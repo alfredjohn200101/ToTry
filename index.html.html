@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="To Try">
+<title>To Try — by Alfred John</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0C0C0E;--bg2:#131316;--bg3:#1A1A1F;--bg4:#222228;
+  --bd:rgba(255,255,255,0.07);--bd2:rgba(255,255,255,0.13);
+  --tx:#F2EFE8;--tx2:#9A9490;--tx3:#5C5A55;
+  --go:#C8A96E;--go2:#E8C98A;--go-bg:rgba(200,169,110,0.08);--go-bd:rgba(200,169,110,0.28);
+  --re:#C0392B;--re-bg:rgba(192,57,43,0.10);--re-bd:rgba(192,57,43,0.32);
+  --gr:#2ECC71;--gr-bg:rgba(46,204,113,0.08);--gr-bd:rgba(46,204,113,0.28);
+  --bl:#5B8DEF;--bl-bg:rgba(91,141,239,0.08);--bl-bd:rgba(91,141,239,0.28);
+  --r:14px;--rs:8px;--rp:100px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Outfit',sans-serif;overflow:hidden}
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:430px;margin:0 auto}
+
+/* ONBOARDING */
+.onboard{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;max-width:430px;margin:0 auto}
+.onboard-step{width:100%;display:none}
+.onboard-step.active{display:block}
+.ob-logo{font-family:'Cormorant Garamond',serif;font-size:42px;font-weight:300;text-align:center;margin-bottom:6px}
+.ob-logo em{font-style:italic;color:var(--go)}
+.ob-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3);letter-spacing:0.18em;text-transform:uppercase;text-align:center;margin-bottom:32px}
+.ob-title{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);margin-bottom:8px;line-height:1.2}
+.ob-desc{font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:24px}
+.ob-prog{display:flex;gap:5px;justify-content:center;margin-bottom:32px}
+.ob-dot{width:6px;height:6px;border-radius:50%;background:var(--bg4)}
+.ob-dot.on{background:var(--go)}
+.vice-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px}
+.vchip{padding:8px 14px;border-radius:var(--rp);border:1px solid var(--bd2);background:var(--bg3);color:var(--tx2);font-size:13px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all 0.15s}
+.vchip.on{border-color:var(--re-bd);background:var(--re-bg);color:var(--re)}
+
+/* HEADER */
+.hdr{padding:54px 20px 14px;flex-shrink:0;border-bottom:1px solid var(--bd);position:relative;overflow:hidden}
+.hdr::before{content:'';position:absolute;top:-60px;right:-40px;width:200px;height:200px;background:radial-gradient(circle,rgba(200,169,110,0.05) 0%,transparent 70%);pointer-events:none}
+.hdr-row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:12px}
+.logo-main{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;line-height:1}
+.logo-main em{font-style:italic;color:var(--go)}
+.logo-sub{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:0.18em;text-transform:uppercase;margin-top:3px}
+.streak-wrap{text-align:right}
+.streak-n{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:300;color:var(--gr);line-height:1}
+.streak-l{font-family:'DM Mono',monospace;font-size:8px;color:var(--tx3);letter-spacing:0.14em;text-transform:uppercase;margin-top:2px}
+.verse-pill{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 14px;cursor:pointer;transition:border-color 0.2s}
+.verse-pill:active{border-color:var(--go-bd)}
+.verse-pill p{font-family:'Cormorant Garamond',serif;font-size:12px;font-style:italic;color:var(--tx2);line-height:1.6}
+.verse-pill .vr{font-family:'DM Mono',monospace;font-size:9px;color:var(--go);margin-top:4px;letter-spacing:0.06em}
+
+/* NAV */
+.nav{display:flex;background:var(--bg);border-top:1px solid var(--bd);flex-shrink:0;overflow-x:auto;scrollbar-width:none}
+.nav::-webkit-scrollbar{display:none}
+.nb{flex:1;min-width:46px;padding:8px 2px 9px;background:none;border:none;border-top:1.5px solid transparent;color:var(--tx3);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:'Outfit',sans-serif;transition:color 0.15s}
+.nb svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.nb span{font-size:7.5px;letter-spacing:0.08em;text-transform:uppercase;font-weight:500}
+.nb.active{color:var(--go);border-top-color:var(--go)}
+
+/* TABS */
+.tabs{flex:1;overflow:hidden}
+.tab{display:none;height:100%;overflow-y:auto;padding:16px 16px 40px;scrollbar-width:thin;scrollbar-color:var(--bg4) transparent}
+.tab.active{display:block}
+.tab::-webkit-scrollbar{width:2px}
+.tab::-webkit-scrollbar-thumb{background:var(--bg4)}
+
+/* COMMON */
+.lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px;display:block}
+.card{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:14px 16px;margin-bottom:10px}
+.card-hd{font-size:13px;font-weight:500;color:var(--tx);margin-bottom:6px}
+.mg{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+.mg3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.met{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:12px 14px}
+.met .ml{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:5px}
+.met .mv{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:400;color:var(--tx);line-height:1}
+.met .mv.g{color:var(--gr)}.met .mv.r{color:var(--re)}.met .mv.au{color:var(--go)}.met .mv.bl{color:var(--bl)}
+.divider{height:1px;background:var(--bd);margin:12px 0}
+input,textarea,select{font-family:'Outfit',sans-serif;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);color:var(--tx);font-size:13px;padding:10px 12px;width:100%;outline:none;transition:border-color 0.2s}
+input:focus,textarea:focus,select:focus{border-color:var(--go-bd)}
+input::placeholder,textarea::placeholder{color:var(--tx3)}
+.row{display:flex;gap:8px;margin-bottom:8px}
+.row input,.row select{flex:1}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:11px 16px;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--bd2);background:var(--bg3);color:var(--tx);font-family:'Outfit',sans-serif;transition:all 0.15s;width:100%}
+.btn:active{transform:scale(0.98);opacity:0.9}
+.btn.primary{background:var(--go);border-color:var(--go);color:#000;font-weight:600}
+.btn.danger{background:var(--re-bg);border-color:var(--re-bd);color:var(--re)}
+.btn.success{background:var(--gr-bg);border-color:var(--gr-bd);color:var(--gr)}
+.btn.blue{background:var(--bl-bg);border-color:var(--bl-bd);color:var(--bl)}
+.btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.qbtns{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.qb{font-size:11px;padding:5px 10px;border-radius:var(--rp);border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;transition:all 0.15s}
+.qb:active{border-color:var(--go-bd);color:var(--go)}
+.msgs{overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;scrollbar-width:thin;scrollbar-color:var(--bg4) transparent;min-height:120px}
+.msgs::-webkit-scrollbar{width:2px}
+.msg{padding:10px 14px;border-radius:var(--r);font-size:13px;line-height:1.65;max-width:92%;white-space:pre-wrap}
+.msg.coach{background:var(--bg3);border:1px solid var(--bd);color:var(--tx);align-self:flex-start}
+.msg.user{background:var(--go);color:#000;align-self:flex-end;font-weight:500}
+.irow{display:flex;gap:8px;align-items:flex-end;flex-shrink:0}
+.irow textarea{resize:none;height:40px;max-height:100px;flex:1}
+.sbtn{height:40px;width:40px;border-radius:var(--rs);background:var(--go);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sbtn:active{opacity:0.8}
+.sbtn svg{width:16px;height:16px;stroke:#000;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+/* VICE CARDS */
+.vice-card{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:16px;margin-bottom:10px;position:relative;overflow:hidden}
+.vice-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--re) 0%,transparent 100%);opacity:0.5}
+.vice-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:5px}
+.vice-name{font-size:15px;font-weight:500;color:var(--tx)}
+.vice-badge{background:var(--gr-bg);border:1px solid var(--gr-bd);border-radius:var(--rp);padding:3px 10px;font-size:11px;color:var(--gr);font-weight:500}
+.vice-trigger{font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3);margin-bottom:12px;line-height:1.5}
+.vice-btn{width:100%;padding:12px;border-radius:var(--rs);border:1px solid var(--re-bd);background:var(--re-bg);color:var(--re);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:'Outfit',sans-serif;transition:all 0.15s}
+.vice-btn:active{transform:scale(0.98)}
+.vice-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.vice-stats{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+.vice-bar-wrap{flex:1;height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;margin:0 10px}
+.vice-bar{height:3px;background:var(--gr);border-radius:2px;transition:width 0.5s}
+.vs-txt{font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3);white-space:nowrap}
+.sos-panel{background:var(--bg2);border:1px solid var(--go-bd);border-radius:var(--r);padding:16px;margin-bottom:12px;display:none}
+.sp-lbl{font-family:'DM Mono',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:12px}
+.sp-verse{font-family:'Cormorant Garamond',serif;font-size:17px;font-style:italic;color:var(--tx);line-height:1.7;margin-bottom:5px}
+.sp-ref{font-family:'DM Mono',monospace;font-size:10px;color:var(--go);letter-spacing:0.06em;margin-bottom:12px}
+.sp-msg{font-size:13px;color:var(--tx2);line-height:1.65;padding-top:12px;border-top:1px solid var(--bd)}
+.sos-btns{display:flex;gap:8px;margin-top:12px}
+
+/* SCOREBOARD */
+.score-hero{background:var(--bg3);border:1px solid var(--gr-bd);border-radius:var(--r);padding:20px;margin-bottom:12px;text-align:center;position:relative;overflow:hidden}
+.score-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(46,204,113,0.08) 0%,transparent 70%);pointer-events:none}
+.score-hero-num{font-family:'Cormorant Garamond',serif;font-size:64px;font-weight:300;color:var(--gr);line-height:1}
+.score-hero-lbl{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.14em;margin-top:4px}
+.score-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.score-met{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:12px;text-align:center}
+.score-met .sml{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px}
+.score-met .smv{font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--tx);line-height:1}
+.score-met .smv.g{color:var(--gr)}.score-met .smv.au{color:var(--go)}.score-met .smv.r{color:var(--re)}
+.vice-score-row{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:12px 14px;margin-bottom:6px}
+.vsr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.vsr-name{font-size:13px;font-weight:500;color:var(--tx)}
+.vsr-pct{font-family:'DM Mono',monospace;font-size:12px;color:var(--gr);font-weight:500}
+.vsr-bar-wrap{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-bottom:4px}
+.vsr-bar{height:4px;background:var(--gr);border-radius:2px;transition:width 0.5s}
+.vsr-meta{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3)}
+.vsr-streak{color:var(--go)}
+
+/* HABITS */
+.habit-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--bd)}
+.habit-row:last-child{border-bottom:none}
+.h-name{font-size:13px;font-weight:400;color:var(--tx)}
+.h-str{font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3);margin-top:2px}
+.dots{display:flex;gap:4px}
+.dot{width:25px;height:25px;border-radius:50%;border:1px solid var(--bd);background:var(--bg3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:8px;font-weight:500;color:var(--tx3);transition:all 0.15s}
+.dot.done{background:var(--gr);border-color:var(--gr);color:#000}
+.dot.today{border-color:var(--go)}
+.dot.done.today{border-color:var(--gr)}
+
+/* FINANCE */
+.debt-row{padding:12px 0;border-bottom:1px solid var(--bd);cursor:pointer}
+.debt-row:last-child{border-bottom:none}
+.dr-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.dr-name{font-size:13px;font-weight:500}
+.dr-amt{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--re)}
+.dr-date{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);display:block;margin-bottom:4px}
+.bar-wrap{height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-bottom:4px}
+.bar{height:3px;background:var(--gr);border-radius:2px;transition:width 0.4s}
+.dr-meta{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3)}
+.dr-paid{color:var(--gr)}
+.payday-result{background:var(--gr-bg);border:1px solid var(--gr-bd);border-radius:var(--r);padding:14px 16px;margin-bottom:12px;display:none}
+.payday-result h4{font-size:13px;font-weight:500;color:var(--gr);margin-bottom:10px}
+.pay-step{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid rgba(46,204,113,0.12)}
+.pay-step:last-child{border-bottom:none}
+.pay-n{width:20px;height:20px;border-radius:50%;background:var(--gr);color:#000;font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.pay-title{font-size:12px;font-weight:500;color:var(--tx)}
+.pay-desc{font-size:11px;color:var(--tx3);margin-top:1px;line-height:1.4}
+.pay-amt{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--gr);white-space:nowrap;padding-left:8px}
+.saved-hero{background:var(--gr-bg);border:1px solid var(--gr-bd);border-radius:var(--r);padding:16px;text-align:center;margin-bottom:10px}
+.saved-num{font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:300;color:var(--gr);line-height:1}
+.saved-lbl{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-top:4px}
+.saved-desc{font-size:12px;color:var(--tx2);margin-top:8px;line-height:1.5}
+
+/* BIBLE */
+.feeling-cloud{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.ftag{font-size:11px;padding:6px 12px;border-radius:var(--rp);border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);cursor:pointer;font-family:'Outfit',sans-serif;transition:all 0.15s}
+.ftag:active{border-color:var(--go-bd);color:var(--go);background:var(--go-bg)}
+.bible-card{background:var(--bg2);border:1px solid var(--go-bd);border-radius:var(--r);padding:20px;margin-bottom:10px;display:none;position:relative;overflow:hidden}
+.bible-card::before{content:'\201C';font-family:'Cormorant Garamond',serif;font-size:80px;color:var(--go);opacity:0.07;position:absolute;top:-10px;left:10px;line-height:1;pointer-events:none}
+.bible-verse{font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:var(--tx);line-height:1.75;margin-bottom:8px;position:relative}
+.bible-ref{font-family:'DM Mono',monospace;font-size:10px;color:var(--go);letter-spacing:0.08em;margin-bottom:12px}
+.bible-reflect{font-size:13px;color:var(--tx2);line-height:1.65;border-top:1px solid var(--bd);padding-top:12px}
+.bible-loading{text-align:center;padding:24px;display:none}
+.bible-loading p{font-family:'Cormorant Garamond',serif;font-size:16px;font-style:italic;color:var(--tx3)}
+
+/* JOURNAL */
+.journal-entry{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:border-color 0.15s}
+.journal-entry:active{border-color:var(--go-bd)}
+.je-date{font-family:'DM Mono',monospace;font-size:9px;color:var(--go);letter-spacing:0.08em;margin-bottom:5px}
+.je-mood{font-size:18px;margin-bottom:4px}
+.je-preview{font-size:12px;color:var(--tx2);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.je-tags{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+.je-tag{font-size:9px;padding:2px 7px;border-radius:10px;background:var(--bg4);color:var(--tx3);font-family:'DM Mono',monospace}
+.je-tag.w{background:var(--gr-bg);color:var(--gr)}
+.je-tag.l{background:var(--re-bg);color:var(--re)}
+.mood-row{display:flex;gap:8px;margin-bottom:12px;justify-content:center}
+.mood-btn{font-size:24px;padding:10px;border-radius:var(--rs);border:1px solid var(--bd);background:var(--bg3);cursor:pointer;transition:all 0.15s;flex:1;text-align:center}
+.mood-btn.on{border-color:var(--go-bd);background:var(--go-bg)}
+.prompt-row{background:var(--bg3);border-radius:var(--rs);padding:10px 12px;margin-bottom:8px;border-left:2px solid var(--go-bd)}
+.prompt-txt{font-size:12px;color:var(--tx2);font-style:italic;margin-bottom:6px}
+
+/* BODY TRACKING */
+.body-chart{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);padding:14px;margin-bottom:10px;overflow:hidden}
+.chart-svg{width:100%;height:120px}
+.check-in-form{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.body-entry{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--bd)}
+.body-entry:last-child{border-bottom:none}
+.be-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3)}
+.be-weight{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--tx)}
+.be-change{font-family:'DM Mono',monospace;font-size:11px}
+.be-change.down{color:var(--gr)}.be-change.up{color:var(--re)}.be-change.same{color:var(--tx3)}
+
+/* CONTENT TAB */
+.script-step{font-family:'DM Mono',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:5px}
+.script-text{font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:12px}
+.check-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--bd);cursor:pointer}
+.check-item:last-child{border-bottom:none}
+.check-box{width:18px;height:18px;border-radius:4px;border:1px solid var(--bd2);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+.check-box.on{background:var(--gr);border-color:var(--gr)}
+.check-box.on::after{content:'✓';font-size:11px;color:#000;font-weight:700}
+.check-lbl{font-size:13px;color:var(--tx2);line-height:1.5}
+.check-lbl.done{text-decoration:line-through;color:var(--tx3)}
+.split-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--bd);align-items:flex-start}
+.split-item:last-child{border-bottom:none}
+.split-day{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;width:28px;flex-shrink:0;padding-top:3px}
+.split-day.today{color:var(--go)}
+.split-focus{font-size:13px;font-weight:500;color:var(--tx);margin-bottom:2px}
+.split-detail{font-size:11px;color:var(--tx3);line-height:1.5}
+.ptag{display:inline-block;font-family:'DM Mono',monospace;font-size:9px;padding:2px 7px;border-radius:4px;margin:4px 3px 0 0}
+.ptag.yt{background:var(--re-bg);color:var(--re);border:1px solid var(--re-bd)}
+.ptag.ig{background:var(--go-bg);color:var(--go);border:1px solid var(--go-bd)}
+.ptag.tt{background:var(--bl-bg);color:var(--bl);border:1px solid var(--bl-bd)}
+.app-link{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);cursor:pointer;transition:border-color 0.15s;text-decoration:none;margin-bottom:8px}
+.app-link:active{border-color:var(--go-bd)}
+.app-link-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.aln{font-size:13px;font-weight:500;color:var(--tx)}.als{font-size:11px;color:var(--tx3);margin-top:1px}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:200;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)}
+.modal-bg.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--bd2);border-radius:20px 20px 0 0;padding:22px 20px 48px;width:100%;max-width:430px;max-height:85vh;overflow-y:auto}
+.modal-handle{width:36px;height:3px;background:var(--bg4);border-radius:2px;margin:0 auto 20px}
+.modal h3{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:400;color:var(--tx);margin-bottom:6px}
+.modal p{font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:14px}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+.pulsing{animation:pulse 1.5s ease infinite}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn 0.3s ease forwards}
+</style>
+</head>
+<body>
+
+<!-- ═══ ONBOARDING ═══ -->
+<div class="onboard" id="onboard">
+  <div class="ob-prog" id="ob-prog">
+    <div class="ob-dot on"></div><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot"></div>
+  </div>
+
+  <!-- Step 1: Welcome -->
+  <div class="onboard-step active" id="ob1">
+    <div class="ob-logo">To <em>Try</em></div>
+    <div class="ob-sub">by Alfred John</div>
+    <div class="ob-title">The only thing required is that you try.</div>
+    <div class="ob-desc">A free app for anyone trying to be better — at anything. No paid plans. No courses. No gatekeeping. Built by someone who needed it himself.</div>
+    <button class="btn primary" onclick="obNext(2)">Begin →</button>
+  </div>
+
+  <!-- Step 2: Name -->
+  <div class="onboard-step" id="ob2">
+    <div class="ob-title">What's your name?</div>
+    <div class="ob-desc">This app is yours. It will speak to you personally from the moment you start.</div>
+    <input type="text" id="ob-name" placeholder="Your first name..." style="margin-bottom:16px;font-size:16px;text-align:center">
+    <button class="btn primary" onclick="obNext(3)">Continue →</button>
+  </div>
+
+  <!-- Step 3: Vices -->
+  <div class="onboard-step" id="ob3">
+    <div class="ob-title">What are you trying to overcome?</div>
+    <div class="ob-desc">Select everything that applies. No judgement. This is the whole point of the app.</div>
+    <div class="vice-chips" id="vice-chip-wrap">
+      <div class="vchip" onclick="toggleChip(this,'Lust / PMO')">Lust / PMO</div>
+      <div class="vchip" onclick="toggleChip(this,'Weed')">Weed</div>
+      <div class="vchip" onclick="toggleChip(this,'Vaping')">Vaping</div>
+      <div class="vchip" onclick="toggleChip(this,'Gambling')">Gambling</div>
+      <div class="vchip" onclick="toggleChip(this,'Alcohol')">Alcohol</div>
+      <div class="vchip" onclick="toggleChip(this,'Food binging')">Food binging</div>
+      <div class="vchip" onclick="toggleChip(this,'Anger')">Anger</div>
+      <div class="vchip" onclick="toggleChip(this,'Overthinking')">Overthinking</div>
+      <div class="vchip" onclick="toggleChip(this,'Social media')">Social media</div>
+      <div class="vchip" onclick="toggleChip(this,'Laziness')">Laziness</div>
+      <div class="vchip" onclick="toggleChip(this,'Spending')">Spending</div>
+      <div class="vchip" onclick="toggleChip(this,'Other')">Other</div>
+    </div>
+    <input type="text" id="ob-vice-custom" placeholder="Add your own..." style="margin-bottom:16px">
+    <button class="btn primary" onclick="obNext(4)">Continue →</button>
+  </div>
+
+  <!-- Step 4: Ready -->
+  <div class="onboard-step" id="ob4">
+    <div class="ob-logo" style="margin-bottom:8px">To <em>Try</em></div>
+    <div class="ob-title" id="ob-ready-title">You're ready.</div>
+    <div class="ob-desc" id="ob-ready-desc">Your app is set up. Every tab is yours. Every day you open this is a day you chose to try. That's all it takes.</div>
+    <button class="btn primary" onclick="finishOnboard()" style="margin-bottom:10px">Start my journey →</button>
+  </div>
+</div>
+
+<!-- ═══ MAIN APP ═══ -->
+<div class="hdr">
+  <div class="hdr-row">
+    <div><div class="logo-main">To <em>Try</em></div><div class="logo-sub" id="app-byline">by Alfred John</div></div>
+    <div class="streak-wrap"><div class="streak-n" id="streak-num">0</div><div class="streak-l">day streak</div></div>
+  </div>
+  <div class="verse-pill" onclick="nextVerse()">
+    <p id="hdr-verse">Loading today's word...</p>
+    <div class="vr" id="hdr-ref"></div>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="nb active" onclick="go('home')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg><span>Home</span></button>
+  <button class="nb" onclick="go('vices')"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span>Vices</span></button>
+  <button class="nb" onclick="go('score')"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg><span>Score</span></button>
+  <button class="nb" onclick="go('coach')"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Coach</span></button>
+  <button class="nb" onclick="go('pt')"><svg viewBox="0 0 24 24"><path d="M6.5 6.5h11M6.5 17.5h11M3 10h2.5M18.5 10H21M3 14h2.5M18.5 14H21"/></svg><span>PT</span></button>
+  <button class="nb" onclick="go('bible')"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>Bible</span></button>
+  <button class="nb" onclick="go('journal')"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg><span>Journal</span></button>
+  <button class="nb" onclick="go('habits')"><svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><span>Habits</span></button>
+  <button class="nb" onclick="go('body')"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>Body</span></button>
+  <button class="nb" onclick="go('finance')"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Finance</span></button>
+  <button class="nb" onclick="go('content')"><svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg><span>Content</span></button>
+</nav>
+
+<div class="tabs">
+
+<!-- HOME -->
+<div id="tab-home" class="tab active">
+  <div class="lbl" id="home-greet">Welcome</div>
+  <div class="mg">
+    <div class="met"><div class="ml">Streak</div><div class="mv au" id="h-streak">0</div></div>
+    <div class="met"><div class="ml">Today</div><div class="mv" id="h-habits">0/0</div></div>
+    <div class="met"><div class="ml">Debt left</div><div class="mv r" id="h-debt">—</div></div>
+    <div class="met"><div class="ml">Vice wins</div><div class="mv g" id="h-wins">0</div></div>
+  </div>
+  <div class="lbl">Today's training mission</div>
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-hd" id="today-focus">Loading...</div>
+    <div id="today-detail" style="font-size:12px;color:var(--tx2);line-height:1.65;margin-top:5px"></div>
+  </div>
+  <div class="lbl">Quick actions</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">
+    <button class="btn danger" onclick="go('vices')"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Fighting a vice</button>
+    <button class="btn primary" onclick="openPayday()"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Just got paid</button>
+    <button class="btn" onclick="go('journal')"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Today's journal</button>
+    <button class="btn" onclick="go('bible')"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Find a verse</button>
+  </div>
+</div>
+
+<!-- VICES -->
+<div id="tab-vices" class="tab">
+  <div class="lbl">Your vices</div>
+  <p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">The moment an urge hits — tap it. Get a verse. Get an intervention. Beat it and log the win.</p>
+  <div id="sos-panel" class="sos-panel">
+    <div class="sp-lbl" id="sp-lbl">Intervention</div>
+    <div class="sp-verse" id="sp-verse">Holding on. Finding your word...</div>
+    <div class="sp-ref" id="sp-ref"></div>
+    <div class="sp-msg" id="sp-msg"></div>
+    <div class="sos-btns">
+      <button class="btn success" onclick="logWin()" style="flex:1">I beat it — log the win</button>
+      <button class="btn" onclick="closePanel()" style="flex:1">Close</button>
+    </div>
+  </div>
+  <div id="vices-list"></div>
+  <div class="card" style="margin-top:4px">
+    <div class="card-hd" style="margin-bottom:5px">Add a vice</div>
+    <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Whatever you're fighting. Add it and this becomes your dedicated space to beat it.</p>
+    <input type="text" id="v-name" placeholder="Name your vice..." style="margin-bottom:8px">
+    <input type="text" id="v-trigger" placeholder="When does it usually hit?" style="margin-bottom:8px">
+    <button class="btn primary" onclick="addVice()">Add this vice</button>
+  </div>
+</div>
+
+<!-- SCOREBOARD -->
+<div id="tab-score" class="tab">
+  <div class="lbl">Victory scoreboard</div>
+  <div class="score-hero">
+    <div class="score-hero-num" id="sc-total">0</div>
+    <div class="score-hero-lbl">Total urges defeated</div>
+  </div>
+  <div class="score-grid">
+    <div class="score-met"><div class="sml">Win rate</div><div class="smv g" id="sc-rate">0%</div></div>
+    <div class="score-met"><div class="sml">Battles fought</div><div class="smv au" id="sc-fought">0</div></div>
+    <div class="score-met"><div class="sml">Best streak</div><div class="smv bl" id="sc-streak">0</div></div>
+  </div>
+  <div class="lbl">By vice</div>
+  <div id="score-by-vice"></div>
+  <div style="background:var(--bg3);border-radius:var(--rs);padding:12px 14px;margin-top:8px">
+    <p style="font-size:12px;color:var(--tx2);line-height:1.6;font-style:italic;font-family:'Cormorant Garamond',serif;font-size:15px">"Every number on this screen is a moment you chose who you're becoming over what you used to be."</p>
+  </div>
+</div>
+
+<!-- COACH -->
+<div id="tab-coach" class="tab">
+  <div class="lbl">Life coach</div>
+  <div class="qbtns">
+    <button class="qb" onclick="goCoach('I just got paid. '+getDebtStr()+' What do I pay first right now before I spend anything?')">Just got paid</button>
+    <button class="qb" onclick="goCoach('I slipped up today. Help me reset without shame and without losing the week.')">I slipped up</button>
+    <button class="qb" onclick="goCoach('Full check-in. What should I prioritise this week across training, finances and faith?')">Weekly check-in</button>
+    <button class="qb" onclick="goCoach('I\'m thinking about her and it hurts badly. Help me turn this pain into fuel not self-destruction.')">About her</button>
+    <button class="qb" onclick="goCoach('I feel completely empty and lost right now. Talk to me.')">I feel empty</button>
+    <button class="qb" onclick="goCoach('What is the single most important thing I should do in the next hour?')">What to do now</button>
+    <button class="qb" onclick="goCoach('I have a poker night coming up. How do I handle this without relapsing into gambling?')">Poker night</button>
+  </div>
+  <div class="msgs" id="coach-msgs" style="max-height:300px">
+    <div class="msg coach" id="coach-welcome">Your coach is here. What do you need right now?</div>
+  </div>
+  <div class="irow">
+    <textarea id="coach-in" placeholder="Talk to your coach..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCoach()}" oninput="ar(this)"></textarea>
+    <button class="sbtn" onclick="sendCoach()"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+  </div>
+</div>
+
+<!-- PT -->
+<div id="tab-pt" class="tab">
+  <div class="lbl">Training apps</div>
+  <a class="app-link" href="hevy://" onclick="tryApp(event,'hevy://','https://apps.apple.com/app/hevy-workout-tracker/id1388737828')">
+    <div class="app-link-icon" style="background:#1C1C3A">💪</div>
+    <div><div class="aln">Hevy</div><div class="als">Log today's workout</div></div>
+    <span style="margin-left:auto;color:var(--tx3)">↗</span>
+  </a>
+  <div class="app-link" onclick="toggleCalPicker()">
+    <div class="app-link-icon" style="background:#1A2A1A" id="cal-icon">🥗</div>
+    <div><div class="aln" id="cal-name">Calorie tracker</div><div class="als">Tap to choose your app</div></div>
+    <span style="margin-left:auto;color:var(--tx3)">↗</span>
+  </div>
+  <div id="cal-picker" style="display:none" class="card">
+    <div class="card-hd" style="margin-bottom:8px">Choose your calorie app</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <button class="btn" onclick="setCalApp('MyFitnessPal','🥗','myfitnesspal://','https://apps.apple.com/app/myfitnesspal/id341232718')">MyFitnessPal</button>
+      <button class="btn" onclick="setCalApp('CalAI','🤖','calai://','https://apps.apple.com/app/calai-calorie-counter-ai/id6447167650')">CalAI</button>
+      <button class="btn" onclick="setCalApp('Cronometer','📊','cronometer://','https://apps.apple.com/app/cronometer/id1145935738')">Cronometer</button>
+      <button class="btn" onclick="setCalApp('Lose It!','🎯','loseit://','https://apps.apple.com/app/lose-it-calorie-counter/id297368629')">Lose It!</button>
+    </div>
+  </div>
+  <div class="lbl" style="margin-top:12px">This week's split</div>
+  <div class="card" id="split-card"></div>
+  <div class="lbl" style="margin-top:12px">Ask your PT</div>
+  <div class="qbtns">
+    <button class="qb" onclick="goPT('Give me today\'s full session. Exact exercises, sets, reps, rest periods. What to log in Hevy. Knee still rehabbing.')">Today's session</button>
+    <button class="qb" onclick="goPT('Full day of meals — breakfast, lunch, dinner with exact calories and protein. 2000-2200 cal target.')">Today's meals</button>
+    <button class="qb" onclick="goPT('Knee is hurting today. What can I train and what must I avoid?')">Knee hurts</button>
+    <button class="qb" onclick="goPT('Only 25 minutes. Best possible session.')">25 min session</button>
+    <button class="qb" onclick="goPT('Bulk meal prep for the week. High protein, budget-friendly, easy to make in batches.')">Meal prep</button>
+    <button class="qb" onclick="goPT('I have chenda today. How do I adjust my training?')">Chenda day</button>
+  </div>
+  <div class="msgs" id="pt-msgs" style="max-height:220px">
+    <div class="msg coach">Your PT. Powerhouse Gym, 34% BF, knee rehabbing, MyFitnessPal + Hevy. What do you need?</div>
+  </div>
+  <div class="irow">
+    <textarea id="pt-in" placeholder="Ask your PT..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendPT()}" oninput="ar(this)"></textarea>
+    <button class="sbtn" onclick="sendPT()"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+  </div>
+</div>
+
+<!-- BIBLE -->
+<div id="tab-bible" class="tab">
+  <div class="lbl">Find your verse — ESV</div>
+  <p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:12px">Type what you're feeling or tap a feeling. God's word will meet you where you are.</p>
+  <div class="feeling-cloud">
+    <button class="ftag" onclick="findVerse('I feel completely hopeless like nothing will ever change')">Hopeless</button>
+    <button class="ftag" onclick="findVerse('I am fighting lust and sexual temptation right now')">Lust</button>
+    <button class="ftag" onclick="findVerse('I feel crushing guilt and shame for what I have done')">Guilt & shame</button>
+    <button class="ftag" onclick="findVerse('I am angry and full of frustration I cannot control')">Anger</button>
+    <button class="ftag" onclick="findVerse('I feel completely alone and unloved')">Lonely</button>
+    <button class="ftag" onclick="findVerse('I need strength and discipline to keep going when I want to quit')">Need strength</button>
+    <button class="ftag" onclick="findVerse('I am anxious and completely overwhelmed by everything')">Anxious</button>
+    <button class="ftag" onclick="findVerse('I feel far from God and spiritually empty and dry')">Far from God</button>
+    <button class="ftag" onclick="findVerse('I am in daily battle with addiction and temptation')">Addiction</button>
+    <button class="ftag" onclick="findVerse('I am drowning in financial stress and debt')">Financial stress</button>
+    <button class="ftag" onclick="findVerse('I need forgiveness for sins I keep committing')">Need forgiveness</button>
+    <button class="ftag" onclick="findVerse('I want to give up on everything')">Want to give up</button>
+    <button class="ftag" onclick="findVerse('I am grieving a relationship I destroyed through my own choices')">Grief & loss</button>
+    <button class="ftag" onclick="findVerse('I fear what people think of me and being judged publicly')">Fear of judgement</button>
+    <button class="ftag" onclick="findVerse('I need courage to take the next step even when I am afraid')">Need courage</button>
+  </div>
+  <div class="row" style="margin-bottom:12px">
+    <input type="text" id="bible-in" placeholder="Type what you're feeling right now..." onkeydown="if(event.key==='Enter'){findVerse(this.value)}">
+    <button class="btn primary" style="width:auto;white-space:nowrap;padding:10px 14px" onclick="findVerse(document.getElementById('bible-in').value)">Find</button>
+  </div>
+  <div class="bible-loading" id="bible-loading"><p class="pulsing">Seeking the word for you...</p></div>
+  <div class="bible-card" id="bible-card">
+    <div class="bible-verse" id="b-verse"></div>
+    <div class="bible-ref" id="b-ref"></div>
+    <div class="bible-reflect" id="b-reflect"></div>
+    <button class="btn" style="margin-top:14px" onclick="findVerse(document.getElementById('bible-in').value)">Another verse</button>
+  </div>
+</div>
+
+<!-- JOURNAL -->
+<div id="tab-journal" class="tab">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <div class="lbl" style="margin:0">Daily journal</div>
+    <button class="btn primary" style="width:auto;padding:7px 12px;font-size:12px" onclick="openNewEntry()">+ New entry</button>
+  </div>
+  <div id="journal-list"></div>
+</div>
+
+<!-- HABITS -->
+<div id="tab-habits" class="tab">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <div class="lbl" style="margin:0">Daily habits</div>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3)" id="h-score">0/0</div>
+  </div>
+  <div class="card" id="habit-list"></div>
+  <div class="row" style="margin-top:8px">
+    <input type="text" id="new-habit" placeholder="Add a habit...">
+    <button class="btn primary" style="width:auto;white-space:nowrap;padding:10px 14px" onclick="addHabit()">Add</button>
+  </div>
+</div>
+
+<!-- BODY TRACKING -->
+<div id="tab-body" class="tab">
+  <div class="lbl">Body progress</div>
+  <div class="mg3">
+    <div class="met"><div class="ml">Current</div><div class="mv au" id="bod-current">—</div></div>
+    <div class="met"><div class="ml">Started</div><div class="mv" id="bod-start">—</div></div>
+    <div class="met"><div class="ml">Lost</div><div class="mv g" id="bod-lost">—</div></div>
+  </div>
+  <div class="body-chart">
+    <div class="lbl" style="margin-bottom:8px">Weight trend (kg)</div>
+    <svg class="chart-svg" id="weight-chart" viewBox="0 0 340 100" preserveAspectRatio="none">
+      <text x="170" y="55" text-anchor="middle" fill="rgba(255,255,255,0.15)" font-family="Cormorant Garamond,serif" font-size="13" font-style="italic">Log your first check-in below</text>
+    </svg>
+  </div>
+  <div class="check-in-form">
+    <div class="card-hd" style="margin-bottom:10px">Weekly check-in</div>
+    <div class="row">
+      <input type="number" id="bod-weight" placeholder="Weight (kg)" step="0.1">
+      <input type="number" id="bod-bf" placeholder="Body fat %" step="0.1">
+    </div>
+    <div class="row">
+      <input type="number" id="bod-waist" placeholder="Waist (cm)">
+      <input type="number" id="bod-chest" placeholder="Chest (cm)">
+    </div>
+    <input type="text" id="bod-note" placeholder="How do you feel this week? (optional)" style="margin-bottom:10px">
+    <button class="btn primary" onclick="logBody()">Log this week</button>
+  </div>
+  <div class="lbl">Check-in history</div>
+  <div class="card" id="body-history"></div>
+</div>
+
+<!-- FINANCE -->
+<div id="tab-finance" class="tab">
+  <div class="lbl">Financial command</div>
+  <div class="mg">
+    <div class="met"><div class="ml">Debt left</div><div class="mv r" id="f-debt">$0</div></div>
+    <div class="met"><div class="ml">Paid off</div><div class="mv g" id="f-paid">$0</div></div>
+    <div class="met"><div class="ml">USA fund</div><div class="mv g" id="f-usa">$0</div></div>
+    <div class="met"><div class="ml">India fund</div><div class="mv g" id="f-india">$0</div></div>
+  </div>
+  <div class="saved-hero" id="saved-hero">
+    <div class="saved-num" id="saved-num">$0</div>
+    <div class="saved-lbl">Saved by quitting vices</div>
+    <div class="saved-desc" id="saved-desc">Set your weekly vice spend below to start tracking</div>
+  </div>
+  <button class="btn primary" style="margin-bottom:12px" onclick="openPayday()">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    I just got paid — allocate my money
+  </button>
+  <div class="payday-result" id="payday-result"></div>
+  <div class="card">
+    <div class="card-hd" style="margin-bottom:10px">Debts — tap to log a payment</div>
+    <div id="debt-list"></div>
+  </div>
+  <div class="card">
+    <div class="card-hd" style="margin-bottom:10px">Add / update debts</div>
+    <div class="row"><input type="text" id="dn" placeholder="Who you owe"><input type="number" id="dt" placeholder="Total $" style="max-width:110px;flex:none"></div>
+    <div class="row"><input type="number" id="dp" placeholder="Paid so far $"><input type="date" id="dd" style="max-width:140px;flex:none"></div>
+    <button class="btn primary" onclick="addDebt()" style="margin-bottom:10px">Add this debt</button>
+    <div class="divider"></div>
+    <div class="row"><input type="number" id="usa-in" placeholder="USA savings $"><input type="number" id="india-in" placeholder="India savings $"></div>
+    <button class="btn" onclick="updateSavings()" style="margin-bottom:10px">Update trip savings</button>
+    <div class="divider"></div>
+    <div class="card-hd" style="margin-bottom:6px">Vice savings tracker</div>
+    <p style="font-size:12px;color:var(--tx3);margin-bottom:8px;line-height:1.5">How much were you spending weekly on vices before quitting?</p>
+    <div class="row">
+      <input type="number" id="weed-spend" placeholder="Weed weekly $">
+      <input type="number" id="vape-spend" placeholder="Vaping weekly $">
+    </div>
+    <div class="row">
+      <input type="number" id="gamb-spend" placeholder="Gambling weekly $">
+      <input type="number" id="other-spend" placeholder="Other weekly $">
+    </div>
+    <input type="date" id="sober-since" style="margin-bottom:8px" title="When did you start trying?">
+    <button class="btn success" onclick="calcViceSavings()">Calculate money saved</button>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div id="tab-content" class="tab">
+  <div class="lbl">Content engine — Alfred John</div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-hd" style="margin-bottom:5px">The mission</div>
+    <p style="font-size:13px;color:var(--tx2);line-height:1.65">Raw daily documentation of a real transformation. No performance. No pretence. The story is the product. To Try is the proof.</p>
+  </div>
+  <div class="lbl">Day 1 reel — structure</div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="script-step">01 — Open mid-sentence (first 3 sec)</div>
+    <div class="script-text">"I lost the person I loved most because of who I chose to be." — no intro, no hey guys, start here.</div>
+    <div class="script-step">02 — The admission (30–60 sec)</div>
+    <div class="script-text">Briefly name your problems. Debt. Addictions. The breakup. No detail needed — just honesty. People feel the truth before they understand it.</div>
+    <div class="script-step">03 — The decision (20 sec)</div>
+    <div class="script-text">Not motivation. A decision. "I'm not changing what I do. I'm changing who I am."</div>
+    <div class="script-step">04 — Show the app (15 sec)</div>
+    <div class="script-text">Screen record. Show one thing — the vice tab, or a Bible verse appearing. "I built this because I couldn't afford what others charge. It's free."</div>
+    <div class="script-step">05 — The sign-off</div>
+    <div class="script-text" style="margin-bottom:0">"I don't know what I'm doing. But from the moment this goes up — I'm trying. The most I can do, hopefully, is to try."</div>
+  </div>
+  <div class="lbl">Daily filming checklist</div>
+  <div class="card" style="margin-bottom:14px" id="film-checks"></div>
+  <div class="lbl">Content coach</div>
+  <div class="qbtns">
+    <button class="qb" onclick="goContent('Help me write a raw caption for my latest post. I\'ll describe what it\'s about.')">Write caption</button>
+    <button class="qb" onclick="goContent('Give me 5 powerful TikTok hook lines for a video about starting over publicly after losing someone you love')">TikTok hooks</button>
+    <button class="qb" onclick="goContent('What should I film today based on where I am right now?')">What to film</button>
+    <button class="qb" onclick="goContent('How do I clip my long form iPhone video into short clips for Reels and TikTok? Step by step CapCut guide.')">How to clip</button>
+    <button class="qb" onclick="goContent('Best hashtags for my niche — self improvement, faith, addiction recovery, transformation')">Hashtags</button>
+  </div>
+  <div class="msgs" id="content-msgs" style="max-height:200px">
+    <div class="msg coach">Your content coach. @alfred_john, @aj2k01, To Try, your mission. What do you need?</div>
+  </div>
+  <div class="irow">
+    <textarea id="content-in" placeholder="Ask your content coach..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendContent()}" oninput="ar(this)"></textarea>
+    <button class="sbtn" onclick="sendContent()"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+  </div>
+</div>
+
+</div><!-- /tabs -->
+
+<!-- PAYDAY MODAL -->
+<div class="modal-bg" id="payday-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>You just got paid.</h3>
+    <p>Before a single dollar goes anywhere else — enter the amount and get your exact allocation.</p>
+    <input type="number" id="paid-amt" placeholder="Amount received ($)" style="margin-bottom:12px">
+    <button class="btn primary" onclick="calcPayday()" style="margin-bottom:8px">Tell me exactly what to do</button>
+    <button class="btn" onclick="document.getElementById('payday-modal').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+
+<!-- JOURNAL MODAL -->
+<div class="modal-bg" id="journal-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>Today's journal</h3>
+    <p style="margin-bottom:10px">How are you really doing?</p>
+    <div class="mood-row" id="mood-row">
+      <button class="mood-btn" onclick="setMood(this,'😤')">😤</button>
+      <button class="mood-btn" onclick="setMood(this,'😔')">😔</button>
+      <button class="mood-btn" onclick="setMood(this,'😐')">😐</button>
+      <button class="mood-btn" onclick="setMood(this,'🙂')">🙂</button>
+      <button class="mood-btn" onclick="setMood(this,'💪')">💪</button>
+    </div>
+    <div id="journal-prompts" style="margin-bottom:10px"></div>
+    <textarea id="journal-text" placeholder="Write honestly. This is just for you..." style="height:140px;resize:none;margin-bottom:10px"></textarea>
+    <div class="row" style="margin-bottom:10px">
+      <div style="flex:1">
+        <div style="font-size:11px;color:var(--tx3);margin-bottom:5px">Urges fought today</div>
+        <input type="number" id="j-urges" placeholder="0" min="0">
+      </div>
+      <div style="flex:1">
+        <div style="font-size:11px;color:var(--tx3);margin-bottom:5px">Urges won</div>
+        <input type="number" id="j-wins" placeholder="0" min="0">
+      </div>
+    </div>
+    <button class="btn primary" onclick="saveEntry()" style="margin-bottom:8px">Save entry</button>
+    <button class="btn" onclick="document.getElementById('journal-modal').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// STORAGE — uses localStorage with JSON
+// ═══════════════════════════════════════════
+function ls(k,v){if(v===undefined){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}}else{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}}
+
+// ═══════════════════════════════════════════
+// API
+// ═══════════════════════════════════════════
+const API='https://api.anthropic.com/v1/messages',MDL='claude-sonnet-4-20250514';
+let userName='Alfred';
+
+function buildAlfredCtx(){
+  return `You are the personal life coach, PT, and content strategist for ${userName}, a young man publicly transforming his life through a free app called "To Try" — built for anyone trying to be better at anything, forever free, no paid tiers, no courses.
+
+${userName==='Alfred'?`ALFRED'S STORY: Well-known respected figure in his community in Bayswater North Melbourne. Lost the woman he loved through micro-cheating and failing to commit to growth. This was the breaking point. Instagram: @alfred_john (main), @aj2k01 (raw progress). Building TikTok and YouTube as Alfred John. Disability Support Worker, helps at dad's family business, between uni semesters, plays chenda (Indian percussion). Saving for America Nov 2026 and India Jan 2027. PHYSICAL: 34% body fat. Powerhouse Gym Bayswater North daily. Knee rehabbing — no heavy barbell squats. 20 min bike daily. MyFitnessPal + Hevy. Target: 2000-2200 kcal, 160-180g protein. FINANCES: ~$10k AUD debt (Bank ~$3k, Friends ~$3.5k, Family ~$3.5k). Mazda 3 overdue service. Pay priority: bank first, friends, family. VICES: Weed, vaping, lust/PMO, gambling, food binging. FAITH: Christian, confession/reconciliation, wants God as genuine anchor.`:`This user is going through their own transformation journey using To Try.`}
+
+STYLE: Direct, warm, specific. No fluff. Accountability without shame. When they slip — reset without wallowing. Faith as real anchor where relevant. Concise responses (3-6 sentences) unless full plan asked.`;
+}
+
+const PT_CTX=`You are a dedicated personal trainer for Alfred John. Powerhouse Gym Bayswater North Melbourne. 34% body fat targeting dream physique. Knee rehabbing — no heavy barbell squats. MyFitnessPal + Hevy. Chenda musician — wrists and shoulders matter. Target: 2000-2200 kcal, 160-180g protein. Split: Mon Legs-rehab, Tue Push, Wed Pull, Thu Legs-strength, Fri Push/Pull hybrid, Sat Cardio+Core, Sun Rest. Knee-safe: leg press (light), RDL, seated leg curl, step-ups, tibialis raises, calf raises. Give exact exercises, sets, reps, rest, Hevy tip. For meals: exact food, calories, protein.`;
+
+const BIBLE_SYS=`You are a scripture guide using the ESV Bible. Respond ONLY with valid JSON, no markdown:
+{"verse":"full ESV verse text","reference":"Book Chapter:Verse (ESV)","reflection":"2-3 warm honest sentences connecting this verse personally to someone in this exact situation"}`;
+
+const SOS_SYS=`You are an emergency intervention coach. Someone is fighting a vice right now using the To Try app. Respond ONLY with valid JSON:
+{"verse":"short powerful ESV verse","reference":"Book Chapter:Verse (ESV)","message":"2-3 sentences using their real stakes and what this moment costs them if they give in, then one immediate physical action to break the urge right now"}`;
+
+const CONTENT_SYS=`You are Alfred John's content coach. He is publicly documenting his life transformation on @alfred_john (Instagram main) and @aj2k01 (raw progress/reels). He created a free self-improvement app called To Try. Content mission: raw, honest, daily documentation. No performance. No pretence. The story is the product. Help with: captions (raw, under 150 words), TikTok hooks, YouTube vlog structure, CapCut iPhone editing guides, posting strategy, hashtags. Be practical and specific.`;
+
+let cH=[],ptH=[],ctH=[];
+
+async function api(sys,hist,msg,tok=900){
+  try{
+    const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:MDL,max_tokens:tok,system:sys,messages:[...hist,{role:'user',content:msg}]})});
+    const d=await r.json();
+    return d.content?.map(b=>b.text||'').join('')||'';
+  }catch(e){return '';}
+}
+
+function addMsg(cid,txt,cls){
+  const c=document.getElementById(cid),id='m'+Date.now()+Math.random().toString(36).slice(2);
+  const d=document.createElement('div');d.className='msg '+cls+' fade-in';d.id=id;d.textContent=txt;
+  c.appendChild(d);c.scrollTop=c.scrollHeight;return id;
+}
+function rmMsg(id){const e=document.getElementById(id);if(e)e.remove();}
+function ar(el){el.style.height='40px';el.style.height=Math.min(el.scrollHeight,100)+'px';}
+
+async function sendCoach(){
+  const el=document.getElementById('coach-in'),t=el.value.trim();if(!t)return;
+  el.value='';el.style.height='40px';
+  addMsg('coach-msgs',t,'user');cH.push({role:'user',content:t});
+  const lid=addMsg('coach-msgs','...','coach');
+  const r=await api(buildAlfredCtx(),cH.slice(0,-1),t);
+  rmMsg(lid);
+  if(r){addMsg('coach-msgs',r,'coach');cH.push({role:'assistant',content:r});if(cH.length>20)cH=cH.slice(-20);}
+  else addMsg('coach-msgs','Connection issue — try again.','coach');
+}
+async function sendPT(){
+  const el=document.getElementById('pt-in'),t=el.value.trim();if(!t)return;
+  el.value='';el.style.height='40px';
+  addMsg('pt-msgs',t,'user');ptH.push({role:'user',content:t});
+  const lid=addMsg('pt-msgs','...','coach');
+  const r=await api(PT_CTX,ptH.slice(0,-1),t);
+  rmMsg(lid);
+  if(r){addMsg('pt-msgs',r,'coach');ptH.push({role:'assistant',content:r});if(ptH.length>20)ptH=ptH.slice(-20);}
+  else addMsg('pt-msgs','Connection issue — try again.','coach');
+}
+async function sendContent(){
+  const el=document.getElementById('content-in'),t=el.value.trim();if(!t)return;
+  el.value='';el.style.height='40px';
+  addMsg('content-msgs',t,'user');ctH.push({role:'user',content:t});
+  const lid=addMsg('content-msgs','...','coach');
+  const r=await api(CONTENT_SYS,ctH.slice(0,-1),t);
+  rmMsg(lid);
+  if(r){addMsg('content-msgs',r,'coach');ctH.push({role:'assistant',content:r});if(ctH.length>20)ctH=ctH.slice(-20);}
+  else addMsg('content-msgs','Connection issue — try again.','coach');
+}
+function goCoach(t){go('coach');document.getElementById('coach-in').value=t;sendCoach();}
+function goPT(t){go('pt');document.getElementById('pt-in').value=t;sendPT();}
+function goContent(t){go('content');document.getElementById('content-in').value=t;sendContent();}
+
+// BIBLE
+async function findVerse(feeling){
+  if(!feeling.trim())return;
+  document.getElementById('bible-in').value=feeling;
+  document.getElementById('bible-card').style.display='none';
+  document.getElementById('bible-loading').style.display='block';
+  const raw=await api(BIBLE_SYS,[],feeling,500);
+  document.getElementById('bible-loading').style.display='none';
+  try{
+    const data=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    document.getElementById('b-verse').textContent='\u201C'+data.verse+'\u201D';
+    document.getElementById('b-ref').textContent='\u2014 '+data.reference;
+    document.getElementById('b-reflect').textContent=data.reflection;
+  }catch(e){
+    document.getElementById('b-verse').textContent='\u201CI can do all things through him who strengthens me.\u201D';
+    document.getElementById('b-ref').textContent='\u2014 Philippians 4:13 (ESV)';
+    document.getElementById('b-reflect').textContent='Whatever you\'re facing right now — you are not facing it alone. Breathe. Pray. Take the next step.';
+  }
+  document.getElementById('bible-card').style.display='block';
+}
+
+// VERSES
+const VS=[
+  {t:"I can do all things through him who strengthens me.",r:"Philippians 4:13 (ESV)"},
+  {t:"Be strong and courageous. Do not be frightened, and do not be dismayed, for the Lord your God is with you wherever you go.",r:"Joshua 1:9 (ESV)"},
+  {t:"No temptation has overtaken you that is not common to man. God is faithful, and he will not let you be tempted beyond your ability.",r:"1 Corinthians 10:13 (ESV)"},
+  {t:"Therefore, if anyone is in Christ, he is a new creation. The old has passed away; behold, the new has come.",r:"2 Corinthians 5:17 (ESV)"},
+  {t:"For God gave us a spirit not of fear but of power and love and self-control.",r:"2 Timothy 1:7 (ESV)"},
+  {t:"Do not be conformed to this world, but be transformed by the renewal of your mind.",r:"Romans 12:2 (ESV)"},
+  {t:"Put on the whole armor of God, that you may be able to stand against the schemes of the devil.",r:"Ephesians 6:11 (ESV)"},
+  {t:"But they who wait for the Lord shall renew their strength; they shall mount up with wings like eagles.",r:"Isaiah 40:31 (ESV)"},
+  {t:"Create in me a clean heart, O God, and renew a right spirit within me.",r:"Psalm 51:10 (ESV)"},
+  {t:"So flee youthful passions and pursue righteousness, faith, love, and peace.",r:"2 Timothy 2:22 (ESV)"},
+  {t:"Commit your work to the Lord, and your plans will be established.",r:"Proverbs 16:3 (ESV)"},
+  {t:"For the moment all discipline seems painful rather than pleasant, but later it yields the peaceful fruit of righteousness.",r:"Hebrews 12:11 (ESV)"},
+  {t:"The Lord is my strength and my shield; in him my heart trusts, and I am helped.",r:"Psalm 28:7 (ESV)"},
+  {t:"I have fought the good fight, I have finished the race, I have kept the faith.",r:"2 Timothy 4:7 (ESV)"},
+  {t:"Trust in the Lord with all your heart, and do not lean on your own understanding.",r:"Proverbs 3:5 (ESV)"},
+  {t:"He gives power to the faint, and to him who has no might he increases strength.",r:"Isaiah 40:29 (ESV)"},
+  {t:"And we know that for those who love God all things work together for good.",r:"Romans 8:28 (ESV)"},
+  {t:"Whoever rules his spirit is better than one who takes a city.",r:"Proverbs 16:32 (ESV)"},
+  {t:"Flee from sexual immorality. The sexually immoral person sins against his own body.",r:"1 Corinthians 6:18 (ESV)"},
+  {t:"Cast your burden on the Lord, and he will sustain you; he will never permit the righteous to be moved.",r:"Psalm 55:22 (ESV)"},
+];
+let vi=Math.floor(Math.random()*VS.length);
+function showV(v){document.getElementById('hdr-verse').textContent=v.t;document.getElementById('hdr-ref').textContent='\u2014 '+v.r;}
+function nextVerse(){vi=(vi+1)%VS.length;showV(VS[vi]);}
+
+// ONBOARDING
+let obSelectedVices=[];
+function toggleChip(el,name){
+  el.classList.toggle('on');
+  if(el.classList.contains('on'))obSelectedVices.push(name);
+  else obSelectedVices=obSelectedVices.filter(v=>v!==name);
+}
+function obNext(step){
+  if(step===3){
+    const n=document.getElementById('ob-name').value.trim();
+    if(!n){document.getElementById('ob-name').focus();return;}
+    userName=n;ls('totry_name',n);
+  }
+  if(step===5||step===4){
+    // finalise vices
+    const custom=document.getElementById('ob-vice-custom').value.trim();
+    if(custom)obSelectedVices.push(custom);
+    if(obSelectedVices.length>0){
+      const saved=ls('totry_v')||[];
+      obSelectedVices.forEach(n=>{
+        if(!saved.find(v=>v.n===n))saved.push({n,t:'Various situations',w:0,total:0,streak:0,lastWin:null});
+      });
+      ls('totry_v',saved);
+    }
+    document.getElementById('ob-ready-title').textContent='You\'re ready, '+userName+'.';
+    document.getElementById('ob-ready-desc').textContent='Your app is set up. Every day you open this is a day you chose to try. That\'s all it takes.';
+  }
+  document.querySelectorAll('.onboard-step').forEach(s=>s.classList.remove('active'));
+  document.getElementById('ob'+step).classList.add('active');
+  document.querySelectorAll('.ob-dot').forEach((d,i)=>d.classList.toggle('on',i<step-1));
+}
+function finishOnboard(){
+  ls('totry_onboarded',true);
+  document.getElementById('onboard').style.display='none';
+  initApp();
+}
+
+// VICES
+let vices=[],curVice=-1;
+function loadVices(){vices=ls('totry_v')||[];}
+function saveVices(){ls('totry_v',vices);}
+
+function renderVices(){
+  loadVices();
+  const list=document.getElementById('vices-list');list.innerHTML='';
+  let totalW=0;
+  vices.forEach((v,i)=>{
+    totalW+=v.w||0;
+    const pct=v.total>0?Math.round(((v.w||0)/v.total)*100):0;
+    const c=document.createElement('div');c.className='vice-card fade-in';
+    c.innerHTML=`<div class="vice-top"><div class="vice-name">${v.n}</div><div class="vice-badge">${v.w||0} wins</div></div><div class="vice-trigger">Usually hits: ${v.t}</div><button class="vice-btn" onclick="fightVice(${i})"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>I'm feeling it right now</button><div class="vice-stats"><span class="vs-txt">${v.w||0}/${v.total||0} won</span><div class="vice-bar-wrap"><div class="vice-bar" style="width:${pct}%"></div></div><span class="vs-txt">${pct}%</span></div>`;
+    list.appendChild(c);
+  });
+  document.getElementById('h-wins').textContent=totalW;
+  renderScoreboard();
+}
+
+async function fightVice(i){
+  loadVices();
+  curVice=i;
+  vices[i].total=(vices[i].total||0)+1;
+  saveVices();renderVices();
+  const p=document.getElementById('sos-panel');p.style.display='block';
+  document.getElementById('sp-lbl').textContent='Fighting: '+vices[i].n;
+  document.getElementById('sp-verse').textContent='Hold on. Finding your word...';
+  document.getElementById('sp-ref').textContent='';document.getElementById('sp-msg').textContent='';
+  p.scrollIntoView({behavior:'smooth'});
+  const isAlfred=userName==='Alfred';
+  const prompt=isAlfred
+    ?`Alfred is fighting his vice of "${vices[i].n}" right now. It usually hits when: ${vices[i].t}. He has won ${vices[i].w||0} out of ${vices[i].total||0} battles. He lost the woman he loved through his own failures. He's building To Try publicly. Intervene hard and personally.`
+    :`${userName} is fighting their vice of "${vices[i].n}" right now. It usually hits when: ${vices[i].t}. They've won ${vices[i].w||0} out of ${vices[i].total||0} battles. Intervene with compassion and strength.`;
+  const raw=await api(SOS_SYS,[],prompt,400);
+  try{
+    const data=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    document.getElementById('sp-verse').textContent='\u201C'+data.verse+'\u201D';
+    document.getElementById('sp-ref').textContent='\u2014 '+data.reference;
+    document.getElementById('sp-msg').textContent=data.message;
+  }catch(e){
+    document.getElementById('sp-verse').textContent='\u201CNo temptation has overtaken you that is not common to man. God is faithful.\u201D';
+    document.getElementById('sp-ref').textContent='\u2014 1 Corinthians 10:13 (ESV)';
+    document.getElementById('sp-msg').textContent='Stand up right now. Do 20 pushups. Then pray out loud. This moment passes. Your character is what stays.';
+  }
+}
+
+function logWin(){
+  loadVices();
+  if(curVice>=0){
+    vices[curVice].w=(vices[curVice].w||0)+1;
+    vices[curVice].lastWin=new Date().toISOString();
+    saveVices();renderVices();
+  }
+  closePanel();
+}
+function closePanel(){document.getElementById('sos-panel').style.display='none';curVice=-1;}
+function addVice(){
+  loadVices();
+  const n=document.getElementById('v-name').value.trim(),t=document.getElementById('v-trigger').value.trim();
+  if(!n)return;
+  vices.push({n,t:t||'Various situations',w:0,total:0,streak:0,lastWin:null});
+  document.getElementById('v-name').value='';document.getElementById('v-trigger').value='';
+  saveVices();renderVices();
+}
+
+// SCOREBOARD
+function renderScoreboard(){
+  loadVices();
+  const totalW=vices.reduce((a,v)=>a+(v.w||0),0);
+  const totalF=vices.reduce((a,v)=>a+(v.total||0),0);
+  const rate=totalF>0?Math.round((totalW/totalF)*100):0;
+  document.getElementById('sc-total').textContent=totalW;
+  document.getElementById('sc-rate').textContent=rate+'%';
+  document.getElementById('sc-fought').textContent=totalF;
+  const streak=getStreak();
+  document.getElementById('sc-streak').textContent=streak;
+  const container=document.getElementById('score-by-vice');container.innerHTML='';
+  vices.forEach(v=>{
+    const pct=v.total>0?Math.round(((v.w||0)/v.total)*100):0;
+    const row=document.createElement('div');row.className='vice-score-row';
+    row.innerHTML=`<div class="vsr-top"><span class="vsr-name">${v.n}</span><span class="vsr-pct">${pct}%</span></div><div class="vsr-bar-wrap"><div class="vsr-bar" style="width:${pct}%"></div></div><div class="vsr-meta"><span>${v.w||0} wins / ${v.total||0} battles</span><span class="vsr-streak">${v.w||0} total defeated</span></div>`;
+    container.appendChild(row);
+  });
+}
+
+// HABITS
+const DN=['M','T','W','T','F','S','S'];
+let habits=[];
+function loadH(){habits=ls('totry_h')||[];}
+function saveH(){ls('totry_h',habits);}
+function tIdx(){const d=new Date().getDay();return d===0?6:d-1;}
+function getStreak(){
+  loadH();const ti=tIdx();let s=0;
+  for(let i=ti;i>=0;i--){if(habits.slice(0,3).every(h=>h.d[i]===1))s++;else break;}
+  return s;
+}
+function initHabits(){
+  loadH();
+  if(!habits.length)habits=[
+    {n:'Morning prayer',d:[0,0,0,0,0,0,0]},
+    {n:'Gym session',d:[0,0,0,0,0,0,0]},
+    {n:'No weed today',d:[0,0,0,0,0,0,0]},
+    {n:'No vaping today',d:[0,0,0,0,0,0,0]},
+    {n:'No PMO today',d:[0,0,0,0,0,0,0]},
+    {n:'Hit protein goal',d:[0,0,0,0,0,0,0]},
+    {n:'Read scripture',d:[0,0,0,0,0,0,0]},
+    {n:'No gambling',d:[0,0,0,0,0,0,0]},
+  ];
+  saveH();
+}
+function renderHabits(){
+  loadH();const ti=tIdx();
+  const list=document.getElementById('habit-list');list.innerHTML='';
+  let done=0;
+  habits.forEach((h,hi)=>{
+    if(h.d[ti]===1)done++;
+    let str=0;for(let i=ti;i>=0;i--){if(h.d[i]===1)str++;else break;}
+    const row=document.createElement('div');row.className='habit-row';
+    row.innerHTML=`<div><div class="h-name">${h.n}</div><div class="h-str">${str>0?str+' day streak':'Start today'}</div></div><div class="dots">${DN.map((d,di)=>`<div class="dot${h.d[di]===1?' done':''}${di===ti?' today':''}" onclick="togH(${hi},${di})">${d}</div>`).join('')}</div>`;
+    list.appendChild(row);
+  });
+  const s=getStreak();
+  document.getElementById('streak-num').textContent=s;
+  document.getElementById('h-streak').textContent=s;
+  document.getElementById('h-habits').textContent=done+'/'+habits.length;
+  document.getElementById('h-score').textContent=done+'/'+habits.length+' today';
+}
+function togH(hi,di){loadH();habits[hi].d[di]=habits[hi].d[di]===1?0:1;saveH();renderHabits();}
+function addHabit(){loadH();const n=document.getElementById('new-habit').value.trim();if(!n)return;habits.push({n,d:[0,0,0,0,0,0,0]});document.getElementById('new-habit').value='';saveH();renderHabits();}
+
+// JOURNAL
+let currentMood='😐';
+const PROMPTS=[
+  'What was the hardest moment today and how did you handle it?',
+  'What did you choose well today, even if it was small?',
+  'What is one thing you want to do differently tomorrow?',
+  'How did your faith show up (or not show up) today?',
+  'What vice tried to take hold today and what happened?',
+];
+function openNewEntry(){
+  currentMood='😐';
+  document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('on'));
+  document.getElementById('journal-text').value='';
+  document.getElementById('j-urges').value='';
+  document.getElementById('j-wins').value='';
+  const pp=document.getElementById('journal-prompts');pp.innerHTML='';
+  const prompt=PROMPTS[Math.floor(Math.random()*PROMPTS.length)];
+  const pr=document.createElement('div');pr.className='prompt-row';
+  pr.innerHTML=`<div class="prompt-txt">${prompt}</div>`;
+  pp.appendChild(pr);
+  document.getElementById('journal-modal').classList.add('open');
+}
+function setMood(btn,mood){currentMood=mood;document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
+function saveEntry(){
+  const text=document.getElementById('journal-text').value.trim();
+  if(!text)return;
+  const entries=ls('totry_journal')||[];
+  const now=new Date();
+  entries.unshift({
+    date:now.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short',year:'numeric'}),
+    ts:now.toISOString(),
+    mood:currentMood,
+    text,
+    urges:parseInt(document.getElementById('j-urges').value||'0'),
+    wins:parseInt(document.getElementById('j-wins').value||'0'),
+  });
+  ls('totry_journal',entries.slice(0,90));
+  document.getElementById('journal-modal').classList.remove('open');
+  renderJournal();
+}
+function renderJournal(){
+  const entries=ls('totry_journal')||[];
+  const list=document.getElementById('journal-list');list.innerHTML='';
+  if(!entries.length){
+    list.innerHTML='<div style="text-align:center;padding:32px 16px"><p style="font-family:\'Cormorant Garamond\',serif;font-size:18px;font-style:italic;color:var(--tx3);margin-bottom:8px">Your journal is empty.</p><p style="font-size:13px;color:var(--tx3)">Tap + New entry to write your first reflection.</p></div>';
+    return;
+  }
+  entries.forEach(e=>{
+    const item=document.createElement('div');item.className='journal-entry';
+    const wTag=e.wins>0?`<span class="je-tag w">+${e.wins} wins</span>`:'';
+    const lTag=e.urges>0?`<span class="je-tag l">${e.urges} battles</span>`:'';
+    item.innerHTML=`<div class="je-date">${e.date}</div><div class="je-mood">${e.mood}</div><div class="je-preview">${e.text}</div><div class="je-tags">${wTag}${lTag}</div>`;
+    item.onclick=()=>{
+      const m=document.createElement('div');m.className='modal-bg open';
+      m.innerHTML=`<div class="modal"><div class="modal-handle"></div><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--go);margin-bottom:8px;letter-spacing:0.1em">${e.date}</div><div style="font-size:24px;margin-bottom:10px">${e.mood}</div><div style="font-size:14px;line-height:1.7;color:var(--tx);white-space:pre-wrap;margin-bottom:14px">${e.text}</div><button class="btn" onclick="this.closest('.modal-bg').remove()">Close</button></div>`;
+      document.body.appendChild(m);
+    };
+    list.appendChild(item);
+  });
+}
+
+// BODY TRACKING
+function logBody(){
+  const w=parseFloat(document.getElementById('bod-weight').value||'0');
+  if(!w)return;
+  const entries=ls('totry_body')||[];
+  entries.unshift({
+    date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'}),
+    ts:new Date().toISOString(),
+    weight:w,
+    bf:parseFloat(document.getElementById('bod-bf').value||'0'),
+    waist:parseFloat(document.getElementById('bod-waist').value||'0'),
+    chest:parseFloat(document.getElementById('bod-chest').value||'0'),
+    note:document.getElementById('bod-note').value.trim(),
+  });
+  ls('totry_body',entries.slice(0,52));
+  ['bod-weight','bod-bf','bod-waist','bod-chest','bod-note'].forEach(id=>document.getElementById(id).value='');
+  renderBody();
+}
+function renderBody(){
+  const entries=ls('totry_body')||[];
+  if(entries.length>0){
+    const cur=entries[0].weight;
+    const start=entries[entries.length-1].weight;
+    const lost=Math.round((start-cur)*10)/10;
+    document.getElementById('bod-current').textContent=cur+'kg';
+    document.getElementById('bod-start').textContent=start+'kg';
+    document.getElementById('bod-lost').textContent=(lost>0?'-':'')+lost+'kg';
+  }
+  // Draw chart
+  const svg=document.getElementById('weight-chart');
+  if(entries.length<2){return;}
+  const pts=entries.slice(0,12).reverse();
+  const weights=pts.map(e=>e.weight);
+  const mn=Math.min(...weights),mx=Math.max(...weights);
+  const range=mx-mn||1;
+  const W=340,H=90,pad=10;
+  const x=(i)=>pad+(i/(pts.length-1))*(W-2*pad);
+  const y=(w)=>H-pad-((w-mn)/range)*(H-2*pad);
+  const pathD=pts.map((p,i)=>(i===0?'M':'L')+x(i).toFixed(1)+','+y(p.weight).toFixed(1)).join(' ');
+  svg.innerHTML=`<defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2ECC71" stop-opacity="0.3"/><stop offset="100%" stop-color="#2ECC71" stop-opacity="0"/></linearGradient></defs><path d="${pathD} L${x(pts.length-1).toFixed(1)},${H} L${x(0).toFixed(1)},${H} Z" fill="url(#wg)"/><path d="${pathD}" stroke="#2ECC71" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>${pts.map((p,i)=>`<circle cx="${x(i).toFixed(1)}" cy="${y(p.weight).toFixed(1)}" r="3" fill="#2ECC71"/>`).join('')}`;
+
+  const hist=document.getElementById('body-history');hist.innerHTML='';
+  entries.forEach((e,i)=>{
+    const prev=entries[i+1];
+    const change=prev?Math.round((e.weight-prev.weight)*10)/10:0;
+    const cls=change<0?'down':change>0?'up':'same';
+    const changeStr=change===0?'—':(change>0?'+':'')+change+'kg';
+    const row=document.createElement('div');row.className='body-entry';
+    row.innerHTML=`<span class="be-date">${e.date}</span><span class="be-weight">${e.weight}kg</span><span class="be-change ${cls}">${changeStr}</span>`;
+    hist.appendChild(row);
+  });
+}
+
+// FINANCE
+let debts=[],usaS=0,indiaS=0;
+function loadF(){const f=ls('totry_f');if(f){debts=f.d||[];usaS=f.u||0;indiaS=f.i||0;}else{debts=[];usaS=0;indiaS=0;}}
+function saveF(){ls('totry_f',{d:debts,u:usaS,i:indiaS});}
+function getDebtStr(){loadF();return debts.map(d=>`${d.n} $${Math.round(d.t-d.p)} remaining${d.due?' due '+d.due:''}`).join(', ');}
+function initDebts(){
+  loadF();
+  if(!debts.length&&userName==='Alfred'){
+    debts=[{n:'Bank',t:3000,p:0,due:''},{n:'Friends',t:3500,p:0,due:''},{n:'Family',t:3500,p:0,due:''}];
+    saveF();
+  }
+}
+function renderFinance(){
+  loadF();
+  const owed=debts.reduce((a,d)=>a+(d.t-d.p),0),paid=debts.reduce((a,d)=>a+d.p,0);
+  ['f-debt','h-debt'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='$'+Math.round(owed).toLocaleString();});
+  document.getElementById('f-paid').textContent='$'+Math.round(paid).toLocaleString();
+  document.getElementById('f-usa').textContent='$'+Math.round(usaS).toLocaleString();
+  document.getElementById('f-india').textContent='$'+Math.round(indiaS).toLocaleString();
+  const dl=document.getElementById('debt-list');dl.innerHTML='';
+  debts.forEach((d,di)=>{
+    const rem=d.t-d.p,pct=d.t>0?Math.round((d.p/d.t)*100):0;
+    const item=document.createElement('div');item.className='debt-row';
+    item.innerHTML=`<div class="dr-top"><span class="dr-name">${d.n}</span><span class="dr-amt">$${Math.round(rem).toLocaleString()}</span></div>${d.due?`<span class="dr-date">Due: ${d.due}</span>`:''}<div class="bar-wrap"><div class="bar" style="width:${pct}%"></div></div><div class="dr-meta"><span class="dr-paid">$${Math.round(d.p).toLocaleString()} paid</span><span>${pct}% — tap to log</span></div>`;
+    item.onclick=()=>{const a=parseFloat(prompt('Payment toward '+d.n+' ($)?')||'0');if(a>0){loadF();debts[di].p=Math.min(debts[di].p+a,debts[di].t);saveF();renderFinance();}};
+    dl.appendChild(item);
+  });
+}
+function addDebt(){
+  loadF();
+  const n=document.getElementById('dn').value.trim(),t=parseFloat(document.getElementById('dt').value||'0'),p=parseFloat(document.getElementById('dp').value||'0'),due=document.getElementById('dd').value;
+  if(!n||t<=0)return;debts.push({n,t,p,due});
+  ['dn','dt','dp','dd'].forEach(id=>document.getElementById(id).value='');saveF();renderFinance();
+}
+function updateSavings(){
+  loadF();
+  const u=parseFloat(document.getElementById('usa-in').value||'0'),i=parseFloat(document.getElementById('india-in').value||'0');
+  if(u>0)usaS=u;if(i>0)indiaS=i;
+  document.getElementById('usa-in').value='';document.getElementById('india-in').value='';saveF();renderFinance();
+}
+function calcViceSavings(){
+  const weed=parseFloat(document.getElementById('weed-spend').value||'0');
+  const vape=parseFloat(document.getElementById('vape-spend').value||'0');
+  const gamb=parseFloat(document.getElementById('gamb-spend').value||'0');
+  const other=parseFloat(document.getElementById('other-spend').value||'0');
+  const weekly=weed+vape+gamb+other;
+  if(!weekly)return;
+  const since=document.getElementById('sober-since').value;
+  let weeks=1;
+  if(since){const days=Math.floor((Date.now()-new Date(since))/(1000*60*60*24));weeks=Math.max(1,Math.floor(days/7));}
+  const saved=Math.round(weekly*weeks);
+  document.getElementById('saved-num').textContent='$'+saved.toLocaleString();
+  document.getElementById('saved-desc').textContent=`$${weekly}/week × ${weeks} weeks. That's $${saved.toLocaleString()} that went toward your debt and future instead.`;
+  ls('totry_vicesave',{weekly,since,saved});
+}
+function openPayday(){document.getElementById('payday-modal').classList.add('open');}
+function calcPayday(){
+  loadF();
+  const amt=parseFloat(document.getElementById('paid-amt').value||'0');if(!amt)return;
+  document.getElementById('payday-modal').classList.remove('open');go('finance');
+  const result=document.getElementById('payday-result');result.style.display='block';result.scrollIntoView({behavior:'smooth'});
+  let rem=amt,steps=[];
+  const buf=Math.round(amt*0.05);steps.push({n:1,title:'Emergency buffer (5%)',desc:'Before anything else. Non-negotiable.',amt:buf});rem-=buf;
+  const dueSoon=debts.filter(d=>d.due&&new Date(d.due)<new Date(Date.now()+14*24*60*60*1000)&&(d.t-d.p)>0);
+  dueSoon.forEach(d=>{const pay=Math.min(Math.round(rem*0.25),Math.round(d.t-d.p));steps.push({n:steps.length+1,title:d.n+' — due soon ⚠️',desc:'Deadline approaching. Pay now.',amt:pay});rem-=pay;});
+  const bank=debts.find(d=>d.n.toLowerCase().includes('bank')&&(d.t-d.p)>0);
+  if(bank){const pay=Math.round(rem*0.35);steps.push({n:steps.length+1,title:'Bank (35%)',desc:'Accrues interest daily. Every dollar here saves more.',amt:pay});rem-=pay;}
+  const fr=debts.find(d=>d.n.toLowerCase().includes('friend')&&(d.t-d.p)>0);
+  if(fr){const pay=Math.round(rem*0.25);steps.push({n:steps.length+1,title:'Friends debt (25%)',desc:'Relationships are on the line. Keep showing effort.',amt:pay});rem-=pay;}
+  const tripS=Math.round(rem*0.4);steps.push({n:steps.length+1,title:'USA + India fund (40% of remainder)',desc:'Split equally. Future you will thank you.',amt:tripS});rem-=tripS;
+  if(rem>0)steps.push({n:steps.length+1,title:'Family + remainder',desc:'Most flexible but never take advantage of that.',amt:rem});
+  result.innerHTML=`<h4>Allocation for $${amt.toLocaleString()}</h4>`+steps.map(s=>`<div class="pay-step"><div class="pay-n">${s.n}</div><div style="flex:1"><div class="pay-title">${s.title}</div><div class="pay-desc">${s.desc}</div></div><div class="pay-amt">$${s.amt.toLocaleString()}</div></div>`).join('')+`<button class="btn success" style="margin-top:14px" onclick="document.getElementById('payday-result').style.display='none'">Got it</button>`;
+}
+
+// TRAINING SPLIT
+const SPLIT=[
+  {day:'Mon',focus:'Legs — Rehab',detail:'Leg press (light), RDL, seated leg curl, step-ups, tibialis raises, calf raises.'},
+  {day:'Tue',focus:'Push',detail:'Bench press, incline DB, OHP, lateral raises, tricep dips and pushdowns.'},
+  {day:'Wed',focus:'Pull',detail:'Cable rows, lat pulldown, face pulls, DB rows, bicep curls, rear delts.'},
+  {day:'Thu',focus:'Legs — Strength',detail:'Progressive overload on leg press. Heavier RDL. Romanian curl.'},
+  {day:'Fri',focus:'Push / Pull Hybrid',detail:'High volume. Superset-friendly. Pump-focused. Mix chest and back.'},
+  {day:'Sat',focus:'Cardio + Core + Mobility',detail:'25-30 min incline walk or bike. Core circuit. Full body stretch.'},
+  {day:'Sun',focus:'Rest + God',detail:'No gym. Prayer, Scripture, journalling. Plan the week. Non-negotiable.'},
+];
+function renderSplit(){
+  const ti=tIdx(),card=document.getElementById('split-card');card.innerHTML='';
+  SPLIT.forEach((s,i)=>{
+    const d=document.createElement('div');d.className='split-item';const isT=i===ti;
+    d.innerHTML=`<div class="split-day${isT?' today':''}">${s.day}</div><div><div class="split-focus">${isT?'★ ':''}${s.focus}</div><div class="split-detail">${s.detail}</div></div>`;
+    card.appendChild(d);
+  });
+  const tod=SPLIT[ti];
+  document.getElementById('today-focus').textContent='★ Today: '+tod.focus;
+  document.getElementById('today-detail').textContent=tod.detail+'\n\nLog in Hevy after. Hit protein target (160-180g). Track in MyFitnessPal.';
+}
+
+// CONTENT CHECKLIST
+const FILM_ITEMS=['Morning check-in filmed','Gym session filmed (at least one clip)','One honest hard moment captured','One win noted — any size','App screen recorded (To Try in action)','3 short clips cut from today','Long form uploaded to YouTube'];
+let filmC=[];
+function loadFilm(){filmC=ls('totry_fc')||FILM_ITEMS.map(()=>false);}
+function renderFilm(){
+  loadFilm();const c=document.getElementById('film-checks');c.innerHTML='';
+  FILM_ITEMS.forEach((f,i)=>{
+    const row=document.createElement('div');row.className='check-item';
+    row.onclick=()=>{loadFilm();filmC[i]=!filmC[i];ls('totry_fc',filmC);renderFilm();};
+    row.innerHTML=`<div class="check-box${filmC[i]?' on':''}"></div><div class="check-lbl${filmC[i]?' done':''}">${f}</div>`;
+    c.appendChild(row);
+  });
+}
+
+// CALORIE APP
+let calApp={name:'Calorie tracker',icon:'🥗',scheme:'',store:''};
+function loadCalApp(){const c=ls('totry_ca');if(c)calApp=c;}
+function setCalApp(name,icon,scheme,store){
+  calApp={name,icon,scheme,store};ls('totry_ca',calApp);
+  document.getElementById('cal-name').textContent=name;document.getElementById('cal-icon').textContent=icon;
+  document.getElementById('cal-picker').style.display='none';
+}
+function toggleCalPicker(){const p=document.getElementById('cal-picker');p.style.display=p.style.display==='none'?'block':'none';}
+function tryApp(e,scheme,store){
+  e.preventDefault();const f=document.createElement('iframe');f.style.display='none';f.src=scheme;document.body.appendChild(f);
+  setTimeout(()=>{document.body.removeChild(f);window.location.href=store;},800);
+}
+
+// NAV
+const TABS=['home','vices','score','coach','pt','bible','journal','habits','body','finance','content'];
+function go(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  const idx=TABS.indexOf(name);if(idx>=0)document.querySelectorAll('.nb')[idx].classList.add('active');
+}
+
+// GREETING
+function setGreeting(){
+  const h=new Date().getHours(),now=new Date();
+  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const g=h<12?'Good morning':'h<17?'Good afternoon':'Good evening';
+  const gfull=h<12?'Good morning, '+userName+'.':h<17?'Good afternoon, '+userName+'.':'Good evening, '+userName+'.';
+  document.getElementById('home-greet').textContent=gfull+' '+days[now.getDay()]+' '+now.getDate()+' '+months[now.getMonth()];
+}
+
+// INIT
+function initApp(){
+  userName=ls('totry_name')||'Alfred';
+  document.getElementById('app-byline').textContent=userName==='Alfred'?'by Alfred John':'by '+userName;
+  document.getElementById('coach-welcome').textContent=userName==='Alfred'
+    ?'Alfred. I know everything — the breakup, the $10k debt, Powerhouse Gym, the chenda, every vice, the faith, and the man you\'re becoming. What do you need right now?'
+    :'Hey '+userName+'. Your coach is here — vices, habits, faith, finances, training. What do you need right now?';
+  showV(VS[vi]);
+  setGreeting();
+  loadCalApp();
+  if(calApp.name!=='Calorie tracker'){document.getElementById('cal-name').textContent=calApp.name;document.getElementById('cal-icon').textContent=calApp.icon;}
+  initHabits();
+  renderHabits();
+  initDebts();
+  renderFinance();
+  renderVices();
+  renderScoreboard();
+  renderSplit();
+  renderFilm();
+  renderJournal();
+  renderBody();
+  const vs=ls('totry_vicesave');
+  if(vs){document.getElementById('saved-num').textContent='$'+vs.saved.toLocaleString();document.getElementById('saved-desc').textContent=`$${vs.weekly}/week saved by quitting. $${vs.saved.toLocaleString()} total.`;}
+}
+
+// CHECK ONBOARDING
+if(ls('totry_onboarded')){
+  document.getElementById('onboard').style.display='none';
+  initApp();
+}
+</script>
+</body>
+</html>
