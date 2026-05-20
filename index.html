@@ -1,0 +1,1703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="To Try">
+<meta name="theme-color" content="#0C0C0E">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>To Try — by Alfred John</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0C0C0E;--bg2:#131316;--bg3:#1A1A1F;--bg4:#222228;
+  --bd:rgba(255,255,255,0.07);--bd2:rgba(255,255,255,0.13);
+  --tx:#F2EFE8;--tx2:#9A9490;--tx3:#5C5A55;
+  --go:#C8A96E;--go-bg:rgba(200,169,110,0.08);--go-bd:rgba(200,169,110,0.28);
+  --re:#C0392B;--re-bg:rgba(192,57,43,0.10);--re-bd:rgba(192,57,43,0.32);
+  --gr:#2ECC71;--gr-bg:rgba(46,204,113,0.08);--gr-bd:rgba(46,204,113,0.28);
+  --bl:#5B8DEF;--bl-bg:rgba(91,141,239,0.08);--bl-bd:rgba(91,141,239,0.28);
+  --pu:#9B59B6;--pu-bg:rgba(155,89,182,0.08);--pu-bd:rgba(155,89,182,0.28);
+  --r:14px;--rs:8px;--rp:100px;
+  --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Outfit',sans-serif;overflow:hidden}
+.app{display:flex;flex-direction:column;height:100vh;height:100dvh;max-width:430px;margin:0 auto}
+
+/* ── ONBOARDING ── */
+.ob{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:32px 28px;max-width:430px;margin:0 auto;overflow-y:auto}
+.ob-step{width:100%;display:none}
+.ob-step.active{display:block;animation:fadeUp 0.4s ease forwards}
+.ob-logo{font-family:'Cormorant Garamond',serif;font-size:52px;font-weight:300;text-align:center;line-height:1;margin-bottom:4px}
+.ob-logo em{font-style:italic;color:var(--go)}
+.ob-by{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:0.2em;text-transform:uppercase;text-align:center;margin-bottom:36px}
+.ob-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;color:var(--tx);margin-bottom:10px;line-height:1.25}
+.ob-desc{font-size:14px;color:var(--tx2);line-height:1.75;margin-bottom:28px}
+.ob-prog{display:flex;gap:6px;justify-content:center;margin-bottom:36px}
+.ob-dot{width:5px;height:5px;border-radius:50%;background:var(--bg4);transition:background 0.3s}
+.ob-dot.on{background:var(--go)}
+.vchips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.vchip{padding:8px 16px;border-radius:var(--rp);border:1px solid var(--bd2);background:var(--bg3);color:var(--tx2);font-size:13px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all 0.15s}
+.vchip.on{border-color:var(--re-bd);background:var(--re-bg);color:var(--re)}
+.ob-quote{font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:var(--go);text-align:center;line-height:1.6;margin-bottom:6px}
+.ob-attr{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:0.1em;text-align:center;margin-bottom:28px}
+
+/* ── HEADER ── */
+.hdr{padding:calc(var(--st) + 14px) 20px 14px;flex-shrink:0;border-bottom:1px solid var(--bd);position:relative;overflow:hidden}
+.hdr::before{content:'';position:absolute;top:-80px;right:-60px;width:260px;height:260px;background:radial-gradient(circle,rgba(200,169,110,0.05) 0%,transparent 70%);pointer-events:none}
+.hdr-row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:12px}
+.logo-main{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;line-height:1}
+.logo-main em{font-style:italic;color:var(--go)}
+.logo-sub{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:0.18em;text-transform:uppercase;margin-top:3px}
+.day-chip{text-align:right;cursor:pointer}
+.day-n{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:300;color:var(--go);line-height:1}
+.day-l{font-family:'DM Mono',monospace;font-size:8px;color:var(--tx3);letter-spacing:0.14em;text-transform:uppercase;margin-top:2px}
+.verse-pill{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 14px;cursor:pointer;transition:border-color 0.2s;position:relative}
+.verse-pill:active{border-color:var(--go-bd)}
+.verse-pill p{font-family:'Cormorant Garamond',serif;font-size:12px;font-style:italic;color:var(--tx2);line-height:1.6;padding-right:36px}
+.verse-pill .vr{font-family:'DM Mono',monospace;font-size:9px;color:var(--go);margin-top:4px;letter-spacing:0.06em}
+.vsave{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--tx3);font-size:18px;padding:4px;line-height:1;transition:color 0.2s}
+.vsave.saved{color:var(--go)}
+
+/* ── NAV ── */
+.nav{display:flex;background:var(--bg);border-top:1px solid var(--bd);flex-shrink:0;overflow-x:auto;scrollbar-width:none;padding-bottom:var(--sb)}
+.nav::-webkit-scrollbar{display:none}
+.nb{flex:1;min-width:46px;padding:8px 2px 6px;background:none;border:none;border-top:1.5px solid transparent;color:var(--tx3);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:'Outfit',sans-serif;transition:color 0.15s}
+.nb svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.nb span{font-size:7px;letter-spacing:0.08em;text-transform:uppercase;font-weight:500}
+.nb.active{color:var(--go);border-top-color:var(--go)}
+
+/* ── TABS ── */
+.tabs{flex:1;overflow:hidden}
+.tab{display:none;height:100%;overflow-y:auto;padding:16px 16px 40px;scrollbar-width:thin;scrollbar-color:var(--bg4) transparent}
+.tab.active{display:block}
+.tab::-webkit-scrollbar{width:2px}
+.tab::-webkit-scrollbar-thumb{background:var(--bg4)}
+
+/* ── COMMON ── */
+.lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px;display:block}
+.card{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:14px 16px;margin-bottom:10px}
+.card-hd{font-size:13px;font-weight:500;color:var(--tx);margin-bottom:6px}
+.mg{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+.mg3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.mg4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+.met{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:12px}
+.met .ml{font-family:'DM Mono',monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:5px}
+.met .mv{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:400;color:var(--tx);line-height:1}
+.met .mv.g{color:var(--gr)}.met .mv.r{color:var(--re)}.met .mv.au{color:var(--go)}.met .mv.bl{color:var(--bl)}.met .mv.pu{color:var(--pu)}
+.divider{height:1px;background:var(--bd);margin:12px 0}
+input,textarea,select{font-family:'Outfit',sans-serif;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);color:var(--tx);font-size:13px;padding:10px 12px;width:100%;outline:none;transition:border-color 0.2s}
+input:focus,textarea:focus,select:focus{border-color:var(--go-bd)}
+input::placeholder,textarea::placeholder{color:var(--tx3)}
+.row{display:flex;gap:8px;margin-bottom:8px}
+.row input,.row select{flex:1}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:11px 16px;border-radius:var(--rs);font-size:13px;font-weight:500;cursor:pointer;border:1px solid var(--bd2);background:var(--bg3);color:var(--tx);font-family:'Outfit',sans-serif;transition:all 0.15s;width:100%}
+.btn:active{transform:scale(0.97);opacity:0.9}
+.btn.primary{background:var(--go);border-color:var(--go);color:#000;font-weight:600}
+.btn.danger{background:var(--re-bg);border-color:var(--re-bd);color:var(--re)}
+.btn.success{background:var(--gr-bg);border-color:var(--gr-bd);color:var(--gr)}
+.btn.blue{background:var(--bl-bg);border-color:var(--bl-bd);color:var(--bl)}
+.btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.qbtns{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.qb{font-size:11px;padding:5px 10px;border-radius:var(--rp);border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;transition:all 0.15s}
+.qb:active{border-color:var(--go-bd);color:var(--go)}
+.msgs{overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:10px;scrollbar-width:none;min-height:100px;max-height:260px}
+.msg{padding:10px 14px;border-radius:var(--r);font-size:13px;line-height:1.65;max-width:93%;white-space:pre-wrap}
+.msg.coach{background:var(--bg3);border:1px solid var(--bd);color:var(--tx);align-self:flex-start}
+.msg.user{background:var(--go);color:#000;align-self:flex-end;font-weight:500}
+.irow{display:flex;gap:8px;align-items:flex-end}
+.irow textarea{resize:none;height:40px;max-height:100px;flex:1}
+.sbtn{height:40px;width:40px;border-radius:var(--rs);background:var(--go);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sbtn:active{opacity:0.8}
+.sbtn svg{width:16px;height:16px;stroke:#000;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── HOME HERO ── */
+.home-hero{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:20px;margin-bottom:12px;text-align:center;position:relative;overflow:hidden}
+.home-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(200,169,110,0.06) 0%,transparent 70%);pointer-events:none}
+.hero-day{font-family:'Cormorant Garamond',serif;font-size:72px;font-weight:300;color:var(--go);line-height:1}
+.hero-lbl{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.16em;margin-top:2px}
+.hero-quote{font-family:'Cormorant Garamond',serif;font-size:14px;font-style:italic;color:var(--tx2);margin-top:10px;line-height:1.6;padding:0 8px}
+.streak-dots{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:8px}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--bg4);transition:background 0.3s}
+.sdot.on{background:var(--gr)}
+.qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.qa-btn{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:14px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);cursor:pointer;transition:border-color 0.15s}
+.qa-btn:active{border-color:var(--go-bd)}
+.qa-btn svg{width:20px;height:20px;stroke:var(--go);fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.qa-t{font-size:12px;font-weight:500;color:var(--tx)}
+.qa-s{font-size:10px;color:var(--tx3)}
+
+/* ── VICES ── */
+.vice-card{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:16px;margin-bottom:10px;position:relative;overflow:hidden}
+.vice-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--re) 0%,transparent 100%);opacity:0.6}
+.vice-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:5px}
+.vice-name{font-size:15px;font-weight:500;color:var(--tx)}
+.vice-badge{background:var(--gr-bg);border:1px solid var(--gr-bd);border-radius:var(--rp);padding:3px 10px;font-size:11px;color:var(--gr);font-weight:500}
+.vice-trigger{font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3);margin-bottom:12px;line-height:1.5}
+.vice-btn{width:100%;padding:12px;border-radius:var(--rs);border:1px solid var(--re-bd);background:var(--re-bg);color:var(--re);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;font-family:'Outfit',sans-serif;transition:all 0.15s}
+.vice-btn:active{transform:scale(0.98)}
+.vice-btn svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.vice-stats{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+.vice-bar-wrap{flex:1;height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;margin:0 10px}
+.vice-bar{height:3px;background:var(--gr);border-radius:2px;transition:width 0.5s}
+.vs-txt{font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3);white-space:nowrap}
+.sos-panel{background:var(--bg2);border:1px solid var(--go-bd);border-radius:var(--r);padding:16px;margin-bottom:12px;display:none}
+.sp-lbl{font-family:'DM Mono',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:12px}
+.sp-verse{font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:var(--tx);line-height:1.7;margin-bottom:5px}
+.sp-ref{font-family:'DM Mono',monospace;font-size:10px;color:var(--go);letter-spacing:0.06em;margin-bottom:12px}
+.sp-msg{font-size:13px;color:var(--tx2);line-height:1.65;padding-top:12px;border-top:1px solid var(--bd)}
+.sos-btns{display:flex;gap:8px;margin-top:12px}
+
+/* ── SCOREBOARD ── */
+.score-hero{background:var(--bg3);border:1px solid var(--gr-bd);border-radius:var(--r);padding:24px 20px;margin-bottom:12px;text-align:center;position:relative;overflow:hidden}
+.score-hero::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(46,204,113,0.1) 0%,transparent 70%);pointer-events:none}
+.score-big{font-family:'Cormorant Garamond',serif;font-size:80px;font-weight:300;color:var(--gr);line-height:1}
+.score-lbl{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.14em;margin-top:6px}
+.score-sub{font-family:'Cormorant Garamond',serif;font-size:15px;font-style:italic;color:var(--tx2);margin-top:8px}
+.sc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.sc-met{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:12px;text-align:center}
+.sc-ml{font-family:'DM Mono',monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px}
+.sc-mv{font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--tx);line-height:1}
+.sc-mv.g{color:var(--gr)}.sc-mv.au{color:var(--go)}.sc-mv.bl{color:var(--bl)}
+.vsr{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:12px 14px;margin-bottom:6px}
+.vsr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.vsr-name{font-size:13px;font-weight:500;color:var(--tx)}
+.vsr-pct{font-family:'DM Mono',monospace;font-size:13px;color:var(--gr);font-weight:500}
+.vsr-wins{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3)}
+.vsr-bar-wrap{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-bottom:4px}
+.vsr-bar{height:4px;background:var(--gr);border-radius:2px;transition:width 0.5s}
+.vsr-meta{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3)}
+.ach{background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rs);padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.ach-icon{font-size:22px;flex-shrink:0}
+.ach-title{font-size:13px;font-weight:500;color:var(--tx)}
+.ach-desc{font-size:11px;color:var(--tx2);margin-top:1px}
+
+/* ── HABITS ── */
+.habit-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--bd)}
+.habit-row:last-child{border-bottom:none}
+.h-name{font-size:13px;font-weight:400;color:var(--tx)}
+.h-str{font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3);margin-top:2px}
+.dots{display:flex;gap:4px}
+.dot{width:25px;height:25px;border-radius:50%;border:1px solid var(--bd);background:var(--bg3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:8px;font-weight:500;color:var(--tx3);transition:all 0.15s}
+.dot.done{background:var(--gr);border-color:var(--gr);color:#000}
+.dot.today{border-color:var(--go)}
+.dot.done.today{border-color:var(--gr)}
+
+/* ── BIBLE ── */
+.feeling-cloud{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.ftag{font-size:11px;padding:6px 12px;border-radius:var(--rp);border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);cursor:pointer;font-family:'Outfit',sans-serif;transition:all 0.15s}
+.ftag:active{border-color:var(--go-bd);color:var(--go);background:var(--go-bg)}
+.bible-card{background:var(--bg2);border:1px solid var(--go-bd);border-radius:var(--r);padding:20px;margin-bottom:10px;display:none;position:relative;overflow:hidden}
+.bible-card::before{content:'\201C';font-family:'Cormorant Garamond',serif;font-size:100px;color:var(--go);opacity:0.06;position:absolute;top:-15px;left:8px;line-height:1;pointer-events:none}
+.bible-verse{font-family:'Cormorant Garamond',serif;font-size:19px;font-style:italic;color:var(--tx);line-height:1.75;margin-bottom:8px;position:relative}
+.bible-ref{font-family:'DM Mono',monospace;font-size:10px;color:var(--go);letter-spacing:0.08em;margin-bottom:12px}
+.bible-reflect{font-size:13px;color:var(--tx2);line-height:1.65;border-top:1px solid var(--bd);padding-top:12px;margin-bottom:12px}
+.bible-actions{display:flex;gap:8px}
+.bible-loading{text-align:center;padding:28px;display:none}
+.bible-loading p{font-family:'Cormorant Garamond',serif;font-size:17px;font-style:italic;color:var(--tx3)}
+.sv-item{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:12px 14px;margin-bottom:8px}
+.sv-v{font-family:'Cormorant Garamond',serif;font-size:14px;font-style:italic;color:var(--tx);line-height:1.6;margin-bottom:4px}
+.sv-r{font-family:'DM Mono',monospace;font-size:9px;color:var(--go);letter-spacing:0.06em}
+.sv-d{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);margin-top:4px}
+
+/* ── JOURNAL ── */
+.j-entry{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:border-color 0.15s}
+.j-entry:active{border-color:var(--go-bd)}
+.je-date{font-family:'DM Mono',monospace;font-size:9px;color:var(--go);letter-spacing:0.08em;margin-bottom:5px}
+.je-mood{font-size:20px;margin-bottom:4px}
+.je-prev{font-size:12px;color:var(--tx2);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.je-tags{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+.je-tag{font-size:9px;padding:2px 7px;border-radius:10px;background:var(--bg4);color:var(--tx3);font-family:'DM Mono',monospace}
+.je-tag.w{background:var(--gr-bg);color:var(--gr)}.je-tag.l{background:var(--re-bg);color:var(--re)}
+.mood-row{display:flex;gap:6px;margin-bottom:12px;justify-content:space-between}
+.mood-btn{font-size:24px;padding:10px 8px;border-radius:var(--rs);border:1px solid var(--bd);background:var(--bg3);cursor:pointer;flex:1;text-align:center;transition:all 0.15s}
+.mood-btn.on{border-color:var(--go-bd);background:var(--go-bg)}
+.prompt-block{background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rs);padding:10px 12px;margin-bottom:10px}
+.prompt-q{font-family:'Cormorant Garamond',serif;font-size:15px;font-style:italic;color:var(--tx);line-height:1.5}
+
+/* ── BODY ── */
+.body-chart{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.body-entry{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--bd)}
+.body-entry:last-child{border-bottom:none}
+.be-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3)}
+.be-weight{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--tx)}
+.be-change{font-family:'DM Mono',monospace;font-size:11px}
+.be-change.down{color:var(--gr)}.be-change.up{color:var(--re)}.be-change.same{color:var(--tx3)}
+
+/* ── FINANCE ── */
+.debt-row{padding:12px 0;border-bottom:1px solid var(--bd);cursor:pointer;transition:opacity 0.15s}
+.debt-row:last-child{border-bottom:none}
+.debt-row:active{opacity:0.7}
+.dr-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px}
+.dr-name{font-size:13px;font-weight:500}
+.dr-amt{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--re)}
+.dr-date{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);display:block;margin-bottom:4px}
+.bar-wrap{height:3px;background:var(--bg4);border-radius:2px;overflow:hidden;margin-bottom:4px}
+.bar{height:3px;background:var(--gr);border-radius:2px;transition:width 0.4s}
+.dr-meta{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3)}
+.dr-paid{color:var(--gr)}
+.payday-result{background:var(--gr-bg);border:1px solid var(--gr-bd);border-radius:var(--r);padding:14px 16px;margin-bottom:12px;display:none}
+.payday-result h4{font-size:13px;font-weight:500;color:var(--gr);margin-bottom:10px}
+.pay-step{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid rgba(46,204,113,0.12)}
+.pay-step:last-child{border-bottom:none}
+.pay-n{width:20px;height:20px;border-radius:50%;background:var(--gr);color:#000;font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.pay-title{font-size:12px;font-weight:500;color:var(--tx)}
+.pay-desc{font-size:11px;color:var(--tx3);margin-top:1px;line-height:1.4}
+.pay-amt{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--gr);white-space:nowrap;padding-left:8px}
+.df-hero{background:var(--bl-bg);border:1px solid var(--bl-bd);border-radius:var(--r);padding:14px;text-align:center;margin-bottom:10px;display:none}
+.df-date{font-family:'Cormorant Garamond',serif;font-size:28px;color:var(--bl);line-height:1}
+.df-lbl{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-top:4px}
+.df-desc{font-size:12px;color:var(--tx2);margin-top:6px;line-height:1.5}
+.saved-hero{background:var(--gr-bg);border:1px solid var(--gr-bd);border-radius:var(--r);padding:14px;text-align:center;margin-bottom:10px}
+.saved-big{font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:300;color:var(--gr);line-height:1}
+.saved-lbl{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-top:4px}
+.saved-desc{font-size:12px;color:var(--tx2);margin-top:6px;line-height:1.5}
+
+/* ── MORNING / EVENING / REVIEW ── */
+.ritual-verse{background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--r);padding:18px;margin-bottom:12px;text-align:center}
+.rv-text{font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:var(--tx);line-height:1.7;margin-bottom:8px}
+.rv-ref{font-family:'DM Mono',monospace;font-size:10px;color:var(--go);letter-spacing:0.08em}
+.prayer-box{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);padding:16px;margin-bottom:12px}
+.prayer-title{font-family:'DM Mono',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px}
+.prayer-text{font-size:14px;color:var(--tx2);line-height:1.85;white-space:pre-wrap;font-family:'Cormorant Garamond',serif;font-style:italic}
+.prayer-opts{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.day-rate-row{display:flex;gap:6px;margin-bottom:12px}
+.dr-btn{flex:1;padding:10px 4px;border-radius:var(--rs);border:1px solid var(--bd);background:var(--bg3);font-size:11px;cursor:pointer;font-family:'Outfit',sans-serif;color:var(--tx2);text-align:center;transition:all 0.15s}
+.dr-btn.on{border-color:var(--go-bd);background:var(--go-bg);color:var(--go)}
+.conscience-q{padding:10px 0;border-bottom:1px solid var(--bd);font-size:13px;color:var(--tx2);line-height:1.5}
+.conscience-q:last-child{border-bottom:none}
+.week-stat{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:12px;text-align:center}
+.ws-num{font-family:'Cormorant Garamond',serif;font-size:26px;color:var(--tx);line-height:1}
+.ws-lbl{font-family:'DM Mono',monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-top:4px}
+.review-item{padding:10px 0;border-bottom:1px solid var(--bd)}
+.review-item:last-child{border-bottom:none}
+.ri-week{font-family:'DM Mono',monospace;font-size:9px;color:var(--go);letter-spacing:0.08em;margin-bottom:4px}
+.ri-proud{font-size:13px;color:var(--tx);margin-bottom:2px}
+.ri-focus{font-size:12px;color:var(--tx2)}
+.gratitude-log{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 14px;margin-bottom:6px}
+.gl-date{font-family:'DM Mono',monospace;font-size:9px;color:var(--go);margin-bottom:4px;letter-spacing:0.06em}
+.gl-text{font-size:13px;color:var(--tx);line-height:1.5}
+
+/* ── MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.82);z-index:200;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(6px)}
+.modal-bg.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--bd2);border-radius:20px 20px 0 0;padding:22px 20px calc(var(--sb) + 40px);width:100%;max-width:430px;max-height:88vh;overflow-y:auto}
+.modal-handle{width:36px;height:3px;background:var(--bg4);border-radius:2px;margin:0 auto 20px}
+.modal h3{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:6px}
+.modal p{font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px}
+.app-link{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);cursor:pointer;text-decoration:none;margin-bottom:8px;transition:border-color 0.15s}
+.app-link:active{border-color:var(--go-bd)}
+.app-link-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.aln{font-size:13px;font-weight:500;color:var(--tx)}.als{font-size:11px;color:var(--tx3);margin-top:1px}
+.split-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--bd);align-items:flex-start}
+.split-item:last-child{border-bottom:none}
+.split-day{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;width:28px;flex-shrink:0;padding-top:3px}
+.split-day.today{color:var(--go)}
+.split-focus{font-size:13px;font-weight:500;color:var(--tx);margin-bottom:2px}
+.split-detail{font-size:11px;color:var(--tx3);line-height:1.5}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+.fade-up{animation:fadeUp 0.3s ease forwards}
+.pulsing{animation:pulse 1.5s ease infinite}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ═══ ONBOARDING ═══ -->
+<div class="ob" id="onboard">
+  <div class="ob-prog" id="ob-prog">
+    <div class="ob-dot on"></div><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot"></div>
+  </div>
+
+  <div class="ob-step active" id="ob1">
+    <div class="ob-logo">To <em>Try</em></div>
+    <div class="ob-by">by Alfred John</div>
+    <div class="ob-title">The only thing required is that you try.</div>
+    <div class="ob-desc">A free app for anyone trying to be better — at anything. No paid plans. No courses. No gatekeeping. Built by someone who needed it himself, and made free so no one else faces the same barrier he did.</div>
+    <button class="btn primary" onclick="obNext(2)">Begin →</button>
+  </div>
+
+  <div class="ob-step" id="ob2">
+    <div class="ob-title">What's your name?</div>
+    <div class="ob-desc">This app is yours from the moment you enter it. It speaks to you personally — not generically.</div>
+    <input type="text" id="ob-name" placeholder="Your first name..." style="margin-bottom:20px;font-size:18px;text-align:center;padding:14px">
+    <button class="btn primary" onclick="obNext(3)">Continue →</button>
+  </div>
+
+  <div class="ob-step" id="ob3">
+    <div class="ob-title">What are you fighting?</div>
+    <div class="ob-desc">Select everything that applies. No judgement here. This is the whole reason the app exists.</div>
+    <div class="vchips" id="vchip-wrap">
+      <div class="vchip" onclick="toggleChip(this,'Lust / PMO')">Lust / PMO</div>
+      <div class="vchip" onclick="toggleChip(this,'Weed')">Weed</div>
+      <div class="vchip" onclick="toggleChip(this,'Vaping')">Vaping</div>
+      <div class="vchip" onclick="toggleChip(this,'Gambling')">Gambling</div>
+      <div class="vchip" onclick="toggleChip(this,'Alcohol')">Alcohol</div>
+      <div class="vchip" onclick="toggleChip(this,'Food binging')">Food binging</div>
+      <div class="vchip" onclick="toggleChip(this,'Anger')">Anger</div>
+      <div class="vchip" onclick="toggleChip(this,'Overthinking')">Overthinking</div>
+      <div class="vchip" onclick="toggleChip(this,'Social media')">Social media</div>
+      <div class="vchip" onclick="toggleChip(this,'Laziness')">Laziness</div>
+      <div class="vchip" onclick="toggleChip(this,'Overspending')">Overspending</div>
+      <div class="vchip" onclick="toggleChip(this,'Loneliness')">Loneliness</div>
+    </div>
+    <input type="text" id="ob-custom" placeholder="Add your own..." style="margin-bottom:14px">
+    <div style="border-top:1px solid var(--bd);padding-top:14px;margin-bottom:16px">
+      <div style="font-size:14px;font-weight:500;color:var(--tx);margin-bottom:4px">Do you have a partner?</div>
+      <div style="font-size:13px;color:var(--tx2);margin-bottom:10px;line-height:1.5">If yes, your evening ritual can include a prayer and a prompt to share on your call tonight.</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" id="partner-yes-btn" onclick="setHasPartner(true)" style="flex:1">Yes</button>
+        <button class="btn" id="partner-no-btn" onclick="setHasPartner(false)" style="flex:1">No — just me</button>
+      </div>
+    </div>
+    <button class="btn primary" onclick="obNext(4)">Continue →</button>
+  </div>
+
+  <div class="ob-step" id="ob4">
+    <div class="ob-quote">"I'm not here because I made it.<br>I'm here because I'm trying.<br>That's all any of us can do."</div>
+    <div class="ob-attr">— Alfred John, Day 1</div>
+    <div class="ob-title" id="ob-ready-title">You're ready.</div>
+    <div class="ob-desc" id="ob-ready-desc">Your space is set up. Every tab is yours. Every day you open this is a day you chose to try.</div>
+    <button class="btn primary" onclick="finishOnboard()">Start my journey →</button>
+  </div>
+</div>
+
+<!-- ═══ HEADER ═══ -->
+<div class="hdr">
+  <div class="hdr-row">
+    <div>
+      <div class="logo-main">To <em>Try</em></div>
+      <div class="logo-sub">by Alfred John</div>
+    </div>
+    <div class="day-chip" onclick="go('review')">
+      <div class="day-n" id="day-num">1</div>
+      <div class="day-l">days in</div>
+    </div>
+  </div>
+  <div class="verse-pill" onclick="nextVerse()">
+    <p id="hdr-verse">Loading today's word...</p>
+    <div class="vr" id="hdr-ref"></div>
+    <button class="vsave" id="vsave-btn" onclick="event.stopPropagation();saveHdrVerse()" title="Save this verse">&#9825;</button>
+  </div>
+</div>
+
+<!-- ═══ NAV ═══ -->
+<nav class="nav">
+  <button class="nb active" onclick="go('home')"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg><span>Home</span></button>
+  <button class="nb" onclick="go('morning')"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg><span>Morning</span></button>
+  <button class="nb" onclick="go('vices')"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span>Vices</span></button>
+  <button class="nb" onclick="go('score')"><svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg><span>Score</span></button>
+  <button class="nb" onclick="go('coach')"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Coach</span></button>
+  <button class="nb" onclick="go('pt')"><svg viewBox="0 0 24 24"><path d="M6.5 6.5h11M6.5 17.5h11M3 10h2.5M18.5 10H21M3 14h2.5M18.5 14H21"/></svg><span>PT</span></button>
+  <button class="nb" onclick="go('bible')"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span>Bible</span></button>
+  <button class="nb" onclick="go('journal')"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg><span>Journal</span></button>
+  <button class="nb" onclick="go('habits')"><svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><span>Habits</span></button>
+  <button class="nb" onclick="go('body')"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>Body</span></button>
+  <button class="nb" onclick="go('finance')"><svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Finance</span></button>
+  <button class="nb" onclick="go('evening')"><svg viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><span>Evening</span></button>
+  <button class="nb" onclick="go('review')"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Review</span></button>
+</nav>
+
+<!-- ═══ TABS ═══ -->
+<div class="tabs">
+
+<!-- HOME -->
+<div id="tab-home" class="tab active">
+  <div class="home-hero">
+    <div class="hero-day" id="hero-day">1</div>
+    <div class="hero-lbl">Days on the journey</div>
+    <div class="hero-quote" id="hero-quote">"The only thing required is that you try."</div>
+    <div class="streak-dots" id="streak-dots"></div>
+  </div>
+  <div class="mg4">
+    <div class="met"><div class="ml">Streak</div><div class="mv au" id="h-streak">0</div></div>
+    <div class="met"><div class="ml">Today</div><div class="mv" id="h-habits">0/0</div></div>
+    <div class="met"><div class="ml">Debt</div><div class="mv r" id="h-debt">—</div></div>
+    <div class="met"><div class="ml">Wins</div><div class="mv g" id="h-wins">0</div></div>
+  </div>
+  <div class="lbl">Today's training mission</div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-hd" id="today-focus">Loading...</div>
+    <div id="today-detail" style="font-size:12px;color:var(--tx2);line-height:1.65;margin-top:5px"></div>
+  </div>
+  <div class="lbl">Quick actions</div>
+  <div class="qa-grid">
+    <button class="qa-btn" onclick="go('morning')">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/></svg>
+      <div class="qa-t">Morning ritual</div><div class="qa-s">Start your day right</div>
+    </button>
+    <button class="qa-btn" onclick="go('vices')">
+      <svg viewBox="0 0 24 24" style="stroke:var(--re)"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div class="qa-t">Fighting a vice</div><div class="qa-s">SOS — tap now</div>
+    </button>
+    <button class="qa-btn" onclick="openPayday()">
+      <svg viewBox="0 0 24 24" style="stroke:var(--gr)"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <div class="qa-t">Just got paid</div><div class="qa-s">Allocate before spending</div>
+    </button>
+    <button class="qa-btn" onclick="go('evening')">
+      <svg viewBox="0 0 24 24" style="stroke:var(--pu)"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <div class="qa-t">Evening check-in</div><div class="qa-s">Close your day</div>
+    </button>
+  </div>
+</div>
+
+<!-- MORNING RITUAL -->
+<div id="tab-morning" class="tab">
+  <div class="lbl" id="morning-greeting">Good morning</div>
+  <div class="ritual-verse" id="morning-verse-block">
+    <div class="rv-text" id="morning-verse-text">Loading today's word...</div>
+    <div class="rv-ref" id="morning-verse-ref"></div>
+  </div>
+  <div class="lbl">Gratitude — one thing right now</div>
+  <textarea id="morning-gratitude" placeholder="What are you genuinely grateful for this morning?" style="height:70px;resize:none;margin-bottom:12px"></textarea>
+  <div class="lbl">My intention for today</div>
+  <textarea id="morning-intention" placeholder="What would make today a good day?" style="height:70px;resize:none;margin-bottom:14px"></textarea>
+  <div class="lbl">Morning prayer</div>
+  <div class="prayer-opts">
+    <button class="btn" onclick="showPrayer('quick')">Quick prayer (2 min)</button>
+    <button class="btn" onclick="showPrayer('full')">Full morning prayer (5 min)</button>
+    <button class="btn" onclick="showPrayer('scripture')">Scripture-based prayer</button>
+  </div>
+  <div id="prayer-display" style="display:none">
+    <div class="prayer-box">
+      <div class="prayer-title" id="prayer-title"></div>
+      <div class="prayer-text" id="prayer-text"></div>
+    </div>
+    <button class="btn primary" onclick="completeMorning()">I prayed — begin my day</button>
+  </div>
+  <div id="morning-done" style="display:none;text-align:center;padding:24px 16px">
+    <div style="font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--go);margin-bottom:8px">Morning done. &#127775;</div>
+    <div style="font-size:13px;color:var(--tx2);line-height:1.6">Your intention is set. Your prayer is heard. Now go live the day.</div>
+  </div>
+</div>
+
+<!-- VICES -->
+<div id="tab-vices" class="tab">
+  <div class="lbl">Your vices</div>
+  <p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">The moment an urge hits — tap it. A verse appears. An intervention fires. Beat it and log the win.</p>
+  <div id="sos-panel" class="sos-panel">
+    <div class="sp-lbl" id="sp-lbl">Intervention</div>
+    <div class="sp-verse" id="sp-verse">Holding on. Finding your word...</div>
+    <div class="sp-ref" id="sp-ref"></div>
+    <div class="sp-msg" id="sp-msg"></div>
+    <div class="sos-btns">
+      <button class="btn success" onclick="logWin()" style="flex:1">I beat it — log the win</button>
+      <button class="btn" onclick="closePanel()" style="flex:1">Close</button>
+    </div>
+  </div>
+  <div id="vices-list"></div>
+  <div class="card" style="margin-top:4px">
+    <div class="card-hd" style="margin-bottom:5px">Add a vice</div>
+    <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Whatever you're fighting. Add it and this becomes your dedicated space to beat it.</p>
+    <input type="text" id="v-name" placeholder="Name your vice..." style="margin-bottom:8px">
+    <input type="text" id="v-trigger" placeholder="When does it usually hit?" style="margin-bottom:8px">
+    <button class="btn primary" onclick="addVice()">Add this vice</button>
+  </div>
+</div>
+
+<!-- SCOREBOARD -->
+<div id="tab-score" class="tab">
+  <div class="lbl">Victory scoreboard</div>
+  <div class="score-hero">
+    <div class="score-big" id="sc-total">0</div>
+    <div class="score-lbl">Total urges defeated</div>
+    <div class="score-sub" id="sc-sub">Every number here is a moment you chose who you're becoming.</div>
+  </div>
+  <div class="sc-grid">
+    <div class="sc-met"><div class="sc-ml">Win rate</div><div class="sc-mv g" id="sc-rate">0%</div></div>
+    <div class="sc-met"><div class="sc-ml">Battles</div><div class="sc-mv au" id="sc-fought">0</div></div>
+    <div class="sc-met"><div class="sc-ml">Streak</div><div class="sc-mv bl" id="sc-streak">0</div></div>
+  </div>
+  <div class="lbl">By vice</div>
+  <div id="score-by-vice" style="margin-bottom:14px"></div>
+  <div class="lbl">Achievements</div>
+  <div id="achievements"></div>
+</div>
+
+<!-- COACH -->
+<div id="tab-coach" class="tab">
+  <div class="lbl">Life coach</div>
+  <div class="qbtns">
+    <button class="qb" onclick="goCoach('I just got paid. '+getDebtStr()+' What do I pay right now before I spend anything?')">Just got paid</button>
+    <button class="qb" onclick="goCoach('I slipped up today. Help me reset without shame and without losing the week.')">I slipped up</button>
+    <button class="qb" onclick="goCoach('Full check-in. What should I prioritise this week?')">Weekly check-in</button>
+    <button class="qb" onclick="goCoach('I feel completely empty and lost right now. Talk to me.')">I feel empty</button>
+    <button class="qb" onclick="goCoach('What is the most important thing I should do in the next hour?')">What to do now</button>
+    <button class="qb" onclick="goCoach('I have a social event and I\'m worried about relapsing. How do I handle it?')">Social situation</button>
+  </div>
+  <div class="msgs" id="coach-msgs">
+    <div class="msg coach" id="coach-welcome">Your coach is here. What do you need?</div>
+  </div>
+  <div class="irow">
+    <textarea id="coach-in" placeholder="Talk to your coach..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCoach()}" oninput="ar(this)"></textarea>
+    <button class="sbtn" onclick="sendCoach()"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+  </div>
+</div>
+
+<!-- PT -->
+<div id="tab-pt" class="tab">
+  <div class="lbl">Training apps</div>
+  <a class="app-link" href="hevy://" onclick="tryApp(event,'hevy://','https://apps.apple.com/app/hevy-workout-tracker/id1388737828')">
+    <div class="app-link-icon" style="background:#1C1C3A">💪</div>
+    <div><div class="aln">Hevy</div><div class="als">Log today's workout</div></div>
+    <span style="margin-left:auto;color:var(--tx3)">↗</span>
+  </a>
+  <div class="app-link" onclick="toggleCalPicker()">
+    <div class="app-link-icon" style="background:#1A2A1A" id="cal-icon">🥗</div>
+    <div><div class="aln" id="cal-name">Calorie tracker</div><div class="als">Tap to choose your app</div></div>
+    <span style="margin-left:auto;color:var(--tx3)">↗</span>
+  </div>
+  <div id="cal-picker" style="display:none" class="card">
+    <div class="card-hd" style="margin-bottom:8px">Choose your calorie app</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <button class="btn" onclick="setCalApp('MyFitnessPal','🥗','myfitnesspal://','https://apps.apple.com/app/myfitnesspal/id341232718')">MyFitnessPal</button>
+      <button class="btn" onclick="setCalApp('CalAI','🤖','calai://','https://apps.apple.com/app/calai-calorie-counter-ai/id6447167650')">CalAI</button>
+      <button class="btn" onclick="setCalApp('Cronometer','📊','cronometer://','https://apps.apple.com/app/cronometer/id1145935738')">Cronometer</button>
+      <button class="btn" onclick="setCalApp('Lose It!','🎯','loseit://','https://apps.apple.com/app/lose-it-calorie-counter/id297368629')">Lose It!</button>
+    </div>
+  </div>
+  <div class="lbl" style="margin-top:12px">Training split</div>
+  <div class="card" id="split-card"></div>
+  <div class="lbl" style="margin-top:12px">Ask your PT</div>
+  <div class="qbtns">
+    <button class="qb" onclick="goPT('Give me today\'s full session. Exact exercises, sets, reps, rest. What to log in Hevy.')">Today's session</button>
+    <button class="qb" onclick="goPT('Full day of meals with exact calories and protein. 2000-2200 cal target.')">Today's meals</button>
+    <button class="qb" onclick="goPT('Knee is hurting. What can I train and what must I avoid?')">Knee hurts</button>
+    <button class="qb" onclick="goPT('Only 25 minutes. Best possible session.')">25 mins</button>
+    <button class="qb" onclick="goPT('High protein bulk meal prep for the week. Budget-friendly.')">Meal prep</button>
+    <button class="qb" onclick="goPT('I have chenda today. How do I adjust training?')">Chenda day</button>
+  </div>
+  <div class="msgs" id="pt-msgs" style="max-height:200px">
+    <div class="msg coach">Your PT. Powerhouse Gym Bayswater North, 34% BF, knee rehabbing, Hevy + MyFitnessPal. What do you need?</div>
+  </div>
+  <div class="irow">
+    <textarea id="pt-in" placeholder="Ask your PT..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendPT()}" oninput="ar(this)"></textarea>
+    <button class="sbtn" onclick="sendPT()"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+  </div>
+</div>
+
+<!-- BIBLE -->
+<div id="tab-bible" class="tab">
+  <div class="lbl">Find your verse — ESV</div>
+  <p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:12px">Type what you're feeling or tap a feeling below. God's word will meet you exactly where you are.</p>
+  <div class="feeling-cloud">
+    <button class="ftag" onclick="findVerse('I feel completely hopeless like nothing will ever change')">Hopeless</button>
+    <button class="ftag" onclick="findVerse('I am fighting lust and sexual temptation right now')">Lust</button>
+    <button class="ftag" onclick="findVerse('I feel crushing guilt and shame for what I have done')">Guilt & shame</button>
+    <button class="ftag" onclick="findVerse('I am angry and full of frustration I cannot control')">Anger</button>
+    <button class="ftag" onclick="findVerse('I feel completely alone and unloved')">Lonely</button>
+    <button class="ftag" onclick="findVerse('I need strength and discipline to keep going when I want to quit')">Need strength</button>
+    <button class="ftag" onclick="findVerse('I am anxious and overwhelmed by everything')">Anxious</button>
+    <button class="ftag" onclick="findVerse('I feel far from God and spiritually empty')">Far from God</button>
+    <button class="ftag" onclick="findVerse('I am in daily battle with addiction and temptation')">Addiction</button>
+    <button class="ftag" onclick="findVerse('I am drowning in financial stress and debt')">Financial stress</button>
+    <button class="ftag" onclick="findVerse('I need forgiveness for sins I keep committing')">Need forgiveness</button>
+    <button class="ftag" onclick="findVerse('I want to give up on everything')">Want to give up</button>
+    <button class="ftag" onclick="findVerse('I am grieving a relationship I hurt through my own choices')">Grief & loss</button>
+    <button class="ftag" onclick="findVerse('I am afraid of what people think of me')">Fear of judgement</button>
+    <button class="ftag" onclick="findVerse('I need courage to take the next step even when afraid')">Need courage</button>
+    <button class="ftag" onclick="findVerse('I feel jealous and bitter of others')">Jealousy</button>
+  </div>
+  <div class="row" style="margin-bottom:12px">
+    <input type="text" id="bible-in" placeholder="Type what you're feeling right now..." onkeydown="if(event.key==='Enter'){findVerse(this.value)}">
+    <button class="btn primary" style="width:auto;white-space:nowrap;padding:10px 14px" onclick="findVerse(document.getElementById('bible-in').value)">Find</button>
+  </div>
+  <div class="bible-loading" id="bible-loading"><p class="pulsing">Seeking the word for you...</p></div>
+  <div class="bible-card" id="bible-card">
+    <div class="bible-verse" id="b-verse"></div>
+    <div class="bible-ref" id="b-ref"></div>
+    <div class="bible-reflect" id="b-reflect"></div>
+    <div class="bible-actions">
+      <button class="btn success" style="flex:1" id="save-verse-btn" onclick="saveCurrentVerse()">Save this verse &#9825;</button>
+      <button class="btn" style="flex:1" onclick="findVerse(document.getElementById('bible-in').value)">Another</button>
+    </div>
+  </div>
+  <div id="saved-section" style="display:none;margin-top:16px">
+    <div class="lbl">Saved verses</div>
+    <div id="saved-verses-list"></div>
+  </div>
+</div>
+
+<!-- JOURNAL -->
+<div id="tab-journal" class="tab">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div class="lbl" style="margin:0">Daily journal</div>
+    <button class="btn primary" style="width:auto;padding:7px 14px;font-size:12px" onclick="openJournal()">+ New entry</button>
+  </div>
+  <div id="journal-list"></div>
+</div>
+
+<!-- HABITS -->
+<div id="tab-habits" class="tab">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <div class="lbl" style="margin:0">Daily habits</div>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3)" id="h-score">0/0</div>
+  </div>
+  <div class="card" id="habit-list"></div>
+  <div class="row" style="margin-top:8px">
+    <input type="text" id="new-habit" placeholder="Add a habit...">
+    <button class="btn primary" style="width:auto;white-space:nowrap;padding:10px 14px" onclick="addHabit()">Add</button>
+  </div>
+</div>
+
+<!-- BODY -->
+<div id="tab-body" class="tab">
+  <div class="lbl">Body progress</div>
+  <div class="mg3">
+    <div class="met"><div class="ml">Now</div><div class="mv au" id="bod-cur">&#8212;</div></div>
+    <div class="met"><div class="ml">Start</div><div class="mv" id="bod-st">&#8212;</div></div>
+    <div class="met"><div class="ml">Lost</div><div class="mv g" id="bod-lo">&#8212;</div></div>
+  </div>
+  <div class="body-chart">
+    <div class="lbl" style="margin-bottom:8px">Weight trend (kg)</div>
+    <svg id="weight-chart" viewBox="0 0 340 100" style="width:100%;height:120px" preserveAspectRatio="none">
+      <text x="170" y="58" text-anchor="middle" fill="rgba(255,255,255,0.12)" font-family="Cormorant Garamond,serif" font-size="13" font-style="italic">Log your first check-in below</text>
+    </svg>
+  </div>
+  <div class="card">
+    <div class="card-hd" style="margin-bottom:10px">Weekly check-in</div>
+    <div class="row"><input type="number" id="bod-weight" placeholder="Weight (kg)" step="0.1"><input type="number" id="bod-bf" placeholder="Body fat %" step="0.1"></div>
+    <div class="row"><input type="number" id="bod-waist" placeholder="Waist (cm)"><input type="number" id="bod-chest" placeholder="Chest (cm)"></div>
+    <input type="text" id="bod-note" placeholder="How do you feel this week? (optional)" style="margin-bottom:10px">
+    <button class="btn primary" onclick="logBody()">Log this week</button>
+  </div>
+  <div class="lbl">History</div>
+  <div class="card" id="body-history"><p style="font-size:13px;color:var(--tx3);text-align:center;padding:10px 0">No check-ins yet</p></div>
+</div>
+
+<!-- FINANCE -->
+<div id="tab-finance" class="tab">
+  <div class="lbl">Financial command</div>
+  <div class="mg">
+    <div class="met"><div class="ml">Debt left</div><div class="mv r" id="f-debt">$0</div></div>
+    <div class="met"><div class="ml">Paid off</div><div class="mv g" id="f-paid">$0</div></div>
+    <div class="met"><div class="ml">Goal 1</div><div class="mv g" id="f-usa">$0</div></div>
+    <div class="met"><div class="ml">Goal 2</div><div class="mv g" id="f-india">$0</div></div>
+  </div>
+  <div class="df-hero" id="df-hero">
+    <div class="df-date" id="df-date">&#8212;</div>
+    <div class="df-lbl">Projected debt-free date</div>
+    <div class="df-desc" id="df-desc">Log payments to calculate your projection</div>
+  </div>
+  <div class="saved-hero">
+    <div class="saved-big" id="saved-num">$0</div>
+    <div class="saved-lbl">Saved by quitting vices</div>
+    <div class="saved-desc" id="saved-desc">Set your weekly vice spend below to track this</div>
+  </div>
+  <button class="btn primary" style="margin-bottom:12px" onclick="openPayday()">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+    I just got paid — allocate my money
+  </button>
+  <div class="payday-result" id="payday-result"></div>
+  <div class="card">
+    <div class="card-hd" style="margin-bottom:10px">Debts — tap to log a payment</div>
+    <div id="debt-list"></div>
+  </div>
+  <div class="card">
+    <div class="card-hd" style="margin-bottom:10px">Add / update</div>
+    <div class="row"><input type="text" id="dn" placeholder="Who you owe"><input type="number" id="dt" placeholder="Total $" style="max-width:110px;flex:none"></div>
+    <div class="row"><input type="number" id="dp" placeholder="Paid so far $"><input type="date" id="dd" style="max-width:145px;flex:none"></div>
+    <button class="btn primary" onclick="addDebt()" style="margin-bottom:10px">Add this debt</button>
+    <div class="divider"></div>
+    <div class="row">
+      <div style="flex:1"><div style="font-size:11px;color:var(--tx3);margin-bottom:5px">Savings goal 1 name</div><input type="text" id="goal1-name" placeholder="e.g. USA trip"></div>
+      <div style="flex:1"><div style="font-size:11px;color:var(--tx3);margin-bottom:5px">Savings goal 2 name</div><input type="text" id="goal2-name" placeholder="e.g. India trip"></div>
+    </div>
+    <div class="row"><input type="number" id="usa-in" placeholder="Goal 1 saved $"><input type="number" id="india-in" placeholder="Goal 2 saved $"></div>
+    <button class="btn" onclick="updateSavings()" style="margin-bottom:10px">Update savings</button>
+    <div class="divider"></div>
+    <div class="card-hd" style="margin-bottom:6px">Vice savings tracker</div>
+    <p style="font-size:12px;color:var(--tx3);margin-bottom:8px;line-height:1.5">What were you spending weekly on vices before you started trying?</p>
+    <div class="row"><input type="number" id="weed-s" placeholder="Substance 1 $"><input type="number" id="vape-s" placeholder="Substance 2 $"></div>
+    <div class="row"><input type="number" id="gamb-s" placeholder="Gambling $"><input type="number" id="other-s" placeholder="Other $"></div>
+    <p style="font-size:11px;color:var(--tx3);margin-bottom:6px">When did you start trying?</p>
+    <input type="date" id="sober-since" style="margin-bottom:10px">
+    <button class="btn success" onclick="calcViceSavings()">Calculate money saved</button>
+  </div>
+</div>
+
+<!-- EVENING CHECK-IN -->
+<div id="tab-evening" class="tab">
+  <div class="lbl" id="evening-greeting">Good evening</div>
+  <div class="lbl">How did today go?</div>
+  <div class="day-rate-row">
+    <button class="dr-btn" onclick="setDayRate(this,1)">&#128545;<br><span style="font-size:9px">Rough</span></button>
+    <button class="dr-btn" onclick="setDayRate(this,2)">&#128532;<br><span style="font-size:9px">Hard</span></button>
+    <button class="dr-btn" onclick="setDayRate(this,3)">&#128528;<br><span style="font-size:9px">Okay</span></button>
+    <button class="dr-btn" onclick="setDayRate(this,4)">&#128578;<br><span style="font-size:9px">Good</span></button>
+    <button class="dr-btn" onclick="setDayRate(this,5)">&#128170;<br><span style="font-size:9px">Strong</span></button>
+  </div>
+  <div class="lbl">One win from today</div>
+  <textarea id="evening-win" placeholder="What did you do well today — even if it was small?" style="height:70px;resize:none;margin-bottom:10px"></textarea>
+  <div class="lbl">One thing to release</div>
+  <textarea id="evening-release" placeholder="What do you need to let go of, confess, or forgive yourself for before you sleep?" style="height:70px;resize:none;margin-bottom:12px"></textarea>
+  <div class="lbl">Evening prayer</div>
+  <div class="prayer-box" style="margin-bottom:14px">
+    <div class="prayer-text">Lord, thank You for this day.
+For the moments I got it right, and for Your grace when I didn't.
+I give You what I carried today — the wins, the failures, the urges I fought, and the ones I didn't.
+Forgive me where I fell short. Strengthen me for tomorrow.
+Make me better than I was today.
+Not perfect. Just better.
+Amen.</div>
+  </div>
+  <div id="partner-evening-section" style="display:none">
+    <div class="lbl">Tonight's call</div>
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-hd" style="margin-bottom:6px">Before you call</div>
+      <div id="call-prompt" style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:12px"></div>
+      <div class="card-hd" style="margin-bottom:6px">A prayer to share</div>
+      <div id="shared-prayer" style="font-family:'Cormorant Garamond',serif;font-size:14px;font-style:italic;color:var(--tx2);line-height:1.7"></div>
+    </div>
+  </div>
+  <button class="btn primary" onclick="completeEvening()">Complete evening check-in</button>
+  <div id="evening-done" style="display:none;text-align:center;padding:24px 16px;margin-top:8px">
+    <div style="font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--go);margin-bottom:8px">Day complete. Rest well.</div>
+    <div style="font-size:13px;color:var(--tx2);line-height:1.6">Tomorrow is a new chance. You showed up today. That matters.</div>
+  </div>
+</div>
+
+<!-- WEEKLY REVIEW -->
+<div id="tab-review" class="tab">
+  <div class="lbl">Weekly review</div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-hd" style="margin-bottom:10px">This week at a glance</div>
+    <div id="week-stats" class="mg3" style="margin-bottom:0"></div>
+  </div>
+  <div class="lbl">I am proud of</div>
+  <textarea id="review-proud" placeholder="What from this week are you genuinely proud of?" style="height:70px;resize:none;margin-bottom:10px"></textarea>
+  <div class="lbl">Next week I will focus on</div>
+  <textarea id="review-focus" placeholder="One thing that needs your most attention next week..." style="height:70px;resize:none;margin-bottom:12px"></textarea>
+  <div class="lbl">Examination of conscience</div>
+  <div class="card" style="margin-bottom:12px">
+    <div id="conscience-list">
+      <div class="conscience-q">Did I give in to any vice this week that I wish I hadn't?</div>
+      <div class="conscience-q">Was I honest with myself and others?</div>
+      <div class="conscience-q">Did I treat the people around me with patience and respect?</div>
+      <div class="conscience-q">Did I honour God in how I spent my time and energy?</div>
+      <div class="conscience-q">Did I do what I said I would do?</div>
+      <div class="conscience-q">What did I avoid that I knew I needed to face?</div>
+    </div>
+  </div>
+  <div class="lbl">Closing prayer</div>
+  <div class="prayer-box" style="margin-bottom:14px">
+    <div class="prayer-text">Lord, a week has passed.
+You saw all of it — what I did well and what I failed at.
+Thank You for not giving up on me when I gave up on myself.
+As I begin a new week, give me the strength to be better than the last.
+Not because I deserve it. Because You are good.
+Amen.</div>
+  </div>
+  <button class="btn primary" onclick="saveWeeklyReview()" style="margin-bottom:14px">Complete this week's review</button>
+  <div id="review-history"></div>
+</div>
+
+</div><!-- /tabs -->
+
+<!-- PAYDAY MODAL -->
+<div class="modal-bg" id="payday-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>You just got paid.</h3>
+    <p>Before a single dollar goes anywhere else — enter the amount and get your exact allocation.</p>
+    <input type="number" id="paid-amt" placeholder="Amount received ($)" style="margin-bottom:12px">
+    <button class="btn primary" onclick="calcPayday()" style="margin-bottom:8px">Tell me exactly what to do</button>
+    <button class="btn" onclick="document.getElementById('payday-modal').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+
+<!-- JOURNAL MODAL -->
+<div class="modal-bg" id="journal-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>Today's entry</h3>
+    <div class="prompt-block"><div class="prompt-q" id="journal-prompt"></div></div>
+    <div class="mood-row">
+      <button class="mood-btn" onclick="setMood(this,'😤')">😤</button>
+      <button class="mood-btn" onclick="setMood(this,'😔')">😔</button>
+      <button class="mood-btn" onclick="setMood(this,'😐')">😐</button>
+      <button class="mood-btn" onclick="setMood(this,'🙂')">🙂</button>
+      <button class="mood-btn" onclick="setMood(this,'💪')">💪</button>
+    </div>
+    <textarea id="journal-text" placeholder="Write honestly. This is just for you..." style="height:150px;resize:none;margin-bottom:10px"></textarea>
+    <div class="row" style="margin-bottom:12px">
+      <div style="flex:1"><div style="font-size:11px;color:var(--tx3);margin-bottom:5px">Urges fought today</div><input type="number" id="j-urges" placeholder="0" min="0"></div>
+      <div style="flex:1"><div style="font-size:11px;color:var(--tx3);margin-bottom:5px">Urges won</div><input type="number" id="j-wins" placeholder="0" min="0"></div>
+    </div>
+    <button class="btn primary" onclick="saveEntry()" style="margin-bottom:8px">Save entry</button>
+    <button class="btn" onclick="document.getElementById('journal-modal').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+
+</div><!-- /app -->
+<script>
+// ═══════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════
+function ls(k,v){if(v===undefined){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}}else{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}}
+
+// ═══════════════════════════════════════
+// API
+// ═══════════════════════════════════════
+const API='https://api.anthropic.com/v1/messages',MDL='claude-sonnet-4-20250514';
+let userName='Friend';
+
+function buildCtx(){
+  const saved=ls('totry_userctx')||{};
+  return `You are a personal life coach inside an app called "To Try" — a free self-improvement app created by Alfred John for anyone trying to be better at anything.
+
+The person using the app right now is ${userName}. ${saved.context||''}
+
+To Try exists because self-improvement should be free. No paid courses, no gatekeeping. The app covers vice fighting, faith, habits, finances, training, body tracking, and daily rituals.
+
+COACHING STYLE: Direct, warm, specific. No generic advice. No fluff. Accountability without shame. When they slip — reset without wallowing. Faith (Christian) as a genuine anchor when relevant. Concise responses (3-6 sentences) unless a full plan is asked for. Never suggest paid services unless genuinely urgent.`;
+}
+
+const PT_SYS=`You are a personal trainer inside To Try. Be specific: exact exercises, sets, reps, rest periods, what to log in Hevy. For nutrition: exact meals with calories and protein. Target 2000-2200 kcal and 160-180g protein unless told otherwise. Practical, no fluff.`;
+const BIBLE_SYS=`You are a scripture guide using the ESV Bible. Respond ONLY with valid JSON, no markdown:\n{"verse":"full ESV verse text","reference":"Book Chapter:Verse (ESV)","reflection":"2-3 warm honest sentences connecting this verse personally to someone in this exact situation right now"}`;
+const SOS_SYS=`You are an emergency intervention coach inside To Try. Someone is fighting a vice urge right now. Respond ONLY with valid JSON:\n{"verse":"short powerful ESV verse","reference":"Book Chapter:Verse (ESV)","message":"2-3 sentences using their real stakes — what they're building, what this moment costs if they give in — then one immediate physical action to break the urge right now"}`;
+
+let cH=[],ptH=[];
+
+async function api(sys,hist,msg,tok=900){
+  try{
+    const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:MDL,max_tokens:tok,system:sys,messages:[...hist,{role:'user',content:msg}]})});
+    const d=await r.json();
+    return d.content?.map(b=>b.text||'').join('')||'';
+  }catch(e){return '';}
+}
+function addMsg(cid,txt,cls){
+  const c=document.getElementById(cid);
+  const id='m'+Date.now()+Math.random().toString(36).slice(2);
+  const d=document.createElement('div');
+  d.className='msg '+cls+' fade-up';d.id=id;d.textContent=txt;
+  c.appendChild(d);c.scrollTop=c.scrollHeight;return id;
+}
+function rmMsg(id){const e=document.getElementById(id);if(e)e.remove();}
+function ar(el){el.style.height='40px';el.style.height=Math.min(el.scrollHeight,100)+'px';}
+
+async function sendCoach(){
+  const el=document.getElementById('coach-in'),t=el.value.trim();if(!t)return;
+  el.value='';el.style.height='40px';
+  addMsg('coach-msgs',t,'user');cH.push({role:'user',content:t});
+  const lid=addMsg('coach-msgs','...','coach');
+  const r=await api(buildCtx(),cH.slice(0,-1),t);
+  rmMsg(lid);
+  if(r){addMsg('coach-msgs',r,'coach');cH.push({role:'assistant',content:r});if(cH.length>20)cH=cH.slice(-20);}
+  else addMsg('coach-msgs','Connection issue — check internet and try again.','coach');
+}
+async function sendPT(){
+  const el=document.getElementById('pt-in'),t=el.value.trim();if(!t)return;
+  el.value='';el.style.height='40px';
+  addMsg('pt-msgs',t,'user');ptH.push({role:'user',content:t});
+  const lid=addMsg('pt-msgs','...','coach');
+  const r=await api(PT_SYS,ptH.slice(0,-1),t);
+  rmMsg(lid);
+  if(r){addMsg('pt-msgs',r,'coach');ptH.push({role:'assistant',content:r});if(ptH.length>20)ptH=ptH.slice(-20);}
+  else addMsg('pt-msgs','Connection issue — try again.','coach');
+}
+function goCoach(t){go('coach');document.getElementById('coach-in').value=t;sendCoach();}
+function goPT(t){go('pt');document.getElementById('pt-in').value=t;sendPT();}
+function getDayCount(){const s=ls('totry_start');if(!s)return 1;return Math.max(1,Math.floor((Date.now()-new Date(s))/86400000)+1);}
+
+// ═══════════════════════════════════════
+// BIBLE
+// ═══════════════════════════════════════
+let curVerse={verse:'',reference:''};
+
+async function findVerse(feeling){
+  if(!feeling||!feeling.trim())return;
+  document.getElementById('bible-in').value=feeling;
+  document.getElementById('bible-card').style.display='none';
+  document.getElementById('bible-loading').style.display='block';
+  const raw=await api(BIBLE_SYS,[],feeling,500);
+  document.getElementById('bible-loading').style.display='none';
+  try{
+    const data=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    curVerse=data;
+    document.getElementById('b-verse').textContent='\u201C'+data.verse+'\u201D';
+    document.getElementById('b-ref').textContent='\u2014 '+data.reference;
+    document.getElementById('b-reflect').textContent=data.reflection;
+  }catch(e){
+    curVerse={verse:"I can do all things through him who strengthens me.",reference:"Philippians 4:13 (ESV)"};
+    document.getElementById('b-verse').textContent='\u201CI can do all things through him who strengthens me.\u201D';
+    document.getElementById('b-ref').textContent='\u2014 Philippians 4:13 (ESV)';
+    document.getElementById('b-reflect').textContent='Whatever you\'re facing right now \u2014 you are not facing it alone. Breathe. Pray. Take the next step.';
+  }
+  document.getElementById('bible-card').style.display='block';
+}
+
+function saveCurrentVerse(){
+  if(!curVerse.verse)return;
+  const saved=ls('totry_sv')||[];
+  if(!saved.find(v=>v.verse===curVerse.verse)){
+    saved.unshift({...curVerse,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'})});
+    ls('totry_sv',saved.slice(0,50));
+    renderSavedVerses();
+  }
+  const btn=document.getElementById('save-verse-btn');
+  if(btn){btn.textContent='Saved \u2713';setTimeout(()=>{btn.textContent='Save this verse \u2661';},2000);}
+}
+function saveHdrVerse(){
+  const v=document.getElementById('hdr-verse').textContent;
+  const r=document.getElementById('hdr-ref').textContent.replace('\u2014 ','');
+  if(!v||v==='Loading today\'s word...')return;
+  const saved=ls('totry_sv')||[];
+  if(!saved.find(sv=>sv.verse===v)){
+    saved.unshift({verse:v,reference:r,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'})});
+    ls('totry_sv',saved.slice(0,50));renderSavedVerses();
+  }
+  const btn=document.getElementById('vsave-btn');
+  btn.textContent='\u2665';btn.classList.add('saved');
+}
+function renderSavedVerses(){
+  const saved=ls('totry_sv')||[];
+  const sec=document.getElementById('saved-section');const list=document.getElementById('saved-verses-list');
+  if(!saved.length){sec.style.display='none';return;}
+  sec.style.display='block';list.innerHTML='';
+  saved.forEach(v=>{
+    const el=document.createElement('div');el.className='sv-item';
+    el.innerHTML='<div class="sv-v">\u201C'+v.verse+'\u201D</div><div class="sv-r">'+v.reference+'</div><div class="sv-d">'+v.date+'</div>';
+    list.appendChild(el);
+  });
+}
+
+// ═══════════════════════════════════════
+// HEADER VERSES
+// ═══════════════════════════════════════
+const VS=[
+  {t:"I can do all things through him who strengthens me.",r:"Philippians 4:13 (ESV)"},
+  {t:"Be strong and courageous. Do not be frightened, and do not be dismayed, for the Lord your God is with you wherever you go.",r:"Joshua 1:9 (ESV)"},
+  {t:"No temptation has overtaken you that is not common to man. God is faithful, and he will not let you be tempted beyond your ability.",r:"1 Corinthians 10:13 (ESV)"},
+  {t:"Therefore, if anyone is in Christ, he is a new creation. The old has passed away; behold, the new has come.",r:"2 Corinthians 5:17 (ESV)"},
+  {t:"For God gave us a spirit not of fear but of power and love and self-control.",r:"2 Timothy 1:7 (ESV)"},
+  {t:"Do not be conformed to this world, but be transformed by the renewal of your mind.",r:"Romans 12:2 (ESV)"},
+  {t:"Put on the whole armor of God, that you may be able to stand against the schemes of the devil.",r:"Ephesians 6:11 (ESV)"},
+  {t:"But they who wait for the Lord shall renew their strength; they shall mount up with wings like eagles.",r:"Isaiah 40:31 (ESV)"},
+  {t:"Create in me a clean heart, O God, and renew a right spirit within me.",r:"Psalm 51:10 (ESV)"},
+  {t:"So flee youthful passions and pursue righteousness, faith, love, and peace.",r:"2 Timothy 2:22 (ESV)"},
+  {t:"Commit your work to the Lord, and your plans will be established.",r:"Proverbs 16:3 (ESV)"},
+  {t:"For the moment all discipline seems painful rather than pleasant, but later it yields the peaceful fruit of righteousness.",r:"Hebrews 12:11 (ESV)"},
+  {t:"The Lord is my strength and my shield; in him my heart trusts, and I am helped.",r:"Psalm 28:7 (ESV)"},
+  {t:"I have fought the good fight, I have finished the race, I have kept the faith.",r:"2 Timothy 4:7 (ESV)"},
+  {t:"Trust in the Lord with all your heart, and do not lean on your own understanding.",r:"Proverbs 3:5 (ESV)"},
+  {t:"He gives power to the faint, and to him who has no might he increases strength.",r:"Isaiah 40:29 (ESV)"},
+  {t:"And we know that for those who love God all things work together for good.",r:"Romans 8:28 (ESV)"},
+  {t:"Whoever rules his spirit is better than one who takes a city.",r:"Proverbs 16:32 (ESV)"},
+  {t:"Flee from sexual immorality. The sexually immoral person sins against his own body.",r:"1 Corinthians 6:18 (ESV)"},
+  {t:"Cast your burden on the Lord, and he will sustain you; he will never permit the righteous to be moved.",r:"Psalm 55:22 (ESV)"},
+  {t:"If we confess our sins, he is faithful and just to forgive us our sins and to cleanse us from all unrighteousness.",r:"1 John 1:9 (ESV)"},
+  {t:"For I know the plans I have for you, declares the Lord, plans for welfare and not for evil, to give you a future and a hope.",r:"Jeremiah 29:11 (ESV)"},
+  {t:"Let your eyes look directly forward, and your gaze be straight before you.",r:"Proverbs 4:25 (ESV)"},
+  {t:"Search me, O God, and know my heart! Try me and know my thoughts!",r:"Psalm 139:23 (ESV)"},
+  {t:"The heart of man plans his way, but the Lord establishes his steps.",r:"Proverbs 16:9 (ESV)"},
+];
+let vi=Math.floor(Math.random()*VS.length);
+function showV(v){
+  document.getElementById('hdr-verse').textContent=v.t;
+  document.getElementById('hdr-ref').textContent='\u2014 '+v.r;
+  document.getElementById('vsave-btn').textContent='\u2661';
+  document.getElementById('vsave-btn').classList.remove('saved');
+  // also update morning tab verse
+  const mt=document.getElementById('morning-verse-text');
+  const mr=document.getElementById('morning-verse-ref');
+  if(mt)mt.textContent='\u201C'+v.t+'\u201D';
+  if(mr)mr.textContent='\u2014 '+v.r;
+}
+function nextVerse(){vi=(vi+1)%VS.length;showV(VS[vi]);}
+
+// ═══════════════════════════════════════
+// ONBOARDING
+// ═══════════════════════════════════════
+let obVices=[],hasPartner=false;
+
+function toggleChip(el,name){
+  el.classList.toggle('on');
+  if(el.classList.contains('on'))obVices.push(name);
+  else obVices=obVices.filter(v=>v!==name);
+}
+function setHasPartner(val){
+  hasPartner=val;
+  document.getElementById('partner-yes-btn').classList.toggle('primary',val);
+  document.getElementById('partner-no-btn').classList.toggle('primary',!val);
+}
+function obNext(step){
+  if(step===3){
+    const n=document.getElementById('ob-name').value.trim();
+    if(!n){document.getElementById('ob-name').style.borderColor='var(--re)';return;}
+    userName=n;ls('totry_name',n);
+  }
+  if(step===4){
+    const custom=document.getElementById('ob-custom').value.trim();
+    if(custom)obVices.push(custom);
+    if(obVices.length){
+      const ex=ls('totry_v')||[];
+      obVices.forEach(n=>{if(!ex.find(v=>v.n===n))ex.push({n,t:'Various situations',w:0,total:0,lastWin:null});});
+      ls('totry_v',ex);
+    }
+    ls('totry_partner',hasPartner);
+    document.getElementById('ob-ready-title').textContent='You\'re ready, '+userName+'.';
+    document.getElementById('ob-ready-desc').textContent='Your space is set up. Every day you open this is a day you chose to try. That\'s enough.';
+  }
+  document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
+  document.getElementById('ob'+step).classList.add('active');
+  document.querySelectorAll('.ob-dot').forEach((d,i)=>d.classList.toggle('on',i<step-1));
+}
+function finishOnboard(){
+  ls('totry_onboarded',true);
+  ls('totry_start',new Date().toISOString());
+  document.getElementById('onboard').style.display='none';
+  initApp();
+}
+
+// ═══════════════════════════════════════
+// DAY COUNTER + HOME
+// ═══════════════════════════════════════
+function renderDayCounter(){
+  const day=getDayCount();
+  document.getElementById('day-num').textContent=day;
+  const hd=document.getElementById('hero-day');if(hd)hd.textContent=day;
+  const quotes=[
+    '"The only thing required is that you try."',
+    '"Every day you open this is a day you chose differently."',
+    '"You\'re not starting over. You\'re starting from experience."',
+    '"The man you\'re becoming is built one day at a time."',
+    '"God doesn\'t need you perfect. He needs you present."',
+    '"Discipline is choosing who you want to be over what you feel right now."',
+    '"Every urge you defeat is proof of who you\'re becoming."',
+    '"Show up today. That\'s the whole plan."',
+    '"The pursuit matters more than the performance."',
+    '"Not perfect. Just better than yesterday."',
+  ];
+  const hq=document.getElementById('hero-quote');if(hq)hq.textContent=quotes[day%quotes.length];
+  const dots=document.getElementById('streak-dots');
+  if(dots){dots.innerHTML='';const streak=getStreak();for(let i=0;i<7;i++){const d=document.createElement('div');d.className='sdot'+(i<streak?' on':'');dots.appendChild(d);}}
+}
+
+// ═══════════════════════════════════════
+// MORNING RITUAL
+// ═══════════════════════════════════════
+const PRAYERS={
+  quick:{
+    title:'Quick prayer (2 min)',
+    text:`Lord, good morning.
+
+Thank You for another day \u2014 another chance to be better than yesterday.
+
+Give me the strength to face what\u2019s ahead. The discipline to honour my commitments. The humility to ask for help when I need it.
+
+I\u2019m trying. That\u2019s enough for today.
+
+Amen.`
+  },
+  full:{
+    title:'Full morning prayer (5 min)',
+    text:`Heavenly Father,
+
+I come to You at the start of this day with an honest heart.
+
+Thank You for waking me up. For another chance. For Your grace that doesn\u2019t run out no matter how many times I fall.
+
+Today I face [my vices, my habits, my responsibilities]. I don\u2019t face them alone. You are with me in every moment \u2014 including the hardest ones.
+
+Give me:
+\u2014 Strength when the urges come
+\u2014 Discipline to honour what I know is right
+\u2014 Humility to admit when I\u2019m wrong
+\u2014 Courage to keep going when it\u2019s hard
+
+I don\u2019t need to be perfect today. I just need to try.
+
+And I trust that You meet people exactly where they are.
+
+Amen.`
+  },
+  scripture:{
+    title:'Scripture-based prayer',
+    text:`"Create in me a clean heart, O God, and renew a right spirit within me." \u2014 Psalm 51:10
+
+Lord, that\u2019s my prayer this morning.
+
+Not for perfection. For a clean heart. A right spirit. A renewed mind that chooses You over the pull of my old habits.
+
+"For God gave us a spirit not of fear but of power and love and self-control." \u2014 2 Timothy 1:7
+
+Let that spirit lead me today.
+
+When I feel weak \u2014 remind me of this.
+When I feel the urge \u2014 remind me of this.
+When I want to give up \u2014 remind me of this.
+
+I\u2019m not doing this alone. I never was.
+
+Amen.`
+  }
+};
+
+function showPrayer(type){
+  const p=PRAYERS[type];
+  document.getElementById('prayer-title').textContent=p.title;
+  document.getElementById('prayer-text').textContent=p.text;
+  document.getElementById('prayer-display').style.display='block';
+  document.getElementById('prayer-display').scrollIntoView({behavior:'smooth'});
+}
+
+function completeMorning(){
+  const g=document.getElementById('morning-gratitude').value.trim();
+  const i=document.getElementById('morning-intention').value.trim();
+  const log=ls('totry_mornings')||[];
+  log.unshift({date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}),day:getDayCount(),gratitude:g,intention:i,ts:new Date().toISOString()});
+  ls('totry_mornings',log.slice(0,90));
+  document.getElementById('prayer-display').style.display='none';
+  document.getElementById('morning-done').style.display='block';
+  document.querySelectorAll('.prayer-opts .btn').forEach(b=>b.style.display='none');
+}
+
+function initMorningTab(){
+  const h=new Date().getHours();
+  const greet=h<12?'Good morning, '+userName:h<17?'Good afternoon, '+userName:'Good evening, '+userName;
+  document.getElementById('morning-greeting').textContent=greet;
+  const today=ls('totry_mornings');
+  if(today&&today.length>0&&today[0].day===getDayCount()){
+    document.getElementById('morning-done').style.display='block';
+    document.querySelector('.prayer-opts').style.display='none';
+    document.getElementById('morning-gratitude').value=today[0].gratitude||'';
+    document.getElementById('morning-intention').value=today[0].intention||'';
+  }
+}
+
+// ═══════════════════════════════════════
+// EVENING CHECK-IN
+// ═══════════════════════════════════════
+let dayRating=3;
+const CALL_PROMPTS=[
+  'Tell her one genuine thing you\'re grateful for today.',
+  'Share one thing you struggled with and how you handled it.',
+  'Tell her one thing you\'re proud of from today.',
+  'Ask her how she\'s really doing \u2014 and actually listen.',
+  'Share the verse that hit you today.',
+  'Tell her one thing she does that makes the journey easier.',
+  'Be honest about where you\'re at. No performance.',
+];
+const SHARED_PRAYERS=[
+  'Lord, thank You for the distance that hasn\'t broken what we have. Keep us growing toward each other. Amen.',
+  'God, hold us both tonight. Give us patience, honesty, and the kind of love that chooses to stay. Amen.',
+  'Lord, we\'re doing this differently. Keep our hearts aligned even when the miles aren\'t. Amen.',
+  'Father, make us the people each other deserves. Not perfect. Just genuinely trying. Amen.',
+];
+
+function setDayRate(btn,rating){
+  dayRating=rating;
+  document.querySelectorAll('.dr-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+function completeEvening(){
+  const win=document.getElementById('evening-win').value.trim();
+  const release=document.getElementById('evening-release').value.trim();
+  const log=ls('totry_evenings')||[];
+  log.unshift({date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}),day:getDayCount(),rating:dayRating,win,release,ts:new Date().toISOString()});
+  ls('totry_evenings',log.slice(0,90));
+  document.getElementById('evening-done').style.display='block';
+  document.getElementById('evening-done').scrollIntoView({behavior:'smooth'});
+}
+
+function initEveningTab(){
+  const h=new Date().getHours();
+  const greet=h<12?'Good morning':'h<17?'Good afternoon':'Good evening';
+  const el=document.getElementById('evening-greeting');
+  if(el)el.textContent=(h<17?'End of day reflection':'Good evening, '+userName);
+  const partner=ls('totry_partner');
+  const ps=document.getElementById('partner-evening-section');
+  if(partner&&ps){
+    ps.style.display='block';
+    const day=getDayCount();
+    document.getElementById('call-prompt').textContent=CALL_PROMPTS[day%CALL_PROMPTS.length];
+    document.getElementById('shared-prayer').textContent=SHARED_PRAYERS[day%SHARED_PRAYERS.length];
+  }
+}
+
+// ═══════════════════════════════════════
+// WEEKLY REVIEW
+// ═══════════════════════════════════════
+function initReviewTab(){
+  const vices=ls('totry_v')||[];
+  const tw=vices.reduce((a,v)=>a+(v.w||0),0);
+  const tf=vices.reduce((a,v)=>a+(v.total||0),0);
+  const habits=ls('totry_h')||[];
+  const ti=tIdx();
+  let habitsDone=0;
+  habits.forEach(h=>{for(let i=0;i<7;i++)if(h.d[i]===1)habitsDone++;});
+  const wStats=document.getElementById('week-stats');
+  if(wStats){
+    wStats.innerHTML='';
+    [{num:getDayCount(),lbl:'Day'},{num:tw,lbl:'Vice wins'},{num:getStreak(),lbl:'Habit streak'}].forEach(s=>{
+      const m=document.createElement('div');m.className='week-stat';
+      m.innerHTML='<div class="ws-num">'+s.num+'</div><div class="ws-lbl">'+s.lbl+'</div>';
+      wStats.appendChild(m);
+    });
+  }
+  renderReviewHistory();
+}
+
+function saveWeeklyReview(){
+  const proud=document.getElementById('review-proud').value.trim();
+  const focus=document.getElementById('review-focus').value.trim();
+  const reviews=ls('totry_reviews')||[];
+  reviews.unshift({
+    week:'Week of '+new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'}),
+    day:getDayCount(),proud,focus,ts:new Date().toISOString()
+  });
+  ls('totry_reviews',reviews.slice(0,52));
+  document.getElementById('review-proud').value='';
+  document.getElementById('review-focus').value='';
+  renderReviewHistory();
+  const btn=document.querySelector('#tab-review .btn.primary');
+  if(btn){btn.textContent='Week logged \u2713';btn.style.background='var(--gr)';setTimeout(()=>{btn.textContent='Complete this week\'s review';btn.style.background='';},2000);}
+}
+
+function renderReviewHistory(){
+  const reviews=ls('totry_reviews')||[];
+  const hist=document.getElementById('review-history');if(!hist)return;
+  if(!reviews.length){hist.innerHTML='';return;}
+  hist.innerHTML='<div class="lbl" style="margin-top:8px">Past reviews</div>';
+  reviews.slice(0,8).forEach(r=>{
+    const item=document.createElement('div');item.className='review-item';
+    item.innerHTML='<div class="ri-week">'+r.week+' \u2014 Day '+r.day+'</div><div class="ri-proud">'+r.proud+'</div><div class="ri-focus" style="color:var(--tx3);font-size:12px;margin-top:2px">Focus: '+r.focus+'</div>';
+    hist.appendChild(item);
+  });
+}
+
+// ═══════════════════════════════════════
+// SCOREBOARD + ACHIEVEMENTS
+// ═══════════════════════════════════════
+const ACHS=[
+  {icon:'⚔️',title:'First Battle',desc:'Fought your first urge',check:(v)=>v.some(x=>x.total>=1)},
+  {icon:'🏆',title:'First Victory',desc:'Won your first battle',check:(v,tw)=>tw>=1},
+  {icon:'🔥',title:'On Fire',desc:'10 total wins',check:(v,tw)=>tw>=10},
+  {icon:'💯',title:'Century',desc:'100 urges defeated',check:(v,tw)=>tw>=100},
+  {icon:'⚡',title:'Unstoppable',desc:'70%+ win rate (5+ battles)',check:(v)=>v.some(x=>x.total>=5&&(x.w/x.total)>=0.7)},
+  {icon:'🛡️',title:'Warrior',desc:'50 total wins',check:(v,tw)=>tw>=50},
+  {icon:'🌅',title:'New Man',desc:'30 days on the journey',check:(v,tw,day)=>day>=30},
+  {icon:'📖',title:'Faithful',desc:'7-day habit streak',check:(v,tw,day,str)=>str>=7},
+  {icon:'💰',title:'Debt Fighter',desc:'Made your first debt payment',check:()=>(ls('totry_payments')||[]).length>=1},
+  {icon:'🌙',title:'Morning Person',desc:'Completed 7 morning rituals',check:()=>(ls('totry_mornings')||[]).length>=7},
+  {icon:'📓',title:'Honest',desc:'Wrote 10 journal entries',check:()=>(ls('totry_journal')||[]).length>=10},
+  {icon:'💪',title:'Committed',desc:'100 days on the journey',check:(v,tw,day)=>day>=100},
+];
+
+function renderScoreboard(){
+  const vices=ls('totry_v')||[];
+  const tw=vices.reduce((a,v)=>a+(v.w||0),0);
+  const tf=vices.reduce((a,v)=>a+(v.total||0),0);
+  const rate=tf>0?Math.round((tw/tf)*100):0;
+  const day=getDayCount();const str=getStreak();
+  const els={total:'sc-total',rate:'sc-rate',fought:'sc-fought',streak:'sc-streak'};
+  Object.entries(els).forEach(([k,id])=>{const el=document.getElementById(id);if(el){if(k==='total')el.textContent=tw;else if(k==='rate')el.textContent=rate+'%';else if(k==='fought')el.textContent=tf;else el.textContent=str;}});
+  const sub=document.getElementById('sc-sub');if(sub&&tw>0)sub.textContent=tw+' moments you chose who you\'re becoming over who you used to be.';
+  const bv=document.getElementById('score-by-vice');
+  if(bv){bv.innerHTML='';vices.forEach(v=>{const pct=v.total>0?Math.round(((v.w||0)/v.total)*100):0;const row=document.createElement('div');row.className='vsr';row.innerHTML='<div class="vsr-top"><span class="vsr-name">'+v.n+'</span><div style="text-align:right"><div class="vsr-pct">'+pct+'%</div><div class="vsr-wins">'+(v.w||0)+' wins</div></div></div><div class="vsr-bar-wrap"><div class="vsr-bar" style="width:'+pct+'%"></div></div><div class="vsr-meta"><span>'+(v.w||0)+'/'+(v.total||0)+' battles won</span><span>'+(v.lastWin?'Last: '+new Date(v.lastWin).toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'No wins yet')+'</span></div>';bv.appendChild(row);});}
+  const ael=document.getElementById('achievements');
+  if(ael){ael.innerHTML='';let earned=0;ACHS.forEach(a=>{if(a.check(vices,tw,day,str)){earned++;const el=document.createElement('div');el.className='ach';el.innerHTML='<div class="ach-icon">'+a.icon+'</div><div><div class="ach-title">'+a.title+'</div><div class="ach-desc">'+a.desc+'</div></div>';ael.appendChild(el);}});if(!earned)ael.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:16px">Fight your first urge to unlock achievements.</p>';}
+}
+
+// ═══════════════════════════════════════
+// VICES
+// ═══════════════════════════════════════
+let vices=[],curVice=-1;
+function loadV(){vices=ls('totry_v')||[];}
+function saveV(){ls('totry_v',vices);}
+function getTotalWins(){loadV();return vices.reduce((a,v)=>a+(v.w||0),0);}
+
+function renderVices(){
+  loadV();const list=document.getElementById('vices-list');list.innerHTML='';let tw=0;
+  vices.forEach((v,i)=>{
+    tw+=v.w||0;const pct=v.total>0?Math.round(((v.w||0)/v.total)*100):0;
+    const c=document.createElement('div');c.className='vice-card fade-up';
+    c.innerHTML='<div class="vice-top"><div class="vice-name">'+v.n+'</div><div class="vice-badge">'+(v.w||0)+' wins</div></div><div class="vice-trigger">Usually hits: '+v.t+'</div><button class="vice-btn" onclick="fightVice('+i+')" ><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>I\'m feeling it right now</button><div class="vice-stats"><span class="vs-txt">'+(v.w||0)+'/'+(v.total||0)+' won</span><div class="vice-bar-wrap"><div class="vice-bar" style="width:'+pct+'%"></div></div><span class="vs-txt">'+pct+'%</span></div>';
+    list.appendChild(c);
+  });
+  document.getElementById('h-wins').textContent=tw;
+}
+
+async function fightVice(i){
+  loadV();curVice=i;vices[i].total=(vices[i].total||0)+1;saveV();renderVices();
+  const p=document.getElementById('sos-panel');p.style.display='block';
+  document.getElementById('sp-lbl').textContent='Fighting: '+vices[i].n;
+  document.getElementById('sp-verse').textContent='Hold on. Finding your word...';
+  document.getElementById('sp-ref').textContent='';document.getElementById('sp-msg').textContent='';
+  p.scrollIntoView({behavior:'smooth'});
+  const prompt=`${userName} is fighting their vice of "${vices[i].n}" right now. It usually hits when: ${vices[i].t}. They have won ${vices[i].w||0} out of ${vices[i].total||0} battles. They are on Day ${getDayCount()} of their transformation. Intervene with compassion and strength.`;
+  const raw=await api(SOS_SYS,[],prompt,400);
+  try{
+    const data=JSON.parse(raw.replace(/```json|```/g,'').trim());
+    document.getElementById('sp-verse').textContent='\u201C'+data.verse+'\u201D';
+    document.getElementById('sp-ref').textContent='\u2014 '+data.reference;
+    document.getElementById('sp-msg').textContent=data.message;
+  }catch(e){
+    document.getElementById('sp-verse').textContent='\u201CNo temptation has overtaken you that is not common to man. God is faithful.\u201D';
+    document.getElementById('sp-ref').textContent='\u2014 1 Corinthians 10:13 (ESV)';
+    document.getElementById('sp-msg').textContent='Stand up right now. Do 20 pushups. Pray out loud. This moment passes. Your character is what stays. Choose who you\'re becoming.';
+  }
+}
+
+function logWin(){
+  loadV();
+  if(curVice>=0){vices[curVice].w=(vices[curVice].w||0)+1;vices[curVice].lastWin=new Date().toISOString();saveV();renderVices();}
+  closePanel();renderScoreboard();
+}
+function closePanel(){document.getElementById('sos-panel').style.display='none';curVice=-1;}
+function addVice(){
+  loadV();const n=document.getElementById('v-name').value.trim(),t=document.getElementById('v-trigger').value.trim();if(!n)return;
+  vices.push({n,t:t||'Various situations',w:0,total:0,lastWin:null});
+  document.getElementById('v-name').value='';document.getElementById('v-trigger').value='';
+  saveV();renderVices();
+}
+
+// ═══════════════════════════════════════
+// HABITS
+// ═══════════════════════════════════════
+const DN=['M','T','W','T','F','S','S'];
+let habits=[];
+function loadH(){habits=ls('totry_h')||[];}
+function saveH(){ls('totry_h',habits);}
+function tIdx(){const d=new Date().getDay();return d===0?6:d-1;}
+function getStreak(){
+  loadH();const ti=tIdx();let s=0;
+  for(let i=ti;i>=0;i--){if(habits.slice(0,3).every(h=>h.d[i]===1))s++;else break;}
+  return s;
+}
+function initHabits(){
+  loadH();
+  if(!habits.length){
+    habits=[
+      {n:'Morning ritual done',d:[0,0,0,0,0,0,0]},
+      {n:'No vice today',d:[0,0,0,0,0,0,0]},
+      {n:'Prayer / scripture',d:[0,0,0,0,0,0,0]},
+      {n:'Gym session',d:[0,0,0,0,0,0,0]},
+      {n:'Hit nutrition goal',d:[0,0,0,0,0,0,0]},
+      {n:'Evening check-in done',d:[0,0,0,0,0,0,0]},
+      {n:'Gratitude logged',d:[0,0,0,0,0,0,0]},
+    ];
+    saveH();
+  }
+}
+function renderHabits(){
+  loadH();const ti=tIdx();const list=document.getElementById('habit-list');list.innerHTML='';let done=0;
+  habits.forEach((h,hi)=>{
+    if(h.d[ti]===1)done++;
+    let str=0;for(let i=ti;i>=0;i--){if(h.d[i]===1)str++;else break;}
+    const row=document.createElement('div');row.className='habit-row';
+    row.innerHTML='<div><div class="h-name">'+h.n+'</div><div class="h-str">'+(str>0?str+' day streak':'Start today')+'</div></div><div class="dots">'+DN.map((d,di)=>'<div class="dot'+(h.d[di]===1?' done':'')+(di===ti?' today':'')+'" onclick="togH('+hi+','+di+')">'+d+'</div>').join('')+'</div>';
+    list.appendChild(row);
+  });
+  const s=getStreak();
+  document.getElementById('h-streak').textContent=s;
+  document.getElementById('h-habits').textContent=done+'/'+habits.length;
+  document.getElementById('h-score').textContent=done+'/'+habits.length+' today';
+}
+function togH(hi,di){loadH();habits[hi].d[di]=habits[hi].d[di]===1?0:1;saveH();renderHabits();renderDayCounter();}
+function addHabit(){
+  loadH();const n=document.getElementById('new-habit').value.trim();if(!n)return;
+  habits.push({n,d:[0,0,0,0,0,0,0]});
+  document.getElementById('new-habit').value='';
+  saveH();renderHabits();
+}
+
+// ═══════════════════════════════════════
+// JOURNAL
+// ═══════════════════════════════════════
+let curMood='😐';
+const PROMPTS=[
+  'What was the hardest moment today and how did you handle it?',
+  'What did you choose well today, even if it was small?',
+  'What is one thing you want to do differently tomorrow?',
+  'How did your faith show up — or not show up — today?',
+  'What vice tried to take hold today and what happened?',
+  'What are you most grateful for right now?',
+  'What does the person you\'re becoming look like today?',
+  'What fear are you still carrying that you need to let go?',
+  'Where did God show up today, even in something small?',
+  'What would you tell yourself from a month ago?',
+  'What does winning actually look like for you today?',
+  'What habit is hardest right now and why?',
+  'Who are you doing this for, really?',
+  'What is the one thing you\'re avoiding that you know you need to face?',
+  'How did your body feel today and what does that tell you?',
+  'What does discipline feel like right now — punishment or identity?',
+  'What is the difference between who you were and who you\'re becoming?',
+  'What do you need to forgive yourself for today?',
+  'What would you do tomorrow if you weren\'t afraid?',
+  'If someone watched your day on replay, what would they see?',
+];
+function openJournal(){
+  curMood='😐';
+  document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('on'));
+  document.getElementById('journal-text').value='';
+  document.getElementById('j-urges').value='';
+  document.getElementById('j-wins').value='';
+  const day=getDayCount();
+  document.getElementById('journal-prompt').textContent='Day '+day+' \u2014 '+PROMPTS[day%PROMPTS.length];
+  document.getElementById('journal-modal').classList.add('open');
+}
+function setMood(btn,mood){curMood=mood;document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
+function saveEntry(){
+  const text=document.getElementById('journal-text').value.trim();if(!text)return;
+  const entries=ls('totry_journal')||[];
+  entries.unshift({date:new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short',year:'numeric'}),ts:new Date().toISOString(),day:getDayCount(),mood:curMood,text,urges:parseInt(document.getElementById('j-urges').value||'0'),wins:parseInt(document.getElementById('j-wins').value||'0')});
+  ls('totry_journal',entries.slice(0,90));
+  document.getElementById('journal-modal').classList.remove('open');
+  renderJournal();
+}
+function renderJournal(){
+  const entries=ls('totry_journal')||[];const list=document.getElementById('journal-list');list.innerHTML='';
+  if(!entries.length){list.innerHTML='<div style="text-align:center;padding:40px 16px"><div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--tx3);margin-bottom:8px">Your journal is empty.</div><div style="font-size:13px;color:var(--tx3);line-height:1.6">Tap + New entry to begin.<br>Every entry is private. Only you will ever read this.</div></div>';return;}
+  entries.forEach(e=>{
+    const item=document.createElement('div');item.className='j-entry';
+    const wTag=e.wins>0?'<span class="je-tag w">+'+e.wins+' wins</span>':'';
+    const lTag=e.urges>0?'<span class="je-tag l">'+e.urges+' battles</span>':'';
+    const dTag=e.day?'<span class="je-tag">Day '+e.day+'</span>':'';
+    item.innerHTML='<div class="je-date">'+e.date+'</div><div class="je-mood">'+e.mood+'</div><div class="je-prev">'+e.text+'</div><div class="je-tags">'+dTag+wTag+lTag+'</div>';
+    item.onclick=()=>{
+      const m=document.createElement('div');m.className='modal-bg open';
+      m.innerHTML='<div class="modal"><div class="modal-handle"></div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);margin-bottom:8px;letter-spacing:0.1em">'+e.date+(e.day?' \u2014 Day '+e.day:'')+'</div><div style="font-size:28px;margin-bottom:12px">'+e.mood+'</div><div style="font-size:14px;line-height:1.75;color:var(--tx);white-space:pre-wrap;margin-bottom:16px">'+e.text+'</div><button class="btn" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div>';
+      document.body.appendChild(m);
+    };
+    list.appendChild(item);
+  });
+}
+
+// ═══════════════════════════════════════
+// BODY
+// ═══════════════════════════════════════
+function logBody(){
+  const w=parseFloat(document.getElementById('bod-weight').value||'0');if(!w)return;
+  const entries=ls('totry_body')||[];
+  entries.unshift({date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'}),ts:new Date().toISOString(),weight:w,bf:parseFloat(document.getElementById('bod-bf').value||'0'),waist:parseFloat(document.getElementById('bod-waist').value||'0'),chest:parseFloat(document.getElementById('bod-chest').value||'0'),note:document.getElementById('bod-note').value.trim()});
+  ls('totry_body',entries.slice(0,52));
+  ['bod-weight','bod-bf','bod-waist','bod-chest','bod-note'].forEach(id=>document.getElementById(id).value='');
+  renderBody();
+}
+function renderBody(){
+  const entries=ls('totry_body')||[];
+  if(entries.length){
+    const cur=entries[0].weight,start=entries[entries.length-1].weight,lost=Math.round((start-cur)*10)/10;
+    document.getElementById('bod-cur').textContent=cur+'kg';
+    document.getElementById('bod-st').textContent=start+'kg';
+    document.getElementById('bod-lo').textContent=(lost>0?'-':'')+lost+'kg';
+  }
+  if(entries.length>=2){
+    const pts=entries.slice(0,12).reverse(),weights=pts.map(e=>e.weight),mn=Math.min(...weights),mx=Math.max(...weights),range=mx-mn||1,W=340,H=90,pad=12;
+    const x=i=>pad+(i/(pts.length-1))*(W-2*pad);
+    const y=w=>H-pad-((w-mn)/range)*(H-2*pad);
+    const pathD=pts.map((p,i)=>(i===0?'M':'L')+x(i).toFixed(1)+','+y(p.weight).toFixed(1)).join(' ');
+    document.getElementById('weight-chart').innerHTML='<defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2ECC71" stop-opacity="0.25"/><stop offset="100%" stop-color="#2ECC71" stop-opacity="0"/></linearGradient></defs><path d="'+pathD+' L'+x(pts.length-1).toFixed(1)+','+H+' L'+x(0).toFixed(1)+','+H+' Z" fill="url(#wg)"/><path d="'+pathD+'" stroke="#2ECC71" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+pts.map((p,i)=>'<circle cx="'+x(i).toFixed(1)+'" cy="'+y(p.weight).toFixed(1)+'" r="3.5" fill="#2ECC71"/><text x="'+x(i).toFixed(1)+'" y="'+(y(p.weight)-8).toFixed(1)+'" text-anchor="middle" fill="rgba(242,239,232,0.4)" font-size="8" font-family="DM Mono,monospace">'+p.weight+'</text>').join('');
+  }
+  const hist=document.getElementById('body-history');hist.innerHTML='';
+  if(!entries.length){hist.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:10px 0">No check-ins yet</p>';return;}
+  entries.forEach((e,i)=>{
+    const prev=entries[i+1];const change=prev?Math.round((e.weight-prev.weight)*10)/10:0;
+    const cls=change<0?'down':change>0?'up':'same';const cs=change===0?'\u2014':(change>0?'+':'')+change+'kg';
+    const row=document.createElement('div');row.className='body-entry';
+    row.innerHTML='<span class="be-date">'+e.date+'</span><span class="be-weight">'+e.weight+'kg</span><span class="be-change '+cls+'">'+cs+'</span>';
+    hist.appendChild(row);
+  });
+}
+
+// ═══════════════════════════════════════
+// FINANCE
+// ═══════════════════════════════════════
+let debts=[],usaS=0,indiaS=0,goal1Name='Goal 1',goal2Name='Goal 2';
+function loadF(){const f=ls('totry_f');if(f){debts=f.d||[];usaS=f.u||0;indiaS=f.i||0;goal1Name=f.g1||'Goal 1';goal2Name=f.g2||'Goal 2';}else{debts=[];usaS=0;indiaS=0;}}
+function saveF(){ls('totry_f',{d:debts,u:usaS,i:indiaS,g1:goal1Name,g2:goal2Name});}
+function getDebtStr(){loadF();return debts.map(d=>`${d.n} $${Math.round(d.t-d.p)} remaining${d.due?' due '+d.due:''}`).join(', ')||'No debts logged yet';}
+
+function calcDebtFreeDate(){
+  const payments=ls('totry_payments')||[];if(payments.length<2)return;
+  const recent=payments.slice(-4);const avg=recent.reduce((a,p)=>a+p.amt,0)/recent.length;if(avg<=0)return;
+  loadF();const owed=debts.reduce((a,d)=>a+(d.t-d.p),0);if(owed<=0)return;
+  const months=Math.ceil(owed/avg);const fd=new Date();fd.setMonth(fd.getMonth()+months);
+  document.getElementById('df-hero').style.display='block';
+  document.getElementById('df-date').textContent=fd.toLocaleDateString('en-AU',{month:'long',year:'numeric'});
+  document.getElementById('df-desc').textContent='~'+months+' months at your current payment rate of $'+Math.round(avg)+'/month';
+}
+
+function renderFinance(){
+  loadF();
+  const owed=debts.reduce((a,d)=>a+(d.t-d.p),0),paid=debts.reduce((a,d)=>a+d.p,0);
+  ['f-debt','h-debt'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='$'+Math.round(owed).toLocaleString();});
+  document.getElementById('f-paid').textContent='$'+Math.round(paid).toLocaleString();
+  document.getElementById('f-usa').textContent='$'+Math.round(usaS).toLocaleString();
+  document.getElementById('f-india').textContent='$'+Math.round(indiaS).toLocaleString();
+  const dl=document.getElementById('debt-list');dl.innerHTML='';
+  if(!debts.length){dl.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:10px 0">No debts added yet</p>';return;}
+  debts.forEach((d,di)=>{
+    const rem=d.t-d.p,pct=d.t>0?Math.round((d.p/d.t)*100):0;
+    const item=document.createElement('div');item.className='debt-row';
+    item.innerHTML='<div class="dr-top"><span class="dr-name">'+d.n+'</span><span class="dr-amt">$'+Math.round(rem).toLocaleString()+'</span></div>'+(d.due?'<span class="dr-date">Due: '+d.due+'</span>':'')+'<div class="bar-wrap"><div class="bar" style="width:'+pct+'%"></div></div><div class="dr-meta"><span class="dr-paid">$'+Math.round(d.p).toLocaleString()+' paid ('+pct+'%)</span><span>Tap to log payment</span></div>';
+    item.onclick=()=>{
+      const a=parseFloat(prompt('Payment toward '+d.n+' ($)?')||'0');
+      if(a>0){
+        loadF();debts[di].p=Math.min(debts[di].p+a,debts[di].t);saveF();
+        const payments=ls('totry_payments')||[];
+        payments.push({amt:a,date:new Date().toISOString(),debt:d.n});
+        ls('totry_payments',payments.slice(-24));
+        renderFinance();calcDebtFreeDate();
+      }
+    };
+    dl.appendChild(item);
+  });
+  calcDebtFreeDate();
+}
+function addDebt(){
+  loadF();
+  const n=document.getElementById('dn').value.trim(),t=parseFloat(document.getElementById('dt').value||'0'),p=parseFloat(document.getElementById('dp').value||'0'),due=document.getElementById('dd').value;
+  if(!n||t<=0)return;debts.push({n,t,p,due});
+  ['dn','dt','dp','dd'].forEach(id=>document.getElementById(id).value='');
+  saveF();renderFinance();
+}
+function updateSavings(){
+  loadF();
+  const u=parseFloat(document.getElementById('usa-in').value||'0'),i=parseFloat(document.getElementById('india-in').value||'0');
+  const g1=document.getElementById('goal1-name').value.trim(),g2=document.getElementById('goal2-name').value.trim();
+  if(u>0)usaS=u;if(i>0)indiaS=i;
+  if(g1)goal1Name=g1;if(g2)goal2Name=g2;
+  document.getElementById('usa-in').value='';document.getElementById('india-in').value='';
+  saveF();renderFinance();
+}
+function calcViceSavings(){
+  const w=parseFloat(document.getElementById('weed-s').value||'0'),va=parseFloat(document.getElementById('vape-s').value||'0'),g=parseFloat(document.getElementById('gamb-s').value||'0'),o=parseFloat(document.getElementById('other-s').value||'0');
+  const weekly=w+va+g+o;if(!weekly)return;
+  const since=document.getElementById('sober-since').value;
+  let weeks=1;if(since){const days=Math.floor((Date.now()-new Date(since))/86400000);weeks=Math.max(1,Math.floor(days/7));}
+  const saved=Math.round(weekly*weeks);
+  document.getElementById('saved-num').textContent='$'+saved.toLocaleString();
+  document.getElementById('saved-desc').textContent='$'+weekly+'/week \xd7 '+weeks+' weeks. $'+saved.toLocaleString()+' redirected from vices.';
+  ls('totry_vs',{weekly,since,saved});
+}
+function openPayday(){document.getElementById('payday-modal').classList.add('open');}
+function calcPayday(){
+  loadF();const amt=parseFloat(document.getElementById('paid-amt').value||'0');if(!amt)return;
+  document.getElementById('payday-modal').classList.remove('open');go('finance');
+  const result=document.getElementById('payday-result');result.style.display='block';result.scrollIntoView({behavior:'smooth'});
+  let rem=amt,steps=[];
+  const buf=Math.round(amt*0.05);steps.push({n:1,title:'Emergency buffer (5%)',desc:'Before anything else. Non-negotiable.',amt:buf});rem-=buf;
+  const due=debts.filter(d=>d.due&&new Date(d.due)<new Date(Date.now()+14*24*60*60*1000)&&(d.t-d.p)>0);
+  due.forEach(d=>{const pay=Math.min(Math.round(rem*0.25),Math.round(d.t-d.p));steps.push({n:steps.length+1,title:d.n+' \u2014 due soon \u26a0\ufe0f',desc:'Deadline approaching. Pay now.',amt:pay});rem-=pay;});
+  const bank=debts.find(d=>d.n.toLowerCase().includes('bank')&&(d.t-d.p)>0);
+  if(bank){const pay=Math.round(rem*0.35);steps.push({n:steps.length+1,title:'Bank debt (35%)',desc:'Accrues interest. Every dollar here saves more.',amt:pay});rem-=pay;}
+  const fr=debts.find(d=>d.n.toLowerCase().includes('friend')&&(d.t-d.p)>0);
+  if(fr){const pay=Math.round(rem*0.25);steps.push({n:steps.length+1,title:'Friends debt',desc:'Relationships are on the line. Keep showing effort.',amt:pay});rem-=pay;}
+  const tripS=Math.round(rem*0.4);
+  steps.push({n:steps.length+1,title:(goal1Name||'Goal 1')+' + '+(goal2Name||'Goal 2')+' (40%)',desc:'Split equally. Future you will thank current you.',amt:tripS});rem-=tripS;
+  if(rem>0)steps.push({n:steps.length+1,title:'Remaining debts + family',desc:'Flexible but never take advantage of that patience.',amt:rem});
+  result.innerHTML='<h4>Allocation for $'+amt.toLocaleString()+'</h4>'+steps.map(s=>'<div class="pay-step"><div class="pay-n">'+s.n+'</div><div style="flex:1"><div class="pay-title">'+s.title+'</div><div class="pay-desc">'+s.desc+'</div></div><div class="pay-amt">$'+s.amt.toLocaleString()+'</div></div>').join('')+'<button class="btn success" style="margin-top:14px" onclick="document.getElementById(\'payday-result\').style.display=\'none\'">Got it</button>';
+}
+
+// ═══════════════════════════════════════
+// TRAINING SPLIT
+// ═══════════════════════════════════════
+const SPLIT=[
+  {day:'Mon',focus:'Legs \u2014 Rehab',detail:'Leg press (light), RDL, seated leg curl, step-ups, tibialis raises, calf raises. Quality over load.'},
+  {day:'Tue',focus:'Push',detail:'Bench press, incline DB press, OHP, lateral raises, tricep dips and pushdowns.'},
+  {day:'Wed',focus:'Pull',detail:'Cable rows, lat pulldown, face pulls, DB rows, bicep curls, rear delts.'},
+  {day:'Thu',focus:'Legs \u2014 Strength',detail:'Progressive overload on leg press. Heavier RDL. Romanian curl.'},
+  {day:'Fri',focus:'Push / Pull Hybrid',detail:'High volume. Superset-friendly. Mix chest and back. Pump-focused.'},
+  {day:'Sat',focus:'Cardio + Core + Mobility',detail:'25-30 min incline walk or bike at RPE 6-7. Core circuit. Full body stretch.'},
+  {day:'Sun',focus:'Rest + God',detail:'No gym. Prayer, Scripture, journalling, plan the week. Non-negotiable anchor day.'},
+];
+function renderSplit(){
+  const ti=tIdx(),card=document.getElementById('split-card');card.innerHTML='';
+  SPLIT.forEach((s,i)=>{
+    const d=document.createElement('div');d.className='split-item';const isT=i===ti;
+    d.innerHTML='<div class="split-day'+(isT?' today':'')+'">'+s.day+'</div><div><div class="split-focus">'+(isT?'\u2605 ':'')+s.focus+'</div><div class="split-detail">'+s.detail+'</div></div>';
+    card.appendChild(d);
+  });
+  const tod=SPLIT[ti];
+  document.getElementById('today-focus').textContent='\u2605 Today: '+tod.focus;
+  document.getElementById('today-detail').textContent=tod.detail+'\n\nLog in Hevy after. Hit your protein target. Track calories.';
+}
+
+// ═══════════════════════════════════════
+// CALORIE APP
+// ═══════════════════════════════════════
+let calApp={name:'Calorie tracker',icon:'\ud83e\udd57',scheme:'',store:''};
+function loadCal(){const c=ls('totry_ca');if(c)calApp=c;}
+function setCalApp(n,ic,sc,st){calApp={name:n,icon:ic,scheme:sc,store:st};ls('totry_ca',calApp);document.getElementById('cal-name').textContent=n;document.getElementById('cal-icon').textContent=ic;document.getElementById('cal-picker').style.display='none';}
+function toggleCalPicker(){const p=document.getElementById('cal-picker');p.style.display=p.style.display==='none'?'block':'none';}
+function tryApp(e,sc,st){e.preventDefault();const f=document.createElement('iframe');f.style.display='none';f.src=sc;document.body.appendChild(f);setTimeout(()=>{document.body.removeChild(f);window.location.href=st;},800);}
+
+// ═══════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════
+const TABS=['home','morning','vices','score','coach','pt','bible','journal','habits','body','finance','evening','review'];
+function go(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  const idx=TABS.indexOf(name);if(idx>=0)document.querySelectorAll('.nb')[idx].classList.add('active');
+  if(name==='score')renderScoreboard();
+  if(name==='body')renderBody();
+  if(name==='bible')renderSavedVerses();
+  if(name==='morning')initMorningTab();
+  if(name==='evening')initEveningTab();
+  if(name==='review')initReviewTab();
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+function initApp(){
+  userName=ls('totry_name')||'Friend';
+  if(!ls('totry_start'))ls('totry_start',new Date().toISOString());
+  // Personalise coach welcome
+  document.getElementById('coach-welcome').textContent='Hey '+userName+'. Day '+getDayCount()+'. Your coach is here \u2014 vices, faith, habits, finances, training. What do you need right now?';
+  // Load verse
+  showV(VS[vi]);
+  // Load cal app
+  loadCal();
+  if(calApp.name!=='Calorie tracker'){document.getElementById('cal-name').textContent=calApp.name;document.getElementById('cal-icon').textContent=calApp.icon;}
+  // Render all
+  initHabits();renderHabits();
+  loadF();renderFinance();
+  loadV();renderVices();
+  renderScoreboard();
+  renderSplit();
+  renderJournal();
+  renderBody();
+  renderDayCounter();
+  renderSavedVerses();
+  // Vice savings restore
+  const vs=ls('totry_vs');
+  if(vs){document.getElementById('saved-num').textContent='$'+vs.saved.toLocaleString();document.getElementById('saved-desc').textContent='$'+vs.weekly+'/week saved. $'+vs.saved.toLocaleString()+' total redirected.';}
+  // Partner section
+  const partner=ls('totry_partner');
+  // Service worker
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
+
+// Day counter render
+function renderDayCounter(){
+  const day=getDayCount();
+  document.getElementById('day-num').textContent=day;
+  const hd=document.getElementById('hero-day');if(hd)hd.textContent=day;
+  const quotes=['"The only thing required is that you try."','"Every day you open this is a day you chose differently."','"You\'re not starting over. You\'re starting from experience."','"The person you\'re becoming is built one day at a time."','"God doesn\'t need you perfect. He needs you present."','"Discipline is choosing who you want to be over what you feel right now."','"Every urge you defeat is proof of who you\'re becoming."','"Show up today. That\'s the whole plan."','"The pursuit matters more than the performance."','"Not perfect. Just better than yesterday."'];
+  const hq=document.getElementById('hero-quote');if(hq)hq.textContent=quotes[day%quotes.length];
+  const dots=document.getElementById('streak-dots');
+  if(dots){dots.innerHTML='';const streak=getStreak();for(let i=0;i<7;i++){const d=document.createElement('div');d.className='sdot'+(i<streak?' on':'');dots.appendChild(d);}}
+}
+
+// Check onboarding
+if(ls('totry_onboarded')){
+  document.getElementById('onboard').style.display='none';
+  initApp();
+}
+</script>
+</body>
+</html>
