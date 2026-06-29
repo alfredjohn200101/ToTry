@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "totry",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [".claude/serve.js"],
+      "port": 4173
+    },
+    {
+      "name": "native-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "./native", "run", "web"],
+      "port": 8081
+    }
+  ]
+}

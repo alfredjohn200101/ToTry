@@ -5,7 +5,9 @@
       "Bash(git -C /Users/alfredjohn/Desktop/ToTry status)",
       "Bash(cp /Users/alfredjohn/Downloads/files/* .)",
       "Bash(npm -v)",
-      "Bash(python3 -V)"
+      "Bash(python3 -V)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(grep -nA20 \"function orbTap\" index.html)"
     ]
   }
 }
