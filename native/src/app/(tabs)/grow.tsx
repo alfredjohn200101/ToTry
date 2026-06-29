@@ -7,7 +7,7 @@ export default function Grow() {
   return (
     <Screen>
       <Text variant="title">Grow</Text>
-      <Text variant="sub" style={{ marginTop: space.s2 }}>
+      <Text variant="callout" style={{ marginTop: space.s2 }}>
         Your body, honestly. Train, then fuel what you earned, then watch the result — one loop, not three trackers.
         Discipline of the body is discipline of the man.
       </Text>

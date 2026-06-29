@@ -1,10 +1,13 @@
 import { Tabs } from 'expo-router';
-import { Platform, ColorValue } from 'react-native';
+import { Platform, View, StyleSheet, ColorValue } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Icon, IconName } from '@/design/Icon';
-import { colors, fonts, fontSize } from '@/design/tokens';
+import { colors } from '@/design/tokens';
 
 function tab(name: IconName) {
-  return ({ color }: { color: ColorValue }) => <Icon name={name} color={color as string} size={22} />;
+  return ({ color, focused }: { color: ColorValue; focused: boolean }) => (
+    <Icon name={name} color={color as string} size={25} strokeWidth={focused ? 1.9 : 1.5} />
+  );
 }
 
 export default function TabsLayout() {
@@ -15,18 +18,20 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.go,
         tabBarInactiveTintColor: colors.tx3,
         tabBarStyle: {
-          backgroundColor: colors.bg,
-          borderTopColor: colors.bd,
-          borderTopWidth: 0.5,
-          height: Platform.OS === 'ios' ? 88 : 64,
-          paddingTop: 8,
+          position: 'absolute',
+          backgroundColor: 'transparent',
+          borderTopColor: colors.hairline,
+          borderTopWidth: StyleSheet.hairlineWidth,
+          height: Platform.OS === 'ios' ? 90 : 68,
+          paddingTop: 10,
+          elevation: 0,
         },
-        tabBarLabelStyle: {
-          fontFamily: fonts.mono,
-          fontSize: fontSize.micro,
-          letterSpacing: 0.6,
-          textTransform: 'uppercase',
-        },
+        tabBarBackground: () => (
+          <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill}>
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(11,10,9,0.55)' }]} />
+          </BlurView>
+        ),
+        tabBarLabelStyle: { fontSize: 10.5, fontWeight: '500', letterSpacing: 0.2, marginTop: 2 },
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Today', tabBarIcon: tab('today') }} />

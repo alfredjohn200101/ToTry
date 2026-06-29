@@ -3,6 +3,8 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { CompanionSheet } from '@/components/CompanionSheet';
 import { useFonts } from 'expo-font';
 import {
   Cormorant_500Medium,
@@ -31,14 +33,14 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="feeling"
-          options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-        />
-      </Stack>
+      <SafeAreaProvider>
+        <StatusBar style="light" />
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
+          <Stack.Screen name="(tabs)" />
+        </Stack>
+        {/* The companion lives here, once, reachable from the orb on every tab. */}
+        <CompanionSheet />
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

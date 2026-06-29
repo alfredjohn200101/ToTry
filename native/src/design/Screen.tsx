@@ -1,49 +1,51 @@
-// Base screen scaffold: daypart aurora background, brand header, scrolling body, the orb.
+// Base screen scaffold: daypart aurora, a quiet wordmark, scrolling body, the orb
+// (lifted clear above the glass tab bar).
 import { ReactNode } from 'react';
-import { ScrollView, View, StyleSheet } from 'react-native';
+import { ScrollView, View, StyleSheet, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Aurora } from './Aurora';
 import { Text } from './Text';
 import { colors, space, getDaypart } from './tokens';
 import { Orb } from '@/components/Orb';
 
+export const TAB_BAR_HEIGHT = Platform.OS === 'ios' ? 90 : 68;
+
 export function Screen({
   children,
   showOrb = true,
-  showHeader = true,
-  auroraIntensity = 1,
+  showWordmark = true,
 }: {
   children: ReactNode;
   showOrb?: boolean;
-  showHeader?: boolean;
-  auroraIntensity?: number;
+  showWordmark?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   return (
     <View style={styles.root}>
-      <Aurora daypart={getDaypart()} intensity={auroraIntensity} />
+      <Aurora daypart={getDaypart()} />
       <ScrollView
-        contentContainerStyle={{ paddingTop: insets.top + space.s4, paddingBottom: space.s10 * 2, paddingHorizontal: space.s5 }}
+        contentContainerStyle={{
+          paddingTop: insets.top + space.s4,
+          paddingBottom: TAB_BAR_HEIGHT + space.s10,
+          paddingHorizontal: space.s5,
+        }}
         showsVerticalScrollIndicator={false}
       >
-        {showHeader && (
-          <View style={styles.header}>
-            <Text variant="title" style={{ fontSize: 22 }}>
-              To <Text variant="title" color={colors.go} style={{ fontSize: 22, fontStyle: 'italic' }}>Try</Text>
-            </Text>
-            <Text variant="micro" style={{ marginTop: 2 }}>
-              BY ALFRED JOHN
+        {showWordmark && (
+          <View style={styles.wordmark}>
+            <Text style={{ fontFamily: 'Cormorant_600SemiBold', fontSize: 19, color: colors.tx }}>
+              To <Text style={{ fontFamily: 'Cormorant_500Medium_Italic', fontSize: 19, color: colors.go }}>Try</Text>
             </Text>
           </View>
         )}
         {children}
       </ScrollView>
-      {showOrb && <Orb bottom={insets.bottom + space.s5} />}
+      {showOrb && <Orb bottom={insets.bottom + TAB_BAR_HEIGHT + space.s3} />}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
-  header: { marginBottom: space.s6 },
+  wordmark: { marginBottom: space.s5, alignItems: 'flex-start' },
 });

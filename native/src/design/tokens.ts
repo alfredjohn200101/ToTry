@@ -1,119 +1,89 @@
-// To Try — design tokens, ported faithfully from the PWA's :root CSS variables.
-// One soul, applied everywhere. Every gap/size/colour should come from here, never an
-// arbitrary value — that consistency is what makes the app read as "crafted".
+// To Try — design tokens. True-iOS materials with a regal, liturgical weight.
+// Deep warm darkness · gold as gilding (precious, sparing) · serif for the sacred,
+// system sans for everything functional · real glass depth · continuous corners.
 
 export const colors = {
-  // Surfaces (three-layer elevation: base / raised / overlay)
-  bg: '#0C0C0E',
-  bg2: '#131316',
-  bg3: '#1A1A1F',
-  bg4: '#222228',
-  // Borders (hairlines over dark)
-  bd: 'rgba(255,255,255,0.07)',
-  bd2: 'rgba(255,255,255,0.13)',
-  // Text
-  tx: '#F2EFE8', // primary
-  tx2: '#9A9490', // secondary
-  tx3: '#5C5A55', // tertiary / quiet data-voice
-  // Gold — the app's voice
-  go: '#C8A96E',
-  goBg: 'rgba(200,169,110,0.08)',
-  goBd: 'rgba(200,169,110,0.28)',
-  // Semantic accents
-  re: '#C85A4E',
-  reBg: 'rgba(200,90,78,0.10)',
-  reBd: 'rgba(200,90,78,0.30)',
-  gr: '#5BB97D',
-  grBg: 'rgba(91,185,125,0.10)',
-  grBd: 'rgba(91,185,125,0.28)',
-  bl: '#6B97D6',
-  blBg: 'rgba(107,151,214,0.10)',
-  blBd: 'rgba(107,151,214,0.28)',
-  pu: '#9B7EC0', // the soul / companion voice
-  puBg: 'rgba(155,126,192,0.10)',
-  puBd: 'rgba(155,126,192,0.28)',
+  // Surfaces — warm near-black, layered (base / raised / overlay)
+  bg: '#0B0A09', // warm ink, not flat black
+  bg2: '#151310', // raised
+  bg3: '#1E1B17', // higher
+  bg4: '#28241F',
+  glass: 'rgba(28,25,21,0.72)', // frosted material tint (over blur)
+  glassHi: 'rgba(40,36,30,0.55)',
+  // Borders / gilding hairlines
+  bd: 'rgba(255,250,240,0.06)',
+  bd2: 'rgba(255,250,240,0.12)',
+  hairline: 'rgba(255,250,240,0.08)',
+  // Text — warm ivory ramp
+  tx: '#F4F0E8',
+  tx2: '#A7A097', // secondary
+  tx3: '#6E665C', // tertiary / quiet
+  // Gold — the gilding. Used sparingly, like precious metal.
+  go: '#C9A75E', // primary gold
+  goSoft: '#E6CE92', // sheen highlight (gradient top)
+  goDeep: '#A8863F', // engraved / gradient bottom
+  goBg: 'rgba(201,167,94,0.07)',
+  goBd: 'rgba(201,167,94,0.30)',
+  // Semantic
+  re: '#CC6A5A',
+  reBg: 'rgba(204,106,90,0.10)',
+  reBd: 'rgba(204,106,90,0.30)',
+  gr: '#6FBF8C',
+  grBg: 'rgba(111,191,140,0.10)',
+  grBd: 'rgba(111,191,140,0.28)',
+  bl: '#7FA6DE',
+  pu: '#A98FCB', // the soul / companion voice
+  puBd: 'rgba(169,143,203,0.30)',
 } as const;
 
-// Radius
-export const radius = { card: 14, small: 8, pill: 100 } as const;
+// Continuous-corner radii (squircle on iOS via borderCurve).
+export const radius = { sm: 12, card: 20, lg: 26, hero: 28, pill: 999 } as const;
 
-// Spacing scale — s1..s10. Use ONLY these.
-export const space = {
-  s1: 4,
-  s2: 8,
-  s3: 12,
-  s4: 16,
-  s5: 20,
-  s6: 24,
-  s8: 32,
-  s10: 40,
-} as const;
+// Spacing scale — 4pt base. Use ONLY these.
+export const space = { s1: 4, s2: 8, s3: 12, s4: 16, s5: 20, s6: 24, s7: 28, s8: 32, s10: 40, s12: 48 } as const;
 
-// Type scale — a deliberate ramp.
+// Type scale — the iOS ramp (points). Legible, generous.
 export const fontSize = {
-  micro: 9,
-  cap: 11,
-  sm: 12,
-  base: 13,
-  md: 14,
-  lg: 16,
-  xl: 20,
-  xxl: 26,
-  hero: 38,
+  caption2: 11,
+  caption: 12,
+  footnote: 13,
+  subhead: 15,
+  callout: 16,
+  body: 17,
+  title3: 20,
+  title2: 24,
+  title1: 30,
+  largeTitle: 36,
+  display: 44, // serif hero
 } as const;
 
-// Font families (loaded in the root layout via @expo-google-fonts).
-// Cormorant = the soul-voice (serif). DM Mono = the quiet data-voice.
+// Fonts. Cormorant = the sacred/soul-voice. DM Mono = ONLY for true data (numbers).
+// Everything functional uses the platform system font (San Francisco / Roboto) — undefined family.
 export const fonts = {
-  serif: 'Cormorant_500Medium',
-  serifSemi: 'Cormorant_600SemiBold',
+  serif: 'Cormorant_600SemiBold',
+  serifMed: 'Cormorant_500Medium',
   serifItalic: 'Cormorant_500Medium_Italic',
   mono: 'DMMono_400Regular',
   monoMed: 'DMMono_500Medium',
-  // Body sans falls back to the platform system font (San Francisco / Roboto) for legibility.
-  body: undefined as undefined | string,
+  system: undefined as undefined | string, // SF Pro / Roboto
 } as const;
 
-// Motion — gentle iOS-style easing. Used with Reanimated withTiming/withSpring.
+// Motion — gentle iOS spring.
 export const motion = {
-  spring: { damping: 18, stiffness: 180, mass: 0.9 }, // confirms, never performs
-  snappy: { damping: 14, stiffness: 260, mass: 0.8 }, // a little pop for small controls
-  timing: 220,
+  spring: { damping: 20, stiffness: 200, mass: 0.9 },
+  snappy: { damping: 16, stiffness: 280, mass: 0.8 },
+  timing: 240,
 } as const;
 
-// Three-layer elevation as RN shadow objects (Apple HIG: base / raised / overlay).
+// Premium depth — soft, large, diffuse. Quiet float, never harsh.
 export const elevation = {
-  e1: {
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
-  e2: {
-    shadowColor: '#000',
-    shadowOpacity: 0.32,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
-  },
-  e3: {
-    shadowColor: '#000',
-    shadowOpacity: 0.5,
-    shadowRadius: 48,
-    shadowOffset: { width: 0, height: 16 },
-    elevation: 16,
-  },
-  gold: {
-    shadowColor: colors.go,
-    shadowOpacity: 0.28,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 10,
-  },
+  e1: { shadowColor: '#000', shadowOpacity: 0.22, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 4 },
+  e2: { shadowColor: '#000', shadowOpacity: 0.34, shadowRadius: 30, shadowOffset: { width: 0, height: 12 }, elevation: 10 },
+  e3: { shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 56, shadowOffset: { width: 0, height: 22 }, elevation: 20 },
+  gold: { shadowColor: colors.go, shadowOpacity: 0.32, shadowRadius: 22, shadowOffset: { width: 0, height: 8 }, elevation: 12 },
 } as const;
 
-// ── DAYPART ── the whole app breathes with the time of day.
+// ── DAYPART ── the whole app breathes with the time of day. Subtle ambient glow.
 export type Daypart = 'dawn' | 'day' | 'dusk' | 'night';
 
 export function getDaypart(d: Date = new Date()): Daypart {
@@ -124,35 +94,13 @@ export function getDaypart(d: Date = new Date()): Daypart {
   return 'night';
 }
 
-// Aurora skins per daypart. RN has no radial gradient in expo-linear-gradient, so we
-// approximate the PWA's radial auroras with layered linear gradients (a glow colour
-// fading from the top, a second from the bottom, over a base). Refined later with SVG.
+// Aurora skins — a soft radial glow (top) over a warm vertical base. Restrained, candlelit.
 export const aurora: Record<
   Daypart,
-  { base: [string, string]; glowTop: string; glowBottom: string; greeting: string }
+  { base: [string, string]; glow: string; glow2: string; greeting: string }
 > = {
-  dawn: {
-    base: ['#1b1518', '#100c10'],
-    glowTop: 'rgba(255,183,107,0.26)',
-    glowBottom: 'rgba(200,140,150,0.18)',
-    greeting: 'Good morning',
-  },
-  day: {
-    base: ['#16161c', '#0e0e13'],
-    glowTop: 'rgba(200,169,110,0.22)',
-    glowBottom: 'rgba(120,150,180,0.16)',
-    greeting: "How's the day going?",
-  },
-  dusk: {
-    base: ['#191319', '#0f0c12'],
-    glowTop: 'rgba(220,130,90,0.24)',
-    glowBottom: 'rgba(140,107,182,0.22)',
-    greeting: 'Good evening',
-  },
-  night: {
-    base: ['#101018', '#08080d'],
-    glowTop: 'rgba(120,130,200,0.20)',
-    glowBottom: 'rgba(90,80,150,0.20)',
-    greeting: 'Still up?',
-  },
+  dawn: { base: ['#191512', '#0B0A09'], glow: 'rgba(230,170,110,0.18)', glow2: 'rgba(180,130,140,0.10)', greeting: 'Good morning' },
+  day: { base: ['#16140F', '#0B0A09'], glow: 'rgba(201,167,94,0.16)', glow2: 'rgba(120,140,170,0.08)', greeting: "How's the day going?" },
+  dusk: { base: ['#181210', '#0B0A09'], glow: 'rgba(210,120,80,0.17)', glow2: 'rgba(140,107,182,0.13)', greeting: 'Good evening' },
+  night: { base: ['#0F0E15', '#070709'], glow: 'rgba(120,130,200,0.13)', glow2: 'rgba(90,80,150,0.12)', greeting: 'Still up?' },
 };

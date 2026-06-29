@@ -7,7 +7,7 @@ export default function Soul() {
   return (
     <Screen>
       <Text variant="title">Soul</Text>
-      <Text variant="sub" style={{ marginTop: space.s2 }}>
+      <Text variant="callout" style={{ marginTop: space.s2 }}>
         The root beneath everything else. The body, the money, the fight — they all grow from here, or they don't last.
         This is where the app points past itself: to Christ, to the sacraments, to the people who love you.
       </Text>
