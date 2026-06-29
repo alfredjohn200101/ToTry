@@ -1,27 +1,49 @@
 import { Pressable, View, StyleSheet } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 import { Card } from '@/design/Card';
 import { Text } from '@/design/Text';
-import { colors, space } from '@/design/tokens';
+import { Icon, IconName } from '@/design/Icon';
+import { colors, space, radius } from '@/design/tokens';
 
-export function HubItem({ title, sub, onPress }: { title: string; sub: string; onPress?: () => void }) {
+// An ornate iOS row: a gilded medallion (gold-framed icon) + serif title + subtitle + chevron.
+export function HubItem({
+  title,
+  sub,
+  icon,
+  onPress,
+}: {
+  title: string;
+  sub: string;
+  icon: IconName;
+  onPress?: () => void;
+}) {
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [{ marginTop: space.s3 }, pressed && { opacity: 0.6 }]}>
       <Card style={styles.row}>
+        <View style={styles.medallion}>
+          <Icon name={icon} size={22} color={colors.go} strokeWidth={1.6} />
+        </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontFamily: 'Cormorant_600SemiBold', fontSize: 22, color: colors.tx }}>{title}</Text>
-          <Text variant="subhead" style={{ marginTop: 3 }}>
+          <Text style={{ fontFamily: 'Cormorant_600SemiBold', fontSize: 23, color: colors.tx, letterSpacing: -0.2 }}>{title}</Text>
+          <Text variant="subhead" style={{ marginTop: 2 }}>
             {sub}
           </Text>
         </View>
-        <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.tx3} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-          <Path d="M9 6l6 6-6 6" />
-        </Svg>
+        <Icon name="chevron" size={17} color={colors.tx3} strokeWidth={2} />
       </Card>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.s4 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.s4, paddingVertical: space.s4 },
+  medallion: {
+    width: 46,
+    height: 46,
+    borderRadius: radius.pill,
+    backgroundColor: colors.goBg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.goBd,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

@@ -37,9 +37,9 @@ export default function Settings() {
         </Text>
       </Card>
 
-      <HubItem title="👤  About you" sub="Helps tailor your nutrition and training." />
-      <HubItem title="✝  Faith" sub="How much scripture surfaces for you." />
-      <HubItem title="Preferences" sub="Currency, units, theme, timezone, reminders." />
+      <HubItem icon="person" title="About you" sub="Helps tailor your nutrition and training." />
+      <HubItem icon="cross" title="Faith" sub="How much scripture surfaces for you." />
+      <HubItem icon="settings" title="Preferences" sub="Currency, units, theme, timezone, reminders." />
     </Screen>
   );
 }
