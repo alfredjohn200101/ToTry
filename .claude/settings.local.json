@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/alfredjohn/Downloads/files/**)",
+      "Bash(git -C /Users/alfredjohn/Desktop/ToTry status)",
+      "Bash(cp /Users/alfredjohn/Downloads/files/* .)",
+      "Bash(npm -v)",
+      "Bash(python3 -V)"
+    ]
+  }
+}
