@@ -17,10 +17,10 @@ type Variant =
   | 'micro';
 
 const variants: Record<Variant, TextStyle> = {
-  display: { fontFamily: fonts.serif, fontSize: fontSize.display, color: colors.tx, lineHeight: fontSize.display * 1.02, letterSpacing: 0.2 },
-  title: { fontFamily: fonts.serif, fontSize: fontSize.title1, color: colors.tx, lineHeight: fontSize.title1 * 1.08 },
-  verse: { fontFamily: fonts.serifItalic, fontSize: fontSize.title3, color: colors.tx2, lineHeight: fontSize.title3 * 1.5 },
-  body: { fontFamily: fonts.system, fontSize: fontSize.body, color: colors.tx, lineHeight: fontSize.body * 1.45 },
+  display: { fontFamily: fonts.serif, fontSize: fontSize.display, color: colors.tx, lineHeight: fontSize.display * 1.0, letterSpacing: -0.5 },
+  title: { fontFamily: fonts.serif, fontSize: fontSize.title1, color: colors.tx, lineHeight: fontSize.title1 * 1.06, letterSpacing: -0.3 },
+  verse: { fontFamily: fonts.serifItalic, fontSize: fontSize.title3, color: colors.tx2, lineHeight: fontSize.title3 * 1.55 },
+  body: { fontFamily: fonts.system, fontSize: fontSize.body, color: colors.tx, lineHeight: fontSize.body * 1.4 },
   callout: { fontFamily: fonts.system, fontSize: fontSize.callout, color: colors.tx2, lineHeight: fontSize.callout * 1.5 },
   subhead: { fontFamily: fonts.system, fontSize: fontSize.subhead, color: colors.tx2, lineHeight: fontSize.subhead * 1.5 },
   footnote: { fontFamily: fonts.system, fontSize: fontSize.footnote, color: colors.tx3, lineHeight: fontSize.footnote * 1.5 },

@@ -1,31 +1,50 @@
-// Surfaces. Raised cards with continuous (squircle) corners and soft, diffuse depth.
-// GlassCard is a true iOS frosted material (blur) for floating/overlay surfaces.
+// Surfaces. Warm gradient fill + a lit-from-above inner sheen + continuous corners +
+// soft diffuse depth — the layered richness of the original, with Apple-grade craft.
+// GlassCard is a true frosted material (blur) for floating/overlay surfaces.
+import { ReactNode } from 'react';
 import { View, ViewProps, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { colors, radius, space, elevation } from './tokens';
 
 export function Card({
+  children,
   style,
   tone = 'raised',
   ...rest
-}: ViewProps & { tone?: 'raised' | 'flat' | 'gold' }) {
+}: ViewProps & { tone?: 'raised' | 'flat' | 'gold'; children?: ReactNode }) {
+  const fill =
+    tone === 'gold'
+      ? ([colors.cardTop, colors.cardBottom] as const)
+      : tone === 'flat'
+        ? (['#1C1915', '#16130E'] as const)
+        : ([colors.cardTop, colors.cardBottom] as const);
+  const sheen = tone === 'gold' ? 'rgba(201,167,94,0.12)' : colors.highlight;
+
   return (
     <View
-      style={[
-        styles.base,
-        tone === 'raised' && [styles.raised, elevation.e1],
-        tone === 'flat' && styles.flat,
-        tone === 'gold' && styles.gold,
-        style,
-      ]}
+      style={[styles.base, tone === 'gold' ? styles.goldBorder : styles.border, elevation.e1, style]}
       {...rest}
-    />
+    >
+      <LinearGradient colors={fill} style={StyleSheet.absoluteFill} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} />
+      {/* lit-from-above sheen — soft highlight fading from the top edge */}
+      <LinearGradient
+        colors={[sheen, 'transparent']}
+        style={[styles.sheen, { pointerEvents: 'none' }]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+      />
+      {children}
+    </View>
   );
 }
 
-export function GlassCard({ style, intensity = 28, ...rest }: ViewProps & { intensity?: number }) {
+export function GlassCard({ children, style, intensity = 30, ...rest }: ViewProps & { intensity?: number; children?: ReactNode }) {
   return (
-    <BlurView intensity={intensity} tint="dark" style={[styles.base, styles.glass, elevation.e1, style]} {...rest} />
+    <BlurView intensity={intensity} tint="dark" style={[styles.base, styles.border, elevation.e1, style]} {...rest}>
+      <LinearGradient colors={[colors.highlight, 'transparent']} style={[styles.sheen, { pointerEvents: 'none' }]} start={{ x: 0.5, y: 0 }} end={{ x: 0.5, y: 1 }} />
+      {children}
+    </BlurView>
   );
 }
 
@@ -37,8 +56,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
   },
-  raised: { backgroundColor: colors.bg2, borderColor: colors.hairline },
-  flat: { backgroundColor: colors.bg3, borderColor: colors.hairline },
-  gold: { backgroundColor: colors.goBg, borderColor: colors.goBd },
-  glass: { backgroundColor: colors.glass, borderColor: colors.bd2 },
+  border: { borderColor: colors.hairline, backgroundColor: colors.bg2 },
+  goldBorder: { borderColor: colors.goBd, backgroundColor: colors.bg2 },
+  sheen: { position: 'absolute', top: 0, left: 0, right: 0, height: 64 },
 });

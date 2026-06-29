@@ -14,6 +14,12 @@ export const colors = {
   bd: 'rgba(255,250,240,0.06)',
   bd2: 'rgba(255,250,240,0.12)',
   hairline: 'rgba(255,250,240,0.08)',
+  // Lit-from-above inner highlight (the premium "crafted" sheen on every surface)
+  highlight: 'rgba(255,250,240,0.055)',
+  highlightStrong: 'rgba(255,250,240,0.10)',
+  // Subtle card fill gradient (warm, lit at the top)
+  cardTop: '#1A1713',
+  cardBottom: '#121009',
   // Text — warm ivory ramp
   tx: '#F4F0E8',
   tx2: '#A7A097', // secondary
