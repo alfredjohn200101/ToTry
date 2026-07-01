@@ -2074,6 +2074,19 @@ input:focus,textarea:focus,select:focus{
     <button class="qb" onclick="searchFood('greek yogurt')">Greek yogurt</button>
     <button class="qb" onclick="searchFood('protein shake')">Protein shake</button>
   </div>
+  <!-- ── FUEL PLAN — real meals + priced shopping, built around training, goal & budget ── -->
+  <div class="card" id="fuel-plan-card" style="margin-bottom:12px;background:linear-gradient(135deg,var(--go-bg),transparent);border:1px solid var(--go-bd)">
+    <div style="display:flex;align-items:flex-start;gap:11px">
+      <div style="font-size:22px;line-height:1.1">🍽️</div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:600;color:var(--tx);margin-bottom:3px">Your fuel plan</div>
+        <div style="font-size:12px;color:var(--tx2);line-height:1.55;margin-bottom:10px">Real meals and a priced shopping list, built around your training times, your goal, and your budget — timed so you're fuelled for every session. A PT in your pocket.</div>
+        <div id="fuel-plan-summary"></div>
+        <button class="btn primary" id="fuel-plan-btn" style="font-size:13px;padding:11px" onclick="openFuelPlan()">Build my fuel plan</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Migration card: make it effortless for MyFitnessPal/Cronometer/etc users to bring history in -->
   <div id="nut-migrate-card" class="card" style="margin-bottom:12px;display:none;background:linear-gradient(135deg,var(--go-bg),transparent);border:1px solid var(--go-bd)">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
@@ -15496,6 +15509,123 @@ function _currentWeekStamp(d){
   return dt.getFullYear()+'-W'+week;
 }
 function _saveCalEvents(list){ ls('totry_cal_events', list.slice(0,300)); if(typeof syncToCloud==='function') syncToCloud(); }
+
+// ════ FUEL PLAN — whole-life meal planning + PT carb-timing ════
+// The integration moat in food form: plans real, priced meals around the person's actual
+// training, goal and budget. Reuses getLifeState/goals/userSex — never re-asks what we know.
+function _fuelCtx(){
+  const sex = (typeof userSex==='function' && userSex()) || 'male';
+  const goals = ls('totry_nut_goals') || (typeof defaultNutGoals==='function' ? defaultNutGoals() : {cal:2100, pro:170});
+  const tdee = ls('totry_tdee_data') || {};
+  let goalDir = 'maintain', goalLabel = 'maintaining';
+  if(tdee.goal === 'lose'){ goalDir='cut'; goalLabel='leaning down'; }
+  else if(tdee.goal === 'gain'){ goalDir='build'; goalLabel='building'; }
+  else { const gi = ls('totry_goal_intent'); if(gi==='cut'){ goalDir='cut'; goalLabel='leaning down'; } else if(gi==='build'){ goalDir='build'; goalLabel='building'; } }
+  return { sex, cal: goals.cal||2100, pro: goals.pro||150, goalDir, goalLabel };
+}
+function getMealPrefs(){ return ls('totry_meal_prefs') || {}; }
+function saveMealPrefs(p){ ls('totry_meal_prefs', p); if(typeof syncToCloud==='function') syncToCloud(); }
+function getPreworkoutLead(){ const v = ls('totry_preworkout_lead'); return (typeof v==='number' && v>0) ? v : 75; }
+
+function renderFuelPlanCard(){
+  const sum = document.getElementById('fuel-plan-summary');
+  const btn = document.getElementById('fuel-plan-btn');
+  if(!sum || !btn) return;
+  const p = getMealPrefs();
+  if(p && p.mealsPerDay){
+    const bits = [p.mealsPerDay+' meals/day'];
+    if(p.budget) bits.push('$'+p.budget+'/wk');
+    if(p.chain) bits.push(p.chain);
+    sum.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx3);margin-bottom:10px">Set up · '+bits.join(' · ')+'</div>';
+    btn.textContent = 'Update my fuel plan';
+  } else {
+    sum.innerHTML = '';
+    btn.textContent = 'Build my fuel plan';
+  }
+}
+
+function openFuelPlan(){
+  if(typeof haptic==='function') haptic('tap');
+  _fuelElicit();
+}
+
+// Small chip helpers (no rebuild — toggle DOM state directly so inputs never reset).
+function _fuelChipOn(el){ el.classList.add('on'); el.style.borderColor='var(--go-bd)'; el.style.background='var(--go-bg)'; el.style.color='var(--go)'; }
+function _fuelChipOff(el){ el.classList.remove('on'); el.style.borderColor='var(--bd)'; el.style.background='transparent'; el.style.color='var(--tx2)'; }
+function _fuelSetMeals(el){ document.querySelectorAll('#fuel-meals-row .fuel-chip').forEach(_fuelChipOff); _fuelChipOn(el); }
+function _fuelToggleDiet(el){ if(el.classList.contains('on')) _fuelChipOff(el); else _fuelChipOn(el); }
+function _fuelToggleSupp(el){ const on = el.getAttribute('data-on')==='1'; el.setAttribute('data-on', on?'0':'1'); el.textContent = on?'No':'Yes'; if(on) _fuelChipOff(el); else _fuelChipOn(el); }
+
+function _fuelElicit(){
+  const ctx = _fuelCtx();
+  const p = getMealPrefs();
+  const dietChips = ['Vegetarian','Vegan','Halal','Kosher','Dairy-free','Gluten-free','Nut-free','Pescatarian'];
+  const savedDiet = Array.isArray(p.diet) ? p.diet : [];
+  const mealsSel = p.mealsPerDay || 4;
+  const suppOn = p.includeSupps !== false;
+  const chipStyle = 'padding:7px 12px;border-radius:100px;border:1px solid var(--bd);background:transparent;color:var(--tx2);font-size:12px;cursor:pointer';
+  const meals = [3,4,5].map(n =>
+    '<button type="button" class="fuel-chip'+(mealsSel===n?' on':'')+'" data-n="'+n+'" onclick="_fuelSetMeals(this)" style="'+chipStyle+(mealsSel===n?';border-color:var(--go-bd);background:var(--go-bg);color:var(--go)':'')+'">'+n+' meals</button>'
+  ).join('');
+  const diets = dietChips.map(d => {
+    const on = savedDiet.indexOf(d) >= 0;
+    return '<button type="button" class="fuel-chip'+(on?' on':'')+'" data-diet="'+d+'" onclick="_fuelToggleDiet(this)" style="'+chipStyle+(on?';border-color:var(--go-bd);background:var(--go-bg);color:var(--go)':'')+'">'+d+'</button>';
+  }).join('');
+  const m = document.createElement('div');
+  m.className='modal-bg open'; m.id='fuel-elicit-modal'; m.style.alignItems='flex-end';
+  m.innerHTML = '<div class="modal" style="text-align:left;max-height:88vh;overflow-y:auto">'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">Let’s build your fuel plan</div>'+
+    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:16px">Around your real life — not a generic diet. I already know you’re <b style="color:var(--tx)">'+ctx.goalLabel+'</b> at about <b style="color:var(--tx)">'+ctx.cal+' cal</b> and <b style="color:var(--tx)">'+ctx.pro+'g protein</b>, so I’ll plan around that. A few quick things:</div>'+
+    '<div class="eyebrow" style="margin-bottom:6px">Weekly grocery budget</div>'+
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px"><span style="font-size:16px;color:var(--tx2)">$</span><input type="number" id="fuel-budget" inputmode="numeric" placeholder="e.g. 120" value="'+(p.budget||'')+'" style="flex:1"></div>'+
+    '<div class="eyebrow" style="margin-bottom:6px">Meals per day</div>'+
+    '<div style="display:flex;gap:8px;margin-bottom:16px" id="fuel-meals-row">'+meals+'</div>'+
+    '<div class="eyebrow" style="margin-bottom:6px">Anything to work around?</div>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px" id="fuel-diet-row">'+diets+'</div>'+
+    '<input type="text" id="fuel-diet-free" placeholder="Allergies, foods you hate, anything else..." value="'+String(p.restrictions||'').replace(/"/g,'&quot;')+'" style="width:100%;margin-bottom:16px">'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:12px"><div><div style="font-size:13px;color:var(--tx);font-weight:500">Include supplements?</div><div style="font-size:11px;color:var(--tx3);line-height:1.4">Only real, evidence-backed, food-first. Optional.</div></div><button type="button" id="fuel-supp-toggle" data-on="'+(suppOn?'1':'0')+'" class="fuel-chip'+(suppOn?' on':'')+'" onclick="_fuelToggleSupp(this)" style="'+chipStyle+(suppOn?';border-color:var(--go-bd);background:var(--go-bg);color:var(--go)':'')+'">'+(suppOn?'Yes':'No')+'</button></div>'+
+    '<button class="btn primary" onclick="_fuelElicitSave()">Next: pick my shop →</button>'+
+    '<button class="btn" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:6px" onclick="closeModal(this)">Maybe later</button>'+
+    '</div>';
+  document.body.appendChild(m);
+}
+
+function _fuelElicitSave(){
+  const budget = parseFloat((document.getElementById('fuel-budget')||{}).value) || 0;
+  const mealsEl = document.querySelector('#fuel-meals-row .fuel-chip.on');
+  const mealsPerDay = mealsEl ? parseInt(mealsEl.getAttribute('data-n'),10) : 4;
+  const diet = Array.prototype.slice.call(document.querySelectorAll('#fuel-diet-row .fuel-chip.on')).map(function(b){ return b.getAttribute('data-diet'); });
+  const restrictions = ((document.getElementById('fuel-diet-free')||{}).value || '').trim();
+  const suppEl = document.getElementById('fuel-supp-toggle');
+  const includeSupps = suppEl ? suppEl.getAttribute('data-on')==='1' : true;
+  window._fuelPendingVals = { budget:budget, mealsPerDay:mealsPerDay, diet:diet, restrictions:restrictions, includeSupps:includeSupps };
+  // ED / restriction off-ramp: gentle language flags or an aggressively low cut target.
+  const ctx = _fuelCtx();
+  const redFlags = /(fast(ing)?\b|starv|skip meals|barely eat|hardly eat|900 cal|1000 cal|as few calories|purg|not eat(ing)?|hate my body|crash diet|lose weight fast)/i;
+  const tooLow = ctx.goalDir==='cut' && ctx.cal < (ctx.sex==='female' ? 1300 : 1500);
+  if(redFlags.test(restrictions) || tooLow){ _fuelSafetyModal(); return; }
+  _fuelFinishSave(window._fuelPendingVals);
+}
+
+function _fuelFinishSave(vals){
+  const prefs = Object.assign(getMealPrefs(), vals);
+  saveMealPrefs(prefs);
+  const m = document.getElementById('fuel-elicit-modal'); if(m) m.remove();
+  if(typeof haptic==='function') haptic('success');
+  if(typeof showToast==='function') showToast('Got it', 'Next: your country and supermarket, so the prices are real.');
+  renderFuelPlanCard();
+}
+
+function _fuelSafetyModal(){
+  const m = document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML = '<div class="modal" style="text-align:left">'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);margin-bottom:10px">Let’s keep this about fuelling you</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:16px">A plan should build the person you’re becoming, not shrink you. I’ll keep your calories in a healthy range and never push a crash. If food or your body has felt heavy lately, talking to a real person is strength — not failure.</div>'+
+    '<button class="btn primary" onclick="closeModal(this);_fuelFinishSave(window._fuelPendingVals)">Build me a healthy plan</button>'+
+    '<button class="btn" style="background:none;border:1px solid var(--bd);color:var(--tx2);margin-top:8px" onclick="closeModal(this);if(typeof bridgeToRealHelp===\'function\')bridgeToRealHelp(\'heavy\')">Point me to real help</button>'+
+    '</div>';
+  document.body.appendChild(m);
+}
 
 async function parseCalendarAI(){
   const input = document.getElementById('cal-ai-input');
