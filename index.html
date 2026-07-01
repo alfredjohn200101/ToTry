@@ -15564,7 +15564,7 @@ function _fuelToggleSupp(el){ const on = el.getAttribute('data-on')==='1'; el.se
 function _fuelElicit(){
   const ctx = _fuelCtx();
   const p = getMealPrefs();
-  const dietChips = ['Vegetarian','Vegan','Halal','Kosher','Dairy-free','Gluten-free','Nut-free','Pescatarian'];
+  const dietChips = ['Vegetarian','Vegan','Pescatarian','Halal','Kosher','No beef','No pork','Dairy-free','Gluten-free','Nut-free'];
   const savedDiet = Array.isArray(p.diet) ? p.diet : [];
   const mealsSel = p.mealsPerDay || 4;
   const suppOn = p.includeSupps !== false;
@@ -15674,15 +15674,19 @@ async function _fuelGenerate(){
   let cal = ctx.cal;
   const floor = ctx.sex==='female' ? 1300 : 1500;
   if(ctx.goalDir==='cut' && cal < floor) cal = floor; // never plan a crash
-  const gym = (ls('totry_cal_events')||[]).filter(function(e){ return e && e.type==='gym'; });
   const dn = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const gym = (ls('totry_cal_events')||[]).filter(function(e){ return e && e.type==='gym'; });
   const trainingDays = gym.length ? Array.from(new Set(gym.map(function(e){ return dn[e.day]; }))).join(', ') : '';
+  const lead = getPreworkoutLead();
+  const preworkout = _fuelComputePreworkout(lead); // concrete pre-gym meal times from their real schedule
   const load = document.createElement('div'); load.className='modal-bg open'; load.id='fuel-loading'; load.style.alignItems='center';
   load.innerHTML = '<div class="modal" style="text-align:center"><div style="font-size:26px;margin-bottom:10px">🍽️</div><div style="font-family:Cormorant Garamond,serif;font-size:20px;color:var(--tx);margin-bottom:6px">Building your plan…</div><div style="font-size:12px;color:var(--tx3);line-height:1.6">Checking real prices at '+_esc(p.chain||'your shop')+' and fitting your targets, budget and training.</div></div>';
   document.body.appendChild(load);
   let brief=''; try{ if(typeof getLifeState==='function') brief = getLifeState().brief || ''; }catch(_){ brief=''; }
   const sys = "You are a registered-dietitian-level meal planner in a faith-rooted whole-life app. You are honest, evidence-based and non-partial: food-first, never push brands or supplements, cite where prices came from, and separate general guidance from individual advice. Build realistic, affordable plans from REAL products at the named supermarket, using web search for CURRENT prices. Return ONLY valid JSON, no prose.";
-  const prompt = "Build a realistic "+(p.mealsPerDay||4)+"-meal day for one person, plus a weekly shopping list, for "+p.chain+" in "+(p.country||'Australia')+". Context: "+brief+". Daily targets ~"+cal+" kcal and "+ctx.pro+"g protein (goal: "+ctx.goalDir+"). Weekly grocery budget ~$"+(p.budget||0)+". Dietary: "+((p.diet&&p.diet.length)?p.diet.join(', '):'no restrictions')+(p.restrictions?('; '+p.restrictions):'')+". "+((p.includeSupps!==false)?"May include 1-2 evidence-backed supermarket supplements (creatine, whey, electrolytes), optional and food-first.":"No supplements.")+" "+(trainingDays?("Their training days are "+trainingDays+"; in carbNote, coach how to add carbs around training."):"In carbNote, coach carb timing generally.")+" Use typical current "+p.chain+" prices (estimates, to confirm in-store). Keep 'items' and 'why' SHORT (one line each). Return ONLY compact JSON, no prose: {\"meals\":[{\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"why\":\"\"}],\"carbNote\":\"\",\"shopping\":[{\"item\":\"\",\"price\":0}],\"total\":0,\"note\":\"\"}. Each \"why\" ties the meal to their goal. \"note\" says prices are estimates and the science is general.";
+  const dietStr = (p.diet&&p.diet.length)?p.diet.join(', '):'no specific diet';
+  const timingStr = preworkout.length ? ('Their gym sessions and pre-gym meal deadlines: '+preworkout.map(function(x){return x.day+' gym '+x.sessionStart+' (finish the pre-gym meal by '+x.eatBy+')';}).join('; ')+'.') : '';
+  const prompt = "Build a realistic "+(p.mealsPerDay||4)+"-meal day for one person, plus a weekly shopping list, for "+p.chain+" in "+(p.country||'Australia')+". Context: "+brief+". Daily targets ~"+cal+" kcal and "+ctx.pro+"g protein (goal: "+ctx.goalDir+"). Weekly grocery budget ~$"+(p.budget||0)+". STRICTLY respect these dietary requirements and NEVER include any forbidden food (e.g. if vegan, no animal products; if 'no beef', no beef anywhere): "+dietStr+(p.restrictions?('; '+p.restrictions):'')+". "+((p.includeSupps!==false)?"May include 1-2 evidence-backed supermarket supplements (creatine, whey, electrolytes), optional and food-first.":"No supplements.")+" Give FULL macros per meal: cal, protein, carbs, fat. The DAY must also cover MICRONUTRIENTS — enough fibre, iron, calcium, healthy fats/omega-3, potassium, and a real range of vegetables and fruit; summarise this in 'microNote' with rough fibre grams. "+(preworkout.length?("Time carbohydrate around training. "+timingStr+" In 'carbNote', say what to eat before training referencing those times."):"In 'carbNote', explain carb timing generally and note that adding their training schedule unlocks exact meal times.")+" Use typical current "+p.chain+" prices (estimates, to confirm in-store). Keep 'items' and 'why' SHORT. Return ONLY compact JSON, no prose: {\"meals\":[{\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"carbs\":0,\"fat\":0,\"why\":\"\"}],\"microNote\":\"\",\"carbNote\":\"\",\"shopping\":[{\"item\":\"\",\"price\":0}],\"total\":0,\"note\":\"\"}. Each \"why\" ties the meal to their goal. \"note\" says prices are estimates and the science is general.";
   const parsePlan = function(t){ try{
     let c=(t||'').replace(/```json|```/g,'').trim();
     c = c.slice(c.indexOf('{'), c.lastIndexOf('}')+1);
@@ -15697,7 +15701,7 @@ async function _fuelGenerate(){
   if(plan) plan._estimated = true;
   const lm = document.getElementById('fuel-loading'); if(lm) lm.remove();
   if(!plan || !plan.meals){ if(typeof showToast==='function') showToast('Hmm', 'Couldn’t build it just now — try again in a moment.'); return; }
-  plan.generatedAt = Date.now(); plan.targets = { cal:cal, pro:ctx.pro }; plan.budget = p.budget||0;
+  plan.generatedAt = Date.now(); plan.targets = { cal:cal, pro:ctx.pro }; plan.budget = p.budget||0; plan.preworkout = preworkout; plan.lead = lead;
   ls('totry_meal_plan', plan); if(typeof syncToCloud==='function') syncToCloud();
   if(typeof haptic==='function') haptic('success');
   renderFuelPlanCard();
@@ -15706,18 +15710,58 @@ async function _fuelGenerate(){
 
 function _fuelViewPlan(){ const plan = ls('totry_meal_plan'); if(plan && plan.meals) _fuelRenderPlan(plan); else openFuelPlan(); }
 
+// Concrete pre-gym meal times from the person's REAL scheduled gym events + their personal lead.
+function _fuelComputePreworkout(lead){
+  const dn=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const gym=(ls('totry_cal_events')||[]).filter(function(e){ return e && e.type==='gym' && e.start; });
+  const fmt=function(H,M){ const ap=H<12?'am':'pm'; let hr=H%12; if(hr===0)hr=12; return hr+(M?(':'+String(M).padStart(2,'0')):'')+ap; };
+  return gym.map(function(e){
+    const parts=(e.start||'18:00').split(':'); const h=parseInt(parts[0],10)||18, mn=parseInt(parts[1],10)||0;
+    let total=h*60+mn-(lead||75); if(total<0) total+=1440;
+    return { day:dn[e.day], sessionStart:fmt(h,mn), eatBy:fmt(Math.floor(total/60), total%60) };
+  });
+}
+// "Find your number" — adjust the personal pre-workout lead and re-time everything from the real schedule.
+function _fuelSetLead(delta){
+  let lead = getPreworkoutLead() + delta;
+  if(lead<15) lead=15; if(lead>240) lead=240;
+  ls('totry_preworkout_lead', lead); if(typeof syncToCloud==='function') syncToCloud();
+  const plan = ls('totry_meal_plan');
+  if(plan){ plan.preworkout = _fuelComputePreworkout(lead); plan.lead=lead; ls('totry_meal_plan', plan); }
+  const m=document.getElementById('fuel-plan-modal'); if(m) m.remove();
+  if(plan) _fuelRenderPlan(plan);
+}
+
 function _fuelRenderPlan(plan){
   const p = getMealPrefs();
-  const money = function(v){ return '$'+(Math.round((v||0)*100)/100).toFixed(2); };
+  const R = Math.round;
+  const money = function(v){ return '$'+(R((v||0)*100)/100).toFixed(2); };
   const mealsHtml = (plan.meals||[]).map(function(mm){
     return '<div style="padding:10px 0;border-top:1px solid var(--bd)">'+
-      '<div style="display:flex;justify-content:space-between;gap:8px"><div style="font-size:13px;font-weight:600;color:var(--tx)">'+_esc(mm.name||'Meal')+'</div><div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx3);white-space:nowrap">'+Math.round(mm.cal||0)+' cal · '+Math.round(mm.pro||0)+'p</div></div>'+
+      '<div style="display:flex;justify-content:space-between;gap:8px"><div style="font-size:13px;font-weight:600;color:var(--tx)">'+_esc(mm.name||'Meal')+'</div><div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx3);white-space:nowrap">'+R(mm.cal||0)+' cal · '+R(mm.pro||0)+'p · '+R(mm.carbs||0)+'c · '+R(mm.fat||0)+'f</div></div>'+
       '<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-top:3px">'+_esc(mm.items||'')+'</div>'+
       (mm.why?'<div style="font-size:11.5px;color:var(--go);line-height:1.5;margin-top:5px;font-style:italic">'+_esc(mm.why)+'</div>':'')+
     '</div>';
   }).join('');
-  const dayCal = (plan.meals||[]).reduce(function(a,mm){ return a+(mm.cal||0); },0);
-  const dayPro = (plan.meals||[]).reduce(function(a,mm){ return a+(mm.pro||0); },0);
+  const sum = function(k){ return (plan.meals||[]).reduce(function(a,mm){ return a+(mm[k]||0); },0); };
+  const dayCal=sum('cal'), dayPro=sum('pro'), dayCarbs=sum('carbs'), dayFat=sum('fat');
+  const macroRow = '<div style="display:flex;justify-content:space-between;margin-top:12px;padding:9px 12px;background:var(--bg3);border-radius:8px;font-family:\'DM Mono\',monospace;font-size:10.5px;color:var(--tx2)"><span>'+R(dayCal)+' cal</span><span style="color:var(--gr)">'+R(dayPro)+'g P</span><span style="color:var(--bl)">'+R(dayCarbs)+'g C</span><span style="color:var(--go)">'+R(dayFat)+'g F</span></div>';
+  const microHtml = plan.microNote ? '<div style="font-size:11.5px;color:var(--tx2);line-height:1.6;margin-top:10px"><span style="color:var(--gr);font-weight:600">Micronutrients · </span>'+_esc(plan.microNote)+'</div>' : '';
+  let timingHtml='';
+  if(plan.preworkout && plan.preworkout.length){
+    const rows = plan.preworkout.map(function(x){ return '<div style="display:flex;justify-content:space-between;font-size:12.5px;padding:4px 0"><div style="color:var(--tx2)">'+_esc(x.day)+' · gym '+_esc(x.sessionStart)+'</div><div style="color:var(--go);font-family:\'DM Mono\',monospace">eat by '+_esc(x.eatBy)+'</div></div>'; }).join('');
+    timingHtml='<div style="background:var(--bg3);border:1px solid var(--go-bd);border-radius:10px;padding:12px;margin-top:14px">'+
+      '<div class="eyebrow" style="color:var(--go);margin-bottom:6px">Fuel around your training</div>'+rows+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);gap:10px"><div style="font-size:11px;color:var(--tx3);line-height:1.4">Pre-workout meal: '+(plan.lead||getPreworkoutLead())+' min before<br>find your number — adjust by feel</div><div style="display:flex;gap:6px"><button onclick="_fuelSetLead(-15)" style="width:30px;height:30px;border-radius:8px;border:1px solid var(--bd);background:var(--bg2);color:var(--tx2);font-size:16px;cursor:pointer">−</button><button onclick="_fuelSetLead(15)" style="width:30px;height:30px;border-radius:8px;border:1px solid var(--bd);background:var(--bg2);color:var(--tx2);font-size:16px;cursor:pointer">+</button></div></div>'+
+      (plan.carbNote?'<div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-top:8px">'+_esc(plan.carbNote)+'</div>':'')+
+    '</div>';
+  } else {
+    timingHtml='<div style="background:var(--bg3);border:1px solid var(--go-bd);border-radius:10px;padding:12px;margin-top:14px">'+
+      '<div class="eyebrow" style="color:var(--go);margin-bottom:6px">Fuel around your training</div>'+
+      '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:10px">Add your training times and I’ll tell you exactly when to eat before each session — real times, not generic advice.</div>'+
+      '<button class="btn" style="width:100%;background:var(--bg2);border:1px solid var(--go-bd);color:var(--go);font-size:12.5px;padding:10px" onclick="closeModal(this);if(typeof go===\'function\')go(\'calendar\')">Add my schedule →</button>'+
+    '</div>';
+  }
   const shopHtml = (plan.shopping||[]).map(function(s){
     return '<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;font-size:12.5px"><div style="color:var(--tx2)">'+_esc(s.item||'')+'</div><div style="font-family:\'DM Mono\',monospace;color:var(--tx);white-space:nowrap">'+money(s.price)+'</div></div>';
   }).join('');
@@ -15726,10 +15770,9 @@ function _fuelRenderPlan(plan){
   const m = document.createElement('div'); m.className='modal-bg open'; m.id='fuel-plan-modal'; m.style.alignItems='flex-end';
   m.innerHTML = '<div class="modal" style="text-align:left;max-height:90vh;overflow-y:auto">'+
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx)">Your fuel plan</div><button onclick="closeModal(this)" style="background:none;border:none;color:var(--tx3);font-size:20px;cursor:pointer">×</button></div>'+
-    '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">A day: ~'+Math.round(dayCal)+' cal · '+Math.round(dayPro)+'g protein · '+_esc(p.chain||'')+'</div>'+
+    '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">A day around '+R(dayCal)+' cal · '+_esc(p.chain||'')+'</div>'+
     '<div class="eyebrow" style="color:var(--go);margin-bottom:2px">A day of meals</div>'+
-    mealsHtml+
-    (plan.carbNote?'<div style="background:var(--bg3);border:1px solid var(--go-bd);border-radius:10px;padding:12px;margin-top:14px"><div class="eyebrow" style="color:var(--go);margin-bottom:5px">Fuel around training</div><div style="font-size:12.5px;color:var(--tx2);line-height:1.6">'+_esc(plan.carbNote)+'</div></div>':'')+
+    mealsHtml+ macroRow+ microHtml+ timingHtml+
     '<div class="eyebrow" style="margin:16px 0 4px">Weekly shopping list</div>'+shopHtml+
     '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);font-size:13px"><div style="color:var(--tx);font-weight:600">Weekly total</div><div style="font-family:\'DM Mono\',monospace;color:'+(overBudget?'var(--re)':'var(--gr)')+'">'+money(total)+(budget?(' / $'+budget):'')+'</div></div>'+
     (overBudget?'<div style="font-size:11.5px;color:var(--re);margin-top:6px;line-height:1.5">A bit over budget — tap Regenerate for a leaner version, or nudge your budget up.</div>':'')+
