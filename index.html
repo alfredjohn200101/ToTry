@@ -15680,13 +15680,19 @@ async function _fuelGenerate(){
   const load = document.createElement('div'); load.className='modal-bg open'; load.id='fuel-loading'; load.style.alignItems='center';
   load.innerHTML = '<div class="modal" style="text-align:center"><div style="font-size:26px;margin-bottom:10px">🍽️</div><div style="font-family:Cormorant Garamond,serif;font-size:20px;color:var(--tx);margin-bottom:6px">Building your plan…</div><div style="font-size:12px;color:var(--tx3);line-height:1.6">Checking real prices at '+_esc(p.chain||'your shop')+' and fitting your targets, budget and training.</div></div>';
   document.body.appendChild(load);
-  const brief = (typeof lifeStateBrief==='function') ? lifeStateBrief() : '';
+  let brief=''; try{ if(typeof getLifeState==='function') brief = getLifeState().brief || ''; }catch(_){ brief=''; }
   const sys = "You are a registered-dietitian-level meal planner in a faith-rooted whole-life app. You are honest, evidence-based and non-partial: food-first, never push brands or supplements, cite where prices came from, and separate general guidance from individual advice. Build realistic, affordable plans from REAL products at the named supermarket, using web search for CURRENT prices. Return ONLY valid JSON, no prose.";
   const prompt = "Build a realistic "+(p.mealsPerDay||4)+"-meal day for one person, plus a weekly shopping list, for "+p.chain+" in "+(p.country||'Australia')+". Context: "+brief+". Daily targets ~"+cal+" kcal and "+ctx.pro+"g protein (goal: "+ctx.goalDir+"). Weekly grocery budget ~$"+(p.budget||0)+". Dietary: "+((p.diet&&p.diet.length)?p.diet.join(', '):'no restrictions')+(p.restrictions?('; '+p.restrictions):'')+". "+((p.includeSupps!==false)?"May include 1-2 evidence-backed supermarket supplements (creatine, whey, electrolytes), optional and food-first.":"No supplements.")+" "+(trainingDays?("Their training days are "+trainingDays+"; in carbNote, coach how to add carbs around training."):"In carbNote, coach carb timing generally.")+" Use typical current "+p.chain+" prices (estimates, to confirm in-store). Keep 'items' and 'why' SHORT (one line each). Return ONLY compact JSON, no prose: {\"meals\":[{\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"why\":\"\"}],\"carbNote\":\"\",\"shopping\":[{\"item\":\"\",\"price\":0}],\"total\":0,\"note\":\"\"}. Each \"why\" ties the meal to their goal. \"note\" says prices are estimates and the science is general.";
-  const parsePlan = function(t){ try{ const c=(t||'').replace(/```json|```/g,'').trim(); return JSON.parse(c.slice(c.indexOf('{'), c.lastIndexOf('}')+1)); }catch(_){ return null; } };
+  const parsePlan = function(t){ try{
+    let c=(t||'').replace(/```json|```/g,'').trim();
+    c = c.slice(c.indexOf('{'), c.lastIndexOf('}')+1);
+    // Repair common free-model JSON glitches: object separators emitted as "}={" or "}{" instead of "},{".
+    c = c.replace(/}\s*=\s*{/g, '},{').replace(/}\s*{/g, '},{').replace(/,\s*([}\]])/g, '$1');
+    return JSON.parse(c);
+  }catch(_){ return null; } };
   // Fast + reliable: build the plan from the model's knowledge (prices as estimates). Live pricing
   // (a focused web-search pass on just the shopping list) is a follow-up so generation stays quick.
-  let txt=''; try{ txt = await api(sys, [], prompt, 1800, { timeout:50000 }); }catch(e){ txt=''; }
+  let txt=''; try{ txt = await api(sys, [], prompt, 1800, { timeout:35000 }); }catch(e){ txt=''; }
   let plan = parsePlan(txt);
   if(plan) plan._estimated = true;
   const lm = document.getElementById('fuel-loading'); if(lm) lm.remove();
