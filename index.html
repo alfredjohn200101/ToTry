@@ -15532,7 +15532,12 @@ function renderFuelPlanCard(){
   const btn = document.getElementById('fuel-plan-btn');
   if(!sum || !btn) return;
   const p = getMealPrefs();
-  if(p && p.mealsPerDay){
+  const plan = ls('totry_meal_plan');
+  if(plan && plan.meals){
+    sum.innerHTML = '<button class="btn" style="width:100%;margin-bottom:8px;background:var(--bg3);border:1px solid var(--go-bd);color:var(--go);font-size:13px;padding:11px" onclick="_fuelViewPlan()">View my plan →</button>';
+    btn.textContent = 'Rebuild my plan';
+    btn.style.background='transparent'; btn.style.border='1px solid var(--bd)'; btn.style.color='var(--tx2)';
+  } else if(p && p.mealsPerDay){
     const bits = [p.mealsPerDay+' meals/day'];
     if(p.budget) bits.push('$'+p.budget+'/wk');
     if(p.chain) bits.push(p.chain);
@@ -15611,9 +15616,9 @@ function _fuelFinishSave(vals){
   const prefs = Object.assign(getMealPrefs(), vals);
   saveMealPrefs(prefs);
   const m = document.getElementById('fuel-elicit-modal'); if(m) m.remove();
-  if(typeof haptic==='function') haptic('success');
-  if(typeof showToast==='function') showToast('Got it', 'Next: your country and supermarket, so the prices are real.');
+  if(typeof haptic==='function') haptic('tap');
   renderFuelPlanCard();
+  _fuelShopPicker();
 }
 
 function _fuelSafetyModal(){
@@ -15623,6 +15628,108 @@ function _fuelSafetyModal(){
     '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:16px">A plan should build the person you’re becoming, not shrink you. I’ll keep your calories in a healthy range and never push a crash. If food or your body has felt heavy lately, talking to a real person is strength — not failure.</div>'+
     '<button class="btn primary" onclick="closeModal(this);_fuelFinishSave(window._fuelPendingVals)">Build me a healthy plan</button>'+
     '<button class="btn" style="background:none;border:1px solid var(--bd);color:var(--tx2);margin-top:8px" onclick="closeModal(this);if(typeof bridgeToRealHelp===\'function\')bridgeToRealHelp(\'heavy\')">Point me to real help</button>'+
+    '</div>';
+  document.body.appendChild(m);
+}
+
+function _esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function _fuelSetChain(name){ const el=document.getElementById('fuel-chain'); if(el) el.value=name; }
+
+function _fuelShopPicker(){
+  const p = getMealPrefs();
+  const country = p.country || 'Australia';
+  const chain = p.chain || '';
+  const auChains = ['Woolworths','Coles','Aldi','IGA'];
+  const chipStyle = 'padding:7px 12px;border-radius:100px;border:1px solid var(--bd);background:transparent;color:var(--tx2);font-size:12px;cursor:pointer';
+  const chips = auChains.map(function(c){ return '<button type="button" onclick="_fuelSetChain(\''+c+'\')" style="'+chipStyle+'">'+c+'</button>'; }).join('');
+  const m = document.createElement('div');
+  m.className='modal-bg open'; m.id='fuel-shop-modal'; m.style.alignItems='flex-end';
+  m.innerHTML = '<div class="modal" style="text-align:left">'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">Where do you shop?</div>'+
+    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:16px">So the plan uses real products at real prices — not made-up numbers.</div>'+
+    '<div class="eyebrow" style="margin-bottom:6px">Country</div>'+
+    '<input type="text" id="fuel-country" value="'+String(country).replace(/"/g,'&quot;')+'" style="width:100%;margin-bottom:16px">'+
+    '<div class="eyebrow" style="margin-bottom:6px">Your main supermarket</div>'+
+    '<input type="text" id="fuel-chain" placeholder="e.g. Woolworths, Tesco, Walmart..." value="'+String(chain).replace(/"/g,'&quot;')+'" style="width:100%;margin-bottom:8px">'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px">'+chips+'</div>'+
+    '<button class="btn primary" onclick="_fuelShopGenerate()">Build my plan →</button>'+
+    '<button class="btn" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:6px" onclick="closeModal(this)">Later</button>'+
+    '</div>';
+  document.body.appendChild(m);
+}
+
+function _fuelShopGenerate(){
+  const country = ((document.getElementById('fuel-country')||{}).value || 'Australia').trim();
+  const chain = ((document.getElementById('fuel-chain')||{}).value || '').trim();
+  if(!chain){ if(typeof showToast==='function') showToast('One thing', 'Type your supermarket so the prices are real.'); return; }
+  saveMealPrefs(Object.assign(getMealPrefs(), { country:country, chain:chain }));
+  const m = document.getElementById('fuel-shop-modal'); if(m) m.remove();
+  renderFuelPlanCard();
+  _fuelGenerate();
+}
+
+async function _fuelGenerate(){
+  const p = getMealPrefs();
+  const ctx = _fuelCtx();
+  let cal = ctx.cal;
+  const floor = ctx.sex==='female' ? 1300 : 1500;
+  if(ctx.goalDir==='cut' && cal < floor) cal = floor; // never plan a crash
+  const gym = (ls('totry_cal_events')||[]).filter(function(e){ return e && e.type==='gym'; });
+  const dn = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const trainingDays = gym.length ? Array.from(new Set(gym.map(function(e){ return dn[e.day]; }))).join(', ') : '';
+  const load = document.createElement('div'); load.className='modal-bg open'; load.id='fuel-loading'; load.style.alignItems='center';
+  load.innerHTML = '<div class="modal" style="text-align:center"><div style="font-size:26px;margin-bottom:10px">🍽️</div><div style="font-family:Cormorant Garamond,serif;font-size:20px;color:var(--tx);margin-bottom:6px">Building your plan…</div><div style="font-size:12px;color:var(--tx3);line-height:1.6">Checking real prices at '+_esc(p.chain||'your shop')+' and fitting your targets, budget and training.</div></div>';
+  document.body.appendChild(load);
+  const brief = (typeof lifeStateBrief==='function') ? lifeStateBrief() : '';
+  const sys = "You are a registered-dietitian-level meal planner in a faith-rooted whole-life app. You are honest, evidence-based and non-partial: food-first, never push brands or supplements, cite where prices came from, and separate general guidance from individual advice. Build realistic, affordable plans from REAL products at the named supermarket, using web search for CURRENT prices. Return ONLY valid JSON, no prose.";
+  const prompt = "Build a realistic "+(p.mealsPerDay||4)+"-meal day for one person, plus a weekly shopping list, for "+p.chain+" in "+(p.country||'Australia')+". Context: "+brief+". Daily targets ~"+cal+" kcal and "+ctx.pro+"g protein (goal: "+ctx.goalDir+"). Weekly grocery budget ~$"+(p.budget||0)+". Dietary: "+((p.diet&&p.diet.length)?p.diet.join(', '):'no restrictions')+(p.restrictions?('; '+p.restrictions):'')+". "+((p.includeSupps!==false)?"May include 1-2 evidence-backed supermarket supplements (creatine, whey, electrolytes), optional and food-first.":"No supplements.")+" "+(trainingDays?("Their training days are "+trainingDays+"; in carbNote, coach how to add carbs around training."):"In carbNote, coach carb timing generally.")+" Use typical current "+p.chain+" prices (estimates, to confirm in-store). Keep 'items' and 'why' SHORT (one line each). Return ONLY compact JSON, no prose: {\"meals\":[{\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"why\":\"\"}],\"carbNote\":\"\",\"shopping\":[{\"item\":\"\",\"price\":0}],\"total\":0,\"note\":\"\"}. Each \"why\" ties the meal to their goal. \"note\" says prices are estimates and the science is general.";
+  const parsePlan = function(t){ try{ const c=(t||'').replace(/```json|```/g,'').trim(); return JSON.parse(c.slice(c.indexOf('{'), c.lastIndexOf('}')+1)); }catch(_){ return null; } };
+  // Fast + reliable: build the plan from the model's knowledge (prices as estimates). Live pricing
+  // (a focused web-search pass on just the shopping list) is a follow-up so generation stays quick.
+  let txt=''; try{ txt = await api(sys, [], prompt, 1800, { timeout:50000 }); }catch(e){ txt=''; }
+  let plan = parsePlan(txt);
+  if(plan) plan._estimated = true;
+  const lm = document.getElementById('fuel-loading'); if(lm) lm.remove();
+  if(!plan || !plan.meals){ if(typeof showToast==='function') showToast('Hmm', 'Couldn’t build it just now — try again in a moment.'); return; }
+  plan.generatedAt = Date.now(); plan.targets = { cal:cal, pro:ctx.pro }; plan.budget = p.budget||0;
+  ls('totry_meal_plan', plan); if(typeof syncToCloud==='function') syncToCloud();
+  if(typeof haptic==='function') haptic('success');
+  renderFuelPlanCard();
+  _fuelRenderPlan(plan);
+}
+
+function _fuelViewPlan(){ const plan = ls('totry_meal_plan'); if(plan && plan.meals) _fuelRenderPlan(plan); else openFuelPlan(); }
+
+function _fuelRenderPlan(plan){
+  const p = getMealPrefs();
+  const money = function(v){ return '$'+(Math.round((v||0)*100)/100).toFixed(2); };
+  const mealsHtml = (plan.meals||[]).map(function(mm){
+    return '<div style="padding:10px 0;border-top:1px solid var(--bd)">'+
+      '<div style="display:flex;justify-content:space-between;gap:8px"><div style="font-size:13px;font-weight:600;color:var(--tx)">'+_esc(mm.name||'Meal')+'</div><div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx3);white-space:nowrap">'+Math.round(mm.cal||0)+' cal · '+Math.round(mm.pro||0)+'p</div></div>'+
+      '<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-top:3px">'+_esc(mm.items||'')+'</div>'+
+      (mm.why?'<div style="font-size:11.5px;color:var(--go);line-height:1.5;margin-top:5px;font-style:italic">'+_esc(mm.why)+'</div>':'')+
+    '</div>';
+  }).join('');
+  const dayCal = (plan.meals||[]).reduce(function(a,mm){ return a+(mm.cal||0); },0);
+  const dayPro = (plan.meals||[]).reduce(function(a,mm){ return a+(mm.pro||0); },0);
+  const shopHtml = (plan.shopping||[]).map(function(s){
+    return '<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;font-size:12.5px"><div style="color:var(--tx2)">'+_esc(s.item||'')+'</div><div style="font-family:\'DM Mono\',monospace;color:var(--tx);white-space:nowrap">'+money(s.price)+'</div></div>';
+  }).join('');
+  const total = plan.total||0; const budget = plan.budget||p.budget||0;
+  const overBudget = budget>0 && total>budget;
+  const m = document.createElement('div'); m.className='modal-bg open'; m.id='fuel-plan-modal'; m.style.alignItems='flex-end';
+  m.innerHTML = '<div class="modal" style="text-align:left;max-height:90vh;overflow-y:auto">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx)">Your fuel plan</div><button onclick="closeModal(this)" style="background:none;border:none;color:var(--tx3);font-size:20px;cursor:pointer">×</button></div>'+
+    '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">A day: ~'+Math.round(dayCal)+' cal · '+Math.round(dayPro)+'g protein · '+_esc(p.chain||'')+'</div>'+
+    '<div class="eyebrow" style="color:var(--go);margin-bottom:2px">A day of meals</div>'+
+    mealsHtml+
+    (plan.carbNote?'<div style="background:var(--bg3);border:1px solid var(--go-bd);border-radius:10px;padding:12px;margin-top:14px"><div class="eyebrow" style="color:var(--go);margin-bottom:5px">Fuel around training</div><div style="font-size:12.5px;color:var(--tx2);line-height:1.6">'+_esc(plan.carbNote)+'</div></div>':'')+
+    '<div class="eyebrow" style="margin:16px 0 4px">Weekly shopping list</div>'+shopHtml+
+    '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);font-size:13px"><div style="color:var(--tx);font-weight:600">Weekly total</div><div style="font-family:\'DM Mono\',monospace;color:'+(overBudget?'var(--re)':'var(--gr)')+'">'+money(total)+(budget?(' / $'+budget):'')+'</div></div>'+
+    (overBudget?'<div style="font-size:11.5px;color:var(--re);margin-top:6px;line-height:1.5">A bit over budget — tap Regenerate for a leaner version, or nudge your budget up.</div>':'')+
+    (plan._estimated?'<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:10px">Prices are estimates — confirm in-store.</div>':'')+
+    (plan.note?'<div style="font-size:11px;color:var(--tx3);line-height:1.6;margin-top:12px;font-style:italic">'+_esc(plan.note)+'</div>':'')+
+    '<button class="btn primary" style="margin-top:16px" onclick="closeModal(this);_fuelGenerate()">↻ Regenerate</button>'+
     '</div>';
   document.body.appendChild(m);
 }
