@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, ViewStyle, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { Text } from './Text';
-import { colors, radius, space, fontSize, elevation } from './tokens';
+import { colors, radius, space, fontSize, elevation, fonts } from './tokens';
 
 export function Button({
   label,
@@ -51,5 +51,5 @@ const styles = StyleSheet.create({
   },
   sheen: { position: 'absolute', top: 0, left: 0, right: 0, height: 22 },
   ghost: { backgroundColor: 'transparent', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.bd2 },
-  label: { fontFamily: undefined, fontSize: fontSize.callout, fontWeight: '600', letterSpacing: 0.2 },
+  label: { fontFamily: fonts.sansSemi, fontSize: fontSize.callout, letterSpacing: 0.2 },
 });

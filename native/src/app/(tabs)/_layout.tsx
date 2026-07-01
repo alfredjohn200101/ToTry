@@ -2,7 +2,7 @@ import { Tabs } from 'expo-router';
 import { Platform, View, StyleSheet, ColorValue } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { Icon, IconName } from '@/design/Icon';
-import { colors } from '@/design/tokens';
+import { colors, fonts } from '@/design/tokens';
 
 function tab(name: IconName) {
   return ({ color, focused }: { color: ColorValue; focused: boolean }) => (
@@ -15,6 +15,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        sceneStyle: { backgroundColor: colors.bg },
         tabBarActiveTintColor: colors.go,
         tabBarInactiveTintColor: colors.tx3,
         tabBarStyle: {
@@ -31,7 +32,7 @@ export default function TabsLayout() {
             <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(11,10,9,0.55)' }]} />
           </BlurView>
         ),
-        tabBarLabelStyle: { fontSize: 10.5, fontWeight: '500', letterSpacing: 0.2, marginTop: 2 },
+        tabBarLabelStyle: { fontFamily: fonts.sansMed, fontSize: 10.5, letterSpacing: 0.2, marginTop: 2 },
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Today', tabBarIcon: tab('today') }} />

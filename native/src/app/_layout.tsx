@@ -12,6 +12,7 @@ import {
   Cormorant_600SemiBold,
 } from '@expo-google-fonts/cormorant';
 import { DMMono_400Regular, DMMono_500Medium } from '@expo-google-fonts/dm-mono';
+import { DMSans_400Regular, DMSans_500Medium, DMSans_600SemiBold } from '@expo-google-fonts/dm-sans';
 import { colors } from '@/design/tokens';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -23,6 +24,9 @@ export default function RootLayout() {
     Cormorant_600SemiBold,
     DMMono_400Regular,
     DMMono_500Medium,
+    DMSans_400Regular,
+    DMSans_500Medium,
+    DMSans_600SemiBold,
   });
 
   useEffect(() => {
