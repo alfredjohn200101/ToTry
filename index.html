@@ -26036,7 +26036,11 @@ function applyHomeProgressiveDisclosure(){
       { id:'home-weekly-reflection-card', unlock:7 },
       { id:'home-quickwin-wrap',        unlock:3 },
       { id:'home-calendar-card',        unlock:5 },
-      { id:'today-for-you',             unlock:4 }
+      { id:'today-for-you',             unlock:4 },
+      // A new person has no 'last week' — the weekly check-in only shames them. Hold it until a real
+      // week of data exists. And 'today's mission' is premature before any rhythm is established.
+      { id:'weekly-checkin',            unlock:7 },
+      { id:'home-today-mission-wrap',   unlock:3 }
     ];
     gates.forEach(g=>{
       const el = document.getElementById(g.id);
