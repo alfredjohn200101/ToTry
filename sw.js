@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v181-fuel-plan';
+const CACHE = 'totry-v182-plan-grace';
 
 const CORE = [
   './',

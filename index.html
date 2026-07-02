@@ -3939,7 +3939,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v181';
+const APP_VERSION = 'v182';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -15781,6 +15781,8 @@ function _fuelRenderPlan(plan){
   const tgtCal = (plan.targets&&plan.targets.cal)||0, tgtPro = (plan.targets&&plan.targets.pro)||0;
   const calGap = tgtCal ? (dayCal - tgtCal) : 0; const onTarget = tgtCal && Math.abs(calGap) <= tgtCal*0.08;
   const targetHtml = tgtCal ? ('<div style="font-size:11.5px;line-height:1.5;margin-top:6px;color:'+(onTarget?'var(--gr)':'var(--go)')+'">'+(onTarget ? ('On target — ~'+R(dayCal)+' of your '+tgtCal+' cal, '+R(dayPro)+' of '+tgtPro+'g protein.') : (calGap<0 ? ('About '+R(-calGap)+' cal under your '+tgtCal+' target — bump portions a little or add a snack to hit it.') : ('About '+R(calGap)+' cal over your '+tgtCal+' target — trim portions slightly.')))+'</div>') : '';
+  const _td = _fuelToday();
+  const todayHtml = tgtCal ? ('<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:10px 12px;background:var(--bg3);border-radius:8px;gap:8px"><div style="font-size:11.5px;color:var(--tx2);line-height:1.4">Logged today <span style="font-family:\'DM Mono\',monospace;color:var(--tx)">'+R(_td.cal)+'</span> / '+tgtCal+' cal<br><span style="color:var(--tx3);font-size:10.5px">counts to your target, not the plan</span></div><button onclick="_fuelFlexToday()" style="flex-shrink:0;background:none;border:1px solid var(--go-bd);color:var(--go);border-radius:100px;padding:7px 13px;font-size:11.5px;cursor:pointer;white-space:nowrap">Eating out?</button></div>') : '';
   const microHtml = plan.microNote ? '<div style="font-size:11.5px;color:var(--tx2);line-height:1.6;margin-top:10px"><span style="color:var(--gr);font-weight:600">Micronutrients · </span>'+_esc(plan.microNote)+'</div>' : '';
   let timingHtml='';
   if(plan.preworkout && plan.preworkout.length){
@@ -15815,7 +15817,7 @@ function _fuelRenderPlan(plan){
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx)">Your fuel plan</div><button onclick="closeModal(this)" style="background:none;border:none;color:var(--tx3);font-size:20px;cursor:pointer">×</button></div>'+
     '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">A day around '+R(dayCal)+' cal · '+_esc(p.chain||'')+'</div>'+
     '<div class="eyebrow" style="color:var(--go);margin-bottom:2px">A day of meals</div>'+
-    mealsHtml+ macroRow+ targetHtml+ microHtml+ timingHtml+
+    mealsHtml+ macroRow+ targetHtml+ todayHtml+ microHtml+ timingHtml+
     '<div class="eyebrow" style="margin:16px 0 4px">Weekly shopping list</div>'+shopHtml+
     '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);font-size:13px"><div style="color:var(--tx);font-weight:600">Weekly total</div><div style="font-family:\'DM Mono\',monospace;color:'+(overBudget?'var(--re)':'var(--gr)')+'">'+money(total)+(budget?(' / $'+budget):'')+'</div></div>'+
     (overBudget?'<div style="font-size:11.5px;color:var(--re);margin-top:6px;line-height:1.5">A bit over budget — tap Regenerate for a leaner version, or nudge your budget up.</div>':'')+
@@ -15847,6 +15849,26 @@ async function _fuelSwapMeal(i){
   if(typeof haptic==='function') haptic('success');
   const m=document.getElementById('fuel-plan-modal'); if(m) m.remove();
   _fuelRenderPlan(plan);
+}
+
+// Today's ACTUAL logged intake (from the tracker) — the day is anchored to targets, not the plan.
+function _fuelToday(){ try{ const today=new Date().toLocaleDateString('en-AU'); const arr=(ls('totry_nutlog')||{})[today]||[]; return { cal: arr.reduce(function(a,e){return a+(e.cal||0);},0), pro: arr.reduce(function(a,e){return a+(e.pro||0);},0) }; }catch(_){ return {cal:0,pro:0}; } }
+
+// Grace when real life happens (a buffet, a night out, anything off-plan). The plan is a guide,
+// not a cage — let it slide, anchor to the day's TARGET, and log whatever they actually ate.
+function _fuelFlexToday(){
+  const plan = ls('totry_meal_plan')||{};
+  const tgt = (plan.targets&&plan.targets.cal)||0;
+  const td = _fuelToday();
+  const left = tgt ? Math.max(0, Math.round(tgt - td.cal)) : 0;
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="text-align:left">'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:10px">Going out? Enjoy it.</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:16px">A meal out, a buffet, a night with people — that’s a life, not a failure. One meal won’t undo your week; what you do <i>most</i> days is what shapes you. The plan is a guide, not a cage.'+(tgt?(' You’ve still got about <b style="color:var(--tx)">'+left+' cal</b> to your target today if you want a rough anchor — or just be present and pick it up tomorrow.'):'')+'</div>'+
+    '<button class="btn primary" onclick="closeModal(this);if(typeof go===\'function\')go(\'nourish\');setTimeout(function(){var i=document.getElementById(\'nut-search-in\');if(i)i.focus();},350)">Log what I ate</button>'+
+    '<button class="btn" style="margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx2)" onclick="closeModal(this);if(typeof haptic===\'function\')haptic(\'tap\');if(typeof showToast===\'function\')showToast(\'Enjoy it\',\'You’re living, not failing. Back on track tomorrow.\')">Just enjoy it — back tomorrow</button>'+
+    '</div>';
+  document.body.appendChild(m);
 }
 
 // Push the plan's meals into today's food log — closes the loop with the tracker.
