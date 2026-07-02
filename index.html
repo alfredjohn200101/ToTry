@@ -3939,7 +3939,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v182';
+const APP_VERSION = 'v183';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -26390,6 +26390,26 @@ function computeProactiveNudge(){
       actions: [{label:'Take a rest day', onclick:'ls(\'totry_low_day\', new Date().toLocaleDateString(\'en-AU\'));if(typeof renderTodayForYou===\'function\')renderTodayForYou();dismissNudge(\'overtrained\')'},
                 {label:'I\u2019m good', ghost:true, onclick:'dismissNudge(\'overtrained\')'}] };
   }
+
+  // RULE 1.5 — PRE-WORKOUT FUEL (the integration moat: schedule + nutrition, in the moment). On a
+  // training day, before the session, surface exactly when to eat the pre-gym meal so there's fuel in
+  // the tank. Placed after the rest-day rule so we don't push training-fuel when we're urging rest.
+  try{
+    const lead = (typeof getPreworkoutLead==='function') ? getPreworkoutLead() : 75;
+    const appDay = (new Date().getDay()+6)%7; // Mon=0..Sun=6
+    const gymToday = (ls('totry_cal_events')||[]).filter(function(e){ return e && e.type==='gym' && e.day===appDay && e.start; });
+    const nowMin = new Date().getHours()*60 + new Date().getMinutes();
+    const fmt = function(mins){ const t=((mins%1440)+1440)%1440; let hh=Math.floor(t/60), mm=t%60; const ap=hh<12?'am':'pm'; let h12=hh%12; if(h12===0)h12=12; return h12+(mm?(':'+String(mm).padStart(2,'0')):'')+ap; };
+    let best=null;
+    gymToday.forEach(function(e){ const parts=e.start.split(':'); const sMin=(parseInt(parts[0],10)||18)*60+(parseInt(parts[1],10)||0); if(nowMin < sMin && (sMin - nowMin) <= 240){ if(!best || sMin < best.sMin) best={ sMin:sMin, eatBy:sMin-lead }; } });
+    if(best){
+      return { id:'preworkout'+dayKey(now)+best.sMin, tone:'nudge',
+        eyebrow:'Fuel for training',
+        text: hi + 'your session’s at ' + fmt(best.sMin) + '. Have your pre-gym meal by ' + fmt(best.eatBy) + ' so you’ve got fuel in the tank — some fast carbs and protein beats training on empty.',
+        actions: [{label:'Open my fuel plan', onclick:'go(\'nourish\');setTimeout(function(){if(typeof _fuelViewPlan===\'function\')_fuelViewPlan();},350);dismissNudge(\'preworkout'+dayKey(now)+best.sMin+'\')'},
+                  {label:'Got it', ghost:true, onclick:'dismissNudge(\'preworkout'+dayKey(now)+best.sMin+'\')'}] };
+    }
+  }catch(_){}
 
   // RULE 2 — GONE QUIET. No reflection/check-in/workout logged in 3+ days, but was active before.
   const lastActivity = Math.max(lastTs(evenings), lastTs(journal), lastTs(checkins), lastTs(workouts));
