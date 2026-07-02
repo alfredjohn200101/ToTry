@@ -15780,7 +15780,7 @@ function _fuelRenderPlan(plan){
   const macroRow = '<div style="display:flex;justify-content:space-between;margin-top:12px;padding:9px 12px;background:var(--bg3);border-radius:8px;font-family:\'DM Mono\',monospace;font-size:10.5px;color:var(--tx2)"><span>'+R(dayCal)+' cal</span><span style="color:var(--gr)">'+R(dayPro)+'g P</span><span style="color:var(--bl)">'+R(dayCarbs)+'g C</span><span style="color:var(--go)">'+R(dayFat)+'g F</span></div>';
   const tgtCal = (plan.targets&&plan.targets.cal)||0, tgtPro = (plan.targets&&plan.targets.pro)||0;
   const calGap = tgtCal ? (dayCal - tgtCal) : 0; const onTarget = tgtCal && Math.abs(calGap) <= tgtCal*0.08;
-  const targetHtml = tgtCal ? ('<div style="font-size:11.5px;line-height:1.5;margin-top:6px;color:'+(onTarget?'var(--gr)':'var(--go)')+'">'+(onTarget ? ('On target — ~'+R(dayCal)+' of your '+tgtCal+' cal, '+R(dayPro)+' of '+tgtPro+'g protein.') : (calGap<0 ? ('About '+R(-calGap)+' cal under your '+tgtCal+' target — bump portions a little or add a snack to hit it.') : ('About '+R(calGap)+' cal over your '+tgtCal+' target — trim portions slightly.')))+'</div>') : '';
+  const targetHtml = tgtCal ? ('<div style="font-size:11.5px;line-height:1.5;margin-top:6px;color:'+(onTarget?'var(--gr)':'var(--go)')+'">'+(onTarget ? ('On target — ~'+R(dayCal)+' of your '+tgtCal+' cal, '+R(dayPro)+' of '+tgtPro+'g protein.') : (calGap<0 ? ('About '+R(-calGap)+' cal under your '+tgtCal+' target — bump portions, or <span onclick="_fuelAddSnack()" style="color:var(--go);border-bottom:1px solid var(--go-bd);cursor:pointer">add a snack to hit it →</span>') : ('About '+R(calGap)+' cal over your '+tgtCal+' target — trim portions slightly.')))+'</div>') : '';
   const _td = _fuelToday();
   const todayHtml = tgtCal ? ('<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:10px 12px;background:var(--bg3);border-radius:8px;gap:8px"><div style="font-size:11.5px;color:var(--tx2);line-height:1.4">Logged today <span style="font-family:\'DM Mono\',monospace;color:var(--tx)">'+R(_td.cal)+'</span> / '+tgtCal+' cal<br><span style="color:var(--tx3);font-size:10.5px">counts to your target, not the plan</span></div><button onclick="_fuelFlexToday()" style="flex-shrink:0;background:none;border:1px solid var(--go-bd);color:var(--go);border-radius:100px;padding:7px 13px;font-size:11.5px;cursor:pointer;white-space:nowrap">Eating out?</button></div>') : '';
   const microHtml = plan.microNote ? '<div style="font-size:11.5px;color:var(--tx2);line-height:1.6;margin-top:10px"><span style="color:var(--gr);font-weight:600">Micronutrients · </span>'+_esc(plan.microNote)+'</div>' : '';
@@ -15829,6 +15829,27 @@ function _fuelRenderPlan(plan){
     '<button class="btn" style="margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx2)" onclick="closeModal(this);_fuelGenerate()">↻ Regenerate</button>'+
     '</div>';
   document.body.appendChild(m);
+}
+
+// Close the target gap in one tap — add a snack sized to the remaining calories/protein.
+async function _fuelAddSnack(){
+  const plan = ls('totry_meal_plan'); if(!plan || !plan.meals) return;
+  const p = getMealPrefs(); const dietStr = (p.diet&&p.diet.length)?p.diet.join(', '):'no specific diet';
+  const dayCal = plan.meals.reduce(function(a,m){return a+(m.cal||0);},0), dayPro = plan.meals.reduce(function(a,m){return a+(m.pro||0);},0);
+  const tgt = (plan.targets&&plan.targets.cal)||0, tgtP = (plan.targets&&plan.targets.pro)||0;
+  const gapC = Math.max(100, Math.round(tgt - dayCal)), gapP = Math.max(0, Math.round(tgtP - dayPro));
+  if(typeof showToast==='function') showToast('Adding a snack…', 'Filling the ~'+gapC+' cal gap.');
+  const shopsStr = (p.chains&&p.chains.join(', ')) || p.chain || 'the supermarket';
+  const sys = "You are a dietitian. Return ONLY one JSON snack object, no prose.";
+  const prompt = "Add ONE realistic snack to close a daily gap of about "+gapC+" kcal and "+gapP+"g protein. STRICTLY respect diet: "+dietStr+(p.restrictions?('; '+p.restrictions):'')+". Available at "+shopsStr+" ("+(p.country||'Australia')+"). Return ONLY JSON: {\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"carbs\":0,\"fat\":0,\"why\":\"\"}.";
+  let txt=''; try{ txt = await api(sys, [], prompt, 300, { timeout:25000 }); }catch(e){ txt=''; }
+  let meal=null; try{ let c=(txt||'').replace(/```json|```/g,'').trim(); c=c.slice(c.indexOf('{'),c.lastIndexOf('}')+1).replace(/,\s*([}\]])/g,'$1'); meal=JSON.parse(c); }catch(_){ meal=null; }
+  if(!meal || !meal.name){ if(typeof showToast==='function') showToast('Hmm','Couldn’t add it — try again shortly.'); return; }
+  if(!meal.name.match(/snack/i)) meal.name = 'Snack — '+meal.name;
+  plan.meals.push(meal); ls('totry_meal_plan', plan); if(typeof syncToCloud==='function') syncToCloud();
+  if(typeof haptic==='function') haptic('success');
+  const m=document.getElementById('fuel-plan-modal'); if(m) m.remove();
+  _fuelRenderPlan(plan);
 }
 
 // Swap a single meal without regenerating the whole plan.
