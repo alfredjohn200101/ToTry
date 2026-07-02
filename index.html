@@ -3939,7 +3939,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v180';
+const APP_VERSION = 'v181';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -15633,25 +15633,43 @@ function _fuelSafetyModal(){
 }
 
 function _esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function _fuelSetChain(name){ const el=document.getElementById('fuel-chain'); if(el) el.value=name; }
+function _fuelShopChains(p){ p = p || getMealPrefs(); return Array.isArray(p.chains) && p.chains.length ? p.chains.slice() : (p.chain ? [p.chain] : []); }
+function _fuelToggleShop(el){ if(el.classList.contains('on')) _fuelChipOff(el); else _fuelChipOn(el); }
+function _fuelAddShop(){
+  const inp = document.getElementById('fuel-shop-add'); const name = (inp && inp.value || '').trim();
+  const row = document.getElementById('fuel-shops-row');
+  if(!name || !row) return;
+  const existing = Array.prototype.slice.call(row.querySelectorAll('.fuel-shop-chip')).filter(function(b){ return (b.getAttribute('data-shop')||'').toLowerCase()===name.toLowerCase(); })[0];
+  if(existing){ _fuelChipOn(existing); }
+  else {
+    const b = document.createElement('button'); b.type='button'; b.className='fuel-shop-chip on'; b.setAttribute('data-shop', name); b.setAttribute('onclick','_fuelToggleShop(this)');
+    b.style.cssText = 'padding:7px 12px;border-radius:100px;border:1px solid var(--go-bd);background:var(--go-bg);color:var(--go);font-size:12px;cursor:pointer';
+    b.textContent = name; row.appendChild(b);
+  }
+  if(inp) inp.value='';
+}
 
 function _fuelShopPicker(){
   const p = getMealPrefs();
   const country = p.country || 'Australia';
-  const chain = p.chain || '';
+  const saved = _fuelShopChains(p);
   const auChains = ['Woolworths','Coles','Aldi','IGA'];
+  const all = auChains.slice(); saved.forEach(function(s){ if(all.indexOf(s)<0) all.push(s); });
   const chipStyle = 'padding:7px 12px;border-radius:100px;border:1px solid var(--bd);background:transparent;color:var(--tx2);font-size:12px;cursor:pointer';
-  const chips = auChains.map(function(c){ return '<button type="button" onclick="_fuelSetChain(\''+c+'\')" style="'+chipStyle+'">'+c+'</button>'; }).join('');
+  const chips = all.map(function(c){
+    const on = saved.indexOf(c) >= 0;
+    return '<button type="button" class="fuel-shop-chip'+(on?' on':'')+'" data-shop="'+String(c).replace(/"/g,'&quot;')+'" onclick="_fuelToggleShop(this)" style="'+chipStyle+(on?';border-color:var(--go-bd);background:var(--go-bg);color:var(--go)':'')+'">'+_esc(c)+'</button>';
+  }).join('');
   const m = document.createElement('div');
   m.className='modal-bg open'; m.id='fuel-shop-modal'; m.style.alignItems='flex-end';
   m.innerHTML = '<div class="modal" style="text-align:left">'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">Where do you shop?</div>'+
-    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:16px">So the plan uses real products at real prices — not made-up numbers.</div>'+
+    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:16px">Pick every shop you use — I’ll build one shopping list, split by store so you know exactly what to get where.</div>'+
     '<div class="eyebrow" style="margin-bottom:6px">Country</div>'+
     '<input type="text" id="fuel-country" value="'+String(country).replace(/"/g,'&quot;')+'" style="width:100%;margin-bottom:16px">'+
-    '<div class="eyebrow" style="margin-bottom:6px">Your main supermarket</div>'+
-    '<input type="text" id="fuel-chain" placeholder="e.g. Woolworths, Tesco, Walmart..." value="'+String(chain).replace(/"/g,'&quot;')+'" style="width:100%;margin-bottom:8px">'+
-    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px">'+chips+'</div>'+
+    '<div class="eyebrow" style="margin-bottom:6px">Your shops (pick any)</div>'+
+    '<div id="fuel-shops-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'+chips+'</div>'+
+    '<div style="display:flex;gap:8px;margin-bottom:18px"><input type="text" id="fuel-shop-add" placeholder="Add another shop (any country)..." style="flex:1"><button class="btn" style="width:auto;padding:0 16px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="_fuelAddShop()">Add</button></div>'+
     '<button class="btn primary" onclick="_fuelShopGenerate()">Build my plan →</button>'+
     '<button class="btn" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:6px" onclick="closeModal(this)">Later</button>'+
     '</div>';
@@ -15660,9 +15678,9 @@ function _fuelShopPicker(){
 
 function _fuelShopGenerate(){
   const country = ((document.getElementById('fuel-country')||{}).value || 'Australia').trim();
-  const chain = ((document.getElementById('fuel-chain')||{}).value || '').trim();
-  if(!chain){ if(typeof showToast==='function') showToast('One thing', 'Type your supermarket so the prices are real.'); return; }
-  saveMealPrefs(Object.assign(getMealPrefs(), { country:country, chain:chain }));
+  const shops = Array.prototype.slice.call(document.querySelectorAll('#fuel-shops-row .fuel-shop-chip.on')).map(function(b){ return b.getAttribute('data-shop'); }).filter(Boolean);
+  if(!shops.length){ if(typeof showToast==='function') showToast('One thing', 'Pick at least one shop so the list and prices are real.'); return; }
+  saveMealPrefs(Object.assign(getMealPrefs(), { country:country, chains:shops, chain:shops.join(', ') }));
   const m = document.getElementById('fuel-shop-modal'); if(m) m.remove();
   renderFuelPlanCard();
   _fuelGenerate();
@@ -15680,13 +15698,14 @@ async function _fuelGenerate(){
   const lead = getPreworkoutLead();
   const preworkout = _fuelComputePreworkout(lead); // concrete pre-gym meal times from their real schedule
   const load = document.createElement('div'); load.className='modal-bg open'; load.id='fuel-loading'; load.style.alignItems='center';
-  load.innerHTML = '<div class="modal" style="text-align:center"><div style="font-size:26px;margin-bottom:10px">🍽️</div><div style="font-family:Cormorant Garamond,serif;font-size:20px;color:var(--tx);margin-bottom:6px">Building your plan…</div><div style="font-size:12px;color:var(--tx3);line-height:1.6">Checking real prices at '+_esc(p.chain||'your shop')+' and fitting your targets, budget and training.</div></div>';
+  load.innerHTML = '<div class="modal" style="text-align:center"><div style="font-size:26px;margin-bottom:10px">🍽️</div><div style="font-family:Cormorant Garamond,serif;font-size:20px;color:var(--tx);margin-bottom:6px">Building your plan…</div><div style="font-size:12px;color:var(--tx3);line-height:1.6">Fitting your targets, budget and training, and building your shopping list.</div></div>';
   document.body.appendChild(load);
   let brief=''; try{ if(typeof getLifeState==='function') brief = getLifeState().brief || ''; }catch(_){ brief=''; }
   const sys = "You are a registered-dietitian-level meal planner in a faith-rooted whole-life app. You are honest, evidence-based and non-partial: food-first, never push brands or supplements, cite where prices came from, and separate general guidance from individual advice. Build realistic, affordable plans from REAL products at the named supermarket, using web search for CURRENT prices. Return ONLY valid JSON, no prose.";
   const dietStr = (p.diet&&p.diet.length)?p.diet.join(', '):'no specific diet';
+  const shops = _fuelShopChains(p); const shopsStr = shops.join(', ') || (p.chain || 'your supermarket');
   const timingStr = preworkout.length ? ('Their gym sessions and pre-gym meal deadlines: '+preworkout.map(function(x){return x.day+' gym '+x.sessionStart+' (finish the pre-gym meal by '+x.eatBy+')';}).join('; ')+'.') : '';
-  const prompt = "Build a realistic "+(p.mealsPerDay||4)+"-meal day for one person, plus a weekly shopping list, for "+p.chain+" in "+(p.country||'Australia')+". Context: "+brief+". Daily targets ~"+cal+" kcal and "+ctx.pro+"g protein (goal: "+ctx.goalDir+"). Weekly grocery budget ~$"+(p.budget||0)+". STRICTLY respect these dietary requirements and NEVER include any forbidden food (e.g. if vegan, no animal products; if 'no beef', no beef anywhere): "+dietStr+(p.restrictions?('; '+p.restrictions):'')+". "+((p.includeSupps!==false)?"May include 1-2 evidence-backed supermarket supplements (creatine, whey, electrolytes), optional and food-first.":"No supplements.")+" Give FULL macros per meal: cal, protein, carbs, fat. The DAY must also cover MICRONUTRIENTS — enough fibre, iron, calcium, healthy fats/omega-3, potassium, and a real range of vegetables and fruit; summarise this in 'microNote' with rough fibre grams. "+(preworkout.length?("Time carbohydrate around training. "+timingStr+" In 'carbNote', say what to eat before training referencing those times."):"In 'carbNote', explain carb timing generally and note that adding their training schedule unlocks exact meal times.")+" Use typical current "+p.chain+" prices (estimates, to confirm in-store). Keep 'items' and 'why' SHORT. Return ONLY compact JSON, no prose: {\"meals\":[{\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"carbs\":0,\"fat\":0,\"why\":\"\"}],\"microNote\":\"\",\"carbNote\":\"\",\"shopping\":[{\"item\":\"\",\"price\":0}],\"total\":0,\"note\":\"\"}. Each \"why\" ties the meal to their goal. \"note\" says prices are estimates and the science is general.";
+  const prompt = "Build a realistic "+(p.mealsPerDay||4)+"-meal day for one person, plus a weekly shopping list, in "+(p.country||'Australia')+". Context: "+brief+". Daily targets: the meals MUST total close to "+cal+" kcal (within ~5%) and reach about "+ctx.pro+"g protein (goal: "+ctx.goalDir+") — adjust portion sizes to hit these numbers. Weekly grocery budget ~$"+(p.budget||0)+". STRICTLY respect these dietary requirements and NEVER include any forbidden food (e.g. if vegan, no animal products; if 'no beef', no beef anywhere): "+dietStr+(p.restrictions?('; '+p.restrictions):'')+". "+((p.includeSupps!==false)?"May include 1-2 evidence-backed supermarket supplements (creatine, whey, electrolytes), optional and food-first.":"No supplements.")+" Give FULL macros per meal: cal, protein, carbs, fat. The DAY must also cover MICRONUTRIENTS — enough fibre, iron, calcium, healthy fats/omega-3, potassium, and a real range of vegetables and fruit; summarise this in 'microNote' with rough fibre grams. "+(preworkout.length?("Time carbohydrate around training. "+timingStr+" In 'carbNote', say what to eat before training referencing those times."):"In 'carbNote', explain carb timing generally and note that adding their training schedule unlocks exact meal times.")+" The person shops at these stores: "+shopsStr+". For EVERY shopping item, set 'shop' to exactly ONE of those store names — choose the store that is cheapest or most likely to stock it, so the list is organised store-by-store for one trip each. Use typical current prices at that store (estimates, to confirm in-store). Keep 'items' and 'why' SHORT. Return ONLY compact JSON, no prose: {\"meals\":[{\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"carbs\":0,\"fat\":0,\"why\":\"\"}],\"microNote\":\"\",\"carbNote\":\"\",\"shopping\":[{\"item\":\"\",\"price\":0,\"shop\":\"\"}],\"total\":0,\"note\":\"\"}. Each \"why\" ties the meal to their goal. \"note\" says prices are estimates and the science is general.";
   const parsePlan = function(t){ try{
     let c=(t||'').replace(/```json|```/g,'').trim();
     c = c.slice(c.indexOf('{'), c.lastIndexOf('}')+1);
@@ -15762,9 +15781,17 @@ function _fuelRenderPlan(plan){
       '<button class="btn" style="width:100%;background:var(--bg2);border:1px solid var(--go-bd);color:var(--go);font-size:12.5px;padding:10px" onclick="closeModal(this);if(typeof go===\'function\')go(\'calendar\')">Add my schedule →</button>'+
     '</div>';
   }
-  const shopHtml = (plan.shopping||[]).map(function(s){
-    return '<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;font-size:12.5px"><div style="color:var(--tx2)">'+_esc(s.item||'')+'</div><div style="font-family:\'DM Mono\',monospace;color:var(--tx);white-space:nowrap">'+money(s.price)+'</div></div>';
-  }).join('');
+  const row1 = function(s){ return '<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;font-size:12.5px"><div style="color:var(--tx2)">'+_esc(s.item||'')+'</div><div style="font-family:\'DM Mono\',monospace;color:var(--tx);white-space:nowrap">'+money(s.price)+'</div></div>'; };
+  const shopHtml = (function(){
+    const items = plan.shopping||[]; if(!items.length) return '';
+    const groups = {}, order = [];
+    items.forEach(function(s){ const k=((s.shop||'').trim())||'Shopping'; if(!groups[k]){ groups[k]=[]; order.push(k); } groups[k].push(s); });
+    if(order.length <= 1) return items.map(row1).join(''); // single store — flat list
+    return order.map(function(k){
+      const list=groups[k]; const sub=list.reduce(function(a,s){ return a+(s.price||0); },0);
+      return '<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:1px"><div style="font-size:13px;font-weight:600;color:var(--go)">'+_esc(k)+'</div><div style="font-family:\'DM Mono\',monospace;font-size:11px;color:var(--tx3)">'+money(sub)+'</div></div>'+list.map(row1).join('')+'</div>';
+    }).join('');
+  })();
   const total = plan.total||0; const budget = plan.budget||p.budget||0;
   const overBudget = budget>0 && total>budget;
   const m = document.createElement('div'); m.className='modal-bg open'; m.id='fuel-plan-modal'; m.style.alignItems='flex-end';
@@ -15776,11 +15803,55 @@ function _fuelRenderPlan(plan){
     '<div class="eyebrow" style="margin:16px 0 4px">Weekly shopping list</div>'+shopHtml+
     '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);font-size:13px"><div style="color:var(--tx);font-weight:600">Weekly total</div><div style="font-family:\'DM Mono\',monospace;color:'+(overBudget?'var(--re)':'var(--gr)')+'">'+money(total)+(budget?(' / $'+budget):'')+'</div></div>'+
     (overBudget?'<div style="font-size:11.5px;color:var(--re);margin-top:6px;line-height:1.5">A bit over budget — tap Regenerate for a leaner version, or nudge your budget up.</div>':'')+
-    (plan._estimated?'<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:10px">Prices are estimates — confirm in-store.</div>':'')+
+    (plan._estimated?'<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:10px">Prices are estimates — tap “Get live prices”, or confirm in-store.</div>':'')+
+    ((plan.citations&&plan.citations.length)?'<div style="font-size:10px;color:var(--tx3);line-height:1.6;margin-top:8px">Prices checked: '+plan.citations.map(_esc).join(' · ')+'</div>':'')+
     (plan.note?'<div style="font-size:11px;color:var(--tx3);line-height:1.6;margin-top:12px;font-style:italic">'+_esc(plan.note)+'</div>':'')+
-    '<button class="btn primary" style="margin-top:16px" onclick="closeModal(this);_fuelGenerate()">↻ Regenerate</button>'+
+    '<button class="btn primary" style="margin-top:16px" onclick="_fuelLogPlan(this)">Log today’s meals</button>'+
+    (plan._estimated?'<button class="btn" style="margin-top:8px;background:var(--bg3);border:1px solid var(--go-bd);color:var(--go)" onclick="_fuelLivePrices()">Get live prices →</button>':'')+
+    '<button class="btn" style="margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx2)" onclick="closeModal(this);_fuelGenerate()">↻ Regenerate</button>'+
     '</div>';
   document.body.appendChild(m);
+}
+
+// Push the plan's meals into today's food log — closes the loop with the tracker.
+function _fuelLogPlan(btn){
+  const plan = ls('totry_meal_plan'); if(!plan || !plan.meals || !plan.meals.length) return;
+  const today = new Date().toLocaleDateString('en-AU');
+  const log = ls('totry_nutlog') || {}; if(!log[today]) log[today]=[];
+  plan.meals.forEach(function(mm, i){
+    log[today].push({ id: Date.now()+i, name: mm.name||'Meal', serving: String(mm.items||'').slice(0,120)||'1 serving', qty:1,
+      cal: Math.round(mm.cal||0), pro: Math.round((mm.pro||0)*10)/10, carb: Math.round((mm.carbs||0)*10)/10, fat: Math.round((mm.fat||0)*10)/10, source: 'Fuel plan' });
+  });
+  if(typeof _pruneNutLog==='function') _pruneNutLog(log);
+  ls('totry_nutlog', log); if(typeof syncToCloud==='function') syncToCloud();
+  if(typeof renderNutritionLog==='function') renderNutritionLog();
+  if(typeof autoTickHabits==='function') autoTickHabits();
+  if(typeof haptic==='function') haptic('success');
+  if(btn && typeof closeModal==='function') closeModal(btn);
+  if(typeof showToast==='function') showToast('Logged', plan.meals.length+' meals added to today.');
+}
+
+// A focused web-search pass to replace estimated prices with real, cited ones (per store).
+async function _fuelLivePrices(){
+  const plan = ls('totry_meal_plan'); if(!plan || !plan.shopping || !plan.shopping.length) return;
+  const p = getMealPrefs();
+  const shops = _fuelShopChains(p); const shopsStr = shops.join(', ') || (p.chain||'');
+  if(typeof showToast==='function') showToast('Checking prices…', 'Looking up current prices at '+(shopsStr||'your shops')+'.');
+  const items = plan.shopping.map(function(s){ return s.item; }).filter(Boolean);
+  const sys = "You look up CURRENT real supermarket prices via web search and return ONLY JSON. Be honest; if unsure, give your best estimate.";
+  const prompt = "In "+(p.country||'Australia')+", at these stores: "+shopsStr+", find the current price of each grocery item below and pick the cheapest of those stores that stocks it. Items: "+items.join('; ')+". Return ONLY JSON: {\"prices\":[{\"item\":\"\",\"price\":0,\"shop\":\"\"}],\"total\":0,\"citations\":[\"\"]}.";
+  let txt=''; try{ txt = await api(sys, [], prompt, 1500, { web_search:true, timeout:40000 }); }catch(e){ txt=''; }
+  let data=null; try{ let c=(txt||'').replace(/```json|```/g,'').trim(); c=c.slice(c.indexOf('{'),c.lastIndexOf('}')+1); c=c.replace(/}\s*=\s*{/g,'},{').replace(/}\s*{/g,'},{').replace(/,\s*([}\]])/g,'$1'); data=JSON.parse(c); }catch(_){ data=null; }
+  if(!data || !data.prices){ if(typeof showToast==='function') showToast('Hmm','Couldn’t fetch live prices just now — try again shortly.'); return; }
+  const byItem = {}; data.prices.forEach(function(pr){ if(pr && pr.item) byItem[String(pr.item).toLowerCase().trim()] = pr; });
+  plan.shopping.forEach(function(s){ const mm = byItem[String(s.item||'').toLowerCase().trim()]; if(mm){ if(typeof mm.price==='number' && mm.price>0) s.price=mm.price; if(mm.shop) s.shop=mm.shop; } });
+  plan.total = (typeof data.total==='number' && data.total>0) ? data.total : plan.shopping.reduce(function(a,s){ return a+(s.price||0); },0);
+  plan.citations = data.citations||[]; plan._estimated = false;
+  ls('totry_meal_plan', plan); if(typeof syncToCloud==='function') syncToCloud();
+  if(typeof haptic==='function') haptic('success');
+  const mm2=document.getElementById('fuel-plan-modal'); if(mm2) mm2.remove();
+  _fuelRenderPlan(plan);
+  if(typeof showToast==='function') showToast('Prices updated','Live prices from '+(shopsStr||'your shops')+'.');
 }
 
 async function parseCalendarAI(){
