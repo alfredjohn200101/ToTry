@@ -15799,15 +15799,17 @@ function _fuelRenderPlan(plan){
       '<button class="btn" style="width:100%;background:var(--bg2);border:1px solid var(--go-bd);color:var(--go);font-size:12.5px;padding:10px" onclick="closeModal(this);if(typeof go===\'function\')go(\'calendar\')">Add my schedule →</button>'+
     '</div>';
   }
-  const row1 = function(s){ return '<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;font-size:12.5px"><div style="color:var(--tx2)">'+_esc(s.item||'')+'</div><div style="font-family:\'DM Mono\',monospace;color:var(--tx);white-space:nowrap">'+money(s.price)+'</div></div>'; };
+  // Interactive shopping checklist — tap an item off as you shop (persists), per-store progress.
+  const row1 = function(s){ const got=!!s.got; return '<div onclick="_fuelToggleShopItem(this,'+s._i+')" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;font-size:12.5px;cursor:pointer"><div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0"><span class="fuel-tick" style="width:16px;height:16px;border-radius:4px;border:1px solid '+(got?'var(--go)':'var(--bd2)')+';background:'+(got?'var(--go)':'transparent')+';display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:#231803;flex-shrink:0">'+(got?'✓':'')+'</span><span class="fuel-item" style="color:var(--tx2)'+(got?';text-decoration:line-through;opacity:0.45':'')+'">'+_esc(s.item||'')+'</span></div><span class="fuel-price" style="font-family:\'DM Mono\',monospace;color:var(--tx);white-space:nowrap'+(got?';opacity:0.45':'')+'">'+money(s.price)+'</span></div>'; };
   const shopHtml = (function(){
-    const items = plan.shopping||[]; if(!items.length) return '';
+    const items = (plan.shopping||[]).map(function(s,idx){ s._i=idx; return s; });
+    if(!items.length) return '';
     const groups = {}, order = [];
     items.forEach(function(s){ const k=((s.shop||'').trim())||'Shopping'; if(!groups[k]){ groups[k]=[]; order.push(k); } groups[k].push(s); });
     if(order.length <= 1) return items.map(row1).join(''); // single store — flat list
     return order.map(function(k){
-      const list=groups[k]; const sub=list.reduce(function(a,s){ return a+(s.price||0); },0);
-      return '<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:1px"><div style="font-size:13px;font-weight:600;color:var(--go)">'+_esc(k)+'</div><div style="font-family:\'DM Mono\',monospace;font-size:11px;color:var(--tx3)">'+money(sub)+'</div></div>'+list.map(row1).join('')+'</div>';
+      const list=groups[k]; const sub=list.reduce(function(a,s){ return a+(s.price||0); },0); const gotN=list.filter(function(s){ return s.got; }).length;
+      return '<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:1px"><div style="font-size:13px;font-weight:600;color:var(--go)">'+_esc(k)+' <span style="font-size:10.5px;color:var(--tx3);font-weight:400">'+gotN+'/'+list.length+'</span></div><div style="font-family:\'DM Mono\',monospace;font-size:11px;color:var(--tx3)">'+money(sub)+'</div></div>'+list.map(row1).join('')+'</div>';
     }).join('');
   })();
   const total = plan.total||0; const budget = plan.budget||p.budget||0;
@@ -15820,6 +15822,7 @@ function _fuelRenderPlan(plan){
     mealsHtml+ macroRow+ targetHtml+ todayHtml+ microHtml+ timingHtml+
     '<div class="eyebrow" style="margin:16px 0 4px">Weekly shopping list</div>'+shopHtml+
     '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);font-size:13px"><div style="color:var(--tx);font-weight:600">Weekly total</div><div style="font-family:\'DM Mono\',monospace;color:'+(overBudget?'var(--re)':'var(--gr)')+'">'+money(total)+(budget?(' / $'+budget):'')+'</div></div>'+
+    '<button onclick="_fuelCopyShopList()" style="width:100%;margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx3);border-radius:8px;padding:8px;font-size:11.5px;cursor:pointer">Copy shopping list</button>'+
     (overBudget?'<div style="font-size:11.5px;color:var(--re);margin-top:6px;line-height:1.5">A bit over budget — tap Regenerate for a leaner version, or nudge your budget up.</div>':'')+
     (plan._estimated?'<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:10px">Prices are estimates — tap “Get live prices”, or confirm in-store.</div>':'')+
     ((plan.citations&&plan.citations.length)?'<div style="font-size:10px;color:var(--tx3);line-height:1.6;margin-top:8px">Prices checked: '+plan.citations.map(_esc).join(' · ')+'</div>':'')+
@@ -15890,6 +15893,29 @@ function _fuelFlexToday(){
     '<button class="btn" style="margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx2)" onclick="closeModal(this);if(typeof haptic===\'function\')haptic(\'tap\');if(typeof showToast===\'function\')showToast(\'Enjoy it\',\'You’re living, not failing. Back on track tomorrow.\')">Just enjoy it — back tomorrow</button>'+
     '</div>';
   document.body.appendChild(m);
+}
+
+// Interactive shopping checklist — tick items off as you shop (persists per item).
+function _fuelToggleShopItem(el, idx){
+  const plan = ls('totry_meal_plan'); if(!plan || !plan.shopping || !plan.shopping[idx]) return;
+  plan.shopping[idx].got = !plan.shopping[idx].got; ls('totry_meal_plan', plan);
+  const got = plan.shopping[idx].got;
+  const tick = el.querySelector('.fuel-tick'), item = el.querySelector('.fuel-item'), price = el.querySelector('.fuel-price');
+  if(tick){ tick.style.background = got?'var(--go)':'transparent'; tick.style.borderColor = got?'var(--go)':'var(--bd2)'; tick.textContent = got?'✓':''; }
+  if(item){ item.style.textDecoration = got?'line-through':'none'; item.style.opacity = got?'0.45':'1'; }
+  if(price){ price.style.opacity = got?'0.45':'1'; }
+  // update this store's got/total counter
+  try{ const header = el.parentElement.querySelector('div span'); if(header && /^\d+\/\d+$/.test(header.textContent)){ const rows=el.parentElement.querySelectorAll('[onclick^="_fuelToggleShopItem"]'); const done=Array.prototype.filter.call(rows,function(r){ return r.querySelector('.fuel-tick') && r.querySelector('.fuel-tick').textContent==='✓'; }).length; header.textContent = done+'/'+rows.length; } }catch(_){}
+  if(typeof haptic==='function') haptic('tap');
+}
+function _fuelCopyShopList(){
+  const plan = ls('totry_meal_plan'); if(!plan || !plan.shopping) return;
+  const groups={}, order=[]; plan.shopping.forEach(function(s){ const k=(s.shop||'Shopping'); if(!groups[k]){ groups[k]=[]; order.push(k); } groups[k].push(s); });
+  let txt='My To Try shopping list\n';
+  order.forEach(function(k){ txt+='\n'+k+':\n'; groups[k].forEach(function(s){ txt+='  - '+(s.item||'')+(s.price?(' ($'+s.price+')'):'')+'\n'; }); });
+  txt+='\nTotal: $'+(plan.total||0);
+  try{ if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(function(){ if(typeof showToast==='function') showToast('Copied','Shopping list copied — paste it anywhere.'); }, function(){ if(typeof showToast==='function') showToast('List ready', txt.slice(0,80)); }); return; } }catch(_){}
+  if(typeof showToast==='function') showToast('List', txt.slice(0,80));
 }
 
 // Push the plan's meals into today's food log — closes the loop with the tracker.
