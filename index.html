@@ -8472,7 +8472,18 @@ function renderUrgeInsights(){
   if(!box) return;
   loadV();
   const tracked = (vices||[]).filter(v => v.trackPatterns);
-  if(!tracked.length){ box.style.display='none'; return; }
+  if(!tracked.length){
+    // Discoverable mirror: if an untracked vice already has enough logged battles for a real pattern,
+    // gently offer it (never forced on — the man chooses to look).
+    const ready = (vices||[]).filter(v => !v.trackPatterns && analyzeUrgePatterns(v.n));
+    if(ready.length){
+      box.innerHTML = ready.map(function(v){ const idx=vices.indexOf(v);
+        return '<div style="margin-bottom:8px;padding:12px 14px;background:var(--bg3);border:1px solid var(--go-bd);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:10px"><div style="font-size:12.5px;color:var(--tx2);line-height:1.5">There’s a pattern in your <b style="color:var(--tx)">'+_esc(v.n)+'</b> battles — when it hits hardest, and how to get ahead of it.</div><button onclick="toggleVicePatterns('+idx+')" style="flex-shrink:0;padding:8px 13px;border-radius:100px;border:1px solid var(--go-bd);background:var(--go-bg);color:var(--go);font-size:12px;cursor:pointer">Show me</button></div>';
+      }).join('');
+      box.style.display='block'; return;
+    }
+    box.style.display='none'; return;
+  }
   let html = '';
   tracked.forEach(v => {
     const p = analyzeUrgePatterns(v.n);
