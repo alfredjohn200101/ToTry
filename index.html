@@ -9182,6 +9182,7 @@ async function _companionSay(userText, opening){
     + (function(){ try{ const today=new Date().toLocaleDateString('en-AU'); const m=(ls('totry_mornings')||[]).find(x=>x.ts&&new Date(x.ts).toLocaleDateString('en-AU')===today); if(m&&m.intention&&m.intention.trim()){ return "THIS MORNING they set this intention for today: \""+m.intention.trim().replace(/"/g,"'")+"\". If it fits naturally and gently, you can remind them of what THEY said they wanted today — not as a guilt trip, but as an older sibling reflecting back the person they said they wanted to be. Only if it lands warmly. "; } return ''; }catch(_){ return ''; } })()
     + "THE EVIDENCE-BASED APPROACH that fits this, which you apply NATURALLY in your own warm words (never name-drop the technique like a textbook): "+spine+" "
     + "ALSO — if at ANY point they voice a permission-giving thought ('just once', 'I deserve it', 'I've already ruined today', 'I can't cope without it', 'I'll start tomorrow'), gently catch it WITH them and ask the question that lets them see it isn't true or isn't a command (CBT cognitive restructuring) — like an older sibling would, never as a lecture. Then help them land on what's truer. "
+    + "If it feels right, gently help them see what the urge is really trying to MANAGE right now — stress, loneliness, boredom, exhaustion, a hard feeling it's numbing — because naming the real need underneath often loosens the urge's grip more than fighting it head-on. Ask softly, with curiosity, never interrogating. "
     + "RULES: Be a present friend, not a therapist or a form. Short, human, warm - 2-4 sentences at a time, like texting someone you love at their hardest moment. Never shame, never lecture. This is the MOMENT - keep them company through it, help them outlast it or step back from it using the approach above. You can offer a breath, a grounding, a truth, a verse if it fits naturally - but mostly you are PRESENCE. If they're clearly in crisis or mention self-harm, gently encourage reaching a real person or helpline - you're a companion, not a replacement for real help. Don't make them feel worse if they've already slipped - meet them with grace, every time is a fresh try. If this struggle has clearly been beating them for a long time or feels bigger than a moment's urge, gently name that bringing in a REAL person (a trusted friend, a priest, a counsellor) is strength, not failure - you're a tool walking beside them, never the whole answer. "
     + (opening ? "OPEN the conversation: greet them gently by acknowledging they reached for help in this moment (that itself is strength), and ask one soft question or offer one small thing to do right now. 2-3 sentences." : "Continue - respond to what they just said.");
   let reply = '';
@@ -15755,11 +15756,12 @@ function _fuelRenderPlan(plan){
   const p = getMealPrefs();
   const R = Math.round;
   const money = function(v){ return '$'+(R((v||0)*100)/100).toFixed(2); };
-  const mealsHtml = (plan.meals||[]).map(function(mm){
+  const mealsHtml = (plan.meals||[]).map(function(mm, i){
     return '<div style="padding:10px 0;border-top:1px solid var(--bd)">'+
       '<div style="display:flex;justify-content:space-between;gap:8px"><div style="font-size:13px;font-weight:600;color:var(--tx)">'+_esc(mm.name||'Meal')+'</div><div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx3);white-space:nowrap">'+R(mm.cal||0)+' cal · '+R(mm.pro||0)+'p · '+R(mm.carbs||0)+'c · '+R(mm.fat||0)+'f</div></div>'+
       '<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-top:3px">'+_esc(mm.items||'')+'</div>'+
       (mm.why?'<div style="font-size:11.5px;color:var(--go);line-height:1.5;margin-top:5px;font-style:italic">'+_esc(mm.why)+'</div>':'')+
+      '<button onclick="_fuelSwapMeal('+i+')" style="margin-top:6px;background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;font-family:\'DM Mono\',monospace;letter-spacing:0.03em">↻ swap this meal</button>'+
     '</div>';
   }).join('');
   const sum = function(k){ return (plan.meals||[]).reduce(function(a,mm){ return a+(mm[k]||0); },0); };
@@ -15814,6 +15816,26 @@ function _fuelRenderPlan(plan){
     '<button class="btn" style="margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx2)" onclick="closeModal(this);_fuelGenerate()">↻ Regenerate</button>'+
     '</div>';
   document.body.appendChild(m);
+}
+
+// Swap a single meal without regenerating the whole plan.
+async function _fuelSwapMeal(i){
+  const plan = ls('totry_meal_plan'); if(!plan || !plan.meals || !plan.meals[i]) return;
+  const p = getMealPrefs();
+  const dietStr = (p.diet&&p.diet.length)?p.diet.join(', '):'no specific diet';
+  const old = plan.meals[i];
+  if(typeof showToast==='function') showToast('Swapping…', 'Finding a different '+(old.name||'meal')+'.');
+  const others = plan.meals.filter(function(_,j){ return j!==i; }).map(function(mm){ return mm.name; }).join(', ');
+  const shopsStr = (p.chains&&p.chains.join(', ')) || p.chain || 'the supermarket';
+  const sys = "You are a dietitian. Return ONLY one JSON meal object, no prose.";
+  const prompt = "Replace this meal: \""+(old.name||'')+" — "+(old.items||'')+"\" with a DIFFERENT meal for the same slot. Keep roughly the same calories (~"+Math.round(old.cal||0)+" kcal) and protein (~"+Math.round(old.pro||0)+"g). STRICTLY respect diet: "+dietStr+(p.restrictions?('; '+p.restrictions):'')+". Available at "+shopsStr+" ("+(p.country||'Australia')+"). Do NOT duplicate these meals: "+others+". Return ONLY JSON: {\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"carbs\":0,\"fat\":0,\"why\":\"\"}.";
+  let txt=''; try{ txt = await api(sys, [], prompt, 400, { timeout:25000 }); }catch(e){ txt=''; }
+  let meal=null; try{ let c=(txt||'').replace(/```json|```/g,'').trim(); c=c.slice(c.indexOf('{'),c.lastIndexOf('}')+1).replace(/,\s*([}\]])/g,'$1'); meal=JSON.parse(c); }catch(_){ meal=null; }
+  if(!meal || !meal.name){ if(typeof showToast==='function') showToast('Hmm','Couldn’t swap that one — try again shortly.'); return; }
+  plan.meals[i] = meal; ls('totry_meal_plan', plan); if(typeof syncToCloud==='function') syncToCloud();
+  if(typeof haptic==='function') haptic('success');
+  const m=document.getElementById('fuel-plan-modal'); if(m) m.remove();
+  _fuelRenderPlan(plan);
 }
 
 // Push the plan's meals into today's food log — closes the loop with the tracker.
