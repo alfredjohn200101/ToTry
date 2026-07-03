@@ -1,5 +1,11 @@
-// Bevel-grade readiness — computed from real health signals (HRV, resting HR, sleep, strain).
-// Pure + testable. On device these come from HealthKit; on web from a mock provider.
+// Readiness — computed from real health signals (HRV, resting HR, sleep, strain).
+// Pure + testable. On device these come from the phone's health store (Apple Health on iOS,
+// Health Connect on Android — which in turn gathers whatever watch syncs in: Apple Watch, Garmin,
+// and others). On web from a mock provider.
+
+// Where a snapshot came from. Devices (Apple Watch, Garmin, and others) feed the platform stores,
+// so most people are covered by apple_health / health_connect without a per-brand integration.
+export type HealthSource = 'apple_health' | 'health_connect' | 'garmin' | 'mock';
 
 export type HealthSnapshot = {
   hrv?: number | null; // ms (SDNN/RMSSD)
@@ -11,7 +17,7 @@ export type HealthSnapshot = {
   activeEnergy?: number | null; // kcal
   strain?: number | null; // recent training load 0-100 (optional)
   baseline?: { hrv?: number | null; rhr?: number | null } | null; // personal 14-day baselines
-  source?: string; // 'HealthKit' | 'mock' | 'GoogleFit'
+  source?: HealthSource; // where the numbers came from
 };
 
 export type Driver = { label: string; dir: 'up' | 'down' };

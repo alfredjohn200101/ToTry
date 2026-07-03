@@ -64,8 +64,8 @@ export default function Recovery() {
       <Text variant="title">Recovery</Text>
       <Flourish />
       <Text variant="callout" style={{ marginTop: space.s4 }}>
-        How recovered you are today — from your sleep, heart-rate variability and resting heart rate.
-        The insight Whoop and Bevel charge for, woven into your whole life.
+        How recovered you are today — read from your sleep, heart-rate variability and resting heart
+        rate, then woven into the rest of your life so it guides the day rather than just measuring it.
       </Text>
 
       {!ready ? (
@@ -109,7 +109,7 @@ export default function Recovery() {
 
           <Text variant="footnote" style={{ marginTop: space.s4, lineHeight: 19 }}>
             {snap?.source === 'mock'
-              ? 'Sample data in the web preview. On your iPhone this reads live from Apple Health (HRV, sleep, resting HR); on Android, Health Connect.'
+              ? 'Sample data in this preview. On your phone it reads live from your health data — Apple Health on iPhone, Health Connect on Android — including whatever your watch syncs there, be it an Apple Watch, a Garmin or another.'
               : 'Live from your health data. Readiness sharpens over ~2 weeks as it learns your personal baseline.'}
           </Text>
         </>
