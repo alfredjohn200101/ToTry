@@ -4,6 +4,7 @@
 // each new domain adds its slice here without changing the surface. This is the moat in code.
 import { get } from '@/data/store';
 import { getVices, cleanDays, totalReclaimed, type Vice } from '@/fight/model';
+import { getUrges, analyzeUrges } from '@/fight/urges';
 import { computeReadiness, type HealthSnapshot, type Readiness } from '@/health/readiness';
 import type { CompanionContext } from '@/soul/companionPrompt';
 
@@ -13,6 +14,7 @@ export type LifeState = {
     activeCount: number;
     longestCleanDays: number;
     reclaimed: number;
+    riskWindow: string | null; // the hardest time of day, once the pattern is clear
   };
   readiness: Readiness | null;
   brief: string;
@@ -26,6 +28,7 @@ export function getLifeState(): LifeState {
 
   const longestCleanDays = vices.reduce((m, v) => Math.max(m, cleanDays(v)), 0);
   const reclaimed = totalReclaimed(vices);
+  const pattern = analyzeUrges(getUrges()); // overall craving pattern, null until there's enough
 
   const parts: string[] = [];
   if (vices.length) {
@@ -38,13 +41,18 @@ export function getLifeState(): LifeState {
     );
     if (reclaimed > 0) parts.push(`Reclaimed ~$${reclaimed} by staying clean.`);
   }
+  if (pattern?.riskWindow) {
+    parts.push(
+      `Hardest urge window: ${pattern.riskWindow}${pattern.topFeeling ? ` (often feeling ${pattern.topFeeling.toLowerCase()})` : ''}.`,
+    );
+  }
   if (readiness?.hasData) {
     parts.push(`Recovery today: ${readiness.level} (${readiness.score}/100).`);
   }
   const brief = parts.join(' ') || 'Just getting started — little history yet.';
 
   return {
-    fight: { vices, activeCount: vices.length, longestCleanDays, reclaimed },
+    fight: { vices, activeCount: vices.length, longestCleanDays, reclaimed, riskWindow: pattern?.riskWindow ?? null },
     readiness,
     brief,
     generatedAt: Date.now(),

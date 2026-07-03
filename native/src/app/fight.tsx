@@ -26,8 +26,18 @@ import {
   withSlip,
 } from '@/fight/model';
 import { viceInfo, streakWord } from '@/fight/viceKnowledge';
+import {
+  type Urge,
+  type UrgePattern,
+  URGE_FEELINGS,
+  logUrge,
+  recordOutcome,
+  analyzeUrges,
+  overridePlan,
+} from '@/fight/urges';
 
 const EMPTY: Vice[] = [];
+const EMPTY_URGES: Urge[] = [];
 
 const haptic = (kind: 'light' | 'success' | 'warn' = 'light') => {
   if (process.env.EXPO_OS === 'web') return;
@@ -47,6 +57,54 @@ function standWith(v: Vice) {
   });
 }
 
+// In-the-moment capture — how strong, what you're feeling, what set it off. Low-friction + skippable.
+function UrgeCapture({ accent, onSave, onCancel }: { accent: string; onSave: (d: { intensity: number | null; feeling: string | null; trigger: string }) => void; onCancel: () => void }) {
+  const [intensity, setIntensity] = useState<number | null>(null);
+  const [feeling, setFeeling] = useState<string | null>(null);
+  const [trigger, setTrigger] = useState('');
+
+  return (
+    <View style={styles.capture}>
+      <Text variant="micro" color={accent} style={{ marginBottom: space.s3 }}>LOG THIS MOMENT</Text>
+
+      <Text variant="footnote" style={{ marginBottom: 6 }}>How strong is it?</Text>
+      <View style={styles.dots}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <Pressable key={n} onPress={() => { haptic(); setIntensity(n); }} style={[styles.dot, intensity != null && n <= intensity && { backgroundColor: accent + '33', borderColor: accent }]}>
+            <Text variant="subhead" color={intensity != null && n <= intensity ? accent : colors.tx3}>{n}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <Text variant="footnote" style={{ marginTop: space.s4, marginBottom: 6 }}>What are you feeling?</Text>
+      <View style={styles.chips}>
+        {URGE_FEELINGS.map((f) => (
+          <Pressable key={f} onPress={() => { haptic(); setFeeling(feeling === f ? null : f); }} style={[styles.chipBtn, feeling === f && { backgroundColor: colors.bl + '1E', borderColor: colors.bl }]}>
+            <Text variant="subhead" color={feeling === f ? colors.bl : colors.tx3}>{f}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      <TextInput
+        value={trigger}
+        onChangeText={setTrigger}
+        placeholder="What set it off? (optional)"
+        placeholderTextColor={colors.tx3}
+        style={styles.input}
+      />
+
+      <View style={styles.actionRow}>
+        <Pressable onPress={() => onSave({ intensity, feeling, trigger })} style={[styles.softBtn, styles.grow, { borderColor: accent + '66' }]}>
+          <Text variant="subhead" color={accent}>Save the moment</Text>
+        </Pressable>
+        <Pressable onPress={onCancel} style={styles.softBtn}>
+          <Text variant="subhead" color={colors.tx3}>Cancel</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 function ViceCard({
   v,
   flash,
@@ -55,6 +113,7 @@ function ViceCard({
   onAskSlip,
   onConfirmSlip,
   onCancelSlip,
+  onLogUrge,
 }: {
   v: Vice;
   flash?: string;
@@ -63,9 +122,11 @@ function ViceCard({
   onAskSlip: () => void;
   onConfirmSlip: () => void;
   onCancelSlip: () => void;
+  onLogUrge: (d: { intensity: number | null; feeling: string | null; trigger: string }) => void;
 }) {
   const info = viceInfo(v.type);
   const words = streakWord(v.mode);
+  const [logging, setLogging] = useState(false);
   const d = cleanDays(v);
   const big = d >= 1 ? String(d) : String(cleanHours(v));
   const unit = d >= 1 ? (d === 1 ? `day ${words.clean}` : `days ${words.clean}`) : `${cleanHours(v) === 1 ? 'hour' : 'hours'} ${words.clean}`;
@@ -74,7 +135,6 @@ function ViceCard({
 
   return (
     <Card style={{ marginTop: space.s4 }}>
-      {/* header — accent medallion gives each vice its own identity */}
       <View style={styles.headRow}>
         <View style={[styles.medallion, { borderColor: info.accent + '55', backgroundColor: info.accent + '14' }]}>
           <Icon name={info.icon} size={20} color={info.accent} />
@@ -91,7 +151,6 @@ function ViceCard({
         </View>
       </View>
 
-      {/* streak — accent-colored serif number for per-type presence */}
       <View style={styles.streakRow}>
         <Text style={{ fontFamily: fonts.serif, fontSize: 46, color: info.accent, lineHeight: 48 }}>{big}</Text>
         <Text variant="subhead" style={{ marginLeft: space.s3, marginBottom: 9 }}>{unit}</Text>
@@ -103,7 +162,6 @@ function ViceCard({
         {v.relapses > 0 && <Text variant="footnote">{'  ·  '}{v.relapses} restart{v.relapses === 1 ? '' : 's'}</Text>}
       </View>
 
-      {/* per-type recovery insight — never generic */}
       <View style={[styles.insight, { borderLeftColor: info.accent }]}>
         <Text variant="micro" color={info.accent} style={{ marginBottom: 4 }}>
           {v.mode === 'moderate' ? 'KEEPING IT IN CHECK' : `WHAT STAYING ${words.clean.toUpperCase()} IS DOING`}
@@ -137,12 +195,74 @@ function ViceCard({
           </Pressable>
         </View>
       )}
+
+      {logging ? (
+        <UrgeCapture
+          accent={info.accent}
+          onSave={(dta) => { onLogUrge(dta); setLogging(false); }}
+          onCancel={() => setLogging(false)}
+        />
+      ) : (
+        <Pressable onPress={() => { haptic(); setLogging(true); }} style={{ alignSelf: 'center', paddingVertical: space.s3, marginTop: space.s2 }}>
+          <Text variant="footnote" color={colors.tx3}>＋ log an urge as it happens</Text>
+        </Pressable>
+      )}
     </Card>
+  );
+}
+
+// The mirror — the scattered urges turned into self-knowledge + a way out. Grace-first: a map, not a verdict.
+function MirrorCard({ p, accent }: { p: UrgePattern; accent: string }) {
+  const lead: string[] = [];
+  if (p.riskWindow) lead.push(`Your hardest window is ${p.riskWindow}`);
+  if (p.topFeeling) lead.push(`usually when you're feeling ${p.topFeeling.toLowerCase()}`);
+  let leadLine = lead.join(', ');
+  if (p.riskDay) leadLine += leadLine ? `, and ${p.riskDay}s hit hardest` : `${p.riskDay}s hit hardest`;
+  leadLine = leadLine ? leadLine + '.' : 'A picture is starting to form from what you log.';
+
+  const trendLine =
+    p.trend === 'improving'
+      ? "And you're outlasting more than you used to — that's real ground gained."
+      : p.trend === 'slipping'
+        ? "You've been slipping a little more lately — no shame in it, let's just get ahead of it."
+        : null;
+
+  const plan = overridePlan(p);
+
+  return (
+    <Card style={{ marginTop: space.s3, borderColor: accent + '40', borderWidth: StyleSheet.hairlineWidth }}>
+      <Text variant="eyebrow" color={accent}>What I'm seeing</Text>
+      <Text variant="body" style={{ marginTop: space.s2 }}>{leadLine}</Text>
+      {trendLine && <Text variant="subhead" style={{ marginTop: space.s2, color: colors.tx2 }}>{trendLine}</Text>}
+
+      <View style={styles.statRow}>
+        {p.winRate != null && <Stat label="outlasted" value={`${p.winRate}%`} accent={accent} />}
+        {p.topTrigger && <Stat label="top cue" value={p.topTrigger} accent={accent} />}
+        {p.avgIntensity != null && <Stat label="avg pull" value={`${p.avgIntensity}/5`} accent={accent} />}
+      </View>
+
+      <View style={[styles.insight, { borderLeftColor: accent, marginTop: space.s4 }]}>
+        <Text variant="micro" color={accent} style={{ marginBottom: 6 }}>YOUR WAY THROUGH IT</Text>
+        {plan.map((para, i) => (
+          <Text key={i} variant="subhead" style={{ color: colors.tx2, lineHeight: 21, marginTop: i ? space.s3 : 0 }}>{para}</Text>
+        ))}
+      </View>
+    </Card>
+  );
+}
+
+function Stat({ label, value, accent }: { label: string; value: string; accent: string }) {
+  return (
+    <View style={styles.stat}>
+      <Text style={{ fontFamily: fonts.monoMed, fontSize: 15, color: accent }}>{value}</Text>
+      <Text variant="micro" color={colors.tx3} style={{ marginTop: 2 }}>{label}</Text>
+    </View>
   );
 }
 
 export default function Fight() {
   const [vices, setVices] = useStored<Vice[]>('fight.vices', EMPTY);
+  const [urges] = useStored<Urge[]>('fight.urges', EMPTY_URGES);
   const { readiness } = useReadiness();
   const [flash, setFlash] = useState<{ id: string; text: string } | null>(null);
   const [confirmSlip, setConfirmSlip] = useState<string | null>(null);
@@ -159,14 +279,22 @@ export default function Fight() {
   const resist = (v: Vice) => {
     haptic('success');
     setVices((cur) => withUrgeResisted(cur, v.id));
+    recordOutcome(v.id, 'outlasted'); // feeds the mirror from ordinary use
     say(v.id, "That's the rep that builds the man. 🌿");
   };
 
   const slip = (v: Vice) => {
     haptic('warn');
     setVices((cur) => withSlip(cur, v.id));
+    recordOutcome(v.id, 'slipped');
     setConfirmSlip(null);
     say(v.id, 'A fresh start from now — your wins stay. Grace, every time.');
+  };
+
+  const doLogUrge = (v: Vice, dta: { intensity: number | null; feeling: string | null; trigger: string }) => {
+    haptic('success');
+    logUrge({ viceId: v.id, intensity: dta.intensity, feeling: dta.feeling, trigger: dta.trigger, outcome: 'open' });
+    say(v.id, "Logged. The more you notice, the more clearly I can help you get ahead of it.");
   };
 
   return (
@@ -198,18 +326,24 @@ export default function Fight() {
         </Card>
       )}
 
-      {vices.map((v) => (
-        <ViceCard
-          key={v.id}
-          v={v}
-          flash={flash?.id === v.id ? flash.text : undefined}
-          confirmSlip={confirmSlip === v.id}
-          onResist={() => resist(v)}
-          onAskSlip={() => setConfirmSlip(v.id)}
-          onConfirmSlip={() => slip(v)}
-          onCancelSlip={() => setConfirmSlip(null)}
-        />
-      ))}
+      {vices.map((v) => {
+        const pattern = analyzeUrges(urges.filter((u) => u.viceId === v.id));
+        return (
+          <View key={v.id}>
+            <ViceCard
+              v={v}
+              flash={flash?.id === v.id ? flash.text : undefined}
+              confirmSlip={confirmSlip === v.id}
+              onResist={() => resist(v)}
+              onAskSlip={() => setConfirmSlip(v.id)}
+              onConfirmSlip={() => slip(v)}
+              onCancelSlip={() => setConfirmSlip(null)}
+              onLogUrge={(dta) => doLogUrge(v, dta)}
+            />
+            {pattern && <MirrorCard p={pattern} accent={viceInfo(v.type).accent} />}
+          </View>
+        );
+      })}
 
       {adding ? (
         <AddVice
@@ -243,8 +377,6 @@ function AddVice({ onSave, onCancel }: { onSave: (v: Vice) => void; onCancel: ()
   const [limit, setLimit] = useState('');
   const [cost, setCost] = useState('');
 
-  // Classify as they type so the form speaks to THIS vice, and lean the goal sensibly (not always
-  // "quit") until they choose for themselves.
   const info = name.trim() ? viceInfo(classifyVice(name)) : null;
   const onName = (t: string) => {
     setName(t);
@@ -355,4 +487,13 @@ const styles = StyleSheet.create({
   segment: { flexDirection: 'row', gap: space.s2, marginTop: space.s4 },
   segItem: { flex: 1, paddingVertical: space.s3, alignItems: 'center', borderRadius: radius.sm, borderCurve: 'continuous', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.bd2 },
   segOn: { backgroundColor: colors.bg3, borderColor: colors.goBd },
+  // craving capture
+  capture: { marginTop: space.s4, paddingTop: space.s4, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.bd },
+  dots: { flexDirection: 'row', gap: space.s2 },
+  dot: { flex: 1, height: 40, borderRadius: radius.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.bd2, alignItems: 'center', justifyContent: 'center' },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.s2 },
+  chipBtn: { paddingHorizontal: space.s3, paddingVertical: space.s2, borderRadius: radius.pill, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.bd2 },
+  // mirror
+  statRow: { flexDirection: 'row', gap: space.s5, marginTop: space.s4 },
+  stat: { alignItems: 'flex-start' },
 });
