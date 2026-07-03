@@ -3939,7 +3939,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v185';
+const APP_VERSION = 'v186';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -11107,6 +11107,15 @@ function getThematicVerses(feeling){
   if(/strength|tired|exhaust|weak|burnt out|burnout|discipline|keep going/.test(f))themes.push('strength');
   if(/identity|who am i|lost myself|purpose|meaning|confused about who/.test(f))themes.push('identity');
   if(/relationship|my partner|girlfriend|boyfriend|marriage|betray/.test(f))themes.push('relationships');
+  if(/tempt|urge|about to (slip|give in|fall)|craving|triggered|give in|on the edge|so close to|one click away/.test(f) && !themes.includes('lust'))themes.push('temptation');
+  if(/grief|grieving|mourning|bereave|passed away|death of|funeral|someone died|they died|loss of a loved/.test(f))themes.push('grief');
+  if(/patien|impatient|waiting|takes so long|not yet|why is it taking|in a hurry|slow to happen|how long/.test(f))themes.push('patience');
+  if(/grateful|gratitude|thankful|give thanks|blessed|count my blessings|appreciate/.test(f))themes.push('gratitude');
+  if(/purity|be pure|stay pure|clean heart|holiness|holy living|stay clean|integrity/.test(f))themes.push('purity');
+  if(/persever|endure|keep pushing|finish the race|dont quit|don't quit|stay the course|almost quit|keep fighting|keep going/.test(f) && !themes.includes('strength'))themes.push('perseverance');
+  if(/heal|sick|illness|disease|unwell|recovery|diagnos|in pain|hurting body|my health|chronic|suffering physically/.test(f))themes.push('healing');
+  if(/doubt|questioning|hard to believe|is god real|unbelief|struggling to believe|losing faith|not sure god|does god exist/.test(f))themes.push('doubt');
+  if(/provi|need money|pay rent|cant afford|can't afford|lost my job|unemployed|will i have enough|daily bread|make ends meet|scared about money/.test(f))themes.push('provision');
   if(!themes.length){
     // Default: rotate through general life-verse themes by content hash so we don't always
     // return the same fallback for unmatched queries
@@ -11123,6 +11132,11 @@ function getThematicVerses(feeling){
       {reference:'2 Corinthians 1:3-4 (ESV)',verse:'Blessed be the God of all comfort, who comforts us in all our affliction, so that we may be able to comfort those who are in any affliction.',reflection:'What you receive from God in this season will one day be what you give to someone else in theirs.'},
       {reference:'John 16:22 (ESV)',verse:'So also you have sorrow now, but I will see you again, and your hearts will rejoice, and no one will take your joy from you.',reflection:'This sorrow has an end. Jesus promised it directly.'},
       {reference:'Revelation 21:4 (ESV)',verse:'He will wipe away every tear from their eyes, and death shall be no more, neither shall there be mourning, nor crying, nor pain anymore.',reflection:'The final word over your pain is its end, by God\'s own hand.'},
+      {reference:'Psalm 56:8 (ESV)',verse:'You have kept count of my tossings; put my tears in your bottle. Are they not in your book?',reflection:'Not one of your tears has gone unnoticed. He keeps them like they matter — because you do.'},
+      {reference:'Psalm 73:26 (ESV)',verse:'My flesh and my heart may fail, but God is the strength of my heart and my portion forever.',reflection:'When your heart literally feels like it is failing, he becomes the strength underneath it. He holds what you cannot.'},
+      {reference:'Isaiah 61:1 (ESV)',verse:'The Lord has anointed me to bring good news to the poor; he has sent me to bind up the brokenhearted.',reflection:'Binding up the brokenhearted is not a side task for Jesus — it is written into why he came.'},
+      {reference:'2 Corinthians 4:8-9 (ESV)',verse:'We are afflicted in every way, but not crushed; perplexed, but not driven to despair; persecuted, but not forsaken; struck down, but not destroyed.',reflection:'Pressed, yes. Crushed, no. Grace lives in that small, stubborn difference.'},
+      {reference:'Psalm 34:17-18 (ESV)',verse:'When the righteous cry for help, the Lord hears and delivers them out of all their troubles. The Lord is near to the brokenhearted.',reflection:'The crying itself reaches him. Nearness to the broken is where he chooses to be.'},
     ],
     courage:[
       {reference:'Joshua 1:9 (ESV)',verse:'Be strong and courageous. Do not be frightened, and do not be dismayed, for the Lord your God is with you wherever you go.',reflection:'Courage is not the absence of fear. It is choosing to act knowing God is with you.'},
@@ -11131,6 +11145,11 @@ function getThematicVerses(feeling){
       {reference:'Isaiah 41:10 (ESV)',verse:'Fear not, for I am with you; be not dismayed, for I am your God; I will strengthen you, I will help you.',reflection:'God\'s presence is the answer to fear — not pep talks, not strategy, just Him.'},
       {reference:'Psalm 27:1 (ESV)',verse:'The Lord is my light and my salvation; whom shall I fear?',reflection:'When you remember Who is for you, the question of who is against you matters less.'},
       {reference:'Matthew 10:28 (ESV)',verse:'And do not fear those who kill the body but cannot kill the soul.',reflection:'There is a fear that is bigger than human opinion. Reset your scale.'},
+      {reference:'Psalm 56:3 (ESV)',verse:'When I am afraid, I put my trust in you.',reflection:'Being afraid and trusting God are not opposites. You can do both in the same breath.'},
+      {reference:'Deuteronomy 31:6 (ESV)',verse:'Be strong and courageous. Do not fear or be in dread of them, for it is the Lord your God who goes with you. He will not leave you or forsake you.',reflection:'Courage is not manufactured — it is borrowed from the One who promised not to leave.'},
+      {reference:'Psalm 31:24 (ESV)',verse:'Be strong, and let your heart take courage, all you who wait for the Lord.',reflection:'Courage is something you reach out and pick up — especially in the waiting.'},
+      {reference:'1 Corinthians 16:13 (ESV)',verse:'Be watchful, stand firm in the faith, act like men, be strong.',reflection:'Sometimes courage is simply refusing to move from where you know you should stand.'},
+      {reference:'Deuteronomy 20:4 (ESV)',verse:'For the Lord your God is he who goes with you to fight for you against your enemies, to give you the victory.',reflection:'You are not walking into this alone or unarmed. He goes ahead of you to fight.'},
     ],
     jealousy:[
       {reference:'James 3:16 (ESV)',verse:'For where jealousy and selfish ambition exist, there will be disorder and every vile practice.',reflection:'Jealousy is not a small sin. It is the root of disorder in your life.'},
@@ -11138,6 +11157,11 @@ function getThematicVerses(feeling){
       {reference:'Galatians 5:26 (ESV)',verse:'Let us not become conceited, provoking one another, envying one another.',reflection:'Envy is a relationship destroyer. It poisons how you see other people.'},
       {reference:'1 Corinthians 13:4 (ESV)',verse:'Love is patient and kind; love does not envy or boast.',reflection:'Real love rejoices in another\'s good. Envy is the opposite of love.'},
       {reference:'Psalm 37:1 (ESV)',verse:'Fret not yourself because of evildoers; be not envious of wrongdoers!',reflection:'Sometimes we even envy those doing wrong. That is a warning sign of how far off we have drifted.'},
+      {reference:'1 Timothy 6:6 (ESV)',verse:'But godliness with contentment is great gain.',reflection:'The gain you are actually after is not what they have. It is a settled heart — and that is available to you now.'},
+      {reference:'Hebrews 13:5 (ESV)',verse:'Keep your life free from love of money, and be content with what you have, for he has said, I will never leave you nor forsake you.',reflection:'The cure for comparison is not getting more — it is realizing you already have the One who cannot be taken.'},
+      {reference:'Proverbs 23:17 (ESV)',verse:'Let not your heart envy sinners, but continue in the fear of the Lord all the day.',reflection:'When someone else\'s life looks better, turn your eyes back to God. That is where the comparison quiets.'},
+      {reference:'Philippians 4:11 (ESV)',verse:'Not that I am speaking of being in need, for I have learned in whatever situation I am to be content.',reflection:'Contentment is learned, not found. Envy loses its grip the more you practice being grateful for your own portion.'},
+      {reference:'James 3:14-16 (ESV)',verse:'But if you have bitter jealousy and selfish ambition in your hearts, do not boast and be false to the truth. For where jealousy and selfish ambition exist, there will be disorder.',reflection:'Name the jealousy honestly instead of dressing it up. Bringing it into the light is the first step out of the disorder.'},
     ],
     shame:[
       {reference:'Romans 8:1 (ESV)',verse:'There is therefore now no condemnation for those who are in Christ Jesus.',reflection:'Whatever you have done, this is the ground truth. No condemnation. Full stop.'},
@@ -11150,6 +11174,11 @@ function getThematicVerses(feeling){
       {reference:'Psalm 34:5 (ESV)',verse:'Those who look to him are radiant, and their faces shall never be ashamed.',reflection:'Looking to him does something visible — it lifts the face that shame wanted bowed.'},
       {reference:'Isaiah 61:7 (ESV)',verse:'Instead of your shame there shall be a double portion; instead of dishonor they shall rejoice in their lot.',reflection:'God\'s economy doesn\'t just remove shame — it replaces it with double honor.'},
       {reference:'Romans 10:11 (ESV)',verse:'For the Scripture says, Everyone who believes in him will not be put to shame.',reflection:'Your faith is not misplaced. The One you\'re trusting will not leave you ashamed for trusting him.'},
+      {reference:'Isaiah 1:18 (ESV)',verse:'Come now, let us reason together, says the Lord: though your sins are like scarlet, they shall be as white as snow; though they are red like crimson, they shall become like wool.',reflection:'The deepest stain you are carrying, he calls washable. Scarlet to snow — that is his specialty.'},
+      {reference:'John 8:10-11 (ESV)',verse:'Jesus stood up and said to her, Has no one condemned you? She said, No one, Lord. And Jesus said, Neither do I condemn you; go, and from now on sin no more.',reflection:'The One with every right to condemn you chose not to. He sends you forward, not back into the shame.'},
+      {reference:'2 Corinthians 5:21 (ESV)',verse:'For our sake he made him to be sin who knew no sin, so that in him we might become the righteousness of God.',reflection:'A trade happened at the cross: he took your shame, you got his standing. That is who you are now.'},
+      {reference:'Psalm 32:5 (ESV)',verse:'I acknowledged my sin to you, and I did not cover my iniquity; I said, I will confess my transgressions to the Lord, and you forgave the iniquity of my sin.',reflection:'Shame says hide it. Grace says name it — and the moment you do, it is already forgiven.'},
+      {reference:'Isaiah 50:7 (ESV)',verse:'But the Lord God helps me; therefore I have not been disgraced; therefore I have set my face like a flint, and I know that I shall not be put to shame.',reflection:'With his help you can lift your face again. Shame does not get the last word over someone he is holding.'},
     ],
     lust:[
       {reference:'1 Corinthians 6:18-19 (ESV)',verse:'Flee from sexual immorality. Every other sin a person commits is outside the body, but the sexually immoral person sins against his own body. Or do you not know that your body is a temple of the Holy Spirit?',reflection:'This is a physical fight - the instruction is to flee, not reason with the urge.'},
@@ -11162,6 +11191,11 @@ function getThematicVerses(feeling){
       {reference:'Job 31:1 (ESV)',verse:'I have made a covenant with my eyes; how then could I gaze at a virgin?',reflection:'A decision made in advance — a covenant with your eyes — is stronger than a decision made in the heat of the moment.'},
       {reference:'Psalm 119:9 (ESV)',verse:'How can a young man keep his way pure? By guarding it according to your word.',reflection:'The path to purity is not willpower alone — it is guarding your way with what God has said.'},
       {reference:'2 Timothy 2:22 (ESV)',verse:'So flee youthful passions and pursue righteousness, faith, love, and peace.',reflection:'Don\'t just run from — run toward. Fill the space the temptation wants with something better.'},
+      {reference:'Galatians 5:16 (ESV)',verse:'But I say, walk by the Spirit, and you will not gratify the desires of the flesh.',reflection:'The win is not only fighting the flesh head-on — it is walking so close to the Spirit there is no room left for it.'},
+      {reference:'Proverbs 6:27 (ESV)',verse:'Can a man carry fire next to his chest and his clothes not be burned?',reflection:'Some battles are won by not picking up the fire in the first place. Wisdom is distance.'},
+      {reference:'1 Peter 2:11 (ESV)',verse:'Beloved, I urge you as sojourners and exiles to abstain from the passions of the flesh, which wage war against your soul.',reflection:'This is not a harmless habit — it is a war on your soul. You are allowed to fight it like it matters.'},
+      {reference:'1 John 2:16 (ESV)',verse:'For all that is in the world—the desires of the flesh and the desires of the eyes and pride of life—is not from the Father but is from the world.',reflection:'The pull is real, but it is not from him. Naming the source helps you let it pass.'},
+      {reference:'1 Thessalonians 4:3-4 (ESV)',verse:'For this is the will of God, your sanctification: that you abstain from sexual immorality; that each one of you know how to control his own body in holiness and honor.',reflection:'Your body is not the enemy — it is meant to be handled with honor. That is dignity, not deprivation.'},
     ],
     lonely:[
       {reference:'Deuteronomy 31:8 (ESV)',verse:'It is the Lord who goes before you. He will be with you; he will not leave you or forsake you. Do not fear or be dismayed.',reflection:'You are never alone, even when it feels like you have been abandoned by everyone else.'},
@@ -11170,6 +11204,11 @@ function getThematicVerses(feeling){
       {reference:'Psalm 25:16 (ESV)',verse:'Turn to me and be gracious to me, for I am lonely and afflicted.',reflection:'David prayed this. The same feelings you have right now. God heard it then.'},
       {reference:'John 14:18 (ESV)',verse:'I will not leave you as orphans; I will come to you.',reflection:'Jesus\'s direct promise - I am not leaving you without someone.'},
       {reference:'Hebrews 13:5 (ESV)',verse:'I will never leave you nor forsake you.',reflection:'Six words that God never takes back.'},
+      {reference:'Matthew 28:20 (ESV)',verse:'And behold, I am with you always, to the end of the age.',reflection:'The very last thing Jesus said was a promise against loneliness: always. To the end.'},
+      {reference:'Psalm 139:7-8 (ESV)',verse:'Where shall I go from your Spirit? Or where shall I flee from your presence? If I ascend to heaven, you are there! If I make my bed in Sheol, you are there!',reflection:'There is no room dark enough, no low low enough, to be beyond his presence. You cannot out-lonely God.'},
+      {reference:'Isaiah 43:1 (ESV)',verse:'Fear not, for I have redeemed you; I have called you by name, you are mine.',reflection:'He knows your name — not the crowd\'s, yours. In the ache of feeling unseen, you are seen and claimed.'},
+      {reference:'Psalm 27:10 (ESV)',verse:'For my father and my mother have forsaken me, but the Lord will take me in.',reflection:'Even if the people who should have stayed did not, there is One who takes you in and will not leave.'},
+      {reference:'Genesis 2:18 (ESV)',verse:'Then the Lord God said, It is not good that the man should be alone; I will make him a helper fit for him.',reflection:'The loneliness you feel is not how it is meant to be — God said so first. Reaching for connection is holy, not weak.'},
     ],
     anxiety:[
       {reference:'Philippians 4:6-7 (ESV)',verse:'Do not be anxious about anything, but in everything by prayer and supplication with thanksgiving let your requests be made known to God. And the peace of God, which surpasses all understanding, will guard your hearts and your minds in Christ Jesus.',reflection:'The antidote to anxiety is not willpower - it is prayer. And the peace that follows defies rational explanation.'},
@@ -11182,6 +11221,11 @@ function getThematicVerses(feeling){
       {reference:'Isaiah 41:10 (ESV)',verse:'Fear not, for I am with you; be not dismayed, for I am your God; I will strengthen you, I will help you.',reflection:'Four promises in one verse: presence, strength, help, and a steadying hand. Hold one when the others feel far.'},
       {reference:'John 14:27 (ESV)',verse:'Peace I leave with you; my peace I give to you. Not as the world gives do I give to you. Let not your hearts be troubled.',reflection:'The peace Jesus offers is a different kind than the world\'s — it doesn\'t depend on circumstances changing.'},
       {reference:'Matthew 6:34 (ESV)',verse:'Therefore do not be anxious about tomorrow, for tomorrow will be anxious for itself. Sufficient for the day is its own trouble.',reflection:'You only have grace for today. Tomorrow\'s weight isn\'t yours to carry yet.'},
+      {reference:'Psalm 55:22 (ESV)',verse:'Cast your burden on the Lord, and he will sustain you; he will never permit the righteous to be moved.',reflection:'Hand it over — the whole weight. He does not just take it; he holds you steady after.'},
+      {reference:'Psalm 46:10 (ESV)',verse:'Be still, and know that I am God. I will be exalted among the nations, I will be exalted in the earth!',reflection:'When the mind is racing, the instruction is small: be still. Not fix everything — just be still and remember who he is.'},
+      {reference:'Matthew 11:28-29 (ESV)',verse:'Come to me, all who labor and are heavy laden, and I will give you rest. Take my yoke upon you, and learn from me, for I am gentle and lowly in heart.',reflection:'The invitation is for the overwhelmed specifically. Come tired, come anxious — rest is what is offered.'},
+      {reference:'Proverbs 12:25 (ESV)',verse:'Anxiety in a man\'s heart weighs him down, but a good word makes him glad.',reflection:'Anxiety is heavy — even Scripture says so. One true, good word can lift what the spiral piled on.'},
+      {reference:'Deuteronomy 31:8 (ESV)',verse:'It is the Lord who goes before you. He will be with you; he will not leave you or forsake you. Do not fear or be dismayed.',reflection:'Whatever you are dreading, he is already there ahead of you. You are not walking into it alone.'},
     ],
     depression:[
       {reference:'Psalm 34:18 (ESV)',verse:'The Lord is near to the brokenhearted and saves the crushed in spirit.',reflection:'God is specifically closer to you in this moment than at any other.'},
@@ -11190,6 +11234,11 @@ function getThematicVerses(feeling){
       {reference:'Lamentations 3:22-23 (ESV)',verse:'The steadfast love of the Lord never ceases; his mercies never come to an end; they are new every morning; great is your faithfulness.',reflection:'Written in the middle of complete devastation. New mercy. Every morning. Including tomorrow.'},
       {reference:'Psalm 30:5 (ESV)',verse:'Weeping may tarry for the night, but joy comes with the morning.',reflection:'This darkness is not permanent. Morning comes.'},
       {reference:'Romans 8:38-39 (ESV)',verse:'For I am sure that neither death nor life, nor angels nor rulers, nor things present nor things to come, nor powers, nor height nor depth, nor anything else in all creation, will be able to separate us from the love of God in Christ Jesus our Lord.',reflection:'Nothing - not even this darkness - can separate you from being loved.'},
+      {reference:'1 Kings 19:5-7 (ESV)',verse:'And behold, an angel touched him and said to him, Arise and eat. And he looked, and behold, there was at his head a cake baked on hot stones and a jar of water.',reflection:'When Elijah wanted to die, God did not lecture him — he let him rest and fed him. Sometimes the holiest next step is sleep and a meal.'},
+      {reference:'Psalm 143:7-8 (ESV)',verse:'Answer me quickly, O Lord! My spirit fails! Let me hear in the morning of your steadfast love, for in you I trust.',reflection:'Even David prayed from empty. You do not have to feel strong to pray — you just have to be honest.'},
+      {reference:'2 Corinthians 1:8-9 (ESV)',verse:'For we were so utterly burdened beyond our strength that we despaired of life itself. But that was to make us rely not on ourselves but on God who raises the dead.',reflection:'Even Paul despaired of life. He came through it leaning on the God who raises the dead — and so can you.'},
+      {reference:'Psalm 40:1-2 (ESV)',verse:'I waited patiently for the Lord; he inclined to me and heard my cry. He drew me up from the pit of destruction, out of the miry bog, and set my feet upon a rock.',reflection:'The pit is real, but it is not the destination. He has pulled people out of exactly this before, and set them on solid ground.'},
+      {reference:'Psalm 3:3 (ESV)',verse:'But you, O Lord, are a shield about me, my glory, and the lifter of my head.',reflection:'When your head is too heavy to lift, that becomes his job. He is the lifter of it.'},
     ],
     anger:[
       {reference:'Ephesians 4:26-27 (ESV)',verse:'Be angry and do not sin; do not let the sun go down on your anger, and give no opportunity to the devil.',reflection:'Anger itself is not the sin. What you do with it is. The clock is ticking - deal with it tonight.'},
@@ -11198,6 +11247,11 @@ function getThematicVerses(feeling){
       {reference:'Psalm 37:8 (ESV)',verse:'Refrain from anger, and forsake wrath! Fret not yourself; it tends only to evil.',reflection:'Anger nursed becomes something much darker. Name it, then release it.'},
       {reference:'Romans 12:19 (ESV)',verse:'Beloved, never avenge yourselves, but leave it to the wrath of God, for it is written, Vengeance is mine, I will repay, says the Lord.',reflection:'You do not have to carry this. Justice is real - it just does not belong to you to execute.'},
       {reference:'Proverbs 16:32 (ESV)',verse:'Whoever is slow to anger is better than the mighty, and he who rules his spirit than he who takes a city.',reflection:'Controlling your anger is the highest form of strength there is.'},
+      {reference:'Proverbs 19:11 (ESV)',verse:'Good sense makes one slow to anger, and it is his glory to overlook an offense.',reflection:'Letting something go is not weakness — Scripture calls it glory. You lose nothing by choosing peace.'},
+      {reference:'Proverbs 29:11 (ESV)',verse:'A fool gives full vent to his spirit, but a wise man quietly holds it back.',reflection:'Holding back is not suppression — it is the space where wisdom decides what is worth saying.'},
+      {reference:'Ecclesiastes 7:9 (ESV)',verse:'Be not quick in your spirit to become angry, for anger lodges in the heart of fools.',reflection:'Anger wants to move in and stay. Do not give it a room; deal with it before it unpacks.'},
+      {reference:'Colossians 3:8 (ESV)',verse:'But now you must put them all away: anger, wrath, malice, slander, and obscene talk from your mouth.',reflection:'Anger can be set down like a coat. You are not required to keep wearing it.'},
+      {reference:'Psalm 4:4 (ESV)',verse:'Be angry, and do not sin; ponder in your own hearts on your beds, and be silent.',reflection:'Feel the anger honestly, then get quiet with it before God. Silence often does what shouting cannot.'},
     ],
     addiction:[
       {reference:'1 Corinthians 10:13 (ESV)',verse:'No temptation has overtaken you that is not common to man. God is faithful, and he will not let you be tempted beyond your ability, but with the temptation he will also provide the way of escape, that you may be able to endure it.',reflection:'There is always a way out. You may not see it yet. But it exists. Look for it.'},
@@ -11211,6 +11265,11 @@ function getThematicVerses(feeling){
       {reference:'Philippians 4:13 (ESV)',verse:'I can do all things through him who strengthens me.',reflection:'Not by your strength — through his. The escape from this is powered by Someone stronger than the craving.'},
       {reference:'Psalm 50:15 (ESV)',verse:'Call upon me in the day of trouble; I will deliver you, and you shall glorify me.',reflection:'The moment the urge hits is the day of trouble. Call out right then. He answers in real time.'},
       {reference:'James 4:7 (ESV)',verse:'Submit yourselves therefore to God. Resist the devil, and he will flee from you.',reflection:'Resistance plus surrender to God is not passive. The thing pulling at you is the one that has to flee.'},
+      {reference:'Proverbs 24:16 (ESV)',verse:'For the righteous falls seven times and rises again, but the wicked stumble in times of calamity.',reflection:'What makes you righteous is not never falling — it is getting up again. Seven times. Every time.'},
+      {reference:'Lamentations 3:22-23 (ESV)',verse:'The steadfast love of the Lord never ceases; his mercies never come to an end; they are new every morning; great is your faithfulness.',reflection:'You have not used up your mercy. It resets every single morning — including the one after your worst night.'},
+      {reference:'Titus 2:11-12 (ESV)',verse:'For the grace of God has appeared, bringing salvation for all people, training us to renounce ungodliness and worldly passions, and to live self-controlled, upright, and godly lives.',reflection:'Grace is not just forgiveness for the fall — it actively trains you to say no. It is on your side of the fight.'},
+      {reference:'Ephesians 3:20 (ESV)',verse:'Now to him who is able to do far more abundantly than all that we ask or think, according to the power at work within us.',reflection:'The power to break this is not in your grip — it is already at work in you, and it is bigger than the habit.'},
+      {reference:'Psalm 34:17 (ESV)',verse:'When the righteous cry for help, the Lord hears and delivers them out of all their troubles.',reflection:'The cry does not need to be eloquent. Call out mid-urge — he hears it and moves.'},
     ],
     forgiveness:[
       {reference:'1 John 1:9 (ESV)',verse:'If we confess our sins, he is faithful and just to forgive us our sins and to cleanse us from all unrighteousness.',reflection:'Confess it - name it specifically - and the cleansing is as complete as the sin was real.'},
@@ -11219,6 +11278,11 @@ function getThematicVerses(feeling){
       {reference:'Micah 7:19 (ESV)',verse:'He will again have compassion on us; he will tread our iniquities underfoot. You will cast all our sins into the depths of the sea.',reflection:'Cast into the sea - not left on the shore where you can pick it back up.'},
       {reference:'Romans 8:1 (ESV)',verse:'There is therefore now no condemnation for those who are in Christ Jesus.',reflection:'No condemnation. Present tense. Right now. Whatever you just did.'},
       {reference:'Luke 15:20 (ESV)',verse:'And he arose and came to his father. But while he was still a long way off, his father saw him and felt compassion, and ran and embraced him and kissed him.',reflection:'The father runs. Not waits. Runs. That is how God responds when you turn back.'},
+      {reference:'Hebrews 8:12 (ESV)',verse:'For I will be merciful toward their iniquities, and I will remember their sins no more.',reflection:'God chooses to forget what you keep replaying. Maybe it is time to stop reminding yourself of what he has dropped.'},
+      {reference:'Colossians 2:13-14 (ESV)',verse:'And you, who were dead in your trespasses, God made alive together with him, having forgiven us all our trespasses, by canceling the record of debt that stood against us.',reflection:'The record against you was not just paid — it was canceled, nailed to the cross. There is nothing left to hold over you.'},
+      {reference:'Ephesians 1:7 (ESV)',verse:'In him we have redemption through his blood, the forgiveness of our trespasses, according to the riches of his grace.',reflection:'Forgiveness is not rationed thinly. It is measured out of riches — there is more than enough for this.'},
+      {reference:'Matthew 6:14 (ESV)',verse:'For if you forgive others their trespasses, your heavenly Father will also forgive you.',reflection:'Sometimes the forgiveness you are longing to feel starts flowing when you extend it to someone else.'},
+      {reference:'2 Corinthians 5:17 (ESV)',verse:'Therefore, if anyone is in Christ, he is a new creation. The old has passed away; behold, the new has come.',reflection:'What you did is real, but so is this: in Christ, the old you has already passed. You are not fetching the old self back.'},
     ],
     strength:[
       {reference:'Isaiah 40:31 (ESV)',verse:'But they who wait for the Lord shall renew their strength; they shall mount up with wings like eagles; they shall run and not be weary; they shall walk and not faint.',reflection:'The renewal comes in the waiting. Stillness before God restores what exhaustion takes.'},
@@ -11231,6 +11295,11 @@ function getThematicVerses(feeling){
       {reference:'Nehemiah 8:10 (ESV)',verse:'Do not be grieved, for the joy of the Lord is your strength.',reflection:'When the discipline feels heavy, joy is the fuel — not grim willpower.'},
       {reference:'Psalm 73:26 (ESV)',verse:'My flesh and my heart may fail, but God is the strength of my heart and my portion forever.',reflection:'Even when your body and resolve give out, he remains the strength underneath them.'},
       {reference:'2 Corinthians 4:16 (ESV)',verse:'So we do not lose heart. Though our outer self is wasting away, our inner self is being renewed day by day.',reflection:'Even on the days you feel like you\'re falling apart, something in you is being rebuilt daily.'},
+      {reference:'Philippians 4:13 (ESV)',verse:'I can do all things through him who strengthens me.',reflection:'The strength was never meant to be yours alone. It is his, running through you — that is why it does not run out.'},
+      {reference:'Psalm 46:1 (ESV)',verse:'God is our refuge and strength, a very present help in trouble.',reflection:'Not a distant help — a very present one. He is not watching your trouble from far off.'},
+      {reference:'Ephesians 6:10 (ESV)',verse:'Finally, be strong in the Lord and in the strength of his might.',reflection:'Be strong in his might, not yours. The pressure to generate it all yourself was never the assignment.'},
+      {reference:'2 Corinthians 12:9-10 (ESV)',verse:'But he said to me, My grace is sufficient for you, for my power is made perfect in weakness. For when I am weak, then I am strong.',reflection:'Your weakness is not disqualifying — it is the doorway. Where you run out is exactly where his power shows up.'},
+      {reference:'Isaiah 40:29 (ESV)',verse:'He gives power to the faint, and to him who has no might he increases strength.',reflection:'This promise is aimed straight at the empty. Being out of strength is the qualification, not the disqualifier.'},
     ],
     identity:[
       {reference:'Psalm 139:14 (ESV)',verse:'I praise you, for I am fearfully and wonderfully made. Wonderful are your works; my soul knows it very well.',reflection:'You were not made by accident or as an afterthought. The God of the universe made you with intention.'},
@@ -11239,6 +11308,11 @@ function getThematicVerses(feeling){
       {reference:'Romans 8:16-17 (ESV)',verse:'The Spirit himself bears witness with our spirit that we are children of God, and if children, then heirs - heirs of God and fellow heirs with Christ.',reflection:'Child of God is not a metaphor. It is your legal, permanent identity.'},
       {reference:'Jeremiah 1:5 (ESV)',verse:'Before I formed you in the womb I knew you, and before you were born I consecrated you.',reflection:'God knew you before any of your failures. He chose you knowing everything.'},
       {reference:'1 Peter 2:9 (ESV)',verse:'But you are a chosen race, a royal priesthood, a holy nation, a people for his own possession.',reflection:'This is what you are. Not what you are trying to become - what you already are.'},
+      {reference:'John 1:12 (ESV)',verse:'But to all who did receive him, who believed in his name, he gave the right to become children of God.',reflection:'Not a servant, not a stranger — a child, with all the rights that come with it. That is the name you carry.'},
+      {reference:'Galatians 2:20 (ESV)',verse:'I have been crucified with Christ. It is no longer I who live, but Christ who lives in me.',reflection:'Your truest identity is not your history or your failures. It is Christ, alive in you right now.'},
+      {reference:'1 John 3:1 (ESV)',verse:'See what kind of love the Father has given to us, that we should be called children of God; and so we are.',reflection:'And so we are. Not aspiring to be, not maybe — it is already settled. You are his.'},
+      {reference:'Ephesians 1:4-5 (ESV)',verse:'Even as he chose us in him before the foundation of the world, that we should be holy and blameless before him. In love he predestined us for adoption.',reflection:'You were wanted before the world began. Your belonging is not an accident — it was the plan.'},
+      {reference:'Colossians 3:3 (ESV)',verse:'For you have died, and your life is hidden with Christ in God.',reflection:'Your real self is kept safe in God — untouchable by your worst day or anyone\'s opinion.'},
     ],
     relationships:[
       {reference:'1 Corinthians 13:4-5 (ESV)',verse:'Love is patient and kind; love does not envy or boast; it is not arrogant or rude. It does not insist on its own way; it is not irritable or resentful.',reflection:'The definition of love - not a feeling but a series of choices made again and again.'},
@@ -11247,6 +11321,11 @@ function getThematicVerses(feeling){
       {reference:'Matthew 18:21-22 (ESV)',verse:'Then Peter came up and said to him, Lord, how often will my brother sin against me, and I forgive him? As many as seven times? Jesus said to him, I do not say to you seven times, but seventy-seven times.',reflection:'Forgiveness is not a score you keep. It is a practice you maintain.'},
       {reference:'Ecclesiastes 4:9-10 (ESV)',verse:'Two are better than one, because they have a good reward for their toil. For if they fall, one will lift up his fellow.',reflection:'You were designed for relationship. The isolation you are feeling is not how it is supposed to be.'},
       {reference:'Colossians 3:13 (ESV)',verse:'Bearing with one another and, if one has a complaint against another, forgiving each other; as the Lord has forgiven you, so you also must forgive.',reflection:'Bearing with - present tense. It is a daily, deliberate act.'},
+      {reference:'Romans 12:18 (ESV)',verse:'If possible, so far as it depends on you, live peaceably with all.',reflection:'You are only responsible for your side of the peace. Do your part, and release the rest.'},
+      {reference:'1 Peter 4:8 (ESV)',verse:'Above all, keep loving one another earnestly, since love covers a multitude of sins.',reflection:'Love does not keep a ledger of wrongs. It covers, again and again. That is what holds people together.'},
+      {reference:'Proverbs 27:17 (ESV)',verse:'Iron sharpens iron, and one man sharpens another.',reflection:'The right people do not just comfort you — they sharpen you. Do not isolate from the friction that makes you better.'},
+      {reference:'Philippians 2:3-4 (ESV)',verse:'Do nothing from selfish ambition or conceit, but in humility count others more significant than yourselves.',reflection:'Most relational knots loosen the moment you genuinely put the other person first.'},
+      {reference:'1 John 4:20 (ESV)',verse:'If anyone says, I love God, and hates his brother, he is a liar; for he who does not love his brother whom he has seen cannot love God whom he has not seen.',reflection:'How you treat the person in front of you is bound up with your love for God. They are not separate.'},
     ],
     finances:[
       {reference:'Matthew 6:24 (ESV)',verse:'No one can serve two masters, for either he will hate the one and love the other, or he will be devoted to the one and despise the other. You cannot serve God and money.',reflection:'Financial stress often comes from money having more authority over your life than it should.'},
@@ -11255,6 +11334,11 @@ function getThematicVerses(feeling){
       {reference:'Philippians 4:19 (ESV)',verse:'And my God will supply every need of yours according to his riches in glory in Christ Jesus.',reflection:'Not every want. Every need. The distinction matters and the promise holds.'},
       {reference:'Ecclesiastes 5:10 (ESV)',verse:'He who loves money will not be satisfied with money, nor he who loves wealth with his income; this also is vanity.',reflection:'More money does not fix the relationship with money. That is an inside job.'},
       {reference:'Proverbs 13:11 (ESV)',verse:'Wealth gained hastily will dwindle, but whoever gathers little by little will increase it.',reflection:'The patient, consistent approach to money is the one that actually works.'},
+      {reference:'Matthew 6:26 (ESV)',verse:'Look at the birds of the air: they neither sow nor reap nor gather into barns, and yet your heavenly Father feeds them. Are you not of more value than they?',reflection:'If he feeds the birds, he has not overlooked you. Your worth to him settles the question of whether you will be cared for.'},
+      {reference:'Hebrews 13:5 (ESV)',verse:'Keep your life free from love of money, and be content with what you have, for he has said, I will never leave you nor forsake you.',reflection:'The antidote to money-fear is not more money — it is the promise attached: I will never leave you.'},
+      {reference:'1 Timothy 6:17 (ESV)',verse:'As for the rich in this present age, charge them not to be haughty, nor to set their hopes on the uncertainty of riches, but on God, who richly provides us with everything to enjoy.',reflection:'Money is a shaky thing to hope in. He is the steady provider behind every good thing you already enjoy.'},
+      {reference:'Proverbs 3:9-10 (ESV)',verse:'Honor the Lord with your wealth and with the firstfruits of all your produce; then your barns will be filled with plenty.',reflection:'Giving first, even when it is tight, is a strange math that God honors. Trust often opens the hand before it fills it.'},
+      {reference:'Psalm 37:16 (ESV)',verse:'Better is the little that the righteous has than the abundance of many wicked.',reflection:'A little held with peace beats a lot held with anxiety. What you have with God in it is enough.'},
     ],
     spiritual_dryness:[
       {reference:'Psalm 63:1 (ESV)',verse:'O God, you are my God; earnestly I seek you; my soul thirsts for you; my flesh faints for you, as in a dry and weary land where there is no water.',reflection:'David felt this exact spiritual dryness. He did not pretend he did not - he prayed it honestly.'},
@@ -27087,6 +27171,7 @@ const STRAVA_APPROVED_EMAILS = [
   // ↓ add tester emails below this line (lowercase, comma after each)
   'amalgeot@outlook.com',
   'brooklynl2001@hotmail.com',
+  'adampj09@gmail.com',
 ];
 const STRAVA_MAX_ATHLETES = 10;
 
