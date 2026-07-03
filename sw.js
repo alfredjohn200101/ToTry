@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v183-preworkout-nudge';
+const CACHE = 'totry-v184-any-watch-screenshot';
 
 const CORE = [
   './',

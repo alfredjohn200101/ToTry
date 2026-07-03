@@ -2283,11 +2283,11 @@ input:focus,textarea:focus,select:focus{
     </div>
     <div id="pt-ex-results" style="margin-bottom:12px"></div>
     
-    <!-- Quick option: Apple Watch / Fitness screenshot upload -->
+    <!-- Quick option: any watch / fitness-app workout screenshot -->
     <div id="screenshot-quick-card" style="background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.04));border:1px solid var(--go-bd);border-radius:14px;padding:12px;margin-bottom:14px">
       <div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px">Fastest option</div>
       <div class="card-hd" style="margin-bottom:4px;font-size:14px">📸 Log from a screenshot</div>
-      <p style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:8px">Apple Watch, Fitness, or Strava workout summary. AI reads it for you.</p>
+      <p style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:8px">A workout summary from any watch or app — Garmin, Apple Watch, Fitbit, Strava, Fitness. AI reads it for you.</p>
       <input type="file" id="workout-screenshot-input" accept="image/*" style="display:none" onchange="handleWorkoutScreenshot(event)">
       <button class="btn primary" onclick="document.getElementById('workout-screenshot-input').click()" style="font-size:13px;padding:10px">Upload workout screenshot</button>
       <button class="btn" onclick="logCardioManually()" style="font-size:12px;padding:9px;margin-top:8px;background:transparent;border:1px solid var(--bd);color:var(--tx2)">Or log it manually instead</button>
@@ -3939,7 +3939,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v183';
+const APP_VERSION = 'v184';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
