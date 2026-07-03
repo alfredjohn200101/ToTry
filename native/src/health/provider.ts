@@ -10,6 +10,7 @@
 // entry — nothing else changes. Native reads are wired at device-build time (need a dev build, not
 // Expo Go); the lazy-requires below keep the web/Go bundle free of native modules.
 import { Platform } from 'react-native';
+import { set as storeSet } from '@/data/store';
 import type { HealthSnapshot, HealthSource } from './readiness';
 
 type Provider = {
@@ -109,7 +110,15 @@ export async function getHealthSnapshot(): Promise<HealthSnapshot> {
     }
   }
   // No live source produced data (web/dev, or native modules not wired yet) → realistic mock.
-  return merged ?? mockSnapshot();
+  const snap = merged ?? mockSnapshot();
+  // Cache the latest snapshot so getLifeState() can read recovery synchronously (the moat: the
+  // Companion and Fight can say "the pull is stronger because you're tired" without an await).
+  try {
+    storeSet('health.snapshot', snap);
+  } catch {
+    /* store not ready yet — non-fatal */
+  }
+  return snap;
 }
 
 // The human-readable sources available on this platform, for UI copy ("reads from Apple Health").

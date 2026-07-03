@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -14,6 +14,8 @@ import {
 import { DMMono_400Regular, DMMono_500Medium } from '@expo-google-fonts/dm-mono';
 import { DMSans_400Regular, DMSans_500Medium, DMSans_600SemiBold } from '@expo-google-fonts/dm-sans';
 import { colors } from '@/design/tokens';
+import { hydrateStore } from '@/data/store';
+import { getHealthSnapshot } from '@/health/provider';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -29,11 +31,24 @@ export default function RootLayout() {
     DMSans_600SemiBold,
   });
 
+  // Hydrate the local-first store before first render so every screen reads real data synchronously.
+  const [storeReady, setStoreReady] = useState(false);
   useEffect(() => {
-    if (loaded) SplashScreen.hideAsync().catch(() => {});
-  }, [loaded]);
+    hydrateStore()
+      .then(() => {
+        setStoreReady(true);
+        // Warm the recovery cache app-wide so getLifeState() has it (moat threads, no spinner).
+        getHealthSnapshot().catch(() => {});
+      })
+      .catch(() => setStoreReady(true));
+  }, []);
 
-  if (!loaded) return null;
+  const ready = loaded && storeReady;
+  useEffect(() => {
+    if (ready) SplashScreen.hideAsync().catch(() => {});
+  }, [ready]);
+
+  if (!ready) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>

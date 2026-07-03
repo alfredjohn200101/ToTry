@@ -15,7 +15,7 @@ export default function Grow() {
         Discipline of the body is discipline of the man.
       </Text>
 
-      <HubItem icon="flame" title="Fight" sub="Beat the vices holding you back. Clean streaks, urge support the moment you need it." />
+      <HubItem icon="flame" title="Fight" sub="Beat the vices holding you back. Clean streaks, urge support the moment you need it." onPress={() => router.push('/fight' as never)} />
       <HubItem icon="dumbbell" title="Train" sub="Workouts, routines, strength over time. Synced with Hevy." />
       <HubItem icon="leaf" title="Nourish" sub="Food, macros, water. Barcode + web lookup, your custom foods." />
       <HubItem icon="pulse" title="Recovery" sub="Readiness from your sleep, HRV and resting heart rate — so you know when to push and when to rest." onPress={() => router.push('/recovery' as never)} />
