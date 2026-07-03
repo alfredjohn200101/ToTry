@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v184-any-watch-screenshot';
+const CACHE = 'totry-v185-verses-copy';
 
 const CORE = [
   './',

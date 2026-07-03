@@ -7,6 +7,7 @@ import { Text } from '@/design/Text';
 import { Card } from '@/design/Card';
 import { Button } from '@/design/Button';
 import { Flourish } from '@/design/Flourish';
+import { Icon } from '@/design/Icon';
 import { colors, space, fonts, radius } from '@/design/tokens';
 import { useStored } from '@/data/useStore';
 import { useReadiness } from '@/health/useReadiness';
@@ -15,6 +16,7 @@ import { COMPANION_MECHANISMS, mechanismForType } from '@/soul/clinicalSpines';
 import {
   type Vice,
   type ViceMode,
+  classifyVice,
   makeVice,
   cleanDays,
   cleanHours,
@@ -23,6 +25,7 @@ import {
   withUrgeResisted,
   withSlip,
 } from '@/fight/model';
+import { viceInfo, streakWord } from '@/fight/viceKnowledge';
 
 const EMPTY: Vice[] = [];
 
@@ -33,7 +36,6 @@ const haptic = (kind: 'light' | 'success' | 'warn' = 'light') => {
   else Haptics.selectionAsync().catch(() => {});
 };
 
-// Meet this specific vice with the companion — using the mechanism that fits its type.
 function standWith(v: Vice) {
   const spine = COMPANION_MECHANISMS[mechanismForType(v.type)].spine;
   openCompanion({
@@ -45,11 +47,98 @@ function standWith(v: Vice) {
   });
 }
 
-function cleanReading(v: Vice): { big: string; unit: string } {
+function ViceCard({
+  v,
+  flash,
+  confirmSlip,
+  onResist,
+  onAskSlip,
+  onConfirmSlip,
+  onCancelSlip,
+}: {
+  v: Vice;
+  flash?: string;
+  confirmSlip: boolean;
+  onResist: () => void;
+  onAskSlip: () => void;
+  onConfirmSlip: () => void;
+  onCancelSlip: () => void;
+}) {
+  const info = viceInfo(v.type);
+  const words = streakWord(v.mode);
   const d = cleanDays(v);
-  if (d >= 1) return { big: String(d), unit: d === 1 ? 'day clean' : 'days clean' };
-  const h = cleanHours(v);
-  return { big: String(h), unit: h === 1 ? 'hour clean' : 'hours clean' };
+  const big = d >= 1 ? String(d) : String(cleanHours(v));
+  const unit = d >= 1 ? (d === 1 ? `day ${words.clean}` : `days ${words.clean}`) : `${cleanHours(v) === 1 ? 'hour' : 'hours'} ${words.clean}`;
+  const saved = moneySaved(v);
+  const insight = v.mode === 'moderate' ? info.moderateNote : info.recovery;
+
+  return (
+    <Card style={{ marginTop: space.s4 }}>
+      {/* header — accent medallion gives each vice its own identity */}
+      <View style={styles.headRow}>
+        <View style={[styles.medallion, { borderColor: info.accent + '55', backgroundColor: info.accent + '14' }]}>
+          <Icon name={info.icon} size={20} color={info.accent} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontFamily: fonts.sansSemi, fontSize: 18, color: colors.tx }}>{v.name}</Text>
+          <View style={styles.subHead}>
+            <Text variant="micro" color={info.accent}>{info.label.toUpperCase()}</Text>
+            <Text variant="micro" color={colors.tx3}>
+              {'  ·  '}
+              {v.mode === 'moderate' ? (v.limit ? `keeping to ${v.limit}/wk` : 'keeping in check') : 'quitting'}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      {/* streak — accent-colored serif number for per-type presence */}
+      <View style={styles.streakRow}>
+        <Text style={{ fontFamily: fonts.serif, fontSize: 46, color: info.accent, lineHeight: 48 }}>{big}</Text>
+        <Text variant="subhead" style={{ marginLeft: space.s3, marginBottom: 9 }}>{unit}</Text>
+      </View>
+
+      <View style={styles.metaRow}>
+        <Text variant="footnote">{v.wins} urge{v.wins === 1 ? '' : 's'} outlasted</Text>
+        {saved > 0 && <Text variant="footnote" color={colors.go}>{'  ·  '}${saved} reclaimed</Text>}
+        {v.relapses > 0 && <Text variant="footnote">{'  ·  '}{v.relapses} restart{v.relapses === 1 ? '' : 's'}</Text>}
+      </View>
+
+      {/* per-type recovery insight — never generic */}
+      <View style={[styles.insight, { borderLeftColor: info.accent }]}>
+        <Text variant="micro" color={info.accent} style={{ marginBottom: 4 }}>
+          {v.mode === 'moderate' ? 'KEEPING IT IN CHECK' : `WHAT STAYING ${words.clean.toUpperCase()} IS DOING`}
+        </Text>
+        <Text variant="subhead" style={{ color: colors.tx2, lineHeight: 21 }}>{insight}</Text>
+      </View>
+
+      {flash && <Text variant="subhead" color={colors.gr} style={{ marginTop: space.s3 }}>{flash}</Text>}
+
+      <Button label="Stand with me now" onPress={() => standWith(v)} style={{ marginTop: space.s4 }} />
+
+      {confirmSlip ? (
+        <View style={styles.confirmRow}>
+          <Text variant="footnote" style={{ flex: 1 }}>
+            {v.mode === 'moderate' ? 'It happens. Reset from now?' : "It's okay. Mark a fresh start from now?"}
+          </Text>
+          <Pressable onPress={onConfirmSlip} style={[styles.softBtn, { borderColor: colors.reBd }]}>
+            <Text variant="subhead" color={colors.re}>Reset</Text>
+          </Pressable>
+          <Pressable onPress={onCancelSlip} style={styles.softBtn}>
+            <Text variant="subhead" color={colors.tx3}>Not now</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={styles.actionRow}>
+          <Pressable onPress={onResist} style={[styles.softBtn, styles.grow, { borderColor: colors.grBd }]}>
+            <Text variant="subhead" color={colors.gr}>I outlasted it</Text>
+          </Pressable>
+          <Pressable onPress={onAskSlip} style={[styles.softBtn, styles.grow]}>
+            <Text variant="subhead" color={colors.tx3}>{words.slip === 'over the line' ? 'Went over' : 'I slipped'}</Text>
+          </Pressable>
+        </View>
+      )}
+    </Card>
+  );
 }
 
 export default function Fight() {
@@ -77,7 +166,7 @@ export default function Fight() {
     haptic('warn');
     setVices((cur) => withSlip(cur, v.id));
     setConfirmSlip(null);
-    say(v.id, "A fresh start from now — your wins stay. Grace, every time.");
+    say(v.id, 'A fresh start from now — your wins stay. Grace, every time.');
   };
 
   return (
@@ -89,10 +178,9 @@ export default function Fight() {
       <Flourish />
       <Text variant="callout" style={{ marginTop: space.s4 }}>
         What has a grip on you? Name it, and I'll stand in the gap with you. Every urge you outlast is
-        a rep. A slip is feedback, never failure — we just start fresh.
+        a rep. Some things are for quitting, some for keeping in check — and each one heals its own way.
       </Text>
 
-      {/* The reclaimed-money thread — freedom, not just abstinence. */}
       {reclaimed > 0 && (
         <Card tone="flat" style={{ marginTop: space.s4, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <Text variant="subhead">Reclaimed by staying clean</Text>
@@ -100,7 +188,6 @@ export default function Fight() {
         </Card>
       )}
 
-      {/* THE MOAT — recovery informs the fight. */}
       {lowRecovery && (
         <Card style={{ marginTop: space.s4, borderColor: colors.puBd, borderWidth: StyleSheet.hairlineWidth }}>
           <Text variant="eyebrow" color={colors.pu}>From your recovery</Text>
@@ -111,58 +198,18 @@ export default function Fight() {
         </Card>
       )}
 
-      {vices.map((v) => {
-        const r = cleanReading(v);
-        const saved = moneySaved(v);
-        return (
-          <Card key={v.id} style={{ marginTop: space.s4 }}>
-            <View style={styles.headRow}>
-              <Text style={{ fontFamily: fonts.sansSemi, fontSize: 18, color: colors.tx, flex: 1 }}>{v.name}</Text>
-              <View style={styles.chip}>
-                <Text variant="micro" color={colors.tx2}>{v.mode === 'moderate' ? 'Moderating' : 'Quitting'}</Text>
-              </View>
-            </View>
-
-            <View style={styles.streakRow}>
-              <Text style={{ fontFamily: fonts.serif, fontSize: 44, color: colors.tx, lineHeight: 46 }}>{r.big}</Text>
-              <Text variant="subhead" style={{ marginLeft: space.s2, marginBottom: 8 }}>{r.unit}</Text>
-            </View>
-
-            <View style={styles.metaRow}>
-              <Text variant="footnote">{v.wins} urge{v.wins === 1 ? '' : 's'} outlasted</Text>
-              {saved > 0 && <Text variant="footnote" color={colors.go}>  ·  ${saved} reclaimed</Text>}
-              {v.relapses > 0 && <Text variant="footnote">  ·  {v.relapses} fresh start{v.relapses === 1 ? '' : 's'}</Text>}
-            </View>
-
-            {flash?.id === v.id && (
-              <Text variant="subhead" color={colors.gr} style={{ marginTop: space.s3 }}>{flash.text}</Text>
-            )}
-
-            <Button label="Stand with me now" onPress={() => standWith(v)} style={{ marginTop: space.s4 }} />
-
-            {confirmSlip === v.id ? (
-              <View style={styles.confirmRow}>
-                <Text variant="footnote" style={{ flex: 1 }}>It's okay. Mark a fresh start from now?</Text>
-                <Pressable onPress={() => slip(v)} style={[styles.softBtn, { borderColor: colors.reBd }]}>
-                  <Text variant="subhead" color={colors.re}>Yes, fresh start</Text>
-                </Pressable>
-                <Pressable onPress={() => setConfirmSlip(null)} style={styles.softBtn}>
-                  <Text variant="subhead" color={colors.tx3}>Not now</Text>
-                </Pressable>
-              </View>
-            ) : (
-              <View style={styles.actionRow}>
-                <Pressable onPress={() => resist(v)} style={[styles.softBtn, styles.grow, { borderColor: colors.grBd }]}>
-                  <Text variant="subhead" color={colors.gr}>I outlasted it</Text>
-                </Pressable>
-                <Pressable onPress={() => setConfirmSlip(v.id)} style={[styles.softBtn, styles.grow]}>
-                  <Text variant="subhead" color={colors.tx3}>I slipped</Text>
-                </Pressable>
-              </View>
-            )}
-          </Card>
-        );
-      })}
+      {vices.map((v) => (
+        <ViceCard
+          key={v.id}
+          v={v}
+          flash={flash?.id === v.id ? flash.text : undefined}
+          confirmSlip={confirmSlip === v.id}
+          onResist={() => resist(v)}
+          onAskSlip={() => setConfirmSlip(v.id)}
+          onConfirmSlip={() => slip(v)}
+          onCancelSlip={() => setConfirmSlip(null)}
+        />
+      ))}
 
       {adding ? (
         <AddVice
@@ -192,15 +239,30 @@ export default function Fight() {
 function AddVice({ onSave, onCancel }: { onSave: (v: Vice) => void; onCancel: () => void }) {
   const [name, setName] = useState('');
   const [mode, setMode] = useState<ViceMode>('quit');
+  const [modeTouched, setModeTouched] = useState(false);
+  const [limit, setLimit] = useState('');
   const [cost, setCost] = useState('');
+
+  // Classify as they type so the form speaks to THIS vice, and lean the goal sensibly (not always
+  // "quit") until they choose for themselves.
+  const info = name.trim() ? viceInfo(classifyVice(name)) : null;
+  const onName = (t: string) => {
+    setName(t);
+    if (!modeTouched && t.trim()) {
+      const lean = viceInfo(classifyVice(t)).lean;
+      setMode(lean === 'moderate' ? 'moderate' : 'quit');
+    }
+  };
 
   const save = () => {
     if (!name.trim()) return;
     const amt = parseFloat(cost);
+    const lim = parseInt(limit, 10);
     onSave(
       makeVice({
         name,
         mode,
+        limit: mode === 'moderate' && lim > 0 ? lim : null,
         cost: amt > 0 ? { amount: amt, per: 'week' } : null,
       }),
     );
@@ -211,24 +273,54 @@ function AddVice({ onSave, onCancel }: { onSave: (v: Vice) => void; onCancel: ()
       <Text variant="eyebrow">Name the fight</Text>
       <TextInput
         value={name}
-        onChangeText={setName}
+        onChangeText={onName}
         placeholder="e.g. late-night scrolling, drinking…"
         placeholderTextColor={colors.tx3}
         style={styles.input}
         autoFocus
       />
 
+      {info && (
+        <View style={[styles.leanHint, { borderLeftColor: info.accent }]}>
+          <Text variant="footnote" style={{ color: colors.tx2 }}>
+            {info.lean === 'moderate'
+              ? `Many keep ${info.label.toLowerCase()} in check rather than quit outright — your call.`
+              : info.lean === 'quit'
+                ? `Most find zero kinder than a limit here — but it's your call.`
+                : `Either quitting or keeping it in check can work — choose what fits you.`}
+          </Text>
+        </View>
+      )}
+
       <View style={styles.segment}>
         {(['quit', 'moderate'] as ViceMode[]).map((m) => (
-          <Pressable key={m} onPress={() => setMode(m)} style={[styles.segItem, mode === m && styles.segOn]}>
+          <Pressable
+            key={m}
+            onPress={() => { setMode(m); setModeTouched(true); }}
+            style={[styles.segItem, mode === m && styles.segOn]}
+          >
             <Text variant="subhead" color={mode === m ? colors.tx : colors.tx3}>
-              {m === 'quit' ? 'Quit it' : 'Moderate it'}
+              {m === 'quit' ? 'Quit it' : 'Keep in check'}
             </Text>
           </Pressable>
         ))}
       </View>
 
-      <Text variant="footnote" style={{ marginTop: space.s4 }}>What it costs you a week (optional — turns into money reclaimed)</Text>
+      {mode === 'moderate' && (
+        <>
+          <Text variant="footnote" style={{ marginTop: space.s4 }}>Times a week that's within your line (optional)</Text>
+          <TextInput
+            value={limit}
+            onChangeText={setLimit}
+            placeholder="e.g. 3"
+            placeholderTextColor={colors.tx3}
+            keyboardType="numeric"
+            style={styles.input}
+          />
+        </>
+      )}
+
+      <Text variant="footnote" style={{ marginTop: space.s4 }}>What it costs you a week — only if it costs money (optional)</Text>
       <TextInput
         value={cost}
         onChangeText={setCost}
@@ -248,16 +340,19 @@ function AddVice({ onSave, onCancel }: { onSave: (v: Vice) => void; onCancel: ()
 
 const styles = StyleSheet.create({
   headRow: { flexDirection: 'row', alignItems: 'center', gap: space.s3 },
-  chip: { paddingHorizontal: space.s3, paddingVertical: 4, borderRadius: radius.pill, backgroundColor: colors.bg3, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.bd },
-  streakRow: { flexDirection: 'row', alignItems: 'flex-end', marginTop: space.s3 },
+  medallion: { width: 44, height: 44, borderRadius: radius.pill, borderWidth: StyleSheet.hairlineWidth, alignItems: 'center', justifyContent: 'center' },
+  subHead: { flexDirection: 'row', alignItems: 'center', marginTop: 3 },
+  streakRow: { flexDirection: 'row', alignItems: 'flex-end', marginTop: space.s4 },
   metaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginTop: space.s2 },
+  insight: { marginTop: space.s4, paddingLeft: space.s4, borderLeftWidth: 2 },
   actionRow: { flexDirection: 'row', gap: space.s3, marginTop: space.s3 },
   confirmRow: { flexDirection: 'row', alignItems: 'center', gap: space.s2, marginTop: space.s3, flexWrap: 'wrap' },
   grow: { flex: 1 },
   softBtn: { paddingHorizontal: space.s4, paddingVertical: space.s3, borderRadius: radius.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.bd2, alignItems: 'center', justifyContent: 'center' },
-  addRow: { marginTop: space.s5, paddingVertical: space.s4, alignItems: 'center', borderRadius: radius.card, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.goBd, backgroundColor: colors.goBg },
+  addRow: { marginTop: space.s5, paddingVertical: space.s4, alignItems: 'center', borderRadius: radius.card, borderCurve: 'continuous', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.goBd, backgroundColor: colors.goBg },
   input: { marginTop: space.s3, backgroundColor: colors.bg2, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.bd2, borderRadius: radius.sm, borderCurve: 'continuous', paddingHorizontal: space.s4, paddingVertical: space.s3, color: colors.tx, fontFamily: fonts.sans, fontSize: 16 },
+  leanHint: { marginTop: space.s3, paddingLeft: space.s3, borderLeftWidth: 2 },
   segment: { flexDirection: 'row', gap: space.s2, marginTop: space.s4 },
-  segItem: { flex: 1, paddingVertical: space.s3, alignItems: 'center', borderRadius: radius.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.bd2 },
+  segItem: { flex: 1, paddingVertical: space.s3, alignItems: 'center', borderRadius: radius.sm, borderCurve: 'continuous', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.bd2 },
   segOn: { backgroundColor: colors.bg3, borderColor: colors.goBd },
 });

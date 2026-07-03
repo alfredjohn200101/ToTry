@@ -26,6 +26,7 @@ export type Vice = {
   name: string;
   type: ViceType;
   mode: ViceMode;
+  limit?: number | null; // moderation only — times/week that's within the line
   trigger?: string;
   startDate: string; // ISO — clean-since anchor; a slip resets it to now
   wins: number; // urges outlasted
@@ -89,6 +90,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 export function makeVice(input: {
   name: string;
   mode: ViceMode;
+  limit?: number | null;
   trigger?: string;
   cost?: ViceCost | null;
   startDate?: string;
@@ -99,6 +101,7 @@ export function makeVice(input: {
     name: input.name.trim(),
     type: classifyVice(input.name),
     mode: input.mode,
+    limit: input.mode === 'moderate' ? input.limit ?? null : null,
     trigger: input.trigger?.trim() || undefined,
     startDate: input.startDate || now,
     wins: 0,
