@@ -2497,6 +2497,14 @@ input:focus,textarea:focus,select:focus{
       <button class="ftag" onclick="findVerse('afraid of what people think of me')">Fear of judgement</button>
       <button class="ftag" onclick="findVerse('need courage to take the next step')">Need courage</button>
       <button class="ftag" onclick="findVerse('jealous and bitter of others')">Jealousy</button>
+      <button class="ftag" onclick="findVerse('grieving the loss of someone I love')">Grief</button>
+      <button class="ftag" onclick="findVerse('right on the edge of temptation')">Temptation</button>
+      <button class="ftag" onclick="findVerse('tired of waiting, needing patience')">Patience</button>
+      <button class="ftag" onclick="findVerse('want a grateful heart today')">Gratitude</button>
+      <button class="ftag" onclick="findVerse('worn out but need to persevere')">Perseverance</button>
+      <button class="ftag" onclick="findVerse('sick and praying for healing')">Healing</button>
+      <button class="ftag" onclick="findVerse('doubting and struggling to believe')">Doubt</button>
+      <button class="ftag" onclick="findVerse('scared about money and provision')">Provision</button>
     </div>
     <div class="bible-loading" id="bible-loading"><p class="pulsing">Seeking the word for you...</p></div>
     <div class="bible-card" id="bible-card">
@@ -3939,7 +3947,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v186';
+const APP_VERSION = 'v187';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -6551,6 +6559,25 @@ const VS=[
   {t:"And we know that for those who love God all things work together for good.",r:"Romans 8:28 (ESV)"},
   {t:"Draw near to God, and he will draw near to you.",r:"James 4:8 (ESV)"},
   {t:"You keep him in perfect peace whose mind is stayed on you, because he trusts in you.",r:"Isaiah 26:3 (ESV)"},
+  {t:"Cast all your anxieties on him, because he cares for you.",r:"1 Peter 5:7 (ESV)"},
+  {t:"The Lord is near to all who call on him, to all who call on him in truth.",r:"Psalm 145:18 (ESV)"},
+  {t:"Come to me, all who labor and are heavy laden, and I will give you rest.",r:"Matthew 11:28 (ESV)"},
+  {t:"The steadfast love of the Lord never ceases; his mercies never come to an end; they are new every morning.",r:"Lamentations 3:22-23 (ESV)"},
+  {t:"Be still, and know that I am God.",r:"Psalm 46:10 (ESV)"},
+  {t:"The Lord your God is in your midst, a mighty one who will save; he will rejoice over you with gladness.",r:"Zephaniah 3:17 (ESV)"},
+  {t:"There is therefore now no condemnation for those who are in Christ Jesus.",r:"Romans 8:1 (ESV)"},
+  {t:"Cast your burden on the Lord, and he will sustain you; he will never permit the righteous to be moved.",r:"Psalm 55:22 (ESV)"},
+  {t:"My grace is sufficient for you, for my power is made perfect in weakness.",r:"2 Corinthians 12:9 (ESV)"},
+  {t:"But the one who endures to the end will be saved.",r:"Matthew 24:13 (ESV)"},
+  {t:"Give thanks in all circumstances; for this is the will of God in Christ Jesus for you.",r:"1 Thessalonians 5:18 (ESV)"},
+  {t:"Wait for the Lord; be strong, and let your heart take courage; wait for the Lord!",r:"Psalm 27:14 (ESV)"},
+  {t:"He heals the brokenhearted and binds up their wounds.",r:"Psalm 147:3 (ESV)"},
+  {t:"I have said these things to you, that in me you may have peace. In the world you will have tribulation. But take heart; I have overcome the world.",r:"John 16:33 (ESV)"},
+  {t:"Fear not, for I am with you; be not dismayed, for I am your God; I will strengthen you, I will help you.",r:"Isaiah 41:10 (ESV)"},
+  {t:"But seek first the kingdom of God and his righteousness, and all these things will be added to you.",r:"Matthew 6:33 (ESV)"},
+  {t:"For nothing will be impossible with God.",r:"Luke 1:37 (ESV)"},
+  {t:"The name of the Lord is a strong tower; the righteous man runs into it and is safe.",r:"Proverbs 18:10 (ESV)"},
+  {t:"Weeping may tarry for the night, but joy comes with the morning.",r:"Psalm 30:5 (ESV)"},
 ];
 let vi=Math.floor(Math.random()*VS.length); // overridden by pickContextualVerse() on load
 // ── SCRIPTURE THAT MEETS YOU ── pick today's verse with gentle awareness of what the person
@@ -10840,7 +10867,7 @@ function readVerseContext(refEncoded){
   }
 }
 
-// ── THEMATIC VERSE LIBRARY (offline fallback, 13 themes) ─────
+// ── THEMATIC VERSE LIBRARY (offline fallback, 25 themes) ─────
 // ── CURRENCY CONVERSION (Frankfurter API — free, no key, 200+ currencies) ──
 const CURRENCY_CACHE_KEY = 'totry_currency_rates';
 async function fetchCurrencyRates(base){
@@ -11351,6 +11378,119 @@ function getThematicVerses(feeling){
       {reference:'Psalm 63:1 (ESV)',verse:'O God, you are my God; earnestly I seek you; my soul thirsts for you in a dry and weary land where there is no water.',reflection:'David wrote this from a dry place too. The dryness is not distance — it can be the very thing that drives the seeking.'},
       {reference:'Isaiah 44:3 (ESV)',verse:'For I will pour water on the thirsty land, and streams on the dry ground; I will pour my Spirit upon your offspring.',reflection:'Dry ground is exactly what God promises to pour water on. The dryness qualifies you for the rain.'},
       {reference:'Matthew 5:6 (ESV)',verse:'Blessed are those who hunger and thirst for righteousness, for they shall be satisfied.',reflection:'The hunger is not the problem to fix — it is the blessing. And it ends in being filled.'},
+      {reference:'Psalm 42:5 (ESV)',verse:'Why are you cast down, O my soul, and why are you in turmoil within me? Hope in God; for I shall again praise him, my salvation and my God.',reflection:'Talk back to the dryness like David did. Feelings are not facts — hope in God, you will praise again.'},
+      {reference:'1 Kings 19:11-12 (ESV)',verse:'And after the earthquake a fire, but the Lord was not in the fire. And after the fire the sound of a low whisper.',reflection:'God was not in the wind or fire, but the whisper. In the dry quiet, listen closer, not louder.'},
+      {reference:'John 7:37-38 (ESV)',verse:'If anyone thirsts, let him come to me and drink. Whoever believes in me, out of his heart will flow rivers of living water.',reflection:'The thirst is an invitation, not a verdict. Come to him with the emptiness — that is where the rivers start.'},
+      {reference:'Psalm 84:6 (ESV)',verse:'As they go through the Valley of Baca they make it a place of springs; the early rain also covers it with pools.',reflection:'Even the valley of weeping can become a place of springs. The dry season is not wasted ground.'},
+      {reference:'Galatians 6:9 (ESV)',verse:'And let us not grow weary of doing good, for in due season we will reap, if we do not give up.',reflection:'Keep showing up in the dryness. The harvest comes to those who do not quit before the rain.'},
+    ],
+    temptation:[
+      {reference:'1 Corinthians 10:13 (ESV)',verse:'No temptation has overtaken you that is not common to man. God is faithful, and he will not let you be tempted beyond your ability, but with the temptation he will also provide the way of escape, that you may be able to endure it.',reflection:'Look for the exit before you look at the temptation. God promised there is one.'},
+      {reference:'Matthew 26:41 (ESV)',verse:'Watch and pray that you may not enter into temptation. The spirit indeed is willing, but the flesh is weak.',reflection:'Jesus does not shame the weak flesh — he gives the way through it: watch, and pray, before the moment arrives.'},
+      {reference:'James 1:14-15 (ESV)',verse:'But each person is tempted when he is lured and enticed by his own desire. Then desire when it has conceived gives birth to sin.',reflection:'Temptation has a lifecycle. The earliest moment — before it conceives — is the easiest place to say no.'},
+      {reference:'Hebrews 4:15 (ESV)',verse:'For we do not have a high priest who is unable to sympathize with our weaknesses, but one who in every respect has been tempted as we are, yet without sin.',reflection:'You are not being judged from a distance. Jesus was tempted in every way you are — and he understands.'},
+      {reference:'Hebrews 2:18 (ESV)',verse:'For because he himself has suffered when tempted, he is able to help those who are being tempted.',reflection:'The One you are calling on has stood exactly where you are standing. He knows the pull, and he helps.'},
+      {reference:'Genesis 4:7 (ESV)',verse:'And if you do not do well, sin is crouching at the door. Its desire is contrary to you, but you must rule over it.',reflection:'The urge is at the door, not inside the house yet. You still hold the handle.'},
+      {reference:'Proverbs 4:14-15 (ESV)',verse:'Do not enter the path of the wicked, and do not walk in the way of the evil. Avoid it; do not go on it; turn away from it and pass on.',reflection:'The strongest move against temptation is often made a few steps early — by not walking down that street at all.'},
+      {reference:'James 4:7 (ESV)',verse:'Submit yourselves therefore to God. Resist the devil, and he will flee from you.',reflection:'Resistance is not white-knuckling alone. Hand it to God first, then stand — and watch what has to flee.'},
+      {reference:'Psalm 119:11 (ESV)',verse:'I have stored up your word in my heart, that I might not sin against you.',reflection:'What you hid in your heart in the calm becomes your defense in the storm.'},
+      {reference:'2 Peter 2:9 (ESV)',verse:'Then the Lord knows how to rescue the godly from trials, and to keep the unrighteous under punishment until the day of judgment.',reflection:'He is not confused by your situation. Rescue is something he knows how to do.'},
+    ],
+    grief:[
+      {reference:'Psalm 34:18 (ESV)',verse:'The Lord is near to the brokenhearted and saves the crushed in spirit.',reflection:'In loss, God draws nearer, not further. The crushing is where he meets you.'},
+      {reference:'Matthew 5:4 (ESV)',verse:'Blessed are those who mourn, for they shall be comforted.',reflection:'Your grief is not a failure of faith. Jesus called mourners blessed and promised them comfort.'},
+      {reference:'John 11:35 (ESV)',verse:'Jesus wept.',reflection:'The shortest verse in the Bible is God himself crying at a grave. He does not rush your tears.'},
+      {reference:'1 Thessalonians 4:13 (ESV)',verse:'But we do not want you to be uninformed, brothers, about those who are asleep, that you may not grieve as others do who have no hope.',reflection:'You are allowed to grieve. But grieve with hope — for those in Christ, the goodbye is not forever.'},
+      {reference:'Psalm 23:4 (ESV)',verse:'Even though I walk through the valley of the shadow of death, I will fear no evil, for you are with me; your rod and your staff, they comfort me.',reflection:'It is a valley you walk through, not stay in — and you are not walking it alone.'},
+      {reference:'Revelation 21:4 (ESV)',verse:'He will wipe away every tear from their eyes, and death shall be no more, neither shall there be mourning, nor crying, nor pain anymore.',reflection:'There is coming a day with no more death, no more mourning. This pain is real, but it is not the last word.'},
+      {reference:'Isaiah 61:3 (ESV)',verse:'To grant to those who mourn in Zion — to give them a beautiful headdress instead of ashes, the oil of gladness instead of mourning.',reflection:'God specializes in exchanges: beauty for ashes. Nothing you have lost is beyond his redeeming.'},
+      {reference:'2 Corinthians 1:3-4 (ESV)',verse:'Blessed be the God of all comfort, who comforts us in all our affliction, so that we may be able to comfort those who are in any affliction.',reflection:'The comfort you receive now becomes comfort you will one day carry to someone else in the same valley.'},
+      {reference:'Psalm 30:5 (ESV)',verse:'Weeping may tarry for the night, but joy comes with the morning.',reflection:'Grief has a night to it. Morning is promised, even if you cannot see the sky yet.'},
+      {reference:'John 14:1-2 (ESV)',verse:'Let not your hearts be troubled. Believe in God; believe also in me. In my Father\'s house are many rooms.',reflection:'The one you are missing, if they were his, is more home now than they have ever been.'},
+    ],
+    patience:[
+      {reference:'Romans 8:25 (ESV)',verse:'But if we hope for what we do not see, we wait for it with patience.',reflection:'Waiting is not wasted time. It is hope doing its quiet work in you.'},
+      {reference:'James 5:7-8 (ESV)',verse:'Be patient, therefore, brothers, until the coming of the Lord. See how the farmer waits for the precious fruit of the earth, being patient about it, until it receives the early and the late rains.',reflection:'The farmer cannot rush the harvest, and neither can you. Growth keeps its own clock.'},
+      {reference:'Psalm 27:14 (ESV)',verse:'Wait for the Lord; be strong, and let your heart take courage; wait for the Lord!',reflection:'Waiting takes more courage than acting. He says it twice because he knows how hard it is.'},
+      {reference:'Lamentations 3:25-26 (ESV)',verse:'The Lord is good to those who wait for him, to the soul who seeks him. It is good that one should wait quietly for the salvation of the Lord.',reflection:'Quiet waiting is not doing nothing. It is trusting that his timing is kinder than yours.'},
+      {reference:'Habakkuk 2:3 (ESV)',verse:'For still the vision awaits its appointed time; it hastens to the end—it will not lie. If it seems slow, wait for it; it will surely come.',reflection:'What God promised has an appointed time. Slow is not the same as never.'},
+      {reference:'Psalm 40:1 (ESV)',verse:'I waited patiently for the Lord; he inclined to me and heard my cry.',reflection:'The waiting was real, and so was the answer. He leaned in and heard.'},
+      {reference:'Galatians 6:9 (ESV)',verse:'And let us not grow weary of doing good, for in due season we will reap, if we do not give up.',reflection:'The season is coming. Keep sowing even when nothing seems to be growing yet.'},
+      {reference:'Ecclesiastes 3:1 (ESV)',verse:'For everything there is a season, and a time for every matter under heaven.',reflection:'This season is not the whole story. There is a time appointed for what you are waiting on.'},
+      {reference:'Romans 12:12 (ESV)',verse:'Rejoice in hope, be patient in tribulation, be constant in prayer.',reflection:'Patience is not passive. It leans on hope and holds on in prayer while it waits.'},
+      {reference:'Isaiah 40:31 (ESV)',verse:'But they who wait for the Lord shall renew their strength; they shall mount up with wings like eagles; they shall run and not be weary.',reflection:'The strength you are missing is on the other side of the wait — not the rush.'},
+    ],
+    gratitude:[
+      {reference:'1 Thessalonians 5:18 (ESV)',verse:'Give thanks in all circumstances; for this is the will of God in Christ Jesus for you.',reflection:'In, not for. You do not have to be thankful for the hard thing — just find one thing to be thankful for inside it.'},
+      {reference:'Psalm 100:4 (ESV)',verse:'Enter his gates with thanksgiving, and his courts with praise! Give thanks to him; bless his name!',reflection:'Gratitude is the doorway in. Start there and the rest of the room opens.'},
+      {reference:'Philippians 4:6 (ESV)',verse:'Do not be anxious about anything, but in everything by prayer and supplication with thanksgiving let your requests be made known to God.',reflection:'Thanksgiving is how anxious prayers get their footing. Name what is already good before you ask for more.'},
+      {reference:'Psalm 103:2 (ESV)',verse:'Bless the Lord, O my soul, and forget not all his benefits.',reflection:'The soul forgets fast. Gratitude is the practice of remembering on purpose.'},
+      {reference:'James 1:17 (ESV)',verse:'Every good gift and every perfect gift is from above, coming down from the Father of lights.',reflection:'Trace anything good in your life back far enough and you find the same generous source.'},
+      {reference:'Psalm 118:24 (ESV)',verse:'This is the day that the Lord has made; let us rejoice and be glad in it.',reflection:'Not tomorrow, not the day things get better. This one. It was made on purpose.'},
+      {reference:'Luke 17:15-16 (ESV)',verse:'Then one of them, when he saw that he was healed, turned back, praising God with a loud voice; and he fell on his face at Jesus\' feet, giving him thanks.',reflection:'Ten were healed; one came back to say thanks. Be the one who turns around.'},
+      {reference:'Colossians 3:15 (ESV)',verse:'And let the peace of Christ rule in your hearts, to which indeed you were called in one body. And be thankful.',reflection:'And be thankful. Sometimes the simplest command is the one that resets everything.'},
+      {reference:'1 Chronicles 16:34 (ESV)',verse:'Oh give thanks to the Lord, for he is good; for his steadfast love endures forever!',reflection:'When you cannot find something to thank him for in your circumstances, thank him for who he is.'},
+      {reference:'Psalm 107:1 (ESV)',verse:'Oh give thanks to the Lord, for he is good, for his steadfast love endures forever!',reflection:'Even on a day with little to feel, his goodness and love are still standing. Thank him for that.'},
+    ],
+    purity:[
+      {reference:'Matthew 5:8 (ESV)',verse:'Blessed are the pure in heart, for they shall see God.',reflection:'Purity is not punishment — it clears the fog so you can actually see him.'},
+      {reference:'Psalm 51:10 (ESV)',verse:'Create in me a clean heart, O God, and renew a right spirit within me.',reflection:'You do not have to scrub yourself clean. Ask him to create it — that is his work, not yours.'},
+      {reference:'Psalm 119:9 (ESV)',verse:'How can a young man keep his way pure? By guarding it according to your word.',reflection:'The path stays clear the same way it always has: guarding it, one honest choice at a time.'},
+      {reference:'Philippians 4:8 (ESV)',verse:'Finally, brothers, whatever is true, whatever is honorable, whatever is just, whatever is pure, whatever is lovely — think about these things.',reflection:'What you feed your mind, you become. Purity often starts with what you choose to dwell on.'},
+      {reference:'Titus 1:15 (ESV)',verse:'To the pure, all things are pure, but to the defiled and unbelieving, nothing is pure.',reflection:'Purity changes how you see everything — it cleans the lens, not just the behavior.'},
+      {reference:'1 John 3:3 (ESV)',verse:'And everyone who thus hopes in him purifies himself as he is pure.',reflection:'Purity grows from hope, not fear. Fix your eyes on him and you start to look like him.'},
+      {reference:'Psalm 24:3-4 (ESV)',verse:'Who shall ascend the hill of the Lord? And who shall stand in his holy place? He who has clean hands and a pure heart.',reflection:'God is not after perfect people, but honest ones — clean hands come from a heart that keeps returning to him.'},
+      {reference:'Hebrews 10:22 (ESV)',verse:'Let us draw near with a true heart in full assurance of faith, with our hearts sprinkled clean from an evil conscience.',reflection:'You come near with a clean heart he gave you, not one you manufactured. Draw near anyway.'},
+      {reference:'2 Timothy 2:22 (ESV)',verse:'So flee youthful passions and pursue righteousness, faith, love, and peace, along with those who call on the Lord from a pure heart.',reflection:'Purity is two moves: run from one thing, run toward another. Do not just resist — replace.'},
+      {reference:'1 Timothy 4:12 (ESV)',verse:'Set the believers an example in speech, in conduct, in love, in faith, in purity.',reflection:'Purity is not just private — it quietly becomes a gift to everyone watching how you live.'},
+    ],
+    perseverance:[
+      {reference:'Galatians 6:9 (ESV)',verse:'And let us not grow weary of doing good, for in due season we will reap, if we do not give up.',reflection:'The harvest comes to those who do not quit before the season. Keep going.'},
+      {reference:'James 1:12 (ESV)',verse:'Blessed is the man who remains steadfast under trial, for when he has stood the test he will receive the crown of life.',reflection:'The reward is not for starting — it is for staying. Standing firm is itself the victory.'},
+      {reference:'Hebrews 12:1 (ESV)',verse:'Let us also lay aside every weight, and sin which clings so closely, and let us run with endurance the race that is set before us.',reflection:'It is a race with endurance, not a sprint. Pace yourself, but do not stop.'},
+      {reference:'Philippians 3:14 (ESV)',verse:'I press on toward the goal for the prize of the upward call of God in Christ Jesus.',reflection:'Press on. Not because you have arrived, but because the goal is worth the next step.'},
+      {reference:'Romans 5:3-4 (ESV)',verse:'We rejoice in our sufferings, knowing that suffering produces endurance, and endurance produces character, and character produces hope.',reflection:'What you are enduring is not pointless. It is building something in you that shortcuts never could.'},
+      {reference:'2 Timothy 4:7 (ESV)',verse:'I have fought the good fight, I have finished the race, I have kept the faith.',reflection:'This is how it ends when you do not give up. Finished. Faithful. Keep walking toward it.'},
+      {reference:'1 Corinthians 15:58 (ESV)',verse:'Therefore, my beloved brothers, be steadfast, immovable, always abounding in the work of the Lord, knowing that in the Lord your labor is not in vain.',reflection:'None of your faithful effort is wasted, even the parts no one sees. Not in vain — his words.'},
+      {reference:'Hebrews 10:36 (ESV)',verse:'For you have need of endurance, so that when you have done the will of God you may receive what is promised.',reflection:'The gap between doing right and receiving the promise is bridged by one thing: endurance.'},
+      {reference:'Matthew 24:13 (ESV)',verse:'But the one who endures to the end will be saved.',reflection:'You do not have to be the fastest or the strongest. You have to be the one still standing at the end.'},
+      {reference:'Isaiah 40:31 (ESV)',verse:'They shall run and not be weary; they shall walk and not faint.',reflection:'Some days you run, some days you can only walk. Both count. Just do not faint.'},
+    ],
+    healing:[
+      {reference:'Jeremiah 17:14 (ESV)',verse:'Heal me, O Lord, and I shall be healed; save me, and I shall be saved, for you are my praise.',reflection:'It is okay to ask plainly. He is the healer, and the asking is a form of praise.'},
+      {reference:'Psalm 147:3 (ESV)',verse:'He heals the brokenhearted and binds up their wounds.',reflection:'He does not just patch you up. He binds the wound with the care of someone who means to see it healed.'},
+      {reference:'Exodus 15:26 (ESV)',verse:'For I am the Lord, your healer.',reflection:'Healer is not just something he does. It is who he is — a name he gave himself.'},
+      {reference:'Isaiah 53:5 (ESV)',verse:'But he was pierced for our transgressions; he was crushed for our iniquities; upon him was the chastisement that brought us peace, and with his wounds we are healed.',reflection:'The healing you need cost him something. His wounds went toward yours.'},
+      {reference:'James 5:14-15 (ESV)',verse:'Is anyone among you sick? Let him call for the elders of the church, and let them pray over him. And the prayer of faith will save the one who is sick.',reflection:'Do not carry sickness alone. Healing often comes through community — let people pray over you.'},
+      {reference:'Psalm 103:2-3 (ESV)',verse:'Bless the Lord, O my soul, and forget not all his benefits, who forgives all your iniquity, who heals all your diseases.',reflection:'Whatever the diagnosis, it does not change his character. He is still the one who heals.'},
+      {reference:'Matthew 11:28 (ESV)',verse:'Come to me, all who labor and are heavy laden, and I will give you rest.',reflection:'Some healing is rest. Come as you are, tired and heavy, and let him carry it a while.'},
+      {reference:'Psalm 30:2 (ESV)',verse:'O Lord my God, I cried to you for help, and you have healed me.',reflection:'The cry and the healing belong in the same sentence. Cry out — he hears.'},
+      {reference:'Malachi 4:2 (ESV)',verse:'But for you who fear my name, the sun of righteousness shall rise with healing in its wings.',reflection:'Healing rises like a sunrise — sometimes slow, but sure, and it drives out the dark.'},
+      {reference:'3 John 1:2 (ESV)',verse:'Beloved, I pray that all may go well with you and that you may be in good health, as it goes well with your soul.',reflection:'God\'s heart toward your body is good. Your wellness is something he cares about, too.'},
+    ],
+    doubt:[
+      {reference:'Mark 9:24 (ESV)',verse:'Immediately the father of the child cried out and said, I believe; help my unbelief!',reflection:'This is a prayer God honors. You do not need perfect faith — just an honest one that asks for help.'},
+      {reference:'John 20:27 (ESV)',verse:'Then he said to Thomas, Put your finger here, and see my hands; and put out your hand, and place it in my side. Do not disbelieve, but believe.',reflection:'Jesus did not scold Thomas\'s doubt — he met it with evidence. He can handle your questions too.'},
+      {reference:'James 1:5-6 (ESV)',verse:'If any of you lacks wisdom, let him ask God, who gives generously to all without reproach, and it will be given him.',reflection:'God does not hold your questions against you. Ask — he gives without a lecture.'},
+      {reference:'Jude 1:22 (ESV)',verse:'And have mercy on those who doubt.',reflection:'Doubt is met with mercy in God\'s economy, not condemnation. Be as gentle with yourself.'},
+      {reference:'Matthew 14:31 (ESV)',verse:'Jesus immediately reached out his hand and took hold of him, saying to him, O you of little faith, why did you doubt?',reflection:'Peter doubted mid-miracle — and Jesus still caught him. Sinking is not the end; his hand is right there.'},
+      {reference:'John 6:37 (ESV)',verse:'All that the Father gives me will come to me, and whoever comes to me I will never cast out.',reflection:'Come with the doubts and all. He has never once turned away someone honest enough to show up.'},
+      {reference:'Isaiah 55:8-9 (ESV)',verse:'For my thoughts are not your thoughts, neither are your ways my ways, declares the Lord.',reflection:'Some doubt comes from expecting God to fit your logic. He is bigger than your framework, and that is good news.'},
+      {reference:'Hebrews 11:1 (ESV)',verse:'Now faith is the assurance of things hoped for, the conviction of things not seen.',reflection:'Faith was never about seeing everything clearly. It is holding on in the unseen — and that is allowed to be hard.'},
+      {reference:'Proverbs 3:5-6 (ESV)',verse:'Trust in the Lord with all your heart, and do not lean on your own understanding. In all your ways acknowledge him, and he will make straight your paths.',reflection:'When your understanding runs out, that is not the end of faith — it is where trust actually begins.'},
+      {reference:'Psalm 73:26 (ESV)',verse:'My flesh and my heart may fail, but God is the strength of my heart and my portion forever.',reflection:'Even when your certainty fails, he does not. He is the ground under the doubt.'},
+    ],
+    provision:[
+      {reference:'Matthew 6:26 (ESV)',verse:'Look at the birds of the air: they neither sow nor reap nor gather into barns, and yet your heavenly Father feeds them. Are you not of more value than they?',reflection:'If he feeds the birds, he has not forgotten you. You are worth more to him than you feel right now.'},
+      {reference:'Philippians 4:19 (ESV)',verse:'And my God will supply every need of yours according to his riches in glory in Christ Jesus.',reflection:'Every need — measured against his riches, not your bank balance.'},
+      {reference:'Matthew 6:31-33 (ESV)',verse:'Do not be anxious, saying, What shall we eat? or What shall we drink?... But seek first the kingdom of God and his righteousness, and all these things will be added to you.',reflection:'The worry is real, but so is the order: seek him first, and the rest gets handled.'},
+      {reference:'Psalm 37:25 (ESV)',verse:'I have been young, and now am old, yet I have not seen the righteous forsaken or his children begging for bread.',reflection:'A lifetime of watching, and God never once dropped the ball on his own. He will not start with you.'},
+      {reference:'Luke 12:24 (ESV)',verse:'Consider the ravens: they neither sow nor reap, they have neither storehouse nor barn, and yet God feeds them. Of how much more value are you than the birds!',reflection:'You are not a burden to God\'s budget. He delights to provide for what he loves.'},
+      {reference:'2 Corinthians 9:8 (ESV)',verse:'And God is able to make all grace abound to you, so that having all sufficiency in all things at all times, you may abound in every good work.',reflection:'Sufficiency — enough — is the promise. Not always extra, but always enough.'},
+      {reference:'Matthew 6:11 (ESV)',verse:'Give us this day our daily bread.',reflection:'Daily bread — enough for today. He rarely shows you the whole road, just the next meal. That is on purpose.'},
+      {reference:'Genesis 22:14 (ESV)',verse:'So Abraham called the name of that place, The Lord will provide; as it is said to this day, On the mount of the Lord it shall be provided.',reflection:'On the mountain, at the last moment, provision showed up. He has a name for exactly this: the Lord will provide.'},
+      {reference:'Psalm 34:10 (ESV)',verse:'The young lions suffer want and hunger; but those who seek the Lord lack no good thing.',reflection:'Even the strong go hungry, but those who seek him are not left without what is truly good.'},
+      {reference:'1 Kings 17:14 (ESV)',verse:'For thus says the Lord, the God of Israel, The jar of flour shall not be spent, and the jug of oil shall not be empty, until the day that the Lord sends rain upon the earth.',reflection:'God stretched a widow\'s last handful through a famine. He can make your little last longer than the math allows.'},
     ],
   };
 

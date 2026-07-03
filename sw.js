@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v186-strava-adam';
+const CACHE = 'totry-v187-strava-adam';
 
 const CORE = [
   './',
