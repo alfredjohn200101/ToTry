@@ -96,7 +96,10 @@ subscribe('*', () => {
 export function companionContext(): CompanionContext {
   const snap = get<HealthSnapshot | null>('health.snapshot', null);
   const poorSleep = snap?.sleepHours != null && snap.sleepHours <= 4.5;
-  const morningIntention = get<string>('soul.morningIntention', '') || undefined;
+  // Only today's intention — a stale one from yesterday should never be handed back.
+  const mi = get<{ text: string; date: string } | null>('soul.morningIntention', null);
+  const today = new Date().toISOString().slice(0, 10);
+  const morningIntention = mi && mi.date === today && mi.text ? mi.text : undefined;
   const name = get<string>('user.name', '') || undefined;
   return { name, poorSleep, morningIntention };
 }

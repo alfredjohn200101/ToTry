@@ -15,8 +15,8 @@ export default function Soul() {
         This is where the app points past itself: to Christ, to the sacraments, to the people who love you.
       </Text>
 
-      <HubItem icon="sunrise" title="Morning" sub="Start the day: gratitude, intention, a word, and prayer." />
-      <HubItem icon="moon" title="Reflect" sub="Close the day: how it went, journal, examen, wins." />
+      <HubItem icon="sunrise" title="Morning" sub="Start the day: gratitude, a word, and the intention I'll hand back when it's hard." onPress={() => router.push('/morning' as never)} />
+      <HubItem icon="moon" title="Reflect" sub="Close the day gently: how it went, the good, one honest thing. Grace, not a scoreboard." onPress={() => router.push('/reflect' as never)} />
       <HubItem icon="clock" title="Today" sub="How your day is going — schedule, streaks, and where your soul is at." />
       <HubItem icon="book" title="Bible" sub="A verse for whatever you're facing, and verses saved for the road." onPress={() => router.push('/bible' as never)} />
       <HubItem icon="cross" title="Today in the Church" sub="The Mass readings and the saint the Church remembers. The living calendar of the faith." />
