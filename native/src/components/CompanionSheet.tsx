@@ -20,6 +20,7 @@ import { colors, space, radius, fonts, motion } from '@/design/tokens';
 import { api, ChatMsg } from '@/ai/api';
 import { FEELINGS, Feeling } from '@/soul/feelings';
 import { buildCompanionSystem, COMPANION_FALLBACK, Struggle } from '@/soul/companionPrompt';
+import { companionContext } from '@/state/lifeState';
 import { registerCompanionOpener } from './companionController';
 
 type Mode = 'feelings' | 'talking';
@@ -50,7 +51,7 @@ export function CompanionSheet() {
       setMessages((prev) => [...prev, m]);
     }
     setBusy(true);
-    const sys = buildCompanionSystem(struggle, opening, {});
+    const sys = buildCompanionSystem(struggle, opening, companionContext());
     let reply = '';
     try {
       reply = await api(sys, histRef.current, opening ? 'Open the moment with me.' : userText || '...', 500, { timeout: 30000 });

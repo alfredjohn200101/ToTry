@@ -5,6 +5,7 @@
 import { get } from '@/data/store';
 import { getVices, cleanDays, totalReclaimed, type Vice } from '@/fight/model';
 import { computeReadiness, type HealthSnapshot, type Readiness } from '@/health/readiness';
+import type { CompanionContext } from '@/soul/companionPrompt';
 
 export type LifeState = {
   fight: {
@@ -48,4 +49,15 @@ export function getLifeState(): LifeState {
     brief,
     generatedAt: Date.now(),
   };
+}
+
+// The in-the-moment context the companion needs — so the voice knows the person, not a stranger.
+// Fills the tuned prompt's existing hooks from real data (poor sleep → "the pull is strong because
+// you're exhausted, not weak"; this morning's intention; their name). Empty for a new person.
+export function companionContext(): CompanionContext {
+  const snap = get<HealthSnapshot | null>('health.snapshot', null);
+  const poorSleep = snap?.sleepHours != null && snap.sleepHours <= 4.5;
+  const morningIntention = get<string>('soul.morningIntention', '') || undefined;
+  const name = get<string>('user.name', '') || undefined;
+  return { name, poorSleep, morningIntention };
 }
