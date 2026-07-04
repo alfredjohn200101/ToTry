@@ -136,6 +136,16 @@ export default function Today() {
         />
       )}
 
+      {/* The coach — the whole-life guide, always a tap away. */}
+      <Thread
+        icon="soul"
+        accent={colors.pu}
+        title="Your coach"
+        value="Ask the one who sees all of it"
+        sub="what should I do right now?"
+        onPress={() => router.push('/coach' as never)}
+      />
+
       {/* Scripture — the soul on the front door */}
       <Card style={{ marginTop: space.s4 }}>
         <View style={styles.goldRule} />
