@@ -10,9 +10,11 @@ import { eventsForToday } from '@/calendar/model';
 export type FuelMeal = { name: string; when: string; kcal: number; protein: number; carbs?: number | null; note?: string };
 export type ShopItem = { item: string; approxCost?: string };
 export type FuelPlan = { meals: FuelMeal[]; shopping: ShopItem[]; why: string; preWorkout?: string };
-export type FuelPrefs = { budget: string; diet: string[]; mealsPerDay: number };
+export type FuelPrefs = { budget: string; diet: string[]; dislikes: string[]; avoid: string; mealsPerDay: number };
 
-export const DIET_OPTIONS = ['Vegan', 'Vegetarian', 'Halal', 'No beef', 'No pork', 'Dairy-free', 'Gluten-free'];
+export const DIET_OPTIONS = ['Vegan', 'Vegetarian', 'Halal', 'No beef', 'No pork', 'Dairy-free', 'Gluten-free', 'Nut-free'];
+// Common personal dislikes (separate from a diet) — the planner will simply not include these.
+export const DISLIKE_OPTIONS = ['Mushrooms', 'Seafood', 'Fish', 'Spicy food', 'Olives', 'Eggs', 'Coriander', 'Tofu', 'Onion', 'Blue cheese', 'Liver', 'Beetroot'];
 
 const to12 = (t: string) => {
   const [h, m] = t.split(':').map(Number);
@@ -43,6 +45,8 @@ export async function generateFuelPlan(prefs: FuelPrefs): Promise<FuelPlan | nul
     ? `They train today at ${to12(gym.time)} (${gym.title}). Time a carb-forward pre-workout meal ~60-90 min before it, and note which meal that is.`
     : 'No training logged for today — keep carbs even across the day.';
   const dietLine = prefs.diet.length ? `Dietary restrictions (respect strictly): ${prefs.diet.join(', ')}.` : 'No dietary restrictions.';
+  const avoidList = [...prefs.dislikes, ...(prefs.avoid.trim() ? [prefs.avoid.trim()] : [])].join(', ');
+  const avoidLine = avoidList ? `DO NOT include these foods/ingredients — they dislike them, so leave them out entirely and don't suggest them: ${avoidList}.` : '';
 
   const sys =
     'You are a registered-dietitian-grade meal planner inside a free, faith-rooted whole-life app. ' +
@@ -57,7 +61,7 @@ export async function generateFuelPlan(prefs: FuelPrefs): Promise<FuelPlan | nul
 
   const prompt =
     `Targets: ${targets.cal} kcal, ${targets.protein}g protein. Budget: ${prefs.budget || 'flexible'}. ` +
-    `${dietLine} Meals per day: ${prefs.mealsPerDay}. ${trainingLine} ` +
+    `${dietLine} ${avoidLine} Meals per day: ${prefs.mealsPerDay}. ${trainingLine} ` +
     `Whole-person context: ${brief}`;
 
   let reply = '';

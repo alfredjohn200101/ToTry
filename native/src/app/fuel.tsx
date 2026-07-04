@@ -9,7 +9,7 @@ import { Button } from '@/design/Button';
 import { Flourish } from '@/design/Flourish';
 import { colors, space, fonts, radius } from '@/design/tokens';
 import { useStored } from '@/data/useStore';
-import { type FuelPlan, type FuelMeal, DIET_OPTIONS, generateFuelPlan } from '@/nourish/fuelPlan';
+import { type FuelPlan, type FuelMeal, DIET_OPTIONS, DISLIKE_OPTIONS, generateFuelPlan } from '@/nourish/fuelPlan';
 
 const EMPTY_DIET: string[] = [];
 const haptic = (k: 'light' | 'success' = 'light') => {
@@ -37,18 +37,21 @@ export default function Fuel() {
   const [plan, setPlan] = useStored<FuelPlan | null>('nourish.fuelPlan', null);
   const [budget, setBudget] = useStored<string>('nourish.fuelBudget', '');
   const [diet, setDiet] = useStored<string[]>('nourish.fuelDiet', EMPTY_DIET);
+  const [dislikes, setDislikes] = useStored<string[]>('nourish.fuelDislikes', EMPTY_DIET);
+  const [avoid, setAvoid] = useStored<string>('nourish.fuelAvoid', '');
   const [meals, setMeals] = useStored<number>('nourish.fuelMeals', 3);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
 
   const toggleDiet = (d: string) => { haptic(); setDiet((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d])); };
+  const toggleDislike = (d: string) => { haptic(); setDislikes((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d])); };
 
   const generate = async () => {
     if (busy) return;
     haptic();
     setBusy(true);
     setErr('');
-    const p = await generateFuelPlan({ budget, diet, mealsPerDay: meals });
+    const p = await generateFuelPlan({ budget, diet, dislikes, avoid, mealsPerDay: meals });
     if (p) { setPlan(p); haptic('success'); } else setErr("Couldn't build a plan right now — check your connection and try again.");
     setBusy(false);
   };
@@ -79,6 +82,23 @@ export default function Fuel() {
             </Pressable>
           ))}
         </View>
+
+        <Text variant="eyebrow" style={{ marginTop: space.s5 }}>Foods you'd rather avoid</Text>
+        <Text variant="footnote" style={{ marginTop: space.s1 }}>Not a diet — just things you don't like. I'll leave them out.</Text>
+        <View style={styles.chips}>
+          {DISLIKE_OPTIONS.map((d) => (
+            <Pressable key={d} onPress={() => toggleDislike(d)} style={[styles.chip, dislikes.includes(d) && styles.chipOn]}>
+              <Text variant="subhead" color={dislikes.includes(d) ? colors.tx : colors.tx3}>{d}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <TextInput
+          value={avoid}
+          onChangeText={setAvoid}
+          placeholder="anything else? e.g. cottage cheese, very sweet things, cheap tuna"
+          placeholderTextColor={colors.tx3}
+          style={styles.input}
+        />
 
         <Text variant="eyebrow" style={{ marginTop: space.s5 }}>Meals a day</Text>
         <View style={styles.seg}>
