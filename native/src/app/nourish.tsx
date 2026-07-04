@@ -22,8 +22,10 @@ import {
   sum,
   pct,
 } from '@/nourish/model';
+import { computeAdaptiveTDEE } from '@/nourish/adaptive';
 
 const EMPTY: Food[] = [];
+const EMPTY_W: unknown[] = [];
 const DEFAULT: Targets = { cal: 2200, protein: 150 };
 const haptic = () => { if (process.env.EXPO_OS !== 'web') Haptics.selectionAsync().catch(() => {}); };
 
@@ -53,8 +55,10 @@ export default function Nourish() {
   const [log] = useStored<Food[]>('nourish.log', EMPTY);
   const [targets] = useStored<Targets>('nourish.targets', DEFAULT);
   const [water] = useStored<Water | null>('nourish.water', null);
+  useStored<unknown[]>('body.weights', EMPTY_W); // subscribe so adaptive TDEE recomputes on weigh-ins
   const [adding, setAdding] = useState(false);
   const [editTargets, setEditTargets] = useState(false);
+  const adaptive = computeAdaptiveTDEE();
 
   const today = log.filter((f) => f.date === todayKey());
   const totals = sum(today);
@@ -90,6 +94,28 @@ export default function Nourish() {
         </Pressable>
         {editTargets && <TargetEditor t={targets} onSave={(t) => { saveTargets(t); setEditTargets(false); }} />}
       </Card>
+
+      {/* Adaptive TDEE — learned from real data, pure code, no AI */}
+      {adaptive && (
+        <Card style={{ marginTop: space.s4, borderColor: colors.goBd, borderWidth: StyleSheet.hairlineWidth }}>
+          <Text variant="eyebrow" color={colors.go}>Learned from your data</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginTop: space.s2 }}>
+            <Text style={{ fontFamily: fonts.serif, fontSize: 32, color: colors.tx, lineHeight: 34 }}>{adaptive.tdee}</Text>
+            <Text variant="subhead" style={{ marginLeft: space.s2, marginBottom: 6 }}>kcal · your real maintenance</Text>
+          </View>
+          <Text variant="footnote" style={{ marginTop: space.s2, lineHeight: 19 }}>
+            From {adaptive.loggedDays} logged days over {adaptive.days}: you averaged {adaptive.avgIntake} kcal and{' '}
+            {adaptive.weightChangeKg >= 0 ? 'gained' : 'lost'} {Math.abs(adaptive.weightChangeKg)} kg. No formula — this is your actual body.
+          </Text>
+          {adaptive.suggested !== targets.cal && (
+            <Pressable onPress={() => { haptic(); saveTargets({ cal: adaptive.suggested, protein: targets.protein }); }} style={[styles.saveBtn, { marginTop: space.s4 }]}>
+              <Text variant="subhead" color={colors.go}>
+                Use {adaptive.suggested} kcal as my target{adaptive.direction !== 'maintain' ? ` (to ${adaptive.direction})` : ''}
+              </Text>
+            </Pressable>
+          )}
+        </Card>
+      )}
 
       {/* Water */}
       <Card tone="flat" style={{ marginTop: space.s4, flexDirection: 'row', alignItems: 'center' }}>
