@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, StyleSheet, Pressable, TextInput } from 'react-native';
+import { View, StyleSheet, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Screen } from '@/design/Screen';
@@ -22,6 +22,7 @@ import {
   totalSets,
 } from '@/train/model';
 import { searchExercises, findExercise } from '@/train/exercises';
+import { importHevy, getHevyKey } from '@/train/hevy';
 
 const EMPTY: Workout[] = [];
 const LEVEL = {
@@ -71,6 +72,19 @@ export default function Train() {
   const [name, setName] = useState('');
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [exName, setExName] = useState('');
+  const [showHevy, setShowHevy] = useState(false);
+  const [hevyKey, setHevyKey] = useState(getHevyKey());
+  const [hevyBusy, setHevyBusy] = useState(false);
+  const [hevyMsg, setHevyMsg] = useState('');
+
+  const runHevy = async () => {
+    if (hevyBusy) return;
+    setHevyBusy(true);
+    setHevyMsg('');
+    const res = await importHevy(hevyKey);
+    setHevyMsg(res.error ? res.error : res.added > 0 ? `Imported ${res.added} workout${res.added === 1 ? '' : 's'} from Hevy.` : 'Already up to date — nothing new to import.');
+    setHevyBusy(false);
+  };
 
   const addExercise = (name: string, cue?: string) => {
     const n = name.trim();
@@ -106,6 +120,30 @@ export default function Train() {
           <Text variant="eyebrow" color={rInfo.color}>Today's readiness · {readiness!.score}</Text>
           <Text variant="body" style={{ marginTop: space.s2 }}>{rInfo.line}</Text>
         </Card>
+      )}
+
+      {/* Import from Hevy — pure REST with your own key, one-way */}
+      {showHevy ? (
+        <Card style={{ marginTop: space.s4 }}>
+          <Text variant="eyebrow">Import from Hevy</Text>
+          <Text variant="footnote" style={{ marginTop: space.s1, lineHeight: 18 }}>Your key is in Hevy → Settings → API. One-way, Hevy → To Try — your existing history, kept.</Text>
+          <TextInput value={hevyKey} onChangeText={setHevyKey} placeholder="Hevy API key" placeholderTextColor={colors.tx3} style={styles.input} autoCapitalize="none" autoCorrect={false} />
+          {hevyBusy ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.s3, marginTop: space.s4 }}>
+              <ActivityIndicator color={colors.go} /><Text variant="subhead">Importing from Hevy…</Text>
+            </View>
+          ) : (
+            <View style={{ flexDirection: 'row', gap: space.s3, marginTop: space.s4 }}>
+              <Pressable onPress={runHevy} style={[styles.smallBtn, { flex: 1 }]}><Text variant="subhead" color={colors.go}>Import</Text></Pressable>
+              <Pressable onPress={() => setShowHevy(false)} style={[styles.setInput, { flex: 1, alignItems: 'center', justifyContent: 'center', maxHeight: 44 }]}><Text variant="subhead" color={colors.tx3}>Close</Text></Pressable>
+            </View>
+          )}
+          {hevyMsg ? <Text variant="footnote" style={{ marginTop: space.s3, color: colors.tx2 }}>{hevyMsg}</Text> : null}
+        </Card>
+      ) : (
+        <Pressable onPress={() => { haptic(); setShowHevy(true); }} style={{ marginTop: space.s4, alignSelf: 'flex-start' }}>
+          <Text variant="footnote" color={colors.go}>↺ Import your history from Hevy</Text>
+        </Pressable>
       )}
 
       {active ? (
