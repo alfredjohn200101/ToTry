@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { Screen } from '@/design/Screen';
 import { Text } from '@/design/Text';
 import { Card } from '@/design/Card';
@@ -37,8 +38,8 @@ export default function Settings() {
         </Text>
       </Card>
 
-      <HubItem icon="person" title="About you" sub="Helps tailor your nutrition and training." />
-      <HubItem icon="cross" title="Faith" sub="How much scripture surfaces for you." />
+      <HubItem icon="person" title="About you" sub="Your name, and honest numbers for nutrition — so it speaks like it knows you." onPress={() => router.push('/about-you' as never)} />
+      <HubItem icon="cross" title="Faith" sub="How much scripture surfaces for you — full, some, or none." onPress={() => router.push('/about-you' as never)} />
       <HubItem icon="settings" title="Preferences" sub="Currency, units, theme, timezone, reminders." />
     </Screen>
   );

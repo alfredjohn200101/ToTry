@@ -28,7 +28,13 @@ export function removeFood(id: string): void {
 }
 
 export function getTargets(): Targets {
-  return get<Targets>('nourish.targets', DEFAULT_TARGETS);
+  const stored = get<Targets | null>('nourish.targets', null);
+  if (stored) return stored;
+  // No explicit target yet → a sex-aware default (About you). Read the raw key to avoid a cycle.
+  const sex = get<'male' | 'female' | null>('user.sex', null);
+  if (sex === 'male') return { cal: 2500, protein: 160 };
+  if (sex === 'female') return { cal: 2000, protein: 120 };
+  return DEFAULT_TARGETS;
 }
 export function saveTargets(t: Targets): void {
   set('nourish.targets', { cal: Math.max(0, Math.round(t.cal)), protein: Math.max(0, Math.round(t.protein)) });
