@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, StyleSheet, Pressable, TextInput } from 'react-native';
 import { router } from 'expo-router';
+import { Icon } from '@/design/Icon';
 import Svg, { Circle } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { Screen } from '@/design/Screen';
@@ -100,6 +101,20 @@ export default function Nourish() {
         <Pressable onPress={() => { haptic(); addWater(500); }} style={styles.waterBtn}><Text variant="subhead" color={colors.bl}>+500ml</Text></Pressable>
       </Card>
 
+      {/* Fuel plan — the whole-life meal planner */}
+      <Pressable onPress={() => { haptic(); router.push('/fuel' as never); }}>
+        {({ pressed }) => (
+          <Card style={[{ marginTop: space.s4, flexDirection: 'row', alignItems: 'center', gap: space.s3, borderColor: colors.goBd, borderWidth: StyleSheet.hairlineWidth }, pressed && { opacity: 0.9 }]}>
+            <View style={styles.fuelMedallion}><Icon name="leaf" size={20} color={colors.go} /></View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontFamily: fonts.sansSemi, fontSize: 16, color: colors.tx }}>Build a fuel plan</Text>
+              <Text variant="footnote" style={{ marginTop: 2 }}>A day of real food around your targets, budget & training</Text>
+            </View>
+            <Icon name="chevron" size={18} color={colors.tx3} />
+          </Card>
+        )}
+      </Pressable>
+
       {/* Today's food */}
       <View style={styles.sectionHead}>
         <Text variant="eyebrow">Today</Text>
@@ -169,6 +184,7 @@ const styles = StyleSheet.create({
   waterBtn: { paddingHorizontal: space.s4, paddingVertical: space.s3, borderRadius: radius.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.bd2, marginLeft: space.s2 },
   remove: { paddingHorizontal: space.s3, paddingVertical: space.s1 },
   addRow: { marginTop: space.s3, paddingVertical: space.s4, alignItems: 'center', borderRadius: radius.card, borderCurve: 'continuous', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.goBd, backgroundColor: colors.goBg },
+  fuelMedallion: { width: 42, height: 42, borderRadius: radius.pill, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.goBd, backgroundColor: colors.goBg, alignItems: 'center', justifyContent: 'center' },
   input: { marginTop: space.s2, backgroundColor: colors.bg2, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.bd2, borderRadius: radius.sm, borderCurve: 'continuous', paddingHorizontal: space.s4, paddingVertical: space.s3, color: colors.tx, fontFamily: fonts.sans, fontSize: 16 },
   saveBtn: { paddingVertical: space.s3, alignItems: 'center', borderRadius: radius.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.goBd, backgroundColor: colors.goBg },
 });
