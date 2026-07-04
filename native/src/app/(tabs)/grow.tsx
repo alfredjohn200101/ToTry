@@ -19,6 +19,7 @@ export default function Grow() {
       <HubItem icon="dumbbell" title="Train" sub="Workouts, sets, strength over time — and today's readiness tells you when to push." onPress={() => router.push('/train' as never)} />
       <HubItem icon="leaf" title="Nourish" sub="Food, macros, water — honest and fast. Hit your protein without the shame spiral." onPress={() => router.push('/nourish' as never)} />
       <HubItem icon="pulse" title="Recovery" sub="Readiness from your sleep, HRV and resting heart rate — so you know when to push and when to rest." onPress={() => router.push('/recovery' as never)} />
+      <HubItem icon="person" title="Body" sub="Weight over time — the trend line, not the daily number. Information, never a verdict." onPress={() => router.push('/body' as never)} />
     </Screen>
   );
 }
