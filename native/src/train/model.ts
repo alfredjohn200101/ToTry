@@ -4,7 +4,7 @@
 import { get, set } from '@/data/store';
 
 export type SetEntry = { weight: number; reps: number };
-export type Exercise = { name: string; sets: SetEntry[] };
+export type Exercise = { name: string; sets: SetEntry[]; cue?: string };
 export type Workout = { id: string; date: string; name: string; exercises: Exercise[] };
 
 const KEY = 'train.workouts';

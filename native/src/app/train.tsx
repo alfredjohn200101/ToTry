@@ -21,6 +21,7 @@ import {
   bestE1rm,
   totalSets,
 } from '@/train/model';
+import { searchExercises, findExercise } from '@/train/exercises';
 
 const EMPTY: Workout[] = [];
 const LEVEL = {
@@ -44,6 +45,7 @@ function ExerciseBlock({ ex, onAddSet }: { ex: Exercise; onAddSet: (s: SetEntry)
   return (
     <View style={{ marginTop: space.s4 }}>
       <Text style={{ fontFamily: fonts.sansSemi, fontSize: 15, color: colors.tx }}>{ex.name}</Text>
+      {ex.cue ? <Text variant="footnote" style={{ marginTop: 2, color: colors.tx3, lineHeight: 18 }}>{ex.cue}</Text> : null}
       {ex.sets.map((s, i) => (
         <View key={i} style={styles.setRow}>
           <Text variant="footnote" color={colors.tx3} style={{ width: 22 }}>{i + 1}</Text>
@@ -70,7 +72,13 @@ export default function Train() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [exName, setExName] = useState('');
 
-  const addExercise = () => { if (exName.trim()) { haptic(); setExercises((c) => [...c, { name: exName.trim(), sets: [] }]); setExName(''); } };
+  const addExercise = (name: string, cue?: string) => {
+    const n = name.trim();
+    if (!n) return;
+    haptic();
+    setExercises((c) => [...c, { name: n, sets: [], cue: cue ?? findExercise(n)?.cue }]);
+    setExName('');
+  };
   const addSet = (idx: number, s: SetEntry) => setExercises((c) => c.map((e, i) => (i === idx ? { ...e, sets: [...e.sets, s] } : e)));
   const finish = () => {
     const withSets = exercises.filter((e) => e.sets.length);
@@ -105,9 +113,22 @@ export default function Train() {
           <TextInput value={name} onChangeText={setName} placeholder="Session name (e.g. Push day)" placeholderTextColor={colors.tx3} style={styles.input} autoFocus />
           {exercises.map((ex, idx) => <ExerciseBlock key={idx} ex={ex} onAddSet={(s) => addSet(idx, s)} />)}
           <View style={styles.addExRow}>
-            <TextInput value={exName} onChangeText={setExName} placeholder="Add an exercise…" placeholderTextColor={colors.tx3} style={[styles.input, { flex: 1, marginTop: 0 }]} />
-            <Pressable onPress={addExercise} style={styles.smallBtn}><Text variant="subhead" color={colors.go}>Add</Text></Pressable>
+            <TextInput value={exName} onChangeText={setExName} placeholder="Search or add an exercise…" placeholderTextColor={colors.tx3} style={[styles.input, { flex: 1, marginTop: 0 }]} />
+            <Pressable onPress={() => addExercise(exName)} style={styles.smallBtn}><Text variant="subhead" color={colors.go}>Add</Text></Pressable>
           </View>
+          {exName.trim().length > 0 && searchExercises(exName).length > 0 && (
+            <View style={styles.suggestBox}>
+              {searchExercises(exName).map((e) => (
+                <Pressable key={e.name} onPress={() => addExercise(e.name, e.cue)} style={styles.suggestRow}>
+                  <View style={{ flex: 1 }}>
+                    <Text variant="subhead" color={colors.tx}>{e.name}</Text>
+                    <Text variant="footnote" style={{ marginTop: 1 }}>{e.cue}</Text>
+                  </View>
+                  <Text variant="micro" color={colors.go}>{e.muscle}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
           <Button label="Finish session" onPress={finish} style={{ marginTop: space.s5 }} />
           <Pressable onPress={() => { setActive(false); setExercises([]); setName(''); }} style={{ alignItems: 'center', paddingVertical: space.s3 }}><Text variant="subhead" color={colors.tx3}>Discard</Text></Pressable>
         </Card>
@@ -141,6 +162,8 @@ const styles = StyleSheet.create({
   addSetRow: { flexDirection: 'row', alignItems: 'center', gap: space.s2, marginTop: space.s3 },
   setInput: { flex: 1, backgroundColor: colors.bg2, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.bd2, borderRadius: radius.sm, paddingHorizontal: space.s4, paddingVertical: space.s3, color: colors.tx, fontFamily: fonts.mono, fontSize: 15 },
   addExRow: { flexDirection: 'row', alignItems: 'center', gap: space.s2, marginTop: space.s4 },
+  suggestBox: { marginTop: space.s2, borderRadius: radius.sm, borderCurve: 'continuous', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.bd, backgroundColor: colors.bg2, overflow: 'hidden' },
+  suggestRow: { flexDirection: 'row', alignItems: 'center', gap: space.s3, paddingHorizontal: space.s4, paddingVertical: space.s3, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.bd },
   smallBtn: { paddingHorizontal: space.s4, paddingVertical: space.s3, borderRadius: radius.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.goBd, backgroundColor: colors.goBg, alignItems: 'center', justifyContent: 'center' },
   rowTop: { flexDirection: 'row', alignItems: 'center' },
   remove: { paddingHorizontal: space.s3, paddingVertical: space.s1 },
