@@ -8,9 +8,12 @@
     "scheme": "totry",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.alfredjohn.totry",
+      "supportsTablet": false
     },
     "android": {
+      "package": "com.alfredjohn.totry",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
