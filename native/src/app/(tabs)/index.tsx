@@ -10,6 +10,7 @@ import { Button } from '@/design/Button';
 import { Icon, type IconName } from '@/design/Icon';
 import { colors, space, radius, aurora, fonts, getDaypart } from '@/design/tokens';
 import { useLifeState } from '@/state/lifeState';
+import { computeReachOut, type ReachAction } from '@/state/reachOut';
 
 const READINESS = {
   go: { color: colors.gr, label: 'Well recovered', call: 'A good day to push.' },
@@ -17,17 +18,13 @@ const READINESS = {
   rest: { color: colors.re, label: 'Recover today', call: "Your body's asking for rest." },
 } as const;
 
-// Is it currently the person's hardest urge window? (labels come from analyzeUrges)
-function inWindow(label: string | null): boolean {
-  if (!label) return false;
-  const h = new Date().getHours();
-  if (label.includes('late night')) return h < 6;
-  if (label.includes('morning')) return h >= 6 && h < 12;
-  if (label.includes('afternoon')) return h >= 12 && h < 17;
-  if (label.includes('evening')) return h >= 17 && h < 21;
-  if (label.includes('night')) return h >= 21;
-  return false;
-}
+const REACH_ACCENT: Record<string, string> = {
+  risk: colors.pu,
+  lateNight: colors.pu,
+  lowRecovery: colors.re,
+  morning: colors.go,
+  evening: colors.bl,
+};
 
 function Thread({
   icon,
@@ -69,7 +66,12 @@ export default function Today() {
   const r = life.readiness;
   const rInfo = r?.hasData ? READINESS[r.level] : null;
   const fightActive = life.fight.activeCount > 0;
-  const nowRisk = fightActive && inWindow(life.fight.riskWindow);
+  const reach = computeReachOut();
+  const onReach = (action?: ReachAction) => {
+    if (action === 'companion') openCompanion();
+    else if (action === 'morning') router.push('/morning' as never);
+    else if (action === 'reflect') router.push('/reflect' as never);
+  };
 
   return (
     <Screen>
@@ -96,16 +98,16 @@ export default function Today() {
         </View>
       </View>
 
-      {/* Risk-window awareness — the reach-out-first, surfaced in-app until push lands. */}
-      {nowRisk && (
-        <Pressable onPress={() => openCompanion()}>
-          <Card style={{ marginTop: space.s4, borderColor: colors.puBd, borderWidth: StyleSheet.hairlineWidth }}>
-            <Text variant="eyebrow" color={colors.pu}>Your hard window</Text>
-            <Text variant="body" style={{ marginTop: space.s2 }}>
-              This is usually when it's hardest for you. Nothing has to happen — I'm just here. Tap if
-              anything's rising.
-            </Text>
-          </Card>
+      {/* Reach-out-first — the decision brain surfaces the one thing that matters right now.
+          (In-app today; the same logic drives native push on device.) */}
+      {reach && (
+        <Pressable onPress={() => onReach(reach.action)}>
+          {({ pressed }) => (
+            <Card style={[{ marginTop: space.s4, borderColor: (REACH_ACCENT[reach.kind] || colors.pu) + '66', borderWidth: StyleSheet.hairlineWidth }, pressed && reach.action ? { opacity: 0.92 } : null]}>
+              <Text variant="eyebrow" color={REACH_ACCENT[reach.kind] || colors.pu}>{reach.title}</Text>
+              <Text variant="body" style={{ marginTop: space.s2 }}>{reach.body}</Text>
+            </Card>
+          )}
         </Pressable>
       )}
 
