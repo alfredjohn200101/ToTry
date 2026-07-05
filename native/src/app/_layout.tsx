@@ -7,12 +7,12 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { CompanionSheet } from '@/components/CompanionSheet';
 import { useFonts } from 'expo-font';
 import {
-  Cormorant_500Medium,
-  Cormorant_500Medium_Italic,
-  Cormorant_600SemiBold,
-} from '@expo-google-fonts/cormorant';
+  CormorantGaramond_400Regular,
+  CormorantGaramond_500Medium,
+  CormorantGaramond_500Medium_Italic,
+} from '@expo-google-fonts/cormorant-garamond';
 import { DMMono_400Regular, DMMono_500Medium } from '@expo-google-fonts/dm-mono';
-import { DMSans_400Regular, DMSans_500Medium, DMSans_600SemiBold } from '@expo-google-fonts/dm-sans';
+import { Outfit_400Regular, Outfit_500Medium, Outfit_600SemiBold } from '@expo-google-fonts/outfit';
 import { colors } from '@/design/tokens';
 import { hydrateStore } from '@/data/store';
 import { getHealthSnapshot } from '@/health/provider';
@@ -21,14 +21,14 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   const [loaded] = useFonts({
-    Cormorant_500Medium,
-    Cormorant_500Medium_Italic,
-    Cormorant_600SemiBold,
+    CormorantGaramond_400Regular,
+    CormorantGaramond_500Medium,
+    CormorantGaramond_500Medium_Italic,
     DMMono_400Regular,
     DMMono_500Medium,
-    DMSans_400Regular,
-    DMSans_500Medium,
-    DMSans_600SemiBold,
+    Outfit_400Regular,
+    Outfit_500Medium,
+    Outfit_600SemiBold,
   });
 
   // Hydrate the local-first store before first render so every screen reads real data synchronously.

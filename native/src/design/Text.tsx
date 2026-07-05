@@ -25,14 +25,14 @@ const variants: Record<Variant, TextStyle> = {
   subhead: { fontFamily: fonts.sans, fontSize: fontSize.subhead, color: colors.tx2, lineHeight: fontSize.subhead * 1.5 },
   footnote: { fontFamily: fonts.sans, fontSize: fontSize.footnote, color: colors.tx3, lineHeight: fontSize.footnote * 1.5 },
   eyebrow: {
-    fontFamily: fonts.sansSemi,
+    fontFamily: fonts.mono, // DM Mono uppercase label — the PWA's signature
     fontSize: fontSize.caption,
     color: colors.tx3,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
   data: { fontFamily: fonts.monoMed, fontSize: fontSize.title3, color: colors.tx, letterSpacing: 0.5 },
-  micro: { fontFamily: fonts.sansMed, fontSize: fontSize.caption2, color: colors.tx3, letterSpacing: 0.4 },
+  micro: { fontFamily: fonts.mono, fontSize: fontSize.caption2, color: colors.tx3, letterSpacing: 0.4 },
 };
 
 export function Text({

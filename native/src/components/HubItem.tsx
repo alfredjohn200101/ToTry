@@ -23,7 +23,7 @@ export function HubItem({
           <Icon name={icon} size={22} color={colors.go} strokeWidth={1.6} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontFamily: 'Cormorant_600SemiBold', fontSize: 23, color: colors.tx, letterSpacing: -0.2 }}>{title}</Text>
+          <Text style={{ fontFamily: 'CormorantGaramond_500Medium', fontSize: 24, color: colors.tx, letterSpacing: -0.2 }}>{title}</Text>
           <Text variant="subhead" style={{ marginTop: 2 }}>
             {sub}
           </Text>

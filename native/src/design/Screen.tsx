@@ -33,8 +33,8 @@ export function Screen({
       >
         {showWordmark && (
           <View style={styles.wordmark}>
-            <Text style={{ fontFamily: 'Cormorant_600SemiBold', fontSize: 19, color: colors.tx }}>
-              To <Text style={{ fontFamily: 'Cormorant_500Medium_Italic', fontSize: 19, color: colors.go }}>Try</Text>
+            <Text style={{ fontFamily: 'CormorantGaramond_500Medium', fontSize: 20, color: colors.tx }}>
+              To <Text style={{ fontFamily: 'CormorantGaramond_500Medium_Italic', fontSize: 20, color: colors.go }}>Try</Text>
             </Text>
           </View>
         )}

@@ -63,19 +63,19 @@ export const fontSize = {
   display: 44, // serif hero
 } as const;
 
-// Fonts — a cohesive family, not bare system. Cormorant = the sacred/soul-voice;
-// DM Sans = functional UI (sibling of DM Mono — warm + clean + iOS-friendly);
-// DM Mono = true data (numbers). Nothing renders as the generic browser/system default.
+// Fonts — the PWA's purposeful system, matched exactly. Outfit = functional UI (geometric, clean,
+// intentional); Cormorant Garamond = the sacred/soul-voice, kept LIGHT (500/400, never heavy);
+// DM Mono = labels, eyebrows and true numbers (a signature — used generously). Nothing generic.
 export const fonts = {
-  serif: 'Cormorant_600SemiBold',
-  serifMed: 'Cormorant_500Medium',
-  serifItalic: 'Cormorant_500Medium_Italic',
-  sans: 'DMSans_400Regular',
-  sansMed: 'DMSans_500Medium',
-  sansSemi: 'DMSans_600SemiBold',
+  serif: 'CormorantGaramond_500Medium',
+  serifMed: 'CormorantGaramond_400Regular',
+  serifItalic: 'CormorantGaramond_500Medium_Italic',
+  sans: 'Outfit_400Regular',
+  sansMed: 'Outfit_500Medium',
+  sansSemi: 'Outfit_600SemiBold',
   mono: 'DMMono_400Regular',
   monoMed: 'DMMono_500Medium',
-  system: 'DMSans_400Regular' as string | undefined, // back-compat alias -> DM Sans
+  system: 'Outfit_400Regular' as string | undefined, // back-compat alias -> Outfit
 } as const;
 
 // Motion — gentle iOS spring.
