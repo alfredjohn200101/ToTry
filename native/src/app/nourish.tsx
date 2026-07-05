@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, StyleSheet, Pressable, TextInput } from 'react-native';
+import { View, StyleSheet, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { Icon } from '@/design/Icon';
 import Svg, { Circle } from 'react-native-svg';
@@ -23,6 +23,7 @@ import {
   pct,
 } from '@/nourish/model';
 import { computeAdaptiveTDEE } from '@/nourish/adaptive';
+import { type FoodResult, searchFoods } from '@/nourish/foodSearch';
 
 const EMPTY: Food[] = [];
 const EMPTY_W: unknown[] = [];
@@ -189,13 +190,49 @@ function AddFood({ onSave, onCancel }: { onSave: (d: { name: string; cal: number
   const [name, setName] = useState('');
   const [cal, setCal] = useState('');
   const [pro, setPro] = useState('');
+  const [results, setResults] = useState<FoodResult[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  const search = async () => {
+    if (name.trim().length < 2 || searching) return;
+    haptic();
+    setSearching(true);
+    setResults(await searchFoods(name));
+    setSearching(false);
+  };
+  const pick = (r: FoodResult) => {
+    haptic();
+    setName(r.name);
+    setCal(String(r.kcalPer100));
+    setPro(String(r.proteinPer100));
+    setResults([]);
+  };
+
   return (
     <Card style={{ marginTop: space.s3 }}>
-      <TextInput value={name} onChangeText={setName} placeholder="What did you eat?" placeholderTextColor={colors.tx3} style={styles.input} autoFocus />
+      <View style={{ flexDirection: 'row', gap: space.s2 }}>
+        <TextInput value={name} onChangeText={setName} placeholder="What did you eat?" placeholderTextColor={colors.tx3} style={[styles.input, { flex: 1, marginTop: 0 }]} onSubmitEditing={search} returnKeyType="search" autoFocus />
+        <Pressable onPress={search} style={[styles.saveBtn, { paddingHorizontal: space.s4, justifyContent: 'center' }]}>
+          {searching ? <ActivityIndicator color={colors.go} /> : <Text variant="subhead" color={colors.go}>Search</Text>}
+        </Pressable>
+      </View>
+
+      {results.length > 0 && (
+        <View style={styles.foodResults}>
+          {results.map((r, i) => (
+            <Pressable key={i} onPress={() => pick(r)} style={styles.foodRow}>
+              <Text variant="subhead" color={colors.tx} style={{ flex: 1 }} numberOfLines={1}>{r.name}</Text>
+              <Text variant="footnote" color={colors.tx3}>{r.kcalPer100} kcal · {r.proteinPer100}g P /100g</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+
       <View style={{ flexDirection: 'row', gap: space.s3, marginTop: space.s3 }}>
         <TextInput value={cal} onChangeText={setCal} keyboardType="numeric" placeholder="kcal" placeholderTextColor={colors.tx3} style={[styles.input, { flex: 1, marginTop: 0 }]} />
         <TextInput value={pro} onChangeText={setPro} keyboardType="numeric" placeholder="protein g" placeholderTextColor={colors.tx3} style={[styles.input, { flex: 1, marginTop: 0 }]} />
       </View>
+      <Text variant="footnote" style={{ marginTop: space.s2 }}>Search fills per-100g values — adjust for your portion.</Text>
       <Pressable onPress={() => { if (name.trim()) { haptic(); onSave({ name, cal: parseFloat(cal) || 0, protein: parseFloat(pro) || 0 }); } }} style={[styles.saveBtn, { marginTop: space.s4 }]}><Text variant="subhead" color={colors.go}>Add</Text></Pressable>
       <Pressable onPress={onCancel} style={{ alignItems: 'center', paddingVertical: space.s3 }}><Text variant="subhead" color={colors.tx3}>Cancel</Text></Pressable>
     </Card>
@@ -213,4 +250,6 @@ const styles = StyleSheet.create({
   fuelMedallion: { width: 42, height: 42, borderRadius: radius.pill, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.goBd, backgroundColor: colors.goBg, alignItems: 'center', justifyContent: 'center' },
   input: { marginTop: space.s2, backgroundColor: colors.bg2, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.bd2, borderRadius: radius.sm, borderCurve: 'continuous', paddingHorizontal: space.s4, paddingVertical: space.s3, color: colors.tx, fontFamily: fonts.sans, fontSize: 16 },
   saveBtn: { paddingVertical: space.s3, alignItems: 'center', borderRadius: radius.sm, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.goBd, backgroundColor: colors.goBg },
+  foodResults: { marginTop: space.s3, borderRadius: radius.sm, borderCurve: 'continuous', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.bd, backgroundColor: colors.bg2, overflow: 'hidden' },
+  foodRow: { flexDirection: 'row', alignItems: 'center', gap: space.s3, paddingHorizontal: space.s4, paddingVertical: space.s3, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.bd },
 });
