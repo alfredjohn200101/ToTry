@@ -23,6 +23,7 @@ import {
 } from '@/train/model';
 import { searchExercises, findExercise } from '@/train/exercises';
 import { importHevy, getHevyKey } from '@/train/hevy';
+import { progressionFor } from '@/train/progression';
 
 const EMPTY: Workout[] = [];
 const LEVEL = {
@@ -39,6 +40,7 @@ const haptic = (k: 'light' | 'success' = 'light') => {
 function ExerciseBlock({ ex, onAddSet }: { ex: Exercise; onAddSet: (s: SetEntry) => void }) {
   const [w, setW] = useState('');
   const [r, setR] = useState('');
+  const prog = progressionFor(ex.name); // your last performance → next target, from history
   const add = () => {
     const ww = parseFloat(w), rr = parseInt(r, 10);
     if (ww >= 0 && rr > 0) { haptic(); onAddSet({ weight: ww, reps: rr }); setW(''); setR(''); }
@@ -47,6 +49,7 @@ function ExerciseBlock({ ex, onAddSet }: { ex: Exercise; onAddSet: (s: SetEntry)
     <View style={{ marginTop: space.s4 }}>
       <Text style={{ fontFamily: fonts.sansSemi, fontSize: 15, color: colors.tx }}>{ex.name}</Text>
       {ex.cue ? <Text variant="footnote" style={{ marginTop: 2, color: colors.tx3, lineHeight: 18 }}>{ex.cue}</Text> : null}
+      {prog ? <Text variant="footnote" color={colors.go} style={{ marginTop: 3 }}>↗ {prog.suggestion}</Text> : null}
       {ex.sets.map((s, i) => (
         <View key={i} style={styles.setRow}>
           <Text variant="footnote" color={colors.tx3} style={{ width: 22 }}>{i + 1}</Text>
