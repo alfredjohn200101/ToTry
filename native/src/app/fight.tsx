@@ -26,6 +26,7 @@ import {
   withSlip,
 } from '@/fight/model';
 import { viceInfo, streakWord } from '@/fight/viceKnowledge';
+import { timelineState } from '@/fight/recoveryTimeline';
 import {
   type Urge,
   type UrgePattern,
@@ -127,7 +128,9 @@ function ViceCard({
   const info = viceInfo(v.type);
   const words = streakWord(v.mode);
   const [logging, setLogging] = useState(false);
+  const [showTimeline, setShowTimeline] = useState(false);
   const d = cleanDays(v);
+  const ts = timelineState(v.type, d);
   const big = d >= 1 ? String(d) : String(cleanHours(v));
   const unit = d >= 1 ? (d === 1 ? `day ${words.clean}` : `days ${words.clean}`) : `${cleanHours(v) === 1 ? 'hour' : 'hours'} ${words.clean}`;
   const saved = moneySaved(v);
@@ -168,6 +171,30 @@ function ViceCard({
         </Text>
         <Text variant="subhead" style={{ color: colors.tx2, lineHeight: 21 }}>{insight}</Text>
       </View>
+
+      {/* What your streak is earning — the recovery timeline (code, not AI) */}
+      <Pressable onPress={() => setShowTimeline((s) => !s)} style={{ marginTop: space.s4 }}>
+        <Text variant="micro" color={info.accent}>{showTimeline ? '▾' : '▸'} WHAT {d >= 1 ? `${d} DAY${d === 1 ? '' : 'S'}` : 'THIS'} IS EARNING YOU</Text>
+        {!showTimeline && ts.latest ? <Text variant="subhead" style={{ marginTop: space.s2, color: colors.tx2, lineHeight: 21 }}>{ts.latest.body}</Text> : null}
+        {!showTimeline && !ts.latest && ts.next ? <Text variant="subhead" style={{ marginTop: space.s2, color: colors.tx2, lineHeight: 21 }}>Day {ts.next.day}: {ts.next.body}</Text> : null}
+      </Pressable>
+      {showTimeline && (
+        <View style={{ marginTop: space.s3 }}>
+          {ts.milestones.map((m) => {
+            const reached = d >= m.day;
+            return (
+              <View key={m.day} style={styles.mileRow}>
+                <View style={[styles.mileDot, { borderColor: info.accent, backgroundColor: reached ? info.accent : 'transparent' }]} />
+                <View style={{ flex: 1 }}>
+                  <Text variant="micro" color={reached ? info.accent : colors.tx3}>DAY {m.day}{reached ? ' · reached' : ''}</Text>
+                  <Text variant="subhead" style={{ color: reached ? colors.tx2 : colors.tx3, lineHeight: 20, marginTop: 1 }}>{m.body}</Text>
+                  <Text variant="footnote" style={{ marginTop: 2, fontStyle: 'italic' }}>{m.soul}</Text>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
 
       {flash && <Text variant="subhead" color={colors.gr} style={{ marginTop: space.s3 }}>{flash}</Text>}
 
@@ -496,4 +523,7 @@ const styles = StyleSheet.create({
   // mirror
   statRow: { flexDirection: 'row', gap: space.s5, marginTop: space.s4 },
   stat: { alignItems: 'flex-start' },
+  // recovery timeline
+  mileRow: { flexDirection: 'row', gap: space.s3, marginTop: space.s3 },
+  mileDot: { width: 12, height: 12, borderRadius: 6, borderWidth: 1.5, marginTop: 3 },
 });
