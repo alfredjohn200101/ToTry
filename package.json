@@ -1,0 +1,20 @@
+{
+  "name": "totry",
+  "version": "1.0.0",
+  "private": true,
+  "description": "To Try — faith-rooted whole-life companion. PWA + Capacitor native shell.",
+  "scripts": {
+    "build:www": "node scripts/build-www.js",
+    "sync": "npm run build:www && npx cap sync",
+    "ios": "npm run sync && npx cap open ios",
+    "android": "npm run sync && npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/cli": "^8.4.1",
+    "@capacitor/core": "^8.4.1",
+    "@capacitor/ios": "^8.4.1",
+    "@capacitor/local-notifications": "^8.2.0",
+    "@capacitor/push-notifications": "^8.1.1"
+  }
+}

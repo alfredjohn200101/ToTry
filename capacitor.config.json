@@ -1,0 +1,18 @@
+{
+  "appId": "app.totry",
+  "appName": "To Try",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#0a0a0f"
+  },
+  "android": {
+    "backgroundColor": "#0a0a0f"
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_icon",
+      "iconColor": "#C8A96E"
+    }
+  }
+}

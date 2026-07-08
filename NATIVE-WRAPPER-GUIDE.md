@@ -1,5 +1,19 @@
 # To Try — Native Wrapper Guide (Capacitor)
 
+> **STATUS (Jul 2026): the wrap is DONE up to the device build.** Capacitor 8 is installed and
+> configured at the repo root (`capacitor.config.json`, appId `app.totry`, webDir `www/`);
+> `npm run sync` assembles `www/` from the root PWA and syncs both platforms; iOS + Android shells
+> scaffold cleanly (`npx cap add ios android` regenerates them — they're gitignored); the
+> notification plugins are wired and the `Notify` layer's API matches Capacitor 8 exactly.
+> **No CocoaPods needed** — Capacitor 8 uses Swift Package Manager.
+>
+> What remains (needs Alfy's Mac + accounts):
+> 1. Install full **Xcode** from the Mac App Store (free; this machine has only Command Line Tools).
+> 2. `npm run ios` → Xcode opens → sign in with your Apple ID → run on your iPhone.
+>    A **free** Apple ID installs to your own phone (7-day re-sign); the $99 Developer account is
+>    only needed for TestFlight/App Store distribution — don't pay it until the app has proven itself.
+> 3. Same for Android later: install Android Studio → `npm run android`.
+
 The app ships now as a PWA. This guide wraps it into a real iOS/Android app so you get **native push
 notifications** (the sibling reaching out first, even when the app is closed), home-screen presence,
 and App Store / Play Store distribution — with **no rewrite**. The code is already prepared: the
