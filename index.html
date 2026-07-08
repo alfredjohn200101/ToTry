@@ -3947,7 +3947,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v187';
+const APP_VERSION = 'v188';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -15795,6 +15795,13 @@ function _fuelChipOn(el){ el.classList.add('on'); el.style.borderColor='var(--go
 function _fuelChipOff(el){ el.classList.remove('on'); el.style.borderColor='var(--bd)'; el.style.background='transparent'; el.style.color='var(--tx2)'; }
 function _fuelSetMeals(el){ document.querySelectorAll('#fuel-meals-row .fuel-chip').forEach(_fuelChipOff); _fuelChipOn(el); }
 function _fuelToggleDiet(el){ if(el.classList.contains('on')) _fuelChipOff(el); else _fuelChipOn(el); }
+// One string for the planner: diet requirements + personal dislikes (hard do-not-include).
+// Dislikes aren't a "diet" — they're one-tap "just don't give me this" (mushrooms, seafood...).
+function _fuelDietStr(p){
+  const d = (p.diet && p.diet.length) ? p.diet.join(', ') : 'no specific diet';
+  const dl = (Array.isArray(p.dislikes) && p.dislikes.length) ? ('; they DISLIKE these — do NOT include them in any meal or the shopping list, substitute something they would enjoy instead: ' + p.dislikes.join(', ')) : '';
+  return d + dl;
+}
 function _fuelToggleSupp(el){ const on = el.getAttribute('data-on')==='1'; el.setAttribute('data-on', on?'0':'1'); el.textContent = on?'No':'Yes'; if(on) _fuelChipOff(el); else _fuelChipOn(el); }
 
 function _fuelElicit(){
@@ -15812,6 +15819,13 @@ function _fuelElicit(){
     const on = savedDiet.indexOf(d) >= 0;
     return '<button type="button" class="fuel-chip'+(on?' on':'')+'" data-diet="'+d+'" onclick="_fuelToggleDiet(this)" style="'+chipStyle+(on?';border-color:var(--go-bd);background:var(--go-bg);color:var(--go)':'')+'">'+d+'</button>';
   }).join('');
+  // Personal dislikes — not a diet, just "don't give me this". One tap beats typing it out.
+  const dislikeChips = ['Mushrooms','Seafood','Fish','Eggs','Tofu','Olives','Onion','Coriander','Spicy food','Beetroot','Blue cheese','Liver'];
+  const savedDislikes = Array.isArray(p.dislikes) ? p.dislikes : [];
+  const dislikes = dislikeChips.map(d => {
+    const on = savedDislikes.indexOf(d) >= 0;
+    return '<button type="button" class="fuel-chip'+(on?' on':'')+'" data-dislike="'+d+'" onclick="_fuelToggleDiet(this)" style="'+chipStyle+(on?';border-color:var(--go-bd);background:var(--go-bg);color:var(--go)':'')+'">'+d+'</button>';
+  }).join('');
   const m = document.createElement('div');
   m.className='modal-bg open'; m.id='fuel-elicit-modal'; m.style.alignItems='flex-end';
   m.innerHTML = '<div class="modal" style="text-align:left;max-height:88vh;overflow-y:auto">'+
@@ -15823,6 +15837,9 @@ function _fuelElicit(){
     '<div style="display:flex;gap:8px;margin-bottom:16px" id="fuel-meals-row">'+meals+'</div>'+
     '<div class="eyebrow" style="margin-bottom:6px">Anything to work around?</div>'+
     '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px" id="fuel-diet-row">'+diets+'</div>'+
+    '<div class="eyebrow" style="margin-bottom:6px">Foods you’d rather avoid</div>'+
+    '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:8px">Not a diet — just things you don’t like. I’ll plan around them.</div>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px" id="fuel-dislike-row">'+dislikes+'</div>'+
     '<input type="text" id="fuel-diet-free" placeholder="Allergies, foods you hate, anything else..." value="'+String(p.restrictions||'').replace(/"/g,'&quot;')+'" style="width:100%;margin-bottom:16px">'+
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:12px"><div><div style="font-size:13px;color:var(--tx);font-weight:500">Include supplements?</div><div style="font-size:11px;color:var(--tx3);line-height:1.4">Only real, evidence-backed, food-first. Optional.</div></div><button type="button" id="fuel-supp-toggle" data-on="'+(suppOn?'1':'0')+'" class="fuel-chip'+(suppOn?' on':'')+'" onclick="_fuelToggleSupp(this)" style="'+chipStyle+(suppOn?';border-color:var(--go-bd);background:var(--go-bg);color:var(--go)':'')+'">'+(suppOn?'Yes':'No')+'</button></div>'+
     '<button class="btn primary" onclick="_fuelElicitSave()">Next: pick my shop →</button>'+
@@ -15836,10 +15853,11 @@ function _fuelElicitSave(){
   const mealsEl = document.querySelector('#fuel-meals-row .fuel-chip.on');
   const mealsPerDay = mealsEl ? parseInt(mealsEl.getAttribute('data-n'),10) : 4;
   const diet = Array.prototype.slice.call(document.querySelectorAll('#fuel-diet-row .fuel-chip.on')).map(function(b){ return b.getAttribute('data-diet'); });
+  const dislikes = Array.prototype.slice.call(document.querySelectorAll('#fuel-dislike-row .fuel-chip.on')).map(function(b){ return b.getAttribute('data-dislike'); });
   const restrictions = ((document.getElementById('fuel-diet-free')||{}).value || '').trim();
   const suppEl = document.getElementById('fuel-supp-toggle');
   const includeSupps = suppEl ? suppEl.getAttribute('data-on')==='1' : true;
-  window._fuelPendingVals = { budget:budget, mealsPerDay:mealsPerDay, diet:diet, restrictions:restrictions, includeSupps:includeSupps };
+  window._fuelPendingVals = { budget:budget, mealsPerDay:mealsPerDay, diet:diet, dislikes:dislikes, restrictions:restrictions, includeSupps:includeSupps };
   // ED / restriction off-ramp: gentle language flags or an aggressively low cut target.
   const ctx = _fuelCtx();
   const redFlags = /(fast(ing)?\b|starv|skip meals|barely eat|hardly eat|900 cal|1000 cal|as few calories|purg|not eat(ing)?|hate my body|crash diet|lose weight fast)/i;
@@ -15938,7 +15956,7 @@ async function _fuelGenerate(){
   document.body.appendChild(load);
   let brief=''; try{ if(typeof getLifeState==='function') brief = getLifeState().brief || ''; }catch(_){ brief=''; }
   const sys = "You are a registered-dietitian-level meal planner in a faith-rooted whole-life app. You are honest, evidence-based and non-partial: food-first, never push brands or supplements, cite where prices came from, and separate general guidance from individual advice. Build realistic, affordable plans from REAL products at the named supermarket, using web search for CURRENT prices. Return ONLY valid JSON, no prose.";
-  const dietStr = (p.diet&&p.diet.length)?p.diet.join(', '):'no specific diet';
+  const dietStr = _fuelDietStr(p);
   const shops = _fuelShopChains(p); const shopsStr = shops.join(', ') || (p.chain || 'your supermarket');
   const timingStr = preworkout.length ? ('Their gym sessions and pre-gym meal deadlines: '+preworkout.map(function(x){return x.day+' gym '+x.sessionStart+' (finish the pre-gym meal by '+x.eatBy+')';}).join('; ')+'.') : '';
   const prompt = "Build a realistic "+(p.mealsPerDay||4)+"-meal day for one person, plus a weekly shopping list, in "+(p.country||'Australia')+". Context: "+brief+". Daily targets: the meals MUST total close to "+cal+" kcal (within ~5%) and reach about "+ctx.pro+"g protein (goal: "+ctx.goalDir+") — adjust portion sizes to hit these numbers. Weekly grocery budget ~$"+(p.budget||0)+". STRICTLY respect these dietary requirements and NEVER include any forbidden food (e.g. if vegan, no animal products; if 'no beef', no beef anywhere): "+dietStr+(p.restrictions?('; '+p.restrictions):'')+". "+((p.includeSupps!==false)?"May include 1-2 evidence-backed supermarket supplements (creatine, whey, electrolytes), optional and food-first.":"No supplements.")+" Give FULL macros per meal: cal, protein, carbs, fat. The DAY must also cover MICRONUTRIENTS — enough fibre, iron, calcium, healthy fats/omega-3, potassium, and a real range of vegetables and fruit; summarise this in 'microNote' with rough fibre grams. "+(preworkout.length?("Time carbohydrate around training. "+timingStr+" In 'carbNote', say what to eat before training referencing those times."):"In 'carbNote', explain carb timing generally and note that adding their training schedule unlocks exact meal times.")+" If their context shows an eating-related struggle or a hard time of day (late-night snacking, stress/boredom eating, alcohol, a risk window), address it directly in the plan — e.g. build in a genuinely satisfying planned snack for that window so they are not reaching for the vice on an empty stomach — and name it warmly in that meal's 'why' or in carbNote (like a big brother who knows their fight). The person shops at these stores: "+shopsStr+". For EVERY shopping item, set 'shop' to exactly ONE of those store names — choose the store that is cheapest or most likely to stock it, so the list is organised store-by-store for one trip each. Use typical current prices at that store (estimates, to confirm in-store). Keep 'items' and 'why' SHORT. Return ONLY compact JSON, no prose: {\"meals\":[{\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"carbs\":0,\"fat\":0,\"why\":\"\"}],\"microNote\":\"\",\"carbNote\":\"\",\"shopping\":[{\"item\":\"\",\"price\":0,\"shop\":\"\"}],\"total\":0,\"note\":\"\"}. Each \"why\" ties the meal to their goal. \"note\" says prices are estimates and the science is general.";
@@ -16061,7 +16079,7 @@ function _fuelRenderPlan(plan){
 // Close the target gap in one tap — add a snack sized to the remaining calories/protein.
 async function _fuelAddSnack(){
   const plan = ls('totry_meal_plan'); if(!plan || !plan.meals) return;
-  const p = getMealPrefs(); const dietStr = (p.diet&&p.diet.length)?p.diet.join(', '):'no specific diet';
+  const p = getMealPrefs(); const dietStr = _fuelDietStr(p);
   const dayCal = plan.meals.reduce(function(a,m){return a+(m.cal||0);},0), dayPro = plan.meals.reduce(function(a,m){return a+(m.pro||0);},0);
   const tgt = (plan.targets&&plan.targets.cal)||0, tgtP = (plan.targets&&plan.targets.pro)||0;
   const gapC = Math.max(100, Math.round(tgt - dayCal)), gapP = Math.max(0, Math.round(tgtP - dayPro));
@@ -16083,7 +16101,7 @@ async function _fuelAddSnack(){
 async function _fuelSwapMeal(i){
   const plan = ls('totry_meal_plan'); if(!plan || !plan.meals || !plan.meals[i]) return;
   const p = getMealPrefs();
-  const dietStr = (p.diet&&p.diet.length)?p.diet.join(', '):'no specific diet';
+  const dietStr = _fuelDietStr(p);
   const old = plan.meals[i];
   if(typeof showToast==='function') showToast('Swapping…', 'Finding a different '+(old.name||'meal')+'.');
   const others = plan.meals.filter(function(_,j){ return j!==i; }).map(function(mm){ return mm.name; }).join(', ');
