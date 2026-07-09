@@ -2031,12 +2031,9 @@ input:focus,textarea:focus,select:focus{
   <div id="nut-adaptive-card" style="display:none;margin-bottom:12px"></div>
   <div id="nut-foodgroups"></div>
 
-  <!-- Meal-prep + grocery list (WS-F) -->
-  <div class="card" style="margin-bottom:12px">
-    <div class="card-hd" style="margin-bottom:6px">🧺 Plan meals &amp; groceries</div>
-    <div style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Get a few days of meals and a shopping list built around your calorie and protein targets — and your budget or preferences.</div>
-    <button class="btn" onclick="openMealPlan()" style="background:linear-gradient(135deg,rgba(200,169,110,0.10),rgba(140,107,182,0.04));border:1px solid var(--go-bd);color:var(--go)">✨ Build a meal plan</button>
-  </div>
+  <!-- (Removed the old "Plan meals & groceries → openMealPlan" card — it duplicated the Fuel Plan
+       below, which is strictly better: real training-timed meals, a priced shopping list, budget,
+       and dislikes. One meal planner, not two.) -->
 
   <!-- ── LOG FOOD (primary daily action) ── -->
   <div class="lbl">Log food</div>
@@ -3947,7 +3944,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v189';
+const APP_VERSION = 'v190';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -27278,16 +27275,8 @@ const APP_REGISTRY = {
 function renderConnectedApps(){
   const list = document.getElementById('connected-apps-list');
   if(!list) return;
-  // For the owner account, always ensure Hevy + Strava are present so they can connect/manage
-  // without hunting through "Add app" — they're core to how Alfred uses ToTry.
-  try{
-    if(currentUser?.email === 'alfredjohn200101@gmail.com'){
-      const used = ls('totry_apps_used') || [];
-      let changed = false;
-      ['hevy','strava'].forEach(a => { if(!used.includes(a)){ used.push(a); changed = true; } });
-      if(changed) ls('totry_apps_used', used);
-    }
-  }catch(_){}
+  // Connected apps shows only what you've actually linked (no force-injected entries). Hevy + Strava
+  // are connectable right from the Train tab, and land here once linked.
   const used = ls('totry_apps_used') || [];
   
   if(used.length === 0){

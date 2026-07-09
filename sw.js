@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v189-instant-companion';
+const CACHE = 'totry-v190-dedupe-cleanup';
 
 const CORE = [
   './',
