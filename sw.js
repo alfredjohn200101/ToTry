@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v188-fuel-dislikes';
+const CACHE = 'totry-v189-instant-companion';
 
 const CORE = [
   './',

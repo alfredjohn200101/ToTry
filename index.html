@@ -3947,7 +3947,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v188';
+const APP_VERSION = 'v189';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -8898,6 +8898,62 @@ const COMPANION_MECHANISMS = {
   }
 };
 
+// ── INSTANT PRESENCE + OFFLINE GUIDE ─────────────────────────────────────────────
+// The crisis path must never depend on the network. The moment the companion opens, the sibling
+// speaks INSTANTLY from the mechanism (no spinner, no dead air) and the AI joins when it arrives.
+// If the network is gone or the model is slow, _compNextLocalStep() walks the person through the
+// clinical mechanism step by step — real progression, never one repeated fallback line.
+const COMPANION_INSTANT_OPEN = {
+  wave: "I'm right here, and I'm glad you came to me instead. First — one slow breath: in for 4, out for 6. This urge is a wave. It will crest and pass whether you feed it or not — we just have to outlast it together.",
+  defuse: "I'm here. Before anything else — one slow breath out, all the way. Now: you're not your thoughts, you're the one hearing them. Try saying to yourself, \"I'm having the thought that…\" and finish it. That little gap is where your freedom is.",
+  interrupt: "I'm here, and reaching for me instead was the exact right move. Now break the loop with your body: stand up, walk to another room, or run cold water over your wrists — right now, while we talk. The pull loses its grip when the scene changes.",
+  ground: "I'm right here with you. Let's come back to the ground together: name 5 things you can see… 4 you can touch… 3 you can hear. Slowly. You're safe in this moment, and I'm not going anywhere.",
+  reframe: "I'm here. Whatever the thought is that's making this feel okay or inevitable — 'just once', 'I deserve it', 'today's already ruined' — catch it and say it to me straight. We'll look at it together in the light."
+};
+const COMPANION_LOCAL_STEPS = {
+  wave: [
+    "Where do you feel it in your body right now — chest, hands, stomach? Just find it and watch it like weather. Naming it (‘I'm noticing an urge’) already loosens it.",
+    "Keep breathing — in 4, out 6. Urges crest in 15–30 minutes and ALWAYS pass. You don't have to fight it, just not obey it. Cold water on your face or a walk to another room speeds the wave along.",
+    "What is this urge trying to manage tonight — stress, loneliness, boredom, being tired? Name the real need underneath. That need is legitimate; the urge is just a bad answer to it.",
+    "You've outlasted this before — that's how you got here. Every wave you ride makes the next one smaller. Stay with me a few more minutes; the crest is closer than it feels.",
+    "However tonight goes, you reached for help instead of hiding — that's the man you're becoming. And if this keeps beating you no matter what, bringing in a real person — a mate, a priest, a counsellor — is strength, not failure. For now: one more slow breath. I'm still here."
+  ],
+  defuse: [
+    "Picture the thought as a leaf dropping onto a stream — watch it drift past. It comes back? Fine, put it on another leaf. You're the stream bank, not the leaf.",
+    "Try thanking your mind, honestly: ‘Thanks, mind — I've got it from here.’ It sounds odd, but it puts you back in charge of the conversation instead of inside it.",
+    "Thoughts are mental events, not commands and not facts. What would you do in the next 10 minutes if this thought were just noise? Do exactly that — I'll wait.",
+    "The spiral feeds on attention. Give your senses something real: feet flat on the floor, one full breath, the temperature of the air. You're here, now — not in the storm in your head.",
+    "If the same spiral keeps taking whole nights from you, that's worth telling a real person — a friend, a counsellor. Not because you're broken; because you're worth backup. Right now though: one more leaf on the stream."
+  ],
+  interrupt: [
+    "Have you changed rooms yet? Do it now — this second — and take me with you. The compulsion lives in the scene it started in; break the scene and it stumbles.",
+    "Now the senses: 5 things you see, 4 you can touch, 3 you can hear, 2 you can smell, 1 you can taste. Slow. This resets the loop your brain is stuck in.",
+    "This is a compulsion, not a moral failure — the shame voice lies. You resist by not acting and letting it pass, gently, like letting a pushy salesman knock without opening the door.",
+    "Pick one values move and do it right now: step outside, 20 push-ups, message a mate, make tea. Any real action in the direction of who you're becoming starves the loop.",
+    "If this loop keeps winning at the same hour no matter what you do, that's a pattern worth handing to a real person — a counsellor or someone you trust. That's tactics, not weakness. For now: you're through the worst minute of it. Stay with me."
+  ],
+  ground: [
+    "Box breathing with me: in 4, hold 4, out 4, hold 4. Three rounds. Don't rush the holds — they're where your body learns it's safe.",
+    "Feet flat on the floor. Press them down and feel the ground push back. Cold water on your hands if you can reach a tap. Your body is here, and here is safe.",
+    "The feeling is loud, but it's weather, not the sky. It has never once stayed forever, and it won't tonight. What's the smallest kind thing you could do for yourself in the next 5 minutes?",
+    "If the panic or the weight keeps coming back night after night, please tell a real person — a doctor, a counsellor, someone who loves you. That's not giving up; that's reinforcements. Right now: one more round of box breathing with me."
+  ],
+  reframe: [
+    "Now look at it with me: is it actually TRUE? Has ‘just once’ ever stayed just once? Does a hard day really get better after — or heavier?",
+    "The thought isn't a command — it's an offer, and you can decline it. What's the truer sentence? Maybe: ‘this feeling passes whether or not I act’, or ‘one hard evening doesn't erase my day.’ Say the true one back to me.",
+    "You caught the thought — that's the whole skill, and most people never learn it. Every time you catch-and-check it, the next one arrives quieter.",
+    "If the same lying thought keeps winning at your weakest hour, tell someone real about it — naming it to a person breaks its spell twice as fast. For now: you saw through it tonight. Breathe, and stay with me a minute."
+  ]
+};
+let _compLocalStep = 0;
+function _compNextLocalStep(){
+  const s = _compStruggle || {};
+  const steps = COMPANION_LOCAL_STEPS[s.mechanism] || COMPANION_LOCAL_STEPS.ground;
+  const step = steps[Math.min(_compLocalStep, steps.length - 1)];
+  _compLocalStep++;
+  return step;
+}
+
 // Map a vice type (from classifyVice) to the best mechanism spine.
 function _mechanismForType(type){
   if(type === 'overthinking' || type === 'anxiety') return 'defuse';
@@ -9175,8 +9231,14 @@ async function _beginCompanion(name, type){
   if(mechEl) mechEl.textContent = mechLabel;
   const conv = document.getElementById('comp-conversation');
   if(conv) conv.innerHTML = '';
-  // Opening line from the companion.
-  await _companionSay(null, true);
+  // INSTANT PRESENCE — the sibling speaks the moment the sheet opens (local, zero network).
+  // The most important 3 seconds in the app must never be a spinner.
+  _compLocalStep = 0;
+  const instant = COMPANION_INSTANT_OPEN[mechKey] || COMPANION_INSTANT_OPEN.ground;
+  _compHistory.push({ role:'assistant', content: instant });
+  if(conv){ const m=document.createElement('div'); m.className='comp-msg comp-msg-them'; m.textContent=instant; conv.appendChild(m); conv.scrollTop=conv.scrollHeight; }
+  // The AI joins the conversation when it arrives — continuing, never re-greeting.
+  await _companionSay(null, 'deepen');
 }
 
 // Research a faith+science protocol for an unexpected struggle, cache to shared knowledge.
@@ -9222,14 +9284,23 @@ async function _companionSay(userText, opening){
     + "ALSO — if at ANY point they voice a permission-giving thought ('just once', 'I deserve it', 'I've already ruined today', 'I can't cope without it', 'I'll start tomorrow'), gently catch it WITH them and ask the question that lets them see it isn't true or isn't a command (CBT cognitive restructuring) — like an older sibling would, never as a lecture. Then help them land on what's truer. "
     + "If it feels right, gently help them see what the urge is really trying to MANAGE right now — stress, loneliness, boredom, exhaustion, a hard feeling it's numbing — because naming the real need underneath often loosens the urge's grip more than fighting it head-on. Ask softly, with curiosity, never interrogating. "
     + "RULES: Be a present friend, not a therapist or a form. Short, human, warm - 2-4 sentences at a time, like texting someone you love at their hardest moment. Never shame, never lecture. This is the MOMENT - keep them company through it, help them outlast it or step back from it using the approach above. You can offer a breath, a grounding, a truth, a verse if it fits naturally - but mostly you are PRESENCE. If they're clearly in crisis or mention self-harm, gently encourage reaching a real person or helpline - you're a companion, not a replacement for real help. Don't make them feel worse if they've already slipped - meet them with grace, every time is a fresh try. If this struggle has clearly been beating them for a long time or feels bigger than a moment's urge, gently name that bringing in a REAL person (a trusted friend, a priest, a counsellor) is strength, not failure - you're a tool walking beside them, never the whole answer. "
-    + (opening ? "OPEN the conversation: greet them gently by acknowledging they reached for help in this moment (that itself is strength), and ask one soft question or offer one small thing to do right now. 2-3 sentences." : "Continue - respond to what they just said.");
+    + (opening === true ? "OPEN the conversation: greet them gently by acknowledging they reached for help in this moment (that itself is strength), and ask one soft question or offer one small thing to do right now. 2-3 sentences."
+      : opening === 'deepen' ? "You have ALREADY spoken your first words to them (the assistant message in the history). Do NOT greet again or repeat yourself. Continue naturally from what you already said — deepen the moment with one soft question or one small concrete next step. 1-3 sentences."
+      : "Continue - respond to what they just said.");
   let reply = '';
-  try{
-    reply = await api(sys, _compHistory, opening ? 'Open the moment with me.' : (userText||'...'), 500, { timeout:30000 });
-  }catch(_){ reply = ''; }
+  const offline = (typeof navigator!=='undefined' && navigator.onLine === false);
+  if(offline){
+    // No network: don't make them stare at a spinner — the local guide carries the moment.
+    await new Promise(r=>setTimeout(r, 650)); // a natural beat, like the sibling typing
+  } else {
+    try{
+      reply = await api(sys, _compHistory, opening === true ? 'Open the moment with me.' : opening === 'deepen' ? 'Continue the moment with me.' : (userText||'...'), 500, { timeout:20000 });
+    }catch(_){ reply = ''; }
+  }
   if(typing) typing.style.display='none';
   if(!reply || reply.length < 2){
-    reply = "I'm here. Take one slow breath with me — in for four, out for six. You reached for help instead of the other thing, and that already matters. What's happening right now?";
+    // AI unreachable → the clinical mechanism carries them step by step, never one repeated line.
+    reply = _compNextLocalStep();
   }
   _compHistory.push({ role:'assistant', content:reply });
   if(conv){ const m=document.createElement('div'); m.className='comp-msg comp-msg-them'; m.textContent=reply; conv.appendChild(m); conv.scrollTop=conv.scrollHeight; }
