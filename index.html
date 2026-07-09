@@ -3944,7 +3944,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v190';
+const APP_VERSION = 'v191';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4826,8 +4826,64 @@ const Notify = {
   // Cancel a scheduled nudge by id (native only; web pending is filtered on delivery).
   async cancel(id){
     try{ if(this.isNative()){ const L=this._local(); if(L&&L.cancel){ await L.cancel({ notifications:[{ id:(typeof id==='number'?id:Math.abs(_hashId(id))) }] }); } } }catch(_){}
+  },
+
+  // Schedule a nudge that fires EVERY DAY at hour:minute, even when the app is closed. This is the
+  // real "reach out first" unlock — only possible once wrapped natively (Capacitor's repeating
+  // `on:{hour,minute}` schedule). On the web PWA it records intent (web can't background-repeat),
+  // so nothing breaks; wrapping the app lights it up with zero code change. Idempotent per id.
+  async scheduleDaily(id, title, body, hour, minute){
+    const nid = (typeof id==='number' ? id : Math.abs(_hashId(id)));
+    try{
+      if(this.isNative()){
+        const L = this._local();
+        if(L && L.schedule){
+          try{ await L.cancel({ notifications:[{ id:nid }] }); }catch(_){}
+          await L.schedule({ notifications:[{ id:nid, title, body, schedule:{ on:{ hour:hour, minute:minute }, allowWhileIdle:true }, smallIcon:'ic_stat_icon' }] });
+          return true;
+        }
+      }
+      // Web: record the intent so it's visible and ready to migrate when wrapped.
+      const daily = ls('totry_notif_daily') || [];
+      const i = daily.findIndex(x=>x.id===id);
+      const rec = { id, title, body, hour, minute };
+      if(i>=0) daily[i]=rec; else daily.push(rec);
+      ls('totry_notif_daily', daily.slice(0,20));
+      return false;
+    }catch(_){ return false; }
   }
 };
+
+// ── REACH-OUT-FIRST — the sibling messages you at YOUR known risk window, app closed ─────────────
+// The app already learns each fight's hardest time of day (analyzeUrgePatterns → riskWindow). This
+// turns that knowledge into a real, daily, background notification ~20 min before that window opens —
+// grace-first, choice-first, never guilt. Web-safe (records intent); fires for real once wrapped.
+const _REACH_WIN_START = { 'late night':0, 'morning':6, 'afternoon':12, 'evening':17, 'night':21 };
+function scheduleReachOut(){
+  try{
+    if(ls('totry_notif_perm') !== 'granted' && !(ls('totry_notif_enabled'))) return 0;
+    if(ls('totry_reachout_off')) return 0; // user can silence it in Settings
+    if(typeof loadV==='function') loadV();
+    const vs = (typeof vices!=='undefined' && Array.isArray(vices)) ? vices : (ls('totry_v')||[]);
+    const first = (ls('totry_name')||'').trim().split(' ')[0];
+    const hi = first ? first+', ' : '';
+    let scheduled = 0;
+    vs.forEach((v, idx) => {
+      if(!v || !v.n) return;
+      const p = (typeof analyzeUrgePatterns==='function') ? analyzeUrgePatterns(v.n) : null;
+      if(!p || !p.riskWindow) return; // needs enough logged moments to know the window
+      const key = Object.keys(_REACH_WIN_START).find(k => p.riskWindow.toLowerCase().includes(k));
+      if(!key) return;
+      let nudgeMin = _REACH_WIN_START[key]*60 - 20; // ~20 min before the window opens
+      if(nudgeMin < 0) nudgeMin += 1440;
+      const nh = Math.floor(nudgeMin/60), nm = nudgeMin%60;
+      const body = hi + 'this is usually when it gets hardest with ' + v.n + '. Nothing has to happen — I’m just here. Open me if anything’s rising.';
+      Notify.scheduleDaily('reachout_'+idx, 'To Try', body, nh, nm);
+      scheduled++;
+    });
+    return scheduled;
+  }catch(_){ return 0; }
+}
 function _hashId(str){ let h=0; const s=String(str); for(let i=0;i<s.length;i++){ h=((h<<5)-h)+s.charCodeAt(i); h|=0; } return h; }
 
 // Local notifications via the Notification API. Daily nudge to return.
@@ -4862,6 +4918,9 @@ function scheduleNotifications(){
   // (true background push requires a push server; this is the lightweight version)
   const hour = ls('totry_notif_hour') || 7;
   ls('totry_notif_schedule', {hour, enabled: true});
+  // Reach-out-first: (re)schedule the risk-window nudges from the latest pattern data. Runs on every
+  // app open so the schedule tracks how the person's hardest hours actually shift over time.
+  if(typeof scheduleReachOut==='function') scheduleReachOut();
 }
 
 // THE GONE-QUIET WELCOME — the single thing the research says cures abandonment: notice when
@@ -25108,6 +25167,7 @@ async function syncPushSubscription(){
 function renderPushSettings(){
   const box=document.getElementById('push-settings-card'); if(!box) return;
   const prefs=_pushPrefs();
+  const reachOn = !ls('totry_reachout_off');
   const ios=/iPad|iPhone|iPod/.test(navigator.userAgent);
   const head='<div class="eyebrow" style="color:var(--go);margin-bottom:6px">Daily reminders</div>';
   if(!('Notification' in window) || !('PushManager' in window)){
@@ -25128,12 +25188,34 @@ function renderPushSettings(){
         '<div style="flex:1"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Evening</div><input type="time" id="push-time-evening" value="'+prefs.evening+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
       '</div>' +
       '<button class="btn" onclick="savePushTimes()" style="background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:12px;margin-bottom:8px">Save times</button>' +
+      // Reach-out-first — the one thing a web PWA could never do; real once wrapped natively.
+      '<div style="border-top:1px solid var(--bd);margin:6px 0 10px;padding-top:12px;display:flex;align-items:center;justify-content:space-between;gap:12px">' +
+        '<div style="flex:1"><div style="font-size:13px;color:var(--tx);font-weight:500">Reach out to me first</div><div style="font-size:11px;color:var(--tx3);line-height:1.45">A quiet check-in at your hardest time of day — learned from your own patterns. Never guilt, always optional.</div></div>' +
+        '<button type="button" onclick="toggleReachOut()" style="padding:7px 14px;border-radius:100px;border:1px solid '+(reachOn?'var(--go-bd)':'var(--bd)')+';background:'+(reachOn?'var(--go-bg)':'transparent')+';color:'+(reachOn?'var(--go)':'var(--tx2)')+';font-size:12px;white-space:nowrap">'+(reachOn?'On':'Off')+'</button>' +
+      '</div>' +
       '<button class="btn" onclick="disablePushReminders()" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px">Turn reminders off</button>';
   } else {
     box.innerHTML = head +
       '<div style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:10px">Two gentle nudges a day — one to begin your morning, one to close the day. Nothing else, ever. You choose the times.</div>' +
       '<button class="btn primary" onclick="enablePushReminders()">Enable reminders</button>';
   }
+}
+
+// Turn the risk-window reach-out on/off. Anti-nagging is sacred — the person is always in control.
+function toggleReachOut(){
+  const turningOff = !ls('totry_reachout_off'); // currently on → we're turning it off
+  ls('totry_reachout_off', turningOff);
+  try{
+    if(turningOff){
+      // Cancel any scheduled reach-outs so nothing fires.
+      (ls('totry_v')||[]).forEach((v,i)=>{ if(typeof Notify!=='undefined' && Notify.cancel) Notify.cancel('reachout_'+i); });
+    } else if(typeof scheduleReachOut==='function'){
+      scheduleReachOut();
+    }
+  }catch(_){}
+  if(typeof haptic==='function') haptic('tap');
+  if(typeof renderPushSettings==='function') renderPushSettings();
+  showToast(turningOff?'Reach-out off':'Reach-out on', turningOff?'I won’t message you at your risk window.':'I’ll gently check in at your hardest hour — app closed once it’s on your phone.');
 }
 
 // ── HONEST METRICS ──
