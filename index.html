@@ -3944,7 +3944,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v192';
+const APP_VERSION = 'v193';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -10005,7 +10005,7 @@ function renderVices(){
           '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + (v.w||0) + '/' + (v.total||0) + '</div>' +
         '</div>' +
       '</div>' +
-      '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Usually hits: ' + v.t + insight + '</div>' +
+      '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Usually hits: ' + (v.t || 'various times') + insight + '</div>' +
       '<button class="vice-btn" onclick="fightVice(' + i + ')" style="width:100%;background:var(--re);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">' +
         '<svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
         'I\'m feeling it right now' +
