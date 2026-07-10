@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v191-reach-out-first';
+const CACHE = 'totry-v192-polish-audit';
 
 const CORE = [
   './',

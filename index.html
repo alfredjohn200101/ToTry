@@ -3944,7 +3944,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v191';
+const APP_VERSION = 'v192';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -6980,8 +6980,9 @@ function renderDayCounter(){
     '"I know exactly who I am. Now I need to live like it."',
     '"Strip the person you were. Become the person you know you can be."',
   ];
-  // Fix singular/plural: "1 day in" not "1 days in".
-  document.querySelectorAll('.day-l, .hero-lbl').forEach(el=>{ if(el) el.textContent = (day===1?'day in':'days in'); });
+  // Fix singular/plural: "1 day in" not "1 days in". (.hero-dayl was missing here — that's why the
+  // hero label was stuck on the plural "days in" even on day 1.)
+  document.querySelectorAll('.day-l, .hero-lbl, .hero-dayl').forEach(el=>{ if(el) el.textContent = (day===1?'day in':'days in'); });
   const hq=document.getElementById('hero-quote');if(hq)hq.textContent=quotes[day%quotes.length];
   const dots=document.getElementById('streak-dots');
   if(dots){dots.innerHTML='';const streak=getStreak();for(let i=0;i<7;i++){const d=document.createElement('div');d.className='sdot'+(i<streak?' on':'');dots.appendChild(d);}}
@@ -28048,20 +28049,8 @@ function addLinkedApp(appId){
   showToast('Linked', APP_REGISTRY[appId]?.name+' added.');
 }
 
-function showHevyInstructions(){
-  const m=document.createElement('div');m.className='modal-bg open';
-  m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:10px">Connect Hevy</div>'+
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">'+
-    '1. Open Hevy and go to Settings<br>'+
-    '2. Tap "Developer" → "Generate API Key"<br>'+
-    '3. Copy your key<br>'+
-    '4. Paste it below and save</div>'+
-    '<input type="text" id="hevy-key-input" placeholder="Paste your Hevy API key..." style="margin-bottom:10px">'+
-    '<button class="btn primary" onclick="saveHevyKey()" style="margin-bottom:8px">Save key</button>'+
-    '<button class="btn" onclick="closeModal(this)">Close</button></div>';
-  document.body.appendChild(m);
-}
+// (Removed showHevyInstructions — a dead, never-called second Hevy modal that duplicated the
+//  hevy-key-input field. offerHevyConnect() is the single Hevy connect flow.)
 
 // Management panel for an already-connected Hevy account: sync now, change key, disconnect.
 function manageStravaConnection(){
