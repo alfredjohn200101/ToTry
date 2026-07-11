@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v197-sot-name-sleep';
+const CACHE = 'totry-v198-burn-ledger-authority';
 
 const CORE = [
   './',

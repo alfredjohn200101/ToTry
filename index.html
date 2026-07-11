@@ -3944,7 +3944,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v197';
+const APP_VERSION = 'v198';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4722,6 +4722,9 @@ async function pullFromCloud(){
     });
     if(changed > 0){
       if(typeof repairJourneyStart === 'function') repairJourneyStart();
+      // Cloud data (workouts / Strava / Watch) just landed — rebuild the burn ledger from the single
+      // source of truth so the "Burned" figure is correct and never double-counted.
+      if(typeof recomputeWorkoutBurns === 'function') try{ recomputeWorkoutBurns(); }catch(_){ }
       if(typeof go === 'function' && window.__currentTab) try{ go(window.__currentTab); }catch(_){ }
     }
     _setSyncState({ status:'synced', lastSyncAt:Date.now() });
@@ -19792,12 +19795,9 @@ function showWorkoutSummary(s){
   let fuelBlock = '';
   try{
     const burnEst = s.durationMin ? Math.round(s.durationMin * 6) : null; // ~6 kcal/min resistance training, honest rough estimate
-    if(burnEst){
-      const burns = ls('totry_calorie_burns') || {};
-      const todayKey = new Date().toLocaleDateString('en-AU');
-      burns[todayKey] = (burns[todayKey] || 0) + burnEst;
-      ls('totry_calorie_burns', burns);
-    }
+    // The session is already saved to totry_workouts; rebuild the burn ledger from there (single
+    // source of truth) so this session is counted exactly once, never stacked with a later resync.
+    recomputeWorkoutBurns();
     const goals = ls('totry_nut_goals') || defaultNutGoals();
     const todayEntries = ((ls('totry_nutlog')||{})[new Date().toLocaleDateString('en-AU')]) || [];
     const proSoFar = Math.round(todayEntries.reduce((a,e)=>a+(e.pro||0),0));
@@ -20061,16 +20061,12 @@ function saveEditTraining(id){
   const dateVal = document.getElementById('edit-cardio-date')?.value;
   let when = workouts[idx].ts ? new Date(workouts[idx].ts) : new Date();
   if(dateVal){ const [y,mo,d]=dateVal.split('-').map(Number); when = new Date(y, mo-1, d, 12, 0, 0); }
-  // Remove the old calorie-burn contribution before re-adding (so edits don't double-count).
-  const burns = ls('totry_calorie_burns') || {};
-  const oldKey = workouts[idx].ts ? new Date(workouts[idx].ts).toLocaleDateString('en-AU') : null;
-  if(oldKey && workouts[idx].calories){ burns[oldKey] = Math.max(0, (burns[oldKey]||0) - workouts[idx].calories); }
   workouts[idx] = { ...workouts[idx], type, splitFocus: type, durationMinutes: mins?Math.round(mins):null,
     distance: km?Math.round(km*1000):null, calories: cal||null, averageHeartRate: hr||null,
     date: when.toLocaleDateString('en-AU'), ts: when.toISOString() };
   ls('totry_workouts', workouts);
-  if(cal>0){ const nk = when.toLocaleDateString('en-AU'); burns[nk] = (burns[nk]||0) + cal; }
-  ls('totry_calorie_burns', burns);
+  // Rebuild the burn ledger from the (now edited) workouts — single source of truth, no drift.
+  recomputeWorkoutBurns();
   if(typeof syncToCloud==='function') syncToCloud();
   if(typeof autoTickHabits==='function') autoTickHabits();
   if(typeof renderHomeHabits==='function') renderHomeHabits();
@@ -20085,14 +20081,9 @@ function deleteTraining(kind, id){
     ls('totry_strava_activities', acts);
   } else {
     const workouts = ls('totry_workouts') || [];
-    const w = workouts.find(x => String(x.id) === id);
-    // Pull back any calories it contributed.
-    if(w && w.calories && w.ts){
-      const burns = ls('totry_calorie_burns') || {};
-      const k = new Date(w.ts).toLocaleDateString('en-AU');
-      if(burns[k]){ burns[k] = Math.max(0, burns[k] - w.calories); ls('totry_calorie_burns', burns); }
-    }
     ls('totry_workouts', workouts.filter(x => String(x.id) !== id));
+    // Rebuild the burn ledger from the remaining workouts — single source of truth.
+    recomputeWorkoutBurns();
   }
   if(typeof syncToCloud==='function') syncToCloud();
   if(typeof autoTickHabits==='function') autoTickHabits();
@@ -20253,13 +20244,8 @@ function saveCardioManually(){
     ts: when.toISOString()
   });
   ls('totry_workouts', workouts.slice(0,500));
-  // Feed the calorie loop on the workout's actual date.
-  if(cal > 0){
-    const key = when.toLocaleDateString('en-AU');
-    const burns = ls('totry_calorie_burns') || {};
-    burns[key] = (burns[key]||0) + cal;
-    ls('totry_calorie_burns', burns);
-  }
+  // Rebuild the burn ledger from totry_workouts — single source of truth, counted exactly once.
+  recomputeWorkoutBurns();
   if(typeof syncToCloud === 'function') syncToCloud();
   if(typeof autoTickHabits === 'function') autoTickHabits();
   if(typeof renderHomeHabits === 'function') renderHomeHabits();
@@ -20383,12 +20369,9 @@ function confirmScreenshotWorkout(detected){
   history.unshift(session);
   ls('totry_workouts', history.slice(0, 365));
   
-  // Add calories burned to the WORKOUT'S date (not always today) so the nutrition net is
-  // correct even when you upload yesterday's session. Falls back to today if no date parsed.
-  const burnKey = new Date(dateStr).toLocaleDateString('en-AU');
-  const burns = ls('totry_calorie_burns') || {};
-  burns[burnKey] = (burns[burnKey] || 0) + cal;
-  ls('totry_calorie_burns', burns);
+  // Rebuild the burn ledger from totry_workouts — single source of truth (stays correct even when
+  // you upload yesterday's session, since it's keyed by each workout's own date).
+  recomputeWorkoutBurns();
   if(typeof syncToCloud === 'function') syncToCloud();
   
   // Re-run the smart auto-tick so the gym habit lands on the workout's actual day (it reads
@@ -22181,15 +22164,13 @@ function completeEvening(){
   const rings = (moveCal||exMin||standHrs||totalBurn) ? {move:moveCal||null, exercise:exMin||null, stand:standHrs||null, total:totalBurn||null} : null;
   try{
     if(moveCal>0){
-      const burns = ls('totry_calorie_burns')||{};
+      // Watch "Move" is whole-day active energy that ALREADY includes any logged/synced workout.
+      // Write it only to the watch sub-ledger; reconcileBurns() makes it SUPERSEDE the per-session
+      // estimates for the day (max), instead of stacking on top (which double-counted the workout).
       const prevWatch = ls('totry_watch_burns_byday')||{};
-      const dk = _todayStrForBurns();
-      // Remove any prior watch contribution for today, then add the fresh figure.
-      if(prevWatch[dk]){ burns[dk] = Math.max(0, (burns[dk]||0) - prevWatch[dk]); }
-      burns[dk] = (burns[dk]||0) + moveCal;
-      prevWatch[dk] = moveCal;
-      ls('totry_calorie_burns', burns);
+      prevWatch[_todayStrForBurns()] = moveCal;
       ls('totry_watch_burns_byday', prevWatch);
+      reconcileBurns();
     }
   }catch(_){ }
   const goalsHit=window.__goalsHit||null;
@@ -25471,6 +25452,9 @@ async function initApp(){
 // local edit — silent data loss. Activating here means every write is timestamped + durably queued
 // from the very first moment; the outbox survives offline and flushes once signed in.
 try{ if(typeof enableSyncMonitoring === 'function') enableSyncMonitoring(); }catch(_){}
+// One-time migration to the single-source burn ledger: if this device already has workouts, rebuild
+// the aggregate from them so any previously double-counted "Burned" figure is corrected on load.
+try{ if(typeof recomputeWorkoutBurns === 'function' && (ls('totry_workouts')||[]).length) recomputeWorkoutBurns(); }catch(_){}
 initSupabase();
 // Handle OAuth callbacks if returning from Strava or Google
 if(window.location.search.includes('code=')){
@@ -27786,8 +27770,6 @@ async function syncStravaActivities(){
     // Nourish net-calorie math reads. Keyed by the app's local date string. Strava-sourced
     // burns are tracked separately so re-syncs replace (not double-count) them.
     try{
-      const burns = ls('totry_calorie_burns') || {};
-      const stravaBurns = ls('totry_strava_burns_byday') || {}; // what we previously added from Strava
       const freshByDay = {};
       saved.forEach(a => {
         if(!a.date) return;
@@ -27809,11 +27791,10 @@ async function syncStravaActivities(){
         const dk = new Date(a.date).toLocaleDateString('en-AU');
         freshByDay[dk] = (freshByDay[dk]||0) + Math.round(cals);
       });
-      // Remove our previous Strava contribution, then add the fresh totals (idempotent).
-      Object.keys(stravaBurns).forEach(dk => { burns[dk] = Math.max(0, (burns[dk]||0) - stravaBurns[dk]); });
-      Object.keys(freshByDay).forEach(dk => { burns[dk] = (burns[dk]||0) + freshByDay[dk]; });
-      ls('totry_calorie_burns', burns);
+      // Write only the Strava sub-ledger; reconcileBurns() folds it into the aggregate (single
+      // source of truth), so re-syncs replace rather than double-count.
       ls('totry_strava_burns_byday', freshByDay);
+      reconcileBurns();
     }catch(_){ }
     // Auto-tick gym habit if there's an activity today
     if(added > 0){
@@ -28615,27 +28596,56 @@ function openHevyTodayPicker(){
   document.body.appendChild(m);
 }
 
-// Sum each strength session's rough burn estimate into the burns ledger the Nourish net-calorie
-// math reads — keyed by local date. Strength-sourced burns are tracked separately so re-syncs
-// REPLACE (never double-count) them, exactly like the Strava path.
-function recomputeStrengthBurns(){
+// ── CALORIE BURN LEDGER — single source of truth ─────────────────────────────────────────────
+// Every source writes ONLY its own per-day sub-ledger; reconcileBurns() rebuilds the aggregate
+// totry_calorie_burns that the Nourish net-calorie math reads. This ends two double-counts:
+//  (1) a session logged in-app was ALSO folded in by a recompute (counted twice), and
+//  (2) Apple Watch "Move" (whole-day active energy that already INCLUDES your workouts) was ADDED
+//      on top of the per-session estimates instead of superseding them.
+// Sub-ledgers: totry_workout_burns_byday (strength + cardio from totry_workouts, not Strava),
+// totry_strava_burns_byday, totry_watch_burns_byday. Rule/day: Watch Move supersedes (max), never stacks.
+function _burnForWorkout(w){
+  if(!w) return 0;
+  const c = parseFloat(w.calories || w.totalCalories || w.activeCalories || 0) || 0;
+  if(c > 0) return Math.round(c);                       // logged calories (typical cardio)
+  const mins = w.durationMinutes || w.durationMin || 0; // strength: ~6 kcal/min honest estimate
+  return mins ? Math.round(mins * 6) : 0;
+}
+// Rebuild the workout sub-ledger from totry_workouts (idempotent — no add/subtract bookkeeping).
+function recomputeWorkoutBurns(){
   try{
-    const burns = ls('totry_calorie_burns') || {};
-    const prev = ls('totry_strength_burns_byday') || {};
-    const freshByDay = {};
+    const byDay = {};
     (ls('totry_workouts')||[]).forEach(w => {
-      // Only strength sessions with an estimate; cardio has its own ledger.
-      if(!w || !w.calories || !w.ts) return;
-      if(w.source && w.source !== 'hevy' && w.source !== 'manual' && w.source !== 'screenshot') return;
+      if(!w || !w.ts) return;
+      if(w.source === 'strava') return;                 // Strava counted via its own ledger
+      const cal = _burnForWorkout(w);
+      if(cal <= 0) return;
       const dk = new Date(w.ts).toLocaleDateString('en-AU');
-      freshByDay[dk] = (freshByDay[dk]||0) + Math.round(w.calories);
+      byDay[dk] = (byDay[dk]||0) + cal;
     });
-    Object.keys(prev).forEach(dk => { burns[dk] = Math.max(0, (burns[dk]||0) - prev[dk]); });
-    Object.keys(freshByDay).forEach(dk => { burns[dk] = (burns[dk]||0) + freshByDay[dk]; });
-    ls('totry_calorie_burns', burns);
-    ls('totry_strength_burns_byday', freshByDay);
+    ls('totry_workout_burns_byday', byDay);
+  }catch(_){ }
+  reconcileBurns();
+}
+// The single authority: aggregate = workout + Strava, with Watch Move superseding (not stacking).
+function reconcileBurns(){
+  try{
+    const workout = ls('totry_workout_burns_byday') || {};
+    const strava  = ls('totry_strava_burns_byday')  || {};
+    const watch   = ls('totry_watch_burns_byday')   || {};
+    const days = new Set([...Object.keys(workout), ...Object.keys(strava), ...Object.keys(watch)]);
+    const out = {};
+    days.forEach(dk => {
+      const est  = (workout[dk]||0) + (strava[dk]||0); // per-session estimates for the day
+      const move = watch[dk]||0;                         // whole-day active energy (already includes them)
+      const val  = move > 0 ? Math.max(move, est) : est;
+      if(val > 0) out[dk] = Math.round(val);
+    });
+    ls('totry_calorie_burns', out);
   }catch(_){ }
 }
+// Back-compat alias: the Hevy sync path still calls this; it now rebuilds the whole workout ledger.
+function recomputeStrengthBurns(){ recomputeWorkoutBurns(); }
 async function syncHevyWorkouts(){
   const key = ls('totry_hevy_api_key');
   if(!key) return;
