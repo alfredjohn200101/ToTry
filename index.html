@@ -3977,7 +3977,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v207';
+const APP_VERSION = 'v208';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9404,6 +9404,19 @@ async function _companionSay(userText, opening){
     + "The person is "+name+". They're facing: \""+(s.name||'something hard')+"\". "
     + (function(){ try{ const rd=(typeof computeReadiness==='function')?computeReadiness():null; if(rd && rd.sleep!=null && rd.sleep<=4){ return "IMPORTANT CONTEXT: they slept poorly recently — low sleep makes urges feel much stronger and willpower thinner. If it fits, gently name this so they know the pull feeling strong tonight is partly exhaustion, NOT weakness or failure in them. "; } return ''; }catch(_){ return ''; } })()
     + (function(){ try{ const today=new Date().toLocaleDateString('en-AU'); const m=(ls('totry_mornings')||[]).find(x=>x.ts&&new Date(x.ts).toLocaleDateString('en-AU')===today); if(m&&m.intention&&m.intention.trim()){ return "THIS MORNING they set this intention for today: \""+m.intention.trim().replace(/"/g,"'")+"\". If it fits naturally and gently, you can remind them of what THEY said they wanted today — not as a guilt trip, but as an older sibling reflecting back the person they said they wanted to be. Only if it lands warmly. "; } return ''; }catch(_){ return ''; } })()
+    + (function(){ try{
+        if(typeof loadV==='function') loadV();
+        const vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices:(ls('totry_v')||[]);
+        const v=vs.find(x=>x&&x.n&&String(x.n).toLowerCase()===String(s.name||'').toLowerCase());
+        if(!v) return '';
+        const days=(typeof viceCleanDays==='function')?viceCleanDays(v):0;
+        const money=(typeof viceMoneySaved==='function')?viceMoneySaved(v):0;
+        let out='';
+        if(days>0){ out+="Right now they are "+days+" day"+(days===1?'':'s')+" clean on this"+(money>0?(", which is about $"+money.toLocaleString()+" reclaimed from it"):"")+". If it lands warmly, you can gently remind them what THIS exact moment is protecting — something real they've built and would be proud to keep — as encouragement, NEVER as guilt, pressure, or a threat of loss. "; }
+        else if(money>0){ out+="Staying clean on this has already reclaimed about $"+money.toLocaleString()+" — real freedom, if it helps to name it gently. "; }
+        out+="And if they do slip, meet them with grace: a streak is a story, not a verdict, and every single moment is a fresh try. ";
+        return out;
+      }catch(_){ return ''; } })()
     + "THE EVIDENCE-BASED APPROACH that fits this, which you apply NATURALLY in your own warm words (never name-drop the technique like a textbook): "+spine+" "
     + "ALSO — if at ANY point they voice a permission-giving thought ('just once', 'I deserve it', 'I've already ruined today', 'I can't cope without it', 'I'll start tomorrow'), gently catch it WITH them and ask the question that lets them see it isn't true or isn't a command (CBT cognitive restructuring) — like an older sibling would, never as a lecture. Then help them land on what's truer. "
     + "If it feels right, gently help them see what the urge is really trying to MANAGE right now — stress, loneliness, boredom, exhaustion, a hard feeling it's numbing — because naming the real need underneath often loosens the urge's grip more than fighting it head-on. Ask softly, with curiosity, never interrogating. "
