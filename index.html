@@ -3977,7 +3977,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v205';
+const APP_VERSION = 'v206';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9270,6 +9270,19 @@ function openCompanionForUrge(){
   if(!ov) return;
   ls('totry_companion_last', String(Date.now()));
   ov.classList.add('open'); document.getElementById('companion-backdrop')?.classList.add('open');
+  // PRESENCE FIRST — the most important 3 seconds in the app must not be a "name it" menu while he's
+  // white-knuckling. If he's fighting ONE known vice, skip straight to the voice with the right
+  // mechanism (he can still say more inside the conversation). Several fights → one-tap which-one
+  // (needed for the right spine + streak); none yet → the gentle picker.
+  try{
+    if(typeof loadV==='function') loadV();
+    const vs = (typeof vices!=='undefined' && Array.isArray(vices)) ? vices.filter(v=>v&&v.n) : ((ls('totry_v')||[]).filter(v=>v&&v.n));
+    if(vs.length === 1){
+      const v = vs[0];
+      _beginCompanion(v.n, v.type || (typeof classifyVice==='function' ? classifyVice(v.n) : 'general'));
+      return;
+    }
+  }catch(_){}
   companionStruggling();
 }
 

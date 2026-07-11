@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v205-ritual-choreography';
+const CACHE = 'totry-v206-crisis-presence-first';
 
 const CORE = [
   './',
