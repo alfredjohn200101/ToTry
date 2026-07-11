@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v206-crisis-presence-first';
+const CACHE = 'totry-v207-companion-crisis-gate';
 
 const CORE = [
   './',

@@ -3977,7 +3977,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v206';
+const APP_VERSION = 'v207';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9435,6 +9435,22 @@ function companionReply(){
   const txt = inp ? inp.value.trim() : '';
   if(!txt) return;
   if(inp) inp.value='';
+  // SAFETY GATE — the same hard crisis check the coach uses, now here too. The companion is where the
+  // hardest moments surface (this is the 11pm door); self-harm / crisis language must reach REAL
+  // resources immediately and never be handed to the AI for a soft reply. (CLAUDE.md rule #5.)
+  try{
+    if(typeof detectCrisis==='function'){
+      const crisis = detectCrisis(txt);
+      if(crisis){
+        const conv=document.getElementById('comp-conversation');
+        if(conv){ const m=document.createElement('div'); m.className='comp-msg comp-msg-me'; m.textContent=txt; conv.appendChild(m); conv.scrollTop=conv.scrollHeight; }
+        if(typeof _compHistory!=='undefined') _compHistory.push({ role:'user', content:txt });
+        if(typeof showCrisisResponse==='function') showCrisisResponse('comp-conversation', crisis);
+        if(typeof _compHistory!=='undefined') _compHistory.push({ role:'assistant', content:'[Crisis resources shown]' });
+        return;
+      }
+    }
+  }catch(_){}
   _companionSay(txt, false);
 }
 
