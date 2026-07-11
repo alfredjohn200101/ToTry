@@ -1733,6 +1733,11 @@ input:focus,textarea:focus,select:focus{
       <button class="sleep-opt" data-v="7" onclick="logMorningSleep(7)" style="flex:1;padding:10px 4px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🙂 Good</button>
       <button class="sleep-opt" data-v="9" onclick="logMorningSleep(9)" style="flex:1;padding:10px 4px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">😌 Great</button>
     </div>
+    <!-- The sleep rating shouldn't vanish into a hidden score: tell him what it means for TODAY —
+         how the day will pull, what to aim for. Arms the 11pm man preemptively (readiness thread). -->
+    <div id="morning-readiness" style="display:none;margin-top:11px;padding-top:11px;border-top:1px solid var(--bd)">
+      <div id="morning-readiness-text" style="font-size:13px;color:var(--tx2);line-height:1.6"></div>
+    </div>
   </div>
   <!-- Active vice fight (secondary, smaller) -->
   <div class="card" id="morning-vice-card" style="margin-bottom:12px;background:var(--bg3);border-color:var(--bd);padding:10px 12px">
@@ -3953,7 +3958,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v202';
+const APP_VERSION = 'v203';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -18105,6 +18110,24 @@ function logMorningSleep(v){
   const msgs = { 3:'Logged. Be gentle with yourself today \u2014 I\u2019ll factor it in.', 5:'Logged. We\u2019ll work with it.', 7:'Logged \u2014 good. Let\u2019s use it.', 9:'Logged \u2014 well rested. Good day to push.' };
   if(typeof showToast==='function') showToast('Sleep noted', msgs[v]||'Logged.');
   if(typeof renderReadinessCard==='function') renderReadinessCard();
+  _showMorningReadiness(v);
+}
+// The morning's readiness thread made visible: given the sleep rating, tell the man how the day will
+// pull and what to aim for — grace over verdict, and it arms the 11pm man preemptively.
+function _showMorningReadiness(v){
+  try{
+    const box=document.getElementById('morning-readiness');
+    const txt=document.getElementById('morning-readiness-text');
+    if(!box||!txt) return;
+    const lines={
+      3:'Running on little sleep — the pull toward comfort, the snack, the easy dopamine will feel stronger today. That’s biology, not weakness. Aim smaller, go gentle, and if an urge hits hard tonight, remember it’s the tiredness talking.',
+      5:'A short night. Enough to show up — just not your sharpest. Steady beats heroic today: pick one thing that matters and let the rest be lighter.',
+      7:'Decent rest. You’ve got what you need for a solid day — spend it on something that counts.',
+      9:'Well rested. Your focus and willpower are at their strongest today — a good day to push on what matters and get ahead of the fight.'
+    };
+    txt.textContent = lines[v] || lines[5];
+    box.style.display='block';
+  }catch(_){}
 }
 // Restore today's sleep selection when the morning view renders.
 function _restoreMorningSleep(){
@@ -18117,6 +18140,7 @@ function _restoreMorningSleep(){
         const on = parseInt(b.getAttribute('data-v'),10) === c.scores.sleep;
         if(on){ b.style.background='var(--go)'; b.style.color='#1a1205'; b.style.borderColor='var(--go)'; }
       });
+      _showMorningReadiness(c.scores.sleep);
     }
   }catch(_){}
 }
