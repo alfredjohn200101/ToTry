@@ -3977,7 +3977,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v209';
+const APP_VERSION = 'v210';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7867,9 +7867,11 @@ function showMorningFocus(){
     if(identity){
       // Strip "I am becoming a person who" prefix to focus on the becoming part
       const becomingPart=identity.replace(/^I am becoming a person who /i,'');
+      identityEl.style.cursor='pointer'; identityEl.setAttribute('onclick','editIdentity()'); identityEl.title='Tap to edit';
       identityEl.innerHTML='I am becoming a person who <em style="color:var(--gr);font-style:normal;font-weight:600">'+becomingPart+'</em>';
     }else{
-      identityEl.innerHTML='<span style="color:var(--tx3);font-style:italic">Set your identity in Settings to see who you\'re becoming today.</span>';
+      identityEl.style.cursor='pointer'; identityEl.setAttribute('onclick','editIdentity()');
+      identityEl.innerHTML='<span style="color:var(--go);font-style:italic">Name who you’re becoming — the person today is for. Tap to set it.</span>';
     }
   }
   // Daily action prompts that connect identity to today
@@ -29565,6 +29567,22 @@ function saveIdentity(){
   ls('totry_identity',full);
   renderIdentity();
   showToast('Identity saved','This is who you are becoming.');
+}
+// Set/edit "who you're becoming" right where it's shown — no hunting through Settings. Used by the
+// morning's identity line so its empty state invites and acts, instead of pointing elsewhere.
+function editIdentity(){
+  const cur = (ls('totry_identity')||'').replace(/^I am becoming a person who /i,'');
+  if(typeof openFormModal!=='function'){ if(typeof go==='function') go('settings'); return; }
+  openFormModal('Who you’re becoming','Finish the sentence. This is the person today is for — you can change it anytime.',[{id:'identity',label:'I am becoming a person who…',type:'text',placeholder:'keeps his promises, even to himself',value:cur}],'Save',(vals)=>{
+    const t=(vals.identity||'').trim(); if(!t) return 'Just name one thing.';
+    const lower=t.toLowerCase();
+    const full = lower.startsWith('i am becoming a person who') ? t : (lower.startsWith('who ') ? ('I am becoming a person '+t) : ('I am becoming a person who '+t.replace(/^who /i,'')));
+    ls('totry_identity',full);
+    if(typeof renderIdentity==='function') renderIdentity();
+    if(typeof showMorningFocus==='function') showMorningFocus();
+    if(typeof showToast==='function') showToast('Identity saved','This is who you are becoming.');
+    return true;
+  });
 }
 
 // ── SEASONS ───────────────────────────────────────────────────
