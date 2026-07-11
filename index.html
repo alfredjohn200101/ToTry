@@ -3944,7 +3944,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v199';
+const APP_VERSION = 'v200';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5574,7 +5574,16 @@ function buildCtx(){
     if(todayMorning.mood) moodCtx += '\nThis morning they felt: ' + todayMorning.mood;
     if(todayMorning.intention) moodCtx += '\nToday\'s intention: "' + todayMorning.intention + '"';
   }
-  
+
+  // Their most recent honest evening reflection ("if the people you love watched today, what would
+  // they see?"). A profound self-knowledge signal — the brother holds it and speaks to the gap
+  // between who they are and who they want to be seen as. Grace-first, never a weapon.
+  let honestCtx = '';
+  try{
+    const lastSee = (ls('totry_evenings')||[]).find(e => e && (e.see||'').trim());
+    if(lastSee && lastSee.see) honestCtx = '\nTheir last honest evening reflection — asked what the people they love would see in their day — was: "' + lastSee.see.trim().slice(0,220) + '". Hold this tenderly; speak to who they want to become, never shame them with it.';
+  }catch(_){ }
+
   // Recent prayer log
   const prayers = ls('totry_prayers') || [];
   const recentPrayers = prayers.slice(0, 3);
@@ -5649,7 +5658,7 @@ Overall: ${tw} wins from ${tf} battles (${winRate}% win rate)${fightCtx}
 TODAY (live data, right now):
 - Nutrition so far: ${todayCals} cal (${calVsGoal}% of ${nutGoals.cal}), ${todayPro}g protein (${proVsGoal}% of ${nutGoals.pro}g) across ${todayMeals} meal${todayMeals===1?'':'s'}
 - Habits ticked: ${habitsDone}/${habits.length} — ${habitsToday}
-- Water: ${waterTodayL}/${waterGoalL}${fastingCtx}${workoutCtx}${trainingInsightCtx}${moodCtx}
+- Water: ${waterTodayL}/${waterGoalL}${fastingCtx}${workoutCtx}${trainingInsightCtx}${moodCtx}${honestCtx}
 
 BODY & TRAINING:
 Today's planned training: ${todayFocus}
@@ -12234,9 +12243,9 @@ function renderJournal(){
         m.innerHTML='<div class="modal"><div class="modal-handle"></div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);margin-bottom:8px;letter-spacing:0.1em">'+(e.date||'')+' \u2014 Morning'+(e.day?', Day '+e.day:'')+'</div><div style="font-size:28px;margin-bottom:12px">\ud83c\udf05</div>'+bodyHtml+'<button class="btn" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div>';document.body.appendChild(m);};
     } else {
       const RAT=['','Rough','Hard','Okay','Good','Strong'];
-      const parts=[]; if(e.win)parts.push('Win: '+e.win); if(e.release)parts.push('Released: '+e.release);
+      const parts=[]; if(e.win)parts.push('Win: '+e.win); if(e.release)parts.push('Released: '+e.release); if(e.see)parts.push('Honest: '+e.see);
       item.innerHTML='<div class="je-date">'+(e.date||'')+'</div><div class="je-mood">\ud83c\udf19</div><div class="je-prev">'+(parts.join(' \u00b7 ')||'Evening reflection')+'</div><div class="je-tags"><span class="je-tag">Evening'+(e.rating?' \u2014 '+RAT[e.rating]:'')+'</span>'+(e.steps?'<span class="je-tag">'+e.steps+' steps</span>':'')+'</div>';
-      item.onclick=()=>{const m=document.createElement('div');m.className='modal-bg open';m.innerHTML='<div class="modal"><div class="modal-handle"></div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);margin-bottom:8px;letter-spacing:0.1em">'+(e.date||'')+' \u2014 Evening'+(e.rating?', '+RAT[e.rating]:'')+'</div><div style="font-size:28px;margin-bottom:12px">\ud83c\udf19</div>'+(e.win?'<div style="font-size:13px;color:var(--tx3);margin-bottom:4px">One win</div><div style="font-size:14px;line-height:1.7;color:var(--tx);margin-bottom:12px;white-space:pre-wrap">'+e.win.replace(/</g,"&lt;")+'</div>':'')+(e.release?'<div style="font-size:13px;color:var(--tx3);margin-bottom:4px">Released</div><div style="font-size:14px;line-height:1.7;color:var(--tx);margin-bottom:12px;white-space:pre-wrap">'+e.release.replace(/</g,"&lt;")+'</div>':'')+(e.goalsHit?'<div style="font-size:13px;color:var(--tx3)">Goals hit: '+e.goalsHit+'</div>':'')+'<button class="btn" style="margin-top:12px" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div>';document.body.appendChild(m);};
+      item.onclick=()=>{const m=document.createElement('div');m.className='modal-bg open';m.innerHTML='<div class="modal"><div class="modal-handle"></div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);margin-bottom:8px;letter-spacing:0.1em">'+(e.date||'')+' \u2014 Evening'+(e.rating?', '+RAT[e.rating]:'')+'</div><div style="font-size:28px;margin-bottom:12px">\ud83c\udf19</div>'+(e.win?'<div style="font-size:13px;color:var(--tx3);margin-bottom:4px">One win</div><div style="font-size:14px;line-height:1.7;color:var(--tx);margin-bottom:12px;white-space:pre-wrap">'+e.win.replace(/</g,"&lt;")+'</div>':'')+(e.release?'<div style="font-size:13px;color:var(--tx3);margin-bottom:4px">Released</div><div style="font-size:14px;line-height:1.7;color:var(--tx);margin-bottom:12px;white-space:pre-wrap">'+e.release.replace(/</g,"&lt;")+'</div>':'')+(e.see?'<div style="font-size:13px;color:var(--tx3);margin-bottom:4px">If the people they love had watched today</div><div style="font-size:14px;line-height:1.7;color:var(--tx);margin-bottom:12px;white-space:pre-wrap;font-style:italic">'+e.see.replace(/</g,"&lt;")+'</div>':'')+(e.goalsHit?'<div style="font-size:13px;color:var(--tx3)">Goals hit: '+e.goalsHit+'</div>':'')+'<button class="btn" style="margin-top:12px" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div>';document.body.appendChild(m);};
     }
     list.appendChild(item);
   });
@@ -22081,7 +22090,7 @@ function showDayActivityDetail(dateKey){
   const matchDate = (ts) => ts && new Date(ts).toLocaleDateString('en-AU') === dateKey;
   
   (ls('totry_journal') || []).forEach(j => { if(matchDate(j.ts)) items.push({kind: 'Journal', text: j.text?.slice(0, 80), mood: j.mood}); });
-  (ls('totry_evenings') || []).forEach(e => { if(matchDate(e.ts)) items.push({kind: 'Evening reflection', text: e.win || e.release || ''}); });
+  (ls('totry_evenings') || []).forEach(e => { if(matchDate(e.ts)) items.push({kind: 'Evening reflection', text: e.win || e.release || e.see || ''}); });
   (ls('totry_mornings') || []).forEach(m => { if(matchDate(m.ts || m.createdAt)) items.push({kind: 'Morning ritual', text: m.intention || m.gratitude || ''}); });
   // Unified: lifts AND cardio both count toward the week's training picture.
   (typeof getUnifiedTraining === 'function' ? getUnifiedTraining() : (ls('totry_workouts')||[])).forEach(t => {
@@ -22150,6 +22159,10 @@ function completeEvening(){
   const _todayStrForBurns = () => new Date().toLocaleDateString('en-AU');
   const win=document.getElementById('evening-win')?.value.trim()||'';
   const release=document.getElementById('evening-release')?.value.trim()||'';
+  // The heaviest question ("if the people you love watched today, what would they see?"). It used
+  // to be saved to an orphan store nothing ever read. Now it lives on the evening record — synced,
+  // shown back in the journal, and given to the brother's context so the answer actually serves him.
+  const see=document.getElementById('evening-see')?.value.trim()||'';
   const t1=document.getElementById('eve-task1')?.value.trim()||'';
   const t2=document.getElementById('eve-task2')?.value.trim()||'';
   const t3=document.getElementById('eve-task3')?.value.trim()||'';
@@ -22179,7 +22192,7 @@ function completeEvening(){
   const goalsHit=window.__goalsHit||null;
   const log=ls('totry_evenings')||[];
   const _todayStr=new Date().toLocaleDateString('en-AU');
-  const entry={date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}),day:getDayCount(),rating:dayRating,win,release,tasks,steps:stepsVal||null,rings,goalsHit,ts:new Date().toISOString()};
+  const entry={date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}),day:getDayCount(),rating:dayRating,win,release,see,tasks,steps:stepsVal||null,rings,goalsHit,ts:new Date().toISOString()};
   // Editable until midnight: replace today's existing entry rather than stacking duplicates.
   const _exIdx=log.findIndex(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===_todayStr);
   if(_exIdx>=0) log[_exIdx]=entry; else log.unshift(entry);
@@ -29679,24 +29692,9 @@ function applySabbathMode(){
 // ── EXTEND setReflectTab for promises ─────────────────────────
 // setReflectTab promises panel handled in main function above
 
-// ── HOOK INTO completeEvening for "would they see" ────────────
-if(typeof completeEvening==='function'){
-  const _origCompleteEvening=completeEvening;
-  window.completeEvening=function(){
-    const see=document.getElementById('evening-see');
-    if(see&&see.value.trim()){
-      const log=ls('totry_honest_q')||[];
-      log.unshift({
-        date:new Date().toLocaleDateString('en-AU'),
-        ts:new Date().toISOString(),
-        day:getDayCount(),
-        answer:see.value.trim()
-      });
-      ls('totry_honest_q',log.slice(0,90));
-    }
-    _origCompleteEvening();
-  };
-}
+// The "would they see" answer is now saved directly on the evening record (entry.see) inside
+// completeEvening — synced, shown back in the journal, and fed to the brother's context. The old
+// wrapper that siloed it in an unread, unsynced totry_honest_q store has been retired.
 
 // ── HOOK INTO initSettingsTab for identity + seasons ──────────
 if(typeof initSettingsTab==='function'){
