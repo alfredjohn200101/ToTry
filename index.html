@@ -3944,7 +3944,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v194';
+const APP_VERSION = 'v195';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -25512,9 +25512,13 @@ function calcTDEE(){
   ls('totry_tdee_data', {age, weight, height, sex, activity, goal, tdee, ts: new Date().toISOString()});
   ls('totry_calorie_goal_type', goal);
   
-  // Calculate carbs and fat targets too
-  const carbsG = Math.round((t.cal - t.pro * 4) * 0.45 / 4);
-  const fatG = Math.round((t.cal - t.pro * 4) * 0.35 / 9);
+  // Carbs & fat targets — derived so all four macros SUM to the calorie goal (fat ≈30% of the
+  // calories left after protein, carbs take the rest). Shared with the manual-goal path via
+  // withDerivedMacros so the two never disagree. (Was a 0.45/0.35 split summing to only 80% of
+  // calories — the macros silently undershot the target by ~14%.)
+  const _dm = withDerivedMacros({cal: t.cal, pro: t.pro});
+  const carbsG = _dm.carb;
+  const fatG = _dm.fat;
   // Save the targets immediately — ALL four macros so the top display reflects them
   ls('totry_nut_goals', {cal: t.cal, pro: t.pro, carb: carbsG, fat: fatG, _ts: Date.now()});
   ls('totry_nut_macros', {cal: t.cal, pro: t.pro, carb: carbsG, fat: fatG, _ts: Date.now()});
@@ -25528,8 +25532,8 @@ function calcTDEE(){
       '<div class="macro-grid" style="margin-bottom:10px">'+
       '<div class="macro-met"><div class="mm-l">Calories</div><div class="mm-v cal">'+t.cal+'</div></div>'+
       '<div class="macro-met"><div class="mm-l">Protein</div><div class="mm-v pro">'+t.pro+'g</div></div>'+
-      '<div class="macro-met"><div class="mm-l">Carbs</div><div class="mm-v carb">'+Math.round((t.cal-t.pro*4)*0.45/4)+'g</div></div>'+
-      '<div class="macro-met"><div class="mm-l">Fat</div><div class="mm-v fat">'+Math.round((t.cal-t.pro*4)*0.35/9)+'g</div></div>'+
+      '<div class="macro-met"><div class="mm-l">Carbs</div><div class="mm-v carb">'+carbsG+'g</div></div>'+
+      '<div class="macro-met"><div class="mm-l">Fat</div><div class="mm-v fat">'+fatG+'g</div></div>'+
       '</div>'+
       (function(){
         if(goal === 'maintain') return '';
