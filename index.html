@@ -2698,7 +2698,7 @@ input:focus,textarea:focus,select:focus{
     
     <div class="tracker-row">
       <span class="tr-icon">&#128564;</span>
-      <div style="flex:1"><div class="tr-label">Sleep</div><div style="font-size:10px;color:var(--tx3)">Target: 7-9 hours</div></div>
+      <div style="flex:1"><div class="tr-label">Sleep</div><div style="font-size:10px;color:var(--tx3)" id="sleep-target-lbl">Target: 7-9 hours</div></div>
       <div class="tr-val"><span id="sleep-count">0</span>h</div>
       <div class="tr-btns"><button class="tr-btn" onclick="adjustTracker('sleep',-0.5)">&#8722;</button><button class="tr-btn" onclick="adjustTracker('sleep',0.5)">+</button></div>
     </div>
@@ -3958,7 +3958,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v203';
+const APP_VERSION = 'v204';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5658,7 +5658,12 @@ function buildCtx(){
   
   // Steps from Google
   const todaySteps=ls('totry_today_steps');
-  let stepsCtx=todaySteps?'\nTODAY\'S STEPS: '+todaySteps:'';
+  // The step + sleep goals he set should actually inform the brother — a target no one references
+  // is a target that does nothing. Feed them in with today's actuals so counsel can use them.
+  const stepGoal=parseInt(ls('totry_step_goal'))||0;
+  const sleepGoal=parseFloat(ls('totry_sleep_goal'))||0;
+  let stepsCtx=todaySteps?('\nTODAY\'S STEPS: '+todaySteps+(stepGoal?(' (goal '+stepGoal+(todaySteps>=stepGoal?' — hit it':'')+')'):'')):(stepGoal?('\nSTEP GOAL: '+stepGoal+'/day (none logged yet today)'):'');
+  if(sleepGoal) stepsCtx+='\nSLEEP GOAL: '+sleepGoal+'h a night';
   
   return `You are the personal life coach inside To Try, built by Alfred John. You know this person deeply and care about who they're becoming. You have access to their REAL data right now — use it.
 
@@ -12985,6 +12990,14 @@ function updateTrackerDisplay(){
   const t=(ls('totry_trackers')||{})[today]||{water:0,sleep:0,steps:0};
   const w=document.getElementById('water-count');const s=document.getElementById('sleep-count');const st=document.getElementById('steps-count');
   if(w)w.textContent=t.water;if(s)s.textContent=t.sleep;if(st)st.textContent=(t.steps||0).toLocaleString();
+  // Honour the user's own sleep goal instead of a hardcoded "7-9 hours" — a target they set should
+  // actually show, and the value goes green once they've met it.
+  try{
+    const _sg=parseFloat(ls('totry_sleep_goal'))||0;
+    const _lbl=document.getElementById('sleep-target-lbl');
+    if(_lbl) _lbl.textContent = _sg>0 ? ('Target: '+_sg+' hours') : 'Target: 7-9 hours';
+    if(s){ const _met = _sg>0 ? (t.sleep>=_sg) : (t.sleep>=7); s.style.color = (t.sleep>0 && _met) ? 'var(--gr)' : ''; }
+  }catch(_){}
   // Keep the weight "today" summary in sync too
   const body=ls('totry_body')||[];
   const todayWeight=body.find(b=>b.date===today || (b.ts && new Date(b.ts).toLocaleDateString('en-AU')===today));
@@ -22388,7 +22401,19 @@ function saveReminderTimes(){
   const e=document.getElementById('notif-evening')?.value||'21:00';
   ls('totry_reminder_morning',m);
   ls('totry_reminder_evening',e);
-  showToast('Times saved','The app will show in-app reminders at these times.');
+  // Actually schedule them — a reminder that saves a time and fires nothing is worse than none.
+  // Native: real daily notifications at these times. Web: records intent (fires once wrapped).
+  let native=false;
+  try{
+    if(typeof Notify!=='undefined' && Notify.scheduleDaily){
+      const [mh,mm]=m.split(':').map(n=>parseInt(n,10));
+      const [eh,em]=e.split(':').map(n=>parseInt(n,10));
+      Notify.scheduleDaily('reminder_morning','To Try','A quiet minute to set your intention for today.', isNaN(mh)?7:mh, isNaN(mm)?0:mm);
+      Notify.scheduleDaily('reminder_evening','To Try','Close the day with grace — a moment to look back honestly.', isNaN(eh)?21:eh, isNaN(em)?0:em);
+      native = !!(Notify.isNative && Notify.isNative());
+    }
+  }catch(_){}
+  showToast('Reminders set', native ? ('Morning '+m+' · Evening '+e+' — I’ll nudge you then.') : ('Morning '+m+' · Evening '+e+'. They fire on your phone once the app is installed to your home screen; in-app for now.'));
 }
 
 
