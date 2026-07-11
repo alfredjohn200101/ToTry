@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v201-evening-evidence';
+const CACHE = 'totry-v202-reflections-persist';
 
 const CORE = [
   './',

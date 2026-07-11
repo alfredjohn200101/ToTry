@@ -3953,7 +3953,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v201';
+const APP_VERSION = 'v202';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7296,7 +7296,7 @@ function completeMorning(){
   const intent=document.getElementById('morning-intention').value.trim();
   const log=ls('totry_mornings')||[];
   log.unshift({date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}),day:getDayCount(),gratitude:g,intention:intent,ts:new Date().toISOString()});
-  ls('totry_mornings',log.slice(0,90));
+  ls('totry_mornings',log.slice(0,1200)); // keep years of reflections (~3+ yrs daily), not ~3 months — a man's inner journey shouldn't silently vanish
   if(typeof logEvent==='function') logEvent('morning_done', { day: getDayCount() });
   if(typeof syncToCloud==='function') syncToCloud();
   document.getElementById('morning-prayer-display').style.display='none';
@@ -12169,7 +12169,7 @@ function saveQuickJournal(){
     wins: todayWins,
     quick: true
   });
-  ls('totry_journal', entries.slice(0, 90));
+  ls('totry_journal', entries.slice(0, 1200)); // was an inconsistent 90 here vs 365 elsewhere — unified to a years-long cap
   
   document.querySelector('.modal-bg.open')?.remove();
   if(typeof renderJournal === 'function') renderJournal();
@@ -12215,7 +12215,7 @@ function saveEntry(){
   entries.push({date:when.date,ts:when.ts,day:when.day,mood:curMood,text,urges:isNaN(manualUrges)?(when.backdated?0:autoUrges):manualUrges,wins:isNaN(manualWins)?(when.backdated?0:todayWins):manualWins,backdated:when.backdated});
   // Keep newest-first by timestamp so a backdated entry lands in the right place in the timeline.
   entries.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
-  ls('totry_journal',entries.slice(0,365));
+  ls('totry_journal',entries.slice(0,1200)); // unified journal cap — reflections persist for years
   const dm=document.getElementById('journal-modal'); if(dm) dm.classList.remove('open');
   const di=document.getElementById('journal-date'); if(di) di.value='';
   renderJournal();
@@ -21866,7 +21866,7 @@ function saveExamen(){
     ..._examenAnswers
   });
   if(typeof logEvent==='function') logEvent('examen_done', { day: getDayCount() });
-  ls('totry_examens', log.slice(0, 365));
+  ls('totry_examens', log.slice(0, 1200)); // the examen is a reflection too — keep years of it
   if(typeof updateExamenCount === 'function') updateExamenCount();
   document.querySelector('.modal-bg.open')?.remove();
   
@@ -22206,7 +22206,7 @@ function completeEvening(){
   const _exIdx=log.findIndex(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===_todayStr);
   if(_exIdx>=0) log[_exIdx]=entry; else log.unshift(entry);
   if(typeof logEvent==='function') logEvent('evening_done', { day: getDayCount(), rating: dayRating||null });
-  ls('totry_evenings',log.slice(0,90));
+  ls('totry_evenings',log.slice(0,1200)); // keep years of reflections, not ~3 months — his honest evenings shouldn't silently vanish
   // Evening check-in is now done → re-run auto-tick so the evening habit (hidden from the tick
   // list because you're doing it right now) lands ticked, plus anything else logged today.
   if(typeof autoTickHabits === 'function') autoTickHabits();
