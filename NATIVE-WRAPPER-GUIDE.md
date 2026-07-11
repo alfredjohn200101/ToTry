@@ -1,18 +1,26 @@
 # To Try — Native Wrapper Guide (Capacitor)
 
-> **STATUS (Jul 2026): the wrap is DONE up to the device build.** Capacitor 8 is installed and
-> configured at the repo root (`capacitor.config.json`, appId `app.totry`, webDir `www/`);
-> `npm run sync` assembles `www/` from the root PWA and syncs both platforms; iOS + Android shells
-> scaffold cleanly (`npx cap add ios android` regenerates them — they're gitignored); the
-> notification plugins are wired and the `Notify` layer's API matches Capacitor 8 exactly.
-> **No CocoaPods needed** — Capacitor 8 uses Swift Package Manager.
+> **STATUS (12 Jul 2026): the wrap is BUILT — one Xcode step from running on your phone.**
+> Capacitor 8 is installed; deps are in `node_modules`; the **iOS project is scaffolded at `ios/App`**
+> and **synced with the latest PWA (v210)** — `ios/App/App/public/index.html` is v210, matching the
+> live GitHub Pages build. Bundle id `app.totry`. Both notification plugins (LocalNotifications +
+> PushNotifications 8.x) are wired via **Swift Package Manager (no CocoaPods)** and resolve cleanly.
+> **Xcode 26.6 is installed**, first-launch components are done, and the **iOS platform is downloading**
+> (`xcodebuild -downloadPlatform iOS`) to enable device builds.
 >
-> What remains (needs Alfy's Mac + accounts):
-> 1. Install full **Xcode** from the Mac App Store (free; this machine has only Command Line Tools).
-> 2. `npm run ios` → Xcode opens → sign in with your Apple ID → run on your iPhone.
->    A **free** Apple ID installs to your own phone (7-day re-sign); the $99 Developer account is
->    only needed for TestFlight/App Store distribution — don't pay it until the app has proven itself.
-> 3. Same for Android later: install Android Studio → `npm run android`.
+> To re-sync after any PWA change: `npm run sync` (assembles `www/` from the root PWA → `npx cap sync`).
+> `ios/`, `android/`, `www/`, `node_modules/` are gitignored (regenerable); the config is committed.
+>
+> **THE FINAL STEP (needs your Apple ID in the Xcode GUI — cannot be automated):**
+> 1. `npm run ios` (or `npx cap open ios`) → opens `ios/App/App.xcodeproj` in Xcode.
+> 2. Select the **App** target → **Signing & Capabilities** → set **Team** to your Apple ID
+>    (a **free** personal team installs to your own phone; 7-day re-sign. The $99 account is only for
+>    TestFlight/App Store — don't pay it until the app has earned it).
+> 3. Plug in your iPhone, pick it as the run destination, press **▶ Run** (⌘R).
+> 4. First run only: on the phone, **Settings → General → VPN & Device Management → trust** the cert.
+> 5. Then background push works — the `Notify` layer auto-detects the wrapper and the reach-out-first
+>    sibling + morning/evening reminders fire even when the app is closed.
+> 6. Android later: install Android Studio → `npm run android`.
 
 The app ships now as a PWA. This guide wraps it into a real iOS/Android app so you get **native push
 notifications** (the sibling reaching out first, even when the app is closed), home-screen presence,
