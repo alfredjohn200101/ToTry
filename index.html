@@ -2850,13 +2850,13 @@ input:focus,textarea:focus,select:focus{
     <div style="font-size:12.5px;color:var(--tx3);margin-top:3px;line-height:1.55">Money is freedom, not just numbers. Every dollar reclaimed from a vice, every debt paid down, is a chain off your shoulders. Steward it well.</div>
   </div>
   <div class="mg">
-    <div class="met"><div class="ml">Debt left</div><div class="mv r" id="f-debt">$0</div></div>
     <div class="met"><div class="ml">Paid off</div><div class="mv g" id="f-paid">$0</div></div>
+    <div class="met"><div class="ml">Debt left</div><div class="mv r" id="f-debt">$0</div></div>
   </div>
   <!-- Dynamic goals list, sorted by priority -->
   <div id="finance-goals-list" style="margin-bottom:14px"></div>
   <div class="df-hero" id="df-hero"><div class="df-date" id="df-date">&#8212;</div><div class="df-lbl">Projected debt-free date</div><div class="df-desc" id="df-desc">Log payments to calculate</div></div>
-  <div class="saved-hero"><div class="saved-big" id="saved-num">$0</div><div class="saved-lbl">Saved by quitting vices</div><div class="saved-desc" id="saved-desc">Set weekly vice spend below</div></div>
+  <div class="saved-hero" id="saved-hero"><div class="saved-big" id="saved-num">$0</div><div class="saved-lbl">Reclaimed by staying clean</div><div class="saved-desc" id="saved-desc">Set weekly vice spend below</div></div>
   <!-- Strategy -->
   <div class="card" style="margin-bottom:12px">
     <div class="card-hd" style="margin-bottom:8px">Payoff strategy</div>
@@ -3977,7 +3977,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v208';
+const APP_VERSION = 'v209';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -15936,6 +15936,9 @@ function renderFinance(){
   if(reclaimed > 0){
     const sn=document.getElementById('saved-num'); const sd=document.getElementById('saved-desc');
     if(sn) sn.textContent='$'+reclaimed.toLocaleString();
+    // Lead with the freedom story, not the debt table (the soul of this screen): when there is real
+    // reclaimed money, float that hero up right beneath the metrics. Idempotent (only moves once).
+    try{ const mg=document.querySelector('#tab-money .mg'); const sh=document.getElementById('saved-hero'); if(mg&&sh&&mg.nextElementSibling!==sh) mg.after(sh); }catch(_){}
     if(sd) sd.textContent='Reclaimed by staying clean — that\u2019s money toward your debt and your freedom.';
   } else {
   const vs=ls('totry_vs');if(vs){const sn=document.getElementById('saved-num');const sd=document.getElementById('saved-desc');if(sn)sn.textContent='$'+vs.saved.toLocaleString();if(sd)sd.textContent='$'+vs.weekly+'/week saved. $'+vs.saved.toLocaleString()+' redirected.';
