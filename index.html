@@ -3944,7 +3944,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v196';
+const APP_VERSION = 'v197';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5048,7 +5048,11 @@ async function checkAuthAndStart(){
 
 // ── API ───────────────────────────────────────────────────────
 
-let userName='Friend';
+// Single source of truth for the user's name: storage. Initialised from totry_name at boot so a
+// greeting that renders before any init pass never falls back to "Friend" while a name is set
+// (was the cause of Home saying "Alfy" but the rituals saying "Friend"). changeName + onboarding
+// keep it in sync when the name changes.
+let userName = ls('totry_name') || 'Friend';
 
 const BIBLE_SYS=`You are a Bible scholar and pastoral counsellor. Someone has described their situation, feeling, or struggle. Your job is to find 6-8 genuinely relevant Bible verses that speak to what they are going through - drawing from across the entire Bible, not just the well-known passages.
 
@@ -12941,6 +12945,9 @@ function adjustTracker(type,delta){
   if(!trackers[today])trackers[today]={water:0,sleep:0,steps:0};
   trackers[today][type]=Math.max(0,Math.round((trackers[today][type]+delta)*10)/10);
   ls('totry_trackers',trackers);
+  // Sleep is shared with the readiness model (via totry_checkins). Mirror precise hours into today's
+  // sleep check-in so readiness uses what you logged here, and Morning/Track never disagree.
+  if(type==='sleep'){ try{ const _iso=new Date().toISOString().slice(0,10); const _ck=ls('totry_checkins')||[]; const _i=_ck.findIndex(c=>(c.ts||'').slice(0,10)===_iso && c.kind==='sleep'); const _e={kind:'sleep',scores:{sleep:trackers[today].sleep},ts:new Date().toISOString()}; if(_i>=0)_ck[_i]=_e; else _ck.unshift(_e); ls('totry_checkins',_ck.slice(0,300)); }catch(_){} }
   updateTrackerDisplay();
   haptic('tap');
 }
@@ -18059,6 +18066,9 @@ function logMorningSleep(v){
   const entry = { kind:'sleep', scores:{ sleep:v }, ts:new Date().toISOString() };
   if(existingIdx >= 0) checkins[existingIdx] = entry; else checkins.unshift(entry);
   ls('totry_checkins', checkins.slice(0,300));
+  // Single source of truth for sleep: mirror into the daily trackers store the Track tab reads, so
+  // a morning sleep rating shows as "Xh" there instead of a stale 0h. (Was two disconnected stores.)
+  try{ const _dk=new Date().toLocaleDateString('en-AU'); const _tr=ls('totry_trackers')||{}; if(!_tr[_dk])_tr[_dk]={water:0,sleep:0,steps:0}; _tr[_dk].sleep=v; ls('totry_trackers',_tr); if(typeof updateTrackerDisplay==='function') updateTrackerDisplay(); }catch(_){}
   if(typeof syncToCloud==='function') syncToCloud();
   if(typeof haptic==='function') haptic('light');
   // Reflect selection in the UI.
