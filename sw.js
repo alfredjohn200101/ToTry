@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v193-vice-fallback';
+const CACHE = 'totry-v194-legible-numerals';
 
 const CORE = [
   './',
