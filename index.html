@@ -3000,6 +3000,15 @@ input:focus,textarea:focus,select:focus{
       <div id="evening-intention-text" style="font-family:'Cormorant Garamond',serif;font-size:16px;font-style:italic;color:var(--tx);line-height:1.5;margin-bottom:6px"></div>
       <div style="font-size:12px;color:var(--tx3);line-height:1.5">Did you live it? No score — just honesty. Carry what's true into tomorrow.</div>
     </div>
+    <!-- The winning man sees his evidence: the day he ACTUALLY lived, drawn from the whole-life data,
+         so looking back is grounded in what he really did — not a blank recall. Grace over shame:
+         especially for the man who FEELS the day failed but actually showed up. Only a whole-life home
+         can do this. -->
+    <div id="evening-day-evidence" style="display:none;background:rgba(140,107,182,0.06);border:1px solid rgba(140,107,182,0.28);border-radius:14px;padding:14px 16px;margin-bottom:14px">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#8C6BB6;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">The day you actually lived</div>
+      <div id="evening-day-evidence-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      <div style="font-size:12px;color:var(--tx3);line-height:1.5;margin-top:9px">However it felt, this is real. You showed up.</div>
+    </div>
     <div class="lbl">How did today go?</div>
     <div class="day-rate-row">
       <button class="dr-btn" onclick="setDayRate(this,1)">&#128545;<br><span style="font-size:9px">Rough</span></button>
@@ -3944,7 +3953,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v200';
+const APP_VERSION = 'v201';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -22244,6 +22253,25 @@ function initEveningTab(){
     const _txt=document.getElementById('evening-intention-text');
     if(_m&&_m.intention&&_m.intention.trim()&&_recall&&_txt){ _txt.textContent='\u201c'+_m.intention.trim()+'\u201d'; _recall.style.display='block'; }
     else if(_recall){ _recall.style.display='none'; }
+  }catch(_){}
+  // The winning man sees his evidence: reflect the day he ACTUALLY lived, from the whole-life data,
+  // so looking back is grounded in what he really did \u2014 not a blank recall. Grace over shame.
+  try{
+    const _au=new Date().toLocaleDateString('en-AU');
+    const _isToday=(ts)=> ts && new Date(ts).toLocaleDateString('en-AU')===_au;
+    const ev=[];
+    if((ls('totry_mornings')||[]).some(m=>_isToday(m.ts))) ev.push('\ud83c\udf05 Set your intention');
+    if((ls('totry_workouts')||[]).some(w=>_isToday(w.ts))) ev.push('\ud83d\udcaa Trained');
+    const _meals=((ls('totry_nutlog')||{})[_au]||[]).length; if(_meals) ev.push('\ud83c\udf7d Logged '+_meals+' meal'+(_meals>1?'s':''));
+    const _wins=(ls('totry_feeling_wins')||[]).filter(w=>_isToday(w.ts)).length; if(_wins) ev.push('\ud83d\udee1 Outlasted '+_wins+' urge'+(_wins>1?'s':''));
+    if((ls('totry_prayers')||[]).some(p=>_isToday(p.ts))) ev.push('\ud83d\ude4f Prayed');
+    const _tr=(ls('totry_trackers')||{})[_au]||{}; if(_tr.steps>=1000) ev.push('\ud83d\udc5f '+Number(_tr.steps).toLocaleString()+' steps');
+    const _box=document.getElementById('evening-day-evidence');
+    const _list=document.getElementById('evening-day-evidence-list');
+    if(_box&&_list){
+      if(ev.length){ _list.innerHTML=ev.map(e=>'<span style="font-size:12.5px;color:var(--tx);background:var(--bg3);border:1px solid var(--bd);border-radius:999px;padding:5px 11px;white-space:nowrap">'+e+'</span>').join(''); _box.style.display='block'; }
+      else { _box.style.display='none'; }
+    }
   }catch(_){}
   // Editable until midnight: if today's evening reflection is already saved, prefill the fields so
   // the user can adjust it as the day finishes (e.g. steps added later) rather than starting blank
