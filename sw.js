@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v195-macro-math-fix';
+const CACHE = 'totry-v196-morning-emoji-fix';
 
 const CORE = [
   './',

@@ -1728,10 +1728,10 @@ input:focus,textarea:focus,select:focus{
   <div class="card" id="morning-sleep-card" style="margin-bottom:12px;padding:12px 14px">
     <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">How did you sleep?</div>
     <div style="display:flex;gap:6px" id="morning-sleep-opts">
-      <button class="sleep-opt" data-v="3" onclick="logMorningSleep(3)" style="flex:1;padding:10px 4px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">\u{1F634} Rough</button>
-      <button class="sleep-opt" data-v="5" onclick="logMorningSleep(5)" style="flex:1;padding:10px 4px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">\u{1F610} Okay</button>
-      <button class="sleep-opt" data-v="7" onclick="logMorningSleep(7)" style="flex:1;padding:10px 4px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">\u{1F642} Good</button>
-      <button class="sleep-opt" data-v="9" onclick="logMorningSleep(9)" style="flex:1;padding:10px 4px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">\u{1F60C} Great</button>
+      <button class="sleep-opt" data-v="3" onclick="logMorningSleep(3)" style="flex:1;padding:10px 4px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">😴 Rough</button>
+      <button class="sleep-opt" data-v="5" onclick="logMorningSleep(5)" style="flex:1;padding:10px 4px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">😐 Okay</button>
+      <button class="sleep-opt" data-v="7" onclick="logMorningSleep(7)" style="flex:1;padding:10px 4px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">🙂 Good</button>
+      <button class="sleep-opt" data-v="9" onclick="logMorningSleep(9)" style="flex:1;padding:10px 4px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;font-size:12px;color:var(--tx2);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">😌 Great</button>
     </div>
   </div>
   <!-- Active vice fight (secondary, smaller) -->
@@ -3944,7 +3944,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v195';
+const APP_VERSION = 'v196';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
