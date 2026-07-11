@@ -3944,7 +3944,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v198';
+const APP_VERSION = 'v199';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -12951,6 +12951,9 @@ function adjustTracker(type,delta){
   // Sleep is shared with the readiness model (via totry_checkins). Mirror precise hours into today's
   // sleep check-in so readiness uses what you logged here, and Morning/Track never disagree.
   if(type==='sleep'){ try{ const _iso=new Date().toISOString().slice(0,10); const _ck=ls('totry_checkins')||[]; const _i=_ck.findIndex(c=>(c.ts||'').slice(0,10)===_iso && c.kind==='sleep'); const _e={kind:'sleep',scores:{sleep:trackers[today].sleep},ts:new Date().toISOString()}; if(_i>=0)_ck[_i]=_e; else _ck.unshift(_e); ls('totry_checkins',_ck.slice(0,300)); }catch(_){} }
+  // Steps are shared with the coach/whole-person brief (via totry_today_steps). Keep them in lockstep
+  // so logging steps here isn't invisible to the coach, and vice-versa. (Was two disconnected stores.)
+  if(type==='steps'){ try{ ls('totry_today_steps', trackers[today].steps); }catch(_){} }
   updateTrackerDisplay();
   haptic('tap');
 }
@@ -22154,7 +22157,7 @@ function completeEvening(){
   if(tasks.length)ls('totry_tomorrow_tasks',{tasks,date:new Date().toLocaleDateString('en-AU'),ts:new Date().toISOString()});
   // Steps entered at night (from the user's watch) — store where the rest of the app reads them.
   const stepsVal=parseInt(document.getElementById('evening-steps')?.value||'0');
-  if(stepsVal>0){ ls('totry_today_steps', stepsVal); }
+  if(stepsVal>0){ ls('totry_today_steps', stepsVal); try{ const _tr=ls('totry_trackers')||{}; const _dk=new Date().toLocaleDateString('en-AU'); if(!_tr[_dk])_tr[_dk]={water:0,sleep:0,steps:0}; _tr[_dk].steps=stepsVal; ls('totry_trackers',_tr); }catch(_){} }
   // Apple Watch rings, entered at a glance. Move = active calories → feed the burn ledger so it
   // affects the nutrition net (idempotent via its own per-day key, like Strava/strength).
   const moveCal=parseInt(document.getElementById('evening-move')?.value||'0')||0;
@@ -27936,6 +27939,8 @@ async function syncGoogleHealth(){
     const today = stepDays.find(d=>d.date===new Date().toDateString());
     if(today && today.steps > 0){
       ls('totry_today_steps', today.steps);
+      // Mirror into the daily trackers store the Track tab reads, so synced steps show there too.
+      try{ const _tr=ls('totry_trackers')||{}; const _dk=new Date().toLocaleDateString('en-AU'); if(!_tr[_dk])_tr[_dk]={water:0,sleep:0,steps:0}; _tr[_dk].steps=today.steps; ls('totry_trackers',_tr); }catch(_){}
     }
     showToast('Google synced', 'Activity data updated.');
   }catch(e){
