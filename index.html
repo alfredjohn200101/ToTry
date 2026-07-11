@@ -743,6 +743,25 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .tab.tab-entered{animation:screenIn 0.34s cubic-bezier(0.22,1,0.36,1)}
 @keyframes screenIn{from{opacity:0;transform:translateY(8px) scale(0.994)}to{opacity:1;transform:translateY(0) scale(1)}}
 
+/* RITUAL CHOREOGRAPHY — the morning and evening are not forms; they should UNFOLD one beat at a
+   time so the eye is led down the arc (set the day / lay it down), calm and unhurried, not hit with
+   a wall of boxes. On the rituals we swap the block "screenIn" for a gentle section-by-section rise.
+   Subtle + slow (liturgical, not flashy); only the first sections stagger so a long form never drags.
+   Motion-only: reduced-motion keeps the plain, instant layout untouched. */
+@media (prefers-reduced-motion: no-preference){
+  #tab-morning.tab-entered, #tab-reflect.tab-entered{ animation:none; }
+  #tab-morning.tab-entered > *,
+  #tab-reflect.tab-entered #reflect-panel-evening > *{
+    animation: fadeUpY 0.5s cubic-bezier(0.22,1,0.36,1) both;
+  }
+  #tab-morning.tab-entered > *:nth-child(1), #tab-reflect.tab-entered #reflect-panel-evening > *:nth-child(1){animation-delay:.03s}
+  #tab-morning.tab-entered > *:nth-child(2), #tab-reflect.tab-entered #reflect-panel-evening > *:nth-child(2){animation-delay:.10s}
+  #tab-morning.tab-entered > *:nth-child(3), #tab-reflect.tab-entered #reflect-panel-evening > *:nth-child(3){animation-delay:.17s}
+  #tab-morning.tab-entered > *:nth-child(4), #tab-reflect.tab-entered #reflect-panel-evening > *:nth-child(4){animation-delay:.24s}
+  #tab-morning.tab-entered > *:nth-child(5), #tab-reflect.tab-entered #reflect-panel-evening > *:nth-child(5){animation-delay:.31s}
+  #tab-morning.tab-entered > *:nth-child(n+6), #tab-reflect.tab-entered #reflect-panel-evening > *:nth-child(n+6){animation-delay:.37s}
+}
+
 /* Button press feedback */
 .btn{transition:transform 0.1s ease, opacity 0.15s ease}
 .btn:active{transform:scale(0.97)}
@@ -3958,7 +3977,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v204';
+const APP_VERSION = 'v205';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
