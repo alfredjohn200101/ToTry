@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v211-native-safe-area';
+const CACHE = 'totry-v212-no-sw-in-native';
 
 const CORE = [
   './',

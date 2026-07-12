@@ -3978,7 +3978,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v211';
+const APP_VERSION = 'v212';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -25533,8 +25533,22 @@ async function initApp(){
   if(typeof checkChangelog === 'function') setTimeout(checkChangelog, 1600);
   // Restore height
   const h=ls('totry_height');const hEl=document.getElementById('settings-height');if(hEl&&h)hEl.value=h;
-  // Service worker
-  if('serviceWorker' in navigator){
+  // Service worker — a PWA/WEB feature only. Inside the native Capacitor shell it intercepts the
+  // local capacitor:// requests and, after a CACHE bump, can serve a stale/broken shell → blank
+  // screen. Native already loads the bundled files directly, so there we UNREGISTER any existing SW
+  // and clear its caches, and never register one. (This is standard Capacitor guidance.)
+  const _isNativeShell = !!(window.Capacitor && (
+    (typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) ||
+    (window.Capacitor.getPlatform && window.Capacitor.getPlatform() !== 'web')
+  ));
+  if(_isNativeShell){
+    try{
+      if(navigator.serviceWorker && navigator.serviceWorker.getRegistrations){
+        navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>{try{r.unregister();}catch(_){}})).catch(()=>{});
+      }
+      if(window.caches && caches.keys){ caches.keys().then(ks=>ks.forEach(k=>{try{caches.delete(k);}catch(_){}})).catch(()=>{}); }
+    }catch(_){}
+  } else if('serviceWorker' in navigator){
     let refreshing=false;
     // Was the page already controlled when it loaded? If yes, a later controllerchange means
     // a genuine UPDATE took over → reload to it. If NO (first-ever install), clients.claim
