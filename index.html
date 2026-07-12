@@ -95,7 +95,11 @@ button:focus:not(:focus-visible){outline:none}
 .verse-pill .vr{font-family:'DM Mono',monospace;font-size:9px;color:var(--go);margin-top:4px;letter-spacing:0.06em}
 .vsave{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--tx3);font-size:18px;padding:4px;line-height:1}
 .vsave.saved{color:var(--go)}
-.nav{display:flex;background:var(--bg);background:color-mix(in srgb, var(--bg) 72%, transparent);border-top:1px solid var(--bd);flex-shrink:0;overflow-x:auto;scrollbar-width:none;padding-bottom:var(--sb)}
+/* Bottom tab bar (iOS convention + the SOUL-ARCHITECTURE intent: "bottom bar, thumb-reachable").
+   .app is a flex column [header, nav, tabs]; order:3 floats the nav below the scrolling content so
+   it becomes a proper thumb-reachable bottom bar — no DOM change. border-top is now the divider
+   above it; padding-bottom:var(--sb) clears the home indicator. */
+.nav{display:flex;background:var(--bg);background:color-mix(in srgb, var(--bg) 82%, transparent);-webkit-backdrop-filter:saturate(160%) blur(18px);backdrop-filter:saturate(160%) blur(18px);border-top:1px solid var(--bd);flex-shrink:0;overflow-x:auto;scrollbar-width:none;padding-bottom:var(--sb);order:3}
 .nav-5{overflow-x:visible}
 .nav-5 .nb{flex:1;min-width:0}
 .hub-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px}
@@ -112,7 +116,7 @@ button:focus:not(:focus-visible){outline:none}
 .nb svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 .nb span{font-size:7px;letter-spacing:0.08em;text-transform:uppercase;font-weight:500}
 .nb.active{color:var(--go);border-top-color:var(--go)}
-.tabs{flex:1;overflow:hidden}
+.tabs{flex:1;overflow:hidden;order:2}
 .tab{display:none;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px calc(var(--sb) + 120px);scrollbar-width:thin;scrollbar-color:var(--bg4) transparent}
 .tab.active{display:block}
 .tab::-webkit-scrollbar{width:2px}
@@ -3978,7 +3982,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v212';
+const APP_VERSION = 'v213';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
