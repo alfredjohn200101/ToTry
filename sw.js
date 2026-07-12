@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v210-identity-empty-state';
+const CACHE = 'totry-v211-native-safe-area';
 
 const CORE = [
   './',
