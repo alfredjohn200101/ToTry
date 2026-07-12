@@ -3982,7 +3982,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v213';
+const APP_VERSION = 'v214';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -26702,7 +26702,7 @@ function renderHomeGreeting(){
   if(h >= 21 || h < 5) daypart = 'night';
   try{ document.body.setAttribute('data-daypart', daypart); }catch(_){}
   // Identity line in the hero (what they're becoming), quietly shown.
-  try{ const idEl=document.getElementById('hero-identity-text'); const identity=ls('totry_identity'); if(idEl) idEl.textContent = identity ? ('becoming '+identity) : ''; }catch(_){}
+  try{ const idEl=document.getElementById('hero-identity-text'); const identity=ls('totry_identity'); if(idEl){ if(identity){ const _t=identity.replace(/^I am becoming a person who\s+/i,'').trim(); idEl.textContent = /becoming/i.test(_t) ? _t : ('becoming '+_t); } else idEl.textContent=''; } }catch(_){}
   hiEl.textContent = hi;
   // Honor the man's chosen faith intensity — 'light' surfaces the daily verse more gently.
   try{ const vp=document.querySelector('.hero-verse'); if(vp) vp.style.display = (faithLevel()==='light') ? 'none' : ''; }catch(_){}
