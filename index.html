@@ -2702,6 +2702,17 @@ input:focus,textarea:focus,select:focus{
     <div style="font-family:'Cormorant Garamond',serif;font-size:23px;font-weight:300;color:var(--tx);line-height:1.2">Track</div>
     <div style="font-size:12.5px;color:var(--tx3);margin-top:3px;line-height:1.55">The result you can see. You trained, you fuelled — this is where the body answers back. Weight, photos, measures, sleep: the honest proof it's working.</div>
   </div>
+  <!-- Apple Health (native only): folds real steps + active energy in automatically, no manual logging. -->
+  <div id="health-connect-card" style="display:none;margin-bottom:14px" class="card">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="font-size:26px">❤️</div>
+      <div style="flex:1">
+        <div style="font-size:14px;color:var(--tx);font-weight:600" id="health-connect-title">Connect Apple Health</div>
+        <div style="font-size:12px;color:var(--tx3);line-height:1.5" id="health-connect-sub">Pull your steps and activity in automatically — no manual logging.</div>
+      </div>
+      <button class="btn primary" id="health-connect-btn" style="width:auto;padding:8px 14px;font-size:12px;margin:0" onclick="connectAppleHealth()">Connect</button>
+    </div>
+  </div>
   <!-- ── DAILY LOGS (top — 5-second daily actions) ── -->
   <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -3982,7 +3993,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v214';
+const APP_VERSION = 'v215';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4894,6 +4905,76 @@ const Notify = {
     }catch(_){ return false; }
   }
 };
+
+// ── APPLE HEALTH (HealthKit) — real device activity, native only ──────────────────────────────────
+// Reads today's steps + active energy from Apple Health (capacitor-health, Cap 8) and folds them into
+// the app's SINGLE-SOURCE stores: steps → totry_today_steps + trackers (coach + Track), active energy
+// → the watch sub-ledger of the burn ledger (whole-day active energy that supersedes manual entry).
+// On web / no plugin every method is a safe no-op, so nothing changes there. This is real device data
+// the PWA could never get — the first step toward Track being genuinely recovery-grade.
+const Health = {
+  _p(){ try{ return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Health) || null; }catch(_){ return null; } },
+  isNative(){ try{ return !!(window.Capacitor && (window.Capacitor.isNativePlatform ? window.Capacitor.isNativePlatform() : (window.Capacitor.getPlatform && window.Capacitor.getPlatform()!=='web'))); }catch(_){ return false; } },
+  async available(){ const p=this._p(); if(!p) return false; try{ const r=await p.isHealthAvailable(); return !!(r && r.available); }catch(_){ return false; } },
+  connected(){ try{ return !!ls('totry_health_connected'); }catch(_){ return false; } },
+  // Ask for read permission (steps, active energy, workouts, heart rate) then pull today's data.
+  async connect(){
+    const p=this._p(); if(!p) return { ok:false, reason:'This build has no Apple Health plugin.' };
+    try{
+      if(!(await this.available())) return { ok:false, reason:'Apple Health isn’t available on this device.' };
+      await p.requestHealthPermissions({ permissions:['READ_STEPS','READ_ACTIVE_CALORIES','READ_WORKOUTS','READ_HEART_RATE'] });
+      try{ ls('totry_health_connected', true); }catch(_){}
+      const synced = await this.syncToday();
+      return { ok:true, synced };
+    }catch(e){ return { ok:false, reason:String(e && e.message || e) }; }
+  },
+  // Pull today's steps + active energy and fold them into the single-source stores. Safe to call often.
+  async syncToday(){
+    const p=this._p(); if(!p) return null;
+    try{
+      const now=new Date(); const start=new Date(now); start.setHours(0,0,0,0);
+      const iso=(d)=>d.toISOString();
+      const sum=async(dataType)=>{ try{ const r=await p.queryAggregated({ startDate:iso(start), endDate:iso(now), dataType, bucket:'day' }); const arr=(r&&r.aggregatedData)||[]; return arr.reduce((s,x)=>s+(x.value||0),0); }catch(_){ return null; } };
+      const steps=await sum('steps');
+      const active=await sum('active-calories');
+      const auKey=now.toLocaleDateString('en-AU');
+      if(steps!=null && steps>0){ try{ ls('totry_today_steps', Math.round(steps)); const tr=ls('totry_trackers')||{}; if(!tr[auKey])tr[auKey]={water:0,sleep:0,steps:0}; tr[auKey].steps=Math.round(steps); ls('totry_trackers',tr); if(typeof updateTrackerDisplay==='function') updateTrackerDisplay(); }catch(_){} }
+      if(active!=null && active>0){ try{ const w=ls('totry_watch_burns_byday')||{}; w[auKey]=Math.round(active); ls('totry_watch_burns_byday',w); if(typeof reconcileBurns==='function') reconcileBurns(); if(typeof renderNutritionLog==='function') renderNutritionLog(); }catch(_){} }
+      try{ ls('totry_health_last_sync', Date.now()); }catch(_){}
+      return { steps: steps!=null?Math.round(steps):null, active: active!=null?Math.round(active):null };
+    }catch(e){ return null; }
+  }
+};
+// The Track-tab card that connects Apple Health (native only) and shows its live status.
+async function connectAppleHealth(){
+  const btn=document.getElementById('health-connect-btn');
+  if(btn){ btn.textContent='Connecting…'; btn.disabled=true; }
+  try{
+    const r = await Health.connect();
+    if(r && r.ok){
+      const s=r.synced||{}; const bits=[]; if(s.steps) bits.push(s.steps.toLocaleString()+' steps'); if(s.active) bits.push(s.active+' active cal');
+      if(typeof showToast==='function') showToast('Apple Health connected', bits.length?('Pulled '+bits.join(' · ')+' today.'):'Your activity will sync automatically.');
+    } else if(typeof showToast==='function'){ showToast('Couldn’t connect', (r&&r.reason)||'Apple Health permission was declined.'); }
+  }catch(e){ if(typeof showToast==='function') showToast('Couldn’t connect', String(e&&e.message||e)); }
+  renderHealthCard();
+}
+function renderHealthCard(){
+  try{
+    const card=document.getElementById('health-connect-card'); if(!card) return;
+    if(typeof Health==='undefined' || !Health.isNative()){ card.style.display='none'; return; } // web/PWA: no HealthKit
+    card.style.display='block';
+    const title=document.getElementById('health-connect-title'), sub=document.getElementById('health-connect-sub'), btn=document.getElementById('health-connect-btn');
+    if(Health.connected()){
+      if(title) title.textContent='Apple Health connected';
+      if(sub) sub.textContent='Steps & activity sync automatically each time you open the app.';
+      if(btn){ btn.textContent='Sync now'; btn.disabled=false; btn.onclick=async function(){ btn.textContent='Syncing…'; btn.disabled=true; const s=await Health.syncToday(); const b=[]; if(s&&s.steps)b.push(s.steps.toLocaleString()+' steps'); if(s&&s.active)b.push(s.active+' cal'); if(typeof showToast==='function') showToast('Synced', b.length?('Apple Health · '+b.join(' · ')):'Up to date.'); btn.textContent='Sync now'; btn.disabled=false; }; }
+    } else {
+      if(title) title.textContent='Connect Apple Health';
+      if(sub) sub.textContent='Pull your steps and activity in automatically — no manual logging.';
+      if(btn){ btn.textContent='Connect'; btn.disabled=false; btn.onclick=connectAppleHealth; }
+    }
+  }catch(_){}
+}
 
 // ── REACH-OUT-FIRST — the sibling messages you at YOUR known risk window, app closed ─────────────
 // The app already learns each fight's hardest time of day (analyzeUrgePatterns → riskWindow). This
@@ -6946,7 +7027,7 @@ function go(name){
   // Show a "back to hub" bar on sub-pages so users can climb back up easily
   updateHubBackBar(name);
   if(name==='fight'){renderVices();renderScoreboard();}
-  if(name==='track'){renderBody();renderBodyCollage();updateTrackerDisplay();}
+  if(name==='track'){renderBody();renderBodyCollage();updateTrackerDisplay();if(typeof renderHealthCard==='function')renderHealthCard();if(typeof Health!=='undefined'&&Health.connected()&&Health.isNative())Health.syncToday();}
   if(name==='grow' && typeof renderBodySystemReport==='function'){renderBodySystemReport();}
   if(name==='settings' && typeof renderPushSettings==='function'){renderPushSettings();}
   if(name==='bible'){renderSavedVerses();initBibleReader();}
@@ -25633,6 +25714,8 @@ try{ if(typeof enableSyncMonitoring === 'function') enableSyncMonitoring(); }cat
 // One-time migration to the single-source burn ledger: if this device already has workouts, rebuild
 // the aggregate from them so any previously double-counted "Burned" figure is corrected on load.
 try{ if(typeof recomputeWorkoutBurns === 'function' && (ls('totry_workouts')||[]).length) recomputeWorkoutBurns(); }catch(_){}
+// Apple Health: if already connected, pull today's steps + active energy on open (native only).
+try{ if(typeof Health!=='undefined' && Health.connected() && Health.isNative()) Health.syncToday(); }catch(_){}
 initSupabase();
 // Handle OAuth callbacks if returning from Strava or Google
 if(window.location.search.includes('code=')){

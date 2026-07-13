@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v214-identity-becoming'
+const CACHE = 'totry-v215-apple-health'
 
 const CORE = [
   './',
