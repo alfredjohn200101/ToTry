@@ -3993,7 +3993,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v215';
+const APP_VERSION = 'v216';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9332,11 +9332,20 @@ function _feelMove(feeling){
   else if(s.go==='__bridge') onclick = 'closeModal(this);bridgeToRealHelp(\'heavy\')';
   else if(s.go==='__procrast') onclick = 'closeModal(this);_startSmallestThing()';
   else onclick = 'closeModal(this);go(\''+s.go+'\')';
+  // The suggested move is never the ONLY door. Whatever they're feeling, they can always choose to
+  // just TALK (the companion) or WRITE it down (journal) instead of following the prescription — met
+  // where they are, not railroaded into a workout or a task. (Skip the talk chip when talking IS the
+  // primary action, e.g. "anxious".)
+  const _talkBtn = (s.go==='__companion') ? '' :
+    '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin:0;font-size:13px">💬 Just talk</button>';
   m.innerHTML = '<div class="modal" style="text-align:center">'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.25;margin-bottom:10px">'+s.title+'</div>'+
-    '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:20px">'+s.body+'</div>'+
+    '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:18px">'+s.body+'</div>'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="'+onclick+'">'+s.cta+'</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Just sit with it a moment</button>'+
+    '<div style="display:flex;gap:8px;margin-bottom:8px">'+_talkBtn+
+      '<button class="btn" onclick="closeModal(this);openQuickJournal()" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin:0;font-size:13px">✎ Write it down</button>'+
+    '</div>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0">Not now</button>'+
     '</div>';
   document.body.appendChild(m);
   if(typeof haptic==='function') haptic('tap');
