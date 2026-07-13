@@ -165,7 +165,7 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 .hero-quote{font-family:'Cormorant Garamond',serif;font-size:14px;font-style:italic;color:var(--tx2);margin-top:10px;line-height:1.6;padding:0 8px}
 .streak-dots{display:flex;align-items:center;justify-content:center;gap:5px;margin-top:8px}
 /* ════ THE FRONT-DOOR HERO ════ a tall, lit, breathing first-screen — a place, not a card. */
-#home-hero.home-hero{text-align:left;padding:0;border:none;background:transparent;margin-bottom:18px;border-radius:24px;min-height:340px;display:flex;overflow:hidden;position:relative}
+#home-hero.home-hero{text-align:left;padding:0;border:none;background:transparent;margin-bottom:18px;border-radius:24px;display:flex;overflow:hidden;position:relative}
 .hero-aurora{position:absolute;inset:0;border-radius:24px;z-index:0;background:
   radial-gradient(120% 80% at 80% 0%, rgba(200,169,110,0.22), transparent 60%),
   radial-gradient(120% 90% at 0% 100%, rgba(140,107,182,0.20), transparent 55%),
@@ -183,8 +183,8 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .hero-identity{display:flex;align-items:baseline;gap:7px;margin-top:18px;cursor:pointer;flex-wrap:wrap}
 .hero-dayn{font-family:'DM Mono',monospace;font-size:30px;font-weight:300;color:var(--go);line-height:1}
 .hero-dayl{font-family:'DM Mono',monospace;font-size:9px;color:rgba(242,239,232,0.5);text-transform:uppercase;letter-spacing:0.16em}
-.hero-identity-text{font-size:12px;color:rgba(242,239,232,0.55);font-style:italic;font-family:'Cormorant Garamond',serif;margin-left:auto}
-.hero-action{margin-top:auto;background:linear-gradient(135deg,#C8A96E,#a98b54);border:none;color:#0c0c0e;border-radius:14px;padding:15px 18px;font-size:14px;font-weight:600;cursor:pointer;width:100%;box-shadow:var(--e-gold);transition:transform .18s var(--spring)}
+.hero-identity-text{font-size:13px;color:rgba(242,239,232,0.6);font-style:italic;font-family:'Cormorant Garamond',serif;flex-basis:100%;margin-top:3px;line-height:1.35}
+.hero-action{margin-top:18px;background:linear-gradient(135deg,#C8A96E,#a98b54);border:none;color:#0c0c0e;border-radius:14px;padding:15px 18px;font-size:14px;font-weight:600;cursor:pointer;width:100%;box-shadow:var(--e-gold);transition:transform .18s var(--spring)}
 .hero-action:active{transform:scale(0.97)}
 .hero-nextstep{margin-top:16px;display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:14px;padding:14px 16px;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:transform .18s var(--spring)}
 .hero-nextstep:active{transform:scale(0.98)}
@@ -3993,7 +3993,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v216';
+const APP_VERSION = 'v217';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }

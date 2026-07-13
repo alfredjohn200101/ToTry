@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v216-feeling-door-agency'
+const CACHE = 'totry-v217-home-hero-proportions'
 
 const CORE = [
   './',
