@@ -926,11 +926,6 @@ html, body, .app{
   #need-talk-btn:hover{transform:scale(1.05);box-shadow:0 6px 20px rgba(200,169,110,0.3)}
 }
 .app.onboarding-active #need-talk-btn{display:none}
-.app.onboarding-active #quick-journal-btn{display:none}
-#quick-journal-btn:active{transform:scale(0.92)}
-@media (hover:hover){
-  #quick-journal-btn:hover{transform:scale(1.05);box-shadow:0 6px 20px rgba(200,169,110,0.25);background:var(--bg3)}
-}
 
 
 /* New check-in dots */
@@ -3861,10 +3856,8 @@ Amen.</div></div>
   <svg aria-hidden="true" viewBox="0 0 24 24" width="24" height="24" style="margin-top:2px"><path fill="currentColor" d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/></svg>
 </button>
 
-<!-- Universal quick-journal floating button -->
-<button id="quick-journal-btn" onclick="openQuickJournal()" aria-label="Quick journal" style="position:fixed;bottom:calc(var(--sb) + 150px);right:17px;width:48px;height:48px;border-radius:50%;background:var(--bg2);border:1px solid var(--go-bd);color:var(--go);cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.4);z-index:90;transition:transform 0.15s,box-shadow 0.15s;display:flex;align-items:center;justify-content:center">
-  <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-</button>
+<!-- Quick-journal is reachable inside the companion ("write it down") and the rituals — no
+     standalone FAB, so the one always-there orb stays the single, unambiguous crisis path. -->
 
 </div><!-- /app -->
 <script>
@@ -3997,7 +3990,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v220';
+const APP_VERSION = 'v221';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
