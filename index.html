@@ -1044,7 +1044,7 @@ input:focus,textarea:focus,select:focus{
 </head>
 <body>
 <div id="boot-splash" style="position:fixed;inset:0;background:var(--bg,#0a0a0c);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.35s ease">
-  <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:34px;font-style:italic;color:#c8a96e;letter-spacing:0.02em">To Try</div>
+  <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:34px;color:#c8a96e;letter-spacing:0.02em">To <em style="font-style:italic">Try</em></div>
   <div style="font-family:'DM Mono',monospace;font-size:9px;color:#6a6a72;text-transform:uppercase;letter-spacing:0.2em;margin-top:8px">by Alfred John</div>
   <div style="margin-top:22px;width:26px;height:26px;border:2px solid rgba(200,169,110,0.25);border-top-color:#c8a96e;border-radius:50%;animation:bootspin 0.7s linear infinite"></div>
 </div>
@@ -1059,8 +1059,8 @@ input:focus,textarea:focus,select:focus{
   <!-- Logo at top — honour the notch/Dynamic Island in the native shell (var(--st) = safe-area-top;
        max() keeps the original 32px in a browser where --st is 0). -->
   <div style="position:absolute;top:max(32px, calc(var(--st) + 16px));left:0;right:0;text-align:center">
-    <div style="font-family:Georgia,serif;font-size:36px;color:var(--go)">
-      To<span style="font-style:italic;font-weight:300">Try</span>
+    <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:36px;color:var(--go)">
+      To <span style="font-style:italic;font-weight:300">Try</span>
     </div>
     <div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.2em;margin-top:4px">BY ALFRED JOHN</div>
   </div>
@@ -1129,7 +1129,7 @@ input:focus,textarea:focus,select:focus{
   <!-- WHAT IT IS — instant "I get it" for a brand-new user, before asking anything -->
   <div class="ob-step" id="ob-what">
     <div class="ob-title" style="margin-bottom:6px">One app for your whole life.</div>
-    <div class="ob-desc" style="margin-bottom:20px">Most apps fix one thing. ToTry holds all of it — and a coach that sees how it connects.</div>
+    <div class="ob-desc" style="margin-bottom:20px">Most apps fix one thing. To Try holds all of it — and a coach that sees how it connects.</div>
     <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
       <div style="display:flex;gap:12px;align-items:flex-start">
         <div style="font-size:20px;flex-shrink:0;width:28px;text-align:center">⚔️</div>
@@ -1540,9 +1540,7 @@ input:focus,textarea:focus,select:focus{
       <div id="home-greeting-hi" class="hero-greeting"></div>
       <div id="home-greeting-sub" class="hero-sub"></div>
 
-      <div class="hero-identity" onclick="go('settings')">
-        <span class="hero-dayn" id="hero-day">1</span>
-        <span class="hero-dayl">days in</span>
+      <div class="hero-identity" id="hero-identity" onclick="go('settings')" style="display:none">
         <span class="hero-identity-text" id="hero-identity-text"></span>
       </div>
 
@@ -3287,6 +3285,12 @@ Amen.</div></div>
     <div style="font-size:11px;color:var(--tx2);margin-top:8px;line-height:1.5">To Try is a self-improvement tool, not a substitute for professional support.</div>
   </div>
 
+  <!-- Honest beta framing — shown on web/PWA only; hidden inside the native app (see initSettingsTab). -->
+  <div id="beta-web-note" class="card" style="display:none;margin-bottom:14px;border:1px solid var(--go-bd);background:var(--go-bg)">
+    <div class="card-hd" style="margin-bottom:6px">You're on the To Try beta</div>
+    <div style="font-size:12px;color:var(--tx2);line-height:1.6">This is the web version — everything here is real and saved to your account. A couple of things need the phone itself: <strong style="color:var(--tx)">Apple Health sync</strong> and <strong style="color:var(--tx)">reminders that reach you first</strong>. Those arrive with the To Try app on the App Store. When it lands you'll get a link, sign in with this same email, and pick up exactly where you are — nothing lost.</div>
+  </div>
+
   <!-- ═══ GROUP 2: PREFERENCES (collapsed — set once, rarely changed) ═══ -->
   <details class="settings-group">
     <summary>⚙ Preferences <span class="settings-group-hint">Currency, units, theme, timezone, reminders</span></summary>
@@ -3491,7 +3495,7 @@ Amen.</div></div>
   <div class="card" style="background:linear-gradient(135deg, rgba(200,169,110,0.06), rgba(140,107,182,0.04));border-color:var(--go-bd)">
     <div class="card-hd" style="margin-bottom:6px">☕ Support the project</div>
     <div style="font-size:13px;color:var(--tx2);line-height:1.7">
-      <p style="margin-bottom:10px">ToTry costs about $20-50 AUD/month to keep running (AI calls + hosting). If it has helped you, you can chip in.</p>
+      <p style="margin-bottom:10px">To Try costs about $20-50 AUD/month to keep running (AI calls + hosting). If it has helped you, you can chip in.</p>
       <p style="margin-bottom:14px;font-size:12px;color:var(--tx3);font-style:italic">Optional. Never unlocks features. Just keeps the app free for everyone.</p>
       <a href="https://buymeacoffee.com/totrybyaj" target="_blank" rel="noopener" class="btn primary" style="display:block;text-align:center;text-decoration:none;padding:11px;font-size:13px">Buy me a coffee →</a>
     </div>
@@ -3569,14 +3573,14 @@ Amen.</div></div>
 
   <!-- HELP IMPROVE — always visible, this is the QA channel -->
   <div class="card" style="background:linear-gradient(135deg,rgba(140,107,182,0.08),rgba(200,169,110,0.05));border-color:var(--go-bd)">
-    <div class="card-hd" style="margin-bottom:6px">💡 Help improve ToTry</div>
+    <div class="card-hd" style="margin-bottom:6px">💡 Help improve To Try</div>
     <p style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:12px">Found a bug? Got an idea? Something feel off? Tell me directly — this app gets better because real people say what's wrong. Every message is read.</p>
     <button class="btn primary" onclick="openFeedback()">Send feedback or report a bug</button>
   </div>
 
   <!-- ═══ GROUP 8: ABOUT (collapsed — read once, rarely revisited) ═══ -->
   <details class="settings-group">
-    <summary>ℹ About ToTry <span class="settings-group-hint">Privacy, terms, contact</span></summary>
+    <summary>ℹ About To Try <span class="settings-group-hint">Privacy, terms, contact</span></summary>
     
     <div class="card">
       <div class="card-hd" style="margin-bottom:6px">About</div>
@@ -3590,7 +3594,7 @@ Amen.</div></div>
     
     <div class="card">
       <div class="card-hd" style="margin-bottom:8px">Privacy &amp; legal</div>
-      <p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.6">Your personal data is stored on your own device. When you use AI features (Coach, Bible, screenshot reading), your request is sent to AI providers (such as Anthropic, Google, or OpenAI) to generate a response — their handling is governed by their own policies. ToTry itself does not sell your data or run its own ads. Please read the full privacy policy for details.</p>
+      <p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.6">Your personal data is stored on your own device. When you use AI features (Coach, Bible, screenshot reading), your request is sent to AI providers (such as Anthropic, Google, or OpenAI) to generate a response — their handling is governed by their own policies. To Try itself does not sell your data or run its own ads. Please read the full privacy policy for details.</p>
       <button class="btn" onclick="showPrivacyPolicy()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px;margin-bottom:8px">Privacy policy</button>
       <button class="btn" onclick="showTermsOfUse()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px">Terms of use</button>
     </div>
@@ -3858,7 +3862,7 @@ Amen.</div></div>
 </button>
 
 <!-- Universal quick-journal floating button -->
-<button id="quick-journal-btn" onclick="openQuickJournal()" aria-label="Quick journal" style="position:fixed;bottom:calc(var(--sb) + 84px);left:14px;width:48px;height:48px;border-radius:50%;background:var(--bg2);border:1px solid var(--go-bd);color:var(--go);cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.4);z-index:90;transition:transform 0.15s,box-shadow 0.15s;display:flex;align-items:center;justify-content:center">
+<button id="quick-journal-btn" onclick="openQuickJournal()" aria-label="Quick journal" style="position:fixed;bottom:calc(var(--sb) + 150px);right:17px;width:48px;height:48px;border-radius:50%;background:var(--bg2);border:1px solid var(--go-bd);color:var(--go);cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.4);z-index:90;transition:transform 0.15s,box-shadow 0.15s;display:flex;align-items:center;justify-content:center">
   <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
 </button>
 
@@ -3993,7 +3997,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v218';
+const APP_VERSION = 'v219';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4001,7 +4005,7 @@ const CHANGELOG = {
 // Shown ONCE to brand-new users after they finish onboarding — a tour of what the app can do,
 // not a list of recent fixes.
 const WHATS_POSSIBLE = {
-  title: 'What ToTry can do',
+  title: 'What To Try can do',
   items: [
     'Fight any vice with live streaks, urge support, and a coach that remembers.',
     'Train with full routines + Hevy sync; log food with macros, barcode, and recipes.',
@@ -4961,9 +4965,16 @@ async function connectAppleHealth(){
 function renderHealthCard(){
   try{
     const card=document.getElementById('health-connect-card'); if(!card) return;
-    if(typeof Health==='undefined' || !Health.isNative()){ card.style.display='none'; return; } // web/PWA: no HealthKit
-    card.style.display='block';
     const title=document.getElementById('health-connect-title'), sub=document.getElementById('health-connect-sub'), btn=document.getElementById('health-connect-btn');
+    card.style.display='block';
+    // Web/PWA is the beta — HealthKit is native-only. Be honest (a heads-up), never a dead button.
+    if(typeof Health==='undefined' || !Health.isNative()){
+      if(title) title.textContent='Apple Health';
+      if(sub) sub.textContent='Automatic steps & activity sync arrives with the To Try app on the App Store — you’ll sign in with this same email and pick up right here.';
+      if(btn) btn.style.display='none';
+      return;
+    }
+    if(btn) btn.style.display='';
     if(Health.connected()){
       if(title) title.textContent='Apple Health connected';
       if(sub) sub.textContent='Steps & activity sync automatically each time you open the app.';
@@ -9391,9 +9402,20 @@ function companionStruggling(){
   const wrap = document.getElementById('comp-known-vices');
   if(wrap){
     const vs = (typeof vices!=='undefined' && Array.isArray(vices)) ? vices : (ls('totry_v')||[]);
-    wrap.innerHTML = vs.filter(v=>v&&v.n).map(v =>
+    const named = vs.filter(v=>v&&v.n);
+    wrap.innerHTML = named.map(v =>
       '<button class="comp-vice-chip" onclick="companionPickVice('+JSON.stringify(String(v.n)).replace(/"/g,'&quot;')+')">'+String(v.n).replace(/</g,'&lt;')+'</button>'
     ).join('');
+    // Copy must be honest to what's on screen: no "Tap one" when there's nothing to tap yet.
+    const sub = document.querySelector('#comp-name .comp-sub');
+    const ft = document.getElementById('comp-freetext');
+    if(named.length){
+      if(sub) sub.textContent = "Tap one, or tell me in your own words. Whatever it is, I'm not here to judge it.";
+      if(ft) ft.placeholder = 'or say it in your own words...';
+    } else {
+      if(sub) sub.textContent = "Tell me what's on you, in your own words. Whatever it is, I'm not here to judge it.";
+      if(ft) ft.placeholder = 'say it in your own words...';
+    }
   }
   setTimeout(()=>{ const f=document.getElementById('comp-freetext'); if(f) f.focus(); }, 350);
 }
@@ -24536,6 +24558,8 @@ async function submitFeedback(){
 
 // ── SETTINGS ──────────────────────────────────────────────────
 function initSettingsTab(){
+  // Honest beta framing on web only — inside the native app it's not a beta, so hide it.
+  try{ const bn=document.getElementById('beta-web-note'); if(bn) bn.style.display = (typeof Notify!=='undefined' && Notify.isNative()) ? 'none' : 'block'; }catch(_){}
   const n=document.getElementById('settings-name-display');if(n)n.textContent=ls('totry_name')||'Not set';
   // Signed-in email — was stuck on "Loading..." because nothing populated it.
   const emailEl=document.getElementById('settings-email-display');
@@ -26794,7 +26818,7 @@ function renderHomeGreeting(){
   if(h >= 21 || h < 5) daypart = 'night';
   try{ document.body.setAttribute('data-daypart', daypart); }catch(_){}
   // Identity line in the hero (what they're becoming), quietly shown.
-  try{ const idEl=document.getElementById('hero-identity-text'); const identity=ls('totry_identity'); if(idEl){ if(identity){ const _t=identity.replace(/^I am becoming a person who\s+/i,'').trim(); idEl.textContent = /becoming/i.test(_t) ? _t : ('becoming '+_t); } else idEl.textContent=''; } }catch(_){}
+  try{ const idEl=document.getElementById('hero-identity-text'); const row=document.getElementById('hero-identity'); const identity=ls('totry_identity'); if(idEl){ if(identity){ const _t=identity.replace(/^I am becoming a person who\s+/i,'').trim(); idEl.textContent = /becoming/i.test(_t) ? _t : ('becoming '+_t); if(row) row.style.display=''; } else { idEl.textContent=''; if(row) row.style.display='none'; } } }catch(_){}
   hiEl.textContent = hi;
   // Honor the man's chosen faith intensity — 'light' surfaces the daily verse more gently.
   try{ const vp=document.querySelector('.hero-verse'); if(vp) vp.style.display = (faithLevel()==='light') ? 'none' : ''; }catch(_){}
