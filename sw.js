@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v219-purpose-audit'
+const CACHE = 'totry-v220-icons-naming'
 
 const CORE = [
   './',

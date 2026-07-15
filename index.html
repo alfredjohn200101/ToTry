@@ -1355,12 +1355,12 @@ input:focus,textarea:focus,select:focus{
       <div class="hc-desc">Workouts, routines, strength over time. Synced with Hevy.</div>
     </div>
     <div class="hub-card" onclick="go('nourish')">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 2v5a3 3 0 0 0 6 0V2"/><line x1="7" y1="2" x2="7" y2="22"/><path d="M17 2c-1.7 0-3 2.5-3 6.5V13h3z"/><line x1="17" y1="13" x2="17" y2="22"/></svg>
       <div class="hc-title">Nourish</div>
       <div class="hc-desc">Food, macros, water. Barcode + web lookup, your custom foods.</div>
     </div>
     <div class="hub-card wide" onclick="go('track')">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      <svg aria-hidden="true" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       <div class="hc-title">Track</div>
       <div class="hc-desc">Body, weight, photos, measurements, sleep — the result of training and fuelling.</div>
     </div>
@@ -1389,8 +1389,8 @@ input:focus,textarea:focus,select:focus{
     </div>
     <div class="hub-card wide" onclick="openSoulToday()">
       <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-      <div class="hc-title">Today</div>
-      <div class="hc-desc">How your day is going — your schedule, your streaks, and where your soul is at, woven together.</div>
+      <div class="hc-title">Your day, woven</div>
+      <div class="hc-desc">Your schedule, your streaks, and where your soul is at — the whole day in one place.</div>
     </div>
     <div class="hub-card wide" onclick="go('bible')">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
@@ -3997,7 +3997,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v219';
+const APP_VERSION = 'v220';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
