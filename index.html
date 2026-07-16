@@ -88,7 +88,7 @@ button:focus:not(:focus-visible){outline:none}
 .logo-main em{font-style:italic;color:var(--go)}
 .logo-sub{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:0.18em;text-transform:uppercase;margin-top:3px}
 .day-chip{text-align:right;cursor:pointer}
-.day-n{font-family:'DM Mono',monospace;font-size:30px;font-weight:300;color:var(--go);line-height:1}
+.day-n{font-family:'Cormorant Garamond',serif;font-size:27px;font-weight:400;color:var(--go);line-height:1}
 .day-l{font-family:'DM Mono',monospace;font-size:8px;color:var(--tx3);letter-spacing:0.14em;text-transform:uppercase;margin-top:2px}
 .verse-pill{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 14px;cursor:pointer;position:relative}
 .verse-pill p{font-family:'Cormorant Garamond',serif;font-size:12px;font-style:italic;color:var(--tx2);line-height:1.6;padding-right:36px}
@@ -3990,7 +3990,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v222';
+const APP_VERSION = 'v223';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -26846,7 +26846,7 @@ function renderHomeGreeting(){
   if(h >= 21 || h < 5) daypart = 'night';
   try{ document.body.setAttribute('data-daypart', daypart); }catch(_){}
   // Identity line in the hero (what they're becoming), quietly shown.
-  try{ const idEl=document.getElementById('hero-identity-text'); const row=document.getElementById('hero-identity'); const identity=ls('totry_identity'); if(idEl){ if(identity){ const _t=identity.replace(/^I am becoming a person who\s+/i,'').trim(); idEl.textContent = /becoming/i.test(_t) ? _t : ('becoming '+_t); if(row) row.style.display=''; } else { idEl.textContent=''; if(row) row.style.display='none'; } } }catch(_){}
+  try{ const idEl=document.getElementById('hero-identity-text'); const row=document.getElementById('hero-identity'); const identity=ls('totry_identity'); if(idEl){ if(identity){ const _t=identity.replace(/^I am\s+/i,'').trim(); idEl.textContent = _t; if(row) row.style.display=''; } else { idEl.textContent=''; if(row) row.style.display='none'; } } }catch(_){}
   hiEl.textContent = hi;
   // Honor the man's chosen faith intensity — 'light' surfaces the daily verse more gently.
   try{ const vp=document.querySelector('.hero-verse'); if(vp) vp.style.display = (faithLevel()==='light') ? 'none' : ''; }catch(_){}
