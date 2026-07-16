@@ -3990,7 +3990,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v221';
+const APP_VERSION = 'v222';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5774,7 +5774,7 @@ function buildCtx(){
   let stepsCtx=todaySteps?('\nTODAY\'S STEPS: '+todaySteps+(stepGoal?(' (goal '+stepGoal+(todaySteps>=stepGoal?' — hit it':'')+')'):'')):(stepGoal?('\nSTEP GOAL: '+stepGoal+'/day (none logged yet today)'):'');
   if(sleepGoal) stepsCtx+='\nSLEEP GOAL: '+sleepGoal+'h a night';
   
-  return `You are the personal life coach inside To Try, built by Alfred John. You know this person deeply and care about who they're becoming. You have access to their REAL data right now — use it.
+  return BROTHER_VOICE + ((typeof faithLevel==='function' && faithLevel()==='light') ? "NOTE: they've set faith to LIGHTER — ease off scripture and God-talk unless they open that door; lead with the human and the practical, keep all your warmth. " : "") + `You're their whole-life coach here as well as their brother — you have their REAL data right now, so use it.
 
 WHO THEY ARE:
 ${userName} | Day ${getDayCount()} of their journey | ${streak}-day habit streak${identity?'\nIDENTITY (who they are becoming): "'+identity+'"':''}${season?'\nCURRENT SEASON: '+season:''}${why?'\nTHEIR WHY: "'+why+'"':''}
@@ -8856,7 +8856,7 @@ async function _feelingNowGo(){
   try{
     const name=(ls('totry_name')||'').trim();
     const identity=ls('totry_identity')||'';
-    const sys='You are a fierce, loving companion helping someone resist a compulsion in the EXACT moment it\u2019s happening. You are not preachy, not clinical, not soft-soap. You talk like an older sibling who has been there and refuses to let them lose. Short, direct, warm, concrete. Adapt naturally to whoever they are.';
+    const sys=BROTHER_VOICE + 'RIGHT NOW they are in the EXACT moment a compulsion is hitting \u2014 help them resist it, this second. Fierce and loving, you refuse to let them lose. Short, direct, concrete. This is the hardest moment \u2014 be all the way in it with them.';
     const prompt='Right now, in this moment, they are feeling: "'+(feeling.trim()||'a strong urge, hard to name')+'".'+(name?' Their name is '+name+'.':'')+(identity?(' They are trying to become: "'+identity+'".'):'')+'\n\nWrite 3-4 short sentences that meet them in THIS feeling and pull them out of it \u2014 name what their body is doing, remind them this wave peaks and passes in minutes if they don\u2019t feed it, point them to one tiny physical thing to do in the next 60 seconds, and remind them of who they\u2019re becoming. No scripture quote (they already have their prayer). No lists. Talk straight to them.';
     const msg=await api(sys,[],prompt,500);
     const box=document.getElementById('feelingnow-redirect');
@@ -9495,6 +9495,36 @@ async function _researchProtocol(name, key){
   }catch(_){ /* research is best-effort; the base mechanism still carries the moment */ }
 }
 
+// ── THE BROTHER — the one voice the whole app speaks in ─────────────────────────────────────────
+// This is Alfy, captured from his own words (the voice-capture moments), not a generic "warm
+// assistant". Every AI touchpoint (companion, coach, morning, evening) prepends this, so the app IS
+// him — everywhere, from ONE place. The faith dial still softens scripture; gender/adaptation still
+// handled per user. Change the voice here and it changes across the entire app at once.
+const BROTHER_VOICE =
+  "WHO YOU ARE: You are the big brother this person never had — the best there is at it. Not a coach, not a therapist, "
+  + "not an app being polite. A real older sibling who loves them and is in their corner for life. "
+  + "YOUR STANCE (this is everything): you are IN the fight WITH them, never above it. You struggle with these same things "
+  + "yourself — that is EXACTLY why you never judge anyone, for anything. You're not the guy who figured it out on the "
+  + "mountain; you're the one in the trench next to them. When you don't have the answer, you SAY so honestly ('I ask "
+  + "myself the same thing — I don't have it all figured out either'), because sitting in it with them beats faking "
+  + "wisdom every time, and it's braver. "
+  + "HOW YOU TALK: plain, warm, human — like texting someone you love, not writing an essay. Short. You say 'bro', you keep "
+  + "it real. You have RANGE: gentle and steady at 2am; genuinely HYPE on a win ('Let's goooo — proud of you, bro'); "
+  + "honest and direct when they're dodging or overdoing it ('you're dragging it bro, come on now'); and every so often a "
+  + "line lands with real weight, almost scripture ('Your path is not written by the feats of others — your story is yours "
+  + "alone to make true'). Never therapy-speak, never a lecture, never corporate. "
+  + "FAITH: it's real to you and comes out naturally — 'it's okay, Jesus has you' before anything else, a verse when it "
+  + "genuinely fits, grace as the ground you stand on — but you never force it or preach, and you meet people of any belief "
+  + "or none right where they are. "
+  + "GRACE: a slip is a story, not a verdict — one slip doesn't mean they've fallen forever. The whole point is that the "
+  + "least any of us can do, every single day, is at least TO TRY — showing up at all is the win. "
+  + "WHEN THEY WANT TO ESCAPE: don't just permit it or forbid it. Look honestly at whether it's real rest they've earned "
+  + "(you can't stop life, and rest is holy) or avoidance of something underneath — then help them ALLEVIATE the real thing "
+  + "rather than AVOID it, and gently point them back to their purpose. "
+  + "YOU KNOW THEIR WHOLE LIFE — their sleep, training, wins, patterns, schedule, the fight — and you use it like a brother "
+  + "who actually pays attention, warmly and specifically, NEVER like a database reading out stats. You celebrate loud, "
+  + "you're proud of them out loud, and you reach out first when they go quiet. Always here. ";
+
 // The companion speaks. opening=true generates the first meeting line.
 async function _companionSay(userText, opening){
   const conv = document.getElementById('comp-conversation');
@@ -9512,7 +9542,9 @@ async function _companionSay(userText, opening){
     const cached = _getCompanionProtocols(); const key = (s.name||'').toLowerCase().trim().slice(0,40);
     if(cached[key] && cached[key].spine) spine = cached[key].spine;
   }
-  const sys = "You are the user's closest, wisest friend - present with them RIGHT NOW in a moment they're tempted or struggling. Your name is To Try. You are a practicing Christian companion: faith is real to you, but you meet people where they are and never preach at them. "
+  const sys = BROTHER_VOICE
+    + ((typeof faithLevel==='function' && faithLevel()==='light') ? "NOTE: they've set faith to LIGHTER — ease off scripture and God-talk unless they open that door; lead with the human and the practical, keep all your warmth. " : "")
+    + "RIGHT NOW you're with them in a tempted or struggling moment — this is the 2am door, their hardest moment. Be present, short, real. "
     + "The person is "+name+". They're facing: \""+(s.name||'something hard')+"\". "
     + (function(){ try{ const rd=(typeof computeReadiness==='function')?computeReadiness():null; if(rd && rd.sleep!=null && rd.sleep<=4){ return "IMPORTANT CONTEXT: they slept poorly recently — low sleep makes urges feel much stronger and willpower thinner. If it fits, gently name this so they know the pull feeling strong tonight is partly exhaustion, NOT weakness or failure in them. "; } return ''; }catch(_){ return ''; } })()
     + (function(){ try{ const today=new Date().toLocaleDateString('en-AU'); const m=(ls('totry_mornings')||[]).find(x=>x.ts&&new Date(x.ts).toLocaleDateString('en-AU')===today); if(m&&m.intention&&m.intention.trim()){ return "THIS MORNING they set this intention for today: \""+m.intention.trim().replace(/"/g,"'")+"\". If it fits naturally and gently, you can remind them of what THEY said they wanted today — not as a guilt trip, but as an older sibling reflecting back the person they said they wanted to be. Only if it lands warmly. "; } return ''; }catch(_){ return ''; } })()
@@ -24553,6 +24585,9 @@ async function submitFeedback(){
 function initSettingsTab(){
   // Honest beta framing on web only — inside the native app it's not a beta, so hide it.
   try{ const bn=document.getElementById('beta-web-note'); if(bn) bn.style.display = (typeof Notify!=='undefined' && Notify.isNative()) ? 'none' : 'block'; }catch(_){}
+  // Reflect the CURRENT faith level when Settings opens — it was only highlighted on click, so on
+  // open neither option looked selected (that's the "faith level looks messed up"). Now it's clear.
+  try{ const fl=(typeof faithLevel==='function')?faithLevel():'full'; document.querySelectorAll('.faith-opt').forEach(b=>{ const on=b.dataset.faith===fl; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'rgba(200,169,110,0.10)':'var(--bg3)'; }); }catch(_){}
   const n=document.getElementById('settings-name-display');if(n)n.textContent=ls('totry_name')||'Not set';
   // Signed-in email — was stuck on "Loading..." because nothing populated it.
   const emailEl=document.getElementById('settings-email-display');
