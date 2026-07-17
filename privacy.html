@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — To Try</title>
+<meta name="description" content="How To Try handles your data — in plain English.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;1,300&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{ --bg:#0b0b0d; --surface:#141417; --tx:#f2efe8; --tx2:rgba(242,239,232,.72); --tx3:rgba(242,239,232,.5); --go:#c8a96e; --line:rgba(255,255,255,.08); }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx2);font-family:'Outfit',system-ui,sans-serif;line-height:1.75;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:680px;margin:0 auto;padding:56px 22px 96px}
+  .brand{font-family:'Cormorant Garamond',serif;font-size:30px;color:var(--go);letter-spacing:.01em}
+  .brand em{font-style:italic;font-weight:300}
+  h1{font-family:'Cormorant Garamond',serif;font-weight:400;font-size:40px;color:var(--tx);margin:28px 0 6px;letter-spacing:.01em}
+  .meta{font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.16em;margin-bottom:30px}
+  h2{font-size:16px;color:var(--tx);font-weight:500;margin:30px 0 8px}
+  p{margin:0 0 14px;font-size:15px}
+  ul{margin:0 0 14px 20px;padding:0}
+  li{margin-bottom:8px;font-size:15px}
+  strong{color:var(--tx)}
+  a{color:var(--go)}
+  .rule{height:1px;background:var(--line);margin:34px 0}
+  .foot{font-family:'DM Mono',monospace;font-size:11px;color:var(--tx3);margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">To <em>Try</em></div>
+  <h1>Privacy Policy</h1>
+  <div class="meta">By Alfred John · Last updated June 2026 · Plain English</div>
+
+  <p>This is a one-person project, not a corporation. I (Alfred) built this and I run it. I will not pretend the app does more privacy work than it does. Here is exactly what happens to your data.</p>
+
+  <h2>1. What is collected</h2>
+  <p>Your email (to sign in), and everything you log inside the app: vices, habits, journal entries, training, nutrition, finances, prayers, goals, reflections, scripture, examens, measurements. Plus an anonymous identifier that links your data to your sign-in.</p>
+
+  <h2>2. Where it lives</h2>
+  <p>Two places. (a) On your device, in local storage. (b) In a Supabase database hosted on AWS in Sydney, Australia. Supabase encrypts data at rest. I (Alfred), as the project owner, can technically read this database — I have not, and I don't intend to, but it is not zero-knowledge encryption. If that matters to you, you should know it.</p>
+
+  <h2>3. What gets sent to third parties</h2>
+  <p>Some app features call external services to work. Each one sees something specific:</p>
+  <ul>
+    <li><strong>Coach &amp; AI features</strong> — your message plus relevant context (recent state from your logs) goes to whichever AI provider responds first: Google (Gemini), Groq (Llama), OpenRouter, or Anthropic. These companies have their own privacy policies. Many providers retain prompts for safety review for around 30 days, and some may use prompts to improve models unless an enterprise tier is used. I use standard API tiers — assume your Coach messages may be reviewed by automated systems and retained briefly by the provider.</li>
+    <li><strong>Apple Health</strong> — if you connect it, the app reads steps and activity from HealthKit on your device. This stays on your device and is not uploaded to my database.</li>
+    <li><strong>Workout screenshot / meal photo reading</strong> — the image is sent to Google Gemini Vision to read the numbers.</li>
+    <li><strong>Barcode scanning</strong> — the barcode is sent to OpenFoodFacts (open database).</li>
+    <li><strong>USDA food search</strong> — the search query is sent to api.nal.usda.gov.</li>
+    <li><strong>Exercise info</strong> — an exercise name is sent to ExerciseDB / Wger.</li>
+    <li><strong>Currency rates</strong> — your selected currency is sent to api.frankfurter.dev.</li>
+    <li><strong>Strava</strong> — if you connect it, Strava serves your activities via OAuth you explicitly authorise.</li>
+    <li><strong>Hevy</strong> — if you enter an API key, Hevy sees your sync requests. You explicitly authorise this.</li>
+    <li><strong>Bible verse lookups</strong> — verse references go to api.esv.org.</li>
+  </ul>
+
+  <h2>4. What never leaves your device</h2>
+  <p>Progress photos. They are stored only in local storage. They are not uploaded to my database, not synced across devices, not sent to any AI provider. If you clear the app's data, they're gone.</p>
+
+  <h2>5. What I do not do</h2>
+  <p>I do not run ads. I do not have an analytics or tracking SDK in this app. I do not share your data with advertisers or data brokers. I am not paid by any third party to feature their service.</p>
+
+  <h2>6. What I cannot control</h2>
+  <p>Once your Coach message reaches a provider like Google or Anthropic, that data is governed by their privacy policies, not mine. I have no influence over their model-training practices or retention periods. Treat your Coach messages the way you would treat a message to any cloud service — not a sealed diary.</p>
+
+  <h2>7. Your control</h2>
+  <p>Export everything (Settings → Your data → Export). Delete your account and all server-side data (Settings → Account → Delete account permanently). Clear local data anytime. You can do any of these without asking me.</p>
+
+  <h2>8. Children</h2>
+  <p>To Try is not designed for users under 16. I cannot verify age. If you are under 16, please don't use this app without a parent's knowledge.</p>
+
+  <h2>9. Contact</h2>
+  <p>Email <a href="mailto:totrybyaj@gmail.com">totrybyaj@gmail.com</a> or DM <a href="https://instagram.com/totry_aj">@totry_aj</a> on Instagram with any privacy concern. I respond personally — there is no support team.</p>
+
+  <h2>10. Changes</h2>
+  <p>If this policy changes, the date at the top updates and the change goes in-app. I will not silently expand what I do with your data.</p>
+
+  <div class="rule"></div>
+  <div class="foot">To Try · <a href="support.html" style="color:var(--tx3)">Support</a> · <a href="https://alfredjohn200101.github.io/ToTry/" style="color:var(--tx3)">Open the app</a></div>
+</div>
+</body>
+</html>
