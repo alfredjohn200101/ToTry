@@ -4020,7 +4020,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v228';
+const APP_VERSION = 'v229';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5019,7 +5019,11 @@ function renderHealthCard(){
 const _REACH_WIN_START = { 'late night':0, 'morning':6, 'afternoon':12, 'evening':17, 'night':21 };
 function scheduleReachOut(){
   try{
-    if(ls('totry_notif_perm') !== 'granted' && !(ls('totry_notif_enabled'))) return 0;
+    // Reminders must be ON. Accept the CURRENT system (totry_push_prefs.enabled — used by both the
+    // native and web-push paths) as well as the legacy web keys, or reach-out silently never fired.
+    const _remindersOn = (typeof _pushPrefs==='function' && _pushPrefs().enabled)
+      || ls('totry_notif_enabled') || ls('totry_notif_perm') === 'granted';
+    if(!_remindersOn) return 0;
     if(ls('totry_reachout_off')) return 0; // user can silence it in Settings
     if(typeof loadV==='function') loadV();
     const vs = (typeof vices!=='undefined' && Array.isArray(vices)) ? vices : (ls('totry_v')||[]);
@@ -5046,6 +5050,12 @@ function _hashId(str){ let h=0; const s=String(str); for(let i=0;i<s.length;i++)
 
 // Local notifications via the Notification API. Daily nudge to return.
 function initNotifications(){
+  // NATIVE: re-arm on-device reminders every launch (the OS can drop pending schedules; the person's
+  // risk-window pattern shifts over time). No permission prompt here — only re-schedules if already on.
+  if(typeof Notify!=='undefined' && Notify.isNative && Notify.isNative()){
+    if(typeof reinitNativeReminders==='function') reinitNativeReminders();
+    return;
+  }
   if(!('Notification' in window)) return;
   // Don't ask immediately - wait until they've engaged
   const asked = ls('totry_notif_asked');
@@ -25704,7 +25714,46 @@ async function refreshAIPushMessages(opts){
   }catch(e){ /* non-fatal — fixed fallback lines still send */ }
 }
 
+// NATIVE reminders — the real "reach out first". Schedules the two daily nudges as on-device local
+// notifications (Capacitor's repeating on:{hour,minute}), which fire even when the app is CLOSED,
+// with no server and no account. The web-push path below can't run in the native WebView (no
+// PushManager), so before this the reminders button was dead in the wrapped app.
+function _scheduleNativeReminders(prefs){
+  try{
+    if(typeof Notify==='undefined' || !Notify.scheduleDaily) return;
+    const p = prefs || _pushPrefs();
+    const parse = (t, dh, dm) => { const a=String(t||'').split(':'); const h=parseInt(a[0],10), m=parseInt(a[1],10); return [isNaN(h)?dh:h, isNaN(m)?dm:m]; };
+    const [mh,mm] = parse(p.morning, 7, 30);
+    const [eh,em] = parse(p.evening, 21, 0);
+    Notify.scheduleDaily('reminder_morning','To Try','A quiet minute to set your intention for today.', mh, mm);
+    Notify.scheduleDaily('reminder_evening','To Try','Close the day with grace — a moment to look back honestly.', eh, em);
+  }catch(_){}
+}
+// Re-arm native reminders on every launch (the OS can clear pending ones; times/patterns shift).
+function reinitNativeReminders(){
+  try{
+    if(!(typeof Notify!=='undefined' && Notify.isNative && Notify.isNative())) return;
+    const prefs = _pushPrefs();
+    if(prefs && prefs.enabled){ _scheduleNativeReminders(prefs); if(typeof scheduleReachOut==='function') scheduleReachOut(); }
+  }catch(_){}
+}
+
 async function enablePushReminders(){
+  // NATIVE: real local notifications — no account, no server, fires app-closed.
+  if(typeof Notify!=='undefined' && Notify.isNative && Notify.isNative()){
+    try{
+      const granted = await Notify.requestPermission();
+      if(!granted){ showToast('No problem','You can enable reminders anytime in Settings.'); renderPushSettings(); return; }
+      const prefs = _pushPrefs(); prefs.enabled = true; ls('totry_push_prefs', prefs);
+      _scheduleNativeReminders(prefs);
+      if(typeof scheduleReachOut==='function') scheduleReachOut();
+      if(typeof haptic==='function') haptic('success');
+      if(typeof logEvent==='function') logEvent('reminders_on');
+      showToast('Reminders on ✓','Morning '+prefs.morning+' · Evening '+prefs.evening+' — even when the app is closed.');
+    }catch(e){ console.error('native reminders failed', e); showToast('Could not enable','Try again in a moment.'); }
+    renderPushSettings();
+    return;
+  }
   try{
     if(!sb || !currentUser){ showToast('Sign in first','Reminders need an account so they can reach this device.'); return; }
     if(!('Notification' in window) || !('PushManager' in window)){ showToast('Not supported here','This browser cannot receive push notifications.'); renderPushSettings(); return; }
@@ -25736,6 +25785,19 @@ async function enablePushReminders(){
 }
 
 async function disablePushReminders(){
+  // NATIVE: cancel the on-device notifications (morning, evening, and every reach-out window).
+  if(typeof Notify!=='undefined' && Notify.isNative && Notify.isNative()){
+    const prefs=_pushPrefs(); prefs.enabled=false; ls('totry_push_prefs',prefs);
+    try{
+      if(Notify.cancel){
+        Notify.cancel('reminder_morning'); Notify.cancel('reminder_evening');
+        (ls('totry_v')||[]).forEach((v,i)=>Notify.cancel('reachout_'+i));
+      }
+    }catch(_){}
+    showToast('Reminders off','Your mornings are your own. Re-enable anytime.');
+    renderPushSettings();
+    return;
+  }
   try{
     const prefs=_pushPrefs(); prefs.enabled=false; ls('totry_push_prefs',prefs);
     const reg = await navigator.serviceWorker.ready;
@@ -25748,6 +25810,16 @@ async function disablePushReminders(){
 }
 
 async function savePushTimes(){
+  // NATIVE: just reschedule the on-device notifications at the new times.
+  if(typeof Notify!=='undefined' && Notify.isNative && Notify.isNative()){
+    const m = document.getElementById('push-time-morning')?.value || '07:30';
+    const ev = document.getElementById('push-time-evening')?.value || '21:00';
+    const prefs=_pushPrefs(); prefs.morning=m; prefs.evening=ev; ls('totry_push_prefs',prefs);
+    if(prefs.enabled) _scheduleNativeReminders(prefs);
+    if(typeof haptic==='function') haptic('tick');
+    showToast('Times saved ✓','Morning '+m+' · Evening '+ev+'.');
+    return;
+  }
   const m = document.getElementById('push-time-morning')?.value || '07:30';
   const ev = document.getElementById('push-time-evening')?.value || '21:00';
   const prefs=_pushPrefs(); prefs.morning=m; prefs.evening=ev; ls('totry_push_prefs',prefs);
@@ -25777,6 +25849,31 @@ function renderPushSettings(){
   const reachOn = !ls('totry_reachout_off');
   const ios=/iPad|iPhone|iPod/.test(navigator.userAgent);
   const head='<div class="eyebrow" style="color:var(--go);margin-bottom:6px">Daily reminders</div>';
+  // NATIVE: the wrapped app has no PushManager and isn't "standalone" by the web test, so the web
+  // branches below would wrongly say "can't receive notifications" / "add to Home Screen" and never
+  // show the button. Render the real reminders UI here, keyed on the saved preference (native
+  // permission is handled when they tap Enable), and return before the web-only checks.
+  if(typeof Notify!=='undefined' && Notify.isNative && Notify.isNative()){
+    if(prefs.enabled){
+      box.innerHTML = head +
+        '<div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:10px">A nudge for your morning ritual and your evening reflection — the rhythm of the day, kept. These reach you even when the app is closed.</div>' +
+        '<div style="display:flex;gap:8px;margin-bottom:10px">' +
+          '<div style="flex:1"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Morning</div><input type="time" id="push-time-morning" value="'+prefs.morning+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
+          '<div style="flex:1"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Evening</div><input type="time" id="push-time-evening" value="'+prefs.evening+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
+        '</div>' +
+        '<button class="btn" onclick="savePushTimes()" style="background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:12px;margin-bottom:8px">Save times</button>' +
+        '<div style="border-top:1px solid var(--bd);margin:6px 0 10px;padding-top:12px;display:flex;align-items:center;justify-content:space-between;gap:12px">' +
+          '<div style="flex:1"><div style="font-size:13px;color:var(--tx);font-weight:500">Reach out to me first</div><div style="font-size:11px;color:var(--tx3);line-height:1.45">A quiet check-in at your hardest time of day — learned from your own patterns. Never guilt, always optional.</div></div>' +
+          '<button type="button" onclick="toggleReachOut()" style="padding:7px 14px;border-radius:100px;border:1px solid '+(reachOn?'var(--go-bd)':'var(--bd)')+';background:'+(reachOn?'var(--go-bg)':'transparent')+';color:'+(reachOn?'var(--go)':'var(--tx2)')+';font-size:12px;white-space:nowrap">'+(reachOn?'On':'Off')+'</button>' +
+        '</div>' +
+        '<button class="btn" onclick="disablePushReminders()" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px">Turn reminders off</button>';
+    } else {
+      box.innerHTML = head +
+        '<div style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:10px">Two gentle nudges a day — one to begin your morning, one to close the day — and, if you want it, a quiet check-in at your hardest hour. They reach you even when the app is closed. Nothing else, ever.</div>' +
+        '<button class="btn primary" onclick="enablePushReminders()">Enable reminders</button>';
+    }
+    return;
+  }
   if(!('Notification' in window) || !('PushManager' in window)){
     box.innerHTML = head + '<div style="font-size:12px;color:var(--tx3);line-height:1.6">This browser cannot receive notifications. On iPhone: open in Safari and add To Try to your Home Screen first.</div>';
     return;
