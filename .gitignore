@@ -1,7 +1,18 @@
 node_modules/
-ios/
 android/
 www/
 .DS_Store
 *.log
 scratchpad/
+
+# iOS native project IS tracked (hand-crafted App Store config: icon, privacy manifest,
+# permissions can't be regenerated) — but keep the regenerable build junk out.
+ios/App/Pods/
+ios/App/App/public/
+ios/App/build/
+ios/DerivedData/
+ios/App/output/
+ios/capacitor-cordova-ios-plugins/
+**/*.xcworkspace/xcuserdata/
+**/*.xcodeproj/xcuserdata/
+**/*.xcodeproj/project.xcworkspace/xcuserdata/
