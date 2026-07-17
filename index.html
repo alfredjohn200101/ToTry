@@ -3816,6 +3816,26 @@ Amen.</div></div>
     </div>
     <!-- Micros preview (hidden unless food has data) -->
     <div id="sm-micros-preview" style="display:none;font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3);background:var(--bg3);border-radius:6px;padding:8px 10px;margin-bottom:14px;line-height:1.6"></div>
+    <!-- CORRECT THE DATA — food databases are crowd-sourced and carry wrong entries (a scanned
+         barcode can hand back a different product's macros entirely). The big trackers make you
+         hunt through duplicate community entries hoping one is right. Instead: fix it once against
+         the label in your hand, and every future scan uses YOUR numbers. -->
+    <button type="button" id="sm-fix-open" onclick="openFoodFix()" style="background:none;border:none;color:var(--tx3);font-size:11.5px;font-family:'DM Mono',monospace;cursor:pointer;padding:0;margin:-4px 0 14px;text-decoration:underline;text-underline-offset:3px">Numbers look wrong? Correct them &rarr;</button>
+    <div id="sm-fix-panel" style="display:none;background:var(--bg3);border:1px solid var(--go-bd);border-radius:10px;padding:12px;margin-bottom:14px">
+      <div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-bottom:10px">Type what the label says for <b id="sm-fix-serving" style="color:var(--go)">this serving</b>. Leave anything you don't know blank. Saved for every future scan.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <label style="font-size:11px;color:var(--tx3)">Calories<input type="number" id="fix-cal" step="0.1" min="0" style="width:100%;margin-top:3px"></label>
+        <label style="font-size:11px;color:var(--tx3)">Protein (g)<input type="number" id="fix-pro" step="0.1" min="0" style="width:100%;margin-top:3px"></label>
+        <label style="font-size:11px;color:var(--tx3)">Carbs (g)<input type="number" id="fix-carb" step="0.1" min="0" style="width:100%;margin-top:3px"></label>
+        <label style="font-size:11px;color:var(--tx3)">Fat (g)<input type="number" id="fix-fat" step="0.1" min="0" style="width:100%;margin-top:3px"></label>
+        <label style="font-size:11px;color:var(--tx3)">Fibre (g)<input type="number" id="fix-fiber" step="0.1" min="0" style="width:100%;margin-top:3px"></label>
+        <label style="font-size:11px;color:var(--tx3)">Sugar (g)<input type="number" id="fix-sugar" step="0.1" min="0" style="width:100%;margin-top:3px"></label>
+        <label style="font-size:11px;color:var(--tx3)">Sodium (mg)<input type="number" id="fix-sodium" step="1" min="0" style="width:100%;margin-top:3px"></label>
+        <label style="font-size:11px;color:var(--tx3)">Potassium (mg)<input type="number" id="fix-potassium" step="1" min="0" style="width:100%;margin-top:3px"></label>
+      </div>
+      <button class="btn primary" onclick="saveFoodFix()" style="margin-bottom:6px;font-size:13px">Save my numbers</button>
+      <button class="btn" onclick="document.getElementById('sm-fix-panel').style.display='none'" style="font-size:12px;background:var(--bg2);border:1px solid var(--bd);color:var(--tx3)">Cancel</button>
+    </div>
     <div class="lbl">Meal</div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px" id="sm-meal-grid">
       <button type="button" class="meal-chip" data-meal="breakfast" onclick="selectMealChip('breakfast')">🌅 Breakfast</button>
@@ -3990,7 +4010,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v224';
+const APP_VERSION = 'v225';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4320,7 +4340,9 @@ const SYNC_KEYS = [
   'totry_notif_enabled','totry_notif_schedule','totry_user_email','totry_last_synthesis','totry_usage_log','totry_streaks',
   'totry_reminder_times','totry_reminder_morning','totry_reminder_evening','totry_step_goal','totry_sleep_goal',
   // v30: conversation memory + share preferences + reading position
-  'totry_coach_history','totry_coach_memory','totry_pt_history','totry_share_prefs','totry_bible_last_position'
+  'totry_coach_history','totry_coach_memory','totry_pt_history','totry_share_prefs','totry_bible_last_position',
+  // Your corrected food numbers — they're yours, so they follow you to every device.
+  'totry_food_overrides'
 ];
 
 async function restoreFromCloud(){
@@ -14437,11 +14459,103 @@ function confirmRepeatYesterday(){
   haptic('success');
 }
 let currentFood=null;
+// ── FOOD CORRECTIONS — your label beats a stranger's database entry ────────────────────────────
+// Food databases are crowd-sourced, so a barcode can return a completely different product's macros
+// (a 250ml coconut water reading 225 cal when the label says 88). Wrong numbers are the one thing a
+// tracker can't survive. The big trackers make you scroll duplicate community entries hoping one is
+// right; here you fix it ONCE against the label in your hand — stored per barcode, applied to every
+// future scan, and synced across your devices. The library gets more accurate the more you use it,
+// and the numbers become yours.
+const _FIX_KEYS = ['cal','pro','carb','fat','fiber','sugar','sodium','potassium'];
+function _foodKey(food){
+  if(!food) return '';
+  if(food.barcode) return 'bc_' + String(food.barcode);
+  if(food.id) return 'id_' + String(food.id);
+  return 'nm_' + String(food.name||'').toLowerCase().replace(/\s+/g,' ').trim().slice(0,60);
+}
+function getFoodOverride(food){
+  try{ const all = ls('totry_food_overrides') || {}; return all[_foodKey(food)] || null; }catch(_){ return null; }
+}
+function saveFoodOverride(food, per100){
+  try{
+    const all = ls('totry_food_overrides') || {};
+    all[_foodKey(food)] = Object.assign({}, per100, { _name: food.name||'', _at: new Date().toISOString() });
+    ls('totry_food_overrides', all);
+  }catch(_){ }
+}
+// Apply a saved correction BEFORE servings are used, and rescale any existing servings from the
+// corrected per-100 base (so the product's own serving option survives instead of being discarded).
+function applyFoodOverride(food){
+  try{
+    const ov = getFoodOverride(food);
+    if(!ov || !food) return food;
+    _FIX_KEYS.forEach(k => { if(typeof ov[k] === 'number' && !isNaN(ov[k])) food[k] = ov[k]; });
+    food.per100 = true;
+    food.__corrected = true;
+    if(Array.isArray(food.servings) && food.servings.length){
+      food.servings = food.servings.map(s => {
+        if(!s || !s.gramsEquiv) return s;
+        const m = s.gramsEquiv / 100;
+        return Object.assign({}, s, {
+          cal:(food.cal||0)*m, pro:(food.pro||0)*m, carb:(food.carb||0)*m, fat:(food.fat||0)*m
+        });
+      });
+    }
+  }catch(_){ }
+  return food;
+}
+// Prefill the fix panel with what we currently show for the SELECTED serving, so a person only has
+// to change what's actually wrong — and reads straight off the label's "per serve" column.
+function openFoodFix(){
+  const panel = document.getElementById('sm-fix-panel');
+  if(!panel || !currentFood) return;
+  const si = parseInt(document.getElementById('sm-serving-select').value || 0);
+  const s = (currentFood.servings||[])[si] || {};
+  const ge = s.gramsEquiv || 100;
+  const lbl = document.getElementById('sm-fix-serving');
+  if(lbl) lbl.textContent = s.name || (ge + (currentFood.__unit||'g'));
+  const m = ge / 100;
+  const set = (id, v) => { const el = document.getElementById(id); if(el) el.value = (v && !isNaN(v)) ? Math.round(v*10)/10 : ''; };
+  set('fix-cal', (currentFood.cal||0)*m);
+  set('fix-pro', (currentFood.pro||0)*m);
+  set('fix-carb', (currentFood.carb||0)*m);
+  set('fix-fat', (currentFood.fat||0)*m);
+  set('fix-fiber', (currentFood.fiber||0)*m);
+  set('fix-sugar', (currentFood.sugar||0)*m);
+  set('fix-sodium', (currentFood.sodium||0)*m);
+  set('fix-potassium', (currentFood.potassium||0)*m);
+  panel.style.display = 'block';
+  try{ panel.scrollIntoView({behavior:'smooth', block:'center'}); }catch(_){ }
+}
+function saveFoodFix(){
+  if(!currentFood) return;
+  const si = parseInt(document.getElementById('sm-serving-select').value || 0);
+  const s = (currentFood.servings||[])[si] || {};
+  const ge = s.gramsEquiv || 100;
+  const num = id => { const el = document.getElementById(id); const v = parseFloat(el && el.value); return (isNaN(v) || v < 0) ? null : v; };
+  if(num('fix-cal') == null){
+    if(typeof showToast==='function') showToast('Calories needed', 'Type at least the calories from the label.');
+    return;
+  }
+  // The label's numbers are for THIS serving — convert back to a per-100 base so every serving scales.
+  const per100 = {};
+  _FIX_KEYS.forEach(k => {
+    const v = num('fix-' + k);
+    if(v != null) per100[k] = Math.round((v * 100 / ge) * 100) / 100;
+  });
+  saveFoodOverride(currentFood, per100);
+  const p = document.getElementById('sm-fix-panel'); if(p) p.style.display = 'none';
+  openServingModal(currentFood);   // re-apply + rescale so the corrected numbers show instantly
+  if(typeof showToast==='function') showToast('Saved your numbers', 'Every future scan of this uses your label — not the database.');
+  if(typeof haptic==='function') haptic('success');
+}
+
 function openServingModal(food){
   currentFood=food;
+  try{ applyFoodOverride(food); }catch(_){ }
   window.__editingEntry = null;
   document.getElementById('sm-food-name').textContent=food.name;
-  document.getElementById('sm-food-brand').textContent=food.brand||food.source;
+  document.getElementById('sm-food-brand').innerHTML=(food.brand||food.source||'')+(food.__corrected?' <span style="color:var(--gr)">· your numbers ✓</span>':'');
   // Per-100 foods (barcodes): values are per 100g/ml. Build sensible servings WITHOUT discarding
   // a real serving_size the product database already provided. We synthesize gram/ml options and
   // tag each with gramsEquiv so micros scale correctly. Default is one serving — never qty=100.
