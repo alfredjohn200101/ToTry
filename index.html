@@ -4020,7 +4020,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v229';
+const APP_VERSION = 'v230';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4913,14 +4913,16 @@ const Notify = {
   // real "reach out first" unlock — only possible once wrapped natively (Capacitor's repeating
   // `on:{hour,minute}` schedule). On the web PWA it records intent (web can't background-repeat),
   // so nothing breaks; wrapping the app lights it up with zero code change. Idempotent per id.
-  async scheduleDaily(id, title, body, hour, minute){
+  async scheduleDaily(id, title, body, hour, minute, extra){
     const nid = (typeof id==='number' ? id : Math.abs(_hashId(id)));
     try{
       if(this.isNative()){
         const L = this._local();
         if(L && L.schedule){
           try{ await L.cancel({ notifications:[{ id:nid }] }); }catch(_){}
-          await L.schedule({ notifications:[{ id:nid, title, body, schedule:{ on:{ hour:hour, minute:minute }, allowWhileIdle:true }, smallIcon:'ic_stat_icon' }] });
+          // `extra` carries where a TAP should take them (handled by _initNotificationTaps), so a
+          // reach-out opens the companion and a morning nudge opens the ritual — not just the app.
+          await L.schedule({ notifications:[{ id:nid, title, body, schedule:{ on:{ hour:hour, minute:minute }, allowWhileIdle:true }, smallIcon:'ic_stat_icon', extra: extra||null }] });
           return true;
         }
       }
@@ -5040,7 +5042,7 @@ function scheduleReachOut(){
       if(nudgeMin < 0) nudgeMin += 1440;
       const nh = Math.floor(nudgeMin/60), nm = nudgeMin%60;
       const body = hi + 'this is usually when it gets hardest with ' + v.n + '. Nothing has to happen — I’m just here. Open me if anything’s rising.';
-      Notify.scheduleDaily('reachout_'+idx, 'To Try', body, nh, nm);
+      Notify.scheduleDaily('reachout_'+idx, 'To Try', body, nh, nm, { route:'reachout', vice: v.n });
       scheduled++;
     });
     return scheduled;
@@ -5049,11 +5051,32 @@ function scheduleReachOut(){
 function _hashId(str){ let h=0; const s=String(str); for(let i=0;i<s.length;i++){ h=((h<<5)-h)+s.charCodeAt(i); h|=0; } return h; }
 
 // Local notifications via the Notification API. Daily nudge to return.
+// Route a notification TAP to where it belongs, so reaching out actually lands somewhere: a
+// reach-out opens the companion (the 2am door), a morning nudge opens the ritual, an evening one
+// opens the reflection. Without this, tapping any of them just opened the app to wherever it was.
+// Native only; wired once per session.
+function _initNotificationTaps(){
+  try{
+    if(!(typeof Notify!=='undefined' && Notify.isNative && Notify.isNative())) return;
+    const L = Notify._local && Notify._local();
+    if(!L || !L.addListener || window.__notifTapWired) return;
+    window.__notifTapWired = true;
+    L.addListener('localNotificationActionPerformed', (action)=>{
+      try{
+        const ex = (action && action.notification && action.notification.extra) || {};
+        if(ex.route === 'morning'){ if(typeof go==='function') go('morning'); }
+        else if(ex.route === 'evening'){ if(typeof go==='function') go('reflect'); }
+        else if(ex.route === 'reachout'){ if(typeof openCompanionForUrge==='function') openCompanionForUrge(); else if(typeof go==='function') go('home'); }
+      }catch(_){}
+    });
+  }catch(_){}
+}
 function initNotifications(){
   // NATIVE: re-arm on-device reminders every launch (the OS can drop pending schedules; the person's
   // risk-window pattern shifts over time). No permission prompt here — only re-schedules if already on.
   if(typeof Notify!=='undefined' && Notify.isNative && Notify.isNative()){
     if(typeof reinitNativeReminders==='function') reinitNativeReminders();
+    if(typeof _initNotificationTaps==='function') _initNotificationTaps();
     return;
   }
   if(!('Notification' in window)) return;
@@ -25725,8 +25748,8 @@ function _scheduleNativeReminders(prefs){
     const parse = (t, dh, dm) => { const a=String(t||'').split(':'); const h=parseInt(a[0],10), m=parseInt(a[1],10); return [isNaN(h)?dh:h, isNaN(m)?dm:m]; };
     const [mh,mm] = parse(p.morning, 7, 30);
     const [eh,em] = parse(p.evening, 21, 0);
-    Notify.scheduleDaily('reminder_morning','To Try','A quiet minute to set your intention for today.', mh, mm);
-    Notify.scheduleDaily('reminder_evening','To Try','Close the day with grace — a moment to look back honestly.', eh, em);
+    Notify.scheduleDaily('reminder_morning','To Try','A quiet minute to set your intention for today.', mh, mm, { route:'morning' });
+    Notify.scheduleDaily('reminder_evening','To Try','Close the day with grace — a moment to look back honestly.', eh, em, { route:'evening' });
   }catch(_){}
 }
 // Re-arm native reminders on every launch (the OS can clear pending ones; times/patterns shift).
