@@ -1756,6 +1756,16 @@ input:focus,textarea:focus,select:focus{
       <div id="morning-readiness-text" style="font-size:13px;color:var(--tx2);line-height:1.6"></div>
     </div>
   </div>
+  <!-- YOUR DAY, BEFORE IT STARTS PULLING — the morning as Alfy designed it: "here's what you have
+       on for the day; going by your history you're about to go gym; given how you slept, train well
+       / don't train too hard." Every ingredient already existed (the calendar, the training history,
+       readiness) and the morning never fused them — it only COLLECTED (sleep, gratitude, intention).
+       This is the one thing that gives back and changes the day. It stays SILENT rather than invent
+       a pattern it can't actually see. -->
+  <div class="card" id="morning-day-ahead" style="display:none;margin-bottom:12px;background:linear-gradient(135deg,rgba(200,169,110,0.07),rgba(140,107,182,0.04));border-color:var(--go-bd)">
+    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Your day, before it starts pulling</div>
+    <div id="morning-day-ahead-text" style="font-size:13.5px;color:var(--tx2);line-height:1.65"></div>
+  </div>
   <!-- Active vice fight (secondary, smaller) -->
   <div class="card" id="morning-vice-card" style="margin-bottom:12px;background:var(--bg3);border-color:var(--bd);padding:10px 12px">
     <div style="display:flex;align-items:center;gap:8px">
@@ -4010,7 +4020,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v227';
+const APP_VERSION = 'v228';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7451,6 +7461,9 @@ function completeMorning(){
 }
 function initMorningTab(){
   if(typeof renderMorningLiturgy === 'function') renderMorningLiturgy();
+  // The one fused thing the morning gives back: today's schedule + whether you're likely training
+  // (from your own history) + how to meet it given your readiness. Silent when it has nothing true.
+  if(typeof renderMorningDayAhead === 'function') renderMorningDayAhead();
   const h=new Date().getHours();
   const el=document.getElementById('morning-eyebrow');
   if(el)el.textContent=(h<12?'Good morning':h<17?'Good afternoon':'Good evening')+(userName?', '+userName:'');
@@ -18513,6 +18526,85 @@ function computeReadiness(){
 // One-tap morning sleep rating → writes a check-in that computeReadiness reads, so sleep instantly
 // shapes readiness, the coach's voice, and the urge companion ("running on no sleep — that's why
 // the pull feels strong; it's not weakness"). Idempotent per day (updates today's entry).
+// ── THE MORNING THAT GIVES SOMETHING BACK ──────────────────────────────────────────────────────
+// Alfy's own words for what the morning should be: "Good morning, hope you slept beautifully — how
+// do you feel? Here's what you have on for the day. Going by your history you're about to go gym?
+// Given your readiness: train well / don't train too hard." Every ingredient already existed — the
+// calendar, the training history, readiness — and the morning never fused them; it only COLLECTED
+// (sleep, gratitude, intention). A flow you pour into but never get changed by isn't one you return
+// to. This is the one fused thing that gives back.
+
+// What does he usually do on THIS weekday? Demands a real pattern (2+ sessions on this day in the
+// last 6 weeks) before claiming one — a guess he'd have to correct is worse than saying nothing.
+function _usualTrainingToday(){
+  try{
+    const dow = new Date().getDay();
+    const cutoff = Date.now() - 42*86400000;
+    const sessions = (ls('totry_workouts')||[]).filter(w => {
+      if(!w || !w.ts) return false;
+      const t = new Date(w.ts);
+      return t.getTime() >= cutoff && t.getDay() === dow;
+    });
+    if(sessions.length < 2) return null;
+    const hours = sessions.map(w => new Date(w.ts).getHours());
+    const hour = Math.round(hours.reduce((a,b)=>a+b,0) / hours.length);
+    const tally = {};
+    sessions.forEach(w => { const f = String(w.splitFocus || w.type || '').trim(); if(f) tally[f] = (tally[f]||0)+1; });
+    const focus = Object.keys(tally).sort((a,b) => tally[b]-tally[a])[0] || '';
+    return { count: sessions.length, hour, focus };
+  }catch(_){ return null; }
+}
+function _fmtHour(h){
+  const ampm = h >= 12 ? 'pm' : 'am';
+  const hr = (h % 12 === 0) ? 12 : (h % 12);
+  return hr + ampm;
+}
+function renderMorningDayAhead(){
+  try{
+    const card = document.getElementById('morning-day-ahead');
+    const out = document.getElementById('morning-day-ahead-text');
+    if(!card || !out) return;
+    const bits = [];
+    const todayKey = new Date().toLocaleDateString('en-AU');
+
+    // 1) What's actually on today — their real schedule (calendar stores Mon=0).
+    const dow = (new Date().getDay() + 6) % 7;
+    const events = ((typeof _calEvents==='function') ? _calEvents() : [])
+      .filter(e => e && e.day === dow)
+      .sort((a,b) => String(a.start||'').localeCompare(String(b.start||'')));
+    if(events.length){
+      const list = events.slice(0,4).map(e => (e.title || e.type || 'something') + (e.start ? (' at ' + e.start) : '')).join(', ');
+      bits.push('You’ve got ' + list + ' today.');
+    }
+
+    // 2) Going by their OWN history — are they likely training today? (Never if they already did,
+    //    and never if the calendar already says it — no point telling them what they can see.)
+    const trainedToday = (ls('totry_workouts')||[]).some(w => w && w.ts && new Date(w.ts).toLocaleDateString('en-AU') === todayKey);
+    const gymOnCal = events.some(e => e && e.type === 'gym');
+    const usual = _usualTrainingToday();
+    if(usual && !trainedToday && !gymOnCal){
+      const dayName = new Date().toLocaleDateString('en-AU', { weekday:'long' });
+      bits.push('Going by the last few weeks you usually train around ' + _fmtHour(usual.hour) + ' on a ' + dayName + (usual.focus ? (' — ' + usual.focus) : '') + '.');
+    }
+
+    // 3) Given how they slept — how to MEET that training. Readiness only speaks on a real signal.
+    const rd = (typeof computeReadiness==='function') ? computeReadiness() : null;
+    const likelyTraining = (!!usual && !trainedToday) || gymOnCal;
+    if(rd && rd.level && likelyTraining){
+      if(rd.level === 'rest') bits.push('You’re not well recovered (' + rd.score + '/100) — still go, but keep it light. Drop a set, leave a rep in the tank. Showing up easy still counts.');
+      else if(rd.level === 'moderate') bits.push('Recovery’s middling (' + rd.score + '/100) — train well, but quality over maxing out.');
+      else bits.push('You’re well recovered (' + rd.score + '/100) — good day to push. This is when a PR gets earned.');
+    } else if(rd && rd.level === 'rest'){
+      bits.push('You’re running low today (' + rd.score + '/100) — go gentle and don’t stack too much on.');
+    }
+
+    // Nothing genuinely true to say → say nothing. Never fill the space for the sake of it.
+    if(!bits.length){ card.style.display = 'none'; return; }
+    out.textContent = bits.join(' ');
+    card.style.display = 'block';
+  }catch(_){ }
+}
+
 function logMorningSleep(v){
   const checkins = ls('totry_checkins') || [];
   const today = new Date().toISOString().slice(0,10);
@@ -18536,6 +18628,9 @@ function logMorningSleep(v){
   if(typeof showToast==='function') showToast('Sleep noted', msgs[v]||'Logged.');
   if(typeof renderReadinessCard==='function') renderReadinessCard();
   _showMorningReadiness(v);
+  // Sleep just changed readiness — so the day-ahead advice must change WITH it, in front of them.
+  // That visible response is the whole point: they told it something and it answered.
+  renderMorningDayAhead();
 }
 // The morning's readiness thread made visible: given the sleep rating, tell the man how the day will
 // pull and what to aim for — grace over verdict, and it arms the 11pm man preemptively.
