@@ -3990,7 +3990,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v223';
+const APP_VERSION = 'v224';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -18688,6 +18688,16 @@ function getUnifiedTraining(){
     activityType: w.type || null,
     raw: w
   }));
+  // A Hevy session can land in totry_workouts TWICE: once via the Hevy API (id "hevy_…") and once as
+  // a Strava-pushed copy converted to a workout (id "stravahevy_…"). Same session, two rows — the old
+  // dedup only compared Strava cardio against lifts, never two lifts against each other, so this
+  // doubled everywhere (the loop, the week counts, Nourish's burn). Drop the Strava-derived copy
+  // whenever a direct import overlaps it in time; keep it only when it's the sole copy of that session.
+  const _primaryLifts = lifts.filter(l => !String(l.id||'').startsWith('stravahevy_'));
+  const liftsDeduped = lifts.filter(l => {
+    if(!String(l.id||'').startsWith('stravahevy_')) return true;
+    return !_primaryLifts.some(p => p.kind === 'strength' && _sessionsOverlap(p.ts, l.ts, 90));
+  });
   const cardio = (ls('totry_strava_activities') || []).map(a => ({
     id: 'strava_' + a.id,
     source: 'strava',
@@ -18712,7 +18722,7 @@ function getUnifiedTraining(){
   // Hevy lift exists within 90 min — REGARDLESS of how Strava typed it (it often arrives typed as
   // "WeightTraining" → classified cardio, which the old kind-only check missed, so the same session
   // appeared twice). We match on time proximity, and treat a same-name match as a definite duplicate.
-  const liftSessions = lifts.filter(l => l.kind === 'strength').map(l => ({ ts: l.ts, name: String(l.title||'').toLowerCase().trim() }));
+  const liftSessions = liftsDeduped.filter(l => l.kind === 'strength').map(l => ({ ts: l.ts, name: String(l.title||'').toLowerCase().trim() }));
   const norm = s => String(s||'').toLowerCase().replace(/\s+/g,' ').trim();
   const deduped = cardio.filter(c => {
     const cName = norm(c.title);
@@ -18728,7 +18738,7 @@ function getUnifiedTraining(){
   });
 
   // Merge, newest first.
-  return [...lifts, ...deduped].sort((a,b) => new Date(b.ts||0) - new Date(a.ts||0));
+  return [...liftsDeduped, ...deduped].sort((a,b) => new Date(b.ts||0) - new Date(a.ts||0));
 }
 // Weekly training stats from the unified set — powers the verdict + adherence honestly.
 function getUnifiedWeekStats(){
@@ -28095,6 +28105,10 @@ async function syncStravaActivities(){
       const freshByDay = {};
       saved.forEach(a => {
         if(!a.date) return;
+        // A session that came from the lifting app is already counted once via the workout ledger
+        // (either its direct import or its converted copy). Counting it here too inflated "Burned"
+        // in Nourish for every pushed session — the net-calorie math was wrong all day because of it.
+        if(a.manufacturer === 'hevy') return;
         let cals = a.calories;
         // Strava's activity LIST endpoint often omits calories (only the detail endpoint has them).
         // Until the edge function fetches detail, estimate from HR + duration so "Burned" isn't 0.
@@ -28939,9 +28953,14 @@ function _burnForWorkout(w){
 function recomputeWorkoutBurns(){
   try{
     const byDay = {};
-    (ls('totry_workouts')||[]).forEach(w => {
-      if(!w || !w.ts) return;
-      if(w.source === 'strava') return;                 // Strava counted via its own ledger
+    const all = (ls('totry_workouts')||[]).filter(w => w && w.ts);
+    // Directly-imported sessions (not Strava-derived) — used to spot the Hevy→Strava copies.
+    const direct = all.filter(w => w.source !== 'strava' && w.via !== 'strava');
+    all.forEach(w => {
+      if(w.source === 'strava') return;                 // genuine Strava cardio counted via its own ledger
+      // A Hevy session pushed to Strava and converted back (via:'strava') is the SAME session as its
+      // direct Hevy import — count it once. Skip the copy only when a direct import overlaps in time.
+      if(w.via === 'strava' && direct.some(d => d.id !== w.id && _sessionsOverlap(d.ts, w.ts, 90))) return;
       const cal = _burnForWorkout(w);
       if(cal <= 0) return;
       const dk = new Date(w.ts).toLocaleDateString('en-AU');
