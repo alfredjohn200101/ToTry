@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v226-type-the-grams'
+const CACHE = 'totry-v227-real-food-search'
 
 const CORE = [
   './',

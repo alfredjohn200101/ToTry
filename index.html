@@ -4010,7 +4010,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v226';
+const APP_VERSION = 'v227';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -13334,16 +13334,29 @@ function getUSDAKey(){ return ls('totry_usda_key') || USDA_DEFAULT_KEY; }
 async function searchUSDA(query){
   try{
     const key = getUSDAKey();
-    const r = await fetch('https://api.nal.usda.gov/fdc/v1/foods/search?api_key=' + key +
-      '&query=' + encodeURIComponent(query) +
-      '&dataType=Foundation,SR Legacy,Branded' +
-      '&pageSize=8');
-    if(!r.ok){
-      if(r.status === 429){ console.warn('[usda] rate-limited (DEMO_KEY)'); }
-      return [];
-    }
-    const d = await r.json();
-    const foods = d.foods || [];
+    // USDA FoodData Central holds ~1.9 MILLION branded products against only ~8k generic
+    // Foundation/SR-Legacy whole foods. Asking for them together (dataType=Foundation,SR Legacy,
+    // Branded) let branded drown everything — searching "chicken breast" returned nothing but
+    // supermarket packets from Tyson and Giant Eagle, and the real food never even reached the
+    // ranker. Ask SEPARATELY so the actual whole food always gets a seat at the table.
+    const call = async (dataType, pageSize) => {
+      const r = await fetch('https://api.nal.usda.gov/fdc/v1/foods/search?api_key=' + key +
+        '&query=' + encodeURIComponent(query) +
+        '&dataType=' + encodeURIComponent(dataType) +
+        '&pageSize=' + pageSize);
+      if(!r.ok){
+        if(r.status === 429){ console.warn('[usda] rate-limited (DEMO_KEY)'); }
+        return [];
+      }
+      const d = await r.json();
+      return d.foods || [];
+    };
+    const [genericFoods, brandedFoods] = await Promise.all([
+      call('Foundation,SR Legacy', 6).catch(()=>[]),
+      call('Branded', 4).catch(()=>[])
+    ]);
+    // Tag the real foods so ranking can let them compete with same-named branded packets.
+    const foods = [...genericFoods.map(f => Object.assign(f, {__generic:true})), ...brandedFoods];
     return foods.map(f => {
       // USDA gives nutrients as an array we need to parse
       const n = {cal: 0, pro: 0, carb: 0, fat: 0, fiber: 0, sugar: 0, sodium: 0,
@@ -13413,6 +13426,7 @@ async function searchUSDA(query){
         calcium: n.calcium, iron: n.iron, magnesium: n.magnesium, phosphorus: n.phosphorus,
         potassium: n.potassium, zinc: n.zinc, selenium: n.selenium, copper: n.copper,
         source: 'USDA',
+        __generic: !!f.__generic,   // a real whole food, not a branded packet — ranking uses this
         servings: [{name: servingLabel, cal: n.cal, pro: n.pro, carb: n.carb, fat: n.fat}]
       };
     });
@@ -13483,12 +13497,19 @@ async function searchFood(query){
   
   const res=document.getElementById('nut-search-results');
   res.innerHTML='<p class="pulsing" style="font-family:\'Cormorant Garamond\',serif;font-size:15px;font-style:italic;color:var(--tx3);text-align:center;padding:16px">Searching...</p>';
+  const ql = query.toLowerCase().trim();
+  // SEARCH BROAD, RANK SPECIFIC. Sending "chicken breast skin off seasoned oven" verbatim makes the
+  // databases return narrow oddities ("chicken breast roll") and miss the generic family entirely —
+  // the entry someone actually wants ("breast, meat only, roasted") never even reaches the ranker.
+  // So strip the prep/negation words for the LOOKUP to get the whole family back, then rank with
+  // every word they typed (scoreFood below still uses the full query).
+  const PREP_WORDS = /\b(skin\s*off|skinless|no\s+skin|without\s+skin|seasoned|unseasoned|oven|roasted|roast|baked|bake|grilled|grill|bbq|barbecue|chargrilled|boiled|boil|poached|steamed|fried|raw|cooked|fresh|homemade|plain|hot|cold)\b/g;
+  const coreQuery = ql.replace(PREP_WORDS, ' ').replace(/\s+/g, ' ').trim() || ql;
   // allSettled, not all: if ONE food source is down/slow, we still show results from the others
   // instead of the whole search failing. Each rejected source just contributes nothing.
-  const _settled = await Promise.allSettled([searchUSDA(query), searchFatSecret(query), searchOFF(query), searchNutritionix(query)]);
+  const _settled = await Promise.allSettled([searchUSDA(coreQuery), searchFatSecret(coreQuery), searchOFF(coreQuery), searchNutritionix(coreQuery)]);
   const [usdaR, fsR, offR, nxR] = _settled.map(s => (s.status==='fulfilled' && Array.isArray(s.value)) ? s.value : []);
   // Personal custom foods match first — the user made these, they're most relevant
-  const ql = query.toLowerCase().trim();
   const customMatches = (ls('totry_custom_foods')||[]).filter(f => f.name.toLowerCase().includes(ql));
   // Community foods contributed by other users. Verified (real online data) rank above estimates.
   // We only surface community items the live databases DIDN'T already return — no point showing a
@@ -13518,6 +13539,47 @@ async function searchFood(query){
     else if(new RegExp('\\b'+ql.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\b').test(name)) s += 400; // whole word
     else if(name.includes(ql)) s += 150;                         // contains
     if(brand.includes(ql)) s += 120;                             // brand matches (e.g. "Nutella" as brand)
+    // MULTI-WORD queries matched NONE of the rules above — nothing is literally named "chicken breast
+    // skin off seasoned oven" — so every result scored 0 on relevance and the list ranked by SOURCE
+    // instead, burying the right whole food under random branded products. Score the individual
+    // TERMS, and translate what people type into what the databases actually call it (someone says
+    // "skin off" and "oven"; USDA says "meat only" and "roasted").
+    const CONCEPTS = [
+      { words:['skinless','skin','skinoff'], dbWords:['skinless','meat only','without skin','no skin'] },
+      { words:['oven','roasted','roast','baked','bake'], dbWords:['roasted','baked','oven'] },
+      { words:['grilled','grill','bbq','barbecue','chargrilled'], dbWords:['grilled','broiled'] },
+      { words:['boiled','boil','poached','steamed'], dbWords:['boiled','poached','simmered','steamed'] },
+      { words:['fried','pan'], dbWords:['fried'] },
+      { words:['raw','fresh','uncooked'], dbWords:['raw'] },
+      { words:['cooked'], dbWords:['cooked','roasted','grilled','boiled','baked'] }
+    ];
+    // "skin off" is a NEGATION — the word "skin" appears in the very thing being excluded, so naive
+    // term matching scores "meat AND skin" exactly as high as "meat only". Handle the intent instead.
+    const wantsSkinless = /\bskin\s*off\b|\bskinless\b|\bno skin\b|\bwithout skin\b/.test(ql);
+    if(wantsSkinless){
+      if(/meat only|skinless|without skin|no skin/.test(name)) s += 400;
+      else if(/meat and skin|with skin/.test(name)) s -= 400;
+    }
+    let terms = ql.split(/\s+/).filter(t => t.length > 2);
+    if(wantsSkinless) terms = terms.filter(t => t !== 'skin' && t !== 'off'); // handled above, don't double-count
+    const nameHas = (t) => {
+      if(name.includes(t) || brand.includes(t)) return true;
+      const c = CONCEPTS.find(c => c.words.includes(t));
+      return !!(c && c.dbWords.some(w => name.includes(w)));
+    };
+    if(terms.length > 1){
+      let hit = 0;
+      terms.forEach(t => { if(nameHas(t)) hit++; });
+      s += hit * 120;                                            // every term they typed that lands
+      if(hit === terms.length) s += 250;                         // all of it matched — almost certainly it
+      else if(hit === 0) s -= 200;                               // nothing matched — get it out of the way
+    }
+    // Real whole foods are named descriptively — "Chicken, broilers or fryers, breast, meat only,
+    // cooked, roasted" — so the phrase someone actually types ("chicken breast") NEVER appears in
+    // them. They can't earn the exact/starts-with bonuses above, while a branded packet literally
+    // named "CHICKEN BREAST" wins every time and buries the real food. When every word they typed
+    // genuinely IS in the entry, let the actual food compete.
+    if(f.__generic && terms.length && terms.every(nameHas)) s += 700;
     // Penalise recipe/multi-ingredient-looking results when the query is a single product word.
     const singleWord = !/\s/.test(ql);
     if(singleWord){
@@ -13532,6 +13594,16 @@ async function searchFood(query){
     return s;
   };
   pool.sort((a,b) => scoreFood(b) - scoreFood(a));
+  // Searching "chicken breast" returned FIVE rows all literally named "CHICKEN BREAST" — the same
+  // product from different sources/brands, which just wastes the whole list. Sorted best-first, so
+  // keep the first of each name+brand and drop the rest.
+  const _seenPool = new Set();
+  const pooled = pool.filter(f => {
+    const k = ((f.name||'').toLowerCase().replace(/\s+/g,' ').trim()) + '|' + ((f.brand||'').toLowerCase().trim());
+    if(_seenPool.has(k)) return false;
+    _seenPool.add(k); return true;
+  });
+  pool.length = 0; pool.push(...pooled);
   // Online/database results are authoritative — collect their normalized names so we can drop any
   // community entry that duplicates one (no double-ups; verified online data wins over community).
   pool.forEach(f => { try{ dbNorms.add(_normLibName(f.name)); }catch(_){} });
