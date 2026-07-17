@@ -3805,8 +3805,8 @@ Amen.</div></div>
     <div class="lbl">Serving size</div>
     <select id="sm-serving-select" style="margin-bottom:10px" onchange="updateServingPreview()"></select>
     <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
-      <input type="number" id="sm-qty" value="1" min="0.1" step="0.1" style="width:80px;flex:none" onchange="updateServingPreview()">
-      <span style="font-size:13px;color:var(--tx2)">servings</span>
+      <input type="number" id="sm-qty" value="1" min="0.1" step="0.1" style="width:80px;flex:none" oninput="updateServingPreview()" onchange="updateServingPreview()">
+      <span style="font-size:13px;color:var(--tx2)" id="sm-qty-unit">servings</span>
     </div>
     <div class="macro-grid" style="margin-bottom:8px">
       <div class="macro-met"><div class="mm-l">Cal</div><div class="mm-v cal" id="sm-cal">0</div></div>
@@ -4010,7 +4010,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v225';
+const APP_VERSION = 'v226';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -14562,20 +14562,25 @@ function openServingModal(food){
   // EXCEPTION: if servings were already built with proper gramsEquiv + macros (e.g. the barcode path
   // now provides a real serving first), trust them and don't rebuild — rebuilding caused mismatches.
   const _preBuilt = food.per100 && Array.isArray(food.servings) && food.servings.length && food.servings.every(s => s && s.gramsEquiv && (s.cal!=null));
-  if(food.per100 && !_preBuilt){
-    // Liquid detection drives g vs ml. Use word-boundaried whole words and exclude common solids
-    // that merely CONTAIN a liquid word (ice cream, milk chocolate, watermelon, cream cheese).
+  // Liquid detection drives g vs ml. Word-boundaried whole words, excluding solids that merely
+  // CONTAIN a liquid word (ice cream, milk chocolate, watermelon, cream cheese). This runs for EVERY
+  // per-100 food — including barcode scans that arrive pre-built — so the exact-amount option below
+  // always names the right unit.
+  if(food.per100){
     const nm = ((food.name||'')+' '+(food.brand||'')).toLowerCase();
     const solidTrap = /\b(ice cream|cream cheese|sour cream|milk chocolate|chocolate milk powder|watermelon|milk powder|coconut water gumm|creamed|biscuit|bar|powder|cereal|yog(h)?urt)\b/.test(nm);
     const liquidWord = /\b(milk|juice|drink|beverage|smoothie|soda|cola|lemonade|cordial|kombucha|water)\b/.test(nm) || /\b\d+\s*ml\b/.test(nm);
-    const isLiquid = liquidWord && !solidTrap;
-    const unit = isLiquid ? 'ml' : 'g';
+    food.__unit = (liquidWord && !solidTrap) ? 'ml' : 'g';
+  }
+  if(food.per100 && !_preBuilt){
+    const unit = food.__unit;
+    const isLiquid = unit === 'ml';
     const per1 = k => (food[k]||0)/100;
-    const mk = (label, grams) => ({ name: label, gramsEquiv: grams,
-      cal: per1('cal')*grams, pro: per1('pro')*grams, carb: per1('carb')*grams, fat: per1('fat')*grams });
+    const mk = (label, grams, extra) => Object.assign({ name: label, gramsEquiv: grams,
+      cal: per1('cal')*grams, pro: per1('pro')*grams, carb: per1('carb')*grams, fat: per1('fat')*grams }, extra||{});
     // Preserve any real product serving the DB gave us (it has a name not equal to "100g").
     const realServing = (food.servings||[]).find(s => s && s.name && !/^100\s*g$/i.test(s.name));
-    const built = [ mk('1 serving (100'+unit+')', 100), mk('250'+unit+(isLiquid?' (≈1 cup)':''), 250), mk('1 '+unit+' — set exact amount as Qty', 1) ];
+    const built = [ mk('1 serving (100'+unit+')', 100), mk('250'+unit+(isLiquid?' (≈1 cup)':''), 250) ];
     if(realServing){
       // Put the product's own serving first, tagged with its gram-equivalent if we can infer it.
       const sq = parseFloat((realServing.name.match(/([\d.]+)\s*(g|ml)/i)||[])[1]);
@@ -14584,11 +14589,21 @@ function openServingModal(food){
     } else {
       food.servings = built;
     }
-    food.__unit = unit;
+  }
+  // EVERY per-100 food must offer "type the exact amount". Barcode scans arrive with their servings
+  // pre-built (the product's serving + 100g only) and so skipped the block above entirely — which is
+  // why weighing 91g of something meant selecting 100g and typing 0.91. It sits right after the
+  // product's own serving, and the quantity field relabels to "grams" so it reads "91 grams".
+  if(food.per100 && Array.isArray(food.servings) && food.servings.length && !food.servings.some(s => s && s.__exact)){
+    const u = (food.__unit === 'ml') ? 'Millilitres' : 'Grams';
+    food.servings.splice(1, 0, { name: u + ' — type the exact amount', gramsEquiv: 1, __exact: true,
+      cal:(food.cal||0)/100, pro:(food.pro||0)/100, carb:(food.carb||0)/100, fat:(food.fat||0)/100 });
   }
   if(!food.per100 && food.servings && !food.servings.some(x => x && x.__gram)){
     const hg = food.servings.find(x => x && /100\s*g/i.test(x.name || ''));
-    if(hg){ food.servings.push({__gram:true, gramsEquiv:1, name:'1 g \u2014 enter grams as Qty', cal:(hg.cal||0)/100, pro:(hg.pro||0)/100, carb:(hg.carb||0)/100, fat:(hg.fat||0)/100}); }
+    // Same as the per-100 path: weighing it should mean typing the real number, not a fraction \u2014
+    // so this sits right after the product's own serving instead of last, and says what it does.
+    if(hg){ food.servings.splice(1, 0, {__gram:true, __exact:true, gramsEquiv:1, name:'Grams \u2014 type the exact amount', cal:(hg.cal||0)/100, pro:(hg.pro||0)/100, carb:(hg.carb||0)/100, fat:(hg.fat||0)/100}); }
   }
   // SAFETY NET: guarantee every serving carries macros. Web/AI/community foods sometimes arrive
   // with flat top-level macros but servings missing cal/pro/carb/fat — which showed as all-ZEROS
@@ -14625,6 +14640,9 @@ function updateServingPreview(){
   const qty=parseFloat(document.getElementById('sm-qty').value||1);
   const si=parseInt(document.getElementById('sm-serving-select').value||0);
   const s=(currentFood.servings||[])[si]||{cal:currentFood.cal,pro:currentFood.pro,carb:currentFood.carb,fat:currentFood.fat};
+  // When they've chosen to weigh it, the number IS grams/ml — say so, so it reads "91 grams".
+  const unitEl = document.getElementById('sm-qty-unit');
+  if(unitEl) unitEl.textContent = s.__exact ? (currentFood.__unit === 'ml' ? 'ml' : 'grams') : 'servings';
   document.getElementById('sm-cal').textContent=Math.round((s.cal||0)*qty);
   document.getElementById('sm-pro').textContent=Math.round((s.pro||0)*qty*10)/10+'g';
   document.getElementById('sm-carb').textContent=Math.round((s.carb||0)*qty*10)/10+'g';
