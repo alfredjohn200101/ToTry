@@ -2879,11 +2879,11 @@ input:focus,textarea:focus,select:focus{
   <!-- Strategy -->
   <div class="card" style="margin-bottom:12px">
     <div class="card-hd" style="margin-bottom:8px">Payoff strategy</div>
-    <div class="strategy-card active" id="strategy-snowball" onclick="setDebtStrategy('snowball')">
+    <div class="strategy-card active" id="strategy-snowball" onclick="setDebtStrategy('snowball', true)">
       <div class="sc-title">&#10052;&#65039; Snowball &#8212; smallest debt first</div>
       <div class="sc-desc">Builds momentum. Every paid-off debt is a win that keeps you going.</div>
     </div>
-    <div class="strategy-card" id="strategy-avalanche" onclick="setDebtStrategy('avalanche')">
+    <div class="strategy-card" id="strategy-avalanche" onclick="setDebtStrategy('avalanche', true)">
       <div class="sc-title">&#127956;&#65039; Avalanche &#8212; highest interest first</div>
       <div class="sc-desc">Saves the most money mathematically.</div>
     </div>
@@ -2898,6 +2898,7 @@ input:focus,textarea:focus,select:focus{
     <div class="card-hd" style="margin-bottom:10px">Add / update</div>
     <div class="row"><input type="text" id="dn" placeholder="Who you owe"><input type="number" id="dt" placeholder="Total $" style="max-width:110px;flex:none"></div>
     <div class="row"><input type="number" id="dp" placeholder="Paid so far $"><input type="date" id="dd" style="max-width:145px;flex:none"></div>
+    <div class="row"><input type="number" id="di" inputmode="decimal" placeholder="Interest rate % (for Avalanche)" step="0.1"></div>
     <button class="btn primary" onclick="addDebt()" style="margin-bottom:10px">Add this debt</button>
     <div class="divider"></div>
     <div class="card-hd" style="margin-bottom:6px;margin-top:8px">Your savings goals</div>
@@ -4020,7 +4021,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v231';
+const APP_VERSION = 'v232';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -16289,9 +16290,22 @@ let debts=[],usaS=0,indiaS=0;
 function loadF(){const f=ls('totry_f');if(f){debts=f.d||[];usaS=f.u||0;indiaS=f.i||0;}else{debts=[];usaS=0;indiaS=0;}}
 function saveF(){ls('totry_f',{d:debts,u:usaS,i:indiaS});}
 function getDebtStr(){loadF();return debts.map(d=>d.n+' $'+Math.round(d.t-d.p)+' remaining').join(', ')||'No debts logged';}
-function setDebtStrategy(type){
+function setDebtStrategy(type, fromUser){
   ls('totry_debt_strategy',type);
   ['snowball','avalanche'].forEach(t=>{const el=document.getElementById('strategy-'+t);if(el)el.classList.toggle('active',t===type);});
+  // Only react to a real TAP — this also runs on every app launch to restore the saved choice, and
+  // the hint/re-render must not fire then (a toast on every boot would be maddening).
+  if(fromUser){
+    try{
+      if(type==='avalanche'){
+        loadF();
+        if(!debts.some(d=>(parseFloat(d.interest)||0)>0) && typeof showToast==='function'){
+          showToast('Add interest rates','Avalanche ranks by interest — add each debt’s rate % so I can order them. Until then I’ll go smallest-first.');
+        }
+      }
+    }catch(_){}
+    if(typeof renderFinance==='function') renderFinance();
+  }
 }
 function calcDebtFreeDate(){
   const payments=ls('totry_payments')||[];if(payments.length<2)return;
@@ -16312,7 +16326,7 @@ function renderFinance(){
   const dl=document.getElementById('debt-list');if(!dl)return;dl.innerHTML='';
   if(!debts.length){dl.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:10px 0">No debts added yet</p>';return;}
   const strategy=ls('totry_debt_strategy')||'snowball';
-  const sorted=[...debts].map((d,i)=>({...d,idx:i})).sort((a,b)=>strategy==='snowball'?(a.t-a.p)-(b.t-b.p):(b.interest||0)-(a.interest||0));
+  const sorted=_sortDebtsByStrategy(debts.map((d,i)=>({...d,idx:i})), strategy);
   sorted.forEach((d,si)=>{
     const rem=d.t-d.p,pct=d.t>0?Math.round((d.p/d.t)*100):0;
     const item=document.createElement('div');item.className='debt-row';
@@ -17905,7 +17919,18 @@ function renderNetWorth(){
     '</div>'
   ).join('');
 }
-function addDebt(){loadF();const n=document.getElementById('dn').value.trim(),t=parseFloat(document.getElementById('dt').value||'0'),p=parseFloat(document.getElementById('dp').value||'0'),due=document.getElementById('dd').value;if(!n||t<=0)return;debts.push({n,t,p,due});['dn','dt','dp','dd'].forEach(id=>document.getElementById(id).value='');saveF();renderFinance();}
+function addDebt(){loadF();const n=document.getElementById('dn').value.trim(),t=parseFloat(document.getElementById('dt').value||'0'),p=parseFloat(document.getElementById('dp').value||'0'),due=document.getElementById('dd').value,interest=parseFloat(document.getElementById('di')?.value||'0')||0;if(!n||t<=0)return;debts.push({n,t,p,due,interest});['dn','dt','dp','dd','di'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});saveF();renderFinance();}
+// One correct debt ordering for BOTH the list and the payday allocator. Avalanche ranks by interest
+// (highest first, ties → smaller balance), but ONLY when interest is actually known; otherwise it
+// falls back to smallest-balance-first so the "attack this first" star is never on an arbitrary debt.
+function _sortDebtsByStrategy(list, strategy){
+  const arr=[...list];
+  const anyInterest=arr.some(d=>(parseFloat(d.interest)||0)>0);
+  if(strategy==='avalanche' && anyInterest){
+    return arr.sort((a,b)=> ((parseFloat(b.interest)||0)-(parseFloat(a.interest)||0)) || ((a.t-a.p)-(b.t-b.p)));
+  }
+  return arr.sort((a,b)=>(a.t-a.p)-(b.t-b.p)); // snowball, or avalanche w/o interest data
+}
 function updateSavings(){loadF();const u=parseFloat(document.getElementById('usa-in').value||'0'),i=parseFloat(document.getElementById('india-in').value||'0');if(u>0)usaS=u;if(i>0)indiaS=i;document.getElementById('usa-in').value='';document.getElementById('india-in').value='';saveF();renderFinance();}
 function calcViceSavings(){
   const w=parseFloat(document.getElementById('weed-s').value||'0'),va=parseFloat(document.getElementById('vape-s').value||'0'),g=parseFloat(document.getElementById('gamb-s').value||'0'),o=parseFloat(document.getElementById('other-s').value||'0');
@@ -17927,7 +17952,7 @@ function calcPayday(){
   const strategy=ls('totry_debt_strategy')||'snowball';
   let rem=amt,steps=[];
   const buf=Math.round(amt*0.05);steps.push({n:1,title:'Emergency buffer (5%)',desc:'Before anything. Non-negotiable.',amt:buf});rem-=buf;
-  const sortedD=[...debts].filter(d=>(d.t-d.p)>0).map((d,i)=>({...d,idx:i})).sort((a,b)=>strategy==='snowball'?(a.t-a.p)-(b.t-b.p):(b.interest||0)-(a.interest||0));
+  const sortedD=_sortDebtsByStrategy(debts.filter(d=>(d.t-d.p)>0).map((d,i)=>({...d,idx:i})), strategy);
   if(sortedD.length){const top=sortedD[0],pay=Math.min(Math.round(rem*0.4),Math.round(top.t-top.p));steps.push({n:2,title:top.n+' \u2014 '+strategy+' priority',desc:'Your strategy says attack this first.',amt:pay});rem-=pay;}
   if(sortedD.length>1){const s2=sortedD[1],p2=Math.min(Math.round(rem*0.25),Math.round(s2.t-s2.p));steps.push({n:3,title:s2.n,desc:'Second priority debt.',amt:p2});rem-=p2;}
   const saveAmt=Math.round(rem*0.5);steps.push({n:steps.length+1,title:'Savings goals',desc:'Future you will thank current you.',amt:saveAmt});rem-=saveAmt;

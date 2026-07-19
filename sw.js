@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v231-voice-everywhere'
+const CACHE = 'totry-v232-avalanche-fix'
 
 const CORE = [
   './',
