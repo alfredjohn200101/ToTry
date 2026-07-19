@@ -4021,7 +4021,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v232';
+const APP_VERSION = 'v233';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -18764,6 +18764,9 @@ function renderReadinessCard(){
 function renderWeeklyReflectionCard(){
   const card = document.getElementById('home-weekly-reflection-card');
   if(!card) return;
+  // A week reflection needs about a week actually lived — never offer it to a brand-new account
+  // (it would generate an "empty week" reflection about a week they were never here for).
+  if(((typeof getDayCount==='function') ? getDayCount() : 99) < 7){ card.style.display='none'; return; }
   const lastAt = ls('totry_weekly_reflection_at') || 0;
   const daysSince = (Date.now() - lastAt) / 86400000;
   const isSunday = new Date().getDay() === 0;
@@ -23159,7 +23162,16 @@ async function generateWeeklySynthesis(){
   const transactions=(ls('totry_transactions')||[]).filter(t=>new Date(t.ts)>=sevenDaysAgo);
   const spentThisWeek=transactions.filter(t=>t.type==='expense').reduce((a,t)=>a+t.amount,0);
   const earnedThisWeek=transactions.filter(t=>t.type==='income').reduce((a,t)=>a+t.amount,0);
-  
+
+  // A "week reflected" needs a week actually lived. Without this gate a BRAND-NEW account (every
+  // array empty) generated an "empty week" lament — "a week of stillness… no workouts, journals or
+  // prayers… this depletion is spiritual and mental" — and auto-popped it as the FIRST thing a
+  // person sees after onboarding. A coach mourning your inactivity thirty seconds after you arrive.
+  // Require the account to be about a week old AND to have a few real entries before reflecting.
+  const _synthDayCount = (typeof getDayCount==='function') ? getDayCount() : 99;
+  const _synthActivity = journal.length + evenings.length + workouts.length + checkins.length + examens.length + prayers.length + fightLog.length + transactions.length;
+  if(_synthDayCount < 7 || _synthActivity < 3){ return; }
+
   // Calc avg ratings if evenings exist
   let avgRating = null;
   if(evenings.length){
@@ -25158,9 +25170,14 @@ function renderTourPrompt(){
   const dayCount = (typeof getDayCount==='function') ? getDayCount() : 99;
   const brandNew = dayCount <= 1;
   if(brandNew){
-    ls('totry_tour_offered', true);
-    setTimeout(()=>{ if(typeof startFeatureTour==='function') startFeatureTour(); }, 600);
-    card.style.display='none';
+    // Don't ambush someone with an 8-step tour the second they finish onboarding — that's the whole
+    // cathedral before they've touched anything. Land them on the home (hero + the one next step),
+    // and OFFER the tour gently. One clear thing first; the guided walk is one tap away if they want it.
+    card.style.display='block';
+    card.innerHTML='<div style="font-family:Cormorant Garamond,serif;font-size:18px;color:var(--tx);margin-bottom:4px">Welcome in.</div>'+
+      '<div style="font-size:13px;color:var(--tx2);line-height:1.55;margin-bottom:12px">Start wherever you feel something. Or, if you’d rather, take a 60-second look at how it all fits together.</div>'+
+      '<div style="display:flex;gap:8px"><button class="btn primary" style="flex:1;font-size:13px" onclick="acceptTourPrompt()">Show me around</button>'+
+      '<button class="btn" style="flex:1;font-size:13px;background:var(--bg3);border:1px solid var(--bd)" onclick="dismissTourPrompt()">I’ll explore</button></div>';
     return;
   }
   // Returning user: gentle one-time offer.
