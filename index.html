@@ -3129,7 +3129,7 @@ Amen.</div></div>
     <button class="btn primary" onclick="completeEvening()">Complete evening check-in</button>
     <div id="evening-done" style="display:none;text-align:center;padding:24px 16px;margin-top:8px">
       <div style="font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--go);margin-bottom:8px">Day complete. Rest well.</div>
-      <div style="font-size:13px;color:var(--tx2);line-height:1.6">Tomorrow is a new chance. You showed up today.</div>
+      <div style="font-size:13px;color:var(--tx2);line-height:1.6">You showed up today — and that means more than you think. The least any of us can do, every single day, is at least <em style="color:var(--go)">To Try</em>. Tomorrow's a fresh one.</div>
     <button class="btn primary" onclick="go('home')" style="margin-top:16px;max-width:220px;margin-left:auto;margin-right:auto">Back to home &rarr;</button>
     </div>
   </div>
@@ -4020,7 +4020,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v230';
+const APP_VERSION = 'v231';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -12790,7 +12790,7 @@ async function generateWeeklyCoachResponse(entry){
   const prompt = `You are this person\'s personal coach. Write a warm, honest, specific response to their weekly check-in. Notice patterns. Celebrate wins. Be direct about struggles without being harsh. End with ONE specific thing for them to focus on next week. 200-300 words. Use their name (${ls('totry_name')||'Friend'}) once. No corporate fluff.\n\n${context}`;
   
   try {
-    const response = await api('You are a wise, direct life coach who cares deeply.', [], prompt, 1000);
+    const response = await api(BROTHER_VOICE + 'You’re giving them an honest weekly read here — what you see across the whole week and the one thing that matters most. Direct because you care.', [], prompt, 1000);
     if(response && response.trim()){
       // Save and show
       const syntheses = ls('totry_syntheses')||[];
@@ -18858,7 +18858,7 @@ async function explainVicePatterns(){
   if(btn){ btn.textContent='Thinking...'; btn.disabled=true; }
   try{
     if(!p){ if(box){ box.style.display='block'; box.innerHTML='<div style="font-size:13px;color:var(--tx2);line-height:1.6">There\u2019s no clear pattern in your slips yet \u2014 and that\u2019s okay. Keep logging honestly; if a pattern emerges, I\u2019ll help you see it gently.</div>'; } return; }
-    const sys = 'You are a compassionate, faith-aware companion helping someone overcome a vice. NEVER shame. Acknowledge the courage it takes to look honestly. Offer 2-3 gentle, practical, hopeful strategies tied to the pattern. Brief and warm. This is a Catholic self-improvement context; grace and growth, never condemnation.';
+    const sys = BROTHER_VOICE + 'RIGHT NOW you’re helping them look honestly at the PATTERN in their fight — the times, the triggers. Acknowledge the courage it takes to look at all. Read what you see and offer 2-3 gentle, practical, hopeful moves tied to it. Brief and warm — never shame, only grace and growth.';
     const prompt = 'A person fighting a vice has these patterns in when they slip: ' + p.patterns.join(' ') + ' (' + p.count + ' slips logged). Compassionately reflect this back and suggest 2-3 specific, doable strategies for those high-risk moments. Hopeful, never shaming.';
     const resp = await api(sys, [], prompt, 600);
     if(box){ box.style.display='block'; box.innerHTML='<div style="font-size:13px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">'+(resp||'').replace(/</g,'&lt;')+'</div>'; }
@@ -18890,7 +18890,7 @@ async function explainReadiness(){
   const body = document.getElementById('readiness-explain-body');
   if(!r){ if(body) body.innerHTML = 'Log a check-in (sleep, stress, energy) and a workout or two, and I\u2019ll be able to read your recovery.'; return; }
   try{
-    const sys = 'You are a calm, knowledgeable recovery coach. Explain a readiness score in plain, encouraging English: what\u2019s driving it and what would move it. 3-4 sentences. No medical claims.';
+    const sys = BROTHER_VOICE + 'RIGHT NOW you\u2019re explaining their readiness score to them in plain, encouraging words \u2014 what\u2019s driving it and what would move it. 3-4 sentences. No medical claims.';
     const prompt = 'Readiness today is ' + r.score + '/100 (' + r.level + '). Inputs: ' + (r.sleep!=null?'sleep '+r.sleep+'/10, ':'') + (r.stress!=null?'stress '+r.stress+'/10, ':'') + (r.energy!=null?'energy '+r.energy+'/10, ':'') + 'reasons: ' + (r.reasons.join(', ')||'recent days') + '. Explain why it\u2019s here and 2 things that would raise it.';
     const resp = await api(sys, [], prompt, 400);
     if(body) body.innerHTML = '<div style="white-space:pre-wrap">'+(resp||r.advice).replace(/</g,'&lt;')+'</div>';
@@ -18982,7 +18982,7 @@ async function generateWeeklyReflection(){
     const ctx = (typeof _ptIntel==='function') ? _ptIntel() : '';
     const rd = (typeof computeReadiness==='function') ? computeReadiness() : null;
     const identity = ls('totry_identity') || '';
-    const sys = 'You are a warm, wise, faith-aware older sibling in a Catholic self-improvement app. Write one honest, encouraging paragraph (4-6 sentences) reflecting the person\u2019s WHOLE week back to them \u2014 connecting body, discipline, money, and spirit, the way only someone who sees all of a person\u2019s life could. Specific, never generic. Grace-centered: name effort, not just outcomes. Then, on a new line, ask ONE real, specific question drawn from a tension in their week (e.g. trained hard but slipped twice \u2014 "what was going on those nights?"). The question should invite honest reflection, not judgment. Format the question on its own line prefixed exactly with "Q: ".';
+    const sys = BROTHER_VOICE + 'RIGHT NOW you\u2019re reflecting their WHOLE week back to them in one honest, encouraging paragraph (4-6 sentences) \u2014 connecting body, discipline, money and spirit the way only someone who sees all of a person could. Specific, never generic. Name the effort, not just the outcomes. Then, on a new line, ask ONE real, specific question drawn from a genuine tension in their week (e.g. trained hard but slipped twice \u2014 "what was going on those nights, bro?"). Invite honest reflection, never judgment. Format the question on its own line prefixed exactly with "Q: ".';
     const prompt = 'This week: ' + s.workouts + ' workouts, ' + s.nutDays + ' days food logged, ' + s.journalEntries + ' journal entries, ' + s.wins + ' urges resisted, ' + s.slips7 + ' slips, longest clean streak ' + s.longestStreak + ' days' + (s.reclaimed>0 ? (', $'+s.reclaimed+' reclaimed from vices toward their freedom') : '') + '.' + (identity?' They are becoming: "'+identity+'".':'') + (rd?' Current readiness: '+rd.level+'.':'') + ' Training context:' + ctx + '\n\nWrite their weekly reflection as an older sibling who sees their whole life, then the one honest question.';
     const resp = await api(sys, [], prompt, 550);
     if(box){

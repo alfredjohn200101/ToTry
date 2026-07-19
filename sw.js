@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v230-notif-taps'
+const CACHE = 'totry-v231-voice-everywhere'
 
 const CORE = [
   './',
