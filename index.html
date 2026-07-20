@@ -4021,7 +4021,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v234';
+const APP_VERSION = 'v235';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -16307,14 +16307,105 @@ function setDebtStrategy(type, fromUser){
     if(typeof renderFinance==='function') renderFinance();
   }
 }
+// The two things a stewardship tool owes you that we were never saying: what the debt actually
+// COSTS you each month, and whether the strategy you picked is genuinely the cheaper one. Honest and
+// non-partial — snowball really does win on adherence, so we say that rather than just pushing math.
+function renderDebtTruth(){
+  const dl=document.getElementById('debt-list'); if(!dl) return;
+  const old=document.getElementById('debt-truth'); if(old) old.remove();
+  loadF();
+  const active=debts.filter(d=>_debtBalance(d)>0); if(!active.length) return;
+  const bits=[];
+  const mi=totalMonthlyInterest(active);
+  if(mi>=1) bits.push('Interest alone takes <b style="color:var(--re)">$'+Math.round(mi).toLocaleString()+'/month</b> before a dollar touches the balance.');
+  const rate=monthlyPaymentRate();
+  if(rate && active.length>1 && active.some(d=>(parseFloat(d.interest)||0)>0)){
+    const av=projectPayoff(active, rate, 'avalanche');
+    const sn=projectPayoff(active, rate, 'snowball');
+    if(av&&sn&&!av.neverClears&&!sn.neverClears){
+      const save=(sn.interestPaid||0)-(av.interestPaid||0);
+      const cur=ls('totry_debt_strategy')||'snowball';
+      if(save>0) bits.push(cur==='avalanche'
+        ? 'Your Avalanche order saves about <b style="color:var(--gr)">$'+save.toLocaleString()+'</b> in interest versus smallest-first.'
+        : 'Avalanche would save about <b style="color:var(--gr)">$'+save.toLocaleString()+'</b> in interest — but Snowball wins on momentum, and the best plan is the one you keep doing.');
+    }
+  }
+  if(!bits.length) return;
+  const el=document.createElement('div'); el.id='debt-truth';
+  el.style.cssText='margin-top:10px;font-size:12px;color:var(--tx3);line-height:1.6';
+  el.innerHTML=bits.join(' ');
+  dl.after(el);
+}
+
+// What the vice was costing, per MONTH — the money that's now free to go somewhere.
+function monthlyReclaimRate(){
+  try{
+    loadV();
+    return (vices||[]).reduce((sum,v)=>{
+      const amt=parseFloat(v.costAmount)||0; if(amt<=0) return sum;
+      const per=v.costPer||'week';
+      if(per==='day') return sum + amt*30.44;
+      if(per==='use') return sum + amt*(parseFloat(v.costUses)||7)*(30.44/7);
+      return sum + amt*(30.44/7);                      // per week
+    },0);
+  }catch(_){ return 0; }
+}
+// Sobriety, priced. Put the reclaimed money on the debt and show how much sooner freedom comes and
+// how much interest it saves. This is the whole thesis of the app in one sentence — and no money
+// app can say it, because none of them know why you're clean.
+function renderReclaimedBuysFreedom(){
+  const host=document.getElementById('saved-desc'); if(!host) return;
+  const old=document.getElementById('reclaim-buys-freedom'); if(old) old.remove();
+  loadF();
+  const owed=debts.reduce((a,d)=>a+_debtBalance(d),0); if(owed<=0) return;
+  const reclaim=monthlyReclaimRate(); if(!(reclaim>0)) return;
+  const base=monthlyPaymentRate(); if(!base) return;          // need real payment history to compare
+  const strategy=ls('totry_debt_strategy')||'snowball';
+  const now=projectPayoff(debts, base, strategy);
+  const boosted=projectPayoff(debts, base+reclaim, strategy);
+  if(!now||!boosted) return;
+  let line='';
+  if(now.neverClears && !boosted.neverClears){
+    line='Right now the interest is outrunning your payments — but adding the $'+Math.round(reclaim).toLocaleString()+'/month you’re reclaiming flips it: debt-free in about '+boosted.months+' months. Staying clean is what gets you above the line.';
+  } else if(!now.neverClears && !boosted.neverClears){
+    const sooner=now.months-boosted.months;
+    const saved=Math.max(0,(now.interestPaid||0)-(boosted.interestPaid||0));
+    if(sooner<=0 && saved<=0) return;
+    line='That $'+Math.round(reclaim).toLocaleString()+'/month, put straight on your debt, makes you free '+
+      (sooner>0?('<b style="color:var(--gr)">'+sooner+' month'+(sooner===1?'':'s')+' sooner</b>'):'sooner')+
+      (saved>0?(' and saves <b style="color:var(--gr)">$'+saved.toLocaleString()+'</b> in interest'):'')+
+      '. That’s what staying clean is worth, in months of your life.';
+  } else { return; }
+  const el=document.createElement('div');
+  el.id='reclaim-buys-freedom';
+  el.style.cssText='margin-top:10px;padding-top:10px;border-top:1px solid var(--go-bd);font-size:12.5px;color:var(--tx2);line-height:1.6';
+  el.innerHTML=line;
+  host.after(el);
+}
+
 function calcDebtFreeDate(){
-  const payments=ls('totry_payments')||[];if(payments.length<2)return;
-  const avg=payments.slice(-4).reduce((a,p)=>a+p.amt,0)/Math.min(4,payments.length);if(avg<=0)return;
-  loadF();const owed=debts.reduce((a,d)=>a+(d.t-d.p),0);if(owed<=0)return;
-  const months=Math.ceil(owed/avg);const fd=new Date();fd.setMonth(fd.getMonth()+months);
-  const dh=document.getElementById('df-hero');if(dh)dh.style.display='block';
-  const dd=document.getElementById('df-date');if(dd)dd.textContent=fd.toLocaleDateString('en-AU',{month:'long',year:'numeric'});
-  const ddesc=document.getElementById('df-desc');if(ddesc)ddesc.textContent='~'+months+' months at $'+Math.round(avg)+'/month';
+  loadF();
+  const owed=debts.reduce((a,d)=>a+_debtBalance(d),0); if(owed<=0) return;
+  const rate=monthlyPaymentRate(); if(!rate) return;      // needs dated history to be honest
+  const strategy=ls('totry_debt_strategy')||'snowball';
+  const proj=projectPayoff(debts, rate, strategy);
+  if(!proj) return;
+  const dh=document.getElementById('df-hero'); if(dh) dh.style.display='block';
+  const dd=document.getElementById('df-date');
+  const ddesc=document.getElementById('df-desc');
+  // The honest case first: if the payment can't cover the interest, there IS no freedom date yet.
+  // Saying so plainly is worth more than a comforting number that will never arrive.
+  if(proj.neverClears){
+    if(dd) dd.textContent='Not yet on track';
+    if(ddesc) ddesc.innerHTML='At $'+Math.round(rate).toLocaleString()+'/month the interest ($'+proj.monthlyInterest.toLocaleString()+'/mo) is eating the payment — the balance grows. Getting above that line is the whole battle, and every dollar reclaimed goes straight at it.';
+    return;
+  }
+  const fd=new Date(); fd.setMonth(fd.getMonth()+proj.months);
+  if(dd) dd.textContent=fd.toLocaleDateString('en-AU',{month:'long',year:'numeric'});
+  if(ddesc){
+    const interestBit = proj.interestPaid>0 ? (' · $'+proj.interestPaid.toLocaleString()+' of that is interest') : '';
+    ddesc.textContent='~'+proj.months+' month'+(proj.months===1?'':'s')+' at $'+Math.round(rate).toLocaleString()+'/month'+interestBit;
+  }
 }
 function renderFinance(){
   loadF();
@@ -16338,6 +16429,7 @@ function renderFinance(){
     dl.appendChild(item);
   });
   calcDebtFreeDate();
+  try{ renderDebtTruth(); }catch(_){}
   // Stewardship pipe: if any vice has a cost set, show the real reclaimed total (per-vice × clean
   // days) — more accurate than the legacy flat weekly estimate. Falls back to totry_vs otherwise.
   const reclaimed = (typeof totalReclaimed==='function') ? totalReclaimed() : 0;
@@ -16348,6 +16440,10 @@ function renderFinance(){
     // reclaimed money, float that hero up right beneath the metrics. Idempotent (only moves once).
     try{ const mg=document.querySelector('#tab-money .mg'); const sh=document.getElementById('saved-hero'); if(mg&&sh&&mg.nextElementSibling!==sh) mg.after(sh); }catch(_){}
     if(sd) sd.textContent='Reclaimed by staying clean — that\u2019s money toward your debt and your freedom.';
+    // THE THING NO MONEY APP CAN SAY: what staying clean actually BUYS. Redirect the money the vice
+    // was taking onto the debt and show the freedom date move — sobriety, priced in months and
+    // interest saved. Only possible because the fight and the money live in the same app.
+    try{ renderReclaimedBuysFreedom(); }catch(_){}
   } else {
   const vs=ls('totry_vs');if(vs){const sn=document.getElementById('saved-num');const sd=document.getElementById('saved-desc');if(sn)sn.textContent='$'+vs.saved.toLocaleString();if(sd)sd.textContent='$'+vs.weekly+'/week saved. $'+vs.saved.toLocaleString()+' redirected.';
     // Restore the input fields too, so it doesn't look like nothing saved when you return.
@@ -17923,6 +18019,45 @@ function addDebt(){loadF();const n=document.getElementById('dn').value.trim(),t=
 // One correct debt ordering for BOTH the list and the payday allocator. Avalanche ranks by interest
 // (highest first, ties → smaller balance), but ONLY when interest is actually known; otherwise it
 // falls back to smallest-balance-first so the "attack this first" star is never on an arbitrary debt.
+// ── HONEST DEBT MATH ──────────────────────────────────────────────────────────────────────────
+// A freedom date you can plan your life around has to include what the debt actually COSTS. The old
+// projection was owed ÷ average-payment: interest ignored entirely, and every logged payment treated
+// as a month (pay weekly and the date was nonsense). This simulates month by month with real
+// compounding, applying the payment in the chosen strategy's order — and tells the truth when a
+// payment is too small to ever clear the balance, instead of printing a comforting date.
+function _debtMonthlyRate(d){ return (parseFloat(d.interest)||0)/100/12; }
+function _debtBalance(d){ return Math.max(0, (parseFloat(d.t)||0) - (parseFloat(d.p)||0)); }
+function totalMonthlyInterest(list){
+  return (list||[]).reduce((a,d)=> a + _debtBalance(d)*_debtMonthlyRate(d), 0);
+}
+// Real monthly payment rate from dated history (fixes "every payment = one month").
+function monthlyPaymentRate(){
+  const pays=(ls('totry_payments')||[]).filter(p=>p&&(parseFloat(p.amt)||0)>0&&p.ts)
+    .sort((a,b)=>new Date(a.ts)-new Date(b.ts));
+  if(pays.length<2) return null;
+  const spanDays=(new Date(pays[pays.length-1].ts)-new Date(pays[0].ts))/86400000;
+  const months=Math.max(1, spanDays/30.44);           // never claim a rate faster than monthly
+  const total=pays.reduce((a,p)=>a+(parseFloat(p.amt)||0),0);
+  return total/months;
+}
+// Simulate payoff. Returns {months, interestPaid} | {neverClears, monthlyInterest} | null.
+function projectPayoff(list, monthlyPayment, strategy){
+  const items=_sortDebtsByStrategy(list||[], strategy)
+    .map(d=>({ b:_debtBalance(d), r:_debtMonthlyRate(d) })).filter(x=>x.b>0);
+  if(!items.length || !(monthlyPayment>0)) return null;
+  const firstInterest=items.reduce((a,x)=>a+x.b*x.r,0);
+  // If the payment can't even cover the interest, the balance GROWS. Say so — never print a date.
+  if(monthlyPayment<=firstInterest) return { neverClears:true, monthlyInterest:Math.round(firstInterest) };
+  let months=0, interest=0;
+  while(items.some(x=>x.b>0.01) && months<600){
+    months++;
+    items.forEach(x=>{ const i=x.b*x.r; x.b+=i; interest+=i; });
+    let pay=monthlyPayment;
+    for(const x of items){ if(pay<=0) break; const use=Math.min(pay,x.b); x.b-=use; pay-=use; }
+  }
+  return { months, interestPaid: Math.round(interest) };
+}
+
 function _sortDebtsByStrategy(list, strategy){
   const arr=[...list];
   const anyInterest=arr.some(d=>(parseFloat(d.interest)||0)>0);

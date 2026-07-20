@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v234-payday-books-it'
+const CACHE = 'totry-v235-honest-freedom'
 
 const CORE = [
   './',
