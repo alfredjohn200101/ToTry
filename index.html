@@ -4021,7 +4021,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v233';
+const APP_VERSION = 'v234';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -17951,13 +17951,52 @@ function calcPayday(){
   const result=document.getElementById('payday-result');result.style.display='block';result.scrollIntoView({behavior:'smooth'});
   const strategy=ls('totry_debt_strategy')||'snowball';
   let rem=amt,steps=[];
-  const buf=Math.round(amt*0.05);steps.push({n:1,title:'Emergency buffer (5%)',desc:'Before anything. Non-negotiable.',amt:buf});rem-=buf;
-  const sortedD=_sortDebtsByStrategy(debts.filter(d=>(d.t-d.p)>0).map((d,i)=>({...d,idx:i})), strategy);
-  if(sortedD.length){const top=sortedD[0],pay=Math.min(Math.round(rem*0.4),Math.round(top.t-top.p));steps.push({n:2,title:top.n+' \u2014 '+strategy+' priority',desc:'Your strategy says attack this first.',amt:pay});rem-=pay;}
-  if(sortedD.length>1){const s2=sortedD[1],p2=Math.min(Math.round(rem*0.25),Math.round(s2.t-s2.p));steps.push({n:3,title:s2.n,desc:'Second priority debt.',amt:p2});rem-=p2;}
-  const saveAmt=Math.round(rem*0.5);steps.push({n:steps.length+1,title:'Savings goals',desc:'Future you will thank current you.',amt:saveAmt});rem-=saveAmt;
-  if(rem>0)steps.push({n:steps.length+1,title:'Remaining / family',desc:'Flexible. Never take advantage.',amt:rem});
-  result.innerHTML='<h4>Allocation for $'+amt.toLocaleString()+'</h4>'+steps.map(s=>'<div class="pay-step"><div class="pay-n">'+s.n+'</div><div style="flex:1"><div class="pay-title">'+s.title+'</div><div class="pay-desc">'+s.desc+'</div></div><div class="pay-amt">$'+s.amt.toLocaleString()+'</div></div>').join('')+'<button class="btn success" style="margin-top:14px" onclick="document.getElementById(\'payday-result\').style.display=\'none\'">Got it</button>';
+  const buf=Math.round(amt*0.05);steps.push({n:1,kind:'buffer',title:'Emergency buffer (5%)',desc:'Before anything. Non-negotiable.',amt:buf});rem-=buf;
+  // idx must be the ORIGINAL index (map before filter) so an applied payment lands on the right debt.
+  const sortedD=_sortDebtsByStrategy(debts.map((d,i)=>({...d,idx:i})).filter(d=>(d.t-d.p)>0), strategy);
+  if(sortedD.length){const top=sortedD[0],pay=Math.min(Math.round(rem*0.4),Math.round(top.t-top.p));steps.push({n:2,kind:'debt',debtIdx:top.idx,title:top.n+' \u2014 '+strategy+' priority',desc:'Your strategy says attack this first.',amt:pay});rem-=pay;}
+  if(sortedD.length>1){const s2=sortedD[1],p2=Math.min(Math.round(rem*0.25),Math.round(s2.t-s2.p));steps.push({n:3,kind:'debt',debtIdx:s2.idx,title:s2.n,desc:'Second priority debt.',amt:p2});rem-=p2;}
+  const saveAmt=Math.round(rem*0.5);steps.push({n:steps.length+1,kind:'savings',title:'Savings goals',desc:'Future you will thank current you.',amt:saveAmt});rem-=saveAmt;
+  if(rem>0)steps.push({n:steps.length+1,kind:'other',title:'Remaining / family',desc:'Flexible. Never take advantage.',amt:rem});
+  window.__paydaySteps = steps;
+  // A plan you have to re-type by hand isn't a plan, it's homework. "Apply" actually books the debt
+  // payments and the savings contribution \u2014 the feature finishing what it started.
+  const canApply = steps.some(s => (s.kind==='debt' || s.kind==='savings') && s.amt > 0);
+  result.innerHTML='<h4>Allocation for $'+amt.toLocaleString()+'</h4>'+steps.map(s=>'<div class="pay-step"><div class="pay-n">'+s.n+'</div><div style="flex:1"><div class="pay-title">'+s.title+'</div><div class="pay-desc">'+s.desc+'</div></div><div class="pay-amt">$'+s.amt.toLocaleString()+'</div></div>').join('')+
+    (canApply ? '<button class="btn primary" style="margin-top:14px" onclick="applyPaydayAllocation()">Apply this \u2014 book it all</button>' : '')+
+    '<button class="btn" style="margin-top:8px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="document.getElementById(\'payday-result\').style.display=\'none\'">Just showing me</button>';
+}
+// Book the allocation for real: pay down the named debts (and record each payment so the debt-free
+// projection has data), and move the savings slice into the top goal. One tap instead of re-entering
+// every number by hand.
+function applyPaydayAllocation(){
+  const steps = window.__paydaySteps || [];
+  if(!steps.length) return;
+  loadF();
+  let onDebts = 0, toSavings = 0, goalName = '';
+  const pays = ls('totry_payments') || [];
+  steps.forEach(s => {
+    if(s.kind==='debt' && s.debtIdx != null && debts[s.debtIdx] && s.amt > 0){
+      const d = debts[s.debtIdx];
+      d.p = Math.min((parseFloat(d.p)||0) + s.amt, d.t); // never overpay past the total
+      onDebts += s.amt;
+      pays.push({ amt: s.amt, ts: new Date().toISOString(), debt: d.n });
+    }
+    if(s.kind==='savings' && s.amt > 0){
+      const goals = ls('totry_finance_goals') || [];
+      if(goals.length){ goals[0].current = (parseFloat(goals[0].current)||0) + s.amt; ls('totry_finance_goals', goals); toSavings += s.amt; goalName = goals[0].name||'your goal'; }
+    }
+  });
+  if(pays.length) ls('totry_payments', pays.slice(-200));
+  saveF();
+  try{ if(typeof syncToCloud==='function') syncToCloud(); }catch(_){}
+  try{ renderFinance(); if(typeof renderFinanceGoals==='function') renderFinanceGoals(); }catch(_){}
+  const el=document.getElementById('payday-result'); if(el) el.style.display='none';
+  try{ if(typeof haptic==='function') haptic('success'); }catch(_){}
+  const bits=[];
+  if(onDebts>0) bits.push('$'+Math.round(onDebts).toLocaleString()+' onto your debts');
+  if(toSavings>0) bits.push('$'+Math.round(toSavings).toLocaleString()+' to '+goalName);
+  if(typeof showToast==='function') showToast(bits.length?'Booked \u2713':'Nothing to book', bits.length?bits.join(' \u00b7 '):'Add a debt or a savings goal first.');
 }
 
 // ── WORKOUT TRACKER ───────────────────────────────────────────
