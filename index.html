@@ -4021,7 +4021,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v236';
+const APP_VERSION = 'v237';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4353,7 +4353,8 @@ const SYNC_KEYS = [
   // v30: conversation memory + share preferences + reading position
   'totry_coach_history','totry_coach_memory','totry_pt_history','totry_share_prefs','totry_bible_last_position',
   // Your corrected food numbers — they're yours, so they follow you to every device.
-  'totry_food_overrides'
+  'totry_food_overrides',
+  'totry_vice_uses'
 ];
 
 async function restoreFromCloud(){
@@ -9814,6 +9815,13 @@ function modEndSession(i){
   const within = thr > 0 ? (s.count <= thr) : true;
   if(!v.modLog) v.modLog = [];
   v.modLog.push({ date:new Date().toISOString(), within, count:s.count });
+  // The session counter is only for tonight — it's cleared below and gone. Mirror it into the
+  // durable use log too, so the honest week-by-week picture keeps building without asking twice.
+  if(s.count > 0){
+    const _u = ls('totry_vice_uses') || [];
+    _u.unshift({ v:v.n, ts:new Date().toISOString(), qty:s.count, via:'session' });
+    ls('totry_vice_uses', _u.slice(0,500));
+  }
   if(within) v.modWithin = (v.modWithin||0)+1; else v.modOver = (v.modOver||0)+1;
   v.lastModCheck = new Date().toISOString();
   saveV();
@@ -10285,7 +10293,16 @@ function renderVices(){
               '<div style="font-size:11px;color:var(--tx3);text-align:center;margin-top:10px;line-height:1.5">'+statusLine+'</div>'+
               (s ? '<button onclick="modEndSession('+i+')" style="width:100%;margin-top:10px;background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:8px;padding:8px;font-size:11px;cursor:pointer">End the night \u00b7 log it</button>' : '')+
             '</div>'+
-            '<button class="vice-btn" onclick="fightVice(' + i + ')" style="width:100%;background:none;border:1px solid var(--go-bd);color:var(--go);border-radius:10px;padding:9px;font-size:12px;cursor:pointer;margin-bottom:6px">Feeling the pull? Talk to me</button>';
+            (function(){
+              // The counter above is tonight. This is the truth of the week — the number that
+              // actually tells you whether "limiting it" is happening or just being said.
+              const wk = viceUsesInWeek(v.n); if(!wk) return '';
+              const spend = viceSpendInWeek(v.n);
+              return '<div style="font-size:11px;color:var(--tx3);text-align:center;margin-bottom:8px;line-height:1.5">'+
+                wk+' '+unit+' logged in the last 7 days'+(spend>0?' · $'+Math.round(spend)+' spent':'')+'</div>';
+            })()+
+            '<button class="vice-btn" onclick="fightVice(' + i + ')" style="width:100%;background:none;border:1px solid var(--go-bd);color:var(--go);border-radius:10px;padding:9px;font-size:12px;cursor:pointer;margin-bottom:6px">Feeling the pull? Talk to me</button>'+
+            '<button onclick="openLogUse(' + i + ')" style="width:100%;background:none;border:1px solid var(--bd);color:var(--tx3);border-radius:10px;padding:8px;font-size:11px;cursor:pointer;margin-bottom:6px">Log a day I missed</button>';
           }
           return '<button class="vice-btn" onclick="fightVice(' + i + ')" style="width:100%;background:var(--go);color:#1a1505;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">I\'m in a situation now</button>'+
             '<div style="display:flex;gap:8px;margin-top:8px">'+
@@ -10315,10 +10332,19 @@ function renderVices(){
         '</div>' +
       '</div>' +
       '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Usually hits: ' + (v.t || 'various times') + insight + '</div>' +
+      (viceNeedsCheckIn(v) ?
+        '<div style="background:var(--go-bg);border:1px solid var(--go-bd);border-radius:12px;padding:12px;margin-bottom:10px">' +
+          '<div style="font-size:12px;color:var(--tx2);line-height:1.55;margin-bottom:10px">It\'s been a week since you last said anything here, and the count kept climbing on its own. I\'d rather it be true than tidy — are you still clean?</div>' +
+          '<div style="display:flex;gap:8px">' +
+            '<button onclick="confirmViceClean(' + i + ')" style="flex:1;background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);border-radius:9px;padding:9px;font-size:12px;cursor:pointer">Still clean</button>' +
+            '<button onclick="openLogUse(' + i + ')" style="flex:1;background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:9px;padding:9px;font-size:12px;cursor:pointer">No — I\'ve used</button>' +
+          '</div>' +
+        '</div>' : '') +
       '<button class="vice-btn" onclick="fightVice(' + i + ')" style="width:100%;background:var(--re);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">' +
         '<svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
         'I\'m feeling it right now' +
       '</button>' +
+      '<button onclick="openLogUse(' + i + ')" style="width:100%;margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:10px;padding:9px;font-size:12px;cursor:pointer">I used — log it honestly</button>' +
       '<button onclick="openRecoveryTimeline(' + i + ')" style="width:100%;margin-top:8px;background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);border-radius:10px;padding:9px;font-size:12px;cursor:pointer">\u{1F33F} What this streak is earning you</button>' +
       totalInsight +
       '<div style="display:flex;gap:10px;margin-top:8px;font-size:10px;flex-wrap:wrap">' +
@@ -10710,6 +10736,28 @@ function viceCleanDays(v){
   return Math.max(0, Math.floor((Date.now() - start) / 86400000));
 }
 
+// SILENCE IS NOT A STREAK. A clean count is only elapsed time — it grows just as fast for someone
+// who stopped being honest as for someone doing the work, which means the app flatters exactly the
+// person who most needs the truth. So a long streak has to be confirmed now and then. This asks,
+// it doesn't accuse, and it never resets anything on its own.
+function _viceLastWord(v){
+  const stamps=[v.lastConfirm, v.lastLoss, v.startDate].filter(Boolean).map(s=>new Date(s).getTime()).filter(t=>!isNaN(t));
+  const uses=(ls('totry_vice_uses')||[]).filter(u=>u&&u.v===v.n).map(u=>new Date(u.ts).getTime()).filter(t=>!isNaN(t));
+  return Math.max(0, ...stamps, ...uses);
+}
+function viceNeedsCheckIn(v){
+  if(!v || v.mode==='moderate') return false;
+  if(viceCleanDays(v) < 6) return false;               // let a young streak just be
+  const last=_viceLastWord(v); if(!last) return false;
+  return (Date.now()-last)/86400000 >= 7;              // a week of silence — worth asking
+}
+function confirmViceClean(i){
+  loadV(); const v=vices[i]; if(!v) return;
+  v.lastConfirm=new Date().toISOString(); saveV();
+  try{ renderVices(); if(typeof haptic==='function') haptic('tap'); }catch(_){}
+  if(typeof showToast==='function') showToast('Good','Then it counts. '+viceCleanDays(v)+' days that are actually yours.');
+}
+
 // Money reclaimed by staying clean — the vice→stewardship pipe. A vice can carry an optional
 // cost: { costAmount, costPer } where costPer is 'day' | 'week' | 'use', costUses = uses/week.
 // Returns dollars saved across the current clean streak. No cost set → 0 (feature is opt-in).
@@ -10856,6 +10904,77 @@ function saveViceStart(i){
 // ── VICE COST → STEWARDSHIP ───────────────────────────────────────────────────
 // Optional: what the vice cost when active. Powers viceMoneySaved — money NOT spent becomes
 // visible progress (the vice→stewardship pipe no single-purpose app can show).
+// ── HONEST USE LOG ────────────────────────────────────────────────────────────────────────────
+// You should never have to go through an urge intervention to tell the truth about a day that's
+// already gone. Everything before this was either a live session counter (stale after 18h) or a
+// slip logged mid-crisis — so a person who simply isn't clean had no way to say so, and the app
+// mistook their silence for success. That flatters people instead of helping them. This records
+// real use, today or backdated, with what it cost and whether it went on credit. It never scolds.
+function openLogUse(i){
+  loadV(); const v=vices[i]; if(!v) return;
+  const today=new Date().toISOString().slice(0,10);
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:4px">'+String(v.n).replace(/</g,'&lt;')+'</div>'+
+    '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:16px">Just the truth — no scolding. Knowing where you actually are is the only way I’m any use to you.</div>'+
+    '<div class="lbl">When</div>'+
+    '<input type="date" id="lu-date" value="'+today+'" max="'+today+'" style="margin-bottom:12px;font-size:16px;padding:12px;color-scheme:dark">'+
+    '<div class="lbl">How many times</div>'+
+    '<input type="number" inputmode="numeric" id="lu-qty" value="1" min="1" style="margin-bottom:12px;font-size:16px;padding:12px">'+
+    '<div class="lbl">Did you buy? (optional)</div>'+
+    '<input type="number" inputmode="decimal" id="lu-cost" placeholder="What it cost $" style="margin-bottom:8px;font-size:16px;padding:12px">'+
+    '<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tx2);margin-bottom:14px"><input type="checkbox" id="lu-credit" style="width:auto;flex:none"> Put it on credit — I still owe this</label>'+
+    '<button class="btn primary" onclick="saveViceUse('+i+')" style="margin-bottom:8px">Log it honestly</button>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Cancel</button>'+
+    '</div>';
+  document.body.appendChild(m);
+}
+function saveViceUse(i){
+  loadV(); const v=vices[i]; if(!v) return;
+  const dateStr=document.getElementById('lu-date')?.value||'';
+  const qty=Math.max(1, parseInt(document.getElementById('lu-qty')?.value||'1',10)||1);
+  const cost=parseFloat(document.getElementById('lu-cost')?.value||'')||0;
+  const credit=!!(document.getElementById('lu-credit')||{}).checked;
+  const ts=dateStr?new Date(dateStr+'T12:00:00').toISOString():new Date().toISOString();
+  const uses=ls('totry_vice_uses')||[];
+  const rec={ v:v.n, ts, qty };
+  if(cost>0){ rec.cost=cost; rec.credit=credit; }
+  uses.unshift(rec);
+  ls('totry_vice_uses', uses.slice(0,500));
+  if(cost>0){
+    if(credit) v.owed=(parseFloat(v.owed)||0)+cost;  // a buy on credit grows what you owe
+    v.lastPurchase=ts;                                // supply you've now paid (or owe) for
+  }
+  // Quitting: an honest use is simply the truth of the streak. Recorded, not dramatised — and only
+  // moved forward, so backfilling older days can't rewrite a more recent reality.
+  // The streak is counted from startDate everywhere else in the app, so that's the field that has
+  // to move — setting only lastLoss would let a logged slip leave the count untouched, which is the
+  // exact dishonesty this whole feature exists to end. Only ever moves forward, so backfilling an
+  // older day can't rewrite a more recent reality.
+  if(v.mode!=='moderate'){
+    const used=new Date(ts).getTime();
+    if(used > (v.lastLoss?new Date(v.lastLoss).getTime():0)) v.lastLoss=ts;
+    if(used > (v.startDate?new Date(v.startDate).getTime():0)) v.startDate=ts;  // streak restarts from when it actually happened
+    v.relapseCount=(v.relapseCount||0)+1;
+  }
+  saveV();
+  document.querySelector('.modal-bg.open')?.remove();
+  try{ renderVices(); if(typeof renderScoreboard==='function') renderScoreboard(); if(typeof renderFinance==='function') renderFinance(); }catch(_){}
+  try{ if(typeof syncToCloud==='function') syncToCloud(); if(typeof haptic==='function') haptic('tap'); }catch(_){}
+  if(typeof showToast==='function') showToast('Logged','Thank you for being honest. That’s the part that actually moves things.');
+}
+// Real use in the last 7 days — the honest denominator for limits and trends.
+function viceUsesInWeek(name){
+  const wk=Date.now()-7*86400000;
+  return (ls('totry_vice_uses')||[]).filter(u=>u&&u.v===name&&new Date(u.ts).getTime()>=wk)
+    .reduce((a,u)=>a+(parseInt(u.qty,10)||1),0);
+}
+function viceSpendInWeek(name){
+  const wk=Date.now()-7*86400000;
+  return (ls('totry_vice_uses')||[]).filter(u=>u&&u.v===name&&u.cost>0&&new Date(u.ts).getTime()>=wk)
+    .reduce((a,u)=>a+(parseFloat(u.cost)||0),0);
+}
+
 function editViceCost(i){
   loadV();
   const v = vices[i]; if(!v) return;
