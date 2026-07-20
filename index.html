@@ -4021,7 +4021,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v235';
+const APP_VERSION = 'v236';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -10713,15 +10713,45 @@ function viceCleanDays(v){
 // Money reclaimed by staying clean — the vice→stewardship pipe. A vice can carry an optional
 // cost: { costAmount, costPer } where costPer is 'day' | 'week' | 'use', costUses = uses/week.
 // Returns dollars saved across the current clean streak. No cost set → 0 (feature is opt-in).
-function viceMoneySaved(v){
-  if(!v || !v.costAmount) return 0;
+// REAL-LIFE vice money. Two things the smooth "cost × weeks clean" model got wrong:
+//  1) LUMPY BUYING. You buy a carton that lasts a month. That money is already spent — quitting on
+//     day 3 has saved you nothing yet. Your first real saving is the purchase you DON'T make when
+//     the supply you already paid for runs out.
+//  2) MONEY OWED. If you still owe your dealer, being clean doesn't put you ahead — it puts you less
+//     behind. Nothing is "reclaimed" until what you owe for past use is cleared.
+// Returns the honest picture: what you've avoided, what you still owe, and what's actually yours.
+function viceSpendPicture(v){
+  if(!v) return null;
+  const amt = parseFloat(v.costAmount)||0;
+  const owed = Math.max(0, parseFloat(v.owed)||0);
+  if(amt<=0 && owed<=0) return null;
   const days = viceCleanDays(v);
-  const amt = parseFloat(v.costAmount) || 0;
-  if(amt <= 0) return 0;
+  let avoided = 0;
   const per = v.costPer || 'week';
-  if(per === 'day') return Math.round(amt * days);
-  if(per === 'use'){ const usesPerWeek = parseFloat(v.costUses)||7; return Math.round(amt * usesPerWeek * (days/7)); }
-  return Math.round(amt * (days/7)); // default: per week
+  if(per === 'purchase'){
+    // One buy lasts N days. Count only the buys you've actually skipped, measured from your LAST
+    // purchase (so supply you'd already paid for is never counted as a saving).
+    const lasts = Math.max(1, parseFloat(v.lastsDays)||30);
+    const since = v.lastPurchase ? Math.max(0, Math.floor((Date.now()-new Date(v.lastPurchase))/86400000)) : days;
+    avoided = Math.floor(since / lasts) * amt;
+  } else if(per === 'day'){ avoided = amt * days; }
+  else if(per === 'use'){ avoided = amt * ((parseFloat(v.costUses)||7) * (days/7)); }
+  else { avoided = amt * (days/7); }
+  avoided = Math.round(avoided);
+  const net = avoided - Math.round(owed);
+  return {
+    avoided,
+    owed: Math.round(owed),
+    net,                                   // can be negative — that's the honest position
+    ahead: net > 0,
+    toGo: Math.max(0, Math.round(owed) - avoided),  // what's left before you're actually ahead
+    nextBuyInDays: (per==='purchase') ? (()=>{ const lasts=Math.max(1,parseFloat(v.lastsDays)||30); const since=v.lastPurchase?Math.max(0,Math.floor((Date.now()-new Date(v.lastPurchase))/86400000)):days; return lasts - (since % lasts); })() : null
+  };
+}
+function viceMoneySaved(v){
+  const p = viceSpendPicture(v);
+  // Never claim money you haven't actually got yet — debts owed cancel savings first.
+  return p ? Math.max(0, p.net) : 0;
 }
 // Total reclaimed across all vices with a cost set.
 function totalReclaimed(){
@@ -10838,30 +10868,54 @@ function editViceCost(i){
     '<input type="number" inputmode="decimal" id="vc-amount" value="'+(v.costAmount||'')+'" placeholder="e.g. 25" style="margin-bottom:12px;font-size:16px;padding:12px">'+
     '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Per</div>'+
     '<select id="vc-per" style="margin-bottom:14px;font-size:16px;padding:12px">'+
+      '<option value="purchase"'+(v.costPer==='purchase'?' selected':'')+'>each time I buy (a pack, a bag — lasts a while)</option>'+
       '<option value="day"'+(v.costPer==='day'?' selected':'')+'>day</option>'+
       '<option value="week"'+(!v.costPer||v.costPer==='week'?' selected':'')+'>week</option>'+
-      '<option value="use"'+(v.costPer==='use'?' selected':'')+'>each time (set uses/week below)</option>'+
+      '<option value="use"'+(v.costPer==='use'?' selected':'')+'>each time I use it (set uses/week below)</option>'+
     '</select>'+
     '<div id="vc-uses-wrap" style="display:'+(v.costPer==='use'?'block':'none')+'">'+
       '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Times per week</div>'+
       '<input type="number" inputmode="numeric" id="vc-uses" value="'+(v.costUses||'')+'" placeholder="e.g. 7" style="margin-bottom:14px;font-size:16px;padding:12px">'+
     '</div>'+
+    // Lumpy buying, told honestly: one buy lasts a while, and that supply was already paid for.
+    '<div id="vc-buy-wrap" style="display:'+(v.costPer==='purchase'?'block':'none')+'">'+
+      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">One buy lasts (days)</div>'+
+      '<input type="number" inputmode="numeric" id="vc-lasts" value="'+(v.lastsDays||'')+'" placeholder="e.g. 30" style="margin-bottom:12px;font-size:16px;padding:12px">'+
+      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">When did you last buy?</div>'+
+      '<input type="date" id="vc-lastbuy" value="'+(v.lastPurchase?String(v.lastPurchase).slice(0,10):'')+'" style="margin-bottom:6px;font-size:16px;padding:12px;color-scheme:dark">'+
+      '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:14px">You already paid for what you have. Saving starts at the buy you don’t make.</div>'+
+    '</div>'+
+    // Money owed for past use — you're not ahead until this is cleared.
+    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Still owe anyone for it? ($)</div>'+
+    '<input type="number" inputmode="decimal" id="vc-owed" value="'+(v.owed||'')+'" placeholder="e.g. 200 — leave blank if none" style="margin-bottom:6px;font-size:16px;padding:12px">'+
+    '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:14px">Being clean doesn’t put you ahead until what you owe is cleared. I’ll count that first, honestly.</div>'+
     '<button class="btn primary" onclick="saveViceCost('+i+')" style="margin-bottom:8px">Save</button>'+
     (v.costAmount?'<button class="btn" onclick="clearViceCost('+i+')" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;margin-bottom:8px">Remove cost tracking</button>':'')+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Cancel</button>'+
     '</div>';
   document.body.appendChild(m);
   const perSel = document.getElementById('vc-per');
-  if(perSel) perSel.onchange = () => { const w=document.getElementById('vc-uses-wrap'); if(w) w.style.display = perSel.value==='use'?'block':'none'; };
+  if(perSel) perSel.onchange = () => {
+    const w=document.getElementById('vc-uses-wrap'); if(w) w.style.display = perSel.value==='use'?'block':'none';
+    const b=document.getElementById('vc-buy-wrap'); if(b) b.style.display = perSel.value==='purchase'?'block':'none';
+  };
 }
 function saveViceCost(i){
   loadV();
   const amt = parseFloat(document.getElementById('vc-amount')?.value||'');
   const per = document.getElementById('vc-per')?.value || 'week';
   const uses = parseFloat(document.getElementById('vc-uses')?.value||'');
+  const lasts = parseFloat(document.getElementById('vc-lasts')?.value||'');
+  const lastBuy = document.getElementById('vc-lastbuy')?.value || '';
+  const owed = parseFloat(document.getElementById('vc-owed')?.value||'');
   if(!amt || amt<=0){ showToast('Enter an amount','Add what it cost, or cancel.'); return; }
   vices[i].costAmount = amt; vices[i].costPer = per;
   if(per==='use') vices[i].costUses = uses||7;
+  if(per==='purchase'){
+    vices[i].lastsDays = lasts||30;
+    vices[i].lastPurchase = lastBuy ? new Date(lastBuy+'T12:00:00').toISOString() : (vices[i].lastPurchase||null);
+  }
+  vices[i].owed = (owed>0) ? owed : 0;
   saveV();
   document.querySelector('.modal-bg.open')?.remove();
   renderVices();
@@ -16440,6 +16494,23 @@ function renderFinance(){
     // reclaimed money, float that hero up right beneath the metrics. Idempotent (only moves once).
     try{ const mg=document.querySelector('#tab-money .mg'); const sh=document.getElementById('saved-hero'); if(mg&&sh&&mg.nextElementSibling!==sh) mg.after(sh); }catch(_){}
     if(sd) sd.textContent='Reclaimed by staying clean — that\u2019s money toward your debt and your freedom.';
+    // Honest position, not a fictional total: if money is still owed for past use, say so and show
+    // what's left before they're genuinely ahead. Being clean while you owe = less behind, not ahead.
+    try{
+      loadV();
+      const owedTotal=(vices||[]).reduce((a,v)=>a+Math.max(0,parseFloat(v.owed)||0),0);
+      const avoidedTotal=(vices||[]).reduce((a,v)=>{ const p=viceSpendPicture(v); return a+(p?p.avoided:0); },0);
+      const oldN=document.getElementById('reclaim-owed-note'); if(oldN) oldN.remove();
+      if(owedTotal>0 && sd){
+        const left=Math.max(0, owedTotal-avoidedTotal);
+        const n=document.createElement('div'); n.id='reclaim-owed-note';
+        n.style.cssText='margin-top:8px;font-size:12px;color:var(--tx3);line-height:1.55';
+        n.innerHTML = left>0
+          ? 'You’ve avoided <b>$'+avoidedTotal.toLocaleString()+'</b> of spending, but still owe <b style="color:var(--go)">$'+owedTotal.toLocaleString()+'</b> for past use — <b>$'+left.toLocaleString()+'</b> to go before you’re actually ahead. Clearing that is the first real win.'
+          : 'That’s after clearing the <b>$'+owedTotal.toLocaleString()+'</b> you owed for past use — you’re genuinely ahead now.';
+        sd.after(n);
+      }
+    }catch(_){}
     // THE THING NO MONEY APP CAN SAY: what staying clean actually BUYS. Redirect the money the vice
     // was taking onto the debt and show the freedom date move — sobriety, priced in months and
     // interest saved. Only possible because the fight and the money live in the same app.
