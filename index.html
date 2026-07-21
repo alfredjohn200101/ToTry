@@ -4024,7 +4024,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v245';
+const APP_VERSION = 'v246';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -17479,9 +17479,14 @@ function _fuelComputePreworkout(lead){
   const gym=(ls('totry_cal_events')||[]).filter(function(e){ return e && e.type==='gym' && e.start; });
   const fmt=function(H,M){ const ap=H<12?'am':'pm'; let hr=H%12; if(hr===0)hr=12; return hr+(M?(':'+String(M).padStart(2,'0')):'')+ap; };
   return gym.map(function(e){
-    const parts=(e.start||'18:00').split(':'); const h=parseInt(parts[0],10)||18, mn=parseInt(parts[1],10)||0;
+    const parts=(e.start||'18:00').split(':');
+    // NaN-check, never `|| default` — a midnight session (hour 00) is a real 0, and `0 || 18` would
+    // silently turn 12:30am into 6:30pm. That bug gave late-night lifters and shift workers the
+    // wrong fuel window entirely.
+    let h=parseInt(parts[0],10); if(isNaN(h)) h=18;
+    let mn=parseInt(parts[1],10); if(isNaN(mn)) mn=0;
     let total=h*60+mn-(lead||75); if(total<0) total+=1440;
-    return { day:dn[e.day], sessionStart:fmt(h,mn), eatBy:fmt(Math.floor(total/60), total%60) };
+    return { day:(dn[e.day]||''), sessionStart:fmt(h,mn), eatBy:fmt(Math.floor(total/60), total%60) };
   });
 }
 // "Find your number" — adjust the personal pre-workout lead and re-time everything from the real schedule.
@@ -28766,7 +28771,7 @@ function computeProactiveNudge(){
     const nowMin = new Date().getHours()*60 + new Date().getMinutes();
     const fmt = function(mins){ const t=((mins%1440)+1440)%1440; let hh=Math.floor(t/60), mm=t%60; const ap=hh<12?'am':'pm'; let h12=hh%12; if(h12===0)h12=12; return h12+(mm?(':'+String(mm).padStart(2,'0')):'')+ap; };
     let best=null;
-    gymToday.forEach(function(e){ const parts=e.start.split(':'); const sMin=(parseInt(parts[0],10)||18)*60+(parseInt(parts[1],10)||0); if(nowMin < sMin && (sMin - nowMin) <= 240){ if(!best || sMin < best.sMin) best={ sMin:sMin, eatBy:sMin-lead }; } });
+    gymToday.forEach(function(e){ const parts=(e.start||'').split(':'); let sh=parseInt(parts[0],10); if(isNaN(sh)) sh=18; let sm=parseInt(parts[1],10); if(isNaN(sm)) sm=0; const sMin=sh*60+sm; if(nowMin < sMin && (sMin - nowMin) <= 240){ if(!best || sMin < best.sMin) best={ sMin:sMin, eatBy:sMin-lead }; } });
     if(best){
       return { id:'preworkout'+dayKey(now)+best.sMin, tone:'nudge',
         eyebrow:'Fuel for training',

@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v245-adaptive-tdee-honours-your-goal'
+const CACHE = 'totry-v246-carb-timing-midnight-fix'
 
 const CORE = [
   './',
