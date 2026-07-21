@@ -4024,7 +4024,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v242';
+const APP_VERSION = 'v243';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -10358,7 +10358,7 @@ function renderVices(){
             '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + within + '/' + totalChecks + '</div>' +
           '</div>' : '') +
         '</div>' +
-        '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Usually: ' + v.t.replace(/</g,'&lt;') + insight + '</div>' +
+        '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Usually: ' + (v.t || 'various times').replace(/</g,'&lt;') + insight + '</div>' +
         (function(){
           const thr = v.modThreshold || 0;
           const s = _getModSession(i);

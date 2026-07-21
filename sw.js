@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v242-home-knows-the-hour'
+const CACHE = 'totry-v243-moderate-card-crash-fix'
 
 const CORE = [
   './',
