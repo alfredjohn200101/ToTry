@@ -4024,7 +4024,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v240';
+const APP_VERSION = 'v241';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5491,6 +5491,31 @@ function getLifeState(){
   const losses7 = fight7.filter(f => f.won === false).length;
   const cravings7 = (L('totry_cravings')||[]).filter(c => c && within(c.ts, 7));
 
+  // ── PER-VICE HONEST STATE ── so the Brother's counsel knows exactly where each fight stands, not
+  // just an aggregate. Carries the honest use log (the truth a clean streak alone can hide) and the
+  // moments he came here and turned away. Without this the app's VOICE was blind to its own tracking.
+  const _usesLog = L('totry_vice_uses') || [];
+  const _momWon = L('totry_moments_won') || [];
+  const momentsWon7 = _momWon.filter(x => x && within(x.ts, 7)).length;
+  const viceStates = (L('totry_v')||[]).filter(v => v && v.n).map(v => {
+    const uses7 = _usesLog.filter(u => u && u.v === v.n && within(u.ts, 7));
+    const lastUse = uses7.length ? uses7.reduce((m,u)=>Math.max(m, new Date(u.ts).getTime()), 0) : null;
+    const turned7 = _momWon.filter(x => x && x.v === v.n && within(x.ts, 7)).length;
+    let pattern = null;
+    try{ pattern = (typeof analyzeUrgePatterns==='function') ? analyzeUrgePatterns(v.n) : null; }catch(_){}
+    return {
+      name: v.n,
+      mode: v.mode || 'quit',
+      cleanDays: (typeof viceCleanDays==='function') ? viceCleanDays(v) : null,
+      uses7: uses7.reduce((a,u)=>a+(parseInt(u.qty,10)||1),0),
+      daysSinceUse: lastUse ? Math.floor((now-lastUse)/86400000) : null,
+      turnedAway7: turned7,
+      limit: v.mode==='moderate' ? (v.modLimit||v.modThreshold||null) : null,
+      hardHour: pattern && pattern.riskWindow ? pattern.riskWindow : null,
+      topTrigger: pattern && pattern.topTrigger ? pattern.topTrigger : null
+    };
+  });
+
   // ── READINESS ──
   const readiness = (typeof computeReadiness==='function') ? computeReadiness() : null;
 
@@ -5521,7 +5546,7 @@ function getLifeState(){
       examens7: examens7.length, prayers7: prayers7.length, reflections7: ev7.length + journal7.length,
       avgDayRating: avg(ev7, e=>e.rating)
     },
-    fight: { wins7, losses7, cravings7: cravings7.length, fights7: fight7.length },
+    fight: { wins7, losses7, cravings7: cravings7.length, fights7: fight7.length, momentsWon7, vices: viceStates },
     readiness: readiness ? { score: readiness.score, level: readiness.level } : null,
     money: (function(){ try{ const f=ls('totry_f')||{}; const debts=f.d||[]; const totalDebt=debts.reduce((s,d)=>s+Math.max(0,(d.t||0)-(d.p||0)),0); const reclaimed=(typeof totalReclaimed==='function')?totalReclaimed():0; return { totalDebt:Math.round(totalDebt), reclaimed, hasDebt: totalDebt>0 }; }catch(_){ return { totalDebt:0, reclaimed:0, hasDebt:false }; } })(),
     sex: (typeof userSex==='function') ? userSex() : null,
@@ -5544,7 +5569,24 @@ function lifeStateBrief(s){
   if(soul.physical!=null) soulBits.push('physical '+soul.physical.toFixed(1)+'/10');
   if(soulBits.length) lines.push('Self-reported (7d avg): '+soulBits.join(', '));
   if(soul.reflections7 || soul.examens7 || soul.prayers7) lines.push('Inner life (7d): '+soul.reflections7+' reflections, '+soul.examens7+' examens, '+soul.prayers7+' prayers logged');
-  if(f.fights7) lines.push('The fight (7d): '+f.wins7+' wins, '+f.losses7+' slips'+(f.cravings7?', '+f.cravings7+' cravings logged':''));
+  if(f.fights7) lines.push('The fight (7d): '+f.wins7+' wins, '+f.losses7+' slips'+(f.cravings7?', '+f.cravings7+' cravings logged':'')+(f.momentsWon7?', came here and turned away '+f.momentsWon7+'x':''));
+  // Per-vice honest state — the truth a streak alone can hide. If he's been logging real use, the
+  // Brother must MEET that with grace, never congratulate a clean streak that isn't real.
+  if(f.vices && f.vices.length){
+    f.vices.forEach(v => {
+      const bits = [];
+      if(v.mode === 'moderate'){
+        bits.push('keeping it within a limit'+(v.limit?(' of '+v.limit+'/wk'):''));
+        bits.push(v.uses7+' logged this week');
+      } else {
+        if(v.cleanDays != null) bits.push(v.cleanDays+' day'+(v.cleanDays===1?'':'s')+' clean');
+        if(v.uses7 > 0) bits.push('BUT honestly used '+v.uses7+'x in 7d'+(v.daysSinceUse!=null?(', last '+v.daysSinceUse+'d ago'):'')+' — meet with grace, not a false streak');
+      }
+      if(v.turnedAway7) bits.push('turned away '+v.turnedAway7+'x this week');
+      if(v.hardHour) bits.push('hardest around '+v.hardHour+(v.topTrigger?(', often '+v.topTrigger):''));
+      lines.push('· '+v.name+': '+bits.join('; '));
+    });
+  }
   if(s.readiness) lines.push('Readiness today: '+s.readiness.score+'/100 ('+s.readiness.level+')');
   if(s.money && (s.money.hasDebt || s.money.reclaimed > 0)) lines.push('Money: '+(s.money.hasDebt?('$'+s.money.totalDebt+' debt remaining'):'no tracked debt')+(s.money.reclaimed>0?(', $'+s.money.reclaimed+' reclaimed from vices'):'')+'. (Debt is a real weight — freedom is the goal.)');
   if(s.sex) lines.push('They are '+(s.sex==='female'?'a woman':'a man')+' — speak as an older sibling who understands what that means for them (training, nutrition, the specific pressures), same love, attuned to who they actually are. Never patronising.');
@@ -9655,9 +9697,23 @@ async function _companionSay(userText, opening){
         if(!v) return '';
         const days=(typeof viceCleanDays==='function')?viceCleanDays(v):0;
         const money=(typeof viceMoneySaved==='function')?viceMoneySaved(v):0;
+        const wk=Date.now()-7*86400000;
+        const uses7=(ls('totry_vice_uses')||[]).filter(u=>u&&u.v===v.n&&new Date(u.ts).getTime()>=wk).reduce((a,u)=>a+(parseInt(u.qty,10)||1),0);
+        const turned7=(ls('totry_moments_won')||[]).filter(x=>x&&x.v===v.n&&new Date(x.ts).getTime()>=wk).length;
+        const moderate=v.mode==='moderate';
         let out='';
-        if(days>0){ out+="Right now they are "+days+" day"+(days===1?'':'s')+" clean on this"+(money>0?(", which is about $"+money.toLocaleString()+" reclaimed from it"):"")+". If it lands warmly, you can gently remind them what THIS exact moment is protecting — something real they've built and would be proud to keep — as encouragement, NEVER as guilt, pressure, or a threat of loss. "; }
+        // THE HONEST STATE FIRST — the app must never congratulate a streak that isn't real. If they've
+        // logged real use this week, the Brother meets them exactly where they are, in grace, not on a
+        // pedestal they'd feel like a fraud standing on.
+        if(uses7>0 && !moderate){
+          out+="HONEST STATE — be careful here: although the day-count may show "+days+", they have TRUTHFULLY logged using this "+uses7+" time"+(uses7===1?'':'s')+" in the last 7 days. So they are NOT cleanly abstinent right now, and they KNOW it — do NOT congratulate a clean streak or it will feel false and push them away. Honour that they keep telling the truth (that honesty IS the progress), meet them exactly where they actually are, with grace and zero shame, and help them with THIS moment. ";
+        } else if(moderate){
+          out+="They're keeping this within a limit"+(v.modLimit?(" (about "+v.modLimit+"/week)"):"")+" rather than quitting — "+uses7+" logged this week. Support the limit they set; staying within it is the win, going over is information not failure. ";
+        } else if(days>0){
+          out+="Right now they are "+days+" day"+(days===1?'':'s')+" clean on this"+(money>0?(", which is about $"+money.toLocaleString()+" reclaimed from it"):"")+". If it lands warmly, you can gently remind them what THIS exact moment is protecting — something real they've built and would be proud to keep — as encouragement, NEVER as guilt, pressure, or a threat of loss. ";
+        }
         else if(money>0){ out+="Staying clean on this has already reclaimed about $"+money.toLocaleString()+" — real freedom, if it helps to name it gently. "; }
+        if(turned7>0){ out+="Worth knowing: they've come here and turned away from this "+turned7+" time"+(turned7===1?'':'s')+" in the last week — real strength they may not be crediting themselves for. "; }
         out+="And if they do slip, meet them with grace: a streak is a story, not a verdict, and every single moment is a fresh try. ";
         return out;
       }catch(_){ return ''; } })()
