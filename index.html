@@ -4357,7 +4357,8 @@ const SYNC_KEYS = [
   'totry_coach_history','totry_coach_memory','totry_pt_history','totry_share_prefs','totry_bible_last_position',
   // Your corrected food numbers — they're yours, so they follow you to every device.
   'totry_food_overrides',
-  'totry_vice_uses'
+  'totry_vice_uses',
+  'totry_moments_won'
 ];
 
 async function restoreFromCloud(){
@@ -9344,7 +9345,7 @@ function orbTap(){
 // ════ THE FEELING DOOR ════ The whole point: meet the person IN the feeling, then move them through
 // it to the ONE thing that helps. Not a tracker. The significant moment.
 const FEELINGS = [
-  { id:'pull',        emoji:'\uD83C\uDF0A', label:'The pull',        sub:'tempted, craving',        act:()=>{ closeFeelingDoor(); setTimeout(openCompanionForUrge, 260); } },
+  { id:'pull',        emoji:'\uD83C\uDF0A', label:'The pull',        sub:'tempted, craving',        act:()=>{ closeFeelingDoor(); setTimeout(_feelThePull, 260); } },
   { id:'restless',    emoji:'\u26A1',       label:'Restless',        sub:'can\u2019t settle, antsy', act:()=>_feelMove('restless') },
   { id:'flat',        emoji:'\uD83C\uDF2B\uFE0F', label:'Flat',      sub:'numb, can\u2019t be bothered', act:()=>_feelMove('flat') },
   { id:'anxious',     emoji:'\uD83C\uDF00', label:'Anxious',         sub:'tense, spinning',         act:()=>_feelMove('anxious') },
@@ -9380,6 +9381,29 @@ function renderFeelingDoor(){
     b.onclick = ()=>{ if(typeof haptic==='function') haptic('light'); try{ _recordFeeling(f.id); }catch(_){}; f.act(); };
     grid.appendChild(b);
   });
+}
+// "The pull" from the orb. If he's fighting a named vice, the integrated stakes door is the truer
+// first response than a blank AI chat — it already knows the losses, the debt, the streak, the hour.
+// One vice: straight in. Several: a one-tap which-one (needed for the right stakes). None yet, or he
+// just wants to talk: the companion. Reachable in two taps from anywhere, before the feeling wins.
+function _feelThePull(){
+  try{
+    if(typeof loadV==='function') loadV();
+    const vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices.filter(v=>v&&v.n):((ls('totry_v')||[]).filter(v=>v&&v.n));
+    if(!vs.length){ openCompanionForUrge(); return; }
+    if(vs.length===1){ openMomentStakes(vices.indexOf(vs[0])); return; }
+    document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+    const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+    m.innerHTML='<div class="modal">'+
+      '<div class="modal-handle"></div>'+
+      '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;color:var(--tx);margin-bottom:4px">Which one’s pulling?</div>'+
+      '<div style="text-align:center;font-size:12px;color:var(--tx3);margin-bottom:16px">No wrong answer. I just want to meet the right one.</div>'+
+      vs.map(v=>{ const idx=vices.indexOf(v); return '<button class="btn" onclick="closeModal(this);openMomentStakes('+idx+')" style="margin-bottom:8px;text-align:left;padding:13px;font-size:14px">'+String(v.n).replace(/</g,'&lt;')+'</button>'; }).join('')+
+      '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:4px">Something else — just talk</button>'+
+      '</div>';
+    document.body.appendChild(m);
+    if(typeof haptic==='function') haptic('tap');
+  }catch(_){ openCompanionForUrge(); }
 }
 // Log the feeling quietly (so patterns can form over time — the mirror learns).
 function _recordFeeling(id){
@@ -10304,7 +10328,7 @@ function renderVices(){
               return '<div style="font-size:11px;color:var(--tx3);text-align:center;margin-bottom:8px;line-height:1.5">'+
                 wk+' '+unit+' logged in the last 7 days'+(spend>0?' · $'+Math.round(spend)+' spent':'')+'</div>';
             })()+
-            '<button class="vice-btn" onclick="fightVice(' + i + ')" style="width:100%;background:none;border:1px solid var(--go-bd);color:var(--go);border-radius:10px;padding:9px;font-size:12px;cursor:pointer;margin-bottom:6px">Feeling the pull? Talk to me</button>'+
+            '<button class="vice-btn" onclick="openMomentStakes(' + i + ')" style="width:100%;background:none;border:1px solid var(--go-bd);color:var(--go);border-radius:10px;padding:9px;font-size:12px;cursor:pointer;margin-bottom:6px">Feeling the pull? Come here first</button>'+
             '<button onclick="openLogUse(' + i + ')" style="width:100%;background:none;border:1px solid var(--bd);color:var(--tx3);border-radius:10px;padding:8px;font-size:11px;cursor:pointer;margin-bottom:6px">Log a day I missed</button>';
           }
           return '<button class="vice-btn" onclick="fightVice(' + i + ')" style="width:100%;background:var(--go);color:#1a1505;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">I\'m in a situation now</button>'+
@@ -10343,9 +10367,9 @@ function renderVices(){
             '<button onclick="openLogUse(' + i + ')" style="flex:1;background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:9px;padding:9px;font-size:12px;cursor:pointer">No — I\'ve used</button>' +
           '</div>' +
         '</div>' : '') +
-      '<button class="vice-btn" onclick="fightVice(' + i + ')" style="width:100%;background:var(--re);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">' +
+      '<button class="vice-btn" onclick="openMomentStakes(' + i + ')" style="width:100%;background:var(--re);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">' +
         '<svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
-        'I\'m feeling it right now' +
+        'I\'m feeling it — come here first' +
       '</button>' +
       '<button onclick="openLogUse(' + i + ')" style="width:100%;margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:10px;padding:9px;font-size:12px;cursor:pointer">I used — log it honestly</button>' +
       '<button onclick="openRecoveryTimeline(' + i + ')" style="width:100%;margin-top:8px;background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);border-radius:10px;padding:9px;font-size:12px;cursor:pointer">\u{1F33F} What this streak is earning you</button>' +
@@ -10976,6 +11000,260 @@ function viceSpendInWeek(name){
   const wk=Date.now()-7*86400000;
   return (ls('totry_vice_uses')||[]).filter(u=>u&&u.v===name&&u.cost>0&&new Date(u.ts).getTime()>=wk)
     .reduce((a,u)=>a+(parseFloat(u.cost)||0),0);
+}
+
+// ── BEFORE IT TAKES OVER ────────────────────────────────────────────────────────────────────────
+// The whole promise of one app instead of ten: when the pull comes, it doesn't just say "don't."
+// It already knows your real losses (the bank), your debt, your goals, your body, and the hour —
+// so it can put the exact stakes in front of you BEFORE the feeling wins, in a way no gambling app,
+// no budget app, and no blocker could, because none of them hold the rest of your life. This is the
+// calm door you reach for early, not the white-knuckle SOS. Every vice gets the stakes that are
+// true FOR IT — money for the ones money touches, and never money for the ones it doesn't.
+
+// What KIND of stakes this vice answers to. A porn or masturbation win is never measured in dollars
+// (he asked for exactly this); gambling and substances are.
+function _viceStakeKind(v){
+  const n=String((v&&v.n)||v||'').toLowerCase();
+  if(/gambl|bet|punt|pokie|casino|lotto|lottery/.test(n)) return 'gambling';
+  if(/smok|cig|tobac|nicotine|vape|weed|cannabis|drink|alcohol|booze|beer|wine/.test(n)) return 'substance';
+  return 'behaviour';
+}
+// The priority debt (the one the current strategy says to hit first) and what a one-off payment
+// against it would move. Returns null when there's no debt to speak to.
+function _priorityDebt(){
+  try{
+    loadF();
+    if(!debts || !debts.length) return null;
+    const strat=ls('totry_debt_strategy')||'snowball';
+    const sorted=_sortDebtsByStrategy(debts.map((d,i)=>({...d,idx:i})), strat);
+    const top=sorted.find(d=>(d.t-d.p)>0);
+    return top||null;
+  }catch(_){ return null; }
+}
+// The highest-priority savings goal not yet complete.
+function _priorityGoal(){
+  const goals=ls('totry_finance_goals')||[];
+  const open=goals.filter(g=>!(g.target>0)||g.current<g.target)
+    .sort((a,b)=>{const ap=a.target>0?a.current/a.target:0,bp=b.target>0?b.current/b.target:0;return ap-bp;});
+  return open[0]||null;
+}
+// What a dollar amount, kept out of a vice and put somewhere real, is actually WORTH — pulled from
+// his own numbers, not a platitude. Returns an array of honest, specific lines.
+function stakesForAmount(amount){
+  const out=[]; if(!(amount>0)) return out;
+  const money=n=>'$'+Math.abs(Math.round(n)).toLocaleString();
+  // Against the freedom date — the most motivating frame the app has. When there's a payment history
+  // to project from, say how many months sooner freedom comes. When there isn't yet, fall back to
+  // the interest this dollar stops bleeding — still true, still concrete, never nothing.
+  try{
+    const debt=_priorityDebt();
+    if(debt){
+      const now=monthlyPaymentRate();
+      const strat=ls('totry_debt_strategy')||'snowball';
+      const base=projectPayoff(debts, now, strat);
+      const withIt=projectPayoff(debts, now+amount, strat);
+      if(base&&withIt&&base.months&&withIt.months&&base.months>withIt.months){
+        out.push({icon:'\u{1F513}', text:money(amount)+' straight at your debt brings your freedom date '+(base.months-withIt.months)+' month'+(base.months-withIt.months===1?'':'s')+' closer. Tonight.'});
+      } else {
+        const rate=parseFloat(debt.interest)||0;
+        if(rate>0){
+          const yr=amount*(rate/100);
+          out.push({icon:'\u{1F513}', text:money(amount)+' off '+String(debt.n).replace(/</g,'&lt;')+' stops it charging you ~'+money(yr)+' a year in interest — every year, until it’s gone.'});
+        } else {
+          out.push({icon:'\u{1F513}', text:money(amount)+' off '+String(debt.n).replace(/</g,'&lt;')+' is '+money(amount)+' you never have to pay back with interest on top.'});
+        }
+      }
+    }
+  }catch(_){}
+  // Against the priority goal.
+  const g=_priorityGoal();
+  if(g){
+    const pct=g.target>0?Math.round((amount/g.target)*100):0;
+    out.push({icon:'\u{1F3AF}', text:money(amount)+' into '+g.name+(pct>0?' — that’s '+pct+'% of it, in one honest move':'')+'.'});
+  }
+  // Against the real cost of living, from his own statement.
+  try{
+    const r=spendingRead();
+    if(r){
+      const groc=(r.cats.find(c=>c.name==='Groceries')||{}).perMonth||0;
+      if(groc>0){ const days=Math.round((amount/(groc/30.44))); if(days>=1) out.push({icon:'\u{1F35E}', text:money(amount)+' is about '+days+' day'+(days===1?'':'s')+' of real food on the table.'}); }
+    }
+  }catch(_){}
+  return out;
+}
+
+// The gambling intervention he asked for, whole: the honest total first (from the bank, not a
+// guess), then "how much have you got on you right now?", then — if he's honest — where that exact
+// money does more for him than the bookie ever will, and a real move to make it count.
+function openGambleMoment(i){
+  loadV(); const v=vices[i]; if(!v) return;
+  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  const bank=viceSpendFromBank('gambling');
+  const lost = bank && bank.total>0 ? bank.total : null;
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto">'+
+    '<div class="modal-handle"></div>'+
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:24px;font-style:italic;color:var(--tx);margin-bottom:6px">Before you put it on</div>'+
+    '<div style="text-align:center;font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:16px">You came here first. That’s the whole game, right there — you already did the hard part.</div>'+
+    (lost
+      ? '<div style="background:var(--re-bg);border:1px solid var(--re-bd);border-radius:12px;padding:14px;margin-bottom:14px;text-align:center">'+
+          '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);letter-spacing:0.1em;margin-bottom:4px">THE BANK’S RECORD, NOT A GUESS</div>'+
+          '<div style="font-family:DM Mono,monospace;font-size:30px;color:var(--re);line-height:1">−$'+Math.round(lost).toLocaleString()+'</div>'+
+          '<div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-top:8px">That’s what it has already taken from you. Not a story — '+bank.count+' transactions it can’t erase. You have never once walked away up. Neither has anyone.</div>'+
+        '</div>'
+      : '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px;font-size:12.5px;color:var(--tx2);line-height:1.65">The house is built to win over time — that’s not bad luck, it’s the maths it’s made of. Import a statement sometime and I’ll show you your real number. For now, let’s deal with right now.</div>')+
+    '<div style="font-size:13.5px;color:var(--tx);line-height:1.6;margin-bottom:8px;text-align:center">Be straight with me — how much have you actually got on you right now?</div>'+
+    '<input type="number" inputmode="decimal" id="gm-cash" placeholder="$ on hand" style="font-size:18px;padding:14px;text-align:center;margin-bottom:12px">'+
+    '<button class="btn primary" onclick="_gambleStakes('+i+')" style="margin-bottom:8px">Show me the truth about this money</button>'+
+    '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin-bottom:8px;font-size:13px">I just need to talk it out</button>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
+    '</div>';
+  document.body.appendChild(m);
+  try{ if(typeof haptic==='function') haptic('tap'); }catch(_){}
+  setTimeout(()=>{ const el=document.getElementById('gm-cash'); if(el) el.focus(); }, 300);
+}
+function _gambleStakes(i){
+  const cash=parseFloat(document.getElementById('gm-cash')?.value||'')||0;
+  if(cash<=0){ showToast('Just a number','However much it is — that’s the honest start. No wrong answer.'); return; }
+  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  const money=n=>'$'+Math.abs(Math.round(n)).toLocaleString();
+  loadF();
+  const stakes=stakesForAmount(cash);
+  const debt=_priorityDebt(); const goal=_priorityGoal();
+  let stakesHTML = stakes.length
+    ? stakes.map(s=>'<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--bd)"><span style="font-size:16px;flex:none">'+s.icon+'</span><span style="font-size:13px;color:var(--tx2);line-height:1.55">'+s.text+'</span></div>').join('')
+    : '<div style="font-size:13px;color:var(--tx2);line-height:1.6">'+money(cash)+' kept is '+money(cash)+' you still have at breakfast. Gambled, it’s almost certainly gone — that’s not pessimism, it’s the maths. Keeping it is the only move that’s ever up.</div>';
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  let actionBtns='';
+  if(debt){ actionBtns+='<button class="btn primary" onclick="_bookRedirect('+i+','+cash+',\'debt\')" style="margin-bottom:8px">I’ll put it at '+String(debt.n).replace(/'/g,'').replace(/</g,'&lt;').slice(0,24)+' instead</button>'; }
+  if(goal){ actionBtns+='<button class="btn'+(debt?'':' primary')+'" onclick="_bookRedirect('+i+','+cash+',\'goal\')" style="margin-bottom:8px'+(debt?';background:var(--bg3);border:1px solid var(--bd);color:var(--tx)':'')+'">Into '+String(goal.name).replace(/'/g,'').replace(/</g,'&lt;').slice(0,24)+' instead</button>'; }
+  if(!debt && !goal){ actionBtns+='<button class="btn primary" onclick="closeModal(this);go(\'money\')" style="margin-bottom:8px">Start a fund with it</button>'; }
+  m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto">'+
+    '<div class="modal-handle"></div>'+
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;color:var(--tx);margin-bottom:4px">'+money(cash)+' — here’s what it really is</div>'+
+    '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px">Same money. One of these you keep. The other, the house keeps.</div>'+
+    '<div style="margin-bottom:16px">'+stakesHTML+'</div>'+
+    actionBtns+
+    '<button class="btn" onclick="_gambleWin('+i+','+cash+')" style="background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);margin-bottom:8px;font-size:13px">I’m keeping it in my pocket — done</button>'+
+    '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Still shaky — talk to me</button>'+
+    '</div>';
+  document.body.appendChild(m);
+  try{ if(typeof haptic==='function') haptic('tap'); }catch(_){}
+}
+// Record that he came here and walked away — a real, tracked win for NOT acting (anti-engagement as
+// the ethic). Never inflates the money ledger with cash that only stayed in his pocket.
+function _gambleWin(i, cash){
+  loadV(); const v=vices[i];
+  if(v){
+    v.w=(v.w||0)+1; v.lastWin=new Date().toISOString();
+    const moments=ls('totry_moments_won')||[];
+    moments.unshift({v:v.n, ts:new Date().toISOString(), kept:cash||0, kind:'gambling'});
+    ls('totry_moments_won', moments.slice(0,300));
+    saveV();
+  }
+  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  try{ renderVices(); if(typeof syncToCloud==='function') syncToCloud(); if(typeof haptic==='function') haptic('success'); }catch(_){}
+  const kept=cash>0?('$'+Math.round(cash).toLocaleString()+' still yours. '):'';
+  showToast('That’s a win — a real one', kept+'The urge passes. What you did here is what changes the number.');
+}
+// Book a redirect ONLY as something he actually does — moving cash to debt/savings is a real-world
+// action, so the app confirms he did it rather than fabricating a payment (non-partial truth). Moves
+// the real ledger, so the freedom date he just earned shows up the next time he looks.
+function _bookRedirect(i, cash, target){
+  const money=n=>'$'+Math.abs(Math.round(n)).toLocaleString();
+  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  const where = target==='debt' ? (_priorityDebt()||{}).n : (_priorityGoal()||{}).name;
+  m.innerHTML='<div class="modal" style="text-align:center">'+
+    '<div class="modal-handle"></div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;color:var(--tx);margin-bottom:10px">Do it now, while you’re here</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:18px">Move the '+money(cash)+' to '+String(where||'it').replace(/</g,'&lt;')+' in your banking app — right now, before the moment cools. Then tell me it’s done and I’ll move your freedom date to match. I won’t log money you didn’t actually move.</div>'+
+    '<button class="btn primary" onclick="_confirmRedirect('+i+','+cash+',\''+target+'\')" style="margin-bottom:8px">Done — I moved it</button>'+
+    '<button class="btn" onclick="_gambleWin('+i+','+cash+')" style="background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);margin-bottom:8px;font-size:13px">Couldn’t right now, but I’m not gambling it</button>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Back</button>'+
+    '</div>';
+  document.body.appendChild(m);
+}
+function _confirmRedirect(i, cash, target){
+  try{
+    if(target==='debt'){
+      loadF();
+      const strat=ls('totry_debt_strategy')||'snowball';
+      const sorted=_sortDebtsByStrategy(debts.map((d,idx)=>({...d,idx})), strat);
+      const top=sorted.find(d=>(d.t-d.p)>0);
+      if(top && debts[top.idx]){
+        debts[top.idx].p=Math.min((parseFloat(debts[top.idx].p)||0)+cash, debts[top.idx].t);
+        const pays=ls('totry_payments')||[]; pays.push({debt:debts[top.idx].n, amt:cash, ts:new Date().toISOString(), via:'moment'}); ls('totry_payments', pays.slice(-200));
+        saveF();
+      }
+    } else {
+      const goals=ls('totry_finance_goals')||[];
+      const g=_priorityGoal();
+      const idx=goals.findIndex(x=>g&&x.id===g.id);
+      if(idx>=0){ goals[idx].current=(parseFloat(goals[idx].current)||0)+cash; ls('totry_finance_goals', goals); }
+    }
+  }catch(_){}
+  _gambleWin(i, 0); // count the moment won; money already booked above, don't double-count as "kept"
+  try{ if(typeof renderFinance==='function') renderFinance(); }catch(_){}
+  showToast('Moved — and it counts', '$'+Math.round(cash).toLocaleString()+' where it builds you instead of the house. Your freedom date just moved.');
+}
+
+// The router: the right door for the right vice, always reachable BEFORE the crisis. Money vices get
+// their stakes; behaviour vices get theirs (time, clarity, self-respect — never dollars).
+function openMomentStakes(i){
+  loadV(); const v=vices[i]; if(!v){ return; }
+  const kind=_viceStakeKind(v);
+  if(kind==='gambling'){ openGambleMoment(i); return; }
+  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  const clean=viceCleanDays(v);
+  let body='', extra='';
+  if(kind==='substance'){
+    // What NOT buying right now is worth, plus where it's already going instead.
+    const pic=viceSpendPicture(v);
+    const saved=pic?Math.max(0,pic.net):0;
+    const nextBuy=pic&&pic.nextBuyInDays!=null?pic.nextBuyInDays:null;
+    body='This craving is a wave — it peaks and falls whether or not you feed it, usually inside 20 minutes. You don’t have to win forever right now. Just outlast this one.';
+    const bits=[];
+    if(clean>0) bits.push({icon:'\u{1F33F}', text:clean+' day'+(clean===1?'':'s')+' clean. This is the moment that keeps it, or ends it — nothing else does.'});
+    if(saved>0) bits.push({icon:'\u{1F4B0}', text:'$'+Math.round(saved).toLocaleString()+' already reclaimed by not buying. Falling now spends the streak AND restarts the meter.'});
+    if(nextBuy!=null) bits.push({icon:'⏳', text:'You don’t need to buy for another '+nextBuy+' day'+(nextBuy===1?'':'s')+'. This urge is trying to move that up. It’s lying about how much you need it.'});
+    bits.push({icon:'\u{1F9E0}', text:'What’s this really about right now — tired, bored, stressed, alone? The urge is usually managing something else. Name that, and it loosens.'});
+    extra=bits.map(s=>'<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--bd)"><span style="font-size:16px;flex:none">'+s.icon+'</span><span style="font-size:13px;color:var(--tx2);line-height:1.55">'+s.text+'</span></div>').join('');
+  } else {
+    // Behaviour: never money. Time, clarity, self-respect, and what the urge is managing.
+    body='This is a wave, not a command. It rises and it passes — 15, 20 minutes — and it passes faster when you don’t argue with it. You’re not fighting forever. Just this one.';
+    const bits=[
+      {icon:'\u{1F33F}', text:(clean>0?clean+' day'+(clean===1?'':'s')+' clean — this exact moment is the whole streak. ':'')+'Ten minutes from now this feeling is smaller. You just have to still be standing then.'},
+      {icon:'\u{1FAA9}', text:'What you’re protecting here doesn’t show up on any balance sheet — the clear head tomorrow, the self-respect, being able to look people in the eye. That’s the real reward, and it’s only earned in moments exactly like this one.'},
+      {icon:'\u{1F9E0}', text:'What’s underneath it — lonely, understimulated, avoiding something? This is almost never about the thing itself. Name what it’s managing and it loses its grip.'},
+    ];
+    extra=bits.map(s=>'<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--bd)"><span style="font-size:16px;flex:none">'+s.icon+'</span><span style="font-size:13px;color:var(--tx2);line-height:1.55">'+s.text+'</span></div>').join('');
+  }
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto">'+
+    '<div class="modal-handle"></div>'+
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:24px;font-style:italic;color:var(--tx);margin-bottom:6px">You came here first</div>'+
+    '<div style="text-align:center;font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:16px">'+body+'</div>'+
+    '<div style="margin-bottom:16px">'+extra+'</div>'+
+    '<button class="btn primary" onclick="_momentWin('+i+')" style="margin-bottom:8px">The wave’s passing — I’m good</button>'+
+    '<button class="btn" onclick="closeModal(this);startLiveIntervention('+i+')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin-bottom:8px;font-size:13px">Stay with me — full SOS</button>'+
+    '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="background:transparent;border:none;color:var(--tx3);font-size:12px">I need to talk</button>'+
+    '</div>';
+  document.body.appendChild(m);
+  try{ if(typeof haptic==='function') haptic('tap'); }catch(_){}
+}
+function _momentWin(i){
+  loadV(); const v=vices[i];
+  if(v){
+    v.w=(v.w||0)+1; v.lastWin=new Date().toISOString();
+    const moments=ls('totry_moments_won')||[];
+    moments.unshift({v:v.n, ts:new Date().toISOString(), kind:_viceStakeKind(v)});
+    ls('totry_moments_won', moments.slice(0,300));
+    saveV();
+  }
+  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  try{ renderVices(); if(typeof syncToCloud==='function') syncToCloud(); if(typeof haptic==='function') haptic('success'); }catch(_){}
+  showToast('That’s the win', 'Not falling was the whole thing. The feeling passes; this is what stays.');
 }
 
 function editViceCost(i){
