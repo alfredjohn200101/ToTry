@@ -2868,6 +2868,9 @@ input:focus,textarea:focus,select:focus{
     <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.2;margin-bottom:2px">Stewardship</div>
     <div style="font-size:12.5px;color:var(--tx3);margin-top:3px;line-height:1.55">Money is freedom, not just numbers. Every dollar reclaimed from a vice, every debt paid down, is a chain off your shoulders. Steward it well.</div>
   </div>
+  <!-- Before it knows anything, this tab has exactly one job: get something real in. -->
+  <div id="money-gate"></div>
+  <div id="money-read-card"></div>
   <div class="mg">
     <div class="met"><div class="ml">Paid off</div><div class="mv g" id="f-paid">$0</div></div>
     <div class="met"><div class="ml">Debt left</div><div class="mv r" id="f-debt">$0</div></div>
@@ -4021,7 +4024,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v237';
+const APP_VERSION = 'v238';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -16580,8 +16583,59 @@ function calcDebtFreeDate(){
     ddesc.textContent='~'+proj.months+' month'+(proj.months===1?'':'s')+' at $'+Math.round(rate).toLocaleString()+'/month'+interestBit;
   }
 }
+// A money tab full of zeros teaches a person nothing and quietly tells them they're fine. Until it
+// knows something real, this tab has one job. Once it does, it leads with the read — and says how
+// stale that read has gone, because a balance sheet nobody feeds stops being true.
+function renderMoneyGate(){
+  const gate = document.getElementById('money-gate');
+  const readCard = document.getElementById('money-read-card');
+  if(!gate || !readCard) return;
+  const tx = ls('totry_transactions')||[];
+  let hasDebts = false;
+  try{ loadF(); hasDebts = (debts && debts.length > 0); }catch(_){}
+  const empty = tx.length < 5 && !hasDebts;
+
+  // The empty-state heroes are the ones that lie loudest — a debt-free date of "—" and $0
+  // reclaimed read as "all good" to someone who has never told the app anything.
+  ['df-hero','saved-hero'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display = empty ? 'none' : ''; });
+  const mg = document.querySelector('#tab-money .mg'); if(mg) mg.style.display = empty ? 'none' : '';
+
+  if(empty){
+    readCard.innerHTML = '';
+    gate.innerHTML = '<div class="card" style="margin-bottom:14px">'+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:21px;font-style:italic;color:var(--tx);margin-bottom:8px">I don’t know anything about your money yet.</div>'+
+      '<div style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">Most people can’t say where theirs actually goes — that’s not a failing, it’s just never been shown to them. Export a statement from your banking app and I’ll read it back to you: what comes in, where it leaves, and the one place worth locking in. It’s parsed on your phone and goes nowhere.</div>'+
+      '<button class="btn primary" onclick="openCSVImport()" style="margin-bottom:8px">Import a bank statement</button>'+
+      '<button class="btn" onclick="openTransactionLogger()">I’ll add it manually</button>'+
+    '</div>';
+    return;
+  }
+  gate.innerHTML = '';
+
+  const r = spendingRead();
+  if(!r){ readCard.innerHTML = ''; return; }
+  const money = n => '$'+Math.abs(Math.round(n)).toLocaleString();
+  const staleDays = Math.floor((Date.now() - r.to.getTime())/86400000);
+  const neg = r.netPerMonth < 0;
+  readCard.innerHTML = '<div class="card" style="margin-bottom:14px">'+
+    '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">'+
+      '<div class="card-hd" style="margin-bottom:0">Your money, honestly</div>'+
+      '<span style="font-family:DM Mono,monospace;font-size:15px;color:'+(neg?'var(--re)':'var(--gr)')+'">'+(neg?'−':'+')+money(r.netPerMonth)+'/mo</span>'+
+    '</div>'+
+    (r.lockIn ? '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:10px">Biggest movable cost: <b style="color:var(--tx)">'+r.lockIn.name+'</b>, '+money(r.lockIn.perMonth)+' a month.</div>' : '')+
+    (staleDays > 9
+      ? '<div style="font-size:11.5px;color:var(--go);line-height:1.5;margin-bottom:10px">Your last statement stops '+staleDays+' days ago. A balance sheet nobody feeds stops being true — import the latest when you get a minute.</div>'
+      : '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Up to date as of '+r.to.toLocaleDateString('en-AU')+'.</div>')+
+    '<div style="display:flex;gap:8px">'+
+      '<button class="btn" style="flex:1;width:auto;padding:9px;font-size:12px" onclick="openSpendingRead()">See the full read</button>'+
+      '<button class="btn" style="flex:1;width:auto;padding:9px;font-size:12px;background:transparent;border:1px solid var(--bd)" onclick="openCSVImport()">Update</button>'+
+    '</div>'+
+  '</div>';
+}
+
 function renderFinance(){
   loadF();
+  try{ renderMoneyGate(); }catch(_){}
   const owed=debts.reduce((a,d)=>a+(d.t-d.p),0),paid=debts.reduce((a,d)=>a+d.p,0);
   ['f-debt','h-debt'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='$'+Math.round(owed).toLocaleString();});
   const fp=document.getElementById('f-paid');if(fp)fp.textContent='$'+Math.round(paid).toLocaleString();
@@ -17454,6 +17508,12 @@ function _autoCategory(desc){
     ['Subscriptions', ['netflix','spotify','disney','youtube','prime','apple.com','icloud','adobe','gym','fitness','membership']],
     ['Shopping', ['amazon','ebay','kmart','target','big w','jb hi','myer','david jones','clothing','cotton on','uniqlo']],
     ['Health', ['pharmacy','chemist','priceline','doctor','medical','dental','hospital','medicare']],
+    // Vices get their own lines. Seeing "$842/mo · Gambling" sitting in the breakdown is the whole
+    // point — it's the truth that stays hidden when it's smeared into "Other". These reuse the same
+    // merchant lists the vice ledger checks against, so the two never disagree.
+    ['Gambling', VICE_MERCHANTS.gambling],
+    ['Tobacco', VICE_MERCHANTS.tobacco],
+    ['Alcohol', VICE_MERCHANTS.alcohol],
     ['Income', ['salary','payroll','wage','deposit','transfer in','refund','centrelink']],
   ];
   for(const [cat, kws] of rules){ if(kws.some(k => d.includes(k))) return cat; }
@@ -17538,7 +17598,22 @@ function handleCSVFile(ev){
   ev.target.value = '';
 }
 let _csvPending = [];
-function _showCSVPreview(parsed){
+function _showCSVPreview(rawParsed){
+  // Re-uploading is the whole point — a statement you pull weekly always overlaps the last one.
+  // Drop what's already here so the ledger stays true no matter how often it's fed.
+  const seen = _existingFingerprints();
+  const dupes = [];
+  const parsed = rawParsed.filter(p => {
+    const fp = _txFingerprint(p);
+    if(seen.has(fp)){ dupes.push(p); return false; }
+    seen.add(fp);   // also catches duplicate rows inside this same file
+    return true;
+  });
+  if(!parsed.length){
+    haptic('tap');
+    showToast('Already up to date', dupes.length+' transactions in that file were all imported before. Nothing double-counted.');
+    return;
+  }
   _csvPending = parsed;
   const expenses = parsed.filter(p=>p.type==='expense');
   const income = parsed.filter(p=>p.type==='income');
@@ -17553,7 +17628,8 @@ function _showCSVPreview(parsed){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:6px">Review import</div>'+
-    '<div style="font-size:13px;color:var(--tx2);margin-bottom:12px">Found <b>'+parsed.length+'</b> transactions: '+expenses.length+' expenses (\u2212$'+totalExp.toFixed(2)+'), '+income.length+' income (+$'+totalInc.toFixed(2)+').</div>'+
+    '<div style="font-size:13px;color:var(--tx2);margin-bottom:12px"><b>'+parsed.length+'</b> new: '+expenses.length+' expenses (\u2212$'+totalExp.toFixed(2)+'), '+income.length+' income (+$'+totalInc.toFixed(2)+').'+
+      (dupes.length ? ' <span style="color:var(--tx3)">'+dupes.length+' already imported \u2014 skipped, not double-counted.</span>' : '')+'</div>'+
     '<div style="margin-bottom:14px">'+preview+(parsed.length>8?'<div style="font-size:11px;color:var(--tx3);text-align:center;padding-top:8px">+ '+(parsed.length-8)+' more</div>':'')+'</div>'+
     '<button class="btn primary" onclick="confirmCSVImport()" style="margin-bottom:8px">Import all '+parsed.length+'</button>'+
     '<button class="btn" onclick="closeModal(this);_csvPending=[]">Cancel</button></div>';
@@ -17571,7 +17647,202 @@ function confirmCSVImport(){
   _csvPending = [];
   document.querySelector('.modal-bg.open')?.remove();
   renderTransactions();
-  haptic('success'); showToast('Imported', n+' transactions added.');
+  try{ renderFinance(); }catch(_){}
+  haptic('success');
+  // Don't just confirm the file landed — say what it means. That's the whole difference between
+  // a ledger and a read.
+  setTimeout(()=>{ try{ openSpendingRead(n); }catch(_){ showToast('Imported', n+' transactions added.'); } }, 260);
+}
+
+// The read. What the money actually says, and the one place to lock in.
+function spendingReadHTML(){
+  const r = spendingRead();
+  if(!r) return '<div style="font-size:13px;color:var(--tx2);line-height:1.6">Not enough yet to see a pattern. Import a statement and I’ll show you where it’s going.</div>';
+  const money = n => '$'+Math.abs(Math.round(n)).toLocaleString();
+  const period = r.months < 1.4 ? 'about a month' : Math.round(r.months)+' months';
+  let h = '';
+
+  // 1. The shape of it. Honest first — including the uncomfortable direction.
+  const neg = r.netPerMonth < 0;
+  h += '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px">'+
+    '<div style="font-size:11px;color:var(--tx3);margin-bottom:8px">'+period+' of your money · '+r.count+' transactions</div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--tx2);padding:3px 0"><span>Coming in</span><span style="font-family:DM Mono,monospace;color:var(--gr)">'+money(r.incomePerMonth)+'/mo</span></div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--tx2);padding:3px 0"><span>Going out</span><span style="font-family:DM Mono,monospace;color:var(--re)">'+money(r.spendPerMonth)+'/mo</span></div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:14px;color:var(--tx);padding:8px 0 0;margin-top:6px;border-top:1px solid var(--bd)"><span>'+(neg?'Short by':'Left over')+'</span>'+
+      '<span style="font-family:DM Mono,monospace;color:'+(neg?'var(--re)':'var(--gr)')+'">'+money(r.netPerMonth)+'/mo</span></div>'+
+    (r.incomePerMonth <= 0 ? '<div style="font-size:11px;color:var(--tx3);margin-top:8px;line-height:1.5">No income rows in this export — if your pay lands in another account, the leftover figure isn’t the full story.</div>' : '')+
+  '</div>';
+
+  // 2. Where it goes.
+  const top = r.cats.slice(0,5);
+  if(top.length){
+    h += '<div style="font-size:12px;color:var(--tx3);margin-bottom:8px">Where it goes</div><div style="margin-bottom:14px">';
+    top.forEach(c => {
+      const pct = Math.round(c.share*100);
+      h += '<div style="margin-bottom:8px">'+
+        '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);margin-bottom:4px"><span>'+c.name+'</span><span style="font-family:DM Mono,monospace">'+money(c.perMonth)+'/mo · '+pct+'%</span></div>'+
+        '<div style="height:5px;background:var(--bg3);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+Math.max(2,pct)+'%;background:var(--go);border-radius:3px"></div></div>'+
+      '</div>';
+    });
+    h += '</div>';
+  }
+
+  // 3. The one place to lock in — and what it's actually worth. This is where the money tab stops
+  // reporting and starts counselling, so it has to name a real consequence, not a vibe.
+  if(r.lockIn){
+    const half = r.lockIn.perMonth/2;
+    let consequence = 'That’s '+money(half*12)+' a year back in your hands.';
+    try{
+      loadF();
+      const owed = debts.reduce((a,d)=>a+(d.t-d.p),0);
+      if(owed > 0){
+        const strat = ls('totry_debt_strategy')||'snowball';
+        const now = monthlyPaymentRate();
+        const base = projectPayoff(debts, now, strat);
+        const better = projectPayoff(debts, now+half, strat);
+        if(base && better && base.months && better.months && base.months > better.months){
+          consequence = 'Put half of that at your debt and you’re free '+(base.months-better.months)+' months sooner.';
+        }
+      }
+    }catch(_){}
+    h += '<div style="background:var(--go-bg);border:1px solid var(--go-bd);border-radius:12px;padding:14px;margin-bottom:12px">'+
+      '<div style="font-size:11px;color:var(--go);margin-bottom:6px">WHERE TO LOCK IN</div>'+
+      '<div style="font-size:13px;color:var(--tx);line-height:1.6">'+r.lockIn.name+' is '+money(r.lockIn.perMonth)+' a month — your biggest movable cost. '+consequence+'</div>'+
+    '</div>';
+  }
+
+  // 4. What the bank says about the fight. The thread no money app can pull, because no money app
+  // is also holding the vice.
+  h += viceLedgerHTML();
+  return h;
+}
+
+// The balance-sheet enforcer: the ledger checked against what's claimed in the Fight.
+function viceLedgerHTML(){
+  let out = '';
+  try{
+    loadV();
+    (vices||[]).forEach((v,i) => {
+      const kind = _viceKindFor(v); if(!kind) return;
+      const bank = viceSpendFromBank(kind);
+      if(!bank || !bank.total) return;
+      const clean = viceCleanDays(v);
+      const since = bank.firstTs ? Math.floor((Date.now()-bank.firstTs)/86400000) : 0;
+      // Did it happen inside the streak the app is currently crediting?
+      const insideStreak = viceSpendFromBank(kind, Date.now() - clean*86400000);
+      const contradicts = v.mode!=='moderate' && insideStreak && insideStreak.total > 0;
+      out += '<div style="background:'+(contradicts?'var(--re-bg)':'var(--bg3)')+';border:1px solid '+(contradicts?'var(--re-bd)':'var(--bd)')+';border-radius:12px;padding:14px;margin-bottom:12px">'+
+        '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px">'+v.n.toUpperCase()+' · WHAT THE BANK SAYS</div>'+
+        '<div style="font-family:DM Mono,monospace;font-size:26px;color:'+(contradicts?'var(--re)':'var(--tx)')+';line-height:1">$'+Math.round(bank.total).toLocaleString()+'</div>'+
+        '<div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-top:8px">'+
+          bank.count+' transactions'+(since?' over the last '+since+' days':'')+'. '+
+          (contradicts
+            ? 'But this card says you’ve been clean '+clean+' days — and $'+Math.round(insideStreak.total).toLocaleString()+' of that spending falls inside it. One of the two isn’t true. No judgement either way; I’d just rather you had the real number.'
+            : 'That’s the real number — not an estimate. It’s what this cost you.')+
+        '</div>'+
+        (contradicts ? '<button onclick="openLogUse('+i+')" style="width:100%;margin-top:10px;background:none;border:1px solid var(--re-bd);color:var(--re);border-radius:9px;padding:9px;font-size:12px;cursor:pointer">Set it straight</button>' : '')+
+      '</div>';
+    });
+  }catch(_){}
+  // Cash is the hole in all of this, and pretending otherwise would make the app a liar.
+  if(out) out += '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:12px">A bank export can’t see cash. If something gets paid for in notes, or you owe someone directly, only you can put that in.</div>';
+  return out;
+}
+
+function openSpendingRead(justImported){
+  const m = document.createElement('div');
+  m.className = 'modal-bg open';
+  m.innerHTML = '<div class="modal" style="max-height:86vh;overflow-y:auto"><div class="modal-handle"></div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;color:var(--tx);margin-bottom:4px">'+(justImported?'Here’s how it looks':'Your money, honestly')+'</div>'+
+    (justImported?'<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">'+justImported+' new transactions read.</div>':'<div style="height:10px"></div>')+
+    spendingReadHTML()+
+    '<button class="btn" onclick="closeModal(this)">Close</button></div>';
+  document.body.appendChild(m);
+}
+
+// ── THE LIFE BALANCE SHEET ───────────────────────────────────────────────────────────────────
+// Importing transactions only ever stored them, and storage isn't counsel. Everything below reads
+// the ledger and says the thing a person can act on: where the money actually goes, the one place
+// to lock in, and — the part no single-purpose money app can do — whether the spending matches
+// what's claimed over in the Fight. Cash is invisible to a bank export; that gets said plainly
+// rather than pretended away.
+
+// A transaction's identity, so re-uploading an overlapping statement can't double-count. Same day,
+// same payee, same cents, same direction = the same event, whatever order the rows arrive in.
+function _txFingerprint(t){
+  const d = new Date(t.ts);
+  const day = isNaN(d.getTime()) ? '' : d.toISOString().slice(0,10);
+  const desc = String(t.note || t.desc || '').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,24);
+  return day+'|'+desc+'|'+Math.round((t.amount||0)*100)+'|'+(t.type||'');
+}
+function _existingFingerprints(){
+  const set = new Set();
+  (ls('totry_transactions')||[]).forEach(t => set.add(_txFingerprint(t)));
+  return set;
+}
+
+// Merchants that give a vice away. Gambling is the one that leaves a perfect paper trail — which
+// is why a bank export can tell someone the true number they've been avoiding.
+const VICE_MERCHANTS = {
+  gambling: ['sportsbet','ladbrokes','bet365','pointsbet','neds','betfair','tabcorp','tab ','crownbet','unibet','betr ','dabble','casino','pokies','keno','lottery','lotto','tatts','sportingbet','picklebet'],
+  tobacco:  ['tobacco','tobacconist','smokemart','smoke mart','cigarette','ciggie','vape','shisha'],
+  alcohol:  ['liquor','bws','dan murphy','liquorland','bottle shop','bottleshop','first choice liq','cellarbrations','sip n save','thirsty camel'],
+};
+function _viceKindFor(v){
+  const n = String((v && v.n) || v || '').toLowerCase();
+  if(/gambl|bet|punt|pokie|casino/.test(n)) return 'gambling';
+  if(/smok|cig|tobac|nicotine|vape/.test(n)) return 'tobacco';
+  if(/drink|alcohol|booze|beer|wine/.test(n)) return 'alcohol';
+  return null;
+}
+// What the bank says a vice actually cost, over a window. Returns null when there's nothing to go on.
+function viceSpendFromBank(kind, sinceTs){
+  const kws = VICE_MERCHANTS[kind]; if(!kws) return null;
+  const list = (ls('totry_transactions')||[]).filter(t => t.type==='expense');
+  if(!list.length) return null;
+  const hits = list.filter(t => {
+    if(sinceTs && new Date(t.ts).getTime() < sinceTs) return false;
+    const d = String(t.note||'').toLowerCase();
+    return kws.some(k => d.includes(k));
+  });
+  if(!hits.length) return { total:0, count:0, hits:[] };
+  return {
+    total: hits.reduce((s,t)=>s+(t.amount||0),0),
+    count: hits.length,
+    hits: hits.slice(0,6),
+    firstTs: Math.min(...hits.map(t=>new Date(t.ts).getTime())),
+  };
+}
+
+// Categories a person can actually move, and can name. Rent and power aren't a discipline problem;
+// "Other" isn't advice you can act on; and vices are confronted by the ledger below, not softened
+// into a "lock in here" nudge. What's left is honest, movable, and specific.
+const _DISCRETIONARY = ['Eating out','Shopping','Subscriptions','Entertainment'];
+
+// The whole picture, normalised to a month so any length of statement reads the same.
+function spendingRead(){
+  const list = ls('totry_transactions')||[];
+  if(list.length < 5) return null;
+  const times = list.map(t=>new Date(t.ts).getTime()).filter(t=>!isNaN(t));
+  if(!times.length) return null;
+  const spanDays = Math.max(1, (Math.max(...times) - Math.min(...times))/86400000);
+  const months = Math.max(0.5, spanDays/30.44);
+  const exp = list.filter(t=>t.type==='expense');
+  const inc = list.filter(t=>t.type==='income');
+  const spend = exp.reduce((s,t)=>s+(t.amount||0),0);
+  const income = inc.reduce((s,t)=>s+(t.amount||0),0);
+  const byCat = {};
+  exp.forEach(t => { const c=t.category||'Other'; byCat[c]=(byCat[c]||0)+(t.amount||0); });
+  const cats = Object.keys(byCat).map(c=>({
+    name:c, total:byCat[c], perMonth:byCat[c]/months, share: spend>0 ? byCat[c]/spend : 0
+  })).sort((a,b)=>b.total-a.total);
+  const lockIn = cats.filter(c=>_DISCRETIONARY.indexOf(c.name)>=0 && c.perMonth>=40)[0] || null;
+  return {
+    months, spend, income, net: income-spend,
+    spendPerMonth: spend/months, incomePerMonth: income/months, netPerMonth: (income-spend)/months,
+    cats, lockIn, count: list.length,
+    from: new Date(Math.min(...times)), to: new Date(Math.max(...times)),
+  };
 }
 
 function quickSpend(){
