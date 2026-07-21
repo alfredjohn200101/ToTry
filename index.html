@@ -4024,7 +4024,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v241';
+const APP_VERSION = 'v242';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -28293,9 +28293,25 @@ function getNextStep(){
   const hour = new Date().getHours();
   // 0. HARD-MOMENT AWARENESS (the nervous system). Late night is the classic danger window for
   // most compulsions — gently put the companion in front of them BEFORE anything routine.
-  if(hour >= 22 || hour < 5){
-    return { text:'Feeling it tonight?', sub:'Late hours are hard \u2014 I\u2019m right here if anything\u2019s rising.', action:'openCompanionForUrge()' };
-  }
+  // Prefer HIS learned hard hour over a blanket assumption \u2014 if the pattern engine knows when a
+  // fight tends to pull, honour THAT (it may be evening, not midnight). Fall back to late night.
+  // Only for someone actually fighting something, and it opens the integrated moment door (which
+  // knows the vice, the stakes, the whole life), not a blank chat.
+  try{
+    if(typeof loadV==='function') loadV();
+    const _vs = (typeof vices!=='undefined' && Array.isArray(vices)) ? vices.filter(v=>v&&v.n) : [];
+    if(_vs.length){
+      const _block = (typeof _viceBlockLabel==='function') ? _viceBlockLabel(hour) : null;
+      let _hardVice = null;
+      _vs.forEach(v=>{ try{ const p=(typeof analyzeUrgePatterns==='function')?analyzeUrgePatterns(v.n):null; if(p && p.riskWindow===_block) _hardVice=v; }catch(_){} });
+      if(_hardVice){
+        return { text:'This is usually your hard hour', sub:'Right around when '+_hardVice.n+' tends to pull. Nothing has to be happening \u2014 come sit with me a second.', action:'_feelThePull()' };
+      }
+      if(hour >= 22 || hour < 5){
+        return { text:'Feeling it tonight?', sub:'Late hours are hard \u2014 I\u2019m right here if anything\u2019s rising.', action:'_feelThePull()' };
+      }
+    }
+  }catch(_){ }
   // 0b. RECOVERY AWARENESS. Low readiness + no training yet today \u2192 steer toward rest, not pushing.
   try{
     if(typeof computeReadiness === 'function'){
