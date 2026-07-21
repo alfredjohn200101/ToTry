@@ -4024,7 +4024,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v239';
+const APP_VERSION = 'v240';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -11109,6 +11109,43 @@ function _recordFightMoment(viceName, won){
   }catch(_){}
 }
 
+// THE MOAT, IN THE MOMENT. The reason one app beats ten: at the point of temptation it can see the
+// whole person, so it says the true thing no single-purpose app could. The pull feels like weakness;
+// usually it's exhaustion, or the hour, or a promise made this morning now being tested. Naming that
+// dissolves the shame that actually fuels the fall. Pulled live from Track (readiness/sleep), Soul
+// (this morning's intention) and the clock — and silent when it has nothing honest to say.
+function _wholeLifeReframe(){
+  const out=[];
+  // His own words from this morning, resurfaced at the exact moment they're tested. Most powerful.
+  try{
+    const today=(ls('totry_mornings')||[])[0];
+    if(today && today.day===getDayCount() && today.intention && today.intention.trim()){
+      out.push({icon:'\u{1F305}', text:'This morning you said who you’d be today: “'+today.intention.trim().replace(/</g,'&lt;').slice(0,120)+'”. This is the exact moment that meant.'});
+    }
+  }catch(_){}
+  // Exhaustion — the clinician's reframe. The pull is loud because you're depleted, not weak.
+  try{
+    const r=(typeof computeReadiness==='function')?computeReadiness():null;
+    if(r && (r.level==='rest' || (r.sleep && r.sleep<=5))){
+      out.push({icon:'\u{1FAAB}', text:'You’re running on empty right now'+(r.sleep&&r.sleep<=5?' — barely '+r.sleep+'h of sleep':'')+'. The pull is this loud because you’re depleted, not because you’re weak. That’s your body, not your character.'});
+    }
+  }catch(_){}
+  // The hour itself — after midnight everything feels heavier and more permissible.
+  try{
+    const h=new Date().getHours();
+    if(out.length<2 && (h>=23 || h<4)){
+      out.push({icon:'\u{1F319}', text:'It’s late. Everything feels heavier and more allowed after midnight — that’s the hour, not the truth. Nothing decided now is decided well. Hold it till morning.'});
+    }
+  }catch(_){}
+  return out.slice(0,2);
+}
+function _reframeHTML(){
+  const r=_wholeLifeReframe(); if(!r.length) return '';
+  return '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin-bottom:14px">'+
+    r.map(s=>'<div style="display:flex;gap:10px;align-items:flex-start;padding:5px 0"><span style="font-size:16px;flex:none">'+s.icon+'</span><span style="font-size:12.5px;color:var(--tx2);line-height:1.6">'+s.text+'</span></div>').join('')+
+  '</div>';
+}
+
 // The gambling intervention he asked for, whole: the honest total first (from the bank, not a
 // guess), then "how much have you got on you right now?", then — if he's honest — where that exact
 // money does more for him than the bookie ever will, and a real move to make it count.
@@ -11123,6 +11160,7 @@ function openGambleMoment(i){
     '<div class="modal-handle"></div>'+
     '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:24px;font-style:italic;color:var(--tx);margin-bottom:6px">Before you put it on</div>'+
     '<div style="text-align:center;font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:16px">You came here first. That’s the whole game, right there — you already did the hard part.</div>'+
+    _reframeHTML()+
     (lost
       ? '<div style="background:var(--re-bg);border:1px solid var(--re-bd);border-radius:12px;padding:14px;margin-bottom:14px;text-align:center">'+
           '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);letter-spacing:0.1em;margin-bottom:4px">THE BANK’S RECORD, NOT A GUESS</div>'+
@@ -11264,6 +11302,7 @@ function openMomentStakes(i){
     '<div class="modal-handle"></div>'+
     '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:24px;font-style:italic;color:var(--tx);margin-bottom:6px">You came here first</div>'+
     '<div style="text-align:center;font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:16px">'+body+'</div>'+
+    _reframeHTML()+
     '<div style="margin-bottom:16px">'+extra+'</div>'+
     '<button class="btn primary" onclick="_momentWin('+i+')" style="margin-bottom:8px">The wave’s passing — I’m good</button>'+
     '<button class="btn" onclick="closeModal(this);startLiveIntervention('+i+')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin-bottom:8px;font-size:13px">Stay with me — full SOS</button>'+
