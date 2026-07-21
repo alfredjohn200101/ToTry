@@ -4024,7 +4024,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v244';
+const APP_VERSION = 'v245';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -16244,11 +16244,17 @@ function renderAdaptiveTDEE(){
   // THE LOOP CLOSER: if real burn differs meaningfully from the set goal, offer (never force)
   // a one-tap goal update. Consent-based, like everything in this app.
   const goals = ls('totry_nut_goals') || defaultNutGoals();
-  const goalDiff = r.tdee - (goals.cal || 2100);
+  // Compare the CURRENT target to the goal-adjusted target from real maintenance — not to raw
+  // maintenance (which for a cutter is always ~500 above target and would nag falsely).
+  const adjTarget = goalAdjustedTarget(r.tdee);
+  const goalDiff = adjTarget.cal - (goals.cal || 2100);
+  const reflectLine = adjTarget.isAdjusted
+    ? 'Your real maintenance is ~<span style="color:var(--tx)">' + r.tdee.toLocaleString() + '</span>, so for ' + adjTarget.verb + ' your target should be ~<span style="color:var(--go)">' + adjTarget.cal.toLocaleString() + '</span> — but it\'s set to <span style="color:var(--tx)">' + (goals.cal||2100).toLocaleString() + '</span>.'
+    : 'Your goal is set to <span style="color:var(--tx)">' + (goals.cal||2100).toLocaleString() + '</span> but your real maintenance is ~<span style="color:var(--go)">' + r.tdee.toLocaleString() + '</span>.';
   const goalSuggest = Math.abs(goalDiff) >= 150
     ? '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)">'+
-      '<div style="font-size:12px;color:var(--tx2);line-height:1.6">Your goal is set to <span style="color:var(--tx)">' + (goals.cal||2100).toLocaleString() + '</span> but your real maintenance is ~' + r.tdee.toLocaleString() + '. Want your goal to reflect reality?</div>'+
-      '<button class="btn" onclick="setCalGoalFromTDEE(' + r.tdee + ')" style="margin-top:8px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:12px">Use ' + r.tdee.toLocaleString() + ' as my maintenance baseline</button>'+
+      '<div style="font-size:12px;color:var(--tx2);line-height:1.6">' + reflectLine + ' Want your goal to reflect reality?</div>'+
+      '<button class="btn" onclick="setCalGoalFromTDEE(' + r.tdee + ')" style="margin-top:8px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:12px">Set my target to ' + adjTarget.cal.toLocaleString() + ' cal</button>'+
       '</div>'
     : '';
   box.innerHTML =
@@ -16272,9 +16278,11 @@ function macrosForCalories(cal, opts){
   opts = opts || {};
   const bw = (typeof getBodyweight==='function') ? getBodyweight() : null;
   const existing = ls('totry_nut_goals') || {};
-  // Protein floor: 1.8g/kg bodyweight (mid of the 1.6–2.2 hypertrophy range). If we don't know
-  // bodyweight, keep whatever protein was already set, else a sane default.
-  let pro = bw ? Math.round(bw * 1.8) : (existing.pro || Math.round(cal * 0.30 / 4));
+  // Protein floor: g/kg bodyweight. Default 1.8 (mid of the 1.6–2.2 hypertrophy range); a cut wants
+  // more to spare muscle, a bulk a touch more for growth — the caller passes proPerKg for the goal.
+  // If we don't know bodyweight, keep whatever protein was already set, else a sane default.
+  const perKg = opts.proPerKg || 1.8;
+  let pro = bw ? Math.round(bw * perKg) : (existing.pro || Math.round(cal * 0.30 / 4));
   // Never drop below a protein the user has deliberately set higher than the floor.
   if(existing.pro && existing.pro > pro) pro = existing.pro;
   // Fat floor: 0.8g/kg (hormonal health), capped so it can't eat the whole budget.
@@ -16290,16 +16298,39 @@ function macrosForCalories(cal, opts){
   const carb = Math.max(0, Math.round(carbCal / 4));
   return { cal: Math.round(cal), pro, carb, fat };
 }
+// The adaptive number is MAINTENANCE — what the body actually burns. A person's daily TARGET is
+// maintenance adjusted for their goal: a cut eats below it, a build above it. Applying maintenance
+// as the target directly (what this used to do) silently erased a cutter's deficit — the flagship
+// number quietly stopped their fat loss. This closes the loop the way MacroFactor does: learn real
+// maintenance from data, THEN apply the goal to get the target the person actually eats to.
+function _goalDir(){
+  return String(ls('totry_calorie_goal_type') || (ls('totry_tdee_data')||{}).goal || ls('totry_goal_intent') || 'maintain').toLowerCase();
+}
+function goalAdjustedTarget(maintenance){
+  const gi = _goalDir();
+  let cal = maintenance, proPerKg = 1.8, label = 'maintenance', verb = 'holding steady';
+  if(/lose|cut|lean|deficit|fat/.test(gi)){ cal = maintenance - 500; proPerKg = 2.2; label = 'fat-loss target'; verb = 'leaning down'; }
+  else if(/gain|build|bulk|surplus|muscle/.test(gi)){ cal = maintenance + 300; proPerKg = 2.4; label = 'muscle-gain target'; verb = 'building'; }
+  // ED-safe floor — never prescribe a reckless deficit.
+  const floor = (typeof userSex==='function' && userSex()==='female') ? 1200 : 1500;
+  cal = Math.max(cal, floor);
+  return { cal: Math.round(cal), proPerKg, label, verb, isAdjusted: cal !== Math.round(maintenance) };
+}
 function setCalGoalFromTDEE(tdee){
-  // Build a full, protein-protected macro target from the real maintenance number — not just
-  // a calorie swap that leaves carbs/fat stale and quietly erodes the protein ratio.
-  const goals = macrosForCalories(tdee);
+  // tdee = the learned MAINTENANCE. Turn it into the goal-appropriate daily target first, then build
+  // a full protein-protected macro target from that (not a bare calorie swap that leaves carbs/fat
+  // stale). Protein scales up on a cut to spare muscle, per the goal.
+  const adj = goalAdjustedTarget(tdee);
+  const goals = macrosForCalories(adj.cal, { proPerKg: adj.proPerKg });
   goals._ts = Date.now();
   ls('totry_nut_goals', goals);
   ls('totry_nut_macros', goals);
   if(typeof syncToCloud==='function') syncToCloud();
   haptic('success');
-  showToast('Goal updated ✓', 'Maintenance set to ' + tdee.toLocaleString() + ' cal · ' + goals.pro + 'g protein held firm.');
+  const msg = adj.isAdjusted
+    ? 'Maintenance ~' + tdee.toLocaleString() + ' → your ' + adj.label + ' ' + adj.cal.toLocaleString() + ' cal · ' + goals.pro + 'g protein.'
+    : 'Maintenance set to ' + tdee.toLocaleString() + ' cal · ' + goals.pro + 'g protein held firm.';
+  showToast('Goal updated ✓', msg);
   if(typeof prefillNutGoals==='function') prefillNutGoals();
   renderNutritionLog();
 }

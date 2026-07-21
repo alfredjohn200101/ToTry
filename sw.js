@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v244-habit-hardening-qa-sweep'
+const CACHE = 'totry-v245-adaptive-tdee-honours-your-goal'
 
 const CORE = [
   './',
