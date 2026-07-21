@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v243-moderate-card-crash-fix'
+const CACHE = 'totry-v244-habit-hardening-qa-sweep'
 
 const CORE = [
   './',

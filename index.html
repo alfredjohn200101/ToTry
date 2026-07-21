@@ -4024,7 +4024,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v243';
+const APP_VERSION = 'v244';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -11579,7 +11579,15 @@ function loadH(){
     }
   }catch(_){ }
   localStorage.setItem('totry_grat_habit_migrated','1');
-  habits=ls('totry_h')||[];}
+  habits=ls('totry_h')||[];
+  // Guarantee every habit has a valid 7-day array. Dozens of core render paths (the day counter,
+  // the home grid, the morning tab) do h.d[i] unguarded — a single habit missing d[] (from an old
+  // version, a partial cloud-sync merge, or corrupted data) would white-screen the home for
+  // everyone. Normalise once, at the source, so no downstream read can crash.
+  let _hFixed=false;
+  habits.forEach(h=>{ if(!h) return; if(!Array.isArray(h.d) || h.d.length!==7){ h.d=[0,0,0,0,0,0,0]; _hFixed=true; } if(h.n==null){ h.n='Habit'; _hFixed=true; } });
+  if(_hFixed){ try{ ls('totry_h', habits); }catch(_){ } }
+}
 function saveH(){ls('totry_h',habits);}
 function tIdx(){const d=new Date().getDay();return d===0?6:d-1;}
 function getStreak(){
