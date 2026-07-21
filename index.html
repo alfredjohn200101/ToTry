@@ -4024,7 +4024,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v238';
+const APP_VERSION = 'v239';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5072,7 +5072,7 @@ function _initNotificationTaps(){
         const ex = (action && action.notification && action.notification.extra) || {};
         if(ex.route === 'morning'){ if(typeof go==='function') go('morning'); }
         else if(ex.route === 'evening'){ if(typeof go==='function') go('reflect'); }
-        else if(ex.route === 'reachout'){ if(typeof openCompanionForUrge==='function') openCompanionForUrge(); else if(typeof go==='function') go('home'); }
+        else if(ex.route === 'reachout'){ if(typeof _feelThePull==='function') _feelThePull(); else if(typeof openCompanionForUrge==='function') openCompanionForUrge(); else if(typeof go==='function') go('home'); }
       }catch(_){}
     });
   }catch(_){}
@@ -8647,14 +8647,17 @@ function _lifeHappenedNotSlip(i){
 }
 // Pattern intelligence: reads the fight log for ONE vice and finds its risky windows,
 // top triggers, and a win-rate trend. Pure local computation, no AI cost. Consent-gated.
+// The one place time-of-day gets bucketed into a risk window. Shared so the proactive greeting that
+// meets him in his hard hour uses the EXACT same blocks the pattern engine learned from.
+function _viceBlockLabel(h){
+  if(h<6) return 'late night (12-6am)'; if(h<12) return 'morning (6am-12pm)';
+  if(h<17) return 'afternoon (12-5pm)'; if(h<21) return 'evening (5-9pm)'; return 'night (9pm-12am)';
+}
 function analyzeUrgePatterns(viceName){
   const log = (ls('totry_fight_log') || []).filter(e => e && e.vice === viceName && e.ts);
   if(log.length < 4) return null; // not enough to be honest about
   // Risk window: bucket by 3-hour blocks, find the heaviest
-  const blocks = {}; const blockLabel = h => {
-    if(h<6) return 'late night (12-6am)'; if(h<12) return 'morning (6am-12pm)';
-    if(h<17) return 'afternoon (12-5pm)'; if(h<21) return 'evening (5-9pm)'; return 'night (9pm-12am)';
-  };
+  const blocks = {}; const blockLabel = _viceBlockLabel;
   const dayCount = {};
   const triggers = {};
   let wins = 0;
@@ -10371,6 +10374,12 @@ function renderVices(){
         '<svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
         'I\'m feeling it — come here first' +
       '</button>' +
+      (function(){
+        // The wins for NOT acting, counted back to him. This is the one number most recovery apps
+        // never show, because they only track the fall.
+        const tw=momentsWonInWeek(v.n); if(!tw) return '';
+        return '<div style="text-align:center;font-size:11px;color:var(--gr);margin-top:8px;line-height:1.5">You came here and turned away '+tw+' time'+(tw===1?'':'s')+' this week. That’s the fight, won.</div>';
+      })() +
       '<button onclick="openLogUse(' + i + ')" style="width:100%;margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:10px;padding:9px;font-size:12px;cursor:pointer">I used — log it honestly</button>' +
       '<button onclick="openRecoveryTimeline(' + i + ')" style="width:100%;margin-top:8px;background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);border-radius:10px;padding:9px;font-size:12px;cursor:pointer">\u{1F33F} What this streak is earning you</button>' +
       totalInsight +
@@ -11001,6 +11010,12 @@ function viceSpendInWeek(name){
   return (ls('totry_vice_uses')||[]).filter(u=>u&&u.v===name&&u.cost>0&&new Date(u.ts).getTime()>=wk)
     .reduce((a,u)=>a+(parseFloat(u.cost)||0),0);
 }
+// Times he came here and turned away in the last 7 days. A win for NOT acting should be visible —
+// otherwise the most important thing he does never gets counted back to him.
+function momentsWonInWeek(name){
+  const wk=Date.now()-7*86400000;
+  return (ls('totry_moments_won')||[]).filter(x=>x&&x.v===name&&new Date(x.ts).getTime()>=wk).length;
+}
 
 // ── BEFORE IT TAKES OVER ────────────────────────────────────────────────────────────────────────
 // The whole promise of one app instead of ten: when the pull comes, it doesn't just say "don't."
@@ -11082,11 +11097,24 @@ function stakesForAmount(amount){
   return out;
 }
 
+// The moment door is where the pull actually hits — the truest timestamp there is for learning his
+// hard hour. Feed it into the same fight log the risk-window engine reads, so the reach-out learns
+// from his real primary flow, not just the old SOS. Recorded at the time the urge OPENED the door.
+function _recordFightMoment(viceName, won){
+  try{
+    const openedAt = window.__momentOpenedAt || Date.now();
+    const log = ls('totry_fight_log') || [];
+    log.unshift({ vice: viceName, won: !!won, ts: new Date(openedAt).toISOString(), date: new Date(openedAt).toLocaleDateString('en-AU'), via:'moment' });
+    ls('totry_fight_log', log.slice(0, 200));
+  }catch(_){}
+}
+
 // The gambling intervention he asked for, whole: the honest total first (from the bank, not a
 // guess), then "how much have you got on you right now?", then — if he's honest — where that exact
 // money does more for him than the bookie ever will, and a real move to make it count.
 function openGambleMoment(i){
   loadV(); const v=vices[i]; if(!v) return;
+  window.__momentOpenedAt = Date.now();  // the true moment the pull hit — for risk-window learning
   document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
   const bank=viceSpendFromBank('gambling');
   const lost = bank && bank.total>0 ? bank.total : null;
@@ -11149,6 +11177,7 @@ function _gambleWin(i, cash){
     const moments=ls('totry_moments_won')||[];
     moments.unshift({v:v.n, ts:new Date().toISOString(), kept:cash||0, kind:'gambling'});
     ls('totry_moments_won', moments.slice(0,300));
+    _recordFightMoment(v.n, true);   // teach the risk-window engine when the pull hits
     saveV();
   }
   document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
@@ -11204,6 +11233,7 @@ function openMomentStakes(i){
   loadV(); const v=vices[i]; if(!v){ return; }
   const kind=_viceStakeKind(v);
   if(kind==='gambling'){ openGambleMoment(i); return; }
+  window.__momentOpenedAt = Date.now();  // the true moment the pull hit — for risk-window learning
   document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
   const clean=viceCleanDays(v);
   let body='', extra='';
@@ -11249,11 +11279,70 @@ function _momentWin(i){
     const moments=ls('totry_moments_won')||[];
     moments.unshift({v:v.n, ts:new Date().toISOString(), kind:_viceStakeKind(v)});
     ls('totry_moments_won', moments.slice(0,300));
+    _recordFightMoment(v.n, true);   // teach the risk-window engine when the pull hits
     saveV();
   }
   document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
   try{ renderVices(); if(typeof syncToCloud==='function') syncToCloud(); if(typeof haptic==='function') haptic('success'); }catch(_){}
   showToast('That’s the win', 'Not falling was the whole thing. The feeling passes; this is what stays.');
+}
+
+// ── MEETING HIM IN THE HARD HOUR, PROACTIVELY ──────────────────────────────────────────────────
+// Background push (reaching out app-closed) is the native step. But the app can already be present
+// the moment he opens it inside his known risk window — the hour the pattern engine learned is
+// hardest for him. This is "before it takes over" made proactive, and it works in the PWA today.
+// Quiet by default: it OFFERS the door, never forces it, and never nags — once per window, per day.
+function _maybeRiskWindowGreeting(){
+  try{
+    if(typeof loadV==='function') loadV();
+    const vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices.filter(v=>v&&v.n):[];
+    if(!vs.length) return;
+    const nowBlock=_viceBlockLabel(new Date().getHours());
+    const today=new Date().toISOString().slice(0,10);
+    // Don't intrude right after he just handled a moment — he's already met.
+    const lastWon=(ls('totry_moments_won')||[])[0];
+    if(lastWon && (Date.now()-new Date(lastWon.ts).getTime()) < 90*60000) return;
+    // Find a vice whose learned hard hour is NOW.
+    let hit=null;
+    vs.forEach(v=>{
+      const p=(typeof analyzeUrgePatterns==='function')?analyzeUrgePatterns(v.n):null;
+      if(p && p.riskWindow===nowBlock){ if(!hit || (p.total>hit.p.total)) hit={v, p, idx:vices.indexOf(v)}; }
+    });
+    if(!hit) return;
+    // Once per window, per day.
+    const key='totry_riskgreet_'+_hashId(hit.v.n);
+    if(ls(key)===today+'|'+nowBlock) return;
+    ls(key, today+'|'+nowBlock);
+    const first=(ls('totry_name')||'').trim().split(' ')[0];
+    const hi=first?first+', ':'';
+    const trig=hit.p.topTrigger?(' It’s often '+hit.p.topTrigger+' that starts it.'):'';
+    const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+    m.innerHTML='<div class="modal" style="text-align:center">'+
+      '<div class="modal-handle"></div>'+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-style:italic;color:var(--tx);line-height:1.3;margin-bottom:10px">I’m here.</div>'+
+      '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:18px">'+hi+'this is usually the hardest stretch for you with '+String(hit.v.n).replace(/</g,'&lt;')+'.'+trig+' Nothing has to be happening — I just wanted to be here before it does. How are you, honestly?</div>'+
+      '<button class="btn primary" onclick="closeModal(this);openMomentStakes('+hit.idx+')" style="margin-bottom:8px">The pull’s here — walk me through it</button>'+
+      '<button class="btn" onclick="_riskGreetSteady('+hit.idx+')" style="background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);margin-bottom:8px;font-size:13px">I’m steady tonight</button>'+
+      '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Just checking in — I’m fine</button>'+
+      '</div>';
+    document.body.appendChild(m);
+    if(typeof haptic==='function') haptic('tap');
+  }catch(_){}
+}
+// "I'm steady" during the hard hour is itself a small win worth marking — he showed up to the moment
+// and stood in it. Recorded gently, and it teaches the pattern engine too.
+function _riskGreetSteady(i){
+  loadV(); const v=vices[i];
+  if(v){
+    const moments=ls('totry_moments_won')||[];
+    moments.unshift({v:v.n, ts:new Date().toISOString(), kind:'steady'});
+    ls('totry_moments_won', moments.slice(0,300));
+    window.__momentOpenedAt=Date.now(); _recordFightMoment(v.n, true);
+    v.w=(v.w||0)+1; v.lastWin=new Date().toISOString(); saveV();
+  }
+  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  try{ renderVices(); if(typeof syncToCloud==='function') syncToCloud(); if(typeof haptic==='function') haptic('success'); }catch(_){}
+  showToast('Good', 'Standing steady through your hard hour is its own kind of strong. I’ll be here.');
 }
 
 function editViceCost(i){
@@ -27061,6 +27150,9 @@ async function initApp(){
   updatePartnerBtn();
   // Show "what's new" once per version (skips brand-new users), after a beat so it doesn't clash with welcome toast
   if(typeof checkChangelog === 'function') setTimeout(checkChangelog, 1600);
+  // Meet him in his hard hour if he's opened the app inside it — the proactive "before it takes
+  // over". After the welcome/changelog beats so it never stacks on top of them.
+  if(typeof _maybeRiskWindowGreeting === 'function') setTimeout(_maybeRiskWindowGreeting, 2600);
   // Restore height
   const h=ls('totry_height');const hEl=document.getElementById('settings-height');if(hEl&&h)hEl.value=h;
   // Service worker — a PWA/WEB feature only. Inside the native Capacitor shell it intercepts the

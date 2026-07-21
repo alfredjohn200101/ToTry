@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v238-life-balance-sheet'
+const CACHE = 'totry-v239-hard-hour-presence'
 
 const CORE = [
   './',
