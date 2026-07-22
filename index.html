@@ -4025,7 +4025,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v248';
+const APP_VERSION = 'v249';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -20210,6 +20210,10 @@ async function generateWeeklyReflection(){
 function getUnifiedTraining(){
   const lifts = (ls('totry_workouts') || []).map(w => ({
     id: 'hevy_' + w.id,
+    // A Strava-pushed Hevy session lands in totry_workouts with a "stravahevy_" id. Capture that from
+    // the ORIGINAL id here — the unified id above prefixes everything with "hevy_", which is exactly
+    // what silently broke the dedup (a "hevy_stravahevy_9" id no longer startsWith "stravahevy_").
+    fromStrava: String(w.id||'').startsWith('stravahevy_'),
     source: w.source || 'hevy',
     kind: (w.exercises && w.exercises.length) ? 'strength' : (_isCardioType(w.type) ? 'cardio' : 'strength'),
     title: w.splitFocus || w.type || 'Workout',
@@ -20231,9 +20235,9 @@ function getUnifiedTraining(){
   // dedup only compared Strava cardio against lifts, never two lifts against each other, so this
   // doubled everywhere (the loop, the week counts, Nourish's burn). Drop the Strava-derived copy
   // whenever a direct import overlaps it in time; keep it only when it's the sole copy of that session.
-  const _primaryLifts = lifts.filter(l => !String(l.id||'').startsWith('stravahevy_'));
+  const _primaryLifts = lifts.filter(l => !l.fromStrava);
   const liftsDeduped = lifts.filter(l => {
-    if(!String(l.id||'').startsWith('stravahevy_')) return true;
+    if(!l.fromStrava) return true;
     return !_primaryLifts.some(p => p.kind === 'strength' && _sessionsOverlap(p.ts, l.ts, 90));
   });
   const cardio = (ls('totry_strava_activities') || []).map(a => ({
