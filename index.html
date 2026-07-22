@@ -2041,7 +2041,10 @@ input:focus,textarea:focus,select:focus{
     </button>
     <div id="micro-panel" style="display:none;margin-top:12px"></div>
   </div>
-  
+
+  <!-- Nourishment quality score — beyond calories: how nourishing was today, populated by renderNourishmentScore() -->
+  <div id="nourishment-score" style="margin-top:14px"></div>
+
   <!-- Net calories card (consumed − burned from training) -->
   <div class="card" style="margin-bottom:12px;background:var(--bg3)">
     <div style="display:flex;justify-content:space-between;align-items:center">
@@ -4031,7 +4034,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v251';
+const APP_VERSION = 'v252';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -15895,6 +15898,65 @@ function renderFoodGroups(){
     '</div><div style="font-size:12px;color:var(--tx3);line-height:1.5">'+nudge+' <span style="opacity:0.7">(rough read from food names)</span></div></div>';
 }
 
+// ── NOURISHMENT SCORE ──────────────────────────────────────────────────────────────────────────
+// The word is "Nourish", not "Count calories". This answers what the macro ring can't: was today
+// actually NOURISHING? Deterministic, from reliable always-present signals — protein (satiety +
+// muscle), fibre (the whole-food marker), and sugar restraint — so it never hangs on spotty
+// micronutrient data. Micros are an informational footnote, never a penalty (a whole-food meal
+// logged by text often carries no micro data and shouldn't be punished for it). Shows only once
+// enough of the day is logged to judge it fairly.
+function nourishmentScore(totals, goals){
+  if(!totals) return null;
+  const cal = totals.cal||0;
+  const goalCal = (goals && goals.cal) || 2100;
+  if(cal < Math.max(500, goalCal*0.35)) return null;         // too little logged to be fair
+  const goalPro = (goals && goals.pro) || 150;
+  const pPro = Math.min(40, 40 * (totals.pro||0) / Math.max(1, goalPro));   // protein — the king
+  const fibreTarget = Math.max(25, cal/1000 * 14);                          // ~14g / 1000 kcal
+  const pFib = Math.min(35, 35 * (totals.fiber||0) / fibreTarget);
+  const sugarShare = cal>0 ? ((totals.sugar||0)*4)/cal : 0;                 // lenient — total sugar includes fruit
+  let pSug; if(sugarShare<=0.10) pSug=25; else if(sugarShare>=0.30) pSug=0; else pSug=25*(1-(sugarShare-0.10)/0.20);
+  const score = Math.max(0, Math.min(100, Math.round(pPro+pFib+pSug)));
+  const dims = [
+    {pct:pPro/40, tip:'A protein source at the next meal would lift this most.'},
+    {pct:pFib/35, tip:'More veg, fruit, beans or whole grains — fibre is where today is light.'},
+    {pct:pSug/25, tip:'Sugar’s running high as a share of today — worth easing back.'}
+  ].sort((a,b)=>a.pct-b.pct);
+  // A strong day earns an affirmation, not a "you're light on X" nudge.
+  const tip = dims[0].pct > 0.85 ? 'Protein, fibre and whole foods all here — this is what nourished looks like.' : dims[0].tip;
+  const MICROS=['vit_a','vit_c','vit_d','vit_e','vit_k','b1','b2','b3','b6','b9','b12','calcium','iron','magnesium','phosphorus','potassium','zinc','selenium','copper'];
+  const microsHit=MICROS.filter(k=>(totals[k]||0)>0).length;
+  let tier, col;
+  if(score>=85){ tier='Deeply nourishing'; col='var(--gr)'; }
+  else if(score>=70){ tier='Nourishing'; col='var(--gr)'; }
+  else if(score>=50){ tier='Getting there'; col='var(--go)'; }
+  else { tier='Light on nourishment'; col='var(--go)'; }
+  return { score, tier, col, tip, microsHit, microsTotal:MICROS.length };
+}
+function renderNourishmentScore(totals, goals){
+  const box=document.getElementById('nourishment-score'); if(!box) return;
+  const r=(typeof nourishmentScore==='function')?nourishmentScore(totals, goals):null;
+  if(!r){ box.innerHTML=''; return; }
+  const C=2*Math.PI*22;
+  box.innerHTML=
+    '<div class="card" style="background:var(--bg2)">'+
+      '<div style="display:flex;align-items:center;gap:14px">'+
+        '<div style="position:relative;width:54px;height:54px;flex:none">'+
+          '<svg viewBox="0 0 54 54" style="width:54px;height:54px;transform:rotate(-90deg)">'+
+            '<circle cx="27" cy="27" r="22" fill="none" stroke="var(--bg4)" stroke-width="5"/>'+
+            '<circle cx="27" cy="27" r="22" fill="none" stroke="'+r.col+'" stroke-width="5" stroke-linecap="round" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+(C*(1-r.score/100)).toFixed(1)+'"/>'+
+          '</svg>'+
+          '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:DM Mono,monospace;font-size:16px;color:var(--tx)">'+r.score+'</div>'+
+        '</div>'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em">Nourishment · today</div>'+
+          '<div style="font-size:15px;color:'+r.col+';font-weight:600">'+r.tier+'</div>'+
+          '<div style="font-size:11.5px;color:var(--tx3);line-height:1.4;margin-top:2px">'+r.tip+'</div>'+
+        '</div>'+
+      '</div>'+
+      (r.microsHit>0?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">'+r.microsHit+' of '+r.microsTotal+' vitamins &amp; minerals covered today</div>':'')+
+    '</div>';
+}
 function renderNutritionLog(){
   if(typeof renderAdaptiveNutrition==='function') renderAdaptiveNutrition();
   // Before any of the empty-plate early returns below — the brand-new user with nothing logged is
@@ -15933,6 +15995,7 @@ function renderNutritionLog(){
     MICRO_KEYS.forEach(k => { a[k] = (a[k] || 0) + (e[k] || 0); });
     return a;
   }, {cal:0, pro:0, carb:0, fat:0});
+  try{ if(typeof renderNourishmentScore==='function') renderNourishmentScore(totals, goals); }catch(_){}
   
   // Net calories: consumed − burned (from workouts, screenshots, Strava)
   const burns = ls('totry_calorie_burns') || {};
@@ -16153,7 +16216,7 @@ function renderNutritionLog(){
       mealEntries.forEach(en => {
         const row=document.createElement('div');
         row.className='food-log-item';
-        row.innerHTML='<div style="min-width:0;flex:1"><div class="fli-name">'+en.name+'</div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3)">'+en.serving+' \u00d7 '+en.qty+'</div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3);margin-top:2px">P '+(Math.round((en.pro||0)*10)/10)+'g \u00b7 C '+(Math.round((en.carb||0)*10)/10)+'g \u00b7 F '+(Math.round((en.fat||0)*10)/10)+'g</div></div><div style="display:flex;align-items:center;gap:6px"><span class="fli-cal">'+en.cal+' cal</span><button class="fli-del" style="font-size:14px;color:var(--tx3)" onclick="editFoodEntry(\''+today+'\','+en.id+')" title="Edit">✎</button><button class="fli-del" onclick="deleteFoodEntry(\''+today+'\','+en.id+')" aria-label="Close">&#215;</button></div>';
+        row.innerHTML='<div style="min-width:0;flex:1"><div class="fli-name">'+en.name+'</div>'+((en.serving||en.qty)?'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3)">'+(en.serving||'serving')+(en.qty?(' \u00d7 '+en.qty):'')+'</div>':'')+'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3);margin-top:2px">P '+(Math.round((en.pro||0)*10)/10)+'g \u00b7 C '+(Math.round((en.carb||0)*10)/10)+'g \u00b7 F '+(Math.round((en.fat||0)*10)/10)+'g</div></div><div style="display:flex;align-items:center;gap:6px"><span class="fli-cal">'+en.cal+' cal</span><button class="fli-del" style="font-size:14px;color:var(--tx3)" onclick="editFoodEntry(\''+today+'\','+en.id+')" title="Edit">✎</button><button class="fli-del" onclick="deleteFoodEntry(\''+today+'\','+en.id+')" aria-label="Close">&#215;</button></div>';
         list.appendChild(row);
       });
     });
@@ -17021,7 +17084,12 @@ function setWaterCount(ml){
   water[today] = Math.max(0, Math.round(ml));
   ls('totry_water', water);
 }
-function getWaterGoal(){ return ls('totry_water_goal') || 2500; } // ml (2.5 L default)
+function waterBaseGoal(){ return ls('totry_water_goal') || 2500; } // ml (2.5 L default)
+// Hydration scaled to training (the Train×Nourish squeeze #7). A training day sweats out more, so
+// the goal lifts ~600ml on days you train — only when there's a real training signal (split, calendar,
+// or a logged workout), so it never bumps for someone who isn't training. Small, deterministic, sound.
+function isWaterTrainingDay(){ try{ return typeof _isTrainingToday==='function' && _isTrainingToday(); }catch(_){ return false; } }
+function getWaterGoal(){ return waterBaseGoal() + (isWaterTrainingDay() ? 600 : 0); }
 function addWater(ml){
   const before = getWaterCount();
   setWaterCount(before + ml);
@@ -17041,7 +17109,7 @@ function renderWaterTracker(){
   const goal = getWaterGoal();
   const countEl = document.getElementById('water-count');
   const cupsEl = document.getElementById('water-cups');
-  if(countEl) countEl.textContent = (ml/1000).toFixed(2).replace(/0$/,'') + ' / ' + (goal/1000).toFixed(1) + ' L';
+  if(countEl) countEl.textContent = (ml/1000).toFixed(2).replace(/0$/,'') + ' / ' + (goal/1000).toFixed(1) + ' L' + (isWaterTrainingDay() ? ' · +0.6 training' : '');
   if(!cupsEl) return;
   cupsEl.innerHTML = '';
   // Show glasses in 250ml increments toward goal
