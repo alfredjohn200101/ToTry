@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v254-soul-examen-date-and-saint-mismatch'
+const CACHE = 'totry-v255-the-rosary'
 
 const CORE = [
   './',

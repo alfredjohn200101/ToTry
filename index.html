@@ -1397,6 +1397,11 @@ input:focus,textarea:focus,select:focus{
       <div class="hc-title">Today in the Church</div>
       <div class="hc-desc">The Mass readings for today and the saint the Church remembers. The living calendar of the faith.</div>
     </div>
+    <div class="hub-card wide" onclick="openRosary()">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="4" r="1.6"/><circle cx="12" cy="20" r="1.6"/><circle cx="4" cy="12" r="1.6"/><circle cx="20" cy="12" r="1.6"/><circle cx="6.3" cy="6.3" r="1.3"/><circle cx="17.7" cy="6.3" r="1.3"/><circle cx="6.3" cy="17.7" r="1.3"/><circle cx="17.7" cy="17.7" r="1.3"/><path d="M12 12l0 3.5"/></svg>
+      <div class="hc-title">The Rosary</div>
+      <div class="hc-desc">Pray it guided, bead by bead — today's mysteries chosen for you, every prayer at hand.</div>
+    </div>
     <div class="hub-card wide" onclick="go('why')">
       <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
       <div class="hc-title">Your Why</div>
@@ -4034,7 +4039,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v254';
+const APP_VERSION = 'v255';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4369,7 +4374,8 @@ const SYNC_KEYS = [
   'totry_food_overrides',
   'totry_vice_uses',
   'totry_moments_won',
-  'totry_cal_cycling'
+  'totry_cal_cycling',
+  'totry_rosaries'
 ];
 
 async function restoreFromCloud(){
@@ -25412,6 +25418,156 @@ async function readTodaysGospel(){
   html += '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:6px">Berean Standard Bible (public domain)</div></div>';
   box.innerHTML = html;
   haptic('tap');
+}
+
+// ── THE ROSARY ─────────────────────────────────────────────────────────────────────────────────
+// The most iconic Catholic devotion, and it was missing entirely. Entirely traditional fixed prayers
+// (no AI, nothing to be wrong about) — a guided, bead-by-bead walk through today's mysteries, so a
+// person can pray it well without holding the structure in their head. Progress is saved, so an
+// interrupted rosary resumes where it left off.
+const ROSARY_PRAYERS = {
+  sign: 'In the name of the Father, and of the Son, and of the Holy Spirit. Amen.',
+  creed: 'I believe in God, the Father almighty, Creator of heaven and earth, and in Jesus Christ, His only Son, our Lord, who was conceived by the Holy Spirit, born of the Virgin Mary, suffered under Pontius Pilate, was crucified, died and was buried; He descended into hell; on the third day He rose again from the dead; He ascended into heaven, and is seated at the right hand of God the Father almighty; from there He will come to judge the living and the dead. I believe in the Holy Spirit, the holy catholic Church, the communion of saints, the forgiveness of sins, the resurrection of the body, and life everlasting. Amen.',
+  our: 'Our Father, who art in heaven, hallowed be Thy name; Thy kingdom come, Thy will be done, on earth as it is in heaven. Give us this day our daily bread, and forgive us our trespasses, as we forgive those who trespass against us; and lead us not into temptation, but deliver us from evil. Amen.',
+  hail: 'Hail Mary, full of grace, the Lord is with thee; blessed art thou amongst women, and blessed is the fruit of thy womb, Jesus. Holy Mary, Mother of God, pray for us sinners, now and at the hour of our death. Amen.',
+  glory: 'Glory be to the Father, and to the Son, and to the Holy Spirit; as it was in the beginning, is now, and ever shall be, world without end. Amen.',
+  fatima: 'O my Jesus, forgive us our sins, save us from the fires of hell, lead all souls to heaven, especially those in most need of Thy mercy. Amen.',
+  salve: 'Hail, holy Queen, Mother of mercy, our life, our sweetness and our hope. To thee do we cry, poor banished children of Eve; to thee do we send up our sighs, mourning and weeping in this valley of tears. Turn then, most gracious Advocate, thine eyes of mercy toward us; and after this our exile, show unto us the blessed fruit of thy womb, Jesus. O clement, O loving, O sweet Virgin Mary. Pray for us, O holy Mother of God, that we may be made worthy of the promises of Christ. Amen.'
+};
+const ROSARY_MYSTERIES = {
+  Joyful: [
+    {title:'The Annunciation', ref:'Luke 1:26–38', fruit:'Humility'},
+    {title:'The Visitation', ref:'Luke 1:39–56', fruit:'Love of Neighbour'},
+    {title:'The Nativity', ref:'Luke 2:1–20', fruit:'Poverty of Spirit'},
+    {title:'The Presentation', ref:'Luke 2:22–38', fruit:'Obedience'},
+    {title:'The Finding in the Temple', ref:'Luke 2:41–52', fruit:'Joy in Finding Jesus'}
+  ],
+  Sorrowful: [
+    {title:'The Agony in the Garden', ref:'Luke 22:39–46', fruit:'Sorrow for Sin'},
+    {title:'The Scourging at the Pillar', ref:'Matthew 27:26', fruit:'Purity'},
+    {title:'The Crowning with Thorns', ref:'Matthew 27:27–31', fruit:'Courage'},
+    {title:'The Carrying of the Cross', ref:'Luke 23:26–32', fruit:'Patience'},
+    {title:'The Crucifixion', ref:'Luke 23:33–46', fruit:'Perseverance'}
+  ],
+  Glorious: [
+    {title:'The Resurrection', ref:'Matthew 28:1–10', fruit:'Faith'},
+    {title:'The Ascension', ref:'Acts 1:6–11', fruit:'Hope'},
+    {title:'The Descent of the Holy Spirit', ref:'Acts 2:1–13', fruit:'Love of God'},
+    {title:'The Assumption of Mary', ref:'Revelation 12:1', fruit:'A Happy Death'},
+    {title:'The Coronation of Mary', ref:'Judith 15:9–10', fruit:'Trust in Mary’s Intercession'}
+  ],
+  Luminous: [
+    {title:'The Baptism of Jesus', ref:'Matthew 3:13–17', fruit:'Openness to the Spirit'},
+    {title:'The Wedding at Cana', ref:'John 2:1–11', fruit:'To Jesus through Mary'},
+    {title:'The Proclamation of the Kingdom', ref:'Mark 1:14–15', fruit:'Repentance & Trust'},
+    {title:'The Transfiguration', ref:'Matthew 17:1–8', fruit:'Desire for Holiness'},
+    {title:'The Institution of the Eucharist', ref:'Matthew 26:26–28', fruit:'Adoration'}
+  ]
+};
+function todaysRosaryMysteries(){
+  // Traditional weekly assignment (with the Luminous mysteries, St John Paul II, 2002).
+  const map = ['Glorious','Joyful','Sorrowful','Glorious','Luminous','Sorrowful','Joyful']; // Sun..Sat
+  const name = map[new Date().getDay()];
+  return { name, mysteries: ROSARY_MYSTERIES[name] };
+}
+const _ROSARY_ORD = ['First','Second','Third','Fourth','Fifth'];
+function _buildRosarySequence(){
+  const set = todaysRosaryMysteries(); const P = ROSARY_PRAYERS; const steps = [];
+  steps.push({sec:'Opening', name:'The Sign of the Cross', text:P.sign});
+  steps.push({sec:'Opening', name:'The Apostles’ Creed', text:P.creed});
+  steps.push({sec:'Opening', name:'Our Father', text:P.our});
+  for(let i=0;i<3;i++) steps.push({sec:'Opening', name:'Hail Mary', text:P.hail, sub:'for faith, hope, and love · '+(i+1)+' of 3'});
+  steps.push({sec:'Opening', name:'Glory Be', text:P.glory});
+  set.mysteries.forEach((mys, di)=>{
+    steps.push({sec:set.name+' Mysteries', name:_ROSARY_ORD[di]+' Mystery', announce:mys});
+    steps.push({sec:'Decade '+(di+1), name:'Our Father', text:P.our});
+    for(let b=0;b<10;b++) steps.push({sec:'Decade '+(di+1), name:'Hail Mary', text:P.hail, sub:(b+1)+' of 10', bead:di*10+b+1});
+    steps.push({sec:'Decade '+(di+1), name:'Glory Be', text:P.glory});
+    steps.push({sec:'Decade '+(di+1), name:'Fatima Prayer', text:P.fatima});
+  });
+  steps.push({sec:'Closing', name:'Hail, Holy Queen', text:P.salve});
+  steps.push({sec:'Closing', name:'The Sign of the Cross', text:P.sign, last:true});
+  return {set, steps};
+}
+let _rosary = null;
+function openRosary(){
+  const built = _buildRosarySequence();
+  _rosary = { set:built.set, steps:built.steps, i:0 };
+  // Resume if there's saved progress from today.
+  try{
+    const sp = ls('totry_rosary_progress');
+    if(sp && sp.date === new Date().toLocaleDateString('en-AU') && sp.i>0 && sp.i<built.steps.length){ _rosary.i = sp.i; }
+  }catch(_){}
+  let ov = document.getElementById('rosary-overlay');
+  if(!ov){ ov = document.createElement('div'); ov.id='rosary-overlay'; document.body.appendChild(ov); }
+  ov.style.cssText='position:fixed;inset:0;z-index:9000;background:radial-gradient(120% 90% at 50% 0%, #16121f 0%, #0a0a0f 70%);display:flex;flex-direction:column;overflow:hidden';
+  _renderRosaryStep();
+  if(typeof haptic==='function') haptic('light');
+}
+function closeRosary(){
+  try{ ls('totry_rosary_progress', { date:new Date().toLocaleDateString('en-AU'), i:_rosary?_rosary.i:0 }); }catch(_){}
+  const ov=document.getElementById('rosary-overlay'); if(ov) ov.remove();
+}
+function _rosaryGo(delta){
+  if(!_rosary) return;
+  const ni=_rosary.i+delta;
+  if(ni<0) return;
+  if(ni>=_rosary.steps.length){ _finishRosary(); return; }
+  _rosary.i=ni; _renderRosaryStep();
+  if(typeof haptic==='function') haptic(_rosary.steps[ni].bead?'tick':'tap');
+}
+function _renderRosaryStep(){
+  const ov=document.getElementById('rosary-overlay'); if(!ov||!_rosary) return;
+  const s=_rosary.steps[_rosary.i]; const total=_rosary.steps.length; const pct=Math.round(((_rosary.i+1)/total)*100);
+  const esc=function(t){ return String(t||'').replace(/</g,'&lt;'); };
+  let bodyHtml;
+  if(s.announce){
+    const m=s.announce;
+    bodyHtml=
+      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:14px">'+esc(s.name)+'</div>'+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:30px;font-style:italic;color:var(--tx);line-height:1.2;margin-bottom:12px">'+esc(m.title)+'</div>'+
+      '<div style="font-family:DM Mono,monospace;font-size:12px;color:var(--tx3);margin-bottom:18px">'+esc(m.ref)+'</div>'+
+      '<div style="font-size:13px;color:var(--go);line-height:1.6">Fruit of the mystery: <span style="color:var(--tx2)">'+esc(m.fruit)+'</span></div>'+
+      '<div style="font-size:12.5px;color:var(--tx3);line-height:1.7;margin-top:16px;font-style:italic">Picture the scene. Sit with it a moment before you pray.</div>';
+  } else {
+    bodyHtml=
+      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:4px">'+esc(s.name)+'</div>'+
+      (s.sub?'<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);margin-bottom:18px">'+esc(s.sub)+'</div>':'<div style="height:14px"></div>')+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:'+(s.text&&s.text.length>240?'19px':'23px')+';color:var(--tx);line-height:1.5;font-style:italic">'+esc(s.text)+'</div>';
+  }
+  ov.innerHTML=
+    '<div style="padding:calc(env(safe-area-inset-top,0px) + 16px) 20px 10px;display:flex;align-items:center;justify-content:space-between;gap:12px">'+
+      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);letter-spacing:0.1em;text-transform:uppercase;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.sec)+'</div>'+
+      '<button onclick="closeRosary()" aria-label="Close" style="background:none;border:none;color:var(--tx3);font-size:22px;cursor:pointer;line-height:1;flex:none">×</button>'+
+    '</div>'+
+    '<div style="height:3px;background:rgba(255,255,255,0.06);margin:0 20px;border-radius:2px"><div style="height:100%;width:'+pct+'%;background:var(--go);border-radius:2px;transition:width .25s"></div></div>'+
+    '<div onclick="_rosaryGo(1)" style="flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;padding:24px 26px;overflow-y:auto;cursor:pointer">'+
+      '<div style="max-width:34ch;margin:0 auto">'+bodyHtml+'</div>'+
+    '</div>'+
+    '<div style="padding:14px 20px calc(env(safe-area-inset-bottom,0px) + 20px);display:flex;align-items:center;gap:12px">'+
+      (_rosary.i>0?'<button onclick="_rosaryGo(-1)" style="flex:none;width:52px;height:52px;border-radius:50%;background:none;border:1px solid var(--bd);color:var(--tx2);font-size:20px;cursor:pointer">‹</button>':'<div style="width:52px"></div>')+
+      '<button onclick="_rosaryGo(1)" class="btn primary" style="flex:1;margin:0;padding:16px;font-size:15px">'+(s.last?'Finish · Amen':(s.announce?'Begin the decade':'Next'))+'</button>'+
+    '</div>';
+}
+function _finishRosary(){
+  let list=ls('totry_rosaries')||[];
+  // The completion screen must ALWAYS render — never let a failed cloud sync or storage write rob a
+  // person of the "you prayed it" moment. All side effects are best-effort.
+  try{
+    list.unshift({ ts:new Date().toISOString(), mysteries:_rosary?_rosary.set.name:null });
+    ls('totry_rosaries', list.slice(0,500));
+    localStorage.removeItem('totry_rosary_progress');
+    if(typeof syncToCloud==='function') syncToCloud();
+    if(typeof haptic==='function') haptic('celebrate');
+  }catch(_){}
+  const ov=document.getElementById('rosary-overlay'); if(!ov) return;
+  const n=list.length;
+  ov.innerHTML='<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px">'+
+    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.16em;text-transform:uppercase;margin-bottom:14px">Rosary complete</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:26px;font-style:italic;color:var(--tx);line-height:1.35;margin-bottom:16px;max-width:22ch">“Pray for us, O holy Mother of God.”</div>'+
+    '<div style="font-size:13px;color:var(--tx3);line-height:1.6;margin-bottom:26px;max-width:30ch">You prayed the '+(_rosary?_rosary.set.name:'')+' Mysteries. That’s '+n+' '+(n===1?'rosary':'rosaries')+' walked with Our Lady.</div>'+
+    '<button onclick="closeRosary()" class="btn primary" style="width:auto;padding:14px 30px">Rest in the peace of it</button>'+
+  '</div>';
 }
 
 // Compact morning surface — one line, taps to the full page. Silent if nothing loaded.
