@@ -186,7 +186,7 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .hero-identity-text{font-size:13px;color:rgba(242,239,232,0.6);font-style:italic;font-family:'Cormorant Garamond',serif;flex-basis:100%;margin-top:3px;line-height:1.35}
 .hero-action{margin-top:18px;background:linear-gradient(135deg,#C8A96E,#a98b54);border:none;color:#0c0c0e;border-radius:14px;padding:15px 18px;font-size:14px;font-weight:600;cursor:pointer;width:100%;box-shadow:var(--e-gold);transition:transform .18s var(--spring)}
 .hero-action:active{transform:scale(0.97)}
-.hero-nextstep{margin-top:16px;display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:14px;padding:14px 16px;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:transform .18s var(--spring)}
+.hero-nextstep{margin-top:16px;display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.10);border-radius:14px;padding:14px 16px;cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:transform .18s var(--spring)}
 .hero-nextstep:active{transform:scale(0.98)}
 .hero-ns-text{font-size:14.5px;color:#fff;font-weight:500;line-height:1.3}
 .hero-ns-sub{font-size:11.5px;color:rgba(242,239,232,0.55);margin-top:3px;line-height:1.4}
@@ -241,10 +241,10 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 @keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 .companion-overlay::before{content:'';position:absolute;top:11px;left:50%;transform:translateX(-50%);width:38px;height:4px;border-radius:3px;background:rgba(255,255,255,0.18)}
 @media (prefers-reduced-motion: reduce){.companion-overlay.open{animation:none}}
-.companion-backdrop{position:fixed;inset:0;z-index:409;background:rgba(0,0,0,0.5);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);display:none;opacity:0;transition:opacity 0.3s ease}
+.companion-backdrop{position:fixed;inset:0;z-index:409;background:rgba(0,0,0,0.5);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);display:none;opacity:0;transition:opacity 0.3s ease}
 .companion-backdrop.open{display:block;opacity:1}
 /* THE FEELING DOOR — rises like a calm breath. Big tappable feelings, not a form. */
-.feel-backdrop{position:fixed;inset:0;z-index:420;background:rgba(0,0,0,0.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:none;opacity:0;transition:opacity .35s ease}
+.feel-backdrop{position:fixed;inset:0;z-index:420;background:rgba(0,0,0,0.55);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);display:none;opacity:0;transition:opacity .35s ease}
 .feel-backdrop.open{display:block;opacity:1}
 .feel-door{position:fixed;left:0;right:0;bottom:0;z-index:421;background:linear-gradient(180deg,var(--bg2) 0%,var(--bg) 100%);border-radius:26px 26px 0 0;border-top:1px solid rgba(255,255,255,0.08);box-shadow:var(--e3);padding:26px 20px calc(var(--sb) + 24px);display:none;flex-direction:column;max-height:88vh;overflow-y:auto}
 .feel-door.open{display:flex;animation:sheetUp .42s var(--spring)}
@@ -432,7 +432,7 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .review-item{padding:10px 0;border-bottom:1px solid var(--bd)}
 .review-item:last-child{border-bottom:none}
 .ri-week{font-family:'DM Mono',monospace;font-size:9px;color:var(--go);letter-spacing:0.08em;margin-bottom:4px}
-.modal-bg{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;background:rgba(0,0,0,0.82);z-index:500;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.modal-bg{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;background:rgba(0,0,0,0.82);z-index:500;display:none;align-items:flex-end;justify-content:center;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 .modal-bg.open{display:flex}
 .modal{background:var(--bg2);border:1px solid var(--bd2);border-radius:20px 20px 0 0;padding:22px 20px calc(var(--sb) + 40px);width:100%;max-width:430px;max-height:88vh;overflow-y:auto;margin:0 auto}
 @media(min-width:600px){
@@ -4039,7 +4039,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v255';
+const APP_VERSION = 'v256';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
