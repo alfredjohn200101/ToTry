@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v249-hevy-strava-dedup-actually-works'
+const CACHE = 'totry-v250-cal-cycling-and-recomp-read'
 
 const CORE = [
   './',

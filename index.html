@@ -1628,7 +1628,7 @@ input:focus,textarea:focus,select:focus{
   <div class="identity-strip" id="identity-strip" onclick="go('settings')">
     <div class="id-label">Who you are becoming</div>
     <div class="id-text" id="identity-text">
-      <span class="id-empty">Name the person you're becoming \u2014 I'll hold you to it, gently</span>
+      <span class="id-empty">Name the person you're becoming &mdash; I'll hold you to it, gently</span>
     </div>
     <div id="identity-evidence" style="display:none;font-family:'DM Mono',monospace;font-size:10px;color:var(--go);margin-top:8px;padding-top:8px;border-top:1px solid var(--go-bd);letter-spacing:0.02em"></div>
   </div>
@@ -1986,6 +1986,7 @@ input:focus,textarea:focus,select:focus{
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-nourish" class="tab">
   <div id="nut-setup-nudge"></div>
+  <div id="nut-cycle-badge"></div>
   <!-- ── TODAY'S PROGRESS (top — what users want to see) ── -->
   <div class="nutrition-hero">
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
@@ -2239,7 +2240,10 @@ input:focus,textarea:focus,select:focus{
       </div>
     </div>
   </details>
-  
+
+  <!-- Calorie/carb cycling — opt-in Train×Nourish feature, populated by renderCyclingSetup() -->
+  <div id="cal-cycling-setup" style="margin-top:12px"></div>
+
   <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--tx3);text-align:center;margin-top:8px;letter-spacing:0.06em">USDA · FatSecret · Open Food Facts · AI estimate</div>
 </div>
 
@@ -2760,6 +2764,8 @@ input:focus,textarea:focus,select:focus{
   </div>
   <!-- Recomposition + protein/muscle insight — appears only when scale body-comp data supports it -->
   <div id="body-comp-insight" class="card" style="display:none;margin-top:10px;background:linear-gradient(135deg,rgba(91,185,125,0.08),rgba(91,185,125,0.02));border:1px solid var(--go-bd)"></div>
+  <!-- Weight × strength recomp read — works for everyone (no smart scale needed), the Train×Nourish cross -->
+  <div id="recomp-insight" class="card" style="display:none;margin-top:10px;border:1px solid var(--gr-bd)"></div>
   <!-- Recent weight entries — tappable to remove, so no logged weight is a trap. -->
   <div id="bod-weight-history" style="margin-top:10px"></div>
 
@@ -2841,7 +2847,7 @@ input:focus,textarea:focus,select:focus{
     
     <div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Focus for next week</div>
     <textarea id="wk-focus" placeholder="One specific thing to work on..." style="height:60px;resize:none;margin-bottom:10px;font-size:16px"></textarea>
-    <div style="font-size:11px;color:var(--tx3);font-style:italic;text-align:center;margin-bottom:4px;line-height:1.5">Your reflection saves with the button below \u2014 add this week\u2019s weight too, then tap <b style="color:var(--go)">Log this week</b>.</div>
+    <div style="font-size:11px;color:var(--tx3);font-style:italic;text-align:center;margin-bottom:4px;line-height:1.5">Your reflection saves with the button below &mdash; add this week&rsquo;s weight too, then tap <b style="color:var(--go)">Log this week</b>.</div>
     
     <!-- WEEK SNAPSHOT — just weight here; full body measurements live in the Measurements card -->
     <div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;margin-top:14px">This week's weight (optional)</div>
@@ -3398,7 +3404,7 @@ Amen.</div></div>
   <details class="settings-group">
     <summary>👤 About you <span class="settings-group-hint">Helps tailor your nutrition & training</span></summary>
     <div class="card">
-      <p style="font-size:12.5px;color:var(--tx2);margin-bottom:14px;line-height:1.6">This shapes the real numbers \u2014 calorie and protein targets, training context \u2014 and helps the app understand you. Used for the math, never to box you in.</p>
+      <p style="font-size:12.5px;color:var(--tx2);margin-bottom:14px;line-height:1.6">This shapes the real numbers &mdash; calorie and protein targets, training context &mdash; and helps the app understand you. Used for the math, never to box you in.</p>
       <div style="display:flex;gap:8px">
         <button class="sex-opt" data-sex="male" onclick="setUserSex('male')" style="flex:1;padding:13px;border-radius:11px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);cursor:pointer;font-size:14px;font-weight:600">Male</button>
         <button class="sex-opt" data-sex="female" onclick="setUserSex('female')" style="flex:1;padding:13px;border-radius:11px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);cursor:pointer;font-size:14px;font-weight:600">Female</button>
@@ -3412,14 +3418,14 @@ Amen.</div></div>
   <details class="settings-group">
     <summary>✝ Faith <span class="settings-group-hint">How much scripture surfaces for you</span></summary>
     <div class="card">
-      <p style="font-size:12.5px;color:var(--tx2);margin-bottom:14px;line-height:1.6">To Try was built honestly from a Christian heart \u2014 that won't change. But you're welcome here whatever you believe. Choose how much of the faith surfaces day to day. The companion, the systems, and every practical feature work fully either way.</p>
+      <p style="font-size:12.5px;color:var(--tx2);margin-bottom:14px;line-height:1.6">To Try was built honestly from a Christian heart &mdash; that won't change. But you're welcome here whatever you believe. Choose how much of the faith surfaces day to day. The companion, the systems, and every practical feature work fully either way.</p>
       <div id="faith-level-options" style="display:flex;flex-direction:column;gap:8px">
         <button class="faith-opt" data-faith="full" onclick="setFaithLevel('full')" style="text-align:left;padding:13px 15px;border-radius:11px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);cursor:pointer">
-          <div style="font-weight:600;font-size:14px">Full \u2014 faith woven through</div>
+          <div style="font-weight:600;font-size:14px">Full &mdash; faith woven through</div>
           <div style="font-size:11.5px;color:var(--tx3);margin-top:2px">Scripture, prayer, the daily verse. The app as it was made.</div>
         </button>
         <button class="faith-opt" data-faith="light" onclick="setFaithLevel('light')" style="text-align:left;padding:13px 15px;border-radius:11px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);cursor:pointer">
-          <div style="font-weight:600;font-size:14px">Lighter \u2014 mostly the systems</div>
+          <div style="font-weight:600;font-size:14px">Lighter &mdash; mostly the systems</div>
           <div style="font-size:11.5px;color:var(--tx3);margin-top:2px">The companion and the whole-life systems lead; scripture stays available when you seek it, but surfaces less.</div>
         </button>
       </div>
@@ -4025,7 +4031,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v249';
+const APP_VERSION = 'v250';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4359,7 +4365,8 @@ const SYNC_KEYS = [
   // Your corrected food numbers — they're yours, so they follow you to every device.
   'totry_food_overrides',
   'totry_vice_uses',
-  'totry_moments_won'
+  'totry_moments_won',
+  'totry_cal_cycling'
 ];
 
 async function restoreFromCloud(){
@@ -13493,9 +13500,63 @@ function deleteWeightEntry(key){
   renderBody();
   haptic('success'); showToast('Deleted','Weigh-in removed.');
 }
+// ── RECOMP READ (the Train×Nourish squeeze #5) ─────────────────────────────────────────────────
+// The read no single-purpose app can give: it needs BOTH your weight trend AND your strength trend.
+// The scale alone lies — "up 1kg" could be muscle or fat; "flat" could be perfect recomposition.
+// Cross the two and the truth appears. Deterministic reads on your own numbers — it reflects, never
+// prescribes — and stays null until there's genuinely enough of both to be honest.
+function weightTrendDir(){
+  const body=(ls('totry_body')||[]).filter(e=>e&&e.weight>0).map(e=>({w:+e.weight,t:new Date(e.ts||e.date).getTime()})).filter(x=>x.w>0&&!isNaN(x.t)).sort((a,b)=>a.t-b.t);
+  if(body.length<3) return null;
+  const spanDays=(body[body.length-1].t-body[0].t)/86400000;
+  if(spanDays<21) return null;                         // ~3 weeks before a trend is trustworthy
+  const trendNow=(typeof getTrendWeight==='function')?getTrendWeight(ls('totry_body')||[]):body[body.length-1].w;
+  const changeKg=trendNow-body[0].w;
+  const perWeek=changeKg/(spanDays/7);
+  return { dir: perWeek>0.12?'up':perWeek<-0.12?'down':'stable', perWeek:Math.round(perWeek*100)/100, changeKg:Math.round(changeKg*10)/10, days:Math.round(spanDays) };
+}
+function strengthTrend(){
+  const sess=((typeof getUnifiedTraining==='function')?getUnifiedTraining():[]).filter(t=>t&&t.kind==='strength'&&t.ts&&(t.volume||0)>0).sort((a,b)=>new Date(a.ts)-new Date(b.ts));
+  if(sess.length<4) return null;
+  const half=Math.floor(sess.length/2);
+  const avg=a=>a.reduce((s,t)=>s+(t.volume||0),0)/a.length;
+  const oAvg=avg(sess.slice(0,half)), rAvg=avg(sess.slice(half));
+  if(oAvg<=0) return null;
+  const pct=(rAvg-oAvg)/oAvg;
+  return { dir: pct>0.05?'up':pct<-0.05?'down':'flat', pct:Math.round(pct*100), sessions:sess.length };
+}
+function recompRead(){
+  const w=weightTrendDir(), s=strengthTrend();
+  if(!w||!s) return null;
+  const up=w.dir==='up', down=w.dir==='down', stable=w.dir==='stable';
+  const sUp=s.dir==='up', sDown=s.dir==='down', sFlat=s.dir==='flat';
+  const kg=Math.abs(w.changeKg);
+  let tone='good', head, body;
+  if(stable && sUp){ head='Recomposition — the scale is lying in your favour.'; body='Your weight held over '+w.days+' days while your training volume climbed. That’s muscle replacing fat at about the same weight — the hardest, best result there is. Don’t chase the scale down.'; }
+  else if(down && (sUp||sFlat)){ head='Cutting clean.'; body='Down '+kg+'kg while your strength '+(sUp?'even rose':'held')+'. You’re losing fat, not muscle — exactly how a cut should look. Keep the protein high.'; }
+  else if(up && sUp){ head='Lean gain.'; body='Up '+kg+'kg and your training’s rising with it — the weight’s going where you want it. If the scale ever climbs faster than your lifts, ease the surplus.'; }
+  else if(down && sDown){ tone='warn'; head='Strength is dropping with the weight.'; body='Down '+kg+'kg, but your lifts are falling too — usually the deficit’s too steep or protein’s low. Ease the cut a little and hold your protein; strength is the thing worth protecting.'; }
+  else if(up && sDown){ tone='warn'; head='Gaining faster than you’re building.'; body='Up '+kg+'kg but strength isn’t following — more of this is fat than muscle. Tighten the surplus and make sure the training keeps progressing.'; }
+  else return null;                                    // no honest signal strong enough to speak
+  return { tone, head, body, w, s };
+}
+function renderRecompInsight(){
+  const box=document.getElementById('recomp-insight'); if(!box) return;
+  const r=(typeof recompRead==='function')?recompRead():null;
+  if(!r){ box.style.display='none'; return; }
+  const col=r.tone==='warn'?'var(--go)':'var(--gr)';
+  box.style.display='block';
+  box.style.background=r.tone==='warn'?'linear-gradient(135deg,rgba(200,169,110,0.10),rgba(200,169,110,0.02))':'linear-gradient(135deg,rgba(91,185,125,0.10),rgba(91,185,125,0.02))';
+  box.style.borderColor=r.tone==='warn'?'var(--go-bd)':'var(--gr-bd)';
+  box.innerHTML=
+    '<div class="eyebrow" style="color:'+col+';margin-bottom:6px">Weight × strength · what the scale can’t see</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:18px;font-style:italic;color:var(--tx);line-height:1.3;margin-bottom:6px">'+r.head+'</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.6">'+r.body+'</div>';
+}
 function renderBody(){
   const entries=ls('totry_body')||[];
   if(typeof renderWeightHistory === 'function') renderWeightHistory();
+  if(typeof renderRecompInsight === 'function') renderRecompInsight();
   
   // Update the daily-log card today summary
   const todaySummary = document.getElementById('bod-current-summary');
@@ -13506,7 +13567,7 @@ function renderBody(){
       todaySummary.textContent = todayEntry.weight + 'kg logged today';
       todaySummary.style.color = 'var(--gr)';
     } else if(entries.length && entries[0].weight > 0){
-      todaySummary.textContent = 'Last: ' + entries[0].weight + 'kg (' + entries[0].date + ')';
+      todaySummary.textContent = 'Last: ' + entries[0].weight + 'kg (' + (entries[0].date || (entries[0].ts ? new Date(entries[0].ts).toLocaleDateString('en-AU') : 'earlier')) + ')';
       todaySummary.style.color = 'var(--tx3)';
     } else {
       todaySummary.textContent = 'No log yet';
@@ -13547,7 +13608,7 @@ function renderBody(){
       const card=document.createElement('div');
       card.style.cssText='background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:8px';
       let html='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:'+((scoreLine||e.win||e.struggle||e.focus||e.note)?'8px':'0')+'">'+
-        '<span style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3)">'+e.date+'</span>'+
+        '<span style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3)">'+(e.date || (e.ts ? new Date(e.ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : ''))+'</span>'+
         (e.weight>0?'<span style="font-size:15px;color:var(--tx)">'+e.weight+'kg <span style="font-size:11px;color:'+(cls==='down'?'var(--gr)':cls==='up'?'var(--re)':'var(--tx3)')+'">'+cs+'</span></span>':'')+
         '</div>';
       if(e.bf>0) html+='<div style="font-size:11px;color:var(--tx3);margin-bottom:6px">Body fat: '+e.bf+'%</div>';
@@ -15817,8 +15878,14 @@ function renderNutritionLog(){
   }
   if(typeof renderFoodGroups === 'function') renderFoodGroups();
   const log=ls('totry_nutlog')||{};const entries=log[today]||[];
-  const goals=(typeof withDerivedMacros==='function')?withDerivedMacros(ls('totry_nut_goals')||defaultNutGoals()):(ls('totry_nut_goals')||defaultNutGoals());
-  
+  let goals=(typeof withDerivedMacros==='function')?withDerivedMacros(ls('totry_nut_goals')||defaultNutGoals()):(ls('totry_nut_goals')||defaultNutGoals());
+  // Calorie/carb cycling: if it's on, TODAY's displayed target is the cycled one (training vs rest),
+  // while the stored goal stays the flat weekly base. A transform, never a rewrite.
+  let _cyc = null;
+  try{ if(typeof cycledTarget==='function'){ const c=cycledTarget(goals); if(c){ _cyc=c; goals=c; } } }catch(_){}
+  try{ if(typeof renderCycleBadge==='function') renderCycleBadge(_cyc); }catch(_){}
+  try{ if(typeof renderCyclingSetup==='function') renderCyclingSetup(); }catch(_){}
+
   // Aggregate macros + micros across the day
   const MICRO_KEYS = ['fiber','sugar','sodium','sat_fat','cholesterol',
                       'vit_a','vit_c','vit_d','vit_e','vit_k',
@@ -16319,6 +16386,125 @@ function goalAdjustedTarget(maintenance){
   const floor = (typeof userSex==='function' && userSex()==='female') ? 1200 : 1500;
   cal = Math.max(cal, floor);
   return { cal: Math.round(cal), proPerKg, label, verb, isAdjusted: cal !== Math.round(maintenance) };
+}
+// ── CALORIE / CARB CYCLING (the Train×Nourish squeeze #1) ───────────────────────────────────────
+// The one thing a logger-plus-tracker can do that neither alone can: keep the WEEKLY average exactly
+// where the goal needs it, but move calories to where the body uses them — more carbs on training
+// days, fewer on rest days. Protein stays flat (muscle is protected every day); only carbs (and thus
+// calories) swing. It's pure, transparent arithmetic — no AI, nothing to be "wrong" about — and it's
+// OPT-IN, because plenty of people (fasted trainers included) don't want it. Off → everything uses
+// the flat base target, exactly as before.
+function _dayFocus(dow){ try{ const s=(typeof getUserSplit==='function')?getUserSplit():[]; const d=s&&s[dow]; return d&&d.focus?String(d.focus).trim():''; }catch(_){ return ''; } }
+function _isTrainingDay(dow){
+  const f=_dayFocus(dow);
+  if(f && !/^rest$/i.test(f)) return true;                       // the split says train
+  try{ if((ls('totry_cal_events')||[]).some(e=>e&&e.type==='gym'&&e.day===dow)) return true; }catch(_){}  // a gym event
+  return false;
+}
+function _isTrainingToday(){
+  const dow=(new Date().getDay()+6)%7;
+  if(_isTrainingDay(dow)) return true;
+  // Already trained today counts, even if it wasn't planned.
+  try{ const today=new Date().toLocaleDateString('en-AU'); if((typeof getUnifiedTraining==='function'?getUnifiedTraining():[]).some(t=>t.kind==='strength'&&t.ts&&new Date(t.ts).toLocaleDateString('en-AU')===today)) return true; }catch(_){}
+  return false;
+}
+function _trainingDaysPerWeek(){
+  let n=0; for(let d=0; d<7; d++){ if(_isTrainingDay(d)) n++; }
+  if(n>0) return n;
+  // No split/calendar signal — count distinct gym-event weekdays as a fallback.
+  try{ const days=new Set(); (ls('totry_cal_events')||[]).forEach(e=>{ if(e&&e.type==='gym'&&e.day!=null) days.add(e.day); }); if(days.size) return days.size; }catch(_){}
+  return 0; // unknown → caller disables cycling
+}
+// Transform a base daily target into today's cycled target. Returns null when cycling can't/shouldn't
+// apply (disabled, or we can't tell training from rest days), so callers fall back to the base.
+function cycledTarget(base){
+  try{
+    const cfg = ls('totry_cal_cycling') || {};
+    if(!cfg.enabled || !base || !base.cal) return null;
+    const T = _trainingDaysPerWeek();
+    const R = 7 - T;
+    if(T <= 0 || R <= 0) return null;                              // need both kinds of day to move calories between them
+    const baseCarb = base.carb || 0;
+    if(baseCarb < 40) return null;                                 // too little carb to meaningfully cycle (e.g. keto)
+    const swingPct = cfg.mode === 'aggressive' ? 0.35 : 0.20;     // share of base carbs shifted onto training days
+    const addG = Math.round(baseCarb * swingPct);                 // extra carbs on a training day
+    const training = _isTrainingToday();
+    const out = Object.assign({}, base);
+    if(training){
+      out.carb = baseCarb + addG;
+      out.cal = (base.cal||0) + addG*4;
+      out.cycleDay = 'training'; out.cycleDelta = addG;
+    } else {
+      const cutG = Math.round(addG * T / R);                       // pulled from each rest day to keep the weekly total
+      out.carb = Math.max(30, baseCarb - cutG);
+      out.cal = (base.cal||0) - cutG*4;
+      out.cycleDay = 'rest'; out.cycleDelta = -cutG;
+    }
+    // ED-safe floor — a rest day can never dip below a sane minimum.
+    const floor = (typeof userSex==='function' && userSex()==='female') ? 1200 : 1500;
+    if(out.cal < floor){ out.cal = floor; }
+    out.cycled = true; out.trainingDaysPerWeek = T; out.baseCal = base.cal;
+    return out;
+  }catch(_){ return null; }
+}
+function setCalCycling(enabled, mode){
+  const cfg = ls('totry_cal_cycling') || {};
+  cfg.enabled = !!enabled; if(mode) cfg.mode = mode;
+  ls('totry_cal_cycling', cfg);
+  if(typeof syncToCloud==='function') syncToCloud();
+  if(typeof renderNutritionLog==='function') renderNutritionLog();
+  if(typeof haptic==='function') haptic('tap');
+  if(enabled && typeof showToast==='function'){
+    const T=_trainingDaysPerWeek();
+    showToast(mode==='aggressive'?'Cycling on · bigger swing':'Cycling on', T>0?('Carbs shift onto your '+T+' training day'+(T===1?'':'s')+'. Same weekly total.'):'Set your weekly split so I know your training days.');
+  }
+}
+// The opt-in control. Explains the idea plainly, shows the T/R split it will use, and only offers to
+// turn on once it can actually tell training from rest days (so it never silently does nothing).
+function renderCyclingSetup(){
+  const box=document.getElementById('cal-cycling-setup'); if(!box) return;
+  const cfg=ls('totry_cal_cycling')||{};
+  const on=!!cfg.enabled;
+  const mode=cfg.mode||'moderate';
+  const T=_trainingDaysPerWeek(); const R=7-T;
+  const canCycle = T>0 && R>0;
+  let body;
+  if(!canCycle && !on){
+    body='<div style="font-size:11.5px;color:var(--tx3);line-height:1.5;margin-top:8px">Set your <span style="color:var(--go);cursor:pointer" onclick="go(\'train\')">weekly training split</span> and I can shift carbs onto your training days automatically.</div>';
+  } else {
+    const modeBtn=(m,lbl,sub)=>'<button onclick="setCalCycling(true,\''+m+'\')" style="flex:1;text-align:left;padding:9px 11px;border-radius:9px;border:1px solid '+((on&&mode===m)?'var(--go-bd)':'var(--bd)')+';background:'+((on&&mode===m)?'var(--go-bg)':'transparent')+';color:'+((on&&mode===m)?'var(--go)':'var(--tx2)')+';cursor:pointer;font-family:Outfit,sans-serif"><div style="font-size:12px;font-weight:600">'+lbl+'</div><div style="font-size:10px;color:var(--tx3);margin-top:1px">'+sub+'</div></button>';
+    body='<div style="font-size:11.5px;color:var(--tx3);line-height:1.5;margin:8px 0 10px">'+(canCycle?('Using your split: <b style="color:var(--tx2)">'+T+' training</b> · <b style="color:var(--tx2)">'+R+' rest</b> days. Same weekly total, redistributed.'):'Set a training split so I know your days.')+'</div>'+
+      (canCycle?('<div style="display:flex;gap:8px;margin-bottom:8px">'+modeBtn('moderate','Moderate','±20% carbs')+modeBtn('aggressive','Aggressive','±35% carbs')+'</div>'):'')+
+      (on?'<button onclick="setCalCycling(false)" style="width:100%;background:none;border:1px solid var(--bd);color:var(--tx3);border-radius:9px;padding:8px;font-size:11.5px;cursor:pointer">Turn cycling off</button>':'');
+  }
+  box.innerHTML=
+    '<div class="card" style="background:var(--bg2)">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center">'+
+        '<div><div class="card-hd" style="margin-bottom:2px">\u{1F504} Calorie cycling'+(on?' <span style="font-family:DM Mono,monospace;font-size:9px;color:var(--go)">ON</span>':'')+'</div>'+
+          '<div style="font-size:11px;color:var(--tx3)">More carbs on training days, fewer on rest</div></div>'+
+        (on?'':'<button class="btn" style="width:auto;padding:7px 13px;font-size:12px;background:var(--go);color:#1a1505;border:none" onclick="'+(canCycle?'setCalCycling(true,\'moderate\')':'go(\'train\')')+'">'+(canCycle?'Turn on':'Set split')+'</button>')+
+      '</div>'+
+      body+
+    '</div>';
+}
+// The at-a-glance "today is a training/rest day" badge on the food log — so the shifted number never
+// looks like a mistake. Silent when cycling is off.
+function renderCycleBadge(cyc){
+  const box=document.getElementById('nut-cycle-badge'); if(!box) return;
+  if(!cyc || !cyc.cycled){ box.innerHTML=''; return; }
+  const training = cyc.cycleDay==='training';
+  const col = training ? 'var(--go)' : 'var(--tx3)';
+  const bg = training ? 'var(--go-bg)' : 'var(--bg3)';
+  const bd = training ? 'var(--go-bd)' : 'var(--bd)';
+  const deltaTxt = cyc.cycleDelta>0 ? ('+'+cyc.cycleDelta+'g carbs today') : (cyc.cycleDelta<0 ? (cyc.cycleDelta+'g carbs today') : 'baseline');
+  box.innerHTML =
+    '<div style="display:flex;align-items:center;gap:10px;background:'+bg+';border:1px solid '+bd+';border-radius:12px;padding:11px 14px;margin-bottom:14px">'+
+      '<span style="font-size:16px">'+(training?'\u{1F525}':'\u{1F31B}')+'</span>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-size:13px;color:var(--tx);font-weight:600">'+(training?'Training day':'Rest day')+' <span style="font-family:DM Mono,monospace;font-size:11px;color:'+col+';font-weight:400">· '+deltaTxt+'</span></div>'+
+        '<div style="font-size:11px;color:var(--tx3);line-height:1.4;margin-top:1px">Carbs shifted to match your day — protein held, weekly total unchanged.</div>'+
+      '</div>'+
+    '</div>';
 }
 function setCalGoalFromTDEE(tdee){
   // tdee = the learned MAINTENANCE. Turn it into the goal-appropriate daily target first, then build
