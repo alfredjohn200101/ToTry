@@ -4034,7 +4034,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v252';
+const APP_VERSION = 'v253';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -15085,7 +15085,10 @@ function openRecipeBuilder(){
     '<h3 style="margin-bottom:8px">My recipes</h3>' +
     '<p style="font-size:12px;color:var(--tx3);margin-bottom:6px">Build meals once, log them in one tap.</p>' +
     listHtml +
-    '<button class="btn primary" onclick="newRecipe()" style="margin-top:10px;margin-bottom:8px">+ New recipe</button>' +
+    '<div style="display:flex;gap:8px;margin-top:10px;margin-bottom:8px">' +
+      '<button class="btn primary" onclick="openPasteRecipe()" style="flex:1">📋 Paste a recipe</button>' +
+      '<button class="btn" onclick="newRecipe()" style="flex:1;background:var(--bg3);border:1px solid var(--bd)">+ Build manually</button>' +
+    '</div>' +
     '<button class="btn" onclick="closeModal(this)">Done</button>' +
   '</div>';
   document.body.appendChild(m);
@@ -15096,9 +15099,52 @@ function newRecipe(){
   editRecipe(-1);
 }
 
-function editRecipe(idx){
+// Paste a recipe from anywhere (a site, a note, a message) and let the AI turn the ingredient list
+// into a full recipe with macros — the tedious part done in one step. We parse pasted TEXT, not a
+// URL: text parsing is what the model is reliably good at, and it can't fail on a paywalled or
+// unreachable page. The result is always an EDITABLE draft, so a wrong number is a tweak, not a trap.
+function openPasteRecipe(){
+  document.querySelector('.modal-bg.open')?.remove();
+  const m=document.createElement('div'); m.className='modal-bg open';
+  m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
+    '<h3 style="margin-bottom:6px">Paste a recipe</h3>'+
+    '<p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Paste the ingredients from anywhere — a website, a note, a message. I’ll turn them into a recipe with macros you can edit. Add how many servings it makes if you know.</p>'+
+    '<textarea id="paste-recipe-text" placeholder="500g chicken breast\n2 cups basmati rice\n1 tbsp olive oil\n1 onion\n\nMakes 4 servings" style="min-height:150px;font-size:15px;line-height:1.5;margin-bottom:12px"></textarea>'+
+    '<button class="btn primary" onclick="parsePastedRecipe()" style="margin-bottom:8px">Build the recipe</button>'+
+    '<button class="btn" onclick="closeModal(this)">Cancel</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  setTimeout(function(){ var t=document.getElementById('paste-recipe-text'); if(t) t.focus(); }, 200);
+}
+async function parsePastedRecipe(){
+  const text=(document.getElementById('paste-recipe-text')?.value||'').trim();
+  if(!text){ showToast('Paste something first','Add the ingredients and I’ll build it.'); return; }
+  const btn=document.querySelector('.modal-bg.open .btn.primary');
+  if(btn){ btn.textContent='Working out the macros…'; btn.disabled=true; }
+  const prompt='Parse this into a structured recipe with macros:\n\n"'+text+'"\n\n'+
+    'For each ingredient, respect any stated quantity EXACTLY and estimate accurate nutrition for it. Macros are for the WHOLE recipe (every ingredient), not per serving. Ignore non-ingredient lines (instructions, headings, method). Return ONLY this JSON, no markdown:\n'+
+    '{"name":"short recipe name","servings":number,"ingredients":[{"name":"e.g. 500g chicken breast","cal":number,"pro":number,"carb":number,"fat":number}]}\n'+
+    'servings = how many meals the whole recipe makes (estimate from the amounts if not stated; default 1). Numbers only. sodium not needed.';
+  try{
+    const raw=await api('You are a precise nutrition coach who converts recipe ingredient lists into accurate per-ingredient macros.',[],prompt,900);
+    const mm=raw.match(/\{[\s\S]*\}/); if(!mm) throw new Error('no json');
+    const parsed=JSON.parse(mm[0]);
+    const recipe={ name:parsed.name||'New recipe', servings:Math.max(1, parseInt(parsed.servings)||1),
+      ingredients:(parsed.ingredients||[]).map(function(i){ return { name:String(i.name||'ingredient'), cal:Math.round(i.cal||0), pro:Math.round((i.pro||0)*10)/10, carb:Math.round((i.carb||0)*10)/10, fat:Math.round((i.fat||0)*10)/10 }; }) };
+    if(!recipe.ingredients.length) throw new Error('no ingredients');
+    document.querySelector('.modal-bg.open')?.remove();
+    editRecipe(-1, recipe);
+    if(typeof haptic==='function') haptic('success');
+    if(typeof showToast==='function') showToast('Recipe drafted ✨', recipe.ingredients.length+' ingredients — review, tweak anything, then save.');
+  }catch(e){
+    if(btn){ btn.textContent='Build the recipe'; btn.disabled=false; }
+    showToast('Couldn’t read that','Try pasting just the ingredient lines — or add them manually.');
+  }
+}
+
+function editRecipe(idx, prefill){
   const recipes = ls('totry_recipes') || [];
-  const recipe = idx >= 0 ? recipes[idx] : {name: '', ingredients: [], servings: 1};
+  const recipe = idx >= 0 ? recipes[idx] : (prefill || {name: '', ingredients: [], servings: 1});
   if(!recipe) return;
   
   window.__editingRecipe = JSON.parse(JSON.stringify(recipe));
