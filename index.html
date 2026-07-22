@@ -4034,7 +4034,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v253';
+const APP_VERSION = 'v254';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -24050,7 +24050,7 @@ function showExamenHistory(){
     const preview = previewSrc.slice(0, 80) + (previewSrc.length > 80 ? '…' : '');
     return '<div onclick="showExamenDetail(' + i + ')" style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
-        '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em">' + e.date + ' · Day ' + (e.day || '?') + '</div>' +
+        '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em">' + (e.date || (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') : 'Earlier')) + ' · Day ' + (e.day || '?') + '</div>' +
         '<div style="font-size:14px;color:var(--tx3)">›</div>' +
       '</div>' +
       (preview ? '<div style="font-size:12px;color:var(--tx2);line-height:1.55;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' + preview.replace(/</g,'&lt;') + '</div>' : '<div style="font-size:11px;color:var(--tx3);font-style:italic">No notes — just walked the steps</div>') +
@@ -24095,7 +24095,7 @@ function showExamenDetail(idx){
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:4px">' + e.date + ' · Day ' + (e.day || '?') + '</div>' +
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:4px">' + (e.date || (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') : 'Earlier')) + ' · Day ' + (e.day || '?') + '</div>' +
     '<h3 style="margin-bottom:14px">Examen</h3>' +
     '<div style="max-height:60vh;overflow-y:auto;padding-right:4px;margin-bottom:14px">' + body + '</div>' +
     '<button class="btn" onclick="showExamenHistory()" style="margin-bottom:8px">Back to list</button>' +
@@ -25323,6 +25323,19 @@ async function fetchLiturgy(){
   if(out.readings || out.celebration){ ls(cacheKey, out); }
   return out;
 }
+// True when the celebration's description is clearly ABOUT a different saint than the one named — the
+// free API's occasional name/bio mismatch. We look for the description's subject ("St. X was/founded/
+// devoted…") and flag it when that saint's name doesn't appear in the feast name. Conservative: only
+// suppresses on a clear subject mismatch, so a real bio that merely mentions another saint is kept.
+function _liturgyCelebrationMismatch(c){
+  try{
+    if(!c || !c.name || !c.description) return false;
+    const m = String(c.description).match(/(?:St\.?|Saint|Bl\.?|Blessed)\s+([A-Z][a-z]+)\s+(?:was|is|were|became|devoted|founded|lived|died|entered|joined|gave|served|preached)/);
+    if(!m) return false;
+    const subject = m[1].toLowerCase();
+    return String(c.name).toLowerCase().indexOf(subject) === -1;
+  }catch(_){ return false; }
+}
 async function renderLiturgy(){
   const box = document.getElementById('liturgy-content');
   const dateEl = document.getElementById('liturgy-date');
@@ -25338,11 +25351,18 @@ async function renderLiturgy(){
   if(d.season){ html += '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:12px">'+d.season+'</div>'; }
   if(d.celebration){
     const c = d.celebration;
+    // The free calendar API sometimes pairs a correct feast NAME with a quote/bio for a DIFFERENT
+    // saint (e.g. "Bridget of Sweden" titled, but the bio is St. Elizabeth's). A wrong saint bio quietly
+    // corrodes trust in the whole faith side \u2014 so when the description's SUBJECT saint isn't the one
+    // named, we keep the reliable name and drop the mismatched quote+bio rather than show something false.
+    const showBio = !_liturgyCelebrationMismatch(c);
+    const q = showBio ? c.quote : null;
+    const desc = showBio ? c.description : null;
     html += '<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.04));border-color:var(--go-bd)">'+
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Today the Church remembers</div>'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:'+(c.quote||c.description?'10px':'0')+'">'+(c.name||'').replace(/</g,'&lt;')+'</div>'+
-      (c.quote?'<div style="font-size:14px;color:var(--go);font-style:italic;line-height:1.6;margin-bottom:'+(c.description?'10px':'0')+'">\u201c'+c.quote.replace(/</g,'&lt;')+'\u201d</div>':'')+
-      (c.description?'<div style="font-size:12px;color:var(--tx3);line-height:1.6">'+c.description.replace(/</g,'&lt;')+'</div>':'')+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:'+(q||desc?'10px':'0')+'">'+(c.name||'').replace(/</g,'&lt;')+'</div>'+
+      (q?'<div style="font-size:14px;color:var(--go);font-style:italic;line-height:1.6;margin-bottom:'+(desc?'10px':'0')+'">\u201c'+q.replace(/</g,'&lt;')+'\u201d</div>':'')+
+      (desc?'<div style="font-size:12px;color:var(--tx3);line-height:1.6">'+desc.replace(/</g,'&lt;')+'</div>':'')+
       '</div>';
   }
   if(d.readings){
