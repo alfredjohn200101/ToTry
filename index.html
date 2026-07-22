@@ -4025,7 +4025,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v247';
+const APP_VERSION = 'v248';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -21032,7 +21032,11 @@ function suggestProgression(ex, lastSets){
   // Work off the heaviest completed working set last time (ignore warmups).
   const working = lastSets.filter(s => (s.type||'normal')!=='warmup' && (parseFloat(s.weight)||0)>0 && (parseInt(s.reps)||0)>0);
   if(!working.length) return null;
-  const top = working.reduce((b,s)=> (parseFloat(s.weight)>parseFloat(b.weight) ? s : b), working[0]);
+  // Best working set = heaviest, and at equal weight the one with the most reps (the real best).
+  const top = working.reduce((b,s)=> {
+    const sw=parseFloat(s.weight), bw=parseFloat(b.weight);
+    if(sw>bw) return s; if(sw===bw && (parseInt(s.reps)||0)>(parseInt(b.reps)||0)) return s; return b;
+  }, working[0]);
   const w = parseFloat(top.weight), r = parseInt(top.reps);
   if(!w || !r) return null;
   // If RPE was logged and it was a true grind (>8.5), don't push — hold and consolidate.
@@ -21044,8 +21048,12 @@ function suggestProgression(ex, lastSets){
     const m = String(ex.targetReps).match(/(\d+)\s*[-–]\s*(\d+)/);
     if(m) repHi = parseInt(m[2]); else { const n=parseInt(ex.targetReps); if(!isNaN(n)) repHi=n; }
   }
-  // Double progression: if no explicit range, treat 12 as a sensible ceiling for adding load.
-  const ceiling = repHi || 12;
+  // Double progression. With an explicit target, honour it. WITHOUT one, infer the scheme from what
+  // they actually did: a low-rep set (≤6) is strength work — add load at 6, don't tell them to rep it
+  // out to 12; a higher-rep set is hypertrophy — build toward 12 then load. The old flat ceiling of
+  // 12 meant a 3–6 rep strength lifter got NO progression nudge at all — the feature silently failed
+  // for exactly the people who overload most deliberately.
+  const ceiling = repHi || (r <= 6 ? 6 : 12);
   // Only suggest if they actually MET the target last time (earned the bump).
   if(r < ceiling){
     // Hit fewer than ceiling reps — earn it by adding a rep, but only if they were already at/above

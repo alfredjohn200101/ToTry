@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v247-nourish-new-user-target-nudge'
+const CACHE = 'totry-v248-train-strength-progression'
 
 const CORE = [
   './',
