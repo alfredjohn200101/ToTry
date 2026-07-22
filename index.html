@@ -4031,7 +4031,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v250';
+const APP_VERSION = 'v251';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -13525,6 +13525,21 @@ function strengthTrend(){
   const pct=(rAvg-oAvg)/oAvg;
   return { dir: pct>0.05?'up':pct<-0.05?'down':'flat', pct:Math.round(pct*100), sessions:sess.length };
 }
+// Smart-scale body-comp trend (fat mass / muscle mass) — the extra dimension a scale like Eufy adds,
+// synced in by CSV today or Apple Health once native. Null unless there's real comp data spanning time.
+function bodyCompTrend(){
+  const pts=(ls('totry_body')||[]).filter(e=>e&&e.weight>0&&e.comp&&(e.comp.fatMassKg!=null||e.comp.muscleKg!=null))
+    .map(e=>({t:new Date(e.ts||e.date).getTime(), fat:e.comp.fatMassKg, mus:e.comp.muscleKg})).filter(x=>!isNaN(x.t)).sort((a,b)=>a.t-b.t);
+  if(pts.length<2) return null;
+  const spanDays=(pts[pts.length-1].t-pts[0].t)/86400000;
+  if(spanDays<14) return null;
+  const f=pts[0], l=pts[pts.length-1];
+  return {
+    dFat:(f.fat!=null&&l.fat!=null)?Math.round((l.fat-f.fat)*10)/10:null,
+    dMus:(f.mus!=null&&l.mus!=null)?Math.round((l.mus-f.mus)*10)/10:null,
+    days:Math.round(spanDays)
+  };
+}
 function recompRead(){
   const w=weightTrendDir(), s=strengthTrend();
   if(!w||!s) return null;
@@ -13538,7 +13553,23 @@ function recompRead(){
   else if(down && sDown){ tone='warn'; head='Strength is dropping with the weight.'; body='Down '+kg+'kg, but your lifts are falling too — usually the deficit’s too steep or protein’s low. Ease the cut a little and hold your protein; strength is the thing worth protecting.'; }
   else if(up && sDown){ tone='warn'; head='Gaining faster than you’re building.'; body='Up '+kg+'kg but strength isn’t following — more of this is fat than muscle. Tighten the surplus and make sure the training keeps progressing.'; }
   else return null;                                    // no honest signal strong enough to speak
-  return { tone, head, body, w, s };
+  // If a smart scale is feeding fat/muscle data, corroborate the read with it — or, when the scale
+  // disagrees with the lifts, say so honestly: bioimpedance muscle/fat numbers wobble, and rising
+  // strength is the more reliable sign of real muscle. This is how the scale "maximises" the read.
+  const bc=(typeof bodyCompTrend==='function')?bodyCompTrend():null;
+  if(bc){
+    const fatDown=bc.dFat!=null&&bc.dFat<-0.2, fatUp=bc.dFat!=null&&bc.dFat>0.2;
+    const musUp=bc.dMus!=null&&bc.dMus>0.2, musDown=bc.dMus!=null&&bc.dMus<-0.2;
+    const agrees = (tone==='good' && (fatDown||musUp)) || (tone==='warn' && (fatUp||musDown));
+    if(agrees){
+      const bits=[]; if(fatDown) bits.push('down '+Math.abs(bc.dFat)+'kg fat'); if(musUp) bits.push('up '+bc.dMus+'kg muscle');
+      if(fatUp) bits.push('up '+bc.dFat+'kg fat'); if(musDown) bits.push('down '+Math.abs(bc.dMus)+'kg muscle');
+      if(bits.length) body += ' Your scale backs it up: '+bits.join(', ')+' over '+bc.days+' days.';
+    } else if(sUp && bc.dMus!=null && bc.dMus<=0){
+      body += ' (Your scale doesn’t show the muscle yet — bioimpedance readings wobble day to day; your rising strength is the more reliable sign.)';
+    }
+  }
+  return { tone, head, body, w, s, bc };
 }
 function renderRecompInsight(){
   const box=document.getElementById('recomp-insight'); if(!box) return;
@@ -13635,6 +13666,9 @@ function renderBody(){
 function renderBodyCompInsight(){
   const box = document.getElementById('body-comp-insight');
   if(!box) return;
+  // When the recomp card is already telling the fat/muscle story (it folds scale data in when there's
+  // also training history), don't stack a second card saying the same thing — defer to the richer one.
+  try{ const rr=(typeof recompRead==='function')?recompRead():null; if(rr && rr.bc){ box.style.display='none'; return; } }catch(_){}
   const entries = (ls('totry_body')||[]).filter(e => e.weight > 0);
   if(entries.length < 2){ box.style.display='none'; return; }
   // entries are newest-first. Compare a recent window to an earlier one (need comp data on both).

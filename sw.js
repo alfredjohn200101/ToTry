@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v250-cal-cycling-and-recomp-read'
+const CACHE = 'totry-v251-scale-maximises-recomp'
 
 const CORE = [
   './',
