@@ -16,3 +16,6 @@ ios/capacitor-cordova-ios-plugins/
 **/*.xcworkspace/xcuserdata/
 **/*.xcodeproj/xcuserdata/
 **/*.xcodeproj/project.xcworkspace/xcuserdata/
+
+# Xcode build artifacts
+build/
