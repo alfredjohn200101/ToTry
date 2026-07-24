@@ -4037,7 +4037,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v260';
+const APP_VERSION = 'v261';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -14333,6 +14333,159 @@ function startVoiceLog(){
   }catch(_){ if(input) input.focus(); }
 }
 
+// ── CURATED COMMON-FOODS DATABASE ────────────────────────────────────────────
+// The ~100 foods people actually log every day, with accurate per-100g macros and real portions.
+// Matched and rendered INSTANTLY, before any network call — so logging a staple is as fast as MFP
+// (searching the 4 online sources takes ~2s). The online DBs still fill the long tail below. This is
+// the reliability principle again: the common case is deterministic, offline, and instant; AI/network
+// is only for the fuzzy long tail. Row = [name, [cal,pro,carb,fat,fiber,sugar,sodium] per 100g,
+// [[portion label, grams], ...] (first = default), aliases?]. Values are per 100 g, cooked where
+// that's how it's eaten.
+const COMMON_FOODS_RAW = [
+  // Proteins
+  ['Chicken breast, cooked',   [165,31,0,3.6,0,0,74],   [['1 breast (170g)',170]], 'poultry'],
+  ['Chicken thigh, cooked',    [209,26,0,10.9,0,0,88],  [['1 thigh (90g)',90]], 'poultry'],
+  ['Beef mince, lean, cooked', [217,26,0,12,0,0,72],    [['100 g',100]], 'ground beef hamburger'],
+  ['Beef steak, cooked',       [250,27,0,15,0,0,58],    [['1 steak (200g)',200]], ''],
+  ['Pork chop, cooked',        [231,26,0,13,0,0,62],    [['1 chop (120g)',120]], ''],
+  ['Salmon, cooked',           [208,20,0,13,0,0,59],    [['1 fillet (150g)',150]], 'fish'],
+  ['White fish (cod), cooked', [105,23,0,0.9,0,0,78],   [['1 fillet (150g)',150]], 'fish'],
+  ['Tuna, canned in springwater', [116,26,0,1,0,0,247], [['1 can (95g)',95]], 'fish'],
+  ['Prawns, cooked',           [99,24,0.2,0.3,0,0,111], [['100 g',100]], 'shrimp seafood'],
+  ['Egg, whole',               [143,13,1.1,9.5,0,1.1,142],[['1 large egg (50g)',50]], ''],
+  ['Egg white',                [52,11,0.7,0.2,0,0.7,166],[['1 white (33g)',33]], ''],
+  ['Greek yogurt, plain',      [59,10,3.6,0.4,0,3.2,36],[['1 tub (170g)',170],['100 g',100]], ''],
+  ['Cottage cheese',           [98,11,3.4,4.3,0,2.7,364],[['1/2 cup (110g)',110],['100 g',100]], ''],
+  ['Whey protein powder',      [400,80,8,6,0,5,300],    [['1 scoop (30g)',30]], 'protein shake'],
+  ['Tofu, firm',               [144,17,3,9,2,0.6,14],   [['100 g',100]], ''],
+  ['Ham, sliced',              [145,18,1.5,7,0,1,1200], [['2 slices (46g)',46],['100 g',100]], 'deli'],
+  ['Bacon, cooked',            [541,37,1.4,42,0,0,1717],[['2 rashers (40g)',40],['100 g',100]], ''],
+  ['Turkey mince, cooked',     [176,27,0,7,0,0,70],     [['100 g',100]], 'ground turkey'],
+  ['Sausage, cooked',          [300,18,3,24,0,1,700],   [['1 sausage (60g)',60]], 'snag'],
+  // Legumes
+  ['Lentils, cooked',          [116,9,20,0.4,7.9,1.8,2],[['1 cup (200g)',200],['100 g',100]], ''],
+  ['Chickpeas, cooked',        [164,9,27,2.6,7.6,4.8,7],[['1 cup (160g)',160],['100 g',100]], 'garbanzo'],
+  ['Black beans, cooked',      [132,9,24,0.5,8.7,0.3,1],[['1 cup (170g)',170],['100 g',100]], ''],
+  ['Baked beans',              [94,5,15,0.5,4.1,5,422], [['1 cup (220g)',220],['100 g',100]], ''],
+  ['Kidney beans, cooked',     [127,9,23,0.5,6.4,0.3,1],[['1 cup (170g)',170],['100 g',100]], ''],
+  // Grains & carbs
+  ['White rice, cooked',       [130,2.7,28,0.3,0.4,0.1,1],[['1 cup (180g)',180],['100 g',100]], ''],
+  ['Brown rice, cooked',       [123,2.7,26,1,1.6,0.4,4],[['1 cup (180g)',180],['100 g',100]], ''],
+  ['Pasta, cooked',            [158,6,31,0.9,1.8,0.6,1],[['1 cup (140g)',140],['100 g',100]], 'spaghetti'],
+  ['Oats, dry',                [379,13,68,7,10,1,6],    [['1/2 cup (40g)',40]], 'oatmeal porridge'],
+  ['White bread',              [265,9,49,3.2,2.7,5,491],[['1 slice (36g)',36]], 'toast'],
+  ['Wholemeal bread',          [247,13,41,3.4,7,6,400], [['1 slice (40g)',40]], 'wholewheat toast'],
+  ['Potato, boiled',           [87,1.9,20,0.1,1.8,0.9,4],[['1 medium (170g)',170],['100 g',100]], ''],
+  ['Sweet potato, baked',      [90,2,21,0.1,3.3,6.5,36],[['1 medium (150g)',150],['100 g',100]], 'kumara'],
+  ['Quinoa, cooked',           [120,4.4,21,1.9,2.8,0.9,7],[['1 cup (185g)',185],['100 g',100]], ''],
+  ['Couscous, cooked',         [112,3.8,23,0.2,1.4,0,5],[['1 cup (155g)',155],['100 g',100]], ''],
+  ['Tortilla wrap',            [310,8,52,7,3,2,600],    [['1 wrap (60g)',60]], 'burrito'],
+  ['Bagel',                    [250,10,48,1.5,2,5,430], [['1 bagel (95g)',95]], ''],
+  ['Weet-Bix',                 [340,12,67,1.6,11,3,270],[['2 biscuits (30g)',30]], 'cereal breakfast'],
+  ['Rice cakes',               [387,8,82,3,4,0.6,30],   [['1 cake (9g)',9]], ''],
+  ['Muesli',                   [360,10,66,6,7,20,90],   [['1/2 cup (45g)',45]], 'cereal granola'],
+  // Fruit
+  ['Banana',                   [89,1.1,23,0.3,2.6,12,1],[['1 medium (118g)',118]], ''],
+  ['Apple',                    [52,0.3,14,0.2,2.4,10,1],[['1 medium (180g)',180]], ''],
+  ['Orange',                   [47,0.9,12,0.1,2.4,9,0], [['1 medium (130g)',130]], ''],
+  ['Strawberries',             [32,0.7,7.7,0.3,2,4.9,1],[['1 cup (150g)',150],['100 g',100]], 'berries'],
+  ['Blueberries',              [57,0.7,14,0.3,2.4,10,1],[['1 cup (148g)',148],['100 g',100]], 'berries'],
+  ['Grapes',                   [69,0.7,18,0.2,0.9,15,2],[['1 cup (150g)',150],['100 g',100]], ''],
+  ['Mango',                    [60,0.8,15,0.4,1.6,14,1],[['1 cup (165g)',165],['100 g',100]], ''],
+  ['Avocado',                  [160,2,9,15,7,0.7,7],    [['1/2 avocado (100g)',100]], ''],
+  ['Dates',                    [277,1.8,75,0.2,6.7,66,1],[['2 dates (48g)',48],['100 g',100]], ''],
+  // Vegetables
+  ['Broccoli, cooked',         [35,2.4,7,0.4,3.3,1.4,41],[['1 cup (156g)',156],['100 g',100]], ''],
+  ['Spinach',                  [23,2.9,3.6,0.4,2.2,0.4,79],[['1 cup (30g)',30],['100 g',100]], 'greens'],
+  ['Carrot',                   [41,0.9,10,0.2,2.8,4.7,69],[['1 medium (60g)',60]], ''],
+  ['Tomato',                   [18,0.9,3.9,0.2,1.2,2.6,5],[['1 medium (120g)',120]], ''],
+  ['Cucumber',                 [15,0.7,3.6,0.1,0.5,1.7,2],[['100 g',100]], ''],
+  ['Capsicum',                 [31,1,6,0.3,2.1,4.2,4],  [['1 medium (120g)',120],['100 g',100]], 'bell pepper'],
+  ['Mushroom',                 [22,3.1,3.3,0.3,1,2,5],  [['100 g',100]], ''],
+  ['Mixed veg, cooked',        [60,3,12,0.4,4,4,50],    [['1 cup (160g)',160],['100 g',100]], ''],
+  ['Sweet corn',               [86,3.2,19,1.2,2.7,3.2,15],[['1 cob (90g)',90],['100 g',100]], ''],
+  ['Peas, cooked',             [84,5.4,16,0.4,5.5,6,3], [['1 cup (160g)',160],['100 g',100]], ''],
+  ['Green beans, cooked',      [35,1.9,8,0.3,3.4,3.3,1],[['1 cup (125g)',125],['100 g',100]], ''],
+  // Dairy & fats
+  ['Whole milk',               [61,3.2,4.8,3.3,0,5,43], [['1 cup (250ml)',250],['100 ml',100]], ''],
+  ['Skim milk',                [34,3.4,5,0.1,0,5,42],   [['1 cup (250ml)',250],['100 ml',100]], 'nonfat milk'],
+  ['Cheddar cheese',           [402,25,1.3,33,0,0.5,621],[['1 slice (20g)',20],['100 g',100]], ''],
+  ['Butter',                   [717,0.9,0.1,81,0,0.1,11],[['1 tbsp (14g)',14]], ''],
+  ['Olive oil',                [884,0,0,100,0,0,2],     [['1 tbsp (14g)',14]], ''],
+  ['Peanut butter',            [588,25,20,50,6,9,17],   [['1 tbsp (16g)',16]], 'nut butter'],
+  ['Almonds',                  [579,21,22,50,12,4,1],   [['handful (28g)',28]], 'nuts'],
+  ['Cashews',                  [553,18,30,44,3.3,6,12], [['handful (28g)',28]], 'nuts'],
+  ['Walnuts',                  [654,15,14,65,7,2.6,2],  [['handful (28g)',28]], 'nuts'],
+  ['Mixed nuts',               [607,20,21,54,7,4,300],  [['handful (30g)',30]], 'nuts'],
+  // Common / snacks
+  ['Protein bar',              [350,30,40,10,5,20,200], [['1 bar (60g)',60]], ''],
+  ['Honey',                    [304,0.3,82,0,0.2,82,4], [['1 tbsp (21g)',21]], ''],
+  ['Sugar',                    [387,0,100,0,0,100,1],   [['1 tsp (4g)',4]], ''],
+  ['Hummus',                   [166,8,14,10,6,0.4,379], [['2 tbsp (30g)',30],['100 g',100]], ''],
+  ['Dark chocolate',           [546,5,61,31,7,48,24],   [['2 squares (20g)',20],['100 g',100]], ''],
+  ['Milk chocolate',           [535,7.6,59,30,3.4,52,79],[['1 row (25g)',25],['100 g',100]], ''],
+  ['Vegemite',                 [174,26,19,0,0,2,3400],  [['1 tsp (5g)',5]], 'spread'],
+  ['Milo powder',              [400,8,79,4,3,44,180],   [['3 tsp (20g)',20]], ''],
+];
+function _buildCommonFood(row){
+  const [name, m, portions, aliases] = row;
+  const [cal,pro,carb,fat,fiber,sugar,sodium] = m;
+  const per = g => ({
+    cal: Math.round(cal*g/100),
+    pro: Math.round(pro*g/100*10)/10,
+    carb: Math.round(carb*g/100*10)/10,
+    fat: Math.round(fat*g/100*10)/10,
+    fiber: Math.round((fiber||0)*g/100*10)/10,
+    sugar: Math.round((sugar||0)*g/100*10)/10,
+    sodium: Math.round((sodium||0)*g/100)
+  });
+  let ports = portions.slice();
+  if(!ports.some(p=>p[1]===100)) ports.push(['100 g',100]);
+  const servings = ports.map(([label,g])=>Object.assign({name:label, gramsEquiv:g}, per(g)));
+  return Object.assign({ name, brand:'', source:'Common', __generic:true, __local:true,
+    __aliases:(aliases||''), servings }, per(portions[0][1]));
+}
+const COMMON_FOODS = COMMON_FOODS_RAW.map(_buildCommonFood);
+// Instant, offline match. Returns up to `limit` foods, best first. No network.
+function searchCommonFoods(query, limit){
+  const ql = (query||'').toLowerCase().trim();
+  if(!ql || ql.length<2) return [];
+  const toks = ql.split(/\s+/).filter(Boolean);
+  const scored = [];
+  COMMON_FOODS.forEach(f=>{
+    const nm = f.name.toLowerCase();
+    const hay = nm + ' ' + (f.__aliases||'');
+    const firstWord = nm.split(/[ ,]/)[0];
+    let s = 0;
+    if(nm === ql) s += 1000;
+    else if(nm.startsWith(ql)) s += 700;
+    else if(firstWord === ql) s += 500;
+    else if(hay.includes(ql)) s += 350;
+    if(toks.length>1 && toks.every(t=>hay.includes(t))) s += 300;
+    if(s>0) scored.push({f,s});
+  });
+  return scored.sort((a,b)=>b.s-a.s).slice(0, limit||6).map(x=>x.f);
+}
+// One food-result row (tap to adjust portion, + to log instantly). Shared by the instant local pass
+// and the full network render so they look and behave identically.
+function _makeFoodResultRow(food){
+  const el=document.createElement('div'); el.className='food-result';
+  el.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:8px';
+  const tap=document.createElement('div');
+  tap.style.cssText='flex:1;cursor:pointer;min-width:0';
+  tap.innerHTML='<div class="fr-name">'+food.name+'</div>'+(food.brand?'<div class="fr-brand">'+food.brand+'</div>':'')+
+    '<div class="fr-macros"><span class="fr-cal">'+food.cal+' cal</span><span>P: '+food.pro+'g</span><span>C: '+food.carb+'g</span><span>F: '+food.fat+'g</span><span style="color:var(--tx3)">'+food.source+'</span></div>';
+  tap.onclick=()=>openServingModal(food);
+  el.appendChild(tap);
+  const plus=document.createElement('button');
+  plus.title='Log instantly';
+  plus.style.cssText='background:var(--go);border:none;color:#1a1505;font-size:18px;font-weight:700;width:34px;height:34px;border-radius:8px;cursor:pointer;flex-shrink:0;line-height:1';
+  plus.textContent='+';
+  plus.onclick=(ev)=>{ ev.stopPropagation(); quickLogSearchFood(food); };
+  el.appendChild(plus);
+  return el;
+}
+
 async function searchFood(query){
   if(!query.trim())return;
   
@@ -14345,6 +14498,18 @@ async function searchFood(query){
   
   const res=document.getElementById('nut-search-results');
   res.innerHTML='<p class="pulsing" style="font-family:\'Cormorant Garamond\',serif;font-size:15px;font-style:italic;color:var(--tx3);text-align:center;padding:16px">Searching...</p>';
+  // INSTANT: curated common foods match with zero network, so the staple you want appears immediately
+  // — tap it now, or wait a beat for the online long-tail to fill in below.
+  const localMatches = searchCommonFoods(query);
+  if(localMatches.length){
+    res.innerHTML='';
+    localMatches.forEach(f=>res.appendChild(_makeFoodResultRow(f)));
+    const more=document.createElement('div');
+    more.className='pulsing';
+    more.style.cssText='font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-align:center;padding:10px';
+    more.textContent='finding more options…';
+    res.appendChild(more);
+  }
   const ql = query.toLowerCase().trim();
   // SEARCH BROAD, RANK SPECIFIC. Sending "chicken breast skin off seasoned oven" verbatim makes the
   // databases return narrow oddities ("chicken breast roll") and miss the generic family entirely —
@@ -14455,8 +14620,15 @@ async function searchFood(query){
   // Online/database results are authoritative — collect their normalized names so we can drop any
   // community entry that duplicates one (no double-ups; verified online data wins over community).
   pool.forEach(f => { try{ dbNorms.add(_normLibName(f.name)); }catch(_){} });
-  const sharedFiltered = sharedMatches.filter(f => { try{ return !dbNorms.has(_normLibName(f.name)); }catch(_){ return true; } });
-  const all = [...customMatches, ...sharedFiltered, ...pool].slice(0, 22);
+  // Curated common foods (instant, at the top) already cover these staples — drop any DB/community/
+  // custom duplicate so nothing shows twice. Order: your custom foods → common foods → community → online.
+  const _norm = s => { try{ return _normLibName(s); }catch(_){ return (s||'').toLowerCase().trim(); } };
+  const customNorms = new Set(customMatches.map(f=>_norm(f.name)));
+  const localMatchesF = localMatches.filter(f=>!customNorms.has(_norm(f.name)));
+  const localNorms = new Set(localMatchesF.map(f=>_norm(f.name)));
+  const poolFiltered = pool.filter(f=>!localNorms.has(_norm(f.name)));
+  const sharedFiltered = sharedMatches.filter(f => { const n=_norm(f.name); return !dbNorms.has(n) && !localNorms.has(n); });
+  const all = [...customMatches, ...localMatchesF, ...sharedFiltered, ...poolFiltered].slice(0, 22);
   res.innerHTML='';
 
   // If NO database results came back, the web lookup is the best path — it finds real branded
@@ -14490,24 +14662,8 @@ async function searchFood(query){
     res.appendChild(aiCard);
   }
   
-  all.forEach((food,idx)=>{
-    const el=document.createElement('div');el.className='food-result';
-    el.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:8px';
-    const tap=document.createElement('div');
-    tap.style.cssText='flex:1;cursor:pointer;min-width:0';
-    tap.innerHTML='<div class="fr-name">'+food.name+'</div>'+(food.brand?'<div class="fr-brand">'+food.brand+'</div>':'')+
-      '<div class="fr-macros"><span class="fr-cal">'+food.cal+' cal</span><span>P: '+food.pro+'g</span><span>C: '+food.carb+'g</span><span>F: '+food.fat+'g</span><span style="color:var(--tx3)">'+food.source+'</span></div>';
-    tap.onclick=()=>openServingModal(food);
-    el.appendChild(tap);
-    // MFP's signature (+): log instantly at default serving; tap the row to adjust portion.
-    const plus=document.createElement('button');
-    plus.title='Log instantly';
-    plus.style.cssText='background:var(--go);border:none;color:#1a1505;font-size:18px;font-weight:700;width:34px;height:34px;border-radius:8px;cursor:pointer;flex-shrink:0;line-height:1';
-    plus.textContent='+';
-    plus.onclick=(ev)=>{ ev.stopPropagation(); quickLogSearchFood(food); };
-    el.appendChild(plus);
-    res.appendChild(el);
-  });
+  // MFP's signature: tap the row to adjust portion, (+) to log instantly at the default serving.
+  all.forEach((food)=>{ res.appendChild(_makeFoodResultRow(food)); });
   
   // Always offer custom food creation at the end — for foods in no database (homemade, regional, supplements)
   const customBtn=document.createElement('button');

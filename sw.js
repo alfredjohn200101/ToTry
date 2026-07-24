@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v260-mobility-deterministic'
+const CACHE = 'totry-v261-instant-food-search'
 
 const CORE = [
   './',
