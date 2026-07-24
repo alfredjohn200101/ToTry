@@ -1889,14 +1889,16 @@ input:focus,textarea:focus,select:focus{
       <div class="sob-sub">Days clean</div>
       <div class="sob-hms" id="sob-hms">0h 0m 0s</div>
     </div>
-    <p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">When an urge hits &#8212; tap it. No typing needed while you're fighting.</p>
+    <p id="fight-tap-hint" style="display:none;font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">When an urge hits &#8212; tap it. No typing needed while you're fighting.</p>
     <div id="feeling-wins-momentum" style="display:none"></div>
     <div id="vices-list"></div>
     <div id="urge-insights" style="display:none;margin-top:8px"></div>
     <!-- Vice-pattern insight (WS-D) — OPT-IN only, compassionate, never auto-popped. Shows only
          when enough slips logged to see a pattern; the user chooses to look. -->
     <div id="vice-pattern-card" style="display:none;margin-top:8px"></div>
-    <div class="card" style="margin-top:8px">
+    <div class="card" id="add-vice-card" style="margin-top:8px">
+      <button type="button" id="add-vice-toggle" onclick="toggleAddVice()" style="display:none;width:100%;background:none;border:none;color:var(--go);font-size:13px;cursor:pointer;padding:8px;text-align:center;letter-spacing:0.02em">+ Add another to the fight</button>
+      <div id="add-vice-body">
       <div class="card-hd" style="margin-bottom:5px">Add a vice</div>
       <input type="text" id="v-name" placeholder="Name it (e.g. weed, drinking, porn)..." style="margin-bottom:8px">
       <input type="text" id="v-trigger" placeholder="When does it usually hit?" style="margin-bottom:8px">
@@ -1925,6 +1927,7 @@ input:focus,textarea:focus,select:focus{
       <div class="eyebrow" id="v-start-lbl">Already started? Set your real start date (optional)</div>
       <input type="date" id="v-start" style="margin-bottom:8px;font-size:16px;padding:10px;color-scheme:dark">
       <button class="btn primary" onclick="addVice()">Add this</button>
+      </div>
     </div>
   </div>
 
@@ -4034,7 +4037,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v258';
+const APP_VERSION = 'v259';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -10320,6 +10323,18 @@ function renderViceSavingsTotal(){
     }
   }
 }
+// The add-a-vice form is collapsed once you already have vices — this reveals it on demand so the
+// screen stays about the fight, not a setup form sitting open forever.
+function toggleAddVice(){
+  const body=document.getElementById('add-vice-body');
+  const tog=document.getElementById('add-vice-toggle');
+  if(!body||!tog) return;
+  const show = body.style.display==='none';
+  body.style.display = show ? 'block' : 'none';
+  tog.textContent = show ? '− Close' : '+ Add another to the fight';
+  if(show){ const n=document.getElementById('v-name'); if(n) setTimeout(()=>n.focus(),50); }
+  if(typeof haptic==='function') haptic('tap');
+}
 function renderVices(){
   loadV();const list=document.getElementById('vices-list');if(!list)return;
   list.innerHTML='';let tw=0;
@@ -10468,9 +10483,26 @@ function renderVices(){
     list.appendChild(c);
   });
   
+  // Add-a-vice form: expanded for the first-time user (they need it), collapsed behind a button
+  // once there's at least one vice — so the screen stays about the fight, not the setup form.
+  const avBody=document.getElementById('add-vice-body');
+  const avTog=document.getElementById('add-vice-toggle');
+  if(avBody&&avTog){
+    const has=vices.length>0;
+    avBody.style.display = has ? 'none' : 'block';
+    avTog.style.display  = has ? 'block' : 'none';
+    avTog.textContent = '+ Add another to the fight';
+  }
+  const tapHint=document.getElementById('fight-tap-hint');
+  if(tapHint) tapHint.style.display = vices.length>0 ? '' : 'none';
+
   // Update main sobriety clock to show the LONGEST current streak.
   // Only abstinence ("quit") vices count here — moderation vices have no clean-day streak.
+  // Hide the whole clock when there's no quit-vice to count: a big "0 Days clean" over an empty or
+  // moderation-only fight is confusing, and against grace-over-shame.
   const quitVices = vices.filter(v => v.mode !== 'moderate');
+  const sobClock=document.getElementById('sob-clock-main');
+  if(sobClock) sobClock.style.display = quitVices.length ? '' : 'none';
   if(quitVices.length){
     const maxClean=Math.max(...quitVices.map(v=>viceCleanDays(v)));
     const cleanEl=document.getElementById('sob-days');
