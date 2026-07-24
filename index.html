@@ -4039,7 +4039,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v256';
+const APP_VERSION = 'v257';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4339,7 +4339,11 @@ const SYNC_KEYS = [
   'totry_journal','totry_evenings','totry_mornings','totry_examens','totry_prayers',
   'totry_cal_events','totry_feeling_wins',
   // Sacraments (Confession/Reconciliation + Mass/Eucharist)
-  'totry_confessions','totry_masses','totry_saved_meals','totry_migrate_dismissed','totry_food_imported','totry_push_prefs','totry_body_goal','totry_fight_log',
+  'totry_confessions','totry_masses','totry_saved_meals','totry_migrate_dismissed','totry_food_imported','totry_body_goal','totry_fight_log',
+  // NOTE: totry_push_prefs is deliberately NOT synced — notification permission is granted per-device,
+  // so a stale cloud value (from before you enabled it, or another device) was silently flipping your
+  // reminders back off. Reminders are device-local; you re-enable per device (which requires that
+  // device's permission anyway).
   // Training & body
   'totry_workouts','totry_body','totry_measurements','totry_ms','totry_split','totry_routines','totry_prs',
   'totry_strava_token','totry_google_token','totry_strava_activities','totry_strava_burns_byday','totry_strength_burns_byday','totry_watch_burns_byday','totry_calorie_burns','totry_google_steps',
@@ -9584,12 +9588,13 @@ function companionFreeText(){
   const f = document.getElementById('comp-freetext');
   const txt = f ? f.value.trim() : '';
   if(!txt){ if(f) f.focus(); return; }
+  if(f) f.value = '';   // clear it — so what you typed never haunts the NEXT time you open this
   const type = (typeof classifyVice==='function') ? classifyVice(txt) : 'general';
-  _beginCompanion(txt, type);
+  _beginCompanion(txt, type, txt);   // 3rd arg: your actual words, so they open the conversation
 }
 
 // Begin the companion conversation for a named struggle.
-async function _beginCompanion(name, type){
+async function _beginCompanion(name, type, userMessage){
   if(typeof haptic==='function') haptic('light');
   // classifyVice doesn't know overthinking/anxiety/panic — catch those here so the right built-in
   // mechanism (defuse / ground) applies immediately instead of falling to 'general'.
@@ -9626,14 +9631,20 @@ async function _beginCompanion(name, type){
   if(mechEl) mechEl.textContent = mechLabel;
   const conv = document.getElementById('comp-conversation');
   if(conv) conv.innerHTML = '';
-  // INSTANT PRESENCE — the sibling speaks the moment the sheet opens (local, zero network).
-  // The most important 3 seconds in the app must never be a spinner.
   _compLocalStep = 0;
-  const instant = COMPANION_INSTANT_OPEN[mechKey] || COMPANION_INSTANT_OPEN.ground;
-  _compHistory.push({ role:'assistant', content: instant });
-  if(conv){ const m=document.createElement('div'); m.className='comp-msg comp-msg-them'; m.textContent=instant; conv.appendChild(m); conv.scrollTop=conv.scrollHeight; }
-  // The AI joins the conversation when it arrives — continuing, never re-greeting.
-  await _companionSay(null, 'deepen');
+  if(userMessage){
+    // They said it in their own words. Show what they said as THEIR message, and have the Brother
+    // answer THAT — not a canned greeting. _companionSay(text, false) renders their bubble, sends
+    // their words, and generates a real reply to them.
+    await _companionSay(userMessage, false);
+  } else {
+    // Vice chip / direct entry (no words to answer): INSTANT PRESENCE — the sibling speaks the moment
+    // the sheet opens (local, zero network), then the AI deepens it. The 3 seconds must not be a spinner.
+    const instant = COMPANION_INSTANT_OPEN[mechKey] || COMPANION_INSTANT_OPEN.ground;
+    _compHistory.push({ role:'assistant', content: instant });
+    if(conv){ const m=document.createElement('div'); m.className='comp-msg comp-msg-them'; m.textContent=instant; conv.appendChild(m); conv.scrollTop=conv.scrollHeight; }
+    await _companionSay(null, 'deepen');
+  }
 }
 
 // Research a faith+science protocol for an unexpected struggle, cache to shared knowledge.
@@ -20606,7 +20617,14 @@ function getUnifiedTraining(){
   // appeared twice). We match on time proximity, and treat a same-name match as a definite duplicate.
   const liftSessions = liftsDeduped.filter(l => l.kind === 'strength').map(l => ({ ts: l.ts, name: String(l.title||'').toLowerCase().trim() }));
   const norm = s => String(s||'').toLowerCase().replace(/\s+/g,' ').trim();
+  // DEFINITIVE dedup: when a Hevy-via-Strava activity is converted to a structured workout, that
+  // workout's id is literally "stravahevy_<the Strava activity id>". So the raw Strava activity with
+  // that id is the SAME session — drop it by ID, not by fuzzy time/name. This is what was still
+  // doubling: Hevy and Strava stamp slightly different times, so the 90-min proximity check missed it.
+  const convertedStravaIds = new Set();
+  (ls('totry_workouts')||[]).forEach(w => { const id=String(w.id||''); if(id.indexOf('stravahevy_')===0) convertedStravaIds.add(id.slice(11)); });
   const deduped = cardio.filter(c => {
+    if(c.raw && c.raw.id!=null && convertedStravaIds.has(String(c.raw.id))) return false;   // its structured copy is already in the list
     const cName = norm(c.title);
     // Same name as a Hevy lift within a wider window → definitely the same pushed session.
     const nameDup = liftSessions.some(l => l.name && cName && l.name === cName && _sessionsOverlap(l.ts, c.ts, 180));
