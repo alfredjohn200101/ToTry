@@ -4037,7 +4037,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v259';
+const APP_VERSION = 'v260';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -20001,58 +20001,110 @@ function _todayTrainedMuscles(){
   }catch(_){ }
   return Array.from(muscles);
 }
-// Adaptive warm-up generator: AI builds a short warm-up for today's muscles + your tightest joints.
-async function generateWarmup(){
-  const btn = document.getElementById('mob-warmup-btn');
-  if(btn){ btn.textContent = 'Building...'; btn.disabled = true; }
-  try{
-    const muscles = _todayTrainedMuscles();
-    const prof = getMobilityProfile() || {};
-    const tight = Object.keys(prof).filter(k => k!=='_ts' && prof[k] <= 2).map(k => (MOBILITY_JOINTS.find(j=>j.id===k)||{}).label || k);
-    const rd = (typeof computeReadiness==='function') ? computeReadiness() : null;
-    const readyCtx = rd ? (' The person\u2019s readiness today is ' + rd.level + ' (' + rd.score + '/100)' + (rd.level==='rest'?' \u2014 keep the warm-up gentle and restorative.':rd.level==='go'?' \u2014 they can warm up thoroughly for a hard session.':'.')) : '';
-    const sys = 'You are a knowledgeable, encouraging strength & mobility coach. You give concise, safe, practical warm-up routines. Never medical claims. Output plain text with short numbered steps.';
-    const prompt = 'Build a short (5\u20138 minute) warm-up' +
-      (muscles.length ? ' to prepare for training these muscle groups today: ' + muscles.join(', ') + '.' : ' for a general training session.') +
-      (tight.length ? ' This person is especially tight in: ' + tight.join(', ') + ' \u2014 include targeted mobility for those.' : '') +
-      readyCtx +
-      ' Give 5\u20137 movements, each with reps/time. Order: general raise \u2192 mobility \u2192 activation \u2192 specific. Keep it tight and doable in a gym.';
-    const resp = await api(sys, [], prompt, 700);
-    const box = document.getElementById('mob-warmup-out');
-    if(box){
-      box.style.display = 'block';
-      box.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">\u2728 Today\u2019s warm-up' + (muscles.length?' \u00b7 '+muscles.slice(0,4).join(', '):'') + '</div>' +
-        '<div style="font-size:13px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">' + (resp||'').replace(/</g,'&lt;') + '</div>';
-    }
-  }catch(e){
-    showToast('Warm-up unavailable', 'Could not reach the coach. Try again, or do your usual warm-up.');
-  }finally{
-    if(btn){ btn.textContent = 'Generate today\u2019s warm-up'; btn.disabled = false; }
-  }
+// \u2500\u2500 DETERMINISTIC MOBILITY ENGINE \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// Warm-ups and flows are composed from a curated movement library by transparent rules \u2014 NOT
+// generated fresh by AI each tap. This is deliberate: a warm-up is a repeatable prescription, so it
+// must be the SAME every time, instant, and work with no signal. (AI stays only for the fuzzy
+// form-check photo.) Each move is tagged by warm-up phase, the joints it frees, and the muscle
+// groups it prepares \u2014 the same vocabulary classifyExerciseMuscles produces.
+const MOBILITY_MOVES = [
+  // RAISE \u2014 get warm, raise the heart rate
+  { name:'Easy cardio \u2014 bike, row, or brisk incline walk', cue:'Nose-breathing pace until you\u2019re warm and lightly sweating', dur:'2\u20133 min', secs:150, phase:'raise', joints:[], groups:['*'] },
+  { name:'Skips or jumping jacks', cue:'Loose and springy \u2014 shake the whole body awake', dur:'45 sec', secs:45, phase:'raise', joints:[], groups:['*'] },
+  // MOBILISE \u2014 move the joints through range
+  { name:'Leg swings \u2014 front to back', cue:'Hold something; let the leg swing tall and free', dur:'10 / leg', secs:60, phase:'mobility', joints:['hips','hamstrings'], groups:['quads','glutes','hamstrings'] },
+  { name:'Leg swings \u2014 side to side', cue:'Open the hip, control the swing', dur:'10 / leg', secs:60, phase:'mobility', joints:['hips'], groups:['glutes','quads'] },
+  { name:'Deep bodyweight squats', cue:'Sink slow, elbows push the knees out, chest tall', dur:'8 reps', secs:60, phase:'mobility', joints:['ankles','hips'], groups:['quads','glutes','hamstrings'] },
+  { name:'Ankle rocks to the wall', cue:'Knee tracks over the toes, heel stays down', dur:'10 / side', secs:45, phase:'mobility', joints:['ankles'], groups:['quads','calves'] },
+  { name:'World\u2019s greatest stretch', cue:'Lunge, hand down, rotate the top arm to the sky', dur:'5 / side', secs:90, phase:'mobility', joints:['hips','tspine','hamstrings'], groups:['quads','glutes','hamstrings','back'] },
+  { name:'Hip 90/90 switches', cue:'Sit tall; rotate both knees floor to floor', dur:'8 / side', secs:75, phase:'mobility', joints:['hips'], groups:['glutes','quads'] },
+  { name:'Cat\u2013cow', cue:'Slow, one vertebra at a time, moving with the breath', dur:'8 reps', secs:45, phase:'mobility', joints:['tspine'], groups:['back','core'] },
+  { name:'T-spine open-books', cue:'On your side, follow the top hand, let the chest open', dur:'6 / side', secs:60, phase:'mobility', joints:['tspine','shoulders'], groups:['back','chest'] },
+  { name:'Thread the needle', cue:'Reach one arm under and through; breathe into the mid-back', dur:'6 / side', secs:60, phase:'mobility', joints:['tspine','shoulders'], groups:['back','shoulders'] },
+  { name:'Shoulder pass-throughs (band or broomstick)', cue:'Wide grip, take it overhead and behind, no shrug', dur:'10 reps', secs:45, phase:'mobility', joints:['shoulders'], groups:['shoulders','chest'] },
+  { name:'Arm circles + cross-body swings', cue:'Big circles both ways, then hug and open', dur:'10 each', secs:40, phase:'mobility', joints:['shoulders'], groups:['shoulders','chest','back'] },
+  { name:'Wrist rocks + prep', cue:'Palms down then up; rock gently to load the wrists', dur:'10 each', secs:40, phase:'mobility', joints:['wrists'], groups:['chest','shoulders','triceps'] },
+  { name:'Toe-touch walkouts', cue:'Hinge, walk the hands out to a plank, walk them back', dur:'6 reps', secs:60, phase:'mobility', joints:['hamstrings','shoulders'], groups:['hamstrings','core'] },
+  // ACTIVATE \u2014 wake up the movers for today\u2019s work
+  { name:'Glute bridges', cue:'Drive through the heels, squeeze the top, ribs down', dur:'12 reps', secs:45, phase:'activation', joints:['hips'], groups:['glutes','hamstrings'] },
+  { name:'Band pull-aparts', cue:'Straight arms; pull to the chest, squeeze the blades', dur:'15 reps', secs:40, phase:'activation', joints:['shoulders'], groups:['back','shoulders'] },
+  { name:'Scapular push-ups', cue:'Arms locked; pinch and spread the shoulder blades', dur:'10 reps', secs:40, phase:'activation', joints:['shoulders'], groups:['chest','shoulders'] },
+  { name:'Dead bugs', cue:'Low back glued to the floor, opposite arm and leg', dur:'8 / side', secs:50, phase:'activation', joints:[], groups:['core'] },
+  { name:'Bird dogs', cue:'Reach long, stay square, no twist in the hips', dur:'8 / side', secs:50, phase:'activation', joints:['tspine'], groups:['core','back'] },
+  { name:'Bodyweight good-mornings', cue:'Soft knees, hinge back, feel the hamstrings load', dur:'12 reps', secs:40, phase:'activation', joints:['hamstrings','hips'], groups:['hamstrings','glutes'] },
+];
+// Split words \u2192 concrete groups, so "push"/"legs"/"upper" from a split focus still target movements.
+const _MUSCLE_EXPAND = {
+  push:['chest','shoulders','triceps'], pull:['back','biceps'],
+  legs:['quads','glutes','hamstrings','calves'], lower:['quads','glutes','hamstrings','calves'],
+  upper:['chest','back','shoulders','biceps','triceps'], arms:['biceps','triceps'],
+  full:['chest','back','shoulders','biceps','triceps','quads','glutes','hamstrings','calves','core'],
+  delts:['shoulders'], quadriceps:['quads'], abs:['core'], waist:['core'], hips:['glutes']
+};
+function _expandMuscles(list){
+  const out=new Set();
+  (list||[]).forEach(mRaw=>{ const m=String(mRaw||'').toLowerCase().trim(); if(!m) return;
+    if(_MUSCLE_EXPAND[m]) _MUSCLE_EXPAND[m].forEach(x=>out.add(x)); else out.add(m); });
+  return out;
 }
-// Daily mobility routine (standalone, "little and often").
-async function generateMobilityRoutine(minutes){
-  const btn = document.getElementById('mob-daily-btn');
-  if(btn){ btn.textContent = 'Building...'; btn.disabled = true; }
-  try{
-    const prof = getMobilityProfile() || {};
-    const tight = Object.keys(prof).filter(k => k!=='_ts' && prof[k] <= 3).map(k => (MOBILITY_JOINTS.find(j=>j.id===k)||{}).label || k);
-    const sys = 'You are an encouraging mobility coach. Concise, safe, practical flows. No medical claims. Plain text, short numbered steps with hold times.';
-    const prompt = 'Create a ' + (minutes||8) + '-minute daily mobility flow' +
-      (tight.length ? ' prioritising these tight areas: ' + tight.join(', ') + '.' : ' for general full-body mobility.') +
-      ' Give 5\u20138 movements with hold/rep times. Calm, methodical, doable at home with no equipment.';
-    const resp = await api(sys, [], prompt, 700);
-    const box = document.getElementById('mob-daily-out');
-    if(box){
-      box.style.display = 'block';
-      box.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">\u2728 ' + (minutes||8) + '-min mobility flow</div>' +
-        '<div style="font-size:13px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">' + (resp||'').replace(/</g,'&lt;') + '</div>';
-    }
-  }catch(e){
-    showToast('Unavailable', 'Could not reach the coach right now.');
-  }finally{
-    if(btn){ btn.textContent = 'Daily mobility flow'; btn.disabled = false; }
-  }
+function _jointLabel(id){ const j=MOBILITY_JOINTS.find(x=>x.id===id); return j?j.label.toLowerCase():id; }
+// Build today's warm-up: raise \u2192 mobilise (today's muscles + your very-tight joints) \u2192 activate.
+function buildWarmup(){
+  const todays=_expandMuscles(_todayTrainedMuscles());
+  const prof=getMobilityProfile()||{};
+  const veryTight=new Set(Object.keys(prof).filter(k=>k!=='_ts'&&prof[k]<=2));
+  const muscleHit=m=>!m.groups.includes('*')&&m.groups.some(g=>todays.has(g));
+  const jointHit=m=>m.joints.some(j=>veryTight.has(j));
+  const score=m=>(jointHit(m)?3:0)+(muscleHit(m)?1:0);
+  const pick=(phase,n)=>MOBILITY_MOVES.filter(m=>m.phase===phase)
+    .map((m)=>({m,s:score(m),i:MOBILITY_MOVES.indexOf(m)}))
+    .sort((a,b)=>b.s-a.s||a.i-b.i).slice(0,n).map(x=>x.m);
+  return { raise:pick('raise',1), mobility:pick('mobility',3), activation:pick('activation', todays.size?2:1),
+           muscles:_todayTrainedMuscles(), tight:[...veryTight] };
+}
+// Build a daily flow to fit the chosen minutes, prioritising your tight areas. Deterministic.
+function buildMobilityRoutine(minutes){
+  const prof=getMobilityProfile()||{};
+  const tight=new Set(Object.keys(prof).filter(k=>k!=='_ts'&&prof[k]<=3));
+  const budget=(minutes||8)*60;
+  const ranked=MOBILITY_MOVES.filter(m=>m.phase==='mobility'||m.phase==='activation')
+    .map((m)=>({m,s:(m.joints.some(j=>tight.has(j))?2:0)+(m.phase==='mobility'?1:0),i:MOBILITY_MOVES.indexOf(m)}))
+    .sort((a,b)=>b.s-a.s||a.i-b.i).map(x=>x.m);
+  const chosen=[]; let t=0;
+  for(const m of ranked){ if(t>=budget) break; if(t+m.secs<=budget+20){ chosen.push(m); t+=m.secs; } }
+  if(chosen.length<4){ for(const m of ranked){ if(chosen.indexOf(m)<0){ chosen.push(m); if(chosen.length>=4) break; } } }
+  return { moves:chosen, minutes:minutes||8, tight:[...tight] };
+}
+function _mobMoveRow(m){
+  return '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 0;border-top:1px solid var(--bd)">'+
+    '<div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--tx);line-height:1.35">'+m.name+'</div>'+
+    '<div style="font-size:11px;color:var(--tx3);line-height:1.45;margin-top:2px">'+m.cue+'</div></div>'+
+    '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--go);white-space:nowrap">'+m.dur+'</div></div>';
+}
+// Warm-up renders directly in the panel \u2014 instant, so there's no "Generate" button to tap.
+function renderWarmupInline(){
+  const box=document.getElementById('mob-warmup-out'); if(!box) return;
+  const w=buildWarmup();
+  const rd=(typeof computeReadiness==='function')?computeReadiness():null;
+  const section=(label,moves)=>moves.length?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin:12px 0 0">'+label+'</div>'+moves.map(_mobMoveRow).join(''):'';
+  const musc=w.muscles.length?w.muscles.slice(0,5).join(', '):'a general session';
+  box.style.display='block';
+  box.innerHTML=
+    '<div style="font-size:12px;color:var(--tx3);line-height:1.5;margin-bottom:2px">Prepping '+musc+(w.tight.length?' \u00b7 easing your tight '+w.tight.map(_jointLabel).join(', '):'')+'.</div>'+
+    (rd&&rd.level==='rest'?'<div style="font-size:11px;color:var(--go);line-height:1.5;margin-top:4px">Readiness is low today \u2014 keep it gentle, don\u2019t force range.</div>':'')+
+    section('Raise',w.raise)+section('Mobilise',w.mobility)+section('Activate',w.activation);
+}
+// Daily flow renders on tap of a duration (5 / 8 / 12) \u2014 the duration is a real choice, so it stays.
+function generateMobilityRoutine(minutes){
+  const box=document.getElementById('mob-daily-out'); if(!box) return;
+  ['5','8','12'].forEach(v=>{ const b=document.getElementById('mob-daily-'+v); if(b){ const on=String(minutes)===v;
+    b.style.background=on?'var(--go)':'var(--bg3)'; b.style.color=on?'#1a1505':'var(--tx2)'; b.style.border='1px solid '+(on?'var(--go)':'var(--bd)'); } });
+  const r=buildMobilityRoutine(minutes);
+  const total=Math.round(r.moves.reduce((a,m)=>a+m.secs,0)/60);
+  box.style.display='block';
+  box.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px">\u2728 '+r.minutes+'-min flow'+(r.tight.length?' \u00b7 for your tight '+r.tight.map(_jointLabel).join(', '):' \u00b7 full body')+'</div>'+
+    r.moves.map(_mobMoveRow).join('')+
+    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:8px">\u2248 '+total+' min \u00b7 move slow, breathe through each one</div>';
 }
 // WS-I: form-check from a single photo via AI vision. Heavily caveated — "things to look at",
 // never medical/coaching certainty, and honest that one still can't capture a full movement.
@@ -20120,20 +20172,20 @@ function renderMobilityPanel(){
   box.innerHTML = profHtml +
     '<div class="card" style="margin-bottom:12px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">'+
       '<div class="card-hd" style="margin-bottom:6px">\ud83d\udd25 Warm up for today</div>'+
-      '<div style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">A warm-up built for the exact muscles you\u2019re training today' + (getMobilityProfile()?' and your tightest areas':'') + '.</div>'+
-      '<button class="btn primary" id="mob-warmup-btn" onclick="generateWarmup()">Generate today\u2019s warm-up</button>'+
-      '<div id="mob-warmup-out" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"></div>'+
+      '<div id="mob-warmup-out"></div>'+
     '</div>'+
     '<div class="card">'+
       '<div class="card-hd" style="margin-bottom:6px">\ud83e\uddd8 Daily mobility</div>'+
       '<div style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Little and often beats long and rare. A short daily flow for your tight areas.</div>'+
       '<div style="display:flex;gap:8px;margin-bottom:8px">'+
-        '<button class="btn" onclick="generateMobilityRoutine(5)" style="flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12px">5 min</button>'+
-        '<button class="btn primary" id="mob-daily-btn" onclick="generateMobilityRoutine(8)" style="flex:1;font-size:12px">8 min</button>'+
-        '<button class="btn" onclick="generateMobilityRoutine(12)" style="flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12px">12 min</button>'+
+        '<button class="btn" id="mob-daily-5" onclick="generateMobilityRoutine(5)" style="flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12px">5 min</button>'+
+        '<button class="btn primary" id="mob-daily-8" onclick="generateMobilityRoutine(8)" style="flex:1;font-size:12px">8 min</button>'+
+        '<button class="btn" id="mob-daily-12" onclick="generateMobilityRoutine(12)" style="flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12px">12 min</button>'+
       '</div>'+
       '<div id="mob-daily-out" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"></div>'+
     '</div>';
+  // Warm-up shows immediately (deterministic + instant); daily flow waits for a duration tap.
+  if(typeof renderWarmupInline==='function') renderWarmupInline();
 }
 
 // ═══════════════════════════════════════════════════════════════════

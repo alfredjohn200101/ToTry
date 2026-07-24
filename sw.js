@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v259-fight-coherence'
+const CACHE = 'totry-v260-mobility-deterministic'
 
 const CORE = [
   './',
