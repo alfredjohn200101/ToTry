@@ -2089,14 +2089,9 @@ input:focus,textarea:focus,select:focus{
     <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="document.getElementById('meal-photo-input').click()">🍽 Snap a meal</button>
     <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openBarcodeScanner()">📷 Scan barcode</button>
     <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openRecipeBuilder()">🍳 My recipes</button>
-    <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="repeatYesterdayMeals()">↻ Repeat yesterday</button>
-    <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="repeatLastWeekday()">↻ Same as last week</button>
+    <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openRepeatDay()">↻ Repeat a day</button>
   </div>
   <input type="file" id="meal-photo-input" accept="image/*" capture="environment" style="display:none" onchange="handleMealPhoto(event)">
-  <!-- Food-app launcher in Nourish (where food belongs) — open your tracker or import a CSV. -->
-  <div id="nourish-food-apps" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
-    <button class="btn" id="nourish-cal-app-btn" style="flex:1;min-width:120px;padding:9px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)" onclick="document.getElementById('food-csv-input').click()">⤓ Import history from another app (CSV)</button>
-  </div>
   <input type="file" id="food-csv-input" accept=".csv" style="display:none" onchange="importFoodCSV(event)">
   <div id="nut-search-results" style="margin-bottom:12px"></div>
   <!-- Recent & frequent foods sit RIGHT under search (MFP's pattern) — your repeat foods,
@@ -2141,14 +2136,14 @@ input:focus,textarea:focus,select:focus{
   </div>
 
   <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
-    <input type="file" id="food-csv-input-2" accept=".csv,text/csv" style="display:none" onchange="importFoodCSV(event)">
     <button class="btn" style="flex:1;min-width:120px;padding:9px;font-size:11px;background:transparent;border:1px dashed var(--bd2);color:var(--tx3)" onclick="document.getElementById('food-csv-input').click()">📥 Import food CSV</button>
     <button class="btn" style="flex:1;min-width:120px;padding:9px;font-size:11px;background:transparent;border:1px dashed var(--bd2);color:var(--tx3)" onclick="exportFoodCSV()">📤 Export my food log</button>
   </div>
   
-  <!-- Today's log -->
-  <div class="lbl">Today's log</div>
-  
+  <!-- Trends & reports (the diary itself lives up top). Hidden until there's actually something to
+       show, so a new user never sees a bare header floating over nothing. Toggled in renderNutritionLog. -->
+  <div class="lbl" id="nut-reports-lbl" style="display:none">Trends &amp; reports</div>
+
   <!-- Adaptive TDEE (MacroFactor-style): your real maintenance from data, not a formula -->
   <div class="card" id="adaptive-tdee-card" style="margin-bottom:12px;display:none"></div>
 
@@ -4039,7 +4034,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v257';
+const APP_VERSION = 'v258';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -10424,9 +10419,9 @@ function renderVices(){
               '<button onclick="curVice=' + i + ';logModerateOver()" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);border-radius:8px;padding:8px;font-size:11px;cursor:pointer">Went over</button>'+
             '</div>';
         })() +
-        '<div style="display:flex;gap:10px;margin-top:8px;font-size:10px">' +
+        '<div style="display:flex;gap:10px;margin-top:8px;font-size:10px;align-items:center">' +
           '<button onclick="openRecoveryTimeline(' + i + ')" style="background:none;border:none;color:var(--gr);cursor:pointer;padding:4px 0">\uD83C\uDF3F What moderation is earning you</button>' +
-          '<button onclick="removeVice(' + i + ')" style="background:none;border:none;color:var(--tx3);cursor:pointer;padding:4px 0;margin-left:auto">Remove</button>' +
+          '<button onclick="openViceManage(' + i + ')" style="background:none;border:none;color:var(--tx3);cursor:pointer;padding:4px 0;margin-left:auto">Manage</button>' +
         '</div>';
       list.appendChild(c);
       return;
@@ -10467,15 +10462,9 @@ function renderVices(){
       '<button onclick="openLogUse(' + i + ')" style="width:100%;margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:10px;padding:9px;font-size:12px;cursor:pointer">I used — log it honestly</button>' +
       '<button onclick="openRecoveryTimeline(' + i + ')" style="width:100%;margin-top:8px;background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);border-radius:10px;padding:9px;font-size:12px;cursor:pointer">\u{1F33F} What this streak is earning you</button>' +
       totalInsight +
-      '<div style="display:flex;gap:10px;margin-top:8px;font-size:10px;flex-wrap:wrap">' +
-        '<button onclick="editViceStart(' + i + ')" style="background:none;border:none;color:var(--tx3);cursor:pointer;text-decoration:underline;padding:4px 0;text-align:left">Edit start date</button>' +
-        '<button onclick="editViceCost(' + i + ')" style="background:none;border:none;color:var(--tx3);cursor:pointer;text-decoration:underline;padding:4px 8px">' + (v.costAmount ? ('$'+viceMoneySaved(v).toLocaleString()+' reclaimed') : 'Track money saved') + '</button>' +
-        '<button onclick="changeViceMode(' + i + ')" style="background:none;border:none;color:var(--tx3);cursor:pointer;text-decoration:underline;padding:4px 0">' + (v.mode === 'moderate' ? 'Switch to quitting' : 'Switch to moderation') + '</button>' +
-        '<button onclick="toggleVicePatterns(' + i + ')" style="background:none;border:none;color:' + (v.trackPatterns?'var(--go)':'var(--tx3)') + ';cursor:pointer;text-decoration:underline;padding:4px 8px">' + (v.trackPatterns ? 'Patterns: on' : 'See my patterns') + '</button>' +
-        '<button onclick="curVice=' + i + ';promptLossDate()" style="background:none;border:none;color:var(--tx3);cursor:pointer;padding:4px 8px">Log a past slip</button>' +
-        '<button onclick="curVice=' + i + ';promptMassAddLosses()" style="background:none;border:none;color:var(--tx3);cursor:pointer;padding:4px 8px">Add several past slips</button>' +
-        '<button onclick="removeVice(' + i + ')" style="background:none;border:none;color:var(--tx3);cursor:pointer;padding:4px 0">Remove</button>' +
-      '</div>';
+      // One quiet "manage" door instead of six loose links. Backdating lives in "I used" (it takes any
+      // date), so the old "log a past slip / add several" buttons are gone — they did the same thing.
+      '<button onclick="openViceManage(' + i + ')" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:6px;letter-spacing:0.03em">Manage &middot; start date, cost, mode, remove</button>';
     list.appendChild(c);
   });
   
@@ -10978,6 +10967,24 @@ function applyViceMode(i, toModerate){
   showToast('Goal updated', v.n + (toModerate ? ' \u2014 now keeping it in check.' : ' \u2014 now aiming for zero.'));
 }
 
+// One home for the vice's settings — so the card face stays about the fight, not the admin. Backdating
+// isn't here: "I used — log it honestly" already takes any date, so there's one way to do it, not three.
+function openViceManage(i){
+  loadV(); const v=vices[i]; if(!v) return;
+  const row=(label, act, danger)=>'<button onclick="closeModal(this);'+act+'" style="width:100%;text-align:left;padding:13px 14px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;margin-bottom:8px;color:'+(danger?'var(--re)':'var(--tx)')+';font-size:14px;cursor:pointer">'+label+'</button>';
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:14px">'+String(v.n).replace(/</g,'&lt;')+'</div>'+
+    row('Edit the start date', 'editViceStart('+i+')')+
+    row(v.costAmount?('Money it costs &middot; $'+viceMoneySaved(v).toLocaleString()+' reclaimed'):'Track the money it costs', 'editViceCost('+i+')')+
+    row(v.mode==='moderate'?'Switch to quitting (aim for zero)':'Switch to keeping it in check', 'changeViceMode('+i+')')+
+    row(v.trackPatterns?'Hide my patterns':'Show my patterns', 'toggleVicePatterns('+i+')')+
+    row('Remove this from the fight', 'removeVice('+i+')', true)+
+    '<button class="btn" onclick="closeModal(this)" style="margin-top:4px;background:transparent;border:none;color:var(--tx3);font-size:13px">Done</button>'+
+    '</div>';
+  document.body.appendChild(m);
+  if(typeof haptic==='function') haptic('tap');
+}
 // Edit a vice's start date (fix your real quit date)
 function editViceStart(i){
   loadV();
@@ -15312,6 +15319,33 @@ function logRecipeAsMeal(i){
   haptic('success');
 }
 
+// ── REPEAT A DAY ─────────────────────────────────
+// One button instead of two near-identical ones. Both paths (yesterday, same weekday last week)
+// are here, each showing whether there's actually anything to copy — so a dead tap never happens.
+function openRepeatDay(){
+  const log = ls('totry_nutlog') || {};
+  const yKey = new Date(Date.now()-1*86400000).toLocaleDateString('en-AU');
+  const yCount = (log[yKey]&&log[yKey].length) ? log[yKey].length : 0;
+  const lwKey = new Date(Date.now()-7*86400000).toLocaleDateString('en-AU');
+  const lwCount = (log[lwKey]&&log[lwKey].length) ? log[lwKey].length : 0;
+  const lwDow = new Date(Date.now()-7*86400000).toLocaleDateString('en-AU',{weekday:'long'});
+  const row=(label, count, act)=>{
+    const dead = !count;
+    return '<button '+(dead?'disabled':'onclick="closeModal(this);'+act+'"')+
+      ' style="width:100%;text-align:left;padding:13px 14px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;margin-bottom:8px;color:'+(dead?'var(--tx3)':'var(--tx)')+';font-size:14px;cursor:'+(dead?'default':'pointer')+';opacity:'+(dead?'0.45':'1')+'">'+
+      label+'<span style="display:block;font-size:11px;color:var(--tx3);margin-top:2px">'+(count?(count+' item'+(count>1?'s':'')+' to copy'):'nothing logged')+'</span></button>';
+  };
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:6px">Repeat a day</div>'+
+    '<div style="text-align:center;font-size:12px;color:var(--tx3);margin-bottom:14px">Copy a previous day&rsquo;s meals into today</div>'+
+    row('Yesterday', yCount, 'repeatYesterdayMeals()')+
+    row('This '+lwDow+', last week', lwCount, 'repeatLastWeekday()')+
+    '<button class="btn" onclick="closeModal(this)" style="margin-top:4px;background:transparent;border:none;color:var(--tx3);font-size:13px">Cancel</button>'+
+    '</div>';
+  document.body.appendChild(m);
+  if(typeof haptic==='function') haptic('tap');
+}
 // ── REPEAT YESTERDAY'S MEALS ─────────────────────────────────
 function repeatYesterdayMeals(){ repeatMealsFrom(1, 'yesterday'); }
 // Same-as-last-[weekday]: people eat on a weekly rhythm (gym days, work days, Sunday roast),
@@ -16290,6 +16324,15 @@ function renderNutritionLog(){
   if(typeof renderNutWeeklyDigest==='function') renderNutWeeklyDigest();
   if(typeof renderSavedMeals==='function') renderSavedMeals();
   if(typeof renderMigrateCard==='function') renderMigrateCard();
+  // Only show the "Trends & reports" header once one of its cards is actually visible — no bare header.
+  try{
+    const lbl=document.getElementById('nut-reports-lbl');
+    if(lbl){
+      const any=['adaptive-tdee-card','nut-macro-glance','nut-weekly-digest','nut-trend-card']
+        .some(id=>{ const el=document.getElementById(id); return el && el.style.display!=='none'; });
+      lbl.style.display = any ? '' : 'none';
+    }
+  }catch(_){}
 }
 
 // Shows the "switching from another app" card until the user imports history or dismisses it,
