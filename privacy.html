@@ -31,7 +31,7 @@
 <div class="wrap">
   <div class="brand">To <em>Try</em></div>
   <h1>Privacy Policy</h1>
-  <div class="meta">By Alfred John · Last updated June 2026 · Plain English</div>
+  <div class="meta">By Alfred John · Last updated July 2026 · Plain English</div>
 
   <p>This is a one-person project, not a corporation. I (Alfred) built this and I run it. I will not pretend the app does more privacy work than it does. Here is exactly what happens to your data.</p>
 
@@ -45,7 +45,7 @@
   <p>Some app features call external services to work. Each one sees something specific:</p>
   <ul>
     <li><strong>Coach &amp; AI features</strong> — your message plus relevant context (recent state from your logs) goes to whichever AI provider responds first: Google (Gemini), Groq (Llama), OpenRouter, or Anthropic. These companies have their own privacy policies. Many providers retain prompts for safety review for around 30 days, and some may use prompts to improve models unless an enterprise tier is used. I use standard API tiers — assume your Coach messages may be reviewed by automated systems and retained briefly by the provider.</li>
-    <li><strong>Apple Health</strong> — if you connect it, the app reads steps and activity from HealthKit on your device. This stays on your device and is not uploaded to my database.</li>
+    <li><strong>Apple Health (HealthKit)</strong> — on iPhone, only if you grant permission, the app reads four health metrics — steps, active energy, workouts, and heart rate — so your movement and training count toward your day automatically, computed <strong>on your device</strong>. Unlike the other items in this list, your Health data is <strong>not</strong> sent to any third party: it is not uploaded to my database, not sent to any AI provider, not used for advertising, and never shared or sold. Anything written back to Apple Health (like a logged workout) is written only at your request. You can revoke access anytime in iOS Settings → Health.</li>
     <li><strong>Workout screenshot / meal photo reading</strong> — the image is sent to Google Gemini Vision to read the numbers.</li>
     <li><strong>Barcode scanning</strong> — the barcode is sent to OpenFoodFacts (open database).</li>
     <li><strong>USDA food search</strong> — the search query is sent to api.nal.usda.gov.</li>

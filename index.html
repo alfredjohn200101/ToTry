@@ -1065,6 +1065,7 @@ input:focus,textarea:focus,select:focus{
     <div style="text-align:center;margin-bottom:24px">
       <div style="font-family:Cormorant Garamond,serif;font-size:28px;color:var(--tx);font-style:italic;margin-bottom:8px">Welcome.</div>
       <div style="font-size:14px;color:var(--tx2);line-height:1.6">Enter your email to begin. We&apos;ll send you a 6-digit code to verify.</div>
+      <div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-top:8px">Your account keeps your whole-life progress saved and synced across your devices — nothing to lose if you switch phones.</div>
     </div>
     
     <input type="email" id="auth-email-input" placeholder="your.email@example.com" autocomplete="email" inputmode="email" style="font-size:16px;padding:14px 16px;text-align:center;margin-bottom:14px" autofocus>
@@ -1161,7 +1162,7 @@ input:focus,textarea:focus,select:focus{
     <div class="vchips" style="margin-bottom:8px">
       <div class="vchip" onclick="toggleAppChip(this,&apos;hevy&apos;)">Hevy</div>
       <div class="vchip" onclick="toggleAppChip(this,&apos;strong&apos;)">Strong</div>
-      <div class="vchip" onclick="toggleAppChip(this,&apos;strava&apos;)">Strava</div>
+      <div class="vchip" id="ob-chip-strava" style="display:none" onclick="toggleAppChip(this,&apos;strava&apos;)">Strava</div>
       <div class="vchip" onclick="toggleAppChip(this,&apos;applefit&apos;)">Apple Fitness</div>
     </div>
     
@@ -4037,7 +4038,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v263';
+const APP_VERSION = 'v264';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4171,6 +4172,7 @@ async function proceedAfterAuth(user){
     } else {
       document.getElementById('onboard').classList.add('active');
       document.getElementById('onboard').style.display = 'block';
+      try{ const sc=document.getElementById('ob-chip-strava'); if(sc && typeof isStravaApproved==='function' && isStravaApproved()) sc.style.display=''; }catch(_){}
     }
     startSyncLoop();
     haptic('celebrate');
@@ -5239,6 +5241,7 @@ async function checkAuthAndStart(){
         // Logged in but not onboarded yet - show onboarding starting at name
         document.getElementById('onboard').classList.add('active');
         document.getElementById('onboard').style.display = 'block';
+        try{ const sc=document.getElementById('ob-chip-strava'); if(sc && typeof isStravaApproved==='function' && isStravaApproved()) sc.style.display=''; }catch(_){}
       }
       
       startSyncLoop();
@@ -30833,7 +30836,12 @@ function removeLinkedApp(appId){
 
 function showAddAppPicker(){
   const used = ls('totry_apps_used') || [];
-  const available = Object.entries(APP_REGISTRY).filter(([id]) => !used.includes(id));
+  // Don't offer Strava to anyone who isn't on the approved allowlist — otherwise they'd hit the
+  // "invite-only" wall, which reads to an App Store reviewer like a broken/placeholder feature.
+  const stravaOk = (typeof isStravaApproved==='function') && isStravaApproved();
+  const available = Object.entries(APP_REGISTRY)
+    .filter(([id]) => !used.includes(id))
+    .filter(([id]) => id !== 'strava' || stravaOk);
   
   if(available.length === 0){
     showToast('All linked','You\'re using all the apps we support.');
