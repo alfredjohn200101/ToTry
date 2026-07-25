@@ -4037,7 +4037,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v262';
+const APP_VERSION = 'v263';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4355,7 +4355,7 @@ const SYNC_KEYS = [
   'totry_finance_goals','totry_transactions','totry_debt_strategy','totry_savings_usa','totry_savings_india',
   'totry_subscriptions','totry_bills','totry_budgets','totry_assets','totry_f','totry_payments','totry_family_contrib','totry_poker_sessions','totry_family_target',
   // Habits & wins — totry_h is the habit grid, totry_trackers holds daily sleep/steps/weight
-  'totry_habits','totry_h','totry_sv','totry_vs','totry_wins','totry_streaks','totry_starts',
+  'totry_habits','totry_h','totry_sv','totry_vs','totry_wins','totry_streaks',
   'totry_step_goal','totry_sleep_goal','totry_trackers','totry_today_steps','totry_cravings',
   // Relationships, promises, letters
   'totry_relationships','totry_letters','totry_promises','totry_affirmations','totry_checkins','totry_freezes',
@@ -9411,7 +9411,7 @@ function orbTap(){
 const FEELINGS = [
   { id:'pull',        emoji:'\uD83C\uDF0A', label:'The pull',        sub:'tempted, craving',        act:()=>{ closeFeelingDoor(); setTimeout(_feelThePull, 260); } },
   { id:'restless',    emoji:'\u26A1',       label:'Restless',        sub:'can\u2019t settle, antsy', act:()=>_feelMove('restless') },
-  { id:'flat',        emoji:'\uD83C\uDF2B\uFE0F', label:'Flat',      sub:'numb, can\u2019t be bothered', act:()=>_feelMove('flat') },
+  { id:'flat',        emoji:'\uD83D\uDE36', label:'Flat',            sub:'numb, can\u2019t be bothered', act:()=>_feelMove('flat') },
   { id:'anxious',     emoji:'\uD83C\uDF00', label:'Anxious',         sub:'tense, spinning',         act:()=>_feelMove('anxious') },
   { id:'down',        emoji:'\uD83C\uDF27\uFE0F', label:'Heavy',     sub:'low, sad, defeated',      act:()=>_feelMove('down') },
   { id:'procrast',    emoji:'\uD83C\uDF6F', label:'Avoiding',        sub:'putting something off',   act:()=>_feelMove('procrast') },
@@ -17342,7 +17342,7 @@ function renderNutSetupNudge(){
         '<div style="font-family:Cormorant Garamond,serif;font-size:17px;font-style:italic;color:var(--tx)">These are just starter numbers.</div>'+
         '<button onclick="dismissNutSetup()" aria-label="Dismiss" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer;line-height:1;flex-shrink:0">×</button>'+
       '</div>'+
-      '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin:8px 0 12px">You’re set to a generic '+(def.cal||2100).toLocaleString()+' cal — that could be hundreds off what your body actually needs. Give me a few details and I’ll set a target that fits <em>you</em> — then it learns from your real results. Takes about 20 seconds.</div>'+
+      '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin:8px 0 12px">You’re on generic starter numbers right now — they could be hundreds off what your body actually needs. Give me a few details and I’ll set a target that fits <em>you</em> — then it learns from your real results. Takes about 20 seconds.</div>'+
       '<button class="btn primary" onclick="openNutSetup()" style="font-size:13px;padding:11px">Set my real target</button>'+
     '</div>';
 }

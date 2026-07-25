@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v262-dismissible-sheets'
+const CACHE = 'totry-v263-bug-sweep'
 
 const CORE = [
   './',
