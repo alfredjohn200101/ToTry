@@ -4037,7 +4037,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v261';
+const APP_VERSION = 'v262';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9452,6 +9452,7 @@ function renderFeelingDoor(){
 // just wants to talk: the companion. Reachable in two taps from anywhere, before the feeling wins.
 function _feelThePull(){
   try{
+    closeFeelingDoor();   // the door's done its job — don't stack the next sheet on top of it
     if(typeof loadV==='function') loadV();
     const vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices.filter(v=>v&&v.n):((ls('totry_v')||[]).filter(v=>v&&v.n));
     if(!vs.length){ openCompanionForUrge(); return; }
@@ -26833,6 +26834,33 @@ function showToast(title,msg,onTap){
   t.onclick=()=>{ if(typeof onTap==='function'){ try{ onTap(); }catch(_){} } t.remove(); };document.body.appendChild(t);setTimeout(()=>{if(t.parentNode)t.remove();},onTap?7000:5000);
 }
 function closeModal(el){const m=el.closest('.modal-bg');if(m)m.remove();}
+// ── UNIVERSAL SHEET DISMISS ──────────────────────────────────────────────────────────────────────
+// Every bottom-sheet is dismissible three ways: tap the backdrop, tap the grab-handle, or press Esc.
+// Without this, sheets built as .modal-bg (e.g. the Feeling Door's "which one's pulling?") had NO
+// visible way out on a pointer device — a real trap. This is the iOS-native behaviour a thumb expects.
+// Sheets that must NOT be dismissed this way can add class "modal-locked" (none currently need to).
+(function(){
+  document.addEventListener('click', function(e){
+    const t = e.target; if(!t || !t.classList) return;
+    // a direct backdrop tap (outside the sheet) OR a tap on the grab-handle
+    const bg = t.classList.contains('modal-bg') ? t
+             : (t.classList.contains('modal-handle') ? t.closest('.modal-bg') : null);
+    if(bg && !bg.classList.contains('modal-locked')){
+      if(typeof closeModal==='function') closeModal(bg); else bg.remove();
+    }
+  }, false);
+  document.addEventListener('keydown', function(e){
+    if(e.key!=='Escape' && e.key!=='Esc') return;
+    // close the topmost open sheet first…
+    const sheets = document.querySelectorAll('.modal-bg:not(.modal-locked)');
+    if(sheets.length){ const top = sheets[sheets.length-1]; if(typeof closeModal==='function') closeModal(top); else top.remove(); return; }
+    // …otherwise the Feeling Door, then the companion sheet.
+    const fd = document.getElementById('feel-door');
+    if(fd && fd.classList.contains('open')){ if(typeof closeFeelingDoor==='function') closeFeelingDoor(); return; }
+    const co = document.getElementById('companion-overlay');
+    if(co && co.classList.contains('open') && typeof dismissCompanion==='function') dismissCompanion();
+  }, false);
+})();
 
 
 // ── IN-APP FEEDBACK ───────────────────────────────────────────
