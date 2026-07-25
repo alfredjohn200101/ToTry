@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v264-store-readiness'
+const CACHE = 'totry-v265-store-readiness'
 
 const CORE = [
   './',

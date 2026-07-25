@@ -4038,7 +4038,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v264';
+const APP_VERSION = 'v265';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7233,6 +7233,10 @@ function countUp(el, target, ms){
     else el.textContent = target;
   }
   requestAnimationFrame(frame);
+  // Safety net: requestAnimationFrame is paused while the page is hidden (backgrounded or
+  // throttled), which can freeze the counter on a partial number. setTimeout still fires, so
+  // guarantee the correct final value lands regardless of rAF state.
+  setTimeout(()=>{ if(el.textContent != String(target)) el.textContent = target; }, dur + 400);
 }
 
 function renderDayCounter(){
