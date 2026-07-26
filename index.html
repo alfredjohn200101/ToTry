@@ -1403,6 +1403,11 @@ input:focus,textarea:focus,select:focus{
       <div class="hc-title">The Rosary</div>
       <div class="hc-desc">Pray it guided, bead by bead — today's mysteries chosen for you, every prayer at hand.</div>
     </div>
+    <div class="hub-card wide" onclick="openBreathMenu()">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>
+      <div class="hc-title">Stillness &amp; breath</div>
+      <div class="hc-desc">A minute of guided breathing — or the Jesus Prayer carried on your breath. The one work you can always do.</div>
+    </div>
     <div class="hub-card wide" onclick="go('why')">
       <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
       <div class="hc-title">Your Why</div>
@@ -4038,7 +4043,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v265';
+const APP_VERSION = 'v266';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9489,11 +9494,11 @@ function _feelMove(feeling){
   const life = (typeof getLifeState==='function') ? getLifeState() : null;
   const sets = {
     restless: { title:'Restless energy', body:'That buzz wants OUT, not in. Don\u2019t scroll it away \u2014 that just traps it. Burn it: 20 push-ups right now, or a fast walk around the block. Move the body and the mind follows.', cta:'Log a quick workout', go:'train' },
-    flat: { title:'Flat is not failure', body:'Numb usually means depleted, not broken \u2014 often sleep, food, or doing too much alone. You don\u2019t need to feel motivated to act; you need ONE small honest move, and the feeling follows the action, not the other way round.', cta:'Show me one small thing', go:'__nextstep' },
-    anxious: { title:'Let\u2019s slow it down', body:'Anxiety is a body running ahead of the moment. Bring it back: breathe in for 4, hold 4, out 4 \u2014 three times, slowly. Then name the ONE thing actually in front of you. The spinning is the mind borrowing tomorrow\u2019s weight.', cta:'Talk it through', go:'__companion' },
+    flat: { title:'Flat is not failure', body:'Numb usually means depleted, not broken. You don\u2019t need to feel motivated to act \u2014 you need ONE small honest move, and the feeling follows the action. On a flat day, breath can be the jump-start: a minute to lift the fog, then one real thing.', cta:'Lift the fog \u2014 one minute', go:'__breath:energize' },
+    anxious: { title:'Let\u2019s slow it down', body:'Anxiety is a body running ahead of the moment. We\u2019ll bring it back down together \u2014 one minute of slow breathing, the long exhale that tells your body it\u2019s safe. Then name the ONE thing actually in front of you. The spinning is just the mind borrowing tomorrow\u2019s weight.', cta:'Breathe with me', go:'__breath:settle' },
     down: { title:'Heavy is allowed', body:'You don\u2019t have to fix this right now. Heavy days are part of it, not proof you\u2019re failing. Be gentle \u2014 water, light, a slow walk, maybe tell one real person. And if it\u2019s been heavy for a while, that\u2019s a sign to let a real person in, not a weakness.', cta:'I might need real help', go:'__bridge' },
     procrast: { title:'The thing you\u2019re avoiding', body:'Avoiding it costs more than doing it \u2014 you already know that, because it\u2019s sitting on you right now. Don\u2019t plan it, don\u2019t perfect it. Start the smallest possible version for 2 minutes. Momentum is the whole secret. What\u2019s the one thing?', cta:'Name it & start', go:'__procrast' },
-    angry: { title:'Fired up', body:'Anger is energy with nowhere to go. Don\u2019t aim it at someone or stuff it down \u2014 move it through the body first (hard effort, cold water, walk it off), THEN decide what\u2019s actually worth doing about it from a calm place.', cta:'Burn it off', go:'train' },
+    angry: { title:'Fired up', body:'Anger is energy with nowhere to go. Don\u2019t aim it at someone or stuff it down. Cool the heat first \u2014 a slow cooling breath drops the temperature in about a minute \u2014 THEN decide what\u2019s actually worth doing, from a calm place.', cta:'Cool it down', go:'__breath:cool' },
     good: { title:'Good \u2014 let\u2019s build on it', body:'When you\u2019re steady is exactly when to invest, because the hard days spend what the good days save. Do one thing now that future-you will thank you for. Don\u2019t coast it away.', cta:'What\u2019s my next step?', go:'__nextstep' }
   };
   const s = sets[feeling]; if(!s) return;
@@ -9504,6 +9509,7 @@ function _feelMove(feeling){
   else if(s.go==='__companion') onclick = 'closeModal(this);openCompanionForUrge()';
   else if(s.go==='__bridge') onclick = 'closeModal(this);bridgeToRealHelp(\'heavy\')';
   else if(s.go==='__procrast') onclick = 'closeModal(this);_startSmallestThing()';
+  else if(s.go && s.go.indexOf('__breath:')===0) onclick = 'closeModal(this);openBreath(\''+s.go.split(':')[1]+'\',{reason:\''+feeling+'\'})';
   else onclick = 'closeModal(this);go(\''+s.go+'\')';
   // The suggested move is never the ONLY door. Whatever they're feeling, they can always choose to
   // just TALK (the companion) or WRITE it down (journal) instead of following the prescription — met
@@ -9533,6 +9539,138 @@ function _startSmallestThing(){
       return true;
     });
   }
+}
+
+// ════ BREATH & STILLNESS — the minimum viable work ════
+// "Faith without works is dead." When willpower is gone, the one work a person can ALWAYS do is take
+// a breath. This is not a modal that TELLS you to breathe — it breathes WITH you, matched to the
+// feeling: the pull gets a physiological sigh, anxiety a long slow exhale, a flat day gets energised,
+// anger gets cooled, faith carries the Jesus Prayer. Deterministic, brief, evidence-led (full research
+// + sources in BREATH-STILLNESS-RESEARCH.md), then it hands you back to your life. No streaks — a
+// tool, not a feed. Intense techniques are safety-gated. Optional 0–10 before/after proves it works
+// with the person's own data.
+const BREATH_PROTOCOLS = {
+  settle:   { name:'Settle',        why:'The long exhale that calms the body', cycles:8,
+    phases:[ {l:'Breathe in', s:4, scale:1.55}, {l:'Slow out', s:6, scale:1.0} ] },
+  sigh:     { name:'Reset',         why:'The fastest way to drop a spike or a craving', cycles:5,
+    phases:[ {l:'Breathe in', s:2.4, scale:1.4}, {l:'Sip a little more', s:1.2, scale:1.62}, {l:'Long slow out', s:6.5, scale:1.0} ] },
+  box:      { name:'Steady',        why:'Steady the mind before a hard choice', cycles:6,
+    phases:[ {l:'Breathe in', s:4, scale:1.55}, {l:'Hold', s:4, scale:1.55}, {l:'Breathe out', s:4, scale:1.0}, {l:'Hold', s:4, scale:1.0} ] },
+  cool:     { name:'Cool it',       why:'Take the heat out of anger', cycles:8,
+    phases:[ {l:'Cool breath in (through your teeth)', s:4, scale:1.55}, {l:'Slow out through the nose', s:6, scale:1.0} ] },
+  sleep:    { name:'Wind down',     why:'For a racing mind at night', cycles:5,
+    phases:[ {l:'Breathe in', s:4, scale:1.55}, {l:'Hold', s:7, scale:1.55}, {l:'Long out', s:8, scale:1.0} ] },
+  prayer:   { name:'Breath prayer', why:'Carry the Jesus Prayer on your breath', faith:true, cycles:8,
+    phases:[ {l:'Lord Jesus Christ, Son of God', s:5, scale:1.55}, {l:'have mercy on me, a sinner', s:6, scale:1.0} ] },
+  presence: { name:'Presence',      why:'Wordless stillness', cycles:8,
+    phases:[ {l:'Receive', s:4, scale:1.55}, {l:'Let go', s:6, scale:1.0} ] },
+  energize: { name:'Lift',          why:'Raise your energy on a flat, numb day', intense:true, cycles:2,
+    phases:[ {l:'Fast breaths — follow the orb', s:15, scale:1.5, pulse:true}, {l:'Now rest — slow breath in', s:4, scale:1.55}, {l:'Long out', s:7, scale:1.0} ] }
+};
+function _breathFaithOn(){ return (typeof faithLevel!=='function') || faithLevel()!=='light'; }
+function _breathScale(el, v, dur){ if(!el) return; el.style.transitionDuration=dur+'s'; el.style.transform='scale('+v+')'; }
+function _breathLog(entry){ try{ const log=ls('totry_breath_log')||[]; log.unshift(Object.assign({ts:Date.now()},entry)); ls('totry_breath_log', log.slice(0,200)); }catch(_){} }
+function _breathSafetyGate(cb){
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="text-align:center">'+
+    '<div style="font-size:30px;margin-bottom:8px">⚠️</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);margin-bottom:10px">One quick check</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:16px">This one is more intense — fast breathing. <b style="color:var(--tx)">Skip it</b> if you’re pregnant, have heart, blood-pressure or breathing conditions, or get panic attacks. Never do it while driving or in water. Sit down first, and stop if you feel dizzy.</div>'+
+    '<button class="btn primary" id="b-safe-ok" style="margin-bottom:8px">I understand — continue</button>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  m.querySelector('#b-safe-ok').onclick=()=>{ try{ ls('totry_breath_intense_ok',true); }catch(_){} m.remove(); if(typeof cb==='function') cb(); };
+}
+function openBreathMenu(){
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  const ids = ['settle','sigh','box','cool','sleep', _breathFaithOn()?'prayer':'presence','energize'];
+  let html='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">Take a breath</div>'+
+    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">The one work you can always do. Pick what fits right now.</div>';
+  ids.forEach(id=>{ const p=BREATH_PROTOCOLS[id]; html+=
+    '<button class="btn" onclick="closeModal(this);openBreath(\''+id+'\')" style="text-align:left;margin-bottom:8px;padding:12px 14px">'+
+      '<div style="font-size:14px;color:var(--tx)">'+p.name+(p.intense?' <span style="color:var(--tx3);font-size:10px">· intense</span>':'')+'</div>'+
+      '<div style="font-size:11.5px;color:var(--tx3)">'+p.why+'</div>'+
+    '</button>'; });
+  html+='<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:4px">Not now</button></div>';
+  m.innerHTML=html; document.body.appendChild(m); if(typeof haptic==='function') haptic('tap');
+}
+function openBreath(id, opts){
+  opts = opts || {};
+  const p = BREATH_PROTOCOLS[id] || BREATH_PROTOCOLS.settle;
+  if(p.intense && !ls('totry_breath_intense_ok')){ _breathSafetyGate(()=>openBreath(id, opts)); return; }
+  const reason = opts.reason || null;
+  const ov=document.createElement('div'); ov.className='breath-overlay';
+  ov.style.cssText='position:fixed;inset:0;z-index:9500;background:radial-gradient(circle at 50% 40%,#151a28,#09090c 72%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px;text-align:center;color:var(--tx)';
+  ov.innerHTML=
+    '<button class="b-x" aria-label="Close" style="position:absolute;top:14px;right:18px;background:none;border:none;color:var(--tx3);font-size:28px;line-height:1;cursor:pointer">×</button>'+
+    '<div class="b-pre" style="display:none;max-width:340px">'+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:24px;margin-bottom:6px">Before we begin</div>'+
+      '<div style="font-size:13.5px;color:var(--tx2);line-height:1.6;margin-bottom:18px">How strong is it right now? <span style="color:var(--tx3)">0 is gone, 10 is overwhelming.</span></div>'+
+      '<div class="b-scale" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px"></div>'+
+      '<button class="b-skip" style="background:transparent;border:none;color:var(--tx3);font-size:12px;cursor:pointer">Skip — just breathe</button>'+
+    '</div>'+
+    '<div class="b-run" style="display:none;flex-direction:column;align-items:center">'+
+      '<div class="b-name" style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--tx3);margin-bottom:26px"></div>'+
+      '<div style="width:220px;height:220px;display:flex;align-items:center;justify-content:center;margin-bottom:26px">'+
+        '<div class="b-orb" style="width:120px;height:120px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(200,169,110,0.92),rgba(200,169,110,0.22));box-shadow:0 0 60px rgba(200,169,110,0.35);transform:scale(1);transition:transform 4s ease-in-out"></div>'+
+      '</div>'+
+      '<div class="b-phase" style="font-family:Cormorant Garamond,serif;font-size:26px;min-height:36px;line-height:1.3;max-width:360px"></div>'+
+      '<div class="b-count" style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);margin-top:16px;min-height:14px"></div>'+
+      '<button class="b-change" style="margin-top:22px;background:none;border:1px solid var(--bd);border-radius:20px;color:var(--tx3);font-size:12px;padding:7px 16px;cursor:pointer">Change breath</button>'+
+    '</div>'+
+    '<div class="b-post" style="display:none;max-width:340px">'+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:24px;margin-bottom:6px">And now?</div>'+
+      '<div style="font-size:13.5px;color:var(--tx2);line-height:1.6;margin-bottom:18px">Same scale — where is it now?</div>'+
+      '<div class="b-scale2" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px"></div>'+
+    '</div>'+
+    '<div class="b-done" style="display:none;max-width:360px">'+
+      '<div class="b-done-msg" style="font-family:Cormorant Garamond,serif;font-size:25px;line-height:1.3;margin-bottom:20px"></div>'+
+      '<button class="btn primary b-done-btn" style="max-width:240px;margin:0 auto">I’m ready</button>'+
+    '</div>';
+  document.body.appendChild(ov);
+  const q=(s)=>ov.querySelector(s);
+  const state={alive:true, timer:null, pulse:null, cycle:0, pi:0, before:null, after:null};
+  function cleanup(){ state.alive=false; if(state.timer){clearTimeout(state.timer);state.timer=null;} if(state.pulse){clearInterval(state.pulse);state.pulse=null;} }
+  function close(){ cleanup(); ov.remove(); }
+  q('.b-x').onclick=close;
+  q('.b-change').onclick=()=>{ cleanup(); ov.remove(); openBreathMenu(); };
+  function show(sec){ ['.b-pre','.b-run','.b-post','.b-done'].forEach(s=>{ const e=q(s); if(e) e.style.display=(s===sec)?(s==='.b-run'?'flex':'block'):'none'; }); }
+  function buildScale(container, cb){ if(!container) return; container.innerHTML=''; for(let n=0;n<=10;n++){ const b=document.createElement('button'); b.textContent=n; b.style.cssText='width:26px;height:34px;border-radius:8px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);font-size:13px;cursor:pointer'; b.onclick=()=>cb(n); container.appendChild(b); } }
+  function startBreathing(){
+    show('.b-run');
+    const orb=q('.b-orb'), phaseEl=q('.b-phase'), countEl=q('.b-count');
+    q('.b-name').textContent=p.name;
+    state.cycle=0; state.pi=0;
+    function doneMsg(){ show('.b-done'); q('.b-done-msg').textContent=_breathFaithOn()?'Rest here a moment. That was a work — small, real, yours.':'Notice how your body feels now. That was one real thing done.'; q('.b-done-btn').onclick=close; try{ if(typeof logEvent==='function') logEvent('breath'); }catch(_){} if(typeof haptic==='function') haptic('tap'); }
+    function afterDone(){ show('.b-done'); const d=state.before-state.after; let msg; if(d>=3) msg='From '+state.before+' to '+state.after+'. You just moved it — with nothing but your breath.'; else if(d>0) msg='From '+state.before+' to '+state.after+'. Even a little down is the wave passing. You stayed.'; else msg='Still heavy — and you showed up and did the work anyway. That counts. If it stays high, let a real person in.'; q('.b-done-msg').textContent=msg; q('.b-done-btn').onclick=close; try{ if(typeof logEvent==='function') logEvent('breath'); }catch(_){} }
+    function askAfter(){ show('.b-post'); buildScale(q('.b-scale2'), (n)=>{ state.after=n; _breathLog({protocol:id, reason:reason, before:state.before, after:n}); afterDone(); }); }
+    function finish(){ cleanup(); _breathScale(orb,1.18,1.6); if(reason && state.before!=null){ askAfter(); return; } doneMsg(); }
+    function runPhase(){
+      if(!state.alive) return;
+      const ph=p.phases[state.pi];
+      phaseEl.textContent=ph.l; countEl.textContent='Round '+(state.cycle+1)+' of '+p.cycles;
+      if(ph.pulse){
+        let up=true; _breathScale(orb,1.5,0.5);
+        state.pulse=setInterval(()=>{ if(!state.alive) return; up=!up; _breathScale(orb, up?1.5:1.1, 0.5); if(typeof haptic==='function') haptic('light'); }, 650);
+        state.timer=setTimeout(()=>{ if(state.pulse){clearInterval(state.pulse);state.pulse=null;} advance(); }, ph.s*1000);
+      } else {
+        _breathScale(orb, ph.scale, ph.s); if(typeof haptic==='function') haptic('light');
+        state.timer=setTimeout(advance, ph.s*1000);
+      }
+    }
+    function advance(){ if(!state.alive) return; state.pi++; if(state.pi>=p.phases.length){ state.pi=0; state.cycle++; if(state.cycle>=p.cycles){ finish(); return; } } runPhase(); }
+    phaseEl.textContent='Get comfortable…'; countEl.textContent='';
+    state.timer=setTimeout(()=>{ if(state.alive) runPhase(); }, 1200);
+    if(typeof haptic==='function') haptic('tap');
+  }
+  if(reason){
+    show('.b-pre');
+    buildScale(q('.b-scale'), (n)=>{ state.before=n; startBreathing(); });
+    q('.b-skip').onclick=()=>{ state.before=null; startBreathing(); };
+  } else { startBreathing(); }
+  if(typeof haptic==='function') haptic('tap');
 }
 
 function openCompanionForUrge(){
@@ -11436,6 +11574,7 @@ function openMomentStakes(i){
     _reframeHTML()+
     '<div style="margin-bottom:16px">'+extra+'</div>'+
     '<button class="btn primary" onclick="_momentWin('+i+')" style="margin-bottom:8px">The wave’s passing — I’m good</button>'+
+    '<button class="btn" onclick="closeModal(this);openBreath(\'sigh\',{reason:\'the pull\'})" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin-bottom:8px;font-size:13px">🌊 Breathe through it — 1 min</button>'+
     '<button class="btn" onclick="closeModal(this);startLiveIntervention('+i+')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin-bottom:8px;font-size:13px">Stay with me — full SOS</button>'+
     '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="background:transparent;border:none;color:var(--tx3);font-size:12px">I need to talk</button>'+
     '</div>';
