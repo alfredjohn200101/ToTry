@@ -4059,7 +4059,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v274';
+const APP_VERSION = 'v275';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9524,7 +9524,7 @@ function _feelMove(feeling){
   const life = (typeof getLifeState==='function') ? getLifeState() : null;
   const sets = {
     restless: { title:'Restless energy', body:'That buzz wants OUT, not in. Don\u2019t scroll it away \u2014 that just traps it. Burn it: 20 push-ups right now, or a fast walk around the block. Move the body and the mind follows.', cta:'Log a quick workout', go:'train' },
-    flat: { title:'Flat is not failure', body:'Numb usually means depleted, not broken. You don\u2019t need to feel motivated to act \u2014 you need ONE small honest move, and the feeling follows the action. On a flat day, breath can be the jump-start: a minute to lift the fog, then one real thing.', cta:'Lift the fog \u2014 one minute', go:'__breath:energize' },
+    flat: { title:'Flat is not failure', body:'Numb usually means depleted, not broken \u2014 and if you\u2019ve quit something, this grey stretch is your reward system healing, not you failing. It lifts. You don\u2019t need motivation to act; you need ONE real hit of clean dopamine, and the feeling follows.', cta:'Chase a real high', go:'__naturalhighs' },
     anxious: { title:'Let\u2019s slow it down', body:'Anxiety is a body running ahead of the moment. We\u2019ll bring it back down together \u2014 one minute of slow breathing, the long exhale that tells your body it\u2019s safe. Then name the ONE thing actually in front of you. The spinning is just the mind borrowing tomorrow\u2019s weight.', cta:'Breathe with me', go:'__breath:settle' },
     down: { title:'Heavy is allowed', body:'You don\u2019t have to fix this right now. Heavy days are part of it, not proof you\u2019re failing. Be gentle \u2014 water, light, a slow walk, maybe tell one real person. And if it\u2019s been heavy for a while, that\u2019s a sign to let a real person in, not a weakness.', cta:'I might need real help', go:'__bridge' },
     procrast: { title:'The thing you\u2019re avoiding', body:'Avoiding it costs more than doing it \u2014 you already know that, because it\u2019s sitting on you right now. Don\u2019t plan it, don\u2019t perfect it. Start the smallest possible version for 2 minutes. Momentum is the whole secret. What\u2019s the one thing?', cta:'Name it & start', go:'__procrast' },
@@ -9539,6 +9539,7 @@ function _feelMove(feeling){
   else if(s.go==='__companion') onclick = 'closeModal(this);openCompanionForUrge()';
   else if(s.go==='__bridge') onclick = 'closeModal(this);bridgeToRealHelp(\'heavy\')';
   else if(s.go==='__procrast') onclick = 'closeModal(this);_startSmallestThing()';
+  else if(s.go==='__naturalhighs') onclick = 'closeModal(this);openNaturalHighs()';
   else if(s.go && s.go.indexOf('__breath:')===0) onclick = 'closeModal(this);openBreath(\''+s.go.split(':')[1]+'\',{reason:\''+feeling+'\'})';
   else onclick = 'closeModal(this);go(\''+s.go+'\')';
   // The suggested move is never the ONLY door. Whatever they're feeling, they can always choose to
@@ -9708,6 +9709,42 @@ function openBreath(id, opts){
     q('.b-skip').onclick=()=>{ state.before=null; startBreathing(); };
   } else { startBreathing(); }
   if(typeof haptic==='function') haptic('tap');
+}
+
+// ════ NATURAL HIGHS ════ Quitting any dopamine-driven vice leaves the reward system flat for a while
+// (anhedonia — it's the brain recalibrating, not failure). These are the evidence-based ways to rebuild
+// it for real, no crash: exercise hits the SAME endocannabinoid receptor the vice did (the runner's
+// high), cold spikes dopamine ~2.5× for hours, morning light + real connection repair the system.
+// Honest, deterministic, on-mission for EVERY vice — see BREATH-STILLNESS-RESEARCH.md.
+function _pickHigh(type){
+  try{ if(typeof logEvent==='function') logEvent('natural_high',{type:type}); }catch(_){}
+  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  if(type==='move'){ if(typeof go==='function') go('train'); }
+  else if(type==='breath'){ if(typeof openBreath==='function') openBreath('energize'); }
+  else {
+    const msg={ cold:['Go cold','60–90s at the end of your shower. Clean energy for hours, no crash.'], sun:['Get the light','10–20 min outside early, no sunglasses — it resets your dopamine and your sleep.'], connect:['Reach out','One message to one person who’s good for you. Isolation feeds it; contact starves it.'] }[type];
+    if(msg && typeof showToast==='function') showToast(msg[0], msg[1]);
+  }
+}
+function openNaturalHighs(){
+  const HIGHS=[
+    ['move','🏃','Move your body','The runner’s high hits the same receptor the vice did — your body’s own version. Strongest, cleanest lift there is.'],
+    ['cold','🧊','Cold water','60–90 seconds cold → dopamine up ~2.5× for hours. No crash after.'],
+    ['sun','☀️','Morning light','10–20 min of early sun resets your dopamine and your sleep.'],
+    ['connect','🤝','Reach out to someone','Real connection rebuilds the reward the vice was faking.'],
+    ['breath','🌬️','A charged breath','A fast breathing round to lift a flat, numb day.']
+  ];
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  let html='<div class="modal" style="text-align:center;max-height:92vh;overflow-y:auto"><div class="modal-handle"></div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">Chase a real high</div>'+
+    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Feeling flat after quitting is the reward system healing — not you failing. These rebuild it for real. Pick one and go.</div>';
+  HIGHS.forEach(h=>{ html+=
+    '<button class="btn" onclick="_pickHigh(\''+h[0]+'\')" style="text-align:left;margin-bottom:8px;padding:12px 14px;display:flex;align-items:center;gap:11px">'+
+      '<span style="font-size:20px;flex-shrink:0">'+h[1]+'</span>'+
+      '<span style="flex:1"><span style="font-size:14px;color:var(--tx);display:block">'+h[2]+'</span><span style="font-size:11.5px;color:var(--tx3);line-height:1.45">'+h[3]+'</span></span>'+
+    '</button>'; });
+  html+='<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:4px">Not now</button></div>';
+  m.innerHTML=html; document.body.appendChild(m); if(typeof haptic==='function') haptic('tap');
 }
 
 // ════ PROGRESS CHECK-IN + FEEDBACK RAFFLE ════ Not a competition — people share what's IMPROVING for
