@@ -4043,7 +4043,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v266';
+const APP_VERSION = 'v267';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4985,7 +4985,7 @@ const Health = {
     const p=this._p(); if(!p) return { ok:false, reason:'This build has no Apple Health plugin.' };
     try{
       if(!(await this.available())) return { ok:false, reason:'Apple Health isn’t available on this device.' };
-      await p.requestHealthPermissions({ permissions:['READ_STEPS','READ_ACTIVE_CALORIES','READ_WORKOUTS','READ_HEART_RATE'] });
+      await p.requestHealthPermissions({ permissions:['READ_STEPS','READ_ACTIVE_CALORIES','READ_WORKOUTS','READ_HEART_RATE','READ_MINDFULNESS'] });
       try{ ls('totry_health_connected', true); }catch(_){}
       const synced = await this.syncToday();
       return { ok:true, synced };
@@ -5003,8 +5003,18 @@ const Health = {
       const auKey=now.toLocaleDateString('en-AU');
       if(steps!=null && steps>0){ try{ ls('totry_today_steps', Math.round(steps)); const tr=ls('totry_trackers')||{}; if(!tr[auKey])tr[auKey]={water:0,sleep:0,steps:0}; tr[auKey].steps=Math.round(steps); ls('totry_trackers',tr); if(typeof updateTrackerDisplay==='function') updateTrackerDisplay(); }catch(_){} }
       if(active!=null && active>0){ try{ const w=ls('totry_watch_burns_byday')||{}; w[auKey]=Math.round(active); ls('totry_watch_burns_byday',w); if(typeof reconcileBurns==='function') reconcileBurns(); if(typeof renderNutritionLog==='function') renderNutritionLog(); }catch(_){} }
+      // Mindful minutes — read the SHARED Apple Health ledger (Watch Breathe/Reflect, Calm, Headspace,
+      // us — any source), so the whole-person view knows the stillness is happening, wherever it comes
+      // from. We build on what exists rather than siloing our own count.
+      let mindfulWk=null;
+      try{
+        const wkStart=new Date(now); wkStart.setDate(wkStart.getDate()-6); wkStart.setHours(0,0,0,0);
+        const mr=await p.queryAggregated({ startDate:iso(wkStart), endDate:iso(now), dataType:'mindfulness', bucket:'day' });
+        const secs=((mr&&mr.aggregatedData)||[]).reduce((s,x)=>s+(x.value||0),0);
+        mindfulWk=Math.round((secs||0)/60); ls('totry_mindful_week', mindfulWk);
+      }catch(_){}
       try{ ls('totry_health_last_sync', Date.now()); }catch(_){}
-      return { steps: steps!=null?Math.round(steps):null, active: active!=null?Math.round(active):null };
+      return { steps: steps!=null?Math.round(steps):null, active: active!=null?Math.round(active):null, mindfulWk: mindfulWk };
     }catch(e){ return null; }
   }
 };
@@ -9585,9 +9595,11 @@ function _breathSafetyGate(cb){
 function openBreathMenu(){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   const ids = ['settle','sigh','box','cool','sleep', _breathFaithOn()?'prayer':'presence','energize'];
+  const mw = ls('totry_mindful_week')||0;
+  const mindfulLine = (mw>0) ? '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.06em;margin-bottom:14px">'+mw+' min of stillness this week · across all your apps</div>' : '';
   let html='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">Take a breath</div>'+
-    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">The one work you can always do. Pick what fits right now.</div>';
+    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:'+(mw>0?'10px':'16px')+'">The one work you can always do. Pick what fits right now.</div>'+mindfulLine;
   ids.forEach(id=>{ const p=BREATH_PROTOCOLS[id]; html+=
     '<button class="btn" onclick="closeModal(this);openBreath(\''+id+'\')" style="text-align:left;margin-bottom:8px;padding:12px 14px">'+
       '<div style="font-size:14px;color:var(--tx)">'+p.name+(p.intense?' <span style="color:var(--tx3);font-size:10px">· intense</span>':'')+'</div>'+
