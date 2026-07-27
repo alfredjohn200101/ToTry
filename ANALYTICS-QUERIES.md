@@ -91,6 +91,37 @@ order by active_days desc, meaningful_actions desc
 limit 50;
 ```
 
+## 8. Feedback & the raffle (from the in-app "How far have you come?" check-in)
+The check-in logs `event='feedback'` with `detail` = `{improvements:[…], note, raffle, email, day}`.
+
+Read everyone's feedback (newest first):
+```sql
+select created_at::date as day, detail->>'note' as note,
+       detail->'improvements' as improvements, (detail->>'raffle')::bool as in_raffle
+from app_events where event = 'feedback'
+order by created_at desc;
+```
+What's improving most across users (turns free feedback into a signal):
+```sql
+select imp as improvement, count(*) as mentions
+from app_events, jsonb_array_elements_text(detail->'improvements') as imp
+where event = 'feedback'
+group by 1 order by 2 desc;
+```
+Raffle entrants (unique emails who opted in):
+```sql
+select distinct detail->>'email' as email
+from app_events
+where event = 'feedback' and (detail->>'raffle')::bool = true and detail->>'email' is not null;
+```
+Draw N random winners:
+```sql
+select detail->>'email' as winner
+from (select distinct detail->>'email' as e2, detail from app_events
+      where event='feedback' and (detail->>'raffle')::bool = true and detail->>'email' is not null) t
+order by random() limit 3;
+```
+
 ## For the 12-week challenge specifically
 - **Add a `user_id` to `app_events`** (and a challenge opt-in flag) so the leaderboard is per real person,
   not per device — otherwise a phone + laptop counts as two people, and cleared storage resets an id.

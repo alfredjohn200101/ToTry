@@ -3313,6 +3313,13 @@ Amen.</div></div>
     <div style="font-size:11px;color:var(--tx2);margin-top:8px;line-height:1.5">To Try is a self-improvement tool, not a substitute for professional support.</div>
   </div>
 
+  <!-- Feedback + raffle — the founder's direct line from the people using it -->
+  <div class="card" style="margin-bottom:14px;border:1px solid var(--go-bd)">
+    <div class="card-hd" style="margin-bottom:6px">Share your journey with Alfy</div>
+    <div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:12px">This is built by one person, for you. Tell me what’s improving and what’s missing — I read every note. Share honest feedback and you’re in the raffle.</div>
+    <button class="btn primary" onclick="openProgressCheckin()">How far have you come?</button>
+  </div>
+
   <!-- Honest beta framing — shown on web/PWA only; hidden inside the native app (see initSettingsTab). -->
   <div id="beta-web-note" class="card" style="display:none;margin-bottom:14px;border:1px solid var(--go-bd);background:var(--go-bg)">
     <div class="card-hd" style="margin-bottom:6px">You're on the To Try beta</div>
@@ -4043,7 +4050,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v271';
+const APP_VERSION = 'v272';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9691,6 +9698,44 @@ function openBreath(id, opts){
     buildScale(q('.b-scale'), (n)=>{ state.before=n; startBreathing(); });
     q('.b-skip').onclick=()=>{ state.before=null; startBreathing(); };
   } else { startBreathing(); }
+  if(typeof haptic==='function') haptic('tap');
+}
+
+// ════ PROGRESS CHECK-IN + FEEDBACK RAFFLE ════ Not a competition — people share what's IMPROVING for
+// them (which tells Alfy what's working) and can opt into a raffle for sharing honest feedback. Feedback
+// lands in Supabase app_events (event='feedback') so it's queryable; raffle opt-in attaches their
+// sign-in email so winners can be contacted. See ANALYTICS-QUERIES.md for the raffle/feedback queries.
+function openProgressCheckin(){
+  const AREAS=['Clearer head','More disciplined','Better sleep','Stronger / fitter','Less of my vice','More at peace','More energy','Closer to God','More present with people'];
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  const picked=new Set();
+  m.innerHTML='<div class="modal" style="text-align:center;max-height:92vh;overflow-y:auto">'+
+    '<div class="modal-handle"></div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">How far have you come?</div>'+
+    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Since you started with To Try — what have you noticed? Tap any that fit. This isn’t a competition; it just helps Alfy build this better.</div>'+
+    '<div class="pc-areas" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px"></div>'+
+    '<textarea class="pc-note" placeholder="Anything you’d want Alfy to know? What’s working, what’s missing?" style="width:100%;min-height:70px;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:13px;font-family:inherit;margin-bottom:14px;resize:vertical;box-sizing:border-box"></textarea>'+
+    '<label class="pc-raffle" style="display:flex;align-items:flex-start;gap:8px;text-align:left;font-size:12px;color:var(--tx2);line-height:1.5;margin-bottom:16px;cursor:pointer"><input type="checkbox" style="width:18px;height:18px;flex-shrink:0;margin-top:1px"> <span>Enter the feedback raffle — Alfy reads every one and picks winners from people who share honestly. We’ll use your sign-in email to reach you if you win.</span></label>'+
+    '<button class="btn primary pc-send" style="margin-bottom:8px">Send it to Alfy</button>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Maybe later</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  const areasWrap=m.querySelector('.pc-areas');
+  AREAS.forEach(a=>{ const b=document.createElement('button'); b.type='button'; b.textContent=a; b.style.cssText='padding:8px 12px;border-radius:16px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);font-size:12.5px;cursor:pointer'; b.onclick=()=>{ if(picked.has(a)){ picked.delete(a); b.style.borderColor='var(--bd)'; b.style.color='var(--tx2)'; b.style.background='var(--bg3)'; } else { picked.add(a); b.style.borderColor='var(--go)'; b.style.color='var(--tx)'; b.style.background='rgba(200,169,110,0.14)'; } }; areasWrap.appendChild(b); });
+  m.querySelector('.pc-send').onclick=()=>{
+    const note=(m.querySelector('.pc-note').value||'').trim();
+    const raffle=!!m.querySelector('.pc-raffle input').checked;
+    if(!picked.size && !note){ if(typeof showToast==='function') showToast('Tell me one thing','Tap what’s improved, or write a line.'); return; }
+    const email = raffle ? ((typeof currentUser!=='undefined'&&currentUser&&currentUser.email)||null) : null;
+    const payload={ improvements:[...picked], note:note||null, raffle:raffle, email:email, day:(typeof getDayCount==='function'?getDayCount():null), ts:new Date().toISOString() };
+    try{ if(typeof logEvent==='function') logEvent('feedback', payload); }catch(_){}
+    try{ ls('totry_last_checkin', Date.now()); }catch(_){}
+    m.remove();
+    const t=document.createElement('div'); t.className='modal-bg open'; t.style.alignItems='center';
+    t.innerHTML='<div class="modal" style="text-align:center"><div style="font-size:30px;margin-bottom:8px">🙏</div><div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:10px">Thank you — really.</div><div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:16px">'+(raffle?'You’re in the raffle. ':'')+'Every word helps me build this for you and the next person who needs it. Keep going.</div><button class="btn primary" onclick="closeModal(this)">Back to it</button></div>';
+    document.body.appendChild(t);
+    if(typeof haptic==='function') haptic('tap');
+  };
   if(typeof haptic==='function') haptic('tap');
 }
 
