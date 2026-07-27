@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v267-mindful'
+const CACHE = 'totry-v268-android-health'
 
 const CORE = [
   './',

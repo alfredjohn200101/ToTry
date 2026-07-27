@@ -4043,7 +4043,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v267';
+const APP_VERSION = 'v268';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4985,7 +4985,11 @@ const Health = {
     const p=this._p(); if(!p) return { ok:false, reason:'This build has no Apple Health plugin.' };
     try{
       if(!(await this.available())) return { ok:false, reason:'Apple Health isn’t available on this device.' };
-      await p.requestHealthPermissions({ permissions:['READ_STEPS','READ_ACTIVE_CALORIES','READ_WORKOUTS','READ_HEART_RATE','READ_MINDFULNESS'] });
+      const perms=['READ_STEPS','READ_ACTIVE_CALORIES','READ_WORKOUTS','READ_HEART_RATE'];
+      // Mindfulness read is iOS-only for now — the plugin maps it on HealthKit but not yet on Android
+      // Health Connect, so we don't request an unsupported permission there (the read degrades to no-op).
+      try{ if(window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform()==='ios') perms.push('READ_MINDFULNESS'); }catch(_){}
+      await p.requestHealthPermissions({ permissions:perms });
       try{ ls('totry_health_connected', true); }catch(_){}
       const synced = await this.syncToday();
       return { ok:true, synced };
