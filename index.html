@@ -4043,7 +4043,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v269';
+const APP_VERSION = 'v270';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9579,7 +9579,10 @@ const BREATH_PROTOCOLS = {
   presence: { name:'Presence',      why:'Wordless stillness', cycles:8,
     phases:[ {l:'Receive', s:4, scale:1.55}, {l:'Let go', s:6, scale:1.0} ] },
   energize: { name:'Lift',          why:'Raise your energy on a flat, numb day', intense:true, cycles:2,
-    phases:[ {l:'Fast breaths — follow the orb', s:15, scale:1.5, pulse:true}, {l:'Now rest — slow breath in', s:4, scale:1.55}, {l:'Long out', s:7, scale:1.0} ] }
+    phases:[ {l:'Fast breaths — follow the orb', s:15, scale:1.5, pulse:true}, {l:'Now rest — slow breath in', s:4, scale:1.55}, {l:'Long out', s:7, scale:1.0} ] },
+  surf:     { name:'Ride the wave',  why:'Train the muscle for riding a craving', intense:true, cycles:6,
+    done:'That’s the same muscle as riding a craving — sit with the still point enough times, and the next urge moves you less.',
+    phases:[ {l:'Breathe in', s:4, scale:1.55}, {l:'Slow out', s:6, scale:1.0}, {l:'Rest on empty — sit with it', s:5, scale:1.0} ] }
 };
 function _breathFaithOn(){ return (typeof faithLevel!=='function') || faithLevel()!=='light'; }
 function _breathScale(el, v, dur){ if(!el) return; el.style.transitionDuration=dur+'s'; el.style.transform='scale('+v+')'; }
@@ -9598,7 +9601,7 @@ function _breathSafetyGate(cb){
 }
 function openBreathMenu(){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
-  const ids = ['settle','sigh','box','cool','sleep', _breathFaithOn()?'prayer':'presence','energize'];
+  const ids = ['settle','sigh','box','cool','sleep', _breathFaithOn()?'prayer':'presence','energize','surf'];
   const mw = ls('totry_mindful_week')||0;
   const mindfulLine = (mw>0) ? '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.06em;margin-bottom:14px">'+mw+' min of stillness this week · across all your apps</div>' : '';
   const _pf = _breathProof();
@@ -9661,7 +9664,7 @@ function openBreath(id, opts){
     const orb=q('.b-orb'), phaseEl=q('.b-phase'), countEl=q('.b-count');
     q('.b-name').textContent=p.name;
     state.cycle=0; state.pi=0;
-    function doneMsg(){ show('.b-done'); q('.b-done-msg').textContent=_breathFaithOn()?'Rest here a moment. That was a work — small, real, yours.':'Notice how your body feels now. That was one real thing done.'; q('.b-done-btn').onclick=close; try{ if(typeof logEvent==='function') logEvent('breath'); }catch(_){} if(typeof haptic==='function') haptic('tap'); }
+    function doneMsg(){ show('.b-done'); q('.b-done-msg').textContent = p.done || (_breathFaithOn()?'Rest here a moment. That was a work — small, real, yours.':'Notice how your body feels now. That was one real thing done.'); q('.b-done-btn').onclick=close; try{ if(typeof logEvent==='function') logEvent('breath'); }catch(_){} if(typeof haptic==='function') haptic('tap'); }
     function afterDone(){ show('.b-done'); const d=state.before-state.after; let msg; if(d>=3) msg='From '+state.before+' to '+state.after+'. You just moved it — with nothing but your breath.'; else if(d>0) msg='From '+state.before+' to '+state.after+'. Even a little down is the wave passing. You stayed.'; else msg='Still heavy — and you showed up and did the work anyway. That counts. If it stays high, let a real person in.'; q('.b-done-msg').textContent=msg; q('.b-done-btn').onclick=close; try{ if(typeof logEvent==='function') logEvent('breath'); }catch(_){} }
     function askAfter(){ show('.b-post'); buildScale(q('.b-scale2'), (n)=>{ state.after=n; _breathLog({protocol:id, reason:reason, before:state.before, after:n}); afterDone(); }); }
     function finish(){ cleanup(); _breathScale(orb,1.18,1.6); if(reason && state.before!=null){ askAfter(); return; } doneMsg(); }

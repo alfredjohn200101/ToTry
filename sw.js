@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v269-jitai'
+const CACHE = 'totry-v270-ride-the-wave'
 
 const CORE = [
   './',
