@@ -4059,7 +4059,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v275';
+const APP_VERSION = 'v276';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9726,6 +9726,17 @@ function _pickHigh(type){
     if(msg && typeof showToast==='function') showToast(msg[0], msg[1]);
   }
 }
+// Where are they in the recovery arc? (uses the existing clean-streak — works for ANY vice). General
+// dopamine-recalibration science, framed as healing, so the flat window isn't read as failure.
+function _recoveryPhaseNote(days){
+  if(days<1) return null;
+  const d='Day '+days+' — ';
+  if(days<=3) return d+'the first days are the hardest. Raw, loud, survivable. One real high now.';
+  if(days<=10) return d+'the pull is still loud but already weakening. Feed the clean dopamine.';
+  if(days<=21) return d+'the flat window. If it all feels grey, that’s your reward system recalibrating — not failure. This is exactly when a real high helps most.';
+  if(days<=45) return d+'the fog is lifting, colour coming back. Keep feeding it clean.';
+  return days+' days clean — you’re rebuilding. The vice moves you less because you’re becoming someone it moves less.';
+}
 function openNaturalHighs(){
   const HIGHS=[
     ['move','🏃','Move your body','The runner’s high hits the same receptor the vice did — your body’s own version. Strongest, cleanest lift there is.'],
@@ -9734,10 +9745,13 @@ function openNaturalHighs(){
     ['connect','🤝','Reach out to someone','Real connection rebuilds the reward the vice was faking.'],
     ['breath','🌬️','A charged breath','A fast breathing round to lift a flat, numb day.']
   ];
+  let _days=-1; try{ if(typeof loadV==='function')loadV(); const _vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices:[]; if(_vs.length && typeof viceCleanDays==='function') _days=Math.max.apply(null,_vs.map(v=>viceCleanDays(v)||0)); }catch(_){}
+  const _phase=(_days>=1)?_recoveryPhaseNote(_days):null;
+  const _phaseLine=_phase?'<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.03em;line-height:1.55;margin-bottom:14px">'+_phase+'</div>':'';
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   let html='<div class="modal" style="text-align:center;max-height:92vh;overflow-y:auto"><div class="modal-handle"></div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">Chase a real high</div>'+
-    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Feeling flat after quitting is the reward system healing — not you failing. These rebuild it for real. Pick one and go.</div>';
+    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:'+(_phase?'10px':'16px')+'">Feeling flat after quitting is the reward system healing — not you failing. These rebuild it for real. Pick one and go.</div>'+_phaseLine;
   HIGHS.forEach(h=>{ html+=
     '<button class="btn" onclick="_pickHigh(\''+h[0]+'\')" style="text-align:left;margin-bottom:8px;padding:12px 14px;display:flex;align-items:center;gap:11px">'+
       '<span style="font-size:20px;flex-shrink:0">'+h[1]+'</span>'+

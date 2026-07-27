@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v275-natural-highs'
+const CACHE = 'totry-v276-recovery-arc'
 
 const CORE = [
   './',
