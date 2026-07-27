@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v272-feedback-raffle'
+const CACHE = 'totry-v273-feedback'
 
 const CORE = [
   './',

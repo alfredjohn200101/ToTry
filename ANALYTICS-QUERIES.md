@@ -108,18 +108,19 @@ from app_events, jsonb_array_elements_text(detail->'improvements') as imp
 where event = 'feedback'
 group by 1 order by 2 desc;
 ```
-Raffle entrants (unique emails who opted in):
+Your raffle pool — everyone who gave feedback (you run the draw outside the app):
 ```sql
-select distinct detail->>'email' as email
+select detail->>'email' as email, count(*) as submissions, max(created_at)::date as last_feedback
 from app_events
-where event = 'feedback' and (detail->>'raffle')::bool = true and detail->>'email' is not null;
+where event = 'feedback' and detail->>'email' is not null
+group by 1 order by submissions desc;
 ```
-Draw N random winners:
+Draw N random names, if you'd rather pull them here:
 ```sql
-select detail->>'email' as winner
-from (select distinct detail->>'email' as e2, detail from app_events
-      where event='feedback' and (detail->>'raffle')::bool = true and detail->>'email' is not null) t
-order by random() limit 3;
+select email from (
+  select distinct detail->>'email' as email from app_events
+  where event='feedback' and detail->>'email' is not null
+) t order by random() limit 3;
 ```
 
 ## For the 12-week challenge specifically
