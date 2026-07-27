@@ -4043,7 +4043,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v270';
+const APP_VERSION = 'v271';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9691,6 +9691,73 @@ function openBreath(id, opts){
     buildScale(q('.b-scale'), (n)=>{ state.before=n; startBreathing(); });
     q('.b-skip').onclick=()=>{ state.before=null; startBreathing(); };
   } else { startBreathing(); }
+  if(typeof haptic==='function') haptic('tap');
+}
+
+// ════ TRAINING SETUP — so the coach ALWAYS knows what you're about to do ════
+// Meet people where they are: if they use Hevy/Strava or have their own plan, we don't force ours —
+// we just link it so the coach has context. If they have genuinely nothing, we become their training
+// brain (like Hevy Pro) and generate a real weekly plan from day one, so getUserSplit() resolves for
+// EVERYONE and "what do I train today?" always has an answer. Deterministic — no AI needed to plan.
+function generateSplit(days, goal){
+  days = Math.max(2, Math.min(6, parseInt(days)||3));
+  const D={
+    'Push':'Chest, shoulders, triceps — bench, overhead press, dips, lateral raises.',
+    'Pull':'Back, biceps — rows, pulldowns, face pulls, curls.',
+    'Legs':'Squat or leg press, RDL, lunges, calves, core.',
+    'Upper':'Chest, back, shoulders, arms in one — push and pull.',
+    'Lower':'Squat/hinge, quads, hamstrings, calves, core.',
+    'Full Body':'One big lift each: squat, press, row — plus core.',
+    'Full Body A':'Squat, bench, row + core. Progressive overload.',
+    'Full Body B':'Hinge, overhead press, pulldown + core.',
+    'Cardio + Core':'25–30 min zone-2 (walk/bike) + a core circuit.'
+  };
+  const build={2:['Full Body A','Full Body B'],3:['Push','Pull','Legs'],4:['Upper','Lower','Push','Pull'],5:['Push','Pull','Legs','Upper','Lower'],6:['Push','Pull','Legs','Push','Pull','Legs']};
+  const lean={2:['Full Body A','Full Body B'],3:['Full Body A','Full Body B','Cardio + Core'],4:['Upper','Lower','Full Body','Cardio + Core'],5:['Push','Pull','Legs','Full Body','Cardio + Core'],6:['Push','Pull','Legs','Upper','Lower','Cardio + Core']};
+  const strength={2:['Upper','Lower'],3:['Push','Pull','Legs'],4:['Upper','Lower','Upper','Lower'],5:['Upper','Lower','Push','Pull','Legs'],6:['Push','Pull','Legs','Upper','Lower','Full Body']};
+  const bank = goal==='lose'?lean : goal==='strength'?strength : build;
+  const seq = bank[days] || build[3];
+  const pattern = {2:[1,0,0,1,0,0,0],3:[1,0,1,0,1,0,0],4:[1,1,0,1,1,0,0],5:[1,1,0,1,1,1,0],6:[1,1,1,0,1,1,1]}[days] || pattern3();
+  function pattern3(){ return [1,0,1,0,1,0,0]; }
+  let si=0;
+  return pattern.map(on=>{ if(!on) return {focus:'Rest', detail:'Recovery — walk, stretch, sleep. Growth happens now.'}; const f=seq[si%seq.length]; si++; return {focus:f, detail:D[f]||'Train with intent — progressive overload.'}; });
+}
+function _applyGeneratedPlan(days, goal){
+  try{
+    const split=generateSplit(days, goal);
+    ls('totry_split', split); ls('totry_train_goal', goal); ls('totry_train_days', days); ls('totry_train_source','totry');
+    ['renderSplitDayCards','loadTodaySplitCard','renderUnifiedTraining','renderSplitOverview'].forEach(fn=>{ try{ if(typeof window[fn]==='function') window[fn](); }catch(_){} });
+    const ti=(typeof tIdx==='function')?tIdx():0; const f=(split[ti]||{}).focus||'your first session';
+    if(typeof logEvent==='function') logEvent('plan_generated',{days,goal});
+    if(typeof showToast==='function') showToast('Your plan is ready', 'Today: '+f+'. The coach knows your whole week now.');
+    if(typeof haptic==='function') haptic('tap');
+  }catch(e){ if(typeof showToast==='function') showToast('Hmm', 'Could not build the plan just now.'); }
+}
+function setupTraining(){
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="text-align:center">'+
+    '<div class="modal-handle"></div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">Set up your training</div>'+
+    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">So the coach knows what you’re doing — and tells you today’s session.</div>'+
+    '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Days a week</div>'+
+    '<div class="ts-days" style="display:flex;gap:6px;justify-content:center;margin-bottom:16px"></div>'+
+    '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Main goal</div>'+
+    '<div class="ts-goals" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:18px"></div>'+
+    '<button class="btn primary ts-build" style="margin-bottom:8px">Build my plan</button>'+
+    '<button class="btn ts-else" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin-bottom:8px;font-size:13px">I already train elsewhere (Hevy / my own)</button>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  const st={days:3, goal:'build'};
+  const daysWrap=m.querySelector('.ts-days'), goalsWrap=m.querySelector('.ts-goals');
+  const chip=(txt,active)=>{ const b=document.createElement('button'); b.textContent=txt; b.style.cssText='padding:8px 13px;border-radius:18px;border:1px solid '+(active?'var(--go)':'var(--bd)')+';background:'+(active?'rgba(200,169,110,0.14)':'var(--bg3)')+';color:var(--tx);font-size:13px;cursor:pointer'; return b; };
+  function renderChips(){
+    daysWrap.innerHTML=''; [2,3,4,5,6].forEach(d=>{ const b=chip(d, st.days===d); b.onclick=()=>{st.days=d;renderChips();}; daysWrap.appendChild(b); });
+    goalsWrap.innerHTML=''; [['build','Build muscle'],['lose','Lose fat'],['strength','Get stronger'],['general','General']].forEach(g=>{ const b=chip(g[1], st.goal===g[0]); b.onclick=()=>{st.goal=g[0];renderChips();}; goalsWrap.appendChild(b); });
+  }
+  renderChips();
+  m.querySelector('.ts-build').onclick=()=>{ m.remove(); _applyGeneratedPlan(st.days, st.goal); };
+  m.querySelector('.ts-else').onclick=()=>{ m.remove(); if(typeof showAddAppPicker==='function') showAddAppPicker(); else if(typeof showToast==='function') showToast('Link your app','Connect Hevy or Strava in Settings → Connected apps.'); };
   if(typeof haptic==='function') haptic('tap');
 }
 
@@ -21206,9 +21273,9 @@ function renderUnifiedTraining(){
           '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">No workouts have come through yet — that\u2019s normal before your first session. Record a workout in '+connected.join(' or ')+', then tap Refresh below and it\u2019ll appear here with your stats.</div>'+
           (hasStrava ? '<button class="btn primary" onclick="syncStravaActivities();showToast(\'Syncing\',\'Checking Strava\u2026\')" style="width:auto;padding:10px 18px;font-size:13px">Refresh now</button>' : '');
       } else {
-        body = '<div style="font-size:14px;color:var(--tx);margin-bottom:8px">No training logged yet</div>'+
-          '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">Connect Strava (for runs, rides, and Apple Watch cardio) or Hevy (for lifting), or just log a session here. Your whole training picture builds from there.</div>'+
-          '<button class="btn primary" onclick="go(\'settings\');setTimeout(()=>document.getElementById(\'connected-apps-section\')?.scrollIntoView({behavior:\'smooth\',block:\'center\'}),300)" style="width:auto;padding:10px 18px;font-size:13px">Connect an app</button>';
+        body = '<div style="font-size:14px;color:var(--tx);margin-bottom:8px">Let’s get you training</div>'+
+          '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">Already have a plan, or use Hevy / Strava? Link it and the coach works around it. Starting from nothing? I’ll build you a plan and tell you today’s session — no guesswork.</div>'+
+          '<button class="btn primary" onclick="setupTraining()" style="width:auto;padding:10px 18px;font-size:13px">Set up my training</button>';
       }
       emptyBox.innerHTML = '<div class="card" style="text-align:center;padding:24px 18px"><div style="font-size:30px;margin-bottom:10px">\ud83c\udfcb\ufe0f</div>'+body+'</div>';
       emptyBox.style.display = 'block';
@@ -23459,7 +23526,8 @@ function renderSplitDayCards(){
   const split=getUserSplit();const ti=tIdx();const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   const container=document.getElementById('pt-split-days');if(!container)return;container.innerHTML='';
   if(!split.some(s=>s)){ // brand-new user, no plan yet — invite instead of showing nothing
-    container.innerHTML='<div style="text-align:center;padding:18px 12px;color:var(--tx3);font-size:13px;line-height:1.55">No training split yet.<br>Set one up below, or just start a workout — your plan can come later.</div>';
+    container.innerHTML='<div style="text-align:center;padding:16px 12px 10px;color:var(--tx3);font-size:13px;line-height:1.55">No training plan yet.<br>Link Hevy / Strava, or let me build you one.</div>'+
+      '<div style="text-align:center;margin-bottom:6px"><button class="btn primary" onclick="setupTraining()" style="width:auto;padding:9px 16px;font-size:13px">Set up my training</button></div>';
     return;
   }
   split.forEach((s,i)=>{
