@@ -1735,6 +1735,15 @@ input:focus,textarea:focus,select:focus{
     </div>
   </div>
   <p style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px">A few quiet minutes to set the day: receive a word, name your gratitude and intention, then pray. Take it at your own pace — there's no wrong way.</p>
+  <!-- Begin with a breath — the daily opening work; grounds the morning before words. Faith-aware. -->
+  <div class="card" style="margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="openBreath((typeof _breathFaithOn==='function'&&_breathFaithOn())?'prayer':'settle')">
+    <div style="width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(200,169,110,0.9),rgba(200,169,110,0.22));flex-shrink:0"></div>
+    <div style="flex:1">
+      <div style="font-size:14px;color:var(--tx)">Begin with a breath</div>
+      <div style="font-size:11.5px;color:var(--tx3);line-height:1.5">One minute of stillness to ground the day before it begins.</div>
+    </div>
+    <div style="color:var(--tx3);font-size:18px">&rsaquo;</div>
+  </div>
   <!-- Adaptive yesterday-response card (shown when there's something to say) -->
   <div class="card" id="morning-adaptive-card" style="display:none;margin-bottom:12px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.04));border-color:var(--go-bd)">
     <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:5px" id="morning-adaptive-tag">From yesterday</div>
@@ -4050,7 +4059,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v273';
+const APP_VERSION = 'v274';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
