@@ -4059,7 +4059,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v276';
+const APP_VERSION = 'v277';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9745,13 +9745,17 @@ function openNaturalHighs(){
     ['connect','🤝','Reach out to someone','Real connection rebuilds the reward the vice was faking.'],
     ['breath','🌬️','A charged breath','A fast breathing round to lift a flat, numb day.']
   ];
-  let _days=-1; try{ if(typeof loadV==='function')loadV(); const _vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices:[]; if(_vs.length && typeof viceCleanDays==='function') _days=Math.max.apply(null,_vs.map(v=>viceCleanDays(v)||0)); }catch(_){}
+  // Recovery-arc framing applies ONLY to vices being QUIT (abstinence). Someone moderating has no
+  // "clean streak" to heal — natural highs still help them (clean dopamine beats the fake), but we
+  // don't mis-frame their planned use as "flat after quitting". Help shaped to what they chose.
+  let _days=-1; try{ if(typeof loadV==='function')loadV(); const _vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices:[]; const _quit=_vs.filter(v=>((v.mode||'quit')!=='moderate')); if(_quit.length && typeof viceCleanDays==='function') _days=Math.max.apply(null,_quit.map(v=>viceCleanDays(v)||0)); }catch(_){}
   const _phase=(_days>=1)?_recoveryPhaseNote(_days):null;
   const _phaseLine=_phase?'<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.03em;line-height:1.55;margin-bottom:14px">'+_phase+'</div>':'';
+  const _intro=_phase?'Feeling flat after quitting is the reward system healing — not you failing. These rebuild it for real. Pick one and go.':'A real hit of clean dopamine beats the fake one every time — no crash, and it makes the pull quieter. Pick one and go.';
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   let html='<div class="modal" style="text-align:center;max-height:92vh;overflow-y:auto"><div class="modal-handle"></div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">Chase a real high</div>'+
-    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:'+(_phase?'10px':'16px')+'">Feeling flat after quitting is the reward system healing — not you failing. These rebuild it for real. Pick one and go.</div>'+_phaseLine;
+    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:'+(_phase?'10px':'16px')+'">'+_intro+'</div>'+_phaseLine;
   HIGHS.forEach(h=>{ html+=
     '<button class="btn" onclick="_pickHigh(\''+h[0]+'\')" style="text-align:left;margin-bottom:8px;padding:12px 14px;display:flex;align-items:center;gap:11px">'+
       '<span style="font-size:20px;flex-shrink:0">'+h[1]+'</span>'+
