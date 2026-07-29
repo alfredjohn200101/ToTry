@@ -4059,7 +4059,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v277';
+const APP_VERSION = 'v278';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9711,6 +9711,77 @@ function openBreath(id, opts){
   if(typeof haptic==='function') haptic('tap');
 }
 
+// ════ THE PLAN — coach the path, don't just track it ════ For each vice, we ask HOW they want to
+// handle it (quit / moderate to a line / just watch), WHY it matters (said back to them when it's
+// hard), and WHAT actually helps them in the moment. Stored on the vice as v.plan; the fight, the
+// at-the-line moment, and the urge door all shape around it. Help appears as they asked for it.
+function openVicePlan(i){
+  if(typeof loadV==='function') loadV();
+  const v=(typeof vices!=='undefined'&&vices[i])?vices[i]:null; if(!v) return;
+  const plan=v.plan||{};
+  const MOVES=['Walk it off','Breathe','Message someone','Leave the room','Wait it out 20 min','Pray','Cold water'];
+  const chosen=new Set((plan.move?String(plan.move).split(' · '):[]).filter(Boolean));
+  let mode=v.mode||'quit';
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="max-height:92vh;overflow-y:auto">'+
+    '<div class="modal-handle"></div>'+
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:2px">Your plan for '+String(v.n).replace(/</g,'&lt;')+'</div>'+
+    '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.5;margin-bottom:16px">However you want to handle it — I’ll shape everything around this. No wrong answer.</div>'+
+    '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">The goal</div>'+
+    '<div class="vp-mode" style="display:flex;gap:6px;margin-bottom:16px"></div>'+
+    '<div class="vp-line-wrap" style="display:none;margin-bottom:16px">'+
+      '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Your line (how much is okay)</div>'+
+      '<input class="vp-line" type="number" min="1" value="'+(v.modThreshold||3)+'" style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:14px;box-sizing:border-box" placeholder="e.g. 3 a week">'+
+    '</div>'+
+    '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Why this matters to you</div>'+
+    '<textarea class="vp-why" placeholder="The real reason. I’ll say it back to you when it’s hard." style="width:100%;min-height:56px;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:13px;font-family:inherit;margin-bottom:16px;resize:vertical;box-sizing:border-box">'+(plan.why?String(plan.why).replace(/</g,'&lt;'):'')+'</textarea>'+
+    '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">When it pulls hardest, what helps you?</div>'+
+    '<div class="vp-moves" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px"></div>'+
+    '<button class="btn primary vp-save">Save my plan</button>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:6px">Not now</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  const modeWrap=m.querySelector('.vp-mode'), lineWrap=m.querySelector('.vp-line-wrap');
+  function renderMode(){
+    modeWrap.innerHTML='';
+    [['quit','Quit it'],['moderate','Moderate it'],['watch','Just watch it']].forEach(o=>{ const b=document.createElement('button'); b.type='button'; b.textContent=o[1]; const on=mode===o[0]; b.style.cssText='flex:1;padding:9px 4px;border-radius:10px;border:1px solid '+(on?'var(--go)':'var(--bd)')+';background:'+(on?'rgba(200,169,110,0.14)':'var(--bg3)')+';color:var(--tx);font-size:12.5px;cursor:pointer'; b.onclick=()=>{mode=o[0];renderMode();}; modeWrap.appendChild(b); });
+    lineWrap.style.display = mode==='moderate' ? 'block' : 'none';
+  }
+  renderMode();
+  const movesWrap=m.querySelector('.vp-moves');
+  MOVES.forEach(mv=>{ const b=document.createElement('button'); b.type='button'; b.textContent=mv; const on=chosen.has(mv); b.style.cssText='padding:7px 11px;border-radius:15px;border:1px solid '+(on?'var(--go)':'var(--bd)')+';background:'+(on?'rgba(200,169,110,0.14)':'var(--bg3)')+';color:'+(on?'var(--tx)':'var(--tx2)')+';font-size:12px;cursor:pointer'; b.onclick=()=>{ if(chosen.has(mv)){chosen.delete(mv);b.style.borderColor='var(--bd)';b.style.background='var(--bg3)';b.style.color='var(--tx2)';}else{chosen.add(mv);b.style.borderColor='var(--go)';b.style.background='rgba(200,169,110,0.14)';b.style.color='var(--tx)';} }; movesWrap.appendChild(b); });
+  m.querySelector('.vp-save').onclick=()=>{
+    if(typeof loadV==='function') loadV();
+    const vv=(typeof vices!=='undefined'&&vices[i])?vices[i]:null; if(!vv){ m.remove(); return; }
+    vv.mode=mode;
+    if(mode==='moderate'){ const ln=parseInt(m.querySelector('.vp-line').value,10); if(ln>0) vv.modThreshold=ln; }
+    vv.plan=Object.assign({}, vv.plan, { why:(m.querySelector('.vp-why').value||'').trim(), move:[...chosen].join(' · '), updatedAt:Date.now() });
+    try{ if(typeof saveV==='function') saveV(); }catch(_){}
+    try{ if(typeof renderVices==='function') renderVices(); }catch(_){}
+    try{ if(typeof logEvent==='function') logEvent('vice_plan',{mode:mode}); }catch(_){}
+    m.remove();
+    if(typeof showToast==='function') showToast('Plan saved','I’ll shape the help around this — and say your why back when it’s hard.');
+    if(typeof haptic==='function') haptic('success');
+  };
+  if(typeof haptic==='function') haptic('tap');
+}
+
+// The in-moment plan card — the person's OWN why + chosen move, shown when the urge hits. Their plan,
+// in their words, exactly when they need it. Empty (returns '') until they've made a plan.
+function _planCardHTML(i){
+  try{
+    if(typeof loadV==='function') loadV();
+    const v=(typeof vices!=='undefined'&&vices[i])?vices[i]:null; if(!v||!v.plan) return '';
+    const why=v.plan.why, move=v.plan.move;
+    if(!why && !move) return '';
+    let inner='';
+    if(why) inner+='<div style="font-size:13px;color:var(--tx);line-height:1.6;font-style:italic;margin-bottom:'+(move?'8px':'0')+'">“'+String(why).replace(/</g,'&lt;')+'”</div>';
+    if(move) inner+='<div style="font-size:11px;color:var(--tx3);line-height:1.5"><span style="color:var(--go)">Your move:</span> '+String(move).replace(/</g,'&lt;')+'</div>';
+    return '<div style="background:rgba(200,169,110,0.08);border:1px solid var(--go-bd);border-radius:12px;padding:13px 14px;margin-bottom:14px;text-align:left">'+
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px">Your plan — in your words</div>'+inner+'</div>';
+  }catch(_){ return ''; }
+}
+
 // ════ NATURAL HIGHS ════ Quitting any dopamine-driven vice leaves the reward system flat for a while
 // (anhedonia — it's the brain recalibrating, not failure). These are the evidence-based ways to rebuild
 // it for real, no crash: exercise hits the SAME endocannabinoid receptor the vice did (the runner's
@@ -11374,6 +11445,7 @@ function openViceManage(i){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
     '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:14px">'+String(v.n).replace(/</g,'&lt;')+'</div>'+
+    row('Your plan — how you want to handle this', 'openVicePlan('+i+')')+
     row('Edit the start date', 'editViceStart('+i+')')+
     row(v.costAmount?('Money it costs &middot; $'+viceMoneySaved(v).toLocaleString()+' reclaimed'):'Track the money it costs', 'editViceCost('+i+')')+
     row(v.mode==='moderate'?'Switch to quitting (aim for zero)':'Switch to keeping it in check', 'changeViceMode('+i+')')+
@@ -11792,6 +11864,7 @@ function openMomentStakes(i){
     '<div class="modal-handle"></div>'+
     '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:24px;font-style:italic;color:var(--tx);margin-bottom:6px">You came here first</div>'+
     '<div style="text-align:center;font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:16px">'+body+'</div>'+
+    _planCardHTML(i)+
     _reframeHTML()+
     '<div style="margin-bottom:16px">'+extra+'</div>'+
     '<button class="btn primary" onclick="_momentWin('+i+')" style="margin-bottom:8px">The wave’s passing — I’m good</button>'+

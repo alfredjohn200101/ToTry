@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v277-mode-aware'
+const CACHE = 'totry-v278-vice-plan'
 
 const CORE = [
   './',
