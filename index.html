@@ -4059,7 +4059,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v280';
+const APP_VERSION = 'v281';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -15661,20 +15661,12 @@ async function lookupBarcode(barcode){
       }] : []).concat([{name: '100g', gramsEquiv:100, cal: kcal100, pro: Math.round(per100Of('proteins')*10)/10, carb: Math.round(per100Of('carbohydrates')*10)/10, fat: Math.round(per100Of('fat')*10)/10}])
     };
     
-    // If product has serving_size, add as a serving option
-    if(p.serving_size && p.serving_quantity){
-      const sq = parseFloat(p.serving_quantity);
-      if(sq > 0){
-        food.servings.unshift({
-          name: p.serving_size,
-          cal: Math.round(food.servings[0].cal * sq / 100),
-          pro: food.servings[0].pro * sq / 100,
-          carb: food.servings[0].carb * sq / 100,
-          fat: food.servings[0].fat * sq / 100
-        });
-      }
-    }
-    
+    // NOTE: the product's real serving is ALREADY built above (from servingG, correctly scaled off the
+    // per-100g base). A previous block re-added it here as food.servings[0].cal * sq/100 — but
+    // servings[0].cal was ALREADY the per-serving value, so that DOUBLE-scaled the macros (a 320g meal
+    // read 1290 cal instead of 404). Removed. Micros were unaffected (scaled elsewhere), which is why
+    // sodium looked right while calories were 3.2x too high. Do not re-add a serving here.
+
     // Recipe-scan mode: route this scan into the open recipe instead of the day log.
     if(window.__recipeScan){
       window.__recipeScan = false;
