@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v281-food-doublescale-fix'
+const CACHE = 'totry-v282-target-refresh'
 
 const CORE = [
   './',
