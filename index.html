@@ -4059,7 +4059,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v282';
+const APP_VERSION = 'v283';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -17130,7 +17130,23 @@ function renderAdaptiveTDEE(){
   const box = document.getElementById('adaptive-tdee-card');
   if(!box) return;
   const r = computeAdaptiveTDEE();
-  if(!r){ box.style.display='none'; return; }
+  if(!r){
+    // Not enough data YET to compute a real burn. But if they've set a target, make the app's LIVING
+    // nature visible — it isn't one-time setup; it's learning and will adjust. Sets the expectation.
+    const g = ls('totry_nut_goals');
+    if(g && g._ts && !ls('totry_nut_setup_dismissed')){
+      box.style.display='block';
+      box.innerHTML =
+        '<div class="card" style="background:var(--bg2)">'+
+          '<div style="display:flex;align-items:flex-start;gap:11px">'+
+            '<span style="font-size:17px;flex-shrink:0">📈</span>'+
+            '<div style="flex:1"><div style="font-size:13px;color:var(--tx);font-weight:600">Your target adapts as you go</div>'+
+            '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">This isn’t a one-time number. Keep logging your food and weight — I learn your real burn from how your weight actually moves, and adjust your target on its own so it never goes stale.</div></div>'+
+          '</div>'+
+        '</div>';
+    } else { box.style.display='none'; }
+    return;
+  }
   box.style.display='block';
   const dir = r.weightChangeKg > 0.1 ? 'gaining' : (r.weightChangeKg < -0.1 ? 'losing' : 'maintaining');
   const dirColor = dir==='losing' ? 'var(--gr)' : dir==='gaining' ? 'var(--go)' : 'var(--tx2)';
@@ -17352,7 +17368,7 @@ function setCalGoalFromTDEE(tdee){
   showToast('Goal updated ✓', msg);
   if(typeof prefillNutGoals==='function') prefillNutGoals();
   if(typeof renderNutSetupNudge==='function') renderNutSetupNudge(); // hide "starter numbers" instantly — the save took
-  if(typeof renderAdaptiveTdeeCard==='function') try{ renderAdaptiveTdeeCard(); }catch(_){}
+  if(typeof renderAdaptiveTDEE==='function') try{ renderAdaptiveTDEE(); }catch(_){}
   renderNutritionLog();
 }
 
