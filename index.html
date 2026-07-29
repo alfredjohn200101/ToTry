@@ -4059,7 +4059,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v278';
+const APP_VERSION = 'v279';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -10844,8 +10844,8 @@ function renderVices(){
             const col = count===0 ? 'var(--tx2)' : count < thr ? 'var(--gr)' : count === thr ? 'var(--go)' : 'var(--re)';
             const statusLine = !s ? ('Tap + as you go. Your line: ' + thr + ' ' + unit + '.')
               : count < thr ? ('Within your line of ' + thr + '. ' + (thr-count) + ' to go.')
-              : count === thr ? ('At your limit of ' + thr + '. Be intentional from here.')
-              : ('Past your line of ' + thr + ' \u2014 noticed, not judged.');
+              : count === thr ? ('At your limit of ' + thr + '. Be intentional from here.' + ((v.plan&&v.plan.move)?(' Your move: '+v.plan.move+'.'):''))
+              : ('Past your line of ' + thr + ' \u2014 noticed, not judged.' + ((v.plan&&v.plan.move)?(' Your move: '+v.plan.move+'.'):''));
             return '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:8px">'+
               '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">'+
                 '<button onclick="modCountDown('+i+')" aria-label="minus" style="width:40px;height:40px;border-radius:50%;background:var(--bg);border:1px solid var(--bd);color:var(--tx2);font-size:20px;cursor:pointer">\u2212</button>'+
@@ -11182,6 +11182,9 @@ function addVice(){
   if(startInput) startInput.value='';
   saveV();renderVices();renderDayCounter();
   haptic('success');
+  // Right after naming it, ask HOW they want to handle it — the plan is the first conversation, not
+  // an afterthought buried in a settings sheet. Meet them at the goal the moment they name the fight.
+  try{ const _ni=vices.length-1; if(_ni>=0 && typeof openVicePlan==='function') setTimeout(function(){ try{ document.querySelectorAll('.modal-bg.open').forEach(function(x){x.remove();}); }catch(_){} try{ openVicePlan(_ni); }catch(_){} }, 220); }catch(_){}
 }
 
 // Get clean days for a vice based on startDate (the streak counter)
