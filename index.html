@@ -4059,7 +4059,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v279';
+const APP_VERSION = 'v280';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5569,7 +5569,8 @@ function getLifeState(){
       turnedAway7: turned7,
       limit: v.mode==='moderate' ? (v.modLimit||v.modThreshold||null) : null,
       hardHour: pattern && pattern.riskWindow ? pattern.riskWindow : null,
-      topTrigger: pattern && pattern.topTrigger ? pattern.topTrigger : null
+      topTrigger: pattern && pattern.topTrigger ? pattern.topTrigger : null,
+      plan: (v.plan && (v.plan.why||v.plan.move)) ? { why:v.plan.why||null, move:v.plan.move||null } : null
     };
   });
 
@@ -5641,6 +5642,7 @@ function lifeStateBrief(s){
       }
       if(v.turnedAway7) bits.push('turned away '+v.turnedAway7+'x this week');
       if(v.hardHour) bits.push('hardest around '+v.hardHour+(v.topTrigger?(', often '+v.topTrigger):''));
+      if(v.plan){ if(v.plan.why) bits.push('their WHY (say it back to them): "'+v.plan.why+'"'); if(v.plan.move) bits.push('the move THEY chose: '+v.plan.move); }
       lines.push('· '+v.name+': '+bits.join('; '));
     });
   }
@@ -8543,7 +8545,7 @@ function startLiveIntervention(i){
   ov.scrollTop=0;
   document.getElementById('sos-vice-name').textContent=vices[i].n;
   // Show their WHY and current streak - the reasons to hold on, right when they need it
-  const why=ls('totry_why');
+  const why=(vices[i] && vices[i].plan && vices[i].plan.why) || ls('totry_why');
   const cleanDays=viceCleanDays(vices[i]);
   const reminderEl=document.getElementById('sos-why-reminder');
   if(reminderEl){
