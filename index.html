@@ -4099,7 +4099,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v292';
+const APP_VERSION = 'v293';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -30136,7 +30136,7 @@ function homeGreetingAction(){
   const actEl = document.getElementById('home-greeting-action');
   const t = actEl ? actEl.dataset.act : '';
   if(t==='morning') go('morning');
-  else if(t==='evening') go('evening');
+  else if(t==='evening') go('reflect'); // the evening ritual lives in tab-reflect ("close the day"); go('evening') was a dead-end
   else if(t==='companion'){ if(typeof openCompanionForUrge==='function') openCompanionForUrge(); }
 }
 
