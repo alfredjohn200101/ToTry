@@ -4099,7 +4099,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v295';
+const APP_VERSION = 'v296';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -20130,8 +20130,8 @@ function renderBills(){
     else urgency = {color: 'var(--tx3)', label: daysUntil + ' days', bg: 'var(--bg3)', border: 'var(--bd)'};
     return '<div style="background:' + urgency.bg + ';border:1px solid ' + urgency.border + ';border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">' +
       '<div style="flex:1;min-width:0">' +
-        '<div style="font-size:13px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + b.name + '</div>' +
-        '<div style="font-family:DM Mono,monospace;font-size:10px;color:' + urgency.color + ';margin-top:2px">$' + b.amount + ' · ' + urgency.label + '</div>' +
+        '<div style="font-size:13px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (b.name||b.n||'Bill') + '</div>' +
+        '<div style="font-family:DM Mono,monospace;font-size:10px;color:' + urgency.color + ';margin-top:2px">$' + (Number(b.amount!=null?b.amount:b.amt)||0).toLocaleString() + ' · ' + urgency.label + '</div>' +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:6px">' +
         '<button class="btn" style="width:auto;padding:5px 8px;font-size:10px;background:var(--gr);color:#000;border:none" onclick="markBillPaid(' + b.id + ')">✓</button>' +
@@ -20173,7 +20173,10 @@ function saveBudgets(){
   haptic('success');
 }
 function renderBudgets(){
-  const budgets = ls('totry_budgets') || {};
+  let budgets = ls('totry_budgets') || {};
+  // Legacy/malformed guard: older data (and a bad demo seed) stored an ARRAY of {cat,limit}; the render
+  // expects a {category: limit} map. Coerce so we never show "$[object Object]" / "$NaN left".
+  if(Array.isArray(budgets)){ const _o={}; budgets.forEach(b=>{ if(b&&b.cat!=null) _o[b.cat]=Number(b.limit)||0; }); budgets=_o; ls('totry_budgets', budgets); }
   const box = document.getElementById('budgets-list');
   if(!box) return;
   const cats = Object.keys(budgets);
@@ -27827,8 +27830,8 @@ function loadDemoData(){
   // Money — debt shrinking, net worth climbing, family target met, honest poker
   ls('totry_f',{d:[{n:'Credit card',t:4000,p:2600,due:''},{n:'Car loan',t:12000,p:5200,due:''}], u:0, i:0});
   ls('totry_payments',[{amt:300,date:iso(dayAgo(5)),debt:'Credit card'},{amt:250,date:iso(dayAgo(20)),debt:'Car loan'}]);
-  ls('totry_bills',[{id:1,n:'Rent',amt:1800,due:iso(dayAgo(-9)),paid:false},{id:2,n:'Gym',amt:60,due:iso(dayAgo(-3)),paid:false}]);
-  ls('totry_budgets',[{cat:'Food',limit:600,spent:410},{cat:'Going out',limit:300,spent:180}]);
+  ls('totry_bills',[{id:1,name:'Rent',amount:1800,due:iso(dayAgo(-9)),paid:false},{id:2,name:'Gym',amount:60,due:iso(dayAgo(-3)),paid:false}]);
+  ls('totry_budgets',{'Food':600,'Going out':300});
   ls('totry_assets',[{id:1,name:'Savings',value:8400},{id:2,name:'Super',value:21000},{id:3,name:'Car',value:9000}]);
   ls('totry_family_contrib',[{id:1,amount:500,note:'monthly help',date:iso(dayAgo(2))},{id:2,amount:500,note:'monthly help',date:iso(dayAgo(33))},{id:3,amount:200,note:'groceries',date:iso(dayAgo(48))}]);
   ls('totry_family_target',{amount:500,dueDay:1});
