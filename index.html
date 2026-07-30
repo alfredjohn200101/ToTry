@@ -1568,6 +1568,9 @@ input:focus,textarea:focus,select:focus{
     </div>
   </div>
 
+  <!-- YOUR LIFE, WOVEN — the stewardship spine: the whole self at a glance, right under the hero.
+       One line per domain, each a door. This is the app's thesis made visible in the first second. -->
+  <div id="home-woven"></div>
   <!-- Tester setup card — shows once for allowlisted Strava testers who haven't connected yet. -->
   <div id="tester-setup-card" style="display:none;background:linear-gradient(135deg,rgba(252,76,2,0.12),rgba(200,169,110,0.05));border:1px solid rgba(252,76,2,0.35);border-radius:var(--r);padding:16px;margin-bottom:14px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px">
@@ -4059,7 +4062,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v283';
+const APP_VERSION = 'v284';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7235,7 +7238,7 @@ function go(name){
   if(name==='bible'){setBibleTab('find');}
   if(name==='money'){renderFinance();if(typeof renderFinanceGoals==='function')renderFinanceGoals();}
   if(name==='coach'){if(typeof renderCoachQuickReplies==='function')renderCoachQuickReplies();if(typeof restoreCoachMessages==='function' && !window.__coachRestored){restoreCoachMessages();window.__coachRestored=true;}}
-  if(name==='home'){if(typeof renderHomeGreeting==='function')renderHomeGreeting();renderHomeHabits();if(typeof renderNextStep==='function')renderNextStep();if(typeof renderReadinessCard==='function')renderReadinessCard();if(typeof renderWeeklyReflectionCard==='function')renderWeeklyReflectionCard();if(typeof renderTourPrompt==='function')renderTourPrompt();if(typeof renderHomeCalendar==='function')renderHomeCalendar();if(typeof renderTesterCard==='function')renderTesterCard();if(typeof renderHomeQuickWins==='function')renderHomeQuickWins();if(typeof checkPreviewBanner==='function')checkPreviewBanner();if(typeof renderTodayForYou==='function')renderTodayForYou();if(typeof renderHomeInsight==='function')renderHomeInsight();renderDayCounter();showAIMorningSentence();updateShareDayNum();generateWeeklySynthesis();checkLettersDue();checkYearInReviewPrompt();if(typeof refreshAIPushMessages==='function')refreshAIPushMessages();if(typeof applyHomeProgressiveDisclosure==='function')applyHomeProgressiveDisclosure();}
+  if(name==='home'){if(typeof renderHomeGreeting==='function')renderHomeGreeting();if(typeof renderLifeWoven==='function')renderLifeWoven();renderHomeHabits();if(typeof renderNextStep==='function')renderNextStep();if(typeof renderReadinessCard==='function')renderReadinessCard();if(typeof renderWeeklyReflectionCard==='function')renderWeeklyReflectionCard();if(typeof renderTourPrompt==='function')renderTourPrompt();if(typeof renderHomeCalendar==='function')renderHomeCalendar();if(typeof renderTesterCard==='function')renderTesterCard();if(typeof renderHomeQuickWins==='function')renderHomeQuickWins();if(typeof checkPreviewBanner==='function')checkPreviewBanner();if(typeof renderTodayForYou==='function')renderTodayForYou();if(typeof renderHomeInsight==='function')renderHomeInsight();renderDayCounter();showAIMorningSentence();updateShareDayNum();generateWeeklySynthesis();checkLettersDue();checkYearInReviewPrompt();if(typeof refreshAIPushMessages==='function')refreshAIPushMessages();if(typeof applyHomeProgressiveDisclosure==='function')applyHomeProgressiveDisclosure();}
   if(name==='settings'){
     // Each render is guarded independently: a single failing widget must never blank the whole
     // Settings page (which is what was happening). Failures are logged, the rest still render.
@@ -29787,6 +29790,49 @@ function applyHomeProgressiveDisclosure(){
   }catch(_){}
 }
 
+// YOUR LIFE, WOVEN — the stewardship spine. One glance across the domains a person is called to tend
+// (the fight, body, spirit, money), each a door to its depth. The thesis made visible on the home.
+function renderLifeWoven(){
+  const box=document.getElementById('home-woven'); if(!box) return;
+  const s=(typeof getLifeState==='function')?getLifeState():null;
+  if(!s){ box.innerHTML=''; return; }
+  const today=new Date().toLocaleDateString('en-AU'); const h=new Date().getHours();
+  const dOn=(x)=>{ try{ return new Date(x.ts||x.createdAt||x.date||0).toLocaleDateString('en-AU')===today; }catch(_){ return false; } };
+  // BODY — trained + fuel today
+  const t=s.training||{}, n=s.nutrition||{}; const bodyBits=[];
+  if(t.sessions7>0) bodyBits.push(t.sessions7+' session'+(t.sessions7===1?'':'s')+' this wk');
+  const goalCal=(ls('totry_nut_goals')||{}).cal;
+  if(n.todayCal!=null && goalCal) bodyBits.push(Math.max(0,goalCal-n.todayCal).toLocaleString()+' cal left');
+  else if(n.todayCal>0) bodyBits.push(n.todayCal.toLocaleString()+' cal today');
+  const bodyTxt=bodyBits.length?bodyBits.join(' · '):'not logged yet';
+  // THE FIGHT — clean streak (quit) or holding the line (moderate)
+  const vs=(s.fight&&s.fight.vices)||[]; let fightTxt;
+  if(!vs.length) fightTxt='no fight named yet';
+  else { const q=vs.filter(v=>v.mode!=='moderate'); if(q.length){ const mc=Math.max.apply(null,q.map(v=>v.cleanDays||0)); fightTxt=mc+' day'+(mc===1?'':'s')+' clean'; } else fightTxt='holding your line'; }
+  // SPIRIT — the daily rhythm
+  const mornDone=(ls('totry_mornings')||[]).some(dOn); const evenDone=(ls('totry_evenings')||[]).some(dOn);
+  const spiritTxt = evenDone?'day closed ✓' : mornDone?'reflect tonight' : (h<15?'set your intention':'reflect on today');
+  // MONEY
+  const m=s.money||{}; const moneyBits=[];
+  if(m.reclaimed>0) moneyBits.push('$'+m.reclaimed.toLocaleString()+' reclaimed');
+  if(m.hasDebt) moneyBits.push('$'+m.totalDebt.toLocaleString()+' debt');
+  const moneyTxt=moneyBits.length?moneyBits.join(' · '):'not tracked yet';
+  const rows=[
+    ['🛡️','The fight',fightTxt,"go('fight')"],
+    ['💪','Body',bodyTxt,"go('grow')"],
+    ['🙏','Spirit',spiritTxt,"go('soul')"],
+    ['💰','Money',moneyTxt,"go('money')"]
+  ];
+  box.innerHTML='<div class="card" style="padding:4px 2px;margin-bottom:14px">'+
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.14em;text-transform:uppercase;padding:8px 12px 2px">Your life, woven</div>'+
+    rows.map(r=>'<button onclick="'+r[3]+'" style="width:100%;display:flex;align-items:center;gap:11px;background:none;border:none;border-top:1px solid var(--bd);padding:11px 12px;cursor:pointer;text-align:left">'+
+      '<span style="font-size:15px;flex-shrink:0;width:20px;text-align:center">'+r[0]+'</span>'+
+      '<span style="font-size:13px;color:var(--tx);flex-shrink:0;width:66px">'+r[1]+'</span>'+
+      '<span style="flex:1;font-size:12px;color:var(--tx3);text-align:right">'+r[2]+'</span>'+
+      '<span style="color:var(--tx3);font-size:14px;flex-shrink:0;margin-left:6px">›</span>'+
+    '</button>').join('')+
+  '</div>';
+}
 function renderHomeGreeting(){
   const hiEl = document.getElementById('home-greeting-hi');
   const subEl = document.getElementById('home-greeting-sub');
