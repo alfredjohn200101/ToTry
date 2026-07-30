@@ -1391,6 +1391,7 @@ input:focus,textarea:focus,select:focus{
     <h2 style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.2;margin-bottom:2px">Soul</h2>
     <p style="font-size:12.5px;color:var(--tx3);line-height:1.6">The root beneath everything else. The body, the money, the fight — they all grow from here, or they don't last. This is where the app points past itself: to Christ, to the sacraments, to the people who love you. Stay grounded here, and the rest holds.</p>
   </div>
+  <div class="hub-section-label">The daily rhythm — begin it, then close it</div>
   <div class="hub-grid">
     <div class="hub-card" onclick="go('morning')">
       <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
@@ -1402,11 +1403,9 @@ input:focus,textarea:focus,select:focus{
       <div class="hc-title">Reflect</div>
       <div class="hc-desc">Close the day: how it went, journal, examen, wins.</div>
     </div>
-    <div class="hub-card wide" onclick="openSoulToday()">
-      <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-      <div class="hc-title">Your day, woven</div>
-      <div class="hc-desc">Your schedule, your streaks, and where your soul is at — the whole day in one place.</div>
-    </div>
+  </div>
+  <div class="hub-section-label">Draw near — prayer &amp; scripture, all in one place</div>
+  <div class="hub-grid">
     <div class="hub-card wide" onclick="go('bible')">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
       <div class="hc-title">Bible</div>
@@ -1426,6 +1425,14 @@ input:focus,textarea:focus,select:focus{
       <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>
       <div class="hc-title">Stillness &amp; breath</div>
       <div class="hc-desc">A minute of guided breathing — or the Jesus Prayer carried on your breath. The one work you can always do.</div>
+    </div>
+  </div>
+  <div class="hub-section-label">Your anchor — what keeps you here</div>
+  <div class="hub-grid">
+    <div class="hub-card wide" onclick="openSoulToday()">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      <div class="hc-title">Your day, woven</div>
+      <div class="hc-desc">Your schedule, your streaks, and where your soul is at — the whole day in one place.</div>
     </div>
     <div class="hub-card wide" onclick="go('why')">
       <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
@@ -4081,7 +4088,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v286';
+const APP_VERSION = 'v287';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }

@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v286-onboard-thesis-loop'
+const CACHE = 'totry-v287-soul-hub-sections'
 
 const CORE = [
   './',
