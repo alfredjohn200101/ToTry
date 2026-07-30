@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v287-soul-hub-sections'
+const CACHE = 'totry-v288-home-depth-fold'
 
 const CORE = [
   './',

@@ -1695,6 +1695,16 @@ input:focus,textarea:focus,select:focus{
     <div id="home-habit-list"></div>
   </div>
 
+  <!-- DEPTH FOLD — the everyday home is the hero + spine + habits. The deeper day (schedule,
+       in-the-moment help, readiness, weekly reflection) tucks behind ONE tap so home stays a glance,
+       not a wall. Depth on-demand (review #2). renderHomeDepthFold() shows the toggle only when
+       there's something inside, and remembers open/closed in totry_home_depth_open. -->
+  <div id="home-depth-toggle" style="display:none;margin-bottom:12px">
+    <button onclick="toggleHomeDepth()" style="width:100%;background:none;border:1px dashed var(--bd);border-radius:var(--r);color:var(--tx3);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;padding:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+      <span id="home-depth-label">More of your day</span><span id="home-depth-caret">&#8964;</span>
+    </button>
+  </div>
+  <div id="home-depth-body" style="display:none">
   <!-- Calendar quick-entry — today's schedule at a glance, links to the smart calendar -->
   <div id="home-calendar-card" onclick="go('calendar')" style="display:none;cursor:pointer">
     <div class="lbl">Today's schedule</div>
@@ -1723,6 +1733,7 @@ input:focus,textarea:focus,select:focus{
 
   <!-- Weekly reflection (WS-A) — pull-based, surfaces ~weekly. AI connects body + discipline + spirit. -->
   <div id="home-weekly-reflection-card" style="display:none"></div>
+  </div><!-- /home-depth-body -->
 
   <!-- Guided-tour offer (shown once): auto for brand-new users, a gentle one-time prompt for
        people who were already signed in before the tour existed. Never nags after a choice. -->
@@ -4088,7 +4099,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v287';
+const APP_VERSION = 'v288';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7266,7 +7277,7 @@ function go(name){
   if(name==='bible'){setBibleTab('find');}
   if(name==='money'){renderFinance();if(typeof renderFinanceGoals==='function')renderFinanceGoals();}
   if(name==='coach'){if(typeof renderCoachQuickReplies==='function')renderCoachQuickReplies();if(typeof restoreCoachMessages==='function' && !window.__coachRestored){restoreCoachMessages();window.__coachRestored=true;}}
-  if(name==='home'){if(typeof renderHomeGreeting==='function')renderHomeGreeting();if(typeof renderLifeWoven==='function')renderLifeWoven();renderHomeHabits();if(typeof renderNextStep==='function')renderNextStep();if(typeof renderReadinessCard==='function')renderReadinessCard();if(typeof renderWeeklyReflectionCard==='function')renderWeeklyReflectionCard();if(typeof renderTourPrompt==='function')renderTourPrompt();if(typeof renderHomeCalendar==='function')renderHomeCalendar();if(typeof renderTesterCard==='function')renderTesterCard();if(typeof renderHomeQuickWins==='function')renderHomeQuickWins();if(typeof checkPreviewBanner==='function')checkPreviewBanner();if(typeof renderTodayForYou==='function')renderTodayForYou();if(typeof renderHomeInsight==='function')renderHomeInsight();renderDayCounter();showAIMorningSentence();updateShareDayNum();generateWeeklySynthesis();checkLettersDue();checkYearInReviewPrompt();if(typeof refreshAIPushMessages==='function')refreshAIPushMessages();if(typeof applyHomeProgressiveDisclosure==='function')applyHomeProgressiveDisclosure();}
+  if(name==='home'){if(typeof renderHomeGreeting==='function')renderHomeGreeting();if(typeof renderLifeWoven==='function')renderLifeWoven();renderHomeHabits();if(typeof renderNextStep==='function')renderNextStep();if(typeof renderReadinessCard==='function')renderReadinessCard();if(typeof renderWeeklyReflectionCard==='function')renderWeeklyReflectionCard();if(typeof renderTourPrompt==='function')renderTourPrompt();if(typeof renderHomeCalendar==='function')renderHomeCalendar();if(typeof renderTesterCard==='function')renderTesterCard();if(typeof renderHomeQuickWins==='function')renderHomeQuickWins();if(typeof checkPreviewBanner==='function')checkPreviewBanner();if(typeof renderTodayForYou==='function')renderTodayForYou();if(typeof renderHomeInsight==='function')renderHomeInsight();renderDayCounter();showAIMorningSentence();updateShareDayNum();generateWeeklySynthesis();checkLettersDue();checkYearInReviewPrompt();if(typeof refreshAIPushMessages==='function')refreshAIPushMessages();if(typeof applyHomeProgressiveDisclosure==='function')applyHomeProgressiveDisclosure();if(typeof renderHomeDepthFold==='function')renderHomeDepthFold();}
   if(name==='settings'){
     // Each render is guarded independently: a single failing widget must never blank the whole
     // Settings page (which is what was happening). Failures are logged, the rest still render.
@@ -29816,6 +29827,36 @@ function applyHomeProgressiveDisclosure(){
       else if(el.dataset._pdHidden==='1'){ delete el.dataset._pdHidden; /* let its own renderer show it next cycle */ }
     });
   }catch(_){}
+}
+
+// HOME DEPTH FOLD — the everyday home is a glance (hero + spine + habits); the deeper cards
+// (schedule, in-the-moment help, readiness, weekly reflection) live behind ONE tap. Depth on-demand,
+// not a wall — kills the 3-4 screen scroll for established users without hiding anything for good.
+function toggleHomeDepth(){
+  const body=document.getElementById('home-depth-body'); if(!body) return;
+  const nowOpen = body.dataset._open!=='1';
+  body.style.display = nowOpen?'block':'none';
+  body.dataset._open = nowOpen?'1':'0';
+  const caret=document.getElementById('home-depth-caret'); if(caret) caret.innerHTML = nowOpen?'&#8963;':'&#8964;';
+  const label=document.getElementById('home-depth-label'); if(label) label.textContent = nowOpen?'Show less':'More of your day';
+  try{ if(typeof haptic==='function') haptic('tap'); }catch(_){}
+  try{ localStorage.setItem('totry_home_depth_open', nowOpen?'1':'0'); }catch(_){}
+}
+function renderHomeDepthFold(){
+  const toggle=document.getElementById('home-depth-toggle');
+  const body=document.getElementById('home-depth-body');
+  if(!toggle||!body) return;
+  // Anything worth showing? Check each child's own render intent (style.display) — the body may be
+  // collapsed, so offsetHeight would read 0 for all of them.
+  const ids=['home-calendar-card','home-quickwin-wrap','home-readiness-card','home-weekly-reflection-card'];
+  const anyContent = ids.some(id=>{ const el=document.getElementById(id); return el && el.style.display!=='none'; });
+  if(!anyContent){ toggle.style.display='none'; body.style.display='none'; body.dataset._open='0'; return; }
+  toggle.style.display='block';
+  let open=false; try{ open = localStorage.getItem('totry_home_depth_open')==='1'; }catch(_){}
+  body.style.display = open?'block':'none';
+  body.dataset._open = open?'1':'0';
+  const caret=document.getElementById('home-depth-caret'); if(caret) caret.innerHTML = open?'&#8963;':'&#8964;';
+  const label=document.getElementById('home-depth-label'); if(label) label.textContent = open?'Show less':'More of your day';
 }
 
 // YOUR LIFE, WOVEN — the stewardship spine. One glance across the domains a person is called to tend
