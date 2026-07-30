@@ -1222,15 +1222,15 @@ input:focus,textarea:focus,select:focus{
   <div class="ob-step" id="ob3">
     <div class="ob-title">I am becoming a person who...</div>
     <div class="ob-desc">Complete this sentence. This is your identity. It guides every choice from now on. You can change it anytime.</div>
-    <textarea id="ob-identity" placeholder="...keeps his promises&#10;...isn't ruled by what tempts him&#10;...loves without needing to be loved back&#10;...shows up even when it's hard" style="height:100px;resize:none;margin-bottom:10px;font-size:16px;line-height:1.6"></textarea>
+    <textarea id="ob-identity" placeholder="...keeps their promises&#10;...isn't ruled by what tempts them&#10;...loves without needing to be loved back&#10;...shows up even when it's hard" style="height:100px;resize:none;margin-bottom:10px;font-size:16px;line-height:1.6"></textarea>
     <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Don't know yet? Tap to use:</div>
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
-      <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillIdentity('keeps his promises, even to himself')">Keeps his promises, even to himself</button>
-      <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillIdentity('is not ruled by what tempts him')">Is not ruled by what tempts him</button>
+      <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillIdentity('keeps their promises, even to themselves')">Keeps their promises, even to themselves</button>
+      <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillIdentity('is not ruled by what tempts them')">Is not ruled by what tempts them</button>
       <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillIdentity('shows up even when it\\'s hard')">Shows up even when it's hard</button>
       <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillIdentity('lives with discipline and love')">Lives with discipline and love</button>
       <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillIdentity('walks with God and gets things done')">Walks with God and gets things done</button>
-      <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillIdentity('is becoming who he was meant to be')">Is becoming who he was meant to be</button>
+      <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillIdentity('is becoming who they were meant to be')">Is becoming who they were meant to be</button>
     </div>
     <button class="btn primary" onclick="obNextToWhy()">Continue &#8594;</button>
     <button class="btn" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:4px" onclick="obQuickFinish()">I'll do this later</button>
@@ -1478,7 +1478,7 @@ input:focus,textarea:focus,select:focus{
     <div class="card-hd" style="margin-bottom:8px">Who I'm becoming</div>
     <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Complete the sentence. The app holds you to this.</p>
     <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--go);margin-bottom:6px">I am becoming a person who...</div>
-    <textarea id="settings-identity" placeholder="...keeps his promises" style="height:80px;resize:none;margin-bottom:10px;font-size:16px"></textarea>
+    <textarea id="settings-identity" placeholder="...keeps their promises" style="height:80px;resize:none;margin-bottom:10px;font-size:16px"></textarea>
     <button class="btn primary" onclick="saveIdentity()" style="font-size:13px">Save identity</button>
   </div>
 
@@ -4099,7 +4099,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v293';
+const APP_VERSION = 'v294';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5443,7 +5443,9 @@ function brotherSpeaks(moment){
 
     const life = (typeof getLifeState==='function') ? getLifeState() : null;
     const name = ls('totry_name') || '';
-    const hi = name ? name : 'brother';
+    // Gender-aware sibling voice: a nameless user shouldn't be called "brother" if she's not one.
+    const _sx = (typeof userSex==='function') ? userSex() : null;
+    const hi = name ? name : (_sx==='female' ? 'sister' : _sx==='male' ? 'brother' : 'friend');
 
     // Build the line from the WHOLE man, not just the one number. This is the integration that makes
     // him a brother. Each kind gets a truthful, specific, respectful line + the choice left open.
@@ -9144,7 +9146,7 @@ function _feelingNowWon(){
     '<div style="text-align:center;padding:16px 8px">'+
       '<div style="font-size:40px;margin-bottom:10px">\u2713</div>'+
       '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-style:italic;color:var(--tx);margin-bottom:10px">You just chose yourself.</div>'+
-      '<div style="font-size:14px;color:var(--tx2);line-height:1.7;margin-bottom:18px">That\u2019s the whole thing, right there. Not forever \u2014 just now, this once. And you did it. The version of you they all see? That was him.</div>'+
+      '<div style="font-size:14px;color:var(--tx2);line-height:1.7;margin-bottom:18px">That\u2019s the whole thing, right there. Not forever \u2014 just now, this once. And you did it. The version of you they all see? That was you.</div>'+
     '</div>'+
     '<button class="btn primary" style="padding:15px" onclick="document.getElementById(\'feelingnow-modal\')?.remove();theRelease({did:\'You chose yourself — not forever, just now, this once. And you did it.\'})">Amen</button>';
   haptic('celebrate');
@@ -9345,7 +9347,7 @@ const COMPANION_LOCAL_STEPS = {
     "Keep breathing — in 4, out 6. Urges crest in 15–30 minutes and ALWAYS pass. You don't have to fight it, just not obey it. Cold water on your face or a walk to another room speeds the wave along.",
     "What is this urge trying to manage tonight — stress, loneliness, boredom, being tired? Name the real need underneath. That need is legitimate; the urge is just a bad answer to it.",
     "You've outlasted this before — that's how you got here. Every wave you ride makes the next one smaller. Stay with me a few more minutes; the crest is closer than it feels.",
-    "However tonight goes, you reached for help instead of hiding — that's the man you're becoming. And if this keeps beating you no matter what, bringing in a real person — a mate, a priest, a counsellor — is strength, not failure. For now: one more slow breath. I'm still here."
+    "However tonight goes, you reached for help instead of hiding — that's who you're becoming. And if this keeps beating you no matter what, bringing in a real person — a mate, a priest, a counsellor — is strength, not failure. For now: one more slow breath. I'm still here."
   ],
   defuse: [
     "Picture the thought as a leaf dropping onto a stream — watch it drift past. It comes back? Fine, put it on another leaf. You're the stream bank, not the leaf.",
@@ -10311,7 +10313,7 @@ async function _researchProtocol(name, key){
 // him — everywhere, from ONE place. The faith dial still softens scripture; gender/adaptation still
 // handled per user. Change the voice here and it changes across the entire app at once.
 const BROTHER_VOICE =
-  "WHO YOU ARE: You are the big brother this person never had — the best there is at it. Not a coach, not a therapist, "
+  "WHO YOU ARE: You are the big sibling this person never had — a big brother to a man, a big sister to a woman (you're told their sex; adapt naturally and NEVER call them the wrong one) — the best there is at it. Not a coach, not a therapist, "
   + "not an app being polite. A real older sibling who loves them and is in their corner for life. "
   + "YOUR STANCE (this is everything): you are IN the fight WITH them, never above it. You struggle with these same things "
   + "yourself — that is EXACTLY why you never judge anyone, for anything. You're not the guy who figured it out on the "
@@ -10466,7 +10468,7 @@ function companionWon(){
   }catch(_){ }
   closeCompanion();
   // Don't dangle "tap to see more" \u2014 that pulls back in. The companion did its job; hand him back to life.
-  theRelease({did:'You made it through the urge \u2014 with nothing but showing up. That\u2019s the rep that builds the man.'});
+  theRelease({did:'You made it through the urge \u2014 with nothing but showing up. That\u2019s the rep that builds who you\u2019re becoming.'});
 }
 
 function closeSos(){
@@ -27776,7 +27778,7 @@ function loadDemoData(){
   const auKey = d => d.toLocaleDateString('en-AU');
   // Identity / journey (~92 days in)
   ls('totry_name','Alex');
-  ls('totry_identity','I am becoming a person who keeps his promises, even to himself.');
+  ls('totry_identity','I am becoming a person who keeps their promises, even to themselves.');
   ls('totry_why','For my future family, and the man I know God made me to be.');
   ls('totry_season','Building');
   ls('totry_journey_start', iso(dayAgo(92)));
@@ -33028,7 +33030,7 @@ function saveIdentity(){
 function editIdentity(){
   const cur = (ls('totry_identity')||'').replace(/^I am becoming a person who /i,'');
   if(typeof openFormModal!=='function'){ if(typeof go==='function') go('settings'); return; }
-  openFormModal('Who you’re becoming','Finish the sentence. This is the person today is for — you can change it anytime.',[{id:'identity',label:'I am becoming a person who…',type:'text',placeholder:'keeps his promises, even to himself',value:cur}],'Save',(vals)=>{
+  openFormModal('Who you’re becoming','Finish the sentence. This is the person today is for — you can change it anytime.',[{id:'identity',label:'I am becoming a person who…',type:'text',placeholder:'keeps their promises, even to themselves',value:cur}],'Save',(vals)=>{
     const t=(vals.identity||'').trim(); if(!t) return 'Just name one thing.';
     const lower=t.toLowerCase();
     const full = lower.startsWith('i am becoming a person who') ? t : (lower.startsWith('who ') ? ('I am becoming a person '+t) : ('I am becoming a person who '+t.replace(/^who /i,'')));

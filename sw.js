@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v293-fix-evening-deadend'
+const CACHE = 'totry-v294-gender-neutral-voice'
 
 const CORE = [
   './',
