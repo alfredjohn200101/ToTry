@@ -4099,7 +4099,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v288';
+const APP_VERSION = 'v289';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5603,6 +5603,7 @@ function getLifeState(){
     return {
       name: v.n,
       mode: v.mode || 'quit',
+      kind: v.kind || null,
       cleanDays: (typeof viceCleanDays==='function') ? viceCleanDays(v) : null,
       uses7: uses7.reduce((a,u)=>a+(parseInt(u.qty,10)||1),0),
       daysSinceUse: lastUse ? Math.floor((now-lastUse)/86400000) : null,
@@ -5775,6 +5776,7 @@ function buildCtx(){
   // Per-vice clean days with grace
   const viceDetails=vices.map(v=>{
     const clean=viceCleanDays(v);
+    if(v.kind==='letgo'){ return v.n+': '+clean+' day'+(clean===1?'':'s')+' into letting go (a grief/attachment they’re releasing — healing goal, NOT a clean-streak; going back is part of it, meet with grace, never "days clean" or relapse language)'; }
     const total=(v.cleanDaysTotal||0)+clean;
     let s=v.n+': '+clean+' days clean';
     if(v.relapseCount>0)s+=' ('+total+' total across '+v.relapseCount+' attempts)';
@@ -8260,7 +8262,7 @@ function startSobrietyClock(){
 }
 function updateSobrietyClock(){
   loadV();if(!vices.length)return;
-  const v=vices[0];
+  const v=vices.find(x=>x&&x.kind!=='letgo'); if(!v)return; // letting-go struggles never drive the "days clean" clock
   const since=v.lastLoss?new Date(v.lastLoss):new Date(ls('totry_start')||Date.now());
   const diff=Math.max(0,Date.now()-since.getTime());
   const days=Math.floor(diff/86400000);
@@ -9500,6 +9502,7 @@ const FEELINGS = [
   { id:'flat',        emoji:'\uD83D\uDE36', label:'Flat',            sub:'numb, can\u2019t be bothered', act:()=>_feelMove('flat') },
   { id:'anxious',     emoji:'\uD83C\uDF00', label:'Anxious',         sub:'tense, spinning',         act:()=>_feelMove('anxious') },
   { id:'down',        emoji:'\uD83C\uDF27\uFE0F', label:'Heavy',     sub:'low, sad, defeated',      act:()=>_feelMove('down') },
+  { id:'heartache',   emoji:'\uD83D\uDC94', label:'Heartache',       sub:'missing someone, a loss', act:()=>{ closeFeelingDoor(); setTimeout(openLettingGo, 260); } },
   { id:'procrast',    emoji:'\uD83C\uDF6F', label:'Avoiding',        sub:'putting something off',   act:()=>_feelMove('procrast') },
   { id:'angry',       emoji:'\uD83D\uDD25', label:'Fired up',        sub:'angry, frustrated',       act:()=>_feelMove('angry') },
   { id:'good',        emoji:'\u2728',       label:'Actually good',   sub:'steady, grateful',        act:()=>_feelMove('good') }
@@ -9616,6 +9619,163 @@ function _startSmallestThing(){
   }
 }
 
+// ════ LETTING GO — the grief-of-a-person path (a breakup, a loss, an attachment you're releasing) ════
+// Not a vice, and not NOT a vice. Some feel this fresh for a week; others carry it for months and it
+// grips exactly like an addiction they can't quit — same cry ("help me stop reaching for them"), same
+// in-the-moment machinery. What differs is the GOAL (letting go, not abstaining) and the VOICE (healing
+// and grace, never shame, never reset-to-zero — going back is part of letting go). Met in the acute
+// moment here; can GRADUATE into a named struggle in the Fight for anyone carrying it longer. Gender-
+// neutral throughout ("them", never assumes who left whom). And every path ENDS — theRelease — because
+// the whole point of a dopamine detox is an app that hands you back to your life instead of holding you.
+function openLettingGo(){
+  document.querySelector('.modal-bg.open')?.remove();
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="text-align:center;max-height:90vh;overflow-y:auto">'+
+    '<div class="modal-handle"></div>'+
+    '<div style="font-size:30px;margin-bottom:6px">💔</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:25px;color:var(--tx);line-height:1.25;margin-bottom:10px">You\u2019re letting go of someone.</div>'+
+    '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:14px">Missing them isn\u2019t weakness \u2014 it\u2019s love that hasn\u2019t found its new shape yet. You don\u2019t have to stop feeling it. You just don\u2019t have to feed it. Let\u2019s tend it here, and then let you go and live.</div>'+
+    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:13px 15px;margin-bottom:16px;text-align:left">'+
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px">One honest thing</div>'+
+      '<div style="font-size:12.5px;color:var(--tx2);line-height:1.65">Looking them up feels like staying close. It isn\u2019t. The research is blunt: on the days people check an ex, their mood is measurably worse \u2014 <i>that same day</i> \u2014 and it keeps the wound open. Watching them isn\u2019t reaching them. It\u2019s reaching the wound.</div>'+
+    '</div>'+
+    '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);_letGoSurf()">The urge to look \u2014 ride it out</button>'+
+    '<button class="btn" style="margin-bottom:8px;text-align:left;background:var(--bg3);border:1px solid var(--bd);color:var(--tx)" onclick="closeModal(this);_letGoJournal()">\u270E&nbsp;&nbsp;Put it here, not in their feed</button>'+
+    '<button class="btn" style="margin-bottom:8px;text-align:left;background:var(--bg3);border:1px solid var(--bd);color:var(--tx)" onclick="closeModal(this);_letGoAct()">🌿&nbsp;&nbsp;One real thing instead</button>'+
+    '<div style="display:flex;gap:8px;margin-bottom:8px">'+
+      '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="flex:1;background:transparent;border:1px solid var(--bd);color:var(--tx3);margin:0;font-size:12px">💬 Just talk</button>'+
+      '<button class="btn" onclick="closeModal(this);_letGoName()" style="flex:1;background:transparent;border:1px solid var(--bd);color:var(--tx3);margin:0;font-size:12px">I keep going back</button>'+
+    '</div>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0">Not now</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  if(typeof haptic==='function') haptic('tap');
+}
+// Ride the urge with a gentle long-exhale breath, then release into life (no shame gate — it's grief).
+function _letGoSurf(){ openBreath('settle', {reason:'letgo', onClose:()=>setTimeout(()=>theRelease({did:'You felt the urge to look \u2014 and let it pass instead of feeding it.'}), 220)}); }
+// A grief-prompted journal that beats Notes at the moment: a real prompt, saved to your journal (day +
+// mood + tagged), and it ENDS by handing you back to your life. Notes just stores; this processes.
+function _letGoJournal(){
+  document.querySelector('.modal-bg.open')?.remove();
+  const m=document.createElement('div'); m.className='modal-bg open';
+  m.innerHTML='<div class="modal" style="max-height:86vh;overflow-y:auto"><div class="modal-handle"></div>'+
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:6px">Let it out \u00b7 not in their feed</div>'+
+    '<h3 style="margin-bottom:6px">What are you actually missing?</h3>'+
+    '<p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.55">Not them, necessarily \u2014 the feeling underneath. What do you miss? What were you getting from them that you need right now? Write it here, where it gets processed instead of poured back into the wound.</p>'+
+    '<textarea id="qj-text" placeholder="I miss\u2026" style="min-height:130px;font-size:16px;line-height:1.6;margin-bottom:14px" autofocus></textarea>'+
+    '<button class="btn primary" onclick="_letGoSaveJournal()" style="margin-bottom:8px">Set it down</button>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  setTimeout(()=>document.getElementById('qj-text')?.focus(),60);
+}
+function _letGoSaveJournal(){
+  const text=document.getElementById('qj-text')?.value.trim();
+  if(!text){ if(typeof showToast==='function') showToast('Empty','Even one line counts.'); return; }
+  try{
+    const entries=ls('totry_journal')||[];
+    entries.unshift({ date:new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short',year:'numeric'}), ts:new Date().toISOString(), day:(typeof getDayCount==='function'?getDayCount():0), mood:'😔', text:text, tag:'letting_go', quick:true });
+    ls('totry_journal', entries.slice(0,1200));
+    if(typeof renderJournal==='function') renderJournal();
+  }catch(_){}
+  document.querySelector('.modal-bg.open')?.remove();
+  if(typeof haptic==='function') haptic('success');
+  theRelease({did:'You put it into words \u2014 and set it down. That\u2019s processing it, not feeding it.'});
+}
+// Behavioral activation — the evidence-based antidote to rumination is ONE valued real action (not
+// avoidance, not numbing). Pick one, then the app closes and you go do it.
+function _letGoAct(){
+  document.querySelector('.modal-bg.open')?.remove();
+  const acts=[
+    ['🚶','Walk \u2014 10 minutes, outside, phone in your pocket'],
+    ['📞','Message ONE real person who loves you'],
+    ['🚿','Cold water on your face, or a shower'],
+    ['🧹','One thing with your hands \u2014 tidy, cook, fix something'],
+    ['🏋️','Move your body \u2014 even 20 push-ups']
+  ];
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="text-align:center;max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:6px">One real thing</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:16px">Rumination breaks when you do something real. Pick one \u2014 then put the phone down and go do it.</div>'+
+    acts.map(a=>'<button class="btn" style="text-align:left;margin-bottom:8px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx);font-size:13px" onclick="closeModal(this);theRelease({did:\''+a[1].replace(/'/g,"\\'")+'\'})">'+a[0]+'&nbsp;&nbsp;'+a[1]+'</button>').join('')+
+    '<button class="btn" onclick="closeModal(this);openLettingGo()" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0">Back</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  if(typeof haptic==='function') haptic('tap');
+}
+// For anyone carrying this longer than a moment — name it, and it becomes something the Fight helps with
+// every day: same urge support, a healing goal, grace on going back. Optional label, gender-free.
+function _letGoName(){
+  document.querySelector('.modal-bg.open')?.remove();
+  if(typeof openFormModal==='function'){
+    openFormModal('Make this something you\u2019re letting go of','You don\u2019t have to name them \u2014 a word is enough, or leave it blank. I\u2019ll keep it in your Fight with a healing goal (no shame clock), and meet you in the urge whenever it pulls.',[{id:'who',label:'',type:'text',placeholder:'e.g. my ex, someone, a name \u2014 optional'}],'Add it to my Fight',(vals)=>{ createLetGo((vals.who||'').trim()); return true; });
+  } else { createLetGo(''); }
+}
+function createLetGo(who){
+  try{
+    if(typeof loadV==='function') loadV();
+    const label = who ? ('Letting go of '+who) : 'Letting go';
+    vices.push({ n:label, type:'letgo', kind:'letgo', mode:'watch', t:'When the missing hits', w:0, total:0, lastWin:null, lastLoss:null, urgelog:[], startDate:new Date().toISOString(), cleanDaysTotal:0, relapseCount:0, relapseHistory:[], plan:{ why:'To let them go and come home to myself.', move:'Ride the urge \u00b7 don\u2019t look them up \u00b7 one real thing', updatedAt:Date.now() } });
+    if(typeof saveV==='function') saveV();
+    if(typeof renderVices==='function') renderVices();
+    if(typeof logEvent==='function') logEvent('letgo_named',{});
+    if(typeof haptic==='function') haptic('success');
+    setTimeout(()=>theRelease({did:'It\u2019s in your Fight now \u2014 I\u2019ll be with you in it, with grace, every time it pulls.'}), 200);
+  }catch(_){}
+}
+// The grace-log for a named letting-go struggle: reaching back is part of the process, nothing resets.
+function _letGoWentBack(i){
+  try{ if(typeof loadV==='function') loadV(); const v=vices[i]; if(v){ v.urgelog=v.urgelog||[]; v.urgelog.push(Date.now()); if(typeof saveV==='function') saveV(); } }catch(_){}
+  document.querySelector('.modal-bg.open')?.remove();
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
+    '<div style="font-size:26px;margin-bottom:8px">🕊️</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:10px">Noticed, not judged.</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:18px">Reaching back is part of letting go, not the end of it. Nothing resets \u2014 you\u2019re still on the way. What do you need right now?</div>'+
+    '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);openLettingGo()">Help me with this moment</button>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">I\u2019m okay</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  if(typeof haptic==='function') haptic('tap');
+}
+
+// ════ THE RELEASE — the off-ramp the whole app was missing ════ A phone has no natural stopping cue
+// (Adam Alter): no last page, no credits, so we never put it down. This BUILDS the ending. Any regulated
+// moment can close here — it names what you did, hands you back to your life, and gives you NOTHING to
+// scroll. The opposite of a feed. And it quietly counts the only metric that matters for a detox: not
+// time-in-app, but the times you came, regulated, and LEFT (totry_releases = "time returned to life").
+function _logRelease(via){ try{ const r=ls('totry_releases')||[]; r.unshift({ts:Date.now(),via:via||''}); ls('totry_releases', r.slice(0,500)); if(typeof logEvent==='function') logEvent('release',{}); }catch(_){} }
+function releaseCount(){ try{ return (ls('totry_releases')||[]).length; }catch(_){ return 0; } }
+function theRelease(opts){
+  opts = opts || {};
+  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  document.querySelectorAll('.breath-overlay').forEach(o=>o.remove());
+  _logRelease(opts.did||'');
+  const name = ls('totry_name') || '';
+  const n = releaseCount();
+  const did = opts.did ? '<div style="font-size:14px;color:var(--tx2);line-height:1.6;margin-bottom:22px;max-width:340px">'+opts.did+'</div>' : '';
+  const countLine = n>1 ? '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);letter-spacing:0.05em;margin-top:28px;line-height:1.6">'+n+' times now, you\u2019ve come here and walked back into your life<br>instead of down the glass.</div>' : '';
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;z-index:9600;background:radial-gradient(circle at 50% 38%,#14180f,#09090c 72%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;color:var(--tx);opacity:0;transition:opacity 0.5s ease';
+  ov.innerHTML=
+    '<div style="font-size:30px;margin-bottom:16px;opacity:0.9">🕊️</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:27px;line-height:1.3;margin-bottom:14px;max-width:340px">You came here instead.</div>'+
+    did+
+    '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:26px;max-width:330px">Now put me down'+(name?', '+name.replace(/</g,'&lt;'):'')+'. Go live the next hour \u2014 the real one, off the glass. I\u2019m right here if the wave comes back. But you don\u2019t need me right now.</div>'+
+    '<button class="btn primary rel-go" style="max-width:240px;margin:0 auto">I\u2019m putting it down</button>'+
+    countLine;
+  document.body.appendChild(ov);
+  requestAnimationFrame(()=>{ ov.style.opacity='1'; });
+  ov.querySelector('.rel-go').onclick=()=>{
+    // No "what's next", no feed — a genuine end. A brief goodbye, then it clears itself and gets out of your way.
+    ov.innerHTML='<div class="rel-bye" style="font-family:Cormorant Garamond,serif;font-size:32px;color:var(--tx);opacity:0;transition:opacity 0.7s ease">Go well.</div>';
+    const g=ov.querySelector('.rel-bye'); requestAnimationFrame(()=>{ g.style.opacity='0.9'; });
+    setTimeout(()=>{ ov.style.opacity='0'; setTimeout(()=>ov.remove(),700); }, 1600);
+    if(typeof haptic==='function') haptic('success');
+  };
+  if(typeof haptic==='function') haptic('tap');
+}
+
 // ════ BREATH & STILLNESS — the minimum viable work ════
 // "Faith without works is dead." When willpower is gone, the one work a person can ALWAYS do is take
 // a breath. This is not a modal that TELLS you to breathe — it breathes WITH you, matched to the
@@ -9715,7 +9875,7 @@ function openBreath(id, opts){
   const q=(s)=>ov.querySelector(s);
   const state={alive:true, timer:null, pulse:null, cycle:0, pi:0, before:null, after:null};
   function cleanup(){ state.alive=false; if(state.timer){clearTimeout(state.timer);state.timer=null;} if(state.pulse){clearInterval(state.pulse);state.pulse=null;} }
-  function close(){ cleanup(); ov.remove(); }
+  function close(){ cleanup(); ov.remove(); if(opts && typeof opts.onClose==='function'){ const cb=opts.onClose; opts.onClose=null; try{ cb(); }catch(_){} } }
   q('.b-x').onclick=close;
   q('.b-change').onclick=()=>{ cleanup(); ov.remove(); openBreathMenu(); };
   function show(sec){ ['.b-pre','.b-run','.b-post','.b-done'].forEach(s=>{ const e=q(s); if(e) e.style.display=(s===sec)?(s==='.b-run'?'flex':'block'):'none'; }); }
@@ -9863,7 +10023,7 @@ function openNaturalHighs(){
   // Recovery-arc framing applies ONLY to vices being QUIT (abstinence). Someone moderating has no
   // "clean streak" to heal — natural highs still help them (clean dopamine beats the fake), but we
   // don't mis-frame their planned use as "flat after quitting". Help shaped to what they chose.
-  let _days=-1; try{ if(typeof loadV==='function')loadV(); const _vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices:[]; const _quit=_vs.filter(v=>((v.mode||'quit')!=='moderate')); if(_quit.length && typeof viceCleanDays==='function') _days=Math.max.apply(null,_quit.map(v=>viceCleanDays(v)||0)); }catch(_){}
+  let _days=-1; try{ if(typeof loadV==='function')loadV(); const _vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices:[]; const _quit=_vs.filter(v=>((v.mode||'quit')!=='moderate') && v.kind!=='letgo'); if(_quit.length && typeof viceCleanDays==='function') _days=Math.max.apply(null,_quit.map(v=>viceCleanDays(v)||0)); }catch(_){}
   const _phase=(_days>=1)?_recoveryPhaseNote(_days):null;
   const _phaseLine=_phase?'<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.03em;line-height:1.55;margin-bottom:14px">'+_phase+'</div>':'';
   const _intro=_phase?'Feeling flat after quitting is the reward system healing — not you failing. These rebuild it for real. Pick one and go.':'A real hit of clean dopamine beats the fake one every time — no crash, and it makes the pull quieter. Pick one and go.';
@@ -10858,6 +11018,26 @@ function renderVices(){
     c.dataset.viceIdx = i;
     if(v.startDate) c.dataset.viceStart = v.startDate;
 
+    if(v.kind === 'letgo'){
+      // LETTING-GO CARD: a healing goal, not a streak. The counter only ever climbs (days of choosing
+      // yourself) — going back never resets it, because grief isn't linear. No red, no shame, no relapse.
+      const lgDays = v.startDate ? Math.floor((Date.now()-new Date(v.startDate).getTime())/86400000) : 0;
+      c.innerHTML =
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">'+
+          '<div style="flex:1">'+
+            '<div class="eyebrow">'+String(v.n).replace(/</g,'&lt;')+'</div>'+
+            '<div style="font-family:DM Mono,monospace;font-size:24px;font-weight:500;color:var(--go)">'+lgDays+' <span style="font-size:11px;color:var(--tx3)">day'+(lgDays===1?'':'s')+' of choosing yourself</span></div>'+
+          '</div>'+
+          '<div style="font-size:20px">🕊️</div>'+
+        '</div>'+
+        '<div style="font-size:11.5px;color:var(--tx3);margin-bottom:12px;line-height:1.55">Grief isn’t linear — going back is part of letting go, not a failure. Nothing resets here.</div>'+
+        '<button class="vice-btn" onclick="openLettingGo()" style="width:100%;background:var(--go);color:#1a1505;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:600;cursor:pointer">Feeling the pull? Come here first</button>'+
+        '<button onclick="_letGoWentBack('+i+')" style="width:100%;margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:10px;padding:9px;font-size:12px;cursor:pointer">I reached out / looked them up</button>'+
+        '<button onclick="openViceManage('+i+')" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:6px">Manage &middot; rename, remove</button>';
+      list.appendChild(c);
+      return;
+    }
+
     if(v.mode === 'moderate'){
       // MODERATION CARD: the goal is staying within a limit, not a streak. No "clean days",
       // no "relapse", no shame — just how often they held their line.
@@ -10982,7 +11162,7 @@ function renderVices(){
   // Only abstinence ("quit") vices count here — moderation vices have no clean-day streak.
   // Hide the whole clock when there's no quit-vice to count: a big "0 Days clean" over an empty or
   // moderation-only fight is confusing, and against grace-over-shame.
-  const quitVices = vices.filter(v => v.mode !== 'moderate');
+  const quitVices = vices.filter(v => v.mode !== 'moderate' && v.kind !== 'letgo');
   const sobClock=document.getElementById('sob-clock-main');
   if(sobClock) sobClock.style.display = quitVices.length ? '' : 'none';
   if(quitVices.length){
@@ -12091,7 +12271,8 @@ function renderScoreboard(){
   const tw=vices.reduce((a,v)=>a+(v.w||0),0),tf=vices.reduce((a,v)=>a+(v.total||0),0);
   // STREAK on the Fight tab = longest CURRENT clean streak across all vices (days clean),
   // not the habit-completion streak. This is what users expect to see here.
-  const cleanStreak = vices.length ? Math.max(0, ...vices.map(v => viceCleanDays(v))) : 0;
+  const _streakVices = vices.filter(v => v.kind !== 'letgo'); // letting-go isn't a clean-day streak
+  const cleanStreak = _streakVices.length ? Math.max(0, ..._streakVices.map(v => viceCleanDays(v))) : 0;
   const rate=tf>0?Math.round((tw/tf)*100):0,day=getDayCount(),str=cleanStreak;
   const e=id=>document.getElementById(id);
   if(e('sc-total'))e('sc-total').textContent=tw;
@@ -12101,6 +12282,7 @@ function renderScoreboard(){
   const sub=e('sc-sub');if(sub&&tw>0)sub.textContent=tw+' moments you chose who you\'re becoming over who you used to be.';
   const bv=e('score-by-vice');
   if(bv){bv.innerHTML='';vices.forEach(v=>{
+    if(v.kind==='letgo')return; // letting-go has a healing goal, not a win-rate
     const pct=v.total>0?Math.round(((v.w||0)/v.total)*100):0;
     const row=document.createElement('div');row.className='vsr';
     row.innerHTML='<div class="vsr-top"><span class="vsr-name">'+v.n+'</span><div style="text-align:right"><div class="vsr-pct">'+pct+'%</div><div class="vsr-wins">'+(v.w||0)+' wins</div></div></div>'+
@@ -29877,7 +30059,7 @@ function renderLifeWoven(){
   // THE FIGHT — clean streak (quit) or holding the line (moderate)
   const vs=(s.fight&&s.fight.vices)||[]; let fightTxt;
   if(!vs.length) fightTxt='no fight named yet';
-  else { const q=vs.filter(v=>v.mode!=='moderate'); if(q.length){ const mc=Math.max.apply(null,q.map(v=>v.cleanDays||0)); fightTxt=mc+' day'+(mc===1?'':'s')+' clean'; } else fightTxt='holding your line'; }
+  else { const q=vs.filter(v=>v.mode!=='moderate' && v.kind!=='letgo'); if(q.length){ const mc=Math.max.apply(null,q.map(v=>v.cleanDays||0)); fightTxt=mc+' day'+(mc===1?'':'s')+' clean'; } else { const lg=vs.filter(v=>v.kind==='letgo'); fightTxt = lg.length ? 'letting go, day '+Math.max.apply(null,lg.map(v=>v.cleanDays||0)) : 'holding your line'; } }
   // SPIRIT — the daily rhythm
   const mornDone=(ls('totry_mornings')||[]).some(dOn); const evenDone=(ls('totry_evenings')||[]).some(dOn);
   const spiritTxt = evenDone?'day closed ✓' : mornDone?'reflect tonight' : (h<15?'set your intention':'reflect on today');
