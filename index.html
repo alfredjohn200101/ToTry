@@ -1318,15 +1318,18 @@ input:focus,textarea:focus,select:focus{
 <div class="hdr">
   <div class="hdr-row">
     <div><div class="logo-main">To <em>Try</em></div><div class="logo-sub">by Alfred John</div></div>
-    <div class="day-chip" onclick="go('reflect')"><div class="day-n" id="day-num">1</div><div class="day-l">days in</div></div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="day-chip" onclick="go('reflect')"><div class="day-n" id="day-num">1</div><div class="day-l">days in</div></div>
+      <button onclick="go('settings')" aria-label="Settings" style="background:none;border:none;padding:6px;margin:0;cursor:pointer;color:var(--tx3);display:flex;align-items:center;line-height:0;-webkit-tap-highlight-color:transparent"><svg aria-hidden="true" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+    </div>
   </div>
 </div>
 <nav class="nav nav-5">
   <button class="nb active" onclick="go('home')"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg><span>Today</span></button>
-  <button class="nb" onclick="go('soul')"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>Soul</span></button>
-  <button class="nb" onclick="go('grow')"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20M5 5l14 14M19 5L5 19" stroke-width="0"/><path d="M12 22c0-6 0-10 4-13M12 22c0-6 0-10-4-13"/><circle cx="12" cy="5" r="2.5"/></svg><span>Grow</span></button>
+  <button class="nb" onclick="go('fight')"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Fight</span></button>
+  <button class="nb" onclick="go('grow')"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22c0-6 0-10 4-13M12 22c0-6 0-10-4-13"/><circle cx="12" cy="5" r="2.5"/></svg><span>Grow</span></button>
   <button class="nb" onclick="go('money')"><svg aria-hidden="true" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Money</span></button>
-  <button class="nb" onclick="go('settings')"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Settings</span></button>
+  <button class="nb" onclick="go('soul')"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>Soul</span></button>
 </nav>
 <div class="tabs">
 
@@ -1336,12 +1339,6 @@ input:focus,textarea:focus,select:focus{
   <div style="margin-bottom:8px">
     <h2 style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.2;margin-bottom:2px">Grow</h2>
     <p style="font-size:12.5px;color:var(--tx3);line-height:1.6">Your body, honestly. Train, then fuel what you earned, then watch the result — one loop, not three trackers. Discipline of the body is discipline of the man.</p>
-  </div>
-  <!-- Fight stands on its own — the core battle -->
-  <div class="hub-card wide" onclick="go('fight')" style="margin-bottom:12px">
-    <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-    <div class="hc-title">Fight</div>
-    <div class="hc-desc">Beat the vices holding you back. Clean streaks, urge support the moment you need it.</div>
   </div>
   <div class="hub-section-label">Health — train, nourish, then track the result</div>
   <div class="hub-grid">
@@ -4062,7 +4059,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v284';
+const APP_VERSION = 'v285';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7109,13 +7106,15 @@ function saveHdrVerse(){
 }
 
 // ── NAV ───────────────────────────────────────────────────────
-const TABS=['home','soul','grow','money','settings'];
-// Sub-tabs map to their parent hub so the right nav button highlights
+const TABS=['home','fight','grow','money','soul'];
+// Sub-tabs map to their parent hub so the right nav button highlights.
+// The 5 tabs ARE the stewardship map: Today · Fight (freedom) · Grow (body) · Money · Soul (spirit).
+// Mind lives in the ever-present orb (Feeling Door); Settings moved to the header gear.
 const TAB_PARENT={
-  fight:'grow', nourish:'grow', train:'grow', track:'grow',
+  nourish:'grow', train:'grow', track:'grow',
   morning:'soul', reflect:'soul', bible:'soul', why:'soul', liturgy:'soul',
-  calendar:'home'
-  // money & settings are now their own top-level tabs; coach is the floating button
+  calendar:'home', settings:'home'
+  // fight, money & soul are their own top-level tabs; coach is the floating button
 };
 
 // Inserts/updates a small "‹ Back to {Hub}" bar at the top of any sub-page that

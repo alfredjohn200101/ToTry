@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v284-daily-spine'
+const CACHE = 'totry-v285-nav-stewardship-map'
 
 const CORE = [
   './',
