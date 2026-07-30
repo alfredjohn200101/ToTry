@@ -4099,7 +4099,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v290';
+const APP_VERSION = 'v291';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -17115,7 +17115,10 @@ function renderNutritionLog(){
       const yKey=y.toLocaleDateString('en-AU');
       const hadYesterday = log[yKey] && log[yKey].length;
       const everLogged = Object.keys(log).some(k => (log[k]||[]).length) || (ls('totry_recent_foods')||[]).length;
-      if(!everLogged){
+      const hasGoals = !!(ls('totry_nut_goals')||{}).cal;
+      if(!everLogged && !hasGoals){
+        // TRUE first-run only: no targets AND nothing ever logged. If targets already exist (even with
+        // nothing logged yet) we must NOT say "no targets to figure out" — the dashboard above shows them.
         // First-ever use: don't confront them with a setup wall or a feature list. One warm,
         // low-pressure step. Goals can derive from real intake later — just log one thing.
         list.innerHTML='<div style="text-align:center;padding:22px 14px;line-height:1.6">'+
@@ -17944,7 +17947,8 @@ function saveNutGoals(){
   let msg='Cal: '+cal+' \u00b7 Protein: '+pro+'g';
   if(goals.carb) msg+=' \u00b7 Carbs: '+goals.carb+'g';
   if(goals.fat) msg+=' \u00b7 Fat: '+goals.fat+'g';
-  showToast('Goals saved',msg);
+  // Adaptation, made felt at the decision moment \u2014 not a one-time number. Kills the "set it once" feeling.
+  showToast('Target set \u2014 and it adapts', msg+' \u00b7 I\u2019ll recalibrate this from your real weight & intake as you go.');
   if(typeof renderNutSetupNudge==='function') renderNutSetupNudge(); // reflect the save immediately, no tab-restart needed
   if(typeof renderNutritionLog==='function') renderNutritionLog();
   haptic('success');
