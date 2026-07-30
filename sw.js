@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v291-cohesion-nourish-contradiction'
+const CACHE = 'totry-v292-release-every-win'
 
 const CORE = [
   './',
