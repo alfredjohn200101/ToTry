@@ -4099,7 +4099,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v289';
+const APP_VERSION = 'v290';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -10465,11 +10465,8 @@ function companionWon(){
     if(typeof renderVices==='function') renderVices();
   }catch(_){ }
   closeCompanion();
-  if(creditedIdx >= 0){
-    if(typeof showToast==='function') showToast('You made it through. \u{1F33F}', 'That\u2019s the rep that builds the man. Tap to see what your streak is earning.', ()=>{ try{ openRecoveryTimeline(creditedIdx); }catch(_){} });
-  } else {
-    if(typeof showToast==='function') showToast('You made it through. \u{1F33F}', 'That\u2019s the rep that builds the man. I\u2019m proud of you.');
-  }
+  // Don't dangle "tap to see more" \u2014 that pulls back in. The companion did its job; hand him back to life.
+  theRelease({did:'You made it through the urge \u2014 with nothing but showing up. That\u2019s the rep that builds the man.'});
 }
 
 function closeSos(){
@@ -12114,7 +12111,8 @@ function _momentWin(i){
   }
   document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
   try{ renderVices(); if(typeof syncToCloud==='function') syncToCloud(); if(typeof haptic==='function') haptic('success'); }catch(_){}
-  showToast('That’s the win', 'Not falling was the whole thing. The feeling passes; this is what stays.');
+  // The win isn't a toast you scroll past — it's a door OUT. You turned away; now go live.
+  theRelease({did:'The wave passed — and you didn’t. Not falling was the whole thing; the feeling goes, this is what stays.'});
 }
 
 // ── MEETING HIM IN THE HARD HOUR, PROACTIVELY ──────────────────────────────────────────────────
@@ -30082,6 +30080,9 @@ function renderLifeWoven(){
       '<span style="flex:1;font-size:12px;color:var(--tx3);text-align:right">'+r[2]+'</span>'+
       '<span style="color:var(--tx3);font-size:14px;flex-shrink:0;margin-left:6px">›</span>'+
     '</button>').join('')+
+    // The one number this app is proud of: not time spent here, but times you left better. Earned (≥3),
+    // never shown at zero — the anti-engagement metric made quietly visible. (totry_releases)
+    (function(){ const rc=(typeof releaseCount==='function')?releaseCount():0; return rc>=3 ? '<div style="font-family:DM Mono,monospace;font-size:9.5px;color:var(--tx3);letter-spacing:0.05em;line-height:1.5;border-top:1px solid var(--bd);padding:9px 12px 8px;text-align:center">🕊️ '+rc+' times, you came here and walked back into your life</div>' : ''; })()+
   '</div>';
 }
 function renderHomeGreeting(){
