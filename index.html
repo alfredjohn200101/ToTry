@@ -4099,7 +4099,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v298';
+const APP_VERSION = 'v299';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -15315,10 +15315,20 @@ async function searchFood(query){
   // product from different sources/brands, which just wastes the whole list. Sorted best-first, so
   // keep the first of each name+brand and drop the rest.
   const _seenPool = new Set();
+  const _nameCount = {};
   const pooled = pool.filter(f => {
-    const k = ((f.name||'').toLowerCase().replace(/\s+/g,' ').trim()) + '|' + ((f.brand||'').toLowerCase().trim());
+    // Dedupe by normalized name + calorie bucket, NOT name+brand — supermarket "SALMON" entries from
+    // different brands but identical macros are the same food to the user; showing them all reads as
+    // broken. Same name + same calories collapses; genuinely different macros survive.
+    const nm = (f.name||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
+    const k = nm + '|' + Math.round((Number(f.cal)||0)/10);
     if(_seenPool.has(k)) return false;
-    _seenPool.add(k); return true;
+    _seenPool.add(k);
+    // And cap any one generic name (e.g. four "SALMON") at 2 rows — beyond that is just clutter.
+    // Pool is sorted best-first, so the kept two are the most relevant.
+    _nameCount[nm] = (_nameCount[nm]||0) + 1;
+    if(_nameCount[nm] > 2) return false;
+    return true;
   });
   pool.length = 0; pool.push(...pooled);
   // Online/database results are authoritative — collect their normalized names so we can drop any

@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v298-nourish-fast-search-typeahead'
+const CACHE = 'totry-v299-nourish-dedupe-results'
 
 const CORE = [
   './',
