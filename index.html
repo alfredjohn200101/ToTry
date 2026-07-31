@@ -2190,6 +2190,22 @@ input:focus,textarea:focus,select:focus{
   <!-- Today's diary: what you've logged, right under the log box -->
   <div class="card" style="margin-bottom:12px"><div id="nut-log-list"><p style="font-size:13px;color:var(--tx3);text-align:center;padding:8px 0">No food logged yet today</p></div></div>
 
+  <!-- ══ SECTION 3 · THIS WEEK — how to actually HIT your target: real meals + a priced shopping list ══ -->
+  <div class="card" id="fuel-plan-card" style="margin-bottom:12px;background:linear-gradient(135deg,var(--go-bg),transparent);border:1px solid var(--go-bd)">
+    <div style="display:flex;align-items:flex-start;gap:11px">
+      <div style="font-size:22px;line-height:1.1">🍽️</div>
+      <div style="flex:1">
+        <div style="font-size:14px;font-weight:600;color:var(--tx);margin-bottom:3px">Your fuel plan · this week</div>
+        <div style="font-size:12px;color:var(--tx2);line-height:1.55;margin-bottom:10px">Real meals and a priced shopping list to hit your target — built around your training times, your goal, and your budget. A PT in your pocket.</div>
+        <div id="fuel-plan-summary"></div>
+        <button class="btn primary" id="fuel-plan-btn" style="font-size:13px;padding:11px" onclick="openFuelPlan()">Build my fuel plan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SECTION 4 · MORE — depth on demand (the result, trends, water, fasting, extras) ══ -->
+  <div class="lbl" style="margin-top:4px">More · your day in depth</div>
+
   <!-- Nourishment quality score — beyond calories: how nourishing was today, populated by renderNourishmentScore() -->
   <div id="nourishment-score" style="margin-top:14px"></div>
 
@@ -2213,22 +2229,7 @@ input:focus,textarea:focus,select:focus{
   <div id="nut-adaptive-card" style="display:none;margin-bottom:12px"></div>
   <div id="nut-foodgroups"></div>
 
-  <!-- (Removed the old "Plan meals & groceries → openMealPlan" card — it duplicated the Fuel Plan
-       below, which is strictly better: real training-timed meals, a priced shopping list, budget,
-       and dislikes. One meal planner, not two.) -->
-
-  <!-- ── SECTION 3 · THIS WEEK — FUEL PLAN: real meals + priced shopping to HIT your target ── -->
-  <div class="card" id="fuel-plan-card" style="margin-bottom:12px;background:linear-gradient(135deg,var(--go-bg),transparent);border:1px solid var(--go-bd)">
-    <div style="display:flex;align-items:flex-start;gap:11px">
-      <div style="font-size:22px;line-height:1.1">🍽️</div>
-      <div style="flex:1">
-        <div style="font-size:14px;font-weight:600;color:var(--tx);margin-bottom:3px">Your fuel plan</div>
-        <div style="font-size:12px;color:var(--tx2);line-height:1.55;margin-bottom:10px">Real meals and a priced shopping list, built around your training times, your goal, and your budget — timed so you're fuelled for every session. A PT in your pocket.</div>
-        <div id="fuel-plan-summary"></div>
-        <button class="btn primary" id="fuel-plan-btn" style="font-size:13px;padding:11px" onclick="openFuelPlan()">Build my fuel plan</button>
-      </div>
-    </div>
-  </div>
+  <!-- (Fuel plan moved up to Section 3 · This week, right after Today) -->
 
   <!-- Migration card: make it effortless for MyFitnessPal/Cronometer/etc users to bring history in -->
   <div id="nut-migrate-card" class="card" style="margin-bottom:12px;display:none;background:linear-gradient(135deg,var(--go-bg),transparent);border:1px solid var(--go-bd)">
@@ -4102,7 +4103,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v302';
+const APP_VERSION = 'v303';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }

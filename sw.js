@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v302-nourish-target-unified'
+const CACHE = 'totry-v303-nourish-thisweek-more'
 
 const CORE = [
   './',
