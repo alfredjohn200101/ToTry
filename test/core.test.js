@@ -65,4 +65,23 @@ H.section('_pmTotals — per-item photo meal totals with per-item multipliers');
   H.eq(t, { cal: 0, pro: 0, carb: 0, fat: 0 }, 'no photo meal → all-zero totals, no crash');
 }
 
+// ── MONEY: reclaimed / spend picture (viceSpendPicture) — the honest money math ──────────────────
+H.section('viceSpendPicture — reclaimed money (debt cancels savings first)');
+{
+  const { viceSpendPicture, viceMoneySaved } = H.load(['viceSpendPicture', 'viceMoneySaved', 'viceCleanDays']);
+  const daysAgo = n => new Date(Date.now() - n * 86400000).toISOString();
+  let p = viceSpendPicture({ costAmount: 20, costPer: 'week', startDate: daysAgo(14) });
+  H.eq(p.avoided, 40, '$20/week × 2 weeks = $40 avoided');
+  H.eq(p.net, 40, 'no debt → net = avoided');
+  H.ok(p.ahead === true, 'ahead when net > 0');
+  p = viceSpendPicture({ costAmount: 20, costPer: 'week', owed: 50, startDate: daysAgo(14) });
+  H.eq(p.net, -10, '$40 avoided − $50 owed = −$10 (honest negative position)');
+  H.ok(p.ahead === false, 'not "ahead" while still in the hole');
+  H.eq(p.toGo, 10, '$10 to go before actually ahead');
+  H.eq(viceMoneySaved({ costAmount: 20, costPer: 'week', owed: 50, startDate: daysAgo(14) }), 0, 'reclaimed clamps at 0 while owed > avoided (never claim money not yet netted)');
+  H.eq(viceMoneySaved({ costAmount: 20, costPer: 'week', startDate: daysAgo(14) }), 40, 'reclaimed = $40 when debt-free');
+  H.eq(viceSpendPicture({ costAmount: 5, costPer: 'day', startDate: daysAgo(10) }).avoided, 50, '$5/day × 10 days = $50');
+  H.eq(viceSpendPicture({ costAmount: 0, owed: 0 }), null, 'no cost + no debt → null (feature is opt-in)');
+}
+
 H.report();
