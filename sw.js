@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v299-nourish-dedupe-results'
+const CACHE = 'totry-v300-photo-meal-per-item'
 
 const CORE = [
   './',

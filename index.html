@@ -4099,7 +4099,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v299';
+const APP_VERSION = 'v300';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -15490,7 +15490,7 @@ async function handleMealPhoto(event){
   const base64 = dataUrl.split(',')[1];
   const mime = 'image/jpeg';
   try{
-      const prompt = 'This is a photo of a meal. Identify the foods on the plate and estimate the nutrition for the WHOLE meal as served (reason about realistic portion sizes from visual cues like plate size). Return ONLY this JSON, no markdown: {"name":"short description of the meal","cal":number,"pro":number,"carb":number,"fat":number,"items":"comma-separated foods you identified","assumptions":"1 short sentence on portions assumed"}. If this is not food, return {"error":"no food"}.';
+      const prompt = 'This is a photo of a meal. Identify EACH distinct food/component SEPARATELY and estimate each one\'s nutrition for the portion actually shown — reason about portion size from visual cues (plate size, utensils, a hand). Return ONLY this JSON, no markdown: {"meal":"short overall name for the meal","items":[{"food":"one item\'s name","portion":"estimated portion, e.g. ~180g or 1 cup","cal":number,"pro":number,"carb":number,"fat":number}],"assumptions":"1 short sentence on what you assumed","confidence":"high|medium|low"}. List 1 to 8 items. If this is not food, return {"error":"no food"}.';
       const {data, error} = await Promise.race([
         sb.functions.invoke('ai-proxy', { body:{ action:'vision', prompt, image_base64:base64, image_mime:mime, max_tokens:500 } }),
         new Promise((_, rej) => setTimeout(() => rej(new Error('Timed out')), 35000))
@@ -15505,22 +15505,81 @@ async function handleMealPhoto(event){
         if(res) res.innerHTML = '<div style="padding:12px;background:var(--bg3);border-radius:10px;font-size:13px;color:var(--tx2)">That didn\'t look like food. Try again, or describe the meal in the search box.</div>';
         return;
       }
-      const food = { name: parsed.name||'Meal', cal: parsed.cal||0, pro: parsed.pro||0, carb: parsed.carb||0, fat: parsed.fat||0, source:'AI photo', brand: parsed.items||parsed.assumptions||'' };
-      if(res){
-        res.innerHTML='';
-        const el=document.createElement('div'); el.className='food-result'; el.style.cssText='border:1px solid var(--go-bd)';
-        el.innerHTML='<div class="fr-name">📸 '+food.name+'</div>'+(parsed.items?'<div class="fr-brand">'+parsed.items+'</div>':'')+
-          '<div class="fr-macros"><span class="fr-cal">'+food.cal+' cal</span><span>P: '+food.pro+'g</span><span>C: '+food.carb+'g</span><span>F: '+food.fat+'g</span><span style="color:var(--go)">AI photo</span></div>'+
-          '<div style="font-size:11px;color:var(--go);margin-top:4px">Tap to choose serving &amp; add →</div>';
-        el.onclick=()=>openServingModal(food);
-        res.appendChild(el);
-        const note=document.createElement('p'); note.style.cssText='font-size:11px;color:var(--tx3);text-align:center;padding:10px;line-height:1.5'; note.textContent='AI estimates are approximate. Tap to add, then adjust if needed.';
-        res.appendChild(note);
-      }
+      // Per-item beats Cal AI's single blob: each detected food is separately adjustable and removable,
+      // so a wrong rice estimate doesn't force you to redo the whole plate. Handle both the new items[]
+      // shape and the old single-macro shape (graceful if the model returns the older format).
+      let _items = Array.isArray(parsed.items) ? parsed.items : null;
+      if(!_items && parsed.cal!=null){ _items = [{ food: parsed.name||'Meal', portion:'as served', cal:parsed.cal, pro:parsed.pro, carb:parsed.carb, fat:parsed.fat }]; }
+      _items = (_items||[]).filter(it=>it && (it.food||it.name)).map(it=>({ food:String(it.food||it.name||'Item'), portion:String(it.portion||''), cal:Number(it.cal)||0, pro:Number(it.pro)||0, carb:Number(it.carb)||0, fat:Number(it.fat)||0, mult:1 }));
+      if(!_items.length){ if(res) res.innerHTML='<div style="padding:12px;background:var(--bg3);border-radius:10px;font-size:13px;color:var(--tx2)">Couldn\'t make out the foods. Try again, or describe the meal in the search box.</div>'; return; }
+      _photoMeal = { name: parsed.meal||parsed.name||'Your meal', items:_items, assumptions:parsed.assumptions||'', confidence:parsed.confidence||'', meal:(typeof currentMealSlot==='function'?currentMealSlot():null) };
+      _renderPhotoMeal();
     }catch(err){
       console.error('meal photo failed', err);
       if(res) res.innerHTML = '<div style="padding:12px;background:var(--re-bg);border:1px solid var(--re-bd);border-radius:10px;font-size:13px;color:var(--re)">Something went wrong reading that. Try describing the meal instead.</div>';
     }
+}
+
+// ── PHOTO MEAL — per-item, editable (beats Cal AI's single-blob) ──────────────────────────────────
+// The AI returns each food on the plate separately. Every item is adjustable (− / + scales just that
+// item) and removable, with a live total, a meal slot, and honest confidence — then logs as real,
+// separate diary items. Cal AI guesses a blob and charges you; this is per-item, correctable, and free.
+let _photoMeal = null;
+function _pmTotals(){ return (_photoMeal?_photoMeal.items:[]).reduce((a,it)=>{ const m=it.mult||1; a.cal+=it.cal*m; a.pro+=it.pro*m; a.carb+=it.carb*m; a.fat+=it.fat*m; return a; },{cal:0,pro:0,carb:0,fat:0}); }
+function _renderPhotoMeal(){
+  const res=document.getElementById('nut-search-results'); if(!res||!_photoMeal) return;
+  const pm=_photoMeal, R=n=>Math.round(n), esc=s=>String(s).replace(/</g,'&lt;');
+  const tot=_pmTotals();
+  const confCol = pm.confidence==='high'?'var(--gr)':pm.confidence==='low'?'var(--re)':'var(--go)';
+  const sel = pm.meal || (typeof currentMealSlot==='function'?currentMealSlot():'dinner');
+  const rows = pm.items.map((it,i)=>{ const m=it.mult||1; return ''+
+    '<div style="display:flex;align-items:center;gap:6px;padding:9px 0;border-top:1px solid var(--bd)">'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(it.food)+'</div>'+
+        '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+R(it.cal*m)+' cal · P'+R(it.pro*m)+' C'+R(it.carb*m)+' F'+R(it.fat*m)+(it.portion?' · '+esc(it.portion):'')+(m!==1?' ×'+m:'')+'</div>'+
+      '</div>'+
+      '<button onclick="_pmAdj('+i+',-0.25)" aria-label="less" style="width:30px;height:30px;border-radius:7px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:17px;cursor:pointer;flex-shrink:0">−</button>'+
+      '<button onclick="_pmAdj('+i+',0.25)" aria-label="more" style="width:30px;height:30px;border-radius:7px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:17px;cursor:pointer;flex-shrink:0">+</button>'+
+      '<button onclick="_pmRemove('+i+')" aria-label="remove" style="width:30px;height:30px;border-radius:7px;background:none;border:none;color:var(--tx3);font-size:17px;cursor:pointer;flex-shrink:0">×</button>'+
+    '</div>'; }).join('');
+  const meals=[['breakfast','🌅','Breakfast'],['lunch','☀️','Lunch'],['dinner','🌙','Dinner'],['snack','🍎','Snack']];
+  res.innerHTML =
+    '<div style="border:1px solid var(--go-bd);border-radius:14px;padding:14px;background:var(--bg2)">'+
+      '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:2px">'+
+        '<div style="font-family:Cormorant Garamond,serif;font-size:19px;color:var(--tx);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">📸 '+esc(pm.name)+'</div>'+
+        (pm.confidence?'<div style="font-family:DM Mono,monospace;font-size:9px;color:'+confCol+';text-transform:uppercase;letter-spacing:0.08em;flex-shrink:0">'+esc(pm.confidence)+' confidence</div>':'')+
+      '</div>'+
+      (pm.assumptions?'<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:6px">'+esc(pm.assumptions)+'</div>':'')+
+      rows+
+      '<div style="display:flex;justify-content:space-between;align-items:center;border-top:2px solid var(--bd);margin-top:4px;padding-top:10px">'+
+        '<div style="font-size:13px;color:var(--tx);font-weight:600">Total</div>'+
+        '<div style="font-family:DM Mono,monospace;font-size:13px;color:var(--go)">'+R(tot.cal)+' cal · P'+R(tot.pro)+' C'+R(tot.carb)+' F'+R(tot.fat)+'</div>'+
+      '</div>'+
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin:12px 0 6px">Add to</div>'+
+      '<div style="display:flex;gap:6px;margin-bottom:10px">'+
+        meals.map(mm=>'<button onclick="_pmMeal(\''+mm[0]+'\')" style="flex:1;padding:8px 2px;border-radius:8px;border:1px solid '+(sel===mm[0]?'var(--go)':'var(--bd)')+';background:'+(sel===mm[0]?'var(--go)':'var(--bg3)')+';color:'+(sel===mm[0]?'#1a1505':'var(--tx2)')+';font-size:11px;cursor:pointer">'+mm[1]+' '+mm[2]+'</button>').join('')+
+      '</div>'+
+      '<button class="btn primary" onclick="_pmLog()">Add '+pm.items.length+' item'+(pm.items.length===1?'':'s')+' to log</button>'+
+      '<div style="font-size:11px;color:var(--tx3);text-align:center;padding:8px 0 0;line-height:1.5">An estimate — tune any item with − / +, remove what isn’t there. The numbers are yours to correct.</div>'+
+    '</div>';
+}
+function _pmAdj(i,d){ if(!_photoMeal||!_photoMeal.items[i])return; const it=_photoMeal.items[i]; it.mult=Math.max(0.25, Math.round(((it.mult||1)+d)*4)/4); _renderPhotoMeal(); }
+function _pmRemove(i){ if(!_photoMeal)return; _photoMeal.items.splice(i,1); if(!_photoMeal.items.length){ _photoMeal=null; const res=document.getElementById('nut-search-results'); if(res) res.innerHTML='<p style="text-align:center;color:var(--tx3);font-size:13px;padding:16px">No items left — snap again or search.</p>'; return; } _renderPhotoMeal(); }
+function _pmMeal(m){ if(!_photoMeal)return; _photoMeal.meal=m; _renderPhotoMeal(); }
+function _pmLog(){
+  if(!_photoMeal||!_photoMeal.items.length) return;
+  const today=new Date().toLocaleDateString('en-AU');
+  const log=ls('totry_nutlog')||{}; if(!log[today]) log[today]=[];
+  const meal=_photoMeal.meal||(typeof currentMealSlot==='function'?currentMealSlot():'dinner');
+  const R=n=>Math.round(n);
+  _photoMeal.items.forEach(it=>{ const m=it.mult||1; log[today].push({ id:Date.now()+Math.floor(Math.random()*100000), name:it.food, brand:'', serving:(it.portion||'1 serving')+(m!==1?' ×'+m:''), qty:1, cal:R(it.cal*m), pro:R(it.pro*m), carb:R(it.carb*m), fat:R(it.fat*m), meal:meal, source:'AI photo', ts:new Date().toISOString() }); });
+  ls('totry_nutlog', log);
+  const n=_photoMeal.items.length; _photoMeal=null;
+  if(typeof haptic==='function') haptic('success');
+  if(typeof showToast==='function') showToast('Logged ✓', n+' item'+(n===1?'':'s')+' added to '+meal);
+  const res=document.getElementById('nut-search-results'); if(res) res.innerHTML='';
+  const si=document.getElementById('nut-search-in'); if(si) si.value='';
+  if(typeof renderNutritionLog==='function') renderNutritionLog();
 }
 
 // ── WS-F: MEAL-PREP + GROCERY LIST ─────────────────────────────────
