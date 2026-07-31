@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v305-photo-correct-and-hidden-fat'
+const CACHE = 'totry-v306-photo-save-meal-consistency'
 
 const CORE = [
   './',

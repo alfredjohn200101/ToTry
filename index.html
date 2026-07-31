@@ -4105,7 +4105,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v305';
+const APP_VERSION = 'v306';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -15592,6 +15592,9 @@ function _renderPhotoMeal(){
         meals.map(mm=>'<button onclick="_pmMeal(\''+mm[0]+'\')" style="flex:1;padding:8px 2px;border-radius:8px;border:1px solid '+(sel===mm[0]?'var(--go)':'var(--bd)')+';background:'+(sel===mm[0]?'var(--go)':'var(--bg3)')+';color:'+(sel===mm[0]?'#1a1505':'var(--tx2)')+';font-size:11px;cursor:pointer">'+mm[1]+' '+mm[2]+'</button>').join('')+
       '</div>'+
       '<button class="btn primary" onclick="_pmLog()">Add '+pm.items.length+' item'+(pm.items.length===1?'':'s')+' to log</button>'+
+      // Save the CORRECTED meal so re-logging is identical forever — the consistency Cal AI can\'t give
+      // you (it re-scans to a different number every time). Fix it once; it sticks.
+      '<button class="btn" onclick="_pmSave()" style="margin-top:6px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px">💾 Save this meal · re-log it identically</button>'+
       '<div style="font-size:11px;color:var(--tx3);text-align:center;padding:8px 0 0;line-height:1.5">Tap any item to fix <b style="color:var(--tx2)">what it is</b> or its numbers. Heads up — photo estimates tend to read <b style="color:var(--tx2)">low</b> on hidden fats, so round up if in doubt.</div>'+
     '</div>';
 }
@@ -15622,6 +15625,23 @@ function _pmCancelEdit(){
 }
 function _pmAddItem(){ if(!_photoMeal)return; _photoMeal.items.push({food:'',portion:'',cal:0,pro:0,carb:0,fat:0,mult:1}); _pmEdit(_photoMeal.items.length-1); }
 function _pmAddFat(){ if(!_photoMeal)return; _photoMeal.items.push({food:'Cooking oil / hidden fat',portion:'~1 tbsp',cal:120,pro:0,carb:0,fat:14,mult:1}); if(typeof haptic==='function') haptic('tap'); _renderPhotoMeal(); }
+// Save the corrected photo meal into My Meals (same schema as saveMealGroup) so it re-logs identically
+// forever — Cal AI re-scans to a different number each time; a saved meal is one truth, one tap.
+function _pmSave(){
+  if(!_photoMeal||!_photoMeal.items.length) return;
+  const items=_photoMeal.items.filter(it=>it && (String(it.food).trim() || it.cal));
+  if(!items.length){ if(typeof showToast==='function') showToast('Nothing to save','Name or add an item first.'); return; }
+  const R=n=>Math.round(n);
+  const name=prompt('Save this meal as (re-log it identically anytime):', _photoMeal.name||'My meal');
+  if(!name || !name.trim()) return;
+  const saved=ls('totry_saved_meals')||[];
+  saved.unshift({ id:Date.now(), name:name.trim(),
+    items: items.map(it=>{ const m=it.mult||1; return { name:it.food||'Item', brand:'', serving:(it.portion||'1 serving')+(m!==1?' ×'+m:''), qty:1, cal:R(it.cal*m), pro:R(it.pro*m), carb:R(it.carb*m), fat:R(it.fat*m), source:'AI photo' }; }) });
+  ls('totry_saved_meals', saved.slice(0,30));
+  if(typeof haptic==='function') haptic('success');
+  if(typeof showToast==='function') showToast('Meal saved ✓', name.trim()+' — one tap to re-log it, same numbers, forever.');
+  if(typeof renderSavedMeals==='function') renderSavedMeals();
+}
 function _pmLog(){
   if(!_photoMeal||!_photoMeal.items.length) return;
   const items=_photoMeal.items.filter(it=>it && (String(it.food).trim() || it.cal));
