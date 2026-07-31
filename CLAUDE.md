@@ -52,11 +52,14 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 1. **Parse-check after EVERY edit.** Extract the big inline `<script>` and run `node --check`. Also
    check div balance (count `<div` vs `</div>` outside scripts == 0). A syntax error ships a white
    screen to a real person. This has caught many bugs; never skip it.
-2. **Bump `APP_VERSION` (index.html) and `CACHE` (sw.js) together** on every release.
-3. **Quality over speed. Honest assessment** — never claim done when it isn't.
-4. **Hold the soul.** Before adding anything, ask: does this serve the person (what's next / what's
+2. **Run `npm test` after touching core math** (nutrition scaling, streaks, TDEE, photo totals, money).
+   The harness in `test/` extracts the REAL functions from index.html and asserts them — it already
+   guards the food double-scale bug. Green before you ship. Add a test when you add core math.
+3. **Bump `APP_VERSION` (index.html) and `CACHE` (sw.js) together** on every release.
+4. **Quality over speed. Honest assessment** — never claim done when it isn't.
+5. **Hold the soul.** Before adding anything, ask: does this serve the person (what's next / what's
    wrong / what can they do better)? If it only reports, it isn't done. Removing can be intention.
-5. **Child safety, medical, crisis:** keep the bridge-to-real-help and crisis paths intact and
+6. **Child safety, medical, crisis:** keep the bridge-to-real-help and crisis paths intact and
    prominent. Never weaken them.
 
 ## WHAT TO DO NEXT (in priority order)
