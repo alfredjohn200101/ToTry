@@ -2050,6 +2050,59 @@ input:focus,textarea:focus,select:focus{
 <div id="tab-nourish" class="tab">
   <div id="nut-setup-nudge"></div>
   <div id="nut-cycle-badge"></div>
+
+  <!-- ══ SECTION 1 · YOUR TARGET — the number + the TDEE calculator that sets it, right where the
+       "set my real target" nudge points. Collapsed once you've set it; the top of the loop. ══ -->
+  <details id="nut-goals-details" style="margin-bottom:14px">
+    <summary style="cursor:pointer;padding:12px;background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);font-family:DM Mono,monospace;font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.12em;list-style:none">
+      ⚙ Your target · goals & TDEE calculator
+    </summary>
+    <div class="card" style="margin-top:8px">
+      <div style="font-size:12px;color:var(--tx3);margin-bottom:8px;line-height:1.5">Already know your macros? Enter them directly. Leave carbs/fat blank if you only track calories + protein.</div>
+      <div class="row"><input type="number" id="nut-goal-cal" placeholder="Calories"><input type="number" id="nut-goal-pro" placeholder="Protein (g)"></div>
+      <div class="row"><input type="number" id="nut-goal-carb" placeholder="Carbs (g) — optional"><input type="number" id="nut-goal-fat" placeholder="Fat (g) — optional"></div>
+      <button class="btn primary" onclick="saveNutGoals()" style="margin-bottom:10px">Save my goals</button>
+      <!-- TDEE Calculator -->
+      <div style="border-top:1px solid var(--bd);padding-top:10px">
+        <div style="font-size:12px;color:var(--tx3);margin-bottom:8px">Don't know your targets? Calculate them.</div>
+        <div class="tdee-form">
+          <div class="tdee-row">
+            <div class="tdee-field"><div class="tdee-label">Age</div><input type="number" id="tdee-age" placeholder="25" min="15" max="80"></div>
+            <div class="tdee-field"><div class="tdee-label">Weight (kg)</div><input type="number" id="tdee-weight" placeholder="75" step="0.1"></div>
+            <div class="tdee-field"><div class="tdee-label">Height (cm)</div><input type="number" id="tdee-height" placeholder="175"></div>
+          </div>
+          <div class="tdee-row">
+            <div class="tdee-field">
+              <div class="tdee-label">Sex</div>
+              <select id="tdee-sex"><option value="male">Male</option><option value="female">Female</option></select>
+            </div>
+            <div class="tdee-field">
+              <div class="tdee-label">Activity</div>
+              <select id="tdee-activity">
+                <option value="1.2">Sedentary</option>
+                <option value="1.375">Light (1-3x/week)</option>
+                <option value="1.55" selected>Moderate (3-5x)</option>
+                <option value="1.725">Active (6-7x)</option>
+                <option value="1.9">Very active</option>
+              </select>
+            </div>
+            <div class="tdee-field">
+              <div class="tdee-label">Goal</div>
+              <select id="tdee-goal">
+                <option value="lose">Lose fat</option>
+                <option value="maintain" selected>Maintain</option>
+                <option value="gain">Build muscle</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn blue" onclick="calcTDEE()">Calculate my targets</button>
+        </div>
+        <div id="tdee-result" style="display:none;margin-top:10px"></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ── SECTION 2 · TODAY — your standing, then log, then diary ── -->
   <!-- ── TODAY'S PROGRESS (top — what users want to see) ── -->
   <div class="nutrition-hero">
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
@@ -2250,55 +2303,7 @@ input:focus,textarea:focus,select:focus{
     <div id="fasting-rhythm" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--bd);font-size:12px;color:var(--tx2);line-height:1.6"></div>
   </div>
 
-  <!-- ── DAILY GOALS (collapsed at bottom — set once) ── -->
-  <details id="nut-goals-details" style="margin-bottom:12px">
-    <summary style="cursor:pointer;padding:12px;background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);font-family:DM Mono,monospace;font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.12em;list-style:none">
-      ⚙ Daily goals & TDEE calculator
-    </summary>
-    <div class="card" style="margin-top:8px">
-      <div style="font-size:12px;color:var(--tx3);margin-bottom:8px;line-height:1.5">Already know your macros? Enter them directly. Leave carbs/fat blank if you only track calories + protein.</div>
-      <div class="row"><input type="number" id="nut-goal-cal" placeholder="Calories"><input type="number" id="nut-goal-pro" placeholder="Protein (g)"></div>
-      <div class="row"><input type="number" id="nut-goal-carb" placeholder="Carbs (g) — optional"><input type="number" id="nut-goal-fat" placeholder="Fat (g) — optional"></div>
-      <button class="btn primary" onclick="saveNutGoals()" style="margin-bottom:10px">Save my goals</button>
-      <!-- TDEE Calculator -->
-      <div style="border-top:1px solid var(--bd);padding-top:10px">
-        <div style="font-size:12px;color:var(--tx3);margin-bottom:8px">Don't know your targets? Calculate them.</div>
-        <div class="tdee-form">
-          <div class="tdee-row">
-            <div class="tdee-field"><div class="tdee-label">Age</div><input type="number" id="tdee-age" placeholder="25" min="15" max="80"></div>
-            <div class="tdee-field"><div class="tdee-label">Weight (kg)</div><input type="number" id="tdee-weight" placeholder="75" step="0.1"></div>
-            <div class="tdee-field"><div class="tdee-label">Height (cm)</div><input type="number" id="tdee-height" placeholder="175"></div>
-          </div>
-          <div class="tdee-row">
-            <div class="tdee-field">
-              <div class="tdee-label">Sex</div>
-              <select id="tdee-sex"><option value="male">Male</option><option value="female">Female</option></select>
-            </div>
-            <div class="tdee-field">
-              <div class="tdee-label">Activity</div>
-              <select id="tdee-activity">
-                <option value="1.2">Sedentary</option>
-                <option value="1.375">Light (1-3x/week)</option>
-                <option value="1.55" selected>Moderate (3-5x)</option>
-                <option value="1.725">Active (6-7x)</option>
-                <option value="1.9">Very active</option>
-              </select>
-            </div>
-            <div class="tdee-field">
-              <div class="tdee-label">Goal</div>
-              <select id="tdee-goal">
-                <option value="lose">Lose fat</option>
-                <option value="maintain" selected>Maintain</option>
-                <option value="gain">Build muscle</option>
-              </select>
-            </div>
-          </div>
-          <button class="btn blue" onclick="calcTDEE()">Calculate my targets</button>
-        </div>
-        <div id="tdee-result" style="display:none;margin-top:10px"></div>
-      </div>
-    </div>
-  </details>
+  <!-- (Daily goals & TDEE calculator moved up to Section 1 · Your target — set the target where it lives) -->
 
   <!-- Calorie/carb cycling — opt-in Train×Nourish feature, populated by renderCyclingSetup() -->
   <div id="cal-cycling-setup" style="margin-top:12px"></div>
@@ -4097,7 +4102,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v301';
+const APP_VERSION = 'v302';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
