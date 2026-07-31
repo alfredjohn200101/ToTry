@@ -2139,7 +2139,7 @@ input:focus,textarea:focus,select:focus{
   <div class="lbl">Log food</div>
   <div style="display:flex;gap:8px;margin-bottom:8px">
     <div style="display:flex;gap:8px;align-items:center">
-      <input type="text" id="nut-search-in" placeholder="Search food, describe a meal, or paste a barcode..." onkeydown="if(event.key==='Enter')searchFood(this.value)" style="flex:1">
+      <input type="text" id="nut-search-in" placeholder="Search food, describe a meal, or paste a barcode..." onkeydown="if(event.key==='Enter')searchFood(this.value)" oninput="nutSearchTypeahead(this.value)" autocomplete="off" style="flex:1">
     </div>
     <button class="btn primary" style="width:auto;white-space:nowrap;padding:10px 14px" onclick="searchFood(document.getElementById('nut-search-in').value)">Search</button>
   </div>
@@ -4099,7 +4099,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v297';
+const APP_VERSION = 'v298';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -15157,6 +15157,35 @@ function _makeFoodResultRow(food){
   return el;
 }
 
+// Type-ahead: MFP-style search-as-you-type. Instant local (common-food) matches on every keystroke —
+// zero network, zero wait — then a debounced full search fills in the online long-tail. This is the
+// difference between "type, hit Search, wait" and a logger that just feels alive under your fingers.
+let _nutSearchTimer=null, _nutLastQuery='';
+function nutSearchTypeahead(q){
+  q=(q||'').trim();
+  const res=document.getElementById('nut-search-results');
+  if(_nutSearchTimer){ clearTimeout(_nutSearchTimer); _nutSearchTimer=null; }
+  if(q.length<2){ if(res) res.innerHTML=''; _nutLastQuery=''; return; }
+  // Instant local matches right now (0ms) so the staple you want is tappable before you finish typing.
+  if(res && typeof searchCommonFoods==='function' && typeof _makeFoodResultRow==='function'){
+    try{
+      const local=searchCommonFoods(q);
+      if(local.length){
+        res.innerHTML='';
+        local.forEach(f=>res.appendChild(_makeFoodResultRow(f)));
+        const m=document.createElement('div'); m.className='pulsing';
+        m.style.cssText='font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-align:center;padding:8px';
+        m.textContent='finding more…';
+        res.appendChild(m);
+      }
+    }catch(_){}
+  }
+  // Barcodes go through the scan button or Enter — don't fire a lookup mid-type.
+  if(/^\d+$/.test(q.replace(/\s+/g,''))) return;
+  // Debounce the networked full search so we don't hit the food APIs on every keystroke.
+  _nutSearchTimer=setTimeout(()=>{ _nutLastQuery=q; try{ searchFood(q); }catch(_){} }, 400);
+}
+
 async function searchFood(query){
   if(!query.trim())return;
   
@@ -15191,7 +15220,11 @@ async function searchFood(query){
   const coreQuery = ql.replace(PREP_WORDS, ' ').replace(/\s+/g, ' ').trim() || ql;
   // allSettled, not all: if ONE food source is down/slow, we still show results from the others
   // instead of the whole search failing. Each rejected source just contributes nothing.
-  const _settled = await Promise.allSettled([searchUSDA(coreQuery), searchFatSecret(coreQuery), searchOFF(coreQuery), searchNutritionix(coreQuery)]);
+  // Cap each source so no single slow/cold/hanging DB stalls the whole search — this is what turned a
+  // cold-start first search into a 12-second wait. A timed-out source contributes nothing instead of
+  // blocking; the instant local matches are already on screen, so worst case is snappy, not broken.
+  const _srcTimeout = (p, ms) => Promise.race([ Promise.resolve(p).catch(()=>[]), new Promise(r=>setTimeout(()=>r([]), ms)) ]);
+  const _settled = await Promise.allSettled([searchUSDA(coreQuery), searchFatSecret(coreQuery), searchOFF(coreQuery), searchNutritionix(coreQuery)].map(p=>_srcTimeout(p, 3500)));
   const [usdaR, fsR, offR, nxR] = _settled.map(s => (s.status==='fulfilled' && Array.isArray(s.value)) ? s.value : []);
   // Personal custom foods match first — the user made these, they're most relevant
   const customMatches = (ls('totry_custom_foods')||[]).filter(f => f.name.toLowerCase().includes(ql));
