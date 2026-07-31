@@ -4105,7 +4105,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v304';
+const APP_VERSION = 'v305';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -15496,7 +15496,7 @@ async function handleMealPhoto(event){
   const base64 = dataUrl.split(',')[1];
   const mime = 'image/jpeg';
   try{
-      const prompt = 'This is a photo of a meal. Identify EACH distinct food/component SEPARATELY and estimate each one\'s nutrition for the portion actually shown — reason about portion size from visual cues (plate size, utensils, a hand). Return ONLY this JSON, no markdown: {"meal":"short overall name for the meal","items":[{"food":"one item\'s name","portion":"estimated portion, e.g. ~180g or 1 cup","cal":number,"pro":number,"carb":number,"fat":number}],"assumptions":"1 short sentence on what you assumed","confidence":"high|medium|low"}. List 1 to 8 items. If this is not food, return {"error":"no food"}.';
+      const prompt = 'This is a photo of a meal. Identify EACH distinct food/component SEPARATELY and estimate each one\'s nutrition for the portion actually shown — reason about portion size from visual cues (plate size, utensils, a hand). IMPORTANT: account for realistic cooking fats — oil, butter, dressings, sauces — even when they are not directly visible; these are the #1 reason photo calorie estimates run ~30% too low, so do NOT underestimate fat or portion size (lean toward realistic-to-generous, not optimistic). Return ONLY this JSON, no markdown: {"meal":"short overall name for the meal","items":[{"food":"one item\'s name","portion":"estimated portion, e.g. ~180g or 1 cup","cal":number,"pro":number,"carb":number,"fat":number}],"assumptions":"1 short sentence on what you assumed, incl. any hidden fat you added","confidence":"high|medium|low"}. List 1 to 8 items. If this is not food, return {"error":"no food"}.';
       const {data, error} = await Promise.race([
         sb.functions.invoke('ai-proxy', { body:{ action:'vision', prompt, image_base64:base64, image_mime:mime, max_tokens:500 } }),
         new Promise((_, rej) => setTimeout(() => rej(new Error('Timed out')), 35000))
@@ -15538,15 +15538,35 @@ function _renderPhotoMeal(){
   const tot=_pmTotals();
   const confCol = pm.confidence==='high'?'var(--gr)':pm.confidence==='low'?'var(--re)':'var(--go)';
   const sel = pm.meal || (typeof currentMealSlot==='function'?currentMealSlot():'dinner');
-  const rows = pm.items.map((it,i)=>{ const m=it.mult||1; return ''+
-    '<div style="display:flex;align-items:center;gap:6px;padding:9px 0;border-top:1px solid var(--bd)">'+
-      '<div style="flex:1;min-width:0">'+
-        '<div style="font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(it.food)+'</div>'+
+  const rows = pm.items.map((it,i)=>{
+    const m=it.mult||1;
+    if(pm._editing===i){
+      // Edit mode — the thing Cal AI won't let you do: correct WHAT it is AND the numbers.
+      return ''+
+      '<div style="padding:10px 0;border-top:1px solid var(--bd)">'+
+        '<input id="pm-e-name" value="'+esc(it.food)+'" placeholder="What is it?" autocomplete="off" style="width:100%;box-sizing:border-box;margin-bottom:6px;font-size:13px;padding:9px">'+
+        '<div style="display:flex;gap:6px;margin-bottom:6px">'+
+          '<input id="pm-e-cal" type="number" inputmode="numeric" value="'+R(it.cal*m)+'" placeholder="cal" style="flex:1.3;min-width:0;padding:9px;font-size:13px">'+
+          '<input id="pm-e-pro" type="number" inputmode="numeric" value="'+R(it.pro*m)+'" placeholder="P" style="flex:1;min-width:0;padding:9px;font-size:13px">'+
+          '<input id="pm-e-carb" type="number" inputmode="numeric" value="'+R(it.carb*m)+'" placeholder="C" style="flex:1;min-width:0;padding:9px;font-size:13px">'+
+          '<input id="pm-e-fat" type="number" inputmode="numeric" value="'+R(it.fat*m)+'" placeholder="F" style="flex:1;min-width:0;padding:9px;font-size:13px">'+
+        '</div>'+
+        '<div style="display:flex;gap:6px">'+
+          '<button onclick="_pmSaveEdit('+i+')" class="btn primary" style="flex:1;padding:9px;font-size:12px;margin:0">Save</button>'+
+          '<button onclick="_pmCancelEdit()" class="btn" style="flex:1;padding:9px;font-size:12px;margin:0;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Cancel</button>'+
+        '</div>'+
+      '</div>';
+    }
+    return ''+
+    '<div style="display:flex;align-items:center;gap:5px;padding:9px 0;border-top:1px solid var(--bd)">'+
+      '<div style="flex:1;min-width:0;cursor:pointer" onclick="_pmEdit('+i+')">'+
+        '<div style="font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(it.food||'Tap to name')+'</div>'+
         '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+R(it.cal*m)+' cal · P'+R(it.pro*m)+' C'+R(it.carb*m)+' F'+R(it.fat*m)+(it.portion?' · '+esc(it.portion):'')+(m!==1?' ×'+m:'')+'</div>'+
       '</div>'+
+      '<button onclick="_pmEdit('+i+')" aria-label="edit" title="Fix what it is / the numbers" style="width:30px;height:30px;border-radius:7px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px;cursor:pointer;flex-shrink:0">✎</button>'+
       '<button onclick="_pmAdj('+i+',-0.25)" aria-label="less" style="width:30px;height:30px;border-radius:7px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:17px;cursor:pointer;flex-shrink:0">−</button>'+
       '<button onclick="_pmAdj('+i+',0.25)" aria-label="more" style="width:30px;height:30px;border-radius:7px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:17px;cursor:pointer;flex-shrink:0">+</button>'+
-      '<button onclick="_pmRemove('+i+')" aria-label="remove" style="width:30px;height:30px;border-radius:7px;background:none;border:none;color:var(--tx3);font-size:17px;cursor:pointer;flex-shrink:0">×</button>'+
+      '<button onclick="_pmRemove('+i+')" aria-label="remove" style="width:28px;height:30px;border-radius:7px;background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer;flex-shrink:0">×</button>'+
     '</div>'; }).join('');
   const meals=[['breakfast','🌅','Breakfast'],['lunch','☀️','Lunch'],['dinner','🌙','Dinner'],['snack','🍎','Snack']];
   res.innerHTML =
@@ -15557,7 +15577,13 @@ function _renderPhotoMeal(){
       '</div>'+
       (pm.assumptions?'<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:6px">'+esc(pm.assumptions)+'</div>':'')+
       rows+
-      '<div style="display:flex;justify-content:space-between;align-items:center;border-top:2px solid var(--bd);margin-top:4px;padding-top:10px">'+
+      // Add a missed item + the hidden-fat one-tap. Photo AI runs ~30% low mainly because cooking oil,
+      // butter and dressings are invisible in a 2D image — one tap puts that back. Nobody else does this.
+      '<div style="display:flex;gap:6px;margin-top:8px">'+
+        '<button onclick="_pmAddItem()" style="flex:1;padding:8px;border-radius:8px;background:var(--bg3);border:1px dashed var(--bd);color:var(--tx2);font-size:11.5px;cursor:pointer">＋ Add an item</button>'+
+        '<button onclick="_pmAddFat()" title="Cooking oil, butter and dressings don\'t show in a photo — this is why AI apps read low" style="flex:1;padding:8px;border-radius:8px;background:var(--bg3);border:1px dashed var(--bd);color:var(--tx2);font-size:11.5px;cursor:pointer">＋ Hidden fat</button>'+
+      '</div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;border-top:2px solid var(--bd);margin-top:10px;padding-top:10px">'+
         '<div style="font-size:13px;color:var(--tx);font-weight:600">Total</div>'+
         '<div style="font-family:DM Mono,monospace;font-size:13px;color:var(--go)">'+R(tot.cal)+' cal · P'+R(tot.pro)+' C'+R(tot.carb)+' F'+R(tot.fat)+'</div>'+
       '</div>'+
@@ -15566,21 +15592,47 @@ function _renderPhotoMeal(){
         meals.map(mm=>'<button onclick="_pmMeal(\''+mm[0]+'\')" style="flex:1;padding:8px 2px;border-radius:8px;border:1px solid '+(sel===mm[0]?'var(--go)':'var(--bd)')+';background:'+(sel===mm[0]?'var(--go)':'var(--bg3)')+';color:'+(sel===mm[0]?'#1a1505':'var(--tx2)')+';font-size:11px;cursor:pointer">'+mm[1]+' '+mm[2]+'</button>').join('')+
       '</div>'+
       '<button class="btn primary" onclick="_pmLog()">Add '+pm.items.length+' item'+(pm.items.length===1?'':'s')+' to log</button>'+
-      '<div style="font-size:11px;color:var(--tx3);text-align:center;padding:8px 0 0;line-height:1.5">An estimate — tune any item with − / +, remove what isn’t there. The numbers are yours to correct.</div>'+
+      '<div style="font-size:11px;color:var(--tx3);text-align:center;padding:8px 0 0;line-height:1.5">Tap any item to fix <b style="color:var(--tx2)">what it is</b> or its numbers. Heads up — photo estimates tend to read <b style="color:var(--tx2)">low</b> on hidden fats, so round up if in doubt.</div>'+
     '</div>';
 }
 function _pmAdj(i,d){ if(!_photoMeal||!_photoMeal.items[i])return; const it=_photoMeal.items[i]; it.mult=Math.max(0.25, Math.round(((it.mult||1)+d)*4)/4); _renderPhotoMeal(); }
-function _pmRemove(i){ if(!_photoMeal)return; _photoMeal.items.splice(i,1); if(!_photoMeal.items.length){ _photoMeal=null; const res=document.getElementById('nut-search-results'); if(res) res.innerHTML='<p style="text-align:center;color:var(--tx3);font-size:13px;padding:16px">No items left — snap again or search.</p>'; return; } _renderPhotoMeal(); }
+function _pmRemove(i){ if(!_photoMeal)return; if(_photoMeal._editing===i) _photoMeal._editing=null; else if(_photoMeal._editing>i) _photoMeal._editing--; _photoMeal.items.splice(i,1); if(!_photoMeal.items.length){ _photoMeal=null; const res=document.getElementById('nut-search-results'); if(res) res.innerHTML='<p style="text-align:center;color:var(--tx3);font-size:13px;padding:16px">No items left — snap again or search.</p>'; return; } _renderPhotoMeal(); }
 function _pmMeal(m){ if(!_photoMeal)return; _photoMeal.meal=m; _renderPhotoMeal(); }
+// Correct WHAT the item is + its macros — the fix Cal AI locks you out of (it hands you one guess).
+function _pmEdit(i){ if(!_photoMeal||!_photoMeal.items[i])return; _photoMeal._editing=i; _renderPhotoMeal(); setTimeout(()=>{ const el=document.getElementById('pm-e-name'); if(el){ try{ el.focus(); if(el.value) el.select(); }catch(_){} } }, 40); }
+function _pmSaveEdit(i){
+  if(!_photoMeal||!_photoMeal.items[i])return;
+  const num=id=>{ const el=document.getElementById(id); const v=parseFloat(el&&el.value); return (isNaN(v)||v<0)?0:v; };
+  const name=((document.getElementById('pm-e-name')||{}).value||'').trim();
+  const it=_photoMeal.items[i];
+  it.food = name || it.food || 'Item';
+  it.cal=num('pm-e-cal'); it.pro=num('pm-e-pro'); it.carb=num('pm-e-carb'); it.fat=num('pm-e-fat');
+  it.mult=1; it.portion=it.portion||'as entered'; it.__edited=true;
+  _photoMeal._editing=null;
+  if(typeof haptic==='function') haptic('tap');
+  _renderPhotoMeal();
+}
+function _pmCancelEdit(){
+  if(!_photoMeal)return;
+  const idx=_photoMeal._editing; _photoMeal._editing=null;
+  // A freshly-added blank item that was cancelled shouldn't linger.
+  if(idx!=null && _photoMeal.items[idx] && !String(_photoMeal.items[idx].food).trim() && !_photoMeal.items[idx].cal){ _photoMeal.items.splice(idx,1); }
+  if(!_photoMeal.items.length){ _photoMeal=null; const res=document.getElementById('nut-search-results'); if(res) res.innerHTML=''; return; }
+  _renderPhotoMeal();
+}
+function _pmAddItem(){ if(!_photoMeal)return; _photoMeal.items.push({food:'',portion:'',cal:0,pro:0,carb:0,fat:0,mult:1}); _pmEdit(_photoMeal.items.length-1); }
+function _pmAddFat(){ if(!_photoMeal)return; _photoMeal.items.push({food:'Cooking oil / hidden fat',portion:'~1 tbsp',cal:120,pro:0,carb:0,fat:14,mult:1}); if(typeof haptic==='function') haptic('tap'); _renderPhotoMeal(); }
 function _pmLog(){
   if(!_photoMeal||!_photoMeal.items.length) return;
+  const items=_photoMeal.items.filter(it=>it && (String(it.food).trim() || it.cal));
+  if(!items.length){ if(typeof showToast==='function') showToast('Nothing to log','Name or add an item first.'); return; }
   const today=new Date().toLocaleDateString('en-AU');
   const log=ls('totry_nutlog')||{}; if(!log[today]) log[today]=[];
   const meal=_photoMeal.meal||(typeof currentMealSlot==='function'?currentMealSlot():'dinner');
   const R=n=>Math.round(n);
-  _photoMeal.items.forEach(it=>{ const m=it.mult||1; log[today].push({ id:Date.now()+Math.floor(Math.random()*100000), name:it.food, brand:'', serving:(it.portion||'1 serving')+(m!==1?' ×'+m:''), qty:1, cal:R(it.cal*m), pro:R(it.pro*m), carb:R(it.carb*m), fat:R(it.fat*m), meal:meal, source:'AI photo', ts:new Date().toISOString() }); });
+  items.forEach(it=>{ const m=it.mult||1; log[today].push({ id:Date.now()+Math.floor(Math.random()*100000), name:it.food||'Item', brand:'', serving:(it.portion||'1 serving')+(m!==1?' ×'+m:''), qty:1, cal:R(it.cal*m), pro:R(it.pro*m), carb:R(it.carb*m), fat:R(it.fat*m), meal:meal, source:'AI photo', ts:new Date().toISOString() }); });
   ls('totry_nutlog', log);
-  const n=_photoMeal.items.length; _photoMeal=null;
+  const n=items.length; _photoMeal=null;
   if(typeof haptic==='function') haptic('success');
   if(typeof showToast==='function') showToast('Logged ✓', n+' item'+(n===1?'':'s')+' added to '+meal);
   const res=document.getElementById('nut-search-results'); if(res) res.innerHTML='';
