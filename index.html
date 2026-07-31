@@ -2105,6 +2105,38 @@ input:focus,textarea:focus,select:focus{
     <div id="micro-panel" style="display:none;margin-top:12px"></div>
   </div>
 
+  <!-- ══ SECTION 2 · TODAY (continued): LOG FOOD right under the ring — log first, THEN see your day
+       (MFP pattern). This used to sit below the diary + net-calories; the search box was buried. ══ -->
+  <div class="lbl">Log food</div>
+  <div style="display:flex;gap:8px;margin-bottom:8px">
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="text" id="nut-search-in" placeholder="Search food, describe a meal, or paste a barcode..." onkeydown="if(event.key==='Enter')searchFood(this.value)" oninput="nutSearchTypeahead(this.value)" autocomplete="off" style="flex:1">
+    </div>
+    <button class="btn primary" style="width:auto;white-space:nowrap;padding:10px 14px" onclick="searchFood(document.getElementById('nut-search-in').value)">Search</button>
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+    <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="document.getElementById('meal-photo-input').click()">🍽 Snap a meal</button>
+    <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openBarcodeScanner()">📷 Scan barcode</button>
+    <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openRecipeBuilder()">🍳 My recipes</button>
+    <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openRepeatDay()">↻ Repeat a day</button>
+  </div>
+  <input type="file" id="meal-photo-input" accept="image/*" capture="environment" style="display:none" onchange="handleMealPhoto(event)">
+  <input type="file" id="food-csv-input" accept=".csv" style="display:none" onchange="importFoodCSV(event)">
+  <div id="nut-search-results" style="margin-bottom:12px"></div>
+  <div id="nut-recent-foods" style="margin-bottom:12px"></div>
+  <div id="nut-saved-meals" style="margin-bottom:12px"></div>
+  <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap">
+    <button class="qb" onclick="searchFood('chicken breast')">Chicken breast</button>
+    <button class="qb" onclick="searchFood('oats')">Oats</button>
+    <button class="qb" onclick="searchFood('rice')">Rice</button>
+    <button class="qb" onclick="searchFood('eggs')">Eggs</button>
+    <button class="qb" onclick="searchFood('banana')">Banana</button>
+    <button class="qb" onclick="searchFood('greek yogurt')">Greek yogurt</button>
+    <button class="qb" onclick="searchFood('protein shake')">Protein shake</button>
+  </div>
+  <!-- Today's diary: what you've logged, right under the log box -->
+  <div class="card" style="margin-bottom:12px"><div id="nut-log-list"><p style="font-size:13px;color:var(--tx3);text-align:center;padding:8px 0">No food logged yet today</p></div></div>
+
   <!-- Nourishment quality score — beyond calories: how nourishing was today, populated by renderNourishmentScore() -->
   <div id="nourishment-score" style="margin-top:14px"></div>
 
@@ -2124,9 +2156,6 @@ input:focus,textarea:focus,select:focus{
     <div id="nut-rings-today" style="margin-top:10px;display:none"></div>
   </div>
 
-  <!-- Diary first (MFP): what you ate today IS the page -->
-  <div class="card" style="margin-bottom:12px"><div id="nut-log-list"><p style="font-size:13px;color:var(--tx3);text-align:center;padding:8px 0">No food logged yet today</p></div></div>
-
   <!-- Adaptive nutrition — weekly suggestion from your weight trend vs goal (you approve, never auto). -->
   <div id="nut-adaptive-card" style="display:none;margin-bottom:12px"></div>
   <div id="nut-foodgroups"></div>
@@ -2135,38 +2164,7 @@ input:focus,textarea:focus,select:focus{
        below, which is strictly better: real training-timed meals, a priced shopping list, budget,
        and dislikes. One meal planner, not two.) -->
 
-  <!-- ── LOG FOOD (primary daily action) ── -->
-  <div class="lbl">Log food</div>
-  <div style="display:flex;gap:8px;margin-bottom:8px">
-    <div style="display:flex;gap:8px;align-items:center">
-      <input type="text" id="nut-search-in" placeholder="Search food, describe a meal, or paste a barcode..." onkeydown="if(event.key==='Enter')searchFood(this.value)" oninput="nutSearchTypeahead(this.value)" autocomplete="off" style="flex:1">
-    </div>
-    <button class="btn primary" style="width:auto;white-space:nowrap;padding:10px 14px" onclick="searchFood(document.getElementById('nut-search-in').value)">Search</button>
-  </div>
-  <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
-    <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="document.getElementById('meal-photo-input').click()">🍽 Snap a meal</button>
-    <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openBarcodeScanner()">📷 Scan barcode</button>
-    <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openRecipeBuilder()">🍳 My recipes</button>
-    <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openRepeatDay()">↻ Repeat a day</button>
-  </div>
-  <input type="file" id="meal-photo-input" accept="image/*" capture="environment" style="display:none" onchange="handleMealPhoto(event)">
-  <input type="file" id="food-csv-input" accept=".csv" style="display:none" onchange="importFoodCSV(event)">
-  <div id="nut-search-results" style="margin-bottom:12px"></div>
-  <!-- Recent & frequent foods sit RIGHT under search (MFP's pattern) — your repeat foods,
-       one tap to log, before you ever type. This is 90% of real logging. -->
-  <div id="nut-recent-foods" style="margin-bottom:12px"></div>
-  <!-- Saved meals (MFP "my usual ___") — grouped foods logged in one tap -->
-  <div id="nut-saved-meals" style="margin-bottom:12px"></div>
-  <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap">
-    <button class="qb" onclick="searchFood('chicken breast')">Chicken breast</button>
-    <button class="qb" onclick="searchFood('oats')">Oats</button>
-    <button class="qb" onclick="searchFood('rice')">Rice</button>
-    <button class="qb" onclick="searchFood('eggs')">Eggs</button>
-    <button class="qb" onclick="searchFood('banana')">Banana</button>
-    <button class="qb" onclick="searchFood('greek yogurt')">Greek yogurt</button>
-    <button class="qb" onclick="searchFood('protein shake')">Protein shake</button>
-  </div>
-  <!-- ── FUEL PLAN — real meals + priced shopping, built around training, goal & budget ── -->
+  <!-- ── SECTION 3 · THIS WEEK — FUEL PLAN: real meals + priced shopping to HIT your target ── -->
   <div class="card" id="fuel-plan-card" style="margin-bottom:12px;background:linear-gradient(135deg,var(--go-bg),transparent);border:1px solid var(--go-bd)">
     <div style="display:flex;align-items:flex-start;gap:11px">
       <div style="font-size:22px;line-height:1.1">🍽️</div>
@@ -4099,7 +4097,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v300';
+const APP_VERSION = 'v301';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
