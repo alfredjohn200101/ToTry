@@ -2102,6 +2102,10 @@ input:focus,textarea:focus,select:focus{
     </div>
   </details>
 
+  <!-- Adaptive: the weekly "adjust your target" suggestion from your weight trend vs goal — surfaced
+       WITH the target (Learn → Target). Hidden until there's enough data; you approve, never auto. -->
+  <div id="nut-adaptive-card" style="display:none;margin-bottom:14px"></div>
+
   <!-- ── SECTION 2 · TODAY — your standing, then log, then diary ── -->
   <!-- ── TODAY'S PROGRESS (top — what users want to see) ── -->
   <div class="nutrition-hero">
@@ -2225,8 +2229,6 @@ input:focus,textarea:focus,select:focus{
     <div id="nut-rings-today" style="margin-top:10px;display:none"></div>
   </div>
 
-  <!-- Adaptive nutrition — weekly suggestion from your weight trend vs goal (you approve, never auto). -->
-  <div id="nut-adaptive-card" style="display:none;margin-bottom:12px"></div>
   <div id="nut-foodgroups"></div>
 
   <!-- (Fuel plan moved up to Section 3 · This week, right after Today) -->
@@ -4103,7 +4105,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v303';
+const APP_VERSION = 'v304';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
