@@ -2137,6 +2137,9 @@ input:focus,textarea:focus,select:focus{
       <div class="goal-bar-wrap"><div class="goal-bar ok" id="nut-cal-bar" style="width:0%"></div></div>
       <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);margin-bottom:2px;margin-top:6px"><span>Protein</span><span id="nut-pro-goal-lbl">0 / 170g</span></div>
       <div class="goal-bar-wrap"><div class="goal-bar ok" id="nut-pro-bar" style="width:0%"></div></div>
+      <!-- Coaching nudge: the diary should COACH toward the target, not just count ('counsel, not
+           tracking') — actionable, time-of-day aware, grace-first. Populated by renderNutritionLog. -->
+      <div id="nut-nudge" style="display:none"></div>
     </div>
 
     <!-- Calorie-by-meal split (MFP's glanceable insight): where today's calories came from -->
@@ -4107,7 +4110,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v307';
+const APP_VERSION = 'v308';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -17126,6 +17129,32 @@ function nourishmentScore(totals, goals){
   else { tier='Light on nourishment'; col='var(--go)'; }
   return { score, tier, col, tip, microsHit, microsTotal:MICROS.length };
 }
+// The diary that COACHES, not just counts — a single actionable, time-of-day-aware, grace-first line.
+// Protein-first (it's what this audience is chasing); over-cal is met with grace; under-cal warns
+// against undereating (anti-ED); a hit target is affirmed. No mainstream tracker turns the log into
+// counsel like this. Returns {tone,text} or '' (nothing logged yet / nothing worth saying).
+function _nutrientNudge(totals, goals){
+  try{
+    if(!goals || !goals.cal || !totals || !(totals.cal>0)) return '';
+    const h=new Date().getHours();
+    const calLeft=Math.round((goals.cal||0)-(totals.cal||0));
+    const proLeft=Math.round((goals.pro||0)-(totals.pro||0));
+    const proPct=goals.pro?(totals.pro/goals.pro):1;
+    const dayLeft = h<11?'most of the day':h<15?'lunch and dinner':h<19?'dinner':h<22?'a snack':'the day almost done';
+    // Over on calories — grace, never shame.
+    if(totals.cal > goals.cal*1.1){ return {tone:'over', text:'About '+Math.abs(calLeft)+' cal over today — no drama, tomorrow resets. Still hungry? Lean protein and veg.'}; }
+    // Protein short with eating time left — the highest-value nudge, with a concrete fix.
+    if(proLeft>=25 && h<22){
+      const fix = proLeft>=45?'a chicken breast or a shake':proLeft>=30?'Greek yogurt or a shake':'a couple of eggs';
+      return {tone:'protein', text:proLeft+'g short on protein with '+dayLeft+' to go — '+fix+' gets you there.'};
+    }
+    // Comfortably under with the day nearly done — warn against undereating.
+    if(calLeft>350 && h>=19){ return {tone:'under', text:calLeft+' cal still to go — room for a proper dinner. Don’t undereat; fuel the work.'}; }
+    // Protein handled — affirm it (the day is working).
+    if(proPct>=0.95 && h>=15){ return {tone:'good', text:'Protein’s handled ('+Math.round(totals.pro)+'g). That’s the day working.'}; }
+    return '';
+  }catch(_){ return ''; }
+}
 function renderNourishmentScore(totals, goals){
   const box=document.getElementById('nourishment-score'); if(!box) return;
   const r=(typeof nourishmentScore==='function')?nourishmentScore(totals, goals):null;
@@ -17189,6 +17218,7 @@ function renderNutritionLog(){
     return a;
   }, {cal:0, pro:0, carb:0, fat:0});
   try{ if(typeof renderNourishmentScore==='function') renderNourishmentScore(totals, goals); }catch(_){}
+  try{ const _nEl=document.getElementById('nut-nudge'); if(_nEl){ const _nd=(typeof _nutrientNudge==='function')?_nutrientNudge(totals,goals):''; if(_nd&&_nd.text){ const _c=_nd.tone==='over'?'var(--re)':_nd.tone==='good'?'var(--gr)':'var(--go)'; _nEl.style.display='block'; _nEl.innerHTML='<div style="font-size:12px;color:'+_c+';line-height:1.55;padding:9px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;margin-top:10px">'+_nd.text+'</div>'; } else { _nEl.style.display='none'; _nEl.innerHTML=''; } } }catch(_){}
   
   // Net calories: consumed − burned (from workouts, screenshots, Strava)
   const burns = ls('totry_calorie_burns') || {};
