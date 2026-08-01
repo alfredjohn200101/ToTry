@@ -2177,6 +2177,8 @@ input:focus,textarea:focus,select:focus{
     <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openRecipeBuilder()">🍳 My recipes</button>
     <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openRepeatDay()">↻ Repeat a day</button>
   </div>
+  <!-- The one thing no calorie app does: meet WHY you're eating, not just what. Opt-in, grace-first. -->
+  <button onclick="openHungerCheck()" style="width:100%;margin-bottom:10px;padding:10px;border-radius:8px;background:transparent;border:1px dashed var(--go-bd);color:var(--go);font-size:12px;cursor:pointer">🤔 Hungry, or something else? — a 5-second check</button>
   <input type="file" id="meal-photo-input" accept="image/*" capture="environment" style="display:none" onchange="handleMealPhoto(event)">
   <input type="file" id="food-csv-input" accept=".csv" style="display:none" onchange="importFoodCSV(event)">
   <div id="nut-search-results" style="margin-bottom:12px"></div>
@@ -4105,7 +4107,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v306';
+const APP_VERSION = 'v307';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -15658,6 +15660,69 @@ function _pmLog(){
   const res=document.getElementById('nut-search-results'); if(res) res.innerHTML='';
   const si=document.getElementById('nut-search-in'); if(si) si.value='';
   if(typeof renderNutritionLog==='function') renderNutritionLog();
+}
+
+// ── WHY AM I EATING? — the root cause no mainstream calorie app touches ──────────────────────────
+// Research (UCL 2025 + emotional-eating literature): every big tracker counts food but NEVER asks why
+// you're eating, and their streaks/targets actively harm mental health. Emotional eating — stress,
+// boredom, tiredness, not hunger — is the common root they all ignore. We already have the emotional
+// engine (Feeling Door, breath, the Fight), so a calorie log can meet the FEELING, with grace, never
+// shame, and never block the eating. Opt-in, never nags. Tags the pattern into self-knowledge.
+const _HUNGER_REASONS = [
+  { id:'hungry',   emoji:'😋', label:'Actually hungry' },
+  { id:'stressed', emoji:'😤', label:'Stressed' },
+  { id:'bored',    emoji:'😑', label:'Bored' },
+  { id:'tired',    emoji:'😴', label:'Tired' },
+  { id:'craving',  emoji:'🌊', label:'A craving' },
+  { id:'sad',      emoji:'🌧️', label:'Low / down' },
+  { id:'social',   emoji:'🥂', label:'Social / joy' },
+  { id:'habit',    emoji:'💭', label:'Just habit' }
+];
+function openHungerCheck(){
+  document.querySelectorAll('.modal-bg.open').forEach(x=>x.remove());
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="text-align:center;max-height:90vh;overflow-y:auto">'+
+    '<div class="modal-handle"></div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.25;margin-bottom:6px">Hungry — or something else?</div>'+
+    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">No wrong answer, no judgement. One honest second before you eat — the thing a calorie count can never tell you.</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+      _HUNGER_REASONS.map(r=>'<button onclick="_hungerPick(\''+r.id+'\')" style="display:flex;align-items:center;gap:9px;padding:13px;border-radius:11px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx);font-size:12.5px;cursor:pointer;text-align:left"><span style="font-size:19px;flex-shrink:0">'+r.emoji+'</span><span>'+r.label+'</span></button>').join('')+
+    '</div>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:12px">Skip</button>'+
+  '</div>';
+  document.body.appendChild(m); if(typeof haptic==='function') haptic('tap');
+}
+function _hungerCount7(id){ try{ const wk=Date.now()-7*86400000; return (ls('totry_hunger_log')||[]).filter(e=>e && e.id===id && e.ts>=wk).length; }catch(_){ return 0; } }
+function _hungerPick(id){
+  try{ const log=ls('totry_hunger_log')||[]; log.unshift({id, ts:Date.now()}); ls('totry_hunger_log', log.slice(0,300)); if(typeof logEvent==='function') logEvent('hunger_check',{r:id}); }catch(_){}
+  document.querySelectorAll('.modal-bg.open').forEach(x=>x.remove());
+  if(id==='hungry'){ if(typeof showToast==='function') showToast('Good','Real hunger — fuel up well.'); return; }
+  if(id==='social'){ if(typeof showToast==='function') showToast('Enjoy it','Eating for joy, together, is part of a good life — be present.'); return; }
+  const R={
+    stressed:{t:'Stress, not hunger.', b:'Food quiets it for a minute — then the stress is still there. You’re allowed to eat. But a slow breath might be what you actually need.', move:'breath'},
+    bored:{t:'Boredom, not hunger.', b:'The mouth just wants something to do. Water or a 2-minute move often scratches the same itch — no shame if you eat anyway.', move:'act'},
+    tired:{t:'That’s tiredness.', b:'Low energy reads as hunger, and tired brains grab quick sugar. Rest or water first if you can — be gentle, you’re running low.', move:null},
+    craving:{t:'A craving — a wave.', b:'It crests and passes whether you feed it or not. Want to ride it out first? Either way, no shame.', move:'feel'},
+    sad:{t:'Eating the feeling.', b:'Comfort food is real comfort — for a moment. You’re allowed it. But if it’s heavy, a person helps more than a plate.', move:'feel'},
+    habit:{t:'Habit, not hunger.', b:'Same time, same reach, not really hungry. Just naming it loosens its grip. Eat if you want — you’re awake to it now.', move:null}
+  };
+  const r=R[id]||R.habit;
+  const n=_hungerCount7(id);
+  const patternLine = n>=3 ? '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.04em;margin-top:14px;line-height:1.5">That’s '+(n+1)+' times this week you’ve eaten for this, not hunger. Worth knowing — gently.</div>' : '';
+  let moveBtn='';
+  if(r.move==='feel') moveBtn='<button class="btn primary" onclick="closeModal(this);openFeelingDoor()" style="margin-bottom:8px">Sit with it first</button>';
+  else if(r.move==='breath') moveBtn='<button class="btn primary" onclick="closeModal(this);openBreath(\'settle\',{reason:\'eating\'})" style="margin-bottom:8px">One slow breath first</button>';
+  else if(r.move==='act') moveBtn='<button class="btn primary" onclick="closeModal(this)" style="margin-bottom:8px">Water / a 2-min move first</button>';
+  const mm=document.createElement('div'); mm.className='modal-bg open'; mm.style.alignItems='center';
+  mm.innerHTML='<div class="modal" style="text-align:center">'+
+    '<div class="modal-handle"></div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);line-height:1.25;margin-bottom:10px">'+r.t+'</div>'+
+    '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:18px">'+r.b+'</div>'+
+    moveBtn+
+    '<button class="btn" onclick="closeModal(this)" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px">Eat anyway — no shame</button>'+
+    patternLine+
+  '</div>';
+  document.body.appendChild(mm); if(typeof haptic==='function') haptic('tap');
 }
 
 // ── WS-F: MEAL-PREP + GROCERY LIST ─────────────────────────────────
