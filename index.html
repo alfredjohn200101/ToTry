@@ -4111,7 +4111,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v309';
+const APP_VERSION = 'v310';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -21561,7 +21561,7 @@ function renderReadinessCard(){
         '<div style="color:var(--tx3);font-size:16px;flex-shrink:0">›</div>'+
       '</div>'+
       '<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-top:10px">'+r.advice+'</div>'+
-      '<div style="font-size:10px;color:var(--tx3);margin-top:8px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.08em">Tap for the full picture</div>'+
+      '<div style="font-size:10px;color:var(--tx3);margin-top:8px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.08em">From your check-ins · tap for the full picture</div>'+
     '</div>';
 }
 
@@ -21719,7 +21719,7 @@ async function explainReadiness(){
   const r = (typeof computeReadiness==='function') ? computeReadiness() : null;
   const m = document.createElement('div');
   m.className = 'modal-bg open';
-  m.innerHTML = '<div class="modal"><div class="modal-handle"></div><div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:10px">Your readiness</div><div id="readiness-explain-body" style="font-size:13px;color:var(--tx2);line-height:1.7">Thinking...</div><button class="btn" onclick="this.closest(\'.modal-bg\').remove()" style="margin-top:14px">Close</button></div>';
+  m.innerHTML = '<div class="modal"><div class="modal-handle"></div><div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:10px">Your readiness</div><div id="readiness-explain-body" style="font-size:13px;color:var(--tx2);line-height:1.7">Thinking...</div><div style="font-size:11px;color:var(--tx3);line-height:1.55;margin-top:12px;padding-top:10px;border-top:1px solid var(--bd)">This reads your own check-ins — sleep, stress, energy — plus your recent training load. An honest daily gauge, not a wearable\'s HRV. Connect Apple Health / Health Connect and it sharpens.</div><button class="btn" onclick="this.closest(\'.modal-bg\').remove()" style="margin-top:14px">Close</button></div>';
   document.body.appendChild(m);
   const body = document.getElementById('readiness-explain-body');
   if(!r){ if(body) body.innerHTML = 'Log a check-in (sleep, stress, energy) and a workout or two, and I\u2019ll be able to read your recovery.'; return; }
