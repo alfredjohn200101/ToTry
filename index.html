@@ -2167,6 +2167,8 @@ input:focus,textarea:focus,select:focus{
 
   <!-- ══ SECTION 2 · TODAY (continued): LOG FOOD right under the ring — log first, THEN see your day
        (MFP pattern). This used to sit below the diary + net-calories; the search box was buried. ══ -->
+  <!-- Proactive emotional-eating check — appears in the late-snack window for people with the pattern. -->
+  <div id="nut-hunger-nudge"></div>
   <div class="lbl">Log food</div>
   <div style="display:flex;gap:8px;margin-bottom:8px">
     <div style="display:flex;gap:8px;align-items:center">
@@ -4111,7 +4113,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v311';
+const APP_VERSION = 'v312';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -15693,6 +15695,29 @@ const _HUNGER_REASONS = [
   { id:'social',   emoji:'🥂', label:'Social / joy' },
   { id:'habit',    emoji:'💭', label:'Just habit' }
 ];
+// PROACTIVE — meet the pattern BEFORE the snack, not only when they tap. Late-evening window (when
+// emotional snacking peaks), only for people who've actually shown the pattern (2+ non-hunger checks),
+// once per day, dismissible. This is the emotional-eating moat made present — never a nag.
+function _emotionalEatCount(){ try{ return (ls('totry_hunger_log')||[]).filter(e=>e && e.id && e.id!=='hungry' && e.id!=='social').length; }catch(_){ return 0; } }
+function _hungerCheckedToday(){ try{ const t=new Date().toLocaleDateString('en-AU'); return (ls('totry_hunger_log')||[]).some(e=>e && e.ts && new Date(e.ts).toLocaleDateString('en-AU')===t); }catch(_){ return false; } }
+function _hungerNudgeGo(){ try{ ls('totry_hunger_nudge_day', new Date().toLocaleDateString('en-AU')); }catch(_){} openHungerCheck(); }
+function _hungerNudgeDismiss(){ try{ ls('totry_hunger_nudge_day', new Date().toLocaleDateString('en-AU')); }catch(_){} const el=document.getElementById('nut-hunger-nudge'); if(el){ el.style.display='none'; el.innerHTML=''; } }
+function renderHungerNudge(){
+  const el=document.getElementById('nut-hunger-nudge'); if(!el) return;
+  el.style.display='none'; el.innerHTML='';
+  const h=new Date().getHours(); const today=new Date().toLocaleDateString('en-AU');
+  if(h<20) return;                                  // late-snack window only
+  if(_emotionalEatCount()<2) return;                // only once the pattern is real
+  if(_hungerCheckedToday()) return;                 // already checked in today
+  if(ls('totry_hunger_nudge_day')===today) return;  // once per day, and remembers a dismiss
+  el.style.display='block';
+  el.innerHTML='<div style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--go-bd);border-radius:10px;padding:11px 13px;margin-bottom:12px">'+
+    '<div style="font-size:20px;flex-shrink:0">🌙</div>'+
+    '<div style="flex:1;font-size:12.5px;color:var(--tx2);line-height:1.5">Late-snack hour. Before you reach for it — hungry, or something else?</div>'+
+    '<button onclick="_hungerNudgeGo()" style="flex-shrink:0;background:var(--go);border:none;color:#1a1505;border-radius:8px;padding:7px 11px;font-size:12px;font-weight:600;cursor:pointer">Check in</button>'+
+    '<button onclick="_hungerNudgeDismiss()" aria-label="dismiss" style="flex-shrink:0;background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer;padding:2px;line-height:1">×</button>'+
+  '</div>';
+}
 function openHungerCheck(){
   document.querySelectorAll('.modal-bg.open').forEach(x=>x.remove());
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
@@ -17248,6 +17273,7 @@ function renderNutritionLog(){
     return a;
   }, {cal:0, pro:0, carb:0, fat:0});
   try{ if(typeof renderNourishmentScore==='function') renderNourishmentScore(totals, goals); }catch(_){}
+  try{ if(typeof renderHungerNudge==='function') renderHungerNudge(); }catch(_){}
   try{ const _nEl=document.getElementById('nut-nudge'); if(_nEl){ const _nd=(typeof _nutrientNudge==='function')?_nutrientNudge(totals,goals):''; if(_nd&&_nd.text){ const _c=_nd.tone==='over'?'var(--re)':_nd.tone==='good'?'var(--gr)':'var(--go)'; _nEl.style.display='block'; _nEl.innerHTML='<div style="font-size:12px;color:'+_c+';line-height:1.55;padding:9px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;margin-top:10px">'+_nd.text+'</div>'; } else { _nEl.style.display='none'; _nEl.innerHTML=''; } } }catch(_){}
   
   // Net calories: consumed − burned (from workouts, screenshots, Strava)

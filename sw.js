@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v311-strava-tester-glensaju'
+const CACHE = 'totry-v312-proactive-hunger-check'
 
 const CORE = [
   './',
