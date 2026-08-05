@@ -3908,6 +3908,7 @@ Amen.</div></div>
       <input type="number" id="sm-qty" value="1" min="0.1" step="0.1" style="width:80px;flex:none" oninput="updateServingPreview()" onchange="updateServingPreview()">
       <span style="font-size:13px;color:var(--tx2)" id="sm-qty-unit">servings</span>
     </div>
+    <button type="button" onclick="openPortionGuide()" style="width:100%;margin-bottom:12px;padding:8px;border-radius:8px;background:transparent;border:1px dashed var(--bd);color:var(--tx3);font-size:11.5px;cursor:pointer">🖐 Not sure how much? Estimate by hand →</button>
     <div class="macro-grid" style="margin-bottom:8px">
       <div class="macro-met"><div class="mm-l">Cal</div><div class="mm-v cal" id="sm-cal">0</div></div>
       <div class="macro-met"><div class="mm-l">Protein</div><div class="mm-v pro" id="sm-pro">0g</div></div>
@@ -4110,7 +4111,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v308';
+const APP_VERSION = 'v309';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -15150,13 +15151,24 @@ function searchCommonFoods(query, limit){
 }
 // One food-result row (tap to adjust portion, + to log instantly). Shared by the instant local pass
 // and the full network render so they look and behave identically.
+// Data-trust signal — the #1 long-term trust-killer across trackers is not knowing which numbers are
+// real vs junk. A verified food DB gets a green ✓; an AI estimate gets a ≈ (with an invite to correct);
+// community/other stays neutral. At-a-glance trust, consistently — MFP's green check but not flaky.
+function _foodVerified(src){ return /USDA|Open Food Facts|FatSecret|Nutritionix|Common/i.test(src||''); }
+function _foodSrcBadge(src){
+  if(!src) return '';
+  const s=String(src).replace(/</g,'&lt;');
+  if(_foodVerified(src)) return '<span style="color:var(--gr)" title="From a verified food database">✓ '+s+'</span>';
+  if(/\bAI\b/i.test(src)) return '<span style="color:var(--go)" title="AI estimate — tap to check or correct">≈ '+s+'</span>';
+  return '<span style="color:var(--tx3)">'+s+'</span>';
+}
 function _makeFoodResultRow(food){
   const el=document.createElement('div'); el.className='food-result';
   el.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:8px';
   const tap=document.createElement('div');
   tap.style.cssText='flex:1;cursor:pointer;min-width:0';
   tap.innerHTML='<div class="fr-name">'+food.name+'</div>'+(food.brand?'<div class="fr-brand">'+food.brand+'</div>':'')+
-    '<div class="fr-macros"><span class="fr-cal">'+food.cal+' cal</span><span>P: '+food.pro+'g</span><span>C: '+food.carb+'g</span><span>F: '+food.fat+'g</span><span style="color:var(--tx3)">'+food.source+'</span></div>';
+    '<div class="fr-macros"><span class="fr-cal">'+food.cal+' cal</span><span>P: '+food.pro+'g</span><span>C: '+food.carb+'g</span><span>F: '+food.fat+'g</span>'+_foodSrcBadge(food.source)+'</div>';
   tap.onclick=()=>openServingModal(food);
   el.appendChild(tap);
   const plus=document.createElement('button');
@@ -16610,12 +16622,30 @@ function saveFoodFix(){
   if(typeof haptic==='function') haptic('success');
 }
 
+// Portion by hand — the visual reference that fixes the universal weakest link (portion accuracy).
+// No scale needed; your hand travels with you. Standard dietitian references. Rough beats not logging.
+function openPortionGuide(){
+  const rows=[
+    ['✋','Palm','≈ 1 serving of protein — ~100–120g of meat/fish, ~25–30g protein'],
+    ['✊','Fist','≈ 1 cup — a serving of veg, or of cooked carbs (rice, pasta, potato)'],
+    ['🤲','Cupped hand','≈ ½ cup — a serving of nuts, or dry oats/cereal'],
+    ['👍','Thumb','≈ 1 tbsp — a serving of fats (oil, butter, nut butter, cheese)']
+  ];
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:4px">Estimate by hand</div>'+
+    '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:14px">No scale? Your hand is always with you. A rough log beats no log.</div>'+
+    rows.map(r=>'<div style="display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-top:1px solid var(--bd)"><div style="font-size:26px;flex-shrink:0;width:34px;text-align:center">'+r[0]+'</div><div><div style="font-size:14px;color:var(--tx);font-weight:500">'+r[1]+'</div><div style="font-size:12px;color:var(--tx3);line-height:1.5">'+r[2]+'</div></div></div>').join('')+
+    '<button class="btn" onclick="closeModal(this)" style="margin-top:14px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Got it</button>'+
+  '</div>';
+  document.body.appendChild(m); if(typeof haptic==='function') haptic('tap');
+}
 function openServingModal(food){
   currentFood=food;
   try{ applyFoodOverride(food); }catch(_){ }
   window.__editingEntry = null;
   document.getElementById('sm-food-name').textContent=food.name;
-  document.getElementById('sm-food-brand').innerHTML=(food.brand||food.source||'')+(food.__corrected?' <span style="color:var(--gr)">· your numbers ✓</span>':'');
+  document.getElementById('sm-food-brand').innerHTML=(food.brand?String(food.brand).replace(/</g,'&lt;'):(food.source&&typeof _foodSrcBadge==='function'?_foodSrcBadge(food.source):''))+(food.__corrected?' <span style="color:var(--gr)">· your numbers ✓</span>':'');
   // Per-100 foods (barcodes): values are per 100g/ml. Build sensible servings WITHOUT discarding
   // a real serving_size the product database already provided. We synthesize gram/ml options and
   // tag each with gramsEquiv so micros scale correctly. Default is one serving — never qty=100.
