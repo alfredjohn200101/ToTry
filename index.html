@@ -1141,7 +1141,7 @@ input:focus,textarea:focus,select:focus{
       </div>
       <div style="display:flex;gap:12px;align-items:flex-start">
         <div style="font-size:20px;flex-shrink:0;width:28px;text-align:center">🙏</div>
-        <div><div style="font-size:14px;color:var(--tx);font-weight:500">Your spirit</div><div style="font-size:12px;color:var(--tx3);line-height:1.5">Morning intention, scripture, evening reflection — the root beneath it all.</div></div>
+        <div><div style="font-size:14px;color:var(--tx);font-weight:500">Your spirit</div><div style="font-size:12px;color:var(--tx3);line-height:1.5">Morning intention, a daily reading, evening reflection — the root beneath it all.</div></div>
       </div>
       <div style="display:flex;gap:12px;align-items:flex-start">
         <div style="font-size:20px;flex-shrink:0;width:28px;text-align:center">💬</div>
@@ -2046,7 +2046,7 @@ input:focus,textarea:focus,select:focus{
   <!-- CRAVING LOG PANEL -->
   <div id="fight-panel-craving" style="display:none">
     <p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:6px">Log a battle that already happened &mdash; whether you won or lost.</p>
-    <p style="font-size:11px;color:var(--tx3);line-height:1.6;margin-bottom:14px;font-style:italic">For an urge happening RIGHT NOW &mdash; go to Fight and tap your vice. That opens the live intervention with breathing, scripture and your win/loss button.</p>
+    <p style="font-size:11px;color:var(--tx3);line-height:1.6;margin-bottom:14px;font-style:italic">For an urge happening RIGHT NOW &mdash; go to Fight and tap your vice. That opens the live intervention with breathing, a grounding word, and your win/loss button.</p>
     <div class="lbl">Vice</div>
     <select id="cl-vice-sel" style="margin-bottom:12px"></select>
     <div class="lbl">Intensity (1 = mild, 10 = overwhelming)</div>
@@ -2946,7 +2946,7 @@ input:focus,textarea:focus,select:focus{
         <input type="range" min="1" max="10" value="5" id="wk-energy" oninput="document.getElementById(&apos;wk-energy-val&apos;).textContent=this.value+&apos;/10&apos;" style="width:100%">
       </div>
       <div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;color:var(--tx2)">Faith / connection with God</span><span id="wk-faith-val" style="font-family:DM Mono,monospace;font-size:11px;color:var(--go)">&mdash;</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span id="wk-faith-label" style="font-size:12px;color:var(--tx2)">Faith / connection with God</span><span id="wk-faith-val" style="font-family:DM Mono,monospace;font-size:11px;color:var(--go)">&mdash;</span></div>
         <input type="range" min="1" max="10" value="5" id="wk-faith" oninput="document.getElementById(&apos;wk-faith-val&apos;).textContent=this.value+&apos;/10&apos;" style="width:100%">
       </div>
     </div>
@@ -3223,8 +3223,8 @@ input:focus,textarea:focus,select:focus{
       <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--go);min-width:16px">2.</span><input type="text" id="eve-task2" placeholder="Second priority..."></div>
       <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--go);min-width:16px">3.</span><input type="text" id="eve-task3" placeholder="Third priority..."></div>
     </div>
-    <div class="lbl">Evening prayer</div>
-    <div class="prayer-box" style="margin-bottom:14px"><div class="prayer-text">Lord, thank You for this day.
+    <div class="lbl" id="eve-prayer-label">Evening prayer</div>
+    <div class="prayer-box" style="margin-bottom:14px"><div class="prayer-text" id="eve-prayer-text">Lord, thank You for this day.
 For the moments I got it right, and for Your grace when I didn't.
 I give You what I carried today &#8212; the wins, the failures, the urges I fought.
 Forgive me where I fell short. Strengthen me for tomorrow.
@@ -3235,7 +3235,7 @@ Amen.</div></div>
       <div class="card" style="margin-bottom:12px">
         <div class="card-hd" style="margin-bottom:6px">Before you call</div>
         <div id="call-prompt" style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:12px"></div>
-        <div class="card-hd" style="margin-bottom:6px">A prayer to share</div>
+        <div class="card-hd" id="shared-prayer-label" style="margin-bottom:6px">A prayer to share</div>
         <div id="shared-prayer" style="font-family:'Cormorant Garamond',serif;font-size:14px;font-style:italic;color:var(--tx2);line-height:1.7"></div>
       </div>
     </div>
@@ -3347,8 +3347,8 @@ Amen.</div></div>
       <div class="conscience-q">Did I do what I said I would do?</div>
       <div class="conscience-q">What did I avoid that I knew I needed to face?</div>
     </div>
-    <div class="lbl">Closing prayer</div>
-    <div class="prayer-box" style="margin-bottom:14px"><div class="prayer-text">Lord, a week has passed.
+    <div class="lbl" id="wk-prayer-label">Closing prayer</div>
+    <div class="prayer-box" style="margin-bottom:14px"><div class="prayer-text" id="wk-prayer-text">Lord, a week has passed.
 You saw all of it &#8212; what I did well and what I failed at.
 Thank You for not giving up on me when I gave up on myself.
 As I begin a new week, give me the strength to be better than the last.
@@ -4176,7 +4176,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v316';
+const APP_VERSION = 'v317';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7221,6 +7221,40 @@ function faithVoiceNote(){
   }catch(_){ return ""; }
 }
 
+// Shared, non-Soul faith labels (the weekly check-in dimension, etc.) — relabel per tradition so a
+// Buddhist/secular user isn't asked to rate "connection with God."
+function faithConnLabel(){
+  return {christianity:'Faith / connection with God',islam:'Faith / connection with Allah',hinduism:'Faith / connection with the Divine',buddhism:'Spirit / inner peace',secular:'Meaning / groundedness'}[faithTradition()] || 'Faith / connection';
+}
+function applyFaithGlobal(){
+  try{ const e=document.getElementById('wk-faith-label'); if(e) e.textContent=faithConnLabel(); }catch(_){}
+  try{ const e2=document.getElementById('shared-prayer-label'); if(e2){ const t=faithTradition(); e2.textContent=(t==='buddhism'||t==='secular')?'Words to share':'A prayer to share'; } }catch(_){}
+}
+// The static evening + weekly "prayers" in the Reflect tab, per tradition (Christianity keeps its own).
+const _EVE_PRAYERS={
+  christianity:{lbl:'Evening prayer',text:'Lord, thank You for this day.\nFor the moments I got it right, and for Your grace when I didn’t.\nI give You what I carried today — the wins, the failures, the urges I fought.\nForgive me where I fell short. Strengthen me for tomorrow.\nNot perfect. Just better.\nAmen.'},
+  islam:{lbl:'Evening du’a',text:'Alhamdulillah for this day —\nfor what I got right, and for Your mercy where I fell short.\nO Allah, I give You what I carried: the wins, the struggles, the urges I fought.\nForgive my shortcomings and strengthen me for tomorrow.\nNot perfect. Just better.'},
+  hinduism:{lbl:'Evening prayer',text:'I give thanks for this day —\nfor what I did well, and for the lessons in what I didn’t.\nI offer up what I carried: the wins, the struggles, the pulls I resisted.\nLet me meet tomorrow with a steadier mind, doing my duty without clinging to the fruits.\nNot perfect. Just better.'},
+  buddhism:{lbl:'Evening reflection',text:'I take this moment to be grateful for the day —\nfor what went well, and for what taught me.\nI set down what I carried: the wins, the struggles, the cravings I met.\nMay I meet tomorrow with mindfulness and an open heart.\nNot perfect. Just present.'},
+  secular:{lbl:'Evening reflection',text:'I close the day honestly —\nfor what I got right, and what I didn’t.\nI set down what I carried: the wins, the failures, the urges I fought.\nWhat’s done is done; tomorrow I begin again.\nNot perfect. Just better.'}
+};
+const _WK_PRAYERS={
+  christianity:{lbl:'Closing prayer',text:'Lord, a week has passed.\nYou saw all of it — what I did well and what I failed at.\nThank You for not giving up on me when I gave up on myself.\nAs I begin a new week, give me the strength to be better than the last.\nAmen.'},
+  islam:{lbl:'Closing du’a',text:'A week has passed, and Allah saw all of it —\nwhat I did well and where I failed.\nAlhamdulillah for the mercy that met me when I gave up on myself.\nAs a new week begins, give me the strength to be better than the last.'},
+  hinduism:{lbl:'Closing prayer',text:'A week has passed —\nwhat I did well, and where I fell short.\nI am grateful for the steadiness that held when I lost my own.\nAs a new week begins, let me act with a clearer, steadier mind than the last.'},
+  buddhism:{lbl:'Closing reflection',text:'A week has passed —\nwhat went well, and what I struggled with.\nI hold it all with an even mind, without clinging or aversion.\nAs a new week begins, may I return, again and again, to the present.'},
+  secular:{lbl:'Closing reflection',text:'A week has passed —\nwhat I did well, and where I fell short.\nI’m grateful for the resolve that held when I nearly let go.\nAs a new week begins, I choose to be a little better than the last.'}
+};
+function applyFaithReflect(){
+  try{
+    const t=faithTradition();
+    const e=_EVE_PRAYERS[t]||_EVE_PRAYERS.christianity, w=_WK_PRAYERS[t]||_WK_PRAYERS.christianity;
+    const set=(id,txt)=>{ const el=document.getElementById(id); if(el) el.textContent=txt; };
+    set('eve-prayer-label',e.lbl); set('eve-prayer-text',e.text);
+    set('wk-prayer-label',w.lbl); set('wk-prayer-text',w.text);
+  }catch(_){}
+}
+
 // Tradition-appropriate spec for AI-written prayers/reflections. Christianity keeps its Amen close;
 // Islam = du'a to Allah; Hinduism = to the Divine + dharma; Buddhism = metta/mindfulness (no deity);
 // Secular = Stoic reflection, zero religious language.
@@ -9328,6 +9362,7 @@ function setFaithTradition(tr){
     });
   }catch(_){}
   try{ if(typeof applyFaithLabels==='function') applyFaithLabels(); }catch(_){}
+  try{ if(typeof applyFaithGlobal==='function') applyFaithGlobal(); }catch(_){}
   // Refresh the daily verse immediately so the pill shows the new tradition's scripture.
   try{ if(typeof pickDailyContextualVerse==='function'){ vi = pickDailyContextualVerse(); } if(typeof showV==='function') showV(activeVerses()[vi]); }catch(_){}
   const f = FAITHS[tr];
@@ -10782,9 +10817,10 @@ const BROTHER_VOICE =
   + "honest and direct when they're dodging or overdoing it ('you're dragging it bro, come on now'); and every so often a "
   + "line lands with real weight, almost scripture ('Your path is not written by the feats of others — your story is yours "
   + "alone to make true'). Never therapy-speak, never a lecture, never corporate. "
-  + "FAITH: it's real to you and comes out naturally — 'it's okay, Jesus has you' before anything else, a verse when it "
-  + "genuinely fits, grace as the ground you stand on — but you never force it or preach, and you meet people of any belief "
-  + "or none right where they are. "
+  + "FAITH: if they follow a path, it's real to you and surfaces naturally IN THEIR OWN TRADITION — read the FAITH CONTEXT "
+  + "below for how they believe and how to speak of it (their words, their scripture, or none at all): a line from it when "
+  + "it genuinely fits, grace as the ground you stand on — but never forced, never preachy. You meet people of any belief "
+  + "or none right where they are, always leading with the human and the practical. "
   + "GRACE: a slip is a story, not a verdict — one slip doesn't mean they've fallen forever. The whole point is that the "
   + "least any of us can do, every single day, is at least TO TRY — showing up at all is the win. "
   + "WHEN THEY WANT TO ESCAPE: don't just permit it or forbid it. Look honestly at whether it's real rest they've earned "
@@ -25616,7 +25652,7 @@ const CALL_PROMPTS=[
   'Share one thing you struggled with and how you handled it.',
   'Tell her one thing you\'re proud of from today.',
   'Ask her how she\'s really doing \u2014 and actually listen.',
-  'Share the verse that hit you today.',
+  'Share the line or verse that hit you today.',
   'Tell her one thing she does that makes the journey easier.',
   'Be honest about where you\'re at. No performance.',
 ];
@@ -25626,6 +25662,34 @@ const SHARED_PRAYERS=[
   'Lord, keep our hearts aligned even when the miles aren\'t. Amen.',
   'Father, make us the people each other deserves. Not perfect. Just genuinely trying. Amen.',
 ];
+// Partner prayers adapt to the person's path (the reflect tab shows one when a partner is set).
+const SHARED_PRAYERS_BY_FAITH={
+  islam:[
+    'O Allah, keep us patient with each other, honest, and grateful for what we have.',
+    'Ya Allah, hold us both tonight — give us mercy, honesty, and a love that chooses to stay.',
+    'O Allah, keep our hearts aligned even when the miles aren’t.',
+    'Ya Allah, make us the people each other deserves — not perfect, just genuinely trying.'
+  ],
+  hinduism:[
+    'May we meet each other with patience and truth, and grow together toward the good.',
+    'May the Divine hold us both tonight — steady our hearts, and let our love choose to stay.',
+    'May our hearts stay aligned even when the miles aren’t.',
+    'May we become the people each other deserves — not perfect, just genuinely trying.'
+  ],
+  buddhism:[
+    'May we both be at ease tonight — patient, honest, and kind to one another.',
+    'May we hold each other with a calm and open heart, and choose to stay through the hard days.',
+    'May our minds stay steady and our hearts close, even across the miles.',
+    'May we meet each other with loving-kindness — not perfect, just genuinely trying.'
+  ],
+  secular:[
+    'Let us be patient with each other, honest, and choose to stay — even on the hard days.',
+    'Let us hold each other tonight with patience and honesty, and a love that stays.',
+    'Let us keep our hearts aligned even when the miles aren’t.',
+    'Let us become the people each other deserves — not perfect, just genuinely trying.'
+  ]
+};
+function sharedPrayers(){ return SHARED_PRAYERS_BY_FAITH[faithTradition()] || SHARED_PRAYERS; }
 function setDayRate(btn,rating){dayRating=rating;document.querySelectorAll('.dr-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
 
 // ─── EVENING HABIT TICKING ────────────────────────────────────
@@ -26156,6 +26220,7 @@ function setGoalsHit(btn, val){
 function initEveningTab(){
   // The Ignatian Examen is Catholic; other paths keep the universal journal + wins + rating.
   try{ const nonChr = (typeof faithTradition==='function' && faithTradition()!=='christianity'); ['examen-label','examen-card'].forEach(id=>{ const e=document.getElementById(id); if(e) e.style.display = nonChr ? 'none' : ''; }); }catch(_){}
+  try{ if(typeof applyFaithReflect==='function') applyFaithReflect(); }catch(_){}
   const h=new Date().getHours();const el=document.getElementById('evening-eyebrow');
   if(el)el.textContent=(userName?userName+', ':'')+'the day winds down';
   // Close the arc: if a morning intention was set today, reflect it back here.
@@ -26205,7 +26270,7 @@ function initEveningTab(){
   if(ls('totry_partner')&&ps){
     ps.style.display='block';const day=getDayCount();
     const cp=document.getElementById('call-prompt');if(cp)cp.textContent=CALL_PROMPTS[day%CALL_PROMPTS.length];
-    const sp=document.getElementById('shared-prayer');if(sp)sp.textContent=SHARED_PRAYERS[day%SHARED_PRAYERS.length];
+    const sp=document.getElementById('shared-prayer');if(sp){const _sps=sharedPrayers();sp.textContent=_sps[day%_sps.length];}
   }
   if(typeof updateExamenCount === 'function') updateExamenCount();
   // Reflect today's examen state — if done, show the green confirmation in the card.
@@ -26217,6 +26282,7 @@ function initEveningTab(){
 
 // ── WEEKLY REVIEW ─────────────────────────────────────────────
 function initReviewTab(){
+  try{ if(typeof applyFaithReflect==='function') applyFaithReflect(); }catch(_){}
   loadV();const tw=vices.reduce((a,v)=>a+(v.w||0),0);
   const ws=document.getElementById('week-stats');
   if(ws){ws.innerHTML='';[{num:getDayCount(),lbl:'Day'},{num:tw,lbl:'Vice wins'},{num:getStreak(),lbl:'Habit streak'}].forEach(s=>{const m=document.createElement('div');m.className='week-stat';m.innerHTML='<div class="ws-num">'+s.num+'</div><div class="ws-lbl">'+s.lbl+'</div>';ws.appendChild(m);});}
@@ -26556,7 +26622,7 @@ async function generateWeeklySynthesis(){
   summary += trend;
   
   try{
-    const prompt='You are looking at one person\'s week across their whole life — body, mind, and soul — plus how the last 4 weeks have trended. Write a warm, honest reflection under 280 words that does what a real coach does and no tracking app can:\n\n1. Name the TURN in the trend — what changed this week versus the weeks before (a stream that rose, fell, or went quiet).\n2. Connect ACROSS domains causally. If training stalled the same week reflection or examens went quiet, say the depletion is spiritual/mental, not physical. If fight-wins rose alongside spiritual check-ins, name that the prayer is holding the fight. Look for these links explicitly — they are the whole point.\n3. Celebrate one specific win with its real number.\n4. End with ONE thing to focus on next week, grounded in what you diagnosed — not generic advice.\n\nSpeak as their mentor, not a dashboard. Plain, grounded, faith-aware without being preachy. Their week and trend:\n'+summary;
+    const prompt='You are looking at one person\'s week across their whole life — body, mind, and soul — plus how the last 4 weeks have trended. Write a warm, honest reflection under 280 words that does what a real coach does and no tracking app can:\n\n1. Name the TURN in the trend — what changed this week versus the weeks before (a stream that rose, fell, or went quiet).\n2. Connect ACROSS domains causally. If training stalled the same week reflection or the evening check-in went quiet, say the depletion is spiritual/mental, not physical. If fight-wins rose alongside spiritual check-ins, name that their inner life (their prayer, practice, or reflection) is holding the fight. Look for these links explicitly — they are the whole point.\n3. Celebrate one specific win with its real number.\n4. End with ONE thing to focus on next week, grounded in what you diagnosed — not generic advice.\n\nSpeak as their mentor, not a dashboard. Plain, grounded, faith-aware without being preachy. Their week and trend:\n'+summary;
     const response=await api('You are this person\'s wise mentor, the personal coach inside To Try by Alfred John. You see their body, mind, and soul as one life — never as separate trackers.',[],prompt,800);
     if(response&&response.trim()){
       const synthesis = {
@@ -29262,7 +29328,7 @@ async function refreshAIPushMessages(opts){
     if(!opts.force && (Date.now() - last) < 7*86400000) return;
     const name = (ls('totry_name')||'').trim();
     const identity = ls('totry_identity') || '';
-    const sys = 'You write short, warm push-notification lines for a Catholic self-improvement app. Each line is ONE sentence, encouraging and grounding — never guilt-inducing, never nagging, never pressuring. Think a wise friend or a gentle line of scripture-flavoured encouragement. Return ONLY JSON.';
+    const sys = 'You write short, warm push-notification lines for a whole-life self-improvement app. Each line is ONE sentence, encouraging and grounding — never guilt-inducing, never nagging, never pressuring. Think a wise friend in their corner. '+((typeof faithVoiceNote==='function')?faithVoiceNote():'')+'Return ONLY JSON.';
     const prompt = 'Write notification lines for '+(name||'someone')+' on their journey of faith and self-improvement'+(identity?(' (becoming: "'+identity+'")'):'')+'.\n\nReturn ONLY this JSON, no markdown:\n{"morning":["6 short morning lines — hopeful, inviting them gently into the day"],"evening":["6 short evening lines — calm, inviting honest reflection and rest"]}\nEach line under 90 characters. No guilt, no stre***-pressure, no "don\u2019t break your streak". Warm and human.';
     const raw = await api(sys, [], prompt, 700);
     const m = raw.match(/\{[\s\S]*\}/);
@@ -29604,6 +29670,7 @@ async function initApp(){
   // Set the day
   vi = pickAdaptiveVerseIndex();
   if(typeof pickDailyContextualVerse==='function'){ vi = pickDailyContextualVerse(); } showV(activeVerses()[vi]);
+  try{ if(typeof applyFaithGlobal==='function') applyFaithGlobal(); }catch(_){}
   // Background: refresh currency rates if user has set a preference different from base
   if(typeof fetchCurrencyRates === 'function') fetchCurrencyRates(getUserCurrency());
   // Personalise coach
