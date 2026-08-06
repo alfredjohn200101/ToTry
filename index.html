@@ -1250,6 +1250,17 @@ input:focus,textarea:focus,select:focus{
     <button class="btn primary" onclick="finishWhyStep()">Continue &#8594;</button>
     <button class="btn" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:4px" onclick="obQuickFinish()">I'll do this later</button>
   </div>
+  <div class="ob-step" id="ob-faith">
+    <div class="ob-title">What&rsquo;s your path?</div>
+    <div class="ob-desc">To Try meets you in your own tradition &mdash; your sacred text, your daily verse, the way it speaks to you. Or choose none, and lean on grounded, tested wisdom instead. You can change this anytime in Settings.</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
+      <button class="btn" style="text-align:left;padding:14px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx)" onclick="obPickFaith('christianity')"><b style="font-size:14px">✝ Christianity</b><div style="font-size:12px;color:var(--tx3);margin-top:2px">Bible &middot; the Church &middot; the Rosary</div></button>
+      <button class="btn" style="text-align:left;padding:14px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx)" onclick="obPickFaith('islam')"><b style="font-size:14px">☪ Islam</b><div style="font-size:12px;color:var(--tx3);margin-top:2px">Qur&rsquo;an &middot; prayer &middot; dhikr</div></button>
+      <button class="btn" style="text-align:left;padding:14px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx)" onclick="obPickFaith('hinduism')"><b style="font-size:14px">🕉 Hinduism</b><div style="font-size:12px;color:var(--tx3);margin-top:2px">Bhagavad Gita &middot; japa</div></button>
+      <button class="btn" style="text-align:left;padding:14px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx)" onclick="obPickFaith('buddhism')"><b style="font-size:14px">☸ Buddhism</b><div style="font-size:12px;color:var(--tx3);margin-top:2px">Dhammapada &middot; meditation</div></button>
+      <button class="btn" style="text-align:left;padding:14px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx)" onclick="obPickFaith('secular')"><b style="font-size:14px">○ Secular / None</b><div style="font-size:12px;color:var(--tx3);margin-top:2px">Stoic &amp; grounded wisdom &mdash; no belief required</div></button>
+    </div>
+  </div>
   <div class="ob-step" id="ob4">
     <div class="ob-title">What season are you in?</div>
     <div class="ob-desc">Life isn't linear. The app speaks to you differently depending on where you actually are.</div>
@@ -1401,7 +1412,7 @@ input:focus,textarea:focus,select:focus{
     <div class="hub-card" onclick="go('reflect')">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       <div class="hc-title">Reflect</div>
-      <div class="hc-desc">Close the day: how it went, journal, examen, wins.</div>
+      <div class="hc-desc" id="soul-reflect-desc">Close the day: how it went, journal, examen, wins.</div>
     </div>
   </div>
   <div class="hub-section-label" id="soul-drawnear-label">Draw near — prayer &amp; scripture, all in one place</div>
@@ -1911,12 +1922,12 @@ input:focus,textarea:focus,select:focus{
   </div>
 
 
-  <div class="lbl">Finish with prayer</div>
-  <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Close your morning in prayer. The scripture prayer is written for exactly where you are today.</p>
+  <div class="lbl" id="morning-pray-lbl">Finish with prayer</div>
+  <p id="morning-pray-sub" style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Close your morning in prayer. The scripture prayer is written for exactly where you are today.</p>
   <div class="prayer-opts">
-    <button class="btn" onclick="showPrayer('quick')">Quick prayer (2 min)</button>
-    <button class="btn" onclick="showPrayer('full')">Full morning prayer (5 min)</button>
-    <button class="btn primary" onclick="showPrayer('scripture')" style="background:linear-gradient(135deg,rgba(200,169,110,0.14),rgba(140,107,182,0.06));border:1px solid var(--go-bd);color:var(--go)">✨ Scripture prayer for today</button>
+    <button class="btn" id="morning-pray-quick" onclick="showPrayer('quick')">Quick prayer (2 min)</button>
+    <button class="btn" id="morning-pray-full" onclick="showPrayer('full')">Full morning prayer (5 min)</button>
+    <button class="btn primary" id="morning-pray-adaptive" onclick="showPrayer('scripture')" style="background:linear-gradient(135deg,rgba(200,169,110,0.14),rgba(140,107,182,0.06));border:1px solid var(--go-bd);color:var(--go)">✨ Scripture prayer for today</button>
   </div>
   <div id="morning-prayer-display" style="display:none">
     <div class="prayer-box"><div class="prayer-title" id="morning-prayer-title"></div><div class="prayer-text" id="morning-prayer-text"></div></div>
@@ -3213,7 +3224,7 @@ Amen.</div></div>
       </div>
     </div>
     <!-- Ignatian Examen — THE FINAL, defining step of the evening. Once done, the day is closed. -->
-    <div class="lbl" style="margin-top:4px">The last step — your examen</div>
+    <div class="lbl" id="examen-label" style="margin-top:4px">The last step — your examen</div>
     <div class="card" id="examen-card" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.04));border-color:var(--go-bd)">
       <div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px">Ignatian Examen · 5 steps</div>
       <div style="font-family:Cormorant Garamond,serif;font-size:19px;color:var(--tx);font-style:italic;margin-bottom:6px">Walk through your day with God.</div>
@@ -4149,7 +4160,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v314';
+const APP_VERSION = 'v315';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -6924,10 +6935,17 @@ function obNextToWhy(){
 function finishWhyStep(){
   const why=document.getElementById('ob-why-text')?.value.trim();
   if(why) ls('totry_why', why);
-  // Continue to season (step 4)
+  // Continue to the faith / path step (then season)
   document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
-  const seasonStep=document.getElementById('ob4');
-  if(seasonStep) seasonStep.classList.add('active');
+  const faithStep=document.getElementById('ob-faith');
+  if(faithStep) faithStep.classList.add('active');
+  window.scrollTo(0,0);
+}
+function obPickFaith(tr){
+  try{ if(typeof FAITHS!=='undefined' && FAITHS[tr]) ls('totry_faith_tradition', tr); }catch(_){}
+  document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
+  const next=document.getElementById('ob4');
+  if(next) next.classList.add('active');
   window.scrollTo(0,0);
 }
 
@@ -7187,6 +7205,20 @@ function faithVoiceNote(){
   }catch(_){ return ""; }
 }
 
+// Tradition-appropriate spec for AI-written prayers/reflections. Christianity keeps its Amen close;
+// Islam = du'a to Allah; Hinduism = to the Divine + dharma; Buddhism = metta/mindfulness (no deity);
+// Secular = Stoic reflection, zero religious language.
+function faithPrayer(){
+  const specs={
+    christianity:{ noun:'prayer', sys:'You are a wise, warm Christian spiritual director writing a personal prayer. Scripturally rich, pastorally deep, never generic or rushed. CRITICAL: always finish completely, ending with “Amen.”', how:'Address God, give thanks, bring the situation honestly before God, ask for grace, and close with trust and Amen. Weave in a relevant scripture verse with its reference.', ends:/amen[.!]?$/i },
+    islam:{ noun:'du’a', sys:'You write warm, sincere Islamic du’a (personal supplication) in the first person — humble and hopeful, never performative. A real person turning to Allah. Never use Christian words (Christ, Amen, saint).', how:'Address Allah (you may open “O Allah”). Give thanks (alhamdulillah where natural), bring the situation honestly before Allah, ask for help, patience (sabr) and guidance, and close in trust. You may weave in a theme from the Qur’an.', ends:null },
+    hinduism:{ noun:'prayer', sys:'You write warm, sincere Hindu prayers in the first person — reverent toward the Divine, grounded in dharma, never performative. Avoid Christian-specific words.', how:'Address the Divine. Give thanks, bring the situation honestly forward, ask for a steady mind and the strength to do one’s duty without attachment to the fruits, and close in trust. You may weave in a theme from the Bhagavad Gita.', ends:null },
+    buddhism:{ noun:'reflection', sys:'You write gentle Buddhist reflections and loving-kindness (metta) in the first person — no deity, grounded in mindfulness and compassion.', how:'There is no God to address — this is an inner turning. Acknowledge what is present honestly and without judgment, set an intention of mindfulness and non-attachment, extend loving-kindness to self and others, and rest in the breath. You may draw on the Dhammapada. Do not address any deity.', ends:null },
+    secular:{ noun:'reflection', sys:'You write clear, grounded first-person reflections — Stoic in spirit, honest and practical. Use NO religious language whatsoever.', how:'This is honest reflection, not a prayer. Name what is true now, separate what is in their control from what is not, choose how they want to meet the moment, and commit to one concrete thing. Never mention God, prayer, scripture, or the sacred.', ends:null }
+  };
+  return specs[faithTradition()]||specs.christianity;
+}
+
 // ── SOUL TAB — make the cards speak the person's tradition ─────────────────────
 // Relabels the book/today/practice/stillness cards and shows only what fits the path.
 // Christianity keeps liturgy + Rosary; other paths get their reader + the universal stillness.
@@ -7223,6 +7255,30 @@ function applyFaithLabels(){
       secular:'to your values, to the people who love you, to the life you actually want'
     };
     set('soul-intro', 'The root beneath everything else. The body, the money, the fight — they all grow from here, or they don’t last. This is where the app points past itself: '+(introTail[t]||introTail.christianity)+'. Stay grounded here, and the rest holds.');
+    set('soul-reflect-desc', t==='christianity' ? 'Close the day: how it went, journal, examen, wins.' : 'Close the day: how it went, journal, review, wins.');
+  }catch(_){}
+}
+
+// Morning ritual prayer section — adapt per tradition. The canned quick/full prayers are Christian
+// pre-written text, so for other paths we hide them and keep the (tradition-aware) generated one.
+function applyFaithMorning(){
+  try{
+    const t=faithTradition(), pr=faithPrayer();
+    const set=(id,txt)=>{ const e=document.getElementById(id); if(e&&txt!=null) e.textContent=txt; };
+    const show=(id,on)=>{ const e=document.getElementById(id); if(e) e.style.display=on?'':'none'; };
+    if(t==='christianity'){
+      set('morning-pray-lbl','Finish with prayer');
+      set('morning-pray-sub','Close your morning in prayer. The scripture prayer is written for exactly where you are today.');
+      show('morning-pray-quick',true); show('morning-pray-full',true);
+      set('morning-pray-adaptive','✨ Scripture prayer for today');
+    } else {
+      show('morning-pray-quick',false); show('morning-pray-full',false);
+      const lbl={islam:'Finish with du’a',hinduism:'Finish with prayer',buddhism:'Finish by sitting a moment',secular:'Finish with reflection'}[t]||'Finish';
+      set('morning-pray-lbl',lbl);
+      set('morning-pray-sub','Written for exactly where you are today.');
+      const btn={islam:'✨ A du’a for today',hinduism:'✨ A prayer for today',buddhism:'✨ A reflection for today',secular:'✨ A reflection for today'}[t]||'✨ For today';
+      set('morning-pray-adaptive',btn);
+    }
   }catch(_){}
 }
 
@@ -7832,8 +7888,9 @@ async function showModalPrayer(type){
       const identity = ls('totry_identity')||''; const season = ls('totry_season')||'Building';
       let struggle=''; if(typeof vices!=='undefined' && vices[0]) struggle = vices[0].n;
       const stateDesc = 'Identity: '+(identity||'someone trying to grow')+'. Season: '+season+'. '+(struggle?('Currently fighting: '+struggle+'.'):'');
-      const sys = 'You are a Catholic spiritual companion writing a short, warm, personal prayer.';
-      const prompt = 'Write a warm personal prayer (6-10 sentences) for this Catholic man, weaving in one scripture verse with its reference. Address God, give thanks, bring his situation honestly before God, ask for grace, close with trust and Amen. Return ONLY the prayer. His state: '+stateDesc;
+      const pr = faithPrayer();
+      const sys = pr.sys;
+      const prompt = 'Write a warm, personal '+pr.noun+' (6-10 sentences) for this person. '+pr.how+' Return ONLY the '+pr.noun+', no title. Their state: '+stateDesc;
       const resp = await api(sys, [], prompt, 900);
       out.textContent = (resp && resp.trim()) ? resp.trim() : (PRAYERS.scripture.text);
     }catch(e){ out.textContent = PRAYERS.scripture.text; }
@@ -7860,7 +7917,7 @@ async function showAdaptivePrayer(){
   const displayEl=document.getElementById('morning-prayer-display');
   if(!titleEl||!textEl||!displayEl)return;
   
-  titleEl.textContent='Scripture prayer';
+  titleEl.textContent = (faithTradition()==='christianity') ? 'Scripture prayer' : ('A '+faithPrayer().noun+' for right now');
   textEl.innerHTML='<span class="pulsing" style="font-style:italic;color:var(--tx3)">Writing a prayer for where you are right now...</span>';
   displayEl.style.display='block';
   displayEl.scrollIntoView({behavior:'smooth'});
@@ -7892,9 +7949,10 @@ async function showAdaptivePrayer(){
   }
   
   // Pull today's actual Mass readings so the prayer is rooted in what the Church reads today.
+  // (Christianity only — other paths don't have a daily lectionary here.)
   let liturgyCtx = '';
   try{
-    if(typeof fetchLiturgy === 'function'){
+    if(faithTradition()==='christianity' && typeof fetchLiturgy === 'function'){
       const lit = await fetchLiturgy();
       if(lit){
         if(lit.celebration && lit.celebration.name) liturgyCtx += ' Today the Church remembers ' + lit.celebration.name + '.';
@@ -7908,13 +7966,15 @@ async function showAdaptivePrayer(){
     }
   }catch(_){ }
   try{
-    const prompt='Write a warm, personal morning prayer for this Catholic man in his current state. This should feel like a real prayer he can pray slowly \u2014 not a quick blessing. Open by addressing God, move through genuine thanksgiving, then bring his actual situation before God honestly (his fight, his intention, where he is in the journey), ask for specific grace for today, and close with a line of trust and Amen.'+(liturgyCtx?' Where it fits naturally, weave in a theme or line from TODAY\u2019S actual Mass readings (below) and name the scripture reference \u2014 this roots his prayer in what the whole Church prays today.':' Weave in one specific scripture verse with its reference.')+' Aim for 8-14 sentences of real spiritual substance. Return ONLY the prayer text, no preamble, no title. His state: '+stateDesc+liturgyCtx;
-    const sys='You are a wise, warm Catholic spiritual director writing a personal morning prayer. Scripturally rich, pastorally deep, never generic or rushed. You write prayers a person returns to because they actually meet them where they are. CRITICAL: always finish the prayer completely, ending with \u201cAmen.\u201d Never stop mid-sentence.';
+    const pr=faithPrayer();
+    const useLit = liturgyCtx && faithTradition()==='christianity';
+    const prompt='Write a warm, personal morning '+pr.noun+' for this person in their current state \u2014 something to pray or sit with slowly, not a quick blessing. '+pr.how+(useLit?' Where it fits naturally, weave in a theme or line from TODAY\u2019S actual readings (below) and name the reference \u2014 rooting it in what the whole community reads today.':'')+' Aim for 8-14 sentences of real substance. Return ONLY the '+pr.noun+' text, no preamble, no title. Their state: '+stateDesc+(useLit?liturgyCtx:'');
+    const sys=pr.sys;
     let response=await api(sys,[],prompt,1400);
     // Detect a truncated/too-short response (server-side providers sometimes cut off) and retry once.
-    const looksTruncated=(t)=>{ if(!t) return true; const x=t.trim(); if(x.length<160) return true; if(!/amen[.!]?$/i.test(x) && !/[.!?\u201d\u2019]$/.test(x)) return true; return false; };
+    const looksTruncated=(t)=>{ if(!t) return true; const x=t.trim(); if(x.length<160) return true; const endsOk = pr.ends ? (pr.ends.test(x) || /[.!?\u201d\u2019]$/.test(x)) : /[.!?\u201d\u2019]$/.test(x); return !endsOk; };
     if(looksTruncated(response)){
-      try{ const retry=await api(sys,[],prompt+'\n\nIMPORTANT: Write the FULL prayer start to finish, 8-14 sentences, ending with Amen. Do not cut off.',1600); if(retry && retry.trim().length > (response||'').trim().length) response=retry; }catch(_){ }
+      try{ const retry=await api(sys,[],prompt+'\n\nIMPORTANT: Write it in FULL, start to finish, 8-14 sentences. Do not cut off.',1600); if(retry && retry.trim().length > (response||'').trim().length) response=retry; }catch(_){ }
     }
     if(response&&response.trim()){
       textEl.textContent=response.trim();
@@ -7944,6 +8004,7 @@ function completeMorning(){
   if(typeof renderHomeCalendar==='function') renderHomeCalendar();
 }
 function initMorningTab(){
+  if(typeof applyFaithMorning === 'function') applyFaithMorning();
   if(typeof renderMorningLiturgy === 'function') renderMorningLiturgy();
   // The one fused thing the morning gives back: today's schedule + whether you're likely training
   // (from your own history) + how to meet it given your readiness. Silent when it has nothing true.
@@ -26010,6 +26071,8 @@ function setGoalsHit(btn, val){
   haptic('tap');
 }
 function initEveningTab(){
+  // The Ignatian Examen is Catholic; other paths keep the universal journal + wins + rating.
+  try{ const nonChr = (typeof faithTradition==='function' && faithTradition()!=='christianity'); ['examen-label','examen-card'].forEach(id=>{ const e=document.getElementById(id); if(e) e.style.display = nonChr ? 'none' : ''; }); }catch(_){}
   const h=new Date().getHours();const el=document.getElementById('evening-eyebrow');
   if(el)el.textContent=(userName?userName+', ':'')+'the day winds down';
   // Close the arc: if a morning intention was set today, reflect it back here.
@@ -27196,6 +27259,7 @@ function _finishRosary(){
 async function renderMorningLiturgy(){
   const box = document.getElementById('morning-liturgy');
   if(!box) return;
+  if(faithTradition()!=='christianity'){ box.style.display='none'; box.innerHTML=''; return; }
   let d;
   try{ d = await fetchLiturgy(); }catch(_){ return; }
   if(!d || (!d.readings && !d.celebration)){ box.style.display='none'; return; }
