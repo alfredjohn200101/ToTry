@@ -1438,6 +1438,14 @@ input:focus,textarea:focus,select:focus{
       <div class="hc-desc" id="soul-still-desc">A minute of guided breathing — or the Jesus Prayer carried on your breath. The one work you can always do.</div>
     </div>
   </div>
+  <div class="hub-section-label">Common ground — the same struggle, across every path</div>
+  <div class="hub-grid">
+    <div class="hub-card wide" onclick="openThreads()">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/></svg>
+      <div class="hc-title">Shared threads</div>
+      <div class="hc-desc">Patience, stillness, self-mastery — how other traditions hold the same human struggle. Not the same, but kin.</div>
+    </div>
+  </div>
   <div class="hub-section-label">Your anchor — what keeps you here</div>
   <div class="hub-grid">
     <div class="hub-card wide" onclick="openSoulToday()">
@@ -1463,6 +1471,14 @@ input:focus,textarea:focus,select:focus{
   <p id="read-sub" style="font-size:12.5px;color:var(--tx3);line-height:1.5;margin-bottom:12px"></p>
   <div id="read-selector" style="margin-bottom:12px"></div>
   <div id="read-content"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TAB: SHARED THREADS — how the traditions echo each other on the same human struggle (peace, not sameness) -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div id="tab-threads" class="tab">
+  <div style="margin-bottom:12px"><button class="btn" onclick="go('soul')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px;padding:8px 12px">&lsaquo; Soul</button></div>
+  <div id="threads-content"></div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════ -->
@@ -4160,7 +4176,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v315';
+const APP_VERSION = 'v316';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7343,6 +7359,73 @@ async function _readGitaLoad(){
 }
 function _gitaNav(d){ if(!window.__gita) window.__gita={ch:1,v:1}; window.__gita.v=Math.max(1,(window.__gita.v||1)+d); _readGitaLoad(); }
 
+// ── SHARED THREADS ─────────────────────────────────────────────────────────────
+// The founder's idea: show how traditions ECHO each other on the same human struggle —
+// to build peace between faiths. Framed as echoes, NOT equivalence (never "all religions
+// are the same" — that quietly insults the devout). Each line is real and attributed.
+const SHARED_THREADS = [
+  { theme:'Patience in hardship', lines:{
+    christianity:{t:'Count it all joy when you meet trials, for the testing of your faith produces steadfastness.',r:'James 1:2–3'},
+    islam:{t:'Indeed, with hardship comes ease.',r:'Qur’an 94:6'},
+    hinduism:{t:'Cold and heat, pleasure and pain come and go; they are impermanent. Endure them patiently.',r:'Bhagavad Gita 2.14'},
+    buddhism:{t:'As a solid rock is unshaken by the wind, the wise are unshaken by praise or blame.',r:'Dhammapada 81'},
+    secular:{t:'We suffer more often in imagination than in reality.',r:'Seneca'} } },
+  { theme:'Mastering yourself', lines:{
+    christianity:{t:'Whoever rules his spirit is better than one who takes a city.',r:'Proverbs 16:32'},
+    islam:{t:'The strong is not the one who overpowers others, but the one who controls himself when angry.',r:'Hadith (Bukhari)'},
+    hinduism:{t:'For one who has conquered the self, the self is a friend.',r:'Bhagavad Gita 6.6'},
+    buddhism:{t:'One who conquers himself is greater than one who conquers a thousand in battle.',r:'Dhammapada 103'},
+    secular:{t:'No one is free who is not master of himself.',r:'Epictetus'} } },
+  { theme:'Stillness & inner peace', lines:{
+    christianity:{t:'Be still, and know that I am God.',r:'Psalm 46:10'},
+    islam:{t:'Verily, in the remembrance of Allah do hearts find rest.',r:'Qur’an 13:28'},
+    hinduism:{t:'As a lamp in a windless place does not flicker — so is the disciplined mind.',r:'Bhagavad Gita 6.19'},
+    buddhism:{t:'Better than a thousand hollow words is one word that brings peace.',r:'Dhammapada 100'},
+    secular:{t:'Confine yourself to the present.',r:'Marcus Aurelius'} } },
+  { theme:'Gratitude & contentment', lines:{
+    christianity:{t:'Give thanks in all circumstances.',r:'1 Thessalonians 5:18'},
+    islam:{t:'If you are grateful, I will surely increase you.',r:'Qur’an 14:7'},
+    hinduism:{t:'Whatever you do, offer it as a gift.',r:'Bhagavad Gita 9.27'},
+    buddhism:{t:'Health is the greatest gift, contentment the greatest wealth.',r:'Dhammapada 204'},
+    secular:{t:'Wealth consists not in having great possessions, but in having few wants.',r:'Epictetus'} } },
+  { theme:'Compassion & mercy', lines:{
+    christianity:{t:'Be kind to one another, tenderhearted, forgiving one another.',r:'Ephesians 4:32'},
+    islam:{t:'The merciful are shown mercy by the Most Merciful.',r:'Hadith (Tirmidhi)'},
+    hinduism:{t:'The wise see the same Self in all beings, and all beings in the Self.',r:'Bhagavad Gita 6.29'},
+    buddhism:{t:'Hatred is never appeased by hatred; by love alone is it appeased.',r:'Dhammapada 5'},
+    secular:{t:'What is not good for the hive is not good for the bee.',r:'Marcus Aurelius'} } },
+  { theme:'Letting go', lines:{
+    christianity:{t:'Cast all your anxieties on him, because he cares for you.',r:'1 Peter 5:7'},
+    islam:{t:'And rely upon Allah; sufficient is Allah as Disposer of affairs.',r:'Qur’an 33:3'},
+    hinduism:{t:'You have a right to your actions, but never to the fruits of your actions.',r:'Bhagavad Gita 2.47'},
+    buddhism:{t:'From craving springs grief, from craving springs fear; for one free from craving there is no grief — whence fear?',r:'Dhammapada 216'},
+    secular:{t:'Some things are within our power, and some are not.',r:'Epictetus'} } },
+];
+const _THREAD_LABELS={christianity:'Christianity',islam:'Islam',hinduism:'Hinduism',buddhism:'Buddhism',secular:'Stoic & secular'};
+function openThreads(){
+  if(typeof go==='function') go('threads');
+  if(typeof window.__threadIdx!=='number'){ let s=0; try{ if(typeof getDayCount==='function') s=getDayCount()%SHARED_THREADS.length; }catch(_){ } window.__threadIdx=s; }
+  renderThread();
+}
+function _threadNav(d){ window.__threadIdx=(((window.__threadIdx||0)+d)%SHARED_THREADS.length+SHARED_THREADS.length)%SHARED_THREADS.length; renderThread(); }
+function renderThread(){
+  const el=document.getElementById('threads-content'); if(!el) return;
+  const idx=(((window.__threadIdx||0))%SHARED_THREADS.length+SHARED_THREADS.length)%SHARED_THREADS.length;
+  const th=SHARED_THREADS[idx]; const mine=faithTradition();
+  const order=[mine].concat(['christianity','islam','hinduism','buddhism','secular'].filter(x=>x!==mine));
+  let html='<div style="text-align:center;margin-bottom:2px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;color:var(--tx3);text-transform:uppercase">Shared thread '+(idx+1)+' / '+SHARED_THREADS.length+'</div></div>';
+  html+='<h2 style="font-family:Cormorant Garamond,serif;font-size:27px;font-weight:300;color:var(--tx);text-align:center;margin-bottom:16px">'+th.theme+'</h2>';
+  order.forEach(function(k){ const L=th.lines[k]; if(!L) return; const isMine=(k===mine);
+    html+='<div class="card" style="margin-bottom:10px;'+(isMine?'border-color:var(--go-bd);background:linear-gradient(135deg,rgba(200,169,110,0.08),rgba(140,107,182,0.04))':'')+'">'+
+      '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:'+(isMine?'var(--go)':'var(--tx3)')+';margin-bottom:6px">'+_THREAD_LABELS[k]+(isMine?' · your path':'')+'</div>'+
+      '<div style="font-size:15px;line-height:1.7;color:var(--tx)">“'+L.t+'”</div>'+
+      '<div style="font-size:12px;color:var(--tx3);margin-top:5px">— '+L.r+'</div></div>';
+  });
+  html+='<p style="font-size:12px;color:var(--tx3);font-style:italic;text-align:center;line-height:1.6;margin:14px 6px 10px">The same human struggle, held across traditions — echoes, not sameness. Each speaks in its own voice.</p>';
+  html+='<div style="display:flex;gap:8px"><button class="btn" onclick="_threadNav(-1)" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">‹ Previous</button><button class="btn" onclick="_threadNav(1)" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Next ›</button></div>';
+  el.innerHTML=html;
+}
+
 let vi=Math.floor(Math.random()*activeVerses().length); // overridden by pickContextualVerse() on load
 // ── SCRIPTURE THAT MEETS YOU ── pick today's verse with gentle awareness of what the person
 // is facing (their fight, season, recent mood) and what has landed before (saved verses).
@@ -7506,7 +7589,7 @@ const TABS=['home','fight','grow','money','soul'];
 // Mind lives in the ever-present orb (Feeling Door); Settings moved to the header gear.
 const TAB_PARENT={
   nourish:'grow', train:'grow', track:'grow',
-  morning:'soul', reflect:'soul', bible:'soul', why:'soul', liturgy:'soul', read:'soul',
+  morning:'soul', reflect:'soul', bible:'soul', why:'soul', liturgy:'soul', read:'soul', threads:'soul',
   calendar:'home', settings:'home'
   // fight, money & soul are their own top-level tabs; coach is the floating button
 };
