@@ -1482,6 +1482,26 @@ input:focus,textarea:focus,select:focus{
 </div>
 
 <!-- ═══════════════════════════════════════════════════ -->
+<!-- TAB: TODAY — per-tradition daily anchor (Islam prayer times/Hijri/ayah; others a daily passage) -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div id="tab-today" class="tab">
+  <div style="margin-bottom:12px"><button class="btn" onclick="go('soul')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px;padding:8px 12px">&lsaquo; Soul</button></div>
+  <h2 id="today-title" style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.2;margin-bottom:2px">Today</h2>
+  <p id="today-sub" style="font-size:12.5px;color:var(--tx3);line-height:1.5;margin-bottom:14px"></p>
+  <div id="today-content"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TAB: PRACTICE — Dhikr (tasbih) / Japa (mala) bead counters -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div id="tab-practice" class="tab">
+  <div style="margin-bottom:12px"><button class="btn" onclick="go('soul')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px;padding:8px 12px">&lsaquo; Soul</button></div>
+  <h2 id="practice-title" style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.2;margin-bottom:2px">Practice</h2>
+  <p id="practice-sub" style="font-size:12.5px;color:var(--tx3);line-height:1.5;margin-bottom:14px"></p>
+  <div id="practice-content"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
 <!-- TAB: LITURGY (today's Mass readings + saint of the day, from the free Catholic readings API) -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-liturgy" class="tab">
@@ -4176,7 +4196,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v317';
+const APP_VERSION = 'v318';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7169,7 +7189,7 @@ const FAITHS = {
   islam: {
     id:'islam', label:'Islam', icon:'☪', divine:'Allah',
     bookName:'the Qur’an', bookShort:'Qur’an',
-    todayTitle:'Today', todayDesc:'Today’s prayer times, the Islamic date, and an ayah for the day.',
+    todayTitle:'Prayer times', todayDesc:'Today’s five prayers, the Hijri date, and an ayah.',
     practiceTitle:'Dhikr', practiceDesc:'Remembrance of Allah — guided, with the beautiful names.',
     scriptureWord:'the Qur’an', wordWord:'an ayah', prayWord:'pray', prayTo:'Allah',
     voice:'Draw on the Qur’an and the Islamic tradition; speak of Allah, mercy (rahma), patience (sabr), and gratitude (shukr) naturally when it fits. Be reverent and never misquote.',
@@ -7178,7 +7198,7 @@ const FAITHS = {
   hinduism: {
     id:'hinduism', label:'Hinduism', icon:'🕉', divine:'the Divine',
     bookName:'the Bhagavad Gita', bookShort:'Gita',
-    todayTitle:'Today', todayDesc:'A verse from the Gita and today’s observance.',
+    todayTitle:'Today’s verse', todayDesc:'A verse from the Gita to carry through the day.',
     practiceTitle:'Japa', practiceDesc:'Mantra repetition — steady the mind, bead by bead.',
     scriptureWord:'the Gita', wordWord:'a verse', prayWord:'pray', prayTo:'the Divine',
     voice:'Draw on the Bhagavad Gita and the dharmic tradition; speak of dharma, doing one’s duty without attachment to the fruits, and the steady mind. Respectful, never dogmatic.',
@@ -7187,7 +7207,7 @@ const FAITHS = {
   buddhism: {
     id:'buddhism', label:'Buddhism', icon:'☸', divine:null,
     bookName:'the Dhammapada', bookShort:'Dhammapada',
-    todayTitle:'Today', todayDesc:'A teaching for the day, and a moment to sit.',
+    todayTitle:'Today’s teaching', todayDesc:'A teaching from the Dhammapada for today.',
     practiceTitle:'Meditation', practiceDesc:'Sit with the breath — guided, at your own pace.',
     scriptureWord:'the Dhammapada', wordWord:'a teaching', prayWord:'sit', prayTo:null,
     voice:'Draw on the Dhammapada and the Buddhist path; speak of mindfulness, non-attachment, and the mind as the root of both suffering and freedom. No deity — the work is inner.',
@@ -7196,7 +7216,7 @@ const FAITHS = {
   secular: {
     id:'secular', label:'Secular / None', icon:'○', divine:null,
     bookName:'the Stoics', bookShort:'Reflections',
-    todayTitle:'Today', todayDesc:'A grounded reflection to steady the day.',
+    todayTitle:'Today’s reflection', todayDesc:'A grounded reflection to steady the day.',
     practiceTitle:'Stillness', practiceDesc:'A few quiet minutes with the breath — no belief required.',
     scriptureWord:'a reflection', wordWord:'a reflection', prayWord:'reflect', prayTo:null,
     voice:'Use NO religious language at all. Lead with the human and the practical — Stoic clarity, the science of habit, honest self-respect. Never mention God, scripture, or prayer.',
@@ -7281,10 +7301,14 @@ function applyFaithLabels(){
     set('soul-book-desc', (t==='secular')
       ? 'Grounded reflections for whatever you’re facing — read, and carry one with you.'
       : 'A passage for whatever you’re facing, a full reader, and passages to carry.');
-    // The "today" anchor (liturgy) and the beads practice (Rosary) are Christianity-specific for now.
-    // Other paths read their text and keep the universal stillness/breath practice.
-    show('soul-today-card', t==='christianity');
-    show('soul-practice-card', t==='christianity');
+    // Every path has a "today" anchor: Christianity=liturgy, Islam=prayer times, others=a daily passage.
+    show('soul-today-card', true);
+    set('soul-today-title', f.todayTitle);
+    set('soul-today-desc', f.todayDesc);
+    // Practice: Christianity=Rosary, Islam=Dhikr, Hinduism=Japa; Buddhism/Secular lean on the stillness card.
+    const hasPractice = (t==='christianity'||t==='islam'||t==='hinduism');
+    show('soul-practice-card', hasPractice);
+    if(hasPractice){ set('soul-practice-title', f.practiceTitle); set('soul-practice-desc', f.practiceDesc); }
     const still={
       christianity:'A minute of guided breathing — or the Jesus Prayer carried on your breath. The one work you can always do.',
       islam:'A minute of guided breathing — or dhikr carried on your breath. The one work you can always do.',
@@ -7334,8 +7358,8 @@ function applyFaithMorning(){
 
 // ── READER — the person's sacred text (Qur'an/Gita live; Dhammapada/Stoic bundled; Bible = tab-bible) ──
 function openScripture(){ const t=faithTradition(); if(t==='christianity'){ if(typeof go==='function') go('bible'); return; } openReader(t); }
-function openTodayAnchor(){ const t=faithTradition(); if(t==='christianity'){ if(typeof go==='function') go('liturgy'); return; } openScripture(); }
-function openPractice(){ const t=faithTradition(); if(t==='christianity'){ if(typeof openRosary==='function') openRosary(); return; } if(typeof openBreathMenu==='function') openBreathMenu(); }
+function openTodayAnchor(){ const t=faithTradition(); if(t==='christianity'){ if(typeof go==='function') go('liturgy'); return; } if(typeof go==='function') go('today'); _renderTodayAnchor(); }
+function openPractice(){ const t=faithTradition(); if(t==='christianity'){ if(typeof openRosary==='function') openRosary(); return; } if(t==='islam'){ openDhikr(); return; } if(t==='hinduism'){ openJapa(); return; } if(typeof openBreathMenu==='function') openBreathMenu(); }
 function _readLoading(){ return '<div style="text-align:center;padding:26px;color:var(--tx3);font-size:13px">Loading…</div>'; }
 function _readErr(msg){ return '<div class="card" style="text-align:center;color:var(--tx3);font-size:13px;padding:18px">'+(msg||'Couldn’t load right now. Check your connection and try again.')+'</div>'; }
 function _selStyle(){ return 'background:var(--bg3);border:1px solid var(--bd);color:var(--tx);border-radius:9px;padding:9px 11px;font-size:13px;max-width:100%'; }
@@ -7392,6 +7416,91 @@ async function _readGitaLoad(){
   }catch(e){ if(window.__gita&&window.__gita.v>1){ window.__gita.v--; } const content2=document.getElementById('read-content'); if(content2) content2.innerHTML=_readErr('That’s the end of the chapter — pick another above.'); }
 }
 function _gitaNav(d){ if(!window.__gita) window.__gita={ch:1,v:1}; window.__gita.v=Math.max(1,(window.__gita.v||1)+d); _readGitaLoad(); }
+
+// ── TODAY ANCHOR (per tradition) ───────────────────────────────────────────────
+// Christianity=liturgy (tab-liturgy). Islam=prayer times + Hijri + ayah. Others=a daily passage.
+function _dailyIndex(len){ let d; try{ d=(typeof getDayCount==='function')?getDayCount():Math.floor(Date.now()/86400000); }catch(_){ d=Math.floor(Date.now()/86400000); } return ((d%len)+len)%len; }
+function _renderTodayAnchor(){
+  const t=faithTradition(), f=curFaith();
+  const ttl=document.getElementById('today-title'); if(ttl) ttl.textContent=f.todayTitle;
+  const sub=document.getElementById('today-sub'); if(sub) sub.textContent=f.todayDesc;
+  const el=document.getElementById('today-content'); if(!el) return;
+  if(t==='islam') _renderIslamToday(el); else _renderDailyPassage(el,t);
+}
+function _renderDailyPassage(el,t){
+  const bank=(t==='hinduism')?VS_HINDU:(t==='buddhism')?VS_BUDDHIST:VS_SECULAR;
+  const v=bank[_dailyIndex(bank.length)];
+  const kind=(t==='hinduism')?'Today’s verse':(t==='buddhism')?'Today’s teaching':'Today’s reflection';
+  el.innerHTML='<div class="card" style="text-align:center;padding:28px 20px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:16px">'+kind+'</div><div style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;line-height:1.65;color:var(--tx);margin-bottom:14px">“'+v.t+'”</div><div style="font-size:12px;color:var(--go)">— '+v.r+'</div></div><button class="btn" onclick="openScripture()" style="width:100%;margin-top:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Open the full '+curFaith().bookShort+' ›</button>';
+}
+// Islam — prayer times (Aladhan, free) + Hijri + a daily ayah. Geolocation, with a city fallback.
+function _renderIslamToday(el){
+  const a=VS_ISLAM[_dailyIndex(VS_ISLAM.length)];
+  el.innerHTML='<div class="card" style="text-align:center;padding:22px 18px;margin-bottom:12px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Ayah for today</div><div style="font-family:Cormorant Garamond,serif;font-size:20px;font-style:italic;line-height:1.6;color:var(--tx);margin-bottom:10px">“'+a.t+'”</div><div style="font-size:12px;color:var(--go)">— '+a.r+'</div></div><div id="salah-box">'+_readLoading()+'</div>';
+  _loadSalah();
+}
+function _salahDateStr(){ const d=new Date(); return String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear(); }
+async function _loadSalah(){
+  const box=document.getElementById('salah-box'); if(!box) return;
+  let coords=null; try{ const g=ls('totry_geo'); if(g&&g.lat) coords=g; }catch(_){}
+  if(!coords){
+    try{ coords=await new Promise((res,rej)=>{ if(!navigator.geolocation) return rej(); navigator.geolocation.getCurrentPosition(p=>res({lat:p.coords.latitude,lng:p.coords.longitude}), ()=>rej(), {timeout:8000,maximumAge:3600000}); }); if(coords){ try{ ls('totry_geo',coords); }catch(_){} } }catch(_){ coords=null; }
+  }
+  if(!coords){ box.innerHTML='<div class="card" style="text-align:center;font-size:13px;color:var(--tx3);padding:18px;line-height:1.6">Allow location to see today’s prayer times.<br><button class="btn" onclick="_promptCity()" style="margin-top:10px;display:inline-block;padding:7px 14px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Or enter your city</button></div>'; return; }
+  try{
+    const r=await fetch('https://api.aladhan.com/v1/timings/'+_salahDateStr()+'?latitude='+coords.lat+'&longitude='+coords.lng+'&method=2');
+    const j=await r.json(); if(j.code!==200||!j.data) throw new Error('n'); box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri);
+  }catch(e){ box.innerHTML=_readErr('Couldn’t load prayer times right now.'); }
+}
+function _promptCity(){ try{ const c=window.prompt('Your city (for prayer times):'); if(c&&c.trim()) _loadSalahByCity(c.trim()); }catch(_){} }
+async function _loadSalahByCity(city){
+  const box=document.getElementById('salah-box'); if(box) box.innerHTML=_readLoading();
+  try{ const r=await fetch('https://api.aladhan.com/v1/timingsByCity/'+_salahDateStr()+'?city='+encodeURIComponent(city)+'&country=&method=2'); const j=await r.json(); if(j.code!==200||!j.data) throw new Error('c'); try{ ls('totry_city',city); }catch(_){} if(box) box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri)+'<div style="text-align:center;margin-top:8px"><button class="btn" onclick="_promptCity()" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">Change city</button></div>'; }
+  catch(e){ if(box) box.innerHTML=_readErr('Couldn’t find that city — try a larger nearby one.'); }
+}
+function _salahCard(t,h){
+  const order=[['Fajr',t.Fajr],['Sunrise',t.Sunrise],['Dhuhr',t.Dhuhr],['Asr',t.Asr],['Maghrib',t.Maghrib],['Isha',t.Isha]];
+  const now=new Date(); const nowM=now.getHours()*60+now.getMinutes();
+  const toM=s=>{const m=/(\d+):(\d+)/.exec(s||''); return m?(+m[1]*60+ +m[2]):9999;};
+  const prayers=order.filter(o=>o[0]!=='Sunrise');
+  let nextIdx=prayers.findIndex(o=>toM(o[1])>nowM); if(nextIdx<0) nextIdx=0;
+  const nextName=prayers[nextIdx][0];
+  const rows=order.map(o=>{ const isNext=(o[0]===nextName); const dim=(o[0]==='Sunrise'); return '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 4px;border-bottom:1px solid var(--bd)"><span style="font-size:14px;color:'+(isNext?'var(--go)':dim?'var(--tx3)':'var(--tx2)')+';'+(isNext?'font-weight:600':'')+'">'+o[0]+(isNext?' · next':'')+'</span><span style="font-family:DM Mono,monospace;font-size:14px;color:'+(isNext?'var(--go)':'var(--tx2)')+'">'+o[1]+'</span></div>'; }).join('');
+  return '<div class="card"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:6px">Today · '+h.day+' '+h.month.en+' '+h.year+' AH</div>'+rows+'<div style="font-size:11px;color:var(--tx3);margin-top:10px;text-align:center">Times for your location · Muslim World League method</div></div>';
+}
+
+// ── PRACTICE (Dhikr / Japa bead counters) ──────────────────────────────────────
+const _PRACTICE={
+  dhikr:{ title:'Dhikr', sub:'Remembrance of Allah. Tap for each — a full tasbih is 33 + 33 + 34.', done:'Tasbih complete', doneSub:'100 remembrances. Carry the stillness with you.', phases:[{name:'SubhanAllah',sub:'Glory be to Allah',n:33},{name:'Alhamdulillah',sub:'Praise be to Allah',n:33},{name:'Allahu Akbar',sub:'Allah is greatest',n:34}] },
+  japa:{ title:'Japa', sub:'Mantra repetition. Tap for each — a full mala is 108.', done:'Mala complete', doneSub:'108 repetitions. Carry the stillness with you.', phases:[{name:'Om Namah Shivaya',sub:'I bow to the Divine within',n:108}] }
+};
+function openDhikr(){ if(typeof go==='function') go('practice'); _renderPractice('dhikr'); }
+function openJapa(){ if(typeof go==='function') go('practice'); _renderPractice('japa'); }
+function _renderPractice(kind){ if(!_PRACTICE[kind]) return; window.__practice={kind:kind,phase:0,count:0}; _paintPractice(); }
+function _paintPractice(){
+  const el=document.getElementById('practice-content'); if(!el) return;
+  const st=window.__practice||{kind:'dhikr',phase:0,count:0}; const cfg=_PRACTICE[st.kind]; const ph=cfg.phases[st.phase];
+  const ttl=document.getElementById('practice-title'); if(ttl) ttl.textContent=cfg.title;
+  const sub=document.getElementById('practice-sub'); if(sub) sub.textContent=cfg.sub;
+  const roundInfo=cfg.phases.length>1?('<div style="font-size:11px;color:var(--tx3);margin-top:4px">Part '+(st.phase+1)+' of '+cfg.phases.length+'</div>'):'';
+  el.innerHTML='<div class="card" style="text-align:center;padding:24px 18px"><div style="font-family:Cormorant Garamond,serif;font-size:26px;color:var(--tx);margin-bottom:2px">'+ph.name+'</div><div style="font-size:12px;color:var(--tx3);font-style:italic">'+ph.sub+'</div>'+roundInfo+'<div onclick="_practiceTap()" style="cursor:pointer;user-select:none;width:180px;height:180px;margin:22px auto;border-radius:50%;border:2px solid var(--go-bd);background:radial-gradient(circle at 50% 40%,rgba(200,169,110,0.12),rgba(140,107,182,0.05));display:flex;flex-direction:column;align-items:center;justify-content:center"><div id="practice-count" style="font-family:DM Mono,monospace;font-size:42px;color:var(--go)">'+st.count+'</div><div style="font-size:11px;color:var(--tx3);letter-spacing:0.1em">of '+ph.n+'</div></div><div style="font-size:12px;color:var(--tx3);margin-bottom:14px">Tap the circle for each repetition</div><button class="btn" onclick="_practiceReset()" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;padding:7px 14px">Reset</button></div>';
+}
+function _practiceTap(){
+  const st=window.__practice; if(!st) return; const cfg=_PRACTICE[st.kind]; const ph=cfg.phases[st.phase];
+  st.count++;
+  if(typeof haptic==='function') haptic('light');
+  if(st.count>=ph.n){
+    if(st.phase<cfg.phases.length-1){ st.phase++; st.count=0; if(typeof haptic==='function') haptic('success'); _paintPractice(); }
+    else {
+      if(typeof haptic==='function') haptic('success');
+      const el=document.getElementById('practice-content');
+      if(el) el.innerHTML='<div class="card" style="text-align:center;padding:32px 20px"><div style="font-size:34px;margin-bottom:10px">✓</div><div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:8px">'+cfg.done+'</div><div style="font-size:13px;color:var(--tx3);margin-bottom:18px">'+cfg.doneSub+'</div><button class="btn primary" onclick="_renderPractice(\''+st.kind+'\')" style="max-width:200px;margin:0 auto">Again</button></div>';
+    }
+  } else {
+    const c=document.getElementById('practice-count'); if(c) c.textContent=st.count; else _paintPractice();
+  }
+}
+function _practiceReset(){ const st=window.__practice; if(!st) return; st.phase=0; st.count=0; _paintPractice(); }
 
 // ── SHARED THREADS ─────────────────────────────────────────────────────────────
 // The founder's idea: show how traditions ECHO each other on the same human struggle —
@@ -7623,7 +7732,7 @@ const TABS=['home','fight','grow','money','soul'];
 // Mind lives in the ever-present orb (Feeling Door); Settings moved to the header gear.
 const TAB_PARENT={
   nourish:'grow', train:'grow', track:'grow',
-  morning:'soul', reflect:'soul', bible:'soul', why:'soul', liturgy:'soul', read:'soul', threads:'soul',
+  morning:'soul', reflect:'soul', bible:'soul', why:'soul', liturgy:'soul', read:'soul', threads:'soul', today:'soul', practice:'soul',
   calendar:'home', settings:'home'
   // fight, money & soul are their own top-level tabs; coach is the floating button
 };
@@ -29671,6 +29780,7 @@ async function initApp(){
   vi = pickAdaptiveVerseIndex();
   if(typeof pickDailyContextualVerse==='function'){ vi = pickDailyContextualVerse(); } showV(activeVerses()[vi]);
   try{ if(typeof applyFaithGlobal==='function') applyFaithGlobal(); }catch(_){}
+  try{ if(typeof applyFaithLabels==='function') applyFaithLabels(); }catch(_){}
   // Background: refresh currency rates if user has set a preference different from base
   if(typeof fetchCurrencyRates === 'function') fetchCurrencyRates(getUserCurrency());
   // Personalise coach
