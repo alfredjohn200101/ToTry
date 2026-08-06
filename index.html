@@ -1404,27 +1404,27 @@ input:focus,textarea:focus,select:focus{
       <div class="hc-desc">Close the day: how it went, journal, examen, wins.</div>
     </div>
   </div>
-  <div class="hub-section-label">Draw near — prayer &amp; scripture, all in one place</div>
+  <div class="hub-section-label" id="soul-drawnear-label">Draw near — prayer &amp; scripture, all in one place</div>
   <div class="hub-grid">
-    <div class="hub-card wide" onclick="go('bible')">
+    <div class="hub-card wide" id="soul-book-card" onclick="openScripture()">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-      <div class="hc-title">Bible</div>
-      <div class="hc-desc">A verse for whatever you're facing, a full reader, and verses saved for the road.</div>
+      <div class="hc-title" id="soul-book-title">Bible</div>
+      <div class="hc-desc" id="soul-book-desc">A verse for whatever you're facing, a full reader, and verses saved for the road.</div>
     </div>
-    <div class="hub-card wide" onclick="go('liturgy')">
+    <div class="hub-card wide" id="soul-today-card" onclick="openTodayAnchor()">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-      <div class="hc-title">Today in the Church</div>
-      <div class="hc-desc">The Mass readings for today and the saint the Church remembers. The living calendar of the faith.</div>
+      <div class="hc-title" id="soul-today-title">Today in the Church</div>
+      <div class="hc-desc" id="soul-today-desc">The Mass readings for today and the saint the Church remembers. The living calendar of the faith.</div>
     </div>
-    <div class="hub-card wide" onclick="openRosary()">
+    <div class="hub-card wide" id="soul-practice-card" onclick="openPractice()">
       <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="4" r="1.6"/><circle cx="12" cy="20" r="1.6"/><circle cx="4" cy="12" r="1.6"/><circle cx="20" cy="12" r="1.6"/><circle cx="6.3" cy="6.3" r="1.3"/><circle cx="17.7" cy="6.3" r="1.3"/><circle cx="6.3" cy="17.7" r="1.3"/><circle cx="17.7" cy="17.7" r="1.3"/><path d="M12 12l0 3.5"/></svg>
-      <div class="hc-title">The Rosary</div>
-      <div class="hc-desc">Pray it guided, bead by bead — today's mysteries chosen for you, every prayer at hand.</div>
+      <div class="hc-title" id="soul-practice-title">The Rosary</div>
+      <div class="hc-desc" id="soul-practice-desc">Pray it guided, bead by bead — today's mysteries chosen for you, every prayer at hand.</div>
     </div>
     <div class="hub-card wide" onclick="openBreathMenu()">
       <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>
       <div class="hc-title">Stillness &amp; breath</div>
-      <div class="hc-desc">A minute of guided breathing — or the Jesus Prayer carried on your breath. The one work you can always do.</div>
+      <div class="hc-desc" id="soul-still-desc">A minute of guided breathing — or the Jesus Prayer carried on your breath. The one work you can always do.</div>
     </div>
   </div>
   <div class="hub-section-label">Your anchor — what keeps you here</div>
@@ -1440,6 +1440,18 @@ input:focus,textarea:focus,select:focus{
       <div class="hc-desc">The reason you started, letters to your future self, and the promises you're keeping. All in one place.</div>
     </div>
   </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TAB: READ — the person's sacred text, per tradition (Qur'an, Bhagavad Gita, Dhammapada, Stoic
+     reflections). Christianity keeps its own richer Bible reader (tab-bible). -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div id="tab-read" class="tab">
+  <div style="margin-bottom:12px"><button class="btn" onclick="go('soul')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px;padding:8px 12px">&lsaquo; Soul</button></div>
+  <h2 id="read-title" style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.2;margin-bottom:2px">Read</h2>
+  <p id="read-sub" style="font-size:12.5px;color:var(--tx3);line-height:1.5;margin-bottom:12px"></p>
+  <div id="read-selector" style="margin-bottom:12px"></div>
+  <div id="read-content"></div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════ -->
@@ -3497,17 +3509,41 @@ Amen.</div></div>
        of another faith or none is fully welcome and fully served. This lets him meet the faith at the
        depth that's true for him — never hidden, never forced. Meeting a man where he is IS the faith. -->
   <details class="settings-group">
-    <summary>✝ Faith <span class="settings-group-hint">How much scripture surfaces for you</span></summary>
+    <summary>🕯 Faith &amp; meaning <span class="settings-group-hint">Your path, and how much surfaces</span></summary>
     <div class="card">
-      <p style="font-size:12.5px;color:var(--tx2);margin-bottom:14px;line-height:1.6">To Try was built honestly from a Christian heart &mdash; that won't change. But you're welcome here whatever you believe. Choose how much of the faith surfaces day to day. The companion, the systems, and every practical feature work fully either way.</p>
+      <p style="font-size:12.5px;color:var(--tx2);margin-bottom:12px;line-height:1.6">To Try was built honestly from a Christian heart &mdash; and made to serve you in yours. Choose your path and the daily reading, the reader, and the companion&rsquo;s voice follow it. Or choose none, and lean on grounded, tested wisdom instead. Every practical feature works fully either way.</p>
+      <div class="lbl" style="margin-bottom:8px">Your path</div>
+      <div id="faith-tradition-options" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px">
+        <button class="faithtr-opt" data-tr="christianity" onclick="setFaithTradition('christianity')" style="text-align:left;padding:12px 13px;border-radius:11px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);cursor:pointer">
+          <div style="font-weight:600;font-size:13.5px">✝ Christianity</div>
+          <div style="font-size:11px;color:var(--tx3);margin-top:2px">Bible · the Church · the Rosary</div>
+        </button>
+        <button class="faithtr-opt" data-tr="islam" onclick="setFaithTradition('islam')" style="text-align:left;padding:12px 13px;border-radius:11px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);cursor:pointer">
+          <div style="font-weight:600;font-size:13.5px">☪ Islam</div>
+          <div style="font-size:11px;color:var(--tx3);margin-top:2px">Qur&rsquo;an · prayer · dhikr</div>
+        </button>
+        <button class="faithtr-opt" data-tr="hinduism" onclick="setFaithTradition('hinduism')" style="text-align:left;padding:12px 13px;border-radius:11px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);cursor:pointer">
+          <div style="font-weight:600;font-size:13.5px">🕉 Hinduism</div>
+          <div style="font-size:11px;color:var(--tx3);margin-top:2px">Bhagavad Gita · japa</div>
+        </button>
+        <button class="faithtr-opt" data-tr="buddhism" onclick="setFaithTradition('buddhism')" style="text-align:left;padding:12px 13px;border-radius:11px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);cursor:pointer">
+          <div style="font-weight:600;font-size:13.5px">☸ Buddhism</div>
+          <div style="font-size:11px;color:var(--tx3);margin-top:2px">Dhammapada · meditation</div>
+        </button>
+        <button class="faithtr-opt" data-tr="secular" onclick="setFaithTradition('secular')" style="grid-column:1 / -1;text-align:left;padding:12px 13px;border-radius:11px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);cursor:pointer">
+          <div style="font-weight:600;font-size:13.5px">○ Secular / None</div>
+          <div style="font-size:11px;color:var(--tx3);margin-top:2px">Stoic &amp; grounded wisdom &mdash; no belief required</div>
+        </button>
+      </div>
+      <div class="lbl" style="margin-bottom:8px">How much surfaces</div>
       <div id="faith-level-options" style="display:flex;flex-direction:column;gap:8px">
         <button class="faith-opt" data-faith="full" onclick="setFaithLevel('full')" style="text-align:left;padding:13px 15px;border-radius:11px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);cursor:pointer">
-          <div style="font-weight:600;font-size:14px">Full &mdash; faith woven through</div>
-          <div style="font-size:11.5px;color:var(--tx3);margin-top:2px">Scripture, prayer, the daily verse. The app as it was made.</div>
+          <div style="font-weight:600;font-size:14px">Full &mdash; woven through</div>
+          <div style="font-size:11.5px;color:var(--tx3);margin-top:2px">The reading, the practice, the daily verse &mdash; present through the day.</div>
         </button>
         <button class="faith-opt" data-faith="light" onclick="setFaithLevel('light')" style="text-align:left;padding:13px 15px;border-radius:11px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);cursor:pointer">
           <div style="font-weight:600;font-size:14px">Lighter &mdash; mostly the systems</div>
-          <div style="font-size:11.5px;color:var(--tx3);margin-top:2px">The companion and the whole-life systems lead; scripture stays available when you seek it, but surfaces less.</div>
+          <div style="font-size:11.5px;color:var(--tx3);margin-top:2px">The companion and the whole-life systems lead; the reading stays available when you seek it, but surfaces less.</div>
         </button>
       </div>
     </div>
@@ -4113,7 +4149,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v312';
+const APP_VERSION = 'v313';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -6004,7 +6040,7 @@ function buildCtx(){
   let stepsCtx=todaySteps?('\nTODAY\'S STEPS: '+todaySteps+(stepGoal?(' (goal '+stepGoal+(todaySteps>=stepGoal?' — hit it':'')+')'):'')):(stepGoal?('\nSTEP GOAL: '+stepGoal+'/day (none logged yet today)'):'');
   if(sleepGoal) stepsCtx+='\nSLEEP GOAL: '+sleepGoal+'h a night';
   
-  return BROTHER_VOICE + ((typeof faithLevel==='function' && faithLevel()==='light') ? "NOTE: they've set faith to LIGHTER — ease off scripture and God-talk unless they open that door; lead with the human and the practical, keep all your warmth. " : "") + `You're their whole-life coach here as well as their brother — you have their REAL data right now, so use it.
+  return BROTHER_VOICE + faithVoiceNote() + `You're their whole-life coach here as well as their brother — you have their REAL data right now, so use it.
 
 WHO THEY ARE:
 ${userName} | Day ${getDayCount()} of their journey | ${streak}-day habit streak${identity?'\nIDENTITY (who they are becoming): "'+identity+'"':''}${season?'\nCURRENT SEASON: '+season:''}${why?'\nTHEIR WHY: "'+why+'"':''}
@@ -6962,8 +6998,8 @@ async function finishOnboard(){
   haptic('celebrate');
 }
 
-// ── HEADER VERSES ─────────────────────────────────────────────
-const VS=[
+// ── HEADER VERSES (per-tradition banks below; activeVerses() returns the current one) ──
+const VS_CHRISTIANITY=[
   {t:"I can do all things through him who strengthens me.",r:"Philippians 4:13 (ESV)"},
   {t:"Be strong and courageous. Do not be frightened, and do not be dismayed, for the Lord your God is with you wherever you go.",r:"Joshua 1:9 (ESV)"},
   {t:"No temptation has overtaken you that is not common to man. God is faithful, and he will not let you be tempted beyond your ability.",r:"1 Corinthians 10:13 (ESV)"},
@@ -7009,7 +7045,241 @@ const VS=[
   {t:"The name of the Lord is a strong tower; the righteous man runs into it and is safe.",r:"Proverbs 18:10 (ESV)"},
   {t:"Weeping may tarry for the night, but joy comes with the morning.",r:"Psalm 30:5 (ESV)"},
 ];
-let vi=Math.floor(Math.random()*VS.length); // overridden by pickContextualVerse() on load
+// ── MULTI-FAITH VERSE BANKS ───────────────────────────────────────────────────
+// The person is served in THEIR tradition. Each bank is a small, carefully-attributed
+// set on the app's themes (strength, patience, self-mastery, fresh starts, stillness,
+// hope). verseThemes() reads the TEXT for contextual selection, so it works for every
+// bank with no per-tradition tagging. Secular is real Stoic/philosophical wisdom —
+// grounded in reality, standing on its own, not "faith removed."
+const VS_ISLAM=[
+  {t:"Indeed, with hardship [will be] ease.",r:"Qur’an 94:6"},
+  {t:"Allah does not charge a soul except [with that within] its capacity.",r:"Qur’an 2:286"},
+  {t:"And whoever fears Allah — He will make for him a way out.",r:"Qur’an 65:2"},
+  {t:"Verily, in the remembrance of Allah do hearts find rest.",r:"Qur’an 13:28"},
+  {t:"O you who have believed, seek help through patience and prayer.",r:"Qur’an 2:153"},
+  {t:"Do not despair of the mercy of Allah; indeed, Allah forgives all sins.",r:"Qur’an 39:53"},
+  {t:"And He found you lost and guided you.",r:"Qur’an 93:7"},
+  {t:"So remember Me; I will remember you.",r:"Qur’an 2:152"},
+  {t:"And that there is not for man except that for which he strives.",r:"Qur’an 53:39"},
+  {t:"And rely upon Allah; and sufficient is Allah as Disposer of affairs.",r:"Qur’an 33:3"},
+  {t:"So do not weaken and do not grieve.",r:"Qur’an 3:139"},
+  {t:"Indeed, prayer prohibits immorality and wrongdoing.",r:"Qur’an 29:45"},
+  {t:"And when I am ill, it is He who cures me.",r:"Qur’an 26:80"},
+  {t:"My success is not but through Allah.",r:"Qur’an 11:88"},
+  {t:"Indeed, Allah is with the patient.",r:"Qur’an 2:153"},
+];
+const VS_HINDU=[
+  {t:"You have a right to your actions, but never to the fruits of your actions.",r:"Bhagavad Gita 2.47"},
+  {t:"Yoga is skill in action.",r:"Bhagavad Gita 2.50"},
+  {t:"Let a man lift himself by his own self; let him not degrade himself.",r:"Bhagavad Gita 6.5"},
+  {t:"For one who has conquered the self, the self is a friend.",r:"Bhagavad Gita 6.6"},
+  {t:"The restless mind is subdued by practice and by detachment.",r:"Bhagavad Gita 6.35"},
+  {t:"He who is even-minded in pleasure and pain, and steadfast, is fit for the deathless.",r:"Bhagavad Gita 2.15"},
+  {t:"Better is one’s own duty, though imperfect, than the duty of another well performed.",r:"Bhagavad Gita 3.35"},
+  {t:"Cold and heat, pleasure and pain, come and go; they are impermanent. Bear them patiently.",r:"Bhagavad Gita 2.14"},
+  {t:"As a lamp in a windless place does not flicker — so is the disciplined mind.",r:"Bhagavad Gita 6.19"},
+  {t:"Perform your duty, for action is indeed better than inaction.",r:"Bhagavad Gita 3.8"},
+  {t:"The wise grieve neither for the living nor for the dead.",r:"Bhagavad Gita 2.11"},
+  {t:"Whatever you do, offer it as a gift.",r:"Bhagavad Gita 9.27"},
+  {t:"One who sees inaction in action, and action in inaction, is truly wise.",r:"Bhagavad Gita 4.18"},
+  {t:"Little by little, through patience and repeated effort, the mind becomes stilled.",r:"Bhagavad Gita 6.25"},
+];
+const VS_BUDDHIST=[
+  {t:"All that we are is the result of what we have thought.",r:"Dhammapada 1"},
+  {t:"Hatred is never appeased by hatred; by love alone is it appeased.",r:"Dhammapada 5"},
+  {t:"One who conquers himself is greater than one who conquers a thousand in battle.",r:"Dhammapada 103"},
+  {t:"Irrigators guide the water; fletchers shape the arrow; the wise master themselves.",r:"Dhammapada 80"},
+  {t:"As a solid rock is unshaken by the wind, the wise are unshaken by praise or blame.",r:"Dhammapada 81"},
+  {t:"Better than a thousand hollow words is one word that brings peace.",r:"Dhammapada 100"},
+  {t:"Do good again and again — the gathering of good, little by little, is happiness.",r:"Dhammapada 118"},
+  {t:"Health is the greatest gift, contentment the greatest wealth.",r:"Dhammapada 204"},
+  {t:"Long is the night to the sleepless; long the road to the weary.",r:"Dhammapada 60"},
+  {t:"Do not think good is far off; even a water-pot is filled by falling drops.",r:"Dhammapada 122"},
+  {t:"The mind is hard to check, swift, and flies wherever it wills; to master it is good.",r:"Dhammapada 35"},
+  {t:"By oneself is one purified; purity and impurity depend on oneself.",r:"Dhammapada 165"},
+  {t:"Know your own good, and be intent upon it.",r:"Dhammapada 166"},
+  {t:"Him I call wise who, though wronged, bears no ill will.",r:"Dhammapada 400"},
+];
+const VS_SECULAR=[
+  {t:"You have power over your mind — not outside events. Realize this, and you will find strength.",r:"Marcus Aurelius, Meditations"},
+  {t:"We suffer more often in imagination than in reality.",r:"Seneca"},
+  {t:"It is not what happens to you, but how you react to it, that matters.",r:"Epictetus"},
+  {t:"The happiness of your life depends upon the quality of your thoughts.",r:"Marcus Aurelius, Meditations"},
+  {t:"No one is free who is not master of himself.",r:"Epictetus"},
+  {t:"Waste no more time arguing what a good person should be. Be one.",r:"Marcus Aurelius, Meditations"},
+  {t:"First say to yourself what you would be; then do what you have to do.",r:"Epictetus"},
+  {t:"Difficulties strengthen the mind, as labour does the body.",r:"Seneca"},
+  {t:"The impediment to action advances action. What stands in the way becomes the way.",r:"Marcus Aurelius, Meditations"},
+  {t:"How long will you wait before you demand the best of yourself?",r:"Epictetus"},
+  {t:"Begin at once to live, and count each day as a separate life.",r:"Seneca"},
+  {t:"Wealth consists not in having great possessions, but in having few wants.",r:"Epictetus"},
+  {t:"He who is brave is free.",r:"Seneca"},
+  {t:"Luck is what happens when preparation meets opportunity.",r:"Seneca"},
+  {t:"Confine yourself to the present.",r:"Marcus Aurelius, Meditations"},
+];
+
+// ── FAITH REGISTRY ────────────────────────────────────────────────────────────
+// One place that fills the universal backbone (sacred-text reader, the daily "today"
+// anchor, a prayer/stillness practice, the voice, the verse pill) per tradition.
+// faithTradition() = which path; faithLevel() (elsewhere) = how much surfaces.
+const FAITHS = {
+  christianity: {
+    id:'christianity', label:'Christianity', icon:'✝', divine:'God',
+    bookName:'the Bible', bookShort:'Bible',
+    todayTitle:'Today in the Church', todayDesc:'The Mass readings for today and the saint the Church remembers.',
+    practiceTitle:'The Rosary', practiceDesc:'Pray it guided, bead by bead — today’s mysteries chosen for you.',
+    scriptureWord:'scripture', wordWord:'a word', prayWord:'pray', prayTo:'God',
+    voice:'Draw on the Bible and the Christian tradition; speak of God, grace, and Christ naturally when it fits.',
+    verses: VS_CHRISTIANITY,
+  },
+  islam: {
+    id:'islam', label:'Islam', icon:'☪', divine:'Allah',
+    bookName:'the Qur’an', bookShort:'Qur’an',
+    todayTitle:'Today', todayDesc:'Today’s prayer times, the Islamic date, and an ayah for the day.',
+    practiceTitle:'Dhikr', practiceDesc:'Remembrance of Allah — guided, with the beautiful names.',
+    scriptureWord:'the Qur’an', wordWord:'an ayah', prayWord:'pray', prayTo:'Allah',
+    voice:'Draw on the Qur’an and the Islamic tradition; speak of Allah, mercy (rahma), patience (sabr), and gratitude (shukr) naturally when it fits. Be reverent and never misquote.',
+    verses: VS_ISLAM,
+  },
+  hinduism: {
+    id:'hinduism', label:'Hinduism', icon:'🕉', divine:'the Divine',
+    bookName:'the Bhagavad Gita', bookShort:'Gita',
+    todayTitle:'Today', todayDesc:'A verse from the Gita and today’s observance.',
+    practiceTitle:'Japa', practiceDesc:'Mantra repetition — steady the mind, bead by bead.',
+    scriptureWord:'the Gita', wordWord:'a verse', prayWord:'pray', prayTo:'the Divine',
+    voice:'Draw on the Bhagavad Gita and the dharmic tradition; speak of dharma, doing one’s duty without attachment to the fruits, and the steady mind. Respectful, never dogmatic.',
+    verses: VS_HINDU,
+  },
+  buddhism: {
+    id:'buddhism', label:'Buddhism', icon:'☸', divine:null,
+    bookName:'the Dhammapada', bookShort:'Dhammapada',
+    todayTitle:'Today', todayDesc:'A teaching for the day, and a moment to sit.',
+    practiceTitle:'Meditation', practiceDesc:'Sit with the breath — guided, at your own pace.',
+    scriptureWord:'the Dhammapada', wordWord:'a teaching', prayWord:'sit', prayTo:null,
+    voice:'Draw on the Dhammapada and the Buddhist path; speak of mindfulness, non-attachment, and the mind as the root of both suffering and freedom. No deity — the work is inner.',
+    verses: VS_BUDDHIST,
+  },
+  secular: {
+    id:'secular', label:'Secular / None', icon:'○', divine:null,
+    bookName:'the Stoics', bookShort:'Reflections',
+    todayTitle:'Today', todayDesc:'A grounded reflection to steady the day.',
+    practiceTitle:'Stillness', practiceDesc:'A few quiet minutes with the breath — no belief required.',
+    scriptureWord:'a reflection', wordWord:'a reflection', prayWord:'reflect', prayTo:null,
+    voice:'Use NO religious language at all. Lead with the human and the practical — Stoic clarity, the science of habit, honest self-respect. Never mention God, scripture, or prayer.',
+    verses: VS_SECULAR,
+  },
+};
+function faithTradition(){ try{ return ls('totry_faith_tradition') || 'christianity'; }catch(_){ return 'christianity'; } }
+function curFaith(){ return FAITHS[faithTradition()] || FAITHS.christianity; }
+function activeVerses(){ try{ const v=curFaith().verses; return (v&&v.length)?v:VS_CHRISTIANITY; }catch(_){ return VS_CHRISTIANITY; } }
+// The voice speaks from the PERSON'S tradition — their scripture, their vocabulary — not Christian
+// verses with the names swapped. Composed into every Brother/companion prompt. Secular = no God-talk.
+function faithVoiceNote(){
+  try{
+    const f = curFaith();
+    let s = "FAITH CONTEXT — the person follows "+f.label+". "+f.voice+" ";
+    if(typeof faithLevel==='function' && faithLevel()==='light'){
+      s += (f.id==='secular')
+        ? "They've set intensity LIGHTER too — keep it minimal and purely practical. "
+        : "They've also set faith LIGHTER — ease off further; lead with the human and the practical, keep all your warmth, and let their tradition surface only when they open that door. ";
+    }
+    return s;
+  }catch(_){ return ""; }
+}
+
+// ── SOUL TAB — make the cards speak the person's tradition ─────────────────────
+// Relabels the book/today/practice/stillness cards and shows only what fits the path.
+// Christianity keeps liturgy + Rosary; other paths get their reader + the universal stillness.
+function applyFaithLabels(){
+  try{
+    const f=curFaith(), t=f.id;
+    const set=(id,txt)=>{ const el=document.getElementById(id); if(el&&txt!=null) el.textContent=txt; };
+    const show=(id,on)=>{ const el=document.getElementById(id); if(el) el.style.display= on ? '' : 'none'; };
+    set('soul-book-title', f.bookShort);
+    set('soul-book-desc', (t==='secular')
+      ? 'Grounded reflections for whatever you’re facing — read, and carry one with you.'
+      : 'A passage for whatever you’re facing, a full reader, and passages to carry.');
+    // The "today" anchor (liturgy) and the beads practice (Rosary) are Christianity-specific for now.
+    // Other paths read their text and keep the universal stillness/breath practice.
+    show('soul-today-card', t==='christianity');
+    show('soul-practice-card', t==='christianity');
+    const still={
+      christianity:'A minute of guided breathing — or the Jesus Prayer carried on your breath. The one work you can always do.',
+      islam:'A minute of guided breathing — or dhikr carried on your breath. The one work you can always do.',
+      hinduism:'A minute of guided breathing — or a mantra carried on your breath. The one work you can always do.',
+      buddhism:'A minute of guided breathing — resting attention on the breath itself. The one work you can always do.',
+      secular:'A minute of guided breathing — just you and the breath, no belief required. The one work you can always do.'
+    };
+    set('soul-still-desc', still[t]||still.christianity);
+    set('soul-drawnear-label',
+      t==='secular' ? 'Steady yourself — reflection & stillness, all in one place'
+      : t==='buddhism' ? 'Draw near — teachings & stillness, all in one place'
+      : 'Draw near — ' + f.scriptureWord + ' & stillness, all in one place');
+  }catch(_){}
+}
+
+// ── READER — the person's sacred text (Qur'an/Gita live; Dhammapada/Stoic bundled; Bible = tab-bible) ──
+function openScripture(){ const t=faithTradition(); if(t==='christianity'){ if(typeof go==='function') go('bible'); return; } openReader(t); }
+function openTodayAnchor(){ const t=faithTradition(); if(t==='christianity'){ if(typeof go==='function') go('liturgy'); return; } openScripture(); }
+function openPractice(){ const t=faithTradition(); if(t==='christianity'){ if(typeof openRosary==='function') openRosary(); return; } if(typeof openBreathMenu==='function') openBreathMenu(); }
+function _readLoading(){ return '<div style="text-align:center;padding:26px;color:var(--tx3);font-size:13px">Loading…</div>'; }
+function _readErr(msg){ return '<div class="card" style="text-align:center;color:var(--tx3);font-size:13px;padding:18px">'+(msg||'Couldn’t load right now. Check your connection and try again.')+'</div>'; }
+function _selStyle(){ return 'background:var(--bg3);border:1px solid var(--bd);color:var(--tx);border-radius:9px;padding:9px 11px;font-size:13px;max-width:100%'; }
+function _readBtnStyle(){ return 'background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:14px;padding:8px 13px'; }
+function openReader(t){
+  const f=FAITHS[t]||curFaith();
+  if(typeof go==='function') go('read');
+  const subs={islam:'The Qur’an — Sahih International translation.',hinduism:'The Bhagavad Gita — chapter and verse.',buddhism:'Selected teachings from the Dhammapada.',secular:'Reflections from the Stoics — grounded, tested wisdom.'};
+  const ttl=document.getElementById('read-title'); if(ttl) ttl.textContent=f.bookName.replace(/^the /,'').replace(/^./,c=>c.toUpperCase());
+  const sub=document.getElementById('read-sub'); if(sub) sub.textContent=subs[t]||'';
+  const sel=document.getElementById('read-selector'), content=document.getElementById('read-content');
+  if(content) content.innerHTML=_readLoading();
+  if(t==='islam') _readQuranInit(sel,content);
+  else if(t==='hinduism') _readGitaInit(sel,content);
+  else if(t==='buddhism') _readBundled(sel,content,VS_BUDDHIST);
+  else _readBundled(sel,content,VS_SECULAR);
+}
+function _readBundled(sel,content,bank){
+  if(sel) sel.innerHTML='';
+  if(!content) return;
+  content.innerHTML='<div class="card">'+bank.map(v=>'<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--bd)"><div style="font-size:15px;line-height:1.75;color:var(--tx)">“'+v.t+'”</div><div style="font-size:12px;color:var(--tx3);margin-top:6px">— '+v.r+'</div></div>').join('')+'</div>';
+}
+// Qur'an — Al-Quran Cloud (free, no key): surah picker + Arabic + English.
+async function _readQuranInit(sel,content){
+  let surahs=window.__quranSurahs;
+  if(!surahs){ try{ const r=await fetch('https://api.alquran.cloud/v1/surah'); const j=await r.json(); surahs=(j&&j.data)||null; window.__quranSurahs=surahs; }catch(e){ surahs=null; } }
+  let start=1; try{ if(typeof getDayCount==='function'){ start=(getDayCount()%20)+1; } }catch(_){ }
+  if(sel){ sel.innerHTML = surahs ? '<select id="quran-surah" onchange="_readQuranLoad(this.value)" style="'+_selStyle()+'">'+surahs.map(s=>'<option value="'+s.number+'"'+(s.number===start?' selected':'')+'>'+s.number+'. '+s.englishName+'</option>').join('')+'</select>' : ''; }
+  _readQuranLoad(String(start));
+}
+async function _readQuranLoad(n){
+  const content=document.getElementById('read-content'); if(!content) return; content.innerHTML=_readLoading();
+  try{
+    let ar=null,en=null;
+    try{ const r=await fetch('https://api.alquran.cloud/v1/surah/'+n+'/editions/quran-uthmani,en.sahih'); const j=await r.json(); if(j&&j.data&&j.data.length>=2){ ar=j.data[0].ayahs; en=j.data[1].ayahs; } }catch(e){}
+    if(!en){ const r2=await fetch('https://api.alquran.cloud/v1/surah/'+n+'/en.sahih'); const j2=await r2.json(); en=j2.data.ayahs; }
+    content.innerHTML='<div class="card">'+en.map((a,i)=>'<div style="margin-bottom:15px">'+(ar&&ar[i]?'<div dir="rtl" style="font-size:21px;line-height:2.1;color:var(--tx);text-align:right;margin-bottom:5px">'+ar[i].text+'</div>':'')+'<div style="font-size:13.5px;color:var(--tx2);line-height:1.65">'+a.text+' <span style="color:var(--tx3);font-size:11px">('+n+':'+a.numberInSurah+')</span></div></div>').join('')+'</div>';
+  }catch(e){ content.innerHTML=_readErr(); }
+}
+// Bhagavad Gita — vedicscriptures (free): chapter select + per-verse navigation.
+async function _readGitaInit(sel,content){
+  if(!window.__gita){ let ch=1; try{ if(typeof getDayCount==='function') ch=(getDayCount()%18)+1; }catch(_){ } window.__gita={ch:ch,v:1}; }
+  if(sel){ sel.innerHTML='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label style="font-size:12px;color:var(--tx3)">Chapter</label><select id="gita-ch" onchange="window.__gita.ch=+this.value;window.__gita.v=1;_readGitaLoad()" style="'+_selStyle()+'">'+Array.from({length:18},(_,i)=>'<option value="'+(i+1)+'">'+(i+1)+'</option>').join('')+'</select><button class="btn" onclick="_gitaNav(-1)" style="'+_readBtnStyle()+'">‹</button><button class="btn" onclick="_gitaNav(1)" style="'+_readBtnStyle()+'">›</button></div>'; }
+  const chSel=document.getElementById('gita-ch'); if(chSel) chSel.value=String(window.__gita.ch);
+  _readGitaLoad();
+}
+async function _readGitaLoad(){
+  const content=document.getElementById('read-content'); if(!content) return; content.innerHTML=_readLoading();
+  try{
+    const g=window.__gita; const r=await fetch('https://vedicscriptures.github.io/slok/'+g.ch+'/'+g.v+'/index.json');
+    if(!r.ok) throw new Error('end'); const j=await r.json();
+    const en=(j.siva&&j.siva.et)||(j.purohit&&j.purohit.et)||(j.raman&&j.raman.et)||(j.gambir&&j.gambir.et)||'';
+    content.innerHTML='<div class="card"><div style="font-size:12px;color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+g.ch+'.'+g.v+'</div>'+(j.slok?'<div style="font-size:16px;line-height:1.95;color:var(--tx);margin-bottom:8px">'+j.slok+'</div>':'')+(j.transliteration?'<div style="font-size:12.5px;font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+String(j.transliteration).trim()+'</div>':'')+'<div style="font-size:14px;color:var(--tx2);line-height:1.75">'+en+'</div></div>';
+  }catch(e){ if(window.__gita&&window.__gita.v>1){ window.__gita.v--; } const content2=document.getElementById('read-content'); if(content2) content2.innerHTML=_readErr('That’s the end of the chapter — pick another above.'); }
+}
+function _gitaNav(d){ if(!window.__gita) window.__gita={ch:1,v:1}; window.__gita.v=Math.max(1,(window.__gita.v||1)+d); _readGitaLoad(); }
+
+let vi=Math.floor(Math.random()*activeVerses().length); // overridden by pickContextualVerse() on load
 // ── SCRIPTURE THAT MEETS YOU ── pick today's verse with gentle awareness of what the person
 // is facing (their fight, season, recent mood) and what has landed before (saved verses).
 // Still fresh each day, but no longer blind random. Falls back to deterministic daily rotation.
@@ -7027,6 +7297,7 @@ function verseThemes(v){
   return themes.length ? themes : ['strength'];
 }
 function pickDailyContextualVerse(){
+  const VS = activeVerses();
   const _dc = () => { try{ return (typeof getDayCount==='function') ? getDayCount() : Math.floor(Date.now()/86400000); }catch(_){ return Math.floor(Date.now()/86400000); } };
   try{
     const today = new Date().toLocaleDateString('en-AU');
@@ -7079,6 +7350,7 @@ function pickDailyContextualVerse(){
 // Adaptive verse selection — pick from VS based on user's current state.
 // Returns an index into VS. Re-evaluates per app open.
 function pickAdaptiveVerseIndex(){
+  const VS = activeVerses();
   try{
     loadV(); loadH();
     const ti = tIdx();
@@ -7149,7 +7421,7 @@ function showV(v){
   if(mt)mt.textContent='\u201C'+v.t+'\u201D';
   if(mr)mr.textContent='\u2014 '+v.r;
 }
-function nextVerse(){vi=(vi+1)%VS.length;showV(VS[vi]);}
+function nextVerse(){const VS=activeVerses();vi=(vi+1)%VS.length;showV(VS[vi]);}
 function saveHdrVerse(){
   const v=document.getElementById('hdr-verse').textContent;
   const r=document.getElementById('hdr-ref').textContent.replace('\u2014 ','');
@@ -7170,7 +7442,7 @@ const TABS=['home','fight','grow','money','soul'];
 // Mind lives in the ever-present orb (Feeling Door); Settings moved to the header gear.
 const TAB_PARENT={
   nourish:'grow', train:'grow', track:'grow',
-  morning:'soul', reflect:'soul', bible:'soul', why:'soul', liturgy:'soul',
+  morning:'soul', reflect:'soul', bible:'soul', why:'soul', liturgy:'soul', read:'soul',
   calendar:'home', settings:'home'
   // fight, money & soul are their own top-level tabs; coach is the floating button
 };
@@ -7272,7 +7544,7 @@ function go(name){
   if(name==='calendar' && typeof renderCalendar==='function'){renderCalendar();}
   
   if(name==='morning'){initMorningTab();showMorningAffirm();showMorningFocus();if(typeof _restoreMorningSleep==='function')_restoreMorningSleep();}
-  if(name==='soul' && typeof highlightSoulByTime==='function'){highlightSoulByTime();}
+  if(name==='soul'){ if(typeof applyFaithLabels==='function') applyFaithLabels(); if(typeof highlightSoulByTime==='function') highlightSoulByTime(); }
   if(name==='reflect'){initEveningTab();initReviewTab();}
   
   if(name==='nourish'){renderNutritionLog();if(typeof prefillNutGoals==='function')prefillNutGoals();}
@@ -8890,6 +9162,25 @@ function _overridePlan(p){
 // app as the whole plan. Any screen can call this.
 // Faith intensity — 'full' (default) or 'light'. Never removes faith; just dials how much surfaces,
 // so a man of any belief is met where he is. The verse pill and auto-scripture honor this.
+// WHICH tradition the person follows — swaps the sacred text, the daily verse, the voice, and (as the
+// Soul tab readers roll out) the "today" anchor and the practice. Distinct from setFaithLevel (how MUCH
+// surfaces). Default christianity preserves the app as built; a person of any path or none is met here.
+function setFaithTradition(tr){
+  if(!FAITHS[tr]) tr='christianity';
+  ls('totry_faith_tradition', tr);
+  try{
+    document.querySelectorAll('.faithtr-opt').forEach(b=>{
+      const on = b.dataset.tr===tr;
+      b.style.borderColor = on ? 'var(--go)' : 'var(--bd)';
+      b.style.background = on ? 'rgba(200,169,110,0.10)' : 'var(--bg3)';
+    });
+  }catch(_){}
+  try{ if(typeof applyFaithLabels==='function') applyFaithLabels(); }catch(_){}
+  // Refresh the daily verse immediately so the pill shows the new tradition's scripture.
+  try{ if(typeof pickDailyContextualVerse==='function'){ vi = pickDailyContextualVerse(); } if(typeof showV==='function') showV(activeVerses()[vi]); }catch(_){}
+  const f = FAITHS[tr];
+  if(typeof showToast==='function') showToast('Path set', 'Your daily '+f.scriptureWord+' and the companion’s voice now follow '+f.label+'.');
+}
 function setFaithLevel(level){
   ls('totry_faith_level', level);
   try{
@@ -10369,7 +10660,7 @@ async function _companionSay(userText, opening){
     if(cached[key] && cached[key].spine) spine = cached[key].spine;
   }
   const sys = BROTHER_VOICE
-    + ((typeof faithLevel==='function' && faithLevel()==='light') ? "NOTE: they've set faith to LIGHTER — ease off scripture and God-talk unless they open that door; lead with the human and the practical, keep all your warmth. " : "")
+    + faithVoiceNote()
     + "RIGHT NOW you're with them in a tempted or struggling moment — this is the 2am door, their hardest moment. Be present, short, real. "
     + "The person is "+name+". They're facing: \""+(s.name||'something hard')+"\". "
     + (function(){ try{ const rd=(typeof computeReadiness==='function')?computeReadiness():null; if(rd && rd.sleep!=null && rd.sleep<=4){ return "IMPORTANT CONTEXT: they slept poorly recently — low sleep makes urges feel much stronger and willpower thinner. If it fits, gently name this so they know the pull feeling strong tonight is partly exhaustion, NOT weakness or failure in them. "; } return ''; }catch(_){ return ''; } })()
@@ -28017,6 +28308,7 @@ function initSettingsTab(){
   // Reflect the CURRENT faith level when Settings opens — it was only highlighted on click, so on
   // open neither option looked selected (that's the "faith level looks messed up"). Now it's clear.
   try{ const fl=(typeof faithLevel==='function')?faithLevel():'full'; document.querySelectorAll('.faith-opt').forEach(b=>{ const on=b.dataset.faith===fl; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'rgba(200,169,110,0.10)':'var(--bg3)'; }); }catch(_){}
+  try{ const tr=(typeof faithTradition==='function')?faithTradition():'christianity'; document.querySelectorAll('.faithtr-opt').forEach(b=>{ const on=b.dataset.tr===tr; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'rgba(200,169,110,0.10)':'var(--bg3)'; }); }catch(_){}
   const n=document.getElementById('settings-name-display');if(n)n.textContent=ls('totry_name')||'Not set';
   // Signed-in email — was stuck on "Loading..." because nothing populated it.
   const emailEl=document.getElementById('settings-email-display');
@@ -29156,7 +29448,7 @@ async function initApp(){
   if(!ls('totry_start'))ls('totry_start',new Date().toISOString());
   // Set the day
   vi = pickAdaptiveVerseIndex();
-  if(typeof pickDailyContextualVerse==='function'){ vi = pickDailyContextualVerse(); } showV(VS[vi]);
+  if(typeof pickDailyContextualVerse==='function'){ vi = pickDailyContextualVerse(); } showV(activeVerses()[vi]);
   // Background: refresh currency rates if user has set a preference different from base
   if(typeof fetchCurrencyRates === 'function') fetchCurrencyRates(getUserCurrency());
   // Personalise coach

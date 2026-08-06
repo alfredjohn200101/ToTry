@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v312-proactive-hunger-check'
+const CACHE = 'totry-v313-multi-faith'
 
 const CORE = [
   './',
@@ -53,6 +53,9 @@ self.addEventListener('fetch', e => {
     'cpbjr.github.io',
     'bible-api.com',
     'api.esv.org',
+    'api.alquran.cloud',
+    'vedicscriptures.github.io',
+    'api.aladhan.com',
     'www.strava.com',
     'fonts.googleapis.com',
     'fonts.gstatic.com',
