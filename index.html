@@ -1239,7 +1239,7 @@ input:focus,textarea:focus,select:focus{
   <div class="ob-step" id="ob-why">
     <div class="ob-title">Why does this matter?</div>
     <div class="ob-desc">When it gets hard &mdash; and it will &mdash; this is what you'll come back to. Who are you doing this for?</div>
-    <textarea id="ob-why-text" placeholder="For my future family...&#10;For the person I know I can be...&#10;Because I'm tired of letting myself down...&#10;For my walk with God..." style="height:110px;resize:none;margin-bottom:10px;font-size:16px;line-height:1.6"></textarea>
+    <textarea id="ob-why-text" placeholder="For my future family...&#10;For the person I know I can be...&#10;Because I'm tired of letting myself down...&#10;For something bigger than myself..." style="height:110px;resize:none;margin-bottom:10px;font-size:16px;line-height:1.6"></textarea>
     <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Or tap one to start:</div>
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
       <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillWhy('For the people I love, who deserve the best version of me')">For the people I love</button>
@@ -1527,7 +1527,7 @@ input:focus,textarea:focus,select:focus{
   <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.04));border-color:var(--go-bd)">
     <div class="card-hd" style="margin-bottom:8px">The reason I started</div>
     <div id="why-display" style="font-family:'Cormorant Garamond',serif;font-size:17px;color:var(--tx);font-style:italic;line-height:1.55;white-space:pre-wrap;margin-bottom:10px"></div>
-    <textarea id="why-edit" placeholder="For my future family...&#10;For the person I know I can be...&#10;Because I'm tired of letting myself down...&#10;For my walk with God..." style="height:120px;resize:none;margin-bottom:8px;font-size:16px;line-height:1.6;display:none"></textarea>
+    <textarea id="why-edit" placeholder="For my future family...&#10;For the person I know I can be...&#10;Because I'm tired of letting myself down...&#10;For something bigger than myself..." style="height:120px;resize:none;margin-bottom:8px;font-size:16px;line-height:1.6;display:none"></textarea>
     <button class="btn" id="why-edit-btn" onclick="toggleWhyEdit()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px">Edit my why</button>
     <button class="btn primary" id="why-save-btn" onclick="saveWhyEdit()" style="font-size:13px;display:none">Save</button>
   </div>
@@ -4196,7 +4196,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v318';
+const APP_VERSION = 'v319';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -6115,7 +6115,7 @@ ${(function(){ const m = (typeof ls==='function') ? ls('totry_coach_memory') : n
 HOW TO COACH:
 Speak like a trusted friend and mentor who knows their whole situation — direct, warm, personal, never generic. When they ask about today's progress, USE the live data above (calories, habits, water, etc.) — don't say "I don't have access to that." You DO have it. Reference their actual numbers when it matters. Hold them to who they said they want to become, with grace not shame. If they've relapsed, remember Proverbs 24:16 — the righteous fall and rise again.
 
-Match the depth of your reply to what they're asking. A quick check-in deserves a few warm, focused sentences. But when they're wrestling with something real — a craving, a setback, a hard decision, a question about who they're becoming — give them a substantial, thoughtful answer: name what's really going on, draw on their actual situation, offer a concrete next step or two, and where it fits naturally, ground it in scripture or a principle. Don't pad, don't ramble, and always finish your thought completely — but don't artificially cut yourself short either. Be the kind of voice anyone would actually want in their corner at 11pm. You are not a chatbot. You are their coach.`;
+Match the depth of your reply to what they're asking. A quick check-in deserves a few warm, focused sentences. But when they're wrestling with something real — a craving, a setback, a hard decision, a question about who they're becoming — give them a substantial, thoughtful answer: name what's really going on, draw on their actual situation, offer a concrete next step or two, and where it fits naturally, ground it in their tradition’s teaching or a solid principle (per the faith context). Don't pad, don't ramble, and always finish your thought completely — but don't artificially cut yourself short either. Be the kind of voice anyone would actually want in their corner at 11pm. You are not a chatbot. You are their coach.`;
 }
 
 
@@ -8317,20 +8317,15 @@ function renderAdaptiveMorning(){
   else if(!yEvening){
     // No evening reflection yesterday
     tagText = 'A new day';
-    headlineText = '"This is the day the Lord has made. Let us rejoice and be glad in it." — Psalm 118:24';
+    { const _v = activeVerses()[_dailyIndex(activeVerses().length)]; headlineText = '“' + _v.t + '” — ' + _v.r; }
     bodyText = 'You didn\'t reflect last night — that\'s okay. The day in front of you matters more than the one behind. Set your intention below.';
   }
   else {
     // Default morning, decent day yesterday
     tagText = 'A new day';
-    const verses = [
-      {h: '"The steadfast love of the Lord never ceases; His mercies never come to an end; they are new every morning."', r: 'Lamentations 3:22-23'},
-      {h: '"Let the morning bring me word of Your unfailing love, for I have put my trust in You."', r: 'Psalm 143:8'},
-      {h: '"Cast all your anxieties on Him, because He cares for you."', r: '1 Peter 5:7'},
-      {h: '"I can do all this through Him who gives me strength."', r: 'Philippians 4:13'},
-    ];
-    const v = verses[getDayCount() % verses.length];
-    headlineText = v.h + ' — ' + v.r;
+    const _av = activeVerses();
+    const v = _av[_dailyIndex(_av.length)];
+    headlineText = '“' + v.t + '” — ' + v.r;
     bodyText = 'Set your intention below. Make today a day you\'d be proud to reflect on tonight.';
   }
   
