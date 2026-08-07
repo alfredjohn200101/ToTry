@@ -2186,20 +2186,23 @@ input:focus,textarea:focus,select:focus{
           <div class="ch-lbl" id="nut-cal-hero-lbl" style="font-size:7px">cal left</div>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:7px">
-        <div style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:2px;background:var(--gr);display:inline-block"></span><span style="font-size:11px;color:var(--tx3)">Protein</span><span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--tx);margin-left:auto" id="nut-pro">0g</span></div>
-        <div style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:2px;background:var(--bl);display:inline-block"></span><span style="font-size:11px;color:var(--tx3)">Carbs</span><span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--tx);margin-left:auto" id="nut-carb">0g</span></div>
-        <div style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:2px;background:var(--go);display:inline-block"></span><span style="font-size:11px;color:var(--tx3)">Fat</span><span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--tx);margin-left:auto" id="nut-fat">0g</span></div>
+      <div style="display:flex;flex-direction:column;gap:5px;min-width:122px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:11px;color:var(--tx3)">Base goal</span><span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--tx2)" id="eq-goal">2200</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:11px;color:var(--tx3)">&minus; Food</span><span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--tx)" id="eq-food">0</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--bd);padding-top:5px;margin-top:1px"><span style="font-size:11px;color:var(--go)">Remaining</span><span style="font-family:'DM Mono',monospace;font-size:15px;color:var(--go)" id="eq-rem">2200</span></div>
+        <div id="eq-burn" style="display:none;font-family:'DM Mono',monospace;font-size:9.5px;color:var(--tx3);text-align:right;line-height:1.3"></div>
       </div>
     </div>
     <div>
-      <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);margin-bottom:2px"><span>Calories</span><span id="nut-cal-goal-lbl">0 / 2100</span></div>
-      <div class="goal-bar-wrap"><div class="goal-bar ok" id="nut-cal-bar" style="width:0%"></div></div>
-      <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);margin-bottom:2px;margin-top:6px"><span>Protein</span><span id="nut-pro-goal-lbl">0 / 170g</span></div>
-      <div class="goal-bar-wrap"><div class="goal-bar ok" id="nut-pro-bar" style="width:0%"></div></div>
+      <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;margin-bottom:2px"><span style="color:var(--gr)">Protein</span><span style="color:var(--tx3)" id="nut-pro-goal-lbl">0 / 170g</span></div>
+      <div class="goal-bar-wrap"><div class="goal-bar" id="nut-pro-bar" style="width:0%;background:var(--gr)"></div></div>
+      <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;margin-bottom:2px;margin-top:7px"><span style="color:var(--bl)">Carbs</span><span style="color:var(--tx3)" id="nut-carb-goal-lbl">0 / 230g</span></div>
+      <div class="goal-bar-wrap"><div class="goal-bar" id="nut-carb-bar" style="width:0%;background:var(--bl)"></div></div>
+      <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;margin-bottom:2px;margin-top:7px"><span style="color:var(--go)">Fat</span><span style="color:var(--tx3)" id="nut-fat-goal-lbl">0 / 60g</span></div>
+      <div class="goal-bar-wrap"><div class="goal-bar" id="nut-fat-bar" style="width:0%;background:var(--go)"></div></div>
       <!-- Coaching nudge: the diary should COACH toward the target, not just count ('counsel, not
            tracking') — actionable, time-of-day aware, grace-first. Populated by renderNutritionLog. -->
-      <div id="nut-nudge" style="display:none"></div>
+      <div id="nut-nudge" style="display:none;margin-top:10px"></div>
     </div>
 
     <!-- Calorie-by-meal split (MFP's glanceable insight): where today's calories came from -->
@@ -2239,6 +2242,7 @@ input:focus,textarea:focus,select:focus{
   <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
     <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="document.getElementById('meal-photo-input').click()">🍽 Snap a meal</button>
     <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openBarcodeScanner()">📷 Scan barcode</button>
+    <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openQuickAdd()">⚡ Quick add</button>
     <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openRecipeBuilder()">🍳 My recipes</button>
     <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openRepeatDay()">↻ Repeat a day</button>
   </div>
@@ -4197,7 +4201,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v324';
+const APP_VERSION = 'v325';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -15723,6 +15727,49 @@ function startVoiceLog(){
   }catch(_){ if(input) input.focus(); }
 }
 
+// ── QUICK ADD ── log calories (+ optional macros) with no food search — MFP's fastest path.
+function openQuickAdd(){
+  const meal = (typeof currentMealSlot==='function') ? currentMealSlot() : 'snack';
+  const meals=[['breakfast','🌅'],['lunch','☀️'],['dinner','🌙'],['snack','🍎']];
+  window.__qaMeal=meal;
+  const m=document.createElement('div'); m.className='modal-bg open';
+  m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
+    '<h3 style="margin-bottom:4px">Quick add</h3>'+
+    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">Just the numbers — when you know roughly what you ate but don’t want to search. Calories required; macros optional.</p>'+
+    '<div class="lbl" style="margin-bottom:6px">Which meal?</div>'+
+    '<div id="qa-meals" style="display:flex;gap:6px;margin-bottom:14px">'+meals.map(x=>'<button class="qa-meal" data-meal="'+x[0]+'" onclick="_qaMeal(\''+x[0]+'\')" style="flex:1;padding:9px 4px;border-radius:9px;border:1px solid '+(x[0]===meal?'var(--go)':'var(--bd)')+';background:'+(x[0]===meal?'rgba(200,169,110,0.12)':'var(--bg3)')+';color:var(--tx2);font-size:15px;cursor:pointer">'+x[1]+'</button>').join('')+'</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'+
+      '<div><div class="lbl" style="margin-bottom:4px">Calories</div><input type="number" id="qa-cal" inputmode="numeric" placeholder="e.g. 350" style="width:100%"></div>'+
+      '<div><div class="lbl" style="margin-bottom:4px">Protein (g)</div><input type="number" id="qa-pro" inputmode="numeric" placeholder="opt." style="width:100%"></div>'+
+      '<div><div class="lbl" style="margin-bottom:4px">Carbs (g)</div><input type="number" id="qa-carb" inputmode="numeric" placeholder="opt." style="width:100%"></div>'+
+      '<div><div class="lbl" style="margin-bottom:4px">Fat (g)</div><input type="number" id="qa-fat" inputmode="numeric" placeholder="opt." style="width:100%"></div>'+
+    '</div>'+
+    '<button class="btn primary" onclick="quickAddLog()" style="margin-bottom:8px">Add to diary</button>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Cancel</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  setTimeout(()=>document.getElementById('qa-cal')?.focus(),80);
+}
+function _qaMeal(m){ window.__qaMeal=m; document.querySelectorAll('#qa-meals .qa-meal').forEach(b=>{ const on=b.dataset.meal===m; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'rgba(200,169,110,0.12)':'var(--bg3)'; }); }
+function quickAddLog(){
+  const cal=parseFloat(document.getElementById('qa-cal')?.value)||0;
+  if(cal<=0){ if(typeof showToast==='function') showToast('Add calories','Enter at least the calories.'); return; }
+  const pro=parseFloat(document.getElementById('qa-pro')?.value)||0;
+  const carb=parseFloat(document.getElementById('qa-carb')?.value)||0;
+  const fat=parseFloat(document.getElementById('qa-fat')?.value)||0;
+  const meal=window.__qaMeal||'snack';
+  const today=new Date().toLocaleDateString('en-AU');
+  const log=ls('totry_nutlog')||{}; if(!log[today]) log[today]=[];
+  log[today].push({ id:Date.now()+Math.floor(Math.random()*1000), name:'Quick add', brand:'', serving:'', qty:1, cal:Math.round(cal), pro:Math.round(pro), carb:Math.round(carb), fat:Math.round(fat), meal:meal, source:'quick add', ts:new Date().toISOString() });
+  ls('totry_nutlog', log);
+  document.querySelector('.modal-bg.open')?.remove();
+  if(typeof renderNutritionLog==='function') renderNutritionLog();
+  if(typeof autoTickHabits==='function') autoTickHabits();
+  if(typeof haptic==='function') haptic('success');
+  if(typeof showToast==='function') showToast('Added', Math.round(cal)+' cal to '+meal+'.');
+  if(typeof logEvent==='function') logEvent('quick_add');
+}
+
 // ── CURATED COMMON-FOODS DATABASE ────────────────────────────────────────────
 // The ~100 foods people actually log every day, with accurate per-100g macros and real portions.
 // Matched and rendered INSTANTLY, before any network call — so logging a staple is as fast as MFP
@@ -18112,14 +18159,17 @@ function renderNutritionLog(){
   if(e('nut-sodium')) e('nut-sodium').textContent = Math.round(totals.sodium || 0) + 'mg';
   if(e('nut-satfat')) e('nut-satfat').textContent = Math.round((totals.sat_fat || 0) * 10) / 10 + 'g';
   
-  const calPct=Math.min(100,Math.round((totals.cal/goalCal)*100));
-  const proPct=Math.min(100,Math.round((totals.pro/goalPro)*100));
-  const calBar=e('nut-cal-bar');const proBar=e('nut-pro-bar');
-  if(calBar){calBar.style.width=calPct+'%';calBar.className='goal-bar '+(calPct>=110?'over':calPct>=90?'warn':'ok');}
-  if(proBar){proBar.style.width=proPct+'%';proBar.className='goal-bar ok';}
-  // Labels show consumed / goal so the target is always visible
-  if(e('nut-cal-goal-lbl'))e('nut-cal-goal-lbl').textContent=Math.round(totals.cal)+' / '+goalCal+' eaten';
-  if(e('nut-pro-goal-lbl'))e('nut-pro-goal-lbl').textContent=Math.round(totals.pro)+'g / '+goalPro+'g eaten';
+  // ── Calorie equation transparency (MFP-familiar): Base goal − Food = Remaining (the ring's math) ──
+  if(e('eq-goal')) e('eq-goal').textContent = goalCal;
+  if(e('eq-food')) e('eq-food').textContent = Math.round(totals.cal);
+  if(e('eq-rem')){ e('eq-rem').textContent = remCal>=0 ? remCal : ('+'+Math.abs(remCal)); e('eq-rem').style.color = remCal>=0 ? 'var(--go)' : 'var(--re)'; }
+  // Exercise surfaced honestly — NOT eaten back (it's already inside your adaptive target). Accurate, not MFP's double-count.
+  if(e('eq-burn')){ const b=(typeof burned!=='undefined'&&burned)?Math.round(burned):0; if(b>0){ e('eq-burn').textContent='🔥 '+b+' burned · already in your target'; e('eq-burn').style.display=''; } else { e('eq-burn').style.display='none'; } }
+  // ── Three macro bars (Protein / Carbs / Fat), colored, eaten / target ──
+  const _mb=(barId,lblId,eaten,goal)=>{ const bar=e(barId); if(bar){ const pct=goal>0?Math.min(100,Math.round((eaten/goal)*100)):0; bar.style.width=pct+'%'; } const lbl=e(lblId); if(lbl) lbl.textContent=Math.round(eaten||0)+'g / '+(Math.round(goal)||0)+'g'; };
+  _mb('nut-pro-bar','nut-pro-goal-lbl',totals.pro,goalPro);
+  _mb('nut-carb-bar','nut-carb-goal-lbl',totals.carb,goalCarb);
+  _mb('nut-fat-bar','nut-fat-goal-lbl',totals.fat,goalFat);
   // Item 11 — gentle macro glance. A quiet, ignorable line that surfaces only later in the day
   // when there's still meaningful protein to get, offering portable options because they might not
   // be somewhere they can cook. Never a push; dismissible for the day with one tap.
