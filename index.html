@@ -4197,7 +4197,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v323';
+const APP_VERSION = 'v324';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -18186,17 +18186,16 @@ function renderNutritionLog(){
     list.innerHTML = '';
     mealOrder.forEach(meal => {
       const mealEntries = grouped[meal];
-      if(!mealEntries.length) return;
+      const has = mealEntries.length > 0;
       const mealCals = Math.round(mealEntries.reduce((a,en)=>a+(en.cal||0),0));
       const mealPro = Math.round(mealEntries.reduce((a,en)=>a+(en.pro||0),0));
       
       const header = document.createElement('div');
-      header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:8px 4px 4px 4px;margin-top:6px;border-bottom:1px solid var(--bd)';
+      header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:8px 4px 4px 4px;margin-top:10px;border-bottom:1px solid var(--bd)';
       header.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.1em">' + mealLabels[meal] + '</div>' +
         '<div style="display:flex;align-items:center;gap:8px">' +
-          '<button onclick="selectMealChip(\''+meal+'\');document.getElementById(\'nut-search-in\').focus()" title="Add food to this meal" style="background:none;border:none;color:var(--go);font-family:DM Mono,monospace;font-size:9px;cursor:pointer;letter-spacing:0.05em">+ add</button>' +
-          '<button onclick="saveMealGroup(\''+meal+'\')" title="Save these foods as a reusable meal" style="background:none;border:none;color:var(--go);font-family:DM Mono,monospace;font-size:9px;cursor:pointer;letter-spacing:0.05em">save meal</button>' +
-          '<span style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">' + mealCals + ' cal · ' + mealPro + 'g P</span>' +
+          (has ? '<button onclick="saveMealGroup(\''+meal+'\')" title="Save these foods as a reusable meal" style="background:none;border:none;color:var(--go);font-family:DM Mono,monospace;font-size:9px;cursor:pointer;letter-spacing:0.05em">save meal</button>' : '') +
+          (has ? '<span style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">' + mealCals + ' cal · ' + mealPro + 'g P</span>' : '') +
         '</div>';
       list.appendChild(header);
       
@@ -18206,6 +18205,11 @@ function renderNutritionLog(){
         row.innerHTML='<div style="min-width:0;flex:1"><div class="fli-name">'+en.name+'</div>'+((en.serving||en.qty)?'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3)">'+(en.serving||'serving')+(en.qty?(' \u00d7 '+en.qty):'')+'</div>':'')+'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3);margin-top:2px">P '+(Math.round((en.pro||0)*10)/10)+'g \u00b7 C '+(Math.round((en.carb||0)*10)/10)+'g \u00b7 F '+(Math.round((en.fat||0)*10)/10)+'g</div></div><div style="display:flex;align-items:center;gap:6px"><span class="fli-cal">'+en.cal+' cal</span><button class="fli-del" style="font-size:14px;color:var(--tx3)" onclick="editFoodEntry(\''+today+'\','+en.id+')" title="Edit">✎</button><button class="fli-del" onclick="deleteFoodEntry(\''+today+'\','+en.id+')" aria-label="Close">&#215;</button></div>';
         list.appendChild(row);
       });
+      // "Add food" under every meal — MFP's core interaction, one tap from each meal to the search.
+      const add=document.createElement('div');
+      add.style.cssText='padding:'+(has?'8px':'9px')+' 4px 2px 4px';
+      add.innerHTML='<button onclick="selectMealChip(\''+meal+'\');var s=document.getElementById(\'nut-search-in\');if(s){s.scrollIntoView({behavior:\'smooth\',block:\'center\'});setTimeout(function(){s.focus();},300);}" style="background:none;border:none;color:'+(has?'var(--go)':'var(--tx3)')+';font-family:\'Outfit\',sans-serif;font-size:12.5px;cursor:pointer;padding:0">+ Add food</button>';
+      list.appendChild(add);
     });
   }
   if(typeof renderNutTrend==='function') renderNutTrend();
