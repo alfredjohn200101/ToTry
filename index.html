@@ -1630,6 +1630,7 @@ input:focus,textarea:focus,select:focus{
     <div class="hero-inner">
       <div id="home-greeting-hi" class="hero-greeting"></div>
       <div id="home-greeting-sub" class="hero-sub"></div>
+      <div id="journey-badge" onclick="editJourneyStart()" style="display:none;margin-top:10px;color:var(--go);cursor:pointer;line-height:1.5;font-family:'DM Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:0.16em"></div>
 
       <div class="hero-identity" id="hero-identity" onclick="go('settings')" style="display:none">
         <span class="hero-identity-text" id="hero-identity-text"></span>
@@ -4196,7 +4197,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v322';
+const APP_VERSION = 'v323';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4492,7 +4493,7 @@ async function signOut(){
 
 const SYNC_KEYS = [
   // Identity & onboarding
-  'totry_v','totry_identity','totry_season','totry_name','totry_partner','totry_why','totry_start','totry_height','totry_onboarded','totry_journey_start',
+  'totry_v','totry_identity','totry_season','totry_name','totry_partner','totry_why','totry_start','totry_height','totry_onboarded','totry_journey_start','totry_first_start','totry_restarts',
   // Daily reflection data
   'totry_journal','totry_evenings','totry_mornings','totry_examens','totry_prayers',
   'totry_cal_events','totry_feeling_wins',
@@ -6747,6 +6748,7 @@ function goPTCoach(t){setPTTab('ptcoach');document.getElementById('pt-in').value
 function repairJourneyStart(){
   try{
     const existing = ls('totry_journey_start') || ls('totry_start');
+    ensureFirstStart(existing); // lock in the lifetime anchor (survives restarts/new chapters)
     if(existing) return;
     let oldest = null;
     const take = ts => { if(!ts) return; const t = new Date(ts).getTime(); if(t && (!oldest || t < oldest)) oldest = t; };
@@ -6790,6 +6792,47 @@ function getDayCountForDate(d){
   }catch(_){ return getDayCount(); }
 }
 
+// ── THE LIFETIME JOURNEY ────────────────────────────────────────────────────────
+// Grace over shame, made real: you can start a NEW CHAPTER (reset the visible day-count to Day 1)
+// without erasing that you've been trying all along. `totry_first_start` is the true beginning —
+// set once, only ever moved earlier, NEVER wiped by a restart. So the app can always say, honestly:
+// "Day 1 of this chapter — and 400 days trying in all. You fell, you're here, you're going again."
+function ensureFirstStart(candidate){
+  try{
+    const cand = candidate ? new Date(candidate).getTime() : null;
+    const fs = ls('totry_first_start');
+    if(!fs){ if(cand && !isNaN(cand)) ls('totry_first_start', new Date(cand).toISOString()); return; }
+    const cur = new Date(fs).getTime();
+    if(cand && !isNaN(cand) && cand < cur) ls('totry_first_start', new Date(cand).toISOString()); // only ever earlier
+  }catch(_){}
+}
+function totalDaysTrying(){
+  try{
+    const anchor = ls('totry_first_start') || ls('totry_journey_start') || ls('totry_start');
+    if(!anchor) return getDayCount();
+    const a = new Date(anchor); if(isNaN(a)) return getDayCount();
+    return Math.max(1, Math.floor((Date.now() - a) / 86400000) + 1);
+  }catch(_){ return getDayCount(); }
+}
+function restartCount(){ try{ return parseInt(ls('totry_restarts')||'0',10) || 0; }catch(_){ return 0; } }
+// Start a new chapter: reset the visible day-count to today, keep the lifetime total + count the restart.
+function restartJourney(){
+  try{
+    const cur = ls('totry_journey_start') || ls('totry_start');
+    ensureFirstStart(cur);                       // lock the true beginning before moving the chapter
+    ls('totry_journey_start', new Date().toISOString());
+    ls('totry_restarts', restartCount() + 1);
+    try{ if(typeof syncToCloud==='function'){ syncToCloud('totry_journey_start', ls('totry_journey_start')); syncToCloud('totry_first_start', ls('totry_first_start')); syncToCloud('totry_restarts', ls('totry_restarts')); } }catch(_){}
+    document.querySelector('.modal-bg.open')?.remove();
+    if(typeof renderDayCounter==='function') renderDayCounter();
+    if(typeof initSettingsTab==='function') initSettingsTab();
+    if(typeof go==='function') go('home');
+    const total = totalDaysTrying();
+    if(typeof showToast==='function') showToast('New chapter — Day 1', total>1 ? (total+' days trying in all. You fell, you’re here, you’re going again.') : 'A clean start. Showing up is the win.');
+    if(typeof haptic==='function') haptic('success');
+  }catch(_){}
+}
+
 // Let the user set the true date their journey began (e.g. the day they quit),
 // which may predate when they installed the app. Honest anchor, not a fake streak.
 function editJourneyStart(){
@@ -6797,17 +6840,30 @@ function editJourneyStart(){
   const currentDate = new Date(current).toISOString().slice(0,10);
   const today = new Date().toISOString().slice(0,10);
   
+  const total = totalDaysTrying();
+  const rc = restartCount();
   const m = document.createElement('div');
   m.className = 'modal-bg open';
-  m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
-    '<h3 style="margin-bottom:6px">When did your journey begin?</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.6">If you started before you found this app — the day you actually decided to change, or quit — set that date here. Your "days in" counter will reflect the real start of your journey.</p>' +
+  m.innerHTML = '<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>' +
+    '<h3 style="margin-bottom:10px">Your journey</h3>' +
+    ((total>1) ? '<div class="card" style="text-align:center;padding:18px;margin-bottom:16px;background:linear-gradient(135deg,rgba(200,169,110,0.08),rgba(140,107,182,0.04));border-color:var(--go-bd)">' +
+        '<div style="font-family:DM Mono,monospace;font-size:36px;color:var(--go);line-height:1">'+total+'</div>' +
+        '<div style="font-size:12px;color:var(--tx2);letter-spacing:0.05em;margin-top:2px">days trying, in all</div>' +
+        (rc>0 ? '<div style="font-size:12px;color:var(--tx3);margin-top:8px">'+rc+' fresh start'+(rc===1?'':'s')+' · still here</div>' : '') +
+      '</div>' : '') +
+    '<div class="lbl">When did it begin?</div>' +
+    '<p style="font-size:12px;color:var(--tx3);margin:6px 0 12px;line-height:1.6">If you started before you found this app — the day you actually decided to change — set that here. Your "days in" counter reflects the real start.</p>' +
     '<input type="date" id="journey-start-in" value="'+currentDate+'" max="'+today+'" style="width:100%;padding:12px;font-size:16px;margin-bottom:14px">' +
     '<div style="display:flex;gap:8px">' +
-      '<button class="btn primary" style="flex:1" onclick="saveJourneyStart()">Save</button>' +
+      '<button class="btn primary" style="flex:1" onclick="saveJourneyStart()">Save date</button>' +
       '<button class="btn" style="flex:1" onclick="closeModal(this)">Cancel</button>' +
     '</div>' +
-    (ls('totry_journey_start') ? '<button class="btn" style="width:100%;margin-top:8px;background:transparent;border:none;color:var(--tx3);font-size:12px" onclick="resetJourneyStart()">Reset to account creation date</button>' : '') +
+    '<div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--bd)">' +
+      '<div class="lbl">Start a new chapter</div>' +
+      '<p style="font-size:12px;color:var(--tx3);margin:6px 0 12px;line-height:1.6">Fell hard, or want a clean slate to begin again? Reset your day-count to <b style="color:var(--tx2)">Day 1</b> — and keep every day you’ve already put in. The falling isn’t erased; it’s the proof you kept going.</p>' +
+      '<button class="btn" style="width:100%;background:var(--bg3);border:1px solid var(--go-bd);color:var(--go)" onclick="if(confirm(\'Start a new chapter at Day 1? Your total days trying is kept and shown.\')) restartJourney()">Begin again — Day 1</button>' +
+    '</div>' +
+    (ls('totry_journey_start') ? '<button class="btn" style="width:100%;margin-top:10px;background:transparent;border:none;color:var(--tx3);font-size:12px" onclick="resetJourneyStart()">Reset to account creation date</button>' : '') +
   '</div>';
   document.body.appendChild(m);
 }
@@ -7962,6 +8018,18 @@ function renderDayCounter(){
     if(!el) return;
     if(animate){ countUp(el, day); } else { el.textContent=day; }
   });
+  // The lifetime journey — only shows once you've begun again, so the falling becomes the proof.
+  try{
+    const badge=document.getElementById('journey-badge');
+    if(badge){
+      const rc=(typeof restartCount==='function')?restartCount():0;
+      const total=(typeof totalDaysTrying==='function')?totalDaysTrying():day;
+      if(rc>0 && total>day){
+        badge.textContent = total+' days trying in all · '+rc+' fresh start'+(rc===1?'':'s')+' · still here';
+        badge.style.display='';
+      } else { badge.style.display='none'; }
+    }
+  }catch(_){}
   const quotes=[
     '"The only thing required is that you try."',
     '"Every day you open this is a day you chose differently."',
