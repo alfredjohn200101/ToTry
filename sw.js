@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v319-faith-leaks2'
+const CACHE = 'totry-v320-faith-deepen'
 
 const CORE = [
   './',

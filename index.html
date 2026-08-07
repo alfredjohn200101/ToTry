@@ -1244,7 +1244,7 @@ input:focus,textarea:focus,select:focus{
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
       <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillWhy('For the people I love, who deserve the best version of me')">For the people I love</button>
       <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillWhy('Because I am tired of letting myself down')">I'm tired of letting myself down</button>
-      <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillWhy('To honour God with how I live my life')">To honour God with my life</button>
+      <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillWhy('To live up to what I believe in')">To live up to what I believe in</button>
       <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillWhy('For my future self, who is counting on me right now')">For my future self</button>
     </div>
     <button class="btn primary" onclick="finishWhyStep()">Continue &#8594;</button>
@@ -4196,7 +4196,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v319';
+const APP_VERSION = 'v320';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7153,6 +7153,14 @@ const VS_BUDDHIST=[
   {t:"By oneself is one purified; purity and impurity depend on oneself.",r:"Dhammapada 165"},
   {t:"Know your own good, and be intent upon it.",r:"Dhammapada 166"},
   {t:"Him I call wise who, though wronged, bears no ill will.",r:"Dhammapada 400"},
+  {t:"Let go of the past, let go of the future, let go of the present.",r:"Dhammapada 348"},
+  {t:"Heedfulness is the path to the deathless; heedlessness the path to death.",r:"Dhammapada 21"},
+  {t:"As rain breaks through an ill-thatched house, passion breaks through an untrained mind.",r:"Dhammapada 13"},
+  {t:"He who holds back rising anger like a rolling chariot — him I call a charioteer.",r:"Dhammapada 222"},
+  {t:"Conquer anger by love, evil by good, the miserly by giving, the liar by truth.",r:"Dhammapada 223"},
+  {t:"The peaceful live happily, having given up both victory and defeat.",r:"Dhammapada 201"},
+  {t:"The fool who knows he is a fool is wise at least so far.",r:"Dhammapada 63"},
+  {t:"Better than a hundred years lived without seeing the deathless is one day lived seeing it.",r:"Dhammapada 114"},
 ];
 const VS_SECULAR=[
   {t:"You have power over your mind — not outside events. Realize this, and you will find strength.",r:"Marcus Aurelius, Meditations"},
@@ -7170,6 +7178,15 @@ const VS_SECULAR=[
   {t:"He who is brave is free.",r:"Seneca"},
   {t:"Luck is what happens when preparation meets opportunity.",r:"Seneca"},
   {t:"Confine yourself to the present.",r:"Marcus Aurelius, Meditations"},
+  {t:"The best revenge is not to be like your enemy.",r:"Marcus Aurelius, Meditations"},
+  {t:"When you arise in the morning, think of what a precious privilege it is to be alive.",r:"Marcus Aurelius"},
+  {t:"Very little is needed to make a happy life; it is all within yourself, in your way of thinking.",r:"Marcus Aurelius, Meditations"},
+  {t:"Choose not to be harmed — and you won’t feel harmed. Don’t feel harmed — and you haven’t been.",r:"Marcus Aurelius, Meditations"},
+  {t:"While we wait for life, life passes.",r:"Seneca"},
+  {t:"It is not that we have a short time to live, but that we waste a lot of it.",r:"Seneca"},
+  {t:"Make the best use of what is in your power, and take the rest as it happens.",r:"Epictetus"},
+  {t:"It is not things that disturb us, but our judgements about things.",r:"Epictetus"},
+  {t:"Don’t explain your philosophy. Embody it.",r:"Epictetus"},
 ];
 
 // ── FAITH REGISTRY ────────────────────────────────────────────────────────────
@@ -7463,34 +7480,50 @@ function _salahCard(t,h){
   const now=new Date(); const nowM=now.getHours()*60+now.getMinutes();
   const toM=s=>{const m=/(\d+):(\d+)/.exec(s||''); return m?(+m[1]*60+ +m[2]):9999;};
   const prayers=order.filter(o=>o[0]!=='Sunrise');
-  let nextIdx=prayers.findIndex(o=>toM(o[1])>nowM); if(nextIdx<0) nextIdx=0;
+  let nextIdx=prayers.findIndex(o=>toM(o[1])>nowM), mins;
+  if(nextIdx<0){ nextIdx=0; mins=(24*60-nowM)+toM(prayers[0][1]); } else { mins=toM(prayers[nextIdx][1])-nowM; }
   const nextName=prayers[nextIdx][0];
+  const hh=Math.floor(mins/60), mm=mins%60; const cd=(hh>0?hh+'h ':'')+mm+'m';
   const rows=order.map(o=>{ const isNext=(o[0]===nextName); const dim=(o[0]==='Sunrise'); return '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 4px;border-bottom:1px solid var(--bd)"><span style="font-size:14px;color:'+(isNext?'var(--go)':dim?'var(--tx3)':'var(--tx2)')+';'+(isNext?'font-weight:600':'')+'">'+o[0]+(isNext?' · next':'')+'</span><span style="font-family:DM Mono,monospace;font-size:14px;color:'+(isNext?'var(--go)':'var(--tx2)')+'">'+o[1]+'</span></div>'; }).join('');
-  return '<div class="card"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:6px">Today · '+h.day+' '+h.month.en+' '+h.year+' AH</div>'+rows+'<div style="font-size:11px;color:var(--tx3);margin-top:10px;text-align:center">Times for your location · Muslim World League method</div></div>';
+  const header='<div style="text-align:center;padding:2px 0 14px;margin-bottom:8px;border-bottom:1px solid var(--bd)"><div style="font-size:11px;letter-spacing:0.05em;color:var(--tx3);margin-bottom:2px">NEXT PRAYER</div><div style="font-family:Cormorant Garamond,serif;font-size:25px;color:var(--go);line-height:1.1">'+nextName+'</div><div style="font-family:DM Mono,monospace;font-size:12px;color:var(--tx2);margin-top:2px">in '+cd+'</div></div>';
+  return '<div class="card"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Today · '+h.day+' '+h.month.en+' '+h.year+' AH</div>'+header+rows+'<div style="font-size:11px;color:var(--tx3);margin-top:10px;text-align:center">Times for your location · Muslim World League method</div></div>';
 }
 
-// ── PRACTICE (Dhikr / Japa bead counters) ──────────────────────────────────────
+// ── PRACTICE (Dhikr / Japa bead counters + the 99 Names) ───────────────────────
+const JAPA_MANTRAS=[
+  {name:'Om',dev:'ॐ',sub:'the primordial sound'},
+  {name:'Om Namah Shivaya',dev:'ॐ नमः शिवाय',sub:'I bow to the Divine within'},
+  {name:'Hare Krishna',dev:'हरे कृष्ण',sub:'the maha-mantra'},
+  {name:'So Ham',dev:'सो ऽहम्',sub:'I am That'},
+  {name:'Om Namo Bhagavate',dev:'ॐ नमो भगवते',sub:'surrender to the Divine'}
+];
 const _PRACTICE={
   dhikr:{ title:'Dhikr', sub:'Remembrance of Allah. Tap for each — a full tasbih is 33 + 33 + 34.', done:'Tasbih complete', doneSub:'100 remembrances. Carry the stillness with you.', phases:[{name:'SubhanAllah',sub:'Glory be to Allah',n:33},{name:'Alhamdulillah',sub:'Praise be to Allah',n:33},{name:'Allahu Akbar',sub:'Allah is greatest',n:34}] },
-  japa:{ title:'Japa', sub:'Mantra repetition. Tap for each — a full mala is 108.', done:'Mala complete', doneSub:'108 repetitions. Carry the stillness with you.', phases:[{name:'Om Namah Shivaya',sub:'I bow to the Divine within',n:108}] }
+  japa:{ title:'Japa', sub:'Mantra repetition. Tap for each — a full mala is 108.', done:'Mala complete', doneSub:'108 repetitions. Carry the stillness with you.' }
 };
 function openDhikr(){ if(typeof go==='function') go('practice'); _renderPractice('dhikr'); }
 function openJapa(){ if(typeof go==='function') go('practice'); _renderPractice('japa'); }
+function _mantraIdx(){ let mi=0; try{ mi=parseInt(ls('totry_mantra')||'0',10)||0; }catch(_){} return (mi>=0&&mi<JAPA_MANTRAS.length)?mi:0; }
+function _practicePhases(kind){ if(kind==='japa'){ const m=JAPA_MANTRAS[_mantraIdx()]; return [{name:m.dev,sub:m.name+' · '+m.sub,n:108}]; } return _PRACTICE[kind].phases; }
 function _renderPractice(kind){ if(!_PRACTICE[kind]) return; window.__practice={kind:kind,phase:0,count:0}; _paintPractice(); }
+function _selectMantra(i){ try{ ls('totry_mantra',i); }catch(_){} window.__practice={kind:'japa',phase:0,count:0}; _paintPractice(); }
 function _paintPractice(){
   const el=document.getElementById('practice-content'); if(!el) return;
-  const st=window.__practice||{kind:'dhikr',phase:0,count:0}; const cfg=_PRACTICE[st.kind]; const ph=cfg.phases[st.phase];
+  const st=window.__practice||{kind:'dhikr',phase:0,count:0}; const cfg=_PRACTICE[st.kind]; const phases=_practicePhases(st.kind); const ph=phases[st.phase];
   const ttl=document.getElementById('practice-title'); if(ttl) ttl.textContent=cfg.title;
   const sub=document.getElementById('practice-sub'); if(sub) sub.textContent=cfg.sub;
-  const roundInfo=cfg.phases.length>1?('<div style="font-size:11px;color:var(--tx3);margin-top:4px">Part '+(st.phase+1)+' of '+cfg.phases.length+'</div>'):'';
-  el.innerHTML='<div class="card" style="text-align:center;padding:24px 18px"><div style="font-family:Cormorant Garamond,serif;font-size:26px;color:var(--tx);margin-bottom:2px">'+ph.name+'</div><div style="font-size:12px;color:var(--tx3);font-style:italic">'+ph.sub+'</div>'+roundInfo+'<div onclick="_practiceTap()" style="cursor:pointer;user-select:none;width:180px;height:180px;margin:22px auto;border-radius:50%;border:2px solid var(--go-bd);background:radial-gradient(circle at 50% 40%,rgba(200,169,110,0.12),rgba(140,107,182,0.05));display:flex;flex-direction:column;align-items:center;justify-content:center"><div id="practice-count" style="font-family:DM Mono,monospace;font-size:42px;color:var(--go)">'+st.count+'</div><div style="font-size:11px;color:var(--tx3);letter-spacing:0.1em">of '+ph.n+'</div></div><div style="font-size:12px;color:var(--tx3);margin-bottom:14px">Tap the circle for each repetition</div><button class="btn" onclick="_practiceReset()" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;padding:7px 14px">Reset</button></div>';
+  let chooser='';
+  if(st.kind==='japa'){ const mi=_mantraIdx(); chooser='<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px">'+JAPA_MANTRAS.map((m,i)=>'<button onclick="_selectMantra('+i+')" style="cursor:pointer;font-size:12px;padding:6px 11px;border-radius:20px;border:1px solid '+(i===mi?'var(--go)':'var(--bd)')+';background:'+(i===mi?'rgba(200,169,110,0.12)':'var(--bg3)')+';color:'+(i===mi?'var(--go)':'var(--tx2)')+'">'+m.name+'</button>').join('')+'</div>'; }
+  const roundInfo=phases.length>1?('<div style="font-size:11px;color:var(--tx3);margin-top:4px">Part '+(st.phase+1)+' of '+phases.length+'</div>'):'';
+  const namesBtn=st.kind==='dhikr'?'<button class="btn" onclick="_openAsma()" style="width:100%;margin-top:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px">✦ The 99 Names of Allah ›</button>':'';
+  el.innerHTML=chooser+'<div class="card" style="text-align:center;padding:24px 18px"><div style="font-family:Cormorant Garamond,serif;font-size:'+(st.kind==='japa'?'34':'26')+'px;color:var(--tx);margin-bottom:2px">'+ph.name+'</div><div style="font-size:12px;color:var(--tx3);font-style:italic">'+ph.sub+'</div>'+roundInfo+'<div onclick="_practiceTap()" style="cursor:pointer;user-select:none;width:180px;height:180px;margin:22px auto;border-radius:50%;border:2px solid var(--go-bd);background:radial-gradient(circle at 50% 40%,rgba(200,169,110,0.12),rgba(140,107,182,0.05));display:flex;flex-direction:column;align-items:center;justify-content:center"><div id="practice-count" style="font-family:DM Mono,monospace;font-size:42px;color:var(--go)">'+st.count+'</div><div style="font-size:11px;color:var(--tx3);letter-spacing:0.1em">of '+ph.n+'</div></div><div style="font-size:12px;color:var(--tx3);margin-bottom:14px">Tap the circle for each repetition</div><button class="btn" onclick="_practiceReset()" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;padding:7px 14px">Reset</button></div>'+namesBtn;
 }
 function _practiceTap(){
-  const st=window.__practice; if(!st) return; const cfg=_PRACTICE[st.kind]; const ph=cfg.phases[st.phase];
+  const st=window.__practice; if(!st) return; const cfg=_PRACTICE[st.kind]; const phases=_practicePhases(st.kind); const ph=phases[st.phase];
   st.count++;
   if(typeof haptic==='function') haptic('light');
   if(st.count>=ph.n){
-    if(st.phase<cfg.phases.length-1){ st.phase++; st.count=0; if(typeof haptic==='function') haptic('success'); _paintPractice(); }
+    if(st.phase<phases.length-1){ st.phase++; st.count=0; if(typeof haptic==='function') haptic('success'); _paintPractice(); }
     else {
       if(typeof haptic==='function') haptic('success');
       const el=document.getElementById('practice-content');
@@ -7501,6 +7534,16 @@ function _practiceTap(){
   }
 }
 function _practiceReset(){ const st=window.__practice; if(!st) return; st.phase=0; st.count=0; _paintPractice(); }
+// The 99 Names of Allah (Asma ul-Husna), from Aladhan — a reverent scrollable list.
+async function _openAsma(){
+  const el=document.getElementById('practice-content'); if(!el) return; el.innerHTML=_readLoading();
+  let names=window.__asma;
+  if(!names){ try{ const r=await fetch('https://api.aladhan.com/v1/asmaAlHusna'); const j=await r.json(); names=(j&&j.code===200)?j.data:null; window.__asma=names; }catch(e){ names=null; } }
+  const back='<div style="margin-bottom:10px"><button class="btn" onclick="_renderPractice(\'dhikr\')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px;padding:7px 12px">‹ Tasbih counter</button></div>';
+  if(!names){ el.innerHTML=back+_readErr('Couldn’t load the names right now.'); return; }
+  const rows=names.map((n,i)=>'<div style="display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--bd)"><div style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);min-width:22px">'+(i+1)+'</div><div style="flex:1"><div style="font-size:14px;color:var(--tx)">'+n.transliteration+'</div><div style="font-size:12px;color:var(--tx3)">'+n.en.meaning+'</div></div><div dir="rtl" style="font-size:22px;color:var(--go)">'+n.name+'</div></div>').join('');
+  el.innerHTML=back+'<div style="text-align:center;font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Asma ul-Husna · the 99 Names</div><div class="card">'+rows+'</div>';
+}
 
 // ── SHARED THREADS ─────────────────────────────────────────────────────────────
 // The founder's idea: show how traditions ECHO each other on the same human struggle —
