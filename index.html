@@ -4196,7 +4196,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v321';
+const APP_VERSION = 'v322';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -10106,7 +10106,7 @@ function openCompanion(){
   const subEl = document.getElementById('comp-sub');
   if(greetEl){
     const hi = name ? ('Hey '+name+'.') : 'Hey.';
-    greetEl.textContent = h >= 21 || h < 5 ? (hi+' How are you, really?') : (hi+' How are you, really?');
+    greetEl.textContent = (h >= 21 || h < 5) ? (hi+' How are you tonight, really?') : (hi+' How are you, really?');
   }
   if(subEl) subEl.textContent = h >= 21 || h < 5 ? "Late one. No wrong answer — I'm just here." : "No wrong answer. I'm just here.";
   ov.classList.add('open'); document.getElementById('companion-backdrop')?.classList.add('open');
@@ -10314,15 +10314,15 @@ function _letGoJournal(){
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:6px">Let it out \u00b7 not in their feed</div>'+
     '<h3 style="margin-bottom:6px">What are you actually missing?</h3>'+
     '<p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.55">Not them, necessarily \u2014 the feeling underneath. What do you miss? What were you getting from them that you need right now? Write it here, where it gets processed instead of poured back into the wound.</p>'+
-    '<textarea id="qj-text" placeholder="I miss\u2026" style="min-height:130px;font-size:16px;line-height:1.6;margin-bottom:14px" autofocus></textarea>'+
+    '<textarea id="lg-jtext" placeholder="I miss\u2026" style="min-height:130px;font-size:16px;line-height:1.6;margin-bottom:14px" autofocus></textarea>'+
     '<button class="btn primary" onclick="_letGoSaveJournal()" style="margin-bottom:8px">Set it down</button>'+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
-  setTimeout(()=>document.getElementById('qj-text')?.focus(),60);
+  setTimeout(()=>document.getElementById('lg-jtext')?.focus(),60);
 }
 function _letGoSaveJournal(){
-  const text=document.getElementById('qj-text')?.value.trim();
+  const text=document.getElementById('lg-jtext')?.value.trim();
   if(!text){ if(typeof showToast==='function') showToast('Empty','Even one line counts.'); return; }
   try{
     const entries=ls('totry_journal')||[];

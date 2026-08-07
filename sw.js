@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v321-gita-reader'
+const CACHE = 'totry-v322-quality-audit'
 
 const CORE = [
   './',
