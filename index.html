@@ -4196,7 +4196,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v320';
+const APP_VERSION = 'v321';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7417,6 +7417,8 @@ async function _readQuranLoad(n){
   }catch(e){ content.innerHTML=_readErr(); }
 }
 // Bhagavad Gita — vedicscriptures (free): chapter select + per-verse navigation.
+const GITA_COUNTS=[47,72,43,42,29,47,30,28,34,42,55,20,35,27,20,24,28,78]; // verses per chapter (1–18)
+function _gitaCount(ch){ return GITA_COUNTS[ch-1] || 40; }
 async function _readGitaInit(sel,content){
   if(!window.__gita){ let ch=1; try{ if(typeof getDayCount==='function') ch=(getDayCount()%18)+1; }catch(_){ } window.__gita={ch:ch,v:1}; }
   if(sel){ sel.innerHTML='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label style="font-size:12px;color:var(--tx3)">Chapter</label><select id="gita-ch" onchange="window.__gita.ch=+this.value;window.__gita.v=1;_readGitaLoad()" style="'+_selStyle()+'">'+Array.from({length:18},(_,i)=>'<option value="'+(i+1)+'">'+(i+1)+'</option>').join('')+'</select><button class="btn" onclick="_gitaNav(-1)" style="'+_readBtnStyle()+'">‹</button><button class="btn" onclick="_gitaNav(1)" style="'+_readBtnStyle()+'">›</button></div>'; }
@@ -7427,12 +7429,21 @@ async function _readGitaLoad(){
   const content=document.getElementById('read-content'); if(!content) return; content.innerHTML=_readLoading();
   try{
     const g=window.__gita; const r=await fetch('https://vedicscriptures.github.io/slok/'+g.ch+'/'+g.v+'/index.json');
-    if(!r.ok) throw new Error('end'); const j=await r.json();
+    if(!r.ok) throw new Error('net'); const j=await r.json();
     const en=(j.siva&&j.siva.et)||(j.purohit&&j.purohit.et)||(j.raman&&j.raman.et)||(j.gambir&&j.gambir.et)||'';
-    content.innerHTML='<div class="card"><div style="font-size:12px;color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+g.ch+'.'+g.v+'</div>'+(j.slok?'<div style="font-size:16px;line-height:1.95;color:var(--tx);margin-bottom:8px">'+j.slok+'</div>':'')+(j.transliteration?'<div style="font-size:12.5px;font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+String(j.transliteration).trim()+'</div>':'')+'<div style="font-size:14px;color:var(--tx2);line-height:1.75">'+en+'</div></div>';
-  }catch(e){ if(window.__gita&&window.__gita.v>1){ window.__gita.v--; } const content2=document.getElementById('read-content'); if(content2) content2.innerHTML=_readErr('That’s the end of the chapter — pick another above.'); }
+    content.innerHTML='<div class="card"><div style="font-size:12px;color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+g.ch+'.'+g.v+' <span style="color:var(--tx3);letter-spacing:0">· verse '+g.v+' of '+_gitaCount(g.ch)+'</span></div>'+(j.slok?'<div style="font-size:16px;line-height:1.95;color:var(--tx);margin-bottom:8px">'+j.slok+'</div>':'')+(j.transliteration?'<div style="font-size:12.5px;font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+String(j.transliteration).trim()+'</div>':'')+'<div style="font-size:14px;color:var(--tx2);line-height:1.75">'+en+'</div></div>';
+  }catch(e){ const c2=document.getElementById('read-content'); if(c2) c2.innerHTML=_readErr('Couldn’t load that verse — check your connection.'); }
 }
-function _gitaNav(d){ if(!window.__gita) window.__gita={ch:1,v:1}; window.__gita.v=Math.max(1,(window.__gita.v||1)+d); _readGitaLoad(); }
+// Continuous nav: past a chapter's last verse rolls to the next chapter (and wraps 18→1).
+function _gitaNav(d){
+  if(!window.__gita) window.__gita={ch:1,v:1};
+  let ch=window.__gita.ch, v=(window.__gita.v||1)+d;
+  if(v<1){ ch=ch>1?ch-1:18; v=_gitaCount(ch); }
+  else if(v>_gitaCount(ch)){ ch=ch<18?ch+1:1; v=1; }
+  window.__gita={ch:ch,v:v};
+  const chSel=document.getElementById('gita-ch'); if(chSel) chSel.value=String(ch);
+  _readGitaLoad();
+}
 
 // ── TODAY ANCHOR (per tradition) ───────────────────────────────────────────────
 // Christianity=liturgy (tab-liturgy). Islam=prayer times + Hijri + ayah. Others=a daily passage.
