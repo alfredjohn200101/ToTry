@@ -412,6 +412,70 @@ OUTWARD to a person — not a solo journaling streak. Another convergence with t
   **always paired with one concrete next step**, or it's the empty positive-fantasy WOOP research warns against.
   🚫 gratitude journaling *streaks* (already an AVOID; solo-list form is the weakest), overclaiming (effects are small), forced daily gratitude-as-chore, toxic positivity that denies real pain.
 
+## 🧔 REACHING MEN + THE ACCOMPANIMENT VOICE — the app's core identity  *(round-9, subagent)*
+*(what actually reaches men who won't seek help is almost exactly what "accompaniment" IS — walk alongside,
+don't fix or preach — so the app's whole DNA is validated. The opportunities are voice calibration + a
+load-bearing bridge to real people. Serves women fully too: same posture, `userSex()` tunes entry-point & emphasis.)*
+- **🫆 An alexithymia-aware, ACTION-FIRST Feeling Door lane** *(highest impact — reaches the men a feeling-door
+  filters out).* "How do you feel?" is a dead end for many men — alexithymia (can't name the inner state) is
+  ~2× as common in men (and men are ~3 in 4 suicides; 76.5% in AU 2024). Add a **body/behaviour entry** ("what's
+  going on in your body / what do you want to *do* right now") and let regulation happen *through* an action —
+  shoulder-to-shoulder, not face-to-face (the Men's Sheds principle). Small change, outsized reach.
+- **🗣 An MI / spiritual-direction "voice audit" of `brotherSpeaks`/`brotherGuidance`/Companion** — strip the
+  "righting reflex" (rushing to fix/advise); favour offered choices + evocative questions over instruction. The
+  accompaniment posture is validated from BOTH sides: clinical (therapeutic alliance = #1 outcome predictor;
+  Rogers' unconditional positive regard = our "grace over shame"; Motivational Interviewing's non-confrontational
+  spirit) AND pastoral (Christian spiritual direction "listens and asks, offers little direction"; Islamic *suhbah*
+  companionship + *naseeha*). Cheap, high-leverage, protects the soul.
+- **🌉 A concrete, warm bridge-to-real-help flow** — named human options (priest, counsellor, a mate, a line),
+  help drafting the first message, and *celebrating the reach-out as the success metric*. This makes "points
+  beyond itself" a feature, and is the antidote to the parasocial-dependence risk (heavy AI-companion use is
+  associated with *more* loneliness). Lead the male-facing voice with **strength / mental-fitness / responsibility-
+  to-the-people-you-love** framing (not "therapy/healing"), surfacing concrete wins — while keeping the reflective front door intact for women.
+  🚫 reinforcing toxic self-reliance ("tough it out"), preachiness/lecturing, fostering app-dependence, a one-size-male
+  stereotype that alienates women OR the many men who aren't stoic "fixers," over-promising ("we're your therapist").
+
+## ⛔ CRISIS & SAFETY — evidence-based, and partly LAUNCH-BLOCKING  *(round-9, subagent)*
+*(a CLAUDE.md non-negotiable. The shape the evidence converges on: help build a plan when calm, meet warmly in
+the moment, route to a human FAST when risk is real — never let the app [esp. the AI] counsel a suicidal person.)*
+- **⛔ AI crisis guardrail IN OUR OWN CODE, not the model layer** *(safety-critical + legally live — verify in the
+  CURRENT build).* The free-first chain (Gemini→Groq→OpenRouter→Haiku) makes consistent crisis behaviour
+  *impossible to guarantee* at the model level. On crisis-keyword/pattern detection: **bypass the LLM** and drop
+  into a fixed crisis card — no free-form generation about suicide/self-harm, no "are you sure?" loops, no delay.
+  The Character.AI + OpenAI wrongful-death suits (settled Jan 2026) and **California SB 243** (in force Jan 1 2026,
+  requiring AI-companion crisis-referral protocols) make this legal, not hypothetical.
+- **🛟 A Stanley-Brown Safety Plan feature** — the highest-evidence thing a non-clinical app can own (SPI +
+  follow-up cut suicidal behaviour **~45%**, JAMA Psychiatry 2018). Six steps (warning signs → internal coping →
+  people/settings for distraction → people to ask → professionals/lines → make the environment safer). Built
+  *while calm*, stored offline, shareable with a trusted person/priest/clinician. AU model: Beyond Blue's "Beyond Now."
+- **📣 A safe-messaging audit + a prominent, one-tap, offline, logged-out, un-paywalled resource set.** Run all
+  copy (SOS, brotherSpeaks, Companion, Feeling Door, AI) against Samaritans/WHO: never a method, always pair any
+  mention of suicide with hope + help, "died by suicide" not "committed." Ship **AU-first** (Lifeline 13 11 14,
+  Beyond Blue 1300 22 4636, 13YARN 13 92 76, 000) **+ international** (988, Samaritans 116 123, **findahelpline.com** — 175+ countries).
+  🚫 (unsafe) AI talking a suicidal person down instead of handing off; any method detail; shame/moralizing ("think
+  of your family"); burying resources; gating crisis help behind login/paywall; over-detection that feels surveillant; sycophancy that validates hopelessness.
+
+## 🔐 PRIVACY & TRUST AS THE MOAT — partly LAUNCH-BLOCKING  *(round-9, subagent)*
+*(To Try holds THREE GDPR "special categories" at once — health, sexuality, religion — plus money & cycle. Every
+app that betrayed users in this exact category got publicly punished, so credibly out-trusting them is a real,
+defensible moat. But we route to cloud AI + Supabase, so we must be able to KEEP every promise.)*
+- **⛔ SDK/pixel audit + kill-list — verify BEFORE App Store submission.** The single most-punished failure:
+  third-party ad SDKs / analytics pixels leaking sensitive data. BetterHelp (FTC $7.8M), Cerebral (~$7M, Meta/
+  Google/TikTok pixels leaked PHI), Flo (cycle data → Facebook; Meta found liable 2025) were all fined for exactly
+  this. Confirm **zero** ad/analytics trackers touch vice, porn-recovery, faith, money, or cycle data.
+- **⛔ In-app data export + true delete** (Apple-mandatory since 2022 — deletion must purge Supabase rows, not
+  soft-flag; `deleteAccount()` exists — verify it fully purges + add export) + an **accurate Privacy Nutrition Label.**
+- **🕊 A plain-language Trust page** (not a legal policy): what's collected, what never leaves the device, what the
+  AI sees, what's stored where, "we will never sell/share your data or show ads," and a clear stance on
+  law-enforcement/subpoena requests. Our incentives are *already* aligned (free, no ads, no broker) — the Proton/
+  Signal moat competitors who monetize attention structurally can't tell. Make the promise **verifiable**, not just stated.
+- **🤖 Honest AI-data handling** — minimize what leaves the device (send the AI only the minimum fuzzy text, never
+  the full raw relapse/journal log), **strip PII before the prompt** (`[the person]`, not a name/id), pin per-provider
+  no-training/retention terms, and say plainly at the AI touchpoint what leaves & to whom. A kept modest promise
+  out-trusts a grand "100% private" one we can't keep. **The cycle feature must ship with a Flo-test stance** (anonymous/local-first + Clue-style law-enforcement pledge) or it's a liability, not a feature.
+  🚫 any ad SDK/pixel/broker near sensitive screens, "we take privacy seriously" boilerplate, dark-pattern/bundled
+  consent, "data first then consent," collecting "just in case," email-only deletion, claiming "fully on-device" while routing to cloud LLMs.
+
 ---
 
 ## Recommended build order (impact × vision-fit × effort)
@@ -420,6 +484,13 @@ Release is the highest-leverage surface in the whole app** (if-then capture, the
 impulse-spend door, the "look up" off-ramp all live there), the loved-ones reframe is backed clinically from
 four independent angles (reach-out cognition, loving-kindness, contribution, relational gratitude), and the
 onboarding finding makes one change both launch-critical and on-brand.*
+
+**⛔ LAUNCH GATE (safety/legal/trust — verify or fix BEFORE App Store submission; these outrank features):**
+- **G1. AI crisis guardrail in our OWN code** — deterministic crisis-keyword detection that bypasses the LLM →
+  fixed crisis card. Legally live (SB 243, Jan 2026; Character.AI/OpenAI settlements). *Verify the live build.*
+- **G2. SDK/pixel audit** — confirm zero ad/analytics trackers touch vice, porn-recovery, faith, money, cycle data (what fined BetterHelp/Cerebral/Flo).
+- **G3. In-app export + true delete** (Apple-mandatory; delete must purge Supabase rows) + accurate Privacy Nutrition Label.
+- **G4. Safe-messaging pass** on all crisis-adjacent copy + a one-tap, offline, logged-out, un-paywalled AU-first + international resource set.
 
 **★ Converged top tier (small builds, highest evidence × soul-fit — do these first):**
 - **A. If-then + "Next Small Real Thing" at the close of the Feeling Door / Release** — two agents landed on this
