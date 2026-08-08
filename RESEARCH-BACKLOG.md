@@ -246,22 +246,109 @@ what HARMS vulnerable people — so we must ship the guardrails MFP refuses to, 
   a first-of-its-kind **"step back from tracking for a while"** affordance; and food framed as *fuel for a life,
   not a math test to win.* The app that tells you to stop tracking is unheard-of — and pure soul.
 
+## 🫂 LONELINESS & THE ETHICAL REACH-OUT — the founder's #1 reframe, now clinically grounded  *(round-7, subagent)*
+*(the strongest finding of the whole hunt: the single most-effective loneliness intervention is CORRECTING
+the false belief that reaching out is unwelcome — not managing contacts. That's a Companion/CBT job we already
+own, and NO relationship app touches it. This is the moat.)*
+- **🧠 The appreciation-gap reframe, built into the Companion** *(highest impact × fit — clinically the top lever).*
+  Across 13 preregistered studies (~6,000 people) we *systematically* underestimate how much a check-in is
+  appreciated — and the gap is **largest exactly when contact has lapsed** ([Liu/Kumar/Epley JPSP 2023](https://pubmed.ncbi.nlm.nih.gov/35816566/)).
+  Masi/Cacioppo: fixing this social-threat bias beat social-skills, support, and opportunity ([meta-analysis](https://journals.sagepub.com/doi/10.1177/1088868310377394)).
+  So every reach-out nudge carries a line that dissolves "they won't care / it'll be awkward" — *presence applied to connection.*
+- **📡 Fire the nudge off the LIFE-STATE, not a calendar** — "you've been heads-down grinding 5 days — who
+  haven't you spoken to?" A detected lapse beats an arbitrary timer, and a lapse is *when reaching out lands
+  hardest* (surprise). Whole-life integration made concrete; no CRM app can do it.
+- **💛 "Your few" — a tiny, private who-you-love list, ANY title** (parent/friend/sibling/partner). No cadence
+  pressure, no scores; surfaced at threshold moments as the WHY: "you're fighting this for her — talked to her
+  this week?" The emotional spine of the reframe. Gender-aware (already knows sex): men bond *shoulder-to-shoulder*
+  → name the **activity** ("see if James wants to train Saturday"), not "call and share your feelings."
+- **🙏 A gratitude micro-door** ("tell them the one specific reason") — separately evidenced ([Kumar/Epley 2018](https://journals.sagepub.com/doi/10.1177/0956797618772506)), faith-resonant.
+  And **reconnection as a Release off-ramp** (Waldinger: swap screen-time for people-time; revive a stale bond by doing something *new* together).
+  *Why this matters here: men with **no close friends rose 3%→15%** (1990→2021); men over-rely on a romantic
+  partner for support, so a breakup collapses the whole structure at once — literally the founder's situation.
+  "The people you love, any title" is not just kinder framing; the research says it's more honest than "partner."*
+  🚫 relationship streaks/scores (Snapchat-streak studies: ~70% feel *obligated* to maintain them), guilt/deficit
+  counters ("you haven't contacted X in 30 days"), parasocial dependence, contact-harvesting/growth-loops/feeds, CRM-ifying loved ones into database rows.
+
+## 🎯 THE LANDING — meaningful work as the second half of the detox  *(round-7, subagent)*
+*(we already regulate the emotion and get the person off the phone; what's underbuilt is the LANDING — the
+concrete, values-aligned act they take with the attention just reclaimed. Behavioral Activation is "minimum
+viable work" with a clinical evidence base.)*
+- **➡️ A "Next Small Real Thing" hand-off at EVERY exit** *(biggest gap, small build).* The Release / Feeling
+  Door must never end on a blank screen — Behavioral Activation (evidence-based, effect ~ antidepressants; *action
+  precedes motivation*) says hand over **one small, pre-chosen, values-aligned, phone-OFF act** tied to a pillar.
+- **✍️ Close `_feelMove()` with a co-written if-then micro-commit** — "when I close this, I will [smallest act]
+  in [room] now" (Gollwitzer d≈0.65). **NOTE THE CONVERGENCE:** two independent agents (habit-formation *and*
+  meaningful-work) landed on *if-then-in-the-Feeling-Door* as the single highest-leverage build. Treat that as a signal.
+- **🧭 A state-matched action menu from `getLifeState()`** — 3–5 smallest-real-things per pillar, surfaced by
+  current emotion + readiness + risk-window. The *doing engine* no single-feature app can build — our integration as action, not a dashboard.
+- **🤲 A "smallest act of service / contribution" exit from the craving loop** — self-transcendence research says
+  doing something for someone else is the fastest way out of a self-referential loop; clinically supported AND
+  faith-congruent (James 2), works secularly as "contribution." Plus a quiet **"clean close"** line (Leroy's
+  attention-residue: "where I stopped / next step" frees the mind, cuts the rumination that pulls back to scrolling).
+  🚫 Forest-style dying-tree/streak-shame on focus, focus-points/XP/leaderboards, hustle-guilt / "rest is laziness,"
+  rigid time-blocking as doctrine, the ikigai-four-circle quiz funnel (a Western invention + lead-gen), Pomodoro-as-doctrine, in-app focus feed, "you were unproductive today" reports.
+
+## 🕯 CONTEMPLATIVE DEPTH ACROSS FAITHS — the Soul pillar's deep layer  *(round-7, subagent)*
+*(every tradition independently discovered that training attention quiets the reactive mind — each with a
+different anchor: a sacred word, a divine name, the breath, a loved one, bare sensation. "Echoes, not
+equivalence" in its purest form — the same human move, five vocabularies.)*
+- **💗 Loving-kindness (metta) that STARTS from the people you love** *(highest fit — build first).* Auto-seed
+  from the loved ones the user already named, then radiate self → loved → neutral → difficult → all, and *end by
+  naming one to actually reach out to* (contemplation into connection). The rare feature that is simultaneously
+  the most evidence-backed contemplative practice (Fredrickson broaden-and-build; Zeng meta g≈0.39) AND a literal
+  expression of the reframe. Ties straight into "your few" above.
+- **🧘 The receptive half of what we already have** — To Try has the *active* repetition side (Dhikr, Japa); add
+  the *watching* side per tradition: **muraqaba** (Islam), **dhyana/vipassana** (Hindu/Buddhist), **centering
+  prayer / the Jesus Prayer** (Christian), a **secular anchor**. Makes each faith's practice whole.
+- **🌬 One breath-prayer engine, phrase swapped per tradition** (Jesus Prayer / *La ilaha illa Allah* / *So'ham*
+  / neutral secular) over the state-matched breath animation — cheap on the existing FAITHS registry. Plus a
+  **cross-faith evening review** generalizing the examen (Ignatian ↔ Stoic ↔ Islamic *muhasaba* ↔ secular), ending in one tomorrow-intention, not rumination.
+- **🛟 An HONEST efficacy-and-safety layer (non-negotiable) + a Release-first timer.** Say it plainly: modest
+  effects, *not* superior to other active practices, and meditation **can destabilize a minority** (Britton's
+  "dark night"). A HARD crisis gate: acute-distress language → **bridge to a human, NOT a body-scan.** The timer
+  is short, *ends*, and off-ramps ("now go do the small thing") — the anti-Calm, retention-inverting on purpose.
+  🚫 meditation streaks/gamified charts, farming in-app minutes (the opposite of Release), **paywalling prayer**
+  (Hallow/Calm/Headspace/Waking Up/Sabr all gate the sacred — our free access IS the moat), guru/celebrity-narrator
+  parasocial dependence, over-claiming clinical benefit, one-size "just breathe" that flattens traditions, pushing meditation on someone in acute crisis.
+
+## 🔔 ETHICAL NOTIFICATIONS / JITAI — how the reach-out & risk-window presence actually land  *(round-7, inline)*
+*(the delivery mechanic under the reach-out feature AND the native-wrapper background-push unlock.)*
+- **The core principle: intervene only when the person is BOTH _vulnerable_ AND _receptive_** — not just
+  vulnerable. A nudge at a known risk window still fails (and *burns the channel* — the user disables notifications)
+  if fired when they're not willing/able to receive it. Read receptivity (active vs mid-task vs asleep vs in-app)
+  and HOLD otherwise — "presence, not pestering" made rigorous. The literature admits most JITAIs are built with
+  "minimal empirical evidence"; our life-state reads both vulnerability *and* receptivity, so we can be the rare
+  theory-grounded one ([JITAI design principles](https://academic.oup.com/abm/article-abstract/52/6/446/4733473), [Time2Stop](https://arxiv.org/pdf/2403.05584)).
+
 ---
 
 ## Recommended build order (impact × vision-fit × effort)
-1. **Nourish day-navigation** — finishes the tracker credibility (Tier 1 last piece)
+*Revised after rounds 6–7. The research converged hard on a small cluster at the top — the Feeling Door / Release
+is the highest-leverage surface in the whole app, and the loved-ones reframe is now backed clinically from three
+independent angles (reach-out cognition, loving-kindness, contribution).*
+
+**★ Converged top tier (small builds, highest evidence × soul-fit — do these first):**
+- **A. If-then + "Next Small Real Thing" at the close of the Feeling Door / Release** — two agents landed on this
+  independently; d≈0.65; turns every rescued moment into a values-aligned real act. The single best ROI in the doc.
+- **B. "Your few" + the appreciation-gap reach-out** — a tiny private who-you-love list (any title) + the
+  Companion line that dissolves "they won't care," fired off the life-state. Completes the relationships front + the native "reach out first" push payload.
+- **C. Grace-based streak reframe — "never miss twice"** — teach the real 66-day curve; a lapse never resets to
+  zero (Lally; abstinence-violation research). Reframes existing streaks; pure soul; shame-reducer.
+- **D. Numbers-off "gentle mode" + obsession guardrail in Nourish** — the antidote to the MFP-parity harm; turns the round-6 risk into the moat.
+
+**Then:**
+1. **Nourish day-navigation** — finishes tracker credibility (Tier 1 last piece)
 2. **Daily pledge** (Fight) — tiny, powerful, pure on-soul
-3. **"Reach out" presence for the people you love** — highest vision fit; completes the relationships front;
-   subsumes the old "accountability partner." Copy reframe already shipped; next = the few + cadence +
-   "log what mattered" + phone-down reminder. Payload for the native "reach out first" push.
-4. **Nightly Examen fusion** (gratitude + devotional + the Fight, 3–4×/week, "why/my role" line, multi-faith)
-5. **Shareable verse/quote cards** (Soul) — serves the founder's recording + growth directly
-6. **Cycle tracking + phase-aware coaching** (Women's health) — serves half the audience; integration moat.
-   Phase 1: track + phase prediction. Phase 2: weave into Nourish/Train/Fight.
-7. **Habit stacking** anchored to existing fronts — evidence-based, cross-front, zero gamification
-8. **Read-aloud + timed sessions** + **P.R.A.Y. devotional spine** (Soul) — audio + universal ritual structure
-9. **Subscription auto-detection** (Money) · **Intention-set focus block → Release** · **reflective journaling follow-up**
-10. 🟢 **iOS Screen Time blocking** + deeper HealthKit — native, biggest thesis unlock, post-wrapper
+3. **Loving-kindness (metta) from "your few"** — most evidence-backed contemplative practice + literal reframe expression
+4. **Nightly Examen fusion → cross-faith evening review** (gratitude + devotional + the Fight, "why/my role," Ignatian/Stoic/muhasaba/secular)
+5. **Shareable verse/quote cards** (Soul) — serves the founder's recording + growth
+6. **Cycle tracking + phase-aware coaching** (Women's health) — serves half the audience; integration moat
+7. **Habit anchoring** (after-I-___-I-will-___) + a state-matched action menu from `getLifeState()`
+8. **Seasonal Fasting Companion** (Ramadan/Lent/Navratri) + **faith-aware Giving/zakat tracker** — body+money×soul, the integration nobody else can do
+9. **Read-aloud + timed (Release-first) sessions** + one **breath-prayer engine** phrase-swapped per tradition
+10. **Subscription auto-detection** (Money) · **contribution/service exit** from the craving loop · **gratitude micro-door**
+11. 🟢 **iOS Screen Time blocking** + deeper HealthKit + **receptivity-gated background push** — native, biggest thesis unlock, post-wrapper
 
 ## Deliberately NOT building (protect the soul)
 Streak-shame · over-goal guilt · notification nagging · leaderboards/gamification · in-app social feeds ·
