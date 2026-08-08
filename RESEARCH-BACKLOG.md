@@ -116,6 +116,77 @@ Already have: `computeReadiness` (honest self-report + available HealthKit data 
 - **Steal across all:** Fabulous's **signed intention / commitment contract** — a quiet threshold the
   Brother/Sister voice can hold you to later, no streak, no shame.
 
+## 📊 INTEGRATION & GENEROSITY  *(round-4, inline)*
+- **🔗 Cross-front correlations as COUNSEL (vs Exist.io / Bearable / Gyroscope).** Their core is finding
+  "when you do X, Y improves." We already have `getLifeState`, `detectVicePatterns`, and the AI weekly
+  reflection that connects fronts causally. Make it concrete: surface a FEW honest, high-confidence
+  cross-front patterns ("on the days you train, your urges are weaker"; "your worst money days follow poor
+  sleep") — framed as counsel + one action, only when the data supports it. THIS is the integration moat
+  made visible. 🚫 spurious correlations from thin data, obsessive self-quantification, a chart dashboard
+  (measurement over presence — we do counsel, not tracking).
+- **🎁 Generosity / giving as stewardship (Money × Soul — vs Zakat+/tithe apps).** Every tradition commands
+  it (Christian **tithe** ~10%, Islamic **zakat** ~2.5%, Hindu/Buddhist **dāna**, secular "give back"). On
+  vision three ways: stewardship (giving is the antidote to hoarding), faith (multi-faith giving guidance —
+  a zakat calculator, a tithe suggestion), and **points beyond the self**. Tie to the existing money engine:
+  "redirect some of what you reclaimed from a vice to someone in need." Track your own giving, privately.
+  🚫 taking a cut, guilt-driven asks, pushing charities for profit.
+
+## 💪 BODY & REST — Train / Track / Stillness  *(round-5, subagent)*
+- **🏋️ Readiness- & RPE-gated "what to train today"** (Fitbod/Juggernaut) — feed the EXISTING readiness score
+  + Hevy RPE into the coach: muscle-freshness advice, auto-suggested next-set load, **proactive deloads**
+  ("your legs are still cooked — go upper, or go easy; backing off is wisdom, not weakness"). Turns tracking
+  into counsel + grace. Low effort, almost no new data. 🚫 1RM-chasing/"faster gains" dopamine framing, paywalls, streak nudges.
+- **🎯 State-matched breathwork routing** (Othership + Stanford/Huberman) — route the breath engine BY the
+  felt emotion from the Feeling Door, with honest mechanisms: **physiological sigh** (double inhale/long
+  exhale — fastest acute stress-down, Stanford 2022) for anxious; **box breathing** for focus; **coherent
+  breathing** (~5–6/min) for resilience. Matches the intervention-engine ("matched-to-state, no false
+  mechanisms"). Low effort, high fit. 🚫 breathing streaks/challenges.
+- **🏃 Walk-run beginner on-ramp + free audio-guided run (a REAL GAP — no run on-ramp today).** Couch-to-5K
+  style walk/run intervals assuming ZERO fitness (meets the sedentary sufferer NRC/Runna ignore) + audio-
+  guided run (phone in pocket, outside — anti-engagement) that can open/close with prayer-on-breath. Weave
+  run+lift+rest in one plan (integration NRC can't match). 🚫 race-goal-only entry, post-run share cards/feed.
+- **😴 Sleep debt (forgivable balance) + wind-down ritual → "put the phone down"** (Rise/Sleep Cycle) —
+  reframe existing sleep logging as a *forgivable running balance*, not a nightly grade (grace, less anxiety);
+  a pre-sleep wind-down that reuses the breath engine + a short reading and ENDS by sending you off the phone
+  (The Release). 🚫 smart-alarm-by-mic (phone in bed all night), endless sleep-sound libraries, nightly sleep grades.
+- **🧭 Pre-session state check before stillness** (Balance) — ask mood/energy → assemble a matched session.
+  It's the Feeling Door philosophy applied to meditation. Cheap, on-vision.
+- **Synthesis:** take the competitors' MECHANICS (recovery-gating, RPE auto-regulation, walk-run on-ramp,
+  sleep-debt, state-matched breath); refuse their ENGINE (streaks, score-grading, content-hoarding, phone-in-bed, paywalls).
+
+## 🌊 IN-THE-MOMENT STRUGGLES — the Feeling Door doors  *(round-5, subagent)*
+*(porn/lust recovery, anxiety/panic, anger, grief — every category independently converged on: shame-based
+tracking backfires; presence + acceptance + getting off the phone toward a real human is what works.)*
+- **🩹 Grace-based counters everywhere — log a lapse, keep the full history, NEVER reset to zero** (NoFap.io
+  "streak freezes"). Reset-to-zero is *documented to backfire* (day-zero reads as "I'm broken" → more use).
+  We already have the lifetime journey; extend the same grace to the per-vice streak. Highest impact, total fit.
+- **🌋 The Anger Iceberg** — for the "fired up" door: name the hurt/fear/shame *underneath* the anger. The
+  Feeling Door thesis applied to rage. Small build, pure soul. 🚫 venting/smash-screen (research: venting *raises* anger).
+- **🌊 "Ride the wave" urge-surf with a timer + OFF-PHONE physical tasks** (Calm Harm/DBT) + **DARE's
+  accept → run-toward** track — for craving/anxious doors. Anti-engagement by construction (into the body, off screen).
+- **✉️ Unsent-letter vault + "write the risky text, then hold it"** — for heartache & the Fight. Extends The
+  Release + the brotherSpeaks threshold pause; evidence-backed expressive writing; native to the founder's story.
+- **🤝 "Ally, not accountability partner" — share patterns, NOT content** + predictive risk-window prep (Fortify
+  JITAI) — the human bridge without surveillance; powers the "reach out first" push. 🚫 screenshot-surveillance, leaderboards, fear-marketing, in-app soothing games.
+
+## 🧭 MIND, MEANING & DISCIPLINE — identity/"why" + the Secular-Stoic track  *(round-5, subagent)*
+*(the valuable ideas are all in the STRUCTURE of reflection, not the retention mechanics — borrow the
+scaffolding, refuse the engagement engine. Items 1+2+6 compound into a self-authored standard to counsel against.)*
+- **🎴 Values Card Sort → top-5 values fed into `getLifeState` & counsel** (ACT/MI, clinically validated). Turns
+  ALL counsel into the person's OWN values, not the app's rules: "you said family was #1 — does tonight move
+  toward it?" Grace-based accountability; makes the Fight about *something*. Highest fit. 🚫 values-as-a-score/leaderboard.
+- **⚖️ Dichotomy of control as an evening-examen module** (Epictetus: what's mine / what's not → ends in
+  RELEASE = the letting-go thesis in Stoic language). Deepens the examen; low build; anchors the Secular track.
+- **📜 Quote-with-application for the Secular track** — Stoic wisdom + one line on living it + a question, in
+  the SAME slot a Christian gets a verse. Makes "faith full, never forced" real.
+- **🕰 "On This Day" resurfacing as witness of growth** — surface last season's entry when they open the door
+  (pull, never push): "a year ago you wrote this about the same struggle — hear how you speak of it now." Grace, integration-only.
+- **🌅 Premeditatio malorum as a morning rehearsal of the hard hour** — pre-arm before the craving (maps to
+  the risk-window work); gentle, no notification. Plus a **"word of the season"** (anti-goal — can't be broken).
+- **📚 Bite-sized CBT/ACT skill lessons tied to the person's fight** (Intellect model, RCT-validated) — a calm
+  place to learn the tool BEFORE the moment (complements the in-the-moment companion). Free, pick-up/put-down.
+  🚫 journaling/practice streaks, chip/badge virtue economies, paywalled CBT, conversation-farming AI personas, ikigai quiz funnels.
+
 ---
 
 ## Recommended build order (impact × vision-fit × effort)
