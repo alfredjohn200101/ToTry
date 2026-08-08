@@ -187,6 +187,65 @@ scaffolding, refuse the engagement engine. Items 1+2+6 compound into a self-auth
   place to learn the tool BEFORE the moment (complements the in-the-moment companion). Free, pick-up/put-down.
   🚫 journaling/practice streaks, chip/badge virtue economies, paywalled CBT, conversation-farming AI personas, ikigai quiz funnels.
 
+## 🔁 HABIT FORMATION — the connective layer under every pillar  *(round-6, subagent)*
+*(To Try has streaks + a lifetime journey but no habit-formation LAYER — the mechanic that turns a felt
+moment into a repeatable pattern. The strongest evidence-based mechanics aren't gamified streaks — they're
+planning, anchoring, and identity, which deepen COUNSEL, not add a chore.)*
+- **🎯 If-then implementation intentions → capture the plan on the way OUT of the Feeling Door** (Gollwitzer:
+  94 studies, d≈0.65, roughly *doubles* follow-through — the single highest-evidence mechanic in the field).
+  "When I feel [the 4pm dip / the craving], I will [the move that just worked]." Build a personal if-then
+  library; the sibling surfaces the right one at the known risk window. **The Door is the natural host. Biggest single gap.**
+- **🌱 Anchored micro-starts + the 2-minute rule** — "after I [existing routine], I will [tiny first rep]."
+  Stop asking people to *log/pray/train*; help them *start* (Fogg B=MAP: shrink the Ability barrier). One honest diary line after morning coffee.
+- **🪪 Identity-based habits ("cast a vote for who you're becoming")** — reframe the lifetime journey from
+  COUNTS to CHARACTER: "you're becoming someone who keeps their word / who is present." Clear's mechanic IS
+  our soul (presence over measurement); make it the journey's spine, not points.
+- **🕊 The 66-day truth + "never miss twice"** (Lally 2010: median 66 days, range 18–254; *one missed day
+  did NOT derail formation*). This is the *scientific license for grace* — teach the real curve, make "never
+  miss twice" the rule instead of "never miss." No app teaches this; doing so is a differentiator AND a shame-reducer.
+- **🌅 Fresh-Start Effect for re-entry after a lapse** (Dai/Milkman: motivation spikes at temporal landmarks)
+  — offer "new week starts tomorrow, begin then" instead of a broken-streak red mark. Ties straight into the
+  already-built `restartJourney()`. Plus a gentle **WOOP** script (wish→outcome→obstacle→if-then-plan) for the Door's move-through.
+  🚫 reset-to-zero streaks (abstinence-violation effect: perfect-adherence dieters were *47% more likely to binge* after one slip),
+  Habitica-style HP-loss/party-damage punishment, gamified virtue points/coins, leaderboards, notification nagging.
+
+## 🌙 FASTING & GIVING ACROSS FAITHS — body + money × soul  *(round-6, subagent)*
+*(two ancient disciplines no single-feature app can hold: a fasting app can't tie the fast to your real
+energy/nutrition; a tithe app can't tie giving to your real budget. To Try owns the whole person, so it can.
+Both are twinned in the traditions themselves — Ramadan pairs sawm with zakat; Lent pairs fasting with almsgiving.)*
+- **🌗 Seasonal Fasting Companion — Ramadan / Lent / Navratri / Uposatha** *(highest impact — the integration
+  moat).* Auto-lights for the user's tradition and adapts ACROSS PILLARS at once: **Nourish** (suhoor/iftar
+  windows from real sunset/dawn; shift calorie/protein/hydration *timing* instead of nagging an empty daytime
+  diary; neutral 16:8 window for secular), **Train** (lighter/post-iftar sessions, protect against training
+  depleted — ties to `readiness`), **Soul** (the day's reading on *why* we fast), **Fight** (the fast reframed as self-mastery reps).
+- **🤲 Faith-aware Giving tracker in Money** *(high impact, clean build — tradition-swapped math on one
+  backbone).* **Zakat calculator** (2.5% above nisab, lunar-year aware — a genuine unmet need), **tithe** (~10%
+  as a *suggestion, never a debt*), **dāna / sadaqah / secular 10%-Pledge**. Tie it to the ACTUAL budget (only
+  To Try knows what they can give) and frame as **stewardship + wellbeing**, surfacing the Dunn/Norton prosocial-spending evidence *honestly* (real but modest), un-gamified, private.
+- **🧵 Two Shared-Threads entries — "Fasting" and "Giving"** (echoes-not-equivalence, secular included; low build, pure soul).
+- **🍞 The solidarity bridge** — during a fast: "the hunger you feel today, some feel every day — give what a
+  meal costs?" Links the Nourish/Fight fast to a Money micro-gift. Only an app holding *both* the fast and the budget can make this move. **Invitation, never guilt.**
+  🚫 sacred fast → diet-culture weight-loss streak ("you burned X fasting"); gamified giving / virtue-score /
+  public badge (traditions explicitly prize giving *without* show or expectation); overclaiming science (no
+  "unlock autophagy," no "giving *makes* you happy"); flattening/equating traditions (zakat ≠ tithe ≠ dāna);
+  pushing gendered fasts (Karva Chauth) on women; preaching at secular users; push-guilt on a missed fast/ungiven money.
+
+## ⚠️ THE OVER-TRACKING EVIDENCE — why our REFUSALS are the moat  *(round-6, inline)*
+*(a meta-finding that lands directly on the v324–325 MFP-parity Nourish work: the very polish we copied is
+what HARMS vulnerable people — so we must ship the guardrails MFP refuses to, or we import its harm with its UI.)*
+- **Self-tracking backfires when it tips into obsession** — "the tracking was in control of me"; tracking
+  *happiness* makes the most-struggling worse; intense body-focus breeds "failure and self-hatred" ([JMIR review](https://www.jmir.org/2021/9/e25171), [adolescent affordances study](https://www.tandfonline.com/doi/full/10.1080/02673843.2025.2590907)).
+- **Calorie apps specifically drive disordered eating** — a U. Louisville study: **~73%** of MyFitnessPal users
+  surveyed felt it *contributed to their eating disorder*; a Flinders 38-study review tied regular diet/fitness
+  app use to obsessive food/exercise habits; calorie counting elicits the exact **perfectionist, all-or-nothing
+  thinking** that is a known ED risk factor ([Flinders/EurekAlert](https://www.eurekalert.org/news-releases/1074348), [BJPsych Open](https://www.cambridge.org/core/journals/bjpsych-open/article/effects-of-diet-and-fitness-apps-on-eating-disorder-behaviours-qualitative-study/2D1EE739D97AB3EFC6573835E4C527BD)).
+- **➜ The design implication (turns the risk into the moat):** To Try can have MFP's polish AND the antidote MFP
+  won't build — an optional **numbers-off / gentle mode** (log food, don't see calories); **never** a red "over
+  budget" shame state (already a NOT-build — reinforced); **detect obsessive patterns** (logging every bite,
+  extreme restriction) and have the sibling step in with grace / bridge to real ED help when it looks clinical;
+  a first-of-its-kind **"step back from tracking for a while"** affordance; and food framed as *fuel for a life,
+  not a math test to win.* The app that tells you to stop tracking is unheard-of — and pure soul.
+
 ---
 
 ## Recommended build order (impact × vision-fit × effort)
