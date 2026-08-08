@@ -321,12 +321,105 @@ equivalence" in its purest form — the same human move, five vocabularies.)*
   "minimal empirical evidence"; our life-state reads both vulnerability *and* receptivity, so we can be the rare
   theory-grounded one ([JITAI design principles](https://academic.oup.com/abm/article-abstract/52/6/446/4733473), [Time2Stop](https://arxiv.org/pdf/2403.05584)).
 
+## 😴 SLEEP AS THE FOUNDATION — not a 6th pillar, the SOIL the other five grow in  *(round-8, subagent)*
+*(a short night pre-loads the day against EVERY pillar at once — and the fix is counsel, not a tracker. The
+build is a signal that biases the sibling's voice, never a sleep score.)*
+- **🧠 Feed a `sleep` signal INTO `getLifeState()` that modulates counsel across all pillars** *(highest impact,
+  purest integration).* One rough number (last night's hours + a rolling short-sleep flag), zero scores. Then the
+  flagship line no standalone can say: **"You slept ~5h — your cravings will lie to you today; go gentle, don't
+  trust the 9pm urge."** The science is hard: short sleep collapses prefrontal impulse-control + relapse risk
+  (the Fight), spikes ghrelin ~18% / junk-craving reward response (Nourish), runs the amygdala ~60% hotter
+  (the Feeling Door), and shifts choices toward risk-seeking (Money) — *all at once.*
+- **📵 The phone-down thesis IS a first-line sleep treatment.** Each extra hour of in-bed screen time = **59%
+  higher insomnia odds** (~40k-person study); pre-bed screen users lost ~50 min/week. So The Release / a wind-down
+  that ends *off the phone, out of the bedroom* isn't adjacent to sleep — it's the intervention. Faith-native
+  fit: night examen / Compline / "commend the day."
+- **🌅 Two cheap, best-evidenced levers:** a consistent **wake time** (anchor the clock even after a bad night)
+  and **morning light** (10–50× more circadian impact than avoiding evening screens). Gentle nudges, not metrics.
+  🚫 **NO sleep score / nightly grade** (measurably worsens anxious sleepers — "orthosomnia"), sleep streaks,
+  guilt over a bad night, precision sleep-stage theater (consumer staging is κ≈0.2–0.53 — confident-wrong AND
+  anxiety-farming), farming bedtime audio that keeps the phone in bed, scare-stats (the "Why We Sleep" overstatement lane — use mechanisms, never the doom register).
+
+## 💸 MONEY-AS-EMOTION — the psychological layer budgeting apps ignore  *(round-8, subagent)*
+*(the killer fit: an NHS-piloted CBT program for money worries — "Space From Money Worries" — uses the EXACT
+toolkit our companion already runs [urge-surf, ACT defusion, cognitive restructuring, behavioral activation],
+and hit d=1.07 on depression. We're not missing the engine; we're missing the DOOR into it.)*
+- **🛑 Impulse-spend "pause" that reuses the Feeling Door / companion** *(highest priority — engine already
+  exists & is clinically validated for money).* A spending urge is a threshold moment identical to a vice craving:
+  route it into the *same* before-it-takes-over door → name the feeling + urge-surf + a **24-hour hold** with a
+  gentle return check-in ("still want it?"). ~70% of impulse urges fade within a day. Dopamine spikes on buying
+  then crashes → guilt → more spend; BNPL amplifies it. Nobody on the market treats spending this way.
+- **🤍 Money-shame → self-compassion path.** Shame drives *avoidance* and empirically *intensifies* hardship
+  (the "ostrich effect" — not opening bills); **guilt can motivate, shame makes people hide.** Financial
+  self-compassion predicts *better* money behavior. So our grace-over-shame stance literally *is* the treatment:
+  a graduated way to open the avoided thing (a bill, the balance) + celebrate the small win ("you looked — that's the hard part").
+- **🧭 Values-based spending + "enough" as counsel** ("does this serve the life you want?"; hedonic-treadmill
+  reframe; wire in the already-researched generosity return) and a **one-time friction setup** (un-save cards,
+  kill BNPL defaults, unsubscribe from retail email — structural, willpower-free). Money is more taboo than
+  politics/religion; ~40% of men say money worries isolated them from friends — our "silently suffering" audience exactly.
+  🚫 shame/guilt budgeting (backfires), scarcity-anxiety triggers ("you're running out!" — money stress already
+  imposes a ~13-IQ-point bandwidth tax), rigid over-restriction (→ binge, like diet culture), gamified/streak-shamed
+  saving, selling/mining financial data or affiliate-pushing products, **personalized investment advice (out of bounds — not a licensed advisor).**
+
+## 🚪 ONBOARDING / TIME-TO-VALUE — our ethics and our growth strategy are the SAME strategy  *(round-8, subagent)*
+*(the science [lead with felt value, defer commitment] and the soul [be a presence, not a wall] point to one
+change. This is launch-critical AND the founder's on-camera demo.)*
+- **✨ Move the Feeling Door aha IN FRONT of the auth wall** *(single highest-impact change).* A first-time
+  visitor should tap the orb, name a feeling, and get one real companion move **without an account** (guest/local
+  state; sync on signup). A signup wall before the first value moment leaks **20–40%** of users *and* hides the
+  actual magic; TTV under ~5 min ≈ 3× activation. Defer email-OTP to the natural "keep this / come back" moment *after* felt relief.
+- **🎯 Pick ONE first win, not five pillars.** The aha is *emotional relief via the Feeling Door*, not configuring
+  Nourish+Train+Fight+Money+Soul. Let the existing `applyHomeProgressiveDisclosure()` keep all five collapsed until
+  the one felt win lands — integration is the *retention* story, not the *first-60-seconds* story. Keep only setup
+  questions that change the very next screen (sex → voice/math; faith can default to universal + refine later).
+- **📣 State the anti-engagement promise out loud** ("this app helps you put the phone *down*; it points to real
+  people, and won't farm your attention") — a *conversion asset* precisely because every competitor does the opposite, and it's true.
+- **🎬 On-camera first 60s arc** (demo = conversion moment): 0–5s opens straight to the orb (no login) → 5–25s
+  names a real feeling → 25–50s does one move + narrates the shift + The Release "put the phone down" → 50–60s
+  *only now* whisper the integration promise + soft "keep this" save. Lands magic → shows ethics → teases the moat, in that order.
+  🚫 forced signup before any value (current OTP-first flow is the biggest offender), confirmshaming opt-outs, the
+  wall-of-setup, first-run streak/guilt pressure (the Duolingo failure mode), fake urgency/countdowns, roach-motel retention, fake progress bars.
+
+## 🌄 AWE, NATURE & THE OUTDOORS — the positive opposite of doomscrolling  *(round-8, subagent)*
+*(awe is measurably the INVERSE of the phone loop: it quiets the same default-mode-network self-referential
+circuit that rumination and scrolling run on. Free, off-phone, points beyond the self by design. Success is
+measured by the phone going AWAY — which is why it's uniquely un-gimmicky for us.)*
+- **👀 The "Look Up" Release off-ramp** *(highest fit, low effort, genuinely uncharted).* A first-class Release
+  variant: "phone in your pocket → step outside → find one thing bigger than you (sky, tree, horizon) → just
+  look." Then it *ends* — returns nothing to log. The awe-walk study proved the single outward-attention
+  instruction IS the whole intervention (8×15-min walks → more gratitude/compassion/joy, less distress).
+- **🌀 Awe as the self-transcendent EXIT from a craving/rumination loop** (Fight + Feeling Door). When the state
+  is self-referential, route to a micro-awe move — awe down-regulates the exact DMN circuitry the loop runs on
+  (van Elk fMRI; Piff/Keltner "small self" → prosociality). Mechanism-matched, not generic "go for a walk."
+- **🕊 Cross-faith Creation/Awe Shared-Thread** — "the heavens declare" (Christian) · *ayat*/signs in nature
+  (Islam — same word as Qur'an verses) · sacred rivers & the divine in elements (Hindu) · impermanence under the
+  trees (Buddhist) · awe at the cosmos & deep time (secular). One theme, five echoes of "look up at creation" — slots into the FAITHS registry.
+- **🌳 Honest dosing as gentle counsel, never surveillance** — the clean line is **"~20 min at a time, ~120
+  min/week"** (White 2019, ~20k people); even **5 min** of green exercise lifts mood (biggest gains in the young
+  & those already struggling). Say it as presence, with zero targets/streaks/GPS-tracking.
+  🚫 a photo-for-likes awe feed (inverts the "self shrinking in the frame" mechanism — the deepest betrayal),
+  gamified awe streaks/XP, GPS-surveillance of outdoor time, over-claiming ("nature cures depression" — the
+  flagship study found *no* clinical anxiety/depression change; effects are small & correlational), another logging chore, sky-map/AR that keeps eyes ON the screen.
+
+## 🙏 GRATITUDE & POSITIVE-PSYCHOLOGY — Soul depth, and it's RELATIONAL  *(round-8, inline)*
+*(the design steer: the evidence-STRONGEST gratitude is EXPRESSED/relational — the "gratitude visit," pointing
+OUTWARD to a person — not a solo journaling streak. Another convergence with the loved-ones reframe.)*
+- **💌 Make gratitude relational** — the "gratitude visit" IS the reach-out + gratitude micro-door (round-7):
+  frame it as *thank a person*, not journal a list (expressed gratitude g≈0.22 > a private list; effects small
+  but robust & **cross-cultural** across 28 countries → fits multi-faith).
+- **🌙 Three Good Things → folds into the cross-faith evening review** (end the day naming three, one of them a
+  person to thank). **Best Possible Self** (d≈.33 wellbeing/optimism) as an occasional journey reflection — but
+  **always paired with one concrete next step**, or it's the empty positive-fantasy WOOP research warns against.
+  🚫 gratitude journaling *streaks* (already an AVOID; solo-list form is the weakest), overclaiming (effects are small), forced daily gratitude-as-chore, toxic positivity that denies real pain.
+
 ---
 
 ## Recommended build order (impact × vision-fit × effort)
-*Revised after rounds 6–7. The research converged hard on a small cluster at the top — the Feeling Door / Release
-is the highest-leverage surface in the whole app, and the loved-ones reframe is now backed clinically from three
-independent angles (reach-out cognition, loving-kindness, contribution).*
+*Revised after rounds 6–8. The research converged hard on a small cluster at the top — the **Feeling Door /
+Release is the highest-leverage surface in the whole app** (if-then capture, the "next real thing" landing, the
+impulse-spend door, the "look up" off-ramp all live there), the loved-ones reframe is backed clinically from
+four independent angles (reach-out cognition, loving-kindness, contribution, relational gratitude), and the
+onboarding finding makes one change both launch-critical and on-brand.*
 
 **★ Converged top tier (small builds, highest evidence × soul-fit — do these first):**
 - **A. If-then + "Next Small Real Thing" at the close of the Feeling Door / Release** — two agents landed on this
@@ -336,19 +429,24 @@ independent angles (reach-out cognition, loving-kindness, contribution).*
 - **C. Grace-based streak reframe — "never miss twice"** — teach the real 66-day curve; a lapse never resets to
   zero (Lally; abstinence-violation research). Reframes existing streaks; pure soul; shame-reducer.
 - **D. Numbers-off "gentle mode" + obsession guardrail in Nourish** — the antidote to the MFP-parity harm; turns the round-6 risk into the moat.
+- **E. Feeling Door AHA before the auth wall** *(launch-critical + the founder's recording).* Guest/local state so
+  a newcomer feels one real companion move before signup; defer email-OTP to a soft "keep this." Fixes a 20–40% leak; ethics = growth strategy.
 
 **Then:**
 1. **Nourish day-navigation** — finishes tracker credibility (Tier 1 last piece)
-2. **Daily pledge** (Fight) — tiny, powerful, pure on-soul
-3. **Loving-kindness (metta) from "your few"** — most evidence-backed contemplative practice + literal reframe expression
-4. **Nightly Examen fusion → cross-faith evening review** (gratitude + devotional + the Fight, "why/my role," Ignatian/Stoic/muhasaba/secular)
-5. **Shareable verse/quote cards** (Soul) — serves the founder's recording + growth
-6. **Cycle tracking + phase-aware coaching** (Women's health) — serves half the audience; integration moat
-7. **Habit anchoring** (after-I-___-I-will-___) + a state-matched action menu from `getLifeState()`
-8. **Seasonal Fasting Companion** (Ramadan/Lent/Navratri) + **faith-aware Giving/zakat tracker** — body+money×soul, the integration nobody else can do
-9. **Read-aloud + timed (Release-first) sessions** + one **breath-prayer engine** phrase-swapped per tradition
-10. **Subscription auto-detection** (Money) · **contribution/service exit** from the craving loop · **gratitude micro-door**
-11. 🟢 **iOS Screen Time blocking** + deeper HealthKit + **receptivity-gated background push** — native, biggest thesis unlock, post-wrapper
+2. **Impulse-spend "pause" → the Feeling Door** — reuses the existing clinically-validated companion engine for money; + money-shame→self-compassion
+3. **Daily pledge** (Fight) — tiny, powerful, pure on-soul
+4. **Sleep signal in `getLifeState()`** — "you slept ~5h, go gentle today" biasing counsel across all pillars; + the phone-down wind-down (a first-line sleep treatment). No sleep score.
+5. **The "Look Up" awe Release off-ramp** — low effort, deeply on-thesis (phone goes *away*); + awe as the exit from a rumination/craving loop
+6. **Loving-kindness (metta) from "your few"** + relational **gratitude visit** — most evidence-backed contemplative practice + literal reframe expression
+7. **Nightly Examen fusion → cross-faith evening review** (Three Good Things + devotional + the Fight, "why/my role," Ignatian/Stoic/muhasaba/secular)
+8. **Shareable verse/quote cards** (Soul) — serves the founder's recording + growth
+9. **Cycle tracking + phase-aware coaching** (Women's health) — serves half the audience; integration moat
+10. **Habit anchoring** (after-I-___-I-will-___) + a state-matched action menu from `getLifeState()`
+11. **Seasonal Fasting Companion** (Ramadan/Lent/Navratri) + **faith-aware Giving/zakat tracker** — body+money×soul, the integration nobody else can do
+12. **Read-aloud + timed (Release-first) sessions** + one **breath-prayer engine** phrase-swapped per tradition · cross-faith **Creation/Awe Shared-Thread**
+13. **Subscription auto-detection** (Money) · **contribution/service exit** from the craving loop · one-time impulse **friction setup**
+14. 🟢 **iOS Screen Time blocking** + deeper HealthKit + **receptivity-gated background push** — native, biggest thesis unlock, post-wrapper
 
 ## Deliberately NOT building (protect the soul)
 Streak-shame · over-goal guilt · notification nagging · leaderboards/gamification · in-app social feeds ·
