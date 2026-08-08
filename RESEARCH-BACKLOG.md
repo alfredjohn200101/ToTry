@@ -5,6 +5,9 @@
 > **Headline finding:** To Try is at or ABOVE feature-parity with the leader in every pillar — and it has
 > the whole-life integration none of them do. The gaps below are a short, high-leverage list, not a rescue.
 
+> **For men AND women both** — the "big sibling" (big brother to a man, big sister to a woman). Gender-aware
+> voice + body-math already exist (`userSex()`); every feature and every line of copy must serve both.
+
 Legend: ✅ have · ⚠️ partial · ❌ gap · 🚫 deliberately NOT doing (vision) · 🟢 native-only
 
 ---
@@ -63,18 +66,45 @@ Already have: CBT restructuring + ACT defusion + urge-surfing + grounding, whole
 - 🚫 **Parasocial dependence** (Replika "AI friend to do life with") — the OPPOSITE of our soul. Our
   companion moves you THROUGH the moment and OFF the phone toward real people. **Lean into this contrast on camera.**
 
+## 👩 WOMEN'S HEALTH / CYCLE — vs Flo / Clue / Natural Cycles  *(half the audience; currently ❌ none)*
+`userSex()` already knows male/female — the foundation exists; there is NO cycle awareness yet.
+- ❌ **Cycle tracking + phase awareness** — log period start + length → predict phase (menstrual / follicular /
+  ovulatory / luteal). Flo has 460M+ users; this is table-stakes for serving women.
+- ❌❌ **Cross-pillar cycle integration (THE moat — no cycle app does this):**
+  - **Nourish:** luteal → appetite/cravings rise (~100–300 cal). Frame as *hormonal, not failure* (grace). Optional phase-aware target nudge.
+  - **Train:** follicular/ovulatory = strength peak (push); luteal/menstrual = honor lower energy, no forced PRs.
+  - **Fight:** PMS week → "this is a harder week hormonally, be extra gentle" — grace for slips.
+  - **Readiness/life-state:** factor the phase in.
+- 🟢 **Privacy-first framing** — cycle data on-device, never sold (a top-3 concern for women post-Roe; Flo has a data-history problem). Genuine trust differentiator, like the Muslim Pro angle.
+- 🚫 Fertility/pregnancy-optimization funnels, data monetization (Flo's model)
+
+## 💤 TRACK / READINESS — vs Whoop / Oura / Rise
+Already have: `computeReadiness` (honest self-report + available HealthKit data — NOT faking HRV), check-ins, HealthKit reads.
+- ⚠️ 🟢 **Deeper native HealthKit sync** (sleep stages, resting HR, HRV) → a truer morning readiness verdict, post-wrapper
+- ✅ Single morning readiness score (Oura/Whoop's core) — already have it, honestly framed
+- 🚫 Faking HRV/precision we can't measure (we already refuse this — keep it)
+
+## 🚀 ONBOARDING / ACTIVATION — best-practice study (Calm/Noom/Headspace/Wysa)
+- ⚠️ **Get to the "aha moment" FAST.** Our aha = the **Feeling Door → companion actually helping in the moment**
+  (or "it sees my whole life"). Current onboarding front-loads a lot of setup (name/identity/why/faith/season/
+  vices) before value — consider letting them *feel* one real moment of help earlier.
+- 🎥 **This is also the recording demo** — the clip that converts viewers is the app meeting a real feeling and
+  moving them through it, not a settings tour.
+
 ---
 
 ## Recommended build order (impact × vision-fit × effort)
 1. **Nourish day-navigation** — finishes the tracker credibility (Tier 1 last piece)
 2. **Daily pledge** (Fight) — tiny, powerful, pure on-soul
 3. **Shareable verse/quote cards** (Soul) — serves the founder's recording + growth directly
-4. **Read-aloud + timed sessions** (Soul) — the audio dimension every faith app has
-5. **Subscription auto-detection** (Money) — reclaim, on-vision
-6. **Guided reading plans** (Soul) — bigger, high-value, differentiated
-7. **Accountability partner** (Fight) — brotherhood done right
-8. **Reflective journaling follow-up** (companion)
-9. 🟢 **iOS Screen Time blocking** — native, biggest thesis unlock, post-wrapper
+4. **Cycle tracking + phase-aware coaching** (Women's health) — serves half the audience; pure integration
+   moat. Phase 1: basic tracking + phase prediction. Phase 2: weave into Nourish/Train/Fight. HIGH value.
+5. **Read-aloud + timed sessions** (Soul) — the audio dimension every faith app has
+6. **Subscription auto-detection** (Money) — reclaim, on-vision
+7. **Guided reading plans** (Soul) — bigger, high-value, differentiated
+8. **Accountability partner** (Fight) — brotherhood done right
+9. **Reflective journaling follow-up** (companion)
+10. 🟢 **iOS Screen Time blocking** + deeper HealthKit — native, biggest thesis unlock, post-wrapper
 
 ## Deliberately NOT building (protect the soul)
 Streak-shame · over-goal guilt · notification nagging · leaderboards/gamification · in-app social feeds ·
