@@ -1312,11 +1312,11 @@ input:focus,textarea:focus,select:focus{
     </div>
     <input type="text" id="ob-custom" placeholder="Add your own..." style="margin-bottom:14px">
     <div style="border-top:1px solid var(--bd);padding-top:14px;margin-bottom:16px">
-      <div style="font-size:14px;font-weight:500;color:var(--tx);margin-bottom:4px">Do you have a partner?</div>
-      <div style="font-size:13px;color:var(--tx2);margin-bottom:10px;line-height:1.5">Your evening ritual can include prompts for your nightly call.</div>
+      <div style="font-size:14px;font-weight:500;color:var(--tx);margin-bottom:4px">Is there someone you're doing this for?</div>
+      <div style="font-size:13px;color:var(--tx2);margin-bottom:10px;line-height:1.5">A partner, a parent, a friend — anyone you want to stay close to. Your evening can nudge you to reach out to them.</div>
       <div style="display:flex;gap:8px">
         <button class="btn" id="pyes" onclick="setHasPartner(true)" style="flex:1">Yes</button>
-        <button class="btn" id="pno" onclick="setHasPartner(false)" style="flex:1">No</button>
+        <button class="btn" id="pno" onclick="setHasPartner(false)" style="flex:1">Not right now</button>
       </div>
     </div>
     <button class="btn primary" onclick="obNext(6)">Continue &#8594;</button>
@@ -3538,7 +3538,7 @@ Amen.</div></div>
         <input type="number" id="settings-height" placeholder="cm" style="width:70px;flex:none;padding:6px 8px;font-size:16px" onchange="ls('totry_height',parseInt(this.value))">
       </div>
       <div class="setting-row" style="border-bottom:none">
-        <div><div class="sr-label">Partner mode</div><div class="sr-desc">Shows nightly call prompts in Evening</div></div>
+        <div><div class="sr-label">Someone you love</div><div class="sr-desc">Evening nudge to reach out to a person you love</div></div>
         <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:12px" id="partner-toggle-btn" onclick="togglePartner()">Loading...</button>
       </div>
     </div>
@@ -4201,7 +4201,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v325';
+const APP_VERSION = 'v326';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -25928,45 +25928,46 @@ function clearCalApp(){
 // ── EVENING ───────────────────────────────────────────────────
 let dayRating=3;
 const CALL_PROMPTS=[
-  'Tell her one genuine thing you\'re grateful for today.',
+  'Tell them one genuine thing you\'re grateful for today.',
   'Share one thing you struggled with and how you handled it.',
-  'Tell her one thing you\'re proud of from today.',
-  'Ask her how she\'s really doing \u2014 and actually listen.',
+  'Tell them one thing you\'re proud of from today.',
+  'Ask how they\'re really doing \u2014 and actually listen.',
   'Share the line or verse that hit you today.',
-  'Tell her one thing she does that makes the journey easier.',
+  'Tell them one thing they do that makes this easier.',
   'Be honest about where you\'re at. No performance.',
 ];
 const SHARED_PRAYERS=[
-  'Lord, thank You for the distance that hasn\'t broken what we have. Keep us growing toward each other. Amen.',
-  'God, hold us both tonight. Give us patience, honesty, and the kind of love that chooses to stay. Amen.',
-  'Lord, keep our hearts aligned even when the miles aren\'t. Amen.',
-  'Father, make us the people each other deserves. Not perfect. Just genuinely trying. Amen.',
+  'Lord, thank You for the people who love me. Keep me present with them — not half-here behind a screen. Amen.',
+  'God, make me someone my people can count on: patient, honest, and actually there. Amen.',
+  'Lord, when I\'m tired or distracted, remind me who I\'m really doing this for. Amen.',
+  'Father, let the ones I love feel me show up today — not perfect, just present. Amen.',
 ];
-// Partner prayers adapt to the person's path (the reflect tab shows one when a partner is set).
+// Adapts to the person's path (the reflect tab shows one when they've named someone they're showing up for —
+// a partner, a parent, a friend, anyone). About being PRESENT for the people you love, not a romantic title.
 const SHARED_PRAYERS_BY_FAITH={
   islam:[
-    'O Allah, keep us patient with each other, honest, and grateful for what we have.',
-    'Ya Allah, hold us both tonight — give us mercy, honesty, and a love that chooses to stay.',
-    'O Allah, keep our hearts aligned even when the miles aren’t.',
-    'Ya Allah, make us the people each other deserves — not perfect, just genuinely trying.'
+    'O Allah, thank You for the people who love me. Keep me present with them, not lost in my phone.',
+    'Ya Allah, make me someone my people can count on — patient, honest, and truly there.',
+    'O Allah, when I’m tired or distracted, remind me who I’m doing this for.',
+    'Ya Allah, let the ones I love feel me show up today — not perfect, just present.'
   ],
   hinduism:[
-    'May we meet each other with patience and truth, and grow together toward the good.',
-    'May the Divine hold us both tonight — steady our hearts, and let our love choose to stay.',
-    'May our hearts stay aligned even when the miles aren’t.',
-    'May we become the people each other deserves — not perfect, just genuinely trying.'
+    'I give thanks for the people who love me; let me be present with them, not lost elsewhere.',
+    'Let me be someone my people can count on — patient, honest, and truly there.',
+    'When I am tired or distracted, let me remember who I am doing this for.',
+    'Let the ones I love feel me show up today — not perfect, just present.'
   ],
   buddhism:[
-    'May we both be at ease tonight — patient, honest, and kind to one another.',
-    'May we hold each other with a calm and open heart, and choose to stay through the hard days.',
-    'May our minds stay steady and our hearts close, even across the miles.',
-    'May we meet each other with loving-kindness — not perfect, just genuinely trying.'
+    'May I be fully present with the people I love, not lost in distraction.',
+    'May I be someone my people can count on — patient, honest, and kind.',
+    'When I am tired or pulled away, may I remember who I am here for.',
+    'May the ones I love feel me show up today — not perfect, just present.'
   ],
   secular:[
-    'Let us be patient with each other, honest, and choose to stay — even on the hard days.',
-    'Let us hold each other tonight with patience and honesty, and a love that stays.',
-    'Let us keep our hearts aligned even when the miles aren’t.',
-    'Let us become the people each other deserves — not perfect, just genuinely trying.'
+    'The people I love matter more than the screen. Let me be present with them today.',
+    'Let me be someone my people can count on — patient, honest, and actually there.',
+    'When I’m tired or distracted, remind me who I’m doing this for.',
+    'Let the ones I love feel me show up today — not perfect, just present.'
   ]
 };
 function sharedPrayers(){ return SHARED_PRAYERS_BY_FAITH[faithTradition()] || SHARED_PRAYERS; }
@@ -32067,7 +32068,7 @@ function togglePartner(){
   const current=ls('totry_partner')||false;
   ls('totry_partner',!current);
   updatePartnerBtn();
-  showToast(!current?'Partner mode on':'Partner mode off',!current?'Evening call prompts enabled.':'Evening call prompts disabled.');
+  showToast(!current?'Reach-out reminder on':'Reach-out reminder off',!current?'Your evening will nudge you to reach out to someone you love.':'Evening reach-out nudge disabled.');
 }
 
 function updatePartnerBtn(){

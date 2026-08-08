@@ -91,19 +91,46 @@ Already have: `computeReadiness` (honest self-report + available HealthKit data 
 - 🎥 **This is also the recording demo** — the clip that converts viewers is the app meeting a real feeling and
   moving them through it, not a settings tour.
 
+## 🙏 GRATITUDE · FOCUS · HABITS · DEVOTIONAL · RELATIONSHIPS  *(round-3 research)*
+- **❤️ "Reach out" presence (vs SoonCall/Garden/Catchup) — HIGHEST vision fit.** Pick the few who matter
+  (parent, old friend, sibling) + a cadence; **log what mattered last time** ("she mentioned the surgery —
+  ask how it went"); the reminder ends with **the phone down, a real person called**. Completes the
+  time/relationships front; it IS "points beyond itself" + anti-engagement in one feature; natural payload
+  for the roadmapped "reach out first" native push. *(Loved-ones copy reframe already shipped as groundwork.)*
+  🚫 social-scraping (Cloze), friendship streaks (Snapchat), "relationship scores."
+- **🌙 Nightly Examen = "Three Good Things" + drift-review + resolve (fuses gratitude+devotional+the Fight).**
+  Evidence-backed gratitude works only with the **"why / my role" line** (benefits persist 6mo); do it
+  **3–4×/week, NOT daily** (habituation — science AND anti-engagement agree). Multi-faith via FAITHS
+  (Examen / muhasabah / secular review). Highest integration payoff for lowest build. 🚫 mood-charting
+  dashboards (Reflectly), gratitude streaks.
+- **🧱 Habit stacking / implementation intentions (Atomic Habits).** "After [existing habit], I will [new]" —
+  anchor a new habit to an existing **To Try front** ("after I log dinner, I pray one line") = cross-front
+  moat. One habit at a time (reuse `applyHomeProgressiveDisclosure`). 🚫 Habitica RPG/XP, Streaks broken-chain shame.
+- **🎯 Intention-set single-task focus → The Release (Forest/Flown/Llama Life).** "What's the one thing I'm
+  protecting this time for?" + one timer + hand off **off the phone** into the existing Release off-ramp.
+  Stewardship of attention. 🚫 Forest's dying-tree loss-aversion, focus streaks/leaderboards.
+- **📿 P.R.A.Y. four-beat devotional spine (Lectio 365): Pause → Reflect(text) → Ask → Yield.** A universal
+  skeleton that maps onto the FAITHS registry (swap text, keep structure) — a clean fix for "rituals still
+  Christian-hardcoded." Morning/midday/night rhythm; night = the Examen above. 🚫 content-library autoplay
+  farming (Pray.com/Abide), "you missed your quiet time" guilt push.
+- **Steal across all:** Fabulous's **signed intention / commitment contract** — a quiet threshold the
+  Brother/Sister voice can hold you to later, no streak, no shame.
+
 ---
 
 ## Recommended build order (impact × vision-fit × effort)
 1. **Nourish day-navigation** — finishes the tracker credibility (Tier 1 last piece)
 2. **Daily pledge** (Fight) — tiny, powerful, pure on-soul
-3. **Shareable verse/quote cards** (Soul) — serves the founder's recording + growth directly
-4. **Cycle tracking + phase-aware coaching** (Women's health) — serves half the audience; pure integration
-   moat. Phase 1: basic tracking + phase prediction. Phase 2: weave into Nourish/Train/Fight. HIGH value.
-5. **Read-aloud + timed sessions** (Soul) — the audio dimension every faith app has
-6. **Subscription auto-detection** (Money) — reclaim, on-vision
-7. **Guided reading plans** (Soul) — bigger, high-value, differentiated
-8. **Accountability partner** (Fight) — brotherhood done right
-9. **Reflective journaling follow-up** (companion)
+3. **"Reach out" presence for the people you love** — highest vision fit; completes the relationships front;
+   subsumes the old "accountability partner." Copy reframe already shipped; next = the few + cadence +
+   "log what mattered" + phone-down reminder. Payload for the native "reach out first" push.
+4. **Nightly Examen fusion** (gratitude + devotional + the Fight, 3–4×/week, "why/my role" line, multi-faith)
+5. **Shareable verse/quote cards** (Soul) — serves the founder's recording + growth directly
+6. **Cycle tracking + phase-aware coaching** (Women's health) — serves half the audience; integration moat.
+   Phase 1: track + phase prediction. Phase 2: weave into Nourish/Train/Fight.
+7. **Habit stacking** anchored to existing fronts — evidence-based, cross-front, zero gamification
+8. **Read-aloud + timed sessions** + **P.R.A.Y. devotional spine** (Soul) — audio + universal ritual structure
+9. **Subscription auto-detection** (Money) · **Intention-set focus block → Release** · **reflective journaling follow-up**
 10. 🟢 **iOS Screen Time blocking** + deeper HealthKit — native, biggest thesis unlock, post-wrapper
 
 ## Deliberately NOT building (protect the soul)
