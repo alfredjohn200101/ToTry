@@ -95,6 +95,8 @@ button:focus:not(:focus-visible){outline:none}
 .verse-pill .vr{font-family:'DM Mono',monospace;font-size:9px;color:var(--go);margin-top:4px;letter-spacing:0.06em}
 .vsave{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--tx3);font-size:18px;padding:4px;line-height:1}
 .vsave.saved{color:var(--go)}
+.vshare{position:absolute;top:8px;right:34px;background:none;border:none;color:var(--tx3);font-size:15px;cursor:pointer;padding:2px 4px;line-height:1}
+.vshare:active{color:var(--go)}
 /* Bottom tab bar (iOS convention + the SOUL-ARCHITECTURE intent: "bottom bar, thumb-reachable").
    .app is a flex column [header, nav, tabs]; order:3 floats the nav below the scrolling content so
    it becomes a proper thumb-reachable bottom bar — no DOM change. border-top is now the divider
@@ -1672,7 +1674,8 @@ input:focus,textarea:focus,select:focus{
       <div class="verse-pill hero-verse" onclick="nextVerse()">
         <p id="hdr-verse">Loading today&#39;s word...</p>
         <div class="vr" id="hdr-ref"></div>
-        <button class="vsave" id="vsave-btn" aria-label="Save this verse" onclick="event.stopPropagation();saveHdrVerse()">&#9825;</button>
+                <button class="vshare" id="vshare-btn" aria-label="Make a card from this verse" onclick="event.stopPropagation();shareVerseFrom('hdr-verse','hdr-ref')">&#10548;</button>
+<button class="vsave" id="vsave-btn" aria-label="Save this verse" onclick="event.stopPropagation();saveHdrVerse()">&#9825;</button>
       </div>
     </div>
   </div>
@@ -1922,6 +1925,10 @@ input:focus,textarea:focus,select:focus{
   <div class="ritual-verse">
     <div class="rv-text" id="morning-verse-text">Loading today's word...</div>
     <div class="rv-ref" id="morning-verse-ref"></div>
+    <div class="verse-tools">
+      <button class="btn" data-speak="morning-verse-text|morning-verse-ref" onclick="Speak.toggleFrom(this)" aria-pressed="false">&#9654; Listen</button>
+      <button class="btn" onclick="shareVerseFrom('morning-verse-text','morning-verse-ref')">&#10022; Make a card</button>
+    </div>
   </div>
   <!-- Today in the Church (compact — taps through to full readings) -->
   <div id="morning-liturgy" style="display:none;margin-bottom:14px"></div>
@@ -2757,6 +2764,7 @@ input:focus,textarea:focus,select:focus{
     <div id="br-loading" style="text-align:center;padding:24px;display:none"><p class="pulsing" style="font-family:'Cormorant Garamond',serif;font-size:16px;font-style:italic;color:var(--tx3)">Loading scripture...</p></div>
     <div id="br-chapter-display" class="bible-chapter-display" style="display:none">
       <div class="bible-chapter-title" id="br-chapter-title"></div>
+      <div class="verse-tools" style="margin:0 0 12px"><button class="btn" data-speak="br-chapter-title|br-verses" onclick="Speak.toggleFrom(this)" aria-pressed="false">&#9654; Listen to this chapter</button></div>
       <div id="br-verses"></div>
     </div>
     <div id="br-api-credit" style="font-family:'DM Mono',monospace;font-size:8px;color:var(--tx3);text-align:center;margin-top:8px;letter-spacing:0.06em"></div>
@@ -4296,7 +4304,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v346';
+const APP_VERSION = 'v347';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -8428,6 +8436,8 @@ function highlightSoulByTime(){
 
 function go(name){
   haptic("tap");
+  // Nothing should still be talking after you leave the screen you started it on.
+  try{ if(typeof Speak!=='undefined' && Speak.stop) Speak.stop(); }catch(_){}
   // Remember the previous tab so floating screens (Coach) can send you back where you were.
   try{
     const cur = document.querySelector('.tab.active');
@@ -11232,6 +11242,8 @@ function _logRelease(via){ try{ const r=ls('totry_releases')||[]; r.unshift({ts:
 function releaseCount(){ try{ return (ls('totry_releases')||[]).length; }catch(_){ return 0; } }
 function theRelease(opts){
   opts = opts || {};
+  // The Release ends the session — nothing should still be talking after it.
+  try{ if(typeof Speak!=='undefined' && Speak.stop) Speak.stop(); }catch(_){}
   document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
   document.querySelectorAll('.breath-overlay').forEach(o=>o.remove());
   _logRelease(opts.did||'');
@@ -30277,6 +30289,134 @@ async function shareCardNative(url){
 }
 
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// VERSE CARDS + READ-ALOUD  (Soul \u00b7 sharing & voice)
+// Cards reuse _renderShareCanvas('scripture') — the app's real serif/gold card — and simply
+// let it be pointed at ANY line, in the person's own tradition. Read-aloud uses the device's
+// own voice: it reads the passage and stops. Not a feed, not a player.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// The tradition names its own word. Never flattened to "scripture".
+function verseCardEyebrow(){
+  const t = (typeof faithTradition === 'function') ? faithTradition() : 'christianity';
+  return ({
+    christianity:'\u00b7 TODAY\u2019S WORD \u00b7',
+    islam:'\u00b7 AN AYAH \u00b7',
+    hinduism:'\u00b7 A VERSE \u00b7',
+    buddhism:'\u00b7 A TEACHING \u00b7',
+    secular:'\u00b7 A REFLECTION \u00b7'
+  })[t] || '\u00b7 TODAY\u2019S WORD \u00b7';
+}
+
+// Shared markup for the two quiet tools under a passage. IDs only — no text in attributes.
+function _verseToolsHTML(textId, refId){
+  return '<div class="verse-tools">' +
+    '<button class="btn" data-speak="' + textId + '|' + refId + '" onclick="Speak.toggleFrom(this)" aria-pressed="false">\u25B6 Listen</button>' +
+    '<button class="btn" onclick="shareVerseFrom(\'' + textId + '\',\'' + refId + '\')">\u2726 Make a card</button>' +
+  '</div>';
+}
+
+function shareVerseCard(text, ref){
+  const strip = /^[\s\u201C\u201D\u2018\u2019"'\u2014\u2013-]+|[\s\u201C\u201D\u2018\u2019"']+$/g;
+  text = String(text || '').replace(strip, '').trim();
+  ref  = String(ref  || '').replace(strip, '').trim();
+  if(!text){ showToast('Nothing to put on it','No line is showing yet \u2014 open one first.'); return; }
+  window._verseCardOverride = { t:text, r:ref };
+  haptic('tap');
+  createShareCard('scripture');
+}
+// Read the line off the screen so user/API text never touches an inline attribute.
+function shareVerseFrom(textId, refId){
+  const te = document.getElementById(textId);
+  const re = refId ? document.getElementById(refId) : null;
+  shareVerseCard(te ? (te.textContent || '') : '', re ? (re.textContent || '') : '');
+}
+
+// ── READ-ALOUD ────────────────────────────────────────────────────────────────
+// window.* so anything loading earlier (go(), theRelease()) can safely null-check it.
+window.Speak = (function(){
+  const SS = window.speechSynthesis;
+  let chunks = [], i = 0, btn = null, on = false;
+  const ok = () => !!(SS && typeof window.SpeechSynthesisUtterance === 'function');
+
+  function paint(playing){
+    if(!btn) return;
+    const long = /chapter/i.test(btn.textContent || '');
+    btn.innerHTML = playing ? '\u25A0 Stop' : (long ? '\u25B6 Listen to this chapter' : '\u25B6 Listen');
+    btn.setAttribute('aria-pressed', playing ? 'true' : 'false');
+  }
+  function stop(){
+    if(ok()){ try{ SS.cancel(); }catch(_){ } }
+    paint(false);
+    on = false; chunks = []; i = 0; btn = null;
+  }
+  // Pull readable text out of live DOM nodes: drop verse numbers and our own controls.
+  function textFrom(spec){
+    const out = [];
+    String(spec || '').split('|').forEach(id => {
+      const el = document.getElementById(id.trim());
+      if(!el) return;
+      String(el.innerText || el.textContent || '').split('\n').forEach(line => {
+        const s = line.replace(/^\s*\d+\s+/, '').trim();
+        if(!s) return;
+        if(/^(\u25B6|\u25A0|Listen|Stop|Make a card|Show study notes)/i.test(s)) return;
+        out.push(/[.!?;:\u201D\u2019"']$/.test(s) ? s : s + '.');
+      });
+    });
+    return out.join(' ');
+  }
+  // Chrome cuts a single utterance at ~15s. Sentence chunks under ~180 chars avoid it,
+  // and make Stop feel instant.
+  function cut(t){
+    const parts = String(t || '').replace(/\s+/g,' ').trim().match(/[^.!?;:]+[.!?;:]*\s*/g) || [String(t || '')];
+    const out = []; let cur = '';
+    parts.forEach(p => { if((cur + p).length > 180 && cur){ out.push(cur.trim()); cur = p; } else cur += p; });
+    if(cur.trim()) out.push(cur.trim());
+    return out.filter(Boolean);
+  }
+  function voice(){
+    try{
+      const vs = SS.getVoices() || [];
+      if(!vs.length) return null;                       // engine not ready → device default
+      const want = (navigator.language || 'en').slice(0,2).toLowerCase();
+      const pool = vs.filter(v => (v.lang || '').slice(0,2).toLowerCase() === want);
+      const use = pool.length ? pool : vs;
+      return use.find(v => v.localService) || use[0] || null;
+    }catch(_){ return null; }
+  }
+  function next(){
+    if(!on || i >= chunks.length){ stop(); return; }
+    const u = new SpeechSynthesisUtterance(chunks[i++]);
+    const v = voice(); if(v){ u.voice = v; u.lang = v.lang; }
+    u.rate = 0.92; u.pitch = 1;
+    u.onend = () => { if(on) next(); };
+    u.onerror = () => { stop(); };
+    try{ SS.speak(u); }catch(_){ stop(); }
+  }
+  function toggleFrom(el){
+    if(!ok()){ showToast('No voice here','This browser can\u2019t read aloud on this device.'); return; }
+    if(on){ stop(); haptic('light'); return; }
+    const text = textFrom(el.getAttribute('data-speak'));
+    if(!text){ showToast('Nothing to read','Open a passage first.'); return; }
+    // iOS only starts speech from inside the tap itself — nothing async may come first.
+    try{ SS.cancel(); SS.resume(); }catch(_){ }
+    chunks = cut(text); i = 0; btn = el; on = true;
+    paint(true); haptic('tap');
+    next();
+    // Told once, plainly: it is not a recording and it is not a person.
+    if(!ls('totry_listen_hint_seen')){
+      ls('totry_listen_hint_seen', true);
+      setTimeout(() => showToast('That\u2019s your phone\u2019s own voice','Not a recording. It reads the passage, then stops.'), 900);
+    }
+  }
+  try{
+    if(SS) SS.getVoices();                                    // warm the async voice list
+    document.addEventListener('visibilitychange', () => { if(document.hidden) stop(); });
+    window.addEventListener('pagehide', stop);
+    if(!ok() && document.body) document.body.classList.add('no-tts');
+  }catch(_){ }
+  return { toggleFrom:toggleFrom, stop:stop, supported:ok };
+})();
 // Tap-to-pick check-in dots
 function setCheckin(field, value){
   const row = document.querySelector('.ci-dot-row[data-target="'+field+'"]');
