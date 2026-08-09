@@ -84,4 +84,31 @@ H.section('viceSpendPicture — reclaimed money (debt cancels savings first)');
   H.eq(viceSpendPicture({ costAmount: 0, owed: 0 }), null, 'no cost + no debt → null (feature is opt-in)');
 }
 
+// ── CRISIS DETECTION — the highest-stakes function in the app ────────────────────────────────────
+// Guards a bug that shipped and was INVISIBLE to desktop testing: iOS Smart Punctuation (on by
+// default) rewrites ' to U+2019 as the person types, so an ASCII-only phrase list silently failed
+// OPEN on the platform most people use — "i don't want to live" never matched, the gate never fired,
+// and the message went straight to the LLM. These cases MUST keep passing on every keyboard.
+H.section('detectCrisis — the gate must fire on any apostrophe (iOS Smart Punctuation)');
+{
+  const { detectCrisis } = H.load(['detectCrisis']);
+  // curly / typographic apostrophe (what an iPhone actually sends)
+  H.eq(detectCrisis('i don’t want to live anymore'), 'suicide', 'curly: "don’t want to live" → suicide');
+  H.eq(detectCrisis('I don’t want to be here anymore'), 'suicide', 'curly: "don’t want to be here anymore" → suicide');
+  H.eq(detectCrisis('I don’t want to wake up tomorrow'), 'suicide', 'curly: "don’t want to wake up" → suicide');
+  H.eq(detectCrisis('I’m going to end it'), 'suicide', 'curly: "I’m going to end it" → suicide');
+  H.eq(detectCrisis('I can’t breathe'), 'medical', 'curly: "can’t breathe" → medical');
+  // straight apostrophe + no apostrophe at all
+  H.eq(detectCrisis("i don't want to live anymore"), 'suicide', 'ascii apostrophe still works');
+  H.eq(detectCrisis('i dont want to live anymore'), 'suicide', 'no apostrophe still works');
+  // apostrophe-free phrases must be unaffected
+  H.eq(detectCrisis('i want to kill myself'), 'suicide', '"kill myself" → suicide');
+  H.eq(detectCrisis('everyone would be better off without me'), 'suicide', 'passive ideation → suicide');
+  H.eq(detectCrisis('i want to hurt myself'), 'selfharm', 'self-harm → selfharm');
+  // and it must NOT fire on ordinary text (over-detection erodes trust)
+  H.eq(detectCrisis('I had a great day and ate pizza'), null, 'ordinary text → null');
+  H.eq(detectCrisis(''), null, 'empty → null');
+  H.eq(detectCrisis(null), null, 'null input → null (no throw)');
+}
+
 H.report();

@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v333-gentle-leak-fix'
+const CACHE = 'totry-v334-crisis-gate-fixes'
 
 const CORE = [
   './',

@@ -1071,7 +1071,19 @@ input:focus,textarea:focus,select:focus{
     <input type="email" id="auth-email-input" placeholder="your.email@example.com" autocomplete="email" inputmode="email" style="font-size:16px;padding:14px 16px;text-align:center;margin-bottom:14px" autofocus>
     
     <button class="btn primary" id="auth-send-otp-btn" onclick="authSendOtp()" style="font-size:14px;padding:14px">Send verification code</button>
-    
+
+    <!-- THE DOOR BEFORE THE WALL. A person in a hard moment should never have to make an account
+         first — the help IS the product, and the evidence is blunt that a signup wall in front of the
+         first real value both loses people and hides the thing that actually helps. So: one real move,
+         no account. Signing up is offered afterwards as "keep this", never as the toll to get in. -->
+    <div style="display:flex;align-items:center;gap:10px;margin:18px 0 12px">
+      <div style="flex:1;height:1px;background:var(--bd)"></div>
+      <div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.12em">OR</div>
+      <div style="flex:1;height:1px;background:var(--bd)"></div>
+    </div>
+    <button class="btn" id="auth-guest-btn" onclick="enterAsGuest()" style="font-size:13.5px;padding:13px;background:transparent;border:1px solid var(--go-bd);color:var(--go)">Something&apos;s pulling at me right now &#8594;</button>
+    <div style="font-size:11.5px;color:var(--tx3);text-align:center;margin-top:8px;line-height:1.55">No account, no setup. Just help, right now.</div>
+
     <div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-align:center;margin-top:18px;line-height:1.6;letter-spacing:0.05em">
       Your email is your account.<br>No password needed. Sign in anytime with a code.
     </div>
@@ -4207,7 +4219,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v333';
+const APP_VERSION = 'v334';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5395,6 +5407,35 @@ function renderNotifSetting(){
 
 
 // ─── INITIAL AUTH CHECK ────────────────────────────────────────
+// ── GUEST MODE — the aha before the wall ─────────────────────────────────────────────────────────
+// A signup wall in front of the first real value loses a large share of people AND hides the thing
+// that actually helps. Worse, the person most likely to open this app is mid-moment — asking them to
+// make an account first is the opposite of a presence. So a guest gets the Feeling Door and one real
+// move immediately, stored locally. Signing up is offered AFTERWARDS, at the natural moment, framed as
+// "keep this" — never as the toll to get in. Everything a guest does is kept and carried into the
+// account they later make (it all lives in the same local storage the app already syncs from).
+function isGuest(){ try{ return !!ls('totry_guest') && !currentUser; }catch(_){ return false; } }
+function enterAsGuest(){
+  try{ ls('totry_guest', true); }catch(_){}
+  try{ if(typeof logEvent==='function') logEvent('guest_enter',{}); }catch(_){}
+  try{ const ac=document.getElementById('auth-container'); if(ac) ac.style.display='none'; }catch(_){}
+  try{ const ob=document.getElementById('onboard'); if(ob){ ob.classList.remove('active'); ob.style.display='none'; } }catch(_){}
+  try{ document.querySelectorAll('.app').forEach(function(a){ a.classList.add('app-ready'); }); }catch(_){}
+  try{ if(typeof initApp==='function') initApp(); }catch(e){ console.warn('[guest] initApp:', e); }
+  // Straight to the thing that helps — no home tour, no setup.
+  setTimeout(function(){ try{ if(typeof openFeelingDoor==='function') openFeelingDoor(); }catch(e){ console.warn('[guest] door:', e); } }, 320);
+}
+// Offered after a guest has actually been helped. "Keep this", not "pay the toll".
+function guestKeepThis(){
+  try{ if(typeof logEvent==='function') logEvent('guest_to_signup',{}); }catch(_){}
+  try{ document.querySelectorAll('.modal-bg').forEach(function(m){ m.remove(); }); }catch(_){}
+  try{ document.querySelectorAll('.totry-release-ov').forEach(function(o){ o.remove(); }); }catch(_){}
+  try{ document.querySelectorAll('.breath-overlay').forEach(function(o){ o.remove(); }); }catch(_){}
+  try{ const ac=document.getElementById('auth-container'); if(ac) ac.style.display='flex'; }catch(_){}
+  try{ if(typeof authShowStep==='function') authShowStep('email'); }catch(_){}
+  try{ const i=document.getElementById('auth-email-input'); if(i) setTimeout(function(){ i.focus(); },120); }catch(_){}
+}
+
 async function checkAuthAndStart(){
   // Wait for Supabase to be ready
   if(!sb){
@@ -6514,8 +6555,15 @@ async function sendCoach(){
 // This is intentionally conservative — false positives are acceptable here.
 function detectCrisis(text){
   if(!text || typeof text !== 'string') return null;
-  const t = text.toLowerCase();
-  
+  // APOSTROPHE NORMALISATION — non-negotiable. iOS Smart Punctuation (on by default) rewrites ' to
+  // U+2019 as the person types, so an ASCII-only phrase list fails OPEN on the platform most people
+  // use: "i don’t want to live anymore" would not match and the gate would never fire. We normalise
+  // every curly/typographic apostrophe to ASCII, and also match an apostrophe-STRIPPED pass so
+  // "dont want to live" lands too. This makes the phrase lists below work as written on any keyboard.
+  const t = text.toLowerCase().replace(/[‘’ʼʻ´`]/g, "'");
+  const tNo = t.replace(/'/g, '');
+  const _hit = function(list){ for(const p of list){ if(t.includes(p) || tNo.includes(p.replace(/'/g,''))) return true; } return false; };
+
   // Direct self-harm / suicide indicators
   const SUICIDE_PHRASES = [
     'kill myself', 'killing myself', 'end my life', 'end it all', 'want to die',
@@ -6547,10 +6595,10 @@ function detectCrisis(text){
     'overdosed', 'took too many pills', 'bleeding badly', 'unconscious'
   ];
   
-  for(const p of SUICIDE_PHRASES){ if(t.includes(p)) return 'suicide'; }
-  for(const p of SELFHARM_PHRASES){ if(t.includes(p)) return 'selfharm'; }
-  for(const p of HARMOTHERS_PHRASES){ if(t.includes(p)) return 'harmothers'; }
-  for(const p of MEDICAL_PHRASES){ if(t.includes(p)) return 'medical'; }
+  if(_hit(SUICIDE_PHRASES))    return 'suicide';
+  if(_hit(SELFHARM_PHRASES))   return 'selfharm';
+  if(_hit(HARMOTHERS_PHRASES)) return 'harmothers';
+  if(_hit(MEDICAL_PHRASES))    return 'medical';
   
   return null;
 }
@@ -10537,6 +10585,7 @@ function theRelease(opts){
   const did = opts.did ? '<div style="font-size:14px;color:var(--tx2);line-height:1.6;margin-bottom:22px;max-width:340px">'+opts.did+'</div>' : '';
   const countLine = n>1 ? '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);letter-spacing:0.05em;margin-top:28px;line-height:1.6">'+n+' times now, you\u2019ve come here and walked back into your life<br>instead of down the glass.</div>' : '';
   const ov=document.createElement('div');
+  ov.className='totry-release-ov';
   ov.style.cssText='position:fixed;inset:0;z-index:9600;background:radial-gradient(circle at 50% 38%,#14180f,#09090c 72%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;color:var(--tx);opacity:0;transition:opacity 0.5s ease';
   ov.innerHTML=
     '<div style="font-size:30px;margin-bottom:16px;opacity:0.9">🕊️</div>'+
@@ -10544,9 +10593,16 @@ function theRelease(opts){
     did+
     '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:26px;max-width:330px">Now put me down'+(name?', '+name.replace(/</g,'&lt;'):'')+'. Go live the next hour \u2014 the real one, off the glass. I\u2019m right here if the wave comes back. But you don\u2019t need me right now.</div>'+
     '<button class="btn primary rel-go" style="max-width:240px;margin:0 auto">I\u2019m putting it down</button>'+
+    // A guest has now actually BEEN helped \u2014 the honest moment to offer an account, framed as keeping
+    // what just happened. Sits UNDER the release button on purpose: putting the phone down still wins.
+    ((typeof isGuest==='function' && isGuest())
+      ? '<button class="btn rel-keep" style="max-width:240px;margin:10px auto 0;background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12.5px;padding:10px">Keep this \u2192</button>'+
+        '<div style="font-size:11px;color:var(--tx3);opacity:0.75;margin-top:8px;max-width:280px;line-height:1.5">An account keeps tonight \u2014 and lets me remember you next time.</div>'
+      : '')+
     countLine;
   document.body.appendChild(ov);
   requestAnimationFrame(()=>{ ov.style.opacity='1'; });
+  try{ const _keep=ov.querySelector('.rel-keep'); if(_keep) _keep.onclick=function(){ if(typeof guestKeepThis==='function') guestKeepThis(); }; }catch(_){}
   ov.querySelector('.rel-go').onclick=()=>{
     // No "what's next", no feed — a genuine end. A brief goodbye, then it clears itself and gets out of your way.
     ov.innerHTML='<div class="rel-bye" style="font-family:Cormorant Garamond,serif;font-size:32px;color:var(--tx);opacity:0;transition:opacity 0.7s ease">Go well.</div>';
@@ -11010,6 +11066,31 @@ function companionFreeText(){
   const txt = f ? f.value.trim() : '';
   if(!txt){ if(f) f.focus(); return; }
   if(f) f.value = '';   // clear it — so what you typed never haunts the NEXT time you open this
+  // SAFETY GATE — these are the companion's FIRST words: the single likeliest place in the whole app
+  // for a crisis disclosure (this is the 11pm door, and the field is auto-focused). It must never
+  // reach the LLM, and must never fire _researchProtocol (which would send the person's verbatim
+  // words out with web_search enabled and cache them). companionReply() already gates every LATER
+  // message; without this, the first one — the most important one — was the only ungated message.
+  try{
+    if(typeof detectCrisis==='function'){
+      const crisis = detectCrisis(txt);
+      if(crisis){
+        _compStruggle = { name:'this moment', type:'general', mechanism:'ground', spine:'', label:'Here with you' };
+        _compHistory = [];
+        _compLocalStep = 0;
+        try{ if(typeof _compPhase==='function') _compPhase('comp-meet'); }catch(_){}
+        const conv = document.getElementById('comp-conversation');
+        if(conv){
+          conv.innerHTML = '';
+          const m=document.createElement('div'); m.className='comp-msg comp-msg-me'; m.textContent=txt; conv.appendChild(m);
+        }
+        if(typeof showCrisisResponse==='function') showCrisisResponse('comp-conversation', crisis);
+        _compHistory.push({ role:'user', content:txt });
+        _compHistory.push({ role:'assistant', content:'[Crisis resources shown]' });
+        return;
+      }
+    }
+  }catch(_){}
   const type = (typeof classifyVice==='function') ? classifyVice(txt) : 'general';
   _beginCompanion(txt, type, txt);   // 3rd arg: your actual words, so they open the conversation
 }
