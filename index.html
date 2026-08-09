@@ -4219,7 +4219,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v336';
+const APP_VERSION = 'v337';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -6575,7 +6575,11 @@ function detectCrisis(text){
     'no reason to live', 'no point living', "don't want to be here anymore",
     "don't want to live", 'plan to die', 'planning to die', 'going to kill',
     'suicide', 'suicidal', 'i\'m going to end', 'gonna end it',
-    'hang myself', 'overdose on', 'jump off', 'shoot myself',
+    'hang myself', 'overdose on', 'shoot myself',
+    // "jump off" alone false-fires constantly in a training app ("jump off the box"), and a gate that
+    // cries wolf trains people to dismiss it. Keep every phrasing that carries real intent.
+    'jump off a bridge', 'jump off the bridge', 'jump off a building', 'jump off the roof',
+    'jump off the balcony', 'want to jump off', 'going to jump off', 'gonna jump off',
     'take my own life', 'taking my own life', "don't want to wake up",
     'dont want to wake up', 'better off without me',
     'everyone would be better without me', 'no reason to be here'
@@ -6593,9 +6597,11 @@ function detectCrisis(text){
     'shoot up', 'going to hurt', 'plan to hurt'
   ];
   
-  // Medical emergency
+  // Medical emergency. NOTE: bare 'stroke' fired on every swim/row/rep question in a training app
+  // ("my stroke felt off"), so it's phrased to catch someone describing an actual event instead.
   const MEDICAL_PHRASES = [
-    'chest pain', 'heart attack', 'stroke', 'can\'t breathe', 'cant breathe',
+    'chest pain', 'heart attack', 'can\'t breathe', 'cant breathe',
+    'having a stroke', 'im having a stroke', 'signs of a stroke', 'think it\'s a stroke',
     'overdosed', 'took too many pills', 'bleeding badly', 'unconscious'
   ];
   
@@ -18183,13 +18189,20 @@ function _gentleCounsel(eaten, goal){
 // under-eating. It NEVER diagnoses and never shames: it offers the numbers-off mode and a real human.
 function _nourishConcern(){
   try{
-    const floor = (typeof userSex==='function' && userSex()==='female') ? 1200 : 1500;
+    // When sex is unset, use the LOWER floor. Guessing the higher one would flag a smaller person
+    // eating perfectly well — and a false "you're not eating enough" is exactly the intrusive,
+    // body-policing message this whole mode exists to avoid.
+    const sx = (typeof userSex==='function') ? userSex() : null;
+    const floor = (sx === 'male') ? 1500 : 1200;
     const log = ls('totry_nutlog') || {};
     let low=0, counted=0;
     for(let i=1;i<=7;i++){
       const k = new Date(Date.now()-i*86400000).toLocaleDateString('en-AU');
       const items = log[k];
-      if(!items || !items.length) continue;
+      // A day only counts if they actually TRACKED it. One lonely entry is almost always someone who
+      // started logging and stopped — reading that as under-eating would be the app inventing a
+      // problem out of an incomplete diary.
+      if(!items || items.length < 2) continue;
       counted++;
       const cal = items.reduce(function(a,x){ return a + (parseFloat(x.cal)||0); }, 0);
       if(cal>0 && cal<floor) low++;
@@ -18207,7 +18220,7 @@ function _renderNourishCare(){
   el.innerHTML =
     '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:13px 15px;text-align:left">'+
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px">Just checking in</div>'+
-      '<div style="font-size:12.5px;color:var(--tx2);line-height:1.65;margin-bottom:10px">A few days this week came in quite low on food. I’m not here to police it — but if counting has started to feel like something you can’t put down, that’s worth being honest about. You can keep logging with the numbers hidden, and talking to a real person about it is strength, not weakness.</div>'+
+      '<div style="font-size:12.5px;color:var(--tx2);line-height:1.65;margin-bottom:10px">A few days this week came in low on what you logged. That might just be an unfinished diary — I can’t see what I don’t get told. But if counting has started to feel like something you can’t put down, that’s worth being honest about. You can keep logging with the numbers hidden, and talking to a real person about it is strength, not weakness.</div>'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
         '<button class="btn" style="width:auto;padding:7px 12px;font-size:12px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go)" onclick="if(!nutGentle())toggleNutGentle();_dismissNourishCare()">Turn the numbers off</button>'+
         // Route to the FOOD-specific support that already exists (Butterfly Foundation, GP, Lifeline)
@@ -26913,7 +26926,11 @@ function pickReachOutPerson(){
   });
   return best;
 }
-const _REACH_ACTIVITY=[  // for men: shoulder-to-shoulder beats "let's talk about how you feel"
+// Two ways in: shoulder-to-shoulder (do something together) and face-to-face (say something).
+// Research finds men more often reconnect through a shared ACTIVITY — but that's a tendency, not a
+// rule, and how someone loves people isn't decided by a field we collected for calorie maths. So
+// everyone gets both kinds, rotating; sex only nudges which one comes up first.
+const _REACH_ACTIVITY=[
   'see if {name} is free this week — a walk, a coffee, a session. Doing something side by side beats a big talk.',
   'ask {name} to do the thing you both used to do. No agenda, just time.',
   'send {name} something that made you think of them — a clip, a track, a memory.',
@@ -26921,9 +26938,11 @@ const _REACH_ACTIVITY=[  // for men: shoulder-to-shoulder beats "let's talk abou
 function reachOutSuggestion(){
   const p=pickReachOutPerson(); if(!p) return null;
   const d=daysSinceReachOut(p.name);
-  const male=(typeof userSex==='function' && userSex()==='male');
   const day=(typeof getDayCount==='function')?getDayCount():0;
-  const prompt = male ? _REACH_ACTIVITY[day%_REACH_ACTIVITY.length] : CALL_PROMPTS[day%CALL_PROMPTS.length];
+  // Alternate between doing-something-together and saying-something. Everyone gets both; a man just
+  // starts on the activity side, and anyone can be met either way on any given day.
+  const leansActivity = (typeof userSex==='function' && userSex()==='male') ? (day%2===0) : (day%3===0);
+  const prompt = leansActivity ? _REACH_ACTIVITY[day%_REACH_ACTIVITY.length] : CALL_PROMPTS[day%CALL_PROMPTS.length];
   // the appreciation-gap reframe — only when it's been a while (or never), where the gap is largest
   const stale=(d==null || d>=5);
   const reframe = stale ? 'You’ll probably feel it’s awkward, or that they don’t need to hear from you. They will — far more than you expect, and more <em>because</em> it’s been a while. Reaching out is almost never regretted.' : '';
@@ -26977,6 +26996,11 @@ function openYourFew(){
     '<button class="btn" style="margin-top:12px;background:transparent;border:none;color:var(--tx3)" onclick="closeYourFew()">Done</button>'+
   '</div>';
   m.addEventListener('click', function(e){ if(e.target===m) closeYourFew(); });
+  // Every close path must go through closeYourFew, or the card behind it goes stale (still saying
+  // "Add someone" after you just added three people). Backdrop, grab-handle and Esc all route here.
+  try{ const h=m.querySelector('.modal-handle'); if(h){ h.style.cursor='pointer'; h.addEventListener('click', closeYourFew); } }catch(_){}
+  m._yfEsc = function(e){ if(e.key==='Escape') closeYourFew(); };
+  document.addEventListener('keydown', m._yfEsc);
   document.body.appendChild(m);
   setTimeout(function(){ const i=document.getElementById('yf-name'); if(i) i.focus(); }, 80);
 }
@@ -26989,7 +27013,12 @@ function _yfAdd(){
   const m=document.getElementById('yourfew-modal'); if(m) m.remove(); openYourFew();
 }
 function _yfRemove(idx){ const few=getYourFew(); few.splice(idx,1); saveYourFew(few); const m=document.getElementById('yourfew-modal'); if(m) m.remove(); openYourFew(); }
-function closeYourFew(){ const m=document.getElementById('yourfew-modal'); if(m) m.remove(); try{ renderReachOutCard(); }catch(_){} try{ const ps=document.getElementById('partner-section'); if(ps && (ls('totry_partner')||getYourFew().length)) ps.style.display='block'; }catch(_){} }
+function closeYourFew(){
+  const m=document.getElementById('yourfew-modal');
+  if(m){ try{ if(m._yfEsc) document.removeEventListener('keydown', m._yfEsc); }catch(_){} m.remove(); }
+  try{ renderReachOutCard(); }catch(_){}
+  try{ const ps=document.getElementById('partner-section'); const pref=ls('totry_partner'); if(ps && pref!==false && (pref||getYourFew().length)) ps.style.display='block'; }catch(_){}
+}
 
 // ── WEEKLY REVIEW ─────────────────────────────────────────────
 function initReviewTab(){

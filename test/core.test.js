@@ -105,6 +105,13 @@ H.section('detectCrisis — the gate must fire on any apostrophe (iOS Smart Punc
   H.eq(detectCrisis('i want to kill myself'), 'suicide', '"kill myself" → suicide');
   H.eq(detectCrisis('everyone would be better off without me'), 'suicide', 'passive ideation → suicide');
   H.eq(detectCrisis('i want to hurt myself'), 'selfharm', 'self-harm → selfharm');
+  // real intent around "jump off" / "stroke" must still fire...
+  H.eq(detectCrisis('i want to jump off a bridge'), 'suicide', '"jump off a bridge" → suicide');
+  H.eq(detectCrisis('im going to jump off'), 'suicide', '"going to jump off" → suicide');
+  H.eq(detectCrisis('i think im having a stroke'), 'medical', '"having a stroke" → medical');
+  // ...but must NOT fire on ordinary training language (a gate that cries wolf gets ignored)
+  H.eq(detectCrisis('jump off the box for plyos'), null, 'plyometric "jump off the box" → null');
+  H.eq(detectCrisis('my stroke felt off in the pool today'), null, 'swimming "stroke" → null');
   // and it must NOT fire on ordinary text (over-detection erodes trust)
   H.eq(detectCrisis('I had a great day and ate pizza'), null, 'ordinary text → null');
   H.eq(detectCrisis(''), null, 'empty → null');
