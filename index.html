@@ -1769,6 +1769,10 @@ input:focus,textarea:focus,select:focus{
       <div class="streak-sub">Days you tried</div>
     </div>
   </div>
+  <!-- Lifetime coping deposits. Clean-days measure abstinence and reset; THIS measures the skill you
+       actually built, and a slip can never take it off you. (Marlatt: each urge you cope with raises
+       self-efficacy, which is what predicts the next one going better.) -->
+  <div id="urges-survived" style="display:none;text-align:center;margin:-4px 0 14px"></div>
   <span id="hero-quote" style="display:none"></span>
   <span id="streak-dots" style="display:none"></span>
 
@@ -4244,7 +4248,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v341';
+const APP_VERSION = 'v342';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -10352,6 +10356,8 @@ const FEELINGS = [
   { id:'down',        emoji:'\uD83C\uDF27\uFE0F', label:'Heavy',     sub:'low, sad, defeated',      act:()=>_feelMove('down') },
   { id:'heartache',   emoji:'\uD83D\uDC94', label:'Heartache',       sub:'missing someone, a loss', act:()=>{ closeFeelingDoor(); setTimeout(openLettingGo, 260); } },
   { id:'procrast',    emoji:'\uD83C\uDF6F', label:'Avoiding',        sub:'putting something off',   act:()=>_feelMove('procrast') },
+  // Frozen is NOT avoiding, and a person stuck in it doesn't recognise themselves in that word.
+  { id:'frozen',      emoji:'\uD83E\uDDCA', label:'Can\u2019t start',     sub:'frozen, staring at it',   act:()=>{ closeFeelingDoor(); setTimeout(openCantStart, 260); } },
   { id:'angry',       emoji:'\uD83D\uDD25', label:'Fired up',        sub:'angry, frustrated',       act:()=>_feelMove('angry') },
   { id:'good',        emoji:'\u2728',       label:'Actually good',   sub:'steady, grateful',        act:()=>_feelMove('good') }
 ];
@@ -10517,6 +10523,9 @@ function _feelMove(feeling){
     '<div style="display:flex;gap:8px;margin-bottom:8px">'+_talkBtn+
       '<button class="btn" onclick="closeModal(this);openQuickJournal()" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin:0;font-size:13px">✎ Write it down</button>'+
     '</div>'+
+    // The outward exit — offered where rumination and self-focus are loudest.
+    ((feeling==='flat'||feeling==='restless'||feeling==='down'||feeling==='angry')
+      ? '<button class="btn" onclick="closeModal(this);openLookUp()" style="margin-bottom:8px;background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12.5px">🌄 Go outside and look up</button>' : '')+
     '<button class="btn" onclick="_lockItIn(\''+feeling+'\')" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0 0 4px">🔒 '+(_saved?'Update':'Make')+' my plan for next time</button>'+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0">Not now</button>'+
     '</div>';
@@ -10680,6 +10689,15 @@ function theRelease(opts){
     did+
     '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:26px;max-width:330px">Now put me down'+(name?', '+name.replace(/</g,'&lt;'):'')+'. Go live the next hour \u2014 the real one, off the glass. I\u2019m right here if the wave comes back. But you don\u2019t need me right now.</div>'+
     '<button class="btn primary rel-go" style="max-width:240px;margin:0 auto">I\u2019m putting it down</button>'+
+    // The best thing to walk back into is a person. Offered only when someone is actually named and
+    // not held quietly \u2014 never a nag, and it logs the reach-out so the app stops asking.
+    (function(){
+      try{
+        const _s=(typeof reachOutSuggestion==='function')?reachOutSuggestion():null;
+        if(!_s||!_s.person) return '';
+        return '<button class="btn rel-person" style="max-width:240px;margin:10px auto 0;background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12.5px;padding:10px">\u2026or go message '+_escFew(_s.person.name)+'</button>';
+      }catch(_){ return ''; }
+    })()+
     // A guest has now actually BEEN helped \u2014 the honest moment to offer an account, framed as keeping
     // what just happened. Sits UNDER the release button on purpose: putting the phone down still wins.
     ((typeof isGuest==='function' && isGuest())
@@ -10690,6 +10708,7 @@ function theRelease(opts){
   document.body.appendChild(ov);
   requestAnimationFrame(()=>{ ov.style.opacity='1'; });
   try{ const _keep=ov.querySelector('.rel-keep'); if(_keep) _keep.onclick=function(){ if(typeof guestKeepThis==='function') guestKeepThis(); }; }catch(_){}
+  try{ const _rp=ov.querySelector('.rel-person'); if(_rp) _rp.onclick=function(){ ov.remove(); if(typeof releaseReachOut==='function') releaseReachOut(); }; }catch(_){}
   ov.querySelector('.rel-go').onclick=()=>{
     // No "what's next", no feed — a genuine end. A brief goodbye, then it clears itself and gets out of your way.
     ov.innerHTML='<div class="rel-bye" style="font-family:Cormorant Garamond,serif;font-size:32px;color:var(--tx);opacity:0;transition:opacity 0.7s ease">Go well.</div>';
@@ -10698,6 +10717,164 @@ function theRelease(opts){
     if(typeof haptic==='function') haptic('success');
   };
   if(typeof haptic==='function') haptic('tap');
+}
+
+// ════ HALT — the 4-tap check before the urge tools ════
+// Hungry / Angry / Lonely / Tired. Half of all relapses trace to a negative state or a conflict, and
+// an urge is very often a real need wearing a disguise. This is the single best fit for a whole-life
+// app: every answer resolves INSIDE the app's own pillars — food, grounding, the person you love,
+// rest — instead of being generic advice. Meet the need and the urge often loses its grip on its own.
+const _HALT = [
+  { k:'h', icon:'🍽', label:'Hungry', sub:'or just running on empty',
+    line:'Then that’s the first thing. An empty tank makes everything harder to hold — cravings included. Eat something real before you fight anything.',
+    cta:'Go log something to eat', act:"go('nourish')" },
+  { k:'a', icon:'🔥', label:'Angry', sub:'wound up, something’s sitting badly',
+    line:'Anger is energy with nowhere to go, and it will happily take the nearest exit. Cool the heat first — then decide anything.',
+    cta:'Cool it down — 1 min', act:"openBreath('cool',{reason:'halt'})" },
+  { k:'l', icon:'🫂', label:'Lonely', sub:'disconnected, on your own with it',
+    line:'This one matters most. Isolation feeds the urge and contact starves it — reaching one real person does more here than any technique.',
+    cta:'Reach someone', act:"go('reflect');setTimeout(function(){var e=document.getElementById('partner-section');if(e)e.scrollIntoView({block:'center'});},350)" },
+  { k:'t', icon:'😴', label:'Tired', sub:'wrung out, no fuel left',
+    line:'Then this isn’t a character problem, it’s a battery problem. Willpower is thinnest when you’re depleted — go gentle and get horizontal earlier than you think.',
+    cta:'Wind down', act:"openBreath('sleep',{reason:'halt'})" }
+];
+function openHALT(){
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="text-align:center;max-height:88vh;overflow-y:auto">'+
+    '<div class="modal-handle"></div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.3;margin-bottom:6px">Before anything else — what’s actually going on?</div>'+
+    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">An urge is often a different need wearing a disguise. Pick whichever is truest right now. More than one can be.</div>'+
+    _HALT.map(function(h){ return '<button class="btn" onclick="_haltPick(\''+h.k+'\')" style="text-align:left;margin-bottom:8px;padding:13px;background:var(--bg3);border:1px solid var(--bd)">'+
+      '<div style="font-size:14px;color:var(--tx)">'+h.icon+'&nbsp;&nbsp;'+h.label+'</div>'+
+      '<div style="font-size:11.5px;color:var(--tx3);margin-left:26px">'+h.sub+'</div></button>'; }).join('')+
+    '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12.5px;margin-top:2px">None of these — just stay with me</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  if(typeof haptic==='function') haptic('tap');
+}
+function _haltPick(k){
+  const h=_HALT.find(function(x){ return x.k===k; }); if(!h) return;
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="text-align:center">'+
+    '<div style="font-size:28px;margin-bottom:8px">'+h.icon+'</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:10px">'+h.label+'.</div>'+
+    '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:18px">'+h.line+'</div>'+
+    '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);'+h.act+'">'+h.cta+'</button>'+
+    '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px;margin-bottom:8px">Stay with me instead</button>'+
+    '<button class="btn" onclick="closeModal(this);openHALT()" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Back</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  if(typeof haptic==='function') haptic('tap');
+}
+
+// ════ CAN'T START — the frozen door ════
+// Task-initiation paralysis is not avoidance and doesn't read as "avoiding" to the person stuck in it.
+// The block is emotional (the residue of every past failure), so the move is to shrink the thing until
+// it's too small to trigger it, then start a VISIBLE two minutes. Written for anyone having a low-
+// capacity day; it happens to name exactly how an ADHD brain gets stuck, without diagnosing anyone.
+function openCantStart(){
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  if(typeof openFormModal==='function'){
+    openFormModal('What can’t you start?','Name it in a few words. Naming it is already the first inch.',
+      [{id:'thing',label:'',type:'text',placeholder:'e.g. the assignment, the washing, the call'}],'Make it smaller',
+      function(vals){
+        const t=(vals.thing||'').trim(); if(!t) return 'Just name it — messy is fine.';
+        setTimeout(function(){ _shrinkIt(t, 0); }, 220);
+        return true;
+      });
+  }
+}
+const _SHRINK = [
+  function(t){ return 'Do the smallest visible piece of “'+t+'” — just enough that it’s started.'; },
+  function(t){ return 'Smaller: open it. Put the file, the page or the app on your screen and nothing else.'; },
+  function(t){ return 'Smaller still: stand up and put one object where it needs to be. That’s it.'; },
+  function(t){ return 'Then just this: sit where you’d do it, for two minutes, doing nothing. Starting is allowed to be that small.'; }
+];
+function _shrinkIt(thing, level){
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  const lv=Math.min(level, _SHRINK.length-1);
+  const safe=String(thing).replace(/</g,'&lt;').replace(/'/g,'&#39;');
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="text-align:center">'+
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:8px">Two minutes. That’s the whole ask.</div>'+
+    '<div style="font-size:14px;color:var(--tx);line-height:1.65;margin-bottom:16px">'+_SHRINK[lv](safe)+'</div>'+
+    '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);_startTwoMin(\''+safe.replace(/"/g,'')+'\')">Start two minutes</button>'+
+    (lv < _SHRINK.length-1
+      ? '<button class="btn" onclick="closeModal(this);_shrinkIt(\''+safe.replace(/"/g,'')+'\','+(lv+1)+')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px;margin-bottom:8px">Still too big — make it smaller</button>'
+      : '<div style="font-size:11.5px;color:var(--tx3);line-height:1.5;margin-bottom:10px">If even that’s too much today, that’s information about your capacity, not your character. Rest counts.</div>')+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  if(typeof haptic==='function') haptic('tap');
+}
+// A visible countdown — time-blindness means an abstract "two minutes" isn't real until you can see
+// it draining. It ends by handing them back to their life, not to another screen.
+function _startTwoMin(thing){
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;z-index:9500;background:radial-gradient(circle at 50% 40%,#141810,#09090c 72%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;color:var(--tx)';
+  ov.innerHTML='<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:16px">You started</div>'+
+    '<div class="tm-clock" style="font-family:DM Mono,monospace;font-size:54px;font-weight:300;color:var(--tx);margin-bottom:14px">2:00</div>'+
+    '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;max-width:320px;margin-bottom:24px">You’re allowed to stop when this hits zero. Most people don’t want to by then — but if you do, stopping still counts as having started.</div>'+
+    '<button class="btn tm-done" style="max-width:220px">I’m going / done</button>';
+  document.body.appendChild(ov);
+  let left=120;
+  const clock=ov.querySelector('.tm-clock');
+  const tick=setInterval(function(){
+    left--;
+    if(clock) clock.textContent = Math.floor(left/60)+':'+String(left%60).padStart(2,'0');
+    if(left<=0){
+      clearInterval(tick);
+      if(clock) clock.textContent='done';
+      try{ if(typeof haptic==='function') haptic('celebrate'); }catch(_){}
+    }
+  }, 1000);
+  ov.querySelector('.tm-done').onclick=function(){
+    clearInterval(tick); ov.remove();
+    theRelease({did:'You started the thing you couldn’t start. That’s the hardest part, and it’s behind you.'});
+  };
+  if(typeof haptic==='function') haptic('tap');
+}
+
+// ════ LOOK UP — the awe off-ramp ════
+// Awe is measurably the inverse of the phone loop: it quiets the same default-mode network that
+// rumination and scrolling run on, shrinks the self, and pulls attention outward. The flagship study
+// found the whole intervention was ONE instruction — shift your attention outward and let yourself
+// be struck by something. So this is deliberately tiny, returns NOTHING to log, and ends with the
+// phone in a pocket. Its success is measured by the app being closed. No photo, no streak, no proof.
+const _LOOK_UP_PROMPTS = [
+  'the sky — whatever it’s doing right now',
+  'the biggest tree you can see',
+  'the horizon, or as far as your eyes can reach',
+  'the moon, or one star if you can find it',
+  'clouds — how fast they’re actually moving',
+  'a building or hill older than everyone you know'
+];
+function openLookUp(){
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  const day = (typeof getDayCount==='function') ? getDayCount() : 0;
+  const what = _LOOK_UP_PROMPTS[day % _LOOK_UP_PROMPTS.length];
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="text-align:center">'+
+    '<div style="font-size:30px;margin-bottom:10px">🌄</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:25px;color:var(--tx);line-height:1.3;margin-bottom:12px">Go outside and look up.</div>'+
+    '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:8px">Phone in your pocket. Step outside, even just the doorway. Find <b style="color:var(--tx)">'+what+'</b> — and actually look at it for a minute.</div>'+
+    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:18px">Don’t photograph it. Don’t post it. Nothing to log — I won’t even ask how it went. Something bigger than you, for one minute, is the oldest way there is to get out of your own head.</div>'+
+    '<button class="btn primary" onclick="closeModal(this);theRelease({did:\'You went outside and looked up — out of your head, into the world.\'})">I’m going out</button>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:4px">Not now</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  if(typeof haptic==='function') haptic('tap');
+}
+// Reconnection as an off-ramp: the Release hands you back to your life — and the most valuable thing
+// in it is a person. Only ever offered when someone is actually named and not held quietly.
+function releaseReachOut(){
+  const s=(typeof reachOutSuggestion==='function')?reachOutSuggestion():null;
+  if(!s||!s.person) return;
+  try{ logReachOut(s.person.name); }catch(_){}
+  theRelease({did:'You put the phone down and went to '+String(s.person.name).replace(/</g,'&lt;')+'. That’s the whole point.'});
 }
 
 // ════ BREATH & STILLNESS — the minimum viable work ════
@@ -13078,6 +13255,7 @@ function openMomentStakes(i){
     '<div style="margin-bottom:16px">'+extra+'</div>'+
     '<button class="btn primary" onclick="_momentWin('+i+')" style="margin-bottom:8px">The wave’s passing — I’m good</button>'+
     '<button class="btn" onclick="closeModal(this);openBreath(\'sigh\',{reason:\'the pull\'})" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin-bottom:8px;font-size:13px">🌊 Breathe through it — 1 min</button>'+
+    '<button class="btn" onclick="closeModal(this);openHALT()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin-bottom:8px;font-size:13px">🍽 Wait — am I hungry, angry, lonely or tired?</button>'+
     '<button class="btn" onclick="closeModal(this);startLiveIntervention('+i+')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin-bottom:8px;font-size:13px">Stay with me — full SOS</button>'+
     '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="background:transparent;border:none;color:var(--tx3);font-size:12px">I need to talk</button>'+
     '</div>';
@@ -32241,6 +32419,21 @@ function computeProactiveNudge(){
   // Helper: most recent timestamp across a set of streams
   const lastTs = arr => arr.reduce((m,x)=>{ const t=new Date(x.ts||x.date||x.createdAt||0).getTime(); return t>m?t:m; }, 0);
 
+  // RULE 0 — SHORT NIGHT. Sleep is the soil under every other pillar, so this speaks FIRST: a short
+  // night weakens impulse control, spikes hunger, runs emotions hot and pushes choices toward risk.
+  // The whole point is forewarning WITH grace — "it's not you, it's the short night" — so a hard day
+  // gets read as physiology instead of character. Once per day, dismissible.
+  try{
+    const _sl = (typeof getLifeState==='function') ? (getLifeState().sleep||null) : null;
+    if(_sl && _sl.short && _sl.lastNight != null){
+      const _sid = 'shortsleep'+dayKey(now);
+      return { id:_sid, tone:'care',
+        eyebrow:'Before today gets going',
+        text: hi + 'you got about ' + _sl.lastNight + 'h. Go gentle today — on a short night the cravings get louder, hunger runs high and everything lands harder. That’s your body running low, not you getting weaker. Lower the bar, eat properly, and don’t trust the 9pm urge.',
+        actions: [{label:'Noted', ghost:true, onclick:'dismissNudge(\''+_sid+'\')'}] };
+    }
+  }catch(_){}
+
   // RULE 1 — OVERTRAINED, NO REST. 5+ workouts in last 6 days with no rest day → urge a rest.
   const last6Workouts = workouts.filter(w => new Date(w.ts||w.date).getTime() >= since(6));
   const trainedDays = new Set(last6Workouts.map(w => dayKey(w.ts||w.date)));
@@ -35066,6 +35259,18 @@ function renderDualStreaks(){
   const rEl=document.getElementById('streak-resilience');
   if(sEl)sEl.textContent=sober;
   if(rEl)rEl.textContent=resilience;
+  // The one number a slip can't take away: every time you came here and rode it out.
+  try{
+    const el=document.getElementById('urges-survived');
+    if(el){
+      const n=(ls('totry_moments_won')||[]).length;
+      if(n>0){
+        el.style.display='block';
+        el.innerHTML='<span style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);letter-spacing:0.05em">'+
+          '<b style="color:var(--go)">'+n+'</b> urge'+(n===1?'':'s')+' ridden out, all time — that’s skill, and nothing resets it</span>';
+      } else { el.style.display='none'; el.innerHTML=''; }
+    }
+  }catch(_){}
   // Reframe the bare "0" after a relapse — a fresh start, not a scoreboard of shame.
   try{ const ss=document.querySelector('.streak-card.sober .streak-sub'); if(ss) ss.textContent=(sober===0?'A fresh start':'Days clean'); }catch(_){}
 }
