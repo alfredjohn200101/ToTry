@@ -4201,7 +4201,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v328';
+const APP_VERSION = 'v329';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -31683,6 +31683,32 @@ function computeProactiveNudge(){
                   {label:'Not now', ghost:true, onclick:'dismissNudge(\'quiet'+dayKey(now)+'\')'}] };
     }
   }
+
+  // RULE 2.5 — REACH OUT (relatedness: a presence that NOTICES the people you love). Fires on real
+  // drift from someone in "your few" while you've been heads-down active. Names ONE person + the
+  // appreciation-gap reframe (we under-estimate how welcome a lapsed check-in is). Grace, never guilt;
+  // throttled to ~once / 3 days via a bucketed id; fully dismissible. Name is escaped (rendered as innerHTML).
+  try{
+    const _few = (typeof getYourFew==='function') ? getYourFew() : [];
+    if(_few.length && typeof reachOutSuggestion==='function'){
+      const _s = reachOutSuggestion();
+      if(_s && _s.person){
+        const _gap = _s.days;
+        const _activeDays = evenings.length + journal.length + workouts.length + fightLog.length;
+        const _drift = (_gap!=null) ? (_gap>=6) : (_activeDays>=5);
+        if(_drift){
+          const _nm = (typeof _escFew==='function') ? _escFew(_s.person.name) : _s.person.name;
+          const _gtxt = (_gap==null) ? ('you haven’t reached out to ' + _nm + ' through here yet') : ('it’s been ' + _gap + ' day' + (_gap===1?'':'s') + ' since you reached out to ' + _nm);
+          const _rb = 'reachfew' + Math.floor(now/(3*86400000));
+          return { id:_rb, tone:'care',
+            eyebrow:'The people you love',
+            text: hi + _gtxt + '. You’ll probably feel it’s awkward, or that they don’t need to hear from you — they will, more than you expect, and more because it’s been a while. One message is enough.',
+            actions: [{label:'I’ll reach out', onclick:'go(\'reflect\');dismissNudge(\''+_rb+'\')'},
+                      {label:'Not now', ghost:true, onclick:'dismissNudge(\''+_rb+'\')'}] };
+        }
+      }
+    }
+  }catch(_){}
 
   // RULE 3 — STREAK AT RISK. A meaningful evening-reflection streak that hasn't been logged today, late in day.
   const hr = new Date().getHours();
