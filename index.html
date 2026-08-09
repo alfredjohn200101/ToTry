@@ -3049,6 +3049,13 @@ input:focus,textarea:focus,select:focus{
     <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.2;margin-bottom:2px">Stewardship</div>
     <div style="font-size:12.5px;color:var(--tx3);margin-top:3px;line-height:1.55">Money is freedom, not just numbers. Every dollar reclaimed from a vice, every debt paid down, is a chain off your shoulders. Steward it well.</div>
   </div>
+  <!-- The impulse door. A spending urge is a threshold moment exactly like a craving — same dopamine
+       spike, same crash, same shame loop — so it gets the same before-it-takes-over treatment rather
+       than a budget lecture. Sits at the top because it's needed BEFORE the money is gone. -->
+  <button class="btn" onclick="openImpulsePause()" style="margin-bottom:12px;text-align:left;padding:13px 15px;background:var(--bg3);border:1px solid var(--go-bd)">
+    <div style="font-size:14px;color:var(--go)">🛑&nbsp;&nbsp;About to buy something?</div>
+    <div style="font-size:11.5px;color:var(--tx3);margin-left:26px;line-height:1.5">Let’s look at it together first — no lecture.</div>
+  </button>
   <!-- Before it knows anything, this tab has exactly one job: get something real in. -->
   <div id="money-gate"></div>
   <div id="money-read-card"></div>
@@ -4248,7 +4255,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v342';
+const APP_VERSION = 'v343';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4563,7 +4570,7 @@ const SYNC_KEYS = [
   // The people you carry, the plans you set, and the numbers-off preference. These are among the most
   // personal things in the app — losing them on a reinstall would mean losing your few and every
   // if-then plan you wrote, so they sync like everything else.
-  'totry_your_few','totry_reachouts','totry_if_then','totry_nut_gentle','totry_nourish_care_shown',
+  'totry_your_few','totry_reachouts','totry_if_then','totry_nut_gentle','totry_nourish_care_shown','totry_impulse_holds',
   // Nutrition
   'totry_nutlog','totry_nut_goals','totry_nut_macros','totry_tdee_data','totry_calorie_goal_type','totry_ca',
   'totry_recipes','totry_custom_foods','totry_recent_foods','totry_water','totry_water_goal','totry_fasting','totry_fast_log','totry_usda_key','totry_esv_key','totry_nutritionix_id','totry_nutritionix_key',
@@ -10717,6 +10724,90 @@ function theRelease(opts){
     if(typeof haptic==='function') haptic('success');
   };
   if(typeof haptic==='function') haptic('tap');
+}
+
+// ════ THE IMPULSE PAUSE — money as an emotion, not arithmetic ════
+// Budgeting apps treat money as maths. The evidence says a spending urge is the same dopamine loop as
+// any other vice: spike on the decision, crash in ~20 minutes, then guilt, which drives the next one.
+// ~70% of impulse urges fade within a day. So this is the before-it-takes-over door pointed at money —
+// name the feeling underneath, then a 24-hour hold you can actually keep. Never shame, never a budget
+// lecture: money stress already eats the mental bandwidth good decisions need.
+function _holds(){ try{ const a=ls('totry_impulse_holds'); return Array.isArray(a)?a:[]; }catch(_){ return []; } }
+function openImpulsePause(){
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  if(typeof openFormModal!=='function') return;
+  openFormModal('Before you buy','No judgement — most of this is just a feeling looking for an exit. What is it, and what’s it cost?',
+    [{id:'what',label:'',type:'text',placeholder:'What is it?'},
+     {id:'amt',label:'',type:'number',placeholder:'Roughly how much? ($)'}],
+    'Next',
+    function(vals){
+      const what=(vals.what||'').trim(); if(!what) return 'Just name it.';
+      const amt=parseFloat(vals.amt)||0;
+      setTimeout(function(){ _impulseFeeling(what, amt); }, 200);
+      return true;
+    });
+}
+const _IMPULSE_FEELINGS = [
+  ['😖','Stressed or wound up','Spending is a fast way to feel in control when something else isn’t. The relief is real — and it’s about twenty minutes long.'],
+  ['😐','Bored','Boredom is the cheapest trigger there is, and the most expensive to obey. This is the one most worth sleeping on.'],
+  ['😔','Flat or low','Buying something lifts the floor for an hour, then puts it back lower. If today’s heavy, this won’t be the thing that fixes it.'],
+  ['🥳','Actually happy — celebrating','Then that might be genuinely fine. Money spent on purpose isn’t a leak. Just make it a choice, not a reflex.'],
+  ['🤷','I want it and I don’t know why','That’s the honest answer, and it’s the most common one. Hold it a day and see if the wanting is still there.']
+];
+function _impulseFeeling(what, amt){
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  const safe=String(what).replace(/</g,'&lt;').replace(/'/g,'&#39;');
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="text-align:center;max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);line-height:1.3;margin-bottom:6px">What’s underneath it?</div>'+
+    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Naming the feeling takes some of the heat out of it. That’s not a trick — it’s the same thing that works on any other urge.</div>'+
+    _IMPULSE_FEELINGS.map(function(f,i){ return '<button class="btn" onclick="_impulseHold(\''+safe.replace(/"/g,'')+'\','+amt+','+i+')" style="text-align:left;margin-bottom:8px;padding:12px;background:var(--bg3);border:1px solid var(--bd);font-size:13.5px">'+f[0]+'&nbsp;&nbsp;'+f[1]+'</button>'; }).join('')+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  if(typeof haptic==='function') haptic('tap');
+}
+function _impulseHold(what, amt, fi){
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  const f=_IMPULSE_FEELINGS[fi]||_IMPULSE_FEELINGS[4];
+  const safe=String(what).replace(/</g,'&lt;');
+  const why=(ls('totry_why')||'').trim();
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="text-align:center;max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
+    '<div style="font-size:26px;margin-bottom:8px">'+f[0]+'</div>'+
+    '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:14px">'+f[2]+'</div>'+
+    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:13px 15px;margin-bottom:14px;text-align:left">'+
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px">The 24-hour hold</div>'+
+      '<div style="font-size:12.5px;color:var(--tx2);line-height:1.65">Don’t decide now — decide tomorrow. About seven in ten urges to buy are gone within a day, and the ones that aren’t are usually the ones worth having. I’ll ask you about <b style="color:var(--tx)">'+safe+'</b> then.</div>'+
+    '</div>'+
+    (why?'<div style="font-size:12px;color:var(--go);line-height:1.6;margin-bottom:14px;font-style:italic">Why you started: “'+why.replace(/</g,'&lt;').slice(0,150)+'”</div>':'')+
+    '<button class="btn primary" style="margin-bottom:8px" onclick="_impulseSaveHold(\''+String(what).replace(/'/g,"").replace(/"/g,'')+'\','+amt+')">Hold it for a day</button>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px;margin-bottom:8px">I’m buying it anyway — that’s allowed</button>'+
+    '<div style="font-size:11px;color:var(--tx3);line-height:1.5">Either way there’s no telling-off here. Buying something isn’t a moral failure; doing it without noticing is just how money leaks.</div>'+
+  '</div>';
+  document.body.appendChild(m);
+  if(typeof haptic==='function') haptic('tap');
+}
+function _impulseSaveHold(what, amt){
+  try{ const h=_holds(); h.unshift({what:String(what).slice(0,80), amt:parseFloat(amt)||0, ts:Date.now()}); ls('totry_impulse_holds', h.slice(0,100)); }catch(_){}
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  try{ if(typeof haptic==='function') haptic('success'); }catch(_){}
+  theRelease({did:'You stopped before you spent, and named what was actually going on. That’s the whole move.'});
+}
+// Asked the next day — the honest follow-through that makes the hold mean something.
+function dueImpulseHold(){
+  try{ return _holds().find(function(h){ return h && !h.done && (Date.now()-h.ts) >= 20*3600000; }) || null; }catch(_){ return null; }
+}
+function _resolveHold(ts, bought){
+  try{ const h=_holds(); const i=h.findIndex(function(x){ return x && x.ts===ts; }); if(i>=0){ h[i].done=true; h[i].bought=!!bought; ls('totry_impulse_holds', h); } }catch(_){}
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  if(!bought){
+    let saved=0; try{ saved=_holds().filter(function(x){ return x.done && !x.bought; }).reduce(function(a,x){ return a+(x.amt||0); },0); }catch(_){}
+    try{ showToast('Still yours', saved>0 ? ('That’s about $'+Math.round(saved).toLocaleString()+' held onto by just waiting a day.') : 'The wanting passed. That’s how most of them go.'); }catch(_){}
+  } else {
+    try{ showToast('Fair enough','You looked at it properly and chose it. That’s the difference that matters.'); }catch(_){}
+  }
+  try{ if(typeof renderMoney==='function') renderMoney(); }catch(_){}
 }
 
 // ════ HALT — the 4-tap check before the urge tools ════
@@ -32431,6 +32522,20 @@ function computeProactiveNudge(){
         eyebrow:'Before today gets going',
         text: hi + 'you got about ' + _sl.lastNight + 'h. Go gentle today — on a short night the cravings get louder, hunger runs high and everything lands harder. That’s your body running low, not you getting weaker. Lower the bar, eat properly, and don’t trust the 9pm urge.',
         actions: [{label:'Noted', ghost:true, onclick:'dismissNudge(\''+_sid+'\')'}] };
+    }
+  }catch(_){}
+
+  // RULE 0.5 — A HELD PURCHASE IS DUE. The hold only means something if someone actually comes back
+  // and asks. No pressure either way — the point is that the decision gets made awake.
+  try{
+    const _h = (typeof dueImpulseHold==='function') ? dueImpulseHold() : null;
+    if(_h){
+      const _esc = (typeof _escFew==='function') ? _escFew(_h.what) : _h.what;
+      return { id:'hold'+_h.ts, tone:'nudge',
+        eyebrow:'You slept on it',
+        text: hi + 'yesterday you held off on <b>'+_esc+'</b>'+(_h.amt?(' (about $'+Math.round(_h.amt).toLocaleString()+')'):'')+'. Still want it? Either answer is fine — the point was deciding it awake instead of in the moment.',
+        actions: [{label:'Still want it', onclick:'_resolveHold('+_h.ts+',true)'},
+                  {label:'Nah, it passed', ghost:true, onclick:'_resolveHold('+_h.ts+',false)'}] };
     }
   }catch(_){}
 
