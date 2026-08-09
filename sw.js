@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v347-cards-and-voice'
+const CACHE = 'totry-v348-giving-fasting'
 
 const CORE = [
   './',
