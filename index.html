@@ -4201,7 +4201,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v327';
+const APP_VERSION = 'v328';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -26552,9 +26552,11 @@ function initEveningTab(){
     }
   }catch(_){ }
   const ps=document.getElementById('partner-section');
-  if(ls('totry_partner')&&ps){
+  const _fewOn = ls('totry_partner') || (typeof getYourFew==='function' && getYourFew().length>0);
+  if(_fewOn && ps){
     ps.style.display='block';const day=getDayCount();
-    const cp=document.getElementById('call-prompt');if(cp)cp.textContent=CALL_PROMPTS[day%CALL_PROMPTS.length];
+    if(typeof renderReachOutCard==='function'){ renderReachOutCard(); }
+    else { const cp=document.getElementById('call-prompt'); if(cp) cp.textContent=CALL_PROMPTS[day%CALL_PROMPTS.length]; }
     const sp=document.getElementById('shared-prayer');if(sp){const _sps=sharedPrayers();sp.textContent=_sps[day%_sps.length];}
   }
   if(typeof updateExamenCount === 'function') updateExamenCount();
@@ -26564,6 +26566,108 @@ function initEveningTab(){
   const edt=document.getElementById('examen-done-today');
   if(edt) edt.style.display = examenToday ? 'block' : 'none';
 }
+
+// ── YOUR FEW — the people you carry, and the noticing reach-out ───────────────
+// Real relatedness is the single biggest lever the research found for lasting change: a presence that
+// NOTICES whether you showed up — for the people you love. "Your few" holds the names (any title);
+// the card names ONE real person, carries the appreciation-gap reframe (we chronically UNDER-estimate
+// how welcome a lapsed check-in is — the gap is largest exactly when it's been a while), adapts to sex
+// (shoulder-to-shoulder activity framing for men), and lets you log the reach-out as the win it is.
+function _escFew(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function getYourFew(){ try{ const a=ls('totry_your_few'); return Array.isArray(a)?a:[]; }catch(_){ return []; } }
+function saveYourFew(a){ try{ ls('totry_your_few', (a||[]).slice(0,12)); if((a||[]).length && !ls('totry_partner')) ls('totry_partner', true); }catch(_){} }
+function _reachOutLog(){ try{ const a=ls('totry_reachouts'); return Array.isArray(a)?a:[]; }catch(_){ return []; } }
+function daysSinceReachOut(name){
+  const rs=_reachOutLog().filter(function(r){return r&&r.name===name&&r.ts;});
+  if(!rs.length) return null;
+  const last=Math.max.apply(null, rs.map(function(r){return new Date(r.ts).getTime();}));
+  return Math.floor((Date.now()-last)/86400000);
+}
+function logReachOut(name){
+  try{ const rs=_reachOutLog(); rs.unshift({name:name, ts:new Date().toISOString()}); ls('totry_reachouts', rs.slice(0,300)); }catch(_){}
+  try{ if(typeof haptic==='function') haptic('celebrate'); }catch(_){}
+  try{ showToast('That mattered', 'Showing up for the people you love is the whole point — well done.'); }catch(_){}
+  try{ renderReachOutCard(); }catch(_){}
+}
+function logReachOutCurrent(){ const s=reachOutSuggestion(); if(s&&s.person) logReachOut(s.person.name); }
+function pickReachOutPerson(){
+  const few=getYourFew(); if(!few.length) return null;
+  // the person it's been longest since you reached — never-contacted ranks first (the biggest gap)
+  let best=null, bestScore=-1;
+  few.forEach(function(p){ const d=daysSinceReachOut(p.name); const score=(d==null)?1e9:d; if(score>bestScore){ bestScore=score; best=p; } });
+  return best;
+}
+const _REACH_ACTIVITY=[  // for men: shoulder-to-shoulder beats "let's talk about how you feel"
+  'see if {name} is free this week — a walk, a coffee, a session. Doing something side by side beats a big talk.',
+  'ask {name} to do the thing you both used to do. No agenda, just time.',
+  'send {name} something that made you think of them — a clip, a track, a memory.',
+];
+function reachOutSuggestion(){
+  const p=pickReachOutPerson(); if(!p) return null;
+  const d=daysSinceReachOut(p.name);
+  const male=(typeof userSex==='function' && userSex()==='male');
+  const day=(typeof getDayCount==='function')?getDayCount():0;
+  const prompt = male ? _REACH_ACTIVITY[day%_REACH_ACTIVITY.length] : CALL_PROMPTS[day%CALL_PROMPTS.length];
+  // the appreciation-gap reframe — only when it's been a while (or never), where the gap is largest
+  const stale=(d==null || d>=5);
+  const reframe = stale ? 'You’ll probably feel it’s awkward, or that they don’t need to hear from you. They will — far more than you expect, and more <em>because</em> it’s been a while. Reaching out is almost never regretted.' : '';
+  return { person:p, days:d, prompt:prompt, reframe:reframe };
+}
+function renderReachOutCard(){
+  const cp=document.getElementById('call-prompt'); if(!cp) return;
+  const few=getYourFew();
+  if(!few.length){
+    cp.innerHTML='<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:10px">Who are you doing this for? Add the people you carry — and the app will help you stay close to them.</div>'+
+      '<button class="btn" style="width:auto;padding:7px 14px;font-size:12px" onclick="openYourFew()">Add someone</button>';
+    return;
+  }
+  const s=reachOutSuggestion(); if(!s){ cp.textContent=''; return; }
+  const nm=_escFew(s.person.name);
+  let line;
+  if(s.prompt.indexOf('{name}')>=0){ line=_escFew(s.prompt).replace(/\{name\}/g,'<b>'+nm+'</b>'); }
+  else { line='<b>'+nm+'</b> — '+_escFew(s.prompt); }
+  const dtxt = (s.days==null)?'':(s.days===0?'you reached out today':(s.days===1?'1 day since you last reached out':s.days+' days since you last reached out'));
+  cp.innerHTML =
+    '<div style="font-size:13px;color:var(--tx);line-height:1.6;margin-bottom:6px">'+line+'</div>'+
+    (s.reframe?'<div style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:10px;font-style:italic">'+s.reframe+'</div>':'')+
+    (dtxt?'<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);letter-spacing:0.04em;margin-bottom:10px">'+dtxt+'</div>':'')+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+      '<button class="btn" style="width:auto;padding:7px 14px;font-size:12px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go)" onclick="logReachOutCurrent()">I reached out ✓</button>'+
+      '<button class="btn" style="width:auto;padding:7px 12px;font-size:12px" onclick="openYourFew()">Your few</button>'+
+    '</div>';
+}
+function openYourFew(){
+  const few=getYourFew();
+  const rows = few.length ? few.map(function(p,i){ return
+    '<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--bd)">'+
+      '<div style="flex:1"><div style="font-size:14px;color:var(--tx)">'+_escFew(p.name)+'</div>'+
+      (p.note?'<div style="font-size:11px;color:var(--tx3)">'+_escFew(p.note)+'</div>':'')+
+      (function(){ const d=daysSinceReachOut(p.name); return d==null?'':'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.04em;margin-top:2px">'+(d===0?'reached out today':d+'d since last')+'</div>'; })()+
+      '</div>'+
+      '<button class="btn" style="width:auto;padding:5px 10px;font-size:11px;color:var(--tx3)" onclick="_yfRemove('+i+')">Remove</button>'+
+    '</div>'; }).join('') : '<div style="font-size:12px;color:var(--tx3);padding:8px 0">No one yet. Add the people you carry.</div>';
+  const m=document.createElement('div'); m.className='modal-bg open'; m.id='yourfew-modal';
+  m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
+    '<h3 style="margin-bottom:4px">Your few</h3>'+
+    '<div style="font-size:12px;color:var(--tx3);line-height:1.5;margin-bottom:14px">The people you carry — a partner, a parent, a friend, anyone. Private to you. The app helps you stay close to them; it never nags, never scores.</div>'+
+    '<div id="yf-list">'+rows+'</div>'+
+    '<div style="display:flex;gap:8px;margin-top:14px">'+
+      '<input type="text" id="yf-name" placeholder="Name" maxlength="40" style="flex:1">'+
+      '<button class="btn primary" style="width:auto;padding:8px 16px" onclick="_yfAdd()">Add</button>'+
+    '</div>'+
+    '<button class="btn" style="margin-top:12px;background:transparent;border:none;color:var(--tx3)" onclick="closeYourFew()">Done</button>'+
+  '</div>';
+  m.addEventListener('click', function(e){ if(e.target===m) closeYourFew(); });
+  document.body.appendChild(m);
+  setTimeout(function(){ const i=document.getElementById('yf-name'); if(i) i.focus(); }, 80);
+}
+function _yfAdd(){
+  const i=document.getElementById('yf-name'); const name=i?i.value.trim():''; if(!name) return;
+  const few=getYourFew(); few.push({name:name.slice(0,40), note:''}); saveYourFew(few);
+  const m=document.getElementById('yourfew-modal'); if(m) m.remove(); openYourFew();
+}
+function _yfRemove(idx){ const few=getYourFew(); few.splice(idx,1); saveYourFew(few); const m=document.getElementById('yourfew-modal'); if(m) m.remove(); openYourFew(); }
+function closeYourFew(){ const m=document.getElementById('yourfew-modal'); if(m) m.remove(); try{ renderReachOutCard(); }catch(_){} try{ const ps=document.getElementById('partner-section'); if(ps && (ls('totry_partner')||getYourFew().length)) ps.style.display='block'; }catch(_){} }
 
 // ── WEEKLY REVIEW ─────────────────────────────────────────────
 function initReviewTab(){
