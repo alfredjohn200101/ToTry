@@ -11,6 +11,23 @@ scripts (must be 0), run `npm test`, bump `APP_VERSION` + `CACHE` in `sw.js` tog
 **VERIFY EVERY ANCHOR BEFORE APPLYING.** Line numbers drift the moment you insert anything, so match
 on the verbatim anchor text, not the number. Anchors were captured at v343 / 35,634 lines.
 
+## STATUS — 6 of 7 applied (v344 → v350)
+
+| Spec | Applied | Version |
+|---|---|---|
+| `daynav.md` | ✅ | v344 |
+| `cycle.md` | ✅ | v345 |
+| `fight.md` | ✅ | v346 |
+| `soulshare.md` | ✅ | v347 |
+| `giving.md` | ✅ | v348 |
+| `activation.md` | ⚠️ **HALF** — the receptivity gate shipped in v349. The **onboarding restructure is NOT applied**: it rewires the signup flow, the one path where a mistake means nobody can create an account. Apply it in a session with room to verify signup end-to-end. | v349 (partial) |
+| `practice.md` | ✅ | v350 |
+
+**Bugs the specs did not anticipate, caught while applying** (why each one needs verification, not just pasting):
+- `cycle.md` — the faith line gated on `curFaith().divine`, making the **Buddhist line unreachable** (Buddhism has no deity by design).
+- `soulshare.md` — insertion duplicated the `function go(name){` signature → unclosed brace → **white screen**. Caught by the parse-check.
+- `activation.md` — its block re-declared `_REACH_WIN_START`, which already existed above the old function.
+
 | Spec | Feature | Notes |
 |---|---|---|
 | `cycle.md` | Women's cycle + phase-aware coaching | Biggest gap. `totry_cycle` deliberately NOT in SYNC_KEYS (local-first, post-Dobbs); opt-in backup splices it in at runtime. NB: "cycle" is already used in this codebase for **calorie/carb cycling** (`cycledTarget`, `totry_cal_cycling`, `nut-cycle-badge`) — do not collide. |
