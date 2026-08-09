@@ -3708,6 +3708,17 @@ Amen.</div></div>
   <details class="settings-group">
     <summary>💾 Your data & account <span class="settings-group-hint">Export, sign out, delete</span></summary>
     
+    <!-- Anonymous usage counting, and a real way to decline it. Named plainly because the privacy
+         policy names it plainly — a promise you can check is worth more than a promise that sounds good. -->
+    <div class="card">
+      <div class="card-hd" style="margin-bottom:10px">Anonymous usage counts</div>
+      <div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:10px">Counts like &ldquo;app opened&rdquo; and &ldquo;reminder set&rdquo;, against a random ID — never your vices, prayers, journal, food, money or body data. Switch it off and the app works exactly the same.</div>
+      <div class="setting-row">
+        <div><div class="sr-label">Count my usage</div><div class="sr-desc">Helps me see what actually helps people</div></div>
+        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:12px" id="metrics-toggle-btn" onclick="toggleMetrics()">On ✓</button>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-hd" style="margin-bottom:10px">Export your data</div>
       <div class="setting-row">
@@ -4219,7 +4230,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v337';
+const APP_VERSION = 'v338';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -29668,7 +29679,8 @@ function showPrivacyPolicy(){
       '<p style="margin-bottom:12px">Progress photos. They are stored only in your browser\'s local storage. They are not uploaded to my database, not synced across devices, not sent to any AI provider. If you clear your browser data, they\'re gone.</p>' +
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">5. What I do not do</strong></p>' +
-      '<p style="margin-bottom:12px">I do not run ads. I do not have an analytics or tracking SDK in this app. I do not share your data with advertisers or data brokers. I am not paid by any third party to feature their service.</p>' +
+      '<p style="margin-bottom:12px">I do not run ads. I do not sell or share your data with advertisers or data brokers. No third party pays me to feature their service. There is no advertising or profiling SDK in this app.</p>' +
+      '<p style="margin-bottom:12px">Two things do count <em>usage</em>, and you should know exactly what they are. <strong>A visitor counter</strong> (GoatCounter) records page views and where visits came from — cookie-free, no personal data, no cross-site tracking, no profile of you. <strong>Anonymous feature counts</strong> go to my own database against a random ID that is not your email — things like &ldquo;app opened&rdquo;, &ldquo;reminder set&rdquo;, &ldquo;import run&rdquo;. Neither ever includes what you log: your vices, prayers, journal, food, money and body data are never in it. You can switch both off in Settings &rarr; Your data, and the app works exactly the same.</p>' +
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">6. What I cannot control</strong></p>' +
       '<p style="margin-bottom:12px">Once your Coach message reaches Google or Anthropic, that data is governed by their privacy policies, not mine. I have no influence over their model-training practices or retention periods. If a provider has a security breach, I cannot prevent it. Treat your Coach messages the way you would treat a message to any cloud service — not a sealed diary.</p>' +
@@ -30299,13 +30311,24 @@ function _anonId(){
   if(!id){ id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)); localStorage.setItem('totry_anon', id); }
   return id;
 }
+// One switch turns BOTH counters off, everywhere. An app whose whole promise is "your confession stays
+// yours" has to let a person decline being counted at all — and the privacy policy has to describe
+// exactly this and nothing more.
+function metricsOff(){ try{ return localStorage.getItem('totry_no_metrics')==='1'; }catch(_){ return false; } }
+function toggleMetrics(){
+  const off = !metricsOff();
+  try{ localStorage.setItem('totry_no_metrics', off?'1':'0'); }catch(_){}
+  try{ showToast(off?'Counting off':'Counting on', off?'You won’t be counted at all. Nothing changes about how the app works for you.':'Thank you — anonymous counts only, never what you log.'); }catch(_){}
+  try{ const b=document.getElementById('metrics-toggle-btn'); if(b) b.textContent = off?'Off':'On ✓'; }catch(_){}
+}
 function logEvent(name, detail){
   try{
+    if(metricsOff()) return;
     if(sb){ sb.from('app_events').insert({ anon_id:_anonId(), event:name, detail:detail||null, standalone:(typeof _isStandalone==='function'&&_isStandalone()) }).then(()=>{},()=>{}); }
     if(window.goatcounter && window.goatcounter.count){ window.goatcounter.count({ path:'/e/'+name, event:true }); }
   }catch(_){ }
 }
-if(GOATCOUNTER_CODE){
+if(GOATCOUNTER_CODE && !metricsOff()){
   const g=document.createElement('script'); g.async=true; g.src='https://gc.zgo.at/count.js';
   g.setAttribute('data-goatcounter','https://'+GOATCOUNTER_CODE+'.goatcounter.com/count');
   document.head.appendChild(g);
@@ -32565,6 +32588,8 @@ function togglePartner(){
 function updatePartnerBtn(){
   const btn=document.getElementById('partner-toggle-btn');
   if(btn)btn.textContent=ls('totry_partner')?'On ✓':'Off';
+  // Reflect the saved usage-counting choice too, so the switch never lies about its own state.
+  try{ const mb=document.getElementById('metrics-toggle-btn'); if(mb) mb.textContent = (typeof metricsOff==='function' && metricsOff()) ? 'Off' : 'On ✓'; }catch(_){}
 }
 
 
