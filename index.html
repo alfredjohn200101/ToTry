@@ -4219,7 +4219,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v334';
+const APP_VERSION = 'v335';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4531,6 +4531,10 @@ const SYNC_KEYS = [
   'totry_hevy_api_key','totry_hevy_synced_once','totry_hevy_tier','totry_hevy_templates','totry_hevy_templates_at','totry_hevy_routines','totry_hevy_folders','totry_hevy_routines_at','totry_hevy_today_pick','totry_mobility_profile','totry_mood_log','totry_meal_plans','totry_pt_adjustments','totry_calorie_burns','totry_bar_weight','totry_last_plate_target','totry_last_warmup_target',
   'totry_custom_exercises','totry_bw_volume','totry_session_proof','totry_first_win_done','totry_quiet_greeted',
   'totry_progress_photos','totry_weight_trend',
+  // The people you carry, the plans you set, and the numbers-off preference. These are among the most
+  // personal things in the app — losing them on a reinstall would mean losing your few and every
+  // if-then plan you wrote, so they sync like everything else.
+  'totry_your_few','totry_reachouts','totry_if_then','totry_nut_gentle','totry_nourish_care_shown',
   // Nutrition
   'totry_nutlog','totry_nut_goals','totry_nut_macros','totry_tdee_data','totry_calorie_goal_type','totry_ca',
   'totry_recipes','totry_custom_foods','totry_recent_foods','totry_water','totry_water_goal','totry_fasting','totry_fast_log','totry_usda_key','totry_esv_key','totry_nutritionix_id','totry_nutritionix_key',
@@ -10373,7 +10377,16 @@ function saveIfThen(feeling, action){
   try{ if(typeof haptic==='function') haptic('success'); }catch(_){}
   try{ showToast('Plan locked in', 'Next time this hits, I’ll hand you back your own words.'); }catch(_){}
 }
-function _saveIfThenFromModal(feeling){ const v=document.getElementById('ifthen-act'); saveIfThen(feeling, v?v.value:''); document.querySelector('.modal-bg.open')?.remove(); }
+// Save, then hand them BACK to the move they were in the middle of — locking in a plan must never
+// cost someone the thing that was actually helping them in the moment.
+function _saveIfThenFromModal(feeling){
+  const v=document.getElementById('ifthen-act');
+  const ok=(v && v.value && v.value.trim());
+  saveIfThen(feeling, v?v.value:'');
+  if(!ok) return;                                   // nothing saved → leave the plan modal open
+  document.querySelector('.modal-bg.open')?.remove();
+  setTimeout(function(){ try{ if(typeof _feelMove==='function') _feelMove(feeling); }catch(_){} }, 180);
+}
 function _lockItIn(feeling){
   const existing=getIfThen(feeling); const preset=existing?existing.action:(_FEEL_PLAN[feeling]||''); const label=_FEEL_LABELS[feeling]||feeling;
   document.querySelector('.modal-bg.open')?.remove();
@@ -13192,10 +13205,12 @@ function tIdx(){const d=new Date().getDay();return d===0?6:d-1;}
 function getStreak(){
   loadH();const ti=tIdx();let s=0;let _g=false;
   for(let i=ti;i>=0;i--){
-    if(habits.slice(0,3).every(h=>h.d[i]===1)) s++;
+    // NEVER MISS TWICE: one off day is forgiven; two in a row ends the stretch. The allowance
+    // resets on each completed day so every isolated gap is forgiven, not only the first.
+    if(habits.slice(0,3).every(h=>h.d[i]===1)){ s++; _g=false; }
     else if(i===ti) continue;                // today still in progress — don't break on it
-    else if(!_g){ _g=true; continue; }        // NEVER MISS TWICE: a single off day won't reset it (Lally 2010)
-    else break;
+    else if(!_g){ _g=true; continue; }        // one missed day: forgiven
+    else break;                               // two in a row: the stretch ends
   }
   return s;
 }
@@ -18195,7 +18210,9 @@ function _renderNourishCare(){
       '<div style="font-size:12.5px;color:var(--tx2);line-height:1.65;margin-bottom:10px">A few days this week came in quite low on food. I’m not here to police it — but if counting has started to feel like something you can’t put down, that’s worth being honest about. You can keep logging with the numbers hidden, and talking to a real person about it is strength, not weakness.</div>'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
         '<button class="btn" style="width:auto;padding:7px 12px;font-size:12px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go)" onclick="if(!nutGentle())toggleNutGentle();_dismissNourishCare()">Turn the numbers off</button>'+
-        '<button class="btn" style="width:auto;padding:7px 12px;font-size:12px" onclick="_dismissNourishCare();if(typeof bridgeToRealHelp===\'function\')bridgeToRealHelp(\'food\')">Talk to someone</button>'+
+        // Route to the FOOD-specific support that already exists (Butterfly Foundation, GP, Lifeline)
+        // — the generic bridge names a priest and a mentor and never mentions eating at all.
+        '<button class="btn" style="width:auto;padding:7px 12px;font-size:12px" onclick="_dismissNourishCare();if(typeof showEDSupport===\'function\')showEDSupport();else if(typeof bridgeToRealHelp===\'function\')bridgeToRealHelp(\'heavy\')">Talk to someone</button>'+
         '<button class="btn" style="width:auto;padding:7px 10px;font-size:12px;background:transparent;border:none;color:var(--tx3)" onclick="_dismissNourishCare()">I’m okay</button>'+
       '</div>'+
     '</div>';
@@ -26798,7 +26815,10 @@ function initEveningTab(){
     }
   }catch(_){ }
   const ps=document.getElementById('partner-section');
-  const _fewOn = ls('totry_partner') || (typeof getYourFew==='function' && getYourFew().length>0);
+  // Respect an EXPLICIT off (Settings → Someone you love). Having people in your few must never
+  // silently override a choice the person deliberately made.
+  const _pref = ls('totry_partner');
+  const _fewOn = (_pref === false) ? false : (_pref || (typeof getYourFew==='function' && getYourFew().length>0));
   if(_fewOn && ps){
     ps.style.display='block';const day=getDayCount();
     if(typeof renderReachOutCard==='function'){ renderReachOutCard(); }
@@ -26821,7 +26841,35 @@ function initEveningTab(){
 // (shoulder-to-shoulder activity framing for men), and lets you log the reach-out as the win it is.
 function _escFew(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 function getYourFew(){ try{ const a=ls('totry_your_few'); return Array.isArray(a)?a:[]; }catch(_){ return []; } }
-function saveYourFew(a){ try{ ls('totry_your_few', (a||[]).slice(0,12)); if((a||[]).length && !ls('totry_partner')) ls('totry_partner', true); }catch(_){} }
+function saveYourFew(a){
+  try{
+    ls('totry_your_few', (a||[]).slice(0,12));
+    // Turn the evening reach-out on for a FIRST-time user — but NEVER override an explicit choice.
+    // If they've deliberately switched it off in Settings, adding a person must not silently re-arm it.
+    const pref = ls('totry_partner');
+    if((a||[]).length && (pref===null || pref===undefined)) ls('totry_partner', true);
+  }catch(_){}
+}
+// Some people in your few can't be reached — someone who died, someone you're estranged from, someone
+// it isn't safe to contact. They still belong here: they can be the WHY you're doing this. So a person
+// can be carried without ever being nudged about. Nothing in this app should cheerfully tell a grieving
+// person to text someone who is gone.
+function yourFewMuted(p){ return !!(p && p.mute); }
+function toggleFewMute(idx){
+  const few=getYourFew(); if(!few[idx]) return;
+  few[idx].mute = !few[idx].mute;
+  saveYourFew(few);
+  const m=document.getElementById('yourfew-modal'); if(m) m.remove();
+  openYourFew();
+  try{ showToast(few[idx].mute?'Held quietly':'Reminders on', few[idx].mute?'They stay part of your why — I just won’t nudge you to reach out.':'I’ll gently remind you again.'); }catch(_){}
+}
+function muteCurrentReachOut(){
+  const s=(typeof reachOutSuggestion==='function')?reachOutSuggestion():null; if(!s||!s.person) return;
+  const few=getYourFew(); const i=few.findIndex(function(p){ return p&&p.name===s.person.name; });
+  if(i>=0){ few[i].mute=true; saveYourFew(few); }
+  try{ showToast('Held quietly','They stay part of your why — I won’t nudge you about them.'); }catch(_){}
+  try{ renderReachOutCard(); }catch(_){}
+}
 function _reachOutLog(){ try{ const a=ls('totry_reachouts'); return Array.isArray(a)?a:[]; }catch(_){ return []; } }
 function daysSinceReachOut(name){
   const rs=_reachOutLog().filter(function(r){return r&&r.name===name&&r.ts;});
@@ -26837,10 +26885,16 @@ function logReachOut(name){
 }
 function logReachOutCurrent(){ const s=reachOutSuggestion(); if(s&&s.person) logReachOut(s.person.name); }
 function pickReachOutPerson(){
-  const few=getYourFew(); if(!few.length) return null;
-  // the person it's been longest since you reached — never-contacted ranks first (the biggest gap)
+  const few=getYourFew().filter(function(p){ return p && !yourFewMuted(p); });
+  if(!few.length) return null;
+  // Longest since you reached out wins; never-contacted ranks first (the biggest gap). Ties break by
+  // the person added LONGEST ago rather than always naming whoever happens to sit first in the list.
   let best=null, bestScore=-1;
-  few.forEach(function(p){ const d=daysSinceReachOut(p.name); const score=(d==null)?1e9:d; if(score>bestScore){ bestScore=score; best=p; } });
+  few.forEach(function(p){
+    const d=daysSinceReachOut(p.name);
+    const score=(d==null)?1e9:d;
+    if(score>bestScore){ bestScore=score; best=p; }
+  });
   return best;
 }
 const _REACH_ACTIVITY=[  // for men: shoulder-to-shoulder beats "let's talk about how you feel"
@@ -26880,6 +26934,8 @@ function renderReachOutCard(){
     '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
       '<button class="btn" style="width:auto;padding:7px 14px;font-size:12px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go)" onclick="logReachOutCurrent()">I reached out ✓</button>'+
       '<button class="btn" style="width:auto;padding:7px 12px;font-size:12px" onclick="openYourFew()">Your few</button>'+
+      // For someone who has died, or who it isn't safe or possible to contact — carried, never nudged.
+      '<button class="btn" style="width:auto;padding:7px 10px;font-size:12px;background:transparent;border:none;color:var(--tx3)" onclick="muteCurrentReachOut()">Not this one</button>'+
     '</div>';
 }
 function openYourFew(){
@@ -26888,14 +26944,15 @@ function openYourFew(){
     '<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--bd)">'+
       '<div style="flex:1"><div style="font-size:14px;color:var(--tx)">'+_escFew(p.name)+'</div>'+
       (p.note?'<div style="font-size:11px;color:var(--tx3)">'+_escFew(p.note)+'</div>':'')+
-      (function(){ const d=daysSinceReachOut(p.name); return d==null?'':'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.04em;margin-top:2px">'+(d===0?'reached out today':d+'d since last')+'</div>'; })()+
+      (function(){ if(yourFewMuted(p)) return '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.04em;margin-top:2px">held quietly · no reminders</div>'; const d=daysSinceReachOut(p.name); return d==null?'':'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.04em;margin-top:2px">'+(d===0?'reached out today':d+'d since you logged one')+'</div>'; })()+
       '</div>'+
+      '<button class="btn" style="width:auto;padding:5px 8px;font-size:11px;color:var(--tx3)" title="Carry them without reminders" onclick="toggleFewMute('+i+')">'+(yourFewMuted(p)?'🔔':'🔕')+'</button>'+
       '<button class="btn" style="width:auto;padding:5px 10px;font-size:11px;color:var(--tx3)" onclick="_yfRemove('+i+')">Remove</button>'+
     '</div>'; }).join('') : '<div style="font-size:12px;color:var(--tx3);padding:8px 0">No one yet. Add the people you carry.</div>';
   const m=document.createElement('div'); m.className='modal-bg open'; m.id='yourfew-modal';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
     '<h3 style="margin-bottom:4px">Your few</h3>'+
-    '<div style="font-size:12px;color:var(--tx3);line-height:1.5;margin-bottom:14px">The people you carry — a partner, a parent, a friend, anyone. Private to you. The app helps you stay close to them; it never nags, never scores.</div>'+
+    '<div style="font-size:12px;color:var(--tx3);line-height:1.5;margin-bottom:14px">The people you carry — a partner, a parent, a friend, anyone. Private to you. The app helps you stay close to them; it never nags, never scores. Tap 🔕 for someone you want to carry <em>without</em> reminders — someone you’ve lost, or who it isn’t right to contact. They stay part of your why.</div>'+
     '<div id="yf-list">'+rows+'</div>'+
     '<div style="display:flex;gap:8px;margin-top:14px">'+
       '<input type="text" id="yf-name" placeholder="Name" maxlength="40" style="flex:1">'+
@@ -26909,7 +26966,10 @@ function openYourFew(){
 }
 function _yfAdd(){
   const i=document.getElementById('yf-name'); const name=i?i.value.trim():''; if(!name) return;
-  const few=getYourFew(); few.push({name:name.slice(0,40), note:''}); saveYourFew(few);
+  const few=getYourFew();
+  if(few.length>=12){ try{ showToast('That’s a full few','This is meant to be the handful you carry closest — remove someone first.'); }catch(_){} return; }
+  if(few.some(function(p){ return p && p.name.toLowerCase()===name.toLowerCase(); })){ try{ showToast('Already here', name+' is already one of your few.'); }catch(_){} if(i) i.value=''; return; }
+  few.push({name:name.slice(0,40), note:''}); saveYourFew(few);
   const m=document.getElementById('yourfew-modal'); if(m) m.remove(); openYourFew();
 }
 function _yfRemove(idx){ const few=getYourFew(); few.splice(idx,1); saveYourFew(few); const m=document.getElementById('yourfew-modal'); if(m) m.remove(); openYourFew(); }
@@ -31879,7 +31939,9 @@ function computeProactiveNudge(){
   const checkins = ls('totry_checkins')||[];
   const fightLog = ls('totry_fight_log')||[];
   const name = (ls('totry_name')||'').trim().split(' ')[0];
-  const hi = name ? name + ', ' : '';
+  // Every nudge's .text is rendered via innerHTML, so the person's OWN name must be escaped too —
+  // a name containing < or & would otherwise break (or inject into) every nudge on the home screen.
+  const hi = name ? ((typeof _escFew==='function' ? _escFew(name) : name) + ', ') : '';
 
   // Helper: most recent timestamp across a set of streams
   const lastTs = arr => arr.reduce((m,x)=>{ const t=new Date(x.ts||x.date||x.createdAt||0).getTime(); return t>m?t:m; }, 0);
@@ -31936,7 +31998,9 @@ function computeProactiveNudge(){
   // throttled to ~once / 3 days via a bucketed id; fully dismissible. Name is escaped (rendered as innerHTML).
   try{
     const _few = (typeof getYourFew==='function') ? getYourFew() : [];
-    if(_few.length && typeof reachOutSuggestion==='function'){
+    // Never fire if they've switched the reach-out off in Settings. And never for a muted person
+    // (reachOutSuggestion already skips those) — the app must not nudge about someone who is gone.
+    if(_few.length && ls('totry_partner')!==false && typeof reachOutSuggestion==='function'){
       const _s = reachOutSuggestion();
       if(_s && _s.person){
         const _gap = _s.days;
@@ -31944,8 +32008,10 @@ function computeProactiveNudge(){
         const _drift = (_gap!=null) ? (_gap>=6) : (_activeDays>=5);
         if(_drift){
           const _nm = (typeof _escFew==='function') ? _escFew(_s.person.name) : _s.person.name;
-          const _gtxt = (_gap==null) ? ('you haven’t reached out to ' + _nm + ' through here yet') : ('it’s been ' + _gap + ' day' + (_gap===1?'':'s') + ' since you reached out to ' + _nm);
-          const _rb = 'reachfew' + Math.floor(now/(3*86400000));
+          // Honest wording: the app only knows what you LOGGED here, not whether you actually called.
+          const _gtxt = (_gap==null) ? ('it’s been a while since you and ' + _nm + ' caught up') : ('it’s been about ' + _gap + ' day' + (_gap===1?'':'s') + ' since you logged reaching ' + _nm);
+          // WEEKLY bucket, not every 3 days — a nudge about someone you love must never become a nag.
+          const _rb = 'reachfew' + Math.floor(now/(7*86400000));
           return { id:_rb, tone:'care',
             eyebrow:'The people you love',
             text: hi + _gtxt + '. You’ll probably feel it’s awkward, or that they don’t need to hear from you — they will, more than you expect, and more because it’s been a while. One message is enough.',
@@ -34683,10 +34749,13 @@ function getResilienceStreak(){
       (ls('totry_workouts')||[]).some(w=>new Date(w.ts).toLocaleDateString('en-AU')===dateStr)||
       (ls('totry_checkins')||[]).some(c=>c.date===dateStr)||
       ls('totry_last_open')===dateStr;
-    if(hasActivity)streak++;
+    // NEVER MISS TWICE (Lally 2010): a single off day never breaks the chain, but two IN A ROW does.
+    // The allowance resets on every day they showed up — so it forgives each isolated gap, not just
+    // the first one in the whole history.
+    if(hasActivity){ streak++; _graceUsed=false; }
     else if(i===0)continue;                              // today not logged yet — that's fine
-    else if(!_graceUsed){ _graceUsed=true; continue; }   // NEVER MISS TWICE: one off day won't break it (Lally 2010)
-    else break;
+    else if(!_graceUsed){ _graceUsed=true; continue; }   // one missed day: forgiven
+    else break;                                          // two in a row: the stretch ends
   }
   return Math.max(streak,1);
 }
@@ -34709,9 +34778,9 @@ function showResilienceInfo(){
     '<div style="font-size:16px;font-weight:500;color:var(--bl);margin-bottom:10px">What is resilience streak?</div>'+
     '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">'+
     '<strong style="color:var(--tx)">Sober streak</strong> resets to zero if you relapse. That is honest.<br><br>'+
-    '<strong style="color:var(--bl)">Resilience streak</strong> never resets — it counts every day you opened this app and tried, regardless of outcome.<br><br>'+
-    'Both matter. The first measures sobriety. The second measures the person you are becoming. Relapse breaks the first. Quitting breaks the second.<br><br>'+
-    'One more thing on grace: missing a single day won’t break your resilience — miss twice in a row and it resets, but one off day is being human, not failing. (Sobriety stays honest: a relapse does reset the sober count — but never your resilience, and never the total days you’ve been trying.) And real habits take about <strong>66 days</strong> to form, not 21 — so this is a long game, and you’re in it.<br><br>'+
+    '<strong style="color:var(--bl)">Resilience streak</strong> counts the days you showed up and tried, regardless of outcome — and it is built with grace: <strong>one missed day won’t break it</strong>. Miss two in a row and it starts again. One off day is being human, not failing.<br><br>'+
+    'Both matter. The first measures sobriety. The second measures the person you are becoming. Relapse breaks the first. Giving up breaks the second.<br><br>'+
+    'Being straight with you: because one off day is forgiven, this number isn’t a claim that you were perfect every single day — it’s the length of the stretch you’ve kept coming back in. (Sobriety stays strictly honest: a relapse does reset the sober count — but never your resilience, and never the total days you’ve been trying.) And real habits take about <strong>66 days</strong> to form, not 21 — so this is a long game, and you’re in it.<br><br>'+
     '<em style="color:var(--go);font-family:Cormorant Garamond,serif;font-size:15px">"I am not here because I made it. I am here because I am trying."</em>'+
     '</div>'+
     '<button class="btn primary" onclick="this.closest(\'.modal-bg\').remove()">Got it</button></div>';
