@@ -2171,7 +2171,10 @@ input:focus,textarea:focus,select:focus{
   <div class="nutrition-hero">
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
       <span style="font-size:13px;font-weight:500;color:var(--tx)">Today</span>
-      <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3)" id="nut-date"></span>
+      <span style="display:flex;align-items:baseline;gap:10px">
+        <button type="button" id="nut-gentle-toggle" onclick="toggleNutGentle()" title="Turn the numbers off — log food without seeing calories" style="background:none;border:none;padding:0;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:0.06em;cursor:pointer;text-transform:uppercase">numbers on</button>
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3)" id="nut-date"></span>
+      </span>
     </div>
     <div class="cal-hero" style="display:flex;align-items:center;justify-content:center;gap:18px">
       <div style="position:relative;width:96px;height:96px;flex-shrink:0">
@@ -2186,7 +2189,7 @@ input:focus,textarea:focus,select:focus{
           <div class="ch-lbl" id="nut-cal-hero-lbl" style="font-size:7px">cal left</div>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:5px;min-width:122px">
+      <div id="nut-equation" style="display:flex;flex-direction:column;gap:5px;min-width:122px">
         <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:11px;color:var(--tx3)">Base goal</span><span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--tx2)" id="eq-goal">2200</span></div>
         <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:11px;color:var(--tx3)">&minus; Food</span><span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--tx)" id="eq-food">0</span></div>
         <div style="display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--bd);padding-top:5px;margin-top:1px"><span style="font-size:11px;color:var(--go)">Remaining</span><span style="font-family:'DM Mono',monospace;font-size:15px;color:var(--go)" id="eq-rem">2200</span></div>
@@ -2203,6 +2206,9 @@ input:focus,textarea:focus,select:focus{
       <!-- Coaching nudge: the diary should COACH toward the target, not just count ('counsel, not
            tracking') — actionable, time-of-day aware, grace-first. Populated by renderNutritionLog. -->
       <div id="nut-nudge" style="display:none;margin-top:10px"></div>
+      <!-- Gentle-mode counsel (replaces the numeric nudge when numbers are off) + the quiet care card. -->
+      <div id="nut-gentle-line" style="display:none;margin-top:10px"></div>
+      <div id="nut-care" style="display:none;margin-top:12px"></div>
     </div>
 
     <!-- Calorie-by-meal split (MFP's glanceable insight): where today's calories came from -->
@@ -2213,7 +2219,7 @@ input:focus,textarea:focus,select:focus{
     </div>
     
     <!-- Fiber / Sugar / Sodium / Sat fat extended macros -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
+    <div id="nut-extended" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
       <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Fiber</div><div id="nut-fiber" style="font-family:DM Mono,monospace;font-size:14px;color:var(--gr)">0g</div></div>
       <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Sugar</div><div id="nut-sugar" style="font-family:DM Mono,monospace;font-size:14px;color:var(--go)">0g</div></div>
       <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Sodium</div><div id="nut-sodium" style="font-family:DM Mono,monospace;font-size:14px;color:var(--bl)">0mg</div></div>
@@ -4201,7 +4207,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v331';
+const APP_VERSION = 'v332';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -18042,6 +18048,106 @@ function renderNourishmentScore(totals, goals){
       (r.microsHit>0?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">'+r.microsHit+' of '+r.microsTotal+' vitamins &amp; minerals covered today</div>':'')+
     '</div>';
 }
+// ── GENTLE MODE — numbers off, nourishment still counted ─────────────────────────────────────────
+// The evidence here is blunt: calorie-tracking UIs elicit perfectionist, all-or-nothing thinking —
+// a known eating-disorder risk factor — and a large share of people in ED treatment say a tracking
+// app contributed to theirs. So To Try ships the antidote no mainstream tracker will: keep the
+// LOGGING (the whole-life counsel still works — energy, training, recovery) but let a person turn
+// the NUMBERS OFF. Food as fuel for a life, not a maths test to win. Never a red "over budget".
+function nutGentle(){ try{ return !!ls('totry_nut_gentle'); }catch(_){ return false; } }
+function toggleNutGentle(){
+  const on = !nutGentle();
+  try{ ls('totry_nut_gentle', on); }catch(_){}
+  try{ if(typeof haptic==='function') haptic('tap'); }catch(_){}
+  try{ showToast(on?'Numbers off':'Numbers back on',
+    on?'Keep logging — I’ll hold the maths. You’ll still get counsel, just no numbers to fight with.'
+      :'Full detail is back. You can turn it off again any time.'); }catch(_){}
+  try{ renderNutritionLog(); }catch(_){}
+}
+function _gentleWord(eaten, goal){
+  if(!(eaten>0)) return { w:'—', s:'nothing logged yet' };
+  if(!(goal>0))  return { w:'Fed', s:'today' };
+  const p = eaten/goal;
+  if(p<0.35) return { w:'Started', s:'early yet' };
+  if(p<0.70) return { w:'On your way', s:'today' };
+  if(p<1.10) return { w:'Nourished', s:'today' };
+  return { w:'Fed well', s:'today' };
+}
+function _gentleCounsel(eaten, goal){
+  if(!(eaten>0)) return 'Nothing logged yet. When you eat, put it here — no numbers, no verdict.';
+  if(!(goal>0))  return 'Logged. That’s all this needs to be.';
+  const p = eaten/goal;
+  const hr = new Date().getHours();
+  if(p<0.5 && hr>=17) return 'That’s a light day so far. Not a rule to obey — just worth asking whether your body’s actually been fed.';
+  if(p<0.7 && hr>=20) return 'Lighter day. If you’re hungry, eat — under-fuelling costs you tomorrow more than it saves you today.';
+  if(p>=1.10) return 'You’ve eaten well today. That’s a body being fed, not a budget being broken. Nothing to make up for.';
+  return 'You’re fed and on track. Nothing to fix — carry on with your day.';
+}
+// A quiet, caring check for a pattern that looks clinical rather than casual — sustained severe
+// under-eating. It NEVER diagnoses and never shames: it offers the numbers-off mode and a real human.
+function _nourishConcern(){
+  try{
+    const floor = (typeof userSex==='function' && userSex()==='female') ? 1200 : 1500;
+    const log = ls('totry_nutlog') || {};
+    let low=0, counted=0;
+    for(let i=1;i<=7;i++){
+      const k = new Date(Date.now()-i*86400000).toLocaleDateString('en-AU');
+      const items = log[k];
+      if(!items || !items.length) continue;
+      counted++;
+      const cal = items.reduce(function(a,x){ return a + (parseFloat(x.cal)||0); }, 0);
+      if(cal>0 && cal<floor) low++;
+    }
+    return (counted>=3 && low>=3) ? { low:low, floor:floor } : null;
+  }catch(_){ return null; }
+}
+function _renderNourishCare(){
+  const el = document.getElementById('nut-care'); if(!el) return;
+  const c = _nourishConcern();
+  const weekKey = 'w'+Math.floor(Date.now()/(7*86400000));
+  let shown=null; try{ shown = ls('totry_nourish_care_shown'); }catch(_){}
+  if(!c || shown===weekKey){ el.style.display='none'; el.innerHTML=''; return; }
+  el.style.display='block';
+  el.innerHTML =
+    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:13px 15px;text-align:left">'+
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px">Just checking in</div>'+
+      '<div style="font-size:12.5px;color:var(--tx2);line-height:1.65;margin-bottom:10px">A few days this week came in quite low on food. I’m not here to police it — but if counting has started to feel like something you can’t put down, that’s worth being honest about. You can keep logging with the numbers hidden, and talking to a real person about it is strength, not weakness.</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+        '<button class="btn" style="width:auto;padding:7px 12px;font-size:12px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go)" onclick="if(!nutGentle())toggleNutGentle();_dismissNourishCare()">Turn the numbers off</button>'+
+        '<button class="btn" style="width:auto;padding:7px 12px;font-size:12px" onclick="_dismissNourishCare();if(typeof bridgeToRealHelp===\'function\')bridgeToRealHelp(\'food\')">Talk to someone</button>'+
+        '<button class="btn" style="width:auto;padding:7px 10px;font-size:12px;background:transparent;border:none;color:var(--tx3)" onclick="_dismissNourishCare()">I’m okay</button>'+
+      '</div>'+
+    '</div>';
+}
+function _dismissNourishCare(){
+  try{ ls('totry_nourish_care_shown', 'w'+Math.floor(Date.now()/(7*86400000))); }catch(_){}
+  const el=document.getElementById('nut-care'); if(el){ el.style.display='none'; el.innerHTML=''; }
+}
+// Applied at the END of the numeric render, so it wins over whatever the counters just painted.
+function applyNutGentle(eaten, goalCal){
+  const on = nutGentle();
+  const g = function(id){ return document.getElementById(id); };
+  const tb = g('nut-gentle-toggle');
+  if(tb){ tb.textContent = on ? 'numbers off' : 'numbers on'; tb.style.color = on ? 'var(--go)' : 'var(--tx3)'; }
+  const HIDE = ['nut-equation','nut-extended','nut-meal-split','nut-macro-glance','nut-nudge'];
+  const RESTORE = { 'nut-equation':'flex', 'nut-extended':'grid' }; // always-visible statics
+  const line = g('nut-gentle-line');
+  if(on){
+    HIDE.forEach(function(id){ const el=g(id); if(el) el.style.display='none'; });
+    const num=g('nut-cal'), lbl=g('nut-cal-hero-lbl');
+    const w=_gentleWord(eaten, goalCal);
+    if(num){ num.textContent=w.w; num.style.color='var(--go)'; num.style.fontSize=(w.w.length>9?'13px':(w.w.length>6?'15px':'19px')); }
+    if(lbl) lbl.textContent=w.s;
+    ['nut-pro-goal-lbl','nut-carb-goal-lbl','nut-fat-goal-lbl'].forEach(function(id){ const el=g(id); if(el) el.textContent=''; });
+    if(line){ line.style.display='block'; line.innerHTML='<div style="font-size:12px;color:var(--tx2);line-height:1.55;padding:9px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px">'+_escFew(_gentleCounsel(eaten, goalCal))+'</div>'; }
+  } else {
+    Object.keys(RESTORE).forEach(function(id){ const el=g(id); if(el && el.style.display==='none') el.style.display=RESTORE[id]; });
+    const num=g('nut-cal'); if(num) num.style.fontSize='26px';
+    if(line){ line.style.display='none'; line.innerHTML=''; }
+  }
+  try{ _renderNourishCare(); }catch(_){}
+}
+
 function renderNutritionLog(){
   if(typeof renderAdaptiveNutrition==='function') renderAdaptiveNutrition();
   // Before any of the empty-plate early returns below — the brand-new user with nothing logged is
@@ -18248,6 +18354,9 @@ function renderNutritionLog(){
     }
   }
   
+  // GENTLE MODE last — it overrides whatever the counters above just painted (numbers off).
+  try{ applyNutGentle(totals.cal, goalCal); }catch(_){}
+
   // Render micro panel content (always populated, hidden until toggled)
   renderMicroPanel(totals);
   
