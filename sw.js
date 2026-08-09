@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v349-receptivity-gate'
+const CACHE = 'totry-v350-blessing-values'
 
 const CORE = [
   './',
