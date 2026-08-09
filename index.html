@@ -4207,7 +4207,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v332';
+const APP_VERSION = 'v333';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -18136,13 +18136,13 @@ function applyNutGentle(eaten, goalCal){
     HIDE.forEach(function(id){ const el=g(id); if(el) el.style.display='none'; });
     const num=g('nut-cal'), lbl=g('nut-cal-hero-lbl');
     const w=_gentleWord(eaten, goalCal);
-    if(num){ num.textContent=w.w; num.style.color='var(--go)'; num.style.fontSize=(w.w.length>9?'13px':(w.w.length>6?'15px':'19px')); }
+    if(num){ num.textContent=w.w; num.style.color='var(--go)'; num.style.fontSize=(w.w.length>8?'12.5px':(w.w.length>6?'14px':'18px')); num.style.lineHeight='1.15'; num.style.maxWidth='74px'; num.style.textAlign='center'; num.style.whiteSpace='normal'; }
     if(lbl) lbl.textContent=w.s;
     ['nut-pro-goal-lbl','nut-carb-goal-lbl','nut-fat-goal-lbl'].forEach(function(id){ const el=g(id); if(el) el.textContent=''; });
     if(line){ line.style.display='block'; line.innerHTML='<div style="font-size:12px;color:var(--tx2);line-height:1.55;padding:9px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px">'+_escFew(_gentleCounsel(eaten, goalCal))+'</div>'; }
   } else {
     Object.keys(RESTORE).forEach(function(id){ const el=g(id); if(el && el.style.display==='none') el.style.display=RESTORE[id]; });
-    const num=g('nut-cal'); if(num) num.style.fontSize='26px';
+    const num=g('nut-cal'); if(num){ num.style.fontSize='26px'; num.style.maxWidth=''; num.style.lineHeight=''; num.style.whiteSpace=''; }
     if(line){ line.style.display='none'; line.innerHTML=''; }
   }
   try{ _renderNourishCare(); }catch(_){}
@@ -18534,6 +18534,10 @@ function renderMealSplit(){
   const bar = document.getElementById('nut-meal-split-bar');
   const legend = document.getElementById('nut-meal-split-legend');
   if(!wrap || !bar || !legend) return;
+  // GENTLE MODE guard at the SOURCE — this runs after applyNutGentle, so hiding it there isn't enough.
+  // A "numbers off" promise that leaks calorie counts here would be a broken promise to the exact
+  // person the mode exists to protect.
+  if(typeof nutGentle==='function' && nutGentle()){ wrap.style.display='none'; return; }
   const today = new Date().toLocaleDateString('en-AU');
   const entries = (ls('totry_nutlog')||{})[today] || [];
   if(!entries.length){ wrap.style.display='none'; return; }
