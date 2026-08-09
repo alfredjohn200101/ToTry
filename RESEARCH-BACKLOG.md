@@ -476,21 +476,99 @@ defensible moat. But we route to cloud AI + Supabase, so we must be able to KEEP
   🚫 any ad SDK/pixel/broker near sensitive screens, "we take privacy seriously" boilerplate, dark-pattern/bundled
   consent, "data first then consent," collecting "just in case," email-only deletion, claiming "fully on-device" while routing to cloud LLMs.
 
+## ⚔️ RECOVERY-SCIENCE DEPTH — the map AROUND the moment (Fight pillar)  *(round-10, subagent)*
+*(the Fight already has the in-the-moment toolkit + the lapse-as-feedback reframe; what's missing is the map
+around it — where the person is in the arc of change, what set the moment up, and where to send them. The
+evidence itself says grace-over-shame + autonomy-over-control are what work.)*
+- **🧭 A stage-of-change mode for the whole pillar** *(highest leverage).* A one-tap "where are you with this
+  right now?" (curious / torn / ready / rebuilding / steady-but-shaky) that *changes what the pillar offers* —
+  Prochaska: pushing action-stage tactics (goals/plans/streaks) onto a *contemplator* backfires. Makes "meets
+  you where you are" literal; drives `brotherSpeaks` tone. The spiral (relapse is a built-in stage) hardens the anti-shame stance.
+- **🍎 A HALT check wired into the Feeling Door / companion open** — Hungry→fuel, Angry→grounding, Lonely→reach
+  out (your few), Tired→the sleep signal. Best cohesion-fit of anything: HALT resolves the *real need* across the
+  body/soul/connection pillars you already have, before the urge tools even fire.
+- **🏦 Reframe the lifetime counter as "urges survived / coping deposits," not just clean-days** *(near-free,
+  high-impact).* Marlatt's coping→self-efficacy loop: each survived urge raises mastery. Structurally defeats the
+  abstinence-violation "back to zero" trap — a lapse can't zero your *skill*.
+- **🤝 A respectful "find real support" bridge menu** — SMART Recovery · AA/NA · Celebrate Recovery (surface when
+  faith dial is high) · therapy · harm-reduction — faith- and goal-aware, never ranked or pushed ("some people
+  find one of these fits"). The *choice itself* is the SDT autonomy that predicts success; points beyond itself.
+- **🔎 Calm-moment tools:** an **AIDs "how did I get here?" walk-back** + a personal high-risk-situation list
+  (negative emotion & conflict cause >half of relapses) — feeds the "reach out first" risk-window data. Plus a
+  saved **Cost-Benefit Analysis** (self-owned reasons the sibling mirrors back), an **ABC** belief tool, and a **DEADS/DENTS** menu inside the urge companion.
+  🚫 relapse-as-moral-failure/shame (the AVE — shame *causes* the next lapse), all-or-nothing "back to zero,"
+  one-model dogma (forcing 12-step OR secular), pushing action on a contemplator, controlling "you must" language (SDT: it kills motivation).
+
+## 🧠 ADHD / EXECUTIVE FUNCTION — a curb-cut that helps everyone  *(round-10, subagent)*
+*(To Try is already, almost accidentally, one of the most ADHD-friendly designs in the category — emotion-entry,
+minimum-viable-work, grace, no shame-clock, progressive disclosure. The move is to NAME & SHARPEN what's there,
+not bolt on an "ADHD mode." Designing for the hardest executive-function day makes the app better on every ordinary one.)*
+- **🔧 A "make it tinier" task-breakdown primitive on the minimum-viable-work spine** *(highest ADHD unlock).*
+  Any next-action can be broken smaller on demand (Goblin Tools' superpower — turn "a threat into a sequence"),
+  grace-framed spiciness. Big/vague = unstartable; the fix is a concrete first step small enough to survive a low-dopamine day.
+- **🧊 An explicit "can't start / frozen / overwhelmed" Feeling Door path** — route task-initiation paralysis (the
+  "Wall of Awful") to: pick one thing → shrink it → start a *visible* 2-minute timer → immediate "you started"
+  reward. Names the Wall without naming ADHD (serve the *experience*, never diagnose).
+- **📊 Streak audit → heatmap + "never miss twice" everywhere** — "streak counters are RSD delivery devices":
+  build to day 23, life explodes on 24, the app says "Streak: 0" = proof of failure → delete. Convert any
+  broken-chain mechanic to cumulative, reward-only visuals. (Reinforces round-6 item C.)
+- **🫂 Body-doubling as first-class presence** — a "start alongside me" companion mode (2-min timer + gentle
+  check-in); post-wrapper, a scheduled "start-with-me" at the person's low-activation windows (uses the risk-window
+  data; points beyond itself). Plus **externalize now/next/one-thing from `getLifeState()`** — make time & the plan *visible*, not remembered.
+  🚫 any streak-zero/broken-chain moment (most RSD-harmful pattern there is), willpower/shame framing ("just do
+  it, no excuses"), walls of text / long option menus (overwhelm IS the barrier), sensory-hostile busy design, diagnosing/medicalizing/quizzes, a visible "ADHD mode" that singles people out.
+
+## 🎯 THE CANDID VERDICT — are we actually a game-changer?  *(round-10, subagent — read this one)*
+*(a deliberately un-flattering stress-test. Headline: To Try's PHILOSOPHY is more aligned with what actually
+changes a life than almost anything in the category. Its RISK is not its values but their execution.)*
+- **What actually changes a life (evidence):** intrinsic motivation via **autonomy + competence + relatedness**
+  (SDT — and expected/tangible rewards like points/streaks *corrode* it, well-replicated); **identity + self-
+  efficacy** close the large intention-behaviour gap (willpower isn't the bottleneck); **human "supportive
+  accountability"** (Mohr) is the single biggest amplifier of any digital tool; **flourishing** ≠ symptom-removal
+  (Keyes — only ~17% flourish); **growth-through-adversity** via meaning-making (PTG).
+- **The humbling limits (what software can't do):** ~**95%+ of wellness-app users are gone within 30 days**
+  (Baumel: 3.3% retained at day 30); app effect sizes shrink to **g≈0.18** once publication bias is corrected
+  (some is "digital placebo"); only **~2%** of wellness apps have *any* research; **software cannot BE the
+  relationship** — it works as a supplement that points to real help + real-world action.
+- **Where To Try IS aligned (the rare correct bets):** anti-engagement / release-off-the-phone (the industry
+  optimizes the opposite); grace-over-shame (= SDT autonomy + PTG meaning-making); *refusing streaks/points* (the
+  one place the science is on our side against nearly everyone); **integration = the honest moat** (meaning is
+  whole-life, not per-feature); points-beyond-itself = the supplement-not-substitute posture the evidence demands; Feeling Door ≈ JITAI (where the small-but-real effects concentrate).
+- **⚠️ Where we RISK being just-another-app:** (1) **relatedness is the biggest MISSING lever** — the "big
+  sibling" is an AI *voice*, not a relationship that *notices whether you showed up*; the reach-out / supportive-
+  accountability roadmap is therefore the most important thing we can build. (2) "**Change humanity**" is fine as
+  private fuel but must **never leak into product claims** — over-claiming is the tell of apps that don't deliver.
+  (3) Don't drift back to **measurement** ("if it only reports, it isn't done" — make it true on every screen).
+  (4) Personalization must be **real adaptation** to *this* person, not the category's emptiest claim. (5) No
+  outcome proof yet → posture is "**we believe and we're testing**," never "this changes lives."
+- **★ The 3–5 highest-leverage moves toward genuine impact:** **(a) build real relatedness** — a genuinely-
+  *noticing* follow-up presence ("you told me Thursdays are hard — how did tonight go?"), a human, or a small
+  circle that actually notices; **(b) instrument for the RIGHT outcome** — lapses-recovered, real-world actions,
+  successful *releases* — and be proud of *low* time-in-app; **(c)** every core loop must pass "does this *move* a
+  person?" (cut report-only surfaces); **(d)** engineer self-efficacy + identity (implementation intentions, tiny
+  wins, a felt future self); **(e)** discipline the language of transformation — change lives internally, never claim it externally. *That honesty isn't a weakness in the mission; per the meaning/PTG science, it IS the mechanism.*
+
 ---
 
 ## Recommended build order (impact × vision-fit × effort)
-*Revised after rounds 6–8. The research converged hard on a small cluster at the top — the **Feeling Door /
+*Revised after rounds 6–10. The research converged hard on a small cluster at the top — the **Feeling Door /
 Release is the highest-leverage surface in the whole app** (if-then capture, the "next real thing" landing, the
 impulse-spend door, the "look up" off-ramp all live there), the loved-ones reframe is backed clinically from
 four independent angles (reach-out cognition, loving-kindness, contribution, relational gratitude), and the
-onboarding finding makes one change both launch-critical and on-brand.*
+round-10 verdict names the #1 missing lever: **real relatedness / supportive accountability** (a presence that
+*notices whether you showed up*) — which is exactly what item B + the native "reach out first" push become.*
 
-**⛔ LAUNCH GATE (safety/legal/trust — verify or fix BEFORE App Store submission; these outrank features):**
-- **G1. AI crisis guardrail in our OWN code** — deterministic crisis-keyword detection that bypasses the LLM →
-  fixed crisis card. Legally live (SB 243, Jan 2026; Character.AI/OpenAI settlements). *Verify the live build.*
-- **G2. SDK/pixel audit** — confirm zero ad/analytics trackers touch vice, porn-recovery, faith, money, cycle data (what fined BetterHelp/Cerebral/Flo).
-- **G3. In-app export + true delete** (Apple-mandatory; delete must purge Supabase rows) + accurate Privacy Nutrition Label.
-- **G4. Safe-messaging pass** on all crisis-adjacent copy + a one-tap, offline, logged-out, un-paywalled AU-first + international resource set.
+**✅ LAUNCH GATE — AUDITED v327 (was: verify before submission). Code side substantially PASSES:**
+- **G1. AI crisis guardrail — ✅ VERIFIED.** `detectCrisis()` runs *before* the AI call and bypasses the LLM to a
+  fixed crisis card, on all THREE chat surfaces (coach ~6456, PT coach ~6724, companion `companionReply` ~11144).
+  v327 added 13YARN + widened suicide-phrase detection. (Legally live: SB 243, Character.AI/OpenAI settlements.)
+- **G2. SDK/pixel audit — ✅ CLEAN.** No ad/analytics trackers anywhere; only external script is Supabase's own
+  library. `privacy.html` already truthfully states "no analytics or tracking SDK." (Minor future hardening: self-host the Supabase JS instead of jsdelivr CDN.)
+- **G3. Export + true delete — ✅ PRESENT.** `exportAllData()` (full backup) + `deleteAccount()` purges the
+  `user_data` row, signs out, wipes local. *Remaining (GUI/your side): fill the App Store Connect Privacy Nutrition Label accurately (privacy.html is an accurate basis).*
+- **G4. Safe-messaging — ✅ LARGELY DONE.** Copy uses "not a substitute," pairs any mention with hope+help, AU-first
+  + international resources, prominent + honest disclaimer. *Optional: a periodic language re-check as copy grows.*
+- **Verdict: no launch-blockers hiding in the code.** Remaining is GUI (the nutrition label) + the re-archive of build 3.
 
 **★ Converged top tier (small builds, highest evidence × soul-fit — do these first):**
 - **A. If-then + "Next Small Real Thing" at the close of the Feeling Door / Release** — two agents landed on this
@@ -507,6 +585,8 @@ onboarding finding makes one change both launch-critical and on-brand.*
 1. **Nourish day-navigation** — finishes tracker credibility (Tier 1 last piece)
 2. **Impulse-spend "pause" → the Feeling Door** — reuses the existing clinically-validated companion engine for money; + money-shame→self-compassion
 3. **Daily pledge** (Fight) — tiny, powerful, pure on-soul
+3b. **"Make it tinier" task-breakdown + a "can't start / frozen" Feeling Door path** — the ADHD curb-cut that helps everyone; on the minimum-viable-work spine
+3c. **Stage-of-change mode + HALT check** (Fight) — meets you where you are; HALT routes the real need across body/soul/connection pillars
 4. **Sleep signal in `getLifeState()`** — "you slept ~5h, go gentle today" biasing counsel across all pillars; + the phone-down wind-down (a first-line sleep treatment). No sleep score.
 5. **The "Look Up" awe Release off-ramp** — low effort, deeply on-thesis (phone goes *away*); + awe as the exit from a rumination/craving loop
 6. **Loving-kindness (metta) from "your few"** + relational **gratitude visit** — most evidence-backed contemplative practice + literal reframe expression
