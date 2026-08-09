@@ -4319,7 +4319,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v348';
+const APP_VERSION = 'v349';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4666,7 +4666,9 @@ const SYNC_KEYS = [
   'totry_cal_cycling',
   // Money × Soul — the season you keep and what you give away
   'totry_fast_season','totry_giving','totry_giving_pledge','totry_zakat',
-  'totry_rosaries'
+  'totry_rosaries',
+  // v344 — the first felt moment, and the receptivity gate under the reach-out.
+  'totry_first_moment','totry_quiet_hours','totry_reachout_log','totry_reachout_state','totry_last_active_ts'
 ];
 // totry_cycle is deliberately NOT in the list above. Post-Dobbs, cycle data is the most sensitive
 // thing this app holds, so it stays on the device by default. It is pushed into SYNC_KEYS at runtime
@@ -5352,36 +5354,178 @@ function renderHealthCard(){
 // The app already learns each fight's hardest time of day (analyzeUrgePatterns → riskWindow). This
 // turns that knowledge into a real, daily, background notification ~20 min before that window opens —
 // grace-first, choice-first, never guilt. Web-safe (records intent); fires for real once wrapped.
+// ── THE RECEPTIVITY GATE (JITAI) — vulnerable AND receptive, or don't send ───────────────────────
+// A nudge at a known risk window still fails if the person can't receive it — and a failed nudge
+// doesn't cost nothing, it burns the channel: they turn notifications off, and then we can never
+// reach them at the moment that matters. So a reach-out is armed only after it passes a gate:
+// quiet hours, likely-asleep, already-in-the-app, one per day, a hard weekly cap, and a stand-down
+// when the last few went unanswered. When the gate HOLDS, the presence isn't lost —
+// _maybeRiskWindowGreeting still meets them in-app the moment they open inside that window.
+const REACHOUT_MAX_PER_WEEK = 3;                              // presence, not a daily alarm
+const REACHOUT_QUIET_DEFAULT = { start:'22:00', end:'07:00' };
+const REACHOUT_STANDDOWN_DAYS = 14;
+
+function quietHours(){ const q=ls('totry_quiet_hours'); return (q&&q.start&&q.end)?q:REACHOUT_QUIET_DEFAULT; }
+function _hm(t,dh,dm){ const a=String(t||'').split(':'); const h=parseInt(a[0],10), m=parseInt(a[1],10); return (isNaN(h)?dh:h)*60+(isNaN(m)?dm:m); }
+function _reachState(){ const s=ls('totry_reachout_state'); return (s&&typeof s==='object')?s:{next:null,hold:null,pausedUntil:0}; }
+function _setReachState(patch){ try{ const s=_reachState(); Object.assign(s,patch,{ts:Date.now()}); ls('totry_reachout_state',s); }catch(_){} }
+function _reachPaused(){ return (_reachState().pausedUntil||0) > Date.now(); }
+function _touchActive(){ try{ ls('totry_last_active_ts', Date.now()); }catch(_){} }
+function _usedRecently(mins){ const t=parseInt(ls('totry_last_active_ts')||'0',10); return t>0 && (Date.now()-t) < (mins||90)*60000; }
+
+// We never GUESS that someone is asleep. We use the hours THEY set — the app must not claim to know
+// something it cannot know. A short logged night only widens that band by an hour either side.
+function _inQuiet(min){ const q=quietHours(); const s=_hm(q.start,22,0), e=_hm(q.end,7,0); return (s<e)?(min>=s&&min<e):(min>=s||min<e); }
+function _likelyAsleep(min){
+  if(_inQuiet(min)) return true;
+  try{ const life=(typeof getLifeState==='function')?getLifeState():null;
+    if(life && life.sleep && life.sleep.short) return _inQuiet((min+60)%1440) || _inQuiet((min+1380)%1440);
+  }catch(_){}
+  return false;
+}
+// If the hard hour sits inside their night we don't buzz at 1:40am — we come to the NEARER edge of
+// the quiet band (just before it starts, or just after they're up) and the message says why.
+// Returns {min, shifted:-1|0|1} or null when their whole receptive band is quiet (→ hold).
+function _receptiveTime(min){
+  if(!_likelyAsleep(min)) return { min:min, shifted:0 };
+  const q=quietHours(); const s=_hm(q.start,22,0), e=_hm(q.end,7,0);
+  const before=(s-20+1440)%1440, after=(e+10)%1440;
+  const back=(min-before+1440)%1440, fwd=(after-min+1440)%1440;
+  const cand=(fwd<=back)?{min:after,shifted:1}:{min:before,shifted:-1};
+  return _likelyAsleep(cand.min) ? null : cand;
+}
+
+function _reachLog(){ try{ const a=ls('totry_reachout_log'); return Array.isArray(a)?a:[]; }catch(_){ return []; } }
+function _saveReachLog(a){ try{ ls('totry_reachout_log', a.slice(-60)); }catch(_){} }
+function _reachCount7(){ const now=Date.now(), wk=now-7*86400000; return _reachLog().filter(function(e){ return e && e.ts<=now && e.ts>=wk; }).length; }
+// Channel health: three armed reach-outs in a row that were never answered means the channel is
+// going cold. Stand down for two weeks rather than keep spending their attention — and say so.
+function _reachUnansweredRun(){ const d=_reachLog().filter(function(e){ return e && e.opened!=null; }); let r=0; for(let i=d.length-1;i>=0;i--){ if(d[i].opened===false) r++; else break; } return r; }
+function _cancelReachOuts(){ try{ if(typeof Notify!=='undefined' && Notify.cancel){ for(let i=0;i<3;i++) Notify.cancel('reachout_'+i); } }catch(_){} }
+function _reachHold(why){ _setReachState({ next:null, hold:why }); _cancelReachOuts(); return 0; }
+function _wonMomentToday(){ try{ const m=(ls('totry_moments_won')||[])[0]; if(!m||!m.ts) return false; return new Date(m.ts).toLocaleDateString('en-AU')===new Date().toLocaleDateString('en-AU'); }catch(_){ return false; } }
+// A tap is the strongest receptivity signal we can get. Mark it against the newest unresolved nudge.
+function _reachOutResponded(){ try{ const a=_reachLog(); for(let i=a.length-1;i>=0;i--){ if(a[i]&&a[i].opened==null&&a[i].ts<=Date.now()){ a[i].opened=true; break; } } _saveReachLog(a); }catch(_){} }
+// Runs on every app open: did the ones we sent actually land?
+function _resolveReachOuts(){
+  try{
+    const now=Date.now(); const a=_reachLog(); let changed=false;
+    a.forEach(function(e){ if(!e||e.opened!=null||e.ts>now) return; e.opened=(now-e.ts)<=45*60000; changed=true; });
+    if(changed) _saveReachLog(a);
+    if(_reachUnansweredRun()>=3 && !_reachPaused()){
+      _setReachState({ pausedUntil: Date.now()+REACHOUT_STANDDOWN_DAYS*86400000, next:null, hold:null });
+      _cancelReachOuts();
+    }
+  }catch(_){}
+}
+// Choice-first words. A short night changes the MESSAGE rather than suppressing it — that's the one
+// line only a whole-life app can say. No faith content here: this reaches everyone.
+function _reachBody(hi, viceName, shifted){
+  let s='';
+  try{ const life=(typeof getLifeState==='function')?getLifeState():null;
+    if(life && life.sleep && life.sleep.short) s=' You slept short — cravings lie louder on a short night. Go gentle today.';
+  }catch(_){}
+  if(shifted===-1) return hi+'the hard stretch with '+viceName+' usually comes later tonight. I won’t buzz you at that hour — so here’s the door now, while it’s easy to walk through.'+s;
+  if(shifted===1)  return hi+'the hard stretch with '+viceName+' usually lands while you’re meant to be asleep. I’m not waking you for it — but the day’s starting, and I’m here.'+s;
+  return hi+'this is usually when it gets hardest with '+viceName+'. Nothing has to happen — I’m just here. Open me if anything’s rising.'+s;
+}
+
 const _REACH_WIN_START = { 'late night':0, 'morning':6, 'afternoon':12, 'evening':17, 'night':21 };
 function scheduleReachOut(){
   try{
-    // Reminders must be ON. Accept the CURRENT system (totry_push_prefs.enabled — used by both the
-    // native and web-push paths) as well as the legacy web keys, or reach-out silently never fired.
     const _remindersOn = (typeof _pushPrefs==='function' && _pushPrefs().enabled)
       || ls('totry_notif_enabled') || ls('totry_notif_perm') === 'granted';
-    if(!_remindersOn) return 0;
-    if(ls('totry_reachout_off')) return 0; // user can silence it in Settings
+    if(!_remindersOn) return _reachHold('reminders are off');
+    if(ls('totry_reachout_off')) return _reachHold('you turned this off');
+    if(_reachPaused()) return _reachHold('standing down — the last few went unanswered, so I’ve stopped spending your attention');
+    if(_reachCount7() >= REACHOUT_MAX_PER_WEEK) return _reachHold('already reached out '+REACHOUT_MAX_PER_WEEK+' times this week — that’s the ceiling');
     if(typeof loadV==='function') loadV();
     const vs = (typeof vices!=='undefined' && Array.isArray(vices)) ? vices : (ls('totry_v')||[]);
-    const first = (ls('totry_name')||'').trim().split(' ')[0];
-    const hi = first ? first+', ' : '';
-    let scheduled = 0;
-    vs.forEach((v, idx) => {
-      if(!v || !v.n) return;
-      const p = (typeof analyzeUrgePatterns==='function') ? analyzeUrgePatterns(v.n) : null;
-      if(!p || !p.riskWindow) return; // needs enough logged moments to know the window
-      const key = Object.keys(_REACH_WIN_START).find(k => p.riskWindow.toLowerCase().includes(k));
-      if(!key) return;
-      let nudgeMin = _REACH_WIN_START[key]*60 - 20; // ~20 min before the window opens
-      if(nudgeMin < 0) nudgeMin += 1440;
-      const nh = Math.floor(nudgeMin/60), nm = nudgeMin%60;
-      const body = hi + 'this is usually when it gets hardest with ' + v.n + '. Nothing has to happen — I’m just here. Open me if anything’s rising.';
-      Notify.scheduleDaily('reachout_'+idx, 'To Try', body, nh, nm, { route:'reachout', vice: v.n });
-      scheduled++;
+    // ONE reach-out, not one per vice. Four named fights used to mean four notifications a day —
+    // exactly the pattern that gets an app muted. Take the single strongest learned window.
+    let best=null;
+    vs.forEach(function(v){
+      if(!v||!v.n) return;
+      const p=(typeof analyzeUrgePatterns==='function')?analyzeUrgePatterns(v.n):null;
+      if(!p||!p.riskWindow) return;
+      if(!best || p.total>best.p.total) best={v:v,p:p};
     });
-    return scheduled;
+    if(!best) return _reachHold('not enough logged moments yet for me to honestly know your hard hour');
+    const key=Object.keys(_REACH_WIN_START).find(function(k){ return best.p.riskWindow.toLowerCase().includes(k); });
+    if(!key) return _reachHold('your hard hour isn’t clear enough yet');
+    const planned=(_REACH_WIN_START[key]*60 - 20 + 1440)%1440;
+    const rt=_receptiveTime(planned);
+    if(!rt) return _reachHold('your hard hour sits inside your quiet hours — I’ll meet you here instead, in the app');
+
+    // Arm up to three single occurrences (re-armed on every open) rather than a blind daily repeat,
+    // so "they're already here" and "they already won this one" can actually cancel a nudge.
+    const now=Date.now();
+    const past=_reachLog().filter(function(e){ return e && e.ts<=now; });   // drop unfired plans; re-arm below
+    const remaining=Math.max(0, REACHOUT_MAX_PER_WEEK-_reachCount7());
+    const slots=[]; const d0=new Date();
+    for(let d=0; d<3 && slots.length<Math.min(3,remaining); d++){
+      const t=new Date(d0.getFullYear(), d0.getMonth(), d0.getDate()+d, Math.floor(rt.min/60), rt.min%60, 0, 0);
+      if(t.getTime() <= now+10*60000) continue;                                        // already gone
+      if(d===0 && _usedRecently(90) && (t.getTime()-now) < 90*60000) continue;          // they're here now
+      if(d===0 && _wonMomentToday()) continue;                                          // already met today
+      if(past.some(function(e){ return Math.abs(e.ts-t.getTime()) < 12*3600000; })) continue; // never twice a day
+      slots.push(t);
+    }
+    if(!slots.length) return _reachHold('you’ve already been here today — no need for me to buzz');
+
+    _cancelReachOuts();
+    const first=(ls('totry_name')||'').trim().split(' ')[0];
+    const body=_reachBody(first?first+', ':'', String(best.v.n), rt.shifted);
+    const native=!!(typeof Notify!=='undefined' && Notify.isNative && Notify.isNative());
+    const log=past.slice();
+    slots.forEach(function(t,i){
+      // Web can't background-fire, and Notify.schedule's web fallback grows totry_notif_pending
+      // unbounded — so on web we compute and SHOW the plan without queueing anything.
+      if(native) Notify.schedule('reachout_'+i, 'To Try', body, t, { route:'reachout', vice:best.v.n });
+      log.push({ ts:t.getTime(), vice:String(best.v.n), opened:null });
+    });
+    _saveReachLog(log);
+    _setReachState({ next: slots[0].getTime(), hold: null });
+    return slots.length;
   }catch(_){ return 0; }
 }
+
+// One shared Settings row for both branches of renderPushSettings (they were duplicated). It shows
+// the person EXACTLY what the gate is doing — a channel that restrains itself has to prove it, or
+// "we won't nag you" is only a claim.
+function _reachOutRowHTML(){
+  const on=!ls('totry_reachout_off'); const q=quietHours(); const st=_reachState();
+  let status;
+  if(!on) status='Off. Nothing is scheduled.';
+  else if(_reachPaused()) status='Standing down until '+new Date(st.pausedUntil).toLocaleDateString('en-AU')+' — the last few went unanswered, so I stopped.';
+  else if(st.next && st.next>Date.now()) status='Next: '+new Date(st.next).toLocaleString('en-AU',{weekday:'short',hour:'numeric',minute:'2-digit'})+' · '+_reachCount7()+' of '+REACHOUT_MAX_PER_WEEK+' used this week.';
+  else if(st.hold) status='Holding — '+st.hold+'.';
+  else status='Nothing scheduled right now.';
+  return '<div style="border-top:1px solid var(--bd);margin:6px 0 10px;padding-top:12px">'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">'+
+      '<div style="flex:1"><div style="font-size:13px;color:var(--tx);font-weight:500">Reach out to me first</div>'+
+      '<div style="font-size:11px;color:var(--tx3);line-height:1.45">A quiet check-in before your hardest hour — learned from your own patterns. At most '+REACHOUT_MAX_PER_WEEK+' a week, never in your quiet hours, never when you’ve just been here.</div></div>'+
+      '<button type="button" onclick="toggleReachOut()" style="padding:7px 14px;border-radius:100px;border:1px solid '+(on?'var(--go-bd)':'var(--bd)')+';background:'+(on?'var(--go-bg)':'transparent')+';color:'+(on?'var(--go)':'var(--tx2)')+';font-size:12px;white-space:nowrap">'+(on?'On':'Off')+'</button>'+
+    '</div>'+
+    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);line-height:1.6;margin-top:8px">'+_escFew(status)+'</div>'+
+    '<div style="display:flex;gap:8px;align-items:flex-end;margin-top:10px">'+
+      '<div style="flex:1"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Quiet from</div><input type="time" id="quiet-start" value="'+q.start+'" style="width:100%;padding:9px;color-scheme:dark"></div>'+
+      '<div style="flex:1"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Until</div><input type="time" id="quiet-end" value="'+q.end+'" style="width:100%;padding:9px;color-scheme:dark"></div>'+
+      '<button class="btn" onclick="saveQuietHours()" style="flex:0 0 auto;margin:0;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:12px;padding:9px 12px">Save</button>'+
+    '</div>'+
+    '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:6px">Nothing reaches you between these hours. If your hard hour falls inside them I come to the nearer edge instead — and the message says why.</div>'+
+  '</div>';
+}
+function saveQuietHours(){
+  const s=(document.getElementById('quiet-start')||{}).value || '22:00';
+  const e=(document.getElementById('quiet-end')||{}).value || '07:00';
+  ls('totry_quiet_hours',{start:s,end:e});
+  if(typeof scheduleReachOut==='function') scheduleReachOut();
+  if(typeof haptic==='function') haptic('tap');
+  if(typeof showToast==='function') showToast('Quiet hours saved','Nothing will reach you between '+s+' and '+e+'.');
+  if(typeof renderPushSettings==='function') renderPushSettings();
+}
+
 function _hashId(str){ let h=0; const s=String(str); for(let i=0;i<s.length;i++){ h=((h<<5)-h)+s.charCodeAt(i); h|=0; } return h; }
 
 // Local notifications via the Notification API. Daily nudge to return.
@@ -31877,7 +32021,7 @@ async function disablePushReminders(){
     try{
       if(Notify.cancel){
         Notify.cancel('reminder_morning'); Notify.cancel('reminder_evening');
-        (ls('totry_v')||[]).forEach((v,i)=>Notify.cancel('reachout_'+i));
+        _cancelReachOuts();
       }
     }catch(_){}
     showToast('Reminders off','Your mornings are your own. Re-enable anytime.');
@@ -31992,20 +32136,18 @@ function renderPushSettings(){
 }
 
 // Turn the risk-window reach-out on/off. Anti-nagging is sacred — the person is always in control.
+// Turn the risk-window reach-out on/off. Anti-nagging is sacred — the person is always in control,
+// and turning it back on clears any stand-down, because a choice they make now outranks our caution.
 function toggleReachOut(){
-  const turningOff = !ls('totry_reachout_off'); // currently on → we're turning it off
+  const turningOff = !ls('totry_reachout_off');
   ls('totry_reachout_off', turningOff);
   try{
-    if(turningOff){
-      // Cancel any scheduled reach-outs so nothing fires.
-      (ls('totry_v')||[]).forEach((v,i)=>{ if(typeof Notify!=='undefined' && Notify.cancel) Notify.cancel('reachout_'+i); });
-    } else if(typeof scheduleReachOut==='function'){
-      scheduleReachOut();
-    }
+    if(turningOff){ _cancelReachOuts(); _setReachState({ next:null, hold:'you turned this off' }); }
+    else { _setReachState({ pausedUntil:0, hold:null }); if(typeof scheduleReachOut==='function') scheduleReachOut(); }
   }catch(_){}
   if(typeof haptic==='function') haptic('tap');
   if(typeof renderPushSettings==='function') renderPushSettings();
-  showToast(turningOff?'Reach-out off':'Reach-out on', turningOff?'I won’t message you at your risk window.':'I’ll gently check in at your hardest hour — app closed once it’s on your phone.');
+  showToast(turningOff?'Reach-out off':'Reach-out on', turningOff?'I won’t message you at your risk window.':'I’ll check in before your hardest hour — at most 3 times a week, never in your quiet hours.');
 }
 
 // ── HONEST METRICS ──
@@ -32084,6 +32226,10 @@ function runSchemaMigrations(){
 
 async function initApp(){
   try{ if(typeof runSchemaMigrations === 'function') runSchemaMigrations(); }catch(_){ }
+  // Receptivity bookkeeping, first thing: mark that they're here (so nothing buzzes them while they
+  // are), then judge whether the reach-outs we already sent actually landed.
+  try{ if(typeof _touchActive==='function') _touchActive(); }catch(_){}
+  try{ if(typeof _resolveReachOuts==='function') _resolveReachOuts(); }catch(_){}
   // Swipe-down-to-dismiss on the companion sheet — the iOS convention thumbs expect. Drag the sheet
   // down and it follows your finger; release past a threshold and it closes like a native sheet.
   try{
