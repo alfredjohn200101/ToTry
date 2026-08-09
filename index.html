@@ -4201,7 +4201,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v329';
+const APP_VERSION = 'v330';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -10293,6 +10293,49 @@ function _recordFeeling(id){
 }
 // Meet the feeling, then MOVE through it — to the one thing that actually helps THIS feeling. The
 // brother's voice. Each path ends with a single, doable next step, never a lecture, never a tracker.
+// ── IF-THEN PLANS (implementation intentions) ────────────────────────────────
+// The highest-evidence habit mechanic in the literature (Gollwitzer/Sheeran, 94 studies, d≈0.65):
+// turn a rescued moment into a rule. We co-write it — PRE-FILLED from the move that just worked, so
+// there's nothing to compose — save it, and surface it back at the NEXT time this feeling comes, so
+// counsel COMPOUNDS instead of starting from zero. One current plan per feeling. Names are escaped.
+const _FEEL_LABELS = { restless:'restless', flat:'flat', anxious:'anxious', down:'heavy', procrast:'avoiding something', angry:'fired up', good:'steady & good' };
+const _FEEL_PLAN = {
+  restless:'burn it off — 20 push-ups or a fast walk, not the scroll',
+  flat:'get one real hit of clean dopamine — cold water, sunlight, or move my body',
+  anxious:'one minute of slow breathing, the long exhale, then name the one real thing in front of me',
+  down:'be gentle — water, light, a slow walk, and tell one real person',
+  procrast:'start the smallest version of it for just 2 minutes',
+  angry:'one slow cooling breath before I decide or say anything',
+  good:'do one thing now that future-me will thank me for'
+};
+function _ifThenLib(){ try{ const a=ls('totry_if_then'); return Array.isArray(a)?a:[]; }catch(_){ return []; } }
+function getIfThen(feeling){ return _ifThenLib().find(function(p){ return p&&p.feeling===feeling; }) || null; }
+function saveIfThen(feeling, action){
+  action=(action||'').trim(); if(!action){ try{ showToast('Empty','A plan needs one line — what will you do?'); }catch(_){} return; }
+  try{ const lib=_ifThenLib().filter(function(p){ return p&&p.feeling!==feeling; });
+    lib.unshift({ feeling:feeling, label:(_FEEL_LABELS[feeling]||feeling), action:action.slice(0,160), ts:new Date().toISOString() });
+    ls('totry_if_then', lib.slice(0,40));
+  }catch(_){}
+  try{ if(typeof haptic==='function') haptic('success'); }catch(_){}
+  try{ showToast('Plan locked in', 'Next time this hits, I’ll hand you back your own words.'); }catch(_){}
+}
+function _saveIfThenFromModal(feeling){ const v=document.getElementById('ifthen-act'); saveIfThen(feeling, v?v.value:''); document.querySelector('.modal-bg.open')?.remove(); }
+function _lockItIn(feeling){
+  const existing=getIfThen(feeling); const preset=existing?existing.action:(_FEEL_PLAN[feeling]||''); const label=_FEEL_LABELS[feeling]||feeling;
+  document.querySelector('.modal-bg.open')?.remove();
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="text-align:center;max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:8px">A plan for next time</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);line-height:1.3;margin-bottom:6px">When I feel '+_escFew(label)+', I will…</div>'+
+    '<div style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px">Decide it now, while you’re clear. Next time the feeling comes, I’ll hand you back your own words — that’s what makes it hold.</div>'+
+    '<textarea id="ifthen-act" style="min-height:70px;font-size:15px;line-height:1.5;margin-bottom:14px">'+_escFew(preset)+'</textarea>'+
+    '<button class="btn primary" style="margin-bottom:8px" onclick="_saveIfThenFromModal(\''+feeling+'\')">Lock in my plan</button>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  setTimeout(function(){ const t=document.getElementById('ifthen-act'); if(t) t.focus(); },60);
+}
+
 function _feelMove(feeling){
   closeFeelingDoor();
   const name = ls('totry_name') || '';
@@ -10323,13 +10366,17 @@ function _feelMove(feeling){
   // primary action, e.g. "anxious".)
   const _talkBtn = (s.go==='__companion') ? '' :
     '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin:0;font-size:13px">💬 Just talk</button>';
+  const _saved = (typeof getIfThen==='function') ? getIfThen(feeling) : null;
+  const _savedBanner = _saved ? '<div style="background:var(--go-bg);border:1px solid var(--go-bd);border-radius:10px;padding:10px 12px;margin-bottom:16px;text-align:left"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">The plan you set for this</div><div style="font-size:12.5px;color:var(--tx2);line-height:1.55">'+_escFew(_saved.action)+'</div></div>' : '';
   m.innerHTML = '<div class="modal" style="text-align:center">'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.25;margin-bottom:10px">'+s.title+'</div>'+
     '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:18px">'+s.body+'</div>'+
+    _savedBanner+
     '<button class="btn primary" style="margin-bottom:8px" onclick="'+onclick+'">'+s.cta+'</button>'+
     '<div style="display:flex;gap:8px;margin-bottom:8px">'+_talkBtn+
       '<button class="btn" onclick="closeModal(this);openQuickJournal()" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin:0;font-size:13px">✎ Write it down</button>'+
     '</div>'+
+    '<button class="btn" onclick="_lockItIn(\''+feeling+'\')" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0 0 4px">🔒 '+(_saved?'Update':'Make')+' my plan for next time</button>'+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0">Not now</button>'+
     '</div>';
   document.body.appendChild(m);

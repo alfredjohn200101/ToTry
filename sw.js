@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v329-reach-nudge'
+const CACHE = 'totry-v330-if-then'
 
 const CORE = [
   './',
