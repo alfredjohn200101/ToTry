@@ -2195,9 +2195,19 @@ input:focus,textarea:focus,select:focus{
 
   <!-- ── SECTION 2 · TODAY — your standing, then log, then diary ── -->
   <!-- ── TODAY'S PROGRESS (top — what users want to see) ── -->
+  <!-- ── DAY NAVIGATION ──────────────────────────────────────────────────────────────────────
+       A diary you can only write in "now" quietly teaches you it's unreliable: you forget one
+       evening and the day is simply gone. Everything below this strip — ring, macros, meals,
+       add/edit/delete — follows the day selected here. Never a future day. -->
+  <div id="nut-day-nav" style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+    <button id="nut-day-prev" type="button" onclick="nutShiftDay(-1)" aria-label="Previous day" style="flex-shrink:0;width:38px;height:38px;border-radius:10px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:17px;line-height:1;cursor:pointer">&lsaquo;</button>
+    <button type="button" onclick="nutPickDay()" title="Pick a day" style="flex:1;min-width:0;height:38px;border-radius:10px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx);font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer"><span id="nut-day-nav-lbl">Today</span></button>
+    <button id="nut-day-next" type="button" onclick="nutShiftDay(1)" aria-label="Next day" style="flex-shrink:0;width:38px;height:38px;border-radius:10px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:17px;line-height:1;cursor:pointer">&rsaquo;</button>
+  </div>
+  <div id="nut-day-banner" style="display:none"></div>
   <div class="nutrition-hero">
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
-      <span style="font-size:13px;font-weight:500;color:var(--tx)">Today</span>
+      <span id="nut-day-title" style="font-size:13px;font-weight:500;color:var(--tx)">Today</span>
       <span style="display:flex;align-items:baseline;gap:10px">
         <button type="button" id="nut-gentle-toggle" onclick="toggleNutGentle()" title="Turn the numbers off — log food without seeing calories" style="background:none;border:none;padding:0;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:0.06em;cursor:pointer;text-transform:uppercase">numbers on</button>
         <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3)" id="nut-date"></span>
@@ -4255,7 +4265,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v343';
+const APP_VERSION = 'v344';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -16339,9 +16349,9 @@ function quickAddLog(){
   const carb=parseFloat(document.getElementById('qa-carb')?.value)||0;
   const fat=parseFloat(document.getElementById('qa-fat')?.value)||0;
   const meal=window.__qaMeal||'snack';
-  const today=new Date().toLocaleDateString('en-AU');
+  const today=(typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
   const log=ls('totry_nutlog')||{}; if(!log[today]) log[today]=[];
-  log[today].push({ id:Date.now()+Math.floor(Math.random()*1000), name:'Quick add', brand:'', serving:'', qty:1, cal:Math.round(cal), pro:Math.round(pro), carb:Math.round(carb), fat:Math.round(fat), meal:meal, source:'quick add', ts:new Date().toISOString() });
+  log[today].push({ id:Date.now()+Math.floor(Math.random()*1000), name:'Quick add', brand:'', serving:'', qty:1, cal:Math.round(cal), pro:Math.round(pro), carb:Math.round(carb), fat:Math.round(fat), meal:meal, source:'quick add', ts:(typeof nutStampFor==='function'?nutStampFor():new Date().toISOString()) });
   ls('totry_nutlog', log);
   document.querySelector('.modal-bg.open')?.remove();
   if(typeof renderNutritionLog==='function') renderNutritionLog();
@@ -16999,11 +17009,11 @@ function _pmLog(){
   if(!_photoMeal||!_photoMeal.items.length) return;
   const items=_photoMeal.items.filter(it=>it && (String(it.food).trim() || it.cal));
   if(!items.length){ if(typeof showToast==='function') showToast('Nothing to log','Name or add an item first.'); return; }
-  const today=new Date().toLocaleDateString('en-AU');
+  const today=(typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
   const log=ls('totry_nutlog')||{}; if(!log[today]) log[today]=[];
   const meal=_photoMeal.meal||(typeof currentMealSlot==='function'?currentMealSlot():'dinner');
   const R=n=>Math.round(n);
-  items.forEach(it=>{ const m=it.mult||1; log[today].push({ id:Date.now()+Math.floor(Math.random()*100000), name:it.food||'Item', brand:'', serving:(it.portion||'1 serving')+(m!==1?' ×'+m:''), qty:1, cal:R(it.cal*m), pro:R(it.pro*m), carb:R(it.carb*m), fat:R(it.fat*m), meal:meal, source:'AI photo', ts:new Date().toISOString() }); });
+  items.forEach(it=>{ const m=it.mult||1; log[today].push({ id:Date.now()+Math.floor(Math.random()*100000), name:it.food||'Item', brand:'', serving:(it.portion||'1 serving')+(m!==1?' ×'+m:''), qty:1, cal:R(it.cal*m), pro:R(it.pro*m), carb:R(it.carb*m), fat:R(it.fat*m), meal:meal, source:'AI photo', ts:(typeof nutStampFor==='function'?nutStampFor():new Date().toISOString()) }); });
   ls('totry_nutlog', log);
   const n=items.length; _photoMeal=null;
   if(typeof haptic==='function') haptic('success');
@@ -18137,7 +18147,7 @@ function addFoodToLog(){
     serving:s.name,
     qty,
     meal: meal,
-    ts:new Date().toISOString(),
+    ts:(typeof nutStampFor==='function'?nutStampFor():new Date().toISOString()),
     date:new Date().toLocaleDateString('en-AU')
   };
   
@@ -18155,7 +18165,7 @@ function addFoodToLog(){
     }
   });
   
-  const today=new Date().toLocaleDateString('en-AU');
+  const today=(typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
   // Edit mode: replace the original entry in place (keep its id + historical timestamp)
   if(window.__editingEntry){
     const ed = window.__editingEntry; window.__editingEntry = null;
@@ -18307,13 +18317,13 @@ function logSavedMeal(id){
   const saved = ls('totry_saved_meals')||[];
   const m = saved.find(x=>x.id===id);
   if(!m){ return; }
-  const today = new Date().toLocaleDateString('en-AU');
+  const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
   const log = ls('totry_nutlog')||{};
   if(!log[today]) log[today]=[];
   const hr = new Date().getHours();
   const meal = hr < 11 ? 'breakfast' : hr < 15 ? 'lunch' : hr < 21 ? 'dinner' : 'snack';
   m.items.forEach(it => {
-    log[today].push({ id: Date.now()+Math.floor(Math.random()*100000), name:it.name, brand:it.brand||'', serving:it.serving||'1 serving', qty:it.qty||1, cal:it.cal, pro:it.pro, carb:it.carb, fat:it.fat, meal:meal, source:it.source||'', ts:new Date().toISOString() });
+    log[today].push({ id: Date.now()+Math.floor(Math.random()*100000), name:it.name, brand:it.brand||'', serving:it.serving||'1 serving', qty:it.qty||1, cal:it.cal, pro:it.pro, carb:it.carb, fat:it.fat, meal:meal, source:it.source||'', ts:(typeof nutStampFor==='function'?nutStampFor():new Date().toISOString()) });
   });
   ls('totry_nutlog', log);
   haptic('success');
@@ -18596,6 +18606,8 @@ function _gentleWord(eaten, goal){
   return { w:'Fed well', s:'today' };
 }
 function _gentleCounsel(eaten, goal){
+  const _past = (typeof nutIsToday==='function') && !nutIsToday();
+  if(_past) return (eaten>0) ? 'Logged for that day. Filling a gap honestly is worth more than a tidy record.' : 'Nothing logged that day. A gap isn’t a failure — put in what you remember.';
   if(!(eaten>0)) return 'Nothing logged yet. When you eat, put it here — no numbers, no verdict.';
   if(!(goal>0))  return 'Logged. That’s all this needs to be.';
   const p = eaten/goal;
@@ -18682,12 +18694,95 @@ function applyNutGentle(eaten, goalCal){
   try{ _renderNourishCare(); }catch(_){}
 }
 
+// ── NOURISH DAY NAVIGATION ──────────────────────────────────────────────────────────────────
+// The offset lives in memory ONLY — never a storage key. Two reasons: nobody should reopen the app
+// and find themselves silently stranded three days in the past, and 0 always means "today, right
+// now", so midnight rollover needs no code at all.
+let _nutDayOff = 0;              // 0 = today. Negative = days back. NEVER positive.
+const NUT_DAY_MIN = -120;
+function nutViewDate(){ const d=new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate()+_nutDayOff); return d; }
+function nutDayKey(){ return nutViewDate().toLocaleDateString('en-AU'); }
+function nutIsToday(){ return _nutDayOff === 0; }
+// Key of N days BEFORE the day being viewed — so "yesterday" means the day before the one you're on.
+function nutRelKey(daysAgo){ const d=nutViewDate(); d.setDate(d.getDate()-(daysAgo||0)); return d.toLocaleDateString('en-AU'); }
+// A timestamp INSIDE the day being written to. Every ts-based reader (weekly digest, adaptive TDEE,
+// the coach brief) buckets by ts — a backfilled entry stamped "now" would land on the wrong day.
+function nutStampFor(){ if(nutIsToday()) return new Date().toISOString(); const d=nutViewDate(); d.setHours(12,0,0,0); return d.toISOString(); }
+// The word the copy uses, so nothing ever says "today" about a day that isn't.
+function nutDayWord(){ return nutIsToday() ? 'today' : 'that day'; }
+function nutDayLabel(){
+  if(_nutDayOff===0) return 'Today';
+  if(_nutDayOff===-1) return 'Yesterday';
+  return nutViewDate().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'});
+}
+function nutShiftDay(delta){
+  const next = Math.max(NUT_DAY_MIN, Math.min(0, _nutDayOff + delta));
+  if(next === _nutDayOff){
+    if(delta > 0) showToast('That day hasn’t happened yet','You can log today and any day behind it — never ahead.');
+    return;
+  }
+  _nutDayOff = next;
+  if(typeof haptic==='function') haptic('tap');
+  renderNutritionLog();
+}
+function nutGoToday(){
+  if(nutIsToday()) return;
+  _nutDayOff = 0;
+  if(typeof haptic==='function') haptic('light');
+  renderNutritionLog();
+  showToast('Back to today','Diary’s caught up. Log the rest as it happens.');
+}
+function nutPickDay(){
+  const d0 = nutViewDate();
+  const iso = d0.getFullYear()+'-'+String(d0.getMonth()+1).padStart(2,'0')+'-'+String(d0.getDate()).padStart(2,'0');
+  openFormModal('Jump to a day','Any day up to today. Whatever you log lands on the day you pick.',
+    [{id:'d', label:'Date', type:'date', value:iso}], 'Go to that day',
+    function(v){
+      if(!v.d) return 'Pick a date first.';
+      const p = String(v.d).split('-').map(Number);
+      if(p.length<3 || !p[0]) return 'That date didn’t read right.';
+      const picked = new Date(p[0], p[1]-1, p[2], 12,0,0,0);
+      const t = new Date(); t.setHours(12,0,0,0);
+      const off = Math.round((picked - t)/86400000);
+      if(off > 0) return 'That day hasn’t happened yet.';
+      if(off < NUT_DAY_MIN) return 'The diary keeps about '+Math.abs(NUT_DAY_MIN)+' days.';
+      _nutDayOff = off;
+      if(typeof haptic==='function') haptic('tap');
+      renderNutritionLog();
+      return true;
+    });
+}
+function renderNutDayNav(){
+  const lbl=document.getElementById('nut-day-nav-lbl');
+  const prev=document.getElementById('nut-day-prev');
+  const next=document.getElementById('nut-day-next');
+  const title=document.getElementById('nut-day-title');
+  const ban=document.getElementById('nut-day-banner');
+  const name=nutDayLabel();
+  if(lbl) lbl.textContent=name;
+  if(title) title.textContent=name;
+  if(prev){ const cap=_nutDayOff<=NUT_DAY_MIN; prev.disabled=cap; prev.style.opacity=cap?'0.28':'1'; }
+  if(next){ const t=nutIsToday(); next.disabled=t; next.style.opacity=t?'0.28':'1'; }
+  if(!ban) return;
+  if(nutIsToday()){ ban.style.display='none'; ban.innerHTML=''; return; }
+  const n=((ls('totry_nutlog')||{})[nutDayKey()]||[]).length;
+  const ago=Math.abs(_nutDayOff);
+  ban.style.display='block';
+  ban.innerHTML='<div style="display:flex;align-items:center;gap:10px;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:10px;padding:10px 12px;margin-bottom:12px">'+
+    '<div style="font-size:16px;flex-shrink:0">🗓</div>'+
+    '<div style="flex:1;min-width:0;font-size:12.5px;color:var(--tx2);line-height:1.55">You’re on <span style="color:var(--go)">'+_escFew(name)+'</span> · '+ago+' day'+(ago===1?'':'s')+' back. Anything you log lands on that day.'+
+      (n?'':' Nothing logged then — a gap isn’t a failure, it’s just a gap. Fill it in if you remember.')+'</div>'+
+    '<button onclick="nutGoToday()" style="flex-shrink:0;background:var(--go);border:none;color:#1a1505;border-radius:8px;padding:7px 11px;font-size:12px;font-weight:600;cursor:pointer">Today</button>'+
+  '</div>';
+}
+
 function renderNutritionLog(){
   if(typeof renderAdaptiveNutrition==='function') renderAdaptiveNutrition();
   // Before any of the empty-plate early returns below — the brand-new user with nothing logged is
   // exactly who needs the "set a real target" nudge, so it must run up here, not after.
   if(typeof renderNutSetupNudge==='function') renderNutSetupNudge();
-  const today=new Date().toLocaleDateString('en-AU');
+  try{ renderNutDayNav(); }catch(_){}
+  const today=nutDayKey();
   const dateEl=document.getElementById('nut-date');
   if(dateEl){
     const st = computeNutStreak();
@@ -18875,7 +18970,7 @@ function renderNutritionLog(){
     const proLeft = Math.round(goalPro - totals.pro);
     const dismissedDay = ls('totry_glance_dismissed');
     const todayKey = new Date().toLocaleDateString('en-AU');
-    const show = hr >= 15 && proLeft >= 30 && totals.cal > 0 && dismissedDay !== todayKey;
+    const show = (typeof nutIsToday!=='function' || nutIsToday()) && hr >= 15 && proLeft >= 30 && totals.cal > 0 && dismissedDay !== todayKey;
     if(show){
       glanceEl.innerHTML =
         '<div style="display:flex;align-items:flex-start;gap:8px">'+
@@ -18900,8 +18995,7 @@ function renderNutritionLog(){
   if(list){
     if(!entries.length){
       const log=ls('totry_nutlog')||{};
-      const y=new Date();y.setDate(y.getDate()-1);
-      const yKey=y.toLocaleDateString('en-AU');
+      const yKey=(typeof nutRelKey==='function')?nutRelKey(1):(function(){const y=new Date();y.setDate(y.getDate()-1);return y.toLocaleDateString('en-AU');})();
       const hadYesterday = log[yKey] && log[yKey].length;
       const everLogged = Object.keys(log).some(k => (log[k]||[]).length) || (ls('totry_recent_foods')||[]).length;
       const hasGoals = !!(ls('totry_nut_goals')||{}).cal;
@@ -18918,7 +19012,7 @@ function renderNutritionLog(){
           '</div>';
         return;
       }
-      list.innerHTML='<div style="text-align:center;padding:18px 12px;font-size:13px;color:var(--tx3);line-height:1.6"><div style="font-size:24px;margin-bottom:8px">🍽️</div><div style="margin-bottom:4px;color:var(--tx2)">Today\'s plate is empty.</div><div style="font-size:11px">Search a food, scan a barcode, or describe a whole meal — the AI will estimate macros.</div>' +
+      list.innerHTML='<div style="text-align:center;padding:18px 12px;font-size:13px;color:var(--tx3);line-height:1.6"><div style="font-size:24px;margin-bottom:8px">🍽️</div><div style="margin-bottom:4px;color:var(--tx2)">'+((typeof nutIsToday==='function'&&!nutIsToday())?(_escFew(nutDayLabel())+'\'s plate is empty.'):'Today\'s plate is empty.')+'</div><div style="font-size:11px">Search a food, scan a barcode, or describe a whole meal — the AI will estimate macros.</div>' +
         (hadYesterday ? '<button class="btn" style="margin-top:12px;background:var(--bg3);border:1px solid var(--bd);font-size:12px;width:auto;padding:8px 14px" onclick="repeatYesterdayMeals()">↻ Copy yesterday\'s ' + log[yKey].length + ' items</button>' : '') +
         '</div>';
       return;
@@ -19085,7 +19179,7 @@ function renderMealSplit(){
   // A "numbers off" promise that leaks calorie counts here would be a broken promise to the exact
   // person the mode exists to protect.
   if(typeof nutGentle==='function' && nutGentle()){ wrap.style.display='none'; return; }
-  const today = new Date().toLocaleDateString('en-AU');
+  const today = (typeof nutDayKey==='function') ? nutDayKey() : new Date().toLocaleDateString('en-AU');
   const entries = (ls('totry_nutlog')||{})[today] || [];
   if(!entries.length){ wrap.style.display='none'; return; }
   const meals = {breakfast:0, lunch:0, dinner:0, snack:0};
