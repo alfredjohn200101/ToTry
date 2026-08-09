@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v345-cycle'
+const CACHE = 'totry-v346-fight-map'
 
 const CORE = [
   './',

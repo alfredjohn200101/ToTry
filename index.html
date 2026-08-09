@@ -1915,10 +1915,8 @@ input:focus,textarea:focus,select:focus{
   </div>
   <!-- Active vice fight (secondary, smaller) -->
   <div class="card" id="morning-vice-card" style="margin-bottom:12px;background:var(--bg3);border-color:var(--bd);padding:10px 12px">
-    <div style="display:flex;align-items:center;gap:8px">
-      <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;flex-shrink:0">Today's quiet battle</div>
-      <div style="font-size:12px;color:var(--tx2);flex:1" id="morning-focus-vice">No vices logged</div>
-    </div>
+      <div id="morning-pledge-body"></div>
+      <div style="display:none" id="morning-focus-vice"></div>
   </div>
   <!-- Daily verse -->
   <div class="ritual-verse">
@@ -4298,7 +4296,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v345';
+const APP_VERSION = 'v346';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9426,22 +9424,10 @@ function showMorningFocus(){
     actionEl.textContent=actionPrompts[getDayCount()%actionPrompts.length];
   }
   
-  // SECONDARY: vice fight (smaller, less prominent)
+  // SECONDARY: the day's pledge. This card used to only NAME the vice — it reported and did nothing.
+  // Now it asks for the one thing a morning can actually give: today's choice, made on purpose.
   loadV();
-  const viceEl=document.getElementById('morning-focus-vice');
-  if(viceEl){
-    if(!vices.length){
-      const card=document.getElementById('morning-vice-card');
-      if(card)card.style.display='none';
-    }else{
-      const primary=vices.reduce((worst,v)=>{
-        const rate=v.total>0?(v.w||0)/v.total:1;
-        const wRate=worst.total>0?(worst.w||0)/worst.total:1;
-        return rate<wRate?v:worst;
-      });
-      viceEl.textContent=primary.n;
-    }
-  }
+  if(typeof renderMorningPledge==='function') renderMorningPledge();
 }
 function addAffirmation(){
   const input=document.getElementById('new-affirm');
@@ -9477,6 +9463,183 @@ function loadV(){
   if(changed) ls('totry_v', vices);
 }
 function saveV(){ls('totry_v',vices);}
+// ── THE MAP AROUND THE FIGHT ──────────────────────────────────────────────────────────────────
+// The Fight had the in-the-moment toolkit but no map: no daily choice, and no idea WHERE in the
+// arc of change a person actually is. Both live ON the vice object (totry_v — already synced), so
+// every existing vice keeps working untouched:
+//   v.pledge     'DD/MM/YYYY'  the day the pledge was last made
+//   v.pledgeDays  int          lifetime days pledged. NEVER resets, never decrements. Breaking it
+//                              is not recorded, not counted, not mentioned. It is re-made, not owed.
+//   v.stage      'curious'|'torn'|'ready'|'rebuilding'|'shaky'   +  v.stageAt (ISO)
+function _vDay(){ return new Date().toLocaleDateString('en-AU'); }
+function vicePledgedToday(v){ return !!(v && v.pledge === _vDay()); }
+
+// B1 — THE DAILY PLEDGE. One tap. One day. Grace-based by construction: there is no "did you keep
+// it?" question anywhere, because a pledge you're audited on is a debt, and a debt shames.
+const _PLEDGE_WORD = {
+  christianity:'Not by your own strength alone. \u201CI can do all things through him who strengthens me.\u201D \u2014 Philippians 4:13',
+  islam:'Say it and mean it. Sabr isn\u2019t one great act \u2014 it\u2019s today, and then today again.',
+  hinduism:'Do today\u2019s duty and let go of the fruit. Today is the only part that was ever yours.',
+  buddhism:'Just this day. A mind that resolves once can resolve again tomorrow.',
+  secular:'A promise made to yourself in the morning, while you\u2019re clear. That\u2019s all today has to be.'
+};
+function makePledge(i, from){
+  loadV(); const v=vices[i]; if(!v || vicePledgedToday(v)) return;
+  v.pledge=_vDay(); v.pledgeDays=(v.pledgeDays||0)+1; saveV();
+  try{ renderVices(); }catch(_){}
+  try{ if(typeof renderMorningPledge==='function') renderMorningPledge(); }catch(_){}
+  try{ if(typeof syncToCloud==='function') syncToCloud(); }catch(_){}
+  try{ if(typeof logEvent==='function') logEvent('pledge',{stage:v.stage||''}); }catch(_){}
+  if(typeof haptic==='function') haptic('celebrate');
+  _pledgeSaid(v, from);
+}
+function _pledgeSaid(v, from){
+  const t=(typeof faithTradition==='function')?faithTradition():'secular';
+  const soft=(typeof _breathFaithOn==='function') ? !_breathFaithOn() : false;   // faith dial on 'light'
+  const word=(soft?_PLEDGE_WORD.secular:(_PLEDGE_WORD[t]||_PLEDGE_WORD.secular));
+  const n=v.pledgeDays||1;
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
+    '<div style="font-size:26px;margin-bottom:8px">\uD83E\uDD1D</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:25px;color:var(--tx);line-height:1.25;margin-bottom:10px">'+
+      (v.mode==='moderate'?'Today, I hold my line.':'Today, not this.')+'</div>'+
+    '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:14px">'+word+'</div>'+
+    (n>1
+      ? '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.08em;margin-bottom:16px">'+n+' days now, you\u2019ve chosen this on purpose</div>'
+      : '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Just today. Tomorrow gets its own.</div>')+
+    (from==='morning'
+      ? '<button class="btn primary" onclick="closeModal(this)">Back to my morning</button>'
+      : '<button class="btn primary" onclick="closeModal(this);theRelease({did:\'You made your pledge for today \u2014 out loud, on purpose.\'})">Now go live it</button>')+
+  '</div>';
+  document.body.appendChild(m);
+}
+function _pledgeRowHTML(i){
+  const v=vices[i]; if(!v || v.kind==='letgo') return '';
+  const n=v.pledgeDays||0;
+  const line=(v.mode==='moderate')?'Today, I hold my line':'Today, not this';
+  if(vicePledgedToday(v)){
+    return '<div style="display:flex;align-items:center;gap:9px;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:10px;padding:9px 11px;margin-bottom:10px">'+
+      '<span style="font-size:14px;flex:none">\uD83E\uDD1D</span>'+
+      '<div style="flex:1;text-align:left">'+
+        '<div style="font-size:12.5px;color:var(--tx2);line-height:1.45">Pledged today. '+line+'.</div>'+
+        (n>1?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.08em;margin-top:2px">'+n+' days you\u2019ve chosen this</div>':'')+
+      '</div></div>';
+  }
+  return '<button onclick="makePledge('+i+',\'fight\')" style="width:100%;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);border-radius:10px;padding:10px;font-size:12.5px;font-weight:500;cursor:pointer;margin-bottom:10px">\uD83E\uDD1D '+line+' \u2014 make the pledge</button>';
+}
+
+// B2 — STAGE OF CHANGE. Prochaska: pushing action-stage tactics (goals, plans, streaks) at someone
+// who is only contemplating BACKFIRES. So the stage the person names changes the card's primary
+// offer and the brother's tone. The in-the-moment door is NEVER removed at any stage — only demoted.
+const VICE_STAGES = {
+  curious:    { label:'Curious',           blurb:'Just looking at it honestly. Nothing asked of you.',
+                cta:'Show me what it\u2019s really costing', act:'openRecoveryTimeline(IDX)',
+                tone:'You told me you\u2019re still just looking at this \u2014 so no lecture from me. I\u2019m only saying it out loud so you\u2019ve seen it.' },
+  torn:       { label:'Torn',              blurb:'Part of you wants out, part of you doesn\u2019t. Both are real.',
+                cta:'Help me work out what I actually want', act:'openVicePlan(IDX)',
+                tone:'You said you\u2019re torn on this, and that\u2019s an honest place to stand. I\u2019m not going to push you off it. What does the part of you that wants out say right now?' },
+  ready:      { label:'Ready',             blurb:'You\u2019ve decided. Now it\u2019s moments, one at a time.',
+                cta:'', act:'', tone:'' },
+  rebuilding: { label:'Rebuilding',        blurb:'Just after a fall. Flat for a while is the reward system healing, not you failing.',
+                cta:'Rebuild me \u2014 a real high, no crash', act:'openNaturalHighs()',
+                tone:'You\u2019re rebuilding right now, so I\u2019ll say this softly: this stretch is the hardest and it counts the most. Nothing tonight is a verdict on you.' },
+  shaky:      { label:'Steady but shaky',  blurb:'Holding, but you can feel it leaning. Catch the setup, not the urge.',
+                cta:'What\u2019s actually going on with me?', act:'openHALT()',
+                tone:'You told me steady but shaky. This is exactly the moment that tells you which one it is \u2014 and either answer is fine, as long as it\u2019s true.' }
+};
+function viceStage(v){ const s=v&&v.stage; return VICE_STAGES[s]?s:'ready'; }
+function viceStageTone(name){
+  try{ loadV(); const v=vices.find(function(x){ return x&&x.n===name; });
+    if(!v||!v.stage||!VICE_STAGES[v.stage]) return '';
+    return VICE_STAGES[v.stage].tone||'';
+  }catch(_){ return ''; }
+}
+
+// B3 — the card strip + the stage-matched action
+function _stageStripHTML(i){
+  const v=vices[i]; if(!v || v.kind==='letgo') return '';
+  const set=!!(v.stage && VICE_STAGES[v.stage]); const s=VICE_STAGES[viceStage(v)];
+  return '<button onclick="openViceStage('+i+')" style="width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--bd);padding:0 0 9px;margin-bottom:10px;cursor:pointer">'+
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:3px">Where you are with this \u00b7 tap to change</div>'+
+    '<div style="font-size:12.5px;line-height:1.45;color:'+(set?'var(--go)':'var(--tx3)')+'">'+
+      (set ? s.label+' <span style="color:var(--tx3)">\u2014 '+s.blurb+'</span>'
+           : 'Not set \u2014 tell me, and I\u2019ll change what I offer you')+'</div>'+
+  '</button>';
+}
+function _stageCtaHTML(i){
+  const v=vices[i]; if(!v) return '';
+  const s=VICE_STAGES[viceStage(v)];
+  if(!s.cta || !s.act) return '';
+  return '<button class="vice-btn" onclick="'+s.act.replace('IDX', i)+'" style="width:100%;background:var(--go);color:#1a1505;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:8px">'+s.cta+'</button>';
+}
+// The quit card's whole primary block. At 'ready' it is EXACTLY the button that was there before.
+// At every other stage the stage-matched move leads and the urge door stays, one tap away.
+function _stagePrimaryHTML(i){
+  const v=vices[i]; if(!v) return '';
+  const RED='<button class="vice-btn" onclick="openMomentStakes('+i+')" style="width:100%;background:var(--re);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">'+
+    '<svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'+
+    'I\u2019m feeling it \u2014 come here first</button>';
+  if(viceStage(v)==='ready') return RED;
+  return _stageCtaHTML(i)+
+    '<button onclick="openMomentStakes('+i+')" style="width:100%;background:none;border:1px solid var(--re-bd);color:var(--re);border-radius:10px;padding:9px;font-size:12px;cursor:pointer">\u26A0 I\u2019m feeling it right now</button>';
+}
+
+// B4 — the chooser
+function openViceStage(i){
+  loadV(); const v=vices[i]; if(!v) return;
+  const cur=v.stage||'';
+  const rows=Object.keys(VICE_STAGES).map(function(k){
+    const s=VICE_STAGES[k]; const on=cur===k;
+    return '<button onclick="setViceStage('+i+',\''+k+'\')" style="width:100%;text-align:left;padding:12px 13px;background:'+(on?'var(--go-bg)':'var(--bg3)')+';border:1px solid '+(on?'var(--go-bd)':'var(--bd)')+';border-radius:10px;margin-bottom:8px;cursor:pointer">'+
+      '<div style="font-size:14px;color:var(--tx)">'+s.label+'</div>'+
+      '<div style="font-size:11.5px;color:var(--tx3);line-height:1.5;margin-top:2px">'+s.blurb+'</div></button>';
+  }).join('');
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);line-height:1.25;margin-bottom:6px">Where are you with '+_escFew(v.n)+' right now?</div>'+
+    '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Honestly \u2014 not where you think you should be. Handing quit-tactics to someone who\u2019s still deciding just makes them dig in. I\u2019d rather offer you the right thing. Change it any day; going backwards is part of it.</div>'+
+    rows+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:2px">Not now</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  if(typeof haptic==='function') haptic('tap');
+}
+function setViceStage(i, k){
+  loadV(); const v=vices[i]; if(!v || !VICE_STAGES[k]) return;
+  v.stage=k; v.stageAt=new Date().toISOString(); saveV();
+  document.querySelector('.modal-bg.open')?.remove();
+  try{ renderVices(); if(typeof syncToCloud==='function') syncToCloud(); }catch(_){}
+  try{ if(typeof logEvent==='function') logEvent('vice_stage',{stage:k}); }catch(_){}
+  if(typeof haptic==='function') haptic('success');
+  if(typeof showToast==='function') showToast('Noted','I\u2019ll meet you there. Nothing else about you changes.');
+}
+
+// B5 — the morning pledge card body (fills #morning-pledge-body)
+function renderMorningPledge(){
+  const body=document.getElementById('morning-pledge-body'); if(!body) return;
+  const card=document.getElementById('morning-vice-card');
+  loadV();
+  const live=vices.map(function(v,i){ return {v:v,i:i}; })
+                  .filter(function(x){ return x.v && x.v.n && x.v.kind!=='letgo'; });
+  if(!live.length){ if(card) card.style.display='none'; body.innerHTML=''; return; }
+  if(card) card.style.display='';
+  body.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Today\u2019s pledge</div>'+
+    live.map(function(x){
+      const v=x.v, n=v.pledgeDays||0;
+      const line=(v.mode==='moderate')?'today, I hold my line':'today, not this';
+      if(vicePledgedToday(v)){
+        return '<div style="display:flex;align-items:center;gap:9px;padding:8px 0;border-top:1px solid var(--bd)">'+
+          '<span style="flex:none;font-size:14px">\uD83E\uDD1D</span>'+
+          '<div style="flex:1;text-align:left"><div style="font-size:12.5px;color:var(--tx2)">'+_escFew(v.n)+' \u2014 pledged.</div>'+
+          (n>1?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">'+n+' days you\u2019ve chosen this</div>':'')+
+          '</div></div>';
+      }
+      return '<button onclick="makePledge('+x.i+',\'morning\')" style="width:100%;display:flex;align-items:center;gap:9px;text-align:left;padding:9px 0;border:none;border-top:1px solid var(--bd);background:none;cursor:pointer">'+
+        '<span style="flex:none;width:18px;height:18px;border-radius:5px;border:1.5px dashed var(--go)"></span>'+
+        '<span style="flex:1;font-size:12.5px;color:var(--tx)">'+_escFew(v.n)+' \u2014 <span style="color:var(--go)">'+line+'</span></span></button>';
+    }).join('')+
+    '<div style="font-size:10.5px;color:var(--tx3);line-height:1.5;margin-top:8px">One day only. If it breaks, nothing here punishes you \u2014 you just make it again tomorrow.</div>';
+}
 
 // Sobriety clock
 let sobClockInt=null;
@@ -12163,7 +12326,7 @@ function modCountUp(i){
       // FIRST time crossing the line this session → one gentle, non-judgmental check. Respects that
       // they may be fine (a celebration, a safe night) — we're checking they're in control, not policing.
       s.askedAtCross = true; _saveModSession(i, s);
-      brotherSpeaks({ kind:'viceOver', detail:{ count: s.count + ' ' + unit, limit: thr + ' ' + unit } });
+      brotherSpeaks({ kind:'viceOver', detail:{ vice: v.n, count: s.count + ' ' + unit, limit: thr + ' ' + unit } });
     } else {
       // Already acknowledged the crossing — don't nag every tap. Just a quiet count.
       showToast(s.count + ' ' + unit, 'Counted.');
@@ -12698,6 +12861,7 @@ function renderVices(){
           '</div>' : '') +
         '</div>' +
         '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Usually: ' + (v.t || 'various times').replace(/</g,'&lt;') + insight + '</div>' +
+        _stageStripHTML(i) + _pledgeRowHTML(i) + _stageCtaHTML(i) +
         (function(){
           const thr = v.modThreshold || 0;
           const s = _getModSession(i);
@@ -12757,6 +12921,7 @@ function renderVices(){
         '</div>' +
       '</div>' +
       '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Usually hits: ' + (v.t || 'various times') + insight + '</div>' +
+      _stageStripHTML(i) + _pledgeRowHTML(i) +
       (viceNeedsCheckIn(v) ?
         '<div style="background:var(--go-bg);border:1px solid var(--go-bd);border-radius:12px;padding:12px;margin-bottom:10px">' +
           '<div style="font-size:12px;color:var(--tx2);line-height:1.55;margin-bottom:10px">It\'s been a week since you last said anything here, and the count kept climbing on its own. I\'d rather it be true than tidy — are you still clean?</div>' +
@@ -12765,10 +12930,7 @@ function renderVices(){
             '<button onclick="openLogUse(' + i + ')" style="flex:1;background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:9px;padding:9px;font-size:12px;cursor:pointer">No — I\'ve used</button>' +
           '</div>' +
         '</div>' : '') +
-      '<button class="vice-btn" onclick="openMomentStakes(' + i + ')" style="width:100%;background:var(--re);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">' +
-        '<svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>' +
-        'I\'m feeling it — come here first' +
-      '</button>' +
+      _stagePrimaryHTML(i) +
       (function(){
         // The wins for NOT acting, counted back to him. This is the one number most recovery apps
         // never show, because they only track the fall.
@@ -14169,6 +14331,58 @@ function renderHabits(){
   const hsc = document.getElementById('h-score'); if(hsc) hsc.textContent = done + '/' + habits.length + ' today';
 }
 function togH(hi,di){loadH();habits[hi].d[di]=habits[hi].d[di]===1?0:1;saveH();renderHabits();renderDayCounter();}
+// ── HABIT ANCHORING ("after I ___, I will ___") ───────────────────────────────────────────────
+// The SAME mechanic as the Feeling Door's if-then plans (getIfThen/saveIfThen, line ~10445 —
+// Gollwitzer/Sheeran, 94 studies, d≈0.65), pointed at habits instead of feelings. Habits here were
+// named as OUTCOMES ("Gym session") with no cue, so they wait on motivation. Stored as h.a on the
+// existing habit object (totry_h) — optional, guarded everywhere, no migration.
+const _ANCHOR_IDEAS=['I make my coffee','I brush my teeth','I get out of bed','I log dinner','I get home','I finish work','I put my phone on charge'];
+function habitAnchor(h){ return (h && typeof h.a==='string' && h.a.trim()) ? h.a.trim() : ''; }
+function openHabitAnchor(hi){
+  loadH(); const h=habits[hi]; if(!h) return;
+  const cur=habitAnchor(h);
+  const chips=_ANCHOR_IDEAS.map(function(a){
+    return '<button type="button" class="qb" style="margin:0 6px 6px 0" onclick="var e=document.getElementById(\'hab-anchor\');if(e)e.value=this.textContent">'+a+'</button>';
+  }).join('');
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:8px">Anchor it to something you already do</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);line-height:1.3;margin-bottom:6px">After I\u2026 I will '+_escFew(h.n).toLowerCase()+'.</div>'+
+    '<div style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px">A habit with no cue waits on motivation, and motivation doesn\u2019t show up daily. Tied to something already in your day, it just happens. Same move as the plans you lock in at the Feeling Door \u2014 decide it now, while you\u2019re clear.</div>'+
+    '<input type="text" id="hab-anchor" maxlength="70" placeholder="e.g. I make my coffee" value="'+_escFew(cur)+'" style="font-size:15px;padding:12px;margin-bottom:10px">'+
+    '<div style="display:flex;flex-wrap:wrap;justify-content:center;margin-bottom:14px">'+chips+'</div>'+
+    '<button class="btn primary" style="margin-bottom:8px" onclick="saveHabitAnchor('+hi+')">Lock in my anchor</button>'+
+    (cur?'<button class="btn" onclick="clearHabitAnchor('+hi+')" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-bottom:4px">Remove the anchor</button>':'')+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  setTimeout(function(){ const t=document.getElementById('hab-anchor'); if(t) t.focus(); },60);
+  if(typeof haptic==='function') haptic('tap');
+}
+function _anchorRefresh(){
+  try{ if(typeof renderHomeHabits==='function') renderHomeHabits(); }catch(_){}
+  try{ if(typeof renderEveningHabitTickList==='function') renderEveningHabitTickList(); }catch(_){}
+  try{ if(typeof syncToCloud==='function') syncToCloud(); }catch(_){}
+}
+function saveHabitAnchor(hi){
+  const el=document.getElementById('hab-anchor');
+  const val=((el&&el.value)||'').trim().slice(0,70);
+  if(!val){ if(typeof showToast==='function') showToast('Empty','Name one thing you already do every day.'); return; }
+  loadH(); if(!habits[hi]) return;
+  habits[hi].a=val; saveH();
+  document.querySelector('.modal-bg.open')?.remove();
+  _anchorRefresh();
+  try{ if(typeof logEvent==='function') logEvent('habit_anchor',{}); }catch(_){}
+  if(typeof haptic==='function') haptic('success');
+  if(typeof showToast==='function') showToast('Anchored','After you '+_escFew(val)+' \u2014 that\u2019s the cue. I\u2019ll show it with the habit.');
+}
+function clearHabitAnchor(hi){
+  loadH(); if(!habits[hi]) return;
+  delete habits[hi].a; saveH();
+  document.querySelector('.modal-bg.open')?.remove();
+  _anchorRefresh();
+  if(typeof haptic==='function') haptic('light');
+}
 function addHabit(){
   loadH();const n=document.getElementById('new-habit').value.trim();if(!n)return;
   habits.push({n,d:[0,0,0,0,0,0,0]});
@@ -27197,7 +27411,8 @@ function renderEveningHabitTickList(){
     row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 12px;background:'+(done?'var(--gr-bg)':'var(--bg3)')+';border:1px solid '+(done?'var(--gr-bd)':'var(--bd)')+';border-radius:8px;margin-bottom:6px;cursor:pointer';
     row.onclick = () => toggleEveningHabit(hi);
     row.innerHTML = '<div style="width:22px;height:22px;border-radius:6px;border:2px solid '+(done?'var(--gr)':'var(--bd)')+';background:'+(done?'var(--gr)':'transparent')+';display:flex;align-items:center;justify-content:center;color:#0C0C0E;font-weight:700;flex-shrink:0">'+(done?'&#10003;':'')+'</div>'+
-      '<div style="flex:1;font-size:13px;color:var(--tx)">'+h.n+'</div>';
+      '<div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--tx)">'+_escFew(h.n)+'</div>'+
+      (habitAnchor(h)?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">after '+_escFew(habitAnchor(h))+'</div>':'')+'</div>';
     list.appendChild(row);
   });
 }
@@ -32844,9 +33059,17 @@ function renderHomeHabits(){
     
     const nameCell = document.createElement('div');
     nameCell.style.cssText = 'min-width:0;overflow:hidden';
-    nameCell.innerHTML = 
-      '<div style="font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + h.n + '</div>' +
+    const _anc = habitAnchor(h);
+    // The name is the door to the anchor. The 7 cells stay read-only exactly as before — this is
+    // not ticking, so it doesn't break the "ticking lives in the evening" rule.
+    nameCell.style.cursor = 'pointer';
+    nameCell.innerHTML =
+      '<div style="font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:1px dotted var(--bd);display:inline-block;max-width:100%">' + _escFew(h.n) + '</div>' +
+      (_anc
+        ? '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">after ' + _escFew(_anc) + '</div>'
+        : (!window.__anchorHintShown ? (window.__anchorHintShown = true, '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">\uFF0B anchor it to a cue</div>') : '')) +
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:' + pastColor + ';margin-top:2px">' + pastHits + '/6 past</div>';
+    nameCell.onclick = function(){ if(typeof openHabitAnchor==='function') openHabitAnchor(hi); };
     row.appendChild(nameCell);
     
     // 7 day cells: index 0 = 6 days ago (leftmost), index 6 = today (rightmost)
@@ -32891,7 +33114,7 @@ function renderHomeHabits(){
   
   const footer = document.createElement('div');
   footer.style.cssText = 'margin-top:14px;padding-top:10px;border-top:1px solid var(--bd);font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-align:center;letter-spacing:0.05em;line-height:1.5';
-  footer.innerHTML = 'Tap today\'s circle to check a habit off · past 6 days shown on the left';
+footer.innerHTML = 'Tap a habit\'s name to anchor it to something you already do \u00b7 past 6 days on the left';
   list.appendChild(footer);
 }
 
