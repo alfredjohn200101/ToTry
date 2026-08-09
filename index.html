@@ -4201,7 +4201,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v330';
+const APP_VERSION = 'v331';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -13103,8 +13103,13 @@ function loadH(){
 function saveH(){ls('totry_h',habits);}
 function tIdx(){const d=new Date().getDay();return d===0?6:d-1;}
 function getStreak(){
-  loadH();const ti=tIdx();let s=0;
-  for(let i=ti;i>=0;i--){if(habits.slice(0,3).every(h=>h.d[i]===1))s++;else break;}
+  loadH();const ti=tIdx();let s=0;let _g=false;
+  for(let i=ti;i>=0;i--){
+    if(habits.slice(0,3).every(h=>h.d[i]===1)) s++;
+    else if(i===ti) continue;                // today still in progress — don't break on it
+    else if(!_g){ _g=true; continue; }        // NEVER MISS TWICE: a single off day won't reset it (Lally 2010)
+    else break;
+  }
   return s;
 }
 function initHabits(){
@@ -34472,7 +34477,7 @@ function getResilienceStreak(){
   const start=ls('totry_start');
   if(!start)return 1;
   const today=new Date();today.setHours(0,0,0,0);
-  let streak=0;
+  let streak=0;let _graceUsed=false;
   for(let i=0;i<365;i++){
     const checkDate=new Date(today);
     checkDate.setDate(today.getDate()-i);
@@ -34485,7 +34490,8 @@ function getResilienceStreak(){
       (ls('totry_checkins')||[]).some(c=>c.date===dateStr)||
       ls('totry_last_open')===dateStr;
     if(hasActivity)streak++;
-    else if(i===0)continue;
+    else if(i===0)continue;                              // today not logged yet — that's fine
+    else if(!_graceUsed){ _graceUsed=true; continue; }   // NEVER MISS TWICE: one off day won't break it (Lally 2010)
     else break;
   }
   return Math.max(streak,1);
@@ -34498,6 +34504,8 @@ function renderDualStreaks(){
   const rEl=document.getElementById('streak-resilience');
   if(sEl)sEl.textContent=sober;
   if(rEl)rEl.textContent=resilience;
+  // Reframe the bare "0" after a relapse — a fresh start, not a scoreboard of shame.
+  try{ const ss=document.querySelector('.streak-card.sober .streak-sub'); if(ss) ss.textContent=(sober===0?'A fresh start':'Days clean'); }catch(_){}
 }
 
 function showResilienceInfo(){
@@ -34509,6 +34517,7 @@ function showResilienceInfo(){
     '<strong style="color:var(--tx)">Sober streak</strong> resets to zero if you relapse. That is honest.<br><br>'+
     '<strong style="color:var(--bl)">Resilience streak</strong> never resets — it counts every day you opened this app and tried, regardless of outcome.<br><br>'+
     'Both matter. The first measures sobriety. The second measures the person you are becoming. Relapse breaks the first. Quitting breaks the second.<br><br>'+
+    'One more thing on grace: missing a single day won’t break your resilience — miss twice in a row and it resets, but one off day is being human, not failing. (Sobriety stays honest: a relapse does reset the sober count — but never your resilience, and never the total days you’ve been trying.) And real habits take about <strong>66 days</strong> to form, not 21 — so this is a long game, and you’re in it.<br><br>'+
     '<em style="color:var(--go);font-family:Cormorant Garamond,serif;font-size:15px">"I am not here because I made it. I am here because I am trying."</em>'+
     '</div>'+
     '<button class="btn primary" onclick="this.closest(\'.modal-bg\').remove()">Got it</button></div>';
