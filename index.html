@@ -4201,7 +4201,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v326';
+const APP_VERSION = 'v327';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -6517,7 +6517,10 @@ function detectCrisis(text){
     'no reason to live', 'no point living', "don't want to be here anymore",
     "don't want to live", 'plan to die', 'planning to die', 'going to kill',
     'suicide', 'suicidal', 'i\'m going to end', 'gonna end it',
-    'hang myself', 'overdose on', 'jump off', 'shoot myself'
+    'hang myself', 'overdose on', 'jump off', 'shoot myself',
+    'take my own life', 'taking my own life', "don't want to wake up",
+    'dont want to wake up', 'better off without me',
+    'everyone would be better without me', 'no reason to be here'
   ];
   
   // Self-harm
@@ -6561,6 +6564,7 @@ function showCrisisResponse(containerId, type){
       {region: 'Australia', name: 'Lifeline', contact: '13 11 14', detail: '24/7 phone'},
       {region: 'Australia', name: 'Beyond Blue', contact: '1300 22 4636', detail: '24/7 phone'},
       {region: 'Australia', name: 'Suicide Call Back Service', contact: '1300 659 467', detail: '24/7 phone & online chat'},
+      {region: 'Australia', name: '13YARN', contact: '13 92 76', detail: '24/7 · Aboriginal & Torres Strait Islander'},
       {region: 'USA / Canada', name: '988 Suicide & Crisis Lifeline', contact: '988', detail: 'Call or text'},
       {region: 'UK', name: 'Samaritans', contact: '116 123', detail: '24/7 phone'},
       {region: 'International', name: 'findahelpline.com', contact: 'findahelpline.com', detail: 'Helplines in 130+ countries'}
