@@ -1087,6 +1087,17 @@ input:focus,textarea:focus,select:focus{
     <div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-align:center;margin-top:18px;line-height:1.6;letter-spacing:0.05em">
       Your email is your account.<br>No password needed. Sign in anytime with a code.
     </div>
+
+    <!-- Crisis help must never sit behind a login. If someone opens this app at their worst moment
+         and can't get in, the numbers still have to be right here, one tap, on the first screen. -->
+    <div style="margin-top:22px;padding-top:14px;border-top:1px solid var(--bd);text-align:center">
+      <div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:8px">If you need real help right now, you don&apos;t need an account:</div>
+      <div style="font-size:12.5px;line-height:1.9;color:var(--tx3)">
+        &#127462;&#127482; Lifeline <a href="tel:131114" style="color:var(--go);text-decoration:none">13 11 14</a> &nbsp;·&nbsp; Beyond Blue <a href="tel:1300224636" style="color:var(--go);text-decoration:none">1300 22 4636</a><br>
+        &#127482;&#127480; <a href="tel:988" style="color:var(--go);text-decoration:none">988</a> &nbsp;·&nbsp; &#127468;&#127463; Samaritans <a href="tel:116123" style="color:var(--go);text-decoration:none">116 123</a><br>
+        &#127760; <a href="https://findahelpline.com" target="_blank" rel="noopener" style="color:var(--bl);text-decoration:none">findahelpline.com</a> &mdash; anywhere in the world
+      </div>
+    </div>
   </div>
   
   <!-- AUTH STEP 2: OTP Entry -->
@@ -2931,7 +2942,7 @@ input:focus,textarea:focus,select:focus{
     <div class="card-hd" style="margin-bottom:8px">Daily targets</div>
     <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Set your steps, sleep, and water goals. (Calorie &amp; protein goals are set in Nourish via the TDEE calculator.)</p>
     <div class="row"><input type="number" id="settings-steps-goal" placeholder="Steps target (default 8000)"><input type="number" id="settings-sleep-goal" placeholder="Sleep target (hours)"></div>
-    <input type="number" id="settings-water-goal" placeholder="Water target (glasses, default 8)" style="margin-bottom:10px">
+    <input type="number" id="settings-water-goal" placeholder="Water target in ml (default 2500)" style="margin-bottom:10px">
     <button class="btn" onclick="saveAllTargets()">Save targets</button>
   </div>
 
@@ -4230,7 +4241,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v338';
+const APP_VERSION = 'v339';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5813,6 +5824,24 @@ function getLifeState(){
     },
     fight: { wins7, losses7, cravings7: cravings7.length, fights7: fight7.length, momentsWon7, vices: viceStates },
     readiness: readiness ? { score: readiness.score, level: readiness.level } : null,
+    // ── SLEEP — the soil the other five pillars grow in ──
+    // A short night pre-loads the whole day against a person at once: impulse control drops (the
+    // Fight), hunger hormones spike (Nourish), the amygdala runs hot (the Feeling Door) and choices
+    // turn risk-seeking (Money). It was already being collected in three places and the counsel
+    // never saw it. Now every surface can say the one true thing: "you slept 5h — go gentle today."
+    sleep: (function(){
+      try{
+        const tr = L('totry_trackers') || {};
+        const hoursOn = function(off){ const k = auKey(now - off*86400000); const d = tr[k]; const h = d && parseFloat(d.sleep); return (h && h > 0) ? h : null; };
+        const last = hoursOn(0) != null ? hoursOn(0) : hoursOn(1);   // last night (or the night before, if today isn't logged yet)
+        const recent = []; for(let i=0;i<7;i++){ const h=hoursOn(i); if(h!=null) recent.push(h); }
+        const avg7 = recent.length ? Math.round((recent.reduce((a,b)=>a+b,0)/recent.length)*10)/10 : null;
+        const goal = parseFloat(L('totry_sleep_goal')) || 8;
+        const debt = recent.length ? Math.round(recent.reduce((a,h)=>a+Math.max(0,goal-h),0)*10)/10 : null;
+        const short = (last != null) && (last < 6);
+        return { lastNight: last, avg7: avg7, nights7: recent.length, goal: goal, debt7: debt, short: short };
+      }catch(_){ return { lastNight:null, avg7:null, nights7:0, goal:8, debt7:null, short:false }; }
+    })(),
     money: (function(){ try{ const f=ls('totry_f')||{}; const debts=f.d||[]; const totalDebt=debts.reduce((s,d)=>s+Math.max(0,(d.t||0)-(d.p||0)),0); const reclaimed=(typeof totalReclaimed==='function')?totalReclaimed():0; return { totalDebt:Math.round(totalDebt), reclaimed, hasDebt: totalDebt>0 }; }catch(_){ return { totalDebt:0, reclaimed:0, hasDebt:false }; } })(),
     sex: (typeof userSex==='function') ? userSex() : null,
     activity: { daysQuiet, everActive: (evenings.length + workouts.length) >= 5 }
@@ -5834,6 +5863,16 @@ function lifeStateBrief(s){
   if(soul.physical!=null) soulBits.push('physical '+soul.physical.toFixed(1)+'/10');
   if(soulBits.length) lines.push('Self-reported (7d avg): '+soulBits.join(', '));
   if(soul.reflections7 || soul.examens7 || soul.prayers7) lines.push('Inner life (7d): '+soul.reflections7+' reflections, '+soul.examens7+' examens, '+soul.prayers7+' prayers logged');
+  // Sleep is the foundation under every other line above — say it plainly, and say what it MEANS,
+  // because a short night is the single best predictor of a hard day across all five pillars.
+  try{
+    const sl = s.sleep;
+    if(sl && sl.lastNight != null){
+      let sleepLine = 'Sleep: '+sl.lastNight+'h last night'+(sl.avg7!=null?(', '+sl.avg7+'h avg over '+sl.nights7+' logged nights'):'');
+      if(sl.short) sleepLine += ' — SHORT. Cravings will feel louder, hunger runs high, emotions amplify and impulse control is thinner today. Meet them with grace and lower the bar; do NOT read a hard day as weakness in them.';
+      lines.push(sleepLine);
+    }
+  }catch(_){}
   if(f.fights7) lines.push('The fight (7d): '+f.wins7+' wins, '+f.losses7+' slips'+(f.cravings7?', '+f.cravings7+' cravings logged':'')+(f.momentsWon7?', came here and turned away '+f.momentsWon7+'x':''));
   // Per-vice honest state — the truth a streak alone can hide. If he's been logging real use, the
   // Brother must MEET that with grace, never congratulate a clean streak that isn't real.
@@ -5966,7 +6005,7 @@ function buildCtx(){
   
   // Water + fasting
   const waterToday = (ls('totry_water') || {})[todayKey] || 0;
-  const waterGoal = ls('totry_water_goal') || 2000;
+  const waterGoal = (typeof waterGoalMl==='function') ? waterGoalMl() : 2000;
   const waterTodayL = (waterToday/1000).toFixed(2).replace(/\.?0+$/,'') + 'L';
   const waterGoalL = (waterGoal/1000).toFixed(1) + 'L';
   // Sacraments — spiritual life context (Catholic user growing closer to God)
@@ -10673,6 +10712,33 @@ const BREATH_PROTOCOLS = {
     phases:[ {l:'Breathe in', s:4, scale:1.55}, {l:'Slow out', s:6, scale:1.0}, {l:'Rest on empty — sit with it', s:5, scale:1.0} ] }
 };
 function _breathFaithOn(){ return (typeof faithLevel!=='function') || faithLevel()!=='light'; }
+// THE BREATH PRAYER MUST BE THE PERSON'S OWN TRADITION'S WORDS. Handing a Muslim user "Lord Jesus
+// Christ, Son of God" while the card calls it "dhikr carried on your breath" makes the multi-faith
+// promise false at the most intimate moment in the app. Same engine, same paced breath — words swap.
+const _BREATH_PRAYERS = {
+  christianity: { name:'Breath prayer',      why:'Carry the Jesus Prayer on your breath',
+                  in:'Lord Jesus Christ, Son of God', out:'have mercy on me, a sinner' },
+  islam:        { name:'Dhikr on the breath', why:'Carry the remembrance of Allah on your breath',
+                  in:'Lā ilāha',                      out:'illā Allāh' },
+  hinduism:     { name:'So’ham',              why:'The mantra already in your breath',
+                  in:'So — I am',                     out:'ham — That' },
+  buddhism:     { name:'Mindful breath',      why:'Ānāpānasati — awareness carried on the breath',
+                  in:'Breathing in, I know I am breathing in', out:'Breathing out, I am at peace' },
+  secular:      { name:'Presence',            why:'Wordless stillness',
+                  in:'Receive',                       out:'Let go' }
+};
+function _faithBreath(){
+  const t = (typeof faithTradition==='function') ? faithTradition() : 'christianity';
+  return _BREATH_PRAYERS[t] || _BREATH_PRAYERS.christianity;
+}
+// Resolve a protocol, swapping the prayer's words for the person's tradition.
+function _protoFor(id){
+  const base = BREATH_PROTOCOLS[id];
+  if(id !== 'prayer' || !base) return base;
+  const f = _faithBreath();
+  return Object.assign({}, base, { name:f.name, why:f.why,
+    phases:[ {l:f.in, s:5, scale:1.55}, {l:f.out, s:6, scale:1.0} ] });
+}
 function _breathScale(el, v, dur){ if(!el) return; el.style.transitionDuration=dur+'s'; el.style.transform='scale('+v+')'; }
 function _breathLog(entry){ try{ const log=ls('totry_breath_log')||[]; log.unshift(Object.assign({ts:Date.now()},entry)); ls('totry_breath_log', log.slice(0,200)); }catch(_){} }
 function _breathSafetyGate(cb){
@@ -10697,7 +10763,7 @@ function openBreathMenu(){
   let html='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">Take a breath</div>'+
     '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:'+((mw>0||proofLine)?'10px':'16px')+'">The one work you can always do. Pick what fits right now.</div>'+mindfulLine+proofLine;
-  ids.forEach(id=>{ const p=BREATH_PROTOCOLS[id]; html+=
+  ids.forEach(id=>{ const p=_protoFor(id); html+=
     '<button class="btn" onclick="closeModal(this);openBreath(\''+id+'\')" style="text-align:left;margin-bottom:8px;padding:12px 14px">'+
       '<div style="font-size:14px;color:var(--tx)">'+p.name+(p.intense?' <span style="color:var(--tx3);font-size:10px">· intense</span>':'')+'</div>'+
       '<div style="font-size:11.5px;color:var(--tx3)">'+p.why+'</div>'+
@@ -10707,7 +10773,7 @@ function openBreathMenu(){
 }
 function openBreath(id, opts){
   opts = opts || {};
-  const p = BREATH_PROTOCOLS[id] || BREATH_PROTOCOLS.settle;
+  const p = _protoFor(id) || BREATH_PROTOCOLS.settle;
   if(p.intense && !ls('totry_breath_intense_ok')){ _breathSafetyGate(()=>openBreath(id, opts)); return; }
   const reason = opts.reason || null;
   const ov=document.createElement('div'); ov.className='breath-overlay';
@@ -13308,7 +13374,7 @@ function autoTickHabits(){
       } else if(/bible|scripture|verse|word|read/.test(name)){
         shouldTick = allSaved.some(v=>v.date===dateStr || (v.ts && new Date(v.ts).toLocaleDateString('en-AU')===dateStr));
       } else if(/water|hydrate/.test(name)){
-        const water=ls('totry_water_'+dateStr)||0; const goal=ls('totry_water_goal')||8;
+        const water=ls('totry_water_'+dateStr)||0; const goal=(typeof waterGoalGlasses==='function')?waterGoalGlasses():8;
         shouldTick = water>=goal;
       }
       // Re-assert directly from live data every time (idempotent). This prevents the
@@ -13359,7 +13425,7 @@ function autoTickHabits(){
     }
     else if(/water|hydrate/.test(name)){
       const water=ls('totry_water_'+today)||0;
-      const goal=ls('totry_water_goal')||8;
+      const goal=(typeof waterGoalGlasses==='function')?waterGoalGlasses():8;
       shouldTick=water>=goal;
     }
     else if(/check.?in|mood|energy/.test(name)){
@@ -13413,6 +13479,20 @@ async function findVerse(feeling){
   if(!feeling||!feeling.trim())return;
   const input=document.getElementById('bible-in');
   if(input)input.value=feeling;
+  // SAFETY GATE — people type how they actually feel into "find me a verse". If that's a disclosure,
+  // a verse is not the answer; a human is. Runs before any AI call.
+  try{
+    if(typeof detectCrisis==='function'){
+      const _c = detectCrisis(feeling);
+      if(_c){
+        const _card=document.getElementById('bible-card'); const _load=document.getElementById('bible-loading');
+        if(_load)_load.style.display='none';
+        if(_card){ _card.style.display='block'; _card.innerHTML='<div id="bible-crisis-slot"></div>'; }
+        if(typeof showCrisisResponse==='function') showCrisisResponse('bible-crisis-slot', _c);
+        return;
+      }
+    }
+  }catch(_){}
   const card=document.getElementById('bible-card');
   const loading=document.getElementById('bible-loading');
   if(card)card.style.display='none';
@@ -14557,6 +14637,19 @@ function savePrayerToList(text, category){
 async function generateIntentionPrayer(){
   const intention = (document.getElementById('ai-prayer-intention')||{}).value || '';
   if(!intention.trim()){ showToast('What\u2019s on your heart?', 'Type what you\u2019d like to pray about first.'); return; }
+  // SAFETY GATE \u2014 "What's on your heart?" is exactly where someone brings the worst of it. A person
+  // typing that they want to die must get the crisis card and a real human, never a generated prayer.
+  try{
+    if(typeof detectCrisis==='function'){
+      const _c = detectCrisis(intention);
+      if(_c){
+        const _o = document.getElementById('ai-prayer-out');
+        if(_o){ _o.style.display='block'; _o.innerHTML=''; _o.id='ai-prayer-out'; }
+        if(typeof showCrisisResponse==='function') showCrisisResponse('ai-prayer-out', _c);
+        return;
+      }
+    }
+  }catch(_){}
   const btn = document.getElementById('ai-prayer-btn'); const out = document.getElementById('ai-prayer-out');
   if(btn){ btn.textContent='Writing...'; btn.disabled=true; }
   try{
@@ -15941,7 +16034,8 @@ function quickAddLog(){
   if(typeof renderNutritionLog==='function') renderNutritionLog();
   if(typeof autoTickHabits==='function') autoTickHabits();
   if(typeof haptic==='function') haptic('success');
-  if(typeof showToast==='function') showToast('Added', Math.round(cal)+' cal to '+meal+'.');
+  // Numbers off → confirm the log without stating the calories.
+  if(typeof showToast==='function') showToast('Added', (typeof nutGentle==='function'&&nutGentle()) ? ('Logged to '+meal+'.') : (Math.round(cal)+' cal to '+meal+'.'));
   if(typeof logEvent==='function') logEvent('quick_add');
 }
 
@@ -17779,7 +17873,7 @@ function addFoodToLog(){
   document.getElementById('serving-modal').classList.remove('open');
   document.getElementById('nut-search-in').value='';
   document.getElementById('nut-search-results').innerHTML='';
-  renderNutritionLog();showToast('Added',entry.name+' \u2014 '+entry.cal+' cal');
+  renderNutritionLog();showToast('Added', (typeof nutGentle==='function'&&nutGentle()) ? entry.name : (entry.name+' \u2014 '+entry.cal+' cal'));
   // The brother notices if this entry pushed you over today's calorie line — and speaks once, gently,
   // knowing your week (he'll cut you slack if you've trained hard). Only when crossing, never nagging.
   try{
@@ -17790,7 +17884,9 @@ function addFoodToLog(){
       const _sum = _dayArr.reduce((a,e)=>a+(e.cal||0),0);
       const _prev = _sum - (entry.cal||0);
       if(_sum > _gc && _prev <= _gc){ // this entry is the one that crossed it
-        setTimeout(()=>{ if(typeof brotherSpeaks==='function') brotherSpeaks({ kind:'calorieOver', detail:{ over: Math.round(_sum-_gc) } }); }, 600);
+        // Never announce going 'over' when the person has asked not to see the numbers — that is
+        // the exact over-goal shame moment gentle mode exists to remove.
+        if(!(typeof nutGentle==='function'&&nutGentle())) setTimeout(()=>{ if(typeof brotherSpeaks==='function') brotherSpeaks({ kind:'calorieOver', detail:{ over: Math.round(_sum-_gc) } }); }, 600);
       }
     }
   }catch(_){}
@@ -19461,7 +19557,17 @@ function setWaterCount(ml){
   water[today] = Math.max(0, Math.round(ml));
   ls('totry_water', water);
 }
-function waterBaseGoal(){ return ls('totry_water_goal') || 2500; } // ml (2.5 L default)
+// ONE SOURCE OF TRUTH for the water goal, in MILLILITRES. Settings used to write GLASSES (8) into
+// the very same key Nourish read as MILLILITRES (2500) — so a person who set their water target
+// silently collapsed their goal to 8ml and the ring read "done" instantly. Any legacy small value is
+// interpreted as glasses and converted, so existing users are healed without touching their data.
+function waterGoalMl(){
+  const v = parseFloat(ls('totry_water_goal'));
+  if(!v || isNaN(v) || v <= 0) return 2500;
+  return (v <= 30) ? Math.round(v * 250) : Math.round(v);   // <=30 can only be glasses
+}
+function waterGoalGlasses(){ return Math.max(1, Math.round(waterGoalMl() / 250)); }
+function waterBaseGoal(){ return waterGoalMl(); } // ml (2.5 L default)
 // Hydration scaled to training (the Train×Nourish squeeze #7). A training day sweats out more, so
 // the goal lifts ~600ml on days you train — only when there's a real training signal (split, calendar,
 // or a logged workout), so it never bumps for someone who isn't training. Small, deterministic, sound.
@@ -26325,6 +26431,62 @@ function toggleEveningHabit(hi){
 // Step 3: Review — walk through the day, hour by hour
 // Step 4: Repent — where did I fall short? Where did I act in love?
 // Step 5: Renewal — what is one resolution for tomorrow?
+// ── THE EVENING REVIEW, PER TRADITION ────────────────────────────────────────────────────────────
+// Same nightly practice, five steps, named and worded in the person's own tradition. Nothing is
+// flattened: each is called what it actually is, and the theistic step becomes an honest self-
+// accounting where there is no deity to petition.
+const _EXAMEN_FACE = {
+  christianity:{ eyebrow:'Ignatian Examen · 5 steps', label:'The last step — your examen',
+    title:'Walk through your day with God.', blurb:'A 600-year-old practice. Five questions. This closes your day — do it last.', cta:'Begin the Examen' },
+  islam:{ eyebrow:'Muhāsaba · 5 steps', label:'The last step — your muhāsaba',
+    title:'Take account of your day before Allah.', blurb:'Muhāsaba — the nightly self-accounting the scholars urged. Five questions. This closes your day.', cta:'Begin the muhāsaba' },
+  hinduism:{ eyebrow:'Evening reflection · 5 steps', label:'The last step — your reflection',
+    title:'Look back over your day with honesty.', blurb:'Svādhyāya — the practice of self-study. Five questions. This closes your day.', cta:'Begin the reflection' },
+  buddhism:{ eyebrow:'Evening reflection · 5 steps', label:'The last step — your reflection',
+    title:'Look back over your day with clear eyes.', blurb:'The nightly reflection the Buddha taught Rāhula — look at what you did, kindly and without flinching. Five questions.', cta:'Begin the reflection' },
+  secular:{ eyebrow:'Evening review · 5 steps', label:'The last step — your evening review',
+    title:'Go back over the day, honestly.', blurb:'Seneca did this nightly: what did I do, where did I fall short, what will I do better. Five questions. This closes your day.', cta:'Begin the review' }
+};
+function applyFaithExamen(){
+  const t = (typeof faithTradition==='function') ? faithTradition() : 'christianity';
+  const f = _EXAMEN_FACE[t] || _EXAMEN_FACE.christianity;
+  const card = document.getElementById('examen-card');
+  const lbl  = document.getElementById('examen-label');
+  // Always visible now — every tradition gets the closing ritual.
+  if(lbl){ lbl.style.display=''; lbl.textContent = f.label; }
+  if(card){
+    card.style.display='';
+    const kids = card.children;
+    if(kids[0]) kids[0].textContent = f.eyebrow;
+    if(kids[1]) kids[1].textContent = f.title;
+    if(kids[2]) kids[2].textContent = f.blurb;
+    const btn = card.querySelector('button.primary'); if(btn) btn.textContent = f.cta;
+  }
+}
+// Swap the divine language in a step for the person's tradition. For non-theistic paths the
+// "petition" becomes a request of oneself rather than of a deity — honest, not bolted on.
+function examenStepFor(step){
+  const t = (typeof faithTradition==='function') ? faithTradition() : 'christianity';
+  if(t === 'christianity') return step;
+  const divine = (typeof curFaith==='function' && curFaith().divine) ? curFaith().divine : 'God';
+  const theistic = (t === 'islam' || t === 'hinduism');
+  const s = Object.assign({}, step);
+  const swap = function(txt){
+    if(!txt) return txt;
+    return theistic
+      ? txt.replace(/\bGod\b/g, divine).replace(/\bYou saw it\b/g, divine + ' saw it').replace(/\bYour\b/g, 'Your')
+      : txt.replace(/\bGod, give me\b/g, 'Let me find').replace(/\bGod\b/g, 'life').replace(/\bYou saw it\b/g, 'it truly was');
+  };
+  s.sub = swap(s.sub); s.body = swap(s.body); s.placeholder = swap(s.placeholder);
+  if(!theistic && step.field === 'petition'){
+    s.title = 'Honesty';
+    s.sub = 'Ask yourself for the clarity to see today truly.';
+    s.body = 'A moment of plain honesty: "Let me see today as it actually was. Not the version that flatters me. Not the version that condemns me. The truth."';
+    s.placeholder = '(Optional) What do you need to see clearly right now?';
+  }
+  return s;
+}
+
 const EXAMEN_STEPS = [
   {
     n: 1,
@@ -26381,7 +26543,7 @@ function startExamen(){
 }
 
 function showExamenStep(idx){
-  const step = EXAMEN_STEPS[idx];
+  const step = examenStepFor(EXAMEN_STEPS[idx]);
   if(!step){ saveExamen(); return; }
   
   document.querySelector('.modal-bg.open')?.remove();
@@ -26409,13 +26571,13 @@ function showExamenStep(idx){
 }
 
 function examenBack(idx){
-  const step = EXAMEN_STEPS[idx];
+  const step = examenStepFor(EXAMEN_STEPS[idx]);
   _examenAnswers[step.field] = document.getElementById('examen-input')?.value || '';
   showExamenStep(idx - 1);
 }
 
 function examenNext(idx){
-  const step = EXAMEN_STEPS[idx];
+  const step = examenStepFor(EXAMEN_STEPS[idx]);
   _examenAnswers[step.field] = document.getElementById('examen-input')?.value || '';
   showExamenStep(idx + 1);
 }
@@ -26807,7 +26969,11 @@ function setGoalsHit(btn, val){
 }
 function initEveningTab(){
   // The Ignatian Examen is Catholic; other paths keep the universal journal + wins + rating.
-  try{ const nonChr = (typeof faithTradition==='function' && faithTradition()!=='christianity'); ['examen-label','examen-card'].forEach(id=>{ const e=document.getElementById(id); if(e) e.style.display = nonChr ? 'none' : ''; }); }catch(_){}
+  // THE EVENING REVIEW IS UNIVERSAL — it was being HIDDEN for 4 of 5 traditions with nothing in its
+  // place, which quietly removed the closing ritual of the day from most users. Every tradition has
+  // this same nightly move; only the name and the words change. Ignatian examen ↔ Islamic muhasaba
+  // ↔ Hindu/Buddhist evening reflection ↔ Seneca's Stoic review. Same 5 steps, attributed honestly.
+  try{ applyFaithExamen(); }catch(_){}
   try{ if(typeof applyFaithReflect==='function') applyFaithReflect(); }catch(_){}
   const h=new Date().getHours();const el=document.getElementById('evening-eyebrow');
   if(el)el.textContent=(userName?userName+', ':'')+'the day winds down';
@@ -34580,7 +34746,9 @@ function saveAllTargets(){
   const pro=parseInt(document.getElementById('settings-pro-goal')?.value||0);
   const steps=parseInt(document.getElementById('settings-steps-goal')?.value||8000);
   const sleep=parseFloat(document.getElementById('settings-sleep-goal')?.value||8);
-  const water=parseInt(document.getElementById('settings-water-goal')?.value||8);
+  // Stored in ML. A small number can only mean glasses, so convert rather than corrupt the goal.
+  let water=parseInt(document.getElementById('settings-water-goal')?.value||2500);
+  if(water>0 && water<=30) water = water*250;
   const h=parseInt(document.getElementById('settings-height')?.value||0);
   if(cal>0&&pro>0)ls('totry_nut_goals',{cal,pro});
   if(h>0)ls('totry_height',h);
