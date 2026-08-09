@@ -2303,7 +2303,7 @@ input:focus,textarea:focus,select:focus{
   <div id="nourishment-score" style="margin-top:14px"></div>
 
   <!-- Net calories card (consumed − burned from training) -->
-  <div class="card" style="margin-bottom:12px;background:var(--bg3)">
+  <div class="card" id="nut-net-card" style="margin-bottom:12px;background:var(--bg3)">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div>
         <div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px">Net today</div>
@@ -4219,7 +4219,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v335';
+const APP_VERSION = 'v336';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -18227,7 +18227,10 @@ function applyNutGentle(eaten, goalCal){
   const g = function(id){ return document.getElementById(id); };
   const tb = g('nut-gentle-toggle');
   if(tb){ tb.textContent = on ? 'numbers off' : 'numbers on'; tb.style.color = on ? 'var(--go)' : 'var(--tx3)'; }
-  const HIDE = ['nut-equation','nut-extended','nut-meal-split','nut-macro-glance','nut-nudge'];
+  // Every numeric surface in Nourish, not just the hero — a "numbers off" promise that leaks a red
+  // over-budget figure two cards down is worse than no promise at all.
+  const HIDE = ['nut-equation','nut-extended','nut-meal-split','nut-macro-glance','nut-nudge',
+                'nut-net-card','nut-weekly-digest','nut-trend-card','adaptive-tdee-card'];
   const RESTORE = { 'nut-equation':'flex', 'nut-extended':'grid' }; // always-visible statics
   const line = g('nut-gentle-line');
   if(on){
@@ -18459,6 +18462,7 @@ function renderNutritionLog(){
   renderMicroPanel(totals);
   
   const list=e('nut-log-list');
+  const _gentleOn = (typeof nutGentle==='function' && nutGentle());
   if(typeof renderRecentFoods === 'function') renderRecentFoods();
   if(list){
     if(!entries.length){
@@ -18508,7 +18512,8 @@ function renderNutritionLog(){
       header.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.1em">' + mealLabels[meal] + '</div>' +
         '<div style="display:flex;align-items:center;gap:8px">' +
           (has ? '<button onclick="saveMealGroup(\''+meal+'\')" title="Save these foods as a reusable meal" style="background:none;border:none;color:var(--go);font-family:DM Mono,monospace;font-size:9px;cursor:pointer;letter-spacing:0.05em">save meal</button>' : '') +
-          (has ? '<span style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">' + mealCals + ' cal · ' + mealPro + 'g P</span>' : '') +
+          // Numbers off → the meal still lists what you ate, just not what it "cost".
+          ((has && !_gentleOn) ? '<span style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">' + mealCals + ' cal · ' + mealPro + 'g P</span>' : '') +
         '</div>';
       list.appendChild(header);
       
@@ -18516,6 +18521,14 @@ function renderNutritionLog(){
         const row=document.createElement('div');
         row.className='food-log-item';
         row.innerHTML='<div style="min-width:0;flex:1"><div class="fli-name">'+en.name+'</div>'+((en.serving||en.qty)?'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3)">'+(en.serving||'serving')+(en.qty?(' \u00d7 '+en.qty):'')+'</div>':'')+'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3);margin-top:2px">P '+(Math.round((en.pro||0)*10)/10)+'g \u00b7 C '+(Math.round((en.carb||0)*10)/10)+'g \u00b7 F '+(Math.round((en.fat||0)*10)/10)+'g</div></div><div style="display:flex;align-items:center;gap:6px"><span class="fli-cal">'+en.cal+' cal</span><button class="fli-del" style="font-size:14px;color:var(--tx3)" onclick="editFoodEntry(\''+today+'\','+en.id+')" title="Edit">✎</button><button class="fli-del" onclick="deleteFoodEntry(\''+today+'\','+en.id+')" aria-label="Close">&#215;</button></div>';
+        // NUMBERS OFF — strip the calorie figure and the macro breakdown from the row. What you ate
+        // still shows (that IS the log, and the whole-life counsel still uses it); what it "cost" doesn't.
+        if(_gentleOn){
+          try{
+            const c=row.querySelector('.fli-cal'); if(c) c.remove();
+            row.querySelectorAll('div[style*="margin-top:2px"]').forEach(function(s){ s.remove(); });
+          }catch(_){}
+        }
         list.appendChild(row);
       });
       // "Add food" under every meal — MFP's core interaction, one tap from each meal to the search.
@@ -18540,6 +18553,9 @@ function renderNutritionLog(){
       lbl.style.display = any ? '' : 'none';
     }
   }catch(_){}
+  // FINAL gentle pass — several cards above (trend, digest, adaptive TDEE, meal split) render AFTER
+  // the first call, so re-apply last. Order can then never re-leak a number.
+  try{ applyNutGentle(totals.cal, goalCal); }catch(_){}
 }
 
 // Shows the "switching from another app" card until the user imports history or dismisses it,
