@@ -2272,6 +2272,9 @@ input:focus,textarea:focus,select:focus{
     <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="document.getElementById('meal-photo-input').click()">🍽 Snap a meal</button>
     <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openBarcodeScanner()">📷 Scan barcode</button>
     <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openQuickAdd()">⚡ Quick add</button>
+    <!-- startVoiceLog() was fully written (and iOS-aware) but had no way in. Speaking a meal is the
+         lowest-friction way to log — especially one-handed, mid-kitchen, or on a low-capacity day. -->
+    <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="startVoiceLog()">🎤 Say it</button>
     <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openRecipeBuilder()">🍳 My recipes</button>
     <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openRepeatDay()">↻ Repeat a day</button>
   </div>
@@ -4241,7 +4244,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v340';
+const APP_VERSION = 'v341';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -10475,6 +10478,10 @@ function _feelMove(feeling){
     angry: { title:'Fired up', body:'Anger is energy with nowhere to go. Don\u2019t aim it at someone or stuff it down. Cool the heat first \u2014 a slow cooling breath drops the temperature in about a minute \u2014 THEN decide what\u2019s actually worth doing, from a calm place.', cta:'Cool it down', go:'__breath:cool' },
     good: { title:'Good \u2014 let\u2019s build on it', body:'When you\u2019re steady is exactly when to invest, because the hard days spend what the good days save. Do one thing now that future-you will thank you for. Don\u2019t coast it away.', cta:'What\u2019s my next step?', go:'__nextstep' }
   };
+  // STATE-MATCHED BREATH on every door. Eight real protocols existed but five of seven feelings
+  // never offered one, and 'sigh' (the fastest way to drop a spike) and 'box' had no caller at all.
+  // Offered as a SECOND option, never replacing the move — a breath is the one work always available.
+  const BREATH_FOR = { restless:'settle', flat:'energize', anxious:'settle', down:'settle', procrast:'box', angry:'cool', good:'' };
   const s = sets[feeling]; if(!s) return;
   const m = document.createElement('div');
   m.className='modal-bg open'; m.style.alignItems='center';
@@ -10499,6 +10506,14 @@ function _feelMove(feeling){
     '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:18px">'+s.body+'</div>'+
     _savedBanner+
     '<button class="btn primary" style="margin-bottom:8px" onclick="'+onclick+'">'+s.cta+'</button>'+
+    (function(){
+      const bp = BREATH_FOR[feeling];
+      // Skip when the primary move IS this breath already, or the feeling doesn't want one.
+      if(!bp || (s.go && s.go.indexOf('__breath:')===0)) return '';
+      const p = (typeof _protoFor==='function') ? _protoFor(bp) : null;
+      const why = p ? p.why : 'One minute of breathing';
+      return '<button class="btn" onclick="closeModal(this);openBreath(\''+bp+'\',{reason:\''+feeling+'\'})" style="margin-bottom:8px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px">🫁 Take a breath first — <span style="color:var(--tx3)">'+why.toLowerCase()+'</span></button>';
+    })()+
     '<div style="display:flex;gap:8px;margin-bottom:8px">'+_talkBtn+
       '<button class="btn" onclick="closeModal(this);openQuickJournal()" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin:0;font-size:13px">✎ Write it down</button>'+
     '</div>'+
@@ -27168,7 +27183,12 @@ function renderReachOutCard(){
   if(s.prompt.indexOf('{name}')>=0){ line=_escFew(s.prompt).replace(/\{name\}/g,'<b>'+nm+'</b>'); }
   else { line='<b>'+nm+'</b> — '+_escFew(s.prompt); }
   const dtxt = (s.days==null)?'':(s.days===0?'you reached out today':(s.days===1?'1 day since you last reached out':s.days+' days since you last reached out'));
+  // The remembered detail comes FIRST — it's the difference between "reach out" and knowing someone.
+  const noteLine = (s.person.note && s.person.note.trim())
+    ? '<div style="font-size:12.5px;color:var(--go);line-height:1.55;margin-bottom:6px">You wanted to remember: '+_escFew(s.person.note.trim())+'</div>'
+    : '';
   cp.innerHTML =
+    noteLine+
     '<div style="font-size:13px;color:var(--tx);line-height:1.6;margin-bottom:6px">'+line+'</div>'+
     (s.reframe?'<div style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:10px;font-style:italic">'+s.reframe+'</div>':'')+
     (dtxt?'<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);letter-spacing:0.04em;margin-bottom:10px">'+dtxt+'</div>':'')+
@@ -27183,9 +27203,13 @@ function openYourFew(){
   const few=getYourFew();
   const rows = few.length ? few.map(function(p,i){ return
     '<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--bd)">'+
-      '<div style="flex:1"><div style="font-size:14px;color:var(--tx)">'+_escFew(p.name)+'</div>'+
-      (p.note?'<div style="font-size:11px;color:var(--tx3)">'+_escFew(p.note)+'</div>':'')+
-      (function(){ if(yourFewMuted(p)) return '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.04em;margin-top:2px">held quietly · no reminders</div>'; const d=daysSinceReachOut(p.name); return d==null?'':'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.04em;margin-top:2px">'+(d===0?'reached out today':d+'d since you logged one')+'</div>'; })()+
+      '<div style="flex:1;min-width:0"><div style="font-size:14px;color:var(--tx)">'+_escFew(p.name)+'</div>'+
+      // The note is the whole point: "she mentioned the surgery — ask how it went". Remembering the
+      // specific thing is what turns a generic nudge into actually knowing someone.
+      '<input type="text" value="'+_escFew(p.note||'')+'" maxlength="90" placeholder="what to remember — e.g. ask about her surgery" '+
+        'onchange="_yfNote('+i+',this.value)" onblur="_yfNote('+i+',this.value)" '+
+        'style="width:100%;margin:4px 0 0;padding:5px 7px;font-size:11.5px;background:var(--bg3);border:1px solid var(--bd);border-radius:7px;color:var(--tx2)">'+
+      (function(){ if(yourFewMuted(p)) return '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.04em;margin-top:3px">held quietly · no reminders</div>'; const d=daysSinceReachOut(p.name); return d==null?'':'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.04em;margin-top:3px">'+(d===0?'reached out today':d+'d since you logged one')+'</div>'; })()+
       '</div>'+
       '<button class="btn" style="width:auto;padding:5px 8px;font-size:11px;color:var(--tx3)" title="Carry them without reminders" onclick="toggleFewMute('+i+')">'+(yourFewMuted(p)?'🔔':'🔕')+'</button>'+
       '<button class="btn" style="width:auto;padding:5px 10px;font-size:11px;color:var(--tx3)" onclick="_yfRemove('+i+')">Remove</button>'+
@@ -27219,6 +27243,14 @@ function _yfAdd(){
   const m=document.getElementById('yourfew-modal'); if(m) m.remove(); openYourFew();
 }
 function _yfRemove(idx){ const few=getYourFew(); few.splice(idx,1); saveYourFew(few); const m=document.getElementById('yourfew-modal'); if(m) m.remove(); openYourFew(); }
+// Saved quietly in place — no Save button, no modal rebuild, so typing a note never costs you your spot.
+function _yfNote(idx, val){
+  const few=getYourFew(); if(!few[idx]) return;
+  const v=String(val||'').trim().slice(0,90);
+  if(few[idx].note===v) return;
+  few[idx].note=v; saveYourFew(few);
+  try{ renderReachOutCard(); }catch(_){}
+}
 function closeYourFew(){
   const m=document.getElementById('yourfew-modal');
   if(m){ try{ if(m._yfEsc) document.removeEventListener('keydown', m._yfEsc); }catch(_){} m.remove(); }
