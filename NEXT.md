@@ -7,7 +7,7 @@ Research behind each item is in `RESEARCH-BACKLOG.md`. Ready-to-apply specs live
 
 ---
 
-## 🟢 PRE-BUILD AUDIT: all 9 blockers closed (v358–v366)
+## 🟢 PRE-BUILD AUDIT: 9 blockers + 26 polish findings closed (v358–v374)
 
 The audit found nine things that had to be fixed before an App Store build, because an App Store build
 can't be hot-fixed the way a Pages deploy can. All nine are closed and each was verified live, not just
@@ -73,7 +73,7 @@ the crisis-gate hardening and the honest privacy rewrite.
 
 | # | Item | Why | Effort |
 |---|---|---|---|
-| 0.1 | **Archive build 3 + upload** | Code side is done: `www/` and `ios/App/App/public/` are both synced to v366 and `PrivacyInfo.xcprivacy` now declares all nine data types (was only Health + Email). What's left is Xcode + App Store Connect, which needs your hands. | your GUI |
+| 0.1 | **Archive build 3 + upload** | Code side is done: `www/` and `ios/App/App/public/` are both synced to v374 and `PrivacyInfo.xcprivacy` now declares all nine data types (was only Health + Email). What's left is Xcode + App Store Connect, which needs your hands. | your GUI |
 | 0.2 | **App Privacy nutrition label** | Answer it from `ios/App/App/PrivacyInfo.xcprivacy` — it and `privacy.html` are now in step, and the label must match both or review flags it. Declare: email, user id, health & fitness, sensitive info (faith), other user content, financial info, name, product interaction (not linked, analytics), crash data. | GUI only |
 | 0.3 | **Age rating** | Not started. | GUI only |
 | 0.4 | **Use it for a week yourself** | Every bug this project has shipped survived because nobody set the value and looked at it (the water goal collapsed to 8ml for exactly that reason). Six of the nine blockers above were only visible to someone actually using it as a new, debt-free, numbers-off, non-Christian user — not to a parse-check. | — |
