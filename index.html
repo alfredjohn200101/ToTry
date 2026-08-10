@@ -4382,7 +4382,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v362';
+const APP_VERSION = 'v363';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7842,7 +7842,7 @@ async function _obFirstMoment(id){
   try{ if(typeof haptic==='function') haptic('light'); }catch(_){}
   try{ if(typeof _recordFeeling==='function') _recordFeeling(id); }catch(_){}
   try{ ls('totry_first_moment', { id:id, ts:Date.now() }); }catch(_){}
-  try{ if(typeof logEvent==='function') logEvent('first_moment', { feeling:id }); }catch(_){}
+  try{ if(typeof logEvent==='function') logEvent('first_moment'); }catch(_){}
   try{ if(typeof finishOnboard==='function') await finishOnboard({ quiet:true }); }catch(_){}
   setTimeout(function(){
     try{
@@ -9567,7 +9567,7 @@ function completeMorning(){
   const log=ls('totry_mornings')||[];
   log.unshift({date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}),day:getDayCount(),gratitude:g,intention:intent,ts:new Date().toISOString()});
   ls('totry_mornings',log.slice(0,1200)); // keep years of reflections (~3+ yrs daily), not ~3 months — a man's inner journey shouldn't silently vanish
-  if(typeof logEvent==='function') logEvent('morning_done', { day: getDayCount() });
+  if(typeof logEvent==='function') logEvent('morning_done');
   if(typeof syncToCloud==='function') syncToCloud();
   document.getElementById('morning-prayer-display').style.display='none';
   document.getElementById('morning-done').style.display='block';
@@ -10193,7 +10193,7 @@ function makePledge(i, from){
   try{ renderVices(); }catch(_){}
   try{ if(typeof renderMorningPledge==='function') renderMorningPledge(); }catch(_){}
   try{ if(typeof syncToCloud==='function') syncToCloud(); }catch(_){}
-  try{ if(typeof logEvent==='function') logEvent('pledge',{stage:v.stage||''}); }catch(_){}
+  try{ if(typeof logEvent==='function') logEvent('pledge'); }catch(_){}
   if(typeof haptic==='function') haptic('celebrate');
   _pledgeSaid(v, from);
 }
@@ -10313,7 +10313,7 @@ function setViceStage(i, k){
   v.stage=k; v.stageAt=new Date().toISOString(); saveV();
   document.querySelector('.modal-bg.open')?.remove();
   try{ renderVices(); if(typeof syncToCloud==='function') syncToCloud(); }catch(_){}
-  try{ if(typeof logEvent==='function') logEvent('vice_stage',{stage:k}); }catch(_){}
+  try{ if(typeof logEvent==='function') logEvent('vice_stage'); }catch(_){}
   if(typeof haptic==='function') haptic('success');
   if(typeof showToast==='function') showToast('Noted','I\u2019ll meet you there. Nothing else about you changes.');
 }
@@ -10784,7 +10784,7 @@ function saveQuickLog(){
     if(_isFirstEverWin){ ls('totry_first_win_done', true); setTimeout(()=>{ if(typeof _celebrateFirstWin==='function') _celebrateFirstWin(); }, 400); }
     const cleanBeforeReset = viceCleanDays(v);
     v.cleanDaysTotal = (v.cleanDaysTotal || 0) + cleanBeforeReset;
-    v.relapseCount = (v.relapseCount || 0) + 1; if(typeof logEvent==='function') logEvent('relapse_logged', { day: getDayCount() });
+    v.relapseCount = (v.relapseCount || 0) + 1;
     if(!v.relapseHistory) v.relapseHistory = [];
     v.relapseHistory.push({date: new Date().toISOString(), streakLength: cleanBeforeReset});
     v.startDate = new Date().toISOString(); // streak resets to now
@@ -13239,7 +13239,7 @@ function openVicePlan(i){
     vv.plan=Object.assign({}, vv.plan, { why:(m.querySelector('.vp-why').value||'').trim(), move:[...chosen].join(' · '), updatedAt:Date.now() });
     try{ if(typeof saveV==='function') saveV(); }catch(_){}
     try{ if(typeof renderVices==='function') renderVices(); }catch(_){}
-    try{ if(typeof logEvent==='function') logEvent('vice_plan',{mode:mode}); }catch(_){}
+    try{ if(typeof logEvent==='function') logEvent('vice_plan'); }catch(_){}
     m.remove();
     if(typeof showToast==='function') showToast('Plan saved','I’ll shape the help around this — and say your why back when it’s hard.');
     if(typeof haptic==='function') haptic('success');
@@ -13269,7 +13269,7 @@ function _planCardHTML(i){
 // high), cold spikes dopamine ~2.5× for hours, morning light + real connection repair the system.
 // Honest, deterministic, on-mission for EVERY vice — see BREATH-STILLNESS-RESEARCH.md.
 function _pickHigh(type){
-  try{ if(typeof logEvent==='function') logEvent('natural_high',{type:type}); }catch(_){}
+  try{ if(typeof logEvent==='function') logEvent('natural_high'); }catch(_){}
   document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
   if(type==='move'){ if(typeof go==='function') go('train'); }
   else if(type==='breath'){ if(typeof openBreath==='function') openBreath('energize'); }
@@ -13342,8 +13342,30 @@ function openProgressCheckin(){
     const note=(m.querySelector('.pc-note').value||'').trim();
     if(!picked.size && !note){ if(typeof showToast==='function') showToast('Tell me one thing','Tap what’s improved, or write a line.'); return; }
     const email = (typeof currentUser!=='undefined'&&currentUser&&currentUser.email)||null;
-    const payload={ improvements:[...picked], note:note||null, email:email, day:(typeof getDayCount==='function'?getDayCount():null), ts:new Date().toISOString() };
-    try{ if(typeof logEvent==='function') logEvent('feedback', payload); }catch(_){}
+    // This is feedback, not a metric, and it used to go ONLY to app_events — the anonymous counter
+    // table — carrying their free-text note and their email. Two failures in one: it put identifying
+    // content into the table both privacy policies describe as never containing what you log, and it
+    // ran through logEvent(), which returns early when someone has turned counting off. So a person
+    // who opted out of being counted tapped "Send it to Alfy", read "Thank you — you're in the
+    // raffle", and their words went nowhere. Now it goes to the feedback table like every other
+    // message, through the local outbox that retries until it lands, regardless of the metrics
+    // setting — because they pressed send. app_events gets a bare count and nothing else.
+    const _entry={
+      type:'progress_checkin',
+      message:(picked.size?('Improved: '+[...picked].join(', ')):'')+(note?((picked.size?'\n\n':'')+note):''),
+      email: email || 'anonymous',
+      app_info:{ day:(typeof getDayCount==='function'?getDayCount():null), version:(typeof APP_VERSION!=='undefined'?APP_VERSION:null), improvements:[...picked] },
+      ts:new Date().toISOString()
+    };
+    try{
+      const _ob=ls('totry_feedback_outbox')||[]; _ob.unshift(_entry); ls('totry_feedback_outbox', _ob.slice(0,50));
+      if(typeof sb!=='undefined' && sb){
+        sb.from('feedback').insert([{ type:_entry.type, message:_entry.message, email:_entry.email, app_info:_entry.app_info, created_at:_entry.ts }])
+          .then(function(r){ if(!r||!r.error){ try{ const o=ls('totry_feedback_outbox')||[]; ls('totry_feedback_outbox', o.filter(function(x){ return !(x&&x.ts===_entry.ts); })); }catch(_){} } }, function(){});
+      }
+    }catch(_){}
+    // A count, with nothing personal in it — how many people answered, not what they said.
+    try{ if(typeof logEvent==='function') logEvent('progress_checkin', { areas:picked.size, wrote:note?1:0 }); }catch(_){}
     try{ ls('totry_last_checkin', Date.now()); }catch(_){}
     m.remove();
     const t=document.createElement('div'); t.className='modal-bg open'; t.style.alignItems='center';
@@ -14156,7 +14178,7 @@ function logWin(){
     vices[curVice].w=(vices[curVice].w||0)+1;
     vices[curVice].total=(vices[curVice].total||0)+1;
     vices[curVice].lastWin=new Date().toISOString();
-    if(typeof logEvent==='function') logEvent('fight_won', { day: getDayCount() });
+    
     // Ensure startDate exists for streak counting
     if(!vices[curVice].startDate)vices[curVice].startDate=new Date().toISOString();
     // Track money saved on this specific decision
@@ -19191,7 +19213,7 @@ function openHungerCheck(){
 }
 function _hungerCount7(id){ try{ const wk=Date.now()-7*86400000; return (ls('totry_hunger_log')||[]).filter(e=>e && e.id===id && e.ts>=wk).length; }catch(_){ return 0; } }
 function _hungerPick(id){
-  try{ const log=ls('totry_hunger_log')||[]; log.unshift({id, ts:Date.now()}); ls('totry_hunger_log', log.slice(0,300)); if(typeof logEvent==='function') logEvent('hunger_check',{r:id}); }catch(_){}
+  try{ const log=ls('totry_hunger_log')||[]; log.unshift({id, ts:Date.now()}); ls('totry_hunger_log', log.slice(0,300)); if(typeof logEvent==='function') logEvent('hunger_check'); }catch(_){}
   document.querySelectorAll('.modal-bg.open').forEach(x=>x.remove());
   if(id==='hungry'){ if(typeof showToast==='function') showToast('Good','Real hunger — fuel up well.'); return; }
   if(id==='social'){ if(typeof showToast==='function') showToast('Enjoy it','Eating for joy, together, is part of a good life — be present.'); return; }
@@ -27481,7 +27503,7 @@ function saveWorkoutSession(){
   const durationMin = __sessionStart ? Math.max(1, Math.round((Date.now()-__sessionStart)/60000)) : null;
   const session={id:Date.now(),date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}),ts:new Date().toISOString(),day:getDayCount(),exercises:JSON.parse(JSON.stringify(currentSession)),completedSets:cs,totalSets:ts,volume:vol,durationMin:durationMin,splitFocus:getUserSplit()[tIdx()]?.focus||'Workout'};
   const history=ls('totry_workouts')||[];history.unshift(session);ls('totry_workouts',history.slice(0,365));
-  if(typeof logEvent==='function') logEvent('workout_logged', { day: getDayCount(), sets: cs });
+  if(typeof logEvent==='function') logEvent('workout_logged');
   const prsHit = updatePersonalRecords(session);
   stopRestTimer();
   const savedExCount = session.exercises.length;
@@ -28221,7 +28243,8 @@ function addTemplateDay(pi, di){
   showToast('Added to your routines', d.name + ' \u2014 it\u2019s on your Train tab now.');
   renderTemplates();
   if(typeof renderRoutines === 'function') renderRoutines();
-  if(typeof logEvent === 'function') logEvent('template_added', {name: d.name});
+  // The name is the person's own words — it belongs in their data, not in the anonymous counter table.
+  if(typeof logEvent === 'function') logEvent('template_added');
 }
 
 // Start a session from an imported Hevy routine (stored under totry_hevy_routines, normalized
@@ -29642,7 +29665,7 @@ function saveExamen(){
     day: getDayCount(),
     ..._examenAnswers
   });
-  if(typeof logEvent==='function') logEvent('examen_done', { day: getDayCount() });
+  if(typeof logEvent==='function') logEvent('examen_done');
   ls('totry_examens', log.slice(0, 1200)); // the examen is a reflection too — keep years of it
   if(typeof updateExamenCount === 'function') updateExamenCount();
   document.querySelector('.modal-bg.open')?.remove();
@@ -30071,7 +30094,7 @@ function completeEvening(){
   // Editable until midnight: replace today's existing entry rather than stacking duplicates.
   const _exIdx=log.findIndex(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===_todayStr);
   if(_exIdx>=0) log[_exIdx]=entry; else log.unshift(entry);
-  if(typeof logEvent==='function') logEvent('evening_done', { day: getDayCount(), rating: dayRating||null });
+  if(typeof logEvent==='function') logEvent('evening_done');
   ls('totry_evenings',log.slice(0,1200)); // keep years of reflections, not ~3 months — his honest evenings shouldn't silently vanish
   // Evening check-in is now done → re-run auto-tick so the evening habit (hidden from the tick
   // list because you're doing it right now) lands ticked, plus anything else logged today.
@@ -33139,7 +33162,7 @@ function showPrivacyPolicy(){
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">5. What I do not do</strong></p>' +
       '<p style="margin-bottom:12px">I do not run ads. I do not sell or share your data with advertisers or data brokers. No third party pays me to feature their service. There is no advertising or profiling SDK in this app.</p>' +
-      '<p style="margin-bottom:12px">Two things do count <em>usage</em>, and you should know exactly what they are. <strong>A visitor counter</strong> (GoatCounter) records page views and where visits came from — cookie-free, no personal data, no cross-site tracking, no profile of you. <strong>Anonymous feature counts</strong> go to my own database against a random ID that is not your email — things like &ldquo;app opened&rdquo;, &ldquo;reminder set&rdquo;, &ldquo;import run&rdquo;. Neither ever includes what you log: your vices, prayers, journal, food, money and body data are never in it. You can switch both off in Settings &rarr; Your data, and the app works exactly the same.</p>' +
+      '<p style="margin-bottom:12px">Two things do count <em>usage</em>, and you should know exactly what they are. <strong>A visitor counter</strong> (GoatCounter) records page views and where visits came from — cookie-free, no personal data, no cross-site tracking, no profile of you. <strong>Anonymous feature counts</strong> go to my own database against a random ID that is not your email — which <em>features</em> got used, with no content attached: &ldquo;app opened&rdquo;, &ldquo;reminder set&rdquo;, &ldquo;import run&rdquo;, &ldquo;a breathing exercise was done&rdquo;. Neither ever includes what you log: your vices, prayers, journal, food, money and body data are never in it. They record <em>that</em> a feature was used, never what you put into it — not the feeling you picked, not the vice, not your day rating, not the name you gave anything. There is no per-person record of whether you slipped or held on; watching someone&rsquo;s fight from the outside is the opposite of what this is for. You can switch both off in Settings &rarr; Your data, and the app works exactly the same — though a message you send me still reaches me, because you pressed send.</p>' +
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">6. What I cannot control</strong></p>' +
       '<p style="margin-bottom:12px">Once your Coach message reaches Google or Anthropic, that data is governed by their privacy policies, not mine. I have no influence over their model-training practices or retention periods. If a provider has a security breach, I cannot prevent it. Treat your Coach messages the way you would treat a message to any cloud service — not a sealed diary.</p>' +
