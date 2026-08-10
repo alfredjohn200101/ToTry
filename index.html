@@ -4454,7 +4454,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v378';
+const APP_VERSION = 'v379';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5206,7 +5206,18 @@ async function pullFromCloud(){
     if(!data){ _setSyncState({ status:'synced', lastSyncAt:Date.now() }); return false; }
     const tsMap = _getKeyTsMap();
     const outbox = _getOutbox();
-    const ARR = ['totry_workouts','totry_body','totry_journal','totry_mornings','totry_evenings','totry_confessions','totry_masses','totry_routines','totry_saved_meals','totry_family_contrib','totry_poker_sessions','totry_examens','totry_prayers','totry_strava_activities','totry_feeling_wins','totry_custom_exercises'];
+    // Append-only logs get UNIONED across devices; anything absent from this list falls through to
+    // "newer scalar wins", which silently discards the other device's copy. A two-phone test found
+    // exactly that: a win logged on phone B was thrown away by phone A's newer write. Every key added
+    // below is a pure event log with NO delete function anywhere in the app, so unioning cannot
+    // resurrect something a person removed — the risk that makes union wrong for editable lists like
+    // bills, assets and subscriptions, which are deliberately left out.
+    // totry_fight_log matters most: it is what teaches the risk window and the hard hour, so losing half
+    // of it on a device switch quietly degrades the app's whole sense of when a person is vulnerable.
+    const ARR = ['totry_workouts','totry_body','totry_journal','totry_mornings','totry_evenings','totry_confessions','totry_masses','totry_routines','totry_saved_meals','totry_family_contrib','totry_poker_sessions','totry_examens','totry_prayers','totry_strava_activities','totry_feeling_wins','totry_custom_exercises',
+      'totry_wins','totry_moments_won','totry_fight_log','totry_cravings','totry_blessings','totry_reachouts',
+      'totry_rosaries','totry_syntheses','totry_reviews','totry_vice_uses','totry_impulse_holds','totry_freezes',
+      'totry_checkins','totry_mood_log','totry_fast_log'];
     const idOf = x => (x && typeof x === 'object') ? (x.id !== undefined ? 'i'+x.id : (x.ts || JSON.stringify(x))) : x;
     const union = (a,b) => { const m = new Map(); [].concat(a||[], b||[]).forEach(x => { const k = idOf(x); if(!m.has(k)) m.set(k, x); }); return Array.from(m.values()); };
     let changed = 0;

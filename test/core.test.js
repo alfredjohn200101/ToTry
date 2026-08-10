@@ -239,6 +239,38 @@ H.section('_auKeyMs + _pruneNutLog — d/m/yyyy keys must not corrupt the diary'
   H.ok(!log['3/4/2026'], 'the oldest days are the ones dropped');
 }
 
+// ── CROSS-DEVICE MERGE — which keys union, and which must not ────────────────────────────────────
+// pullFromCloud unions the keys in its ARR list and falls through to "newer scalar wins" for everything
+// else, which silently discards the other device's copy. A two-phone test found a win logged on phone B
+// being thrown away by phone A's newer write — and totry_fight_log had the same problem, which matters
+// more than it sounds: that log is what teaches the risk window and the hard hour, so losing half of it
+// on a device switch quietly degrades the app's sense of when someone is vulnerable.
+// The split is the point. Union is right for append-only event logs and WRONG for editable lists, where
+// it resurrects things a person deleted (the same class as the cycle-delete bug).
+H.section('sync merge — append-only unions, editable lists do not');
+{
+  const fs = require('fs');
+  const path = require('path');
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const m = html.match(/const ARR = \[([\s\S]*?)\];/);
+  H.ok(!!m, 'the ARR union list is present in pullFromCloud');
+  const ARR = new Set((m[1].match(/'([a-z_]+)'/g) || []).map(x => x.replace(/'/g, '')));
+
+  // Pure event logs — no delete function exists for any of these, so unioning cannot resurrect anything.
+  ['totry_wins', 'totry_moments_won', 'totry_fight_log', 'totry_cravings', 'totry_blessings',
+   'totry_reachouts', 'totry_rosaries', 'totry_syntheses', 'totry_reviews', 'totry_vice_uses',
+   'totry_impulse_holds', 'totry_freezes', 'totry_checkins', 'totry_mood_log', 'totry_fast_log',
+   'totry_journal', 'totry_examens', 'totry_prayers'].forEach(k => {
+    H.ok(ARR.has(k), k + ' is unioned, so a device switch cannot lose entries');
+  });
+
+  // Editable lists have real delete functions; unioning them would undo a deletion on the other device.
+  ['totry_bills', 'totry_assets', 'totry_subscriptions', 'totry_transactions', 'totry_letters',
+   'totry_relationships', 'totry_measurements'].forEach(k => {
+    H.ok(!ARR.has(k), k + ' is NOT unioned — it has a delete path, and a removed item must stay removed');
+  });
+}
+
 // ── BANK CSV IMPORT — money maths on other people's file formats ─────────────────────────────────
 // The importer stripped everything except [0-9.-] from an amount, which silently multiplied European
 // figures by 100: '-22,99' became -2299 and '1.234,56' became 1.23456. A 100x error on someone's real
