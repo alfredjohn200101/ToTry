@@ -4390,7 +4390,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v367';
+const APP_VERSION = 'v368';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -33238,18 +33238,32 @@ function loadDemoData(){
 // USE it. Steps with no `target` show a centered card (intro/outro). `tab` is the tab to open;
 // `find` returns the element to highlight (a function so it runs after the tab is shown).
 const TOUR_STEPS = [
-  { tab:'home', title:'Welcome to To Try', caption:'A 60-second walk through how it all fits together. Tap Next — or Skip anytime.' },
+  { tab:'home', title:'Welcome to To Try', caption:'A 60-second walk through how it all fits together. Tap Next \u2014 or Skip anytime.' },
   { tab:'home', find:()=>document.getElementById('home-habit-list'),
-    title:'Your daily habits', caption:'These are the things you\u2019re building. Tap today\u2019s circle to check one off — workouts and prayer even tick themselves when you log them.' },
+    title:'Your daily habits', caption:'These are the things you\u2019re building. Tap today\u2019s circle to check one off \u2014 workouts and prayer even tick themselves when you log them.' },
   { tab:'home', find:()=>document.getElementById('home-quickwin-list'),
-    title:'Fighting an urge?', caption:'Your vices live here, tracked honestly — wins and slips. Tap one the moment you\u2019re tempted and you\u2019ll get walked through it.' },
+    prep:()=>{ try{ localStorage.setItem('totry_home_depth_open','1');
+                    if(typeof renderHomeDepthFold==='function') renderHomeDepthFold(); }catch(_){} },
+    title:'Fighting an urge?', caption:'Your vices live here, tracked honestly \u2014 wins and slips. Tap one the moment you\u2019re tempted and you\u2019ll get walked through it.' },
+  // The orb opens the FEELING DOOR, not the coach \u2014 orbTap() calls openFeelingDoor(). This step used
+  // to call it "your AI coach, 24/7", which taught people the wrong thing about the single most
+  // important action in the app. The Feeling Door IS the thesis: you come because you FEEL something.
   { tab:'home', find:()=>document.getElementById('need-talk-btn'),
-    title:'Your coach, anytime', caption:'This button is your AI coach, 24/7. It knows your real data — your training, your fight, your day — and talks to you like it remembers.' },
-  { tab:'grow', find:()=>document.getElementById('nut-search-in'),
-    title:'Log food in plain words', caption:'Just describe a meal — \u201c200g chicken, 1 cup rice\u201d or \u201cdinner out\u201d — and the AI works out the macros. Give exact amounts when you want it precise.' },
-  { tab:'soul', title:'Faith, woven in', caption:'A daily verse, the Examen, and prayer. Tap \u201cPray right now\u201d and you can have the AI write a prayer for whatever\u2019s on your heart — and save it.' },
+    title:'The one button that matters', caption:'Tap this whenever you feel anything \u2014 restless, low, tempted, wired, ashamed. It asks what you\u2019re feeling, then moves you through it. This is the thing to open instead of your feed.' },
+  { tab:'home', find:()=>document.getElementById('need-talk-btn'),
+    title:'It knows your whole life', caption:'Whatever it says is shaped by everything else in here \u2014 how you slept, whether you trained, where the money is, how the week has gone in your fight. That is the part a single-purpose app cannot do.' },
+  { tab:'nourish', find:()=>document.getElementById('nut-search-in'),
+    title:'Log food in plain words', caption:'Just describe a meal \u2014 \u201c200g chicken, 1 cup rice\u201d or \u201cdinner out\u201d \u2014 and the AI works out the macros. Give exact amounts when you want it precise.' },
+  { tab:'nourish', find:()=>document.getElementById('nut-gentle-toggle'),
+    title:'Or turn the numbers off', caption:'If counting is the thing that hurt you, tap this. You still log food, you just never see a number \u2014 and the coach is told never to say one either.' },
+  { tab:'fight', find:()=>document.getElementById('toolkit-card'),
+    title:'Learn the tools before 11pm', caption:'Eight skills, two minutes each \u2014 urge surfing, defusion, HALT. Learn them while you\u2019re calm, so they\u2019re already yours in the moment. Free, and nothing to finish.' },
+  { tab:'money', find:()=>document.getElementById('sub-detect'),
+    title:'Money, honestly', caption:'Import a statement and it finds the subscriptions quietly draining you \u2014 and shows what a habit actually costs you a year. The same habit you\u2019re fighting one tab over.' },
+  { tab:'soul', title:'Faith, woven in \u2014 or not', caption:'A daily verse, the Examen, and prayer. It works for Christian, Muslim, Hindu, Buddhist and secular \u2014 Settings lets you choose, or dial faith all the way down. Nothing is forced on you.' },
   { tab:'reflect', title:'Close the day', caption:'Each evening: one win, one thing to release, tomorrow\u2019s priorities, ending in the Examen. You can edit it right up until midnight.' },
-  { tab:'home', title:'Free, and built with care', caption:'No ads, no paywall — this was made to help, not to profit. The goal is to keep it free for as long as that\u2019s possible.' },
+  { tab:'home', title:'It won\u2019t chase you', caption:'No streak held over your head, no guilt, no notifications begging you back. At most a few quiet check-ins a week, before your hardest hour \u2014 and you can turn even those off.' },
+  { tab:'home', title:'Free, and built with care', caption:'No ads, no paywall \u2014 this was made to help, not to profit. The goal is to keep it free for as long as that\u2019s possible.' },
 ];
 let _tourIdx = 0;
 // Onboarding trigger: brand-new users get the tour automatically on first Home view; people who
@@ -33306,6 +33320,10 @@ function renderTourStep(){
   if(!ov) return;
   const step = TOUR_STEPS[_tourIdx];
   if(typeof go === 'function' && step.tab) go(step.tab);
+  // Some targets live inside a collapsed section ("More of your day"), so the spotlight had nothing
+  // to point at and the step silently fell back to a centred card — the tour talked about a thing the
+  // viewer could not see. `prep` opens whatever needs opening first.
+  if(typeof step.prep === 'function'){ try{ step.prep(); }catch(_){ } }
   const spot = document.getElementById('tour-spot');
   const card = document.getElementById('tour-card');
   // Give the tab a moment to render/layout, then find + spotlight the target element.
