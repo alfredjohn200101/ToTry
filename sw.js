@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v354-recovery-map'
+const CACHE = 'totry-v355-subs-otd'
 
 const CORE = [
   './',

@@ -3202,6 +3202,7 @@ input:focus,textarea:focus,select:focus{
       <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd)" onclick="openSubscriptionLogger()">+ Add</button>
     </div>
     <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Track recurring expenses. Cancel what doesn't serve you.</p>
+  <div id="sub-detect" style="display:none"></div>
     <div id="subscriptions-list"></div>
     <div id="subscriptions-total" style="font-family:DM Mono,monospace;font-size:12px;color:var(--tx3);text-align:center;margin-top:10px"></div>
   </div>
@@ -3379,6 +3380,7 @@ Amen.</div></div>
         <div style="color:var(--tx3);font-size:18px">\u203A</div>
       </div>
     </div>
+    <div id="on-this-day" style="display:none"></div>
     <!-- THREE GOOD THINGS — the validated positive-psychology core (Seligman), and the one form of
          gratitude with the strongest evidence behind it is RELATIONAL: thanking a real person beats
          listing things to yourself. So the third slot quietly points at a person, and offers to
@@ -4356,7 +4358,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v354';
+const APP_VERSION = 'v355';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4708,6 +4710,8 @@ const SYNC_KEYS = [
   'totry_values','totry_blessings',
   // Three good things — the evening's gratitude, incl. who it was about and whether it got said.
   'totry_tgt',
+  // Dismissed subscription suggestions + the last 'on this day' entry shown.
+  'totry_sub_dismissed','totry_otd_seen',
   // v344 — the first felt moment, and the receptivity gate under the reach-out.
   'totry_first_moment','totry_quiet_hours','totry_reachout_log','totry_reachout_state','totry_last_active_ts'
 ];
@@ -23475,6 +23479,7 @@ function renderTransactions(){
   renderSubscriptions();
   if(typeof renderFamilyContribution==='function') renderFamilyContribution();
   if(typeof renderGiving==='function') renderGiving();
+  try{ renderSubDetect(); }catch(_){}
   if(typeof renderPoker==='function') renderPoker();
   renderBills();
   renderBudgets();
@@ -23689,6 +23694,130 @@ function renderPoker(){
       '<div style="display:flex;align-items:center;gap:10px"><span style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+when+'</span>'+
       '<button onclick="deletePokerSession('+p.id+')" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer">\u00d7</button></div></div>';
   }).join('');
+}
+
+
+// ── SUBSCRIPTION AUTO-DETECTION ───────────────────────────────────────────────────────────────
+// The one real Money gap against Rocket Money — and the importer already exists, so this is just
+// pattern-matching on top of it. A subscription is the purest form of money leaking without a
+// decision: nobody chooses it monthly, they chose it once and then stopped noticing. Finding them is
+// not a gotcha, it is handing back a decision. It never cancels anything or judges a single charge.
+function _subNorm(str){
+  return String(str||'').toLowerCase()
+    .replace(/\b(pty|ltd|inc|llc|com|au|usa?)\b/g,'')
+    .replace(/[^a-z ]+/g,' ').replace(/\s+/g,' ').trim().slice(0,28);
+}
+function detectSubscriptions(){
+  try{
+    const tx=(ls('totry_transactions')||[]).filter(function(t){ return t && t.type==='expense' && t.amount>0 && (t.ts||t.date); });
+    if(tx.length<6) return [];
+    const groups={};
+    tx.forEach(function(t){
+      const k=_subNorm(t.note||t.category);
+      if(!k || k.length<3) return;
+      (groups[k]=groups[k]||[]).push({ amt:Math.round(t.amount*100)/100, ts:new Date(t.ts||t.date).getTime(), note:(t.note||t.category||'').slice(0,40) });
+    });
+    const known=(ls('totry_subscriptions')||[]).map(function(x){ return _subNorm(x.name); });
+    const dismissed=ls('totry_sub_dismissed')||[];
+    const out=[];
+    Object.keys(groups).forEach(function(k){
+      if(known.indexOf(k)>=0 || dismissed.indexOf(k)>=0) return;
+      const g=groups[k].sort(function(a,b){ return a.ts-b.ts; });
+      if(g.length<3) return;
+      // same-ish amount every time — a real subscription barely moves
+      const amts=g.map(function(x){ return x.amt; });
+      const avg=amts.reduce(function(a,b){ return a+b; },0)/amts.length;
+      if(avg<=0) return;
+      const spread=Math.max.apply(null,amts)-Math.min.apply(null,amts);
+      if(spread > Math.max(2, avg*0.12)) return;
+      // and it lands on a rhythm — monthly, or roughly weekly/yearly
+      const gaps=[]; for(let i=1;i<g.length;i++) gaps.push(Math.round((g[i].ts-g[i-1].ts)/86400000));
+      const avgGap=gaps.reduce(function(a,b){ return a+b; },0)/gaps.length;
+      let period=null;
+      if(avgGap>=25 && avgGap<=35) period='month';
+      else if(avgGap>=6 && avgGap<=8) period='week';
+      else if(avgGap>=350 && avgGap<=380) period='year';
+      if(!period) return;
+      const drift=gaps.filter(function(x){ return Math.abs(x-avgGap) > Math.max(4, avgGap*0.3); }).length;
+      if(drift > Math.floor(gaps.length/2)) return;
+      out.push({ key:k, name:g[g.length-1].note || k, amount:Math.round(avg*100)/100, period:period, seen:g.length, yearly:Math.round(avg*(period==='month'?12:period==='week'?52:1)) });
+    });
+    return out.sort(function(a,b){ return b.yearly-a.yearly; }).slice(0,8);
+  }catch(_){ return []; }
+}
+function renderSubDetect(){
+  const el=document.getElementById('sub-detect'); if(!el) return;
+  const found=detectSubscriptions();
+  if(!found.length){ el.style.display='none'; el.innerHTML=''; return; }
+  const total=found.reduce(function(a,f){ return a+f.yearly; },0);
+  el.style.display='block';
+  el.innerHTML='<div style="background:var(--bg3);border:1px solid var(--go-bd);border-radius:12px;padding:13px 15px;margin-bottom:12px">'+
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px">Found in your statements</div>'+
+    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:10px">'+found.length+' charge'+(found.length===1?'':'s')+' that repeat like subscriptions \u2014 about <b style="color:var(--tx)">$'+total.toLocaleString()+'/year</b> between them. Not an accusation, just the ones you may have stopped noticing.</div>'+
+    found.map(function(f){ return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--bd)">'+
+      '<div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+_escFew(f.name)+'</div>'+
+      '<div style="font-family:DM Mono,monospace;font-size:9.5px;color:var(--tx3)">$'+f.amount+'/'+f.period+' \u00b7 seen '+f.seen+'\u00d7 \u00b7 ~$'+f.yearly.toLocaleString()+'/yr</div></div>'+
+      '<button class="btn" style="width:auto;padding:5px 10px;font-size:11px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go)" onclick="_subAccept(\''+String(f.key).replace(/'/g,"")+'\')">Track</button>'+
+      '<button class="btn" style="width:auto;padding:5px 8px;font-size:11px;color:var(--tx3)" onclick="_subDismiss(\''+String(f.key).replace(/'/g,"")+'\')">Not one</button>'+
+    '</div>'; }).join('')+
+  '</div>';
+}
+function _subAccept(key){
+  const f=detectSubscriptions().find(function(x){ return x.key===key; }); if(!f) return;
+  try{
+    const list=ls('totry_subscriptions')||[];
+    list.unshift({id:Date.now(), name:f.name, amount:f.amount, period:f.period, note:'found in your statements', addedAt:new Date().toISOString()});
+    ls('totry_subscriptions', list);
+  }catch(_){}
+  try{ if(typeof renderSubscriptions==='function') renderSubscriptions(); }catch(_){}
+  renderSubDetect();
+  try{ showToast('Tracked', f.name+' \u2014 about $'+f.yearly.toLocaleString()+' a year. Now it is a decision again.'); }catch(_){}
+}
+function _subDismiss(key){
+  try{ const d=ls('totry_sub_dismissed')||[]; d.push(key); ls('totry_sub_dismissed', d.slice(-100)); }catch(_){}
+  renderSubDetect();
+}
+
+// ── ON THIS DAY — resurfacing as witness, never as a metric ───────────────────────────────────
+// Pull, never push: it appears in the reflect tab, not as a notification. Showing someone how they
+// wrote about the same struggle a season ago is the only proof of change that doesn't require them
+// to trust the app's arithmetic — it's their own handwriting.
+function onThisDay(){
+  try{
+    const j=ls('totry_journal')||[];
+    if(j.length<8) return null;
+    const now=Date.now();
+    const scored=j.map(function(e){
+      if(!e||!e.ts||!e.text||e.text.length<40) return null;
+      const age=Math.floor((now-new Date(e.ts).getTime())/86400000);
+      if(age<150) return null;                         // needs real distance to mean anything
+      // prefer close to a year, then any older entry
+      const d=Math.abs(age-365);
+      return { e:e, age:age, score:d };
+    }).filter(Boolean).sort(function(a,b){ return a.score-b.score; });
+    return scored.length ? scored[0] : null;
+  }catch(_){ return null; }
+}
+function renderOnThisDay(){
+  const el=document.getElementById('on-this-day'); if(!el) return;
+  const hit=onThisDay();
+  const seen=ls('totry_otd_seen')||'';
+  const key=hit?String(hit.e.ts):'';
+  if(!hit || seen===key){ el.style.display='none'; el.innerHTML=''; return; }
+  const months=Math.round(hit.age/30);
+  const when = hit.age>=330 ? 'about a year ago' : (months+' months ago');
+  el.style.display='block';
+  el.innerHTML='<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:13px 15px;margin-bottom:12px">'+
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px">You wrote this '+when+'</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:14.5px;font-style:italic;color:var(--tx2);line-height:1.7;margin-bottom:10px">\u201c'+_escFew(String(hit.e.text).slice(0,340))+(String(hit.e.text).length>340?'\u2026':'')+'\u201d</div>'+
+    '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:10px">Not to make you feel anything in particular \u2014 just so you can hear how you were speaking then, and notice whether it has moved.</div>'+
+    '<button class="btn" style="width:auto;padding:6px 12px;font-size:12px" onclick="_otdSeen()">Read it</button>'+
+  '</div>';
+}
+function _otdSeen(){
+  const hit=onThisDay(); if(hit){ try{ ls('totry_otd_seen', String(hit.e.ts)); }catch(_){} }
+  const el=document.getElementById('on-this-day'); if(el){ el.style.display='none'; el.innerHTML=''; }
+  try{ if(typeof go==='function') go('reflect'); }catch(_){}
 }
 
 function renderSubscriptions(){
@@ -29282,6 +29411,9 @@ function initEveningTab(){
     else { const cp=document.getElementById('call-prompt'); if(cp) cp.textContent=CALL_PROMPTS[day%CALL_PROMPTS.length]; }
     const sp=document.getElementById('shared-prayer');if(sp){const _sps=sharedPrayers();sp.textContent=_sps[day%_sps.length];}
   }
+  try{ renderOnThisDay(); }catch(_){}
+  try{ renderTGT(); }catch(_){}
+  if(typeof updateExamenCount === 'function') updateExamenCount();
   try{ renderTGT(); }catch(_){}
   if(typeof updateExamenCount === 'function') updateExamenCount();
   // Reflect today's examen state — if done, show the green confirmation in the card.
