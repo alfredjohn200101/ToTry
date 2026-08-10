@@ -4382,7 +4382,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v360';
+const APP_VERSION = 'v361';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5486,7 +5486,8 @@ function _reachOutResponded(){ try{ const a=_reachLog(); for(let i=a.length-1;i>
 function _resolveReachOuts(){
   try{
     const now=Date.now(); const a=_reachLog(); let changed=false;
-    a.forEach(function(e){ if(!e||e.opened!=null||e.ts>now) return; e.opened=(now-e.ts)<=45*60000; changed=true; });
+    // Only judge nudges we actually sent. An unsent one has no answer to give.
+    a.forEach(function(e){ if(!e||e.sent!==true||e.opened!=null||e.ts>now) return; e.opened=(now-e.ts)<=45*60000; changed=true; });
     if(changed) _saveReachLog(a);
     if(_reachUnansweredRun()>=3 && !_reachPaused()){
       _setReachState({ pausedUntil: Date.now()+REACHOUT_STANDDOWN_DAYS*86400000, next:null, hold:null });
@@ -5557,8 +5558,17 @@ function scheduleReachOut(){
     slots.forEach(function(t,i){
       // Web can't background-fire, and Notify.schedule's web fallback grows totry_notif_pending
       // unbounded — so on web we compute and SHOW the plan without queueing anything.
-      if(native) Notify.schedule('reachout_'+i, 'To Try', body, t, { route:'reachout', vice:best.v.n });
-      log.push({ ts:t.getTime(), vice:String(best.v.n), opened:null });
+      // And critically: on web we do NOT write it to the log. The log exists to measure whether a
+      // nudge we ACTUALLY SENT landed. Recording an unsent one made web self-destruct silently —
+      // the phantom entries ate the 3-a-week ceiling, then _resolveReachOuts marked all three
+      // unanswered (nobody opened a notification that never arrived) and stood the channel down for
+      // two weeks. Worse, it followed the person into the native app: a fresh install inherited a
+      // log that already said "three ignored", so the one feature the wrapper unlocks was mute on
+      // day one. Nothing sent, nothing logged.
+      if(native){
+        Notify.schedule('reachout_'+i, 'To Try', body, t, { route:'reachout', vice:best.v.n });
+        log.push({ ts:t.getTime(), vice:String(best.v.n), opened:null, sent:true });
+      }
     });
     _saveReachLog(log);
     _setReachState({ next: slots[0].getTime(), hold: null });
@@ -5571,6 +5581,7 @@ function scheduleReachOut(){
 // "we won't nag you" is only a claim.
 function _reachOutRowHTML(){
   const on=!ls('totry_reachout_off'); const q=quietHours(); const st=_reachState();
+  const _native=!!(typeof Notify!=='undefined' && Notify.isNative && Notify.isNative());
   let status;
   if(!on) status='Off. Nothing is scheduled.';
   else if(_reachPaused()) status='Standing down until '+new Date(st.pausedUntil).toLocaleDateString('en-AU')+' — the last few went unanswered, so I stopped.';
@@ -5590,6 +5601,10 @@ function _reachOutRowHTML(){
       '<button class="btn" onclick="saveQuietHours()" style="flex:0 0 auto;margin:0;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:12px;padding:9px 12px">Save</button>'+
     '</div>'+
     '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:6px">Nothing reaches you between these hours. If your hard hour falls inside them I come to the nearer edge instead — and the message says why.</div>'+
+    // Say the limit out loud. A browser cannot wake itself, so on the web this works out your hard
+    // hour and holds it — nothing buzzes. Claiming otherwise would be the exact promise this app
+    // is built not to make.
+    (_native ? '' : '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);line-height:1.6;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">In the browser I can work out your hard hour but I can’t buzz you — a web page can’t wake itself. The check-in starts once To Try is installed as an app; what you set here is kept and waiting. Quiet hours only ever silence what I send you — if you open me at 3am I’ll still meet you properly.</div>')+
   '</div>';
 }
 function saveQuietHours(){
@@ -5620,7 +5635,13 @@ function _initNotificationTaps(){
         const ex = (action && action.notification && action.notification.extra) || {};
         if(ex.route === 'morning'){ if(typeof go==='function') go('morning'); }
         else if(ex.route === 'evening'){ if(typeof go==='function') go('reflect'); }
-        else if(ex.route === 'reachout'){ if(typeof _feelThePull==='function') _feelThePull(); else if(typeof openCompanionForUrge==='function') openCompanionForUrge(); else if(typeof go==='function') go('home'); }
+        else if(ex.route === 'reachout'){
+          // A tap is the strongest receptivity signal there is — record it before routing, or the
+          // 45-minute "did they come back" heuristic is the only evidence we ever have and a nudge
+          // they answered from the lock screen can still count against the channel.
+          try{ if(typeof _reachOutResponded==='function') _reachOutResponded(); }catch(_){}
+          if(typeof _feelThePull==='function') _feelThePull(); else if(typeof openCompanionForUrge==='function') openCompanionForUrge(); else if(typeof go==='function') go('home');
+        }
       }catch(_){}
     });
   }catch(_){}
@@ -33572,10 +33593,10 @@ function renderPushSettings(){
           '<div style="flex:1"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Evening</div><input type="time" id="push-time-evening" value="'+prefs.evening+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
         '</div>' +
         '<button class="btn" onclick="savePushTimes()" style="background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:12px;margin-bottom:8px">Save times</button>' +
-        '<div style="border-top:1px solid var(--bd);margin:6px 0 10px;padding-top:12px;display:flex;align-items:center;justify-content:space-between;gap:12px">' +
-          '<div style="flex:1"><div style="font-size:13px;color:var(--tx);font-weight:500">Reach out to me first</div><div style="font-size:11px;color:var(--tx3);line-height:1.45">A quiet check-in at your hardest time of day — learned from your own patterns. Never guilt, always optional.</div></div>' +
-          '<button type="button" onclick="toggleReachOut()" style="padding:7px 14px;border-radius:100px;border:1px solid '+(reachOn?'var(--go-bd)':'var(--bd)')+';background:'+(reachOn?'var(--go-bg)':'transparent')+';color:'+(reachOn?'var(--go)':'var(--tx2)')+';font-size:12px;white-space:nowrap">'+(reachOn?'On':'Off')+'</button>' +
-        '</div>' +
+        // The receptivity gate's real row — toggle AND quiet hours AND why nothing is scheduled.
+        // A stripped hand-rolled copy used to live here, which meant quiet hours could never be set
+        // (quietHours() was permanently the 22:00–07:00 default) and a stand-down was invisible.
+        _reachOutRowHTML() +
         '<button class="btn" onclick="disablePushReminders()" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px">Turn reminders off</button>';
     } else {
       box.innerHTML = head +
@@ -33602,11 +33623,11 @@ function renderPushSettings(){
         '<div style="flex:1"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Evening</div><input type="time" id="push-time-evening" value="'+prefs.evening+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
       '</div>' +
       '<button class="btn" onclick="savePushTimes()" style="background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:12px;margin-bottom:8px">Save times</button>' +
-      // Reach-out-first — the one thing a web PWA could never do; real once wrapped natively.
-      '<div style="border-top:1px solid var(--bd);margin:6px 0 10px;padding-top:12px;display:flex;align-items:center;justify-content:space-between;gap:12px">' +
-        '<div style="flex:1"><div style="font-size:13px;color:var(--tx);font-weight:500">Reach out to me first</div><div style="font-size:11px;color:var(--tx3);line-height:1.45">A quiet check-in at your hardest time of day — learned from your own patterns. Never guilt, always optional.</div></div>' +
-        '<button type="button" onclick="toggleReachOut()" style="padding:7px 14px;border-radius:100px;border:1px solid '+(reachOn?'var(--go-bd)':'var(--bd)')+';background:'+(reachOn?'var(--go-bg)':'transparent')+';color:'+(reachOn?'var(--go)':'var(--tx2)')+';font-size:12px;white-space:nowrap">'+(reachOn?'On':'Off')+'</button>' +
-      '</div>' +
+      // Reach-out-first — the one thing a web PWA could never do; real once wrapped natively. The
+      // row is shown here because quiet hours are worth setting either way (they gate the in-app
+      // presence too), but it says plainly that the buzz itself waits for the installed app rather
+      // than implying a background nudge the browser cannot deliver.
+      _reachOutRowHTML() +
       '<button class="btn" onclick="disablePushReminders()" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px">Turn reminders off</button>';
   } else {
     box.innerHTML = head +
@@ -33723,6 +33744,19 @@ function runSchemaMigrations(){
 async function initApp(){
   try{ if(typeof runSchemaMigrations === 'function') runSchemaMigrations(); }catch(_){ }
   try{ if(typeof _purgeSyncedPhotos==='function') _purgeSyncedPhotos(); }catch(_){ }
+  // One-time: clear a reach-out log poisoned by the web phantom-send bug. Until now every entry was
+  // written whether or not a notification was actually scheduled, and web can't background-fire —
+  // so the log in the wild is all phantoms, already marked unanswered, and may have stood the
+  // channel down for two weeks over nudges nobody ever received. Drop the unsent ones and lift a
+  // stand-down that only phantoms caused, so the gate starts honest.
+  try{
+    if(!ls('totry_reach_phantom_purged')){
+      const a=_reachLog().filter(function(e){ return e && e.sent===true; });
+      _saveReachLog(a);
+      if(_reachUnansweredRun() < 3) _setReachState({ pausedUntil:0 });
+      ls('totry_reach_phantom_purged', 1);
+    }
+  }catch(_){ }
   // Receptivity bookkeeping, first thing: mark that they're here (so nothing buzzes them while they
   // are), then judge whether the reach-outs we already sent actually landed.
   try{ if(typeof _touchActive==='function') _touchActive(); }catch(_){}
