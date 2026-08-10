@@ -143,4 +143,38 @@ H.section('crisis gate — call-site coverage must never regress');
   });
 }
 
+// ── REACHABILITY: a feature nobody can start is not built ────────────────────────────────────────
+// Habits shipped uncreatable. addHabit() was never called from anywhere AND read #new-habit, an id that
+// has never existed, so it threw on its first line. No rename, no delete, no other creation path — and
+// the empty state told people to "add them in Settings", where no habit UI exists. The daily action the
+// entire home page is built around could not be started by any user. Nothing here caught it, because
+// these tests only ever asserted functions in isolation. These assert the WIRING.
+H.section('reachability — core actions must have a live entry point');
+{
+  const fs = require('fs');
+  const path = require('path');
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  // Every id an onclick/oninput handler pokes must actually exist in the markup.
+  const mustExist = ['home-habit-list', 'journal-text', 'nut-search-in', 'pt-pr-list', 'feel-door'];
+  mustExist.forEach(id => {
+    H.ok(html.indexOf('id="' + id + '"') > 0, '#' + id + ' exists in the markup');
+  });
+
+  // Habits: creation, listing and removal must each be reachable from a real handler.
+  ['openAddHabit', 'openManageHabits', 'deleteHabit'].forEach(fn => {
+    H.ok(html.indexOf('function ' + fn + '(') > 0, fn + ' is defined');
+    const refs = (html.match(new RegExp(fn + '\\s*\\(', 'g')) || []).length;
+    H.ok(refs >= 2, fn + ' is called from somewhere, not just defined (refs=' + refs + ')');
+  });
+  H.ok(/onclick="openManageHabits\(\)"/.test(html), 'the habit card header has a live add/edit control');
+  H.ok(/onclick="openAddHabit\(\)"/.test(html), 'the empty state offers a live "add your first habit" control');
+  H.ok(html.indexOf("getElementById('new-habit')") < 0, 'addHabit no longer reads the non-existent #new-habit');
+
+  // The onboarding boot gate must key on the flag finishOnboard actually writes, or fast-path users
+  // are thrown back into onboarding forever and their day count resets to 1 on every pass.
+  H.ok(/isOnboarded\s*\|\|/.test(html), 'boot gate consults totry_onboarded, not just identity+name');
+  H.ok(/if\(!ls\('totry_start'\)\) ls\('totry_start'/.test(html), 'totry_start is written once and never re-stamped');
+}
+
 H.report();

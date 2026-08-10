@@ -1819,8 +1819,12 @@ input:focus,textarea:focus,select:focus{
   <span id="hero-quote" style="display:none"></span>
   <span id="streak-dots" style="display:none"></span>
 
-  <!-- Today's habits — primary daily action -->
-  <div class="lbl">Today's habits</div>
+  <!-- Today's habits — primary daily action. The manage/add affordance has to live here: it is the only
+       route to creating a habit, and before this there was none anywhere in the app. -->
+  <div class="lbl" style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+    <span>Today&#39;s habits</span>
+    <button onclick="openManageHabits()" style="background:none;border:none;padding:0;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">+ add / edit</button>
+  </div>
   <div class="card" style="margin-bottom:12px">
     <div id="home-habit-list"></div>
   </div>
@@ -4390,7 +4394,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v370';
+const APP_VERSION = 'v371';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -6694,7 +6698,14 @@ function buildPTCtx(){
   const bodyEntries = ls('totry_body') || [];
   const currentWeight = bodyEntries[0] && bodyEntries[0].weight ? bodyEntries[0].weight : null;
   const goalWeight = ls('totry_goal_weight') || null;
-  const goalIntent = ls('totry_goal_intent') || ''; // cut / maintain / build
+  // Same dead key: the coach was never told whether this person is cutting, gaining or maintaining —
+  // one of the most basic things a whole-life coach should know before it talks about food or training.
+  const goalIntent = (function(){
+    try{
+      const g = (typeof _goalDir==='function') ? _goalDir() : '';
+      return g==='lose' ? 'losing fat' : (g==='gain' ? 'building muscle' : (g==='maintain' ? 'maintaining' : ''));
+    }catch(_){ return ''; }
+  })();
   // Recent training — pull last few sessions from workout history (Hevy-synced or local)
   let recentTraining = 'No recent sessions logged.';
   try{
@@ -11068,7 +11079,18 @@ function setFaithLevel(level){
   // Refresh the home verse visibility immediately if we're on home.
   try{ const vp=document.querySelector('.hero-verse'); if(vp) vp.style.display = (level==='light') ? 'none' : ''; }catch(_){}
 }
-function faithLevel(){ return ls('totry_faith_level') || 'full'; }
+function faithLevel(){
+  const explicit = ls('totry_faith_level');
+  if(explicit) return explicit;
+  // "Faith is full but never forced." The foundation onboarding always asks (ob-faith has five choices
+  // and no skip), but the FAST paths — "Take me in →" and the first-felt-moment door — bypass that step
+  // entirely, leaving totry_faith_tradition unset. faithTradition() then falls back to Christianity, and
+  // this used to hand that person FULL intensity: a Muslim or an atheist getting Christian scripture they
+  // never asked for. Until they choose, stay light — practical and warm, tradition only if they open that
+  // door in Settings. Anyone who did choose a path is unaffected.
+  try{ if(!ls('totry_faith_tradition')) return 'light'; }catch(_){}
+  return 'full';
+}
 function setUserSex(sex){
   ls('totry_sex', sex);
   try{ document.querySelectorAll('.sex-opt').forEach(b=>{ const on=b.dataset.sex===sex; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'rgba(200,169,110,0.10)':'var(--bg3)'; }); }catch(_){}
@@ -15802,7 +15824,9 @@ function autoTickHabits(){
     dayList.push({ dateStr: d.toLocaleDateString('en-AU'), idx: ((ti - off) % 7 + 7) % 7 });
   }
   // Determine the nutrition-goal direction once (lose = stay under, gain = hit/over, else hit).
-  const nutGoalIntent = (ls('totry_goal_intent') || '').toLowerCase();
+  // Was reading totry_goal_intent, which nothing writes — so neither branch below could ever match and
+  // the "hit nutrition goal" habit auto-ticked on the wrong rule for anyone cutting or gaining.
+  const nutGoalIntent = (typeof _goalDir==='function') ? _goalDir() : (ls('totry_calorie_goal_type')||'').toLowerCase();
   loadV();
   const allMornings = ls('totry_mornings')||[];
   const allEvenings = ls('totry_evenings')||[];
@@ -15997,10 +16021,66 @@ function clearHabitAnchor(hi){
   _anchorRefresh();
   if(typeof haptic==='function') haptic('light');
 }
-function addHabit(){
-  loadH();const n=document.getElementById('new-habit').value.trim();if(!n)return;
-  habits.push({n,d:[0,0,0,0,0,0,0]});
-  document.getElementById('new-habit').value='';saveH();renderHabits();
+// Habits were uncreatable. addHabit() was never called from anywhere (refcount 1) and its first line
+// read #new-habit — an id that has never existed in this file — so even a wired-up button would have
+// thrown a TypeError. No rename, no delete, no other path. A new user landed on "Today's habits", saw
+// "No habits yet. Add them in Settings", went to Settings, and found nothing. The daily action the whole
+// home page is built around could not be started.
+function addHabit(name){
+  const n = String(name==null ? '' : name).trim().slice(0,60);
+  if(!n) return false;
+  loadH();
+  if(habits.some(function(h){ return h && String(h.n).toLowerCase()===n.toLowerCase(); })) return 'dupe';
+  habits.push({n:n, d:[0,0,0,0,0,0,0]});
+  saveH();
+  try{ if(typeof syncToCloud==='function') syncToCloud('totry_h', habits); }catch(_){}
+  renderHabits();
+  return true;
+}
+function openAddHabit(){
+  if(typeof openFormModal!=='function') return;
+  openFormModal('Add a habit',
+    'One small thing you want to be true of you most days. Keep it small enough that a bad day can still hold it.',
+    [{id:'habit', label:'The habit', placeholder:'e.g. Read 10 pages · Walk after dinner · Pray before bed'}],
+    'Add it',
+    function(vals){
+      const r = addHabit(vals.habit);
+      if(r === 'dupe') return 'That one is already on your list.';
+      if(!r) return 'Give it a name first.';
+      try{ if(typeof haptic==='function') haptic('success'); }catch(_){}
+      try{ showToast('Added','It shows up on your home from today.'); }catch(_){}
+      return true;
+    });
+}
+function deleteHabit(i){
+  loadH();
+  const h = habits[i]; if(!h) return;
+  if(!confirm('Remove "'+String(h.n)+'"?\n\nYour ticks for it are removed too. This only takes it off your list \u2014 it is not a failure.')) return;
+  habits.splice(i,1);
+  saveH();
+  try{ if(typeof syncToCloud==='function') syncToCloud('totry_h', habits); }catch(_){}
+  try{ if(typeof haptic==='function') haptic('tap'); }catch(_){}
+  try{ showToast('Removed','One less thing to carry.'); }catch(_){}
+  renderHabits();
+}
+function openManageHabits(){
+  loadH();
+  const m=document.createElement('div'); m.className='modal-bg open';
+  const rows = habits.length
+    ? habits.map(function(h,i){
+        return '<div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--bd)">'+
+          '<div style="flex:1;font-size:14px;color:var(--tx)">'+_escFew(h.n)+'</div>'+
+          '<button onclick="closeModal(this);deleteHabit('+i+')" style="background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;padding:6px 8px">Remove</button>'+
+        '</div>';
+      }).join('')
+    : '<div style="font-size:13px;color:var(--tx3);text-align:center;padding:18px 0;line-height:1.6">Nothing on your list yet.</div>';
+  m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
+    '<h3 style="margin-bottom:4px">Your habits</h3>'+
+    '<p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.55">Small and few beats long and forgotten. Removing one is a choice, not a failure.</p>'+
+    rows+
+    '<button class="btn primary" style="margin-top:14px;margin-bottom:8px" onclick="closeModal(this);openAddHabit()">+ Add a habit</button>'+
+    '<button class="btn" onclick="closeModal(this)">Done</button></div>';
+  document.body.appendChild(m);
 }
 
 // ── BIBLE FIND ────────────────────────────────────────────────
@@ -17889,7 +17969,16 @@ function renderBody(){
   const hist=document.getElementById('body-history');
   if(hist){
     hist.innerHTML='';
-    if(!entries.length){hist.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:10px 0">No check-ins yet</p>';return;}
+    if(!entries.length){
+      hist.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:10px 0">No check-ins yet</p>';
+      // Run the tail before bailing. Measurements, progress photos and the body-comp insight do NOT
+      // depend on a weight check-in existing, and skipping them meant someone who tracked their waist
+      // or took photos but never weighed themselves saw none of their own data.
+      try{ renderMeasurements(); }catch(_){}
+      try{ renderProgressPhotos(); }catch(_){}
+      try{ renderBodyCompInsight(); }catch(_){}
+      return;
+    }
     // Full entry per check-in (not just weight) so progress reads as a story over time:
     // weight + change, body-fat, the scores, and the win/struggle/focus reflections.
     entries.forEach((e,i)=>{
@@ -23066,7 +23155,9 @@ function _fuelCtx(){
   let goalDir = 'maintain', goalLabel = 'maintaining';
   if(tdee.goal === 'lose'){ goalDir='cut'; goalLabel='leaning down'; }
   else if(tdee.goal === 'gain'){ goalDir='build'; goalLabel='building'; }
-  else { const gi = ls('totry_goal_intent'); if(gi==='cut'){ goalDir='cut'; goalLabel='leaning down'; } else if(gi==='build'){ goalDir='build'; goalLabel='building'; } }
+  else { const gi = (typeof _goalDir==='function') ? _goalDir() : '';
+         if(gi==='lose'||gi==='cut'){ goalDir='cut'; goalLabel='leaning down'; }
+         else if(gi==='gain'||gi==='build'){ goalDir='build'; goalLabel='building'; } }
   return { sex, cal: goals.cal||2100, pro: goals.pro||150, goalDir, goalLabel };
 }
 function getMealPrefs(){ return ls('totry_meal_prefs') || {}; }
@@ -28390,7 +28481,19 @@ function loadRoutine(id){
   currentSession=routine.exercises.map(ex=>({...ex,sets:ex.sets.map(s=>({...s,done:false}))}));
   setPTTab('log');renderWorkoutSession();showToast('Routine loaded',routine.name);
 }
-function deleteRoutine(id){ls('totry_routines',(ls('totry_routines')||[]).filter(r=>r.id!==id));renderRoutines();}
+function deleteRoutine(id){
+  // One tap on a small × used to destroy an entire routine — no confirm, no undo, no toast. A routine is
+  // a person's own training plan, often built exercise by exercise.
+  const all=(ls('totry_routines')||[]);
+  const r=all.find(function(x){ return x && x.id===id; });
+  const nm=r&&r.name?String(r.name):'this routine';
+  if(!confirm('Delete "'+nm+'"?\n\nThe routine and its exercises are removed. Sessions you already logged with it are kept.')) return;
+  ls('totry_routines', all.filter(function(x){ return x.id!==id; }));
+  try{ if(typeof syncToCloud==='function') syncToCloud('totry_routines', ls('totry_routines')); }catch(_){}
+  try{ if(typeof haptic==='function') haptic('tap'); }catch(_){}
+  try{ showToast('Routine deleted', nm+' is off your list.'); }catch(_){}
+  renderRoutines();
+}
 
 // ── CUSTOM ROUTINE BUILDER ──────────────────────────────────
 // Lets users build a routine from scratch: name + list of exercises with default sets/reps.
@@ -33318,7 +33421,7 @@ function loadDemoData(){
 const TOUR_STEPS = [
   { tab:'home', title:'Welcome to To Try', caption:'A 60-second walk through how it all fits together. Tap Next \u2014 or Skip anytime.' },
   { tab:'home', find:()=>document.getElementById('home-habit-list'),
-    title:'Your daily habits', caption:'These are the things you\u2019re building. Tap today\u2019s circle to check one off \u2014 workouts and prayer even tick themselves when you log them.' },
+    title:'Your daily habits', caption:'These are the things you\u2019re building \u2014 the last seven days at a glance. Workouts and prayer tick themselves when you log them; you tick the rest when you close the day.' },
   { tab:'home', find:()=>document.getElementById('home-quickwin-list'),
     prep:()=>{ try{ localStorage.setItem('totry_home_depth_open','1');
                     if(typeof renderHomeDepthFold==='function') renderHomeDepthFold(); }catch(_){} },
@@ -35136,7 +35239,9 @@ function getFirstRunSteps(){
       done: hasHabits,
       label: 'Add your first habits',
       desc: 'The daily actions that build you.',
-      action: "go('fight');setTimeout(()=>document.getElementById('new-habit')?.scrollIntoView({behavior:'smooth',block:'center'}),300)"
+      // Was: go('fight') then scroll to #new-habit — an id that has never existed, and the ?. meant it
+      // failed silently. So the app's own "Add your first habits" suggestion did nothing at all.
+      action: "openAddHabit()"
     },
     {
       done: coachHistory.length > 0,
@@ -35237,7 +35342,11 @@ function checkWhatsPossible(){
     '<div class="modal-handle"></div>' +
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:6px">Welcome</div>' +
     '<div style="font-family:Cormorant Garamond,serif;font-size:26px;color:var(--tx);font-style:italic;margin-bottom:6px">' + WHATS_POSSIBLE.title + '</div>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">A complete tool for the modern man. Explore at your own pace — it all lives behind five simple tabs.</p>' +
+    /* Was "A complete tool for the modern man" — this app is explicitly for men and women both, and the
+       founder's story being a big-brother one does not make the product's voice male. NOTE: this whole
+       modal is currently unreachable (checkWhatsPossible has no caller), so the copy has never shipped —
+       fixed anyway so it cannot ship wrong if anyone wires it up later. */
+    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">Your whole life in one place. Explore at your own pace — it all lives behind five simple tabs.</p>' +
     '<div style="margin-bottom:16px">' +
       WHATS_POSSIBLE.items.map(it =>
         '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)">' +
@@ -35507,7 +35616,21 @@ function getNextStep(){
     }
   }
   // 4. Morning's done but it's still early and nothing else pressing — gentle prayer nudge.
-  const prayedToday = (ls('totry_prayer_done')||{})[today];
+  // totry_prayer_done has ZERO writers anywhere in the app, so this was permanently falsy and the home's
+  // next step said "Take a moment to pray" all morning even to someone who had just prayed, saved an
+  // intention and finished their Examen. Nagging a person about the thing they just did is the exact
+  // opposite of this app's promise. Derive it from what actually gets written instead.
+  const prayedToday = (function(){
+    try{
+      const sameDay = ts => ts && new Date(ts).toLocaleDateString('en-AU') === today;
+      if((ls('totry_prayers')||[]).some(p => p && (sameDay(p.createdAt) || sameDay(p.ts)))) return true;
+      if((ls('totry_examens')||[]).some(e => e && sameDay(e.ts))) return true;
+      if((ls('totry_rosaries')||[]).some(r => r && (sameDay(r.ts) || sameDay(r.date)))) return true;
+      const m = (ls('totry_mornings')||[])[0];
+      if(m && sameDay(m.ts) && (m.intention || m.gratitude)) return true;
+      return false;
+    }catch(_){ return false; }
+  })();
   if(!prayedToday && hour < 17){
     return { text:'Take a moment to pray', sub:'A short scripture and prayer for today.', action:"go('soul')" };
   }
@@ -35725,7 +35848,12 @@ function renderHomeHabits(){
   list.innerHTML = '';
   
   if(!habits.length){
-    list.innerHTML = '<p style="font-size:13px;color:var(--tx3);text-align:center;padding:14px 0">No habits yet. Add them in Settings.</p>';
+    // Used to read "Add them in Settings" — there is no habit UI in Settings, so this sent every new
+    // user looking for something that does not exist. Now it offers the thing directly.
+    list.innerHTML = '<div style="text-align:center;padding:16px 8px 6px">'+
+      '<div style="font-size:13px;color:var(--tx3);line-height:1.6;margin-bottom:12px">No habits yet. Pick one small thing you want to be true of you most days.</div>'+
+      '<button class="btn primary" style="width:auto;padding:9px 18px;font-size:13px" onclick="openAddHabit()">Add your first habit</button>'+
+    '</div>';
     return;
   }
   
@@ -35836,7 +35964,9 @@ function renderHomeHabits(){
         'width:100%;max-width:32px;aspect-ratio:1/1;min-height:24px;margin:0 auto;border-radius:6px;display:flex;align-items:center;justify-content:center;' +
         'font-family:DM Mono,monospace;font-size:12px;font-weight:600;box-sizing:border-box;' +
         'background:' + bg + ';border:' + border + ';color:' + color + ';user-select:none' +
-        (isToday ? ';cursor:pointer' : '');
+        '';   // no cursor:pointer — this grid is deliberately read-only (see below), so it must not
+              // advertise a tap it will not honour.
+
       cell.textContent = mark;
       // Home grid is READ-ONLY — an at-a-glance view of the last 7 days. Habits auto-tick from
       // logged activity; manual ticking lives in the evening reflection, not here.
