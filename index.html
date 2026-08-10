@@ -4452,7 +4452,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v381';
+const APP_VERSION = 'v382';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -14387,11 +14387,31 @@ function logHonestLoss(viceName){
   if(!v)return;
   v.total=(v.total||0)+1;
   v.lastLoss=new Date().toISOString();
+  // This did NOT reset the streak — it only bumped `total` and stamped lastLoss. viceCleanDays()
+  // reads startDate FIRST and only falls back to lastLoss, so for any established vice the counter
+  // kept climbing after an admitted relapse. Someone taps "I failed before opening this. Be honest."
+  // — the hardest button in the app — and the app answers with a clean streak they know they do not
+  // have. CLAUDE.md is explicit: never congratulate a clean streak that isn't real. It also made
+  // honesty the one action with no consequence, which teaches people not to bother being honest.
+  // Same bookkeeping a normal relapse does, so the number tells the truth and the days they DID put
+  // in are banked rather than erased.
+  const cleanBeforeReset = (typeof viceCleanDays==='function') ? viceCleanDays(v) : 0;
+  v.cleanDaysTotal = (v.cleanDaysTotal || 0) + cleanBeforeReset;
+  v.relapseCount = (v.relapseCount || 0) + 1;
+  if(!v.relapseHistory) v.relapseHistory = [];
+  v.relapseHistory.push({date: new Date().toISOString(), streakLength: cleanBeforeReset, honest: true});
+  v.startDate = new Date().toISOString();
+  // An honestly-logged slip is real data about WHEN it happens — teach the risk-window engine too.
+  try{ if(typeof _recordFightMoment==='function') _recordFightMoment(v.n, false); }catch(_){}
   saveV();
   renderVices();
   renderScoreboard();
   renderDayCounter();
-  showToast('Honest. Logged.','Yesterday was a slip. Today, you\'re back. That\'s what matters.');
+  // Grace over shame, and honest about what changed. The banked days are the point: nothing they
+  // actually did is taken away from them.
+  showToast('Honest. Logged.', cleanBeforeReset>0
+    ? ('The count starts again today \u2014 and your '+cleanBeforeReset+' day'+(cleanBeforeReset===1?'':'s')+' stay in your total. Telling the truth is the harder thing, and you did it.')
+    : 'The count starts again today. Telling the truth is the harder thing, and you did it.');
 }
 
 function logWin(){
