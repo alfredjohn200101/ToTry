@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v382-honest-streak'
+const CACHE = 'totry-v383-escape'
 
 const CORE = [
   './',

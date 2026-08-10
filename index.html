@@ -4452,7 +4452,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v382';
+const APP_VERSION = 'v383';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -10852,7 +10852,7 @@ function fightVice(i){
   m.style.alignItems='center';
   m.innerHTML='<div class="modal">'+
     '<div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:6px">'+v.n+'</div>'+
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:6px">'+_escFew(v.n)+'</div>'+
     '<div style="text-align:center;font-size:12px;color:var(--tx3);margin-bottom:18px">What\'s happening?</div>'+
     '<button class="btn primary" style="margin-bottom:8px;padding:14px;font-size:14px;text-align:left;line-height:1.4" onclick="startLiveIntervention('+i+')">'+
       '<div style="font-weight:600">&#x2694;&#xfe0f; Fighting right now</div>'+
@@ -10894,7 +10894,7 @@ function startLiveIntervention(i){
       html+='<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px">You are '+cleanDays+' day'+(cleanDays===1?'':'s')+' in</div>';
     }
     if(why){
-      html+='<div style="font-size:14px;color:var(--tx);font-style:italic;font-family:Cormorant Garamond,serif;line-height:1.5">Remember why: "'+why+'"</div>';
+      html+='<div style="font-size:14px;color:var(--tx);font-style:italic;font-family:Cormorant Garamond,serif;line-height:1.5">Remember why: "'+_escFew(why)+'"</div>';
     }
     reminderEl.innerHTML=html;
     reminderEl.style.display=html?'block':'none';
@@ -10913,7 +10913,7 @@ function startQuickLog(i){
   m.style.alignItems='center';
   m.innerHTML='<div class="modal">'+
     '<div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:14px">'+v.n+'</div>'+
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:14px">'+_escFew(v.n)+'</div>'+
     
     '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Did you win or lose?</div>'+
     '<div style="display:flex;gap:8px;margin-bottom:14px">'+
@@ -11365,7 +11365,7 @@ function renderUrgeInsights(){
   tracked.forEach(v => {
     const p = analyzeUrgePatterns(v.n);
     if(!p){
-      html += '<div style="margin-bottom:10px;padding:12px;background:var(--bg3);border-radius:10px;font-size:12px;color:var(--tx3);line-height:1.5">Tracking <b style="color:var(--tx2)">'+v.n+'</b> — log a few more battles and your patterns will show here.</div>';
+      html += '<div style="margin-bottom:10px;padding:12px;background:var(--bg3);border-radius:10px;font-size:12px;color:var(--tx3);line-height:1.5">Tracking <b style="color:var(--tx2)">'+_escFew(v.n)+'</b> — log a few more battles and your patterns will show here.</div>';
       return;
     }
     const trendColor = p.trend==='improving'?'var(--gr)':p.trend==='slipping'?'var(--re)':'var(--tx2)';
@@ -11374,7 +11374,7 @@ function renderUrgeInsights(){
     // shows the wound AND how to heal it.
     const override = _overridePlan(p);
     html += '<div style="margin-bottom:10px;padding:14px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px">'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:17px;color:var(--go);font-style:italic;margin-bottom:8px">'+v.n+' — your patterns</div>'+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:17px;color:var(--go);font-style:italic;margin-bottom:8px">'+_escFew(v.n)+' — your patterns</div>'+
       '<div style="font-size:12px;color:var(--tx2);line-height:1.7">'+
         (p.riskWindow?'Hardest time: <b style="color:var(--tx)">'+p.riskWindow+'</b>'+(p.riskDay?', especially <b style="color:var(--tx)">'+p.riskDay+'s</b>':'')+'.<br>':'')+
         (p.topTrigger?'Most common trigger: <b style="color:var(--tx)">'+p.topTrigger+'</b>.<br>':'')+
@@ -14681,7 +14681,7 @@ function renderVices(){
     c.innerHTML =
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">' +
         '<div style="flex:1">' +
-          '<div class="eyebrow">' + v.n + '</div>' +
+          '<div class="eyebrow">' + _escFew(v.n) + '</div>' +
           '<div style="font-family:DM Mono,monospace;font-size:24px;font-weight:500;color:' + (cleanDays >= 7 ? 'var(--gr)' : cleanDays >= 1 ? 'var(--go)' : 'var(--tx2)') + '">' + cleanDays + ' <span style="font-size:11px;color:var(--tx3)">day' + (cleanDays===1?'':'s') + ' clean</span></div>' +
           (liveClock ? '<div class="vice-live-clock" style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:2px">' + liveClock.replace(' &middot; ', '') + '</div>' : '') +
         '</div>' +
@@ -14691,7 +14691,7 @@ function renderVices(){
           '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + (v.w||0) + '/' + (v.total||0) + '</div>' +
         '</div>' +
       '</div>' +
-      '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Usually hits: ' + (v.t || 'various times') + insight + '</div>' +
+      '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Usually hits: ' + _escFew(v.t || 'various times') + insight + '</div>' +
       _stageStripHTML(i) + _pledgeRowHTML(i) +
       (viceNeedsCheckIn(v) ?
         '<div style="background:var(--go-bg);border:1px solid var(--go-bd);border-radius:12px;padding:12px;margin-bottom:10px">' +
@@ -15196,7 +15196,7 @@ function changeViceMode(i){
   m.className = 'modal-bg open'; m.style.alignItems = 'center';
   if(toModerate){
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
-      '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:6px">'+v.n+'</div>'+
+      '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:6px">'+_escFew(v.n)+'</div>'+
       '<div style="text-align:center;font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:16px">Switch to keeping this in check \u2014 staying within a limit instead of aiming for zero.</div>'+
       '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Weekly limit</div>'+
       '<div style="position:relative;margin-bottom:14px"><input type="number" id="change-mode-limit" inputmode="numeric" placeholder="e.g. 3" value="'+(v.modLimit||'')+'" style="font-size:16px;padding:12px"></div>'+
@@ -15206,7 +15206,7 @@ function changeViceMode(i){
       '</div>';
   } else {
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
-      '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:6px">'+v.n+'</div>'+
+      '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:6px">'+_escFew(v.n)+'</div>'+
       '<div style="text-align:center;font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:16px">Switch to quitting \u2014 aiming for zero. Your clean-day streak will start from today.</div>'+
       '<button class="btn primary" onclick="applyViceMode('+i+',false)" style="margin-bottom:8px">Switch to quitting</button>'+
       '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Cancel</button>'+
@@ -15879,7 +15879,7 @@ function renderScoreboard(){
     if(v.kind==='letgo')return; // letting-go has a healing goal, not a win-rate
     const pct=v.total>0?Math.round(((v.w||0)/v.total)*100):0;
     const row=document.createElement('div');row.className='vsr';
-    row.innerHTML='<div class="vsr-top"><span class="vsr-name">'+v.n+'</span><div style="text-align:right"><div class="vsr-pct">'+pct+'%</div><div class="vsr-wins">'+(v.w||0)+' wins</div></div></div>'+
+    row.innerHTML='<div class="vsr-top"><span class="vsr-name">'+_escFew(v.n)+'</span><div style="text-align:right"><div class="vsr-pct">'+pct+'%</div><div class="vsr-wins">'+(v.w||0)+' wins</div></div></div>'+
       '<div class="vsr-bar-wrap"><div class="vsr-bar" style="width:'+pct+'%"></div></div>'+
       '<div class="vsr-meta"><span>'+(v.w||0)+'/'+(v.total||0)+' won</span><span>'+(v.lastWin?'Last: '+new Date(v.lastWin).toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'No wins yet')+'</span></div>';
     bv.appendChild(row);
@@ -24310,7 +24310,7 @@ function viceLedgerHTML(){
       const insideStreak = viceSpendFromBank(kind, Date.now() - clean*86400000);
       const contradicts = v.mode!=='moderate' && insideStreak && insideStreak.total > 0;
       out += '<div style="background:'+(contradicts?'var(--re-bg)':'var(--bg3)')+';border:1px solid '+(contradicts?'var(--re-bd)':'var(--bd)')+';border-radius:12px;padding:14px;margin-bottom:12px">'+
-        '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px">'+v.n.toUpperCase()+' · WHAT THE BANK SAYS</div>'+
+        '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px">'+_escFew(v.n.toUpperCase())+' · WHAT THE BANK SAYS</div>'+
         '<div style="font-family:DM Mono,monospace;font-size:26px;color:'+(contradicts?'var(--re)':'var(--tx)')+';line-height:1">$'+Math.round(bank.total).toLocaleString()+'</div>'+
         '<div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-top:8px">'+
           bank.count+' transactions'+(since?' over the last '+since+' days':'')+'. '+
@@ -28600,7 +28600,7 @@ function renderTemplates(){
   const mine = (ls('totry_routines')||[]).map(r=>r.name);
   box.innerHTML = TEMPLATE_LIBRARY.map((p,pi) =>
     '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:8px">'+
-    '<div style="font-size:14px;color:var(--tx);margin-bottom:2px">'+p.name+'</div>'+
+    '<div style="font-size:14px;color:var(--tx);margin-bottom:2px">'+_escFew(p.name)+'</div>'+
     '<div style="font-size:11px;color:var(--tx3);margin-bottom:8px">'+p.desc+'</div>'+
     p.days.map((d,di) => {
       const added = mine.includes(d.name);
@@ -30973,7 +30973,7 @@ function floatingHelpSOS(){
   vices.forEach((v, i) => {
     const cleanDays = viceCleanDays(v);
     viceButtons += '<button class="btn" style="margin-bottom:6px;padding:14px;font-size:14px;text-align:left;line-height:1.4;background:var(--bg3);border:1px solid var(--bd)" onclick="document.querySelector(&apos;.modal-bg.open&apos;)?.remove();startLiveIntervention(' + i + ')">' +
-      '<div style="font-weight:600;font-size:14px">' + v.n + '</div>' +
+      '<div style="font-weight:600;font-size:14px">' + _escFew(v.n) + '</div>' +
       '<div style="font-size:11px;color:var(--tx3);margin-top:2px">' + cleanDays + ' day' + (cleanDays===1?'':'s') + ' clean</div>' +
     '</button>';
   });
@@ -32090,7 +32090,7 @@ function renderLetters(){
     delivered.slice(0,5).forEach(l=>{
       html+='<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer" onclick="deliverLetter('+l.id+')">'+
         '<div style="font-size:12px;color:var(--tx)">Letter from Day '+l.writtenDay+' · read</div>'+
-        '<div style="font-size:11px;color:var(--tx3);margin-top:2px;font-style:italic">'+String(l&&l.text||'').slice(0,100)+'...</div>'+
+        '<div style="font-size:11px;color:var(--tx3);margin-top:2px;font-style:italic">'+_escFew(String(l&&l.text||'').slice(0,100))+'...</div>'+
       '</div>';
     });
   }
@@ -39239,7 +39239,7 @@ function renderPromises(){
     dueNow.forEach(p=>{
       const card=document.createElement('div');
       card.className='promise-card pending';
-      card.innerHTML='<div class="promise-text">"'+p.text+'"</div>'+
+      card.innerHTML='<div class="promise-text">"'+_escFew(p.text)+'"</div>'+
         '<div class="promise-meta">Made Day '+p.day+' · <span class="status">Did you keep this?</span></div>'+
         '<div class="promise-actions">'+
         '<button class="keep" onclick="markPromise('+p.id+',\'kept\')">Yes, I kept it</button>'+
@@ -39262,7 +39262,7 @@ function renderPromises(){
       const dueDate=new Date(p.due).toLocaleDateString('en-AU',{day:'numeric',month:'short'});
       const card=document.createElement('div');
       card.className='promise-card pending';
-      card.innerHTML='<div class="promise-text">"'+p.text+'"</div>'+
+      card.innerHTML='<div class="promise-text">"'+_escFew(p.text)+'"</div>'+
         '<div class="promise-meta">Made Day '+p.day+' · <span class="status">Due '+dueDate+'</span></div>';
       list.appendChild(card);
     });
@@ -39278,7 +39278,7 @@ function renderPromises(){
     resolved.slice(0,10).forEach(p=>{
       const card=document.createElement('div');
       card.className='promise-card '+p.status;
-      card.innerHTML='<div class="promise-text">"'+p.text+'"</div>'+
+      card.innerHTML='<div class="promise-text">"'+_escFew(p.text)+'"</div>'+
         '<div class="promise-meta">Day '+p.day+' · <span class="status">'+p.status+'</span></div>';
       list.appendChild(card);
     });
