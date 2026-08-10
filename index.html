@@ -4378,7 +4378,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v357';
+const APP_VERSION = 'v358';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7282,6 +7282,11 @@ function detectCrisis(text){
     'jump off a bridge', 'jump off the bridge', 'jump off a building', 'jump off the roof',
     'jump off the balcony', 'want to jump off', 'going to jump off', 'gonna jump off',
     'take my own life', 'taking my own life', "don't want to wake up",
+    // Added after the pre-release audit flagged these as common first-disclosure phrasings.
+    'want it to stop', 'make it stop', 'cant do this anymore', "can't do this anymore",
+    'tired of living', 'sick of living', 'nothing left', 'give up on life',
+    'not worth living', 'rather be dead', 'wish i was dead', 'wish i were dead',
+    'end the pain', 'stop existing', 'disappear forever',
     'dont want to wake up', 'better off without me',
     'everyone would be better without me', 'no reason to be here'
   ];
@@ -11211,8 +11216,24 @@ function _feelingQuick(text){
 // personalised redirect generates in the background.
 async function _feelingNowGo(){
   const feeling=(document.getElementById('feelingnow-input')||{}).value || '';
-  window.__feelingNowText = feeling.trim();
   const b=document.getElementById('feelingnow-body'); if(!b) return;
+  // SAFETY GATE — this is the app's most-invited disclosure ("everything at once and I just want to
+  // numb it") and it was the ONE free-text path to the LLM without a gate. The system prompt here is
+  // deliberately fierce ("refuse to let them lose") — the worst possible voice to answer someone
+  // saying they don't want to be here. Gate BEFORE window.__feelingNowText is set, so a disclosure is
+  // never later written into totry_feeling_wins as a "win".
+  try{
+    if(typeof detectCrisis==='function'){
+      const _c = detectCrisis(feeling);
+      if(_c){
+        b.innerHTML = '<div id="fn-crisis-slot"></div>'+
+          '<button class="btn" style="margin-top:10px" onclick="document.querySelectorAll(\'.modal-bg\').forEach(function(m){m.remove();})">Close</button>';
+        if(typeof showCrisisResponse==='function') showCrisisResponse('fn-crisis-slot', _c);
+        return;
+      }
+    }
+  }catch(_){}
+  window.__feelingNowText = feeling.trim();
   // Your actual ritual prayer, hand on heart — the thing that locks you in.
   b.innerHTML=
     '<div style="text-align:center;padding:8px 0 4px">'+
@@ -16786,6 +16807,19 @@ function nextChapter(){
   else{const idx=BIBLE_BOOKS.findIndex(b=>b.id===bookSel.value);if(idx<BIBLE_BOOKS.length-1){bookSel.value=BIBLE_BOOKS[idx+1].id;onBibleBookChange(false);document.getElementById('br-chapter').value=1;loadBibleChapter();}}
 }
 async function searchBible(query){
+  // SAFETY GATE — people type how they actually feel into a scripture search. If that's a
+  // disclosure, a verse is not the answer; a human is. Same reasoning as findVerse.
+  try{
+    if(typeof detectCrisis==='function'){
+      const _c = detectCrisis(query);
+      if(_c){
+        const _r=document.getElementById('bible-search-results')||document.getElementById('bible-results');
+        if(_r){ _r.innerHTML='<div id="bsr-crisis-slot"></div>'; if(typeof showCrisisResponse==='function') showCrisisResponse('bsr-crisis-slot', _c); }
+        else if(typeof showCrisisResponse==='function'){ const d=document.createElement('div'); d.id='bsr-crisis-slot'; document.body.appendChild(d); showCrisisResponse('bsr-crisis-slot', _c); }
+        return;
+      }
+    }
+  }catch(_){}
   query=(query||'').trim();
   if(!query)return;
   const res=document.getElementById('br-search-results');

@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v357-toolkit'
+const CACHE = 'totry-v358-gate-blocker'
 
 const CORE = [
   './',

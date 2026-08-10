@@ -118,4 +118,29 @@ H.section('detectCrisis — the gate must fire on any apostrophe (iOS Smart Punc
   H.eq(detectCrisis(null), null, 'null input → null (no throw)');
 }
 
+// ── CALL-SITE COVERAGE — the test that would have caught the v357 blocker ────────────────────────
+// The pre-release audit found a SEVENTH free-text→LLM path with no crisis gate ("I'm feeling it right
+// now" on Home), after two earlier rounds of gating. The reason it survived: these tests asserted
+// detectCrisis() in ISOLATION and nothing asserted that every call site actually invokes it. Green
+// tests, dead coverage. This test reads index.html and asserts the gate count does not fall.
+H.section('crisis gate — call-site coverage must never regress');
+{
+  const fs = require('fs');
+  const path = require('path');
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const gates = (html.match(/detectCrisis\s*\(/g) || []).length;
+  // 1 definition + N call sites. At v358 there are 7 gated surfaces: sendCoach, sendPT,
+  // companionFreeText, companionReply, findVerse, generateIntentionPrayer, _feelingNowGo, searchBible.
+  H.ok(gates >= 9, 'detectCrisis is referenced at least 9 times (definition + every gated surface) — found ' + gates);
+  // The specific surfaces, by their enclosing function, must each contain a gate.
+  const mustGate = ['_feelingNowGo', 'searchBible', 'companionFreeText', 'companionReply', 'findVerse', 'generateIntentionPrayer'];
+  mustGate.forEach(fn => {
+    const i = html.indexOf('function ' + fn + '(');
+    H.ok(i > 0, fn + ' exists');
+    // look only inside the first 3000 chars of the function body — the gate belongs at the top
+    const body = html.slice(i, i + 3000);
+    H.ok(body.indexOf('detectCrisis') > 0, fn + ' calls detectCrisis before doing its work');
+  });
+}
+
 H.report();
