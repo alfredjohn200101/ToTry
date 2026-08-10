@@ -4382,7 +4382,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v359';
+const APP_VERSION = 'v360';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9140,7 +9140,13 @@ function go(name){
   if(name==='reflect'){renderJournal();setReflectTab('evening');}
   if(name==='fight'){renderVices();renderScoreboard();setFightTab('vices');if(typeof renderFeelingWinsMomentum==='function')renderFeelingWinsMomentum();if(typeof renderUrgeInsights==='function')renderUrgeInsights();if(typeof renderVicePatternCard==='function')renderVicePatternCard();}
   if(name==='bible'){setBibleTab('find');}
-  if(name==='money'){renderFinance();if(typeof renderFinanceGoals==='function')renderFinanceGoals();}
+  if(name==='money'){renderFinance();if(typeof renderFinanceGoals==='function')renderFinanceGoals();
+    // renderFinance() early-returns when there are no debts, and renderTransactions() — the only
+    // caller of Giving, subscription auto-detection, subscriptions, bills, budgets, net worth and
+    // family contribution — sat AFTER that return. So every debt-free user (i.e. every new user)
+    // got a Money tab of empty card headers, and v348 + v355 shipped doing nothing at all.
+    if(typeof renderTransactions==='function') renderTransactions();
+  }
   if(name==='coach'){if(typeof renderCoachQuickReplies==='function')renderCoachQuickReplies();if(typeof restoreCoachMessages==='function' && !window.__coachRestored){restoreCoachMessages();window.__coachRestored=true;}}
   if(name==='home'){if(typeof renderHomeGreeting==='function')renderHomeGreeting();if(typeof renderLifeWoven==='function')renderLifeWoven();renderHomeHabits();if(typeof renderNextStep==='function')renderNextStep();if(typeof renderReadinessCard==='function')renderReadinessCard();if(typeof renderWeeklyReflectionCard==='function')renderWeeklyReflectionCard();if(typeof renderTourPrompt==='function')renderTourPrompt();if(typeof renderHomeCalendar==='function')renderHomeCalendar();if(typeof renderTesterCard==='function')renderTesterCard();if(typeof renderHomeQuickWins==='function')renderHomeQuickWins();if(typeof checkPreviewBanner==='function')checkPreviewBanner();if(typeof renderTodayForYou==='function')renderTodayForYou();if(typeof renderHomeInsight==='function')renderHomeInsight();renderDayCounter();showAIMorningSentence();updateShareDayNum();generateWeeklySynthesis();checkLettersDue();checkYearInReviewPrompt();if(typeof refreshAIPushMessages==='function')refreshAIPushMessages();if(typeof applyHomeProgressiveDisclosure==='function')applyHomeProgressiveDisclosure();if(typeof renderHomeDepthFold==='function')renderHomeDepthFold();}
   if(name==='settings'){
@@ -13023,9 +13029,13 @@ function openWalkBack(i){
     function(vals){
       const chain=(vals.chain||'').trim(); if(!chain) return 'Even a rough chain is worth more than none.';
       try{
-        v.walkbacks=v.walkbacks||[];
-        v.walkbacks.unshift({chain:chain.slice(0,600), catch:(vals.catch||'').trim().slice(0,200), ts:new Date().toISOString()});
-        v.walkbacks=v.walkbacks.slice(0,12);
+        const _name=v.n;
+        if(typeof loadV==='function') loadV();
+        const _i=vices.findIndex(function(x){ return x && x.n===_name; });
+        const _t=(_i>=0)?vices[_i]:v;
+        _t.walkbacks=_t.walkbacks||[];
+        _t.walkbacks.unshift({chain:chain.slice(0,600), catch:(vals.catch||'').trim().slice(0,200), ts:new Date().toISOString()});
+        _t.walkbacks=_t.walkbacks.slice(0,12);
         if(typeof saveV==='function') saveV();
       }catch(_){}
       try{ showToast('Saved','That chain is the thing to interrupt \u2014 miles earlier than the moment itself.'); }catch(_){}
@@ -13048,8 +13058,16 @@ function openCBA(i){
      {id:'free',label:'',type:'text',placeholder:'What being free of it would look like', value:c.free||''}],
     'Keep this',
     function(vals){
+      // Re-resolve by NAME inside the callback. `v` was captured before the form opened, and any
+      // loadV() in between REPLACES the vices array with fresh objects — mutating the stale one and
+      // calling saveV() then writes an array that never contained the edit, silently discarding
+      // everything the person just typed. Same trap in the walk-back below.
       try{
-        v.cba={gain:(vals.gain||'').trim().slice(0,500),cost:(vals.cost||'').trim().slice(0,500),free:(vals.free||'').trim().slice(0,240),ts:new Date().toISOString()};
+        const _name=v.n;
+        if(typeof loadV==='function') loadV();
+        const _i=vices.findIndex(function(x){ return x && x.n===_name; });
+        const _t=(_i>=0)?vices[_i]:v;
+        _t.cba={gain:(vals.gain||'').trim().slice(0,500),cost:(vals.cost||'').trim().slice(0,500),free:(vals.free||'').trim().slice(0,240),ts:new Date().toISOString()};
         if(typeof saveV==='function') saveV();
       }catch(_){}
       try{ showToast('Kept','I\u2019ll hand these back to you in your own words when it counts.'); }catch(_){}
@@ -19286,7 +19304,7 @@ function logEstimatedMeal(){
   const meal=window.__pendingMeal;
   if(!meal){ showToast('Nothing to log','Describe a meal first.'); return; }
   const t=meal.total||{};
-  const today=new Date().toLocaleDateString('en-AU');
+  const today=(typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
   const log=ls('totry_nutlog')||{};
   if(!log[today]) log[today]=[];
   log[today].push({
@@ -19781,7 +19799,7 @@ function logRecipeAsMeal(i){
   const totalCarb = r.ingredients.reduce((a, ing) => a + (ing.carb||0), 0) * portion;
   const totalFat = r.ingredients.reduce((a, ing) => a + (ing.fat||0), 0) * portion;
   
-  const today = new Date().toLocaleDateString('en-AU');
+  const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
   const log = ls('totry_nutlog') || {};
   if(!log[today]) log[today] = [];
   log[today].push({
@@ -19882,7 +19900,7 @@ function confirmRepeatYesterday(){
   const log = ls('totry_nutlog') || {};
   const daysAgo = window.__repeatSrcDays || 1;
   const src = new Date(Date.now() - daysAgo*86400000).toLocaleDateString('en-AU');
-  const today = new Date().toLocaleDateString('en-AU');
+  const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
   const srcMeals = log[src] || [];
   const checks = document.querySelectorAll('#repeat-yesterday-list input[type="checkbox"]');
   
@@ -19893,7 +19911,7 @@ function confirmRepeatYesterday(){
     const idx = parseInt(c.dataset.idx);
     const e = srcMeals[idx];
     if(!e) return;
-    log[today].push({...e, id: Date.now() + idx, ts: new Date().toISOString()});
+    log[today].push({...e, id: Date.now() + idx, ts: (typeof nutStampFor==='function'?nutStampFor():new Date().toISOString())});
     added++;
   });
   ls('totry_nutlog', log);
@@ -20152,7 +20170,7 @@ function addFoodToLog(){
     qty,
     meal: meal,
     ts:(typeof nutStampFor==='function'?nutStampFor():new Date().toISOString()),
-    date:new Date().toLocaleDateString('en-AU')
+    date:(typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU')
   };
   
   // Carry-through full micronutrient panel if source supplied them.
@@ -20193,7 +20211,15 @@ function addFoodToLog(){
   }
   const log=ls('totry_nutlog')||{};if(!log[today])log[today]=[];
   log[today].push(entry);
-  const keys=Object.keys(log).sort();if(keys.length>30)delete log[keys[0]];
+  // en-AU keys are d/m/yyyy, so a plain .sort() is LEXICOGRAPHIC — '10/08/2026' sorts before
+  // '9/12/2026', which means keys[0] can be TODAY and this used to delete the current diary outright.
+  // Sort by real date, and keep 120 days to match what day-navigation promises.
+  try{
+    const _ms=function(k){ const q=String(k).split('/').map(function(n){return parseInt(n,10);}); return (q.length<3||!q[2])?0:new Date(q[2],q[1]-1,q[0]).getTime(); };
+    const keys=Object.keys(log).sort(function(a,b){ return _ms(a)-_ms(b); });
+    const today=(typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+    while(keys.length>120){ const k=keys.shift(); if(k!==today) delete log[k]; }
+  }catch(_){}
   ls('totry_nutlog',log);
   // Remember this food for one-tap re-logging (recent foods list, most-recent first, deduped)
   rememberRecentFood(currentFood);
@@ -20206,7 +20232,7 @@ function addFoodToLog(){
   try{
     const _g = ls('totry_nut_goals')||{}; const _gc = _g.cal||0;
     if(_gc > 0){
-      const _today = new Date().toLocaleDateString('en-AU');
+      const _today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
       const _log = ls('totry_nutlog')||{}; const _dayArr = _log[_today]||[];
       const _sum = _dayArr.reduce((a,e)=>a+(e.cal||0),0);
       const _prev = _sum - (entry.cal||0);
@@ -20302,7 +20328,7 @@ function logRecentFood(name){
 // with a quick confirmation. No modal. This is what makes repeat logging "take seconds".
 // MFP-style saved meals: group foods you eat together ("my usual breakfast") and log them in one tap.
 function saveMealGroup(meal){
-  const today = new Date().toLocaleDateString('en-AU');
+  const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
   const entries = ((ls('totry_nutlog')||{})[today]||[]).filter(e => (e.meal||'snack') === meal);
   if(!entries.length){ showToast('Nothing to save', 'Log some foods in this meal first.'); return; }
   const name = prompt('Name this meal (e.g. "My usual breakfast"):', meal.charAt(0).toUpperCase()+meal.slice(1));
@@ -20361,7 +20387,7 @@ function renderSavedMeals(){
 // MFP-style one-tap log from a search result: logs at default serving into the time-based
 // meal slot, remembers it for next time. Tapping the row instead opens the portion editor.
 function quickLogSearchFood(food){
-  const today = new Date().toLocaleDateString('en-AU');
+  const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
   const log = ls('totry_nutlog') || {};
   if(!log[today]) log[today] = [];
   const hr = new Date().getHours();
@@ -20371,7 +20397,7 @@ function quickLogSearchFood(food){
     name: food.name, brand: food.brand || '',
     serving: '1 serving', qty: 1,
     cal: food.cal, pro: food.pro, carb: food.carb, fat: food.fat,
-    meal: meal, source: food.source || '', ts: new Date().toISOString()
+    meal: meal, source: food.source || '', ts: (typeof nutStampFor==='function'?nutStampFor():new Date().toISOString())
   });
   ls('totry_nutlog', log);
   if(typeof rememberRecentFood === 'function') rememberRecentFood(food);
@@ -20383,7 +20409,7 @@ function quickLogRecent(name){
   const recents = ls('totry_recent_foods') || [];
   const f = recents.find(x => x.name.toLowerCase().trim() === name.toLowerCase().trim());
   if(!f){ showToast('Not found', 'Search for it instead.'); return; }
-  const today = new Date().toLocaleDateString('en-AU');
+  const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
   const log = ls('totry_nutlog') || {};
   if(!log[today]) log[today] = [];
   // Best-guess meal slot by time of day
@@ -20394,7 +20420,7 @@ function quickLogRecent(name){
     name: f.name, brand: f.brand || '',
     serving: '1 serving', qty: 1,
     cal: f.cal, pro: f.pro, carb: f.carb, fat: f.fat,
-    meal: meal, source: f.source || '', ts: new Date().toISOString()
+    meal: meal, source: f.source || '', ts: (typeof nutStampFor==='function'?nutStampFor():new Date().toISOString())
   });
   ls('totry_nutlog', log);
   rememberRecentFood(f); // bump its recency/count
