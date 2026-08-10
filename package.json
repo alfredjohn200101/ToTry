@@ -18,5 +18,8 @@
     "@capacitor/local-notifications": "^8.2.0",
     "@capacitor/push-notifications": "^8.1.1",
     "capacitor-health": "^8.1.2"
+  },
+  "devDependencies": {
+    "playwright": "^1.62.1"
   }
 }
