@@ -239,6 +239,54 @@ H.section('_auKeyMs + _pruneNutLog — d/m/yyyy keys must not corrupt the diary'
   H.ok(!log['3/4/2026'], 'the oldest days are the ones dropped');
 }
 
+// ── STORAGE QUOTA — a failed save must never look like a saved one ───────────────────────────────
+// ls() used to swallow every write error into catch(e){}. Harmless for a JSON hiccup, catastrophic for
+// QuotaExceededError: iOS Safari caps localStorage near 5MB and this app stores base64 progress photos,
+// 1200 journal entries and coach transcripts. Once full, every save failed silently while the person kept
+// working and seeing success toasts. Recovery must reclaim only EXPENDABLE data — never their words, never
+// their fight — and when it cannot write at all, it must say so.
+H.section('ls() quota handling — recover, or tell the truth');
+{
+  const store = {};
+  let failOn = null;                      // key that should throw QuotaExceededError
+  const quotaErr = () => { const e = new Error('quota'); e.name = 'QuotaExceededError'; throw e; };
+  const localStorage = {
+    getItem: k => (k in store ? store[k] : null),
+    setItem: (k, v) => { if (failOn && k === failOn) { failOn = null; quotaErr(); } store[k] = String(v); },
+    removeItem: k => { delete store[k]; },
+  };
+  let toast = null;
+  const { ls } = H.load(['ls', '_lsEmergencyPrune'], {
+    localStorage,
+    showToast: (t, b) => { toast = t; },
+    console: { error: () => {}, warn: () => {} },
+    // module-level flag the extracted ls() reads; the harness turns context keys into parameters, so a
+    // plain value here is assignable inside the function under test
+    _lsQuotaWarned: false,
+  });
+
+  // seed expendable bulk plus the two things that must never be touched
+  store['totry_progress_photos'] = JSON.stringify(Array.from({length:30},(_,i)=>({id:i,data:'p'.repeat(2000)})));
+  store['totry_journal'] = JSON.stringify([{ ts:'x', text:'MY WORDS' }]);
+  store['totry_v'] = JSON.stringify([{ n:'MY FIGHT' }]);
+
+  // a recoverable quota failure
+  failOn = 'totry_nutlog';
+  const ok = ls('totry_nutlog', { '10/08/2026': [{ cal: 500 }] });
+  H.eq(ok, true, 'ls reports success after recovering from a quota error');
+  H.ok(!!ls('totry_nutlog'), 'the data actually persisted on the retry');
+  H.ok(JSON.parse(store['totry_progress_photos']).length < 30, 'photos were trimmed to make room');
+  H.eq(JSON.parse(store['totry_journal'])[0].text, 'MY WORDS', 'the JOURNAL is never sacrificed');
+  H.eq(JSON.parse(store['totry_v'])[0].n, 'MY FIGHT', 'the FIGHT is never sacrificed');
+  H.eq(toast, null, 'no alarm raised when recovery succeeded');
+
+  // an unrecoverable one — every write throws
+  localStorage.setItem = () => quotaErr();
+  const ok2 = ls('totry_nutlog', { y: 1 });
+  H.eq(ok2, false, 'ls returns false when it genuinely could not write');
+  H.eq(toast, 'Storage full', 'and the person is TOLD, instead of the save silently vanishing');
+}
+
 // ── DEAD ELEMENT REFERENCES — a ratchet on the signature bug class ───────────────────────────────
 // This codebase's dominant failure is code that parses, passes tests and does nothing, and the most
 // common mechanism is a handler poking an id that does not exist. A guarded one (if(el)) is a silent

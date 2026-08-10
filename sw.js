@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v376-date-keys'
+const CACHE = 'totry-v377-quota-safe'
 
 const CORE = [
   './',

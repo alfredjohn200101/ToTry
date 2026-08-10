@@ -4391,16 +4391,70 @@ function importAllData(ev){
 }
 
 // ── STORAGE ──────────────────────────────────────────────────
+// ls() is the single most-called function in this app, and its write path used to swallow every error
+// into catch(e){}. That is fine for a JSON hiccup and catastrophic for QuotaExceededError: iOS Safari
+// caps localStorage around 5MB per origin, and this app stores base64 progress photos, up to 1200 journal
+// entries, coach and PT transcripts, and 120 days of food. Once full, EVERY subsequent save failed
+// silently — the person kept logging meals and writing entries, saw the success toasts, and none of it
+// persisted. That is the silent-failure mode in its purest form, on the platform we are shipping to.
+//
+// So: on a quota failure, free space from the largest EXPENDABLE stores (never the fight, never the
+// journal), retry once, and if it still cannot write, say so out loud rather than pretending.
+let _lsQuotaWarned = false;
+function _lsEmergencyPrune(){
+  let freed = 0;
+  // Ordered least-painful first. Photos are by far the biggest and are explicitly device-only, so a lost
+  // photo costs a picture; a lost journal entry costs someone's words. Never touch totry_v/totry_journal.
+  const plans = [
+    ['totry_progress_photos', a => Array.isArray(a) ? a.slice(0, 8)  : a],
+    ['totry_coach_history',   a => Array.isArray(a) ? a.slice(-6)    : a],
+    ['totry_pt_history',      a => Array.isArray(a) ? a.slice(-6)    : a],
+    ['totry_strava_activities', a => Array.isArray(a) ? a.slice(0, 40) : a],
+    ['totry_workouts',        a => Array.isArray(a) ? a.slice(0, 120) : a],
+  ];
+  for(const [key, trim] of plans){
+    try{
+      const raw = localStorage.getItem(key);
+      if(!raw) continue;
+      const next = trim(JSON.parse(raw));
+      const out = JSON.stringify(next);
+      if(out.length < raw.length){ localStorage.setItem(key, out); freed += raw.length - out.length; }
+    }catch(_){ }
+    if(freed > 400000) break;                 // enough headroom for a normal write
+  }
+  // Last resort: drop photos entirely. They are device-only by policy, so nothing syncs back.
+  if(!freed){ try{ const raw=localStorage.getItem('totry_progress_photos');
+    if(raw){ localStorage.removeItem('totry_progress_photos'); freed = raw.length; } }catch(_){ } }
+  return freed;
+}
 function ls(k,v){
   if(v===undefined){try{return JSON.parse(localStorage.getItem(k));}catch(e){return null;}}
-  else{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+  try{ localStorage.setItem(k, JSON.stringify(v)); return true; }
+  catch(e){
+    const quota = e && (e.name==='QuotaExceededError' || e.name==='NS_ERROR_DOM_QUOTA_REACHED' || e.code===22);
+    if(!quota) return false;                  // a genuine serialisation problem — nothing to reclaim
+    try{
+      _lsEmergencyPrune();
+      localStorage.setItem(k, JSON.stringify(v));
+      return true;                            // recovered; the person keeps their data
+    }catch(_){
+      // Could not write even after reclaiming. Tell them — a lost save must never look like a saved one.
+      if(!_lsQuotaWarned){
+        _lsQuotaWarned = true;
+        try{ if(typeof showToast==='function') showToast('Storage full',
+          'This device is out of room, so that did not save. Settings \u2192 Your data \u2192 Export to back up, then clear old progress photos.'); }catch(_){}
+        try{ console.error('[ls] quota exceeded, write dropped:', k); }catch(_){}
+      }
+      return false;
+    }
+  }
 }
 
 // ── APP VERSION & CHANGELOG ───────────────────────────────────
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v376';
+const APP_VERSION = 'v377';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
