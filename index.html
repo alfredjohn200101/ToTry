@@ -4454,7 +4454,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v377';
+const APP_VERSION = 'v378';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -17534,9 +17534,12 @@ function setQuickMood(btn){
   btn.style.borderColor = 'var(--go)';
 }
 
+const JOURNAL_MAX = 20000;   // ~4,000 words. Long enough for anything real, short enough to not eat the device.
 function saveQuickJournal(){
-  const text = document.getElementById('qj-text')?.value.trim();
+  let text = document.getElementById('qj-text')?.value.trim();
   if(!text){ showToast('Empty', 'Write a few words first.'); return; }
+  let _trimmed = false;
+  if(text.length > JOURNAL_MAX){ text = text.slice(0, JOURNAL_MAX); _trimmed = true; }
   
   loadV();
   const todayKey = new Date().toLocaleDateString('en-AU');
@@ -17560,7 +17563,8 @@ function saveQuickJournal(){
   
   document.querySelector('.modal-bg.open')?.remove();
   if(typeof renderJournal === 'function') renderJournal();
-  showToast('Saved', 'In your journal.');
+  // Never trim someone's words without telling them.
+  showToast('Saved', _trimmed ? 'In your journal \u2014 though it was very long, so the last part was trimmed.' : 'In your journal.');
   haptic('success');
 }
 
@@ -17625,7 +17629,7 @@ function renderJournal(){
       const wTag=e.wins>0?'<span class="je-tag w">+'+e.wins+' wins</span>':'';
       const lTag=e.urges>0?'<span class="je-tag l">'+e.urges+' battles</span>':'';
       const dTag=e.day?'<span class="je-tag">Day '+e.day+'</span>':'';
-      item.innerHTML='<div class="je-date">'+_escFew(e.date||'')+'</div><div class="je-mood">'+_escFew(e.mood||'')+'</div><div class="je-prev">'+_escFew(e.text||'')+'</div><div class="je-tags">'+dTag+wTag+lTag+'</div>';
+      item.innerHTML='<div class="je-date">'+_escFew(e.date||'')+'</div><div class="je-mood">'+_escFew(e.mood||'')+'</div><div class="je-prev">'+_escFew(String(e.text||'').slice(0,240))+'</div><div class="je-tags">'+dTag+wTag+lTag+'</div>';
       item.onclick=()=>{const m=document.createElement('div');m.className='modal-bg open';m.innerHTML='<div class="modal"><div class="modal-handle"></div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);margin-bottom:8px;letter-spacing:0.1em">'+e.date+(e.day?' \u2014 Day '+e.day:'')+'</div><div style="font-size:28px;margin-bottom:12px">'+_escFew(e.mood||'')+'</div><div style="font-size:14px;line-height:1.75;color:var(--tx);white-space:pre-wrap;margin-bottom:16px">'+_escFew(e.text||'')+'</div><button class="btn" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx3);margin-bottom:8px" onclick="this.closest(\'.modal-bg\').remove();deleteJournalEntry(\''+String(e.ts||'').replace(/[\\'"\\\\]/g,'')+'\')">Delete this entry</button><button class="btn" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div>';document.body.appendChild(m);};
     } else if(rec.kind==='morning'){
       const parts=[]; if(e.gratitude)parts.push('Grateful: '+_escFew(e.gratitude)); if(e.intention)parts.push('Intention: '+_escFew(e.intention));
@@ -24108,9 +24112,9 @@ function handleCSVFile(ev){
         if(f.length < 2) continue;
         const desc = cols.desc>=0 ? (f[cols.desc]||'') : (f[1]||'');
         let amt = 0;
-        if(cols.amount>=0 && f[cols.amount]) amt = parseFloat(f[cols.amount].replace(/[^0-9.\-]/g,''))||0;
-        else if(cols.debit>=0 && f[cols.debit]) amt = -(Math.abs(parseFloat((f[cols.debit]||'').replace(/[^0-9.\-]/g,''))||0));
-        if(cols.credit>=0 && f[cols.credit]){ const c = parseFloat((f[cols.credit]||'').replace(/[^0-9.\-]/g,''))||0; if(c) amt = Math.abs(c); }
+        if(cols.amount>=0 && f[cols.amount]) amt = _csvAmount(f[cols.amount]);
+        else if(cols.debit>=0 && f[cols.debit]) amt = -Math.abs(_csvAmount(f[cols.debit]));
+        if(cols.credit>=0 && f[cols.credit]){ const c = _csvAmount(f[cols.credit]); if(c) amt = Math.abs(c); }
         if(!amt) continue;
         const dateStr = cols.date>=0 ? (f[cols.date]||'') : '';
         const when = dateStr ? new Date(dateStr) : new Date();
@@ -38664,8 +38668,41 @@ async function smartImportCSV(file, schema, onReady, opts){
   onReady(cols, rows);
 }
 
+// Normalise a money string from a bank export. The old code stripped everything except [0-9.-], which
+// silently multiplied European amounts by 100: '-22,99' became -2299 and '1.234,56' became 1.23456.
+// Rule: whichever of . or , appears LAST is the decimal separator; the other is a thousands grouper.
+function _csvAmount(raw){
+  let t = String(raw == null ? '' : raw).trim();
+  if(!t) return 0;
+  const neg = /^\(.*\)$/.test(t) || /-/.test(t);        // some exports use (123.45) for negatives
+  t = t.replace(/[^0-9.,]/g, '');
+  const lastDot = t.lastIndexOf('.'), lastComma = t.lastIndexOf(',');
+  if(lastDot >= 0 && lastComma >= 0){
+    if(lastComma > lastDot) t = t.replace(/\./g, '').replace(',', '.');   // 1.234,56
+    else t = t.replace(/,/g, '');                                        // 1,234.56
+  } else if(lastComma >= 0){
+    // Only commas: a trailing group of exactly 2 digits reads as a decimal, otherwise thousands.
+    t = /,\d{2}$/.test(t) ? t.replace(/,/g, '.') : t.replace(/,/g, '');
+  } else if(lastDot >= 0 && /\.\d{3}$/.test(t) && t.indexOf('.') === lastDot){
+    // Only a single dot, followed by exactly THREE digits: '2.500'. Money carries two decimal places, not
+    // three, so in every locale this is a thousands grouper — European exports write 2.500 for 2,500.
+    // Reading it as 2.5 understated the amount by 1000x.
+    t = t.replace(/\./g, '');
+  }
+  const n = parseFloat(t);
+  if(isNaN(n)) return 0;
+  return neg ? -Math.abs(n) : n;
+}
 function parseCSV(text){
   const rows = [];
+  // Excel and most Windows bank exports start with a UTF-8 BOM, which stayed glued to the first header
+  // ("\uFEFFDate"), so header detection missed the very first column every time.
+  text = String(text || '').replace(/^\uFEFF/, '');
+  // Delimiter is not always a comma: European exports use ';' (with ',' as the decimal point) and some
+  // use tabs. Sniff it from the first line, which is the header on every real export.
+  const firstLine = text.slice(0, text.indexOf('\n') < 0 ? text.length : text.indexOf('\n'));
+  const counts = { ',': (firstLine.match(/,/g)||[]).length, ';': (firstLine.match(/;/g)||[]).length, '\t': (firstLine.match(/\t/g)||[]).length };
+  const DELIM = Object.keys(counts).reduce((a,b)=> counts[b] > counts[a] ? b : a, ',');
   let row = [], field = '', inQuotes = false;
   for(let i = 0; i < text.length; i++){
     const c = text[i], next = text[i+1];
@@ -38675,7 +38712,7 @@ function parseCSV(text){
       else { field += c; }
     } else {
       if(c === '"'){ inQuotes = true; }
-      else if(c === ','){ row.push(field); field = ''; }
+      else if(c === DELIM){ row.push(field); field = ''; }
       else if(c === '\r'){ /* skip */ }
       else if(c === '\n'){ row.push(field); rows.push(row); row = []; field = ''; }
       else { field += c; }

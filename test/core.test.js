@@ -239,6 +239,42 @@ H.section('_auKeyMs + _pruneNutLog — d/m/yyyy keys must not corrupt the diary'
   H.ok(!log['3/4/2026'], 'the oldest days are the ones dropped');
 }
 
+// ── BANK CSV IMPORT — money maths on other people's file formats ─────────────────────────────────
+// The importer stripped everything except [0-9.-] from an amount, which silently multiplied European
+// figures by 100: '-22,99' became -2299 and '1.234,56' became 1.23456. A 100x error on someone's real
+// spending is the kind of bug that makes an app untrustworthy in one glance. parseCSV also kept the UTF-8
+// BOM that Excel and most Windows bank exports prepend, so the FIRST header ("\uFEFFDate") never matched
+// and its column was lost, and it only ever split on commas — European exports are semicolon-delimited.
+H.section('_csvAmount + parseCSV — real bank export shapes');
+{
+  const { _csvAmount, parseCSV } = H.load(['_csvAmount', 'parseCSV']);
+
+  // AU / US format
+  H.eq(_csvAmount('-88.20'), -88.2, 'plain decimal');
+  H.eq(_csvAmount('1,234.56'), 1234.56, 'comma thousands + dot decimal');
+  H.eq(_csvAmount('$1,234.56'), 1234.56, 'currency symbol stripped');
+  // European format
+  H.eq(_csvAmount('-22,99'), -22.99, "'-22,99' is -22.99, NOT -2299");
+  H.eq(_csvAmount('1.234,56'), 1234.56, "'1.234,56' is 1234.56, NOT 1.23456");
+  H.eq(_csvAmount('1,50'), 1.5, 'comma decimal with two places');
+  H.eq(_csvAmount('2.500'), 2500, "'2.500' is 2500 — money has 2 decimals, so 3 digits means thousands");
+  // accounting + junk
+  H.eq(_csvAmount('(123.45)'), -123.45, 'parenthesised negative');
+  H.eq(_csvAmount('-0,05'), -0.05, 'small negative with comma decimal');
+  H.eq(_csvAmount(''), 0, 'empty is 0');
+  H.eq(_csvAmount('abc'), 0, 'unparseable is 0, never NaN');
+  H.eq(_csvAmount(null), 0, 'null is 0');
+
+  // parseCSV against real export quirks
+  H.eq(parseCSV('\uFEFFDate,Desc,Amt\n1/1/2026,X,-1\n')[0], ['Date','Desc','Amt'], 'UTF-8 BOM is stripped off the first header');
+  H.eq(parseCSV('Date;Desc;Amt\n1/1/2026;NETFLIX;-22,99\n')[1], ['1/1/2026','NETFLIX','-22,99'], 'semicolon-delimited files split');
+  H.eq(parseCSV('Date\tDesc\tAmt\n1/1/2026\tX\t-1\n')[0], ['Date','Desc','Amt'], 'tab-delimited files split');
+  H.eq(parseCSV('Date,Description,Amount\n10/08/2026,"WOOLWORTHS, RICHMOND",-88.20\n')[1],
+    ['10/08/2026','WOOLWORTHS, RICHMOND','-88.20'], 'a quoted comma inside a field is still one field');
+  H.eq(parseCSV('D,A\n1/1/2026,"He said ""hi"""\n')[1], ['1/1/2026','He said "hi"'], 'escaped quotes');
+  H.eq(parseCSV(''), [], 'empty file gives no rows');
+}
+
 // ── STORAGE QUOTA — a failed save must never look like a saved one ───────────────────────────────
 // ls() used to swallow every write error into catch(e){}. Harmless for a JSON hiccup, catastrophic for
 // QuotaExceededError: iOS Safari caps localStorage near 5MB and this app stores base64 progress photos,
