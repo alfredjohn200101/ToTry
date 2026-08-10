@@ -4356,7 +4356,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v353';
+const APP_VERSION = 'v354';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -8434,6 +8434,14 @@ async function _openAsma(){
 // to build peace between faiths. Framed as echoes, NOT equivalence (never "all religions
 // are the same" — that quietly insults the devout). Each line is real and attributed.
 const SHARED_THREADS = [
+  // Awe is the one practice every tradition arrived at independently: go outside, look up, and be
+  // made small in a way that doesn't diminish you. Pairs with the "Look Up" off-ramp.
+  { theme:'Looking up at creation', lines:{
+    christianity:{t:'The heavens declare the glory of God; the skies proclaim the work of his hands.',r:'Psalm 19:1'},
+    islam:{t:'In the creation of the heavens and the earth, and the alternation of night and day, there are signs for people of understanding.',r:'Qur\u2019an 3:190'},
+    hinduism:{t:'I am the taste in water, the light of the sun and the moon, the sound in air.',r:'Bhagavad Gita 7.8'},
+    buddhism:{t:'Look on the world as a bubble, look on it as a mirage \u2014 and the king of death will not find you.',r:'Dhammapada 170'},
+    secular:{t:'We are a way for the cosmos to know itself.',r:'Carl Sagan'} } },
   { theme:'Patience in hardship', lines:{
     christianity:{t:'Count it all joy when you meet trials, for the testing of your faith produces steadfastness.',r:'James 1:2–3'},
     islam:{t:'Indeed, with hardship comes ease.',r:'Qur’an 94:6'},
@@ -10692,6 +10700,7 @@ function openServiceExit(){
     '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:18px">An urge points you inward, at yourself. The quickest way out is not to think harder about it \u2014 it is to turn and do one small thing for someone else.</div>'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);theRelease({did:\'You turned outward instead of inward \u2014 and did something real for someone else.\'})">I\u2019m doing it</button>'+
     '<button class="btn" onclick="closeModal(this);openServiceExit()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px;margin-bottom:8px">Give me another</button>'+
+    '<button class="btn" onclick="closeModal(this);openDEADS()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin-bottom:8px;font-size:13px">\u{1F5FA} Five ways through \u2014 pick one</button>'+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
@@ -10786,6 +10795,21 @@ function playTheTape(){
     '<b style="color:var(--re)">If you give in:</b> the relief is real, and it\u2019s short \u2014 minutes. Then the wanting comes back a little louder than before, because that\u2019s how it grows. Nothing is destroyed and nothing resets; you just haven\u2019t moved.<br><br>'+
     '<b style="color:var(--gr)">If you hold on:</b> the urge peaks and passes \u2014 it always does, usually within 20 minutes. And riding it out is the rep: each one you sit through makes the next one quieter. That\u2019s not willpower, it\u2019s practice \u2014 and it counts whether or not anyone sees it.'+
     (why ? '<br><br><span style="color:var(--go)">Remember why you started:</span><br>\u201c'+why.replace(/</g,'&lt;').slice(0,220)+'\u201d' : '')+
+    // Their OWN ledger, in their OWN words — the whole reason it was worth writing down. A reason
+    // written while clear beats anything the app could say while they are not. playTheTape() has no
+    // vice index, so resolve the one they're actually fighting: a single vice, or the most recent.
+    (function(){
+      try{
+        if(typeof loadV==='function') loadV();
+        const vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices.filter(function(v){return v&&v.cba;}):[];
+        if(!vs.length) return '';
+        const _c=vs.sort(function(a,b){ return new Date(b.cba.ts||0)-new Date(a.cba.ts||0); })[0].cba;
+        let out='';
+        if(_c.cost) out+='<br><br><span style="color:var(--re)">What you said it costs you:</span><br>\u201c'+String(_c.cost).replace(/</g,'&lt;').slice(0,200)+'\u201d';
+        if(_c.free) out+='<br><br><span style="color:var(--gr)">What free looks like, in your words:</span><br>\u201c'+String(_c.free).replace(/</g,'&lt;').slice(0,180)+'\u201d';
+        return out;
+      }catch(_){ return ''; }
+    })()+
     '<br><br><b style="color:var(--tx)">Which version of tomorrow do you want?</b>';
   box.style.display = 'block';
   box.scrollIntoView({block:'center', behavior:'smooth'});
@@ -12382,6 +12406,86 @@ function openBreath(id, opts){
 // handle it (quit / moderate to a line / just watch), WHY it matters (said back to them when it's
 // hard), and WHAT actually helps them in the moment. Stored on the vice as v.plan; the fight, the
 // at-the-line moment, and the urge door all shape around it. Help appears as they asked for it.
+
+// ── THE MAP AROUND THE MOMENT — walk-back, cost/benefit, and named escapes ────────────────────
+// The companion handles the urge itself well. What was missing is everything AROUND it: how you got
+// there (Marlatt's "seemingly irrelevant decisions" — the quiet chain of small choices that walks a
+// person to the brink while feeling like nothing), your own reasons in your own words, and a set of
+// named responses so the answer to a craving isn't only "endure it".
+
+// 2.1 — THE WALK-BACK. Done in the calm, never mid-urge: an urge cannot see its own runway.
+function openWalkBack(i){
+  if(typeof loadV==='function') loadV();
+  const v=vices[i]; if(!v) return;
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  if(typeof openFormModal!=='function') return;
+  openFormModal('How did you get there?',
+    'Think of the last time it got you \u2014 and work backwards. Not the moment itself: the hour before, and the hour before that. What were the small, innocent-looking decisions that quietly put you in the room?',
+    [{id:'chain',label:'',type:'textarea',placeholder:'e.g. stayed up past midnight \u2192 took my phone to bed \u2192 told myself I\u2019d just check one thing'},
+     {id:'catch',label:'',type:'text',placeholder:'Which link could you realistically break next time?'}],
+    'Save this',
+    function(vals){
+      const chain=(vals.chain||'').trim(); if(!chain) return 'Even a rough chain is worth more than none.';
+      try{
+        v.walkbacks=v.walkbacks||[];
+        v.walkbacks.unshift({chain:chain.slice(0,600), catch:(vals.catch||'').trim().slice(0,200), ts:new Date().toISOString()});
+        v.walkbacks=v.walkbacks.slice(0,12);
+        if(typeof saveV==='function') saveV();
+      }catch(_){}
+      try{ showToast('Saved','That chain is the thing to interrupt \u2014 miles earlier than the moment itself.'); }catch(_){}
+      try{ if(typeof renderVices==='function') renderVices(); }catch(_){}
+      return true;
+    });
+}
+
+// 2.2 — COST / BENEFIT. SMART Recovery's core tool. Their reasons, their words, mirrored back later.
+function openCBA(i){
+  if(typeof loadV==='function') loadV();
+  const v=vices[i]; if(!v) return;
+  const c=v.cba||{};
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  if(typeof openFormModal!=='function') return;
+  openFormModal('The honest ledger',
+    'Both columns, honestly \u2014 including what it genuinely gives you. A list that pretends it does nothing for you is a list you won\u2019t believe at 11pm.',
+    [{id:'gain',label:'',type:'textarea',placeholder:'What it actually gives me\u2026', value:c.gain||''},
+     {id:'cost',label:'',type:'textarea',placeholder:'What it actually costs me\u2026', value:c.cost||''},
+     {id:'free',label:'',type:'text',placeholder:'What being free of it would look like', value:c.free||''}],
+    'Keep this',
+    function(vals){
+      try{
+        v.cba={gain:(vals.gain||'').trim().slice(0,500),cost:(vals.cost||'').trim().slice(0,500),free:(vals.free||'').trim().slice(0,240),ts:new Date().toISOString()};
+        if(typeof saveV==='function') saveV();
+      }catch(_){}
+      try{ showToast('Kept','I\u2019ll hand these back to you in your own words when it counts.'); }catch(_){}
+      try{ if(typeof renderVices==='function') renderVices(); }catch(_){}
+      return true;
+    });
+}
+
+// 2.3 — DEADS. Named escapes, so a craving has more answers than "hold on".
+const _DEADS=[
+  ['\u23F1','Delay','Not "no" \u2014 just not now. Set fifteen minutes and decide at the end of it. Most of the wave is gone by then.'],
+  ['\u{1F6AA}','Escape','Leave the room. Not a metaphor \u2014 the actual room. Most urges are half-made of where you\u2019re standing.'],
+  ['\u{1F91D}','Accept','Stop wrestling it. Let it be there, unfought, and watch it move. It always does.'],
+  ['\u{1F3AF}','Distract','Something with your hands and a bit of friction \u2014 cold water, a walk, tidying, press-ups. Not a screen.'],
+  ['\u{1F504}','Substitute','Give the need what it actually wants. Tired \u2192 rest. Lonely \u2192 a person. Bored \u2192 something real.']
+];
+function openDEADS(){
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);line-height:1.3;margin-bottom:6px">Five ways through.</div>'+
+    '<div style="text-align:center;font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:15px">Enduring it is only one of them, and usually the hardest. Pick whichever you could actually do in the next minute.</div>'+
+    _DEADS.map(function(d){ return '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin-bottom:8px">'+
+      '<div style="font-size:13.5px;color:var(--tx);margin-bottom:2px">'+d[0]+'&nbsp;&nbsp;'+d[1]+'</div>'+
+      '<div style="font-size:12px;color:var(--tx2);line-height:1.55">'+d[2]+'</div></div>'; }).join('')+
+    '<button class="btn primary" style="margin-top:4px" onclick="closeModal(this);theRelease({did:\'You picked a way through instead of white-knuckling it.\'})">Doing one now</button>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:6px">Back</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  if(typeof haptic==='function') haptic('tap');
+}
+
 function openVicePlan(i){
   if(typeof loadV==='function') loadV();
   const v=(typeof vices!=='undefined'&&vices[i])?vices[i]:null; if(!v) return;
@@ -12406,7 +12510,11 @@ function openVicePlan(i){
     '<div class="vp-moves" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px"></div>'+
     '<button class="btn primary vp-save">Save my plan</button>'+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:6px">Not now</button>'+
-  '</div>';
+      '<div style="display:flex;gap:8px;margin-bottom:8px">'+
+      '<button class="btn" onclick="closeModal(this);openCBA('+i+')" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px;margin:0">\u2696 The honest ledger</button>'+
+      '<button class="btn" onclick="closeModal(this);openWalkBack('+i+')" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px;margin:0">\u{1F50E} How did I get there?</button>'+
+    '</div>'+
+    '</div>';
   document.body.appendChild(m);
   const modeWrap=m.querySelector('.vp-mode'), lineWrap=m.querySelector('.vp-line-wrap');
   function renderMode(){
