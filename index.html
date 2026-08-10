@@ -4382,7 +4382,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v363';
+const APP_VERSION = 'v364';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5134,6 +5134,13 @@ async function pullFromCloud(){
       else { if(typeof rawK==='string' && rawK.indexOf(TEST_PREFIX)===0) return; }
       const k = _unCloudKey(rawK), cv = row.data_value;
       if(cv === null || cv === undefined) return;
+      // A tombstoned cycle log is never restored, no matter what the server still holds. If the
+      // original purge never landed (offline when they deleted), retry it here — quietly, once per
+      // pull — so the row cannot outlive the person's decision.
+      if(k === CYCLE_KEY && typeof _cycleTombed==='function' && _cycleTombed()){
+        if(localStorage.getItem(CYCLE_TOMB) !== 'done'){ try{ _cyclePurgeCloud(); }catch(_){} }
+        return;
+      }
       const lraw = localStorage.getItem(k);
       let lv = null; try{ lv = lraw ? JSON.parse(lraw) : null; }catch(_){ lv = lraw; }
       const cts = row.updated_at ? new Date(row.updated_at).getTime() : 0;
@@ -6125,7 +6132,9 @@ function cycleDecline(){
 function cycleToggleOn(){
   const c=cycleGet();
   if(c.on){ c.on=false; cycleSet(c); showToast('Off','Cycle counsel is hidden. Your entries are still here \u2014 delete them below if you want them gone.'); }
-  else { c.on=true; delete c.declined; cycleSet(c); showToast('On','Cycle counsel is back.'); }
+  // Turning it back on is a fresh decision, so it lifts the delete tombstone. Nothing is restored —
+  // the old entries are gone — it just means a new log is allowed to sync again if they enable backup.
+  else { c.on=true; delete c.declined; try{ localStorage.removeItem(CYCLE_TOMB); }catch(_){} cycleSet(c); showToast('On','Cycle counsel is back.'); }
   haptic('tap'); renderCycleSurfaces();
 }
 function _cycleRefreshBtns(){ try{ const b=document.getElementById('cycle-backup-btn'); if(b) b.textContent=cycleGet().backup?'Backed up':'This device only'; const a=document.getElementById('cycle-ai-btn'); if(a) a.textContent=cycleGet().aiOK?'On \u2713':'Off'; }catch(_){} }
@@ -6141,6 +6150,10 @@ function cycleToggleBackup(){
   if(!c.backup){
     if(!confirm('Back your cycle data up to your To Try account?\n\nRight now it lives only on this device. Backing it up means it survives a reinstall \u2014 but it also means it leaves this phone and sits on a server. This is the most sensitive data in the app. Most people should leave this off.\n\nTurn backup on?')) return;
     c.backup=true; cycleSet(c);
+    // Turning backup off tombstones the key so a stale server copy can never sync back. Turning it
+    // ON again is the explicit reversal, so lift it — otherwise she would push a backup she could
+    // never restore, which is the worst of both worlds.
+    try{ localStorage.removeItem(CYCLE_TOMB); }catch(_){}
     try{ if(!SYNC_KEYS.includes(CYCLE_KEY)) SYNC_KEYS.push(CYCLE_KEY); }catch(_){}
     try{ if(typeof syncToCloud==='function') syncToCloud(CYCLE_KEY,c); }catch(_){}
     showToast('Backed up','It will restore if you reinstall. You can turn this off any time.');
@@ -6151,13 +6164,25 @@ function cycleToggleBackup(){
   }
   haptic('tap'); renderCycleSurfaces();
 }
+// A delete that only succeeds when the network happens to be up is not a delete. The purge below can
+// fail (offline, signed out, server down) and used to fail SILENTLY — and because pullFromCloud writes
+// every row the server returns without consulting SYNC_KEYS, the next sync quietly restored the most
+// sensitive data in the app, after the person had typed DELETE. The tombstone is the guarantee: it
+// blocks the key on every future pull and keeps re-issuing the purge until the server confirms.
+const CYCLE_TOMB = 'totry_cycle_tombstone';
+function _cycleTombed(){ try{ return !!localStorage.getItem(CYCLE_TOMB); }catch(_){ return false; } }
 async function _cyclePurgeCloud(){
   try{ const o=_getOutbox(); if(o && o[CYCLE_KEY]){ delete o[CYCLE_KEY]; _setOutbox(o); } }catch(_){}
+  try{ localStorage.setItem(CYCLE_TOMB, String(Date.now())); }catch(_){}
   try{
     if(typeof sb!=='undefined' && sb && typeof currentUser!=='undefined' && currentUser){
-      await sb.from('user_data').delete().eq('user_id',currentUser.id).eq('data_key',CYCLE_KEY);
+      const { error } = await sb.from('user_data').delete()
+        .eq('user_id',currentUser.id).eq('data_key',_cloudKey(CYCLE_KEY));
+      if(!error){ try{ localStorage.setItem(CYCLE_TOMB,'done'); }catch(_){} return true; }
+      console.warn('[cycle] cloud purge failed, tombstone holds:', error.message);
     }
-  }catch(e){ console.warn('[cycle] cloud purge failed:',e); }
+  }catch(e){ console.warn('[cycle] cloud purge failed, tombstone holds:',e); }
+  return false;                                  // tombstone stays pending; retried on next pull
 }
 function cycleDeleteAll(){
   if(!confirm('Delete every period entry?\n\nThis erases your cycle log from this device and from my server. It cannot be undone.')) return;
@@ -6166,7 +6191,9 @@ function cycleDeleteAll(){
   try{ const i=SYNC_KEYS.indexOf(CYCLE_KEY); if(i>=0) SYNC_KEYS.splice(i,1); }catch(_){}
   try{ localStorage.removeItem(CYCLE_KEY); }catch(_){}
   haptic('success'); renderCycleSurfaces();
-  showToast('Deleted','Your cycle data is gone. The offer is still there if you ever want to start again.');
+  // Say what is actually guaranteed. The server copy is deleted, and if that call cannot go through
+  // right now the entry is blocked from ever syncing back and the delete is retried until it lands.
+  showToast('Deleted','Gone from this device and from my server — and it will not come back on a sync. If you use To Try on another phone, delete it there too.');
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────────────────────

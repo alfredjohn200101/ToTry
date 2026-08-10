@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v363-anon-truth'
+const CACHE = 'totry-v364-cycle-tombstone'
 
 const CORE = [
   './',
