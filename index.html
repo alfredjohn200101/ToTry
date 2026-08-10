@@ -2100,7 +2100,7 @@ input:focus,textarea:focus,select:focus{
       <input type="text" id="v-trigger" placeholder="When does it usually hit?" style="margin-bottom:8px">
     <label style="display:flex;align-items:flex-start;gap:8px;margin:10px 0;cursor:pointer;font-size:12px;color:var(--tx2);line-height:1.5">
       <input type="checkbox" id="v-track-consent" style="margin-top:2px;flex-shrink:0;width:16px;height:16px;accent-color:var(--go)">
-      <span>Track my patterns for this — when urges hit, time of day, what triggers them. Private, only you see it. Helps spot your risky windows. <span style="color:var(--tx3)">(optional)</span></span>
+      <span>Track my patterns for this — when urges hit, time of day, what triggers them. Only for you, never shown to anyone else; it is backed up to your account and the coach uses it to name your risky windows. <span style="color:var(--tx3)">(optional)</span></span>
     </label>
       <div class="eyebrow" style="margin-top:4px">What's your goal with this?</div>
       <div id="v-mode-toggle" style="display:flex;gap:8px;margin-bottom:10px">
@@ -4390,7 +4390,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v368';
+const APP_VERSION = 'v369';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5836,11 +5836,19 @@ async function checkAuthAndStart(){
       syncEnabled = true;
       document.getElementById('auth-container').style.display = 'none';
       
-      // Check if onboarded
+      // Check if onboarded.
+      // This used to gate ONLY on identity + name, and finishOnboard() writes neither — it writes
+      // totry_onboarded. So the two paths the app deliberately optimised for, "Take me in →" and
+      // tapping a feeling at the first felt moment, produced a person who was thrown back to onboarding
+      // screen one on EVERY launch, with initApp() never running. And because each pass through
+      // finishOnboard re-stamped totry_start, getDayCount() returned 1 forever: the day counter, the
+      // milestones and every progressive-disclosure gate (day>=3..7) were frozen at day one. Someone
+      // could use the app for a month and never leave their first ten minutes.
       const hasIdentity = ls('totry_identity');
       const hasName = ls('totry_name');
-      
-      if(hasIdentity && hasName){
+      const isOnboarded = !!ls('totry_onboarded');
+
+      if(isOnboarded || (hasIdentity && hasName)){
         // Returning user
         document.getElementById('onboard').classList.remove('active');
         document.getElementById('onboard').style.display = 'none';
@@ -6996,7 +7004,7 @@ RECENT JOURNAL: ${recentJournal||'No entries yet'}
 ${(function(){ const m = (typeof ls==='function') ? ls('totry_coach_memory') : null; return m && m.summary ? '\nWHAT YOU\u2019VE BEEN WORKING ON TOGETHER (from past conversations — reference it naturally, like a coach who remembers):\n'+m.summary : ''; })()}
 
 HOW TO COACH:
-Speak like a trusted friend and mentor who knows their whole situation — direct, warm, personal, never generic. When they ask about today's progress, USE the live data above (calories, habits, water, etc.) — don't say "I don't have access to that." You DO have it. Reference their actual numbers when it matters. Hold them to who they said they want to become, with grace not shame. If they've relapsed, remember Proverbs 24:16 — the righteous fall and rise again.
+Speak like a trusted friend and mentor who knows their whole situation — direct, warm, personal, never generic. When they ask about today's progress, USE the live data above (calories, habits, water, etc.) — don't say "I don't have access to that." You DO have it. Reference their actual numbers when it matters. Hold them to who they said they want to become, with grace not shame. If they've relapsed, meet it as feedback and not a verdict — the falling isn't the line, the getting up is. (Scriptural framing comes from FAITH CONTEXT above and nowhere else: never reach for a Bible verse unless that is their tradition.)
 
 Match the depth of your reply to what they're asking. A quick check-in deserves a few warm, focused sentences. But when they're wrestling with something real — a craving, a setback, a hard decision, a question about who they're becoming — give them a substantial, thoughtful answer: name what's really going on, draw on their actual situation, offer a concrete next step or two, and where it fits naturally, ground it in their tradition’s teaching or a solid principle (per the faith context). Don't pad, don't ramble, and always finish your thought completely — but don't artificially cut yourself short either. Be the kind of voice anyone would actually want in their corner at 11pm. You are not a chatbot. You are their coach.`;
 }
@@ -7375,7 +7383,10 @@ async function sendCoach(){
       const btn = document.createElement('button');
       btn.className = 'btn'; btn.textContent = 'Write it in my journal';
       btn.style.cssText = 'margin:8px 0;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px';
-      btn.onclick = () => { if(typeof go==='function') go('reflect'); setTimeout(()=>document.getElementById('journal-input')?.focus(),300); };
+      btn.onclick = () => { if(typeof go==='function') go('reflect');
+        setTimeout(()=>{ try{ if(typeof setReflectTab==='function') setReflectTab('journal');
+                              if(typeof openJournal==='function') openJournal();
+                              document.getElementById('journal-text')?.focus(); }catch(_){} },300); };
       msgs.appendChild(btn);
     }
   }
@@ -8059,7 +8070,9 @@ function selectObSeason(chip){
 }
 async function finishOnboard(opts){
   ls('totry_onboarded',true);
-  ls('totry_start',new Date().toISOString());
+  // NEVER re-stamp the journey anchor. This ran on every pass through onboarding, so any second visit
+  // silently reset the person's day count to 1 and wiped the one number the whole app leans on.
+  if(!ls('totry_start')) ls('totry_start', new Date().toISOString());
   // Suppress the companion auto-check-in for this first session — a brand-new user shouldn't be
   // greeted with "what's pulling at you?" seconds after finishing setup. It returns next open.
   try{ sessionStorage.setItem('totry_just_onboarded','1'); }catch(_){}
@@ -11730,9 +11743,17 @@ let _compManualMechanism = null;
 function _userHour(){ return new Date().getHours(); }
 function _isMorningWindow(){
   // Use the user's existing morning reminder time if they set one (no new setup needed); else 5–11am.
-  let wake = parseInt(ls('totry_wake_hour')||'',10);
+  let wake = parseInt(ls('totry_wake_hour')||'',10);   // never written today; kept for forward compat
   if(isNaN(wake)){
     try{ const rt = ls('totry_reminder_times')||{}; if(rt.morning){ const h=parseInt(String(rt.morning).split(':')[0],10); if(!isNaN(h)) wake=h; } }catch(_){}
+  }
+  // The LIVE settings UI (savePushTimes) writes totry_push_prefs, not totry_reminder_times — so for
+  // anyone who set their morning time there this fell through to the 5am default and silenced the urge
+  // check-in from 5:00 to 11:00. A late riser or shift worker got nothing through the hours they were
+  // actually awake, and someone up at 4am got the check-in instead of the morning.
+  if(isNaN(wake)){
+    try{ const pp=(typeof _pushPrefs==='function')?_pushPrefs():(ls('totry_push_prefs')||{});
+         if(pp && pp.morning){ const h=parseInt(String(pp.morning).split(':')[0],10); if(!isNaN(h)) wake=h; } }catch(_){}
   }
   if(isNaN(wake)) wake = 5;
   const h = _userHour();
@@ -17410,7 +17431,7 @@ function renderJournal(){
   const mornings=(ls('totry_mornings')||[]).map(m=>({kind:'morning', ts:m.ts, e:m}));
   const evenings=(ls('totry_evenings')||[]).map(v=>({kind:'evening', ts:v.ts, e:v}));
   const all=[...journal,...mornings,...evenings].sort((a,b)=>new Date(b.ts||0)-new Date(a.ts||0));
-  if(!all.length){list.innerHTML='<div style="text-align:center;padding:40px 16px"><div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--tx3);margin-bottom:8px">Your journal is empty.</div><div style="font-size:13px;color:var(--tx3);line-height:1.6">Tap + New entry, or complete a morning or evening reflection \u2014 they all gather here.<br>Every entry is private. Only you will ever read this.</div></div>';return;}
+  if(!all.length){list.innerHTML='<div style="text-align:center;padding:40px 16px"><div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--tx3);margin-bottom:8px">Your journal is empty.</div><div style="font-size:13px;color:var(--tx3);line-height:1.6">Tap + New entry, or complete a morning or evening reflection \u2014 they all gather here.<br>Nobody else reads your journal. It is backed up to your account so a lost phone can\u2019t take it, and the coach sees a short excerpt so it can speak to what you\u2019re actually carrying. Settings \u2192 Your data says exactly what goes where.</div></div>';return;}
   list.innerHTML='';
   all.forEach(rec=>{
     const e=rec.e;
@@ -17419,10 +17440,10 @@ function renderJournal(){
       const wTag=e.wins>0?'<span class="je-tag w">+'+e.wins+' wins</span>':'';
       const lTag=e.urges>0?'<span class="je-tag l">'+e.urges+' battles</span>':'';
       const dTag=e.day?'<span class="je-tag">Day '+e.day+'</span>':'';
-      item.innerHTML='<div class="je-date">'+e.date+'</div><div class="je-mood">'+(e.mood||'')+'</div><div class="je-prev">'+(e.text||'')+'</div><div class="je-tags">'+dTag+wTag+lTag+'</div>';
-      item.onclick=()=>{const m=document.createElement('div');m.className='modal-bg open';m.innerHTML='<div class="modal"><div class="modal-handle"></div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);margin-bottom:8px;letter-spacing:0.1em">'+e.date+(e.day?' \u2014 Day '+e.day:'')+'</div><div style="font-size:28px;margin-bottom:12px">'+(e.mood||'')+'</div><div style="font-size:14px;line-height:1.75;color:var(--tx);white-space:pre-wrap;margin-bottom:16px">'+(e.text||'')+'</div><button class="btn" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div>';document.body.appendChild(m);};
+      item.innerHTML='<div class="je-date">'+_escFew(e.date||'')+'</div><div class="je-mood">'+_escFew(e.mood||'')+'</div><div class="je-prev">'+_escFew(e.text||'')+'</div><div class="je-tags">'+dTag+wTag+lTag+'</div>';
+      item.onclick=()=>{const m=document.createElement('div');m.className='modal-bg open';m.innerHTML='<div class="modal"><div class="modal-handle"></div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);margin-bottom:8px;letter-spacing:0.1em">'+e.date+(e.day?' \u2014 Day '+e.day:'')+'</div><div style="font-size:28px;margin-bottom:12px">'+_escFew(e.mood||'')+'</div><div style="font-size:14px;line-height:1.75;color:var(--tx);white-space:pre-wrap;margin-bottom:16px">'+_escFew(e.text||'')+'</div><button class="btn" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx3);margin-bottom:8px" onclick="this.closest(\'.modal-bg\').remove();deleteJournalEntry(\''+String(e.ts||'').replace(/[\\'"\\\\]/g,'')+'\')">Delete this entry</button><button class="btn" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div>';document.body.appendChild(m);};
     } else if(rec.kind==='morning'){
-      const parts=[]; if(e.gratitude)parts.push('Grateful: '+e.gratitude); if(e.intention)parts.push('Intention: '+e.intention);
+      const parts=[]; if(e.gratitude)parts.push('Grateful: '+_escFew(e.gratitude)); if(e.intention)parts.push('Intention: '+_escFew(e.intention));
       const hasContent = e.gratitude || e.intention;
       const preview = parts.join(' \u00b7 ') || (hasContent ? 'Morning ritual' : 'Morning completed \u2014 no notes written');
       item.innerHTML='<div class="je-date">'+(e.date||'')+'</div><div class="je-mood">\ud83c\udf05</div><div class="je-prev">'+preview+'</div><div class="je-tags"><span class="je-tag">Morning'+(e.day?' \u2014 Day '+e.day:'')+'</span></div>';
@@ -17433,7 +17454,7 @@ function renderJournal(){
         m.innerHTML='<div class="modal"><div class="modal-handle"></div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);margin-bottom:8px;letter-spacing:0.1em">'+(e.date||'')+' \u2014 Morning'+(e.day?', Day '+e.day:'')+'</div><div style="font-size:28px;margin-bottom:12px">\ud83c\udf05</div>'+bodyHtml+'<button class="btn" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div>';document.body.appendChild(m);};
     } else {
       const RAT=['','Rough','Hard','Okay','Good','Strong'];
-      const parts=[]; if(e.win)parts.push('Win: '+e.win); if(e.release)parts.push('Released: '+e.release); if(e.see)parts.push('Honest: '+e.see);
+      const parts=[]; if(e.win)parts.push('Win: '+_escFew(e.win)); if(e.release)parts.push('Released: '+_escFew(e.release)); if(e.see)parts.push('Honest: '+_escFew(e.see));
       item.innerHTML='<div class="je-date">'+(e.date||'')+'</div><div class="je-mood">\ud83c\udf19</div><div class="je-prev">'+(parts.join(' \u00b7 ')||'Evening reflection')+'</div><div class="je-tags"><span class="je-tag">Evening'+(e.rating?' \u2014 '+RAT[e.rating]:'')+'</span>'+(e.steps?'<span class="je-tag">'+e.steps+' steps</span>':'')+'</div>';
       item.onclick=()=>{const m=document.createElement('div');m.className='modal-bg open';m.innerHTML='<div class="modal"><div class="modal-handle"></div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);margin-bottom:8px;letter-spacing:0.1em">'+(e.date||'')+' \u2014 Evening'+(e.rating?', '+RAT[e.rating]:'')+'</div><div style="font-size:28px;margin-bottom:12px">\ud83c\udf19</div>'+(e.win?'<div style="font-size:13px;color:var(--tx3);margin-bottom:4px">One win</div><div style="font-size:14px;line-height:1.7;color:var(--tx);margin-bottom:12px;white-space:pre-wrap">'+e.win.replace(/</g,"&lt;")+'</div>':'')+(e.release?'<div style="font-size:13px;color:var(--tx3);margin-bottom:4px">Released</div><div style="font-size:14px;line-height:1.7;color:var(--tx);margin-bottom:12px;white-space:pre-wrap">'+e.release.replace(/</g,"&lt;")+'</div>':'')+(e.see?'<div style="font-size:13px;color:var(--tx3);margin-bottom:4px">If the people they love had watched today</div><div style="font-size:14px;line-height:1.7;color:var(--tx);margin-bottom:12px;white-space:pre-wrap;font-style:italic">'+e.see.replace(/</g,"&lt;")+'</div>':'')+(e.goalsHit?'<div style="font-size:13px;color:var(--tx3)">Goals hit: '+e.goalsHit+'</div>':'')+'<button class="btn" style="margin-top:12px" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div>';document.body.appendChild(m);};
     }
@@ -21221,11 +21242,13 @@ function renderNutritionLog(){
           '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">No setup, no targets to figure out yet. Just log one thing you ate today — we\'ll learn your rhythm from there.</div>'+
           '<button class="btn primary" style="width:auto;padding:10px 20px;font-size:13px" onclick="document.getElementById(&apos;nut-search-in&apos;)?.focus()">Log one thing</button>'+
           '</div>';
+        _nutTailRenders(totals, goalCal);
         return;
       }
       list.innerHTML='<div style="text-align:center;padding:18px 12px;font-size:13px;color:var(--tx3);line-height:1.6"><div style="font-size:24px;margin-bottom:8px">🍽️</div><div style="margin-bottom:4px;color:var(--tx2)">'+((typeof nutIsToday==='function'&&!nutIsToday())?(_escFew(nutDayLabel())+'\'s plate is empty.'):'Today\'s plate is empty.')+'</div><div style="font-size:11px">Search a food, scan a barcode, or describe a whole meal — the AI will estimate macros.</div>' +
         (hadYesterday ? '<button class="btn" style="margin-top:12px;background:var(--bg3);border:1px solid var(--bd);font-size:12px;width:auto;padding:8px 14px" onclick="repeatYesterdayMeals()">↻ Copy ' + ((typeof nutIsToday==='function'&&!nutIsToday()) ? 'the day before' : 'yesterday\'s') + ' ' + log[yKey].length + ' items</button>' : '') +
         '</div>';
+      _nutTailRenders(totals, goalCal);
       return;
     }
     
@@ -21276,6 +21299,18 @@ function renderNutritionLog(){
       list.appendChild(add);
     });
   }
+  _nutTailRenders(totals, goalCal);
+}
+
+// The tail of renderNutritionLog, extracted so the two empty-plate early returns can still run it.
+// They used to `return` outright, which skipped all six renderers below — the same shape as the
+// renderFinance()/no-debt return that hid Money's entire lower half. The cruellest casualty was
+// renderMigrateCard(): its own gate only shows the "switching from another app — import your CSV"
+// card when the person has fewer than 10 entries, yet it could only be REACHED once today's plate was
+// non-empty. So the import offer was invisible to precisely the person it exists for — someone
+// arriving from MyFitnessPal, who had just been told in onboarding that it lives in Nourish. It became
+// available only after they hand-logged a meal, i.e. after doing the work the import would have saved.
+function _nutTailRenders(totals, goalCal){
   if(typeof renderNutTrend==='function') renderNutTrend();
   if(typeof renderAdaptiveTDEE==='function') renderAdaptiveTDEE();
   if(typeof renderMealSplit==='function') renderMealSplit();
@@ -21293,7 +21328,7 @@ function renderNutritionLog(){
   }catch(_){}
   // FINAL gentle pass — several cards above (trend, digest, adaptive TDEE, meal split) render AFTER
   // the first call, so re-apply last. Order can then never re-leak a number.
-  try{ applyNutGentle(totals.cal, goalCal); }catch(_){}
+  try{ if(typeof applyNutGentle==='function') applyNutGentle(totals&&totals.cal, goalCal); }catch(_){}
 }
 
 // Shows the "switching from another app" card until the user imports history or dismisses it,
@@ -24654,8 +24689,16 @@ function _otdRespond(){
     if(typeof go==='function') go('reflect');
     setTimeout(function(){
       try{
-        const ta=document.getElementById('journal-input')||document.querySelector('#tab-reflect textarea');
-        if(ta){ ta.focus(); if(!ta.value) ta.placeholder='You wrote that '+(hit?(hit.age>=330?'about a year ago':Math.round(hit.age/30)+' months ago'):'a while back')+'. What would you say to yourself now?'; }
+        // Open the JOURNAL properly. #journal-input has never existed in this file; the old fallback
+        // took the first textarea in the reflect tab, which is the evening "one win" box — so their
+        // answer to their own past self was filed as tonight's win.
+        if(typeof setReflectTab==='function') setReflectTab('journal');
+        if(typeof openJournal==='function') openJournal();
+        const ta=document.getElementById('journal-text');
+        if(ta){
+          ta.placeholder='You wrote that '+(hit?(hit.age>=330?'about a year ago':Math.round(hit.age/30)+' months ago'):'a while back')+'. What would you say to yourself now?';
+          ta.focus();
+        }
       }catch(_){}
     }, 420);
   }catch(_){}
@@ -25125,7 +25168,11 @@ function setPTTab(tab){
     const p=document.getElementById('pt-panel-'+t);const b=document.getElementById('pt-sub-'+t);
     if(p)p.style.display=t===tab?'block':'none';if(b)b.classList.toggle('active',t===tab);
   });
-  if(tab==='history'){renderMuscleGroupCard();if(typeof renderStravaActivities==='function')renderStravaActivities();if(typeof populateExerciseSelect==='function')populateExerciseSelect();if(typeof renderPlateauCard==='function')renderPlateauCard();}
+  // renderPersonalRecords() was reachable ONLY from renderWorkoutHistory(), which is dead code
+  // (refcount 1, and its container #pt-history-list does not exist in the file). So the "Personal
+  // records" heading sat above a permanently empty box while PRs were being recorded on every
+  // completed set and announced with a "New PR!" toast — told you hit one, then never able to find it.
+  if(tab==='history'){renderMuscleGroupCard();if(typeof renderPersonalRecords==='function')renderPersonalRecords();if(typeof renderStravaActivities==='function')renderStravaActivities();if(typeof populateExerciseSelect==='function')populateExerciseSelect();if(typeof renderPlateauCard==='function')renderPlateauCard();}
   if(tab==='log'){ if(typeof renderSplitOverview==='function') renderSplitOverview(); }
   if(tab==='routines'){renderRoutines();}
   if(tab==='mobility'){if(typeof renderMobilityPanel==='function')renderMobilityPanel();}
@@ -33226,7 +33273,24 @@ function loadDemoData(){
                            {feeling:'lonely',moved:'reach out',ts:iso(dayAgo(3))}]);
   ls('totry_relationships',[{id:1,name:'Mum',lastContact:iso(dayAgo(3))},{id:2,name:'Dan',lastContact:iso(dayAgo(5))}]);
 
+  // FIRST-RUN GATES A 92-DAY PERSON WOULD HAVE PASSED LONG AGO. Without these the persona looks
+  // established everywhere except the surfaces that gate on them — and the worst offender is the
+  // Feeling Door, the app's primary action and the single most important thing to film: unset,
+  // totry_first_moment makes it render the two-option beginner stub instead of the real door with all
+  // eleven feelings. Every reel of the front door would have shown the wrong product.
+  ls('totry_first_moment',{feeling:'restless', ts:iso(dayAgo(90))});
+  ls('totry_tour_offered', true);
+  ls('totry_first_win_done', true);
+  ls('totry_nourish_care_shown', true);
+  try{ localStorage.setItem('totry_home_depth_open','1'); }catch(_){}   // depth open, so Home films full
+
   if(typeof initApp === 'function') initApp();
+  // Guarantee a VISIBLE app afterwards. initApp() alone does not reveal it, so if the auth overlay
+  // happened to be up the person was left staring at a sign-in spinner with demo data silently loaded
+  // behind it — the one thing that must never happen when the next action is "press record".
+  try{ const ac=document.getElementById('auth-container'); if(ac) ac.style.display='none'; }catch(_){}
+  try{ const ob=document.getElementById('onboard'); if(ob){ ob.classList.remove('active'); ob.style.display='none'; } }catch(_){}
+  try{ document.querySelectorAll('.app').forEach(function(a){ a.classList.add('app-ready'); }); }catch(_){}
   if(typeof go === 'function') go('home');
   _demoBanner();
   haptic('success'); showToast('Demo data loaded','Camera-ready. Your real data is saved — the red bar puts it back.');
