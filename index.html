@@ -2081,6 +2081,14 @@ input:focus,textarea:focus,select:focus{
     <!-- Vice-pattern insight (WS-D) — OPT-IN only, compassionate, never auto-popped. Shows only
          when enough slips logged to see a pattern; the user chooses to look. -->
     <div id="vice-pattern-card" style="display:none;margin-top:8px"></div>
+    <!-- THE TOOLKIT — the calm counterpart to the companion. The mechanisms it uses in the moment,
+         taught somewhere nothing is happening. Free, 2 minutes, no streak, no completion. -->
+    <div class="card" id="toolkit-card" style="margin-top:8px">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:7px">The toolkit</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:21px;color:var(--tx);line-height:1.25;margin-bottom:5px">Learn the tool before you need it.</div>
+      <div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:12px">Eight skills, two minutes each &mdash; the same ones I use with you at 11pm. Free, and nothing to finish.</div>
+      <button class="btn primary" onclick="openToolkit()" style="margin:0">Learn the tools &mdash; 2 min each</button>
+    </div>
     <div class="card" id="add-vice-card" style="margin-top:8px">
       <button type="button" id="add-vice-toggle" onclick="toggleAddVice()" style="display:none;width:100%;background:none;border:none;color:var(--go);font-size:13px;cursor:pointer;padding:8px;text-align:center;letter-spacing:0.02em">+ Add another to the fight</button>
       <div id="add-vice-body">
@@ -4370,7 +4378,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v356';
+const APP_VERSION = 'v357';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4727,7 +4735,9 @@ const SYNC_KEYS = [
   // Where you are in each reading plan. A position, never a score.
   'totry_read_plans',
   // v344 — the first felt moment, and the receptivity gate under the reach-out.
-  'totry_first_moment','totry_quiet_hours','totry_reachout_log','totry_reachout_state','totry_last_active_ts'
+  'totry_first_moment','totry_quiet_hours','totry_reachout_log','totry_reachout_state','totry_last_active_ts',
+  // The Toolkit — which skills you've picked up, and the permission-giving sentence in your own words.
+  'totry_toolkit'
 ];
 // totry_cycle is deliberately NOT in the list above. Post-Dobbs, cycle data is the most sensitive
 // thing this app holds, so it stays on the device by default. It is pushed into SYNC_KEYS at runtime
@@ -12104,6 +12114,239 @@ function _resolveHold(ts, bought){
   try{ if(typeof renderMoney==='function') renderMoney(); }catch(_){}
 }
 
+// ════ THE TOOLKIT — learn the tool BEFORE the moment ═══════════════════════════════════════════
+// The companion applies these mechanisms in the grip of it. Nobody ever got to LEARN them somewhere
+// calm — the whole category charges for that. This app already refuses to paywall prayer; it refuses
+// here too. NOT a course: no streak, no badge, no percentage, nothing to complete. You pick a tool up
+// and then you put the phone down (every lesson ends in theRelease, like every other exit here).
+// Each lesson carries its OWN honest evidence line and its OWN source, because overclaiming a
+// technique to someone who is suffering is a way of lying to them.
+// Reuses: openBreath · openCompanion · openHALT · openValuesSort · openBlessing · _letGoAct ·
+// theRelease · openFormModal · bridgeToRealHelp · faithLevel/faithTradition · _escFew · showToast · haptic.
+const _TOOLKIT = [
+  { id:'wave', ic:'\uD83C\uDF0A', t:'Riding the wave', st:'Why an urge fades if you stop fighting it',
+    idea:[
+      'An urge is not a straight line that climbs until you give in. It rises, it peaks, and it comes down \u2014 whether or not you feed it. That shape is the entire reason you can outlast one.',
+      'Bracing against it is what makes it louder. Push a thought away and it comes back with interest; that rebound is one of the most reliably reproduced findings in the field. So you do the opposite of fighting: notice it, find where it sits in your body, breathe, and let it crest with you watching.',
+      'You are not trying to win an argument with it. You are trying to still be here when it passes.'],
+    ex:'11pm, phone in your hand. The pull arrives and you clamp down \u2014 not tonight, not tonight, not tonight. Two minutes later it is the only thing in your head, and the clamping is why. Surfing it looks embarrassingly small from outside: \u201cthere it is \u2014 tight chest, hot ears \u2014 okay.\u201d Then you breathe, and it moves.',
+    prac:'Where does an urge usually sit in your body? Chest, throat, stomach, hands. Find it now, while nothing is happening, and put three words to it. Knowing the address means at 11pm you recognise the visitor instead of being ambushed.',
+    pracBtn:'I found it',
+    ev:'Urge surfing is a core piece of Mindfulness-Based Relapse Prevention, which in head-to-head trials does about as well as standard relapse prevention, with some advantage on heavy-use days at longer follow-up. Real, and modest. The \u201curges pass in 15\u201330 minutes\u201d line you hear everywhere is a clinical rule of thumb, not a measured law \u2014 yours may be shorter or longer.',
+    src:'Paraphrased from Marlatt & Gordon\u2019s relapse-prevention work and Mindfulness-Based Relapse Prevention (Bowen, Chawla, Witkiewitz). The rebound point is Wegner\u2019s thought-suppression research.',
+    live:'Breathe one through now', act:"openBreath('settle',{reason:'lesson'})" },
+
+  { id:'defuse', ic:'\u26C5', t:'Thoughts as weather', st:'Getting half a step back from what your mind says',
+    idea:[
+      'Your mind produces sentences all day. Some are useful, some are rubbish, and none of them are orders. The trouble starts when you are so far inside a thought that you cannot see it is a thought \u2014 it just feels like the truth about you.',
+      'Defusion is the half-step back. Not arguing with it, not replacing it, not pretending it isn\u2019t there. Only changing your relationship to it: from being inside it, to hearing it. \u201cI never follow through\u201d becomes \u201cI\u2019m having the thought that I never follow through.\u201d Same sentence \u2014 and suddenly there is a person there, holding it.',
+      'Weather, not commands. You don\u2019t negotiate with rain. You notice it and go where you were going anyway.'],
+    ex:'One skipped session turns into \u201cI never follow through with anything,\u201d and that single sentence can end a whole week \u2014 because it stopped being a thought and became a fact about you. Say it the other way and it goes back to being a sentence. Then you can look at your last month honestly, instead of through it.',
+    prac:'Take whatever your mind has been repeating this week. Put \u201cI\u2019m having the thought that\u2026\u201d in front of it and say the whole thing out loud, once. Out loud matters more than it should \u2014 hearing it in your own voice is most of the effect.',
+    pracBtn:'I said it',
+    ev:'Short defusion exercises reliably reduce how believable and how uncomfortable a thought feels, and they do it fast \u2014 that part is well replicated in small experiments. The knock-on effect on what people actually DO is smaller and patchier. It makes a thought easier to carry. It does not delete it, and it isn\u2019t meant to.',
+    src:'Paraphrased from Acceptance and Commitment Therapy (Steven Hayes and colleagues), where defusion and the \u201cI\u2019m having the thought that\u2026\u201d move come from.',
+    live:'Say one to me now', act:'openCompanion()' },
+
+  { id:'reframe', ic:'\uD83E\uDDF2', t:'Catching the sentence before the slip', st:'The permission-giving thought, and how to test it',
+    idea:[
+      'Almost nobody slips out of nowhere. There is a sentence first, and it always sounds reasonable: just once. I\u2019ve had a hard week. I\u2019ve already ruined today. I\u2019ll start properly tomorrow. I can\u2019t cope with this without it.',
+      'That sentence is doing a job \u2014 it is giving you permission. Catch it and you take the permission back. Three moves: catch it (say it in the exact words your head used), test it (is that actually true? has \u201cjust once\u201d ever been just once?), and replace it with something truer that you genuinely believe.',
+      'You are not trying to think positively. You are trying to think accurately \u2014 which usually turns out to be kinder anyway.'],
+    ex:'\u201cI\u2019ve already blown today.\u201d Test it: one bad choice at 4pm, and the other twenty hours are what \u2014 void? You wouldn\u2019t write off a week of training over one bad set. Truer: \u201cI made one choice I don\u2019t like. The rest of today is still mine.\u201d That isn\u2019t motivational. It\u2019s just more correct than the first version.',
+    prac:'Write down the exact sentence your head uses on you \u2014 not the tidy version, the real one. I\u2019ll keep it, and you\u2019ll recognise it the next time it turns up.',
+    pracBtn:'Write my sentence', pracFn:'_tkMyLine',
+    ev:'Cognitive behavioural therapy as a whole is among the best-evidenced psychological treatments there is \u2014 clearly better than nothing or waiting, and roughly on par with other decent active treatments. Restructuring is one component of that package, and researchers genuinely argue about how much of the benefit is specifically down to it. Strong evidence for the whole; honest uncertainty about the part.',
+    src:'Paraphrased from Aaron Beck\u2019s cognitive therapy and standard CBT relapse-prevention practice. The permission-giving thoughts listed are the ones this app\u2019s companion already listens for.',
+    live:'One is loud right now', act:'openCompanion()' },
+
+  { id:'ave', ic:'\uD83E\uDE79', t:'Why one becomes five', st:'Stopping a slip from becoming a night',
+    idea:[
+      'The damage in a slip is usually not the slip. It is the story you tell in the ninety seconds afterwards. \u201cWell, that\u2019s gone.\u201d \u201cI\u2019m clearly not built for this.\u201d And once you are the kind of person who has blown it, there is no reason left to stop at one.',
+      'Clinicians named this decades ago because they kept watching it happen: one lapse, plus shame, plus all-or-nothing thinking, equals a full relapse. The lapse was survivable. The story wasn\u2019t.',
+      'The way out is unglamorous. Decide now, while you are calm, what the next ten minutes look like if it happens \u2014 because you will not be inventing a plan at the time.'],
+    ex:'One drink at a wedding you said you wouldn\u2019t drink at. Version one: \u201cnight\u2019s gone\u201d \u2014 and it\u2019s five. Version two, decided in advance: \u201cif I have one, I put the glass down, I go outside for four minutes, and I log it honestly.\u201d Same slip. Completely different Sunday.',
+    prac:'Say your ten-minute plan out loud, in one sentence, starting with \u201cif it happens, I will\u2026\u201d. Keep it small enough to do while feeling awful \u2014 stand up, step outside, tell one person, log it honestly. Heroic plans are for people who aren\u2019t in it.',
+    pracBtn:'I\u2019ve said mine',
+    ev:'The abstinence violation effect is one of the most recognisable patterns in addiction practice, described consistently for over forty years. How much of relapse it explains is genuinely contested, and the original model has been revised more than once. Naming it in advance is a plan, not armour \u2014 people who do this still slip. They just tend to stop sooner.',
+    src:'Paraphrased from Marlatt & Gordon\u2019s relapse-prevention model, where the abstinence violation effect was first described.',
+    live:'Put it in my plan', act:"go('fight')" },
+
+  { id:'compassion', ic:'\uD83E\uDEB6', t:'Why the hard voice loses', st:'Self-compassion, and the honest evidence for it',
+    idea:[
+      'The hard voice makes a promise: be brutal with yourself and you will finally get in line. It is worth asking whether it has delivered. Most people have been running that experiment for years.',
+      'Here is the mechanism, and it isn\u2019t sentimental. Self-attack produces shame. Shame makes you want to disappear \u2014 and the fastest way to disappear is the exact behaviour you were attacking yourself for. So the hard voice reliably manufactures the next slip it is furious about.',
+      'Self-compassion is not going easy on yourself. It is three plain things: speak to yourself as you would to someone you love in your exact position; remember that struggling is a normal human condition, not a defect unique to you; and see the situation clearly instead of drowning in it. None of those three is \u201clower your standards.\u201d'],
+    ex:'Three days, no gym, and the voice says \u201cpathetic, you always do this.\u201d Now imagine your brother said it about himself. You wouldn\u2019t agree with him \u2014 not out of politeness, but because it isn\u2019t true and it wouldn\u2019t help. Say to yourself what you\u2019d have said to him. Then go and do the ten-minute version.',
+    prac:'One sentence, out loud, about the thing you are currently hardest on yourself about \u2014 the sentence you\u2019d say to someone you love. A hand on your own chest while you say it isn\u2019t a gimmick; it\u2019s a physiological cue that takes some heat out. Feel free to feel ridiculous.',
+    pracBtn:'I said it',
+    ev:'This is the one to be careful about. Self-compassion is consistently and fairly strongly linked to lower anxiety, depression and shame across a very large body of research \u2014 but most of that is correlational, so it cannot prove which way the arrow points. Trials that actually train it show real improvements of small-to-moderate size. And the worry that self-compassion breeds slacking is not supported \u2014 it tends to travel WITH taking more responsibility, not less \u2014 though that finding is correlational too. So: promising, probably true, not proven. And not one more thing to feel bad about failing at.',
+    src:'Paraphrased from Kristin Neff\u2019s self-compassion research (the three components are hers) and Paul Gilbert\u2019s compassion-focused therapy, which is where the shame-avoidance mechanism and the soothing-touch cue come from.',
+    live:'Sit with it a minute', act:'openBlessing()' },
+
+  { id:'values', ic:'\uD83E\uDDED', t:'Doing it when you don\u2019t feel like it', st:'Values, and why motivation was never the entry fee',
+    idea:[
+      'You were sold a sequence: first you feel motivated, then you act. It is backwards often enough to ruin people. Waiting to feel like it hands your life to whichever mood turns up.',
+      'The alternative is boring and it works: pick the direction you actually care about, and act in that direction regardless of the weather inside you. A value isn\u2019t a goal \u2014 you cannot complete \u201cbeing someone my sister can rely on.\u201d That\u2019s the point. It is available again in ten minutes, no matter how today went.',
+      'You will still not want to. That\u2019s allowed. Wanting to was never the entry fee.'],
+    ex:'Nobody wants to train at 6am. There is no version of you that wakes up delighted. You go because of what you\u2019re becoming, and the not-wanting comes along \u2014 in the car, into the gym, through the first set \u2014 and then quietly leaves. It was never a verdict on the plan. It was weather.',
+    prac:'Name out loud the one value actually driving this season of your life \u2014 your words, no committee language. Then do the two-minute version of one thing that points at it. Now, not later.',
+    pracBtn:'Named it',
+    ev:'ACT as a whole treatment has decent evidence, broadly comparable to CBT across a range of problems. Values work is one ingredient of it and has not been cleanly isolated and tested on its own, so \u201cvalues make you follow through\u201d is a reasonable inference rather than a demonstrated fact. What IS well established sits right next to it: acting for reasons you own yourself sustains behaviour better than acting under pressure.',
+    src:'Paraphrased from ACT (Hayes and colleagues) for the values-versus-goals distinction, and self-determination theory (Deci & Ryan) for the autonomy point.',
+    live:'Sort my values', act:'openValuesSort()' },
+
+  { id:'activation', ic:'\uD83D\uDC5F', t:'Action comes first', st:'The strongest-evidenced idea on this list',
+    idea:[
+      'Low mood shrinks your world. You do less, so less good happens, so you feel worse, so you do even less. It is a spiral with a very simple mechanism \u2014 which is good news, because simple mechanisms can be interrupted from the outside.',
+      'You interrupt it by doing, not by feeling. Not the whole thing \u2014 one specific, small, scheduled, real action. Not \u201cget my life together.\u201d \u201cWalk to the end of the road at four.\u201d The motivation shows up afterwards, if it shows up at all, and you don\u2019t need it either way.',
+      'This is the least glamorous idea in the toolkit and it has the best track record.'],
+    ex:'Sunday, 4pm, flat. Nothing done, so nothing feels worth starting, and the day is quietly writing itself off. Behavioural activation says: don\u2019t fix the mood, fix the afternoon. Shoes on, ten minutes outside, phone in your pocket. You won\u2019t feel better at minute one. Often you do by minute seven.',
+    prac:'Pick the two-minute version of one thing you\u2019ve been putting off. Two minutes, specific, and now \u2014 then put me down and go and do it. That is the entire technique.',
+    pracBtn:'Give me one real thing', pracFn:'_letGoAct',
+    ev:'Behavioural activation is the strongest-evidenced thing on this list. In several good trials, including a large non-inferiority trial, it performs about as well as full cognitive behavioural therapy for depression, while being simpler to deliver. That is a big claim and it holds up. It is evidenced for low mood and depression specifically \u2014 a good bet for a flat day, not a cure for everything.',
+    src:'Paraphrased from behavioural activation research: Lewinsohn\u2019s original model, Jacobson\u2019s component study, the Ekers meta-analysis, and the COBRA non-inferiority trial.',
+    live:'', act:'' },
+
+  { id:'halt', ic:'\uD83C\uDF7D', t:'The need under the urge', st:'Hungry, angry, lonely, tired \u2014 and the honest caveat',
+    idea:[
+      'A lot of urges are not really about the thing. They are an unmet need arriving in the only costume it knows. Four candidates cover most of it: hungry, angry, lonely, tired.',
+      'Check them before you reach for any technique \u2014 because if you\u2019re running on no food and no sleep and you\u2019ve spoken to nobody all day, no clever exercise is going to hold. You are not weak in that state. You are depleted, which is a different problem with a different fix.',
+      'Meet the need and the urge often deflates on its own, without a fight.'],
+    ex:'11pm, the pull is enormous, and you\u2019re gearing up for a battle of willpower. Then you notice: you last ate at one, you haven\u2019t spoken to anyone since work, and you\u2019re exhausted. That isn\u2019t a moral crisis. That\u2019s a sandwich, a message to one person, and bed \u2014 and the urge usually leaves with them.',
+    prac:'Run the four now, honestly, even though nothing is happening. Whichever one is already true today is the one that will be true at 11pm.',
+    pracBtn:'Run the four', pracFn:'openHALT',
+    ev:'Be straight about this one: HALT is a mnemonic out of recovery practice, not a tested intervention \u2014 nobody has run a trial on the acronym and it would be strange to. The pieces underneath it do have support: sleep loss and hunger measurably degrade self-control, and loneliness and negative mood are among the better-established predictors of relapse. So \u2014 useful checklist, borrowed authority. Judge it on whether it helps you.',
+    src:'HALT comes from twelve-step and wider recovery practice; the supporting pieces come from self-regulation and relapse-prediction research.',
+    live:'', act:'' }
+];
+const _TK_NOT_THERAPY = 'These are skills, not treatment. A skill can carry a hard hour; it cannot carry everything, and nobody\u2019s suffering continues because they haven\u2019t learned a technique yet. If what you\u2019re facing is bigger than an hour, that deserves a real person, not a better exercise.';
+const _TK_FAITH = { // Only the compassion lesson, only when faith is full. Faith full, never forced.
+  christianity:'The theological version is older than the psychology: grace is not a wage you earn by being hard enough on yourself. If you\u2019d accept mercy from God, it\u2019s strange to refuse it from yourself.',
+  islam:'The older version: Allah is Ar-Rahman, the Most Merciful \u2014 and that mercy is not less available to you than to anyone else. Harshness with yourself is not a form of piety.',
+  hinduism:'The older version: act without clinging to the fruit of the act. Self-punishment is only another kind of clinging \u2014 to an outcome you already missed.',
+  buddhism:'The older version: metta begins with yourself, and not as a warm-up. Cruelty aimed inward is still cruelty, and it still produces suffering.',
+  secular:'' };
+function _tkStore(){ try{ const o=ls('totry_toolkit'); return (o&&typeof o==='object')?o:{}; }catch(_){ return {}; } }
+function _tkSeen(id){ try{ const s=_tkStore().seen||{}; return !!s[id]; }catch(_){ return false; } }
+function _tkMark(id){ try{ const o=_tkStore(); o.seen=o.seen||{}; o.seen[id]=new Date().toISOString(); ls('totry_toolkit',o); if(typeof syncToCloud==='function') syncToCloud(); }catch(_){} }
+function _tkLesson(id){ for(let i=0;i<_TOOLKIT.length;i++){ if(_TOOLKIT[i].id===id) return _TOOLKIT[i]; } return null; }
+// Which one to point at first — integration, not a curriculum. A fresh reset means the slip-to-night
+// lesson is the one that would actually have helped; otherwise the oldest one they haven't picked up.
+function _tkSuggest(){
+  try{
+    if(typeof loadV==='function') loadV();
+    const vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices:[];
+    const fresh=vs.some(function(v){ return v && v.mode!=='moderate' && (v.cleanDays!=null) && v.cleanDays<=2 && !_tkSeen('ave'); });
+    if(fresh) return 'ave';
+    for(let i=0;i<_TOOLKIT.length;i++){ if(!_tkSeen(_TOOLKIT[i].id)) return _TOOLKIT[i].id; }
+  }catch(_){}
+  return '';
+}
+function openToolkit(){
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  const sug=_tkSuggest();
+  const myLine=(_tkStore().myLine||'').trim();
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="max-height:90vh;overflow-y:auto"><div class="modal-handle"></div>'+
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.3;margin-bottom:6px">The tools I use with you.</div>'+
+    '<div style="text-align:center;font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:14px">Two minutes each. Learn one somewhere calm and it works far better at 11pm, because you\u2019ll recognise it. Nothing to finish here \u2014 no streak, no score. Pick one up and put me down.</div>'+
+    (myLine?'<div style="background:rgba(200,169,110,0.08);border:1px solid var(--go-bd);border-radius:12px;padding:11px 13px;margin-bottom:12px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:5px">The sentence you told me about</div><div style="font-size:13px;color:var(--tx);line-height:1.55;font-style:italic">\u201c'+_escFew(myLine)+'\u201d</div></div>':'')+
+    _TOOLKIT.map(function(l){
+      const hi=(l.id===sug);
+      return '<button class="btn" onclick="openLesson(\''+l.id+'\')" style="text-align:left;margin-bottom:8px;padding:13px;background:'+(hi?'rgba(200,169,110,0.10)':'var(--bg3)')+';border:1px solid '+(hi?'var(--go-bd)':'var(--bd)')+';display:block;width:100%">'+
+        (hi?'<div style="font-family:DM Mono,monospace;font-size:8.5px;color:var(--go);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:5px">Maybe start here</div>':'')+
+        '<div style="font-size:14px;color:var(--tx);margin-bottom:3px">'+l.ic+'&nbsp;&nbsp;'+l.t+'</div>'+
+        '<div style="font-size:12px;color:var(--tx3);line-height:1.5">'+l.st+'</div></button>';
+    }).join('')+
+    '<div style="font-size:11.5px;color:var(--tx3);line-height:1.65;margin:10px 0 12px;text-align:left">'+_TK_NOT_THERAPY+'</div>'+
+    '<button class="btn" onclick="closeModal(this);if(typeof bridgeToRealHelp===\'function\')bridgeToRealHelp(\'heavy\')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px;margin-bottom:8px">\uD83E\uDD1D This is bigger than a skill \u2014 point me to real help</button>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0">Close</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  if(typeof haptic==='function') haptic('tap');
+  try{ if(typeof logEvent==='function') logEvent('toolkit_open',{suggest:sug}); }catch(_){}
+}
+function openLesson(id){
+  const l=_tkLesson(id); if(!l) return;
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  const again=_tkSeen(id);
+  const faithOn=(typeof faithLevel!=='function')||faithLevel()!=='light';
+  const tr=(typeof faithTradition==='function')?faithTradition():'christianity';
+  const fLine=(id==='compassion'&&faithOn)?(_TK_FAITH[tr]||''):'';
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="max-height:90vh;overflow-y:auto">'+
+    '<div class="modal-handle"></div>'+
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.13em;text-transform:uppercase;margin-bottom:7px">'+l.ic+'&nbsp; about 2 minutes</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:25px;color:var(--tx);line-height:1.25;margin-bottom:12px">'+l.t+'</div>'+
+    (again?'<div style="font-size:11.5px;color:var(--tx3);line-height:1.55;margin-bottom:12px;font-style:italic">You\u2019ve picked this one up before. Good \u2014 repetition is how a skill stops being information and starts being a reflex.</div>':'')+
+    l.idea.map(function(p){ return '<div style="font-size:14px;color:var(--tx2);line-height:1.75;margin-bottom:12px">'+p+'</div>'; }).join('')+
+    (fLine?'<div style="font-size:13.5px;color:var(--tx2);line-height:1.75;margin-bottom:12px;padding-left:11px;border-left:2px solid var(--go-bd)">'+fLine+'</div>':'')+
+    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:13px 14px;margin:4px 0 14px">'+
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.13em;text-transform:uppercase;margin-bottom:6px">What it looks like</div>'+
+      '<div style="font-size:13px;color:var(--tx2);line-height:1.7">'+l.ex+'</div></div>'+
+    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:13px 14px;margin-bottom:14px">'+
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.13em;text-transform:uppercase;margin-bottom:6px">What it\u2019s honestly evidenced for</div>'+
+      '<div style="font-size:12.5px;color:var(--tx2);line-height:1.7;margin-bottom:8px">'+l.ev+'</div>'+
+      '<div style="font-size:11px;color:var(--tx3);line-height:1.6">Where it comes from: '+l.src+' The wording, the example and the practice here are the app\u2019s own.</div></div>'+
+    '<button class="btn primary" onclick="_tkPractice(\''+l.id+'\')" style="margin-bottom:8px">Try the practice \u2014 one minute</button>'+
+    // A person can land straight in a lesson without passing the index, so the honest limit travels
+    // with the lesson rather than living only on the shelf it came from.
+    '<div style="font-size:11px;color:var(--tx3);line-height:1.6;margin:2px 0 10px;text-align:left">A skill, not treatment \u2014 and nobody\u2019s suffering continues because they haven\u2019t learned one yet. If this is bigger than an hour, <a href="#" onclick="event.preventDefault();closeModal(this);if(typeof openRecoveryBridge===\'function\')openRecoveryBridge()" style="color:var(--go);text-decoration:none">that deserves a real person</a>.</div>'+
+    '<button class="btn" onclick="closeModal(this);openToolkit()" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0">Back to the toolkit</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  try{ m.querySelector('.modal').scrollTop=0; }catch(_){}
+  if(typeof haptic==='function') haptic('tap');
+  try{ if(typeof logEvent==='function') logEvent('lesson_open',{id:id}); }catch(_){}
+}
+function _tkPractice(id){
+  const l=_tkLesson(id); if(!l) return;
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  // Two lessons hand straight to a tool that already exists rather than describing one.
+  if(l.pracFn==='_tkMyLine'){ _tkMyLine(); return; }
+  if(l.pracFn==='openHALT' || l.pracFn==='_letGoAct'){ _tkMark(id); try{ window[l.pracFn](); }catch(_){} return; }
+  const yourVal=(id==='values'&&typeof getValues==='function')?getValues():null;
+  const valLine=(yourVal&&yourVal.v&&yourVal.v.length)?'<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:14px">You already told me one of yours: <span style="color:var(--go)">'+_escFew(yourVal.v[0])+'</span>. Start there.</div>':'';
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="text-align:center;max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.13em;text-transform:uppercase;margin-bottom:8px">One tiny practice \u2014 now</div>'+
+    '<div style="font-size:14.5px;color:var(--tx);line-height:1.75;margin-bottom:14px;text-align:left">'+l.prac+'</div>'+
+    valLine+
+    '<button class="btn primary" onclick="_tkDone(\''+l.id+'\')" style="margin-bottom:8px">'+(l.pracBtn||'Done')+'</button>'+
+    (l.live?'<button class="btn" onclick="_tkMark(\''+l.id+'\');closeModal(this);'+l.act+'" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px;margin-bottom:8px">'+l.live+'</button>':'')+
+    '<button class="btn" onclick="closeModal(this);openLesson(\''+l.id+'\')" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0">Back to the lesson</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  if(typeof haptic==='function') haptic('tap');
+}
+// The person's own permission-giving sentence, in their words — the single most useful thing they can
+// hand the app from a calm moment. Stored locally, shown back at the top of the toolkit.
+function _tkMyLine(){
+  if(typeof openFormModal!=='function'){ _tkDone('reframe'); return; }
+  const cur=(_tkStore().myLine||'');
+  openFormModal('The sentence it uses on you','Not the tidy version \u2014 the real one. \u201cJust once.\u201d \u201cI\u2019ve earned this.\u201d \u201cToday\u2019s already gone.\u201d I\u2019ll keep it and say it back when it turns up.',
+    [{id:'line',label:'In your own words',type:'text',value:cur,placeholder:'e.g. I\u2019ve had a hard week, I deserve it'}],
+    'Keep it',
+    function(vals){
+      const t=(vals.line||'').trim(); if(!t) return 'Just write the sentence \u2014 however it actually sounds.';
+      try{ const o=_tkStore(); o.myLine=t.slice(0,180); ls('totry_toolkit',o); if(typeof syncToCloud==='function') syncToCloud(); }catch(_){}
+      setTimeout(function(){ _tkDone('reframe'); },200);
+      return true;
+    });
+}
+// Every lesson ends the same way every other exit in this app ends: off the phone.
+function _tkDone(id){
+  const l=_tkLesson(id);
+  _tkMark(id);
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  if(typeof haptic==='function') haptic('success');
+  try{ if(typeof logEvent==='function') logEvent('lesson_done',{id:id}); }catch(_){}
+  const did='You learned '+((l&&l.t)?l.t.charAt(0).toLowerCase()+l.t.slice(1):'a skill')+' while nothing was going wrong \u2014 which is the only time anybody ever really learns anything. It\u2019ll be there when you need it.';
+  if(typeof theRelease==='function') theRelease({did:did});
+  else if(typeof showToast==='function') showToast('Picked up','It\u2019ll be there when you need it.');
+}
+
 // ════ HALT — the 4-tap check before the urge tools ════
 // Hungry / Angry / Lonely / Tired. Half of all relapses trace to a negative state or a conflict, and
 // an urge is very often a real need wearing a disguise. This is the single best fit for a whole-life
@@ -12788,6 +13031,7 @@ function openDEADS(){
       '<div style="font-size:13.5px;color:var(--tx);margin-bottom:2px">'+d[0]+'&nbsp;&nbsp;'+d[1]+'</div>'+
       '<div style="font-size:12px;color:var(--tx2);line-height:1.55">'+d[2]+'</div></div>'; }).join('')+
     '<button class="btn primary" style="margin-top:4px" onclick="closeModal(this);theRelease({did:\'You picked a way through instead of white-knuckling it.\'})">Doing one now</button>'+
+    '<button class="btn" onclick="closeModal(this);openToolkit()" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:8px">Learn these properly when it\u2019s quiet \u2192</button>'+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:6px">Back</button>'+
   '</div>';
   document.body.appendChild(m);
