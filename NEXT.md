@@ -1,6 +1,6 @@
 # NEXT — the build list
 
-Where To Try stands at **v366**, and what's actually left. Every item below was **verified absent in
+Where To Try stands at **v374**, and what's actually left. Every item below was **verified absent in
 `index.html`** (not guessed). Ranked by impact × vision-fit ÷ effort.
 
 Research behind each item is in `RESEARCH-BACKLOG.md`. Ready-to-apply specs live in `specs/`.
@@ -32,6 +32,30 @@ features were found across v357–v365 (`_reachOutRowHTML`, `_reachOutResponded`
 post-slip rule). `try/catch` everywhere makes failure silent. **A green test suite is not evidence a
 feature exists** — the call-site coverage test added in v357 is the only guard against this class, and it
 should grow every time a new surface is added.
+
+---
+
+## 🧹 Known dead code — prune or revive, deliberately
+
+A mechanical sweep (now guarded by a ratchet test) found **42 element ids referenced from JS that do not
+exist in the markup**, plus a few orphaned functions. None of them crash: the seven *unguarded* ones all
+live inside `previewBodyPhoto()` and `updateSavings()`, which are themselves never called. The rest are
+guarded silent no-ops. They are listed here rather than "fixed", because re-adding a surface the design
+dropped would be guessing at intent — this is a decision, not a side effect.
+
+| Cluster | Ids | What it was |
+|---|---|---|
+| Season badge | `season-emoji`, `season-name` | `renderSeasonBadge()` runs every boot and does nothing; `.season-badge` CSS still present. Season data is still used by the coach brief. |
+| Legacy body photos | `bod-photo`, `bod-photo-img`, `bod-photo-preview`, `bod-photo-info` | Superseded by the working progress-photos feature. `previewBodyPhoto()` + `renderBodyCollage()` are orphaned with it. |
+| Old header counters | `h-streak`, `h-habits`, `h-score`, `h-wins`, `h-debt` | An earlier home header; the current home renders these differently. |
+| Legacy cardio log | `cardio-*`, `edit-cardio-*` (11 ids) | An older cardio-logging modal. |
+| Legacy reminders | `notif-morning`, `notif-evening`, `notif-setting-status` | Superseded by `push-time-morning`/`push-time-evening`. |
+| Legacy savings | `usa-in`, `india-in`, `f-usa`, `f-india` | `updateSavings()` — never called. |
+| Misc | `strava-link-status`, `settings-cal-goal`, `settings-pro-goal`, `pt-coach-welcome`, `steps-count`, `pt-history-list`, `pt-split-*`, `bible-results`, `br-search-results` | Each a small surface that silently never renders. `steps-count` is the only one a user might notice: steps never display on Track. |
+
+**The ratchet:** `npm test` now fails if a new dead id appears, or if an unguarded dead reference ends up
+inside a function anything calls. That is the guard this project actually needed — the suite could not
+previously tell the difference between "built" and "built and wired".
 
 ---
 
