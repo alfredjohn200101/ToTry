@@ -1,17 +1,6 @@
 {
   "version": "0.0.1",
   "configurations": [
-    {
-      "name": "totry",
-      "runtimeExecutable": "node",
-      "runtimeArgs": [".claude/serve.js"],
-      "port": 4173
-    },
-    {
-      "name": "native-web",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "./native", "run", "web"],
-      "port": 8081
-    }
+    { "name": "totry-static", "runtimeExecutable": "node", "runtimeArgs": ["/private/tmp/claude-501/-Users-alfredjohn-Desktop-ToTry/0fcac028-f9bf-4731-ab57-8b340678f2e7/scratchpad/serve.js"], "port": 8137 }
   ]
 }

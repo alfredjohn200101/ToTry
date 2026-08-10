@@ -3395,9 +3395,9 @@ Amen.</div></div>
          telling you to leave the room \u2014 the only feature here whose success is the app closing. -->
     <div class="card" style="margin-bottom:12px;background:var(--bg3);cursor:pointer" onclick="openWindDown()">
       <div style="display:flex;align-items:center;gap:11px">
-        <div style="font-size:20px">\U0001F319</div>
+        <div style="font-size:20px">🌙</div>
         <div style="flex:1"><div style="font-size:14px;color:var(--tx)">Land the day</div><div style="font-size:11.5px;color:var(--tx3);line-height:1.5">Four small things, then the phone goes down.</div></div>
-        <div style="color:var(--tx3);font-size:18px">\u203A</div>
+        <div style="color:var(--tx3);font-size:18px">›</div>
       </div>
     </div>
     <div id="on-this-day" style="display:none"></div>
@@ -4382,7 +4382,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v361';
+const APP_VERSION = 'v362';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4744,7 +4744,12 @@ const SYNC_KEYS = [
   // v344 — the first felt moment, and the receptivity gate under the reach-out.
   'totry_first_moment','totry_quiet_hours','totry_reachout_log','totry_reachout_state','totry_last_active_ts',
   // The Toolkit — which skills you've picked up, and the permission-giving sentence in your own words.
-  'totry_toolkit'
+  'totry_toolkit',
+  // Who you are and what you believe. These were missing, and their absence was not cosmetic: on a
+  // new device faith fell back to Christianity, so a Muslim or secular person reinstalling was handed
+  // someone else's tradition, and userSex() went null, which changes the calorie and protein maths and
+  // the voice. Identity has to survive a reinstall.
+  'totry_sex','totry_faith_tradition','totry_faith_level'
 ];
 // totry_cycle is deliberately NOT in the list above. Post-Dobbs, cycle data is the most sensitive
 // thing this app holds, so it stays on the device by default. It is pushed into SYNC_KEYS at runtime
@@ -6470,7 +6475,9 @@ function getLifeState(){
       todayCal: Math.round(todayCal), todayPro: Math.round(todayPro),
       avgCal7: nutDays7 ? Math.round(nutCal7/nutDays7) : null,
       avgPro7: nutDays7 ? Math.round(nutPro7/nutDays7) : null,
-      daysLogged7: nutDays7
+      daysLogged7: nutDays7,
+      // The target, so the brief can describe WHERE they are without quoting a number (gentle mode).
+      goalCal: (function(){ try{ const g=ls('totry_nut_goals')||{}; return g.cal||null; }catch(_){ return null; } })()
     },
     body: { currentWeight: curWeight, recomp },
     soul: {
@@ -6525,7 +6532,23 @@ function lifeStateBrief(s){
   const lines = [];
   const t = s.training, n = s.nutrition, b = s.body, soul = s.soul, f = s.fight;
   if(t.sessions7 != null) lines.push('Training: '+t.sessions7+' sessions in 7 days ('+t.daysTrained7+' days)'+(t.lastTitle?', last: '+t.lastTitle:''));
-  if(n.daysLogged7) lines.push('Nutrition: avg '+(n.avgCal7||'?')+' cal / '+(n.avgPro7||'?')+'g protein over '+n.daysLogged7+' logged days; today '+n.todayCal+' cal / '+n.todayPro+'g');
+  // Gentle mode ("numbers on/off") is a promise that this person does not see calorie or macro
+  // figures — often because counting them is the thing that hurt them. Handing the raw numbers to the
+  // coach broke that promise from the other side: the diary hid them and then the coach said them out
+  // loud. Under gentle mode the model gets the SHAPE of their eating and an explicit instruction.
+  const _gentleBrief = (typeof nutGentle==='function' && nutGentle());
+  if(n.daysLogged7){
+    if(_gentleBrief){
+      // Reuse the app's own gentle vocabulary so the coach says what the diary says.
+      const _gw=(typeof _gentleWord==='function')?_gentleWord(n.todayCal, n.goalCal):null;
+      const _where=_gw ? (_gw.w+' ('+_gw.s+')') : 'logged today';
+      lines.push('Nutrition: they have NUMBERS TURNED OFF — they log food without seeing calories or macros. '+
+        'Ate on '+n.daysLogged7+' of the last 7 days; today reads as: '+_where+'. '+
+        'CRITICAL: never state a calorie count, macro gram figure, deficit, surplus or target number. Speak in food, portions, energy and how they feel. If they ask for a number, tell them it is switched off and they can turn numbers back on in Nourish.');
+    } else {
+      lines.push('Nutrition: avg '+(n.avgCal7||'?')+' cal / '+(n.avgPro7||'?')+'g protein over '+n.daysLogged7+' logged days; today '+n.todayCal+' cal / '+n.todayPro+'g');
+    }
+  }
   if(b.currentWeight) lines.push('Weight: '+b.currentWeight+'kg'+(b.recomp&&b.recomp.dFat!=null?' (last stretch: '+(b.recomp.dWeight>0?'+':'')+b.recomp.dWeight+'kg scale, '+(b.recomp.dFat>0?'+':'')+b.recomp.dFat+'kg fat'+(b.recomp.dMuscle!=null?', '+(b.recomp.dMuscle>0?'+':'')+b.recomp.dMuscle+'kg muscle':'')+')':''));
   const soulBits = [];
   if(soul.spiritual!=null) soulBits.push('spiritual '+soul.spiritual.toFixed(1)+'/10');
@@ -6553,7 +6576,9 @@ function lifeStateBrief(s){
         menstrual:'energy and iron genuinely lower; rest is legitimate, not slipping',
         follicular:'energy and recovery usually climbing \u2014 a good stretch to push',
         ovulatory:'usually her strongest, most social stretch',
-        luteal:'appetite genuinely rises (~100-300 cal/day), cravings sharpen and willpower is genuinely thinner. Read a heavy day or a slip this week as PHYSIOLOGY \u2014 never as weakness or a failure of will'
+        // Gentle mode means numbers off. Handing the model a calorie range here let it say one back
+        // to someone who explicitly asked never to see them \u2014 the leak defeats the whole setting.
+        luteal:'appetite genuinely rises'+((typeof nutGentle==='function' && nutGentle())?'':' (~100-300 cal/day)')+', cravings sharpen and willpower is genuinely thinner. Read a heavy day or a slip this week as PHYSIOLOGY \u2014 never as weakness or a failure of will'
       }[cy.phase] || '';
       lines.push('Cycle (self-logged, ESTIMATE only \u2014 never state it as fact, never give fertility, contraception or medical advice): day '+cy.day+', likely '+cy.phase+' phase'+(meaning?' \u2014 '+meaning:'')+'.');
     }
@@ -11184,7 +11209,19 @@ function playTheTape(){
         return out;
       }catch(_){ return ''; }
     })()+
-    '<br><br><b style="color:var(--tx)">Which version of tomorrow do you want?</b>';
+    '<br><br><b style="color:var(--tx)">Which version of tomorrow do you want?</b>'+
+    // The runway they traced in the calm. Same resolution problem as the ledger above: no index here,
+    // so take the vice whose walk-back is newest. This is the half of the walk-back that was missing —
+    // it has been collecting chains since v354 and showing them nowhere.
+    (function(){
+      try{
+        if(typeof _walkBackAtThreshold!=='function') return '';
+        const vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices.filter(function(v){return v&&Array.isArray(v.walkbacks)&&v.walkbacks.length;}):[];
+        if(!vs.length) return '';
+        const v=vs.sort(function(a,b){ return new Date(b.walkbacks[0].ts||0)-new Date(a.walkbacks[0].ts||0); })[0];
+        return _walkBackAtThreshold(v);
+      }catch(_){ return ''; }
+    })();
   box.style.display = 'block';
   box.scrollIntoView({block:'center', behavior:'smooth'});
   haptic('tap');
@@ -12309,7 +12346,15 @@ function _tkSuggest(){
   try{
     if(typeof loadV==='function') loadV();
     const vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices:[];
-    const fresh=vs.some(function(v){ return v && v.mode!=='moderate' && (v.cleanDays!=null) && v.cleanDays<=2 && !_tkSeen('ave'); });
+    // cleanDays is COMPUTED (viceCleanDays), never a field on the stored vice — reading v.cleanDays
+    // here was always undefined, so the abstinence-violation lesson could never be suggested at the
+    // one moment it exists for: the two days after a slip.
+    const fresh=vs.some(function(v){
+      if(!v || v.mode==='moderate' || _tkSeen('ave')) return false;
+      if(!(v.startDate || v.lastLoss)) return false;   // never reset = not fresh, just new
+      const cd=(typeof viceCleanDays==='function')?viceCleanDays(v):null;
+      return cd!=null && cd<=2;
+    });
     if(fresh) return 'ave';
     for(let i=0;i<_TOOLKIT.length;i++){ if(!_tkSeen(_TOOLKIT[i].id)) return _TOOLKIT[i].id; }
   }catch(_){}
@@ -13036,14 +13081,39 @@ function openBreath(id, opts){
 // person to the brink while feeling like nothing), your own reasons in your own words, and a set of
 // named responses so the answer to a craving isn't only "endure it".
 
+// The links they have already named, read back to them. Written since v354 and never once shown —
+// a walk-back that only writes is a diary entry, not an intervention. Marlatt's whole point is that
+// the chain gets INTERRUPTED, which requires the person to see it again outside the moment.
+function walkBackLinks(v){
+  try{
+    const w=(v&&Array.isArray(v.walkbacks))?v.walkbacks:[];
+    if(!w.length) return null;
+    const catches=[]; w.forEach(function(e){ const c=((e&&e.catch)||'').trim(); if(c && catches.indexOf(c)<0) catches.push(c); });
+    return { count:w.length, last:w[0], catches:catches.slice(0,3) };
+  }catch(_){ return null; }
+}
+// The threshold block: their own runway, in their own words, at the moment it is about to run again.
+function _walkBackAtThreshold(v){
+  try{
+    const L=walkBackLinks(v); if(!L || !L.catches.length) return '';
+    return '<div style="border:1px solid var(--bd);border-radius:12px;padding:12px;margin-top:10px;background:var(--bg3)">'+
+      '<div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">The link you said you’d break</div>'+
+      L.catches.map(function(c){ return '<div style="font-size:12.5px;color:var(--tx);line-height:1.5">• '+_escFew(c)+'</div>'; }).join('')+
+      '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:6px">You worked that out when you were clear-headed. It is still true now.</div>'+
+    '</div>';
+  }catch(_){ return ''; }
+}
+
 // 2.1 — THE WALK-BACK. Done in the calm, never mid-urge: an urge cannot see its own runway.
 function openWalkBack(i){
   if(typeof loadV==='function') loadV();
   const v=vices[i]; if(!v) return;
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
   if(typeof openFormModal!=='function') return;
+  const _L=walkBackLinks(v);
+  const _prev=_L ? ('\n\nLast time you traced it: “'+String(_L.last.chain||'').slice(0,180)+'”'+(_L.last.catch?(' — and the link you named was: '+_L.last.catch):'')) : '';
   openFormModal('How did you get there?',
-    'Think of the last time it got you \u2014 and work backwards. Not the moment itself: the hour before, and the hour before that. What were the small, innocent-looking decisions that quietly put you in the room?',
+    'Think of the last time it got you \u2014 and work backwards. Not the moment itself: the hour before, and the hour before that. What were the small, innocent-looking decisions that quietly put you in the room?'+_prev,
     [{id:'chain',label:'',type:'textarea',placeholder:'e.g. stayed up past midnight \u2192 took my phone to bed \u2192 told myself I\u2019d just check one thing'},
      {id:'catch',label:'',type:'text',placeholder:'Which link could you realistically break next time?'}],
     'Save this',
@@ -19870,7 +19940,7 @@ function openRepeatDay(){
   if(typeof haptic==='function') haptic('tap');
 }
 // ── REPEAT YESTERDAY'S MEALS ─────────────────────────────────
-function repeatYesterdayMeals(){ repeatMealsFrom(1, 'yesterday'); }
+function repeatYesterdayMeals(){ repeatMealsFrom(1, (typeof nutIsToday==='function' && !nutIsToday()) ? 'the day before' : 'yesterday'); }
 // Same-as-last-[weekday]: people eat on a weekly rhythm (gym days, work days, Sunday roast),
 // so "last Tuesday" is often a truer template than "yesterday". Looks back up to 7 days to the
 // same weekday that actually has a log.
@@ -19890,7 +19960,11 @@ function repeatLastWeekday(){
 }
 function repeatMealsFrom(daysAgo, label){
   const log = ls('totry_nutlog') || {};
-  const src = new Date(Date.now() - daysAgo*86400000).toLocaleDateString('en-AU');
+  // Relative to the day being VIEWED, not to today. The copy lands on the viewed day, so sourcing
+  // from today-1 meant that while looking at Saturday you were offered "yesterday" — which was
+  // actually a day AFTER the one you were filling in.
+  const _base = (typeof nutViewDate==='function') ? nutViewDate() : new Date();
+  const src = new Date(_base.getTime() - daysAgo*86400000).toLocaleDateString('en-AU');
   const srcMeals = log[src] || [];
   if(!srcMeals.length){
     showToast('Nothing to copy', 'No food logged ' + (label||('on '+src)) + '.');
@@ -19908,8 +19982,8 @@ function repeatMealsFrom(daysAgo, label){
     '</label>';
   });
   m.innerHTML = '<div class="modal" style="max-height:88vh"><div class="modal-handle"></div>' +
-    '<h3 style="margin-bottom:8px">Repeat ' + (label||'that day') + '</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:10px">Pick which meals to log today.</p>' +
+    '<h3 style="margin-bottom:8px">Repeat ' + (label||('the day before ' + ((typeof nutDayWord==='function')?nutDayWord():'today'))) + '</h3>' +
+    '<p style="font-size:12px;color:var(--tx3);margin-bottom:10px">Pick which meals to log '+((typeof nutIsToday==='function' && !nutIsToday() && typeof nutDayLabel==='function') ? ('on '+nutDayLabel()) : 'today')+'.</p>' +
     '<div id="repeat-yesterday-list">' + itemsHtml + '</div>' +
     '<button class="btn primary" onclick="confirmRepeatYesterday()" style="margin-top:10px;margin-bottom:8px">Log selected</button>' +
     '<button class="btn" onclick="closeModal(this)">Cancel</button>' +
@@ -21064,7 +21138,7 @@ function renderNutritionLog(){
         return;
       }
       list.innerHTML='<div style="text-align:center;padding:18px 12px;font-size:13px;color:var(--tx3);line-height:1.6"><div style="font-size:24px;margin-bottom:8px">🍽️</div><div style="margin-bottom:4px;color:var(--tx2)">'+((typeof nutIsToday==='function'&&!nutIsToday())?(_escFew(nutDayLabel())+'\'s plate is empty.'):'Today\'s plate is empty.')+'</div><div style="font-size:11px">Search a food, scan a barcode, or describe a whole meal — the AI will estimate macros.</div>' +
-        (hadYesterday ? '<button class="btn" style="margin-top:12px;background:var(--bg3);border:1px solid var(--bd);font-size:12px;width:auto;padding:8px 14px" onclick="repeatYesterdayMeals()">↻ Copy yesterday\'s ' + log[yKey].length + ' items</button>' : '') +
+        (hadYesterday ? '<button class="btn" style="margin-top:12px;background:var(--bg3);border:1px solid var(--bd);font-size:12px;width:auto;padding:8px 14px" onclick="repeatYesterdayMeals()">↻ Copy ' + ((typeof nutIsToday==='function'&&!nutIsToday()) ? 'the day before' : 'yesterday\'s') + ' ' + log[yKey].length + ' items</button>' : '') +
         '</div>';
       return;
     }
@@ -24464,13 +24538,47 @@ function renderOnThisDay(){
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px">You wrote this '+when+'</div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:14.5px;font-style:italic;color:var(--tx2);line-height:1.7;margin-bottom:10px">\u201c'+_escFew(String(hit.e.text).slice(0,340))+(String(hit.e.text).length>340?'\u2026':'')+'\u201d</div>'+
     '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:10px">Not to make you feel anything in particular \u2014 just so you can hear how you were speaking then, and notice whether it has moved.</div>'+
-    '<button class="btn" style="width:auto;padding:6px 12px;font-size:12px" onclick="_otdSeen()">Read it</button>'+
+    // "Read it" used to hide the card and jump to Reflect \u2014 it never opened anything, and it burned
+    // the entry: totry_otd_seen was stamped so it could never resurface. The card is already the
+    // entry, so the only honest actions are: show the rest of it, respond to it, or put it down.
+    '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+      (String(hit.e.text).length>340 ? '<button class="btn" style="width:auto;padding:6px 12px;font-size:12px;margin:0" onclick="_otdExpand()">Read the rest</button>' : '')+
+      '<button class="btn" style="width:auto;padding:6px 12px;font-size:12px;margin:0;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go)" onclick="_otdRespond()">Write to that version of me</button>'+
+      '<button class="btn" style="width:auto;padding:6px 12px;font-size:12px;margin:0;background:transparent;border:1px solid var(--bd);color:var(--tx3)" onclick="_otdSeen()">Put it down</button>'+
+    '</div>'+
   '</div>';
 }
+// Show the whole entry in place. No navigation, no dismissal \u2014 they asked to read, so let them read.
+function _otdExpand(){
+  try{
+    const hit=onThisDay(); if(!hit) return;
+    const el=document.getElementById('on-this-day'); if(!el) return;
+    const q=el.querySelector('div[style*="Cormorant"]');
+    if(q) q.innerHTML='\u201c'+_escFew(String(hit.e.text))+'\u201d';
+    const b=el.querySelector('button'); if(b && /Read the rest/.test(b.textContent||'')) b.remove();
+    if(typeof haptic==='function') haptic('tap');
+  }catch(_){}
+}
+// Respond to it. This is the one move that earns the resurfacing: then vs now, in their own hand.
+function _otdRespond(){
+  try{
+    const hit=onThisDay();
+    if(hit){ try{ ls('totry_otd_seen', String(hit.e.ts)); }catch(_){} window.__otdPrompt = String(hit.e.text).slice(0,300); }
+    const el=document.getElementById('on-this-day'); if(el){ el.style.display='none'; el.innerHTML=''; }
+    if(typeof go==='function') go('reflect');
+    setTimeout(function(){
+      try{
+        const ta=document.getElementById('journal-input')||document.querySelector('#tab-reflect textarea');
+        if(ta){ ta.focus(); if(!ta.value) ta.placeholder='You wrote that '+(hit?(hit.age>=330?'about a year ago':Math.round(hit.age/30)+' months ago'):'a while back')+'. What would you say to yourself now?'; }
+      }catch(_){}
+    }, 420);
+  }catch(_){}
+}
+// Put it down. Marks it seen so it doesn't chase them \u2014 that's the anti-engagement promise.
 function _otdSeen(){
   const hit=onThisDay(); if(hit){ try{ ls('totry_otd_seen', String(hit.e.ts)); }catch(_){} }
   const el=document.getElementById('on-this-day'); if(el){ el.style.display='none'; el.innerHTML=''; }
-  try{ if(typeof go==='function') go('reflect'); }catch(_){}
+  if(typeof haptic==='function') haptic('tap');
 }
 
 function renderSubscriptions(){
