@@ -1144,7 +1144,7 @@ input:focus,textarea:focus,select:focus{
     <div class="ob-by">by Alfred John</div>
     <div class="ob-title">The only thing required is that you try.</div>
     <div class="ob-desc">An app for anyone trying to be better at anything. Built by someone who needed it himself — and shared freely, in that spirit.</div>
-    <button class="btn primary" style="margin-top:8px" onclick="obNext('ob-what')">Begin &#8594;</button>
+    <button class="btn primary" style="margin-top:8px" onclick="obNext(2)">Begin &#8594;</button>
   </div>
   
   <!-- WHAT IT IS — instant "I get it" for a brand-new user, before asking anything -->
@@ -1173,15 +1173,25 @@ input:focus,textarea:focus,select:focus{
         <div><div style="font-size:14px;color:var(--tx);font-weight:500">One coach who sees all of it</div><div style="font-size:12px;color:var(--tx3);line-height:1.5">Not five apps — one that remembers your whole story and speaks to it.</div></div>
       </div>
     </div>
-    <button class="btn primary" onclick="obNext(2)">I'm in &#8594;</button>
+    <button class="btn primary" onclick="obNextToApps()">I'm in &#8594;</button>
   </div>
   <div class="ob-step" id="ob2">
     <div class="ob-title">What's your name?</div>
     <div class="ob-desc">This app speaks to you personally, not generically.</div>
     <input type="text" id="ob-name" placeholder="Your first name..." style="margin-bottom:20px;font-size:18px;text-align:center;padding:14px" autocomplete="given-name">
-    <button class="btn primary" onclick="obNextToApps()">Continue &#8594;</button>
+    <button class="btn primary" onclick="obNextToMoment()">Continue &#8594;</button>
   </div>
   
+  <!-- THE FIRST FELT MOMENT. A guest reaches the Feeling Door in ~10 seconds (enterAsGuest). Someone
+       who made an ACCOUNT used to get explainer screens then an empty Home — so the best thing in the
+       app was hidden from the people most likely to stay. This IS the door, inline, rendered from the
+       same FEELINGS array and running the same real move. Not a wall: there is a way past, below. -->
+  <div class="ob-step" id="ob-moment">
+    <div class="ob-title" id="ob-moment-title" style="margin-bottom:6px">Before anything else &mdash; how are you right now?</div>
+    <div class="ob-desc" style="margin-bottom:20px">This is the app. Not the setup &mdash; this. Tap whatever&rsquo;s closest and I&rsquo;ll meet you there. No right answer, nothing to fill in.</div>
+    <div class="feel-grid" id="ob-moment-grid"></div>
+    <button class="btn" onclick="obSkipMoment()" style="background:transparent;border:none;color:var(--tx3);font-size:12.5px;margin-top:16px">Nothing right now &mdash; show me around &#8594;</button>
+  </div>
   <!-- NEW STEP: Apps you already use -->
   <div class="ob-step" id="ob-apps">
     <div class="ob-title">Already track in another app?</div>
@@ -4329,7 +4339,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v350';
+const APP_VERSION = 'v351';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7670,6 +7680,64 @@ function selectHevyTier(tier){
   haptic('tap');
 }
 
+// ── THE FIRST FELT MOMENT ─────────────────────────────────────────────────────
+// The signed-up path's aha. The name step earns its place because it changes THIS screen — nothing
+// else asked here would, so nothing else is asked here. Rendered from FEELINGS (one source of truth,
+// same chips as renderFeelingDoor) so the founder's demo and the real door can never drift apart.
+function obNextToMoment(){
+  const el = document.getElementById('ob-name');
+  const n = el ? el.value.trim() : '';
+  if(!n){ if(el) el.style.borderColor = 'var(--re)'; return; }
+  try{ userName = n; }catch(_){}
+  ls('totry_name', n);
+  renderObMoment();
+  document.querySelectorAll('.ob-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('ob-moment').classList.add('active');
+  document.querySelectorAll('.ob-dot').forEach((d,i) => d.classList.toggle('on', i < 2));
+  window.scrollTo(0,0);
+}
+function renderObMoment(){
+  const first = (ls('totry_name')||'').trim().split(' ')[0];
+  const t = document.getElementById('ob-moment-title');
+  // First name only, and it goes in via textContent — never innerHTML.
+  if(t) t.textContent = first ? ('Before anything else, '+first+' — how are you right now?')
+                              : 'Before anything else — how are you right now?';
+  const grid = document.getElementById('ob-moment-grid');
+  if(!grid || typeof FEELINGS === 'undefined') return;
+  grid.innerHTML = '';
+  FEELINGS.forEach(function(f){
+    const b = document.createElement('button');
+    b.className = 'feel-chip';
+    // f.emoji/label/sub are app constants, not user text — same as renderFeelingDoor.
+    b.innerHTML = '<span class="feel-chip-emoji">'+f.emoji+'</span><span class="feel-chip-label">'+f.label+'</span><span class="feel-chip-sub">'+f.sub+'</span>';
+    b.onclick = function(){ _obFirstMoment(f.id); };
+    grid.appendChild(b);
+  });
+}
+// Finish setup FIRST so nothing is trapped behind the onboarding overlay, THEN run the real move.
+// The move ends where it always ends — theRelease, or a closed modal on Home. No new dead end.
+async function _obFirstMoment(id){
+  try{ if(typeof haptic==='function') haptic('light'); }catch(_){}
+  try{ if(typeof _recordFeeling==='function') _recordFeeling(id); }catch(_){}
+  try{ ls('totry_first_moment', { id:id, ts:Date.now() }); }catch(_){}
+  try{ if(typeof logEvent==='function') logEvent('first_moment', { feeling:id }); }catch(_){}
+  try{ if(typeof finishOnboard==='function') await finishOnboard({ quiet:true }); }catch(_){}
+  setTimeout(function(){
+    try{
+      const f = (typeof FEELINGS!=='undefined') ? FEELINGS.find(function(x){ return x.id===id; }) : null;
+      if(f && typeof f.act==='function') f.act();
+      else if(typeof openCompanionForUrge==='function') openCompanionForUrge();
+    }catch(_){}
+  }, 480);
+}
+// Not everyone arrives feeling something, and pressing them to would be the opposite of this app.
+// The way past is a door, not a skip-button-shaped wall: it goes to the tour they used to get first.
+function obSkipMoment(){
+  try{ if(typeof logEvent==='function') logEvent('first_moment_skip'); }catch(_){}
+  document.querySelectorAll('.ob-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('ob-what').classList.add('active');
+  window.scrollTo(0,0);
+}
 function obNextToApps(){
   // Save name first
   const n = document.getElementById('ob-name')?.value.trim();
@@ -7811,7 +7879,7 @@ function selectObSeason(chip){
   document.querySelectorAll('.ob-step.active .season-chip').forEach(c=>c.classList.remove('on'));
   chip.classList.add('on');
 }
-async function finishOnboard(){
+async function finishOnboard(opts){
   ls('totry_onboarded',true);
   ls('totry_start',new Date().toISOString());
   // Suppress the companion auto-check-in for this first session — a brand-new user shouldn't be
@@ -7821,7 +7889,9 @@ async function finishOnboard(){
   await initApp();
   // Show home tab
   if(typeof go === 'function') go('home');
-  haptic('celebrate');
+  // A celebration haptic on top of "I'm heavy" would be tone-deaf. When setup ends INSIDE a felt
+  // moment (the first-moment path) we finish quietly and let the move carry the feeling.
+  haptic((opts && opts.quiet) ? 'light' : 'celebrate');
 }
 
 // ── HEADER VERSES (per-tradition banks below; activeVerses() returns the current one) ──
