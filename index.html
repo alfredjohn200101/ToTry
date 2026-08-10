@@ -4452,7 +4452,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v385';
+const APP_VERSION = 'v386';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -13958,7 +13958,12 @@ async function _companionSay(userText, opening){
     await new Promise(r=>setTimeout(r, 650)); // a natural beat, like the sibling typing
   } else {
     try{
-      reply = await api(sys, _compHistory, opening === true ? 'Open the moment with me.' : opening === 'deepen' ? 'Continue the moment with me.' : (userText||'...'), 500, { timeout:20000 });
+      // _compHistory already ENDS with this user message (pushed above), and api() appends `msg` again —
+      // so the model was receiving the same user turn twice in a row. Two consecutive user turns is
+      // malformed for Anthropic's API and confusing for the rest of the chain, at the one conversation
+      // that matters most: the 2am door. sendPT already does this correctly with ptH.slice(0,-1).
+      const _hist = userText ? _compHistory.slice(0, -1) : _compHistory;
+      reply = await api(sys, _hist, opening === true ? 'Open the moment with me.' : opening === 'deepen' ? 'Continue the moment with me.' : (userText||'...'), 500, { timeout:20000 });
     }catch(_){ reply = ''; }
   }
   if(typing) typing.style.display='none';
@@ -23603,7 +23608,8 @@ function _fuelRenderPlan(plan){
       '<button onclick="_fuelSwapMeal('+i+')" style="margin-top:6px;background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;font-family:\'DM Mono\',monospace;letter-spacing:0.03em">↻ swap this meal</button>'+
     '</div>';
   }).join('');
-  const sum = function(k){ return (plan.meals||[]).reduce(function(a,mm){ return a+(mm[k]||0); },0); };
+  // Number() so an already-stored string cannot turn addition into concatenation.
+  const sum = function(k){ return (plan.meals||[]).reduce(function(a,mm){ const n=parseFloat(mm&&mm[k]); return a+(isFinite(n)?n:0); },0); };
   const dayCal=sum('cal'), dayPro=sum('pro'), dayCarbs=sum('carbs'), dayFat=sum('fat');
   const macroRow = '<div style="display:flex;justify-content:space-between;margin-top:12px;padding:9px 12px;background:var(--bg3);border-radius:8px;font-family:\'DM Mono\',monospace;font-size:10.5px;color:var(--tx2)"><span>'+R(dayCal)+' cal</span><span style="color:var(--gr)">'+R(dayPro)+'g P</span><span style="color:var(--bl)">'+R(dayCarbs)+'g C</span><span style="color:var(--go)">'+R(dayFat)+'g F</span></div>';
   const tgtCal = (plan.targets&&plan.targets.cal)||0, tgtPro = (plan.targets&&plan.targets.pro)||0;
@@ -23677,13 +23683,34 @@ async function _fuelAddSnack(){
   let meal=null; try{ let c=(txt||'').replace(/```json|```/g,'').trim(); c=c.slice(c.indexOf('{'),c.lastIndexOf('}')+1).replace(/,\s*([}\]])/g,'$1'); meal=JSON.parse(c); }catch(_){ meal=null; }
   if(!meal || !meal.name){ if(typeof showToast==='function') showToast('Hmm','Couldn’t add it — try again shortly.'); return; }
   if(!meal.name.match(/snack/i)) meal.name = 'Snack — '+meal.name;
-  plan.meals.push(meal); ls('totry_meal_plan', plan); if(typeof syncToCloud==='function') syncToCloud();
+  const _clean = _fuelSaneMeal(meal);
+  if(!_clean){ if(typeof showToast==='function') showToast('Hmm','That snack came back unusable — try again shortly.'); return; }
+  plan.meals.push(_clean); ls('totry_meal_plan', plan); if(typeof syncToCloud==='function') syncToCloud();
   if(typeof haptic==='function') haptic('success');
   const m=document.getElementById('fuel-plan-modal'); if(m) m.remove();
   _fuelRenderPlan(plan);
 }
 
 // Swap a single meal without regenerating the whole plan.
+// Never store a model's numbers unchecked. Coerce to finite numbers, clamp to what a single meal can
+// plausibly be, and keep the text fields as strings — a swapped meal is written straight into
+// totry_meal_plan and synced, so a bad value follows the person to every device.
+function _fuelSaneMeal(meal){
+  if(!meal || typeof meal!=='object') return null;
+  const num=(v,max)=>{ const n=parseFloat(v); return (isFinite(n) && n>=0) ? Math.min(n,max) : 0; };
+  const str=(v,len)=>String(v==null?'':v).slice(0,len);
+  const out={
+    name: str(meal.name,80),
+    items: str(meal.items||meal.ingredients||'',300),
+    cal:  Math.round(num(meal.cal,  3000)),   // one meal, not one day
+    pro:  Math.round(num(meal.pro,   300)),
+    carb: Math.round(num(meal.carb,  500)),
+    fat:  Math.round(num(meal.fat,   300)),
+  };
+  if(meal.slot!=null) out.slot=str(meal.slot,24);
+  if(meal.time!=null) out.time=str(meal.time,24);
+  return out.name ? out : null;
+}
 async function _fuelSwapMeal(i){
   const plan = ls('totry_meal_plan'); if(!plan || !plan.meals || !plan.meals[i]) return;
   const p = getMealPrefs();
@@ -23697,7 +23724,9 @@ async function _fuelSwapMeal(i){
   let txt=''; try{ txt = await api(sys, [], prompt, 400, { timeout:25000 }); }catch(e){ txt=''; }
   let meal=null; try{ let c=(txt||'').replace(/```json|```/g,'').trim(); c=c.slice(c.indexOf('{'),c.lastIndexOf('}')+1).replace(/,\s*([}\]])/g,'$1'); meal=JSON.parse(c); }catch(_){ meal=null; }
   if(!meal || !meal.name){ if(typeof showToast==='function') showToast('Hmm','Couldn’t swap that one — try again shortly.'); return; }
-  plan.meals[i] = meal; ls('totry_meal_plan', plan); if(typeof syncToCloud==='function') syncToCloud();
+  const _clean = _fuelSaneMeal(meal);
+  if(!_clean){ if(typeof showToast==='function') showToast('Hmm','That swap came back unusable — try again shortly.'); return; }
+  plan.meals[i] = _clean; ls('totry_meal_plan', plan); if(typeof syncToCloud==='function') syncToCloud();
   if(typeof haptic==='function') haptic('success');
   const m=document.getElementById('fuel-plan-modal'); if(m) m.remove();
   _fuelRenderPlan(plan);

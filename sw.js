@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v385-breath-notch'
+const CACHE = 'totry-v386-ai-trust'
 
 const CORE = [
   './',
