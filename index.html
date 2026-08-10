@@ -1387,7 +1387,10 @@ input:focus,textarea:focus,select:focus{
   <div class="hdr-row">
     <div><div class="logo-main">To <em>Try</em></div><div class="logo-sub">by Alfred John</div></div>
     <div style="display:flex;align-items:center;gap:12px">
-      <div class="day-chip" onclick="go('reflect')"><div class="day-n" id="day-num">1</div><div class="day-l">days in</div></div>
+      <!-- Singular by default: the static markup is only ever seen before hydration, and anyone seeing it
+           un-hydrated is on day 1. It used to read "1 days in" for that first beat — the very first words a
+           new person reads. Runtime still switches to "days in" from day 2 (see the .day-l update). -->
+      <div class="day-chip" onclick="go('reflect')"><div class="day-n" id="day-num">1</div><div class="day-l">day in</div></div>
       <button onclick="go('settings')" aria-label="Settings" style="background:none;border:none;padding:6px;margin:0;cursor:pointer;color:var(--tx3);display:flex;align-items:center;line-height:0;-webkit-tap-highlight-color:transparent"><svg aria-hidden="true" viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
     </div>
   </div>
@@ -3832,8 +3835,9 @@ Amen.</div></div>
        account used to record tutorials/reels). No swap/restore — the account holds this data. -->
   <div class="card" id="demo-mode-card" style="display:none" data-dev-only="true">
     <div class="card-hd" style="margin-bottom:8px">🎬 Demo data (for tutorials)</div>
-    <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Loads a realistic, camera-ready dataset into <b>this account</b> so every screen looks alive for recording. Use on your dedicated test account — it overwrites this account's data.</p>
+    <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Loads a realistic, camera-ready dataset so every screen looks alive for recording. <b>Safe on your real account:</b> your data is snapshotted and downloaded first, syncing is switched off while demo data is loaded, and one tap puts everything back.</p>
     <button class="btn primary" onclick="loadDemoData()" style="font-size:13px;margin-bottom:8px">Load demo data</button>
+    <button class="btn" onclick="exitDemoMode()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px;margin-bottom:8px">↩ Restore my real data</button>
     <button class="btn" onclick="startFeatureTour()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px">▶ Play guided tour</button>
   </div>
 
@@ -4386,7 +4390,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v366';
+const APP_VERSION = 'v367';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4862,6 +4866,12 @@ function _queueWrite(key, value){
 // Cloud-first write: record locally (already done by caller), durably queue, then flush.
 async function syncToCloud(key, value){
   if(!SYNC_KEYS.includes(key)) return;          // only app data
+  // Demo mode is checked HERE, not just via the syncEnabled flag, because three separate auth paths
+  // set syncEnabled = true (sign-in, session restore, token refresh). Relying on the flag meant a
+  // refresh mid-recording would quietly resume syncing and push demo data into a real account. This
+  // is the one gate that cannot be flipped from underneath, and it also keeps the outbox clean —
+  // queueing a fake write would push it the moment demo mode ended.
+  if(typeof inDemoMode==='function' && inDemoMode()) return;
   _queueWrite(key, value);                        // DURABLE first — survives close even if flush fails
   if(!sb || !currentUser || !syncEnabled) return; // will flush once signed in / online
   flushOutbox();
@@ -4871,6 +4881,7 @@ let _flushing = false;
 let _flushPending = false;
 async function flushOutbox(){
   if(_flushing){ _flushPending = true; return; }   // a flush is running; ask it to loop again after
+  if(typeof inDemoMode==='function' && inDemoMode()) return;   // never upload a persona (see syncToCloud)
   if(!sb || !currentUser || !syncEnabled){ return; }
   _flushing = true;
   _flushPending = false;
@@ -5119,6 +5130,10 @@ async function rejectSubmission(id){
 // thrown away — they win and sync up.
 async function pullFromCloud(){
   if(!sb || !currentUser) return false;
+  // And no pulling either. A pull would merge his real rows INTO the demo dataset — ruining the shot
+  // with half-real data, and worse, the merged result is what a later restore would be measured
+  // against. Demo mode is a sealed local session in both directions.
+  if(typeof inDemoMode==='function' && inDemoMode()) return false;
   _setSyncState({ status:'syncing', error:null });
   try{
     const { data, error } = await sb.from('user_data')
@@ -32917,8 +32932,81 @@ function checkDevPanelVisibility(){
 // screen is camera-ready. No backup/restore — meant for a dedicated test account that holds it.
 // Persona: ~90 days in, heavy early slips, clean and climbing now; weight trending down; varied
 // training; debt shrinking; net worth rising. Built to look alive and aspirational-but-believable.
+// \u2500\u2500 DEMO MODE SAFETY \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+// The dev panel is gated by DEV_EMAILS \u2014 which is Alfy's REAL account, because it has to be. So the
+// "Load demo data" button appears while he is signed in as himself, one confirm away from replacing
+// ninety-odd days of his own life with a persona called Alex. The old note said "no swap/restore,
+// meant for a dedicated test account", but nothing enforced that, and the failure is unrecoverable:
+// local data gone, and then pullFromCloud MERGES the demo values with his real cloud rows (arrays
+// union, newer scalars win) and the next edit pushes the franken-state back up.
+//
+// So demo mode is now reversible and cannot touch the cloud:
+//   1. snapshot every key locally BEFORE writing anything, and download a JSON backup as well
+//   2. hard-disable sync for the duration, so no fake row can ever reach his account
+//   3. an unmissable banner, because the real danger is forgetting which data you are looking at
+//   4. one tap to put his real life back
+const DEMO_SNAP = 'totry_demo_snapshot';
+const DEMO_FLAG = 'totry_demo_mode';
+function inDemoMode(){ try{ return localStorage.getItem(DEMO_FLAG)==='1'; }catch(_){ return false; } }
+function _demoSnapshot(){
+  try{
+    const snap={};
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(typeof k==='string' && k.indexOf('totry_')===0 && k!==DEMO_SNAP && k!==DEMO_FLAG){
+        snap[k]=localStorage.getItem(k);
+      }
+    }
+    localStorage.setItem(DEMO_SNAP, JSON.stringify(snap));
+    return Object.keys(snap).length;
+  }catch(_){ return -1; }
+}
+function exitDemoMode(){
+  if(!inDemoMode()){ showToast('Not in demo mode','Nothing to restore.'); return; }
+  if(!confirm('Restore your real data and clear the demo dataset?')) return;
+  try{
+    const raw=localStorage.getItem(DEMO_SNAP);
+    const snap=raw?JSON.parse(raw):null;
+    if(!snap){ alert('The snapshot is missing \u2014 NOT clearing anything, so nothing else can be lost. Restore from your downloaded backup file instead (Settings \u2192 Your data \u2192 Restore).'); return; }
+    // Remove demo keys, then put the real ones back exactly as they were.
+    const kill=[];
+    for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
+      if(typeof k==='string' && k.indexOf('totry_')===0 && k!==DEMO_SNAP && k!==DEMO_FLAG) kill.push(k); }
+    kill.forEach(k=>{ try{ localStorage.removeItem(k); }catch(_){} });
+    Object.keys(snap).forEach(k=>{ try{ localStorage.setItem(k, snap[k]); }catch(_){} });
+    localStorage.removeItem(DEMO_SNAP);
+    localStorage.removeItem(DEMO_FLAG);
+    try{ syncEnabled = true; }catch(_){}
+    showToast('Your data is back','Demo dataset cleared and syncing again. Reloading.');
+    setTimeout(function(){ location.reload(); }, 900);
+  }catch(e){ alert('Restore failed: '+(e&&e.message||e)+'\n\nNothing was cleared. Use your downloaded backup file.'); }
+}
+function _demoBanner(){
+  try{
+    let b=document.getElementById('demo-mode-banner');
+    if(!inDemoMode()){ if(b) b.remove(); return; }
+    if(!b){
+      b=document.createElement('div'); b.id='demo-mode-banner';
+      b.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#7a2e2e;color:#fff;'+
+        'font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;'+
+        'padding:9px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 -2px 14px rgba(0,0,0,.4)';
+      b.innerHTML='<span>\ud83c\udfac Demo data \u2014 not your real life. Syncing is off.</span>'+
+        '<button onclick="exitDemoMode()" style="background:#fff;color:#7a2e2e;border:none;border-radius:100px;'+
+        'padding:6px 12px;font-family:inherit;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;cursor:pointer">Restore my data</button>';
+      document.body.appendChild(b);
+    }
+  }catch(_){}
+}
+
 function loadDemoData(){
-  if(!confirm('Load demo data into THIS account? It overwrites this account\u2019s current data. Use only on your test account.')) return;
+  if(inDemoMode()){ showToast('Already in demo mode','Restore your real data first (red bar at the bottom).'); return; }
+  if(!confirm('Load the camera-ready demo dataset?\n\nYour real data is snapshotted first and a backup file is downloaded, syncing is switched OFF so nothing fake can reach your account, and one tap puts everything back.\n\nContinue?')) return;
+  // Belt: the in-browser snapshot. Braces: a file on disk, in case the browser store is ever cleared.
+  const n=_demoSnapshot();
+  if(n < 0){ alert('Could not snapshot your current data, so I have not touched anything. Nothing was changed.'); return; }
+  try{ if(typeof exportFullBackup==='function') exportFullBackup(); }catch(_){}
+  try{ syncEnabled = false; }catch(_){}                 // nothing fake may ever reach the cloud
+  try{ localStorage.setItem(DEMO_FLAG,'1'); }catch(_){}
   const now = new Date();
   const iso = d => d.toISOString();
   const dayAgo = n => new Date(now.getTime() - n*86400000);
@@ -32992,9 +33080,156 @@ function loadDemoData(){
   ]);
   ls('totry_journal',[{ts:iso(dayAgo(0)),text:'92 days ago I couldn\u2019t go three days. Today the streak feels normal. Not because it\u2019s easy \u2014 because I stopped doing it alone.'}]);
   ls('totry_prayers',[{ts:iso(dayAgo(1)),text:'For patience with the people I love, and strength to keep the promises I\u2019ve made.'}]);
+
+  // \u2500\u2500 EVERYTHING BUILT SINCE THIS SEEDER WAS WRITTEN \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  // The dataset above stopped at v~250 and covered 30 keys. Twenty-three were missing, and the
+  // omissions were exactly the features worth filming \u2014 most painfully totry_nutlog, so the food
+  // diary, the most visual screen in the whole app, recorded as an empty plate. A tutorial of an
+  // empty feature is worse than no tutorial. Everything below exists so every tab films alive.
+
+  // FOOD \u2014 14 days of real meals, so the diary, the macro rings, the by-meal split, the weekly
+  // digest, adaptive TDEE and "copy yesterday" all have something to show.
+  (function(){
+    const MEALS=[
+      [['Greek yoghurt, berries, honey',320,24,38,6,'1 bowl','breakfast'],['Chicken, rice, broccoli',620,52,68,12,'1 plate','lunch'],['Salmon, potatoes, salad',680,46,52,28,'1 plate','dinner'],['Protein shake',180,30,6,2,'1 scoop','snack']],
+      [['Three eggs on sourdough',420,26,32,20,'2 slices','breakfast'],['Beef burrito bowl',740,48,72,26,'1 bowl','lunch'],['Stir-fry with tofu',560,32,64,18,'1 plate','dinner'],['Apple and peanut butter',210,7,24,11,'1 serve','snack']],
+      [['Oats, banana, whey',480,34,66,9,'1 bowl','breakfast'],['Tuna salad wrap',520,42,44,18,'1 wrap','lunch'],['Roast chicken and veg',700,58,48,26,'1 plate','dinner']],
+    ];
+    const log={};
+    for(let i=0;i<14;i++){
+      const d=dayAgo(i); const k=auKey(d); const set=MEALS[i%MEALS.length];
+      log[k]=set.map(function(m,j){
+        const t=new Date(d); t.setHours(8+j*4, 15, 0, 0);
+        return {id:'demo_f'+i+'_'+j, name:m[0], cal:m[1], pro:m[2], carb:m[3], fat:m[4],
+                serving:m[5], qty:1, meal:m[6], ts:t.toISOString()};
+      });
+    }
+    ls('totry_nutlog', log);
+  })();
+  ls('totry_nut_goals',{cal:2600,pro:180});
+  ls('totry_nut_macros',{carb:280,fat:80});
+  ls('totry_water',{[auKey(dayAgo(0))]:2100});
+  ls('totry_water_goal',3000);
+  ls('totry_recent_foods',[
+    {name:'Chicken breast',cal:165,pro:31,carb:0,fat:3.6,serving:'100g'},
+    {name:'Jasmine rice, cooked',cal:130,pro:2.7,carb:28,fat:0.3,serving:'100g'},
+    {name:'Whey protein',cal:120,pro:24,carb:3,fat:1.5,serving:'1 scoop'},
+  ]);
+
+  // THE FIGHT'S REAL HISTORY \u2014 this is what teaches the risk window, the hard hour, the patterns
+  // panel and the reach-out. Without it every pattern surface says "not enough logged moments yet".
+  (function(){
+    const fl=[]; const TRIG=['bored','tired','alone','stressed','scrolling in bed'];
+    for(let i=1;i<=40;i++){
+      const d=dayAgo(i);
+      d.setHours(i%4===0?23:(i%3===0?22:21), 20, 0, 0);          // clusters at night \u2192 a learnable window
+      fl.push({vice:'Lust', ts:iso(d), won:(i%5!==0), trigger:TRIG[i%TRIG.length]});
+    }
+    for(let i=1;i<=18;i++){
+      const d=dayAgo(i); d.setHours(7,10,0,0);                    // morning-in-bed cluster
+      fl.push({vice:'Doomscrolling', ts:iso(d), won:(i%3!==0), trigger:'first thing in the morning'});
+    }
+    ls('totry_fight_log', fl);
+  })();
+  ls('totry_moments_won',[
+    {v:'Lust', ts:iso(dayAgo(0)), kind:'urge'},
+    {v:'Doomscrolling', ts:iso(dayAgo(1)), kind:'urge'},
+    {v:'Lust', ts:iso(dayAgo(2)), kind:'urge'},
+  ]);
+  ls('totry_wins',[
+    {text:'Defeated an urge to lust \u2014 chose who I\u2019m becoming.', ts:iso(dayAgo(0)), date:auKey(dayAgo(0)), source:'vice'},
+    {text:'Put the phone in the kitchen before bed.', ts:iso(dayAgo(1)), date:auKey(dayAgo(1)), source:'manual'},
+    {text:'Trained when I did not feel like it.', ts:iso(dayAgo(2)), date:auKey(dayAgo(2)), source:'train'},
+  ]);
+  ls('totry_cravings',[{ts:iso(dayAgo(0)),intensity:6,note:'late, tired, phone in hand'}]);
+
+  // The Fight's deeper tools, each with the person's OWN words in it \u2014 the ledger and the walk-back
+  // are mirrored back at the threshold, so they need content or that moment shows nothing.
+  (function(){
+    const v=ls('totry_v')||[];
+    if(v[0]){
+      v[0].stage='ready';
+      v[0].plan={why:'I want to be the same man alone at midnight as I am at noon.',
+                 move:'Phone out of the room \u00b7 cold water \u00b7 ten slow breaths', updatedAt:Date.now()};
+      v[0].cba={cost:'It steals the morning after, and it makes me quieter with the people I love.',
+                free:'Clear-headed. Not hiding anything. Able to look my future wife in the eye.',
+                ts:iso(dayAgo(20))};
+      v[0].walkbacks=[{chain:'stayed up past midnight \u2192 took my phone to bed \u2192 told myself I\u2019d just check one thing \u2192 forty minutes gone',
+                       catch:'Phone charges in the kitchen, not the bedroom.', ts:iso(dayAgo(18))}];
+    }
+    if(v[1]){
+      v[1].stage='shaky';
+      v[1].plan={why:'The first ten minutes of the day set the other fifteen hours.',
+                 move:'Feet on the floor \u00b7 curtains open \u00b7 no phone until after prayer', updatedAt:Date.now()};
+    }
+    ls('totry_v', v);
+  })();
+  ls('totry_if_then',[
+    {feeling:'restless', label:'Restless', action:'Ten minutes outside, no phone, no destination.', ts:iso(dayAgo(9))},
+    {feeling:'lonely',   label:'Lonely',   action:'Text Dan. Not about anything \u2014 just text him.',  ts:iso(dayAgo(14))},
+  ]);
+  ls('totry_toolkit',{seen:{wave:iso(dayAgo(11)), defuse:iso(dayAgo(7)), halt:iso(dayAgo(3))},
+                      myLine:'A craving is a wave, not an order. I am allowed to let it pass without obeying it.'});
+
+  // BODY \u2014 sleep, steps and water, so the readiness read and the whole-person brief are real.
+  (function(){
+    const tr={};
+    const SL=[7.5,6.2,8.1,7.0,5.4,7.8,8.0,6.9,7.4,7.1,6.0,7.6,8.2,7.3];
+    for(let i=0;i<14;i++){ tr[auKey(dayAgo(i))]={sleep:SL[i], steps:6200+((i*937)%5200), water:1600+((i*311)%1500)}; }
+    ls('totry_trackers', tr);
+    ls('totry_today_steps', 8420);
+  })();
+  ls('totry_step_goal',10000); ls('totry_sleep_goal',8);
+
+  // MONEY \u2014 transactions are what make subscription auto-detection and the balance sheet demo-able.
+  (function(){
+    const tx=[]; let id=0;
+    for(let m=0;m<5;m++){                                        // a real monthly rhythm
+      tx.push({id:'d'+(id++),type:'expense',amount:22.99,note:'NETFLIX.COM',       ts:iso(dayAgo(m*30+3))});
+      tx.push({id:'d'+(id++),type:'expense',amount:12.99,note:'SPOTIFY P1DE4B',    ts:iso(dayAgo(m*30+8))});
+      tx.push({id:'d'+(id++),type:'expense',amount:59.00,note:'FITNESS FIRST DD',  ts:iso(dayAgo(m*30+1))});
+      tx.push({id:'d'+(id++),type:'income', amount:3200,  note:'SALARY',            ts:iso(dayAgo(m*30+15))});
+    }
+    [88.20,143.55,61.10,102.40,37.85,74.20].forEach(function(a,i){
+      tx.push({id:'g'+(id++),type:'expense',amount:a,note:'WOOLWORTHS METRO',ts:iso(dayAgo(i*5+2))});
+    });
+    [18.50,22.00,15.75].forEach(function(a,i){
+      tx.push({id:'e'+(id++),type:'expense',amount:a,note:'UBER EATS',ts:iso(dayAgo(i*11+4))});
+    });
+    ls('totry_transactions', tx);
+  })();
+  ls('totry_subscriptions',[]);                                   // left empty so DETECTION is what shows
+  ls('totry_goals',[{id:1,name:'Emergency fund',target:5000,current:2150,created:iso(dayAgo(60)),priority:1}]);
+  ls('totry_giving',[
+    {id:1,amount:120,kind:'tithe',to:'Parish',        ts:iso(dayAgo(4))},
+    {id:2,amount:50, kind:'alms', to:'Vinnies',       ts:iso(dayAgo(26))},
+  ]);
+  ls('totry_giving_pledge',{pct:10});
+
+  // SOUL + PEOPLE \u2014 the threads, the plans, the values, the people he carries.
+  ls('totry_read_plans',{ pull:{d:4,tr:'christianity',ts:iso(dayAgo(2)),done:false},
+                          fear:{d:7,tr:'christianity',ts:iso(dayAgo(21)),done:true} });
+  ls('totry_values',{v:['Honesty','Discipline','Family','Faith','Courage'],
+                     why:'Because the man I want to be is decided in the small hours, not the big ones.',
+                     ts:iso(dayAgo(30))});
+  ls('totry_blessings',[{ts:iso(dayAgo(1)),reach:'Dad',faith:'christianity'},
+                        {ts:iso(dayAgo(6)),reach:'Dan',faith:'christianity'}]);
+  ls('totry_your_few',[{name:'Mum',note:''},{name:'Dad',note:''},{name:'Dan',note:'oldest mate'},{name:'Fr. Peter',note:''}]);
+  ls('totry_reachouts',[{name:'Dan',ts:iso(dayAgo(5))},{name:'Mum',ts:iso(dayAgo(12))}]);
+  ls('totry_promises',[
+    {id:1,text:'Phone stays out of the bedroom.',to:'myself',status:'kept',  created:iso(dayAgo(18))},
+    {id:2,text:'Call Mum every Sunday.',         to:'Mum',   status:'kept',  created:iso(dayAgo(40))},
+  ]);
+  ls('totry_tgt',{[auKey(dayAgo(0))]:{a:'Trained even though I was flat.',b:'Read instead of scrolling at night.',
+                                      c:'Dan called just to check in.',person:'Dan',told:false,ts:iso(dayAgo(0))}});
+  ls('totry_feeling_wins',[{feeling:'restless',moved:'walk',ts:iso(dayAgo(0))},
+                           {feeling:'lonely',moved:'reach out',ts:iso(dayAgo(3))}]);
+  ls('totry_relationships',[{id:1,name:'Mum',lastContact:iso(dayAgo(3))},{id:2,name:'Dan',lastContact:iso(dayAgo(5))}]);
+
   if(typeof initApp === 'function') initApp();
   if(typeof go === 'function') go('home');
-  haptic('success'); showToast('Demo data loaded','Every screen is camera-ready. Record away.');
+  _demoBanner();
+  haptic('success'); showToast('Demo data loaded','Camera-ready. Your real data is saved — the red bar puts it back.');
 }
 
 // ── GUIDED FEATURE TOUR (for tutorials) ───────────────────────
@@ -33941,6 +34176,14 @@ function runSchemaMigrations(){
 async function initApp(){
   try{ if(typeof runSchemaMigrations === 'function') runSchemaMigrations(); }catch(_){ }
   try{ if(typeof _purgeSyncedPhotos==='function') _purgeSyncedPhotos(); }catch(_){ }
+  // Demo mode has to survive a reload, or the first restart silently turns syncing back on and starts
+  // pushing a persona named Alex into a real account. Re-assert both facts, and show the banner.
+  try{
+    if(typeof inDemoMode==='function' && inDemoMode()){
+      syncEnabled = false;
+      if(typeof _demoBanner==='function') _demoBanner();
+    }
+  }catch(_){ }
   // One-time: clear a reach-out log poisoned by the web phantom-send bug. Until now every entry was
   // written whether or not a notification was actually scheduled, and web can't background-fire —
   // so the log in the wild is all phantoms, already marked unanswered, and may have stood the
