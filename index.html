@@ -93,9 +93,9 @@ button:focus:not(:focus-visible){outline:none}
 .verse-pill{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 14px;cursor:pointer;position:relative}
 .verse-pill p{font-family:'Cormorant Garamond',serif;font-size:12px;font-style:italic;color:var(--tx2);line-height:1.6;padding-right:62px}
 .verse-pill .vr{font-family:'DM Mono',monospace;font-size:9px;color:var(--go);margin-top:4px;letter-spacing:0.06em}
-.vsave{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--tx3);font-size:18px;padding:4px;line-height:1}
+.vsave{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--tx3);font-size:18px;padding:12px;margin:-12px;line-height:1;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
 .vsave.saved{color:var(--go)}
-.vshare{position:absolute;top:8px;right:34px;background:none;border:none;color:var(--tx3);font-size:15px;cursor:pointer;padding:2px 4px;line-height:1}
+.vshare{position:absolute;top:8px;right:34px;background:none;border:none;color:var(--tx3);font-size:15px;cursor:pointer;padding:12px;margin:-12px;line-height:1;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
 .vshare:active{color:var(--go)}
 /* Bottom tab bar (iOS convention + the SOUL-ARCHITECTURE intent: "bottom bar, thumb-reachable").
    .app is a flex column [header, nav, tabs]; order:3 floats the nav below the scrolling content so
@@ -1829,7 +1829,7 @@ input:focus,textarea:focus,select:focus{
        route to creating a habit, and before this there was none anywhere in the app. -->
   <div class="lbl" style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
     <span>Today&#39;s habits</span>
-    <button onclick="openManageHabits()" style="background:none;border:none;padding:0;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">+ add / edit</button>
+    <button onclick="openManageHabits()" aria-label="Add or edit your habits" style="background:none;border:none;padding:8px 4px;margin:-8px -4px;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">+ add / edit</button>
   </div>
   <div class="card" style="margin-bottom:12px">
     <div id="home-habit-list"></div>
@@ -4454,7 +4454,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v379';
+const APP_VERSION = 'v380';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -36182,7 +36182,7 @@ function renderWeeklyCheckin(){
   else if(wDelta != null && Math.abs(wDelta) > 1.2) focus = 'Weight moved ' + (wDelta>0?'+':'') + wDelta.toFixed(1) + 'kg in a week \u2014 faster than intended. Worth a look.';
   else focus = 'No weak link stands out. Hold the line and let the weeks stack.';
   box.innerHTML = '<div style="background:var(--bg2);border:1px solid var(--go-bd);border-radius:var(--r);padding:16px;position:relative">'+
-    '<button onclick="ls(\'totry_weekcheck\',\''+wk+'\');renderWeeklyCheckin()" style="position:absolute;top:10px;right:12px;background:none;border:none;color:var(--tx3);font-size:16px">\u00d7</button>'+
+    '<button onclick="ls(\'totry_weekcheck\',\''+wk+'\');renderWeeklyCheckin()" aria-label="Dismiss this weekly check-in" style="position:absolute;top:2px;right:4px;background:none;border:none;color:var(--tx3);font-size:16px;padding:10px 12px;line-height:1;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center">\u00d7</button>'+
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">Weekly check-in</div>'+
     '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:6px">Trained <b style="color:var(--tx)">'+trained+'\u00d7</b>'+(proDays?' \u00b7 protein <b style="color:var(--tx)">'+proAvg+'g/day</b>':'')+(wDelta!=null?' \u00b7 weight <b style="color:var(--tx)">'+(wDelta>0?'+':'')+wDelta.toFixed(1)+'kg</b>':'')+'</div>'+
     '<div style="font-size:13px;color:var(--tx);line-height:1.6;margin-bottom:12px">'+focus+'</div>'+
