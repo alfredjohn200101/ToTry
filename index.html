@@ -3370,6 +3370,14 @@ Amen.</div></div>
         <div id="shared-prayer" style="font-family:'Cormorant Garamond',serif;font-size:14px;font-style:italic;color:var(--tx2);line-height:1.7"></div>
       </div>
     </div>
+    <!-- THREE GOOD THINGS — the validated positive-psychology core (Seligman), and the one form of
+         gratitude with the strongest evidence behind it is RELATIONAL: thanking a real person beats
+         listing things to yourself. So the third slot quietly points at a person, and offers to
+         carry it to them. A solo list is where gratitude goes to die; a message is where it lands. -->
+    <div class="lbl" style="margin-top:4px">Three good things</div>
+    <div class="card" id="tgt-card" style="margin-bottom:14px">
+      <div id="tgt-body"></div>
+    </div>
     <!-- Ignatian Examen — THE FINAL, defining step of the evening. Once done, the day is closed. -->
     <div class="lbl" id="examen-label" style="margin-top:4px">The last step — your examen</div>
     <div class="card" id="examen-card" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.04));border-color:var(--go-bd)">
@@ -4339,7 +4347,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v351';
+const APP_VERSION = 'v352';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4689,6 +4697,8 @@ const SYNC_KEYS = [
   'totry_rosaries',
   // Values card sort (their own standard) + the loving-kindness/blessing log.
   'totry_values','totry_blessings',
+  // Three good things — the evening's gratitude, incl. who it was about and whether it got said.
+  'totry_tgt',
   // v344 — the first felt moment, and the receptivity gate under the reach-out.
   'totry_first_moment','totry_quiet_hours','totry_reachout_log','totry_reachout_state','totry_last_active_ts'
 ];
@@ -28821,6 +28831,95 @@ function showDayActivityDetail(dateKey){
   document.body.appendChild(m);
 }
 
+// ── THREE GOOD THINGS ────────────────────────────────────────────────────────────────────────
+// The validated PPI core (Seligman), with one deliberate change the evidence supports: the strongest
+// form of gratitude is RELATIONAL. A private list moves the needle a little; telling a real person
+// moves it more — and we chronically under-estimate how much it lands. So the third slot points at a
+// person, and offers to carry it. No streak, no daily obligation, no scoring — three lines on the
+// days you feel like it, and nothing at all on the days you don't.
+function _tgtKey(){ return new Date().toLocaleDateString('en-AU'); }
+function getTGT(d){ try{ const all=ls('totry_tgt')||{}; return all[d||_tgtKey()]||null; }catch(_){ return null; } }
+function saveTGT(patch){
+  try{
+    const all=ls('totry_tgt')||{}; const k=_tgtKey();
+    all[k]=Object.assign({ts:new Date().toISOString()}, all[k]||{}, patch);
+    // keep it light — a season of entries, not a lifetime archive
+    const keys=Object.keys(all); if(keys.length>120){ keys.sort(); delete all[keys[0]]; }
+    ls('totry_tgt', all);
+  }catch(_){}
+}
+function _tgtSaveField(which, val){
+  const v=String(val||'').trim().slice(0,160);
+  const cur=getTGT()||{};
+  if(cur[which]===v) return;
+  const patch={}; patch[which]=v; saveTGT(patch);
+  try{ renderTGT(); }catch(_){}
+}
+function renderTGT(){
+  const el=document.getElementById('tgt-body'); if(!el) return;
+  const t=getTGT()||{};
+  const few=(typeof getYourFew==='function')?getYourFew().filter(function(p){return p&&!yourFewMuted(p);}):[];
+  const person=(t.person||'').trim();
+  const field=function(id,ph,val){
+    return '<input type="text" id="'+id+'" maxlength="160" placeholder="'+ph+'" value="'+_escFew(val||'')+'" '+
+      'onchange="_tgtSaveField(\''+id.replace('tgt-','')+'\',this.value)" onblur="_tgtSaveField(\''+id.replace('tgt-','')+'\',this.value)" '+
+      'style="width:100%;margin-bottom:8px;padding:9px 11px;font-size:13px;background:var(--bg3);border:1px solid var(--bd);border-radius:9px;color:var(--tx)">';
+  };
+  const told = !!t.told;
+  el.innerHTML =
+    '<div style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:10px">Three things that went right today, however small. Not a gratitude exercise to perform — just three true things, so the day isn’t only remembered by what went wrong.</div>'+
+    field('tgt-a','Something that went right…', t.a)+
+    field('tgt-b','Something else…', t.b)+
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.1em;text-transform:uppercase;margin:10px 0 5px">And one that was a person</div>'+
+    field('tgt-c','Someone who made today better…', t.c)+
+    (few.length
+      ? '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 8px">'+
+          few.slice(0,5).map(function(p){ const on=(person===p.name);
+            return '<button class="btn" onclick="_tgtPickPerson(\''+String(p.name).replace(/'/g,"\\'").replace(/"/g,'')+'\')" style="width:auto;padding:5px 10px;font-size:11.5px;background:'+(on?'var(--go-bg)':'transparent')+';border:1px solid '+(on?'var(--go-bd)':'var(--bd)')+';color:'+(on?'var(--go)':'var(--tx3)')+'">'+_escFew(p.name)+'</button>'; }).join('')+
+        '</div>'
+      : '')+
+    ((t.c && t.c.trim())
+      ? (told
+          ? '<div style="font-size:12px;color:var(--gr);line-height:1.5;margin-top:4px">✓ You told them. That’s the part that actually lands.</div>'
+          : '<button class="btn" onclick="_tgtTellThem()" style="margin-top:4px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:12.5px">Tell them →</button>'+
+            '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:6px">Saying it out loud is worth more than writing it down. They’ll take it better than you expect — people almost always do.</div>')
+      : '');
+}
+function _tgtPickPerson(name){ saveTGT({person:String(name||'').slice(0,40)}); try{ renderTGT(); }catch(_){} }
+// Hands them the words and gets out of the way. Counts as a real reach-out, because it is one.
+function _tgtTellThem(){
+  const t=getTGT()||{};
+  const who=(t.person||'').trim();
+  const what=(t.c||'').trim();
+  if(!what) return;
+  const msg = who
+    ? (who+' — just so you know: '+what.charAt(0).toLowerCase()+what.slice(1)+'. Thought you should hear it.')
+    : ('Just so you know: '+what.charAt(0).toLowerCase()+what.slice(1)+'. Thought you should hear it.');
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:8px">Send it as it is.</div>'+
+    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:12px">Edit it if you want — but plain and unpolished lands better than clever. Copy it, then send it in whatever you normally use.</div>'+
+    '<textarea id="tgt-msg" style="min-height:92px;font-size:14px;line-height:1.55;margin-bottom:12px">'+_escFew(msg)+'</textarea>'+
+    '<button class="btn primary" style="margin-bottom:8px" onclick="_tgtCopyAndDone()">Copy &amp; mark as told</button>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not yet</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  setTimeout(function(){ const a=document.getElementById('tgt-msg'); if(a) a.focus(); },60);
+}
+function _tgtCopyAndDone(){
+  const a=document.getElementById('tgt-msg');
+  const txt=a?a.value:'';
+  try{ if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(txt); }catch(_){}
+  saveTGT({told:true});
+  const who=((getTGT()||{}).person||'').trim();
+  if(who && typeof logReachOut==='function'){ try{ logReachOut(who); }catch(_){} }
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  try{ if(typeof haptic==='function') haptic('celebrate'); }catch(_){}
+  try{ showToast('Copied','Now go send it. That one message is worth more than the whole list.'); }catch(_){}
+  try{ renderTGT(); }catch(_){}
+}
+
 function completeEvening(){
   const _todayStrForBurns = () => new Date().toLocaleDateString('en-AU');
   const win=document.getElementById('evening-win')?.value.trim()||'';
@@ -28963,6 +29062,7 @@ function initEveningTab(){
     else { const cp=document.getElementById('call-prompt'); if(cp) cp.textContent=CALL_PROMPTS[day%CALL_PROMPTS.length]; }
     const sp=document.getElementById('shared-prayer');if(sp){const _sps=sharedPrayers();sp.textContent=_sps[day%_sps.length];}
   }
+  try{ renderTGT(); }catch(_){}
   if(typeof updateExamenCount === 'function') updateExamenCount();
   // Reflect today's examen state — if done, show the green confirmation in the card.
   const today=new Date().toLocaleDateString('en-AU');
