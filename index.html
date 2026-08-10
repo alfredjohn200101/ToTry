@@ -1440,6 +1440,12 @@ input:focus,textarea:focus,select:focus{
     <h2 style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.2;margin-bottom:2px">Soul</h2>
     <p id="soul-intro" style="font-size:12.5px;color:var(--tx3);line-height:1.6">The root beneath everything else. The body, the money, the fight — they all grow from here, or they don't last. This is where the app points past itself: to Christ, to the sacraments, to the people who love you. Stay grounded here, and the rest holds.</p>
   </div>
+  <!-- The one, quiet offer of a tradition. Shown ONLY to someone who has never chosen one, only after a
+       week of real use, and never again once dismissed or acted on. It states plainly that nothing here
+       needs belief — because that is true — and leaves the door visible rather than pushing anyone
+       through it. Repeating this, or slipping religious content in unasked, would break the app's own
+       "full but never forced" promise and would be the kind of nudging it exists to refuse. -->
+  <div id="faith-door" style="display:none"></div>
   <div class="hub-section-label">The daily rhythm — begin it, then close it</div>
   <div class="hub-grid">
     <div class="hub-card" onclick="go('morning')">
@@ -4394,7 +4400,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v371';
+const APP_VERSION = 'v372';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4761,7 +4767,7 @@ const SYNC_KEYS = [
   // new device faith fell back to Christianity, so a Muslim or secular person reinstalling was handed
   // someone else's tradition, and userSex() went null, which changes the calorie and protein maths and
   // the voice. Identity has to survive a reinstall.
-  'totry_sex','totry_faith_tradition','totry_faith_level'
+  'totry_sex','totry_faith_tradition','totry_faith_level','totry_faith_door_seen'
 ];
 // totry_cycle is deliberately NOT in the list above. Post-Dobbs, cycle data is the most sensitive
 // thing this app holds, so it stays on the device by default. It is pushed into SYNC_KEYS at runtime
@@ -6080,7 +6086,7 @@ function cyclePhase(){
 function _cycleFaithLine(key){
   if(key!=='luteal' && key!=='menstrual') return '';
   if(typeof faithLevel==='function' && faithLevel()==='light') return '';
-  const tr=(typeof faithTradition==='function')?faithTradition():'christianity';
+  const tr=(typeof faithTradition==='function')?faithTradition():'secular';
   // Check the tradition's OWN words first. Gating on curFaith().divine made Buddhism fall through to
   // the generic line — Buddhism has no deity by design, which is exactly why its line was written.
   const BY_TRADITION = {
@@ -8284,9 +8290,49 @@ const FAITHS = {
     verses: VS_SECULAR,
   },
 };
-function faithTradition(){ try{ return ls('totry_faith_tradition') || 'christianity'; }catch(_){ return 'christianity'; } }
-function curFaith(){ return FAITHS[faithTradition()] || FAITHS.christianity; }
-function activeVerses(){ try{ const v=curFaith().verses; return (v&&v.length)?v:VS_CHRISTIANITY; }catch(_){ return VS_CHRISTIANITY; } }
+// UNCHOSEN = SECULAR. This used to fall back to Christianity, so anyone who skipped the faith step —
+// which every fast path does — was handed scripture and prayer they never asked for. The default is now
+// no religious views at all: the app works completely without them (Stoic reflections, the science of
+// habit, plain honest counsel). Faith is never withheld — it is one tap away in Settings and offered
+// once, plainly, in the Soul tab. Anyone who HAS chosen a path is unaffected.
+function faithTradition(){ try{ return ls('totry_faith_tradition') || 'secular'; }catch(_){ return 'secular'; } }
+function curFaith(){ return FAITHS[faithTradition()] || FAITHS.secular; }
+function activeVerses(){ try{ const v=curFaith().verses; return (v&&v.length)?v:VS_SECULAR; }catch(_){ return VS_SECULAR; } }
+function faithChosen(){ try{ return !!ls('totry_faith_tradition'); }catch(_){ return false; } }
+
+// The quiet door. Nothing in this app requires belief, and for someone who never chose a path we say so
+// out loud rather than assuming one for them. Offered once, after they have actually been using it.
+function renderFaithDoor(){
+  try{
+    const el=document.getElementById('faith-door'); if(!el) return;
+    const dismissed = ls('totry_faith_door_seen');
+    const day = (typeof getDayCount==='function') ? getDayCount() : 1;
+    if(faithChosen() || dismissed || day < 7){ el.style.display='none'; el.innerHTML=''; return; }
+    el.style.display='block';
+    el.innerHTML =
+      '<div style="border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px;background:var(--bg3)">'+
+        '<div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:7px">One thing worth saying</div>'+
+        '<div style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:12px">Everything here works without any faith at all, and it will stay that way unless you say otherwise. But it was built by someone with one, and if you ever want it to speak from a tradition — Christian, Muslim, Hindu or Buddhist — that is a single tap, and you can undo it just as easily.</div>'+
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+          '<button class="btn" style="width:auto;margin:0;padding:8px 14px;font-size:12.5px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go)" onclick="_faithDoorOpen()">Show me the options</button>'+
+          '<button class="btn" style="width:auto;margin:0;padding:8px 14px;font-size:12.5px;background:transparent;border:1px solid var(--bd);color:var(--tx3)" onclick="_faithDoorNo()">No thanks</button>'+
+        '</div>'+
+      '</div>';
+  }catch(_){}
+}
+function _faithDoorOpen(){
+  try{ ls('totry_faith_door_seen', 1); renderFaithDoor();
+       if(typeof go==='function') go('settings');
+       setTimeout(function(){ try{ document.getElementById('faith-tradition-options')
+         ?.scrollIntoView({behavior:'smooth', block:'center'}); }catch(_){} }, 420);
+  }catch(_){}
+}
+function _faithDoorNo(){
+  // Asked once, answered, never again. No second attempt, no softer re-ask later.
+  try{ ls('totry_faith_door_seen', 1); renderFaithDoor();
+       if(typeof showToast==='function') showToast('Understood','It stays exactly as it is. You can change it any time in Settings.');
+  }catch(_){}
+}
 // The voice speaks from the PERSON'S tradition — their scripture, their vocabulary — not Christian
 // verses with the names swapped. Composed into every Brother/companion prompt. Secular = no God-talk.
 function faithVoiceNote(){
@@ -9245,7 +9291,7 @@ function go(name){
   if(name==='calendar' && typeof renderCalendar==='function'){renderCalendar();}
   
   if(name==='morning'){initMorningTab();showMorningAffirm();showMorningFocus();if(typeof _restoreMorningSleep==='function')_restoreMorningSleep();}
-  if(name==='soul'){ if(typeof applyFaithLabels==='function') applyFaithLabels(); if(typeof highlightSoulByTime==='function') highlightSoulByTime(); }
+  if(name==='soul'){ if(typeof applyFaithLabels==='function') applyFaithLabels(); if(typeof highlightSoulByTime==='function') highlightSoulByTime(); if(typeof renderFaithDoor==='function') renderFaithDoor(); }
   if(name==='reflect'){initEveningTab();initReviewTab();}
   
   if(name==='nourish'){renderNutritionLog();if(typeof prefillNutGoals==='function')prefillNutGoals();}
@@ -11050,7 +11096,7 @@ function _overridePlan(p){
 // Soul tab readers roll out) the "today" anchor and the practice. Distinct from setFaithLevel (how MUCH
 // surfaces). Default christianity preserves the app as built; a person of any path or none is met here.
 function setFaithTradition(tr){
-  if(!FAITHS[tr]) tr='christianity';
+  if(!FAITHS[tr]) tr='secular';
   ls('totry_faith_tradition', tr);
   try{
     document.querySelectorAll('.faithtr-opt').forEach(b=>{
@@ -11079,18 +11125,10 @@ function setFaithLevel(level){
   // Refresh the home verse visibility immediately if we're on home.
   try{ const vp=document.querySelector('.hero-verse'); if(vp) vp.style.display = (level==='light') ? 'none' : ''; }catch(_){}
 }
-function faithLevel(){
-  const explicit = ls('totry_faith_level');
-  if(explicit) return explicit;
-  // "Faith is full but never forced." The foundation onboarding always asks (ob-faith has five choices
-  // and no skip), but the FAST paths — "Take me in →" and the first-felt-moment door — bypass that step
-  // entirely, leaving totry_faith_tradition unset. faithTradition() then falls back to Christianity, and
-  // this used to hand that person FULL intensity: a Muslim or an atheist getting Christian scripture they
-  // never asked for. Until they choose, stay light — practical and warm, tradition only if they open that
-  // door in Settings. Anyone who did choose a path is unaffected.
-  try{ if(!ls('totry_faith_tradition')) return 'light'; }catch(_){}
-  return 'full';
-}
+// Intensity is a separate dial from tradition. An unchosen person is now SECULAR rather than
+// Christian-at-light, so they get the full secular experience — grounded and complete — instead of a
+// thinned version of someone else's faith.
+function faithLevel(){ return ls('totry_faith_level') || 'full'; }
 function setUserSex(sex){
   ls('totry_sex', sex);
   try{ document.querySelectorAll('.sex-opt').forEach(b=>{ const on=b.dataset.sex===sex; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'rgba(200,169,110,0.10)':'var(--bg3)'; }); }catch(_){}
@@ -11105,7 +11143,7 @@ function setUserSex(sex){
 // is worth 10-50x avoiding evening screens for resetting the clock. No sleep score, ever.
 function openWindDown(){
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
-  const t=(typeof faithTradition==='function')?faithTradition():'christianity';
+  const t=(typeof faithTradition==='function')?faithTradition():'secular';
   const soft=(typeof faithLevel==='function') && faithLevel()==='light';
   const close={christianity:'Commend the day to God \u2014 the good and the botched \u2014 and let Him hold it while you sleep.',
                islam:'Say what you say before sleep, and leave the day with Allah. It is out of your hands now.',
@@ -11141,7 +11179,7 @@ function openWindDown(){
 function openRecoveryBridge(){
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
   const faithOn = (typeof faithLevel!=='function') || faithLevel()!=='light';
-  const tr = (typeof faithTradition==='function') ? faithTradition() : 'christianity';
+  const tr = (typeof faithTradition==='function') ? faithTradition() : 'secular';
   const opts = [
     ['\u{1F9ED}','SMART Recovery','Free meetings, online and in person. Science-based, secular, no higher power required — you are the agent of your own change.','https://smartrecovery.org/meetings/'],
     ['\u{1F91D}','AA / NA','The widest availability of anything on this list — a meeting most places, most nights. The higher power is yours to define.','https://www.aa.org/find-aa'],
@@ -12496,7 +12534,7 @@ function openLesson(id){
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
   const again=_tkSeen(id);
   const faithOn=(typeof faithLevel!=='function')||faithLevel()!=='light';
-  const tr=(typeof faithTradition==='function')?faithTradition():'christianity';
+  const tr=(typeof faithTradition==='function')?faithTradition():'secular';
   const fLine=(id==='compassion'&&faithOn)?(_TK_FAITH[tr]||''):'';
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="max-height:90vh;overflow-y:auto">'+
@@ -12763,7 +12801,7 @@ const _BLESS_STEPS = [ null,
   { eye:'SOMEONE DIFFICULT', sub:'Someone who irritates you \u2014 start small. This is not forgiveness on demand and it is not therapy for what was done to you. If someone hurt you badly, skip them. Skipping is the correct instruction, not a failure.' },
   { eye:'EVERYONE', sub:'Widen it until no one is left out \u2014 including the ones you\u2019ll never meet.' }
 ];
-function _bless(){ return BLESS[(typeof faithTradition==='function')?faithTradition():'christianity'] || BLESS.christianity; }
+function _bless(){ return BLESS[(typeof faithTradition==='function')?faithTradition():'secular'] || BLESS.secular; }
 function blessLog(){ try{ const a=ls('totry_blessings'); return Array.isArray(a)?a:[]; }catch(_){ return []; } }
 function blessLastLine(){
   try{ const l=blessLog(); if(!l.length) return '';
@@ -13057,7 +13095,7 @@ const _BREATH_PRAYERS = {
                   in:'Receive',                       out:'Let go' }
 };
 function _faithBreath(){
-  const t = (typeof faithTradition==='function') ? faithTradition() : 'christianity';
+  const t = (typeof faithTradition==='function') ? faithTradition() : 'secular';
   return _BREATH_PRAYERS[t] || _BREATH_PRAYERS.christianity;
 }
 // Resolve a protocol, swapping the prayer's words for the person's tradition.
@@ -22582,7 +22620,7 @@ function fastSeasonNow(){
       if(dayN < 1 || (len > 0 && dayN > len)) return null;
       return Object.assign({}, p, {name:(cfg.name||p.name), dayN:dayN, total:(len||null), left:(len?len-dayN:null), src:'chosen'});
     }
-    const t = (typeof faithTradition==='function') ? faithTradition() : 'christianity';
+    const t = (typeof faithTradition==='function') ? faithTradition() : 'secular';
     if(t === 'islam'){
       const h = hijriParts(new Date(today.getTime() - shift*D));
       if(h && h.m === 9) return Object.assign({}, FAST_SEASONS.ramadan, {dayN:h.d, total:null, left:_ramadanLeft(), src:'auto'});
@@ -22735,7 +22773,7 @@ const GIVING = {
     sub:'A share of what comes in, given on purpose.',
     quiet:'Given quietly. Nothing here is shared, ranked or shown to anyone.' }
 };
-function curGiving(){ return GIVING[(typeof faithTradition==='function')?faithTradition():'christianity'] || GIVING.christianity; }
+function curGiving(){ return GIVING[(typeof faithTradition==='function')?faithTradition():'secular'] || GIVING.secular; }
 function givingLog(){ return ls('totry_giving') || []; }
 function givingPledge(){ return ls('totry_giving_pledge') || {mode:'off', percent:10, amount:0, quiet:false}; }
 function monthIncome(){
@@ -29737,7 +29775,7 @@ const _EXAMEN_FACE = {
     title:'Go back over the day, honestly.', blurb:'Seneca did this nightly: what did I do, where did I fall short, what will I do better. Five questions. This closes your day.', cta:'Begin the review' }
 };
 function applyFaithExamen(){
-  const t = (typeof faithTradition==='function') ? faithTradition() : 'christianity';
+  const t = (typeof faithTradition==='function') ? faithTradition() : 'secular';
   const f = _EXAMEN_FACE[t] || _EXAMEN_FACE.christianity;
   const card = document.getElementById('examen-card');
   const lbl  = document.getElementById('examen-label');
@@ -29755,7 +29793,7 @@ function applyFaithExamen(){
 // Swap the divine language in a step for the person's tradition. For non-theistic paths the
 // "petition" becomes a request of oneself rather than of a deity — honest, not bolted on.
 function examenStepFor(step){
-  const t = (typeof faithTradition==='function') ? faithTradition() : 'christianity';
+  const t = (typeof faithTradition==='function') ? faithTradition() : 'secular';
   if(t === 'christianity') return step;
   const divine = (typeof curFaith==='function' && curFaith().divine) ? curFaith().divine : 'God';
   const theistic = (t === 'islam' || t === 'hinduism');
@@ -32686,7 +32724,7 @@ async function shareCardNative(url){
 
 // The tradition names its own word. Never flattened to "scripture".
 function verseCardEyebrow(){
-  const t = (typeof faithTradition === 'function') ? faithTradition() : 'christianity';
+  const t = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
   return ({
     christianity:'\u00b7 TODAY\u2019S WORD \u00b7',
     islam:'\u00b7 AN AYAH \u00b7',
@@ -32992,7 +33030,7 @@ function initSettingsTab(){
   // Reflect the CURRENT faith level when Settings opens — it was only highlighted on click, so on
   // open neither option looked selected (that's the "faith level looks messed up"). Now it's clear.
   try{ const fl=(typeof faithLevel==='function')?faithLevel():'full'; document.querySelectorAll('.faith-opt').forEach(b=>{ const on=b.dataset.faith===fl; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'rgba(200,169,110,0.10)':'var(--bg3)'; }); }catch(_){}
-  try{ const tr=(typeof faithTradition==='function')?faithTradition():'christianity'; document.querySelectorAll('.faithtr-opt').forEach(b=>{ const on=b.dataset.tr===tr; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'rgba(200,169,110,0.10)':'var(--bg3)'; }); }catch(_){}
+  try{ const tr=(typeof faithTradition==='function')?faithTradition():'secular'; document.querySelectorAll('.faithtr-opt').forEach(b=>{ const on=b.dataset.tr===tr; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'rgba(200,169,110,0.10)':'var(--bg3)'; }); }catch(_){}
   const n=document.getElementById('settings-name-display');if(n)n.textContent=ls('totry_name')||'Not set';
   // Signed-in email — was stuck on "Loading..." because nothing populated it.
   const emailEl=document.getElementById('settings-email-display');
