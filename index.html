@@ -4452,7 +4452,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v384';
+const APP_VERSION = 'v385';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -13224,7 +13224,10 @@ function openBreath(id, opts){
   const ov=document.createElement('div'); ov.className='breath-overlay';
   ov.style.cssText='position:fixed;inset:0;z-index:9500;background:radial-gradient(circle at 50% 40%,#151a28,#09090c 72%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px;text-align:center;color:var(--tx)';
   ov.innerHTML=
-    '<button class="b-x" aria-label="Close" style="position:absolute;top:14px;right:18px;background:none;border:none;color:var(--tx3);font-size:28px;line-height:1;cursor:pointer">×</button>'+
+    // top:14px put this behind the notch / Dynamic Island on every modern iPhone — on the breathing
+    // screen, which is exactly where someone arrives mid-panic and most needs a way out. Respect the safe
+    // area, and give it a 44x44 target while we are here.
+    '<button class="b-x" aria-label="Close" style="position:absolute;top:calc(env(safe-area-inset-top, 0px) + 10px);right:10px;background:none;border:none;color:var(--tx3);font-size:28px;line-height:1;cursor:pointer;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center">×</button>'+
     '<div class="b-pre" style="display:none;max-width:340px">'+
       '<div style="font-family:Cormorant Garamond,serif;font-size:24px;margin-bottom:6px">Before we begin</div>'+
       '<div style="font-size:13.5px;color:var(--tx2);line-height:1.6;margin-bottom:18px">How strong is it right now? <span style="color:var(--tx3)">0 is gone, 10 is overwhelming.</span></div>'+
