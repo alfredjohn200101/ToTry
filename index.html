@@ -3717,6 +3717,10 @@ Amen.</div></div>
         <div><div class="sr-label">Where it&rsquo;s stored</div><div class="sr-desc">Off = this device only. On = survives a reinstall, but it leaves your phone.</div></div>
         <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:12px" id="cycle-backup-btn" onclick="cycleToggleBackup()">This device only</button>
       </div>
+      <div class="setting-row">
+        <div><div class="sr-label">Let the coach see my phase</div><div class="sr-desc">Off by default. On = the phase word only (never your dates) goes to the AI with the rest of your context.</div></div>
+        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:12px" id="cycle-ai-btn" onclick="cycleToggleAI()">Off</button>
+      </div>
       <div class="setting-row" style="border-bottom:none">
         <div><div class="sr-label">Delete my cycle data</div><div class="sr-desc">Erases every entry here and on the server. Cannot be undone.</div></div>
         <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:12px;border-color:var(--re);color:var(--re)" onclick="cycleDeleteAll()">Delete</button>
@@ -4378,7 +4382,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v358';
+const APP_VERSION = 'v359';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4689,7 +4693,10 @@ const SYNC_KEYS = [
   'totry_strava_token','totry_google_token','totry_strava_activities','totry_strava_burns_byday','totry_strength_burns_byday','totry_watch_burns_byday','totry_calorie_burns','totry_google_steps',
   'totry_hevy_api_key','totry_hevy_synced_once','totry_hevy_tier','totry_hevy_templates','totry_hevy_templates_at','totry_hevy_routines','totry_hevy_folders','totry_hevy_routines_at','totry_hevy_today_pick','totry_mobility_profile','totry_mood_log','totry_meal_plans','totry_pt_adjustments','totry_calorie_burns','totry_bar_weight','totry_last_plate_target','totry_last_warmup_target',
   'totry_custom_exercises','totry_bw_volume','totry_session_proof','totry_first_win_done','totry_quiet_greeted',
-  'totry_progress_photos','totry_weight_trend',
+  // totry_progress_photos is deliberately NOT synced: both privacy policies state photos stay on
+  // the device, and a policy that isn't true is worse than no policy. (Also: base64 photos would eat
+  // the row.) A one-time purge below clears any copy an earlier build already uploaded.
+  'totry_weight_trend',
   // The people you carry, the plans you set, and the numbers-off preference. These are among the most
   // personal things in the app — losing them on a reinstall would mean losing your few and every
   // if-then plan you wrote, so they sync like everything else.
@@ -5111,7 +5118,7 @@ async function pullFromCloud(){
     if(!data){ _setSyncState({ status:'synced', lastSyncAt:Date.now() }); return false; }
     const tsMap = _getKeyTsMap();
     const outbox = _getOutbox();
-    const ARR = ['totry_workouts','totry_body','totry_journal','totry_mornings','totry_evenings','totry_confessions','totry_masses','totry_routines','totry_saved_meals','totry_family_contrib','totry_poker_sessions','totry_examens','totry_prayers','totry_strava_activities','totry_feeling_wins','totry_progress_photos','totry_custom_exercises'];
+    const ARR = ['totry_workouts','totry_body','totry_journal','totry_mornings','totry_evenings','totry_confessions','totry_masses','totry_routines','totry_saved_meals','totry_family_contrib','totry_poker_sessions','totry_examens','totry_prayers','totry_strava_activities','totry_feeling_wins','totry_custom_exercises'];
     const idOf = x => (x && typeof x === 'object') ? (x.id !== undefined ? 'i'+x.id : (x.ts || JSON.stringify(x))) : x;
     const union = (a,b) => { const m = new Map(); [].concat(a||[], b||[]).forEach(x => { const k = idOf(x); if(!m.has(k)) m.set(k, x); }); return Array.from(m.values()); };
     let changed = 0;
@@ -6095,6 +6102,14 @@ function cycleToggleOn(){
   else { c.on=true; delete c.declined; cycleSet(c); showToast('On','Cycle counsel is back.'); }
   haptic('tap'); renderCycleSurfaces();
 }
+function _cycleRefreshBtns(){ try{ const b=document.getElementById('cycle-backup-btn'); if(b) b.textContent=cycleGet().backup?'Backed up':'This device only'; const a=document.getElementById('cycle-ai-btn'); if(a) a.textContent=cycleGet().aiOK?'On \u2713':'Off'; }catch(_){} }
+function cycleToggleAI(){
+  const c=cycleGet(); c.aiOK=!c.aiOK; cycleSet(c);
+  try{ const b=document.getElementById('cycle-ai-btn'); if(b) b.textContent=c.aiOK?'On \u2713':'Off'; }catch(_){}
+  try{ showToast(c.aiOK?'Coach can see your phase':'Coach can\u2019t see your phase',
+    c.aiOK?'Only the phase word \u2014 never your dates. It helps it read a hard week as physiology.'
+          :'Your phase stays on this device. Every card in the app still works.'); }catch(_){}
+}
 function cycleToggleBackup(){
   const c=cycleGet();
   if(!c.backup){
@@ -6148,6 +6163,7 @@ function renderCycleSurfaces(){
     const c=cycleGet();
     const b1=document.getElementById('cycle-on-btn'); if(b1) b1.textContent = c.on ? 'On' : 'Off';
     const b2=document.getElementById('cycle-backup-btn'); if(b2) b2.textContent = c.backup ? 'Backed up' : 'This device only';
+    const b3=document.getElementById('cycle-ai-btn'); if(b3) b3.textContent = c.aiOK ? 'On \u2713' : 'Off';
   }catch(_){}
 }
 // One quiet line where she is standing — not a second card competing with the pillar she came for.
@@ -6464,7 +6480,15 @@ function getLifeState(){
     money: (function(){ try{ const f=ls('totry_f')||{}; const debts=f.d||[]; const totalDebt=debts.reduce((s,d)=>s+Math.max(0,(d.t||0)-(d.p||0)),0); const reclaimed=(typeof totalReclaimed==='function')?totalReclaimed():0; return { totalDebt:Math.round(totalDebt), reclaimed, hasDebt: totalDebt>0 }; }catch(_){ return { totalDebt:0, reclaimed:0, hasDebt:false }; } })(),
     // Her cycle, if she chose to track it. Present ONLY when she opted in — the whole-life brain
     // must never quietly hold something she didn't hand it.
-    cycle: (function(){ try{ if(typeof cyclePhase!=='function') return null; const p=cyclePhase(); if(!p) return null;
+    // Her cycle reaches the AI ONLY on a separate, explicit opt-in (cycleGet().aiOK). Tracking it is
+    // one decision; sending the phase to a third-party model is a different one, and the privacy
+    // policy promises cycle data is never sent to an AI provider. The phase still powers every LOCAL
+    // surface (the phase card, Nourish/Train/Fight notes) with no consent needed, because that never
+    // leaves the device. Default: off.
+    cycle: (function(){ try{
+      if(typeof cyclePhase!=='function') return null;
+      if(!(typeof cycleGet==='function' && cycleGet().aiOK === true)) return null;
+      const p=cyclePhase(); if(!p) return null;
       return { phase:p.key, day:p.day, lenDays:p.len.len, basis:p.len.source }; }catch(_){ return null; } })(),
     // Their OWN top values, in their own order — so counsel argues from their standard, not ours.
     values: (function(){ try{ const o=(typeof getValues==='function')?getValues():null; return o?{ top:o.v.map(function(id){ return valLabel(id); }), why:o.why||'' }:null; }catch(_){ return null; } })(),
@@ -32956,7 +32980,7 @@ function showPrivacyPolicy(){
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">4. What never leaves your device</strong></p>' +
       '<p style="margin-bottom:12px">Progress photos. They are stored only in your browser\'s local storage. They are not uploaded to my database, not synced across devices, not sent to any AI provider. If you clear your browser data, they\'re gone.</p>' +
-      '<p style="margin-bottom:12px">Your cycle data, if you track it. Period dates, flow and symptoms are stored in local storage on your device only. They are not written to my database, not synced, and never sent to any AI provider. Backing them up to your account is off by default and only happens if you switch it on yourself in Settings &rarr; Your cycle &mdash; which also has a one-tap delete that erases them here and on the server. I will not sell, share or hand this data to anyone, and while backup is off there is nothing on my server for anyone to ask me for.</p>' +
+      '<p style="margin-bottom:12px">Your cycle data, if you track it. Period dates, flow and symptoms are stored in local storage on your device only. They are not written to my database and not synced. They are never sent to any AI provider \u2014 with one exception you control: if you switch on Settings &rarr; Your cycle &rarr; "Let the coach see my phase" (off by default), the coach is told the phase word only (e.g. "luteal"), never your dates, flow or symptoms. Leave it off and nothing about your cycle ever leaves the device. Backing them up to your account is off by default and only happens if you switch it on yourself in Settings &rarr; Your cycle &mdash; which also has a one-tap delete that erases them here and on the server. I will not sell, share or hand this data to anyone, and while backup is off there is nothing on my server for anyone to ask me for.</p>' +
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">5. What I do not do</strong></p>' +
       '<p style="margin-bottom:12px">I do not run ads. I do not sell or share your data with advertisers or data brokers. No third party pays me to feature their service. There is no advertising or profiling SDK in this app.</p>' +
@@ -33592,6 +33616,22 @@ function _anonId(){
 // One switch turns BOTH counters off, everywhere. An app whose whole promise is "your confession stays
 // yours" has to let a person decline being counted at all — and the privacy policy has to describe
 // exactly this and nothing more.
+// One-time cleanup: earlier builds synced totry_progress_photos to the server while both privacy
+// policies said photos never leave the device. The key is out of SYNC_KEYS now; this clears whatever
+// a previous version already uploaded, so the policy is true retroactively and not just going forward.
+async function _purgeSyncedPhotos(){
+  try{
+    if(localStorage.getItem('totry_photos_purged')==='1') return;
+    if(!(typeof sb!=='undefined' && sb) || !(typeof currentUser!=='undefined' && currentUser)) return;
+    const { data } = await sb.from('user_data').select('data').eq('user_id', currentUser.id).maybeSingle();
+    const d = data && data.data;
+    if(d && Object.prototype.hasOwnProperty.call(d,'totry_progress_photos')){
+      delete d.totry_progress_photos;
+      await sb.from('user_data').update({ data:d }).eq('user_id', currentUser.id);
+    }
+    localStorage.setItem('totry_photos_purged','1');
+  }catch(_){ /* retried next launch */ }
+}
 function metricsOff(){ try{ return localStorage.getItem('totry_no_metrics')==='1'; }catch(_){ return false; } }
 function toggleMetrics(){
   const off = !metricsOff();
@@ -33656,6 +33696,7 @@ function runSchemaMigrations(){
 
 async function initApp(){
   try{ if(typeof runSchemaMigrations === 'function') runSchemaMigrations(); }catch(_){ }
+  try{ if(typeof _purgeSyncedPhotos==='function') _purgeSyncedPhotos(); }catch(_){ }
   // Receptivity bookkeeping, first thing: mark that they're here (so nothing buzzes them while they
   // are), then judge whether the reach-outs we already sent actually landed.
   try{ if(typeof _touchActive==='function') _touchActive(); }catch(_){}
