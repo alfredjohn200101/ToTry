@@ -1,9 +1,37 @@
 # NEXT — the build list
 
-Where To Try stands at **v352**, and what's actually left. Every item below was **verified absent in
+Where To Try stands at **v366**, and what's actually left. Every item below was **verified absent in
 `index.html`** (not guessed). Ranked by impact × vision-fit ÷ effort.
 
 Research behind each item is in `RESEARCH-BACKLOG.md`. Ready-to-apply specs live in `specs/`.
+
+---
+
+## 🟢 PRE-BUILD AUDIT: all 9 blockers closed (v358–v366)
+
+The audit found nine things that had to be fixed before an App Store build, because an App Store build
+can't be hot-fixed the way a Pages deploy can. All nine are closed and each was verified live, not just
+parse-checked. In rough order of how much harm they'd have done:
+
+| Fixed | What it actually did to a person | v |
+|---|---|---|
+| Stale native bundles | `www/` and the iOS shell were still **v326** — an archive would have shipped a build predating multi-faith, cycle, and every crisis-gate fix | v365 |
+| Cycle delete resurrection | She typed DELETE; if the purge couldn't reach the server the next sync wrote her period log back. Now tombstoned and retried until confirmed | v364 |
+| Check-in sent to the wrong table | The progress check-in put her free text **and email** in the anonymous counters — and if she'd turned counting off it was silently binned while the UI said "you're in the raffle" | v363 |
+| Per-person fight telemetry | `relapse_logged` / `fight_won` traced individual slips and wins against a persistent id — the surveillance our own refusal list rules out. Removed | v363 |
+| Gentle mode leaked | "Numbers off" hid calories in the diary, then handed the coach the exact figures to say back | v362 |
+| The honest ledger discarded everything | Both columns typed, "Kept" shown, nothing saved — a stale object captured before the form opened | v360 |
+| Food prune could delete today | Lexicographic sort on d/m/yyyy keys meant `keys[0]` could be **today**, and history was capped at 30 days while day-nav promises 120 | v360 |
+| Money's lower half never rendered | For a debt-free user — i.e. every new user — Giving, subscriptions, bills, budgets and net worth all sat behind an early return | v360 |
+| Receptivity gate unreachable | Quiet hours could never be set, and on web it logged sends that never happened, then stood the channel down for "ignoring" them | v361 |
+| Crisis gate on the Home free-text door | A seventh free-text→LLM path with no gate | v358 |
+
+**The pattern, again:** every one of these parsed cleanly and passed the tests. Nine written-but-never-called
+features were found across v357–v365 (`_reachOutRowHTML`, `_reachOutResponded`, `verseCardEyebrow`,
+`_verseToolsHTML`, `_verseCardOverride`, `viceStageTone`, `nutDayWord`, the walk-back, the Toolkit's
+post-slip rule). `try/catch` everywhere makes failure silent. **A green test suite is not evidence a
+feature exists** — the call-site coverage test added in v357 is the only guard against this class, and it
+should grow every time a new surface is added.
 
 ---
 
@@ -21,9 +49,10 @@ the crisis-gate hardening and the honest privacy rewrite.
 
 | # | Item | Why | Effort |
 |---|---|---|---|
-| 0.1 | **Re-archive as build 3 + upload** | The build sitting in App Store Connect predates *everything* — multi-faith, cycle, the crisis-gate fix. `npm run build:www && npx cap sync ios`, then archive. | ~1h + your GUI |
-| 0.2 | **App Privacy nutrition label** | Must now declare cycle data and the usage counters. `privacy.html` is the accurate source. | GUI only |
-| 0.3 | **Use it for a week yourself** | Every bug this project has shipped survived because nobody set the value and looked at it (the water goal collapsed to 8ml for exactly that reason). | — |
+| 0.1 | **Archive build 3 + upload** | Code side is done: `www/` and `ios/App/App/public/` are both synced to v366 and `PrivacyInfo.xcprivacy` now declares all nine data types (was only Health + Email). What's left is Xcode + App Store Connect, which needs your hands. | your GUI |
+| 0.2 | **App Privacy nutrition label** | Answer it from `ios/App/App/PrivacyInfo.xcprivacy` — it and `privacy.html` are now in step, and the label must match both or review flags it. Declare: email, user id, health & fitness, sensitive info (faith), other user content, financial info, name, product interaction (not linked, analytics), crash data. | GUI only |
+| 0.3 | **Age rating** | Not started. | GUI only |
+| 0.4 | **Use it for a week yourself** | Every bug this project has shipped survived because nobody set the value and looked at it (the water goal collapsed to 8ml for exactly that reason). Six of the nine blockers above were only visible to someone actually using it as a new, debt-free, numbers-off, non-Christian user — not to a parse-check. | — |
 
 ---
 
@@ -45,9 +74,11 @@ the crisis-gate hardening and the honest privacy rewrite.
 | Cost–benefit "honest ledger" — **mirrored back in their own words at the threshold** | v354 |
 | DEADS — five ways through | v354 |
 | Subscription auto-detection *(3+ hits, stable amount, real rhythm; verified it ignores groceries, one-offs and irregular coffees)* | v355 |
-| On This Day — pull, never push | v355 |
-| Guided reading plans | ⬜ in progress |
-| CBT/ACT micro-lessons | ⬜ in progress |
+| On This Day — pull, never push *(and its "Read it" button now reads instead of destroying the entry)* | v355, fixed v362 |
+| Guided reading plans | v356 |
+| CBT/ACT micro-lessons — the Toolkit *(post-slip rule now actually fires)* | v357, fixed v362 |
+
+**TIER 2 COMPLETE.** All seven shipped and verified live.
 
 **Dead code caught while building these** — all three parsed fine and would have looked "built" forever:
 the morning-light nudge could never fire (the short-sleep rule claimed the same condition first); the
@@ -107,7 +138,15 @@ backlog. Don't trade one away for a growth number.
 
 ## A note on sequencing
 
-**Tier 0.3 before Tier 1.** The highest-value thing right now is not another feature — it's a week of
-real use. Six defects this project shipped were found only by someone actually looking, and the app
-has grown enormously in a short time. Build from what *your own use* surfaces, and the tutorials will
-be truer for it.
+**Tier 0 is all that stands between here and the App Store.** Tier 1 and Tier 2 are complete, the nine
+pre-build blockers are closed, and the native bundle is synced. Everything left in Tier 0 is Xcode and
+App Store Connect — GUI work that needs your hands, not more code.
+
+**Then 0.4 before Tier 3.** The highest-value thing after submitting is not another feature — it's a
+week of real use. Six of the nine blockers above were invisible to parse-checks and tests: they only
+showed up when the app was driven as a *new* user (debt-free, numbers-off, non-Christian, no data). The
+tutorials will be truer for a week of that, and so will the next build.
+
+**One caveat now that it's an App Store app.** A Pages deploy is instant and silent; a store build is
+neither. Batch small fixes into fewer releases rather than shipping an update a day at people — and keep
+the PWA as the fast channel while the store build stays the stable one.
