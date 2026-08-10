@@ -15,6 +15,11 @@ const ASSETS = [
   'icon-512.png',
   'apple-touch-icon.png',
   'icon.svg',
+  // The policy and support pages. Nothing in index.html links to them today (the app carries its own
+  // in-app policy), but shipping them keeps the native bundle self-contained — otherwise the first
+  // link anyone adds 404s inside the wrapper, silently, which is exactly how this project loses things.
+  'privacy.html',
+  'support.html',
 ];
 
 fs.rmSync(WWW, { recursive: true, force: true });
