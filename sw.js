@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v374-pt-history'
+const CACHE = 'totry-v375-delete-all'
 
 const CORE = [
   './',

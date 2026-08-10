@@ -4400,7 +4400,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v374';
+const APP_VERSION = 'v375';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -33665,8 +33665,15 @@ async function deleteAccount(){
   
   try{
     if(sb && currentUser){
-      // Delete cloud row first
-      try{ await sb.from('user_data').delete().eq('user_id', currentUser.id); }catch(e){ console.warn('[delete] cloud row delete failed:', e); }
+      // Delete EVERY row that is tied to them, not just user_data. The confirm promises "delete ALL
+      // your data from the cloud", and two tables were being left behind: push_subscriptions (keyed by
+      // user_id, so a stale device row outlived the account) and feedback (which stores their email
+      // address alongside whatever they wrote to me). app_events is deliberately left — it is keyed by a
+      // random anon_id that is not the email and holds no content, so there is nothing there to identify.
+      const _uid = currentUser.id, _email = currentUser.email || null;
+      try{ await sb.from('user_data').delete().eq('user_id', _uid); }catch(e){ console.warn('[delete] user_data:', e); }
+      try{ await sb.from('push_subscriptions').delete().eq('user_id', _uid); }catch(e){ console.warn('[delete] push_subscriptions:', e); }
+      if(_email){ try{ await sb.from('feedback').delete().eq('email', _email); }catch(e){ console.warn('[delete] feedback:', e); } }
       // Sign out
       try{ await sb.auth.signOut(); }catch(e){ console.warn('[delete] signOut failed:', e); }
     }
