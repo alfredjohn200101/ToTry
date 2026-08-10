@@ -4452,7 +4452,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v386';
+const APP_VERSION = 'v387';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5730,6 +5730,77 @@ function _hashId(str){ let h=0; const s=String(str); for(let i=0;i<s.length;i++)
 // reach-out opens the companion (the 2am door), a morning nudge opens the ritual, an evening one
 // opens the reflection. Without this, tapping any of them just opened the app to wherever it was.
 // Native only; wired once per session.
+// ── ACCESSIBLE NAMES ──────────────────────────────────────────────────────────────────────────
+// A sweep found 135 form controls in the static markup and ZERO with an accessible name: no aria-label,
+// no <label for>. 57 had no placeholder either, so VoiceOver announces them as a bare "text field" or
+// "pop up button" — the date you started, your sex, your activity level, the vice-tracking consent
+// checkbox. Someone using a screen reader cannot fill in this app.
+//
+// Doing it at runtime rather than by hand-editing 135 tags: it also covers every dynamically-built
+// modal (openFormModal, the quick journal, the fuel plan), which is most of the app's real inputs, and
+// it cannot break the markup — it only ever ADDS an attribute where none existed.
+function _a11yName(el){
+  try{
+    if(!el || el.getAttribute('aria-label') || el.getAttribute('aria-labelledby')) return;
+    if(el.id && document.querySelector('label[for="'+CSS.escape(el.id)+'"]')) return;
+    const clean = t => String(t||'').replace(/\s+/g,' ').trim().slice(0,60);
+    let name = '';
+    // 1. a wrapping <label>
+    const lab = el.closest('label');
+    if(lab) name = clean(lab.textContent);
+    // 2. the nearest preceding sibling that is SHORT TEXT ONLY. A class allowlist was too narrow — it
+    //    missed .tdee-label ("Sex", "Activity level"), which is exactly the kind of label this app uses.
+    //    Any element that is short and contains no form controls is almost certainly a label.
+    const looksLikeLabel = n => {
+      if(!n) return '';
+      // Reject the element itself being interactive as well as containing something interactive —
+      // querySelector only searches DESCENDANTS, so a sibling <button> was passing as a label and a date
+      // field ended up announced as "+ Add another to the fight".
+      if(/^(BUTTON|A|INPUT|TEXTAREA|SELECT)$/.test(n.tagName)) return '';
+      if(n.getAttribute && (n.getAttribute('onclick') || n.getAttribute('role')==='button')) return '';
+      if(n.querySelector && n.querySelector('input,textarea,select,button')) return '';
+      const t = clean(n.textContent);
+      return t.length>0 && t.length<=45 ? t : '';
+    };
+    if(!name){
+      let n = el.previousElementSibling;
+      for(let i=0;i<3 && n && !name;i++){ name = looksLikeLabel(n) || ''; n = n.previousElementSibling; }
+    }
+    // 3. the same, one level up (a label + input wrapped in a div)
+    if(!name && el.parentElement){
+      let n = el.parentElement.previousElementSibling;
+      for(let i=0;i<2 && n && !name;i++){ name = looksLikeLabel(n) || ''; n = n.previousElementSibling; }
+    }
+    // 4. placeholder, then a last-resort type name so nothing is announced as nothing
+    if(!name) name = clean(el.getAttribute('placeholder'));
+    if(!name){
+      const t=(el.getAttribute('type')||el.tagName).toLowerCase();
+      name = t==='file' ? 'Choose a file' : t==='date' ? 'Pick a date' : t==='range' ? 'Adjust value'
+           : t==='checkbox' ? 'Toggle option' : (t==='select' || el.tagName==='SELECT') ? 'Choose an option'
+           : el.tagName==='TEXTAREA' ? 'Write here' : 'Enter a value';   // never leave one announced as nothing
+    }
+    if(name) el.setAttribute('aria-label', name);
+  }catch(_){}
+}
+function applyA11yNames(root){
+  try{
+    (root||document).querySelectorAll('input,textarea,select').forEach(_a11yName);
+  }catch(_){}
+}
+let _a11yPending = null;
+function _watchA11y(){
+  try{
+    applyA11yNames(document);
+    if(!window.MutationObserver || window.__a11yWatching) return;
+    window.__a11yWatching = true;
+    // Debounced: most of this app's inputs appear inside modals built after the fact.
+    new MutationObserver(function(){
+      if(_a11yPending) return;
+      _a11yPending = setTimeout(function(){ _a11yPending=null; applyA11yNames(document); }, 300);
+    }).observe(document.body, { childList:true, subtree:true });
+  }catch(_){}
+}
+
 function _initNotificationTaps(){
   try{
     if(!(typeof Notify!=='undefined' && Notify.isNative && Notify.isNative())) return;
@@ -34606,6 +34677,7 @@ function runSchemaMigrations(){
 async function initApp(){
   try{ if(typeof runSchemaMigrations === 'function') runSchemaMigrations(); }catch(_){ }
   try{ if(typeof _purgeSyncedPhotos==='function') _purgeSyncedPhotos(); }catch(_){ }
+  try{ if(typeof _watchA11y==='function') _watchA11y(); }catch(_){ }
   // Demo mode has to survive a reload, or the first restart silently turns syncing back on and starts
   // pushing a persona named Alex into a real account. Re-assert both facts, and show the banner.
   try{
