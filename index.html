@@ -91,7 +91,7 @@ button:focus:not(:focus-visible){outline:none}
 .day-n{font-family:'Cormorant Garamond',serif;font-size:27px;font-weight:400;color:var(--go);line-height:1}
 .day-l{font-family:'DM Mono',monospace;font-size:8px;color:var(--tx3);letter-spacing:0.14em;text-transform:uppercase;margin-top:2px}
 .verse-pill{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 14px;cursor:pointer;position:relative}
-.verse-pill p{font-family:'Cormorant Garamond',serif;font-size:12px;font-style:italic;color:var(--tx2);line-height:1.6;padding-right:36px}
+.verse-pill p{font-family:'Cormorant Garamond',serif;font-size:12px;font-style:italic;color:var(--tx2);line-height:1.6;padding-right:62px}
 .verse-pill .vr{font-family:'DM Mono',monospace;font-size:9px;color:var(--go);margin-top:4px;letter-spacing:0.06em}
 .vsave{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--tx3);font-size:18px;padding:4px;line-height:1}
 .vsave.saved{color:var(--go)}
@@ -4390,7 +4390,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v369';
+const APP_VERSION = 'v370';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -32958,7 +32958,10 @@ function initSettingsTab(){
 
 // Dev panel gate — called on every settings open AND on auth state change
 function checkDevPanelVisibility(){
-  const DEV_EMAILS = ['alfredjohn200101@gmail.com','alfredjohn200101@yahoo.com'];
+  // +studio is a plus-address: it delivers to the same inbox but is a DIFFERENT To Try account with
+  // no real data in it. That is the account tutorials get filmed on, so a real vice, a real debt
+  // figure or a real journal entry can never end up in a frame.
+  const DEV_EMAILS = ['alfredjohn200101@gmail.com','alfredjohn200101@yahoo.com','alfredjohn200101+studio@gmail.com'];
   const userEmail = (currentUser?.email || '').toLowerCase().trim();
   const usageCard = document.getElementById('usage-stats-card');
   const demoCard = document.getElementById('demo-mode-card');
@@ -33023,6 +33026,8 @@ function exitDemoMode(){
     Object.keys(snap).forEach(k=>{ try{ localStorage.setItem(k, snap[k]); }catch(_){} });
     localStorage.removeItem(DEMO_SNAP);
     localStorage.removeItem(DEMO_FLAG);
+    try{ const _h=document.querySelector('.hdr'); if(_h) _h.style.paddingTop = _h.dataset._padWas || '';
+         const _b=document.getElementById('demo-mode-banner'); if(_b) _b.remove(); }catch(_){}
     try{ syncEnabled = true; }catch(_){}
     showToast('Your data is back','Demo dataset cleared and syncing again. Reloading.');
     setTimeout(function(){ location.reload(); }, 900);
@@ -33034,13 +33039,22 @@ function _demoBanner(){
     if(!inDemoMode()){ if(b) b.remove(); return; }
     if(!b){
       b=document.createElement('div'); b.id='demo-mode-banner';
-      b.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#7a2e2e;color:#fff;'+
-        'font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;'+
-        'padding:9px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 -2px 14px rgba(0,0,0,.4)';
-      b.innerHTML='<span>\ud83c\udfac Demo data \u2014 not your real life. Syncing is off.</span>'+
+      b.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99999;background:#7a2e2e;color:#fff;'+
+        'font-family:DM Mono,monospace;font-size:9px;letter-spacing:0.07em;text-transform:uppercase;'+
+        'padding:6px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 2px 14px rgba(0,0,0,.4)';
+      b.innerHTML='<span>\ud83c\udfac Demo data \u00b7 sync off</span>'+
         '<button onclick="exitDemoMode()" style="background:#fff;color:#7a2e2e;border:none;border-radius:100px;'+
-        'padding:6px 12px;font-family:inherit;font-size:10px;text-transform:uppercase;letter-spacing:0.08em;cursor:pointer">Restore my data</button>';
+        'padding:4px 10px;font-family:inherit;font-size:9px;text-transform:uppercase;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">Restore</button>';
       document.body.appendChild(b);
+      // Give the header enough top padding to clear the banner, so it never clips the wordmark or the
+      // day counter — both in shot on almost every tutorial. It has to be the HEADER and not the body:
+      // .app is a fixed 100dvh flex column, so padding the body would just push the tab bar off-screen.
+      try{
+        const h=document.querySelector('.hdr');
+        if(h){ const bh=Math.ceil(b.getBoundingClientRect().height);
+               h.dataset._padWas = h.style.paddingTop || '';
+               h.style.paddingTop = 'calc(var(--st) + 14px + '+bh+'px)'; }
+      }catch(_){}
     }
   }catch(_){}
 }
