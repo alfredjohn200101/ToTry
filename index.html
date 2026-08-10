@@ -4400,7 +4400,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v375';
+const APP_VERSION = 'v376';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -20556,12 +20556,7 @@ function addFoodToLog(){
   // en-AU keys are d/m/yyyy, so a plain .sort() is LEXICOGRAPHIC — '10/08/2026' sorts before
   // '9/12/2026', which means keys[0] can be TODAY and this used to delete the current diary outright.
   // Sort by real date, and keep 120 days to match what day-navigation promises.
-  try{
-    const _ms=function(k){ const q=String(k).split('/').map(function(n){return parseInt(n,10);}); return (q.length<3||!q[2])?0:new Date(q[2],q[1]-1,q[0]).getTime(); };
-    const keys=Object.keys(log).sort(function(a,b){ return _ms(a)-_ms(b); });
-    const today=(typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
-    while(keys.length>120){ const k=keys.shift(); if(k!==today) delete log[k]; }
-  }catch(_){}
+  try{ _pruneNutLog(log); }catch(_){}   // one implementation, shared by every write path
   ls('totry_nutlog',log);
   // Remember this food for one-tap re-logging (recent foods list, most-recent first, deduped)
   rememberRecentFood(currentFood);
@@ -23171,13 +23166,30 @@ const CAL_TYPE_COLORS = { work:'#C8A96E', class:'#8C6BB6', gym:'#5BA88A', person
 // Keep the nutrition log from growing forever (it's a {date:[entries]} map that otherwise
 // accumulates a key per day indefinitely and re-syncs the whole thing on every meal). 120 days
 // of history is plenty for trends; older days are dropped. Mutates the passed object in place.
+// Parse an en-AU d/m/yyyy diary key to a real timestamp. new Date('10/08/2026') CANNOT be used: V8 reads
+// it as US m/d/yyyy, so 10 August silently becomes 8 October, and anything past the 12th ('25/08/2026')
+// is an Invalid Date whose NaN makes a sort comparator return NaN — a garbage ordering, not a stable one.
+function _auKeyMs(k){
+  try{
+    const q=String(k).split('/').map(function(n){ return parseInt(n,10); });
+    if(q.length<3 || !q[2] || isNaN(q[0]) || isNaN(q[1]) || isNaN(q[2])) return 0;
+    return new Date(q[2], q[1]-1, q[0]).getTime();
+  }catch(_){ return 0; }
+}
 function _pruneNutLog(log){
   try{
     const keys=Object.keys(log||{});
     if(keys.length<=120) return;
-    // keys are date strings; sort by actual date, keep newest 120
-    keys.sort((a,b)=>new Date(a)-new Date(b));
-    while(keys.length>120){ const k=keys.shift(); delete log[k]; }
+    // Sort by REAL date (see _auKeyMs) and never drop the day being written to. Both mattered: the old
+    // comparator ordered days arbitrarily, so "keep the newest 120" could evict recent days and keep old
+    // ones, and with no guard the very diary the caller was mid-write on could be deleted underneath it.
+    keys.sort(function(a,b){ return _auKeyMs(a)-_auKeyMs(b); });
+    const today=(typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+    // Compare by PARSED date, not string equality: '10/8/2026' and '10/08/2026' are the same day but
+    // different strings, so a string guard silently stops protecting today the moment any write path
+    // produces an unpadded key. Timestamps cannot drift apart on formatting.
+    const todayMs=_auKeyMs(today);
+    while(keys.length>120){ const k=keys.shift(); if(_auKeyMs(k)!==todayMs) delete log[k]; }
   }catch(_){ }
 }
 function _calEvents(){
@@ -24431,7 +24443,8 @@ function renderTransactions(){
   if(breakdown){
     const byCategory = {};
     thisMonth.filter(t => t.type === 'expense').forEach(t => {
-      byCategory[t.category] = (byCategory[t.category] || 0) + t.amount;
+      const _c = t.category || 'Uncategorised';   // was t.category — an unset one keyed the string "undefined"
+      byCategory[_c] = (byCategory[_c] || 0) + t.amount;
     });
     const cats = Object.entries(byCategory).sort((a,b)=>b[1]-a[1]);
     if(cats.length){
@@ -24458,7 +24471,7 @@ function renderTransactions(){
           const sign = t.type === 'expense' ? '−' : '+';
           const color = t.type === 'expense' ? 'var(--re)' : 'var(--gr)';
           return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--bd);font-size:12px">' +
-            '<div style="flex:1;min-width:0"><div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (t.note || t.category) + '</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + t.date + ' · ' + t.category + '</div></div>' +
+            '<div style="flex:1;min-width:0"><div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(t.note || t.category || 'Transaction') + '</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + t.date + ' · ' + t.category + '</div></div>' +
             '<div style="display:flex;align-items:center;gap:6px"><span style="font-family:DM Mono,monospace;color:' + color + '">' + sign + '$' + t.amount + '</span><button onclick="deleteTransaction(' + t.id + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
           '</div>';
         }).join('');
@@ -25015,7 +25028,7 @@ function renderBudgets(){
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
   const transactions = (ls('totry_transactions') || []).filter(t => t.type === 'expense' && new Date(t.ts).getTime() >= monthStart);
   const spentByCat = {};
-  transactions.forEach(t => { spentByCat[t.category] = (spentByCat[t.category] || 0) + t.amount; });
+  transactions.forEach(t => { const c = t.category || 'Uncategorised'; spentByCat[c] = (spentByCat[c] || 0) + t.amount; });
   
   box.innerHTML = cats.map(cat => {
     const limit = budgets[cat];

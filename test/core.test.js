@@ -193,6 +193,52 @@ H.section('reachability — core actions must have a live entry point');
   H.ok(/if\(!ls\('totry_start'\)\) ls\('totry_start'/.test(html), 'totry_start is written once and never re-stamped');
 }
 
+// ── en-AU DATE KEYS — the silent data-corruption class ───────────────────────────────────────────
+// The food diary is keyed by toLocaleDateString('en-AU'), i.e. d/m/yyyy. new Date() CANNOT parse that:
+// V8 reads it as US m/d/yyyy, so '10/08/2026' (10 August) becomes 8 October, and anything past the 12th
+// ('25/08/2026') is an Invalid Date whose NaN makes a sort comparator return NaN — an arbitrary order,
+// not a stable one. The prune used that comparator to decide which 120 days to KEEP, so it could evict
+// recent days and hold old ones, and on two of three write paths it had no guard on the day being
+// written. These assertions pin the parser and the prune's two guarantees.
+H.section('_auKeyMs + _pruneNutLog — d/m/yyyy keys must not corrupt the diary');
+{
+  const { _auKeyMs, _pruneNutLog } = H.load(['_auKeyMs', '_pruneNutLog'], {
+    nutDayKey: () => '10/08/2026'
+  });
+
+  // the exact case new Date() gets wrong
+  H.eq(_auKeyMs('10/08/2026'), new Date(2026, 7, 10).getTime(), "'10/08/2026' is 10 AUGUST, not 8 October");
+  H.eq(_auKeyMs('25/08/2026'), new Date(2026, 7, 25).getTime(), "'25/08/2026' parses (new Date() gives Invalid)");
+  H.eq(_auKeyMs('1/1/2026'), new Date(2026, 0, 1).getTime(), 'single-digit day and month parse');
+  H.eq(_auKeyMs('rubbish'), 0, 'unparseable key returns 0, never NaN (NaN poisons a sort)');
+  H.eq(_auKeyMs(''), 0, 'empty key returns 0');
+  H.ok(!isNaN(_auKeyMs('99/99/9999')), 'nonsense key still returns a number, not NaN');
+
+  // ordering must be by real date, which lexicographic sorting gets wrong
+  const keys = ['9/12/2026', '10/08/2026', '25/08/2026'];
+  const byReal = keys.slice().sort((a, b) => _auKeyMs(a) - _auKeyMs(b));
+  H.eq(byReal, ['10/08/2026', '25/08/2026', '9/12/2026'], 'sorts Aug 10 < Aug 25 < Dec 9');
+  H.ok(keys.slice().sort()[0] === '10/08/2026' && byReal[2] === '9/12/2026',
+    'plain .sort() disagrees with real order — which is why the naive version was wrong');
+
+  // the prune keeps 120, drops the oldest, and never deletes the day being written
+  const log = {};
+  for (let i = 0; i < 130; i++) {
+    const d = new Date(2026, 7, 10); d.setDate(d.getDate() - i);
+    log[d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear()] = [{ cal: 1 }];
+  }
+  const before = Object.keys(log).length;
+  _pruneNutLog(log);
+  H.eq(before, 130, 'seeded 130 days');
+  H.ok(Object.keys(log).length <= 121, 'pruned to ~120 days (got ' + Object.keys(log).length + ')');
+  H.ok(!!log['10/8/2026'],
+    'TODAY survives the prune even though it was written UNPADDED (10/8) while nutDayKey returns 10/08 — ' +
+    'the guard compares parsed dates, so it cannot be defeated by formatting');
+  // the newest days must be the ones kept
+  H.ok(!!log['9/8/2026'] && !!log['1/8/2026'], 'recent days are kept');
+  H.ok(!log['3/4/2026'], 'the oldest days are the ones dropped');
+}
+
 // ── DEAD ELEMENT REFERENCES — a ratchet on the signature bug class ───────────────────────────────
 // This codebase's dominant failure is code that parses, passes tests and does nothing, and the most
 // common mechanism is a handler poking an id that does not exist. A guarded one (if(el)) is a silent
