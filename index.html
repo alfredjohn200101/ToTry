@@ -4084,6 +4084,10 @@ Amen.</div></div>
       <div class="sos-verse-text" id="sos-verse-text">Loading your verse...</div>
       <div class="sos-verse-ref" id="sos-verse-ref"></div>
     </div>
+    <!-- Read-aloud belongs here more than anywhere else in the app: mid-craving, hands-free, eyes
+         off the screen. The morning verse had these buttons hand-written inline and this one had
+         none, so the verse chosen for the exact temptation could not be heard or kept. -->
+    <div class="verse-tools" id="sos-verse-tools" style="display:none;justify-content:center;margin:-8px 0 18px"></div>
     <div class="sos-breathe-wrap">
       <div class="sos-breathe-circle" id="sos-breathe-circle"></div>
       <div class="sos-breathe-lbl" id="sos-breathe-lbl">Breathe in...</div>
@@ -4382,7 +4386,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v364';
+const APP_VERSION = 'v365';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -6323,7 +6327,17 @@ function brotherSpeaks(moment){
         if(r && r.level && /low|depleted|poor/i.test(r.level)) why = ' You\u2019re running low today \u2014 tired is when the pull wins. ';
         else if(life.fight && life.fight.losses7 > life.fight.wins7) why = ' It\u2019s been a heavy week. ';
       }
-      body = 'That\u2019s '+(d.count||'')+' \u2014 past the '+(d.limit||'line')+' you set.'+why+'No judgment. You set that line for a reason only you know. I\u2019m just checking: are you still in the driver\u2019s seat, or is this the thing taking the wheel?';
+      // Stage of change decides the TONE, not just the card's offer. Prochaska's whole finding is that
+      // action-stage pressure aimed at someone who is merely contemplating backfires \u2014 and the
+      // threshold is the loudest thing the app ever says. viceStageTone() has existed for this and was
+      // never called, so someone who told us "I'm just looking at this honestly" got the same push as
+      // someone who had decided. When they've named a stage, their words lead and we stay quiet after.
+      const _tone = (typeof viceStageTone==='function' && d.vice) ? viceStageTone(d.vice) : '';
+      if(_tone){
+        body = 'That\u2019s '+(d.count||'')+' \u2014 past the '+(d.limit||'line')+' you set.'+why+' '+_tone;
+      } else {
+        body = 'That\u2019s '+(d.count||'')+' \u2014 past the '+(d.limit||'line')+' you set.'+(why||' ')+'No judgment. You set that line for a reason only you know. I\u2019m just checking: are you still in the driver\u2019s seat, or is this the thing taking the wheel?';
+      }
       secondary = 'Talk it through with me'; secondaryAct = 'companion';
     }
     else if(moment.kind === 'calorieOver'){
@@ -11487,6 +11501,14 @@ function goSosP2(){
   const vr=document.getElementById('sos-verse-ref');
   if(vt)vt.textContent='\u201C'+(sosVerseData?.verse || pb.verse)+'\u201D';
   if(vr)vr.textContent='\u2014 '+(sosVerseData?.reference || (pb.verseRef + ' (ESV)'));
+  // Listen / Make a card, now that there is a verse to listen to.
+  try{
+    const vtools=document.getElementById('sos-verse-tools');
+    if(vtools && typeof _verseToolsHTML==='function'){
+      vtools.innerHTML=_verseToolsHTML('sos-verse-text','sos-verse-ref');
+      vtools.style.display='flex';
+    }
+  }catch(_){}
   // Inject the vice-specific science note (why this urge works the way it does) if there's a slot
   const sciEl=document.getElementById('sos-science-note');
   if(sciEl) sciEl.textContent = pb.science;
@@ -30013,7 +30035,16 @@ function _tgtSaveField(which, val){
   const cur=getTGT()||{};
   if(cur[which]===v) return;
   const patch={}; patch[which]=v; saveTGT(patch);
-  try{ renderTGT(); }catch(_){}
+  // Do NOT re-render on every keystroke-or-blur. renderTGT() rebuilds the whole block via innerHTML,
+  // which replaces all three inputs — so tabbing from the first field to the second destroyed the
+  // field you were moving to and dropped focus. Writing three short lines meant tapping six times.
+  // The only structural change is the "Tell them" button appearing once the person field has text,
+  // so re-render only when that condition actually flips.
+  try{
+    const wasTellable = !!(cur.c && String(cur.c).trim());
+    const nowTellable = !!((which==='c' ? v : cur.c) && String(which==='c' ? v : cur.c).trim());
+    if(wasTellable !== nowTellable) renderTGT();
+  }catch(_){}
 }
 function renderTGT(){
   const el=document.getElementById('tgt-body'); if(!el) return;
@@ -30022,7 +30053,8 @@ function renderTGT(){
   const person=(t.person||'').trim();
   const field=function(id,ph,val){
     return '<input type="text" id="'+id+'" maxlength="160" placeholder="'+ph+'" value="'+_escFew(val||'')+'" '+
-      'onchange="_tgtSaveField(\''+id.replace('tgt-','')+'\',this.value)" onblur="_tgtSaveField(\''+id.replace('tgt-','')+'\',this.value)" '+
+      /* onblur alone — onchange also fires on blur for a text input, so both meant a double save. */
+      'onblur="_tgtSaveField(\''+id.replace('tgt-','')+'\',this.value)" '+
       'style="width:100%;margin-bottom:8px;padding:9px 11px;font-size:13px;background:var(--bg3);border:1px solid var(--bd);border-radius:9px;color:var(--tx)">';
   };
   const told = !!t.told;
@@ -32296,8 +32328,13 @@ function _renderShareCanvas(style, theme){
   const todayWorkout=(ls('totry_workouts')||[]).find(w=>w.date===today||new Date(w.ts||'').toLocaleDateString('en-AU')===today);
   const todayWins=(ls('totry_vice_savings_log')||[]).filter(e=>e.date===today).length;
   const longestStreak = vices.length ? Math.max(...vices.map(v => viceCleanDays(v))) : 0;
-  const verse = ls('totry_hdr_verse_text') || ls('totry_last_verse') || '';
-  const verseRef = ls('totry_hdr_verse_ref') || ls('totry_last_verse_ref') || '';
+  // shareVerseFrom() stashes the exact verse the person tapped in window._verseCardOverride, and the
+  // card used to ignore it — so "Make a card" on a mid-craving verse produced a card of whatever
+  // verse happened to be in the header. Honour the override first.
+  const _ov = (typeof window!=='undefined' && window._verseCardOverride) ? window._verseCardOverride : null;
+  const verse = (_ov && _ov.t) || ls('totry_hdr_verse_text') || ls('totry_last_verse') || '';
+  const verseRef = (_ov && _ov.r) || ls('totry_hdr_verse_ref') || ls('totry_last_verse_ref') || '';
+  try{ if(_ov) window._verseCardOverride = null; }catch(_){}   // one card per tap; never leak into the next
 
   const canvas=document.createElement('canvas');
   canvas.width=1080; canvas.height=1080;
@@ -32370,7 +32407,9 @@ function _renderShareCanvas(style, theme){
     ctx.fillText('DAY \u00b7 '+dayCount, 540, y + 54);
   }
   else if(style === 'scripture' && verse){
-    eyebrow('\u00b7 TODAY\u2019S WORD \u00b7', 340);
+    // The shared card is the most public thing this app produces. Hardcoding "TODAY'S WORD" undid the
+    // whole multi-faith backbone on that one artifact \u2014 a Muslim sharing an ayah got a Christian label.
+    eyebrow((typeof verseCardEyebrow==='function') ? verseCardEyebrow() : '\u00b7 TODAY\u2019S WORD \u00b7', 340);
     ctx.fillStyle = C.ink;
     ctx.font = 'italic 300 44px "Cormorant Garamond", Georgia, serif';
     const lines = _wrapText(ctx, '\u201c'+verse+'\u201d', 840);
