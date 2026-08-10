@@ -4452,7 +4452,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v383';
+const APP_VERSION = 'v384';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -15428,7 +15428,18 @@ function stakesForAmount(amount){
       const now=monthlyPaymentRate();
       const strat=ls('totry_debt_strategy')||'snowball';
       const base=projectPayoff(debts, now, strat);
-      const withIt=projectPayoff(debts, now+amount, strat);
+      // A one-off payment is a LUMP SUM off the balance, not a permanent raise in the monthly rate.
+      // This used to pass now+amount, i.e. it modelled paying an extra $50 EVERY MONTH for the rest of
+      // the payoff — so a single $50 was reported as bringing the freedom date months closer. Motivating
+      // and false, on the number the app treats as its most motivating frame. Knock the amount off the
+      // priority debt's balance instead and re-project at the unchanged rate.
+      const _after = (debts||[]).map(function(d){
+        if(d !== debt) return d;
+        const c = Object.assign({}, d);
+        c.p = (parseFloat(c.p)||0) + amount;      // paid-off portion grows by the one-off
+        return c;
+      });
+      const withIt=projectPayoff(_after, now, strat);
       if(base&&withIt&&base.months&&withIt.months&&base.months>withIt.months){
         out.push({icon:'\u{1F513}', text:money(amount)+' straight at your debt brings your freedom date '+(base.months-withIt.months)+' month'+(base.months-withIt.months===1?'':'s')+' closer. Tonight.'});
       } else {
@@ -23076,6 +23087,11 @@ function monthlyReclaimRate(){
       const per=v.costPer||'week';
       if(per==='day') return sum + amt*30.44;
       if(per==='use') return sum + amt*(parseFloat(v.costUses)||7)*(30.44/7);
+      // 'purchase' is a real option in the cost picker and had NO branch here, so it fell through to the
+      // weekly formula: a $120 buy that lasts a month was counted as $120 a WEEK — $521/month instead of
+      // $122, a 4.3x overstatement of what staying clean is giving back. viceSpendPicture() already
+      // models it properly (one buy lasts lastsDays); match it, or the two disagree on screen.
+      if(per==='purchase') return sum + amt*(30.44/Math.max(1, parseFloat(v.lastsDays)||30));
       return sum + amt*(30.44/7);                      // per week
     },0);
   }catch(_){ return 0; }

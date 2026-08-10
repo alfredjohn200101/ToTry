@@ -274,6 +274,52 @@ H.section('FEELINGS — every entry is complete and wired');
   H.ok(/onclick="orbTap\(\)"/.test(html), 'the orb button is wired to orbTap');
 }
 
+// ── MONEY CLAIMS MUST NOT OVERSTATE ──────────────────────────────────────────────────────────────
+// Two separate places told people they were further ahead than they were. Overstating progress on a
+// debt-payoff app is worse than being silent: it is the number someone makes real decisions against.
+H.section('monthlyReclaimRate — per-purchase costs');
+{
+  const { monthlyReclaimRate } = H.load(['monthlyReclaimRate'], {
+    loadV: () => {},
+    vices: [{ n: 'X', costAmount: 120, costPer: 'purchase', lastsDays: 30 }],
+  });
+  // 'purchase' is a real option in the cost picker and had no branch, so it fell through to the WEEKLY
+  // formula: a $120 buy lasting a month was counted as $120 a week.
+  H.approx(monthlyReclaimRate(), 120 * (30.44 / 30), 0.5, 'a $120 buy lasting 30 days is ~$122/month, not $522');
+  H.ok(monthlyReclaimRate() < 200, 'nowhere near the $522 the weekly fall-through produced');
+}
+{
+  const { monthlyReclaimRate } = H.load(['monthlyReclaimRate'], {
+    loadV: () => {}, vices: [{ n: 'Y', costAmount: 20, costPer: 'week' }],
+  });
+  H.approx(monthlyReclaimRate(), 20 * (30.44 / 7), 0.5, 'weekly costs are unchanged');
+}
+{
+  const { monthlyReclaimRate } = H.load(['monthlyReclaimRate'], {
+    loadV: () => {}, vices: [{ n: 'Z', costAmount: 5, costPer: 'day' }],
+  });
+  H.approx(monthlyReclaimRate(), 5 * 30.44, 0.5, 'daily costs are unchanged');
+}
+
+H.section('projectPayoff — a one-off payment is a lump sum, not a raise');
+{
+  const { projectPayoff } = H.load(
+    ['projectPayoff', '_sortDebtsByStrategy', '_debtBalance', '_debtMonthlyRate'], { ls: () => null });
+  const debts = [{ n: 'Card', t: 5000, p: 1000, interest: 20 }];
+  const rate = 300;
+  const base = projectPayoff(debts, rate, 'snowball');
+  // the bug: adding a one-off amount to the MONTHLY RATE models paying it every month, forever
+  const asRaise = projectPayoff(debts, rate + 50, 'snowball');
+  // the truth: a single $50 comes off the balance once
+  const asLump = projectPayoff(debts.map(d => Object.assign({}, d, { p: d.p + 50 })), rate, 'snowball');
+  H.ok(base && base.months > 0, 'a baseline payoff projects');
+  H.ok(asLump.months >= asRaise.months,
+    'a one-off saves NO MORE than paying that amount every month (lump ' + asLump.months +
+    ' vs raise ' + asRaise.months + ' months)');
+  H.ok((base.months - asLump.months) < (base.months - asRaise.months),
+    'the honest saving is smaller than the overstated one — the app claimed ~3x the real benefit');
+}
+
 // ── CROSS-DEVICE MERGE — which keys union, and which must not ────────────────────────────────────
 // pullFromCloud unions the keys in its ARR list and falls through to "newer scalar wins" for everything
 // else, which silently discards the other device's copy. A two-phone test found a win logged on phone B
