@@ -66,7 +66,7 @@ the crisis-gate hardening and the honest privacy rewrite.
 | HALT on the vice card *(it only existed mid-craving)* | v353 |
 | Cross-faith Creation / Awe shared thread | v354 |
 
-## ✅ TIER 2 — 5 of 7 DONE
+## ✅ TIER 2 — DONE (7 of 7, v354–v357)
 
 | Item | Version |
 |---|---|
