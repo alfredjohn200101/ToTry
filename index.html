@@ -4400,7 +4400,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v372';
+const APP_VERSION = 'v373';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5877,6 +5877,19 @@ async function checkAuthAndStart(){
         if(ls('totry_google_token') && typeof syncGoogleHealth==='function') syncGoogleHealth();
         if(ls('totry_hevy_api_key') && typeof syncHevyWorkouts==='function') syncHevyWorkouts();
       }, 3000);
+    } else if(ls('totry_guest')){
+      // A GUEST COMING BACK. There was no branch for this at all: no Supabase session meant "show the
+      // sign-up wall", so anyone who came in through "Something's pulling at me right now — no account,
+      // no setup, just help" was met on their NEXT open with "Welcome. Enter your email to begin." Their
+      // vices, journal and everything else were sitting in local storage the whole time, invisible behind
+      // an account request. That door exists for someone in a hard moment; asking them to register to get
+      // back to what they wrote is the worst possible second impression. initApp() never ran for them
+      // either, so migrations, faith labels and the receptivity bookkeeping were all skipped.
+      document.getElementById('auth-container').style.display = 'none';
+      const _ob=document.getElementById('onboard');
+      if(_ob){ _ob.classList.remove('active'); _ob.style.display='none'; }
+      document.querySelectorAll('.app').forEach(function(a){ a.classList.add('app-ready'); });
+      if(typeof initApp === 'function') await initApp();
     } else {
       // Not logged in - show auth
       document.getElementById('auth-container').style.display = 'flex';
@@ -39171,12 +39184,16 @@ if(typeof go==='function'){
 // ── HOOK INTO initApp ─────────────────────────────────────────
 if(typeof initApp==='function'){
   const _origInitApp=initApp;
-  window.initApp=function(){
-    _origInitApp();
-    renderIdentity();
-    renderSeasonBadge();
-    renderDualStreaks();
-    applySabbathMode();
+  // initApp is async. This used to call it WITHOUT awaiting, then immediately run the four renderers
+  // below — so they read state the original had not finished assembling yet, and every caller that does
+  // `await initApp()` was really only awaiting the wrapper. Await it, and keep the wrapper async so the
+  // boot paths that await it still get a settled app.
+  window.initApp=async function(){
+    try{ await _origInitApp(); }catch(e){ console.warn('[initApp]', e); }
+    try{ renderIdentity(); }catch(_){}
+    try{ renderSeasonBadge(); }catch(_){}
+    try{ renderDualStreaks(); }catch(_){}
+    try{ applySabbathMode(); }catch(_){}
     setTimeout(maybeShowCheckin,2000);
   };
 }

@@ -171,6 +171,22 @@ H.section('reachability — core actions must have a live entry point');
   H.ok(/onclick="openAddHabit\(\)"/.test(html), 'the empty state offers a live "add your first habit" control');
   H.ok(html.indexOf("getElementById('new-habit')") < 0, 'addHabit no longer reads the non-existent #new-habit');
 
+  // A GUEST WHO RELOADS must land in the app, not on the sign-up wall. checkAuthAndStart had no guest
+  // branch at all: no Supabase session meant "show auth", so anyone who came in through the no-account
+  // crisis door ("just help, right now") was met next time with "Enter your email to begin" while all
+  // their data sat in local storage behind it — and initApp() never ran for them, so migrations, faith
+  // labels and the receptivity bookkeeping were skipped too.
+  H.ok(/else if\(ls\('totry_guest'\)\)/.test(html), 'checkAuthAndStart has a returning-guest branch');
+  {
+    const i = html.indexOf("async function checkAuthAndStart");
+    const body = html.slice(i, i + 4000);
+    const g = body.indexOf("else if(ls('totry_guest'))");
+    H.ok(g > 0, 'the guest branch lives inside checkAuthAndStart');
+    H.ok(body.slice(g, g + 900).indexOf('initApp') > 0, 'the guest branch runs initApp');
+  }
+  // The initApp wrapper must await the original, or its follow-up renderers read half-built state.
+  H.ok(/await _origInitApp\(\)/.test(html), 'the initApp wrapper awaits the original');
+
   // The onboarding boot gate must key on the flag finishOnboard actually writes, or fast-path users
   // are thrown back into onboarding forever and their day count resets to 1 on every pass.
   H.ok(/isOnboarded\s*\|\|/.test(html), 'boot gate consults totry_onboarded, not just identity+name');
