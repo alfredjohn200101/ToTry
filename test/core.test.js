@@ -239,6 +239,41 @@ H.section('_auKeyMs + _pruneNutLog — d/m/yyyy keys must not corrupt the diary'
   H.ok(!log['3/4/2026'], 'the oldest days are the ones dropped');
 }
 
+// ── THE FEELING DOOR — every feeling must lead somewhere ─────────────────────────────────────────
+// This is the app's primary action and its whole thesis: you open it because you FEEL something, and it
+// must move you THROUGH the feeling to one real thing rather than showing sympathetic text and stopping.
+// All ten paths were walked live as a brand-new user with zero data — no vices, no "few", no saved plans —
+// and each gave a first action matched to the feeling, an exit, and no dead handlers. These assertions
+// stop a future feeling being added without somewhere to go.
+H.section('FEELINGS — every entry is complete and wired');
+{
+  const fs = require('fs');
+  const path = require('path');
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  const i = html.indexOf('const FEELINGS');
+  H.ok(i > 0, 'the FEELINGS registry exists');
+  const block = html.slice(i, html.indexOf('\n];', i));
+
+  const ids = [...block.matchAll(/\{\s*id:\s*'([a-z]+)'/g)].map(m => m[1]);
+  H.ok(ids.length >= 10, 'at least ten feelings are offered (found ' + ids.length + ')');
+
+  // Every entry needs a label, a sub, and an act() — an entry without act() renders a chip that does nothing.
+  const entries = block.split(/\{\s*id:/).slice(1);
+  H.eq(entries.length, ids.length, 'every entry parsed');
+  entries.forEach((e, n) => {
+    H.ok(/label:\s*'/.test(e), 'feeling ' + ids[n] + ' has a label');
+    H.ok(/sub:\s*'/.test(e), 'feeling ' + ids[n] + ' has a sub-label');
+    H.ok(/act:\s*(\(\)|function)/.test(e), 'feeling ' + ids[n] + ' has an act() — a chip with no action is a dead end');
+  });
+
+  // The door itself must be reachable from the orb, and the orb must open the DOOR (not the coach).
+  H.ok(/function orbTap\(\)/.test(html), 'orbTap exists');
+  const orb = html.slice(html.indexOf('function orbTap()'), html.indexOf('function orbTap()') + 700);
+  H.ok(orb.indexOf('openFeelingDoor') > 0, 'the orb opens the Feeling Door, not the coach');
+  H.ok(/onclick="orbTap\(\)"/.test(html), 'the orb button is wired to orbTap');
+}
+
 // ── CROSS-DEVICE MERGE — which keys union, and which must not ────────────────────────────────────
 // pullFromCloud unions the keys in its ARR list and falls through to "newer scalar wins" for everything
 // else, which silently discards the other device's copy. A two-phone test found a win logged on phone B

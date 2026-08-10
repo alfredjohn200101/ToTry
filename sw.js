@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v380-touch'
+const CACHE = 'totry-v381-safety-xss'
 
 const CORE = [
   './',

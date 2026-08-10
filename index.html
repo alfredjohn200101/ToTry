@@ -116,7 +116,7 @@ button:focus:not(:focus-visible){outline:none}
 .nav::-webkit-scrollbar{display:none}
 .nb{flex:1;min-width:46px;padding:8px 2px 6px;background:none;border:none;border-top:1.5px solid transparent;color:var(--tx3);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:'Outfit',sans-serif;transition:color 0.15s}
 .nb svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-.nb span{font-size:7px;letter-spacing:0.08em;text-transform:uppercase;font-weight:500}
+.nb span{font-size:10px;letter-spacing:0.06em;text-transform:uppercase;font-weight:500}
 .nb.active{color:var(--go);border-top-color:var(--go)}
 .tabs{flex:1;overflow:hidden;order:2}
 .tab{display:none;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px calc(var(--sb) + 120px);scrollbar-width:thin;scrollbar-color:var(--bg4) transparent}
@@ -886,7 +886,6 @@ input:focus, textarea:focus, select:focus{outline:none;border-color:var(--go);bo
   .vice-card,.sos-coach-box,.prayer-box,.bible-chapter-display,.nutrition-hero{padding:14px}
   .hub-card{padding:14px}
   /* Nav labels can get tight — ease the font a touch */
-  .nb span{font-size:9px}
   /* Big display numerals (day count, share preview) shouldn't overflow narrow screens */
   .day-num-big,.hero-day{font-size:clamp(40px,16vw,64px)}
   /* Macro/stat grids: keep them readable, allow wrap */
@@ -897,7 +896,6 @@ input:focus, textarea:focus, select:focus{outline:none;border-color:var(--go);bo
 @media(max-width:340px){
   .tab{padding:11px 10px calc(var(--sb) + 112px)}
   .card{padding:12px 11px}
-  .nb span{font-size:8px}
   .btn{font-size:13px}
 }
 
@@ -4454,7 +4452,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v380';
+const APP_VERSION = 'v381';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5142,13 +5140,15 @@ async function loadPendingSubmissions(){
     if(!data || !data.length){ body.innerHTML = '<div style="font-size:12px;color:var(--tx3);text-align:center;padding:14px">Nothing pending. \u2713</div>'; return; }
     body.innerHTML = data.map(row => {
       let d = row.data; if(typeof d === 'string'){ try{ d = JSON.parse(d); }catch(_){ d = {}; } }
+      // Every component is another user's text — escape each BEFORE joining. This blob arrives from a
+      // table any signed-in person can write to, and it renders in the reviewer's own session.
       const meta = row.kind === 'exercise'
-        ? [d.bodyPart, d.equipment, d.tracking].filter(Boolean).join(' \u00b7 ')
-        : [d.brand, d.serving, (d.cal!=null?d.cal+' cal':''), (d.pro!=null?d.pro+'g P':'')].filter(Boolean).join(' \u00b7 ');
+        ? [d.bodyPart, d.equipment, d.tracking].filter(Boolean).map(_escFew).join(' \u00b7 ')
+        : [d.brand, d.serving, (d.cal!=null?d.cal+' cal':''), (d.pro!=null?d.pro+'g P':'')].filter(Boolean).map(_escFew).join(' \u00b7 ');
       const vTag = row.verified ? '<span class="src-tag" style="color:var(--gr);margin-left:6px">VERIFIED</span>' : '';
       return '<div style="border:1px solid var(--bd);border-radius:10px;padding:11px 12px;margin-bottom:8px">'+
         '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><span style="font-size:8px;color:var(--tx3);font-family:DM Mono,monospace;text-transform:uppercase">'+row.kind+'</span>'+vTag+'</div>'+
-        '<div style="font-size:14px;color:var(--tx);margin-bottom:2px">'+String(row.name||'').replace(/</g,'&lt;')+'</div>'+
+        '<div style="font-size:14px;color:var(--tx);margin-bottom:2px">'+_escFew(row.name||'')+'</div>'+
         '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">'+(meta||'\u2014')+'</div>'+
         '<div style="display:flex;gap:8px">'+
           '<button class="btn primary" style="flex:1;font-size:12px;padding:8px" onclick="approveSubmission('+row.id+')">Approve</button>'+
@@ -18942,7 +18942,7 @@ function _makeFoodResultRow(food){
   el.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:8px';
   const tap=document.createElement('div');
   tap.style.cssText='flex:1;cursor:pointer;min-width:0';
-  tap.innerHTML='<div class="fr-name">'+food.name+'</div>'+(food.brand?'<div class="fr-brand">'+food.brand+'</div>':'')+
+  tap.innerHTML='<div class="fr-name">'+_escFew(food.name)+'</div>'+(food.brand?'<div class="fr-brand">'+_escFew(food.brand)+'</div>':'')+
     '<div class="fr-macros"><span class="fr-cal">'+food.cal+' cal</span><span>P: '+food.pro+'g</span><span>C: '+food.carb+'g</span><span>F: '+food.fat+'g</span>'+_foodSrcBadge(food.source)+'</div>';
   tap.onclick=()=>openServingModal(food);
   el.appendChild(tap);
@@ -21485,7 +21485,7 @@ function renderNutritionLog(){
       mealEntries.forEach(en => {
         const row=document.createElement('div');
         row.className='food-log-item';
-        row.innerHTML='<div style="min-width:0;flex:1"><div class="fli-name">'+en.name+'</div>'+((en.serving||en.qty)?'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3)">'+(en.serving||'serving')+(en.qty?(' \u00d7 '+en.qty):'')+'</div>':'')+'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3);margin-top:2px">P '+(Math.round((en.pro||0)*10)/10)+'g \u00b7 C '+(Math.round((en.carb||0)*10)/10)+'g \u00b7 F '+(Math.round((en.fat||0)*10)/10)+'g</div></div><div style="display:flex;align-items:center;gap:6px"><span class="fli-cal">'+en.cal+' cal</span><button class="fli-del" style="font-size:14px;color:var(--tx3)" onclick="editFoodEntry(\''+today+'\','+en.id+')" title="Edit">✎</button><button class="fli-del" onclick="deleteFoodEntry(\''+today+'\','+en.id+')" aria-label="Close">&#215;</button></div>';
+        row.innerHTML='<div style="min-width:0;flex:1"><div class="fli-name">'+_escFew(en.name)+'</div>'+((en.serving||en.qty)?'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3)">'+_escFew(en.serving||'serving')+(en.qty?(' \u00d7 '+en.qty):'')+'</div>':'')+'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3);margin-top:2px">P '+(Math.round((en.pro||0)*10)/10)+'g \u00b7 C '+(Math.round((en.carb||0)*10)/10)+'g \u00b7 F '+(Math.round((en.fat||0)*10)/10)+'g</div></div><div style="display:flex;align-items:center;gap:6px"><span class="fli-cal">'+en.cal+' cal</span><button class="fli-del" style="font-size:14px;color:var(--tx3)" onclick="editFoodEntry(\''+today+'\','+en.id+')" title="Edit">✎</button><button class="fli-del" onclick="deleteFoodEntry(\''+today+'\','+en.id+')" aria-label="Close">&#215;</button></div>';
         // NUMBERS OFF — strip the calorie figure and the macro breakdown from the row. What you ate
         // still shows (that IS the log, and the whole-life counsel still uses it); what it "cost" doesn't.
         if(_gentleOn){
@@ -21800,14 +21800,23 @@ function macrosForCalories(cal, opts){
 function _goalDir(){
   return String(ls('totry_calorie_goal_type') || (ls('totry_tdee_data')||{}).goal || ls('totry_goal_intent') || 'maintain').toLowerCase();
 }
+// THE ED-SAFE FLOOR, in one place. It existed only inside goalAdjustedTarget(), and calcTDEE() — the
+// primary, most-discoverable path, the "Calculate my targets" button — rolled its own targets table with
+// no floor at all and SAVED the result. A 22-year-old woman at 48kg/158cm, sedentary, choosing "lose fat"
+// got a persisted target of 936 cal/day (BMR 1196, TDEE 1436, minus 500), while the adaptive path would
+// have clamped the same person to 1200. Two derivations of the same number, and the unsafe one was the
+// one people actually reach. On an app for people rebuilding their relationship with food, that is not a
+// rounding error — it is the app prescribing a deficit it explicitly promises never to prescribe.
+function _calFloor(){
+  try{ return (typeof userSex==='function' && userSex()==='female') ? 1200 : 1500; }catch(_){ return 1200; }
+}
 function goalAdjustedTarget(maintenance){
   const gi = _goalDir();
   let cal = maintenance, proPerKg = 1.8, label = 'maintenance', verb = 'holding steady';
   if(/lose|cut|lean|deficit|fat/.test(gi)){ cal = maintenance - 500; proPerKg = 2.2; label = 'fat-loss target'; verb = 'leaning down'; }
   else if(/gain|build|bulk|surplus|muscle/.test(gi)){ cal = maintenance + 300; proPerKg = 2.4; label = 'muscle-gain target'; verb = 'building'; }
-  // ED-safe floor — never prescribe a reckless deficit.
-  const floor = (typeof userSex==='function' && userSex()==='female') ? 1200 : 1500;
-  cal = Math.max(cal, floor);
+  // ED-safe floor — never prescribe a reckless deficit. (see _calFloor)
+  cal = Math.max(cal, _calFloor());
   return { cal: Math.round(cal), proPerKg, label, verb, isAdjusted: cal !== Math.round(maintenance) };
 }
 // ── CALORIE / CARB CYCLING (the Train×Nourish squeeze #1) ───────────────────────────────────────
@@ -23177,7 +23186,7 @@ function renderFinance(){
       (d.due?'<span class="dr-date">Due: '+d.due+'</span>':'')+
       '<div class="bar-wrap"><div class="bar" style="width:'+pct+'%"></div></div>'+
       '<div class="dr-meta"><span class="dr-paid">$'+Math.round(d.p).toLocaleString()+' paid ('+pct+'%)</span><span>Tap to log payment</span></div>';
-    item.onclick=()=>{openFormModal('Log a payment','Payment toward '+d.n+'.',[{id:'amt',label:'Amount',type:'number',prefix:'$',placeholder:'e.g. 200'}],'Log payment',(vals)=>{const a=parseFloat(vals.amt);if(isNaN(a)||a<=0)return 'Enter an amount greater than 0.';loadF();debts[d.idx].p=Math.min(debts[d.idx].p+a,debts[d.idx].t);saveF();const payments=ls('totry_payments')||[];payments.push({amt:a,date:new Date().toISOString(),debt:d.n});ls('totry_payments',payments.slice(-24));if(typeof syncToCloud==='function')syncToCloud();renderFinance();calcDebtFreeDate();checkMilestones();return true;});};
+    item.onclick=()=>{openFormModal('Log a payment','Payment toward '+d.n+'.',[{id:'amt',label:'Amount',type:'number',prefix:'$',placeholder:'e.g. 200'}],'Log payment',(vals)=>{const a=parseFloat(vals.amt);if(isNaN(a)||a<=0)return 'Enter an amount greater than 0.';loadF();debts[d.idx].p=Math.min(debts[d.idx].p+a,debts[d.idx].t);saveF();const payments=ls('totry_payments')||[];payments.push({amt:a,ts:new Date().toISOString(),date:new Date().toISOString(),debt:d.n});ls('totry_payments',payments.slice(-200));if(typeof syncToCloud==='function')syncToCloud();renderFinance();calcDebtFreeDate();checkMilestones();return true;});};
     dl.appendChild(item);
   });
   calcDebtFreeDate();
@@ -25214,10 +25223,13 @@ function totalMonthlyInterest(list){
 }
 // Real monthly payment rate from dated history (fixes "every payment = one month").
 function monthlyPaymentRate(){
-  const pays=(ls('totry_payments')||[]).filter(p=>p&&(parseFloat(p.amt)||0)>0&&p.ts)
-    .sort((a,b)=>new Date(a.ts)-new Date(b.ts));
+  // Accept `date` as well as `ts`: the main logging path wrote only `date` for a long time, so requiring
+  // ts made every one of those payments invisible and this function returned null forever.
+  const _T=p=>new Date(p.ts||p.date);
+  const pays=(ls('totry_payments')||[]).filter(p=>p&&(parseFloat(p.amt)||0)>0&&(p.ts||p.date))
+    .sort((a,b)=>_T(a)-_T(b));
   if(pays.length<2) return null;
-  const spanDays=(new Date(pays[pays.length-1].ts)-new Date(pays[0].ts))/86400000;
+  const spanDays=(_T(pays[pays.length-1])-_T(pays[0]))/86400000;
   const months=Math.max(1, spanDays/30.44);           // never claim a rate faster than monthly
   const total=pays.reduce((a,p)=>a+(parseFloat(p.amt)||0),0);
   return total/months;
@@ -27262,8 +27274,11 @@ async function searchExercises(query){
     el.className='ex-result';
     const srcTag = ex.source==='Custom' ? '<span class="src-tag" style="color:var(--go);margin-left:6px">CUSTOM</span>'
       : ex.source==='Community' ? '<span class="src-tag" style="margin-left:6px">COMMUNITY</span>' : '';
-    const meta=[ex.bodyPart,ex.equipment,ex.primary,ex.secondary].filter(Boolean).join(' \u00b7 ');
-    el.innerHTML='<div class="ex-name">'+ex.name+srcTag+'</div><div class="ex-meta">'+meta+'</div>';
+    // ex can come from three untrusted places: the community library (any signed-in user can write to
+    // it), a third-party exercise API, and raw AI output from the api() call in this same flow. Escape
+    // every field. Once an item is approved this list renders for EVERY user, not just the reviewer.
+    const meta=[ex.bodyPart,ex.equipment,ex.primary,ex.secondary].filter(Boolean).map(_escFew).join(' \u00b7 ');
+    el.innerHTML='<div class="ex-name">'+_escFew(ex.name)+srcTag+'</div><div class="ex-meta">'+meta+'</div>';
     el.onclick=()=>addExerciseToSession(ex);
     res.appendChild(el);
   });
@@ -33366,7 +33381,7 @@ function loadDemoData(){
   ls('totry_height', 180);
   // Money — debt shrinking, net worth climbing, family target met, honest poker
   ls('totry_f',{d:[{n:'Credit card',t:4000,p:2600,due:''},{n:'Car loan',t:12000,p:5200,due:''}], u:0, i:0});
-  ls('totry_payments',[{amt:300,date:iso(dayAgo(5)),debt:'Credit card'},{amt:250,date:iso(dayAgo(20)),debt:'Car loan'}]);
+  ls('totry_payments',[{amt:300,ts:iso(dayAgo(5)),date:iso(dayAgo(5)),debt:'Credit card'},{amt:250,ts:iso(dayAgo(20)),date:iso(dayAgo(20)),debt:'Car loan'},{amt:300,ts:iso(dayAgo(35)),date:iso(dayAgo(35)),debt:'Credit card'}]);
   ls('totry_bills',[{id:1,name:'Rent',amount:1800,due:iso(dayAgo(-9)),paid:false},{id:2,name:'Gym',amount:60,due:iso(dayAgo(-3)),paid:false}]);
   ls('totry_budgets',{'Food':600,'Going out':300});
   ls('totry_assets',[{id:1,name:'Savings',value:8400},{id:2,name:'Super',value:21000},{id:3,name:'Car',value:9000}]);
@@ -34795,6 +34810,12 @@ function calcTDEE(){
     gain: {cal:tdee+300, pro:Math.round(weight*2.4), label:'Muscle gain (+300 cal surplus)'},
   };
   const t=targets[goal];
+  // Apply the SAME floor the adaptive path applies. Without this, calcTDEE persisted a sub-floor deficit
+  // to totry_nut_goals and totry_nut_macros and nothing ever corrected it.
+  try{
+    const _fl=_calFloor();
+    if(t && t.cal > 0 && t.cal < _fl){ t.cal = _fl; t.label = (t.label||'') + ' \u2014 held at a safe floor'; }
+  }catch(_){}
   
   // Save TDEE inputs so PT layer can adjust later
   ls('totry_tdee_data', {age, weight, height, sex, activity, goal, tdee, ts: new Date().toISOString()});
@@ -34864,7 +34885,7 @@ function calcTDEE(){
   renderNutritionLog();
   haptic('success');
   // Same duty-of-care check as the manual goal path
-  if(t.cal > 0 && t.cal < 1200){
+  if(t.cal > 0 && t.cal <= _calFloor()){   // was a hardcoded 1200 — a man below his own 1500 floor got no warning at all
     setTimeout(() => { if(typeof showLowCalorieCare==='function') showLowCalorieCare(); }, 600);
   }
 }
