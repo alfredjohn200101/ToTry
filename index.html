@@ -1457,6 +1457,11 @@ input:focus,textarea:focus,select:focus{
       <div class="hc-title" id="soul-book-title">Bible</div>
       <div class="hc-desc" id="soul-book-desc">A verse for whatever you're facing, a full reader, and verses saved for the road.</div>
     </div>
+    <div class="hub-card wide" id="soul-plans-card" onclick="openPlans()">
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      <div class="hc-title">Reading plans</div>
+      <div class="hc-desc" id="soul-plans-desc">Don’t know where to read? Take a short plan — fear, the pull, starting again. Five to seven days, finishable.</div>
+    </div>
     <div class="hub-card wide" id="soul-today-card" onclick="openTodayAnchor()">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
       <div class="hc-title" id="soul-today-title">Today in the Church</div>
@@ -1519,6 +1524,13 @@ input:focus,textarea:focus,select:focus{
 </div>
 
 <!-- ═══════════════════════════════════════════════════ -->
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- TAB: PLANS — short guided reading plans, written once per tradition. No streaks, no percentage. -->
+<!-- ═══════════════════════════════════════════════════ -->
+<div id="tab-plans" class="tab">
+  <div style="margin-bottom:12px"><button class="btn" onclick="go('soul')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px;padding:8px 12px">&lsaquo; Soul</button></div>
+  <div id="plans-content"></div>
+</div>
 <!-- TAB: SHARED THREADS — how the traditions echo each other on the same human struggle (peace, not sameness) -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-threads" class="tab">
@@ -4358,7 +4370,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v355';
+const APP_VERSION = 'v356';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4712,6 +4724,8 @@ const SYNC_KEYS = [
   'totry_tgt',
   // Dismissed subscription suggestions + the last 'on this day' entry shown.
   'totry_sub_dismissed','totry_otd_seen',
+  // Where you are in each reading plan. A position, never a score.
+  'totry_read_plans',
   // v344 — the first felt moment, and the receptivity gate under the reach-out.
   'totry_first_moment','totry_quiet_hours','totry_reachout_log','totry_reachout_state','totry_last_active_ts'
 ];
@@ -8208,6 +8222,8 @@ function applyFaithLabels(){
       buddhism:'The classic practice \u2014 self, a loved one, a stranger, a difficult person, all beings. Ends by naming one to actually go to.',
       secular:'Deliberately wish one person well, then widen \u2014 yourself, someone you love, a stranger, someone difficult, everyone. Ends with one to actually go to.'
     };
+    const _pl=(typeof planLastLine==='function')?planLastLine():'';
+    set('soul-plans-desc','Don\u2019t know where to read? Take a short plan \u2014 fear, the pull, starting again. Five to seven days '+(t==='secular'?'with the Stoics':'in '+f.bookName)+', finishable.'+(_pl?' \u00B7 '+_pl:''));
     set('soul-bless-title', blessT[t]||blessT.christianity);
     const _bl=(typeof blessLastLine==='function')?blessLastLine():'';
     set('soul-bless-desc', (blessD[t]||blessD.christianity)+(_bl?' \u00B7 '+_bl:''));
@@ -8281,6 +8297,7 @@ async function _readQuranInit(sel,content){
   let surahs=window.__quranSurahs;
   if(!surahs){ try{ const r=await fetch('https://api.alquran.cloud/v1/surah'); const j=await r.json(); surahs=(j&&j.data)||null; window.__quranSurahs=surahs; }catch(e){ surahs=null; } }
   let start=1; try{ if(typeof getDayCount==='function'){ start=(getDayCount()%20)+1; } }catch(_){ }
+  try{ if(window.__quranJump){ start=window.__quranJump; window.__quranJump=0; } }catch(_){ }
   if(sel){ sel.innerHTML = surahs ? '<select id="quran-surah" onchange="_readQuranLoad(this.value)" style="'+_selStyle()+'">'+surahs.map(s=>'<option value="'+s.number+'"'+(s.number===start?' selected':'')+'>'+s.number+'. '+s.englishName+'</option>').join('')+'</select>' : ''; }
   _readQuranLoad(String(start));
 }
@@ -8484,6 +8501,292 @@ const SHARED_THREADS = [
     secular:{t:'Some things are within our power, and some are not.',r:'Epictetus'} } },
 ];
 const _THREAD_LABELS={christianity:'Christianity',islam:'Islam',hinduism:'Hinduism',buddhism:'Buddhism',secular:'Stoic & secular'};
+// ── GUIDED READING PLANS ──────────────────────────────────────────────────────
+// Short, finishable plans (5–7 days) on what this app actually meets people in. Each plan is
+// written FIVE TIMES — once per tradition, in that tradition's own register, with references
+// checked one by one. Not Christian plans with the deity swapped. All passage text is bundled,
+// so a plan works with no signal; the live Qur'an/Gita readers are an optional deeper look.
+// Day shape: {r:reference, t:passage, w:reflection (the app's voice), q:one small question}.
+// To add a plan: append an object of this shape. Nothing else needs to change.
+const READING_PLANS = [
+{ id:'fear', title:'When fear has you', short:'fear', sub:'7 days · anxiety, dread, the thing you keep turning over at 2am.', days:{
+ christianity:[
+  {r:'Philippians 4:6-7',t:'Do not be anxious about anything, but in everything by prayer and supplication with thanksgiving let your requests be made known to God. And the peace of God, which surpasses all understanding, will guard your hearts and your minds.',w:'Notice what Paul doesn’t say. He doesn’t say stop being anxious — he says hand it over, item by item, out loud. And the promise isn’t that the situation resolves; it’s that something stands guard over your mind while it’s still unresolved.',q:'Name the one thing, in plain words, as if you were saying it to God.'},
+  {r:'Psalm 23:4',t:'Even though I walk through the valley of the shadow of death, I will fear no evil, for you are with me; your rod and your staff, they comfort me.',w:'Through the valley. Not around it. The psalm never promises the road avoids the dark place — it promises company inside it.',q:'What are you hoping to be rescued out of, that you may instead be walked through?'},
+  {r:'Matthew 6:34',t:'Therefore do not be anxious about tomorrow, for tomorrow will be anxious for itself. Sufficient for the day is its own trouble.',w:'Almost all anxiety is time travel. Christ hands you a boundary you’re allowed to keep: today has enough in it. Tomorrow’s weight isn’t yours yet, and grace is issued daily, not in advance.',q:'What’s on today’s list that actually belongs to tomorrow? Put it down.'},
+  {r:'1 Peter 5:6-7',t:'Humble yourselves, therefore, under the mighty hand of God, casting all your anxieties on him, because he cares for you.',w:'Cast is a violent word — you throw it, you don’t set it down politely. And the reason given isn’t that your worry is silly. The reason is that he cares.',q:'What would you have to stop holding for this to be a handover and not a loan?'},
+  {r:'Isaiah 41:10',t:'Fear not, for I am with you; be not dismayed, for I am your God; I will strengthen you, I will help you, I will uphold you with my righteous right hand.',w:'Four promises, all future tense: strengthen, help, uphold. God isn’t asking you to feel brave first. He’s telling you what he’ll be doing while you’re still afraid.',q:'Read it once more, slowly, with your own name after “fear not”.'},
+  {r:'Mark 4:38-40',t:'Teacher, do you not care that we are perishing? … And he said to them, Why are you so afraid? Have you still no faith?',w:'They weren’t wrong that the boat was filling. They were wrong that they were alone in it. And notice he was asleep in the storm — the danger was real and he was still at rest.',q:'What are you convinced God has slept through?'},
+  {r:'2 Timothy 1:7',t:'For God gave us a spirit not of fear but of power and love and self-control.',w:'Fear shrinks a life down to self-protection. What you were given instead is outward-facing: power to act, love to spend, self-control to hold a line. That’s the test of whether fear is running you — has it made you smaller?',q:'One thing fear has made you avoid this week. Do the smallest version of it today.'}],
+ islam:[
+  {r:'Qur’an 2:286',t:'Allah does not charge a soul except with that within its capacity.',w:'Read it as a promise about the load, not about the ease. Whatever has been placed on you was measured against what you were given to carry — the fear says otherwise, and the ayah answers it directly.',q:'What are you afraid you cannot carry? Say the ayah over it.'},
+  {r:'Qur’an 13:28',t:'Those who have believed, and whose hearts are assured by the remembrance of Allah. Verily, in the remembrance of Allah do hearts find rest.',w:'The ayah names a mechanism, not a mood: dhikr settles the heart. It doesn’t say the fear is unfounded — it says there’s a place the heart goes and is quiet.',q:'One minute, SubhanAllah on the breath. Where is your heart after?'},
+  {r:'Qur’an 94:5-6',t:'For indeed, with hardship will be ease. Indeed, with hardship will be ease.',w:'Said twice, which is emphasis, not repetition. And the word is with, not after — the ease is bound up inside the hardship, not waiting on the far side of it.',q:'Where is the ease already sitting inside this hard thing, if you look honestly?'},
+  {r:'Qur’an 3:173',t:'Sufficient for us is Allah, and He is the best disposer of affairs.',w:'This was said by people who had just been told an army was gathering against them. It isn’t a denial of the threat; it’s a decision about where the outcome sits. What you can’t control has an Owner.',q:'What is the one part of this that is yours to do? Do that; hand the rest over.'},
+  {r:'Qur’an 9:40',t:'Do not grieve; indeed, Allah is with us.',w:'Spoken in a cave, hidden, with the pursuers close enough to hear. The comfort wasn’t that they were safe — it was Who was with them in the narrow place.',q:'Where is your narrow place right now? Who is in it with you?'},
+  {r:'Qur’an 20:46',t:'Fear not. Indeed, I am with you both; I hear and I see.',w:'Musa was sent to a tyrant and said plainly that he was afraid. The answer wasn’t “you are strong” — it was I hear, I see. Being heard and seen by Allah changes the size of the thing in front of you.',q:'Say the fear out loud in du’a, unedited. You are heard.'},
+  {r:'Qur’an 65:3',t:'And whoever relies upon Allah — then He is sufficient for him.',w:'Tawakkul isn’t passivity; the camel is still tied. It’s doing your part and then refusing to carry the outcome, which was never your part.',q:'Name one thing you’ll do today, and one thing you’ll stop rehearsing.'}],
+ hinduism:[
+  {r:'Bhagavad Gita 2.11',t:'You grieve for those who should not be grieved for. The wise mourn neither for the living nor for the dead.',w:'Krishna doesn’t begin by comforting Arjuna — he begins by widening his view. Fear takes a slice of time and treats it as the whole. From the larger frame, most of what panics you is a change of form, not an ending.',q:'What are you treating as final that is actually a change?'},
+  {r:'Bhagavad Gita 2.14',t:'The contacts of the senses with their objects give rise to cold and heat, pleasure and pain. They come and go; they are impermanent. Bear them patiently.',w:'Fear promises permanence. The Gita just reports the physics: sensation arrives, sensation leaves. Titikshasva — bear it — isn’t grim endurance; it’s discovering that you are the one watching the weather, not the weather.',q:'Time the feeling. How long does the sharpest part actually last?'},
+  {r:'Bhagavad Gita 6.35',t:'The mind is restless and hard to restrain, but it is subdued by practice and by detachment.',w:'Two tools, neither of them willpower. Abhyasa is the repetition you return to daily; vairagya is loosening the grip on outcomes. A mind is not argued into steadiness — it is trained into it.',q:'What will your abhyasa be tomorrow morning, for five minutes?'},
+  {r:'Bhagavad Gita 6.19',t:'As a lamp in a windless place does not flicker, so is the disciplined mind of one absorbed in the Self.',w:'Notice where the stillness comes from: not from the absence of wind outside, but from being sheltered. The practice builds the shelter. Fear is the flame reading every draught as its own end.',q:'Sit until the flame steadies, even a little. That is the whole task today.'},
+  {r:'Bhagavad Gita 2.47',t:'You have a right to your work, but never to its fruits. Let not the fruit be your motive, nor withdraw from the work.',w:'Almost all fear lives in the fruit — the result, the verdict. Karma yoga cuts the cord between your action and your peace. You still act, fully; you simply stop paying rent on a future that hasn’t arrived.',q:'Do your part of this today, deliberately, without checking for the result.'},
+  {r:'Bhagavad Gita 18.58',t:'Fixing your mind on Me, you shall by My grace cross over every difficulty.',w:'Cross over, not skirt around. The verse takes the obstacle seriously and still calls it crossable. What it asks is where the mind rests while you cross.',q:'What do you want your mind resting on when the hard hour comes?'},
+  {r:'Bhagavad Gita 18.66',t:'Abandon all other supports and take refuge in Me alone. I shall free you; do not grieve.',w:'Sharanagati is the end of the arc: not one more technique, but setting the weight down at last. Ma shuchah — grieve not — is the last thing Krishna says on the matter.',q:'What are you still holding that you could hand over tonight?'}],
+ buddhism:[
+  {r:'Dhammapada 1',t:'All that we are arises with our thoughts. With our thoughts we make the world.',w:'The Dhammapada opens here for a reason. It isn’t saying your fear is imaginary — it’s saying the mind that met the event is part of the event. That is the only part you can train.',q:'What did your mind add to today’s facts?'},
+  {r:'Dhammapada 216',t:'From craving springs grief, from craving springs fear. For one wholly freed from craving there is no grief, and no fear.',w:'Look for what the fear is guarding. Under nearly every fear is a wanting — that this must not be lost, that this must go my way. Not that you shouldn’t care; that clinging is the machinery.',q:'What am I holding so tightly that losing it became terrifying?'},
+  {r:'Dhammapada 277',t:'All conditioned things are impermanent. One who sees this wearies of suffering.',w:'Anicca isn’t consolation, it’s observation — and it cuts both ways. The good passes, and so does this. Fear survives on the assumption that this state is where you now permanently live.',q:'Watch one wave of fear from arising to fading, without moving.'},
+  {r:'Dhammapada 33',t:'The flickering, fickle mind, hard to guard, hard to check — the wise straighten it as a fletcher straightens an arrow.',w:'A crooked arrow isn’t scolded, it’s worked. Straightening is patient, repeated, unemotional. Bring the hands of a craftsman to your own mind.',q:'What is the one bend in your thinking that keeps recurring?'},
+  {r:'Dhammapada 35',t:'The mind is hard to check, swift, and flits wherever it wills. To tame the mind is good; a tamed mind brings happiness.',w:'The promise is modest and testable: a trained mind is a happier place to live. Not fearless — trained. You aren’t failing because it still runs. You’d only be failing if you stopped bringing it back.',q:'Ten breaths. Every time it leaves, bring it back — the returning is the practice.'},
+  {r:'Dhammapada 81',t:'As a solid rock is unshaken by the wind, so the wise are unshaken by praise or blame.',w:'Much of what we call fear is fear of the verdict — being judged, exposed, found wanting. The rock isn’t unshaken because it’s loved. It’s unshaken because it no longer needs the wind’s approval.',q:'Whose opinion is doing most of the frightening? What if it were simply weather?'},
+  {r:'Dhammapada 348',t:'Let go of the past, let go of the future, let go of the present, and cross over to the further shore.',w:'The whole path in one line, and it isn’t about detaching from your life — it’s about stopping the grip. Fear is grip. Crossing begins with an open hand.',q:'One thing to set down before you sleep. Say it, then put the phone down.'}],
+ secular:[
+  {r:'Epictetus, Enchiridion 5',t:'Men are disturbed not by things, but by the views which they take of things.',w:'This is the oldest cognitive insight we have, and modern therapy essentially rediscovered it. Between the event and your dread sits a judgement — and the judgement is the part with a handle on it.',q:'Write the event in one sentence with no adjectives. Then write what you added.'},
+  {r:'Seneca, Letters 13.4',t:'There are more things likely to frighten us than there are to crush us; we suffer more often in imagination than in reality.',w:'Seneca is doing arithmetic, not poetry. Count the catastrophes you’ve rehearsed against the ones that arrived. The ledger is comically lopsided — and the rehearsals cost real hours of your life.',q:'What have you already survived that you were certain you wouldn’t?'},
+  {r:'Marcus Aurelius, Meditations 8.47',t:'If you are distressed by anything external, the pain is not due to the thing itself but to your own judgement of it — and this you have the power to revoke at any moment.',w:'At any moment is the operative phrase. He isn’t claiming it’s easy; he’s locating the switch. A man who ran an empire wrote this to himself at night, because he needed reminding too.',q:'Revoke one judgement today. Which one?'},
+  {r:'Epictetus, Enchiridion 1',t:'Some things are in our control and others are not. In our control are opinion, impulse, desire, aversion; not in our control are the body, reputation, office.',w:'Draw the line and half of anxiety loses its funding. Most fear is effort spent on the far side of that line, where effort does nothing but exhaust you.',q:'Two columns — mine, not mine. Be ruthless. Then work only the left one.'},
+  {r:'Marcus Aurelius, Meditations 8.36',t:'Do not let the general view of your whole life crush you. Do not gather up all the troubles that may come, but ask of each present thing: what is unbearable here?',w:'Fear works by aggregation — it hands you the sum of every hard hour at once. Taken apart, almost nothing in the present moment is unbearable. It’s the pile, and the pile is imaginary.',q:'Ask it literally: what in this hour is unbearable?'},
+  {r:'Epictetus, Discourses 2.1',t:'It is not death or pain that is fearful, but the fear of death or pain.',w:'The dread is a separate object from the event, and it usually lasts far longer. This is why people say the waiting was the worst part. If the fear is the real problem, the fear is what you get to work on.',q:'Which are you actually suffering right now — the thing, or the waiting?'},
+  {r:'Marcus Aurelius, Meditations 4.49',t:'Be like the rock that the waves keep crashing over. It stands unmoved, and the raging of the sea falls still around it.',w:'Not a fantasy of never being hit. A picture of taking the hit and staying where you are. That is all courage has ever been — built by small refusals to be moved, not by feeling different.',q:'Where will you stand today instead of moving?'}]}},
+{ id:'pull', title:'The pull', short:'the pull', sub:'7 days · temptation, and becoming someone who can say no.', days:{
+ christianity:[
+  {r:'1 Corinthians 10:13',t:'No temptation has overtaken you that is not common to man. God is faithful, and he will not let you be tempted beyond your ability, but with the temptation will also provide the way of escape.',w:'Two things are promised, and neither is that you won’t be tempted: that it isn’t unique to you, and that there is a way out. Part of the work is looking for the exit early, while you can still see it.',q:'Where is the exit in your pattern — the last moment you could still turn?'},
+  {r:'James 1:14-15',t:'Each person is tempted when he is lured and enticed by his own desire. Then desire when it has conceived gives birth to sin.',w:'James describes a sequence, not an ambush. There’s a gap between the lure and the birth, and everything you can do lives in that gap. Naming your own desire honestly isn’t shameful; it’s the first accurate map.',q:'What does yours actually promise you? Say the real want, not the behaviour.'},
+  {r:'Genesis 4:7',t:'Sin is crouching at the door. Its desire is for you, but you must rule over it.',w:'Said to Cain before he did anything — at the door, while it was still outside. And the word isn’t resist harder, it’s rule. You’re addressed as someone with authority here.',q:'What’s at your door today, and what time does it usually knock?'},
+  {r:'Matthew 26:41',t:'Watch and pray that you may not enter into temptation. The spirit indeed is willing, but the flesh is weak.',w:'Watch comes first: know the hour, know the setup. Christ says this to men who genuinely loved him and still fell asleep — willingness was never the missing piece.',q:'What is your weak hour? Put something in it before it arrives.'},
+  {r:'Romans 7:15, 24-25',t:'I do not do what I want, but the very thing I hate … Wretched man that I am! Who will deliver me? Thanks be to God through Jesus Christ our Lord.',w:'This is Paul, mid-ministry, describing the split you thought disqualified you. It doesn’t end in despair, and it doesn’t end in self-improvement either. It ends in a Person.',q:'Where have you been trying to be your own deliverer?'},
+  {r:'Galatians 5:16',t:'Walk by the Spirit, and you will not gratify the desires of the flesh.',w:'The instruction is a direction, not a prohibition. You don’t empty the appetite by staring at it; you occupy the life with something better and truer.',q:'What good thing will you walk toward tonight, in the hour you’d usually fall?'},
+  {r:'Hebrews 4:15-16',t:'We do not have a high priest who is unable to sympathise with our weaknesses, but one who in every respect has been tempted as we are, yet without sin. Let us then with confidence draw near to the throne of grace.',w:'With confidence — after a week of thinking about your worst pull. The One you approach knows the pull from the inside, which is why shame has no argument here.',q:'Draw near now, as you are, without cleaning yourself up first.'}],
+ islam:[
+  {r:'Qur’an 12:53',t:'Indeed, the soul is a persistent enjoiner of evil, except those upon whom my Lord has mercy.',w:'Yusuf says this at the height of his vindication, about himself. That isn’t self-hatred; it’s realism about the nafs — and realism protects you. A man who thinks he is past the pull doesn’t guard against it.',q:'Where have you assumed you’re past this? Guard there.'},
+  {r:'Qur’an 24:30-31',t:'Tell the believing men to lower their gaze and guard themselves … and tell the believing women to lower their gaze and guard themselves.',w:'The command lands before the act, at the glance — because that’s where it’s still cheap. Ghadd al-basar isn’t prudishness; it’s the recognition that the eye feeds the heart.',q:'What is your first look, each day? Cut it there.'},
+  {r:'Qur’an 7:200',t:'And if an evil suggestion comes to you from Satan, then seek refuge in Allah. Indeed, He is Hearing and Knowing.',w:'A waswasa isn’t a verdict on your character; it’s traffic. And the instruction is astonishingly practical — don’t debate it, relocate. Say a’udhu billah and move your body.',q:'Practise it once now, out loud, before you need it.'},
+  {r:'Qur’an 29:69',t:'And those who strive for Us — We will surely guide them to Our ways.',w:'The guidance follows the striving, not the other way round. Mujahada is the effort you make while still unsure it’s working, and the ayah promises the effort itself is met.',q:'One act of striving today that costs you something real.'},
+  {r:'Qur’an 13:11',t:'Indeed, Allah will not change the condition of a people until they change what is in themselves.',w:'The order matters, and it isn’t harsh — it’s dignifying. You aren’t waiting to be rescued from your habit; you’re being told your move counts.',q:'One thing in yourself, today. Not the whole self.'},
+  {r:'Qur’an 79:40-41',t:'But as for he who feared the position of his Lord and restrained his soul from unlawful inclination — Paradise will be his refuge.',w:'Restraining the nafs is named here as the achievement. The Qur’an doesn’t treat your resistance as a small private matter; it treats it as the thing a life turns on.',q:'Name the last time you restrained it. That counted.'},
+  {r:'Qur’an 39:53',t:'Say: O My servants who have transgressed against themselves, do not despair of the mercy of Allah. Indeed, He forgives all sins.',w:'The week ends here on purpose, because despair is the second trap and it takes more people than the first. Tawba isn’t a limited offer you’ve exhausted; the door is wider than your record.',q:'If you fell today, what’s the next right act? Do that, not the punishing.'}],
+ hinduism:[
+  {r:'Bhagavad Gita 3.37',t:'It is desire, it is anger, born of rajas — all-devouring and most sinful. Know this to be the enemy here.',w:'Krishna names it as an enemy, not as you. That distinction is the whole practice: the craving is a force moving through the system, and you are the one who gets to see it as such.',q:'Say it as weather — desire is arising. Watch what changes.'},
+  {r:'Bhagavad Gita 2.62-63',t:'Dwelling on objects breeds attachment; from attachment, desire; from desire, anger; from anger, delusion; from delusion, loss of memory; and from that, ruin.',w:'This is a mechanism diagram, and it starts with dwelling — the looking, the lingering, the scroll. Every stage after that is harder to interrupt than the one before.',q:'Where in the chain do you usually notice? Move one step earlier.'},
+  {r:'Bhagavad Gita 5.22',t:'The pleasures born of contact with the senses are wombs of pain. The wise take no delight in them.',w:'Not a condemnation of pleasure but an honest cost accounting. And notice the Gita asks you to become someone who genuinely sees the pain in it — not someone gritting their teeth against something they still believe is good.',q:'Recall the hour after, honestly. Was it as promised?'},
+  {r:'Bhagavad Gita 6.5-6',t:'Lift yourself by your own self; do not degrade yourself. For the self is a friend to one who has conquered it, and an enemy to one who has not.',w:'The same self, two roles, decided by practice. This is the most encouraging line in the Gita for anyone inside a habit: the material you’re working with is the material that will help you.',q:'One act today that makes your own self an ally tomorrow.'},
+  {r:'Bhagavad Gita 6.26',t:'Whenever the restless mind wanders away, draw it back and fix it again on the Self.',w:'Whenever — not if, and not once. The instruction contains the expectation of repeated failure and doesn’t treat it as failure at all. Bringing it back is the yoga.',q:'How many times can you bring it back today without one word of self-blame?'},
+  {r:'Bhagavad Gita 3.42-43',t:'The senses are subtle; subtler than the senses is the mind; subtler than mind, the intellect; and subtler still is the Self. Knowing this, restrain the lower by the higher.',w:'A hierarchy you can actually use: you don’t fight a craving on its own level, you meet it from a higher one. Sit still, become the one watching, and the pull loses its authority.',q:'From where are you meeting this — the senses, or the seer?'},
+  {r:'Bhagavad Gita 2.70',t:'As the ocean is not disturbed by the rivers pouring into it, so is the one whom desires enter and who abides in peace.',w:'Not a man with no rivers. A man large enough that they no longer change him. This is what practice is quietly building while you feel nothing changing.',q:'Where have you already become bigger than something that used to move you?'}],
+ buddhism:[
+  {r:'Dhammapada 326',t:'Formerly this mind wandered as it liked, where it wished, as it pleased. Today I shall hold it in check, as a rider holds a rutting elephant.',w:'Honest about the force involved — an elephant in rut isn’t talked down. And honest about your position: you are the rider, not the elephant, however loud it gets.',q:'Which is speaking right now, the rider or the elephant?'},
+  {r:'Dhammapada 338',t:'As a felled tree grows again if its root is unharmed, so suffering returns again and again while the root of craving is untouched.',w:'This explains why cutting the behaviour alone keeps failing. The visible branch isn’t the problem; the root is what gets watered every time you feed the wanting.',q:'What feeds the root in your day, hours before the branch appears?'},
+  {r:'Dhammapada 336',t:'Whoever overcomes this craving, so hard to overcome, from him sorrow falls away like water from a lotus leaf.',w:'Hard to overcome is stated plainly — the text never pretends otherwise. But look at the image: not a scrubbed leaf, a leaf water cannot stick to. Freedom is a change in what adheres to you.',q:'What has already stopped sticking, compared to a year ago?'},
+  {r:'Dhammapada 80',t:'Irrigators guide the water; fletchers shape the shaft; carpenters shape the wood; the wise master themselves.',w:'Three trades, one point: mastery is craft, not temperament. Nobody expects a fletcher to straighten an arrow by wanting it straight.',q:'What is the tool you will actually pick up today?'},
+  {r:'Dhammapada 103',t:'Better than conquering a thousand men in battle is conquering oneself. He is the greatest of conquerors.',w:'The scale is deliberately absurd, because the private victory nobody saw last night is genuinely larger than the public one. Don’t let the smallness of the moment fool you about the size of the work.',q:'Name last night’s unseen victory. Count it.'},
+  {r:'Dhammapada 121',t:'Think not lightly of evil, saying it will not come near me. Drop by drop the water-pot is filled.',w:'And the very next verse says the same of good. Nothing you did today felt decisive — which is exactly how both directions accumulate.',q:'Which pot did today’s drops go into?'},
+  {r:'Dhammapada 205',t:'Having tasted the sweetness of solitude and of stillness, one is freed from sorrow and from wrong.',w:'This is the part most attempts at self-control skip: something has to taste better. Stillness isn’t the punishment that replaces the pleasure — trained a little, it becomes the sweeter thing.',q:'Sit for three minutes. Is there anything here worth staying for?'}],
+ secular:[
+  {r:'Epictetus, Enchiridion 34',t:'When you are struck by the appearance of any pleasure, do not be carried away by it; let the thing wait for you. Then compare the time of enjoyment with the time you will afterwards repent.',w:'Two moves, both mechanical: insert delay, then run the tape forward. He isn’t asking you to be virtuous in the moment — only to be slow, and honest about the hour after.',q:'Let it wait ten minutes. Write what you predict you’ll feel at 11pm.'},
+  {r:'Marcus Aurelius, Meditations 9.7',t:'Wipe out imagination. Check impulse. Quench appetite. Keep the governing self in its own power.',w:'Four short orders, in the order things actually happen — the picture comes first, then the impulse, then the appetite. Interrupt at the picture and the rest never assembles.',q:'What image starts it for you? Name it, then stop feeding it.'},
+  {r:'Epictetus, Discourses 2.18',t:'Every habit and faculty is confirmed and strengthened by the corresponding acts. If you would not be angry, do not feed the habit; give it nothing to help its increase.',w:'The clearest ancient statement of what we now call reinforcement. Each act is a vote. Today you aren’t deciding one evening — you’re adjusting the odds of every evening after it.',q:'Which habit did today strengthen?'},
+  {r:'Seneca, Letters 18',t:'Set aside a number of days on which you will be content with the scantiest fare … so that you may ask yourself whether this is really the thing you feared.',w:'Voluntary discomfort, chosen while calm, on purpose. Seneca’s point is that you meet the deprivation once on your own terms, and it stops holding a knife to your throat afterwards.',q:'Choose one small comfort to go without tomorrow. Deliberately, not as punishment.'},
+  {r:'Marcus Aurelius, Meditations 5.1',t:'At dawn, when you have trouble getting out of bed, tell yourself: I have to go to work — as a human being. What do I have to complain of, if I am going to do what I was born for?',w:'An emperor negotiating with his own bedsheets is oddly reassuring. And notice the argument he uses on himself: not discipline. Identity, and purpose.',q:'What were you made for, that this pull keeps costing you?'},
+  {r:'Seneca, On Anger 3.36',t:'I examine my whole day and go back over what I have done and said, hiding nothing from myself, passing nothing by.',w:'A nightly audit with no punishment attached — he calls himself to account, then sleeps. That combination, honesty plus no self-flagellation, is what makes it repeatable.',q:'Review today plainly: what happened, what set it off, what worked. No verdict.'},
+  {r:'Epictetus, Enchiridion 51',t:'How long will you wait before you demand the best of yourself? Let whatever appears to be best be to you an inviolable law.',w:'The week ends with a demand rather than a comfort, and it’s meant kindly. Some version of you already knows what the rule should be. The only question is whether it’s a rule or a preference.',q:'Write the one rule. Make it a law, not a hope.'}]}},
+{ id:'again', title:'Starting again', short:'starting again', sub:'5 days · for the morning after. A lapse is feedback, not a verdict.', days:{
+ christianity:[
+  {r:'Lamentations 3:22-23',t:'The steadfast love of the Lord never ceases; his mercies never come to an end; they are new every morning; great is your faithfulness.',w:'Written from rubble, by a man watching a city burn — this isn’t a cheerful verse, it’s a defiant one. New every morning means the supply wasn’t reduced by yesterday.',q:'What did you think you had used up?'},
+  {r:'Proverbs 24:16',t:'The righteous falls seven times and rises again, but the wicked stumble in times of calamity.',w:'Notice that the righteous man in this proverb falls — repeatedly. The line between the two isn’t the falling. It’s the getting up.',q:'What is the smallest possible act of rising today?'},
+  {r:'Luke 15:20',t:'But while he was still a long way off, his father saw him and felt compassion, and ran and embraced him and kissed him.',w:'The son had a speech prepared; he barely got through it. The father was already watching the road, and ran — which no dignified man of that culture did.',q:'What speech are you rehearsing that God isn’t waiting to hear?'},
+  {r:'Psalm 51:10-12',t:'Create in me a clean heart, O God, and renew a right spirit within me. Restore to me the joy of your salvation.',w:'David doesn’t ask to feel better; he asks to be remade, and specifically for the joy to come back. Ask for the same. A restart with no joy in it won’t last a fortnight.',q:'Pray those two lines slowly, as your own words.'},
+  {r:'Philippians 3:13-14',t:'Forgetting what lies behind and straining forward to what lies ahead, I press on toward the goal.',w:'Forgetting here isn’t amnesia; it’s refusing to live there. Paul had a real past and chose to face the other way — a decision that’s available to you this morning.',q:'What is the one thing forward you can press toward today?'}],
+ islam:[
+  {r:'Qur’an 39:53',t:'Say: O My servants who have transgressed against themselves, do not despair of the mercy of Allah. Indeed, He forgives all sins.',w:'Notice who’s being addressed — those who have transgressed are still called My servants. Despair is the trap that follows the slip, and it’s the more dangerous of the two.',q:'What has despair been telling you that this ayah contradicts?'},
+  {r:'Qur’an 2:222',t:'Indeed, Allah loves those who turn to Him in repentance and those who purify themselves.',w:'Loves the tawwabin — the ones who keep returning, plural and repeated. Your return isn’t tolerated. It is what is loved.',q:'Return now, in your own words. That is the whole act.'},
+  {r:'Qur’an 3:135',t:'And those who, when they commit an immorality or wrong themselves, remember Allah and seek forgiveness — and who forgives sins except Allah?',w:'The believer described here isn’t the one who never fell; he’s the one who remembers quickly. Speed of return, not spotlessness, is the marker.',q:'How long did it take you to turn back last time? Shorten it.'},
+  {r:'Qur’an 25:70',t:'Except for those who repent, believe and do righteous work — for them Allah will replace their evil deeds with good.',w:'Replace, not merely erase. The Qur’an describes a trade so generous it’s hard to read soberly: the record itself is changed by what you do next.',q:'One righteous work today, in place of what happened. Name it and do it.'},
+  {r:'Qur’an 11:114',t:'Indeed, good deeds do away with misdeeds. That is a reminder for those who remember.',w:'A practical instruction to follow a fall with an act, not a mood. Do the next good thing immediately — that is how ground is retaken.',q:'What is the next good thing, in the next hour?'}],
+ hinduism:[
+  {r:'Bhagavad Gita 9.30-31',t:'Even if one of most sinful conduct worships Me with undivided devotion, he is to be considered righteous, for he has rightly resolved. He will swiftly become holy.',w:'The verse turns on resolve, not on record. In the Gita’s view your direction of travel matters more than the distance you’ve already covered.',q:'State your resolve in one plain sentence.'},
+  {r:'Bhagavad Gita 4.36',t:'Even if you were the most sinful of all sinners, you would cross the ocean of sin by the raft of knowledge.',w:'The raft is knowledge — seeing clearly what happened and why. Which means the honest look at last night isn’t the punishment. It’s the vessel.',q:'What did you actually learn from it? Write it as information.'},
+  {r:'Bhagavad Gita 2.40',t:'In this path no effort is wasted and no obstacle prevails. Even a little effort toward spiritual life protects you.',w:'Nothing you did before the slip was deleted by it. This is scripture’s clearest answer to the feeling of being back at zero: there is no zero here.',q:'Name three things from the last month that still stand.'},
+  {r:'Bhagavad Gita 12.9-10',t:'If you cannot fix your mind steadily on Me, then seek to reach Me by the practice of yoga. If you are unable even to practise, then work for My sake.',w:'Krishna walks down the ladder until he finds a rung you can actually reach. Start where you honestly are today, not where you were on your best week.',q:'Which rung can you stand on today? Take that one.'},
+  {r:'Bhagavad Gita 6.40',t:'No one who does good comes to an evil end.',w:'Said plainly, with no conditions attached. The good you do now goes somewhere, even when today feels like it undid everything.',q:'One good act, offered without needing to feel better first.'}],
+ buddhism:[
+  {r:'Dhammapada 172',t:'Whoever was formerly heedless and afterwards becomes heedful brightens the world, like the moon emerging from cloud.',w:'The image gives the cloud its due and still says the moon was never diminished. Heedfulness resumed is not a lesser state than heedfulness unbroken.',q:'What does becoming heedful look like in the next ten minutes?'},
+  {r:'Dhammapada 173',t:'Whoever covers over an ill deed with what is skilful brightens the world, like the moon emerging from cloud.',w:'Covers over, in the sense of overlaying with action — not hiding. The remedy prescribed is skilful conduct now, and no self-punishment appears anywhere in the verse.',q:'What skilful thing will you lay over yesterday?'},
+  {r:'Dhammapada 116',t:'Make haste in doing good; restrain the mind from wrong. Whoever is slow in doing good, his mind delights in wrong.',w:'The urgency is about the gap. Wrong doesn’t need to be invited in — it moves into empty time. Fill the next hour rather than adjudicating the last one.',q:'What good thing can start within the hour?'},
+  {r:'Dhammapada 25',t:'By effort, heedfulness, restraint and self-mastery, let the wise build an island no flood can overwhelm.',w:'An island is built, load by load, in advance of the flood. What you construct in ordinary hours is what stands when the next wave comes.',q:'What is one load you can add to the island today?'},
+  {r:'Dhammapada 160',t:'By oneself is one’s refuge. Who else could it be? By a well-controlled self one finds a refuge hard to find.',w:'Not a lonely teaching but a dignifying one: the refuge is being built by you, out of ordinary restraint. Nobody is coming to do it — and nobody can take it from you either.',q:'What would a person building a refuge do tonight?'}],
+ secular:[
+  {r:'Marcus Aurelius, Meditations 5.9',t:'Do not be disgusted, do not give up, do not despair, if acting rightly is not continuous. After a fall, return to it again.',w:'He wrote this to himself, which means he needed it. The instruction is a loop, not a straight line — the return is the practice, and the fall is assumed.',q:'Return now. What is the next right action, this hour?'},
+  {r:'Marcus Aurelius, Meditations 10.16',t:'Waste no more time arguing about what a good man should be. Be one.',w:'The morning after generates enormous amounts of talk — about your character, your history, whether you’re the kind of person who can do this. He cuts it all off. Be one, now, in some small way.',q:'Stop the argument. What is the action?'},
+  {r:'Seneca, Letters 27',t:'I am not so shameless as to undertake to cure my fellow-men when I am ill myself. I am discussing with you troubles which concern us both, and sharing the remedy, just as if we were lying ill in the same hospital.',w:'The man who wrote the letters on self-mastery openly said he hadn’t mastered himself. Whatever you feel this morning isn’t disqualification. It’s the ordinary condition of anyone doing this work.',q:'Say it to one real person today — as a fellow patient, not a failure.'},
+  {r:'Marcus Aurelius, Meditations 6.21',t:'If anyone can prove and show me that I do not think or act rightly, I will gladly change; for I seek the truth, by which no one was ever harmed.',w:'A slip is the clearest evidence you’ll get about what your plan can’t yet handle. Treat it as data handed to you, and change the plan rather than the self-assessment.',q:'What exactly did the plan fail to cover? Patch that one hole.'},
+  {r:'Marcus Aurelius, Meditations 2.5',t:'Do every act as if it were your last, free from all inattention … concentrate on what is before you.',w:'The restart doesn’t need a new identity, or a Monday. It needs the next act, done properly, with attention.',q:'Name the next act. Do it well.'}]}}
+];
+
+// State: {planId:{d:<index of the day to resume>, tr:tradition, ts:iso, done:bool}}. A position,
+// not a score — no streak, no percentage, nothing decays if you leave it for a month.
+function _plans(){ try{ return ls('totry_read_plans')||{}; }catch(_){ return {}; } }
+function _plansSave(o){ try{ ls('totry_read_plans',o); }catch(_){} }
+function _planById(id){ for(let i=0;i<READING_PLANS.length;i++){ if(READING_PLANS[i].id===id) return READING_PLANS[i]; } return null; }
+function _planDays(p){ try{ const t=faithTradition(); return (p&&p.days&&(p.days[t]||p.days.christianity))||[]; }catch(_){ return []; } }
+function _planClamp(i,n){ return Math.max(0,Math.min(i,n-1)); }
+// The resume line the Soul card wears. Empty unless something is genuinely in progress.
+function planLastLine(){
+  try{
+    const st=_plans(); let best=null;
+    READING_PLANS.forEach(function(p){ const s=st[p.id]; if(!s||s.done||!(s.d>0)) return; if(!best||String(s.ts||'')>String(best.s.ts||'')) best={p:p,s:s}; });
+    if(!best) return '';
+    const n=_planDays(best.p).length; if(!n) return '';
+    return best.p.title+' \u2014 day '+Math.min((best.s.d||0)+1,n)+' of '+n;
+  }catch(_){ return ''; }
+}
+function openPlans(){ if(typeof go==='function') go('plans'); renderPlans(); }
+function renderPlans(){
+  const el=document.getElementById('plans-content'); if(!el) return;
+  const f=curFaith(), t=faithTradition(), st=_plans();
+  let h='<div style="text-align:center;margin-bottom:16px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3)">Guided reading</div>'+
+    '<h2 style="font-family:Cormorant Garamond,serif;font-size:27px;font-weight:300;color:var(--tx);margin:6px 0 8px">Short plans</h2>'+
+    '<p style="font-size:12.5px;color:var(--tx3);line-height:1.65;max-width:330px;margin:0 auto">Five to seven days on one thing you’re actually carrying. Finishable \u2014 not a year-long debt. Miss a week and nothing is lost; you pick up where you left off.</p></div>';
+  READING_PLANS.forEach(function(p){
+    const days=_planDays(p), n=days.length; if(!n) return;
+    const s=st[p.id]||null, d=s&&typeof s.d==='number'?_planClamp(s.d,n):0;
+    const line=(s&&s.done)?'Finished \u00B7 read it again any time':(d>0?'Day '+(d+1)+' of '+n+' \u00B7 whenever you’re ready':n+' days');
+    h+='<div class="card" onclick="openPlan(\''+p.id+'\')" style="cursor:pointer;margin-bottom:10px">'+
+      '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--go);margin-bottom:7px">'+line+'</div>'+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:21px;color:var(--tx);line-height:1.25;margin-bottom:5px">'+p.title+'</div>'+
+      '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6">'+p.sub+'</div>'+
+      '<div style="font-size:12.5px;color:var(--go);margin-top:10px">'+((s&&!s.done&&d>0)?'Continue':'Begin')+' \u203A</div></div>';
+  });
+  h+='<p style="font-size:11.5px;color:var(--tx3);font-style:italic;line-height:1.65;text-align:center;margin:16px 8px 4px">Written for your path \u2014 '+f.label+' \u2014 not translated from someone else’s. Every passage is here even with no signal'+((t==='islam'||t==='hinduism')?', and you can open the full '+f.bookShort+' from any day':'')+'. No streaks, no percentage: a plan is a door, not a scoreboard.</p>';
+  el.innerHTML=h;
+}
+function openPlan(id){
+  const p=_planById(id); if(!p) return;
+  if(typeof go==='function') go('plans');
+  const n=_planDays(p).length, s=_plans()[id];
+  renderPlanDay(id, s&&typeof s.d==='number'?_planClamp(s.d,n):0);
+}
+function renderPlanDay(id,i){
+  const el=document.getElementById('plans-content'); if(!el) return;
+  const p=_planById(id); if(!p) return;
+  const days=_planDays(p);
+  if(!days.length){ el.innerHTML=_readErr('This plan isn’t written for your path yet.'); return; }
+  i=_planClamp(i,days.length);
+  const day=days[i], t=faithTradition(), s=_plans()[id]||{};
+  const readLbl=(t==='christianity')?'Open it in the Bible':(t==='islam')?'Open it in the Qur’an':(t==='hinduism')?'Open it in the Gita':'';
+  let h='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px">'+
+    '<button class="btn" onclick="renderPlans()" style="width:auto;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px;padding:7px 11px">\u2039 Plans</button>'+
+    '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3)">Day '+(i+1)+' of '+days.length+'</div></div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.25;margin-bottom:12px">'+p.title+'</div>'+
+    '<div class="card" style="border-color:var(--go-bd);background:linear-gradient(135deg,rgba(200,169,110,0.08),rgba(140,107,182,0.04));padding:22px 18px;margin-bottom:12px">'+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:19px;font-style:italic;line-height:1.7;color:var(--tx)">\u201C'+day.t+'\u201D</div>'+
+      '<div style="font-size:12px;color:var(--go);margin-top:11px">\u2014 '+day.r+'</div></div>'+
+    '<div class="card" style="margin-bottom:12px"><div style="font-size:14px;line-height:1.8;color:var(--tx2)">'+day.w+'</div></div>'+
+    '<div class="card" style="margin-bottom:12px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:9px">One question</div>'+
+      '<div style="font-size:15px;line-height:1.7;color:var(--tx);margin-bottom:13px">'+day.q+'</div>'+
+      '<button class="btn" onclick="_planAnswer(\''+id+'\','+i+')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px">Write your answer</button></div>'+
+    '<button class="btn primary" onclick="_planDone(\''+id+'\','+i+')" style="margin-bottom:8px">That’s today</button>'+
+    '<div style="display:flex;gap:8px;margin-bottom:8px">'+
+      (readLbl?'<button class="btn" onclick="_planOpenFull(\''+id+'\','+i+')" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px">'+readLbl+'</button>':'')+
+      '<button class="btn" onclick="_planCarry(\''+id+'\','+i+')" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px">Carry this passage</button></div>';
+  const seen=Math.max(typeof s.d==='number'?s.d:0, i);
+  let nav='';
+  if(i>0) nav+='<button class="btn" onclick="renderPlanDay(\''+id+'\','+(i-1)+')" style="flex:1;background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px">\u2039 Day '+i+'</button>';
+  if(i<days.length-1 && i<seen) nav+='<button class="btn" onclick="renderPlanDay(\''+id+'\','+(i+1)+')" style="flex:1;background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px">Day '+(i+2)+' \u203A</button>';
+  if(s.done) nav+='<button class="btn" onclick="_planRestart(\''+id+'\')" style="flex:1;background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px">Read it again</button>';
+  if(nav) h+='<div style="display:flex;gap:8px;margin-top:4px">'+nav+'</div>';
+  h+='<p style="font-size:11.5px;color:var(--tx3);font-style:italic;line-height:1.65;text-align:center;margin:16px 10px 4px">One day at a time is the whole design. Come back tomorrow, or in a fortnight \u2014 day '+(i+1)+' will still be here.</p>';
+  el.innerHTML=h;
+  try{ const tab=document.getElementById('tab-plans'); if(tab) tab.scrollTop=0; }catch(_){}
+}
+function _planDone(id,i){
+  const p=_planById(id); if(!p) return;
+  const days=_planDays(p); if(!days.length) return;
+  const st=_plans(), s=st[id]||{}, next=i+1, fin=next>=days.length;
+  s.d=fin?days.length-1:Math.max(typeof s.d==='number'?s.d:0,next);
+  s.tr=faithTradition(); s.ts=new Date().toISOString(); if(fin) s.done=true;
+  st[id]=s; _plansSave(st);
+  haptic('success');
+  if(typeof applyFaithLabels==='function') applyFaithLabels();
+  _planClose(id,i,fin);
+}
+function _planClose(id,i,finished){
+  const el=document.getElementById('plans-content'); if(!el) return;
+  const p=_planById(id); if(!p) return;
+  const days=_planDays(p), f=curFaith(), t=faithTradition();
+  const beyond={christianity:'a priest, or one person who’ll pray it with you',islam:'your imam, or one person who’ll make du’a with you',hinduism:'a teacher, or one person who’ll sit with you',buddhism:'a teacher, or a sangha \u2014 someone further down the path',secular:'one person who’ll actually hear it \u2014 a friend, or a counsellor'}[t]||'one person who’ll actually hear it';
+  let h='<div style="text-align:center;padding:14px 4px 0">';
+  if(finished){
+    h+='<div style="font-size:26px;margin-bottom:12px">\u{1F54A}\uFE0F</div>'+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:12px">You finished it.</div>'+
+      '<div style="font-size:14px;color:var(--tx2);line-height:1.75;max-width:330px;margin:0 auto 16px">'+days.length+' days on '+p.short+'. No badge for this, and no streak \u2014 you simply sat with '+f.wordWord+' on '+days.length+' days and let it work on you. That’s a different kind of thing.</div>'+
+      '<div class="card" style="text-align:left;margin-bottom:14px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Now take it past the app</div>'+
+      '<div style="font-size:13.5px;color:var(--tx2);line-height:1.75">The reading did part of the work. The rest happens with '+beyond+'. Say one thing out loud this week that you only wrote down in here.</div></div>';
+  } else {
+    h+='<div style="font-family:Cormorant Garamond,serif;font-size:25px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:12px">That’s today.</div>'+
+      '<div style="font-size:14px;color:var(--tx2);line-height:1.75;max-width:330px;margin:0 auto 18px">Day '+(i+2)+' of '+days.length+' is there whenever you’re ready \u2014 tomorrow, or next week. Nothing resets, and nothing is lost if you leave it a while.</div>';
+  }
+  h+='<button class="btn primary" onclick="theRelease({did:\'You sat with the reading and answered it honestly. That was the work.\'})" style="margin-bottom:8px">Put it down and carry it</button>'+
+    '<button class="btn" onclick="renderPlans()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px">Back to the plans</button></div>';
+  el.innerHTML=h;
+}
+function _planRestart(id){
+  const st=_plans(); st[id]={d:0,tr:faithTradition(),ts:new Date().toISOString(),done:false}; _plansSave(st);
+  haptic('tap'); if(typeof applyFaithLabels==='function') applyFaithLabels(); renderPlanDay(id,0);
+}
+// The question, answered into the real journal (so the weekly review and the AI see it).
+function _planAnswer(id,i){
+  const p=_planById(id); if(!p) return;
+  const days=_planDays(p); if(!days.length) return;
+  i=_planClamp(i,days.length); const day=days[i];
+  const m=document.createElement('div'); m.className='modal-bg open';
+  m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
+    '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:9px">'+p.title+' \u00B7 day '+(i+1)+'</div>'+
+    '<div style="font-size:15.5px;color:var(--tx);line-height:1.65;margin-bottom:5px">'+day.q+'</div>'+
+    '<div style="font-size:11.5px;color:var(--tx3);margin-bottom:13px">'+day.r+'</div>'+
+    '<textarea id="plan-answer" placeholder="However it comes out. Nobody reads this but you." style="height:130px;resize:none;font-size:16px;line-height:1.6;margin-bottom:12px"></textarea>'+
+    '<button class="btn primary" onclick="_planAnswerSave(\''+id+'\','+i+',this)" style="margin-bottom:8px">Keep it in my journal</button>'+
+    '<button class="btn" onclick="closeModal(this)">Not now</button></div>';
+  document.body.appendChild(m);
+  setTimeout(function(){ const ta=document.getElementById('plan-answer'); if(ta) ta.focus(); },120);
+}
+function _planAnswerSave(id,i,btn){
+  const ta=document.getElementById('plan-answer'), txt=ta?ta.value.trim():'';
+  if(!txt){ showToast('Nothing kept yet','Write one line \u2014 even a short one.'); return; }
+  const p=_planById(id), days=p?_planDays(p):[], day=days.length?days[_planClamp(i,days.length)]:{q:'',r:''};
+  const entries=ls('totry_journal')||[];
+  entries.unshift({ date:new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short',year:'numeric'}),
+    ts:new Date().toISOString(), day:(typeof getDayCount==='function')?getDayCount():null,
+    text:day.q+'\n\n'+txt, plan:(p?p.title:''), planRef:day.r });
+  ls('totry_journal', entries.slice(0,1200));
+  if(typeof renderJournal==='function'){ try{ renderJournal(); }catch(_){} }
+  if(btn) closeModal(btn);
+  haptic('success'); showToast('Kept','In your journal, with the passage.');
+}
+// Carry = the existing saved-passages shelf (totry_sv), same shape the Bible reader writes.
+function _planCarry(id,i){
+  const p=_planById(id); if(!p) return;
+  const days=_planDays(p); if(!days.length) return;
+  const day=days[_planClamp(i,days.length)], saved=ls('totry_sv')||[];
+  if(!saved.some(function(v){ return v&&v.verse===day.t; })){
+    saved.unshift({verse:day.t, reference:day.r, date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'})});
+    ls('totry_sv', saved.slice(0,100));
+    if(typeof renderSavedVerses==='function'){ try{ renderSavedVerses(); }catch(_){} }
+  }
+  haptic('light'); showToast('Carried', day.r+' is with your saved passages.');
+}
+// Deeper look: hand the day's reference to the reader that already exists, at that exact place.
+function _planOpenFull(id,i){
+  const t=faithTradition();
+  if(t==='christianity'){ if(typeof go==='function') go('bible'); return; }
+  const p=_planById(id), days=p?_planDays(p):[];
+  const ref=days.length?String(days[_planClamp(i,days.length)].r||''):'';
+  if(t==='hinduism'){ const m=ref.match(/(\d+)\.(\d+)/); if(m) window.__gita={ch:+m[1],v:+m[2]}; }
+  if(t==='islam'){ const m=ref.match(/(\d+):(\d+)/); if(m) window.__quranJump=+m[1]; }
+  if(typeof openReader==='function') openReader(t);
+}
+
 function openThreads(){
   if(typeof go==='function') go('threads');
   if(typeof window.__threadIdx!=='number'){ let s=0; try{ if(typeof getDayCount==='function') s=getDayCount()%SHARED_THREADS.length; }catch(_){ } window.__threadIdx=s; }
@@ -8671,7 +8974,7 @@ const TABS=['home','fight','grow','money','soul'];
 // Mind lives in the ever-present orb (Feeling Door); Settings moved to the header gear.
 const TAB_PARENT={
   nourish:'grow', train:'grow', track:'grow',
-  morning:'soul', reflect:'soul', bible:'soul', why:'soul', liturgy:'soul', read:'soul', threads:'soul', today:'soul', practice:'soul',
+  morning:'soul', reflect:'soul', bible:'soul', why:'soul', liturgy:'soul', read:'soul', threads:'soul', today:'soul', practice:'soul', plans:'soul',
   calendar:'home', settings:'home'
   // fight, money & soul are their own top-level tabs; coach is the floating button
 };
@@ -8773,6 +9076,7 @@ function go(name){
   if(name==='bible'){renderSavedVerses();initBibleReader();}
   if(name==='why'){initWhyTab();}
   if(name==='liturgy'){renderLiturgy();}
+  if(name==='plans' && typeof renderPlans==='function'){renderPlans();}
   if(name==='calendar' && typeof renderCalendar==='function'){renderCalendar();}
   
   if(name==='morning'){initMorningTab();showMorningAffirm();showMorningFocus();if(typeof _restoreMorningSleep==='function')_restoreMorningSleep();}
