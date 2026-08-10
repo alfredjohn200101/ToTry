@@ -27,7 +27,34 @@ the crisis-gate hardening and the honest privacy rewrite.
 
 ---
 
-## 🟠 TIER 1 — highest value, small builds
+## ✅ TIER 1 — DONE (v353–v355, all verified live)
+
+| Item | Version |
+|---|---|
+| Sleep wind-down ("Land the day") + morning light *(merged into the short-sleep nudge — a standalone rule could never fire)* | v353 |
+| Recovery bridge — SMART · AA/NA · Celebrate Recovery *(faith-gated)* · GP · someone who knows | v353 |
+| Contribution / service exit from the craving loop | v353 |
+| HALT on the vice card *(it only existed mid-craving)* | v353 |
+| Cross-faith Creation / Awe shared thread | v354 |
+
+## ✅ TIER 2 — 5 of 7 DONE
+
+| Item | Version |
+|---|---|
+| AIDs walk-back + the link to break | v354 |
+| Cost–benefit "honest ledger" — **mirrored back in their own words at the threshold** | v354 |
+| DEADS — five ways through | v354 |
+| Subscription auto-detection *(3+ hits, stable amount, real rhythm; verified it ignores groceries, one-offs and irregular coffees)* | v355 |
+| On This Day — pull, never push | v355 |
+| Guided reading plans | ⬜ in progress |
+| CBT/ACT micro-lessons | ⬜ in progress |
+
+**Dead code caught while building these** — all three parsed fine and would have looked "built" forever:
+the morning-light nudge could never fire (the short-sleep rule claimed the same condition first); the
+ledger referenced `vices[i]` inside `playTheTape()`, which has no index in scope, and failed silently
+inside its own try/catch; `sub-detect` mounted twice.
+
+## 🟠 TIER 1 — (original list, kept for reference)
 
 | # | Item | Why it matters | Effort |
 |---|---|---|---|
