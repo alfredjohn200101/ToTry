@@ -4400,7 +4400,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v373';
+const APP_VERSION = 'v374';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -25318,6 +25318,14 @@ function setPTTab(tab){
   if(tab==='log'){ if(typeof renderSplitOverview==='function') renderSplitOverview(); }
   if(tab==='routines'){renderRoutines();}
   if(tab==='mobility'){if(typeof renderMobilityPanel==='function')renderMobilityPanel();}
+  // The PT coach's saved conversation was loaded into ptH at boot and SENT to the model on every
+  // message (api(buildPTCtx(), ptH.slice(0,-1), ...)) — but never shown back to the person. So they
+  // reopened the coach to a blank screen while it answered as though mid-conversation, referencing
+  // sessions and advice they could no longer see. restorePTMessages() was written for exactly this and
+  // never called (refcount 1). Same guard idiom as the main coach, so it restores once per session.
+  if(tab==='ptcoach'){
+    if(typeof restorePTMessages==='function' && !window.__ptRestored){ restorePTMessages(); window.__ptRestored=true; }
+  }
 }
 // ══════════════════════════════════════════════════════════════════════
 // UNIFIED TRAINING ENGINE — merges Hevy lifts + Strava cardio into ONE timeline,

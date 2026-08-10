@@ -193,4 +193,47 @@ H.section('reachability — core actions must have a live entry point');
   H.ok(/if\(!ls\('totry_start'\)\) ls\('totry_start'/.test(html), 'totry_start is written once and never re-stamped');
 }
 
+// ── DEAD ELEMENT REFERENCES — a ratchet on the signature bug class ───────────────────────────────
+// This codebase's dominant failure is code that parses, passes tests and does nothing, and the most
+// common mechanism is a handler poking an id that does not exist. A guarded one (if(el)) is a silent
+// no-op; an UNGUARDED one throws and can take down a whole render (v366's v.limit.replace took out the
+// entire Fight tab). At the time of writing there are 42 dead ids, all legacy, and the 7 unguarded ones
+// all sit inside functions that are themselves never called. These two assertions stop that getting
+// worse: a new dead reference, or a dead reference that becomes reachable, fails the suite.
+H.section('dead element references — must not grow');
+{
+  const fs = require('fs');
+  const path = require('path');
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+
+  const have = new Set();
+  for (const m of html.matchAll(/\bid=\\?["']([A-Za-z0-9_-]+)\\?["']/g)) have.add(m[1]);
+  for (const m of html.matchAll(/\.id\s*=\s*['"]([A-Za-z0-9_-]+)['"]/g)) have.add(m[1]);
+
+  const dead = new Set();
+  for (const m of html.matchAll(/getElementById\(\s*'([A-Za-z0-9_-]+)'\s*\)/g)) {
+    if (!have.has(m[1])) dead.add(m[1]);
+  }
+  const BASELINE = 42;
+  H.ok(dead.size <= BASELINE,
+    'no NEW dead getElementById targets (baseline ' + BASELINE + ', found ' + dead.size + ')' +
+    (dead.size > BASELINE ? ' → ' + [...dead].join(', ') : ''));
+
+  // An unguarded dead reference inside a function anyone can actually call is a live crash.
+  const reachableCrashes = [];
+  for (const m of html.matchAll(/getElementById\(\s*'([A-Za-z0-9_-]+)'\s*\)\s*[.[]/g)) {
+    const id = m[1];
+    if (have.has(id)) continue;
+    // find the enclosing top-level function and check whether anything calls it
+    const before = html.slice(0, m.index);
+    const fnMatch = [...before.matchAll(/\n(?:async )?function ([A-Za-z0-9_$]+)\s*\(/g)].pop();
+    if (!fnMatch) { reachableCrashes.push(id + ' (top-level)'); continue; }
+    const fn = fnMatch[1];
+    const refs = (html.match(new RegExp('\\b' + fn + '\\s*\\(', 'g')) || []).length;
+    if (refs > 1) reachableCrashes.push(id + ' in ' + fn + '() which has ' + refs + ' refs');
+  }
+  H.eq(reachableCrashes, [],
+    'no unguarded dead element reference sits inside a function that is actually called');
+}
+
 H.report();
