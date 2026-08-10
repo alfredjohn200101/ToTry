@@ -4386,7 +4386,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v365';
+const APP_VERSION = 'v366';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -14427,9 +14427,9 @@ function renderVices(){
       c.innerHTML =
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">' +
           '<div style="flex:1">' +
-            '<div class="eyebrow">' + v.n.replace(/</g,'&lt;') + ' &middot; keeping in check</div>' +
+            '<div class="eyebrow">' + String(v.n||'').replace(/</g,'&lt;') + ' &middot; keeping in check</div>' +
             '<div style="font-family:DM Mono,monospace;font-size:24px;font-weight:500;color:var(--go)">' + within + ' <span style="font-size:11px;color:var(--tx3)">time' + (within===1?'':'s') + ' within limit</span></div>' +
-            (v.limit ? '<div style="font-size:11px;color:var(--tx2);margin-top:3px">Your limit: ' + v.limit.replace(/</g,'&lt;') + '</div>' : '') +
+            (v.limit ? '<div style="font-size:11px;color:var(--tx2);margin-top:3px">Your limit: ' + String(v.limit).replace(/</g,'&lt;') + '</div>' : '') +
           '</div>' +
           (holdRate !== null ? '<div style="text-align:right">' +
             '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em">Held it</div>' +
@@ -16384,7 +16384,7 @@ function showVerseToast(context, customTitle){
       '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;line-height:1.5;margin-bottom:14px">"' + v.text + '"</div>' +
       '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--go);letter-spacing:0.1em">' + v.ref + '</div>' +
     '</div>' +
-    '<button class="btn primary" onclick="saveContextualVerse(\'' + v.ref.replace(/'/g, "\\'") + '\',\'' + v.text.replace(/'/g, "\\'") + '\');closeModal(this)" style="margin-top:14px;margin-bottom:8px">Save this verse</button>' +
+    '<button class="btn primary" onclick="saveContextualVerse(\'' + String(v.ref||'').replace(/'/g, "\\'") + '\',\'' + String(v.text||'').replace(/'/g, "\\'") + '\');closeModal(this)" style="margin-top:14px;margin-bottom:8px">Save this verse</button>' +
     '<button class="btn" onclick="closeModal(this)">Close</button>' +
   '</div>';
   document.body.appendChild(m);
