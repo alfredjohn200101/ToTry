@@ -4452,7 +4452,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v393';
+const APP_VERSION = 'v394';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -39277,8 +39277,32 @@ function exportWorkouts(){
   const history=ls('totry_workouts')||[];
   if(!history.length){showToast('No workouts','Log some sessions first.');return;}
   const NL='\n';
-  const text=history.map(s=>'=== '+s.date+' (Day '+s.day+') ==='+NL+s.splitFocus+NL+
-    s.exercises.map(ex=>ex.name+':'+NL+ex.sets.map((set,i)=>'  S'+(i+1)+': '+(set.weight||'?')+'kg x '+(set.reps||'?')+' reps'+(set.done?' done':'')).join(NL)).join(NL)).join(NL+NL);
+  // This assumed every session is a structured strength log: s.exercises[].sets[]. It is not. A Hevy
+  // import stores exercises with no sets array, and cardio, Strava and the Apple Health sessions added in
+  // v389 have no exercises at all — so ex.sets.map threw and the Export workouts button in Settings just
+  // did nothing, on the most common shapes in the store. Describe whatever the session actually is.
+  const text=history.map(function(s){
+    const head = '=== ' + (s.date || (s.ts ? new Date(s.ts).toLocaleDateString('en-AU') : '')) +
+                 (s.day ? ' (Day ' + s.day + ')' : '') + ' ===';
+    const title = s.splitFocus || s.type || 'Session';
+    const meta = [
+      s.durationMinutes ? s.durationMinutes + ' min' : '',
+      s.distance ? (Math.round(s.distance) + ' m') : '',
+      s.calories ? (Math.round(s.calories) + ' cal') : '',
+      s.averageHeartRate ? (Math.round(s.averageHeartRate) + ' bpm') : '',
+      s.sourceName ? ('via ' + s.sourceName) : ''
+    ].filter(Boolean).join(' \u00b7 ');
+    const exList = Array.isArray(s.exercises) ? s.exercises : [];
+    const body = exList.map(function(ex){
+      const sets = Array.isArray(ex && ex.sets) ? ex.sets : [];
+      const name = (ex && ex.name) || 'Exercise';
+      if(!sets.length) return name;                       // Hevy-style entry with no set detail
+      return name + ':' + NL + sets.map(function(set,i){
+        return '  S' + (i+1) + ': ' + ((set && set.weight) || '?') + 'kg x ' + ((set && set.reps) || '?') + ' reps' + ((set && set.done) ? ' done' : '');
+      }).join(NL);
+    }).join(NL);
+    return [head, title, meta, body].filter(Boolean).join(NL);
+  }).join(NL+NL);
   copyToClipboard(text);showToast('Copied!',history.length+' sessions copied to clipboard.');
 }
 

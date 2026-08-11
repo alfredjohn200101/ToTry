@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v393-backup-truth'
+const CACHE = 'totry-v394-export-workouts'
 
 const CORE = [
   './',
