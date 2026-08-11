@@ -4452,7 +4452,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v390';
+const APP_VERSION = 'v391';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7300,7 +7300,7 @@ function buildCtx(){
   let stepsCtx=todaySteps?('\nTODAY\'S STEPS: '+todaySteps+(stepGoal?(' (goal '+stepGoal+(todaySteps>=stepGoal?' — hit it':'')+')'):'')):(stepGoal?('\nSTEP GOAL: '+stepGoal+'/day (none logged yet today)'):'');
   if(sleepGoal) stepsCtx+='\nSLEEP GOAL: '+sleepGoal+'h a night';
   
-  return BROTHER_VOICE + faithVoiceNote() + `You're their whole-life coach here as well as their brother — you have their REAL data right now, so use it.
+  return BROTHER_VOICE + faithVoiceNote() + sharedWisdomNote() + `You're their whole-life coach here as well as their brother — you have their REAL data right now, so use it.
 
 WHO THEY ARE:
 ${userName} | Day ${getDayCount()} of their journey | ${streak}-day habit streak${identity?'\nIDENTITY (who they are becoming): "'+identity+'"':''}${season?'\nCURRENT SEASON: '+season:''}${why?'\nTHEIR WHY: "'+why+'"':''}
@@ -8640,6 +8640,44 @@ function _faithDoorNo(){
 }
 // The voice speaks from the PERSON'S tradition — their scripture, their vocabulary — not Christian
 // verses with the names swapped. Composed into every Brother/companion prompt. Secular = no God-talk.
+// SHARED WISDOM. The traditions arrived at the same handful of truths independently — self-mastery,
+// letting go, patience under hardship, stillness — and SHARED_THREADS already holds each one in all five
+// voices. Until now that only existed as a page someone could browse. This puts it where it actually
+// helps: in counsel, when a person is asking about a struggle.
+//
+// The asymmetry is deliberate and matters:
+//   • Someone WITH a tradition gets their own words first, and may hear a Stoic or philosophical echo
+//     alongside — Stoicism sits comfortably beside every faith here because it is practical philosophy,
+//     not a competing claim about God.
+//   • Someone SECULAR gets the Stoic line only. They chose no religious views; answering their question
+//     about a habit with scripture they did not ask for would break the promise the app makes them.
+//     The door to a tradition stays open in Settings; it is not walked through on their behalf.
+// And it is offered as a resonance, never as equivalence — "another tradition arrived here too" is a
+// true and humbling thing to say; "all paths are the same" is a claim this app has no business making.
+function sharedWisdomNote(){
+  try{
+    if(typeof SHARED_THREADS==='undefined' || !SHARED_THREADS.length) return '';
+    const t = (typeof faithTradition==='function') ? faithTradition() : 'secular';
+    const level = (typeof faithLevel==='function') ? faithLevel() : 'full';
+    const pick = th => (th && th.lines) ? th.lines[t] : null;
+    const lines = SHARED_THREADS.map(function(th){
+      const own = pick(th);
+      const sec = th.lines && th.lines.secular;
+      if(t === 'secular'){
+        return sec ? ('· ' + th.theme + ' — "' + sec.t + '" (' + sec.r + ')') : '';
+      }
+      const bits = [];
+      if(own) bits.push('their tradition: "' + own.t + '" (' + own.r + ')');
+      if(sec && level !== 'light') bits.push('a Stoic echo: "' + sec.t + '" (' + sec.r + ')');
+      return bits.length ? ('· ' + th.theme + ' — ' + bits.join('; ')) : '';
+    }).filter(Boolean);
+    if(!lines.length) return '';
+    const how = (t === 'secular')
+      ? 'SHARED WISDOM you may draw on when it fits what they are actually asking. This person follows no religion — use these as practical philosophy and NEVER introduce religious language or scripture.\n'
+      : 'SHARED WISDOM you may draw on when it fits what they are actually asking. Lead with THEIR tradition. You may add the second line as a resonance — "the Stoics came at the same thing from another direction" — when it genuinely helps, never to imply the paths are interchangeable, and never more than one per reply. If they are in acute distress, drop it entirely and just be present.\n';
+    return how + lines.join('\n') + '\n\n';
+  }catch(_){ return ''; }
+}
 function faithVoiceNote(){
   try{
     const f = curFaith();
@@ -8718,9 +8756,17 @@ function applyFaithLabels(){
     set('soul-today-title', f.todayTitle);
     set('soul-today-desc', f.todayDesc);
     // Practice: Christianity=Rosary, Islam=Dhikr, Hinduism=Japa; Buddhism/Secular lean on the stillness card.
-    const hasPractice = (t==='christianity'||t==='islam'||t==='hinduism');
+    // Every tradition has an authored practice — Rosary, Dhikr, Japa, Meditation, Stillness — and
+    // openPractice() already routes all five (Buddhism and Secular fall through to the breath menu,
+    // which IS the practice for them). This gate listed only three, so a Buddhist never saw a door to
+    // meditation and a secular person never saw one to stillness, despite both being written and wired.
+    // It also left the title element holding the PREVIOUS tradition's text, so switching from Hinduism
+    // to Secular in Settings showed a secular user the word "Japa".
+    const hasPractice = !!(f && f.practiceTitle);
     show('soul-practice-card', hasPractice);
-    if(hasPractice){ set('soul-practice-title', f.practiceTitle); set('soul-practice-desc', f.practiceDesc); }
+    // Set unconditionally so the label can never go stale from a previous tradition.
+    set('soul-practice-title', f.practiceTitle || '');
+    set('soul-practice-desc', f.practiceDesc || '');
     const still={
       christianity:'A minute of guided breathing — or the Jesus Prayer carried on your breath. The one work you can always do.',
       islam:'A minute of guided breathing — or dhikr carried on your breath. The one work you can always do.',
@@ -9190,7 +9236,10 @@ function renderPlanDay(id,i){
   if(!days.length){ el.innerHTML=_readErr('This plan isn’t written for your path yet.'); return; }
   i=_planClamp(i,days.length);
   const day=days[i], t=faithTradition(), s=_plans()[id]||{};
-  const readLbl=(t==='christianity')?'Open it in the Bible':(t==='islam')?'Open it in the Qur’an':(t==='hinduism')?'Open it in the Gita':'';
+  // Derived from the registry rather than a hardcoded list of three. The button was hidden entirely for
+  // Buddhism and Secular — so someone reading a plan day had no way through to the Dhammapada or the
+  // Stoics, even though openReader() serves both. Every tradition has a bookName; use it.
+  const readLbl = (function(){ try{ const bn=(FAITHS[t]||curFaith()).bookName; return bn?('Open it in '+bn):''; }catch(_){ return ''; } })();
   let h='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px">'+
     '<button class="btn" onclick="renderPlans()" style="width:auto;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px;padding:7px 11px">\u2039 Plans</button>'+
     '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3)">Day '+(i+1)+' of '+days.length+'</div></div>'+
@@ -14140,6 +14189,7 @@ async function _companionSay(userText, opening){
   }
   const sys = BROTHER_VOICE
     + faithVoiceNote()
+    + sharedWisdomNote()
     + "RIGHT NOW you're with them in a tempted or struggling moment — this is the 2am door, their hardest moment. Be present, short, real. "
     + "The person is "+name+". They're facing: \""+(s.name||'something hard')+"\". "
     + (function(){ try{ const rd=(typeof computeReadiness==='function')?computeReadiness():null; if(rd && rd.sleep!=null && rd.sleep<=4){ return "IMPORTANT CONTEXT: they slept poorly recently — low sleep makes urges feel much stronger and willpower thinner. If it fits, gently name this so they know the pull feeling strong tonight is partly exhaustion, NOT weakness or failure in them. "; } return ''; }catch(_){ return ''; } })()
