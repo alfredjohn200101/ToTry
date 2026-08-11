@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v407-no-eval-sink'
+const CACHE = 'totry-v408-health-plugin-name'
 
 const CORE = [
   './',

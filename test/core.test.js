@@ -583,6 +583,45 @@ H.section('training history — one cap, no silent truncation');
   H.eq(raw, 0, 'no write site caps totry_workouts with its own slice() — all go through _capWorkouts');
 }
 
+H.section('native plugin lookups must match the names the plugins register');
+{
+  // Apple Health had NEVER worked in the native build: capacitor-health registers as 'HealthPlugin'
+  // (registerPlugin('HealthPlugin'); jsName = "HealthPlugin") while the app looked up
+  // Capacitor.Plugins.Health. _p() returned null, so available() was false and connect() answered
+  // "This build has no Apple Health plugin" — a polite toast covering a completely dead feature.
+  // This test reads the plugin's OWN declared name from node_modules and fails if the app cannot
+  // resolve it, so a rename cannot silently kill the integration again.
+  const fs = require('fs');
+  const path = require('path');
+  const pluginJs = path.join(__dirname, '..', 'node_modules', 'capacitor-health', 'dist', 'esm', 'index.js');
+  if (fs.existsSync(pluginJs)) {
+    const src = fs.readFileSync(pluginJs, 'utf8');
+    const m = src.match(/registerPlugin\(\s*['"]([A-Za-z]+)['"]/);
+    H.ok(!!m, 'capacitor-health declares a plugin name');
+    const declared = m[1];
+    // the app's resolver must reference that exact key
+    const resolver = H.html.match(/_p\(\)\{[\s\S]{0,400}?\},/);
+    H.ok(!!resolver, 'Health._p() exists');
+    H.ok(resolver[0].includes('P.' + declared) || resolver[0].includes("Plugins." + declared),
+      'the app resolves Capacitor.Plugins.' + declared + ' (the name the plugin actually registers)');
+  }
+
+  // And the app's own Swift plugin: the JS lookup must accept what the Swift declares.
+  const swift = path.join(__dirname, '..', 'ios', 'App', 'App', 'SleepPlugin.swift');
+  if (fs.existsSync(swift)) {
+    const sw = fs.readFileSync(swift, 'utf8');
+    const js = (sw.match(/jsName\s*=\s*"([A-Za-z]+)"/) || [])[1];
+    const id = (sw.match(/identifier\s*=\s*"([A-Za-z]+)"/) || [])[1];
+    H.ok(!!js, 'SleepPlugin declares a jsName');
+    const r = H.html.match(/_sleepP\(\)\{[\s\S]{0,400}?\},/);
+    H.ok(!!r, 'Health._sleepP() exists');
+    H.ok(r[0].includes('P.' + js), 'the app resolves Plugins.' + js + ' (SleepPlugin\'s jsName)');
+    if (id && id !== js) {
+      H.ok(r[0].includes('P.' + id), 'and also Plugins.' + id + ' (its class identifier), since registration differs by build');
+    }
+  }
+}
+
 H.section('no code strings in the DOM — the next-step action is a key, not a script');
 {
   // doNextStep() used to read a STRING OF CODE off a dataset attribute and run it through

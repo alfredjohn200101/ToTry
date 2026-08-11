@@ -4464,7 +4464,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v407';
+const APP_VERSION = 'v408';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5494,7 +5494,26 @@ const Notify = {
 // On web / no plugin every method is a safe no-op, so nothing changes there. This is real device data
 // the PWA could never get — the first step toward Track being genuinely recovery-grade.
 const Health = {
-  _p(){ try{ return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Health) || null; }catch(_){ return null; } },
+  // THE PLUGIN IS CALLED HealthPlugin, NOT Health.
+  //
+  // capacitor-health registers itself as 'HealthPlugin' — `registerPlugin('HealthPlugin')` in its JS and
+  // `jsName = "HealthPlugin"` in its Swift. This looked up Capacitor.Plugins.Health, which is undefined,
+  // so _p() returned null and EVERY health call short-circuited: available() was false, connect() returned
+  // "This build has no Apple Health plugin", and the whole automatic side — steps, active energy, workouts,
+  // heart rate, mindful minutes — had never once worked in the native build. Nothing surfaced it because
+  // the failure path is a polite toast, and on the web the card correctly hides itself instead.
+  //
+  // Found by printing Object.keys(Capacitor.Plugins) onto the screen in a throwaway build and reading it
+  // off a screenshot; the registry said HealthPlugin while the code asked for Health.
+  //
+  // Resolved by name-list rather than a single key, because this is a mismatch no test caught and the
+  // plugin could rename again on a major version.
+  _p(){
+    try{
+      const P = (window.Capacitor && window.Capacitor.Plugins) || {};
+      return P.HealthPlugin || P.Health || null;
+    }catch(_){ return null; }
+  },
   isNative(){ try{ return !!(window.Capacitor && (window.Capacitor.isNativePlatform ? window.Capacitor.isNativePlatform() : (window.Capacitor.getPlatform && window.Capacitor.getPlatform()!=='web'))); }catch(_){ return false; } },
   async available(){ const p=this._p(); if(!p) return false; try{ const r=await p.isHealthAvailable(); return !!(r && r.available); }catch(_){ return false; } },
   connected(){ try{ return !!ls('totry_health_connected'); }catch(_){ return false; } },
@@ -5549,7 +5568,17 @@ const Health = {
   // sleepAnalysis and nothing else. Sleep is the highest-value automatic signal this app can have: it
   // already feeds getLifeState() and already changes what the coach says, but it was self-reported, and
   // nobody types in their sleep every morning — so in practice the whole-person view was blind to it.
-  _sleepP(){ try{ return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Sleep) || null; }catch(_){ return null; } },
+  // Same lesson: accept either the jsName or the class name. SleepPlugin.swift declares
+  // jsName = "Sleep" and identifier = "SleepPlugin"; on the simulator neither key appeared in
+  // Capacitor.Plugins at all, so sleep sync silently does nothing there and the app falls back to the
+  // manual +/- control on the Track tab. See NEXT.md — registration of an app-target plugin needs
+  // confirming on a real device.
+  _sleepP(){
+    try{
+      const P = (window.Capacitor && window.Capacitor.Plugins) || {};
+      return P.Sleep || P.SleepPlugin || null;
+    }catch(_){ return null; }
+  },
   async syncSleep(days){
     const sp=this._sleepP(); if(!sp || !sp.querySleep) return 0;
     try{

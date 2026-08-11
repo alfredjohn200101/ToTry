@@ -1,43 +1,57 @@
 # NEXT — the build list
 
-Where To Try stands at **v407**, and what's actually left. Every item below was **verified absent in
+Where To Try stands at **v408**, and what's actually left. Every item below was **verified absent in
 `index.html`** (not guessed). Ranked by impact × vision-fit ÷ effort.
 
 Research behind each item is in `RESEARCH-BACKLOG.md`. Ready-to-apply specs live in `specs/`.
 
 ---
 
-## 🟡 APPLE HEALTH — verified as far as a simulator allows, one thing left for a device
+## 🔴→🟢 APPLE HEALTH WAS DEAD IN THE NATIVE APP — fixed in v408
 
-Ran the App Store build on a booted iPhone 17 Pro simulator and drove it by hand. Everything that can
-be checked without a real device checks out:
+Resolved the amber item above by printing `Object.keys(Capacitor.Plugins)` onto the Track card in a
+throwaway build and reading it off a screenshot. The registry said one thing and the code asked for
+another:
 
-| Checked | Result |
-|---|---|
-| `NSHealthShareUsageDescription` in the **built** app | ✅ present (missing = HealthKit authorization CRASHES) |
-| `NSHealthUpdateUsageDescription` | ✅ present |
-| `com.apple.developer.healthkit` + `.background-delivery` | ✅ both in `App.entitlements` |
-| `HealthPlugin` (capacitor-health) compiled into the binary | ✅ |
-| `SleepPlugin` (the one written for this app) compiled in | ✅ |
-| Track tab shows the **native** branch | ✅ a real "Connect" button, not the web fallback |
-| Web build shows the honest fallback instead | ✅ "arrives with the To Try app on the App Store", no dead button |
-| Tapping Connect crashes | ✅ no — the app stays up |
-| No overlay intercepts the button by design | ✅ on a clean load every `.modal-bg` is `display:none` |
+```
+keys = CapacitorHttp, Console, WebView, CapacitorCookies, SystemBars,
+       LocalNotifications, PushNotifications, HealthPlugin
+```
 
-**UNRESOLVED, and it needs your device.** Tapping "Connect" in the simulator produced no permission
-sheet, no toast and no change — and `connectAppleHealth()` is written so that every branch ends in a
-toast, so a tap that reached the button should always show *something*. Two explanations fit and I could
-not separate them with the tools available: my synthetic tap landing a few points off a 75×33pt button,
-or something genuinely swallowing it. Nearby controls (the Sleep +, the Track card, Settings, Enable
-reminders) all responded to taps in the same session, which argues against a general input problem —
-but HealthKit is also only partly functional in a simulator, so a quiet failure there is not proof of a
-bug either.
+`capacitor-health` registers as **`HealthPlugin`** — `registerPlugin('HealthPlugin')` in its JS,
+`jsName = "HealthPlugin"` in its Swift. The app looked up `Capacitor.Plugins.Health`, which is
+`undefined`. So `Health._p()` returned null and every call short-circuited: `available()` was false,
+`connect()` answered *"This build has no Apple Health plugin"*, and **the entire automatic health side
+had never worked once in the native build** — steps, active energy, workouts, heart rate, mindful
+minutes. Nothing surfaced it, because the failure path is a polite toast and the web build correctly
+hides the card instead.
 
-**First thing to try on the real device:** open Grow → Track, tap **Connect**, and watch for the
-HealthKit permission sheet. If it appears, this is closed. If nothing happens, the button is genuinely
-dead and the place to look is `connectAppleHealth()` → `Health.connect()` → `p.isHealthAvailable()`.
+Proof the fix works, from the same on-device diagnostic after the change:
 
-Deliberately not "fixed" speculatively — there is nothing to fix until it is known which of the two it is.
+```
+resolved _p() = HealthPlugin OK
+isHealthAvailable = {"available":true}
+Health.available() = true                 <- was false before
+Health.connect()   = {"ok":false,"reason":"Authorization failed:
+                      Missing com.apple.developer.healthkit entitlement."}
+```
+
+`available()` flipping false → true is the bug closing. The remaining error is an artifact of an
+**unsigned** simulator build (`CODE_SIGNING_ALLOWED=NO` does not embed entitlements); `App.entitlements`
+has both `com.apple.developer.healthkit` and `.background-delivery`, so a signed build does not hit it.
+
+**Still open — the sleep plugin is not registered.** `Plugins.Sleep` is absent from that key list even
+though `SleepPlugin` is compiled into the binary (`strings` finds it). `SleepPlugin.swift` declares
+`jsName = "Sleep"` and conforms to `CAPBridgedPlugin`, but Capacitor is not discovering it — plugins
+living in the **app target** rather than a package are not picked up in this setup. Consequence: sleep
+never syncs from Apple Health and the Track tab falls back to the manual ± control, which works. The
+lookup now accepts `Sleep` or `SleepPlugin` so it will start working the moment registration is fixed.
+The likely fix is registering it explicitly in `AppDelegate`/`ViewController`, or moving it into a local
+Swift package — worth doing after submission, not before.
+
+**Lesson worth keeping:** three separate times this session an on-device "dead control" turned out to be
+a measurement artifact — a `getBoundingClientRect()` taken while the tab was `display:none` reports
+`0x0`, and `elementFromPoint` at (0,0) then returns the header. The real bug was never the button.
 
 ---
 
