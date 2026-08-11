@@ -1537,7 +1537,6 @@ input:focus,textarea:focus,select:focus{
      reflections). Christianity keeps its own richer Bible reader (tab-bible). -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-read" class="tab">
-  <div style="margin-bottom:12px"><button class="btn" onclick="go('soul')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px;padding:8px 12px">&lsaquo; Soul</button></div>
   <h2 id="read-title" style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.2;margin-bottom:2px">Read</h2>
   <p id="read-sub" style="font-size:12.5px;color:var(--tx3);line-height:1.5;margin-bottom:12px"></p>
   <div id="read-selector" style="margin-bottom:12px"></div>
@@ -1549,13 +1548,14 @@ input:focus,textarea:focus,select:focus{
 <!-- TAB: PLANS — short guided reading plans, written once per tradition. No streaks, no percentage. -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-plans" class="tab">
-  <div style="margin-bottom:12px"><button class="btn" onclick="go('soul')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px;padding:8px 12px">&lsaquo; Soul</button></div>
   <div id="plans-content"></div>
 </div>
 <!-- TAB: SHARED THREADS — how the traditions echo each other on the same human struggle (peace, not sameness) -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-threads" class="tab">
-  <div style="margin-bottom:12px"><button class="btn" onclick="go('soul')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px;padding:8px 12px">&lsaquo; Soul</button></div>
+  <!-- No hardcoded back button here. updateHubBackBar() injects a "‹ Soul" bar into every hub
+       sub-page (see TAB_PARENT), so a hand-rolled one stacked a second, heavier full-width button
+       directly under it. Five Soul sub-pages had this: read, threads, today, practice, plans. -->
   <div id="threads-content"></div>
 </div>
 
@@ -1563,7 +1563,6 @@ input:focus,textarea:focus,select:focus{
 <!-- TAB: TODAY — per-tradition daily anchor (Islam prayer times/Hijri/ayah; others a daily passage) -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-today" class="tab">
-  <div style="margin-bottom:12px"><button class="btn" onclick="go('soul')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px;padding:8px 12px">&lsaquo; Soul</button></div>
   <h2 id="today-title" style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.2;margin-bottom:2px">Today</h2>
   <p id="today-sub" style="font-size:12.5px;color:var(--tx3);line-height:1.5;margin-bottom:14px"></p>
   <div id="today-content"></div>
@@ -1573,7 +1572,6 @@ input:focus,textarea:focus,select:focus{
 <!-- TAB: PRACTICE — Dhikr (tasbih) / Japa (mala) bead counters -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-practice" class="tab">
-  <div style="margin-bottom:12px"><button class="btn" onclick="go('soul')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px;padding:8px 12px">&lsaquo; Soul</button></div>
   <h2 id="practice-title" style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.2;margin-bottom:2px">Practice</h2>
   <p id="practice-sub" style="font-size:12.5px;color:var(--tx3);line-height:1.5;margin-bottom:14px"></p>
   <div id="practice-content"></div>
@@ -4466,7 +4464,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v404';
+const APP_VERSION = 'v405';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }

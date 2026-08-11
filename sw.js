@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v404-narrow-screen'
+const CACHE = 'totry-v405-one-way-back'
 
 const CORE = [
   './',

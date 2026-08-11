@@ -583,6 +583,25 @@ H.section('training history — one cap, no silent truncation');
   H.eq(raw, 0, 'no write site caps totry_workouts with its own slice() — all go through _capWorkouts');
 }
 
+H.section('navigation — one way back, not two');
+{
+  // updateHubBackBar() injects a "‹ {Hub}" bar into every hub sub-page (see TAB_PARENT). Five Soul
+  // sub-pages ALSO had their own hardcoded full-width "‹ Soul" button, so those screens showed two
+  // stacked back controls — the light injected bar and a heavy button right under it.
+  const hardcoded = [...H.html.matchAll(/<div style="margin-bottom:12px"><button class="btn" onclick="go\('(soul|grow|home)'\)/g)]
+    .map(m => H.html.slice(0, m.index).split('\n').length);
+  H.eq(hardcoded, [], 'no hub sub-page hardcodes its own back button (the bar is injected)');
+
+  // The injected bar must cover every sub-page, or removing the hardcoded ones would strand people.
+  const parentMap = H.html.match(/const TAB_PARENT\s*=\s*\{([\s\S]*?)\n\};/);
+  H.ok(!!parentMap, 'TAB_PARENT exists');
+  ['threads','read','today','practice','plans'].forEach(t => {
+    H.ok(new RegExp('\\b' + t + '\\s*:').test(parentMap[1]),
+      t + ' is registered in TAB_PARENT, so it still gets a back bar');
+  });
+  H.ok(/insertBefore\(bar, tab\.firstChild\)/.test(H.html), 'the bar is inserted at the top of the sub-page');
+}
+
 H.section('platform gating — the App Store build must never show PWA install copy');
 {
   // Confirmed on a real device before this was fixed: the native app displayed
