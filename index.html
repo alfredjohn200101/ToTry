@@ -4452,7 +4452,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v399';
+const APP_VERSION = 'v400';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9068,6 +9068,12 @@ async function _loadSalah(){
   if(!coords){
     try{ coords=await new Promise((res,rej)=>{ if(!navigator.geolocation) return rej(); navigator.geolocation.getCurrentPosition(p=>res({lat:p.coords.latitude,lng:p.coords.longitude}), ()=>rej(), {timeout:8000,maximumAge:3600000}); }); if(coords){ try{ ls('totry_geo',coords); }catch(_){} } }catch(_){ coords=null; }
   }
+  // A saved city is as good as coordinates, and the app already stores one (Settings writes totry_city
+  // for fasting times). Without this, someone who declines location — and plenty of people do — had to
+  // retype their city on EVERY visit to see prayer times, the most-used feature of their tradition.
+  if(!coords){
+    try{ const _c = ls('totry_city'); if(_c){ return _loadSalahByCity(_c); } }catch(_){}
+  }
   if(!coords){ box.innerHTML='<div class="card" style="text-align:center;font-size:13px;color:var(--tx3);padding:18px;line-height:1.6">Allow location to see today’s prayer times.<br><button class="btn" onclick="_promptCity()" style="margin-top:10px;display:inline-block;padding:7px 14px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Or enter your city</button></div>'; return; }
   try{
     const r=await fetch('https://api.aladhan.com/v1/timings/'+_salahDateStr()+'?latitude='+coords.lat+'&longitude='+coords.lng+'&method=2');
@@ -9077,6 +9083,9 @@ async function _loadSalah(){
 function _promptCity(){ try{ const c=window.prompt('Your city (for prayer times):'); if(c&&c.trim()) _loadSalahByCity(c.trim()); }catch(_){} }
 async function _loadSalahByCity(city){
   const box=document.getElementById('salah-box'); if(box) box.innerHTML=_readLoading();
+  // NB: the city is saved further down, only after the API confirms it resolved — so a typo is never
+  // persisted and then silently reused. The bug was never the write; it was that _loadSalah() did not
+  // READ it, so the saved city sat there unused and people retyped it every visit.
   try{ const r=await fetch('https://api.aladhan.com/v1/timingsByCity/'+_salahDateStr()+'?city='+encodeURIComponent(city)+'&country=&method=2'); const j=await r.json(); if(j.code!==200||!j.data) throw new Error('c'); try{ ls('totry_city',city); }catch(_){} if(box) box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri)+'<div style="text-align:center;margin-top:8px"><button class="btn" onclick="_promptCity()" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">Change city</button></div>'; }
   catch(e){ if(box) box.innerHTML=_readErr('Couldn’t find that city — try a larger nearby one.'); }
 }
@@ -18122,6 +18131,23 @@ function setQuickMood(btn){
 }
 
 const JOURNAL_MAX = 20000;   // ~4,000 words. Long enough for anything real, short enough to not eat the device.
+// Wins logged TODAY, from the dated record. Both journal writers used to compute
+//   todayWins = (sum of every vice's lifetime w) - (ls('totry_wins_yesterday') || 0)
+// and nothing in the app has ever written totry_wins_yesterday — zero write sites. So prevWins was
+// always 0 and every journal entry was stamped with the person's LIFETIME win total as if it were that
+// day's: someone 200 wins in wrote "47 wins" on a day they won twice. totry_fight_log is the honest
+// dated record (each entry carries won + ts + date), so count from that instead of a phantom baseline.
+function _winsOnDay(dayKey){
+  try{
+    const key = dayKey || new Date().toLocaleDateString('en-AU');
+    return (ls('totry_fight_log')||[]).filter(function(e){
+      if(!e || e.won !== true) return false;
+      if(e.date === key) return true;
+      if(e.ts){ try{ return new Date(e.ts).toLocaleDateString('en-AU') === key; }catch(_){ return false; } }
+      return false;
+    }).length;
+  }catch(_){ return 0; }
+}
 function saveQuickJournal(){
   let text = document.getElementById('qj-text')?.value.trim();
   if(!text){ showToast('Empty', 'Write a few words first.'); return; }
@@ -18131,9 +18157,7 @@ function saveQuickJournal(){
   loadV();
   const todayKey = new Date().toLocaleDateString('en-AU');
   const autoUrges = vices.reduce((a,v) => a + (v.urgelog || []).filter(t => new Date(t).toLocaleDateString('en-AU') === todayKey).length, 0);
-  const autoWins = vices.reduce((a,v) => a + (v.w || 0), 0);
-  const prevWins = ls('totry_wins_yesterday') || 0;
-  const todayWins = Math.max(0, autoWins - prevWins);
+  const todayWins = _winsOnDay(todayKey);
   
   const entries = ls('totry_journal') || [];
   entries.unshift({
@@ -18182,9 +18206,7 @@ function saveEntry(){
   // Auto-pull vice stats from today's data
   loadV();
   const autoUrges=vices.reduce((a,v)=>a+(v.urgelog||[]).filter(t=>new Date(t).toLocaleDateString('en-AU')===new Date().toLocaleDateString('en-AU')).length,0);
-  const autoWins=vices.reduce((a,v)=>a+(v.w||0),0);
-  const prevWins=ls('totry_wins_yesterday')||0;
-  const todayWins=Math.max(0,autoWins-prevWins);
+  const todayWins=_winsOnDay();
   const entries=ls('totry_journal')||[];
   const when=_resolveEntryDate('journal-date');
   // If the user typed urge/win numbers, honour them (esp. useful when backdating a past day).
@@ -23554,7 +23576,15 @@ function zakatState(){ return ls('totry_zakat') || {basis:'silver', pricePerGram
 function openZakat(){
   const z = zakatState();
   let cash = 0, owedOut = 0, invest = 0;
-  try{ if(typeof loadF==='function'){ loadF(); cash = (typeof usaS==='number'?usaS:0) + (typeof indiaS==='number'?indiaS:0); owedOut = (debts||[]).reduce((s,d)=>s+Math.max(0,(d.t||0)-(d.p||0)), 0); } }catch(_){}
+  // Cash comes from the savings goals, which is where savings ACTUALLY live. usaS/indiaS are the dead
+  // legacy path: the inputs they read (#usa-in, #india-in) do not exist in the markup any more and
+  // its updater was deleted as dead code, so both are permanently 0 — meaning "Cash & savings" was always
+  // blank while the modal told the person it had been filled in from what they had tracked. Savings were
+  // migrated to totry_finance_goals long ago (see the migration in renderSavingsGoals); each goal's
+  // `current` is money actually set aside, which is exactly what is zakatable. loadF() is still called
+  // because owedOut below needs the debts it loads.
+  try{ if(typeof loadF==='function'){ loadF(); cash = (ls('totry_finance_goals')||[]).reduce((n,g)=>n+(parseFloat(g&&g.current)||0),0)
+                                             + (typeof usaS==='number'?usaS:0) + (typeof indiaS==='number'?indiaS:0); owedOut = (debts||[]).reduce((s,d)=>s+Math.max(0,(d.t||0)-(d.p||0)), 0); } }catch(_){}
   try{ invest = (ls('totry_assets')||[]).reduce((s,a)=>s+(a.value||0), 0); }catch(_){}
   openFormModal('Zakat', 'Filled in from what you’ve already tracked — correct any line. Your home, your car and the tools of your trade are not zakatable, so take them out.',
     [ {id:'cash', label:'Cash & savings', type:'number', prefix:'$', value: Math.round(cash)||''},
@@ -25312,10 +25342,18 @@ function deleteSubscription(id){
   renderSubscriptions();
 }
 function monthlyEquivalent(sub){
-  if(sub.period === 'weekly') return sub.amount * 4.345;
-  if(sub.period === 'quarterly') return sub.amount / 3;
-  if(sub.period === 'annual') return sub.amount / 12;
-  return sub.amount; // monthly
+  // TWO VOCABULARIES REACH HERE. Subscriptions added by hand carry 'weekly'/'monthly'/'quarterly'/
+  // 'annual'; detectSubscriptions() emits 'week'/'month'/'year'. Only the first set was tested, so
+  // tapping "Track" on a DETECTED subscription fell through to the monthly branch: a $10-a-week
+  // charge counted as $10 a month (4.3x too low) and a $120-a-year one as $120 a month (12x too
+  // high). Both feed the monthly total a person budgets against. Accept either spelling.
+  const p = String(sub && sub.period || '').toLowerCase();
+  const amt = parseFloat(sub && sub.amount) || 0;
+  if(p === 'weekly' || p === 'week') return amt * 4.345;
+  if(p === 'fortnightly' || p === 'fortnight') return amt * 2.1725;
+  if(p === 'quarterly' || p === 'quarter') return amt / 3;
+  if(p === 'annual' || p === 'annually' || p === 'year' || p === 'yearly') return amt / 12;
+  return amt; // monthly
 }
 // ── FAMILY CONTRIBUTION ──────────────────────────────
 // Reusable validated input modal — replaces fragile native prompt() for money/number entry.
@@ -25792,6 +25830,29 @@ function saveBudgets(){
   showToast('Budgets saved', Object.keys(out).length + ' categor' + (Object.keys(out).length === 1 ? 'y' : 'ies') + ' tracked.');
   haptic('success');
 }
+// Budget limits are keyed to EXPENSE_CATEGORIES ('Food', 'Rent/bills', 'Entertainment'...), but the bank
+// importer labels rows with _autoCategory's richer vocabulary ('Groceries', 'Eating out', 'Bills',
+// 'Subscriptions', 'Gambling'...). Nothing reconciled the two, so for anyone who used the CSV import —
+// the flagship money feature — a Food budget read $0 spent no matter how much they spent on food, and an
+// Entertainment budget could never be spent against at all. Budgets looked permanently, reassuringly
+// untouched. This maps any incoming category onto the budget bucket it belongs to, without migrating
+// stored data, so both vocabularies land in the same place.
+const _BUDGET_BUCKET = {
+  'groceries':'Food', 'eating out':'Food', 'food':'Food',
+  'bills':'Rent/bills', 'rent/bills':'Rent/bills', 'rent':'Rent/bills',
+  'subscriptions':'Entertainment', 'entertainment':'Entertainment', 'going out':'Entertainment',
+  'transport':'Transport', 'health':'Health', 'shopping':'Shopping'
+};
+function _budgetBucket(cat, budgetCats){
+  const raw = String(cat == null ? '' : cat).trim();
+  if(!raw) return 'Uncategorised';
+  // An exact budget name always wins, so a person who set a budget literally called "Gambling" or
+  // "Groceries" sees their own spend against it rather than having it folded away.
+  if(budgetCats && budgetCats.some(c => String(c).toLowerCase() === raw.toLowerCase())){
+    return budgetCats.find(c => String(c).toLowerCase() === raw.toLowerCase());
+  }
+  return _BUDGET_BUCKET[raw.toLowerCase()] || raw;
+}
 function renderBudgets(){
   let budgets = ls('totry_budgets') || {};
   // Legacy/malformed guard: older data (and a bad demo seed) stored an ARRAY of {cat,limit}; the render
@@ -25809,7 +25870,7 @@ function renderBudgets(){
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
   const transactions = (ls('totry_transactions') || []).filter(t => t.type === 'expense' && new Date(t.ts).getTime() >= monthStart);
   const spentByCat = {};
-  transactions.forEach(t => { const c = t.category || 'Uncategorised'; spentByCat[c] = (spentByCat[c] || 0) + t.amount; });
+  transactions.forEach(t => { const c = _budgetBucket(t.category, cats); spentByCat[c] = (spentByCat[c] || 0) + (parseFloat(t.amount)||0); });
   
   box.innerHTML = cats.map(cat => {
     const limit = budgets[cat];
@@ -25971,7 +26032,11 @@ function _sortDebtsByStrategy(list, strategy){
   }
   return arr.sort((a,b)=>(a.t-a.p)-(b.t-b.p)); // snowball, or avalanche w/o interest data
 }
-function updateSavings(){loadF();const u=parseFloat(document.getElementById('usa-in').value||'0'),i=parseFloat(document.getElementById('india-in').value||'0');if(u>0)usaS=u;if(i>0)indiaS=i;document.getElementById('usa-in').value='';document.getElementById('india-in').value='';saveF();renderFinance();}
+// updateSavings() lived here. It read #usa-in and #india-in, neither of which exists in the markup any
+// more, so it would have thrown on the first line if anything had called it — and nothing did. Savings
+// moved to totry_finance_goals (see the migration in renderSavingsGoals). Deleted rather than left
+// lying around, because dead code that looks like a savings entry point is how the Zakat modal came to
+// read usaS/indiaS and always show $0.
 function calcViceSavings(){
   const w=parseFloat(document.getElementById('weed-s').value||'0'),va=parseFloat(document.getElementById('vape-s').value||'0'),g=parseFloat(document.getElementById('gamb-s').value||'0'),o=parseFloat(document.getElementById('other-s').value||'0');
   const weekly=w+va+g+o;if(!weekly){ if(typeof showToast==='function') showToast('Add a weekly amount','Enter at least one vice\u2019s weekly spend to calculate.'); return; }
@@ -35244,12 +35309,15 @@ async function _purgeSyncedPhotos(){
   try{
     if(localStorage.getItem('totry_photos_purged')==='1') return;
     if(!(typeof sb!=='undefined' && sb) || !(typeof currentUser!=='undefined' && currentUser)) return;
-    const { data } = await sb.from('user_data').select('data').eq('user_id', currentUser.id).maybeSingle();
-    const d = data && data.data;
-    if(d && Object.prototype.hasOwnProperty.call(d,'totry_progress_photos')){
-      delete d.totry_progress_photos;
-      await sb.from('user_data').update({ data:d }).eq('user_id', currentUser.id);
-    }
+    // The real schema is ONE ROW PER KEY — {user_id, data_key, data_value, updated_at} — which is what
+    // flushOutbox upserts and pullFromCloud selects. This used to .select('data') and look for a single
+    // blob holding every key, a shape that does not exist: the query errored, `d` was undefined, the
+    // delete never ran, and the 'purged' flag was set anyway so it never retried. A permanent no-op
+    // guarding a privacy-policy promise. Delete the row, and only claim success if the server confirms.
+    const { error } = await sb.from('user_data').delete()
+      .eq('user_id', currentUser.id)
+      .eq('data_key', _cloudKey('totry_progress_photos'));
+    if(error){ console.warn('[purge] photos:', error); return; }   // no flag — try again next launch
     localStorage.setItem('totry_photos_purged','1');
   }catch(_){ /* retried next launch */ }
 }

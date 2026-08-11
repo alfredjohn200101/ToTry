@@ -1,9 +1,80 @@
 # NEXT — the build list
 
-Where To Try stands at **v396**, and what's actually left. Every item below was **verified absent in
+Where To Try stands at **v400**, and what's actually left. Every item below was **verified absent in
 `index.html`** (not guessed). Ranked by impact × vision-fit ÷ effort.
 
 Research behind each item is in `RESEARCH-BACKLOG.md`. Ready-to-apply specs live in `specs/`.
+
+---
+
+## 🟢 v397–v400: the soul, money, companion and data-custody sweep
+
+Twenty findings confirmed by adversarial verification; twenty fixed across v397–v400, each re-verified
+by reading the code and running it in the browser.
+
+**Safety and privacy**
+
+| Fixed | What it did to a person |
+|---|---|
+| The crisis gate held for **one turn** | The verbatim disclosure was stored in `_compHistory` six lines under a comment saying it must never reach the LLM — so the next thing they typed carried it to whichever provider answered. Redacted in history at both gates; they still see their own words |
+| The gate cried wolf on leg day | A bare `'going to kill'` entry made *"this workout is going to kill me"* return `suicide`. It also missed `kms`, `unalive` and "isn't worth living". Both directions now tested |
+| Struggle words were **published** | A research path wrote `'__protocol__' + <the person's own words>` into `shared_library`, readable by any signed-in user, filed as an *exercise*. It also made the App Store answer "nothing a user writes is visible to any other user" false |
+| Sign out destroyed every progress photo | The confirm said "Your data is saved" then wiped photos (which by policy never leave the device) and cycle data. Now flushes first and names what cannot come back |
+| "Account deleted" was unverified | supabase-js returns `{error}` on an RLS refusal instead of throwing, and it was discarded. Now checked; a refusal tells the person the truth |
+| The photo purge was a permanent no-op | It queried a `data` column that does not exist (the table is one row per key), then set its "done" flag anyway so it never retried |
+
+**Wrong numbers**
+
+| Fixed | What it did |
+|---|---|
+| The debt-free date, a fencepost | `n` payments span `n-1` gaps but cover `n` periods. Six $500 payments read as $608/month; **two** payments read as double. The freedom date arrived before the money, and it muted the "interest is outrunning your payments" warning |
+| Detected subscriptions | The detector emits `week`/`year`, the converter tested `weekly`/`annual` — a $10/week sub counted as $10/month (4.3× low), a $120/year one as $120/month (12× high) |
+| Category budgets | Keyed to `Food`/`Entertainment` while the bank importer labels rows `Groceries`/`Eating out`/`Subscriptions`. A Food budget read **$0 spent** however much you spent on food |
+| Zakat "cash & savings" | Read `usaS`/`indiaS`, whose inputs no longer exist in the markup and whose updater was never called — permanently $0 while the modal said it was filled in from tracked data. Now reads the savings goals |
+| Journal win counts | `todayWins = lifetime − ls('totry_wins_yesterday')`, and that key has **zero write sites**. Every entry was stamped with the lifetime total as if it were that day's |
+
+**Multi-faith** — the load-bearing surface
+
+The `ECHO_OK` rule governed only what the AI was *told*. A static hub section, "Common ground — the same
+struggle, across every path", was shown to every tradition, so a Muslim user was offered a card about how
+Lent and Navratri hold the same struggle. The fasting card listed all four seasons to everyone, including
+someone who had chosen no religion.
+
+The daily-verse cache was keyed by date but **not tradition**, and the banks differ in size (Christianity
+44 → Hindu 14). Choosing a faith path mid-day handed the smaller bank an index from the larger one;
+`showV()` dereferenced `undefined`, and at boot that call is not inside a `try`, so `initApp()` died there
+— the sobriety clock, milestones and the front-door check-in silently never ran for the rest of that day.
+
+**Interventions are now per tradition, not a swapped phrase.** The "I'm feeling it right now" screen used
+to hand everyone the Jesus Prayer. Each tradition now gets its own real in-the-moment practice — the
+name, the words, the posture, the count — with an honest `why` (a real mechanism where the claim is
+clinical, named as the tradition's own teaching where it is not):
+
+- **Christianity** the Jesus Prayer on the out-breath, hand on heart, three times
+- **Islam** taʿawwudh then istighfār ×3, then change posture (standing → sit → lie), wuḍūʾ if you can
+- **Hinduism** japa eleven times on the breath, then watching as the witness (sākṣī)
+- **Buddhism** note it aloud, three breaths, watch it as anicca
+- **Secular** urge surfing with the double-inhale long-exhale — no religious framing at all
+
+The examen's closing screen and toast were Psalm 139 and "God walked with you today" for everyone; both
+are per-tradition now. `_researchProtocol`'s prompt hardcoded "AND Christian faith"; it uses the person's
+tradition.
+
+**One week definition.** Two separate bugs came from week stamps disagreeing with the app's Monday→Sunday
+week: habit auto-tick wrote last week's activity into *this* week's future slots, and one-off calendar
+events vanished every Saturday and Sunday because that stamp rolled on Saturday. There is now a single
+Monday-anchored stamp, and days before Monday render as "no record" rather than as misses.
+
+Also: the coach never received the morning ritual (`completeMorning` writes `"Tue, 11 Aug"`,
+`buildCtx` compared `"11/08/2026"`); a finished rosary re-armed its own resume pointer, so a second
+rosary the same day started at the closing prayer; prayer times never read the saved city, so a Muslim
+without geolocation retyped it every visit.
+
+**⚠️ ACTION FOR YOU (Supabase dashboard, not code):** `feedback` and `push_subscriptions` need `DELETE`
+policies. Account deletion now verifies its deletes, so without those policies it will correctly tell the
+person their data is still on the server.
+
+Tests: 215 → **298**.
 
 ---
 

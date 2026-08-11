@@ -583,6 +583,67 @@ H.section('training history — one cap, no silent truncation');
   H.eq(raw, 0, 'no write site caps totry_workouts with its own slice() — all go through _capWorkouts');
 }
 
+H.section('money vocabularies — two names for the same thing must not diverge');
+{
+  // Both of these were the same shape of bug: one part of the app writes a word, another part tests for
+  // a different word, and nothing reconciles them. Silent, and wrong in the direction that flatters.
+  // The mapping is a plain literal; read it out of index.html rather than restating it here, so the
+  // test can never quietly drift from what the app actually ships.
+  const bucketSrc = H.html.match(/const _BUDGET_BUCKET = \{[\s\S]*?\n\};/);
+  if(!bucketSrc) throw new Error('_BUDGET_BUCKET literal not found in index.html');
+  // eslint-disable-next-line no-new-func
+  const _BUDGET_BUCKET = new Function(bucketSrc[0] + ' return _BUDGET_BUCKET;')();
+  const { monthlyEquivalent, _budgetBucket } =
+    H.load(['monthlyEquivalent', '_budgetBucket'], { _BUDGET_BUCKET });
+
+  // detectSubscriptions() emits week/month/year; hand-added subs carry weekly/monthly/annual. Only the
+  // second set was tested, so a detected $10/week sub counted as $10/month (4.3x low) and a $120/year
+  // one as $120/month (12x high) — both straight into the total someone budgets against.
+  H.approx(monthlyEquivalent({period:'week', amount:10}), 43.45, 0.01, 'week -> monthly');
+  H.approx(monthlyEquivalent({period:'weekly', amount:10}), 43.45, 0.01, 'weekly -> monthly (same)');
+  H.approx(monthlyEquivalent({period:'year', amount:120}), 10, 0.01, 'year -> monthly');
+  H.approx(monthlyEquivalent({period:'annual', amount:120}), 10, 0.01, 'annual -> monthly (same)');
+  H.approx(monthlyEquivalent({period:'quarter', amount:30}), 10, 0.01, 'quarter -> monthly');
+  H.eq(monthlyEquivalent({period:'month', amount:15}), 15, 'month passes through');
+  H.eq(monthlyEquivalent({}), 0, 'a missing period and amount is 0, not NaN');
+
+  // Budgets are keyed to EXPENSE_CATEGORIES but the bank importer labels rows with _autoCategory's
+  // richer vocabulary, so a Food budget read $0 however much was spent on food.
+  const cats = ['Food','Rent/bills','Entertainment','Transport'];
+  H.eq(_budgetBucket('Groceries', cats), 'Food', 'Groceries counts toward Food');
+  H.eq(_budgetBucket('Eating out', cats), 'Food', 'Eating out counts toward Food');
+  H.eq(_budgetBucket('Bills', cats), 'Rent/bills', 'Bills counts toward Rent/bills');
+  H.eq(_budgetBucket('Subscriptions', cats), 'Entertainment', 'Subscriptions counts toward Entertainment');
+  H.eq(_budgetBucket('Transport', cats), 'Transport', 'an exact budget name is unchanged');
+  // A budget the person named themselves must win over any mapping.
+  H.eq(_budgetBucket('Groceries', ['Groceries','Food']), 'Groceries', 'an exact user-named budget wins');
+  // And a category with no bucket stays itself rather than being folded into Other — seeing
+  // "$842/mo Gambling" in the breakdown is the point.
+  H.eq(_budgetBucket('Gambling', cats), 'Gambling', 'an unmapped category stays visible as itself');
+  H.eq(_budgetBucket('', cats), 'Uncategorised', 'a missing category is named, not blank');
+}
+
+H.section('journal win count — the dated record, not the lifetime total');
+{
+  // Both journal writers computed todayWins = lifetimeWins - ls('totry_wins_yesterday'), and that key
+  // has ZERO write sites anywhere in the app. So every entry was stamped with the person's lifetime win
+  // total as if it were that day's: 200 wins in, a day they won twice was written up as 200.
+  H.eq(/totry_wins_yesterday/.test(H.html.replace(/\/\/[^\n]*/g, '')), false,
+    'the phantom baseline key is gone from executable code');
+  const today = new Date().toLocaleDateString('en-AU');
+  const older = new Date(Date.now() - 3*86400000).toLocaleDateString('en-AU');
+  const log = [
+    { vice:'x', won:true,  date: today },
+    { vice:'x', won:true,  date: today },
+    { vice:'x', won:false, date: today },   // an honest loss must not count as a win
+    { vice:'x', won:true,  date: older }
+  ];
+  const { _winsOnDay } = H.load(['_winsOnDay'], { ls: k => (k === 'totry_fight_log' ? log : null) });
+  H.eq(_winsOnDay(today), 2, "counts only today's real wins");
+  H.eq(_winsOnDay(older), 1, 'counts a past day correctly');
+  H.eq(_winsOnDay('01/01/2001'), 0, 'a day with nothing logged is 0');
+}
+
 H.section('the pull intervention — each tradition gets its OWN practice');
 {
   // This is the screen someone sees while white-knuckling. It used to hand every person the Jesus
