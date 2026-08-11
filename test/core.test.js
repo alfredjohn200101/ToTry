@@ -583,6 +583,47 @@ H.section('training history — one cap, no silent truncation');
   H.eq(raw, 0, 'no write site caps totry_workouts with its own slice() — all go through _capWorkouts');
 }
 
+H.section('no code strings in the DOM — the next-step action is a key, not a script');
+{
+  // doNextStep() used to read a STRING OF CODE off a dataset attribute and run it through
+  // `new Function(action)()`. Eight of the nine values were literals; the ninth interpolated the
+  // person's own vice name, guarded by stripping quotes and backslashes. The denylist held, but it
+  // guarded an eval sink reachable from a DOM attribute, in an app that has already needed two XSS
+  // fixes. The dataset now carries a key and the argument travels as data.
+  H.eq(/new Function\s*\(/.test(H.html.replace(/\/\/[^\n]*/g, '')), false,
+    'no new Function() anywhere in executable code');
+  H.eq(/\beval\s*\(/.test(H.html.replace(/\/\/[^\n]*/g, '')), false, 'no eval()');
+  H.eq(/set(?:Timeout|Interval)\(\s*['"]/.test(H.html), false,
+    'no setTimeout/setInterval with a string body (also an eval sink)');
+
+  // Every action a step can hand over must exist in the map, or the button silently does nothing.
+  const map = H.html.match(/const NEXT_STEP_ACTIONS = \{([\s\S]*?)\n\};/);
+  H.ok(!!map, 'NEXT_STEP_ACTIONS exists');
+  const keys = [...map[1].matchAll(/^\s*([a-z]+):/gm)].map(m => m[1]);
+
+  // Scope to getNextStep's own body — `action:` is also a property name in unrelated API payloads
+  // ('vision', 'exchange', 'hevy'...), and matching those made this test fail on working code.
+  const gnsAt = H.html.indexOf('function getNextStep');
+  H.ok(gnsAt > 0, 'getNextStep exists');
+  let depth = 0, i = H.html.indexOf('{', gnsAt), end = i;
+  for (; end < H.html.length; end++) {
+    if (H.html[end] === '{') depth++;
+    else if (H.html[end] === '}') { depth--; if (depth === 0) break; }
+  }
+  const body = H.html.slice(i, end + 1);
+
+  const used = [...body.matchAll(/action:\s*'([a-z]+)'/g)].map(m => m[1]);
+  H.ok(used.length >= 8, 'getNextStep still offers actions (' + used.length + ' sites)');
+  H.eq([...new Set(used)].filter(k => !keys.includes(k)), [],
+    'every action getNextStep returns has an entry in the map');
+
+  // And no action it returns may be code any more.
+  H.eq(/action:\s*"/.test(body), false, 'no action value in getNextStep is a double-quoted code string');
+  H.eq(/action:[^,}]*\(/.test(body), false, 'no action value in getNextStep contains a call');
+  H.ok(/el\.dataset\.actionArg = String\(step\.actionArg\)/.test(H.html),
+    'the parameter travels as data on a separate attribute');
+}
+
 H.section('repeated button labels need distinct accessible names');
 {
   // Found by counting actions per screen rather than looking at screens: the Train tab had SEVEN

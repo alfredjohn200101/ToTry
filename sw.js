@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v406-distinct-actions'
+const CACHE = 'totry-v407-no-eval-sink'
 
 const CORE = [
   './',

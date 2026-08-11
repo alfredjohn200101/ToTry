@@ -4464,7 +4464,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v406';
+const APP_VERSION = 'v407';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -36633,10 +36633,10 @@ function getNextStep(){
       let _hardVice = null;
       _vs.forEach(v=>{ try{ const p=(typeof analyzeUrgePatterns==='function')?analyzeUrgePatterns(v.n):null; if(p && p.riskWindow===_block) _hardVice=v; }catch(_){} });
       if(_hardVice){
-        return { text:'This is usually your hard hour', sub:'Right around when '+_hardVice.n+' tends to pull. Nothing has to be happening \u2014 get ahead of it with me.', action:"_hardHourBreath('"+String(_hardVice.n).replace(/['\"\\]/g,'')+"')" };
+        return { text:'This is usually your hard hour', sub:'Right around when '+_hardVice.n+' tends to pull. Nothing has to be happening \u2014 get ahead of it with me.', action:'breath', actionArg:String(_hardVice.n) };
       }
       if(hour >= 22 || hour < 5){
-        return { text:'The hard hour\u2019s near', sub:'Late hours are when it pulls \u2014 get ahead of it. One slow minute, before anything rises.', action:"_hardHourBreath()" };
+        return { text:'The hard hour\u2019s near', sub:'Late hours are when it pulls \u2014 get ahead of it. One slow minute, before anything rises.', action:'breath' };
       }
     }
   }catch(_){ }
@@ -36646,14 +36646,14 @@ function getNextStep(){
       const _r = computeReadiness();
       const _trained = (typeof getUnifiedTraining==='function') && getUnifiedTraining().some(t=>t.ts && new Date(t.ts).toLocaleDateString('en-AU')===today);
       if(_r && _r.level === 'rest' && !_trained && hour >= 7 && hour < 20){
-        return { text:'Your body needs rest today', sub:'Recovery is low \u2014 go gentle. Mobility or a walk, not a max effort.', action:"go('train');setTimeout(function(){try{setPTTab('mobility')}catch(e){}},250)" };
+        return { text:'Your body needs rest today', sub:'Recovery is low \u2014 go gentle. Mobility or a walk, not a max effort.', action:'mobility' };
       }
     }
   }catch(_){ }
   // 1. Morning ritual not done yet today?
   const morningToday = (ls('totry_mornings')||[]).some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===today);
   if(!morningToday && hour < 12){
-    return { text:'Start your morning', sub:'Set today\u2019s intention and gratitude.', action:"go('morning')" };
+    return { text:'Start your morning', sub:'Set today\u2019s intention and gratitude.', action:'morning' };
   }
   // 2. After the morning: surface the next thing actually on the calendar today.
   if(typeof _calEvents === 'function'){
@@ -36668,20 +36668,20 @@ function getNextStep(){
       const nx = upcoming[0];
       const mins = nx._min - nowMin;
       const whenTxt = mins <= 0 ? 'now' : mins < 60 ? ('in '+mins+' min') : ('at '+nx.start);
-      return { text: nx.title, sub: 'Coming up '+whenTxt+' \u00b7 tap to see your day', action:"go('calendar')" };
+      return { text: nx.title, sub: 'Coming up '+whenTxt+' \u00b7 tap to see your day', action:'calendar' };
     }
   }
   // 3. No training logged today?
   const trainedToday = (typeof getUnifiedTraining==='function') && getUnifiedTraining().some(t=>t.ts && new Date(t.ts).toLocaleDateString('en-AU')===today);
   if(!trainedToday && hour >= 10 && hour < 21){
-    return { text:'Log today\u2019s training', sub:'A workout, a walk, anything you did.', action:"go('train')" };
+    return { text:'Log today\u2019s training', sub:'A workout, a walk, anything you did.', action:'train' };
   }
   // 3. Evening: examen / reflection not done?
   if(hour >= 17){
     const examenToday = (ls('totry_examens')||[]).some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
     const eveningToday = (ls('totry_evenings')||[]).some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
     if(!eveningToday || !examenToday){
-      return { text:'Close your day', sub:'Your evening reflection and examen.', action:"go('reflect')" };
+      return { text:'Close your day', sub:'Your evening reflection and examen.', action:'reflect' };
     }
   }
   // 4. Morning's done but it's still early and nothing else pressing — gentle prayer nudge.
@@ -36701,10 +36701,10 @@ function getNextStep(){
     }catch(_){ return false; }
   })();
   if(!prayedToday && hour < 17){
-    return { text:'Take a moment to pray', sub:'A short scripture and prayer for today.', action:"go('soul')" };
+    return { text:'Take a moment to pray', sub:'A short scripture and prayer for today.', action:'soul' };
   }
   // 5. Everything core is done.
-  return { text:'You\u2019ve done today\u2019s work', sub:'Rest, or revisit anything you like.', action:"go('reflect')", done:true };
+  return { text:'You\u2019ve done today\u2019s work', sub:'Rest, or revisit anything you like.', action:'reflect', done:true };
 }
 // The home's time-aware greeting — this is what makes the home FEEL different through the day.
 // Morning: invite setting the day. Midday/afternoon: a light check-in. Evening: invite closing it.
@@ -36887,6 +36887,8 @@ function renderNextStep(){
   }catch(_){}
   if(sub) sub.textContent = subText;
   el.dataset.action = step.action;
+  if(step.actionArg != null) el.dataset.actionArg = String(step.actionArg);
+  else delete el.dataset.actionArg;
   el.style.opacity = step.done ? '0.75' : '1';
   el.style.display = 'flex';
 }
@@ -36903,10 +36905,27 @@ function _countOpenLoops(){
   }catch(_){}
   return open;
 }
+// The next-step action used to be a STRING OF CODE stored on a DOM dataset attribute and run through
+// `new Function(action)()`. Every value was a literal except one, which interpolated the person's own
+// vice name — defended by stripping quotes and backslashes. That denylist held, but it is the fragile
+// way to secure an eval sink, and the sink itself was reachable from a DOM attribute in an app that has
+// already had two XSS fixes. So there is no sink any more: the dataset carries a KEY, the argument
+// travels as DATA, and the only things that can run are the seven listed here.
+const NEXT_STEP_ACTIONS = {
+  morning:  () => go('morning'),
+  reflect:  () => go('reflect'),
+  soul:     () => go('soul'),
+  train:    () => go('train'),
+  calendar: () => go('calendar'),
+  mobility: () => { go('train'); setTimeout(function(){ try{ setPTTab('mobility'); }catch(_){ } }, 250); },
+  breath:   (arg) => { if(typeof _hardHourBreath==='function') _hardHourBreath(arg || undefined); },
+};
 function doNextStep(){
   const el = document.getElementById('next-step-anchor');
-  const action = el?.dataset.action;
-  if(action){ try{ (new Function(action))(); }catch(e){ console.warn('next step action failed', e); } }
+  const key = el?.dataset.action;
+  const fn = key && NEXT_STEP_ACTIONS[key];
+  if(!fn){ if(key) console.warn('unknown next-step action:', key); return; }
+  try{ fn(el.dataset.actionArg || ''); }catch(e){ console.warn('next step action failed', e); }
 }
 function renderHomeHabits(){
   autoTickHabits();
