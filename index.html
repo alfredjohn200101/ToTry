@@ -4466,7 +4466,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v401';
+const APP_VERSION = 'v402';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -35029,14 +35029,36 @@ function resetAll(){
 let deferredInstallPrompt=null;
 window.addEventListener('beforeinstallprompt',(e)=>{
   e.preventDefault();deferredInstallPrompt=e;
-  if(!ls('totry_pwa_dismissed'))setTimeout(()=>{const b=document.getElementById('pwa-banner');if(b)b.style.display='block';},2000);
+  if(!isNativeApp() && !ls('totry_pwa_dismissed'))setTimeout(()=>{const b=document.getElementById('pwa-banner');if(b)b.style.display='block';},2000);
 });
 window.addEventListener('appinstalled',()=>{ls('totry_pwa_installed',true);showToast('To Try installed \u2713','Find it on your home screen.');});
 
 function isIOSSafari(){const ua=navigator.userAgent;return /iP(ad|hone|od)/.test(ua)&&/WebKit/.test(ua)&&!/(CriOS|FxiOS|OPiOS|mercury)/.test(ua);}
-function isStandalone(){return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;}
+// ── "IS THIS AN INSTALLED APP, OR A BROWSER TAB?" ────────────────────────────────────────────────
+// Every functional use of this asks that question, and the old answer was wrong in the one place it
+// matters most: inside the native App Store build. A Capacitor WKWebView reports display-mode
+// "browser", and navigator.standalone is a Safari-only property that is undefined there — so
+// isStandalone() returned FALSE in the native app while isIOSSafari() returned TRUE (the user agent
+// genuinely says iPhone + WebKit).
+//
+// The result, confirmed on a device: the native app told people to
+//   "Install To Try on your iPhone — 1. Tap the Share button at the bottom of Safari"
+// inside an app that has no Safari and no Share button, and the notification settings told them to add
+// the app to their Home Screen before reminders would work. It also silently withheld the daily
+// "good to see you back" greeting from native users, because that was gated on the same check.
+//
+// A native build IS the installed app, so it answers true. isNativeApp() stays separate for the cases
+// that genuinely mean "has native APIs" (HealthKit, local notifications) rather than "is installed".
+function isNativeApp(){
+  try{ return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }
+  catch(_){ return false; }
+}
+function isStandalone(){
+  if(isNativeApp()) return true;
+  return window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone===true;
+}
 function checkIOSInstall(){
-  if(!isIOSSafari() || isStandalone() || ls('totry_pwa_dismissed')) return;
+  if(isNativeApp() || !isIOSSafari() || isStandalone() || ls('totry_pwa_dismissed')) return;
   
   // Show on first open after 8 seconds, then every 3 days if still not installed/dismissed
   const lastShown = ls('totry_ios_shown_ts') || 0;
@@ -35066,7 +35088,10 @@ async function requestPersistentStorage(){if(navigator.storage&&navigator.storag
 // nothing is requested until the user taps Enable. Times are theirs to choose.
 const PUSH_VAPID_PUBLIC = 'BJOHDoZ7ARQCjaOn0dKRZtZT6rZOwmCiF75YnnVHBT1v4DsAy0I26ixYAdeNpwaBK1oSVPIF1KfVVi-lhOzsA1I';
 function _b64uToU8(b){const p='='.repeat((4-b.length%4)%4);const r=atob((b+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from(r,c=>c.charCodeAt(0));}
-function _isStandalone(){return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;}
+// Second copy of the same predicate, kept so existing call sites keep working — delegates now, so the
+// two can never drift apart again (they already had: only one of them was ever going to get fixed).
+function _isStandalone(){ return (typeof isStandalone==='function') ? isStandalone()
+  : (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true); }
 function _pushPrefs(){return ls('totry_push_prefs')||{enabled:false,morning:'07:30',evening:'21:00'};}
 
 // WS-J: generate the user's personalized notification message sets and store them on their

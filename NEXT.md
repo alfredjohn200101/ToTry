@@ -1,9 +1,43 @@
 # NEXT — the build list
 
-Where To Try stands at **v400**, and what's actually left. Every item below was **verified absent in
+Where To Try stands at **v402**, and what's actually left. Every item below was **verified absent in
 `index.html`** (not guessed). Ranked by impact × vision-fit ÷ effort.
 
 Research behind each item is in `RESEARCH-BACKLOG.md`. Ready-to-apply specs live in `specs/`.
+
+---
+
+## 🟢 v401–v402: found by running the app natively for the first time
+
+Two classes of problem that no amount of browser testing could have surfaced.
+
+**PWA copy inside the App Store build.** The native app displayed *"Install To Try on your iPhone —
+1. Tap the Share button ↗ at the bottom of Safari"*, in an app with no Safari and no Share button. The
+reminder settings had the same trap. Root cause worth remembering: **a Capacitor WKWebView is not
+"standalone"** — `display-mode` reports `browser` and `navigator.standalone` is a Safari-only property
+that is `undefined` there — while `isIOSSafari()` *is* true, because the user agent really does say
+iPhone + WebKit. So every check of the form "is this an installed app?" answered **false** in the one
+place it most needed to answer true.
+
+`isStandalone()` now returns true for a native build, with `isNativeApp()` kept separate for the cases
+that genuinely mean "has native APIs" (HealthKit, local notifications). That also restored something
+native users were silently missing: the daily "good to see you back" greeting was gated on the same
+check. Guarded by a test that stubs a WKWebView-shaped `window`.
+
+Already correct, checked while sweeping: `enablePushReminders()` and `renderPushSettings()` both branch
+on native before the web-only paths, the Health card shows honest "arrives with the app" copy on web
+instead of a dead button, and `#beta-web-note` is hidden natively.
+
+**Typography.** The same idea — a number that matters — was drawn in three font families at weights
+300–700 across eight sizes. Standardised on Outfit 500 (the body face) with **tabular figures**, so a
+streak going 61 → 62 → 63 stops changing width between renders. The urge-surf countdown and the rest
+timer stay monospace, because they tick every second and must not reflow.
+
+The launch screen was still Capacitor's stock placeholder — white, with the Capacitor logo, on a
+`systemBackgroundColor` that goes white in light mode. Replaced with the app's own `#0a0a0f` and the
+wordmark.
+
+Tests: 298 → **305**.
 
 ---
 

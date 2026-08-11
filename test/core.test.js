@@ -583,6 +583,42 @@ H.section('training history — one cap, no silent truncation');
   H.eq(raw, 0, 'no write site caps totry_workouts with its own slice() — all go through _capWorkouts');
 }
 
+H.section('platform gating — the App Store build must never show PWA install copy');
+{
+  // Confirmed on a real device before this was fixed: the native app displayed
+  //   "Install To Try on your iPhone — 1. Tap the Share button at the bottom of Safari"
+  // inside an app that has no Safari and no Share button, and the reminder settings told a native user
+  // to add the app to their Home Screen first. Cause: a Capacitor WKWebView reports display-mode
+  // "browser" and navigator.standalone is undefined there (Safari-only), so isStandalone() was FALSE —
+  // while isIOSSafari() was TRUE, because the user agent really does say iPhone + WebKit.
+  const mkWin = (native) => ({
+    Capacitor: native ? { isNativePlatform: () => true } : undefined,
+    matchMedia: () => ({ matches: false }),          // WKWebView: display-mode is "browser"
+    navigator: {}                                    // navigator.standalone is Safari-only
+  });
+  const load = (native) => {
+    const w = mkWin(native);
+    return H.load(['isNativeApp', 'isStandalone'], { window: w, navigator: w.navigator });
+  };
+
+  const nat = load(true);
+  H.eq(nat.isNativeApp(), true, 'the native build is detected as native');
+  H.eq(nat.isStandalone(), true, 'the native build counts as an installed app');
+
+  const web = load(false);
+  H.eq(web.isNativeApp(), false, 'a browser tab is not native');
+  H.eq(web.isStandalone(), false, 'a browser tab is not an installed app');
+
+  // The install prompt must be guarded explicitly, not only via isStandalone().
+  H.ok(/if\(isNativeApp\(\) \|\| !isIOSSafari\(\)/.test(H.html),
+    'checkIOSInstall() returns early on native');
+  H.ok(/if\(!isNativeApp\(\) && !ls\('totry_pwa_dismissed'\)/.test(H.html),
+    'the Chrome install banner is suppressed on native');
+  // The duplicate predicate must delegate, so the two can never drift apart again.
+  H.ok(/function _isStandalone\(\)\{ return \(typeof isStandalone/.test(H.html),
+    '_isStandalone delegates to isStandalone rather than duplicating the logic');
+}
+
 H.section('money vocabularies — two names for the same thing must not diverge');
 {
   // Both of these were the same shape of bug: one part of the app writes a word, another part tests for
