@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v391-shared-wisdom'
+const CACHE = 'totry-v392-echo-optin'
 
 const CORE = [
   './',

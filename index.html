@@ -4452,7 +4452,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v391';
+const APP_VERSION = 'v392';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -8654,6 +8654,21 @@ function _faithDoorNo(){
 //     The door to a tradition stays open in Settings; it is not walked through on their behalf.
 // And it is offered as a resonance, never as equivalence — "another tradition arrived here too" is a
 // true and humbling thing to say; "all paths are the same" is a claim this app has no business making.
+// WHICH traditions get an outside echo at all — Alfy's call, and deliberately conservative.
+//
+// No religion is EVER paired with another religion here: a Muslim would never be handed a line from the
+// Gita, a Hindu never one from the Qur'an. That mixing is not something an app should do to someone's
+// faith uninvited, and for many people it would read as the app not taking their tradition seriously.
+//
+// Even the Stoic echo is opt-in per tradition rather than assumed. Christianity is on because the two
+// have been genuinely intertwined for eighteen centuries — the Church Fathers, Boethius and Aquinas all
+// read and argued with the Stoics, so a Seneca line beside a Psalm is a familiar pairing rather than a
+// foreign one. Islam, Hinduism and Buddhism are OFF: each has its own deep tradition of practical
+// wisdom, and importing Greek philosophy into counsel about someone's faith, unasked, is presumptuous.
+// They still get the full shared-theme material in their OWN voice.
+//
+// This is one line to change per tradition if that judgement ever changes.
+const ECHO_OK = { christianity:true, islam:false, hinduism:false, buddhism:false, secular:true };
 function sharedWisdomNote(){
   try{
     if(typeof SHARED_THREADS==='undefined' || !SHARED_THREADS.length) return '';
@@ -8668,13 +8683,15 @@ function sharedWisdomNote(){
       }
       const bits = [];
       if(own) bits.push('their tradition: "' + own.t + '" (' + own.r + ')');
-      if(sec && level !== 'light') bits.push('a Stoic echo: "' + sec.t + '" (' + sec.r + ')');
+      if(sec && level !== 'light' && ECHO_OK[t]) bits.push('a Stoic echo: "' + sec.t + '" (' + sec.r + ')');
       return bits.length ? ('· ' + th.theme + ' — ' + bits.join('; ')) : '';
     }).filter(Boolean);
     if(!lines.length) return '';
     const how = (t === 'secular')
       ? 'SHARED WISDOM you may draw on when it fits what they are actually asking. This person follows no religion — use these as practical philosophy and NEVER introduce religious language or scripture.\n'
-      : 'SHARED WISDOM you may draw on when it fits what they are actually asking. Lead with THEIR tradition. You may add the second line as a resonance — "the Stoics came at the same thing from another direction" — when it genuinely helps, never to imply the paths are interchangeable, and never more than one per reply. If they are in acute distress, drop it entirely and just be present.\n';
+      : (ECHO_OK[t]
+          ? 'SHARED WISDOM you may draw on when it fits what they are actually asking. Lead with THEIR tradition. You may add the second line as a resonance — "the Stoics came at the same thing from another direction" — when it genuinely helps, never to imply the paths are interchangeable, and never more than one per reply. If they are in acute distress, drop it entirely and just be present.\n'
+          : 'SHARED WISDOM from THEIR OWN tradition, to draw on when it fits what they are actually asking. Speak only from within their tradition — do NOT bring in other religions, and do not import outside philosophy into counsel about their faith. If they are in acute distress, drop it entirely and just be present.\n');
     return how + lines.join('\n') + '\n\n';
   }catch(_){ return ''; }
 }
