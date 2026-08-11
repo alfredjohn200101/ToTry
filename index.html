@@ -2,7 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<!-- No maximum-scale / user-scalable=no. Those were there to stop iOS zooming the page when a small
+     input is focused, but they also disable pinch-to-zoom for everyone, which Apple's accessibility
+     guidance is explicitly against and which a low-vision person needs. The zoom-on-focus problem is
+     solved properly instead: every focusable control is >=16px (the CSS rule plus the inline styles
+     that used to override it), and iOS only auto-zooms below 16px. -->
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="To Try">
@@ -4501,7 +4506,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v417';
+const APP_VERSION = 'v418';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -12646,7 +12651,7 @@ function _lockItIn(feeling){
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:8px">A plan for next time</div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);line-height:1.3;margin-bottom:6px">When I feel '+_escFew(label)+', I will…</div>'+
     '<div style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px">Decide it now, while you’re clear. Next time the feeling comes, I’ll hand you back your own words — that’s what makes it hold.</div>'+
-    '<textarea id="ifthen-act" style="min-height:70px;font-size:15px;line-height:1.5;margin-bottom:14px">'+_escFew(preset)+'</textarea>'+
+    '<textarea id="ifthen-act" style="min-height:70px;font-size:16px;line-height:1.5;margin-bottom:14px">'+_escFew(preset)+'</textarea>'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="_saveIfThenFromModal(\''+feeling+'\')">Lock in my plan</button>'+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
   '</div>';
@@ -13725,7 +13730,7 @@ function _vsRender(){
   b.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.14em;margin-bottom:8px">WHAT MATTERS \u00B7 3 OF 3</div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.3;margin-bottom:6px">'+valLabel(s.picked[0])+' is your first.</div>'+
     '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:12px">One line: why that one? This is the sentence I\u2019ll hand back to you when a hard choice comes. Optional \u2014 blank is fine.</div>'+
-    '<textarea id="vs-why" maxlength="160" placeholder="e.g. because I\u2019d rather be the person my kids describe than the one they explain" style="min-height:76px;font-size:15px;line-height:1.5;margin-bottom:14px">'+_escFew(s.why)+'</textarea>'+
+    '<textarea id="vs-why" maxlength="160" placeholder="e.g. because I\u2019d rather be the person my kids describe than the one they explain" style="min-height:76px;font-size:16px;line-height:1.5;margin-bottom:14px">'+_escFew(s.why)+'</textarea>'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="_vsSave()">Hold me to this</button>'+
     '<button class="btn" onclick="_vsPhase(2)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">\u2039 Back</button>';
 }
@@ -14099,10 +14104,10 @@ function openVicePlan(i){
     '<div class="vp-mode" style="display:flex;gap:6px;margin-bottom:16px"></div>'+
     '<div class="vp-line-wrap" style="display:none;margin-bottom:16px">'+
       '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Your line (how much is okay)</div>'+
-      '<input class="vp-line" type="number" min="1" value="'+(v.modThreshold||3)+'" style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:14px;box-sizing:border-box" placeholder="e.g. 3 a week">'+
+      '<input class="vp-line" type="number" min="1" value="'+(v.modThreshold||3)+'" style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:16px;box-sizing:border-box" placeholder="e.g. 3 a week">'+
     '</div>'+
     '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Why this matters to you</div>'+
-    '<textarea class="vp-why" placeholder="The real reason. I’ll say it back to you when it’s hard." style="width:100%;min-height:56px;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:13px;font-family:inherit;margin-bottom:16px;resize:vertical;box-sizing:border-box">'+(plan.why?String(plan.why).replace(/</g,'&lt;'):'')+'</textarea>'+
+    '<textarea class="vp-why" placeholder="The real reason. I’ll say it back to you when it’s hard." style="width:100%;min-height:56px;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:16px;font-family:inherit;margin-bottom:16px;resize:vertical;box-sizing:border-box">'+(plan.why?String(plan.why).replace(/</g,'&lt;'):'')+'</textarea>'+
     '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">When it pulls hardest, what helps you?</div>'+
     '<div class="vp-moves" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px"></div>'+
     '<button class="btn primary vp-save">Save my plan</button>'+
@@ -14221,7 +14226,7 @@ function openProgressCheckin(){
     '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">How far have you come?</div>'+
     '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Since you started with To Try — what have you noticed? Tap any that fit. Alfy reads every one personally, and everyone who shares goes in the feedback raffle.</div>'+
     '<div class="pc-areas" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px"></div>'+
-    '<textarea class="pc-note" placeholder="Anything you’d want Alfy to know? What’s working, what’s missing?" style="width:100%;min-height:70px;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:13px;font-family:inherit;margin-bottom:14px;resize:vertical;box-sizing:border-box"></textarea>'+
+    '<textarea class="pc-note" placeholder="Anything you’d want Alfy to know? What’s working, what’s missing?" style="width:100%;min-height:70px;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:16px;font-family:inherit;margin-bottom:14px;resize:vertical;box-sizing:border-box"></textarea>'+
     '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:16px">Sent from your account, so Alfy knows who to thank — and who to add to the raffle.</div>'+
     '<button class="btn primary pc-send" style="margin-bottom:8px">Send it to Alfy</button>'+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Maybe later</button>'+
@@ -15129,8 +15134,8 @@ function addMassLossRow(){
   row.className = 'mal-row';
   row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:center';
   row.innerHTML =
-    '<input type="date" class="mal-date" max="'+today+'" value="'+today+'" style="flex:1;font-size:15px;padding:10px;color-scheme:dark">'+
-    '<input type="time" class="mal-time" value="12:00" style="width:96px;font-size:15px;padding:10px;color-scheme:dark">'+
+    '<input type="date" class="mal-date" max="'+today+'" value="'+today+'" style="flex:1;font-size:16px;padding:10px;color-scheme:dark">'+
+    '<input type="time" class="mal-time" value="12:00" style="width:96px;font-size:16px;padding:10px;color-scheme:dark">'+
     '<button class="btn" onclick="this.parentElement.remove()" style="width:40px;padding:10px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx3)">\u2715</button>';
   box.appendChild(row);
 }
@@ -17027,7 +17032,7 @@ function openHabitAnchor(hi){
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:8px">Anchor it to something you already do</div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);line-height:1.3;margin-bottom:6px">After I\u2026 I will '+_escFew(h.n).toLowerCase()+'.</div>'+
     '<div style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px">A habit with no cue waits on motivation, and motivation doesn\u2019t show up daily. Tied to something already in your day, it just happens. Same move as the plans you lock in at the Feeling Door \u2014 decide it now, while you\u2019re clear.</div>'+
-    '<input type="text" id="hab-anchor" maxlength="70" placeholder="e.g. I make my coffee" value="'+_escFew(cur)+'" style="font-size:15px;padding:12px;margin-bottom:10px">'+
+    '<input type="text" id="hab-anchor" maxlength="70" placeholder="e.g. I make my coffee" value="'+_escFew(cur)+'" style="font-size:16px;padding:12px;margin-bottom:10px">'+
     '<div style="display:flex;flex-wrap:wrap;justify-content:center;margin-bottom:14px">'+chips+'</div>'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="saveHabitAnchor('+hi+')">Lock in my anchor</button>'+
     (cur?'<button class="btn" onclick="clearHabitAnchor('+hi+')" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-bottom:4px">Remove the anchor</button>':'')+
@@ -20278,12 +20283,12 @@ function _renderPhotoMeal(){
       // Edit mode — the thing Cal AI won't let you do: correct WHAT it is AND the numbers.
       return ''+
       '<div style="padding:10px 0;border-top:1px solid var(--bd)">'+
-        '<input id="pm-e-name" value="'+esc(it.food)+'" placeholder="What is it?" autocomplete="off" style="width:100%;box-sizing:border-box;margin-bottom:6px;font-size:13px;padding:9px">'+
+        '<input id="pm-e-name" value="'+esc(it.food)+'" placeholder="What is it?" autocomplete="off" style="width:100%;box-sizing:border-box;margin-bottom:6px;font-size:16px;padding:9px">'+
         '<div style="display:flex;gap:6px;margin-bottom:6px">'+
-          '<input id="pm-e-cal" type="number" inputmode="numeric" value="'+R(it.cal*m)+'" placeholder="cal" style="flex:1.3;min-width:0;padding:9px;font-size:13px">'+
-          '<input id="pm-e-pro" type="number" inputmode="numeric" value="'+R(it.pro*m)+'" placeholder="P" style="flex:1;min-width:0;padding:9px;font-size:13px">'+
-          '<input id="pm-e-carb" type="number" inputmode="numeric" value="'+R(it.carb*m)+'" placeholder="C" style="flex:1;min-width:0;padding:9px;font-size:13px">'+
-          '<input id="pm-e-fat" type="number" inputmode="numeric" value="'+R(it.fat*m)+'" placeholder="F" style="flex:1;min-width:0;padding:9px;font-size:13px">'+
+          '<input id="pm-e-cal" type="number" inputmode="numeric" value="'+R(it.cal*m)+'" placeholder="cal" style="flex:1.3;min-width:0;padding:9px;font-size:16px">'+
+          '<input id="pm-e-pro" type="number" inputmode="numeric" value="'+R(it.pro*m)+'" placeholder="P" style="flex:1;min-width:0;padding:9px;font-size:16px">'+
+          '<input id="pm-e-carb" type="number" inputmode="numeric" value="'+R(it.carb*m)+'" placeholder="C" style="flex:1;min-width:0;padding:9px;font-size:16px">'+
+          '<input id="pm-e-fat" type="number" inputmode="numeric" value="'+R(it.fat*m)+'" placeholder="F" style="flex:1;min-width:0;padding:9px;font-size:16px">'+
         '</div>'+
         '<div style="display:flex;gap:6px">'+
           '<button onclick="_pmSaveEdit('+i+')" class="btn primary" style="flex:1;padding:9px;font-size:12px;margin:0">Save</button>'+
@@ -20947,7 +20952,7 @@ function openPasteRecipe(){
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
     '<h3 style="margin-bottom:6px">Paste a recipe</h3>'+
     '<p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Paste the ingredients from anywhere — a website, a note, a message. I’ll turn them into a recipe with macros you can edit. Add how many servings it makes if you know.</p>'+
-    '<textarea id="paste-recipe-text" placeholder="500g chicken breast\n2 cups basmati rice\n1 tbsp olive oil\n1 onion\n\nMakes 4 servings" style="min-height:150px;font-size:15px;line-height:1.5;margin-bottom:12px"></textarea>'+
+    '<textarea id="paste-recipe-text" placeholder="500g chicken breast\n2 cups basmati rice\n1 tbsp olive oil\n1 onion\n\nMakes 4 servings" style="min-height:150px;font-size:16px;line-height:1.5;margin-bottom:12px"></textarea>'+
     '<button class="btn primary" onclick="parsePastedRecipe()" style="margin-bottom:8px">Build the recipe</button>'+
     '<button class="btn" onclick="closeModal(this)">Cancel</button>'+
   '</div>';
@@ -31492,7 +31497,7 @@ function renderTGT(){
     return '<input type="text" id="'+id+'" maxlength="160" placeholder="'+ph+'" value="'+_escFew(val||'')+'" '+
       /* onblur alone — onchange also fires on blur for a text input, so both meant a double save. */
       'onblur="_tgtSaveField(\''+id.replace('tgt-','')+'\',this.value)" '+
-      'style="width:100%;margin-bottom:8px;padding:9px 11px;font-size:13px;background:var(--bg3);border:1px solid var(--bd);border-radius:9px;color:var(--tx)">';
+      'style="width:100%;margin-bottom:8px;padding:9px 11px;font-size:16px;background:var(--bg3);border:1px solid var(--bd);border-radius:9px;color:var(--tx)">';
   };
   const told = !!t.told;
   el.innerHTML =
@@ -31529,7 +31534,7 @@ function _tgtTellThem(){
   m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:8px">Send it as it is.</div>'+
     '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:12px">Edit it if you want — but plain and unpolished lands better than clever. Copy it, then send it in whatever you normally use.</div>'+
-    '<textarea id="tgt-msg" style="min-height:92px;font-size:14px;line-height:1.55;margin-bottom:12px">'+_escFew(msg)+'</textarea>'+
+    '<textarea id="tgt-msg" style="min-height:92px;font-size:16px;line-height:1.55;margin-bottom:12px">'+_escFew(msg)+'</textarea>'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="_tgtCopyAndDone()">Copy &amp; mark as told</button>'+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not yet</button>'+
   '</div>';
@@ -31829,7 +31834,7 @@ function openYourFew(){
       // specific thing is what turns a generic nudge into actually knowing someone.
       '<input type="text" value="'+_escFew(p.note||'')+'" maxlength="90" placeholder="what to remember — e.g. ask about her surgery" '+
         'onchange="_yfNote('+i+',this.value)" onblur="_yfNote('+i+',this.value)" '+
-        'style="width:100%;margin:4px 0 0;padding:5px 7px;font-size:11.5px;background:var(--bg3);border:1px solid var(--bd);border-radius:7px;color:var(--tx2)">'+
+        'style="width:100%;margin:4px 0 0;padding:5px 7px;font-size:16px;background:var(--bg3);border:1px solid var(--bd);border-radius:7px;color:var(--tx2)">'+
       (function(){ if(yourFewMuted(p)) return '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.04em;margin-top:3px">held quietly · no reminders</div>'; const d=daysSinceReachOut(p.name); return d==null?'':'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.04em;margin-top:3px">'+(d===0?'reached out today':d+'d since you logged one')+'</div>'; })()+
       '</div>'+
       '<button class="btn" style="width:auto;padding:5px 8px;font-size:11px;color:var(--tx3)" title="Carry them without reminders" onclick="toggleFewMute('+i+')">'+(yourFewMuted(p)?'🔔':'🔕')+'</button>'+
@@ -39665,7 +39670,7 @@ function confirmScaleScreenshotEntry(weight, p){
       '<div style="flex:1"><label style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:4px">Weight (kg)</label>'+
       '<input type="number" id="shot-weight" step="0.1" value="'+weight+'" style="width:100%;font-size:22px;text-align:center;padding:10px;font-family:DM Mono,monospace"></div>'+
       '<div style="width:140px"><label style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:4px">Date</label>'+
-      '<input type="date" id="shot-date" max="'+today+'" value="'+today+'" style="width:100%;font-size:14px;padding:11px;color-scheme:dark"></div>'+
+      '<input type="date" id="shot-date" max="'+today+'" value="'+today+'" style="width:100%;font-size:16px;padding:11px;color-scheme:dark"></div>'+
     '</div>'+
     '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;margin-bottom:14px">'+
       row('Body fat', p.bf, '%')+row('Muscle mass', p.musclePct, '%')+row('Muscle mass', p.muscleKg, 'kg')+

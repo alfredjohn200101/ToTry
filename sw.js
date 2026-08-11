@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v417-health-writeback'
+const CACHE = 'totry-v418-pinch-zoom'
 
 const CORE = [
   './',
