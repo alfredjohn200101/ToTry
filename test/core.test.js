@@ -524,4 +524,50 @@ H.section('dead element references — must not grow');
     'no unguarded dead element reference sits inside a function that is actually called');
 }
 
+H.section('training history — one cap, no silent truncation');
+{
+  // The bug this guards: totry_workouts was capped at each of its eight write sites with a different
+  // number (300/365/400/500/1000/uncapped), so the SMALLEST cap won whenever its path ran. Importing
+  // 1000 sessions from Hevy then finishing one workout destroyed 636 of them, permanently and silently.
+  const { _auKeyMs, _workoutMs, _capWorkouts, WORKOUT_CAP } =
+    H.load(['_auKeyMs', '_workoutMs', '_capWorkouts'], { WORKOUT_CAP: 1000 });
+
+  H.eq(_capWorkouts(new Array(1200).fill(0).map((_, i) => ({ id: i, ts: new Date(Date.now() - i * 86400000).toISOString() }))).length,
+    1000, 'caps at 1000');
+  H.eq(_capWorkouts([{ id: 'a' }, { id: 'b' }]).length, 2, 'leaves a short history untouched');
+
+  // Newest-first culling: the kept set must be the newest, whichever order they arrived in.
+  const scrambled = new Array(1100).fill(0).map((_, i) => ({ id: i, ts: new Date(2020, 0, 1 + i).toISOString() }));
+  const kept = _capWorkouts(scrambled).map(w => w.id);
+  H.ok(kept.includes(1099) && !kept.includes(0), 'keeps the newest and culls the oldest');
+
+  // Both real-world date shapes must resolve, or undated rows sort to 0 and get culled first.
+  H.ok(_workoutMs({ date: '3/08/2026' }) > 0, 'parses en-AU short dates (3/08/2026)');
+  H.ok(_workoutMs({ date: 'Mon, 3 Aug 2026' }) > 0, 'parses en-AU long dates (Mon, 3 Aug 2026)');
+  H.ok(_workoutMs({ ts: '2026-08-03T10:00:00.000Z' }) > 0, 'prefers the ISO timestamp');
+
+  // The ratchet: no write site may re-introduce its own cap.
+  const raw = [...H.html.matchAll(/ls\('totry_workouts',\s*[A-Za-z0-9_.]+\.slice\(/g)].length;
+  H.eq(raw, 0, 'no write site caps totry_workouts with its own slice() — all go through _capWorkouts');
+}
+
+H.section('storage caps agree across write sites');
+{
+  // The class, not just the instance. Whenever one key is capped at two different lengths, the SMALLER
+  // one wins the moment its path runs and the difference is deleted forever. Found three live cases:
+  // checkins 90 vs 300, feeling_wins 200 vs 500, saved verses 100 vs 200 — all user-authored, all
+  // unrecoverable. This fails the build if any key ever disagrees with itself again.
+  const caps = {};
+  for (const m of H.html.matchAll(/ls\('(totry_[a-z_]+)',\s*[A-Za-z0-9_.]+\.slice\(\s*(-?\d+)\s*,?\s*(-?\d+)?\s*\)/g)) {
+    const [, key, a, b] = m;
+    const n = b === undefined ? a : b;          // slice(0,N) → N ; slice(-N) → -N
+    (caps[key] = caps[key] || new Set()).add(String(n));
+  }
+  const disagree = Object.entries(caps)
+    .filter(([, v]) => v.size > 1)
+    .map(([k, v]) => k + ' capped at ' + [...v].sort().join(' and '));
+  H.eq(disagree, [], 'every storage key is capped at the same length everywhere it is written');
+  H.ok(Object.keys(caps).length > 25, 'the scan actually found the write sites (' + Object.keys(caps).length + ' keys)');
+}
+
 H.report();
