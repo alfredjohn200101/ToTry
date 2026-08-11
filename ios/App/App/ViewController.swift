@@ -22,5 +22,7 @@ class ViewController: CAPBridgeViewController {
         super.capacitorDidLoad()
         // Registered by instance because this plugin is not part of a package's generated plugin list.
         bridge?.registerPluginInstance(SleepPlugin())
+        // Same reason: an app-target plugin is compiled but never auto-discovered.
+        bridge?.registerPluginInstance(HealthWritePlugin())
     }
 }

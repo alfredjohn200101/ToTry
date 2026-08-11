@@ -13,6 +13,7 @@
 		504EC3081FED79650016851F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
 		A1B2C3D402AA00AA00AA00A2 /* SleepPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D401AA00AA00AA00A1 /* SleepPlugin.swift */; };
 		A1B2C3D404AA00AA00AA00A4 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D403AA00AA00AA00A3 /* ViewController.swift */; };
+		A1B2C3D406AA00AA00AA00A6 /* HealthWritePlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D405AA00AA00AA00A5 /* HealthWritePlugin.swift */; };
 		504EC30D1FED79650016851F /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30B1FED79650016851F /* Main.storyboard */; };
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
@@ -30,6 +31,7 @@
 		504EC3071FED79650016851F /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A1B2C3D401AA00AA00AA00A1 /* SleepPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepPlugin.swift; sourceTree = "<group>"; };
 		A1B2C3D403AA00AA00AA00A3 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		A1B2C3D405AA00AA00AA00A5 /* HealthWritePlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthWritePlugin.swift; sourceTree = "<group>"; };
 		504EC30E1FED79650016851F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		504EC3131FED79650016851F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		50B271D01FEDC1A000F3C39B /* public */ = {isa = PBXFileReference; lastKnownFileType = folder; path = public; sourceTree = "<group>"; };
@@ -74,6 +76,7 @@
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				A1B2C3D401AA00AA00AA00A1 /* SleepPlugin.swift */,
 				A1B2C3D403AA00AA00AA00A3 /* ViewController.swift */,
+				A1B2C3D405AA00AA00AA00A5 /* HealthWritePlugin.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
 				504EC30E1FED79650016851F /* Assets.xcassets */,
 				504EC3101FED79650016851F /* LaunchScreen.storyboard */,
@@ -170,6 +173,7 @@
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				A1B2C3D402AA00AA00AA00A2 /* SleepPlugin.swift in Sources */,
 				A1B2C3D404AA00AA00AA00A4 /* ViewController.swift in Sources */,
+				A1B2C3D406AA00AA00AA00A6 /* HealthWritePlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

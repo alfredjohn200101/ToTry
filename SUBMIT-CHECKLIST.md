@@ -13,6 +13,7 @@ Verified in the actual shipping bundle, not just the repo:
 | Build number | ✅ **3** (ASC already holds 2 — uploading 2 is rejected before review) |
 | Version | `1.0` · bundle id `app.totry` · display name **To Try** |
 | Usage descriptions in built plist | ✅ Camera, HealthShare, HealthUpdate, PhotoLibrary, PhotoLibraryAdd |
+| **HealthUpdate is now actually USED** | ✅ v417 — `HealthWritePlugin` writes finished workouts + weigh-ins. Before this, the app requested write access it had no code for, and both the usage string and privacy.html described a feature that did not exist. Apple checks that a requested permission is used |
 | `ITSAppUsesNonExemptEncryption` | ✅ `false` — you will **not** be asked the export-compliance question |
 | Icons | ✅ `Assets.car` + AppIcon variants |
 | Account deletion (5.1.1(v), mandatory) | ✅ deletes `user_data`, `push_subscriptions`, `feedback` |

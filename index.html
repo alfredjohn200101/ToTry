@@ -3004,6 +3004,16 @@ input:focus,textarea:focus,select:focus{
       </div>
       <button class="btn primary" id="health-connect-btn" style="width:auto;padding:8px 14px;font-size:12px;margin:0" onclick="connectAppleHealth()">Connect</button>
     </div>
+    <!-- The write side, opt-in and off by default. Hidden entirely unless this build can actually write,
+         so it is never a switch that does nothing. Deliberately phrased as what it does, not as a feature
+         name: "send my logs back" is checkable, "Health integration" is not. -->
+    <div id="health-write-row" style="display:none;margin-top:11px;padding-top:11px;border-top:1px solid var(--bd);align-items:center;gap:10px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;color:var(--tx)">Send my logs back to Apple Health</div>
+        <div style="font-size:11.5px;color:var(--tx3);line-height:1.5">Workouts you finish here and your weigh-ins appear in Health and Fitness. Never your food &mdash; those numbers are estimates.</div>
+      </div>
+      <button class="btn" id="health-write-btn" style="width:auto;padding:7px 12px;font-size:12px;margin:0;background:var(--bg3);border:1px solid var(--bd)" onclick="toggleHealthWrite()">Turn on</button>
+    </div>
   </div>
   <!-- ── DAILY LOGS (top — 5-second daily actions) ── -->
   <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">
@@ -4491,7 +4501,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v416';
+const APP_VERSION = 'v417';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4821,6 +4831,7 @@ const SYNC_KEYS = [
   // stung most: it is the anti-engagement metric the app SHOWS — the count of times someone came,
   // regulated, and left — and switching phones silently reset it to zero. train_goal/train_days are
   // the answers that generated totry_split, which already synced without them.
+  'totry_health_write',   // opted in to mirroring logs into Apple Health — see HealthWrite
   'totry_cba',   // the person's own cost-benefit reasons, per vice — see openCBA()
   'totry_releases','totry_feelings','totry_hunger_log','totry_breath_log',
   'totry_meal_plan','totry_meal_prefs','totry_train_goal','totry_train_days',
@@ -5766,7 +5777,46 @@ async function connectAppleHealth(){
   }catch(e){ if(typeof showToast==='function') showToast('Couldn’t connect', String(e&&e.message||e)); }
   renderHealthCard();
 }
+// The write row's own state. Separate function, called from renderHealthCard, so the read card's logic
+// stays readable — and so this can be called on its own after the toggle.
+function renderHealthWriteRow(){
+  try{
+    const row=document.getElementById('health-write-row'); if(!row) return;
+    const btn=document.getElementById('health-write-btn');
+    const canWrite = (typeof HealthWrite!=='undefined') && HealthWrite.isNative() && !!HealthWrite._p();
+    if(!canWrite){ row.style.display='none'; return; }   // never show a switch that cannot work
+    row.style.display='flex';
+    const on = HealthWrite.enabled();
+    if(btn){
+      btn.textContent = on ? 'On' : 'Turn on';
+      btn.style.background = on ? 'var(--go-bg)' : 'var(--bg3)';
+      btn.style.borderColor = on ? 'var(--go-bd)' : 'var(--bd)';
+      btn.style.color = on ? 'var(--go)' : 'var(--tx2)';
+    }
+  }catch(_){}
+}
+async function toggleHealthWrite(){
+  if(typeof HealthWrite==='undefined') return;
+  const btn=document.getElementById('health-write-btn');
+  if(HealthWrite.enabled()){
+    // Turning it off is instant and local — iOS permission stays granted, which is correct: revoking it
+    // is theirs to do in Settings, and we should not pretend to have done it.
+    ls('totry_health_write', false);
+    if(typeof showToast==='function') showToast('Turned off','Nothing more will be sent to Apple Health.');
+    renderHealthWriteRow(); return;
+  }
+  if(btn){ btn.textContent='…'; btn.disabled=true; }
+  const r = await HealthWrite.connect();
+  if(btn) btn.disabled=false;
+  if(typeof showToast==='function'){
+    if(r && r.ok) showToast('On','Workouts and weigh-ins will appear in Apple Health from now on.');
+    else showToast('Not connected', (r&&r.reason) || 'Permission wasn\u2019t granted.');
+  }
+  if(typeof logEvent==='function' && r && r.ok) logEvent('health_write_on');
+  renderHealthWriteRow();
+}
 function renderHealthCard(){
+  try{ renderHealthWriteRow(); }catch(_){ }
   try{
     const card=document.getElementById('health-connect-card'); if(!card) return;
     const title=document.getElementById('health-connect-title'), sub=document.getElementById('health-connect-sub'), btn=document.getElementById('health-connect-btn');
@@ -14583,6 +14633,67 @@ function nextSmallThingHTML(){
   }catch(_){ return ''; }
 }
 
+
+// ── WRITE BACK TO APPLE HEALTH ──────────────────────────────────────────────────────────────────
+// The app has always DECLARED this: NSHealthUpdateUsageDescription says "To Try can record activity you
+// log here back to Apple Health, so your data stays in one place", and the privacy policy promised
+// anything written back happens "only at your request". Neither was true — capacitor-health exposes only
+// query methods, and nothing else wrote. So the app asked for a permission it could not use and described
+// a feature that did not exist. Apple checks that a requested permission is used, and beyond the review
+// risk it was a claim the code did not keep.
+//
+// Narrow on purpose. It writes only what the person explicitly logged:
+//   · the workout they just finished
+//   · a weigh-in
+// It never writes nutrition — the app's calorie numbers are estimates, and an estimate does not belong in
+// a health record next to data from a scale. It never writes anything inferred, and never on a timer.
+//
+// Opt-in, and OFF by default. Nothing is mirrored until the person turns it on in the Track tab, because
+// silently pushing their training into a system health record is not a decision an app should make for
+// them. The HealthKit sheet appears when they choose it, not at startup — a permission prompt before
+// someone has logged anything is a prompt with no story attached, and those get declined.
+const HealthWrite = {
+  _p(){ try{ const P=(window.Capacitor&&window.Capacitor.Plugins)||{}; return P.HealthWrite || P.HealthWritePlugin || null; }catch(_){ return null; } },
+  isNative(){ try{ return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }catch(_){ return false; } },
+  enabled(){ try{ return ls('totry_health_write') === true; }catch(_){ return false; } },
+  async available(){ const p=this._p(); if(!p) return false; try{ const r=await p.isAvailable(); return !!(r&&r.available); }catch(_){ return false; } },
+  // Called from Settings. Returns true only if iOS actually granted it — write authorization is one of
+  // the few HealthKit answers iOS tells you honestly.
+  async connect(){
+    const p=this._p(); if(!p) return { ok:false, reason:'This build cannot write to Apple Health.' };
+    try{
+      if(!(await this.available())) return { ok:false, reason:'Apple Health isn’t available on this device.' };
+      const r = await p.requestAuthorization();
+      const ok = !!(r && r.granted);
+      ls('totry_health_write', ok);
+      return ok ? { ok:true } : { ok:false, reason:'Permission wasn’t granted — you can change it in iOS Settings → Health.' };
+    }catch(e){ return { ok:false, reason:String(e&&e.message||e) }; }
+  },
+  // Fire-and-forget from the logging paths. A failed write must never block or interrupt a log: the
+  // person's own record is the source of truth and Health is a mirror of it.
+  async workout(sess){
+    if(!this.enabled() || !this.isNative()) return;
+    const p=this._p(); if(!p || !sess) return;
+    try{
+      const mins = parseFloat(sess.durationMin || sess.durationMinutes || 0) || 0;
+      if(mins <= 0) return;                      // nothing honest to write
+      await p.saveWorkout({
+        type: String(sess.splitFocus || sess.type || 'Strength'),
+        startMs: sess.ts ? Date.parse(sess.ts) : Date.now(),
+        durationMin: mins,
+        calories: parseFloat(sess.calories || 0) || 0
+      });
+    }catch(_){ /* mirror only — never surface */ }
+  },
+  async weight(kg, atMs){
+    if(!this.enabled() || !this.isNative()) return;
+    const p=this._p(); if(!p) return;
+    const n = parseFloat(kg) || 0;
+    if(n <= 20 || n >= 500) return;              // same sanity floor the plugin enforces
+    try{ await p.saveWeight({ kg:n, atMs: atMs || Date.now() }); }catch(_){}
+  }
+};
+
 // ── THE BROTHER — the one voice the whole app speaks in ─────────────────────────────────────────
 // This is Alfy, captured from his own words (the voice-capture moments), not a generic "warm
 // assistant". Every AI touchpoint (companion, coach, morning, evening) prepends this, so the app IS
@@ -19054,6 +19165,7 @@ function saveQuickWeight(){
   ls('totry_body', entries);
   document.querySelector('.modal-bg.open')?.remove();
   renderBody();
+  try{ if(typeof HealthWrite!=='undefined') HealthWrite.weight(w); }catch(_){}
   showToast('Logged', w + 'kg saved.');
   haptic('success');
 }
@@ -28851,6 +28963,8 @@ function saveWorkoutSession(){
   const session={id:Date.now(),source:'manual',date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}),ts:new Date().toISOString(),day:getDayCount(),exercises:JSON.parse(JSON.stringify(currentSession)),completedSets:cs,totalSets:ts,volume:vol,durationMin:durationMin,splitFocus:getUserSplit()[tIdx()]?.focus||'Workout'};
   const history=ls('totry_workouts')||[];history.unshift(session);ls('totry_workouts',_capWorkouts(history));
   if(typeof logEvent==='function') logEvent('workout_logged');
+  // Mirror it into Apple Health, if they turned that on. Fire and forget.
+  try{ if(typeof HealthWrite!=='undefined') HealthWrite.workout(session); }catch(_){}
   const prsHit = updatePersonalRecords(session);
   stopRestTimer();
   const savedExCount = session.exercises.length;

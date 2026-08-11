@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v416-next-small-real-thing'
+const CACHE = 'totry-v417-health-writeback'
 
 const CORE = [
   './',
