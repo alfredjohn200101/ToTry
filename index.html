@@ -3348,18 +3348,6 @@ input:focus,textarea:focus,select:focus{
   <div id="reflect-panel-evening">
     <!-- ════ EVENING — close the day with grace ════ Dusk. Look back honestly, without shame.
          End the day reconciled. "You showed up. Tomorrow is new." -->
-      <!-- TIER 1.1 — the wind-down. Sleep was already in getLifeState() and the app already TALKED about
-           it; nothing helped. This is the anti-scroll thesis as an actual intervention: a short sequence
-           whose last step is putting the phone down, ending in theRelease() so the session is over rather
-           than handing them back to a lit screen. Deliberately NOT a sleep score (do-not-build list). -->
-      <div class="card" id="winddown-card" style="margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="openWindDown()">
-        <div style="width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(140,107,182,0.85),rgba(140,107,182,0.18));flex-shrink:0"></div>
-        <div style="flex:1">
-          <div style="font-size:14px;color:var(--tx)">Wind down for sleep</div>
-          <div style="font-size:11.5px;color:var(--tx3);line-height:1.5">Four steps, a few minutes, and it ends with the phone face down.</div>
-        </div>
-        <div style="color:var(--tx3);font-size:18px">&rsaquo;</div>
-      </div>
     <div class="ritual-hero ritual-hero-dusk">
       <div class="ritual-hero-glow"></div>
       <div class="ritual-hero-inner">
@@ -4096,13 +4084,12 @@ Amen.</div></div>
       <input type="text" id="comp-reply" class="comp-input" placeholder="talk to me..." onkeydown="if(event.key==='Enter')companionReply()">
       <button class="comp-send" onclick="companionReply()" aria-label="Send">&#10148;</button>
     </div>
-    <!-- TIER 2.3 — DEADS. SMART Recovery's urge menu: Delay, Escape, Accept, Distract, Substitute.
-         The companion already carries ONE mechanism it picked. That is right for the first three
-         seconds and wrong after them: being handed a response is not the same as choosing one, and
-         choosing is the part that predicts follow-through (SDT — autonomy, not compliance). Collapsed
-         by default so it never competes with the voice; one tap opens five named ways out. -->
-    <button id="comp-deads-toggle" onclick="_deadsToggle()" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:11.5px;cursor:pointer;font-family:'DM Mono',monospace;letter-spacing:0.04em">or pick your own way through &darr;</button>
-    <div id="comp-deads" style="display:none;margin-top:8px"></div>
+    <!-- The urge menu (openDEADS) already existed but was reachable from ONE modal only, never from the
+         companion — which is the exact surface where someone is choosing a way through. The companion
+         hands them one mechanism it picked, which is right for the first three seconds and wrong after:
+         being handed a response is compliance, choosing one is autonomy, and autonomy is what predicts
+         doing it again unprompted. This is a second door onto the menu that was already built. -->
+    <button onclick="openDEADS()" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:11.5px;cursor:pointer;font-family:'DM Mono',monospace;letter-spacing:0.04em">or pick your own way through &rarr;</button>
     <div class="comp-meet-actions">
       <button class="btn success" onclick="companionWon()" style="flex:1">I'm through it &#127793;</button>
       <button class="btn" onclick="closeCompanion()" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Step away</button>
@@ -4504,7 +4491,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v411';
+const APP_VERSION = 'v412';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4834,6 +4821,7 @@ const SYNC_KEYS = [
   // stung most: it is the anti-engagement metric the app SHOWS — the count of times someone came,
   // regulated, and left — and switching phones silently reset it to zero. train_goal/train_days are
   // the answers that generated totry_split, which already synced without them.
+  'totry_cba',   // the person's own cost-benefit reasons, per vice — see openCBA()
   'totry_releases','totry_feelings','totry_hunger_log','totry_breath_log',
   'totry_meal_plan','totry_meal_prefs','totry_train_goal','totry_train_days',
   'totry_confessions','totry_masses','totry_saved_meals','totry_migrate_dismissed','totry_food_imported','totry_body_goal','totry_fight_log',
@@ -14455,230 +14443,13 @@ async function _researchProtocol(name, key){
 }
 
 
-// ── THE RECOVERY BRIDGE ────────────────────────────────────────────────────────────────────────
-// CLAUDE.md: "It points beyond itself — to real people, a priest, a counsellor, the sacraments. It is
-// NOT a replacement for real help." The crisis paths cover emergencies. This covers the ordinary,
-// bigger case: someone who has decided they want people, and does not know that free rooms exist.
-//
-// Rules this follows, deliberately:
-//   · NEVER RANKED. No "recommended". Different things work for different people and the app does not
-//     get to decide. Order is fixed and neutral, not scored.
-//   · NEVER FRAMED AS FAILURE. Wanting people is not a relapse and not the app breaking down.
-//   · FAITH-AWARE, NOT FAITH-GATED. The faith-based fellowships are labelled honestly so nobody walks
-//     into a prayer expecting none, and the secular ones are labelled just as plainly. A person of any
-//     tradition (or none) sees the whole list — only the ORDER shifts so their own is not buried.
-//   · NO TRACKING. Tapping through records nothing. There is no funnel here and no engagement to farm;
-//     if they leave for a real room and never come back, that is the app working.
-const RECOVERY_BRIDGES = [
-  { id:'smart', name:'SMART Recovery', kind:'secular',
-    what:'Free meetings built on CBT and motivational tools — the same mechanisms this app uses. Online meetings daily, worldwide.',
-    url:'https://meetings.smartrecovery.org/' },
-  { id:'aa', name:'AA · Alcoholics Anonymous', kind:'faith',
-    what:'The original twelve-step fellowship, for alcohol. Speaks of a higher power, understood however you understand it.',
-    url:'https://www.aa.org/find-aa' },
-  { id:'na', name:'NA · Narcotics Anonymous', kind:'faith',
-    what:'Twelve steps, for drugs of any kind. Same higher-power framing as AA.',
-    url:'https://na.org/meetingsearch/' },
-  { id:'saa', name:'SAA / SA · sex & pornography fellowships', kind:'faith',
-    what:'Twelve-step rooms specifically for sexual compulsion, including porn. Many are men-only or women-only.',
-    url:'https://saa-recovery.org/meetings/' },
-  { id:'cr', name:'Celebrate Recovery', kind:'christian',
-    what:'Explicitly Christian, church-hosted, for any hurt or habit — not only addiction. Usually a meal, a talk, then small groups.',
-    url:'https://www.celebraterecovery.com/crgroups' },
-  { id:'refuge', name:'Refuge Recovery', kind:'buddhist',
-    what:'Recovery built on Buddhist practice — mindfulness and the four truths rather than a higher power.',
-    url:'https://refugerecovery.org/meetings' },
-  { id:'harm', name:'Harm reduction', kind:'secular',
-    what:'If you are not trying to stop yet, or stopping outright is unsafe: services that help you stay alive and well in the meantime, without asking you to quit first.',
-    url:'https://harmreduction.org/resource-center/' },
-  { id:'therapy', name:'A therapist or counsellor', kind:'secular',
-    what:'One person, trained, whose whole job is you. If money is the barrier, ask about sliding scale — most will not mention it unless asked.',
-    url:'https://findahelpline.com' },
-];
-// Which of these speaks the person's own language, so their tradition is not buried at the bottom.
-const _BRIDGE_AFFINITY = {
-  christianity: ['christian','faith'],
-  islam:        ['faith'],
-  hinduism:     ['faith'],
-  buddhism:     ['buddhist','faith'],
-  secular:      ['secular'],
-};
-function _bridgeOrder(){
-  const t = (typeof faithTradition==='function') ? faithTradition() : 'secular';
-  const pref = _BRIDGE_AFFINITY[t] || _BRIDGE_AFFINITY.secular;
-  // Stable partition, NOT a score: theirs first, everything else after. Within their group the
-  // affinity list's own order decides, so a Christian sees Celebrate Recovery before the generic
-  // higher-power rooms and a Buddhist sees Refuge Recovery before them — otherwise the closest match
-  // sat below three others purely because of where it happened to sit in the source array. Ties keep
-  // source order. Nothing is hidden, nothing is scored, and the whole list is always present.
-  const rank = b => pref.indexOf(b.kind);
-  const mine = RECOVERY_BRIDGES.filter(b => rank(b) >= 0)
-    .map((b, i) => ({ b, i }))
-    .sort((x, y) => (rank(x.b) - rank(y.b)) || (x.i - y.i))
-    .map(x => x.b);
-  const rest = RECOVERY_BRIDGES.filter(b => rank(b) < 0);
-  return mine.concat(rest);
-}
-const _BRIDGE_KIND_LABEL = { secular:'no religious framing', faith:'higher power, your own understanding',
-                             christian:'Christian', buddhist:'Buddhist practice' };
-function openRecoveryBridge(){
-  const m = document.createElement('div');
-  m.className = 'modal-bg open';
-  const rows = _bridgeOrder().map(function(b){
-    return '<a href="'+b.url+'" target="_blank" rel="noopener" class="card" '+
-      'style="display:block;text-decoration:none;margin-bottom:8px;padding:13px 14px">'+
-      '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">'+
-        '<div style="font-size:14px;color:var(--tx);font-weight:500">'+_escFew(b.name)+'</div>'+
-        '<div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;white-space:nowrap">'+_escFew(_BRIDGE_KIND_LABEL[b.kind]||'')+'</div>'+
-      '</div>'+
-      '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-top:5px">'+_escFew(b.what)+'</div>'+
-      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);margin-top:7px">Find a meeting &rarr;</div>'+
-    '</a>';
-  }).join('');
-  m.innerHTML = '<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-style:italic;color:var(--tx);margin-bottom:6px">People who know your name.</div>'+
-    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.65;margin-bottom:14px">Not a ranking, and not a sign anything has gone wrong. These are the free rooms that exist. Some are religious and say so; some are not and say so. Walk into one and see.</div>'+
-    rows +
-    '<div style="font-size:11px;color:var(--tx3);line-height:1.6;margin:10px 0 12px">Nothing here is recorded. I do not know which one you tap, and if you find your people and stop needing me, that is this working.</div>'+
-    '<button class="btn" onclick="closeModal(this)">Close</button></div>';
-  document.body.appendChild(m);
-  m.addEventListener('click', function(e){ if(e.target===m) m.remove(); });
-  if(typeof haptic==='function') haptic('tap');
-}
-
-
-// ── DEADS — the urge menu (SMART Recovery) ─────────────────────────────────────────────────────
-// Five named responses to a craving. The companion picks a mechanism for the first moments, which is
-// right when someone is white-knuckling and cannot decide anything. But a person handed a response is
-// complying; a person choosing one is deciding — and autonomy is what predicts whether they do it
-// again unprompted. So this offers the same moves BY NAME and lets them pick.
-//
-// Each one routes to something the app already does rather than inventing a new screen: the breath
-// overlay, the Release off-ramp, the values sort, the toolkit. Nothing here is new machinery.
-const DEADS = [
-  { k:'D', name:'Delay',     what:'Not "no" — "not for the next few minutes". Urges peak and fall; you only have to outlast the crest.',
-    cta:'Start a few minutes',  act:"_deadsDelay()" },
-  { k:'E', name:'Escape',    what:'Leave the situation, not just the thought. Change room, go outside, put the phone down somewhere else.',
-    cta:'Step out of it',       act:"_deadsEscape()" },
-  { k:'A', name:'Accept',    what:'Stop wrestling it. Feel where it sits in your body and let it be there without obeying it.',
-    cta:'Ride it out',          act:"_deadsAccept()" },
-  { k:'D', name:'Distract',  what:'Give your attention somewhere real. Not scrolling — something with your hands or your body.',
-    cta:'Find something',       act:"_deadsDistract()" },
-  { k:'S', name:'Substitute',what:'Meet the need underneath instead. Hungry, tired, lonely, wired — the urge is often standing in for one of those.',
-    cta:'What’s underneath',act:"_deadsSubstitute()" },
-  // Not one of Marlatt's five, added deliberately: turning outward is the exit the clinical menu misses,
-  // and it is the one every tradition this app serves arrived at on its own.
-  { k:'+', name:'Turn outward', what:'Do one small thing for someone else. A craving runs on a loop about you — this is the fastest way to break the loop rather than argue with it.',
-    cta:'Give me one thing', act:"_deadsService()" },
-];
-function _deadsToggle(){
-  const box=document.getElementById('comp-deads'); const tog=document.getElementById('comp-deads-toggle');
-  if(!box) return;
-  const open = box.style.display !== 'none';
-  if(open){ box.style.display='none'; if(tog) tog.innerHTML='or pick your own way through ↓'; return; }
-  box.innerHTML = DEADS.map(function(d){
-    return '<div class="card" style="margin-bottom:6px;padding:11px 12px">'+
-      '<div style="display:flex;align-items:baseline;gap:8px">'+
-        '<div style="font-family:DM Mono,monospace;font-size:13px;color:var(--go);width:14px">'+d.k+'</div>'+
-        '<div style="flex:1;min-width:0">'+
-          '<div style="font-size:13px;color:var(--tx);font-weight:500">'+_escFew(d.name)+'</div>'+
-          '<div style="font-size:11.5px;color:var(--tx3);line-height:1.55;margin-top:3px">'+_escFew(d.what)+'</div>'+
-          '<button onclick="'+d.act+'" style="margin-top:7px;background:none;border:none;padding:0;color:var(--go);font-size:11.5px;cursor:pointer;font-family:DM Mono,monospace">'+_escFew(d.cta)+' →</button>'+
-        '</div>'+
-      '</div></div>';
-  }).join('');
-  box.style.display='block';
-  if(tog) tog.innerHTML='hide these ↑';
-  if(typeof haptic==='function') haptic('tap');
-  if(typeof logEvent==='function') logEvent('deads_opened');
-}
-// Each route reuses something that already exists. No new screens.
-function _deadsDelay(){ if(typeof openBreath==='function') openBreath('settle'); else _deadsSay('Set a timer for five minutes. You do not have to decide anything until it goes off.'); }
-function _deadsEscape(){ _deadsSay('Stand up and change rooms now — take the phone with you or leave it, but move. Come back and tell me where you are.'); }
-// 'surf' is literally the urge-surfing protocol — the exact mechanism Accept names, already built.
-function _deadsAccept(){ if(typeof openBreath==='function') openBreath('surf'); else _deadsSay('Find where it sits in your body. Watch it like weather. You are not required to act on it.'); }
-function _deadsDistract(){ if(typeof theRelease==='function') theRelease({did:'You chose to put it down and go do something real.'}); else _deadsSay('Something with your hands, off the screen. Ten minutes.'); }
-function _deadsSubstitute(){ if(typeof openHALT==='function') openHALT(); else _deadsSay('Hungry, angry, lonely, tired — which one is it actually?'); }
-function _deadsService(){ if(typeof openServiceExit==='function') openServiceExit(); else _deadsSay('Do one small thing for someone else, right now. That is the exit.'); }
-// Fallback: speak it into the conversation rather than failing silently.
-function _deadsSay(text){
-  try{
-    const conv=document.getElementById('comp-conversation');
-    if(conv){ const d=document.createElement('div'); d.className='comp-msg comp-msg-them'; d.textContent=text;
-      conv.appendChild(d); conv.scrollTop=conv.scrollHeight; }
-    if(typeof _compHistory!=='undefined') _compHistory.push({ role:'assistant', content:text });
-  }catch(_){}
-}
-
-
-// ── TIER 1.1 — WIND-DOWN + MORNING LIGHT ───────────────────────────────────────────────────────
-// Sleep already reaches getLifeState() and the coach already speaks about it, but nothing helped. These
-// are the two cheapest, best-evidenced levers, and both are deliberately un-gadgety.
-//
-// WHAT THIS IS NOT, on purpose:
-//   · Not a sleep score. Scores are on the do-not-build list, and a bad score at 11pm makes sleep worse.
-//   · Not a notification. Both live inside rituals the person already chooses to open.
-//   · Not a tracker. Nothing here is graded; the only thing stored is that they did it, so the app can
-//     stop offering something they have already done tonight.
-//
-// The last step is the point: it ends OFF the phone, through theRelease(), so the session closes instead
-// of handing them back a lit screen. That is the whole anti-scroll thesis in one sequence.
-const WINDDOWN_STEPS = [
-  { t:'Put tomorrow down on paper',
-    d:'The mind keeps rehearsing what it is afraid to forget. Write the two or three things you are carrying into tomorrow — anywhere, not in here — and it can stop holding them.',
-    cta:'Done' },
-  { t:'Dim what you can',
-    d:'Big lights off, small lamp on. Bright light this late tells your body it is still daytime, and it believes the light over the clock.',
-    cta:'Done' },
-  { t:'One slow minute',
-    d:'The long exhale is the part that works — it is the breath that tells your nervous system it is safe to stop.',
-    cta:'Breathe' },
-  { t:'Phone down, face down, out of reach',
-    d:'Not on the pillow. Across the room if you can. This is the step everything else was setting up.',
-    cta:'Put it down' },
-];
-function _windKey(){ try{ return new Date().toLocaleDateString('en-AU'); }catch(_){ return 'x'; } }
-function windDoneTonight(){ try{ return ls('totry_winddown_last') === _windKey(); }catch(_){ return false; } }
-function openWindDown(step){
-  const i = typeof step==='number' ? step : 0;
-  const st = WINDDOWN_STEPS[i];
-  if(!st){ return _windFinish(); }
-  document.querySelectorAll('#winddown-modal').forEach(e=>e.remove());
-  const m=document.createElement('div'); m.className='modal-bg open'; m.id='winddown-modal';
-  m.innerHTML='<div class="modal" style="text-align:center">'+
-    '<div class="modal-handle"></div>'+
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:10px">Wind down · '+(i+1)+' of '+WINDDOWN_STEPS.length+'</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;color:var(--tx);line-height:1.35;margin-bottom:10px">'+_escFew(st.t)+'</div>'+
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:18px">'+_escFew(st.d)+'</div>'+
-    '<button class="btn primary" onclick="_windNext('+i+')" style="padding:14px">'+_escFew(st.cta)+'</button>'+
-    '<button class="btn" onclick="document.getElementById(\'winddown-modal\')?.remove()" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:8px">Not tonight</button>'+
-  '</div>';
-  document.body.appendChild(m);
-  if(typeof haptic==='function') haptic('tap');
-}
-function _windNext(i){
-  // Step 3 hands off to the breath protocol that already exists rather than duplicating a timer.
-  if(WINDDOWN_STEPS[i] && WINDDOWN_STEPS[i].cta==='Breathe' && typeof openBreath==='function'){
-    document.getElementById('winddown-modal')?.remove();
-    // openBreath's real completion hook is opts.onClose — it fires once, on close, and nulls itself.
-    // (My first version passed opts.then, which openBreath ignores: it only reads opts.reason. That
-    // would have stranded the sequence at step 3 and never reached the step that matters, which is
-    // putting the phone down. Exactly the kind of quiet dead end this codebase specialises in.)
-    try{ openBreath('sleep', { onClose:function(){ openWindDown(i+1); } }); }
-    catch(_){ openWindDown(i+1); }
-    return;
-  }
-  openWindDown(i+1);
-}
-function _windFinish(){
-  try{ ls('totry_winddown_last', _windKey()); }catch(_){}
-  if(typeof logEvent==='function') logEvent('winddown_done');
-  document.getElementById('winddown-modal')?.remove();
-  // End the session properly — off the phone. That is the whole point of the sequence.
-  if(typeof theRelease==='function') theRelease({ did:'You wound the day down and put the phone away.' });
-  else if(typeof showToast==='function') showToast('Goodnight','Phone down. That was the whole point.');
-}
 // The morning half. One screen, no timer, nothing to log — the act is going outside.
+// The morning half of the sleep lever. The EVENING half already existed (openWindDown — faith-aware,
+// wired from the evening ritual, with a per-tradition closing line); this did not. Daylight in the eyes
+// early sets tonight's sleep more than anything done at bedtime. One screen, no timer, nothing logged
+// but the fact it was done — so the card can stop asking once they have been out.
+function _sleepDayKey(){ try{ return new Date().toLocaleDateString('en-AU'); }catch(_){ return 'x'; } }
+function morningLightDoneToday(){ try{ return ls('totry_morning_light_last') === _sleepDayKey(); }catch(_){ return false; } }
 function openMorningLight(){
   const m=document.createElement('div'); m.className='modal-bg open';
   m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
@@ -14694,102 +14465,13 @@ function openMorningLight(){
   if(typeof haptic==='function') haptic('tap');
 }
 function _morningLightGo(){
-  try{ ls('totry_morning_light_last', _windKey()); }catch(_){}
+  try{ ls('totry_morning_light_last', _sleepDayKey()); }catch(_){}
   if(typeof logEvent==='function') logEvent('morning_light');
   document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
   // Same principle as the wind-down: the app gets out of the way rather than keeping them here.
   if(typeof theRelease==='function') theRelease({ did:'You went out for the light.' });
 }
 
-
-// ── TIER 1.3 — THE WAY OUT IS OUTWARD ──────────────────────────────────────────────────────────
-// A craving is a loop that runs on self-reference: me, my urge, my resistance, me again. Doing one small
-// thing for someone else is among the fastest documented exits from that loop, and it is the one move
-// every tradition this app serves arrived at independently — which is why the naming below comes from
-// the FAITHS pattern rather than one tradition's vocabulary bolted onto everyone.
-//
-// It also does what CLAUDE.md says the app is for: it points OUTWARD, at a real person, off the phone.
-//
-// Deliberately NOT built here: no points, no streak, no "acts of service" counter. Gamified virtue is on
-// the do-not-build list, and scoring kindness is the fastest way to hollow it out. The app records that
-// the loop was broken — which it already does through the Release — and nothing about how good you were.
-const SERVICE_FRAME = {
-  christianity: { name:'Faith without works',
-    line:'“Faith by itself, if it does not have works, is dead.” The oldest cure for a self-centred hour is a small act for someone who cannot repay it.' },
-  islam:        { name:'Sadaqah',
-    line:'Sadaqah is not only money — the Prophet ﷺ called a smile a charity. A small good turn, given quietly, turns the hour outward.' },
-  hinduism:     { name:'Seva',
-    line:'Seva is service without thought of return. The self loosens its grip when it is busy with someone else’s need.' },
-  buddhism:     { name:'Dāna',
-    line:'Dāna — generosity — is the first practice for a reason. Craving feeds on self-reference; giving starves it.' },
-  secular:      { name:'Do one useful thing',
-    line:'Craving runs on a loop about you. Doing something small for another person breaks the loop faster than arguing with it does.' },
-};
-// Small enough to actually do while the urge is still up. Nothing here takes planning or money.
-const SERVICE_ACTS = [
-  'Send the message you have been meaning to send.',
-  'Ask someone how the thing they were dreading went.',
-  'Do the chore that is not yours, without mentioning it.',
-  'Pay for the next person, or leave something for someone who needs it.',
-  'Thank someone specifically — name the thing they did.',
-  'Check on the person nobody is checking on.',
-];
-function _serviceFrame(){
-  const t=(typeof faithTradition==='function')?faithTradition():'secular';
-  return SERVICE_FRAME[t] || SERVICE_FRAME.secular;
-}
-function openServiceExit(){
-  const f=_serviceFrame();
-  const day=(typeof getDayCount==='function')?getDayCount():0;
-  // Suggest a person they already told us they carry — reusing "your few" rather than asking for
-  // contacts the app has no business holding.
-  let who=null;
-  try{ const few=(typeof getYourFew==='function')?getYourFew():[]; if(few.length) who=few[day%few.length]; }catch(_){}
-  const act = SERVICE_ACTS[day % SERVICE_ACTS.length];
-  const m=document.createElement('div'); m.className='modal-bg open';
-  m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px">'+_escFew(f.name)+'</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;color:var(--tx);line-height:1.35;margin-bottom:10px">The way out is outward.</div>'+
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">'+_escFew(f.line)+'</div>'+
-    '<div class="card" style="margin-bottom:10px;padding:13px 14px">'+
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:5px">One small thing</div>'+
-      '<div style="font-size:14px;color:var(--tx);line-height:1.5">'+_escFew(act)+'</div>'+
-      (who ? '<div style="font-size:12px;color:var(--tx3);margin-top:7px;line-height:1.5">'+_escFew(who.name)+' has not heard from you in a while, if you want somewhere to start.</div>' : '')+
-    '</div>'+
-    '<button class="btn primary" onclick="_serviceDone('+(who?JSON.stringify(String(who.name)).replace(/"/g,'&quot;'):'null')+')" style="padding:14px">I’ll go do it now</button>'+
-    '<button class="btn" onclick="openServiceExit._again()" style="background:var(--bg3);border:1px solid var(--bd);margin-top:8px;font-size:12px">Something else</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:6px">Not now</button>'+
-  '</div>';
-  document.body.appendChild(m);
-  m.addEventListener('click', function(e){ if(e.target===m) m.remove(); });
-  if(typeof haptic==='function') haptic('tap');
-}
-// "Something else" walks the list rather than reopening the same suggestion.
-openServiceExit._n = 0;
-openServiceExit._again = function(){
-  openServiceExit._n++;
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
-  const day=((typeof getDayCount==='function')?getDayCount():0) + openServiceExit._n;
-  const f=_serviceFrame(); const act=SERVICE_ACTS[day % SERVICE_ACTS.length];
-  const m=document.createElement('div'); m.className='modal-bg open';
-  m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px">'+_escFew(f.name)+'</div>'+
-    '<div class="card" style="margin-bottom:10px;padding:13px 14px"><div style="font-size:14px;color:var(--tx);line-height:1.5">'+_escFew(act)+'</div></div>'+
-    '<button class="btn primary" onclick="_serviceDone(null)" style="padding:14px">I’ll go do it now</button>'+
-    '<button class="btn" onclick="openServiceExit._again()" style="background:var(--bg3);border:1px solid var(--bd);margin-top:8px;font-size:12px">Something else</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:6px">Not now</button>'+
-  '</div>';
-  document.body.appendChild(m);
-};
-function _serviceDone(name){
-  // If they picked a person, credit it to the reach-out ledger that already exists — one concept, not two.
-  try{ if(name && typeof logReachOut==='function') logReachOut(String(name)); }catch(_){}
-  if(typeof logEvent==='function') logEvent('service_exit');
-  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
-  // Ends off the phone, like every other real exit in this app.
-  if(typeof theRelease==='function') theRelease({ did:'You turned it outward and went to do something for someone else.' });
-  else if(typeof showToast==='function') showToast('Go on then','That is the way out.');
-}
 
 // ── THE BROTHER — the one voice the whole app speaks in ─────────────────────────────────────────
 // This is Alfy, captured from his own words (the voice-capture moments), not a generic "warm
@@ -25801,6 +25483,16 @@ function openFormModal(title, subtitle, fields, submitLabel, onSubmit){
     const pad = f.prefix ? 'padding-left:26px' : '';
     const inMode = f.type==='number' ? ' inputmode="decimal"' : '';
     const val = (f.value!=null && f.value!=='') ? ' value="'+String(f.value).replace(/"/g,'&quot;')+'"' : '';
+    // type:'textarea' renders a real multi-line field. It used to fall through to <input type="text">,
+    // which silently turned a "write me a few sentences" prompt into a one-line box — the form looked
+    // fine and quietly discouraged the very answer it was asking for.
+    if(f.type === 'textarea'){
+      return '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.1em">'+f.label+'</div>'+
+        '<div style="position:relative;margin-bottom:14px">'+
+        '<textarea id="fm-'+f.id+'" rows="3" placeholder="'+(f.placeholder||'').replace(/"/g,'&quot;')+'" '+
+        'style="width:100%;min-height:74px;resize:vertical;line-height:1.55">'+
+        String(f.value==null?'':f.value).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</textarea></div>';
+    }
     return '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.1em">'+f.label+'</div>'+
       '<div style="position:relative;margin-bottom:14px">'+pre+
       '<input type="'+(f.type==='date'?'date':'text')+'"'+inMode+' id="fm-'+f.id+'"'+val+' placeholder="'+(f.placeholder||'').replace(/"/g,'&quot;')+'" style="'+pad+'"></div>';

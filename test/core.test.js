@@ -583,142 +583,61 @@ H.section('training history — one cap, no silent truncation');
   H.eq(raw, 0, 'no write site caps totry_workouts with its own slice() — all go through _capWorkouts');
 }
 
-H.section('the service exit — outward, and never scored');
+H.section('sleep, service and the bridge — the features that already existed');
 {
-  // A craving runs on self-reference. Doing one small thing for someone else breaks the loop faster
-  // than arguing with it, it is faith-congruent in every tradition here, and it points OUTWARD — which
-  // CLAUDE.md names as the point of the whole app.
-  const frame = H.html.match(/const SERVICE_FRAME = \{([\s\S]*?)\n\};/);
-  H.ok(!!frame, 'SERVICE_FRAME exists');
-  // Each tradition names this practice itself — the naming is the respect.
-  ['christianity','islam','hinduism','buddhism','secular'].forEach(t => {
-    H.ok(new RegExp(t + ':\\s*\\{').test(frame[1]), t + ' has its own framing');
-  });
-  H.ok(/Sadaqah/.test(frame[1]) && /Seva/.test(frame[1]) && /D\\u0101na|Dāna/.test(frame[1]),
-    'the practices are named in their own traditions, not translated into one');
-  const sec = (frame[1].match(/secular:\s*\{([\s\S]*?)\n  \}/) || [, ''])[1];
-  H.eq(/God|Allah|scripture|prayer|faith/i.test(sec), false,
-    'the secular framing carries no religious language and still stands on its own');
+  // A correction, recorded so it is not repeated: I built duplicate implementations of openWindDown,
+  // openRecoveryBridge, openServiceExit and openCBA without first checking whether they existed. They
+  // did — all four, already wired, and better than mine (the wind-down carries a per-tradition closing
+  // line, the bridge gates its faith option on faithLevel, the CBA stores on the vice object). A second
+  // top-level `function foo(){}` silently shadows the first, so nothing failed and nothing warned.
 
-  const acts = H.html.match(/const SERVICE_ACTS = \[([\s\S]*?)\n\];/);
-  H.ok(!!acts, 'SERVICE_ACTS exists');
-  H.ok((acts[1].match(/'/g) || []).length / 2 >= 5, 'several acts, so it does not repeat itself');
+  // The ratchet that would have caught it in seconds.
+  const decls = {};
+  for (const m of H.html.matchAll(/^function\s+([A-Za-z_$][\w$]*)\s*\(/gm)) {
+    decls[m[1]] = (decls[m[1]] || 0) + 1;
+  }
+  H.eq(Object.keys(decls).filter(k => decls[k] > 1), [],
+    'no top-level function is declared twice — a later one silently shadows the first');
 
-  // Reuses the people they already told us about, rather than asking for contacts.
-  H.ok(/getYourFew\(\)/.test(H.html.slice(H.html.indexOf('function openServiceExit'), H.html.indexOf('function _serviceDone'))),
-    'it draws on "your few" instead of inventing a contacts system');
-  // Credits the reach-out ledger that already exists — one concept, not two.
-  H.ok(/function _serviceDone[\s\S]{0,400}logReachOut/.test(H.html),
-    'completing it credits the existing reach-out log');
-  // Ends off the phone, like every other real exit here.
-  H.ok(/function _serviceDone[\s\S]{0,700}theRelease\(/.test(H.html), 'and ends the session');
+  // The wind-down that ships: faith-aware, and not a score.
+  H.ok(/function openWindDown\(\)/.test(H.html), 'openWindDown exists');
+  const wd = H.html.slice(H.html.indexOf('function openWindDown'), H.html.indexOf('function openWindDown') + 3000);
+  H.ok(/christianity:|islam:|buddhism:|secular:/.test(wd), "it closes in the person's own tradition");
+  H.eq(/sleep score|out of 10|rate your sleep/i.test(wd), false, 'no sleep score');
 
-  // Gamified virtue is explicitly on the do-not-build list.
-  const block = H.html.slice(H.html.indexOf('const SERVICE_FRAME'), H.html.indexOf('function _serviceDone') + 700);
-  H.eq(/points|xp\b|score|badge|streak|leaderboard/i.test(block), false,
-    'no points, score, badge or streak attached to kindness');
-}
-
-H.section('wind-down + morning light — must END off the phone');
-{
-  // Sleep already reached getLifeState() and the coach already spoke about it; nothing helped. These are
-  // the two best-evidenced, cheapest levers. The design constraint that matters most: the sequence has to
-  // END with the phone down, or it is just more screen time wearing a sleep costume.
-  const steps = H.html.match(/const WINDDOWN_STEPS = \[([\s\S]*?)\n\];/);
-  H.ok(!!steps, 'WINDDOWN_STEPS exists');
-  const titles = [...steps[1].matchAll(/t:'([^']+)'/g)].map(m => m[1]);
-  H.ok(titles.length >= 3, 'a real sequence, not one screen (' + titles.length + ' steps)');
-  H.ok(/[Pp]hone down/.test(titles[titles.length - 1]),
-    'the LAST step is putting the phone down — the whole point of the sequence');
-
-  // It must close the session through theRelease(), not hand back a lit screen.
-  H.ok(/function _windFinish\(\)[\s\S]{0,400}theRelease\(/.test(H.html),
-    'finishing routes through theRelease(), which ends the session');
+  // The morning half, which genuinely did not exist — the other side of the same lever.
+  H.ok(/function openMorningLight\(\)/.test(H.html), 'the morning light anchor exists');
   H.ok(/function _morningLightGo\(\)[\s\S]{0,600}theRelease\(/.test(H.html),
-    'the morning anchor also gets out of the way rather than keeping them here');
+    'it ends the session rather than keeping them here');
+  H.ok(/function morningLightDoneToday\(\)/.test(H.html),
+    'it can tell whether they already went out, so the card can stop asking');
 
-  // The breath step hands off to the protocol that already exists, via the hook that actually exists.
-  H.ok(/openBreath\('sleep', \{ onClose:/.test(H.html),
-    "the breath step uses openBreath's real onClose hook (opts.then is ignored by openBreath)");
-  H.ok(/function openBreath\(id, opts\)/.test(H.html), 'openBreath takes opts');
-  H.ok(/opts\.onClose==='function'/.test(H.html), 'and openBreath genuinely calls opts.onClose');
+  // The originals, still present and still reachable.
+  H.ok(/const _SERVICE_ACTS = \[/.test(H.html), 'the service acts exist');
+  const rb = H.html.slice(H.html.indexOf('function openRecoveryBridge'), H.html.indexOf('function openRecoveryBridge') + 2600);
+  H.ok(/SMART Recovery/.test(rb), 'SMART Recovery is offered (secular, science-based)');
+  H.ok(/counsellor|GP/.test(rb), 'a real clinician is offered, not only fellowships');
+  H.eq(/recommended|best option|top pick/i.test(rb), false, 'nothing is ranked or recommended');
 
-  // Both must be REACHABLE — an unopened ritual is the signature bug here.
-  H.ok(/id="winddown-card"[^>]*onclick="openWindDown\(\)"/.test(H.html),
-    'the wind-down card is wired, in the evening ritual');
-  H.ok(/id="morning-light-card"[^>]*onclick="openMorningLight\(\)"/.test(H.html),
-    'the morning light card is wired, in the morning ritual');
-
-  // And it must not become the thing the do-not-build list forbids.
-  const fnSrc = H.html.slice(H.html.indexOf('const WINDDOWN_STEPS'), H.html.indexOf('function openMorningLight'));
-  H.eq(/score|rating|out of 10|grade/i.test(fnSrc), false, 'no sleep score anywhere in the wind-down');
-  H.eq(/streak/i.test(fnSrc), false, 'no streak attached to sleep');
+  ['openWindDown', 'openRecoveryBridge', 'openServiceExit', 'openMorningLight'].forEach(fn => {
+    const calls = (H.html.match(new RegExp(fn + '\\(\\)', 'g')) || []).length;
+    H.ok(calls >= 2, fn + ' is reachable, not just defined (' + calls + ' references)');
+  });
 }
 
-H.section('the recovery bridge — points beyond itself, never ranked');
+H.section('the urge menu is reachable from the companion');
 {
-  // CLAUDE.md non-negotiable: "It points beyond itself — to real people... It is NOT a replacement for
-  // real help." The crisis paths cover emergencies; this covers the ordinary case of someone who wants
-  // people and does not know free rooms exist.
-  const listSrc = H.html.match(/const RECOVERY_BRIDGES = \[([\s\S]*?)\n\];/);
-  H.ok(!!listSrc, 'RECOVERY_BRIDGES exists');
-  const ids = [...listSrc[1].matchAll(/id:'([a-z]+)'/g)].map(m => m[1]);
-  H.ok(ids.length >= 6, 'several routes out, not a token one (' + ids.length + ')');
-  // every entry must carry a real destination
-  const urls = [...listSrc[1].matchAll(/url:'(https?:\/\/[^']+)'/g)].map(m => m[1]);
-  H.eq(urls.length, ids.length, 'every bridge has a working URL, none is a dead card');
-  // secular and faith options must BOTH be present, and labelled
-  H.ok(/kind:'secular'/.test(listSrc[1]), 'secular options exist');
-  H.ok(/kind:'christian'/.test(listSrc[1]) && /kind:'buddhist'/.test(listSrc[1]),
-    'tradition-specific options exist and are labelled as such');
-  H.ok(/harm/.test(ids.join(',')), 'harm reduction is offered — not everyone is trying to stop yet');
-
-  // H.load returns the extracted FUNCTIONS only — the globals it is handed are injected into their
-  // scope, not returned — so keep our own reference to the parsed registries.
-  const BRIDGES = new Function(listSrc[0] + ' return RECOVERY_BRIDGES;')();
-  const AFFINITY = new Function(H.html.match(/const _BRIDGE_AFFINITY = \{[\s\S]*?\n\};/)[0] + ' return _BRIDGE_AFFINITY;')();
-  const RECOVERY_BRIDGES = BRIDGES;
-  const { _bridgeOrder } = H.load(['_bridgeOrder'], {
-    RECOVERY_BRIDGES: BRIDGES,
-    _BRIDGE_AFFINITY: AFFINITY,
-    faithTradition: () => global.__tr || 'secular',
-  });
-  const orderFor = t => { global.__tr = t; return _bridgeOrder().map(b => b.id); };
-
-  // NOTHING IS EVER HIDDEN — only the order shifts. A ranked or filtered list would make the app the
-  // judge of which recovery is right, which it does not get to be.
-  ['christianity','islam','hinduism','buddhism','secular'].forEach(t => {
-    H.eq(orderFor(t).length, RECOVERY_BRIDGES.length, t + ' sees every option');
-  });
-  // and the closest match leads, rather than sitting below three others by accident of array order
-  H.eq(orderFor('christianity')[0], 'cr', 'a Christian sees Celebrate Recovery first');
-  H.eq(orderFor('buddhism')[0], 'refuge', 'a Buddhist sees Refuge Recovery first');
-  H.eq(orderFor('secular')[0], 'smart', 'a secular person sees SMART Recovery first');
-}
-
-H.section('DEADS — the person chooses their own way through');
-{
-  // SMART Recovery's urge menu. The companion picks ONE mechanism, which is right for the first three
-  // seconds and wrong after them: being handed a response is compliance, choosing one is autonomy, and
-  // autonomy is what predicts doing it again unprompted.
-  const src = H.html.match(/const DEADS = \[([\s\S]*?)\n\];/);
-  H.ok(!!src, 'DEADS exists');
-  const names = [...src[1].matchAll(/name:'([A-Za-z ]+)'/g)].map(m => m[1]);
-  H.eq(names.slice(0, 5), ['Delay','Escape','Accept','Distract','Substitute'],
-    "Marlatt's five, in order");
-  // Plus one deliberate addition: turning outward is the exit the clinical menu misses, and it is the
-  // move every tradition this app serves arrived at independently.
-  H.eq(names[5], 'Turn outward', 'the service exit is offered alongside them');
-  // every option must route somewhere REAL — a menu of dead buttons is worse than no menu
-  const acts = [...src[1].matchAll(/act:"(_deads[A-Za-z]+)\(\)"/g)].map(m => m[1]);
-  H.eq(acts.length, names.length, 'every option has an action');
-  acts.forEach(fn => H.ok(new RegExp('function ' + fn + '\\s*\\(').test(H.html), fn + ' is defined'));
-  // and it must be reachable from the companion, not merely defined
-  H.ok(/id="comp-deads-toggle"/.test(H.html), 'the toggle is in the companion markup');
-  H.ok(/_deadsToggle\(\)/.test(H.html), '_deadsToggle is wired to it');
-  // Accept should use the urge-surf protocol, which is the mechanism it names
-  H.ok(/_deadsAccept\(\)\{[^}]*openBreath\('surf'\)/.test(H.html.replace(/\n/g, ' ')),
-    'Accept routes to the urge-surfing protocol, not a generic one');
+  // openDEADS() (SMART Recovery's Delay/Escape/Accept/Distract/Substitute) already existed, but was
+  // reachable from ONE modal and never from the companion — the exact surface where someone is
+  // choosing a way through. I initially rebuilt the whole menu before noticing; this now just adds the
+  // missing door onto what was already there.
+  H.ok(/const _DEADS\s*=\s*\[/.test(H.html), 'the urge menu exists');
+  H.ok(/function openDEADS\(\)/.test(H.html), 'openDEADS exists');
+  const calls = (H.html.match(/openDEADS\(\)/g) || []).length;
+  H.ok(calls >= 3, 'it is reachable from more than one place (' + calls + ' references)');
+  // specifically from the companion's meet phase
+  const comp = H.html.slice(H.html.indexOf('id="comp-meet"'), H.html.indexOf('id="comp-meet"') + 3000);
+  H.ok(/openDEADS\(\)/.test(comp), 'and one of those places is the companion itself');
 }
 
 H.section('native plugin lookups must match the names the plugins register');
