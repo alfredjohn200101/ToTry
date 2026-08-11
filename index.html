@@ -4466,7 +4466,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v402';
+const APP_VERSION = 'v403';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5914,11 +5914,19 @@ function _reachOutRowHTML(){
       '<button type="button" onclick="toggleReachOut()" style="padding:7px 14px;border-radius:100px;border:1px solid '+(on?'var(--go-bd)':'var(--bd)')+';background:'+(on?'var(--go-bg)':'transparent')+';color:'+(on?'var(--go)':'var(--tx2)')+';font-size:12px;white-space:nowrap">'+(on?'On':'Off')+'</button>'+
     '</div>'+
     '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);line-height:1.6;margin-top:8px">'+_escFew(status)+'</div>'+
+    // Two time fields on their own row, then a full-width Save beneath — the same shape as the
+    // morning/evening row above, which is why that one has always looked right.
+    // On a 402pt iPhone this row used to overflow and clip Save off the right edge. Two causes, and I
+    // only spotted the second after the first "fix" made it worse: <input type="time"> has a large
+    // intrinsic width on iOS and flex children default to min-width:auto (hence min-width:0), AND
+    // .btn carries width:100%, so flex:0 0 auto resolved the button's basis to the FULL row width.
+    // With the inputs finally able to shrink, they collapsed to nothing and the labels collided.
+    // Found by running the real build; a desktop browser never showed any of it.
     '<div style="display:flex;gap:8px;align-items:flex-end;margin-top:10px">'+
-      '<div style="flex:1"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Quiet from</div><input type="time" id="quiet-start" value="'+q.start+'" style="width:100%;padding:9px;color-scheme:dark"></div>'+
-      '<div style="flex:1"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Until</div><input type="time" id="quiet-end" value="'+q.end+'" style="width:100%;padding:9px;color-scheme:dark"></div>'+
-      '<button class="btn" onclick="saveQuietHours()" style="flex:0 0 auto;margin:0;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:12px;padding:9px 12px">Save</button>'+
+      '<div style="flex:1;min-width:0"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Quiet from</div><input type="time" id="quiet-start" value="'+q.start+'" style="width:100%;padding:9px;color-scheme:dark"></div>'+
+      '<div style="flex:1;min-width:0"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Until</div><input type="time" id="quiet-end" value="'+q.end+'" style="width:100%;padding:9px;color-scheme:dark"></div>'+
     '</div>'+
+      '<button class="btn" onclick="saveQuietHours()" style="margin-top:8px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:12px;padding:9px 12px">Save quiet hours</button>'+
     '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:6px">Nothing reaches you between these hours. If your hard hour falls inside them I come to the nearer edge instead — and the message says why.</div>'+
     // Say the limit out loud. A browser cannot wake itself, so on the web this works out your hard
     // hour and holds it — nothing buzzes. Claiming otherwise would be the exact promise this app
@@ -35267,8 +35275,8 @@ function renderPushSettings(){
       box.innerHTML = head +
         '<div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:10px">A nudge for your morning ritual and your evening reflection — the rhythm of the day, kept. These reach you even when the app is closed.</div>' +
         '<div style="display:flex;gap:8px;margin-bottom:10px">' +
-          '<div style="flex:1"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Morning</div><input type="time" id="push-time-morning" value="'+prefs.morning+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
-          '<div style="flex:1"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Evening</div><input type="time" id="push-time-evening" value="'+prefs.evening+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
+          '<div style="flex:1;min-width:0"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Morning</div><input type="time" id="push-time-morning" value="'+prefs.morning+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
+          '<div style="flex:1;min-width:0"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Evening</div><input type="time" id="push-time-evening" value="'+prefs.evening+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
         '</div>' +
         '<button class="btn" onclick="savePushTimes()" style="background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:12px;margin-bottom:8px">Save times</button>' +
         // The receptivity gate's real row — toggle AND quiet hours AND why nothing is scheduled.
@@ -35297,8 +35305,8 @@ function renderPushSettings(){
     box.innerHTML = head +
       '<div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:10px">A nudge for your morning ritual and your evening reflection — the rhythm of the day, kept.</div>' +
       '<div style="display:flex;gap:8px;margin-bottom:10px">' +
-        '<div style="flex:1"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Morning</div><input type="time" id="push-time-morning" value="'+prefs.morning+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
-        '<div style="flex:1"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Evening</div><input type="time" id="push-time-evening" value="'+prefs.evening+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
+        '<div style="flex:1;min-width:0"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Morning</div><input type="time" id="push-time-morning" value="'+prefs.morning+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
+        '<div style="flex:1;min-width:0"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Evening</div><input type="time" id="push-time-evening" value="'+prefs.evening+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
       '</div>' +
       '<button class="btn" onclick="savePushTimes()" style="background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:12px;margin-bottom:8px">Save times</button>' +
       // Reach-out-first — the one thing a web PWA could never do; real once wrapped natively. The

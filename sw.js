@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v402-platform-gating'
+const CACHE = 'totry-v403-time-row-overflow'
 
 const CORE = [
   './',
