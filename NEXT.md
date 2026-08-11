@@ -1,6 +1,6 @@
 # NEXT — the build list
 
-Where To Try stands at **v413**, and what's actually left.
+Where To Try stands at **v415**, and what's actually left.
 
 **Read the "WHAT IS ACTUALLY BUILT" table before building anything.** The tier lists that used to live
 here went stale, and in v409–v411 I rebuilt five features that already existed because I trusted them.
@@ -45,14 +45,23 @@ Health.connect()   = {"ok":false,"reason":"Authorization failed:
 **unsigned** simulator build (`CODE_SIGNING_ALLOWED=NO` does not embed entitlements); `App.entitlements`
 has both `com.apple.developer.healthkit` and `.background-delivery`, so a signed build does not hit it.
 
-**Still open — the sleep plugin is not registered.** `Plugins.Sleep` is absent from that key list even
-though `SleepPlugin` is compiled into the binary (`strings` finds it). `SleepPlugin.swift` declares
-`jsName = "Sleep"` and conforms to `CAPBridgedPlugin`, but Capacitor is not discovering it — plugins
-living in the **app target** rather than a package are not picked up in this setup. Consequence: sleep
-never syncs from Apple Health and the Track tab falls back to the manual ± control, which works. The
-lookup now accepts `Sleep` or `SleepPlugin` so it will start working the moment registration is fixed.
-The likely fix is registering it explicitly in `AppDelegate`/`ViewController`, or moving it into a local
-Swift package — worth doing after submission, not before.
+**RESOLVED in v415 — the sleep plugin is registered.** `Plugins.Sleep` was absent even though
+`SleepPlugin` was compiled into the binary, because Capacitor only auto-discovers plugins that ship
+inside a Swift **package**; one living in the app **target** is compiled and then never added to the
+list. The symptom was maximally misleading — `strings` found it in the binary, so it looked present.
+
+The fix is a `CAPBridgeViewController` subclass (`ios/App/App/ViewController.swift`) overriding
+`capacitorDidLoad()` to call `bridge?.registerPluginInstance(SleepPlugin())`, plus pointing
+`Main.storyboard` at `App.ViewController` instead of `Capacitor.CAPBridgeViewController`. Confirmed on a
+booted simulator by printing the plugin list onto the Track card:
+
+```
+keys = …, LocalNotifications, HealthPlugin, PushNotifications, Sleep
+Sleep=true    _sleepP()=RESOLVED
+```
+
+Automatic sleep sync can now run. Whether Apple Health actually RETURNS sleep samples still needs a real
+device with data in it — the simulator has no sleep history to read.
 
 **Lesson worth keeping:** three separate times this session an on-device "dead control" turned out to be
 a measurement artifact — a `getBoundingClientRect()` taken while the tab was `display:none` reports
@@ -328,8 +337,8 @@ here means built *and reachable*, not merely present.
 | 2.6 Guided reading plans | ✅ built, multi-faith | Soul → plans |
 | 2.7 CBT/ACT toolkit | ✅ built, 8 skills | Fight card |
 | 3.2 Reach-out scheduling | ✅ built | needs a device to confirm delivery |
-| 3.3 HealthKit sleep | ⚠️ written, **plugin not registered** | see the Apple Health section above |
-| 3.4 Body-doubling | ❌ genuinely absent | — |
+| 3.3 HealthKit sleep | ✅ plugin registered (v415); needs a device with real sleep data to confirm reads |
+| 3.4 Body-doubling | ✅ built (v414) | end of the "can't start" ladder |
 | 3.1 Screen Time / Family Controls blocking | ❌ absent | native, post-submission |
 
 **The honest summary:** this app is far more built than its own backlog claimed. What is left is not a
