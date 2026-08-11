@@ -1934,6 +1934,17 @@ input:focus,textarea:focus,select:focus{
     </div>
     <div style="color:var(--tx3);font-size:18px">&rsaquo;</div>
   </div>
+  <!-- TIER 1.1b — the morning light anchor. The cheapest circadian lever there is: daylight in the eyes
+       early shifts the whole clock, and it costs nothing and needs no device. Sits in the morning ritual
+       because that is the surface a person already opens; it is not a notification and does not nag. -->
+  <div class="card" id="morning-light-card" style="margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="openMorningLight()">
+    <div style="width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(255,214,140,0.95),rgba(255,180,90,0.20));flex-shrink:0"></div>
+    <div style="flex:1">
+      <div style="font-size:14px;color:var(--tx)">Get light in your eyes</div>
+      <div style="font-size:11.5px;color:var(--tx3);line-height:1.5">Outside, no sunglasses, a few minutes. It sets tonight&rsquo;s sleep more than anything you do at bedtime.</div>
+    </div>
+    <div style="color:var(--tx3);font-size:18px">&rsaquo;</div>
+  </div>
   <!-- Adaptive yesterday-response card (shown when there's something to say) -->
   <div class="card" id="morning-adaptive-card" style="display:none;margin-bottom:12px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.04));border-color:var(--go-bd)">
     <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:5px" id="morning-adaptive-tag">From yesterday</div>
@@ -3337,6 +3348,18 @@ input:focus,textarea:focus,select:focus{
   <div id="reflect-panel-evening">
     <!-- ════ EVENING — close the day with grace ════ Dusk. Look back honestly, without shame.
          End the day reconciled. "You showed up. Tomorrow is new." -->
+      <!-- TIER 1.1 — the wind-down. Sleep was already in getLifeState() and the app already TALKED about
+           it; nothing helped. This is the anti-scroll thesis as an actual intervention: a short sequence
+           whose last step is putting the phone down, ending in theRelease() so the session is over rather
+           than handing them back to a lit screen. Deliberately NOT a sleep score (do-not-build list). -->
+      <div class="card" id="winddown-card" style="margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="openWindDown()">
+        <div style="width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(140,107,182,0.85),rgba(140,107,182,0.18));flex-shrink:0"></div>
+        <div style="flex:1">
+          <div style="font-size:14px;color:var(--tx)">Wind down for sleep</div>
+          <div style="font-size:11.5px;color:var(--tx3);line-height:1.5">Four steps, a few minutes, and it ends with the phone face down.</div>
+        </div>
+        <div style="color:var(--tx3);font-size:18px">&rsaquo;</div>
+      </div>
     <div class="ritual-hero ritual-hero-dusk">
       <div class="ritual-hero-glow"></div>
       <div class="ritual-hero-inner">
@@ -4481,7 +4504,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v409';
+const APP_VERSION = 'v410';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -14580,6 +14603,97 @@ function _deadsSay(text){
       conv.appendChild(d); conv.scrollTop=conv.scrollHeight; }
     if(typeof _compHistory!=='undefined') _compHistory.push({ role:'assistant', content:text });
   }catch(_){}
+}
+
+
+// ── TIER 1.1 — WIND-DOWN + MORNING LIGHT ───────────────────────────────────────────────────────
+// Sleep already reaches getLifeState() and the coach already speaks about it, but nothing helped. These
+// are the two cheapest, best-evidenced levers, and both are deliberately un-gadgety.
+//
+// WHAT THIS IS NOT, on purpose:
+//   · Not a sleep score. Scores are on the do-not-build list, and a bad score at 11pm makes sleep worse.
+//   · Not a notification. Both live inside rituals the person already chooses to open.
+//   · Not a tracker. Nothing here is graded; the only thing stored is that they did it, so the app can
+//     stop offering something they have already done tonight.
+//
+// The last step is the point: it ends OFF the phone, through theRelease(), so the session closes instead
+// of handing them back a lit screen. That is the whole anti-scroll thesis in one sequence.
+const WINDDOWN_STEPS = [
+  { t:'Put tomorrow down on paper',
+    d:'The mind keeps rehearsing what it is afraid to forget. Write the two or three things you are carrying into tomorrow — anywhere, not in here — and it can stop holding them.',
+    cta:'Done' },
+  { t:'Dim what you can',
+    d:'Big lights off, small lamp on. Bright light this late tells your body it is still daytime, and it believes the light over the clock.',
+    cta:'Done' },
+  { t:'One slow minute',
+    d:'The long exhale is the part that works — it is the breath that tells your nervous system it is safe to stop.',
+    cta:'Breathe' },
+  { t:'Phone down, face down, out of reach',
+    d:'Not on the pillow. Across the room if you can. This is the step everything else was setting up.',
+    cta:'Put it down' },
+];
+function _windKey(){ try{ return new Date().toLocaleDateString('en-AU'); }catch(_){ return 'x'; } }
+function windDoneTonight(){ try{ return ls('totry_winddown_last') === _windKey(); }catch(_){ return false; } }
+function openWindDown(step){
+  const i = typeof step==='number' ? step : 0;
+  const st = WINDDOWN_STEPS[i];
+  if(!st){ return _windFinish(); }
+  document.querySelectorAll('#winddown-modal').forEach(e=>e.remove());
+  const m=document.createElement('div'); m.className='modal-bg open'; m.id='winddown-modal';
+  m.innerHTML='<div class="modal" style="text-align:center">'+
+    '<div class="modal-handle"></div>'+
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:10px">Wind down · '+(i+1)+' of '+WINDDOWN_STEPS.length+'</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;color:var(--tx);line-height:1.35;margin-bottom:10px">'+_escFew(st.t)+'</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:18px">'+_escFew(st.d)+'</div>'+
+    '<button class="btn primary" onclick="_windNext('+i+')" style="padding:14px">'+_escFew(st.cta)+'</button>'+
+    '<button class="btn" onclick="document.getElementById(\'winddown-modal\')?.remove()" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:8px">Not tonight</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  if(typeof haptic==='function') haptic('tap');
+}
+function _windNext(i){
+  // Step 3 hands off to the breath protocol that already exists rather than duplicating a timer.
+  if(WINDDOWN_STEPS[i] && WINDDOWN_STEPS[i].cta==='Breathe' && typeof openBreath==='function'){
+    document.getElementById('winddown-modal')?.remove();
+    // openBreath's real completion hook is opts.onClose — it fires once, on close, and nulls itself.
+    // (My first version passed opts.then, which openBreath ignores: it only reads opts.reason. That
+    // would have stranded the sequence at step 3 and never reached the step that matters, which is
+    // putting the phone down. Exactly the kind of quiet dead end this codebase specialises in.)
+    try{ openBreath('sleep', { onClose:function(){ openWindDown(i+1); } }); }
+    catch(_){ openWindDown(i+1); }
+    return;
+  }
+  openWindDown(i+1);
+}
+function _windFinish(){
+  try{ ls('totry_winddown_last', _windKey()); }catch(_){}
+  if(typeof logEvent==='function') logEvent('winddown_done');
+  document.getElementById('winddown-modal')?.remove();
+  // End the session properly — off the phone. That is the whole point of the sequence.
+  if(typeof theRelease==='function') theRelease({ did:'You wound the day down and put the phone away.' });
+  else if(typeof showToast==='function') showToast('Goodnight','Phone down. That was the whole point.');
+}
+// The morning half. One screen, no timer, nothing to log — the act is going outside.
+function openMorningLight(){
+  const m=document.createElement('div'); m.className='modal-bg open';
+  m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:10px">Morning light</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;color:var(--tx);line-height:1.35;margin-bottom:10px">Outside, before the screen.</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:8px">A few minutes of real daylight in your eyes — no sunglasses, and a window does not count for much. Even grey and overcast is many times brighter than any room you own.</div>'+
+    '<div style="font-size:12px;color:var(--tx3);line-height:1.65;margin-bottom:18px">It sets tonight’s sleep far more than anything you do at bedtime. Do it while the kettle boils.</div>'+
+    '<button class="btn primary" onclick="_morningLightGo()" style="padding:14px">I’m going out</button>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:8px">Later</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  m.addEventListener('click', function(e){ if(e.target===m) m.remove(); });
+  if(typeof haptic==='function') haptic('tap');
+}
+function _morningLightGo(){
+  try{ ls('totry_morning_light_last', _windKey()); }catch(_){}
+  if(typeof logEvent==='function') logEvent('morning_light');
+  document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
+  // Same principle as the wind-down: the app gets out of the way rather than keeping them here.
+  if(typeof theRelease==='function') theRelease({ did:'You went out for the light.' });
 }
 
 // ── THE BROTHER — the one voice the whole app speaks in ─────────────────────────────────────────

@@ -583,6 +583,42 @@ H.section('training history — one cap, no silent truncation');
   H.eq(raw, 0, 'no write site caps totry_workouts with its own slice() — all go through _capWorkouts');
 }
 
+H.section('wind-down + morning light — must END off the phone');
+{
+  // Sleep already reached getLifeState() and the coach already spoke about it; nothing helped. These are
+  // the two best-evidenced, cheapest levers. The design constraint that matters most: the sequence has to
+  // END with the phone down, or it is just more screen time wearing a sleep costume.
+  const steps = H.html.match(/const WINDDOWN_STEPS = \[([\s\S]*?)\n\];/);
+  H.ok(!!steps, 'WINDDOWN_STEPS exists');
+  const titles = [...steps[1].matchAll(/t:'([^']+)'/g)].map(m => m[1]);
+  H.ok(titles.length >= 3, 'a real sequence, not one screen (' + titles.length + ' steps)');
+  H.ok(/[Pp]hone down/.test(titles[titles.length - 1]),
+    'the LAST step is putting the phone down — the whole point of the sequence');
+
+  // It must close the session through theRelease(), not hand back a lit screen.
+  H.ok(/function _windFinish\(\)[\s\S]{0,400}theRelease\(/.test(H.html),
+    'finishing routes through theRelease(), which ends the session');
+  H.ok(/function _morningLightGo\(\)[\s\S]{0,600}theRelease\(/.test(H.html),
+    'the morning anchor also gets out of the way rather than keeping them here');
+
+  // The breath step hands off to the protocol that already exists, via the hook that actually exists.
+  H.ok(/openBreath\('sleep', \{ onClose:/.test(H.html),
+    "the breath step uses openBreath's real onClose hook (opts.then is ignored by openBreath)");
+  H.ok(/function openBreath\(id, opts\)/.test(H.html), 'openBreath takes opts');
+  H.ok(/opts\.onClose==='function'/.test(H.html), 'and openBreath genuinely calls opts.onClose');
+
+  // Both must be REACHABLE — an unopened ritual is the signature bug here.
+  H.ok(/id="winddown-card"[^>]*onclick="openWindDown\(\)"/.test(H.html),
+    'the wind-down card is wired, in the evening ritual');
+  H.ok(/id="morning-light-card"[^>]*onclick="openMorningLight\(\)"/.test(H.html),
+    'the morning light card is wired, in the morning ritual');
+
+  // And it must not become the thing the do-not-build list forbids.
+  const fnSrc = H.html.slice(H.html.indexOf('const WINDDOWN_STEPS'), H.html.indexOf('function openMorningLight'));
+  H.eq(/score|rating|out of 10|grade/i.test(fnSrc), false, 'no sleep score anywhere in the wind-down');
+  H.eq(/streak/i.test(fnSrc), false, 'no streak attached to sleep');
+}
+
 H.section('the recovery bridge — points beyond itself, never ranked');
 {
   // CLAUDE.md non-negotiable: "It points beyond itself — to real people... It is NOT a replacement for
