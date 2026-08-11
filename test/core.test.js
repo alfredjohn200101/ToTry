@@ -583,6 +583,40 @@ H.section('training history — one cap, no silent truncation');
   H.eq(raw, 0, 'no write site caps totry_workouts with its own slice() — all go through _capWorkouts');
 }
 
+H.section('the pull intervention — each tradition gets its OWN practice');
+{
+  // This is the screen someone sees while white-knuckling. It used to hand every person the Jesus
+  // Prayer. A swapped phrase was not enough either: each tradition has its own in-the-moment practice
+  // for exactly this, and the posture and the count are part of it.
+  const src = H.html.match(/const _PULL_PRACTICE = \{([\s\S]*?)\n\};/);
+  H.ok(!!src, '_PULL_PRACTICE registry exists');
+  const body = src[1];
+
+  ['christianity','islam','hinduism','buddhism','secular'].forEach(t => {
+    const entry = body.match(new RegExp(t + ':\\s*\\{([\\s\\S]*?)\\n  \\}'));
+    H.ok(!!entry, t + ' has a practice');
+    if(entry){
+      ['name:','line:','how:','why:'].forEach(f =>
+        H.ok(entry[1].includes(f), t + ' practice has ' + f.replace(':','')));
+    }
+  });
+
+  // No tradition may be handed another's religion. Secular must carry none at all.
+  const sec = (body.match(/secular:\s*\{([\s\S]*?)\n  \}/) || [,''])[1];
+  H.eq(/Jesus|Christ|Allah|Qur|God\b|Lord|Krishna|Buddha|prayer/i.test(sec), false,
+    'the secular practice contains no religious language');
+  const isl = (body.match(/islam:\s*\{([\s\S]*?)\n  \}/) || [,''])[1];
+  H.eq(/Jesus|Christ|Krishna|Buddha/i.test(isl), false, 'the Islamic practice names no other religion');
+  const hin = (body.match(/hinduism:\s*\{([\s\S]*?)\n  \}/) || [,''])[1];
+  H.eq(/Jesus|Christ|Allah|Buddha/i.test(hin), false, 'the Hindu practice names no other religion');
+
+  // It must be WIRED, not merely defined — the signature failure of this codebase.
+  H.ok((H.html.match(/_fnPractice\(\)/g) || []).length >= 4,
+    '_fnPractice() is actually rendered into the intervention');
+  // And the superseded thin helpers must be gone, not left as dead code.
+  H.eq(/_fnAnchorLine|_fnAnchorHow/.test(H.html), false, 'the phrase-swap helpers it replaced were removed');
+}
+
 H.section('faith gate — the UI must obey the same rule as the prompt');
 {
   // ECHO_OK governed only what the AI was TOLD. A static hub section, "Common ground — the same struggle,

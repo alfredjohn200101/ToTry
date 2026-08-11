@@ -4452,7 +4452,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v398';
+const APP_VERSION = 'v399';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4725,8 +4725,33 @@ function authReset(){
 
 async function signOut(){
   if(!sb) return;
-  if(!confirm('Sign out? Your data is saved and you can sign back in anytime.')) return;
-  
+  // "Your data is saved and you can sign back in anytime" was a promise this function did not keep.
+  // It wipes every totry_ key, and several of the most personal ones are DELIBERATELY never uploaded:
+  // progress photos never leave the device (privacy policy §4), and cycle data only leaves if she
+  // switched backup on. Signing out — something people do casually, to tidy up or switch accounts —
+  // destroyed every progress photo they had ever taken, permanently, while telling them it was safe.
+  // Now: flush anything still pending first, then name exactly what cannot come back.
+  const _n = k => { try{ const v=ls(k); return Array.isArray(v) ? v.length : (v ? 1 : 0); }catch(_){ return 0; } };
+  const photos = _n('totry_progress_photos');
+  const cyc = (function(){ try{ const c=ls(CYCLE_KEY); return (c && !c.backup) ? 1 : 0; }catch(_){ return 0; } })();
+  let pending = 0;
+  try{ pending = Object.keys(_getOutbox()||{}).length; }catch(_){}
+
+  // Give un-uploaded work its best chance of reaching the cloud before anything is deleted.
+  if(pending){ try{ await flushOutbox(); pending = Object.keys(_getOutbox()||{}).length; }catch(_){} }
+
+  const losses = [];
+  if(photos) losses.push(photos + ' progress photo' + (photos===1?'':'s'));
+  if(cyc) losses.push('your cycle log (backup is off, so it is only on this device)');
+  if(pending) losses.push(pending + ' change' + (pending===1?'':'s') + ' that have not reached the cloud yet');
+
+  const msg = losses.length
+    ? ('Signing out clears this device. Everything synced comes back when you sign in \u2014 but these '
+       + 'are only here and will be gone for good:\n\n\u2022 ' + losses.join('\n\u2022 ')
+       + '\n\nSettings \u2192 Your data \u2192 Export saves them first. Sign out anyway?')
+    : 'Sign out? Everything is synced, so it all comes back when you sign in.';
+  if(!confirm(msg)) return;
+
   try {
     await sb.auth.signOut();
     // Clear local data so next user gets clean slate
@@ -7235,7 +7260,16 @@ function buildCtx(){
   
   // Today's mood/morning if logged
   const mornings = ls('totry_mornings') || [];
-  const todayMorning = mornings.find(m => m.date === todayKey);
+  // Match on the ISO timestamp, not the display string. completeMorning() writes
+  // date: toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}) — "Tue, 11 Aug" —
+  // while todayKey here is the plain en-AU key "11/08/2026". Those can never be equal, so todayMorning
+  // was ALWAYS undefined: the coach never once heard the gratitude or the intention a person had just
+  // written, in an app whose entire claim is that the fronts talk to each other.
+  const todayMorning = mornings.find(m => {
+    if(!m) return false;
+    if(m.ts){ try{ if(new Date(m.ts).toLocaleDateString('en-AU') === todayKey) return true; }catch(_){} }
+    return m.date === todayKey;   // tolerate any older row that stored the plain key
+  });
   let moodCtx = '';
   if(todayMorning){
     if(todayMorning.mood) moodCtx += '\nThis morning they felt: ' + todayMorning.mood;
@@ -8785,6 +8819,26 @@ function applyFaithGlobal(){
   try{ const e2=document.getElementById('shared-prayer-label'); if(e2){ const t=faithTradition(); e2.textContent=(t==='buddhism'||t==='secular')?'Words to share':'A prayer to share'; } }catch(_){}
 }
 // The static evening + weekly "prayers" in the Reflect tab, per tradition (Christianity keeps its own).
+// The examen's closing screen, per tradition. It used to hardcode Psalm 139:23, a Christian prayer and
+// the toast "God walked with you today" — for a Muslim, a Hindu, a Buddhist and for someone who chose no
+// religion at all. The examen itself is deliberately offered to everyone (it is a nightly review of the
+// day, not a Catholic-only practice), so its ending has to belong to whoever just did it.
+const _EXAMEN_CLOSE={
+  christianity:{ q:'Search me, O God, and know my heart;<br>try me and know my thoughts.', r:'Psalm 139:23',
+                 toast:'God walked with you today.' },
+  islam:        { q:'And it is He who takes your souls by night,<br>and knows what you have done by day.', r:'Qur\u2019an 6:60',
+                 toast:'Allah saw all of it \u2014 and His mercy is wider.' },
+  hinduism:     { q:'Let a man lift himself by himself;<br>let him not lower himself.', r:'Bhagavad Gita 6:5',
+                 toast:'You looked honestly at your day.' },
+  buddhism:     { q:'Thus should you train yourself:<br>\u201CI will review my actions, by day and by night.\u201D', r:'Majjhima Nik\u0101ya 61',
+                 toast:'You reviewed the day clearly.' },
+  secular:      { q:'The unexamined life is not worth living.', r:'Socrates',
+                 toast:'You looked honestly at your day.' }
+};
+function _examenClose(){
+  const t = (typeof faithTradition==='function') ? faithTradition() : 'secular';
+  return _EXAMEN_CLOSE[t] || _EXAMEN_CLOSE.secular;
+}
 const _EVE_PRAYERS={
   christianity:{lbl:'Evening prayer',text:'Lord, thank You for this day.\nFor the moments I got it right, and for Your grace when I didn’t.\nI give You what I carried today — the wins, the failures, the urges I fought.\nForgive me where I fell short. Strengthen me for tomorrow.\nNot perfect. Just better.\nAmen.'},
   islam:{lbl:'Evening du’a',text:'Alhamdulillah for this day —\nfor what I got right, and for Your mercy where I fell short.\nO Allah, I give You what I carried: the wins, the struggles, the urges I fought.\nForgive my shortcomings and strengthen me for tomorrow.\nNot perfect. Just better.'},
@@ -9484,7 +9538,16 @@ function pickDailyContextualVerse(){
     const today = new Date().toLocaleDateString('en-AU');
     const cacheKey = 'totry_verse_today';
     const cached = ls(cacheKey);
-    if(cached && cached.date === today && typeof cached.idx === 'number'){ return cached.idx; }
+    // KEYED BY TRADITION, AND BOUNDS-CHECKED. The banks are very different sizes (Christianity 44,
+    // secular 24, Buddhist 22, Islam 15, Hindu 14). Caching only {date, idx} meant that choosing a
+    // tradition mid-day handed the NEW smaller bank an index from the old larger one — activeVerses()[idx]
+    // came back undefined and showV() dereferenced it, which at boot is not inside a try and killed the
+    // rest of initApp(). The person who took the app's own day-7 invitation to choose a faith path got a
+    // half-dead app for the rest of that day, and nothing told them why.
+    const _tr = (typeof faithTradition==='function') ? faithTradition() : 'secular';
+    const _bankLen = (typeof activeVerses==='function') ? (activeVerses()||[]).length : 0;
+    if(cached && cached.date === today && cached.tr === _tr &&
+       typeof cached.idx === 'number' && cached.idx >= 0 && cached.idx < _bankLen){ return cached.idx; }
 
     // What's the person facing? Build a light theme-weight map.
     const weights = {};
@@ -9523,7 +9586,7 @@ function pickDailyContextualVerse(){
     if(topScore === 0){ return _dc() % VS.length; }
     const top = scored.filter(x => x.score >= Math.max(1, topScore - 1));
     const chosen = top[_dc() % top.length].idx;
-    ls(cacheKey, { date: today, idx: chosen });
+    ls(cacheKey, { date: today, tr: _tr, idx: chosen });
     return chosen;
   }catch(_){ try{ return _dc() % VS.length; }catch(__){ return 0; } }
 }
@@ -9591,6 +9654,13 @@ function pickAdaptiveVerseIndex(){
 }
 
 function showV(v){
+  // Defensive on purpose: this runs UNGUARDED during initApp, so a bad index here used to take out
+  // every core render after it (the sobriety clock, milestones, the front-door check-in). Falling back
+  // to the first verse of the current bank is always better than a half-booted app.
+  if(!v || v.t == null){
+    try{ v = (typeof activeVerses==='function' ? (activeVerses()||[]) : [])[0] || { t:'', r:'' }; }
+    catch(_){ v = { t:'', r:'' }; }
+  }
   document.getElementById('hdr-verse').textContent=v.t;
   document.getElementById('hdr-ref').textContent='\u2014 '+v.r;
   document.getElementById('vsave-btn').textContent='\u2661';
@@ -11899,8 +11969,14 @@ async function _feelingNowGo(){
       '<div id="feelingnow-breath" style="width:120px;height:120px;border-radius:50%;margin:0 auto 18px;background:radial-gradient(circle,rgba(200,169,110,0.25),rgba(140,107,182,0.08));border:1px solid var(--go-bd);display:flex;align-items:center;justify-content:center;animation:fnBreathe 8s ease-in-out infinite">'+
         '<span style="font-size:11px;color:var(--go);font-family:DM Mono,monospace;letter-spacing:0.1em">breathe</span>'+
       '</div>'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;line-height:1.5;color:var(--tx);margin-bottom:8px">\u201CJesus Christ, have mercy on me.\u201D</div>'+
-      '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:18px">Hand on your heart. Say it slowly, three times, while you breathe. You only have to get through <span style="color:var(--go)">this</span> one moment \u2014 not forever.</div>'+
+      // Each tradition's OWN practice for this moment — see _PULL_PRACTICE. Not a swapped phrase: the
+      // name, the words, the posture and the count all come from the tradition the person chose, and
+      // secular gets urge surfing with no religious framing at all.
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:8px">'+_escFew(_fnPractice().name)+'</div>'+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;line-height:1.5;color:var(--tx);margin-bottom:10px">\u201C'+_escFew(_fnPractice().line)+'\u201D</div>'+
+      '<div style="font-size:12.5px;color:var(--tx2);line-height:1.65;margin-bottom:8px">'+_escFew(_fnPractice().how)+'</div>'+
+      '<div style="font-size:11px;color:var(--tx3);line-height:1.6;margin-bottom:16px;padding:0 4px">'+_escFew(_fnPractice().why)+'</div>'+
+      '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:18px">You only have to get through <span style="color:var(--go)">this</span> one moment \u2014 not forever.</div>'+
     '</div>'+
     '<div id="feelingnow-redirect" style="padding:14px;background:var(--bg3);border-radius:10px;margin-bottom:14px;min-height:60px">'+
       '<p class="pulsing" style="font-family:Cormorant Garamond,serif;font-style:italic;color:var(--tx3);text-align:center;font-size:14px">Sitting with you...</p>'+
@@ -13524,6 +13600,51 @@ function _breathFaithOn(){ return (typeof faithLevel!=='function') || faithLevel
 // THE BREATH PRAYER MUST BE THE PERSON'S OWN TRADITION'S WORDS. Handing a Muslim user "Lord Jesus
 // Christ, Son of God" while the card calls it "dhikr carried on your breath" makes the multi-faith
 // promise false at the most intimate moment in the app. Same engine, same paced breath — words swap.
+// ── THE PULL, MET IN EACH TRADITION'S OWN PRACTICE ─────────────────────────────────────────────
+// This is the intervention behind "I'm feeling it right now" — the moment someone is white-knuckling.
+// It used to hand EVERY person the Jesus Prayer. Swapping one line per tradition was not enough either:
+// each of these traditions has its OWN in-the-moment practice for exactly this, developed over centuries,
+// and the practice is the point — the words, the posture, the count. So each tradition gets its real one.
+//
+// `why` states an honest mechanism and never a false one. Where a claim is clinical it is a real finding
+// (paced breathing and the long exhale; affect labelling; urge surfing); where it is a tradition's own
+// teaching it is named as that, not dressed up as science.
+const _PULL_PRACTICE = {
+  christianity: {
+    name: 'The Jesus Prayer',
+    line: "Lord Jesus Christ, Son of God, have mercy on me, a sinner.",
+    how:  "Hand on your heart. Say it on each out-breath \u2014 three times, slower than feels natural.",
+    why:  "The desert monks used this prayer for this exact moment, and a slow out-breath settles your body while the words take your attention off the pull."
+  },
+  islam: {
+    name: "Ta\u02BFawwudh, then istighf\u0101r",
+    line: "A\u02BF\u016Bdhu bill\u0101hi min ash-shay\u1E6D\u0101n \u2014 Astaghfirull\u0101h.",
+    how:  "Seek refuge once, then Astaghfirull\u0101h three times. Then change your position: if you are standing, sit; if you are sitting, lie down. Make wu\u1E0D\u016B\u02BE if you can.",
+    why:  "The Prophet \uFDFA taught changing your posture and seeking refuge when something rises in you. Moving your body genuinely interrupts the moment, and the words turn you back to All\u0101h."
+  },
+  hinduism: {
+    name: "Japa, and the witness",
+    line: "So\u2019ham \u2014 I am That.",
+    how:  "Repeat it with the breath eleven times, counting on your fingers. Then watch the urge as something moving through you \u2014 not as you.",
+    why:  "Japa gives a restless mind one thing to hold. Watching as the witness (s\u0101k\u1E63\u012B) puts space between you and the craving: it is happening in you, it is not you."
+  },
+  buddhism: {
+    name: "Noting, and the breath",
+    line: "This is craving. It arose, and it will pass.",
+    how:  "Name it once, out loud \u2014 \u201Ccraving\u201D. Then follow three full breaths, feeling where it sits in your body without pushing it away.",
+    why:  "Naming what is present loosens its grip (labelling an emotion measurably lowers its intensity), and watching it change is seeing anicca directly. Modern urge-surfing is this practice, borrowed."
+  },
+  secular: {
+    name: "Urge surfing",
+    line: "This is a wave. I can feel it without riding it.",
+    how:  "Two short breaths in through your nose, one long breath out. Three rounds. Then describe the urge to yourself: where it sits, how strong, rising or falling.",
+    why:  "The double inhale with a long exhale drops your heart rate faster than deep breathing does. Tracking an urge instead of fighting it is urge surfing \u2014 it peaks and falls, usually within minutes."
+  }
+};
+function _fnPractice(){
+  const t = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
+  return _PULL_PRACTICE[t] || _PULL_PRACTICE.secular;
+}
 const _BREATH_PRAYERS = {
   christianity: { name:'Breath prayer',      why:'Carry the Jesus Prayer on your breath',
                   in:'Lord Jesus Christ, Son of God', out:'have mercy on me, a sinner' },
@@ -14137,7 +14258,11 @@ function companionFreeText(){
           const m=document.createElement('div'); m.className='comp-msg comp-msg-me'; m.textContent=txt; conv.appendChild(m);
         }
         if(typeof showCrisisResponse==='function') showCrisisResponse('comp-conversation', crisis);
-        _compHistory.push({ role:'user', content:txt });
+        // REDACTED IN HISTORY. The gate above stops this message reaching the LLM, but storing the
+        // verbatim words meant the very next thing the person typed carried the disclosure straight to
+        // whichever provider answered — the gate held for exactly one turn. They still see their own
+        // words on screen (appended above); only what LEAVES the device is replaced.
+        _compHistory.push({ role:'user', content:'[the person disclosed something serious; crisis resources were shown instead of an AI reply]' });
         _compHistory.push({ role:'assistant', content:'[Crisis resources shown]' });
         return;
       }
@@ -14204,17 +14329,24 @@ async function _beginCompanion(name, type, userMessage){
 // Research a faith+science protocol for an unexpected struggle, cache to shared knowledge.
 async function _researchProtocol(name, key){
   try{
-    const sys = "You are a clinical researcher with deep knowledge of evidence-based behavior-change protocols AND Christian faith. Given a struggle, return the single best evidence-based mechanism for helping someone through an acute moment of it, in 2-3 sentences, naming the approach (e.g. urge surfing, cognitive defusion, behavioral interruption, grounding) and how it's applied in the moment. Be specific and practical. Then in one more sentence, note how faith can anchor it. Return ONLY the guidance text, no preamble.";
+    // Was hardcoded "AND Christian faith", which sent a Muslim, Hindu, Buddhist or secular person a
+    // Christian anchor as the centre of their in-the-moment protocol. faithVoiceNote() already carries
+    // the person's tradition (and says "no religious framing" for secular).
+    const _fv = (typeof faithVoiceNote==='function') ? faithVoiceNote() : '';
+    const sys = "You are a clinical researcher with deep knowledge of evidence-based behavior-change protocols. " + _fv + " Given a struggle, return the single best evidence-based mechanism for helping someone through an acute moment of it, in 2-3 sentences, naming the approach (e.g. urge surfing, cognitive defusion, behavioral interruption, grounding) and how it's applied in the moment. Be specific and practical. Then in one more sentence, note how faith can anchor it. Return ONLY the guidance text, no preamble.";
     const txt = await api(sys, [], 'The struggle: "'+name+'". What is the best evidence-based in-the-moment approach?', 350, { web_search:true, timeout:38000 });
     if(txt && txt.length > 40){
       const store = _getCompanionProtocols();
       store[key] = { spine: txt.trim(), label: 'Here with you', at: Date.now() };
       try{ localStorage.setItem('totry_companion_protocols', JSON.stringify(store)); }catch(_){}
-      // Contribute to the shared library so everyone benefits (if available).
-      if(typeof contributeToSharedLibrary==='function'){
-        // Stored under a 'protocol' kind is future-proofing; safe no-op if backend lacks it.
-        try{ contributeToSharedLibrary('exercise', '__protocol__'+key, {}); }catch(_){}
-      }
+      // DELIBERATELY NOT SHARED. This used to call contributeToSharedLibrary('exercise', '__protocol__'
+      // + key) — and `key` is the person's own words for what they are fighting, lowercased and
+      // truncated. That put "porn at 2am" or "drinking when dad calls" into `shared_library`, a table
+      // any signed-in user can read, filed as an EXERCISE. Three things wrong at once: it published
+      // someone's most private sentence, it polluted the exercise library, and it made the App Store
+      // answer "nothing a user writes is visible to any other user" untrue. The protocol is cached
+      // locally above, which is the part that actually helps this person. Sharing it would need real
+      // consent and moderation, and neither exists.
     }
   }catch(_){ /* research is best-effort; the base mechanism still carries the moment */ }
 }
@@ -14354,7 +14486,9 @@ function companionReply(){
       if(crisis){
         const conv=document.getElementById('comp-conversation');
         if(conv){ const m=document.createElement('div'); m.className='comp-msg comp-msg-me'; m.textContent=txt; conv.appendChild(m); conv.scrollTop=conv.scrollHeight; }
-        if(typeof _compHistory!=='undefined') _compHistory.push({ role:'user', content:txt });
+        // Redacted for the same reason as the other gate: never let the disclosure ride along in the
+        // history of the next message.
+        if(typeof _compHistory!=='undefined') _compHistory.push({ role:'user', content:'[the person disclosed something serious; crisis resources were shown instead of an AI reply]' });
         if(typeof showCrisisResponse==='function') showCrisisResponse('comp-conversation', crisis);
         if(typeof _compHistory!=='undefined') _compHistory.push({ role:'assistant', content:'[Crisis resources shown]' });
         return;
@@ -16371,8 +16505,13 @@ function autoTickHabits(){
   let anyTicked=false;
   // Backfill EACH of the last 7 days from real activity data — not just today. This is why
   // yesterday's synced workout / completed reflection now correctly shows ticked.
+  // Bounded to THIS WEEK (off <= ti). h.d is seven slots for the current Monday->Sunday week, and
+  // since the weekly zeroing landed that is literally true. Backfilling a rolling 7 CALENDAR days into
+  // it wrapped: on a Tuesday (ti=1), three days ago is last Saturday, and ((1-3)%7+7)%7 = 5 = THIS
+  // Saturday — a day that has not happened yet. So last week's workout ticked a future day, the home
+  // grid drew it as done, and getStreak counted it. Only days from this Monday to today can be backfilled.
   const dayList = [];
-  for(let off=0; off<7; off++){
+  for(let off=0; off<=ti; off++){
     const d = new Date(Date.now() - off*86400000);
     dayList.push({ dateStr: d.toLocaleDateString('en-AU'), idx: ((ti - off) % 7 + 7) % 7 });
   }
@@ -23809,15 +23948,21 @@ function _calEvents(){
   // Non-recurring (one-off) events carry a weekStamp; they only appear during the week they were
   // added for. Recurring events (the default for a weekly timetable) always show.
   const nowWeek = _currentWeekStamp();
-  return all.filter(e => e && (e.recurring !== false || !e.weekStamp || e.weekStamp === nowWeek));
+  return all.filter(e => e && (e.recurring !== false || !e.weekStamp
+                              || _isLegacyWeekStamp(e.weekStamp) || e.weekStamp === nowWeek));
 }
 // ISO-ish week stamp (year + week number) so one-off events can be scoped to "this week only".
+// ONE week definition for the whole app: the week runs Monday -> Sunday, matching tIdx() and the habit
+// ring. This used to compute a Sunday-start ISO-ish week NUMBER, which rolled over on SATURDAY — so a
+// one-off event added on Tuesday for "Saturday 10am" had its stamp go stale the moment Saturday arrived
+// and silently disappeared from the calendar on exactly the two days of the week people plan around.
 function _currentWeekStamp(d){
-  const dt = d ? new Date(d) : new Date();
-  const onejan = new Date(dt.getFullYear(),0,1);
-  const week = Math.ceil((((dt - onejan)/86400000) + onejan.getDay()+1)/7);
-  return dt.getFullYear()+'-W'+week;
+  return _habitWeekStamp(d);
 }
+// Stamps written before that change look like "2026-W33" and can no longer be compared. A one-off event
+// lingering an extra week is a far smaller harm than a dentist appointment vanishing, so legacy stamps
+// are shown rather than hidden; they age out as events are re-added.
+function _isLegacyWeekStamp(v){ return typeof v === 'string' && /^\d{4}-W\d{1,2}$/.test(v); }
 function _saveCalEvents(list){ ls('totry_cal_events', list.slice(0,300)); if(typeof syncToCloud==='function') syncToCloud(); }
 
 // ════ FUEL PLAN — whole-life meal planning + PT carb-timing ════
@@ -25788,7 +25933,15 @@ function monthlyPaymentRate(){
     .sort((a,b)=>_T(a)-_T(b));
   if(pays.length<2) return null;
   const spanDays=(_T(pays[pays.length-1])-_T(pays[0]))/86400000;
-  const months=Math.max(1, spanDays/30.44);           // never claim a rate faster than monthly
+  // FENCEPOST. n payments span only n-1 gaps, but they COVER n periods. Dividing the total by the span
+  // alone overstated the rate by n/(n-1) — 20% with six payments and a full 100% with two, which is
+  // exactly where a new user starts. An overstated rate means a debt-free date that arrives sooner than
+  // the money ever will, and it also suppresses the "the interest is outrunning your payments" warning,
+  // which is the one thing that person most needs to hear. Scale the span up by one average interval so
+  // the last payment is credited with the period it actually bought.
+  const n=pays.length;
+  const covered=spanDays * (n/(n-1));
+  const months=Math.max(1, covered/30.44);            // never claim a rate faster than monthly
   const total=pays.reduce((a,p)=>a+(parseFloat(p.amt)||0),0);
   return total/months;
 }
@@ -30629,15 +30782,15 @@ function saveExamen(){
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
     '<div style="text-align:center;padding:14px 0">' +
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:8px">Examen Complete</div>' +
-      '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;line-height:1.4;margin-bottom:14px">"Search me, O God, and know my heart;<br>try me and know my thoughts."</div>' +
-      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">Psalm 139:23</div>' +
+      '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;line-height:1.4;margin-bottom:14px">"'+_examenClose().q+'"</div>' +
+      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+_escFew(_examenClose().r)+'</div>' +
     '</div>' +
-    '<div class="prayer-box" style="margin-bottom:14px"><div class="prayer-text">Lord, You walked with me through today — every step, every fall, every quiet victory. Thank You for what You gave me. Forgive me for what I missed. Tomorrow I begin again. Amen.</div></div>' +
+    '<div class="prayer-box" style="margin-bottom:14px"><div class="prayer-text">'+_escFew(((typeof _EVE_PRAYERS!=='undefined' && _EVE_PRAYERS[(typeof faithTradition==='function'?faithTradition():'secular')]) || _EVE_PRAYERS.secular).text)+'</div></div>' +
     '<button class="btn primary" onclick="closeModal(this)">Rest in peace tonight</button>' +
   '</div>';
   document.body.appendChild(m);
   haptic('celebrate');
-  showToast('Examen logged', 'God walked with you today.');
+  showToast('Examen logged', _examenClose().toast);
 }
 
 // ── EXAMEN HISTORY VIEWER ──────────────────────────────────────
@@ -32393,6 +32546,7 @@ let _rosary = null;
 function openRosary(){
   const built = _buildRosarySequence();
   _rosary = { set:built.set, steps:built.steps, i:0 };
+  _rosaryDone = false;
   // Resume if there's saved progress from today.
   try{
     const sp = ls('totry_rosary_progress');
@@ -32405,7 +32559,15 @@ function openRosary(){
   if(typeof haptic==='function') haptic('light');
 }
 function closeRosary(){
-  try{ ls('totry_rosary_progress', { date:new Date().toLocaleDateString('en-AU'), i:_rosary?_rosary.i:0 }); }catch(_){}
+  // Don't re-arm a finished rosary. _finishRosary() clears the resume pointer, but the completion
+  // screen's only button is this function, which then wrote the pointer straight back at the LAST step
+  // index — and the resume guard (sp.i < steps.length) happily accepts it. So praying a second rosary
+  // the same day dropped the person on the closing Sign of the Cross with the whole rosary skipped.
+  try{
+    if(_rosaryDone){ localStorage.removeItem('totry_rosary_progress'); }
+    else { ls('totry_rosary_progress', { date:new Date().toLocaleDateString('en-AU'), i:_rosary?_rosary.i:0 }); }
+  }catch(_){}
+  _rosaryDone = false;
   const ov=document.getElementById('rosary-overlay'); if(ov) ov.remove();
 }
 function _rosaryGo(delta){
@@ -32449,7 +32611,9 @@ function _renderRosaryStep(){
       '<button onclick="_rosaryGo(1)" class="btn primary" style="flex:1;margin:0;padding:16px;font-size:15px">'+(s.last?'Finish · Amen':(s.announce?'Begin the decade':'Next'))+'</button>'+
     '</div>';
 }
+let _rosaryDone = false;      // set on completion so closeRosary() cannot re-arm the resume pointer
 function _finishRosary(){
+  _rosaryDone = true;
   let list=ls('totry_rosaries')||[];
   // The completion screen must ALWAYS render — never let a failed cloud sync or storage write rob a
   // person of the "you prayed it" moment. All side effects are best-effort.
@@ -34350,10 +34514,25 @@ async function deleteAccount(){
       // user_id, so a stale device row outlived the account) and feedback (which stores their email
       // address alongside whatever they wrote to me). app_events is deliberately left — it is keyed by a
       // random anon_id that is not the email and holds no content, so there is nothing there to identify.
+      //
+      // CHECK THE RESULT, DON'T ASSUME IT. supabase-js does NOT throw when a delete is refused — an RLS
+      // policy that has no DELETE rule returns {error} (or silently affects zero rows) and resolves
+      // normally. So try/catch caught nothing, the {error} was discarded, and the app said "Account
+      // deleted" whether or not anything was. That is a false statement to the person, a broken promise
+      // in the privacy policy, and an App Store 5.1.1(v) failure. Now every delete is verified and the
+      // toast tells the truth.
       const _uid = currentUser.id, _email = currentUser.email || null;
-      try{ await sb.from('user_data').delete().eq('user_id', _uid); }catch(e){ console.warn('[delete] user_data:', e); }
-      try{ await sb.from('push_subscriptions').delete().eq('user_id', _uid); }catch(e){ console.warn('[delete] push_subscriptions:', e); }
-      if(_email){ try{ await sb.from('feedback').delete().eq('email', _email); }catch(e){ console.warn('[delete] feedback:', e); } }
+      const _failed = [];
+      const _del = async (table, col, val, label) => {
+        try{
+          const { error } = await sb.from(table).delete().eq(col, val);
+          if(error){ _failed.push(label); console.warn('[delete] '+table+':', error); }
+        }catch(e){ _failed.push(label); console.warn('[delete] '+table+':', e); }
+      };
+      await _del('user_data', 'user_id', _uid, 'your logged data');
+      await _del('push_subscriptions', 'user_id', _uid, 'your notification registration');
+      if(_email) await _del('feedback', 'email', _email, 'messages you sent me');
+      window.__deleteFailures = _failed;
       // Sign out
       try{ await sb.auth.signOut(); }catch(e){ console.warn('[delete] signOut failed:', e); }
     }
@@ -34367,7 +34546,18 @@ async function deleteAccount(){
     if(k.startsWith('totry_') && !keep.includes(k)) localStorage.removeItem(k);
   });
   
-  showToast('Account deleted', 'Goodbye. The door is always open.');
+  const _f = window.__deleteFailures || [];
+  if(_f.length){
+    // Never claim a deletion that did not happen. Local data is gone either way, so say precisely what
+    // is still on the server and give them a person to ask — that is the only honest move left here.
+    alert('This device has been wiped, and you are signed out.\n\nBut the server refused to delete:\n\n\u2022 '
+      + _f.join('\n\u2022 ')
+      + '\n\nI will not tell you it is gone when it is not. Email totrybyaj@gmail.com and I will delete it by hand '
+      + 'and confirm to you. I am sorry \u2014 this is my bug, not something you did wrong.');
+    showToast('Partly deleted', 'This device is wiped. Please email me about the rest.');
+  } else {
+    showToast('Account deleted', 'Goodbye. The door is always open.');
+  }
   setTimeout(() => location.reload(), 1500);
 }
 
@@ -36642,8 +36832,11 @@ function renderHomeHabits(){
   };
   
   // Header: past 7 days perfect-day count
+  // Only days this week are knowable (the ring holds Monday->Sunday of the current week), so counting
+  // six days back claimed knowledge of days whose slots belong to a different week.
   let pastPerfect = 0;
-  for(let off = 1; off <= 6; off++){
+  const knowable = Math.min(6, ti);          // days before today, within this week
+  for(let off = 1; off <= knowable; off++){
     if(habits.every(h => cellFor(h, off))) pastPerfect++;
   }
   const todayDone = habits.filter(h => cellFor(h, 0)).length;
@@ -36653,8 +36846,9 @@ function renderHomeHabits(){
   summary.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--bg3);border-radius:10px;margin-bottom:14px';
   summary.innerHTML = 
     '<div>' +
-      '<div class="eyebrow">Last 6 days</div>' +
-      '<div style="font-size:18px;font-weight:500;color:var(--tx)">' + pastPerfect + '/6 perfect</div>' +
+      '<div class="eyebrow">' + (knowable ? 'This week so far' : 'This week') + '</div>' +
+      '<div style="font-size:18px;font-weight:500;color:var(--tx)">' +
+        (knowable ? (pastPerfect + '/' + knowable + ' perfect') : 'starts today') + '</div>' +
     '</div>' +
     '<div style="text-align:right">' +
       '<div class="eyebrow">Today so far</div>' +
@@ -36677,7 +36871,7 @@ function renderHomeHabits(){
     
     // Past 6 days hit count for at-a-glance pattern
     let pastHits = 0;
-    for(let off = 1; off <= 6; off++) if(cellFor(h, off)) pastHits++;
+    for(let off = 1; off <= knowable; off++) if(cellFor(h, off)) pastHits++;
     const pastColor = pastHits >= 5 ? 'var(--gr)' : pastHits >= 3 ? 'var(--go)' : 'var(--tx3)';
     
     const nameCell = document.createElement('div');
@@ -36691,7 +36885,7 @@ function renderHomeHabits(){
       (_anc
         ? '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">after ' + _escFew(_anc) + '</div>'
         : (!window.__anchorHintShown ? (window.__anchorHintShown = true, '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">\uFF0B anchor it to a cue</div>') : '')) +
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:' + pastColor + ';margin-top:2px">' + pastHits + '/6 past</div>';
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:' + pastColor + ';margin-top:2px">' + (knowable ? (pastHits + '/' + knowable + ' this week') : 'day one') + '</div>';
     nameCell.onclick = function(){ if(typeof openHabitAnchor==='function') openHabitAnchor(hi); };
     row.appendChild(nameCell);
     
@@ -36700,11 +36894,20 @@ function renderHomeHabits(){
       const offset = 6 - idx; // 6=oldest, 0=today
       const done = cellFor(h, offset);
       const isToday = dl.isToday;
+      // Days before this Monday sit outside what the ring can speak to — its seven slots describe the
+      // CURRENT week only. Drawing them as empty circles read as "you missed that day", which is a
+      // different lie from the stale ticks that used to appear there. Shown as unknown instead.
+      const unknown = offset > ti;
       
       const cell = document.createElement('div');
       let bg, border, color, mark;
       
-      if(done){
+      if(unknown){
+        bg = 'transparent';
+        border = '1px dotted var(--bd)';
+        color = 'rgba(242,239,232,0.22)';
+        mark = '\u2013';                       // en dash: no record, not a miss
+      } else if(done){
         bg = isToday ? 'var(--go-bg)' : 'rgba(89,164,103,0.18)';
         border = isToday ? '1.5px solid var(--go)' : '1px solid var(--gr)';
         color = isToday ? 'var(--go)' : 'var(--gr)';
