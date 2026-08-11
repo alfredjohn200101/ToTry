@@ -1,10 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="17132" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
-    <device id="retina4_7" orientation="portrait" appearance="light"/>
+<!--
+  The launch screen a person actually sees while the WebView loads.
+
+  It used to be the stock Capacitor placeholder: a WHITE background with the Capacitor logo, on a
+  systemBackgroundColor that goes white in light mode. In practice the app showed roughly seven seconds
+  of pure black on launch — long enough to read as a hang, and long enough for an App Store reviewer to
+  treat it as one. The blank time is real (the single-file build has ~2.4MB of inline script to compile
+  before the body paints), so the honest fix is to make those seconds look like the app instead of like
+  a crash: the same #0a0a0f background the WebView hands over to, and the wordmark, so the handoff is
+  seamless rather than a jump.
+
+  Constraints of a launch storyboard: it is static (no spinner — the in-page boot splash has that once
+  the WebView paints), no custom classes, and no custom fonts, because nothing in the app bundle has
+  loaded yet. Georgia is on every iOS device and is the closest always-available serif to Cormorant
+  Garamond, so it degrades to nothing.
+-->
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="22154" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
+    <device id="retina6_12" orientation="portrait" appearance="dark"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="17105"/>
-        <capability name="System colors in document resources" minToolsVersion="11.0"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="22131"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
@@ -12,21 +28,36 @@
         <scene sceneID="EHf-IW-A2E">
             <objects>
                 <viewController id="01J-lp-oVM" sceneMemberID="viewController">
-                    <imageView key="view" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Splash" id="snD-IY-ifK">
-                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
-                        <autoresizingMask key="autoresizingMask"/>
-                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
-                    </imageView>
+                    <view key="view" contentMode="scaleToFill" id="Ic4-ZR-tYk">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="To Try" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="wm1-To-Try">
+                                <rect key="frame" x="141.5" y="392" width="110" height="53"/>
+                                <fontDescription key="fontDescription" name="Georgia" family="Georgia" pointSize="44"/>
+                                <color key="textColor" red="0.78431372549019607" green="0.66274509803921566" blue="0.43137254901960786" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="BY ALFRED JOHN" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="wm2-By-Aj">
+                                <rect key="frame" x="132" y="453" width="129" height="13"/>
+                                <fontDescription key="fontDescription" type="system" weight="light" pointSize="11"/>
+                                <color key="textColor" red="0.41568627450980394" green="0.41568627450980394" blue="0.44705882352941179" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                        </subviews>
+                        <viewLayoutGuide key="safeArea" id="Bcu-3y-fUS"/>
+                        <color key="backgroundColor" red="0.039215686274509803" green="0.039215686274509803" blue="0.058823529411764705" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <constraints>
+                            <constraint firstItem="wm1-To-Try" firstAttribute="centerX" secondItem="Ic4-ZR-tYk" secondAttribute="centerX" id="c01-cx-wm1"/>
+                            <constraint firstItem="wm1-To-Try" firstAttribute="centerY" secondItem="Ic4-ZR-tYk" secondAttribute="centerY" id="c02-cy-wm1"/>
+                            <constraint firstItem="wm2-By-Aj" firstAttribute="centerX" secondItem="Ic4-ZR-tYk" secondAttribute="centerX" id="c03-cx-wm2"/>
+                            <constraint firstItem="wm2-By-Aj" firstAttribute="top" secondItem="wm1-To-Try" secondAttribute="bottom" constant="8" id="c04-tp-wm2"/>
+                        </constraints>
+                    </view>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="iYj-Kq-Ea1" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="53" y="375"/>
         </scene>
     </scenes>
-    <resources>
-        <image name="Splash" width="1366" height="1366"/>
-        <systemColor name="systemBackgroundColor">
-            <color white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-        </systemColor>
-    </resources>
 </document>

@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v400-remaining-eight'
+const CACHE = 'totry-v401-numerals-and-launch'
 
 const CORE = [
   './',

@@ -42,6 +42,20 @@
 /* ── DESIGN SYSTEM UTILITIES ──
    Reusable classes so repeated patterns are pixel-identical everywhere.
    The eye reads consistency as quality. */
+/* ── STAT NUMERALS: one treatment, everywhere ─────────────────────────────────────────────────
+   The same idea — "a number that matters" — was being drawn three different ways: DM Mono at weight
+   300 (the streak cards, the reclaimed total), the body sans at 500 (the habit summary), and a serif
+   for dates. Side by side on the home screen the streaks read light and wide while the habit line read
+   dense and tight, which is exactly what makes a screen look assembled rather than designed.
+   Standardised on the denser one: Outfit 500, which is the body face, so numbers sit in the same voice
+   as the words around them.
+   tabular-nums is the part that actually matters day to day — with proportional figures a streak going
+   61 -> 62 -> 63 changes width and the number visibly jiggles between renders. Tabular figures hold
+   their column, so a counter that updates every day stays put. */
+.stat-num{font-family:'Outfit',sans-serif;font-weight:500;line-height:1;
+  font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;letter-spacing:-0.01em}
+.stat-num.sn-lg{font-size:32px}
+.stat-num.sn-xl{font-size:44px}
 .eyebrow{font-family:'DM Mono',monospace;font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:var(--s1)}
 .stack-1>*+*{margin-top:var(--s1)}
 .stack-2>*+*{margin-top:var(--s2)}
@@ -132,7 +146,7 @@ button:focus:not(:focus-visible){outline:none}
 .mg4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
 .met{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:12px}
 .met .ml{font-family:'DM Mono',monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:5px}
-.met .mv{font-family:'DM Mono',monospace;font-size:22px;font-weight:400;color:var(--tx);line-height:1}
+.met .mv{font-family:'Outfit',sans-serif;font-size:22px;font-weight:500;color:var(--tx);line-height:1;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;letter-spacing:-0.01em}
 .met .mv.g{color:var(--gr)}.met .mv.r{color:var(--re)}.met .mv.au{color:var(--go)}.met .mv.bl{color:var(--bl)}
 .divider{height:1px;background:var(--bd);margin:12px 0}
 input,textarea,select{font-family:'Outfit',sans-serif;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);color:var(--tx);font-size:13px;padding:10px 12px;width:100%;outline:none;transition:border-color 0.2s}
@@ -183,7 +197,7 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .hero-greeting{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;color:#fff;line-height:1.12;letter-spacing:-0.01em}
 .hero-sub{font-size:13.5px;color:rgba(242,239,232,0.66);margin-top:7px;line-height:1.55;max-width:300px}
 .hero-identity{display:flex;align-items:baseline;gap:7px;margin-top:18px;cursor:pointer;flex-wrap:wrap}
-.hero-dayn{font-family:'DM Mono',monospace;font-size:30px;font-weight:300;color:var(--go);line-height:1}
+.hero-dayn{font-family:'Outfit',sans-serif;font-size:30px;font-weight:500;color:var(--go);line-height:1;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;letter-spacing:-0.01em}
 .hero-dayl{font-family:'DM Mono',monospace;font-size:9px;color:rgba(242,239,232,0.5);text-transform:uppercase;letter-spacing:0.16em}
 .hero-identity-text{font-size:13px;color:rgba(242,239,232,0.6);font-style:italic;font-family:'Cormorant Garamond',serif;flex-basis:100%;margin-top:3px;line-height:1.35}
 .hero-action{margin-top:18px;background:linear-gradient(135deg,#C8A96E,#a98b54);border:none;color:#0c0c0e;border-radius:14px;padding:15px 18px;font-size:14px;font-weight:600;cursor:pointer;width:100%;box-shadow:var(--e-gold);transition:transform .18s var(--spring)}
@@ -332,7 +346,7 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .sc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
 .sc-met{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:12px;text-align:center}
 .sc-ml{font-family:'DM Mono',monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px}
-.sc-mv{font-family:'DM Mono',monospace;font-size:24px;color:var(--tx);line-height:1}
+.sc-mv{font-family:'Outfit',sans-serif;font-size:24px;color:var(--tx);line-height:1;font-weight:500;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;letter-spacing:-0.01em}
 .sc-mv.g{color:var(--gr)}.sc-mv.au{color:var(--go)}.sc-mv.bl{color:var(--bl)}
 .vsr{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:12px 14px;margin-bottom:6px}
 .vsr-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
@@ -386,7 +400,7 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .body-entry{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--bd)}
 .body-entry:last-child{border-bottom:none}
 .be-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3)}
-.be-weight{font-family:'DM Mono',monospace;font-size:20px;color:var(--tx)}
+.be-weight{font-family:'Outfit',sans-serif;font-size:20px;color:var(--tx);font-weight:500;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;letter-spacing:-0.01em}
 .be-change{font-family:'DM Mono',monospace;font-size:11px}
 .be-change.down{color:var(--gr)}.be-change.up{color:var(--re)}.be-change.same{color:var(--tx3)}
 .debt-row{padding:12px 0;border-bottom:1px solid var(--bd);cursor:pointer;transition:opacity 0.15s}
@@ -413,7 +427,7 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .df-lbl{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-top:4px}
 .df-desc{font-size:12px;color:var(--tx2);margin-top:6px;line-height:1.5}
 .saved-hero{background:var(--gr-bg);border:1px solid var(--gr-bd);border-radius:var(--r);padding:14px;text-align:center;margin-bottom:10px}
-.saved-big{font-family:'DM Mono',monospace;font-size:48px;font-weight:300;color:var(--gr);line-height:1}
+.saved-big{font-family:'Outfit',sans-serif;font-size:44px;font-weight:500;color:var(--gr);line-height:1;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;letter-spacing:-0.01em}
 .saved-lbl{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-top:4px}
 .saved-desc{font-size:12px;color:var(--tx2);margin-top:6px;line-height:1.5}
 .ritual-verse{background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--r);padding:18px;margin-bottom:12px;text-align:center}
@@ -429,7 +443,7 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .conscience-q{padding:10px 0;border-bottom:1px solid var(--bd);font-size:13px;color:var(--tx2);line-height:1.5}
 .conscience-q:last-child{border-bottom:none}
 .week-stat{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:12px;text-align:center}
-.ws-num{font-family:'DM Mono',monospace;font-size:26px;color:var(--tx);line-height:1}
+.ws-num{font-family:'Outfit',sans-serif;font-size:26px;color:var(--tx);line-height:1;font-weight:500;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;letter-spacing:-0.01em}
 .ws-lbl{font-family:'DM Mono',monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-top:4px}
 .review-item{padding:10px 0;border-bottom:1px solid var(--bd)}
 .review-item:last-child{border-bottom:none}
@@ -488,7 +502,7 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .macro-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
 .macro-met{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 8px;text-align:center}
 .macro-met .mm-l{font-family:'DM Mono',monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px}
-.macro-met .mm-v{font-family:'DM Mono',monospace;font-size:20px;color:var(--tx2);line-height:1}
+.macro-met .mm-v{font-family:'Outfit',sans-serif;font-size:20px;color:var(--tx2);line-height:1;font-weight:500;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;letter-spacing:-0.01em}
 /* The hero calorie block spans the full width above the three macros */
 .cal-hero{text-align:center;padding:6px 0 14px;border-bottom:1px solid var(--bd);margin-bottom:12px}
 .cal-hero .ch-num{font-family:'DM Mono',monospace;font-size:52px;font-weight:300;color:var(--go);line-height:0.95;letter-spacing:-0.01em}
@@ -554,7 +568,7 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 /* ── SOBRIETY CLOCK ── */
 .sob-clock{background:var(--bg2);border:1px solid var(--re-bd);border-radius:var(--r);padding:16px;text-align:center;margin-bottom:10px;position:relative;overflow:hidden}
 .sob-clock::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(192,57,43,0.06) 0%,transparent 70%);pointer-events:none}
-.sob-big{font-family:'DM Mono',monospace;font-size:48px;font-weight:300;color:var(--re);line-height:1}
+.sob-big{font-family:'Outfit',sans-serif;font-size:48px;font-weight:500;color:var(--re);line-height:1;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;letter-spacing:-0.01em}
 .sob-big.clean{color:var(--gr)}
 .sob-sub{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-top:4px}
 .sob-hms{font-family:'DM Mono',monospace;font-size:13px;color:var(--tx2);margin-top:6px;letter-spacing:0.08em}
@@ -607,7 +621,7 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .tracker-row:last-child{border-bottom:none}
 .tr-icon{font-size:20px;flex-shrink:0}
 .tr-label{font-size:13px;font-weight:500;color:var(--tx);flex:1}
-.tr-val{font-family:'DM Mono',monospace;font-size:20px;color:var(--go);min-width:50px;text-align:right}
+.tr-val{font-family:'Outfit',sans-serif;font-size:20px;color:var(--go);min-width:50px;text-align:right;font-weight:500;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;letter-spacing:-0.01em}
 .tr-btns{display:flex;gap:4px}
 .tr-btn{width:32px;height:32px;border-radius:var(--rs);border:1px solid var(--bd);background:var(--bg3);color:var(--tx);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif}
 .tr-btn:active{background:var(--go-bg);border-color:var(--go-bd)}
@@ -685,7 +699,7 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .streak-card:active{border-color:var(--go-bd);background:var(--bg4)}
 .streak-card.sober{border-color:var(--gr-bd);background:var(--gr-bg)}
 .streak-card.resilience{border-color:var(--bl-bd);background:var(--bl-bg)}
-.streak-num{font-family:'DM Mono',monospace;font-size:32px;font-weight:300;line-height:1;margin-bottom:2px}
+.streak-num{font-family:'Outfit',sans-serif;font-size:32px;font-weight:500;line-height:1;margin-bottom:2px;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;letter-spacing:-0.01em}
 .streak-card.sober .streak-num{color:var(--gr)}
 .streak-card.resilience .streak-num{color:var(--bl)}
 .streak-lbl{font-family:'DM Mono',monospace;font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:var(--tx3)}
@@ -4452,7 +4466,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v400';
+const APP_VERSION = 'v401';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -36915,12 +36929,12 @@ function renderHomeHabits(){
   summary.innerHTML = 
     '<div>' +
       '<div class="eyebrow">' + (knowable ? 'This week so far' : 'This week') + '</div>' +
-      '<div style="font-size:18px;font-weight:500;color:var(--tx)">' +
+      '<div class="stat-num" style="font-size:18px;color:var(--tx)">' +
         (knowable ? (pastPerfect + '/' + knowable + ' perfect') : 'starts today') + '</div>' +
     '</div>' +
     '<div style="text-align:right">' +
       '<div class="eyebrow">Today so far</div>' +
-      '<div style="font-size:18px;font-weight:500;color:var(--tx2)">' + todayDone + '/' + todayTotal + '</div>' +
+      '<div class="stat-num" style="font-size:18px;color:var(--tx2)">' + todayDone + '/' + todayTotal + '</div>' +
     '</div>';
   list.appendChild(summary);
   
