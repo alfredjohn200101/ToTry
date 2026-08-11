@@ -11,6 +11,17 @@
 -- Run. It is idempotent: safe to run again, and re-running is the way to repair
 -- drift later.
 --
+-- STATUS: RUN on 12 Aug 2026, and verified from the attacker's own position — signed
+-- out, using the public anon key that ships in index.html:
+--     user_data          0 rows readable   ← the leak, closed
+--     feedback           0 rows readable   ← nobody can harvest emails
+--     app_events         unreadable, still insertable (guest counts survive)
+--     shared_library     read query succeeds; anonymous INSERT rejected by policy
+-- A SELECT with no matching policy returns zero rows rather than an error, which is
+-- why "0 rows readable" is the pass condition and not a failure.
+-- Still to confirm with a signed-in account: that a real user can read and write
+-- their own user_data. That needs credentials, so it is the owner's check.
+--
 -- SAFE BY CONSTRUCTION:
 --   · Wrapped in a transaction. If any statement fails, NOTHING is applied, so
 --     you can never end up with RLS on and no policy (which locks the app out

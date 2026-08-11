@@ -345,8 +345,14 @@ here means built *and reachable*, not merely present.
 **The honest summary:** this app is far more built than its own backlog claimed. What is left is not a
 list of missing features. It is:
 
-1. **`SleepPlugin` registration** — written, compiled into the binary, not discovered by Capacitor
-   because it lives in the app target rather than a package. Sleep therefore never syncs automatically.
+0. ~~**Supabase RLS**~~ — done 12 Aug 2026. Supabase flagged `rls_disabled_in_public`; with RLS off the
+   public anon key could read, edit and delete every row. `supabase-rls-fix.sql` enables RLS on all seven
+   tables with policies derived from the app's real queries, and folds in the two DELETE policies that
+   make account deletion truthful. Verified signed out: `user_data` and `feedback` return 0 rows to the
+   anon key, guest event inserts still work, and anonymous writes to `shared_library` are rejected.
+
+1. ~~**`SleepPlugin` registration**~~ — done in v415 via a `CAPBridgedViewController` subclass; `Sleep`
+   now appears in `Capacitor.Plugins` and `_sleepP()` resolves.
 2. **Body-doubling and Screen Time blocking** — the only two genuinely unbuilt items, and 3.1 is
    native-only and best attempted after the first release.
 3. **The things only real use finds.** Six of the nine pre-release blockers were invisible to every

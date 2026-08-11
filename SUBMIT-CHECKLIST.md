@@ -16,6 +16,8 @@ Verified in the actual shipping bundle, not just the repo:
 | `ITSAppUsesNonExemptEncryption` | ✅ `false` — you will **not** be asked the export-compliance question |
 | Icons | ✅ `Assets.car` + AppIcon variants |
 | Account deletion (5.1.1(v), mandatory) | ✅ deletes `user_data`, `push_subscriptions`, `feedback` |
+| Row Level Security on every table | ✅ enabled + policies, 12 Aug 2026 (`supabase-rls-fix.sql`) — verified signed-out: `user_data` and `feedback` return 0 rows to the public anon key |
+| DELETE policies so deletion is truthful | ✅ in the same script — without them `deleteAccount()` reported success while rows survived |
 
 ---
 
