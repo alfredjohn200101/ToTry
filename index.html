@@ -3242,7 +3242,7 @@ input:focus,textarea:focus,select:focus{
   <div class="card" style="margin-top:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-hd" style="margin-bottom:0">🔁 Subscriptions</div>
-      <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd)" onclick="openSubscriptionLogger()">+ Add</button>
+      <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd)" onclick="openSubscriptionLogger()" aria-label="Add a subscription">+ Add</button>
     </div>
     <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Track recurring expenses. Cancel what doesn't serve you.</p>
   <div id="sub-detect" style="display:none"></div>
@@ -3254,7 +3254,7 @@ input:focus,textarea:focus,select:focus{
   <div class="card" style="margin-top:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-hd" style="margin-bottom:0">📅 Upcoming bills</div>
-      <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd)" onclick="openBillLogger()">+ Add</button>
+      <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd)" onclick="openBillLogger()" aria-label="Add a bill">+ Add</button>
     </div>
     <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">One-off or annual bills with a due date. We'll surface the closest first.</p>
     <div id="bills-list"></div>
@@ -3285,7 +3285,7 @@ input:focus,textarea:focus,select:focus{
   <div class="card" style="margin-top:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-hd" style="margin-bottom:0">👪 Family contribution</div>
-      <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd)" onclick="openFamilyContribution()">+ Log</button>
+      <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd)" onclick="openFamilyContribution()" aria-label="Log a family contribution">+ Log</button>
     </div>
     <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Money you give to family. Track what you contribute over time.</p>
     <div id="family-contribution-list"></div>
@@ -3296,7 +3296,7 @@ input:focus,textarea:focus,select:focus{
   <div class="card" style="margin-top:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-hd" style="margin-bottom:0">🤲 <span id="giving-title">Giving</span></div>
-      <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd)" onclick="openGivingLog()">+ Log</button>
+      <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd)" onclick="openGivingLog()" aria-label="Log giving">+ Log</button>
     </div>
     <div id="giving-body"></div>
   </div>
@@ -3692,11 +3692,11 @@ Amen.</div></div>
       <div class="card-hd" style="margin-bottom:10px">Profile</div>
       <div class="setting-row">
         <div><div class="sr-label">Your name</div><div class="sr-desc" id="settings-name-display">Loading...</div></div>
-        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:12px" onclick="changeName()">Edit</button>
+        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:12px" onclick="changeName()" aria-label="Edit your name">Edit</button>
       </div>
       <div class="setting-row">
         <div><div class="sr-label">Journey started</div><div class="sr-desc" id="settings-start-date">Loading...</div></div>
-        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:12px" onclick="editJourneyStart()">Edit</button>
+        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:12px" onclick="editJourneyStart()" aria-label="Edit your journey start date">Edit</button>
       </div>
       <div class="setting-row">
         <div><div class="sr-label">Days on the journey</div><div class="sr-desc" id="settings-day-count">Loading...</div></div>
@@ -3908,15 +3908,15 @@ Amen.</div></div>
       </div>
       <div class="setting-row">
         <div><div class="sr-label">Export journal</div><div class="sr-desc">Copy all entries as plain text</div></div>
-        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:12px" onclick="exportJournal()">Export</button>
+        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:12px" onclick="exportJournal()" aria-label="Export your journal">Export</button>
       </div>
       <div class="setting-row">
         <div><div class="sr-label">Export wins</div><div class="sr-desc">Copy all wins as plain text</div></div>
-        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:12px" onclick="exportWins()">Export</button>
+        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:12px" onclick="exportWins()" aria-label="Export your wins">Export</button>
       </div>
       <div class="setting-row" style="border-bottom:none">
         <div><div class="sr-label">Export workouts</div><div class="sr-desc">Copy session history as plain text</div></div>
-        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:12px" onclick="exportWorkouts()">Export</button>
+        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:12px" onclick="exportWorkouts()" aria-label="Export your training history">Export</button>
       </div>
     </div>
     
@@ -4464,7 +4464,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v405';
+const APP_VERSION = 'v406';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -10480,6 +10480,8 @@ function renderSplitOverview(){
   if(!overview)return;
   const split=ls('totry_split')||[];
   const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  // Full names for the accessible label only — the visible chip stays short.
+  const DAYS_FULL=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
   const ti=tIdx();
   
   // Default to 7 empty days if not configured
@@ -10494,7 +10496,10 @@ function renderSplitOverview(){
     const focusText=day.focus||(day.routine?day.routine:'Rest day');
     row.innerHTML='<div style="font-family:DM Mono,monospace;font-size:11px;color:'+(isToday?'var(--go)':'var(--tx3)')+';width:40px;text-transform:uppercase;letter-spacing:0.1em">'+DAYS[i]+'</div>'+
       '<div style="flex:1;font-size:13px;color:var(--tx)">'+focusText+'</div>'+
-      '<button class="btn" style="width:auto;padding:5px 10px;font-size:11px" onclick="editSplitDay('+i+')">Edit</button>';
+      // Seven buttons on this screen all read just "Edit", so a screen reader announced "Edit, Edit,
+      // Edit..." seven times with nothing to tell them apart. The visible label stays short (the day is
+      // right there in the row); the accessible name says which day and what is on it.
+      '<button class="btn" style="width:auto;padding:5px 10px;font-size:11px" aria-label="Edit '+_escFew(DAYS_FULL[i]||DAYS[i])+' \u2014 currently '+_escFew(focusText)+'" onclick="editSplitDay('+i+')">Edit</button>';
     overview.appendChild(row);
   });
 }

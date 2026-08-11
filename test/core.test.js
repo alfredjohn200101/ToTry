@@ -583,6 +583,28 @@ H.section('training history — one cap, no silent truncation');
   H.eq(raw, 0, 'no write site caps totry_workouts with its own slice() — all go through _capWorkouts');
 }
 
+H.section('repeated button labels need distinct accessible names');
+{
+  // Found by counting actions per screen rather than looking at screens: the Train tab had SEVEN
+  // buttons reading just "Edit" (one per weekday of the split), so a screen reader announced
+  // "Edit, Edit, Edit..." with nothing to tell them apart. Money had two "+ Add" and two "+ Log";
+  // Settings had three "Export" and two "Edit". Each pair has a different handler, so the intent was
+  // unambiguous in code and invisible to anyone not looking at the screen.
+  const NEEDS_NAME = [
+    'openSubscriptionLogger', 'openBillLogger', 'openFamilyContribution', 'openGivingLog',
+    'exportJournal', 'exportWins', 'exportWorkouts', 'changeName',
+  ];
+  NEEDS_NAME.forEach(fn => {
+    const re = new RegExp('onclick="' + fn + '\\(\\)"[^>]*aria-label="[^"]+"');
+    H.ok(re.test(H.html), fn + '() has a distinct accessible name');
+  });
+  // The split-day buttons are generated, so assert the generator emits a per-day name.
+  H.ok(/aria-label="Edit '\+_escFew\(DAYS_FULL\[i\]/.test(H.html),
+    'each split-day Edit button is named for its day');
+  H.ok(/const DAYS_FULL=\['Monday'/.test(H.html),
+    'DAYS_FULL is in scope where the label is built (an undefined name would throw and kill the row)');
+}
+
 H.section('navigation — one way back, not two');
 {
   // updateHubBackBar() injects a "‹ {Hub}" bar into every hub sub-page (see TAB_PARENT). Five Soul
