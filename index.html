@@ -4452,7 +4452,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v397';
+const APP_VERSION = 'v398';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7751,7 +7751,12 @@ function detectCrisis(text){
     'kill myself', 'killing myself', 'end my life', 'end it all', 'want to die',
     'wanna die', 'want to be dead', 'better off dead', 'better if i was dead',
     'no reason to live', 'no point living', "don't want to be here anymore",
-    "don't want to live", 'plan to die', 'planning to die', 'going to kill',
+    "don't want to live", 'plan to die', 'planning to die',
+    // 'going to kill' (bare) was here and fired on "this workout is going to kill me" — the single
+    // most natural sentence in a training app. Nothing is lost by removing it: the self-directed form
+    // is caught by 'kill myself' above, and kill her/him/them by HARMOTHERS below. Same reasoning the
+    // bare 'stroke' and bare 'jump off' entries were already narrowed for: a gate that cries wolf
+    // trains people to dismiss it, and this one has to be believed the one time it matters.
     'suicide', 'suicidal', 'i\'m going to end', 'gonna end it',
     'hang myself', 'overdose on', 'shoot myself',
     // "jump off" alone false-fires constantly in a training app ("jump off the box"), and a gate that
@@ -7765,7 +7770,18 @@ function detectCrisis(text){
     'not worth living', 'rather be dead', 'wish i was dead', 'wish i were dead',
     'end the pain', 'stop existing', 'disappear forever',
     'dont want to wake up', 'better off without me',
-    'everyone would be better without me', 'no reason to be here'
+    'everyone would be better without me', 'no reason to be here',
+    // "unalive" is now the most common euphemism, precisely because it evades keyword filters. Matched
+    // on the STEM: "unaliving" contains no 'e' after the v, so the full word would have missed the
+    // continuous form entirely. No English word contains "unaliv", so no qualifier is needed.
+    'unaliv',
+    // "kms" = "kill myself" in the shorthand a lot of people actually type. It is NOT safe bare: this
+    // app logs running and cycling distances, so "i ran 5 kms today" must stay clear. Qualified by
+    // intent instead.
+    'wanna kms', 'want to kms', 'gonna kms', 'going to kms', 'about to kms', 'might kms',
+    // 'not worth living' was already listed but misses the commonest phrasing, because stripping the
+    // apostrophe turns "isn't" into "isnt", which does not contain "not".
+    'isnt worth living', 'is not worth living', 'no longer want to live'
   ];
   
   // Self-harm
@@ -7785,7 +7801,8 @@ function detectCrisis(text){
   const MEDICAL_PHRASES = [
     'chest pain', 'heart attack', 'can\'t breathe', 'cant breathe',
     'having a stroke', 'im having a stroke', 'signs of a stroke', 'think it\'s a stroke',
-    'overdosed', 'took too many pills', 'bleeding badly', 'unconscious'
+    'overdosed', 'took too many pills', 'bleeding badly', 'unconscious',
+    'took a bunch of pills', 'took a bottle of pills', 'swallowed a bunch of pills', 'took all my pills'
   ];
   
   if(_hit(SUICIDE_PHRASES))    return 'suicide';

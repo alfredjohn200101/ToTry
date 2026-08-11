@@ -116,6 +116,38 @@ H.section('detectCrisis — the gate must fire on any apostrophe (iOS Smart Punc
   H.eq(detectCrisis('I had a great day and ate pizza'), null, 'ordinary text → null');
   H.eq(detectCrisis(''), null, 'empty → null');
   H.eq(detectCrisis(null), null, 'null input → null (no throw)');
+
+  // ── Boundary cases found by probing the gate live, both directions ──────────────────────────
+  // THE FALSE POSITIVE THAT MATTERED: a bare 'going to kill' entry fired on the single most natural
+  // sentence in a training app. Someone joking about leg day got a suicide-helpline screen. That
+  // teaches people the gate is noise, which costs lives the one time it is right.
+  H.eq(detectCrisis('this workout is going to kill me'), null, 'gym hyperbole → null');
+  H.eq(detectCrisis('that session nearly killed me'), null, '"nearly killed me" → null');
+  H.eq(detectCrisis("i'd rather die than skip leg day"), null, 'leg-day hyperbole → null');
+  // ...while every genuinely self-directed form still fires.
+  H.eq(detectCrisis('im going to kill myself'), 'suicide', '"going to kill myself" still → suicide');
+  H.eq(detectCrisis('i am going to kill her'), 'harmothers', 'harm to others still → harmothers');
+
+  // "kms" is how a lot of people actually type it. It must fire on intent...
+  H.eq(detectCrisis('i wanna kms'), 'suicide', '"wanna kms" → suicide');
+  H.eq(detectCrisis('i think i might kms tonight'), 'suicide', '"might kms" → suicide');
+  // ...and must NEVER fire on distance, because this app logs runs and rides in km.
+  H.eq(detectCrisis('i ran 5 kms today'), null, 'running "5 kms" → null');
+  H.eq(detectCrisis('did 10 kms on the bike'), null, 'cycling "10 kms" → null');
+
+  // "unalive" is now the commonest euphemism precisely because it dodges keyword lists.
+  H.eq(detectCrisis('i want to unalive myself'), 'suicide', '"unalive" → suicide');
+  H.eq(detectCrisis('been thinking about unaliving'), 'suicide', '"unaliving" → suicide');
+
+  // The apostrophe-stripping pass turns "isn't" into "isnt", which does not contain "not" — so the
+  // existing 'not worth living' entry missed the commonest phrasing of it.
+  H.eq(detectCrisis("my life isn't worth living"), 'suicide', '"isn\'t worth living" → suicide');
+  H.eq(detectCrisis('life is not worth living'), 'suicide', '"is not worth living" → suicide');
+
+  // A described overdose is a medical emergency in progress.
+  H.eq(detectCrisis('i took a bunch of pills'), 'medical', 'described overdose → medical');
+  H.eq(detectCrisis('i took all my pills'), 'medical', '"took all my pills" → medical');
+  H.eq(detectCrisis('i took my pills this morning'), null, 'ordinary medication → null');
 }
 
 // ── CALL-SITE COVERAGE — the test that would have caught the v357 blocker ────────────────────────
