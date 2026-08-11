@@ -628,6 +628,32 @@ H.section('sleep, service and the bridge — the features that already existed')
   });
 }
 
+H.section('body doubling — company, and then it lets go');
+{
+  // The two-minute starter existed but was SOLO: a clock, and you alone with it. What makes body
+  // doubling work is not the timer, it is that someone is there — the one thing an app can honestly
+  // offer at 9pm when nobody else is awake.
+  H.ok(/function _startTwoMin\(thing, round\)/.test(H.html), 'the starter takes a round number');
+  const src = H.html.slice(H.html.indexOf('function _startTwoMin'), H.html.indexOf('function _twoMinCheckIn'));
+
+  // Present from the first second — a spinner or a network call here would break the exact thing
+  // being built, so the lines are local and pre-written.
+  H.ok(/const SAY = \[/.test(src), 'the presence lines are local, not fetched');
+  H.eq(/api\(|fetch\(/.test(src), false, 'nothing waits on the network at the moment of starting');
+  H.ok(/Starting together|Still with you/.test(src), 'it says it is with them');
+
+  // ANTI-DEPENDENCE, which is the constraint that matters most here. CLAUDE.md forbids fostering
+  // dependence, so this can offer one more round and then must send them off.
+  const chk = H.html.slice(H.html.indexOf('function _twoMinCheckIn'), H.html.indexOf('function _twoMinCheckIn') + 1800);
+  H.ok(/canAgain = \(round \|\| 1\) < 2/.test(chk), 'a second round is offered only once');
+  H.ok(/go on without me/.test(chk), 'and on the last round it explicitly hands them back their own evening');
+  H.ok(/theRelease\(/.test(chk), 'finishing ends the session off the phone');
+
+  // Reachable: it is where "can't start" already lands.
+  H.ok(/_startTwoMin\(/.test(H.html.slice(H.html.indexOf('const _SHRINK'), H.html.indexOf('function _startTwoMin'))),
+    'the shrink-it ladder still hands off to it');
+}
+
 H.section('the urge menu is reachable from the companion');
 {
   // openDEADS() (SMART Recovery's Delay/Escape/Accept/Distract/Substitute) already existed, but was

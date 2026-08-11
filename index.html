@@ -4491,7 +4491,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v413';
+const APP_VERSION = 'v414';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -13282,15 +13282,45 @@ function _shrinkIt(thing, level){
 }
 // A visible countdown — time-blindness means an abstract "two minutes" isn't real until you can see
 // it draining. It ends by handing them back to their life, not to another screen.
-function _startTwoMin(thing){
+function _startTwoMin(thing, round){
+  // TIER 3.4 — BODY DOUBLING. This used to be a solo countdown: a clock, and you alone with it. The
+  // thing that actually makes body doubling work is not the timer, it is that someone is THERE — which
+  // is the one thing an app can genuinely offer at 9pm when nobody else is awake.
+  //
+  // So the sibling stays present through the two minutes and says three things, spaced out, then asks
+  // once whether you are still going. Deliberately small:
+  //   · The lines are pre-written and local. No network, no AI, nothing to wait for at the moment of
+  //     starting — a spinner here would break the exact thing being built.
+  //   · ONE extension only. Body doubling is a push-off, not a place to live; an infinite "keep going"
+  //     loop would be the dependence CLAUDE.md forbids.
+  //   · It ends in theRelease(), off the phone, like every other real exit here.
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  document.querySelectorAll('.tm-overlay').forEach(function(o){ o.remove(); });
+  const r = round || 1;
   const ov=document.createElement('div');
-  ov.style.cssText='position:fixed;inset:0;z-index:9500;background:radial-gradient(circle at 50% 40%,#141810,#09090c 72%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;text-align:center;color:var(--tx)';
-  ov.innerHTML='<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:16px">You started</div>'+
-    '<div class="tm-clock" style="font-family:DM Mono,monospace;font-size:54px;font-weight:300;color:var(--tx);margin-bottom:14px">2:00</div>'+
-    '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;max-width:320px;margin-bottom:24px">You’re allowed to stop when this hits zero. Most people don’t want to by then — but if you do, stopping still counts as having started.</div>'+
+  ov.className='tm-overlay';
+  ov.style.cssText='position:fixed;inset:0;z-index:9500;background:radial-gradient(circle at 50% 40%,#141810,#09090c 72%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px';
+  ov.innerHTML='<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:16px">'+(r>1?'Still with you':'Starting together')+'</div>'+
+    '<div class="tm-clock stat-num" style="font-size:54px;color:var(--tx);margin-bottom:14px">2:00</div>'+
+    '<div class="tm-say" style="font-family:Cormorant Garamond,serif;font-size:17px;font-style:italic;color:var(--tx2);line-height:1.6;max-width:320px;min-height:76px;margin-bottom:20px;transition:opacity 0.4s ease">I’m here. You don’t have to do it well — just do it while I’m sitting with you.</div>'+
     '<button class="btn tm-done" style="max-width:220px">I’m going / done</button>';
   document.body.appendChild(ov);
+
+  // Presence, spaced out. Silence between them is the point — this is company, not commentary.
+  const SAY = [
+    'I’m here. You don’t have to do it well — just do it while I’m sitting with you.',
+    'Still here. Whatever you have done so far is more than the version of tonight where you did not start.',
+    'Nearly. Do not tidy it, do not restart it — just keep your hands on it.'
+  ];
+  const say = ov.querySelector('.tm-say');
+  const setSay = function(i){
+    if(!say || !SAY[i]) return;
+    say.style.opacity='0';
+    setTimeout(function(){ say.textContent = SAY[i]; say.style.opacity='1'; }, 380);
+  };
+  const t1=setTimeout(function(){ setSay(1); }, 45000);
+  const t2=setTimeout(function(){ setSay(2); }, 95000);
+
   let left=120;
   const clock=ov.querySelector('.tm-clock');
   const tick=setInterval(function(){
@@ -13300,14 +13330,49 @@ function _startTwoMin(thing){
       clearInterval(tick);
       if(clock) clock.textContent='done';
       try{ if(typeof haptic==='function') haptic('celebrate'); }catch(_){}
+      _twoMinCheckIn(ov, thing, r);
     }
   }, 1000);
+
+  const cleanup=function(){ clearInterval(tick); clearTimeout(t1); clearTimeout(t2); };
   ov.querySelector('.tm-done').onclick=function(){
-    clearInterval(tick); ov.remove();
+    cleanup(); ov.remove();
+    if(typeof logEvent==='function') logEvent('two_min_done');
     theRelease({did:'You started the thing you couldn’t start. That’s the hardest part, and it’s behind you.'});
   };
+  ov._cleanup = cleanup;
   if(typeof haptic==='function') haptic('tap');
 }
+// The check-in. Asked ONCE — a second round is offered only on the first, so this can never become a
+// loop that keeps someone on the phone.
+function _twoMinCheckIn(ov, thing, round){
+  if(!ov || !document.body.contains(ov)) return;
+  const canAgain = (round || 1) < 2;
+  const say = ov.querySelector('.tm-say');
+  if(say) say.textContent = canAgain
+    ? 'That’s two minutes. Still going, or is that enough for tonight?'
+    : 'That’s four. Whatever happens now, you started — go on without me.';
+  const btns = document.createElement('div');
+  btns.style.cssText='display:flex;flex-direction:column;gap:8px;width:100%;max-width:240px;margin-top:4px';
+  btns.innerHTML =
+    (canAgain ? '<button class="btn tm-again" style="background:var(--bg3);border:1px solid var(--bd)">Two more, with me</button>' : '')+
+    '<button class="btn primary tm-fin">I’m going / done</button>';
+  const old = ov.querySelector('.tm-done'); if(old) old.remove();
+  ov.appendChild(btns);
+  const again = ov.querySelector('.tm-again');
+  if(again) again.onclick=function(){
+    if(ov._cleanup) ov._cleanup();
+    ov.remove();
+    _startTwoMin(thing, (round||1)+1);
+  };
+  ov.querySelector('.tm-fin').onclick=function(){
+    if(ov._cleanup) ov._cleanup();
+    ov.remove();
+    if(typeof logEvent==='function') logEvent('two_min_done');
+    theRelease({did:'You started the thing you couldn’t start. That’s the hardest part, and it’s behind you.'});
+  };
+}
+
 
 // ════ LOOK UP — the awe off-ramp ════
 // Awe is measurably the inverse of the phone loop: it quiets the same default-mode network that
