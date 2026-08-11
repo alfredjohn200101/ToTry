@@ -4491,7 +4491,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v412';
+const APP_VERSION = 'v413';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -10158,42 +10158,13 @@ function openPrayerSection(){
   if(typeof setBibleTab==='function') setBibleTab('prayer');
   try{ const t=document.getElementById('ai-prayer-intention'); if(t&&t.scrollIntoView) t.scrollIntoView({block:'center'}); }catch(_){ }
 }
-function openPrayerModal(){
-  const m = document.createElement('div');
-  m.className = 'modal-bg open'; m.id = 'prayer-modal';
-  m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:4px">A prayer for right now</div>'+
-    '<div style="font-size:12px;color:var(--tx3);margin-bottom:16px">Pick one. The scripture prayer adapts to where you are.</div>'+
-    '<button class="btn" onclick="showModalPrayer(&quot;quick&quot;)" style="margin-bottom:8px">Quick prayer (2 min)</button>'+
-    '<button class="btn" onclick="showModalPrayer(&quot;full&quot;)" style="margin-bottom:8px">Full prayer (5 min)</button>'+
-    '<button class="btn primary" onclick="showModalPrayer(&quot;scripture&quot;)" style="margin-bottom:14px">Scripture-based prayer</button>'+
-    '<div id="modal-prayer-text" style="display:none;font-family:Cormorant Garamond,serif;font-size:16px;line-height:1.7;color:var(--tx2);white-space:pre-wrap;padding:14px;background:var(--bg3);border-radius:10px;margin-bottom:14px"></div>'+
-    '<button class="btn" onclick="closeModal(this)">Close</button></div>';
-  document.body.appendChild(m);
-}
-async function showModalPrayer(type){
-  const out = document.getElementById('modal-prayer-text');
-  if(!out) return;
-  out.style.display = 'block';
-  if(type === 'scripture'){
-    out.innerHTML = '<span class="pulsing" style="font-style:italic;color:var(--tx3)">Writing a prayer for where you are right now...</span>';
-    try{
-      // Reuse the adaptive prayer generation by reading the same state, via the AI proxy.
-      loadV();
-      const identity = ls('totry_identity')||''; const season = ls('totry_season')||'Building';
-      let struggle=''; if(typeof vices!=='undefined' && vices[0]) struggle = vices[0].n;
-      const stateDesc = 'Identity: '+(identity||'someone trying to grow')+'. Season: '+season+'. '+(struggle?('Currently fighting: '+struggle+'.'):'');
-      const pr = faithPrayer();
-      const sys = pr.sys;
-      const prompt = 'Write a warm, personal '+pr.noun+' (6-10 sentences) for this person. '+pr.how+' Return ONLY the '+pr.noun+', no title. Their state: '+stateDesc;
-      const resp = await api(sys, [], prompt, 900);
-      out.textContent = (resp && resp.trim()) ? resp.trim() : (PRAYERS.scripture.text);
-    }catch(e){ out.textContent = PRAYERS.scripture.text; }
-  } else {
-    const p = PRAYERS[type];
-    out.textContent = p.text;
-  }
-}
+// openPrayerModal() lived here — superseded by the Prayer tab (setBibleTab('prayer') +
+// generateIntentionPrayer()). Never referenced once.
+
+// showModalPrayer() lived here — the render half of the superseded openPrayerModal. Its only DOM
+// target (#modal-prayer-text) was created by that modal, so with the modal gone this could never find
+// anything. Unreferenced.
+
 async function showPrayer(type){
   // For scripture-based prayer, make it adaptive based on user's state
   if(type==='scripture'){
@@ -20261,50 +20232,13 @@ function _hungerPick(id){
 // ── WS-F: MEAL-PREP + GROCERY LIST ─────────────────────────────────
 // AI builds a few days of meals around the user's cal/protein targets + budget/preferences,
 // plus a consolidated shopping list. Saveable.
-function openMealPlan(){
-  const goals=ls('totry_nut_goals')||{};
-  const m=document.createElement('div');
-  m.className='modal-bg open';
-  m.innerHTML='<div class="modal" style="max-height:92vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:6px">Plan meals &amp; groceries</div>'+
-    '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:12px">'+(goals.cal?('Built around your target of <span style="color:var(--go)">'+goals.cal+' cal / '+(goals.pro||0)+'g protein</span>. '):'')+'Add anything else \u2014 how many days, budget, foods you like or avoid.</div>'+
-    '<textarea id="mealplan-input" placeholder="e.g. 3 days, on a budget, high protein, no seafood, quick to prep" style="min-height:80px;margin-bottom:10px"></textarea>'+
-    '<button class="btn primary" id="mealplan-btn" onclick="generateMealPlan()">Build my plan</button>'+
-    '<div id="mealplan-out" style="margin-top:14px"></div>'+
-    '<button class="btn" onclick="closeModal(this)" style="margin-top:10px;background:transparent;border:none;color:var(--tx3)">Close</button>'+
-  '</div>';
-  document.body.appendChild(m);
-}
-async function generateMealPlan(){
-  const extra=(document.getElementById('mealplan-input')||{}).value||'';
-  const goals=ls('totry_nut_goals')||{};
-  const btn=document.getElementById('mealplan-btn'); const out=document.getElementById('mealplan-out');
-  if(btn){ btn.textContent='Building...'; btn.disabled=true; }
-  try{
-    const sys='You are a practical nutrition coach + meal planner. Build realistic, affordable, repeatable meal plans that hit targets. Return ONLY JSON.';
-    const prompt='Build a meal plan'+(goals.cal?(' hitting roughly '+goals.cal+' calories and '+(goals.pro||0)+'g protein per day'):'')+'. Extra requirements: "'+(extra.trim()||'none')+'".\n\nReturn ONLY this JSON, no markdown:\n{"days":[{"label":"Day 1","meals":[{"meal":"Breakfast","food":"description","cal":number,"pro":number}]}],"groceries":["item with rough qty"],"tip":"1 short prep tip"}\nKeep it realistic and repeatable. Consolidate the grocery list across all days.';
-    const raw=await api(sys,[],prompt,1400);
-    const mt=raw.match(/\{[\s\S]*\}/);
-    if(mt && out){
-      const plan=JSON.parse(mt[0]);
-      window.__pendingMealPlan=plan;
-      let html='';
-      (plan.days||[]).forEach(d=>{
-        html+='<div class="card" style="margin-bottom:10px"><div style="font-size:13px;color:var(--tx);font-weight:500;margin-bottom:6px">'+(d.label||'Day')+'</div>'+
-          (d.meals||[]).map(meal=>'<div style="padding:4px 0;border-bottom:1px solid var(--bd)"><div style="display:flex;justify-content:space-between;gap:8px;font-size:12px"><span style="color:var(--go)">'+(meal.meal||'')+'</span><span style="color:var(--tx3);font-family:DM Mono,monospace;font-size:10px">'+(meal.cal||0)+' cal · '+(meal.pro||0)+'g P</span></div><div style="font-size:12px;color:var(--tx2);margin-top:2px">'+(meal.food||'')+'</div></div>').join('')+
-          '</div>';
-      });
-      if(plan.groceries && plan.groceries.length){
-        html+='<div class="card" style="margin-bottom:10px"><div class="card-hd" style="margin-bottom:6px">🛒 Shopping list</div>'+
-          plan.groceries.map(g=>'<div style="font-size:12px;color:var(--tx2);padding:3px 0">• '+String(g).replace(/</g,'&lt;')+'</div>').join('')+'</div>';
-      }
-      if(plan.tip) html+='<div style="font-size:12px;color:var(--tx2);line-height:1.6;padding:10px;background:var(--bg3);border-radius:8px;margin-bottom:8px">💡 '+plan.tip+'</div>';
-      html+='<button class="btn primary" onclick="saveMealPlan()" style="margin-top:4px">Save this plan</button>';
-      out.innerHTML=html;
-    } else if(out){ out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t build that plan. Try different requirements.</div>'; }
-  }catch(e){ if(out){ out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t reach the coach right now.</div>'; } }
-  finally{ if(btn){ btn.textContent='Build my plan'; btn.disabled=false; } }
-}
+// openMealPlan() lived here — superseded by openFuelPlan(), which is what the Nourish tab's
+// "Build my plan" button actually calls. Never referenced once.
+
+// generateMealPlan() lived here — the AI half of the superseded openMealPlan. Its inputs
+// (#mealplan-input/-btn/-out) only ever existed inside that modal. Unreferenced; openFuelPlan() is the
+// live meal-planning path.
+
 function saveMealPlan(){
   const plan=window.__pendingMealPlan; if(!plan) return;
   const plans=ls('totry_meal_plans')||[];
@@ -31835,35 +31769,10 @@ function openNeedTalk(){
 }
 
 // ── FLOATING HELP — two-tap path to SOS or Coach from anywhere ──
-function openFloatingHelp(){
-  haptic('tap');
-  loadV();
-  const m = document.createElement('div');
-  m.className = 'modal-bg open';
-  m.style.alignItems = 'center';
-  m.innerHTML = '<div class="modal">' +
-    '<div class="modal-handle"></div>' +
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:6px">What do you need?</div>' +
-    '<div style="text-align:center;font-size:12px;color:var(--tx3);margin-bottom:18px">One tap. No judgment.</div>' +
-    // Feeling-first — the primary path: meet the feeling the instant it rises, before it becomes action.
-    '<button class="btn" style="margin-bottom:8px;padding:16px;font-size:14px;text-align:left;line-height:1.4;background:linear-gradient(135deg,rgba(200,169,110,0.16),rgba(140,107,182,0.12));border:1px solid var(--go-bd);color:var(--tx)" onclick="document.querySelector(&apos;.modal-bg.open&apos;)?.remove();openCompanionForUrge()">' +
-      '<div style="font-weight:600;font-size:15px">\uD83E\uDD1D I\'m feeling it right now</div>' +
-      '<div style="font-size:11px;color:var(--tx3);font-weight:400;margin-top:3px">An urge, a craving, a heaviness \u2014 I\'ll help you through it before you act</div>' +
-    '</button>' +
-    // Talk to Coach
-    '<button class="btn" style="margin-bottom:8px;padding:16px;font-size:14px;text-align:left;line-height:1.4;background:linear-gradient(135deg,rgba(200,169,110,0.1),rgba(140,107,182,0.08));border:1px solid var(--go-bd);color:var(--tx)" onclick="document.querySelector(&apos;.modal-bg.open&apos;)?.remove();openNeedTalk()">' +
-      '<div style="font-weight:600;font-size:15px">💬 Talk to my Coach</div>' +
-      '<div style="font-size:11px;color:var(--tx3);font-weight:400;margin-top:3px">Open Coach with everything they know about you</div>' +
-    '</button>' +
-    // What's next — the brother's proactive counsel, for when you're not in crisis but want direction.
-    '<button class="btn" style="margin-bottom:8px;padding:16px;font-size:14px;text-align:left;line-height:1.4;background:rgba(255,255,255,0.04);border:1px solid var(--bd);color:var(--tx)" onclick="document.querySelector(&apos;.modal-bg.open&apos;)?.remove();brotherGuidance()">' +
-      '<div style="font-weight:600;font-size:15px">\uD83E\uDEC2 What should I do right now?</div>' +
-      '<div style="font-size:11px;color:var(--tx3);font-weight:400;margin-top:3px">I\'ll look at your whole day and point you to the one thing that matters</div>' +
-    '</button>' +
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:6px">Close</button>' +
-  '</div>';
-  document.body.appendChild(m);
-}
+// openFloatingHelp() lived here — an alternative "two-tap path to SOS or Coach from anywhere".
+// The live path won: the floating button (#need-talk-btn) calls orbTap() into the Feeling Door, and
+// openNeedTalk() covers the talk-to-someone case. Never referenced once.
+
 
 // Picks vice (or auto-skips if only one) then routes to SOS intervention
 function floatingHelpSOS(){

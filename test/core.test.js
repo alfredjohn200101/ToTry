@@ -534,7 +534,10 @@ H.section('dead element references — must not grow');
   for (const m of html.matchAll(/getElementById\(\s*'([A-Za-z0-9_-]+)'\s*\)/g)) {
     if (!have.has(m[1])) dead.add(m[1]);
   }
-  const BASELINE = 42;
+  // Ratcheted 42 -> 40 in v413 by pruning a dead cluster: openPrayerModal + showModalPrayer and
+  // openMealPlan + generateMealPlan, both superseded (by the Prayer tab and openFuelPlan) and both
+  // unreferenced. Tighten this number whenever it drops — a ratchet that only ever holds is a ceiling.
+  const BASELINE = 40;
   H.ok(dead.size <= BASELINE,
     'no NEW dead getElementById targets (baseline ' + BASELINE + ', found ' + dead.size + ')' +
     (dead.size > BASELINE ? ' → ' + [...dead].join(', ') : ''));
