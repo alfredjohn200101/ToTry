@@ -651,7 +651,7 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 /* ── TDEE CALCULATOR ── */
 .tdee-form{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);padding:14px;margin-bottom:12px}
 .tdee-row{display:flex;gap:8px;margin-bottom:8px;align-items:flex-end}
-.tdee-field{flex:1}
+.tdee-field{flex:1;min-width:0}   /* min-width:0 or a wide <select> forces the row to overflow */
 .tdee-label{font-size:10px;color:var(--tx3);margin-bottom:4px;font-family:'DM Mono',monospace;text-transform:uppercase;letter-spacing:0.08em}
 /* ── CONNECTED APPS ── */
 .connected-app{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);margin-bottom:8px}
@@ -2244,9 +2244,9 @@ input:focus,textarea:focus,select:focus{
               <div class="tdee-label">Activity</div>
               <select id="tdee-activity">
                 <option value="1.2">Sedentary</option>
-                <option value="1.375">Light (1-3x/week)</option>
-                <option value="1.55" selected>Moderate (3-5x)</option>
-                <option value="1.725">Active (6-7x)</option>
+                <option value="1.375">Light 1–3×</option>
+                <option value="1.55" selected>Moderate 3–5×</option>
+                <option value="1.725">Active 6–7×</option>
                 <option value="1.9">Very active</option>
               </select>
             </div>
@@ -4466,7 +4466,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v403';
+const APP_VERSION = 'v404';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -36973,7 +36973,10 @@ function renderHomeHabits(){
   
   // Day-letter row across the top
   const headerRow = document.createElement('div');
-  headerRow.style.cssText = 'display:grid;grid-template-columns:minmax(0,1fr) repeat(7,minmax(24px,1fr));gap:4px;align-items:center;margin-bottom:6px;padding:0 4px;max-width:100%';
+  // The name column used to be 1 of 8 EQUAL columns, which on a 375px iPhone left it 36px wide — so
+  // every habit rendered as "Mor…", "No v…", "Pra…" and the grid became unreadable at a glance. The day
+  // cells only ever hold a tick or a dot, so they are clamped small and the name takes what is left.
+  headerRow.style.cssText = 'display:grid;grid-template-columns:minmax(84px,1.4fr) repeat(7,minmax(18px,24px));gap:4px;align-items:center;margin-bottom:6px;padding:0 4px;max-width:100%';
   headerRow.innerHTML = '<div></div>' + dayLabels.map(d => 
     '<div style="font-family:DM Mono,monospace;font-size:9px;text-align:center;color:' + (d.isToday ? 'var(--go)' : 'var(--tx3)') + '">' + d.letter + '</div>'
   ).join('');
@@ -36982,7 +36985,7 @@ function renderHomeHabits(){
   // Each habit as a row: name on left, last 7 day cells on right (oldest left, today right)
   habits.forEach((h, hi) => {
     const row = document.createElement('div');
-    row.style.cssText = 'display:grid;grid-template-columns:minmax(0,1fr) repeat(7,minmax(24px,1fr));gap:4px;align-items:center;padding:8px 4px;border-top:1px solid var(--bd);max-width:100%';
+    row.style.cssText = 'display:grid;grid-template-columns:minmax(84px,1.4fr) repeat(7,minmax(18px,24px));gap:4px;align-items:center;padding:8px 4px;border-top:1px solid var(--bd);max-width:100%';
     
     // Past 6 days hit count for at-a-glance pattern
     let pastHits = 0;
