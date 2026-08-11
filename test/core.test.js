@@ -583,6 +583,68 @@ H.section('training history — one cap, no silent truncation');
   H.eq(raw, 0, 'no write site caps totry_workouts with its own slice() — all go through _capWorkouts');
 }
 
+H.section('the recovery bridge — points beyond itself, never ranked');
+{
+  // CLAUDE.md non-negotiable: "It points beyond itself — to real people... It is NOT a replacement for
+  // real help." The crisis paths cover emergencies; this covers the ordinary case of someone who wants
+  // people and does not know free rooms exist.
+  const listSrc = H.html.match(/const RECOVERY_BRIDGES = \[([\s\S]*?)\n\];/);
+  H.ok(!!listSrc, 'RECOVERY_BRIDGES exists');
+  const ids = [...listSrc[1].matchAll(/id:'([a-z]+)'/g)].map(m => m[1]);
+  H.ok(ids.length >= 6, 'several routes out, not a token one (' + ids.length + ')');
+  // every entry must carry a real destination
+  const urls = [...listSrc[1].matchAll(/url:'(https?:\/\/[^']+)'/g)].map(m => m[1]);
+  H.eq(urls.length, ids.length, 'every bridge has a working URL, none is a dead card');
+  // secular and faith options must BOTH be present, and labelled
+  H.ok(/kind:'secular'/.test(listSrc[1]), 'secular options exist');
+  H.ok(/kind:'christian'/.test(listSrc[1]) && /kind:'buddhist'/.test(listSrc[1]),
+    'tradition-specific options exist and are labelled as such');
+  H.ok(/harm/.test(ids.join(',')), 'harm reduction is offered — not everyone is trying to stop yet');
+
+  // H.load returns the extracted FUNCTIONS only — the globals it is handed are injected into their
+  // scope, not returned — so keep our own reference to the parsed registries.
+  const BRIDGES = new Function(listSrc[0] + ' return RECOVERY_BRIDGES;')();
+  const AFFINITY = new Function(H.html.match(/const _BRIDGE_AFFINITY = \{[\s\S]*?\n\};/)[0] + ' return _BRIDGE_AFFINITY;')();
+  const RECOVERY_BRIDGES = BRIDGES;
+  const { _bridgeOrder } = H.load(['_bridgeOrder'], {
+    RECOVERY_BRIDGES: BRIDGES,
+    _BRIDGE_AFFINITY: AFFINITY,
+    faithTradition: () => global.__tr || 'secular',
+  });
+  const orderFor = t => { global.__tr = t; return _bridgeOrder().map(b => b.id); };
+
+  // NOTHING IS EVER HIDDEN — only the order shifts. A ranked or filtered list would make the app the
+  // judge of which recovery is right, which it does not get to be.
+  ['christianity','islam','hinduism','buddhism','secular'].forEach(t => {
+    H.eq(orderFor(t).length, RECOVERY_BRIDGES.length, t + ' sees every option');
+  });
+  // and the closest match leads, rather than sitting below three others by accident of array order
+  H.eq(orderFor('christianity')[0], 'cr', 'a Christian sees Celebrate Recovery first');
+  H.eq(orderFor('buddhism')[0], 'refuge', 'a Buddhist sees Refuge Recovery first');
+  H.eq(orderFor('secular')[0], 'smart', 'a secular person sees SMART Recovery first');
+}
+
+H.section('DEADS — the person chooses their own way through');
+{
+  // SMART Recovery's urge menu. The companion picks ONE mechanism, which is right for the first three
+  // seconds and wrong after them: being handed a response is compliance, choosing one is autonomy, and
+  // autonomy is what predicts doing it again unprompted.
+  const src = H.html.match(/const DEADS = \[([\s\S]*?)\n\];/);
+  H.ok(!!src, 'DEADS exists');
+  const names = [...src[1].matchAll(/name:'([A-Za-z]+)'/g)].map(m => m[1]);
+  H.eq(names, ['Delay','Escape','Accept','Distract','Substitute'], 'all five named moves');
+  // every option must route somewhere REAL — a menu of dead buttons is worse than no menu
+  const acts = [...src[1].matchAll(/act:"(_deads[A-Za-z]+)\(\)"/g)].map(m => m[1]);
+  H.eq(acts.length, 5, 'every option has an action');
+  acts.forEach(fn => H.ok(new RegExp('function ' + fn + '\\s*\\(').test(H.html), fn + ' is defined'));
+  // and it must be reachable from the companion, not merely defined
+  H.ok(/id="comp-deads-toggle"/.test(H.html), 'the toggle is in the companion markup');
+  H.ok(/_deadsToggle\(\)/.test(H.html), '_deadsToggle is wired to it');
+  // Accept should use the urge-surf protocol, which is the mechanism it names
+  H.ok(/_deadsAccept\(\)\{[^}]*openBreath\('surf'\)/.test(H.html.replace(/\n/g, ' ')),
+    'Accept routes to the urge-surfing protocol, not a generic one');
+}
+
 H.section('native plugin lookups must match the names the plugins register');
 {
   // Apple Health had NEVER worked in the native build: capacitor-health registers as 'HealthPlugin'

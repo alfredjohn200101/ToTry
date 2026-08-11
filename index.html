@@ -2112,6 +2112,16 @@ input:focus,textarea:focus,select:focus{
       <div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:12px">Eight skills, two minutes each &mdash; the same ones I use with you at 11pm. Free, and nothing to finish.</div>
       <button class="btn primary" onclick="openToolkit()" style="margin:0">Learn the tools &mdash; 2 min each</button>
     </div>
+    <!-- TIER 1.2 — the warm hand-off. "It points beyond itself" is a non-negotiable in CLAUDE.md, and
+         the Fight had no route to a real recovery community: only the crisis helplines, which are for
+         emergencies, not for someone who has decided they want people around them. Deliberately never
+         ranked, never framed as the app failing, and it stays visible whether they are 3 days in or 300. -->
+    <div class="card" id="bridge-card" style="margin-top:8px">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:7px">People, not just an app</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:21px;color:var(--tx);line-height:1.25;margin-bottom:5px">There are rooms full of people doing this too.</div>
+      <div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:12px">I can hold the 2am moment with you. I cannot be a person who knows your name. When you want that, here is where it is &mdash; free, and none of it needs me.</div>
+      <button class="btn" onclick="openRecoveryBridge()" style="margin:0;background:var(--bg3);border:1px solid var(--bd)">Find real people &rarr;</button>
+    </div>
     <div class="card" id="add-vice-card" style="margin-top:8px">
       <button type="button" id="add-vice-toggle" onclick="toggleAddVice()" style="display:none;width:100%;background:none;border:none;color:var(--go);font-size:13px;cursor:pointer;padding:8px;text-align:center;letter-spacing:0.02em">+ Add another to the fight</button>
       <div id="add-vice-body">
@@ -4063,6 +4073,13 @@ Amen.</div></div>
       <input type="text" id="comp-reply" class="comp-input" placeholder="talk to me..." onkeydown="if(event.key==='Enter')companionReply()">
       <button class="comp-send" onclick="companionReply()" aria-label="Send">&#10148;</button>
     </div>
+    <!-- TIER 2.3 — DEADS. SMART Recovery's urge menu: Delay, Escape, Accept, Distract, Substitute.
+         The companion already carries ONE mechanism it picked. That is right for the first three
+         seconds and wrong after them: being handed a response is not the same as choosing one, and
+         choosing is the part that predicts follow-through (SDT — autonomy, not compliance). Collapsed
+         by default so it never competes with the voice; one tap opens five named ways out. -->
+    <button id="comp-deads-toggle" onclick="_deadsToggle()" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:11.5px;cursor:pointer;font-family:'DM Mono',monospace;letter-spacing:0.04em">or pick your own way through &darr;</button>
+    <div id="comp-deads" style="display:none;margin-top:8px"></div>
     <div class="comp-meet-actions">
       <button class="btn success" onclick="companionWon()" style="flex:1">I'm through it &#127793;</button>
       <button class="btn" onclick="closeCompanion()" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Step away</button>
@@ -4464,7 +4481,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v408';
+const APP_VERSION = 'v409';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -14414,6 +14431,157 @@ async function _researchProtocol(name, key){
   }catch(_){ /* research is best-effort; the base mechanism still carries the moment */ }
 }
 
+
+// ── THE RECOVERY BRIDGE ────────────────────────────────────────────────────────────────────────
+// CLAUDE.md: "It points beyond itself — to real people, a priest, a counsellor, the sacraments. It is
+// NOT a replacement for real help." The crisis paths cover emergencies. This covers the ordinary,
+// bigger case: someone who has decided they want people, and does not know that free rooms exist.
+//
+// Rules this follows, deliberately:
+//   · NEVER RANKED. No "recommended". Different things work for different people and the app does not
+//     get to decide. Order is fixed and neutral, not scored.
+//   · NEVER FRAMED AS FAILURE. Wanting people is not a relapse and not the app breaking down.
+//   · FAITH-AWARE, NOT FAITH-GATED. The faith-based fellowships are labelled honestly so nobody walks
+//     into a prayer expecting none, and the secular ones are labelled just as plainly. A person of any
+//     tradition (or none) sees the whole list — only the ORDER shifts so their own is not buried.
+//   · NO TRACKING. Tapping through records nothing. There is no funnel here and no engagement to farm;
+//     if they leave for a real room and never come back, that is the app working.
+const RECOVERY_BRIDGES = [
+  { id:'smart', name:'SMART Recovery', kind:'secular',
+    what:'Free meetings built on CBT and motivational tools — the same mechanisms this app uses. Online meetings daily, worldwide.',
+    url:'https://meetings.smartrecovery.org/' },
+  { id:'aa', name:'AA · Alcoholics Anonymous', kind:'faith',
+    what:'The original twelve-step fellowship, for alcohol. Speaks of a higher power, understood however you understand it.',
+    url:'https://www.aa.org/find-aa' },
+  { id:'na', name:'NA · Narcotics Anonymous', kind:'faith',
+    what:'Twelve steps, for drugs of any kind. Same higher-power framing as AA.',
+    url:'https://na.org/meetingsearch/' },
+  { id:'saa', name:'SAA / SA · sex & pornography fellowships', kind:'faith',
+    what:'Twelve-step rooms specifically for sexual compulsion, including porn. Many are men-only or women-only.',
+    url:'https://saa-recovery.org/meetings/' },
+  { id:'cr', name:'Celebrate Recovery', kind:'christian',
+    what:'Explicitly Christian, church-hosted, for any hurt or habit — not only addiction. Usually a meal, a talk, then small groups.',
+    url:'https://www.celebraterecovery.com/crgroups' },
+  { id:'refuge', name:'Refuge Recovery', kind:'buddhist',
+    what:'Recovery built on Buddhist practice — mindfulness and the four truths rather than a higher power.',
+    url:'https://refugerecovery.org/meetings' },
+  { id:'harm', name:'Harm reduction', kind:'secular',
+    what:'If you are not trying to stop yet, or stopping outright is unsafe: services that help you stay alive and well in the meantime, without asking you to quit first.',
+    url:'https://harmreduction.org/resource-center/' },
+  { id:'therapy', name:'A therapist or counsellor', kind:'secular',
+    what:'One person, trained, whose whole job is you. If money is the barrier, ask about sliding scale — most will not mention it unless asked.',
+    url:'https://findahelpline.com' },
+];
+// Which of these speaks the person's own language, so their tradition is not buried at the bottom.
+const _BRIDGE_AFFINITY = {
+  christianity: ['christian','faith'],
+  islam:        ['faith'],
+  hinduism:     ['faith'],
+  buddhism:     ['buddhist','faith'],
+  secular:      ['secular'],
+};
+function _bridgeOrder(){
+  const t = (typeof faithTradition==='function') ? faithTradition() : 'secular';
+  const pref = _BRIDGE_AFFINITY[t] || _BRIDGE_AFFINITY.secular;
+  // Stable partition, NOT a score: theirs first, everything else after. Within their group the
+  // affinity list's own order decides, so a Christian sees Celebrate Recovery before the generic
+  // higher-power rooms and a Buddhist sees Refuge Recovery before them — otherwise the closest match
+  // sat below three others purely because of where it happened to sit in the source array. Ties keep
+  // source order. Nothing is hidden, nothing is scored, and the whole list is always present.
+  const rank = b => pref.indexOf(b.kind);
+  const mine = RECOVERY_BRIDGES.filter(b => rank(b) >= 0)
+    .map((b, i) => ({ b, i }))
+    .sort((x, y) => (rank(x.b) - rank(y.b)) || (x.i - y.i))
+    .map(x => x.b);
+  const rest = RECOVERY_BRIDGES.filter(b => rank(b) < 0);
+  return mine.concat(rest);
+}
+const _BRIDGE_KIND_LABEL = { secular:'no religious framing', faith:'higher power, your own understanding',
+                             christian:'Christian', buddhist:'Buddhist practice' };
+function openRecoveryBridge(){
+  const m = document.createElement('div');
+  m.className = 'modal-bg open';
+  const rows = _bridgeOrder().map(function(b){
+    return '<a href="'+b.url+'" target="_blank" rel="noopener" class="card" '+
+      'style="display:block;text-decoration:none;margin-bottom:8px;padding:13px 14px">'+
+      '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">'+
+        '<div style="font-size:14px;color:var(--tx);font-weight:500">'+_escFew(b.name)+'</div>'+
+        '<div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;white-space:nowrap">'+_escFew(_BRIDGE_KIND_LABEL[b.kind]||'')+'</div>'+
+      '</div>'+
+      '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-top:5px">'+_escFew(b.what)+'</div>'+
+      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);margin-top:7px">Find a meeting &rarr;</div>'+
+    '</a>';
+  }).join('');
+  m.innerHTML = '<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-style:italic;color:var(--tx);margin-bottom:6px">People who know your name.</div>'+
+    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.65;margin-bottom:14px">Not a ranking, and not a sign anything has gone wrong. These are the free rooms that exist. Some are religious and say so; some are not and say so. Walk into one and see.</div>'+
+    rows +
+    '<div style="font-size:11px;color:var(--tx3);line-height:1.6;margin:10px 0 12px">Nothing here is recorded. I do not know which one you tap, and if you find your people and stop needing me, that is this working.</div>'+
+    '<button class="btn" onclick="closeModal(this)">Close</button></div>';
+  document.body.appendChild(m);
+  m.addEventListener('click', function(e){ if(e.target===m) m.remove(); });
+  if(typeof haptic==='function') haptic('tap');
+}
+
+
+// ── DEADS — the urge menu (SMART Recovery) ─────────────────────────────────────────────────────
+// Five named responses to a craving. The companion picks a mechanism for the first moments, which is
+// right when someone is white-knuckling and cannot decide anything. But a person handed a response is
+// complying; a person choosing one is deciding — and autonomy is what predicts whether they do it
+// again unprompted. So this offers the same moves BY NAME and lets them pick.
+//
+// Each one routes to something the app already does rather than inventing a new screen: the breath
+// overlay, the Release off-ramp, the values sort, the toolkit. Nothing here is new machinery.
+const DEADS = [
+  { k:'D', name:'Delay',     what:'Not "no" — "not for the next few minutes". Urges peak and fall; you only have to outlast the crest.',
+    cta:'Start a few minutes',  act:"_deadsDelay()" },
+  { k:'E', name:'Escape',    what:'Leave the situation, not just the thought. Change room, go outside, put the phone down somewhere else.',
+    cta:'Step out of it',       act:"_deadsEscape()" },
+  { k:'A', name:'Accept',    what:'Stop wrestling it. Feel where it sits in your body and let it be there without obeying it.',
+    cta:'Ride it out',          act:"_deadsAccept()" },
+  { k:'D', name:'Distract',  what:'Give your attention somewhere real. Not scrolling — something with your hands or your body.',
+    cta:'Find something',       act:"_deadsDistract()" },
+  { k:'S', name:'Substitute',what:'Meet the need underneath instead. Hungry, tired, lonely, wired — the urge is often standing in for one of those.',
+    cta:'What’s underneath',act:"_deadsSubstitute()" },
+];
+function _deadsToggle(){
+  const box=document.getElementById('comp-deads'); const tog=document.getElementById('comp-deads-toggle');
+  if(!box) return;
+  const open = box.style.display !== 'none';
+  if(open){ box.style.display='none'; if(tog) tog.innerHTML='or pick your own way through ↓'; return; }
+  box.innerHTML = DEADS.map(function(d){
+    return '<div class="card" style="margin-bottom:6px;padding:11px 12px">'+
+      '<div style="display:flex;align-items:baseline;gap:8px">'+
+        '<div style="font-family:DM Mono,monospace;font-size:13px;color:var(--go);width:14px">'+d.k+'</div>'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-size:13px;color:var(--tx);font-weight:500">'+_escFew(d.name)+'</div>'+
+          '<div style="font-size:11.5px;color:var(--tx3);line-height:1.55;margin-top:3px">'+_escFew(d.what)+'</div>'+
+          '<button onclick="'+d.act+'" style="margin-top:7px;background:none;border:none;padding:0;color:var(--go);font-size:11.5px;cursor:pointer;font-family:DM Mono,monospace">'+_escFew(d.cta)+' →</button>'+
+        '</div>'+
+      '</div></div>';
+  }).join('');
+  box.style.display='block';
+  if(tog) tog.innerHTML='hide these ↑';
+  if(typeof haptic==='function') haptic('tap');
+  if(typeof logEvent==='function') logEvent('deads_opened');
+}
+// Each route reuses something that already exists. No new screens.
+function _deadsDelay(){ if(typeof openBreath==='function') openBreath('settle'); else _deadsSay('Set a timer for five minutes. You do not have to decide anything until it goes off.'); }
+function _deadsEscape(){ _deadsSay('Stand up and change rooms now — take the phone with you or leave it, but move. Come back and tell me where you are.'); }
+// 'surf' is literally the urge-surfing protocol — the exact mechanism Accept names, already built.
+function _deadsAccept(){ if(typeof openBreath==='function') openBreath('surf'); else _deadsSay('Find where it sits in your body. Watch it like weather. You are not required to act on it.'); }
+function _deadsDistract(){ if(typeof theRelease==='function') theRelease({did:'You chose to put it down and go do something real.'}); else _deadsSay('Something with your hands, off the screen. Ten minutes.'); }
+function _deadsSubstitute(){ if(typeof openHALT==='function') openHALT(); else _deadsSay('Hungry, angry, lonely, tired — which one is it actually?'); }
+// Fallback: speak it into the conversation rather than failing silently.
+function _deadsSay(text){
+  try{
+    const conv=document.getElementById('comp-conversation');
+    if(conv){ const d=document.createElement('div'); d.className='comp-msg comp-msg-them'; d.textContent=text;
+      conv.appendChild(d); conv.scrollTop=conv.scrollHeight; }
+    if(typeof _compHistory!=='undefined') _compHistory.push({ role:'assistant', content:text });
+  }catch(_){}
+}
+
 // ── THE BROTHER — the one voice the whole app speaks in ─────────────────────────────────────────
 // This is Alfy, captured from his own words (the voice-capture moments), not a generic "warm
 // assistant". Every AI touchpoint (companion, coach, morning, evening) prepends this, so the app IS
@@ -15232,6 +15400,11 @@ function renderVices(){
                 wk+' '+unit+' logged in the last 7 days'+(spend>0?' · $'+Math.round(spend)+' spent':'')+'</div>';
             })()+
             '<button class="vice-btn" onclick="openMomentStakes(' + i + ')" style="width:100%;background:none;border:1px solid var(--go-bd);color:var(--go);border-radius:10px;padding:9px;font-size:12px;cursor:pointer;margin-bottom:6px">Feeling the pull? Come here first</button>'+
+            // TIER 1.4 — HALT lived only behind the mid-craving door, which is the worst moment to
+            // learn a tool. Most urges are a body asking for food, rest, or a person; naming that
+            // BEFORE the pull starts is the cheap version of the same skill. Same openHALT(), one tap
+            // from the card they already look at.
+            '<button onclick="openHALT()" style="width:100%;background:none;border:1px dashed var(--bd);color:var(--tx3);border-radius:10px;padding:8px;font-size:11px;cursor:pointer;margin-bottom:6px">\uD83C\uDF7D What\u2019s underneath it right now?</button>'+
             '<button onclick="openLogUse(' + i + ')" style="width:100%;background:none;border:1px solid var(--bd);color:var(--tx3);border-radius:10px;padding:8px;font-size:11px;cursor:pointer;margin-bottom:6px">Log a day I missed</button>';
           }
           return '<button class="vice-btn" onclick="fightVice(' + i + ')" style="width:100%;background:var(--go);color:#1a1505;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">I\'m in a situation now</button>'+

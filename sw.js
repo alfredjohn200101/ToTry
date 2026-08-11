@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v408-health-plugin-name'
+const CACHE = 'totry-v409-bridge-deads-halt'
 
 const CORE = [
   './',
