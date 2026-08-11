@@ -9,7 +9,7 @@ Verified in the actual shipping bundle, not just the repo:
 |---|---|
 | Release archive builds | ✅ `ARCHIVE SUCCEEDED` |
 | `PrivacyInfo.xcprivacy` **inside** the .app | ✅ present, 9 data types |
-| Web assets shipped | ✅ `v375`, all 11 files incl. `privacy.html`, `support.html` |
+| Web assets shipped | ✅ `v396`, all 11 files incl. `privacy.html`, `support.html` |
 | Build number | ✅ **3** (ASC already holds 2 — uploading 2 is rejected before review) |
 | Version | `1.0` · bundle id `app.totry` · display name **To Try** |
 | Usage descriptions in built plist | ✅ Camera, HealthShare, HealthUpdate, PhotoLibrary, PhotoLibraryAdd |

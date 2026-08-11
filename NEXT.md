@@ -1,9 +1,47 @@
 # NEXT — the build list
 
-Where To Try stands at **v374**, and what's actually left. Every item below was **verified absent in
+Where To Try stands at **v396**, and what's actually left. Every item below was **verified absent in
 `index.html`** (not guessed). Ranked by impact × vision-fit ÷ effort.
 
 Research behind each item is in `RESEARCH-BACKLOG.md`. Ready-to-apply specs live in `specs/`.
+
+---
+
+## 🟢 v375–v396: data-loss and dead-path sweep (all verified live, not just parse-checked)
+
+Two systemic bug classes, each found by asking a class question rather than checking one instance.
+
+**Caps that disagreed with themselves.** Five keys were capped at different lengths at different write
+sites, so the smallest cap won the moment its path ran and the difference was gone forever. The two that
+would have bitten: importing a year from Hevy (1000 sessions) then finishing one workout destroyed 636 of
+them; importing a bank CSV then logging one coffee deleted 500 transactions and the subscription
+detector's evidence with it. Now one `_capWorkouts()` plus a ratchet test that fails the build if any key
+ever disagrees with itself again — it caught `totry_transactions` on its first run, after my own grep
+missed it.
+
+**Dead and lying paths** (v396, from an adversarial sweep of the flows never driven end to end):
+
+| Fixed | What it did to a person |
+|---|---|
+| Hevy routine "Start →" | Inert for every Hevy user — `JSON.stringify` broke the onclick attribute. It also matched on the wrong id field, so it would have started the *first* routine, not the tapped one |
+| Onboarding vices had no `startDate` | "0 days clean" forever, no live clock, no Recovery Timeline — doing *more* setup left you worse off than the quick route. Backfilled, so anyone stuck is healed on next open |
+| In-app sessions branded HEVY | Your own workout was credited to Hevy and the modal told you to go edit it there — a claim the app cannot keep |
+| (+) on a food search result | Logged per-100g as "1 serving": ~535 cal for a 25g bar where tapping the row logged ~134 |
+| Repeat-a-day | Previewed the viewed day, committed the day before *today* — wrong food, extra items silently dropped |
+| Reach-out tap payload | Dropped, so the knock before someone's hardest hour opened the last tab instead of the Feeling Door, and the strongest receptivity signal was unreachable |
+| Cancelled reach-outs | Stayed in the log, burned the 3-a-week ceiling, then stood the channel down 14 days blaming the user for messages never sent |
+| Habit ring never cleared | The home "last 7 days" grid became a loop of old ticks — a fortnight's absence still showed a full green week |
+| 8 durable keys never synced | Including `totry_releases`, the anti-engagement metric the app *shows* — reset to zero on a new phone |
+
+One fix was written and thrown away: stamping the habit ring with the existing `_currentWeekStamp()` is a
+**Sunday**-start week number while the ring runs Monday→Sunday, so it would have wiped Mon–Sat's real
+ticks every Sunday morning. `_habitWeekStamp()` identifies a week by its Monday; tested at the boundary.
+
+`getStreak()` still cannot see past Monday — the store is seven weekday slots, so a real multi-week streak
+needs a date-keyed history (not attempted this close to submission). Its two live consumers now say "this
+week" and the AI is told plainly it is not an all-time streak. Both home call sites were already dead ids.
+
+Tests: 58 → **215**.
 
 ---
 
