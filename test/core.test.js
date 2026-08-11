@@ -628,6 +628,43 @@ H.section('sleep, service and the bridge — the features that already existed')
   });
 }
 
+H.section('the next small real thing — an exit never ends on a sentiment');
+{
+  // The one gap the research named from two independent angles: an exit must not end on "go live your
+  // life". Behavioural activation's whole claim is that ACTION PRECEDES MOTIVATION, so the moment the
+  // phone goes down is when one concrete thing is worth more than encouragement.
+  const acts = H.html.match(/const NEXT_SMALL = \{([\s\S]*?)\n\};/);
+  H.ok(!!acts, 'NEXT_SMALL exists');
+  ['sleep','movement','people','order','body','soul'].forEach(k => {
+    H.ok(new RegExp('\\b' + k + ':\\s*\\[').test(acts[1]), 'has acts for ' + k);
+  });
+
+  // Every act must be doable OFF the phone and small enough to be almost embarrassing. Anything that
+  // sends them back into the app would defeat the entire point of the exit.
+  const all = [...acts[1].matchAll(/'([^']{10,})'/g)].map(m => m[1]);
+  H.ok(all.length >= 12, 'enough acts that it does not repeat (' + all.length + ')');
+  H.eq(all.filter(a => /\bapp\b|tap |open the|log it|in here|scroll/i.test(a)), [],
+    'no act sends them back to a screen');
+
+  // Matched to the real person, not random: it must read getLifeState().
+  const fn = H.html.slice(H.html.indexOf('function nextSmallThing'), H.html.indexOf('function nextSmallThingHTML'));
+  H.ok(/getLifeState\(\)/.test(fn), 'it reads the actual life state');
+  H.ok(/daysQuiet/.test(fn) && /momentsWon7|wins7/.test(fn) && /sleep/.test(fn),
+    'and branches on real signals — quiet weeks, a win today, a short night');
+  // It can never be blank, because a blank exit is the bug being fixed.
+  H.ok(/return pick\('order'\)/.test(fn), 'there is always a fallback act');
+
+  // Phrased as an if-then, which roughly doubles follow-through over an intention alone.
+  H.ok(/When I put this down, I’ll /.test(H.html), 'phrased as an implementation intention');
+
+  // Wired into the Release, and it must NOT track — a chore list with a memory is nagging.
+  H.ok(/nextSmallThingHTML\(\)/.test(H.html.slice(H.html.indexOf('function theRelease'), H.html.indexOf('function theRelease') + 3000)),
+    'the Release renders it');
+  const both = fn + H.html.slice(H.html.indexOf('function nextSmallThingHTML'), H.html.indexOf('function nextSmallThingHTML') + 900);
+  H.eq(/ls\(|logEvent|streak|score/.test(both), false,
+    'it suggests and forgets — nothing stored, scored or checked up on later');
+}
+
 H.section('body doubling — company, and then it lets go');
 {
   // The two-minute starter existed but was SOLO: a clock, and you alone with it. What makes body

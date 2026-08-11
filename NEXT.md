@@ -1,6 +1,6 @@
 # NEXT — the build list
 
-Where To Try stands at **v415**, and what's actually left.
+Where To Try stands at **v416**, and what's actually left.
 
 **Read the "WHAT IS ACTUALLY BUILT" table before building anything.** The tier lists that used to live
 here went stale, and in v409–v411 I rebuilt five features that already existed because I trusted them.
@@ -339,7 +339,8 @@ here means built *and reachable*, not merely present.
 | 3.2 Reach-out scheduling | ✅ built | needs a device to confirm delivery |
 | 3.3 HealthKit sleep | ✅ plugin registered (v415); needs a device with real sleep data to confirm reads |
 | 3.4 Body-doubling | ✅ built (v414) | end of the "can't start" ladder |
-| 3.1 Screen Time / Family Controls blocking | ❌ absent | native, post-submission |
+| 3.1 Screen Time / Family Controls blocking | ❌ absent | native; needs an Apple-granted Family Controls entitlement, so post-submission |
+| ➡️ Next Small Real Thing at every exit | ✅ built (v416) | the Release, matched to the thinnest pillar |
 
 **The honest summary:** this app is far more built than its own backlog claimed. What is left is not a
 list of missing features. It is:

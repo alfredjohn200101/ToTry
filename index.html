@@ -4491,7 +4491,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v415';
+const APP_VERSION = 'v416';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -12832,6 +12832,9 @@ function theRelease(opts){
     '<div style="font-size:30px;margin-bottom:16px;opacity:0.9">🕊️</div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:27px;line-height:1.3;margin-bottom:14px;max-width:340px">You came here instead.</div>'+
     did+
+    // Behavioural activation: hand over ONE concrete phone-off act, matched to whichever pillar is
+    // actually thinnest tonight. "Go live your life" is a sentiment; this is a thing you can do.
+    ((typeof nextSmallThingHTML==='function') ? nextSmallThingHTML() : '')+
     '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:26px;max-width:330px">Now put me down'+(name?', '+name.replace(/</g,'&lt;'):'')+'. Go live the next hour \u2014 the real one, off the glass. I\u2019m right here if the wave comes back. But you don\u2019t need me right now.</div>'+
     '<button class="btn primary rel-go" style="max-width:240px;margin:0 auto">I\u2019m putting it down</button>'+
     // The best thing to walk back into is a person. Offered only when someone is actually named and
@@ -14508,6 +14511,77 @@ function _morningLightGo(){
   if(typeof theRelease==='function') theRelease({ did:'You went out for the light.' });
 }
 
+
+
+// ── THE NEXT SMALL REAL THING ───────────────────────────────────────────────────────────────────
+// The one gap the research kept naming, from two independent angles at once: an exit must never end on
+// "go live your life". Behavioural activation is about as effective as antidepressants for low mood and
+// its whole claim is that ACTION PRECEDES MOTIVATION — so the moment someone puts the phone down is
+// exactly when they need one concrete thing, not encouragement.
+//
+// Two rules make this different from a generic suggestion list:
+//   1. MATCHED TO THE ACTUAL PERSON. It reads getLifeState() and picks the pillar that is genuinely
+//      thinnest right now — a short night gets a sleep act, a quiet week gets a movement act, a lapsed
+//      person gets a person. A random tip would be noise; this is the integration the app exists for.
+//   2. PHONE-OFF, AND SMALL ENOUGH TO BE EMBARRASSING. "One glass of water" beats "hydrate properly".
+//      If it needs planning, it is the wrong size.
+//
+// Phrased as an if-then ("when I put this down, I'll…"), because implementation intentions roughly double
+// follow-through versus an intention alone (Gollwitzer, d≈0.65) — and it costs one sentence.
+//
+// It suggests, it does not track. Nothing here is logged, scored or checked up on later: a chore list
+// with a memory is the nagging this app refuses to do.
+const NEXT_SMALL = {
+  sleep:    ['put your phone on the other side of the room, now, while you are thinking of it',
+             'turn off every light but one',
+             'fill a glass of water and put it by the bed'],
+  movement: ['step outside and walk to the end of the street and back',
+             'do ten slow press-ups against the kitchen bench',
+             'stand up and stretch until something clicks'],
+  people:   ['send one message to the person you thought of first',
+             'ask someone how the thing they were dreading went'],
+  order:    ['clear one surface — just one',
+             'put away the thing that has been sitting out for days',
+             'wash the three things in the sink'],
+  body:     ['drink one full glass of water',
+             'eat something with actual protein in it',
+             'sit down and eat without a screen'],
+  soul:     ['sit still for two minutes with nothing on',
+             'write one line about today, then close the book',
+             'step outside and look up for a minute'],
+};
+// Which pillar is actually thinnest right now. Ordered by urgency, not by preference — the first honest
+// match wins, and there is always a fallback so the exit can never be blank.
+function nextSmallThing(){
+  let L=null; try{ L=(typeof getLifeState==='function')?getLifeState():null; }catch(_){}
+  const pick = k => { const a=NEXT_SMALL[k]; const d=(typeof getDayCount==='function')?getDayCount():0;
+                      return { kind:k, act:a[d % a.length] }; };
+  try{
+    const hr = new Date().getHours();
+    // Late and short on sleep — the most time-sensitive thing there is.
+    if(L && L.sleep && (L.sleep.short || (L.sleep.lastNight && L.sleep.lastNight < 6)) && (hr >= 20 || hr < 4)) return pick('sleep');
+    if(hr >= 22 || hr < 4) return pick('sleep');
+    // Gone quiet — movement is the cheapest re-entry, and a quiet week is the strongest signal here.
+    if(L && L.activity && L.activity.daysQuiet >= 3) return pick('movement');
+    // Fought something today and won — the best thing to walk back into is a person.
+    if(L && L.fight && (L.fight.momentsWon7 > 0 || L.fight.wins7 > 0)) return pick('people');
+    if(L && L.nutrition && L.nutrition.daysLogged7 === 0) return pick('body');
+    if(L && L.training && L.training.sessions7 === 0) return pick('movement');
+    if(L && L.soul && L.soul.reflections7 === 0) return pick('soul');
+  }catch(_){}
+  return pick('order');   // never blank: everyone has one surface
+}
+// Rendered into an exit. Deliberately quiet — this sits UNDER the reason they came, and the button that
+// puts the phone down still wins the page.
+function nextSmallThingHTML(){
+  try{
+    const n = nextSmallThing(); if(!n) return '';
+    return '<div style="margin:2px auto 22px;max-width:330px;padding:13px 15px;background:rgba(255,255,255,0.03);border:1px solid var(--bd);border-radius:12px">'+
+      '<div style="font-family:DM Mono,monospace;font-size:8.5px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">One small real thing</div>'+
+      '<div style="font-size:13.5px;color:var(--tx);line-height:1.6">When I put this down, I’ll '+_escFew(n.act)+'.</div>'+
+    '</div>';
+  }catch(_){ return ''; }
+}
 
 // ── THE BROTHER — the one voice the whole app speaks in ─────────────────────────────────────────
 // This is Alfy, captured from his own words (the voice-capture moments), not a generic "warm
