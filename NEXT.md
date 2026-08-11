@@ -1,9 +1,43 @@
 # NEXT — the build list
 
-Where To Try stands at **v402**, and what's actually left. Every item below was **verified absent in
+Where To Try stands at **v407**, and what's actually left. Every item below was **verified absent in
 `index.html`** (not guessed). Ranked by impact × vision-fit ÷ effort.
 
 Research behind each item is in `RESEARCH-BACKLOG.md`. Ready-to-apply specs live in `specs/`.
+
+---
+
+## 🟡 APPLE HEALTH — verified as far as a simulator allows, one thing left for a device
+
+Ran the App Store build on a booted iPhone 17 Pro simulator and drove it by hand. Everything that can
+be checked without a real device checks out:
+
+| Checked | Result |
+|---|---|
+| `NSHealthShareUsageDescription` in the **built** app | ✅ present (missing = HealthKit authorization CRASHES) |
+| `NSHealthUpdateUsageDescription` | ✅ present |
+| `com.apple.developer.healthkit` + `.background-delivery` | ✅ both in `App.entitlements` |
+| `HealthPlugin` (capacitor-health) compiled into the binary | ✅ |
+| `SleepPlugin` (the one written for this app) compiled in | ✅ |
+| Track tab shows the **native** branch | ✅ a real "Connect" button, not the web fallback |
+| Web build shows the honest fallback instead | ✅ "arrives with the To Try app on the App Store", no dead button |
+| Tapping Connect crashes | ✅ no — the app stays up |
+| No overlay intercepts the button by design | ✅ on a clean load every `.modal-bg` is `display:none` |
+
+**UNRESOLVED, and it needs your device.** Tapping "Connect" in the simulator produced no permission
+sheet, no toast and no change — and `connectAppleHealth()` is written so that every branch ends in a
+toast, so a tap that reached the button should always show *something*. Two explanations fit and I could
+not separate them with the tools available: my synthetic tap landing a few points off a 75×33pt button,
+or something genuinely swallowing it. Nearby controls (the Sleep +, the Track card, Settings, Enable
+reminders) all responded to taps in the same session, which argues against a general input problem —
+but HealthKit is also only partly functional in a simulator, so a quiet failure there is not proof of a
+bug either.
+
+**First thing to try on the real device:** open Grow → Track, tap **Connect**, and watch for the
+HealthKit permission sheet. If it appears, this is closed. If nothing happens, the button is genuinely
+dead and the place to look is `connectAppleHealth()` → `Health.connect()` → `p.isHealthAvailable()`.
+
+Deliberately not "fixed" speculatively — there is nothing to fix until it is known which of the two it is.
 
 ---
 
