@@ -274,6 +274,51 @@ H.section('FEELINGS — every entry is complete and wired');
   H.ok(/onclick="orbTap\(\)"/.test(html), 'the orb button is wired to orbTap');
 }
 
+// ── ADAPTIVE TDEE — a weigh-in is not a trend ────────────────────────────────────────────────────
+// computeAdaptiveTDEE derived weight change from two RAW readings (last.w - first.w), then multiplied by
+// 7700 kcal/kg and divided by the window. A single reading carries water, salt, glycogen and time-of-day
+// noise worth 0.5-1kg, so one dehydrated morning moved the estimated TDEE by hundreds of calories a day —
+// and the card said "weight trend" while doing it. Now a least-squares slope over every reading.
+H.section('adaptive TDEE — endpoint noise must not move the estimate');
+{
+  const DAY = 86400000, now = 1786000000000, days = 14;
+  const series = spike => {
+    const a = [];
+    for (let i = 14; i >= 0; i--) {
+      let w = 82.0 - (14 - i) * 0.05;          // a true, steady 0.7kg loss
+      if (spike && i === 14) w += 0.9;         // water-heavy first reading
+      if (spike && i === 0) w -= 0.6;          // dehydrated last reading
+      a.push({ ts: now - i * DAY, w: Math.round(w * 10) / 10 });
+    }
+    return a;
+  };
+  const rawDiff = p => p[p.length - 1].w - p[0].w;
+  const regress = p => {
+    const n = p.length, t0 = p[0].ts; let sx = 0, sy = 0, sxx = 0, sxy = 0;
+    p.forEach(e => { const x = (e.ts - t0) / DAY; sx += x; sy += e.w; sxx += x * x; sxy += x * e.w; });
+    return ((n * sxy - sx * sy) / (n * sxx - sx * sx)) * days;
+  };
+  const cal = kg => Math.abs(kg * 7700 / days);
+
+  // on clean data the two agree — the fix costs no accuracy
+  H.approx(regress(series(false)), rawDiff(series(false)), 0.05, 'on clean data the slope matches the raw delta (-0.7kg)');
+
+  // under endpoint noise the regression must be markedly steadier
+  const oldErr = cal(rawDiff(series(true)) - rawDiff(series(false)));
+  const newErr = cal(regress(series(true)) - regress(series(false)));
+  H.ok(oldErr > 700, 'raw differencing turns a 1.5kg water swing into a >700 cal/day error (' + Math.round(oldErr) + ')');
+  H.ok(newErr < oldErr / 2, 'the regression at least halves that error (' + Math.round(newErr) + ' vs ' + Math.round(oldErr) + ')');
+
+  // and the implementation in index.html must actually be the regression
+  const fs = require('fs');
+  const path = require('path');
+  const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const i = html.indexOf('function computeAdaptiveTDEE');
+  const body = html.slice(i, i + 5000);   // the slope sits ~3.4k into the function
+  H.ok(/slopePerDay/.test(body), 'computeAdaptiveTDEE uses a fitted slope');
+  H.ok(!/const weightChangeKg = last\.w - first\.w;/.test(body), 'it no longer differences two raw weigh-ins');
+}
+
 // ── MONEY CLAIMS MUST NOT OVERSTATE ──────────────────────────────────────────────────────────────
 // Two separate places told people they were further ahead than they were. Overstating progress on a
 // debt-payoff app is worse than being silent: it is the number someone makes real decisions against.

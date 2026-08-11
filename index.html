@@ -4452,7 +4452,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v387';
+const APP_VERSION = 'v388';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5492,8 +5492,50 @@ const Health = {
       try{ ls('totry_health_last_sync', Date.now()); }catch(_){}
       return { steps: steps!=null?Math.round(steps):null, active: active!=null?Math.round(active):null, mindfulWk: mindfulWk };
     }catch(e){ return null; }
+  },
+  // Throttled auto-sync. syncToday() only ever ran at boot, on opening the Track tab, or from the manual
+  // button — so someone could open the app, walk 5,000 steps with it still in memory, come back, and see
+  // yesterday's number. The phone already knows; the app just wasn't asking. Keyed by day and idempotent,
+  // so calling it often is safe; the throttle is only to avoid pointless HealthKit queries.
+  async autoSync(minMinutes){
+    try{
+      if(!this.isNative() || !this.connected()) return null;
+      const gap = (minMinutes==null ? 5 : minMinutes) * 60000;
+      const last = parseInt(ls('totry_health_last_sync')||'0', 10) || 0;
+      if(Date.now() - last < gap) return null;
+      const r = await this.syncToday();
+      // Refresh whatever is on screen so the new numbers appear without a tab change.
+      try{ if(typeof updateTrackerDisplay==='function') updateTrackerDisplay(); }catch(_){}
+      try{ if(typeof renderHealthCard==='function') renderHealthCard(); }catch(_){}
+      try{ if(typeof renderNutritionLog==='function') renderNutritionLog(); }catch(_){}   // net calories move with active energy
+      return r;
+    }catch(_){ return null; }
   }
 };
+
+// Keep Apple Health current the way a native app should: whenever the person comes BACK to the app, and
+// on a slow tick while it is open. Their steps, active energy and mindful minutes are already being
+// recorded by the phone all day — the whole point of being a native app is that we fold that in without
+// asking them to do anything.
+function _initHealthAutoSync(){
+  try{
+    if(window.__healthAutoWired) return;
+    window.__healthAutoWired = true;
+    const wake = function(reason){ try{ if(typeof Health!=='undefined') Health.autoSync(reason==='resume' ? 1 : 10); }catch(_){} };
+    // Web + native: the tab/app becoming visible again.
+    document.addEventListener('visibilitychange', function(){
+      if(document.visibilityState === 'visible') wake('resume');
+    });
+    window.addEventListener('focus', function(){ wake('resume'); });
+    // Native: Capacitor's own foreground event, which fires where visibilitychange can be unreliable.
+    try{
+      const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+      if(App && App.addListener) App.addListener('appStateChange', function(st){ if(st && st.isActive) wake('resume'); });
+    }catch(_){}
+    // And a slow tick so a long session still keeps up with the day.
+    setInterval(function(){ if(document.visibilityState==='visible') wake('tick'); }, 10*60000);
+  }catch(_){}
+}
 // The Track-tab card that connects Apple Health (native only) and shows its live status.
 async function connectAppleHealth(){
   const btn=document.getElementById('health-connect-btn');
@@ -21807,7 +21849,29 @@ function computeAdaptiveTDEE(){
   });
   if(calDays < 5) return null; // need enough logged days for a trustworthy estimate
   const avgIntake = calSum / calDays;
-  const weightChangeKg = last.w - first.w;
+  // Use the SMOOTHED trend at each end of the window, not the two raw weigh-ins. A single reading carries
+  // water, salt, glycogen and time-of-day noise easily worth 0.5-1kg — and this difference is multiplied
+  // by 7700 kcal/kg and divided by the window, so a 0.6kg water swing on either endpoint moved the
+  // estimated TDEE by hundreds of calories a day. The card already SAYS 'weight trend' and already
+  // displays getTrendWeight(); the maths just wasn't using it.
+  // Least-squares slope over EVERY reading in the window. Differencing two endpoints — even two smoothed
+  // ones — is dominated by whatever noise sits at the ends; a regression uses all the data, so one
+  // dehydrated morning cannot swing the answer. (A half-window smoothed difference was tried first and
+  // was WORSE: scaling a half-window delta back up doubles its error. Measured, not assumed.)
+  const weightChangeKg = (function(){
+    const n = recentBody.length;
+    if(n < 3) return last.w - first.w;                 // too few points to regress honestly
+    const t0 = recentBody[0].ts;
+    let sx=0, sy=0, sxx=0, sxy=0;
+    recentBody.forEach(function(e){
+      const x = (e.ts - t0)/86400000;                   // days from the window start
+      sx+=x; sy+=e.w; sxx+=x*x; sxy+=x*e.w;
+    });
+    const denom = n*sxx - sx*sx;
+    if(!denom) return last.w - first.w;
+    const slopePerDay = (n*sxy - sx*sy) / denom;        // kg per day
+    return slopePerDay * days;                          // across the window
+  })();
   const dailyEnergyBalance = (weightChangeKg * 7700) / days; // +surplus / −deficit per day
   const tdee = Math.round(avgIntake - dailyEnergyBalance);
   // Guard-rails: ignore absurd outputs from sparse/noisy data
@@ -34678,6 +34742,7 @@ async function initApp(){
   try{ if(typeof runSchemaMigrations === 'function') runSchemaMigrations(); }catch(_){ }
   try{ if(typeof _purgeSyncedPhotos==='function') _purgeSyncedPhotos(); }catch(_){ }
   try{ if(typeof _watchA11y==='function') _watchA11y(); }catch(_){ }
+  try{ if(typeof _initHealthAutoSync==='function') _initHealthAutoSync(); }catch(_){ }
   // Demo mode has to survive a reload, or the first restart silently turns syncing back on and starts
   // pushing a persona named Alex into a real account. Re-assert both facts, and show the banner.
   try{
