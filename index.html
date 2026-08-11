@@ -4452,7 +4452,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v389';
+const APP_VERSION = 'v390';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5462,9 +5462,13 @@ const Health = {
       // Health Connect, so we don't request an unsupported permission there (the read degrades to no-op).
       try{ if(window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform()==='ios') perms.push('READ_MINDFULNESS'); }catch(_){}
       await p.requestHealthPermissions({ permissions:perms });
+      // Sleep lives in a separate native plugin because capacitor-health cannot read it. Ask in the same
+      // breath so the person sees one connect journey, not two.
+      try{ const sp=this._sleepP(); if(sp && sp.requestAuthorization) await sp.requestAuthorization(); }catch(_){}
       try{ ls('totry_health_connected', true); }catch(_){}
       const synced = await this.syncToday();
       try{ synced && (synced.workouts = await this.syncWorkouts(30)); }catch(_){}   // 30 days on first connect
+      try{ synced && (synced.sleepNights = await this.syncSleep(30)); }catch(_){}
       return { ok:true, synced };
     }catch(e){ return { ok:false, reason:String(e && e.message || e) }; }
   },
@@ -5493,6 +5497,46 @@ const Health = {
       try{ ls('totry_health_last_sync', Date.now()); }catch(_){}
       return { steps: steps!=null?Math.round(steps):null, active: active!=null?Math.round(active):null, mindfulWk: mindfulWk };
     }catch(e){ return null; }
+  },
+  // SLEEP. capacitor-health has no sleep permission or data type at all, so this reads a tiny native
+  // plugin added to the app target (ios/App/App/SleepPlugin.swift) that asks HealthKit for
+  // sleepAnalysis and nothing else. Sleep is the highest-value automatic signal this app can have: it
+  // already feeds getLifeState() and already changes what the coach says, but it was self-reported, and
+  // nobody types in their sleep every morning — so in practice the whole-person view was blind to it.
+  _sleepP(){ try{ return (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Sleep) || null; }catch(_){ return null; } },
+  async syncSleep(days){
+    const sp=this._sleepP(); if(!sp || !sp.querySleep) return 0;
+    try{
+      const r = await sp.querySleep({ days: days||14 });
+      const nights = (r && r.nights) || [];
+      if(!nights.length) return 0;
+      const tr = ls('totry_trackers') || {};
+      let filled = 0;
+      nights.forEach(function(n){
+        try{
+          const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(n.date||''));
+          if(!m) return;
+          const key = new Date(+m[1], +m[2]-1, +m[3]).toLocaleDateString('en-AU');
+          if(!tr[key]) tr[key] = { water:0, sleep:0, steps:0 };
+          // NEVER overwrite a figure the person typed themselves. A value with no _sleepSrc came from
+          // them, and their own account of the night outranks the watch's.
+          const existing = parseFloat(tr[key].sleep) || 0;
+          if(existing > 0 && tr[key]._sleepSrc !== 'health') return;
+          const hrs = parseFloat(n.hours) || 0;
+          if(hrs <= 0 || hrs > 18) return;                     // ignore nonsense rather than store it
+          if(Math.abs(existing - hrs) < 0.05) return;          // already current
+          tr[key].sleep = hrs;
+          tr[key]._sleepSrc = 'health';
+          filled++;
+        }catch(_){}
+      });
+      if(filled){
+        ls('totry_trackers', tr);
+        try{ if(typeof syncToCloud==='function') syncToCloud('totry_trackers', tr); }catch(_){}
+        try{ if(typeof updateTrackerDisplay==='function') updateTrackerDisplay(); }catch(_){}
+      }
+      return filled;
+    }catch(_){ return 0; }
   },
   // Pull workouts Apple Health already holds — Watch rings, Fitness, Nike, Strava-via-Health, anything
   // that writes there — so training fills itself in. Held back until now for one honest reason: without
@@ -5567,6 +5611,7 @@ const Health = {
         if(Date.now()-lastW > 30*60000){
           ls('totry_health_workouts_last', Date.now());
           const n = await this.syncWorkouts(14);
+          try{ await this.syncSleep(14); }catch(_){}
           if(n>0){
             try{ if(typeof renderPTHistory==='function') renderPTHistory(); }catch(_){}
             try{ if(typeof showToast==='function') showToast('Training synced', n+' session'+(n===1?'':'s')+' brought in from Apple Health.'); }catch(_){}
