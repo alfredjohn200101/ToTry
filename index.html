@@ -4452,7 +4452,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v388';
+const APP_VERSION = 'v389';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5464,6 +5464,7 @@ const Health = {
       await p.requestHealthPermissions({ permissions:perms });
       try{ ls('totry_health_connected', true); }catch(_){}
       const synced = await this.syncToday();
+      try{ synced && (synced.workouts = await this.syncWorkouts(30)); }catch(_){}   // 30 days on first connect
       return { ok:true, synced };
     }catch(e){ return { ok:false, reason:String(e && e.message || e) }; }
   },
@@ -5493,6 +5494,62 @@ const Health = {
       return { steps: steps!=null?Math.round(steps):null, active: active!=null?Math.round(active):null, mindfulWk: mindfulWk };
     }catch(e){ return null; }
   },
+  // Pull workouts Apple Health already holds — Watch rings, Fitness, Nike, Strava-via-Health, anything
+  // that writes there — so training fills itself in. Held back until now for one honest reason: without
+  // dedupe this would double every session a person already imports from Hevy or Strava, and a doubled
+  // workout is worse than a missing one. queryWorkouts gives a stable id and a sourceBundleId, which is
+  // what makes it safe.
+  async syncWorkouts(days){
+    const p=this._p(); if(!p || !p.queryWorkouts) return 0;
+    try{
+      const now=new Date(); const start=new Date(now.getTime() - (days||14)*86400000);
+      const r=await p.queryWorkouts({ startDate:start.toISOString(), endDate:now.toISOString(),
+                                      includeHeartRate:true, includeRoute:false, includeSteps:true });
+      const list=(r&&r.workouts)||[];
+      if(!list.length) return 0;
+      const existing = ls('totry_workouts') || [];
+      const seen = new Set((ls('totry_health_workout_ids')||[]).map(String));
+      // Our own bundle writes sessions BACK to Health — never re-import our own echo.
+      const selfBundle = (function(){ try{ return (window.Capacitor&&window.Capacitor.getPlatform&&window.Capacitor.getPlatform()==='ios') ? 'app.totry' : ''; }catch(_){ return ''; } })();
+      let added=0;
+      list.forEach(function(w){
+        try{
+          const wid = String(w.id || (w.startDate+'|'+w.workoutType));
+          if(seen.has(wid)) return;                                        // already imported
+          if(selfBundle && String(w.sourceBundleId||'').indexOf(selfBundle)===0) return;   // our own echo
+          // Same session already here from Hevy, Strava or a manual log — match on time, as the rest of
+          // the app does (_sessionsOverlap, 90 minutes).
+          if(existing.some(function(e){ return _sessionsOverlap(e.ts, w.startDate, 90); })) { seen.add(wid); return; }
+          const mins = Math.round((w.duration||0)/60) || Math.round((new Date(w.endDate)-new Date(w.startDate))/60000);
+          const hr = (w.heartRate&&w.heartRate.length)
+            ? Math.round(w.heartRate.reduce(function(a,x){return a+(x.bpm||0);},0)/w.heartRate.length) : null;
+          existing.unshift({
+            id: 'health_'+wid,
+            source: 'health',
+            type: String(w.workoutType||'Workout'),
+            durationMinutes: mins,
+            distance: (w.distance!=null? Math.round(w.distance) : null),
+            calories: (w.calories!=null? Math.round(w.calories) : null),
+            averageHeartRate: hr,
+            steps: (w.steps!=null? Math.round(w.steps) : null),
+            exercises: [],
+            sourceName: String(w.sourceName||'Apple Health').slice(0,40),
+            ts: w.startDate
+          });
+          seen.add(wid); added++;
+        }catch(_){}
+      });
+      if(added){
+        ls('totry_workouts', existing.slice(0,400));
+        ls('totry_health_workout_ids', Array.from(seen).slice(-400));
+        try{ if(typeof syncToCloud==='function') syncToCloud('totry_workouts', ls('totry_workouts')); }catch(_){}
+        try{ if(typeof reconcileBurns==='function') reconcileBurns(); }catch(_){}
+      } else {
+        ls('totry_health_workout_ids', Array.from(seen).slice(-400));
+      }
+      return added;
+    }catch(_){ return 0; }
+  },
   // Throttled auto-sync. syncToday() only ever ran at boot, on opening the Track tab, or from the manual
   // button — so someone could open the app, walk 5,000 steps with it still in memory, come back, and see
   // yesterday's number. The phone already knows; the app just wasn't asking. Keyed by day and idempotent,
@@ -5504,6 +5561,18 @@ const Health = {
       const last = parseInt(ls('totry_health_last_sync')||'0', 10) || 0;
       if(Date.now() - last < gap) return null;
       const r = await this.syncToday();
+      // Workouts change far less often than step counts — check them at most every 30 minutes.
+      try{
+        const lastW = parseInt(ls('totry_health_workouts_last')||'0',10)||0;
+        if(Date.now()-lastW > 30*60000){
+          ls('totry_health_workouts_last', Date.now());
+          const n = await this.syncWorkouts(14);
+          if(n>0){
+            try{ if(typeof renderPTHistory==='function') renderPTHistory(); }catch(_){}
+            try{ if(typeof showToast==='function') showToast('Training synced', n+' session'+(n===1?'':'s')+' brought in from Apple Health.'); }catch(_){}
+          }
+        }
+      }catch(_){}
       // Refresh whatever is on screen so the new numbers appear without a tab change.
       try{ if(typeof updateTrackerDisplay==='function') updateTrackerDisplay(); }catch(_){}
       try{ if(typeof renderHealthCard==='function') renderHealthCard(); }catch(_){}
