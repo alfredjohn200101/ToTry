@@ -551,6 +551,42 @@ H.section('training history — one cap, no silent truncation');
   H.eq(raw, 0, 'no write site caps totry_workouts with its own slice() — all go through _capWorkouts');
 }
 
+H.section('faith gate — the UI must obey the same rule as the prompt');
+{
+  // ECHO_OK governed only what the AI was TOLD. A static hub section, "Common ground — the same struggle,
+  // across every path", was shown to every tradition — so a Muslim user was offered a card about how Lent
+  // and Navratri hold the same struggle, and the fasting blurb named all four seasons to everyone.
+  // Read the registries straight out of the source — they are plain literals.
+  const echoSrc = H.html.match(/const ECHO_OK = \{([^}]*)\}/);
+  const fastSrc = H.html.match(/const FAST_SEASON_NAME = \{([^}]*)\}/);
+  H.ok(!!echoSrc, 'ECHO_OK exists');
+  H.ok(!!fastSrc, 'FAST_SEASON_NAME exists');
+
+  const traditions = ['christianity','islam','hinduism','buddhism','secular'];
+  traditions.forEach(t => {
+    H.ok(new RegExp(t + '\\s*:').test(fastSrc[1]),
+      'FAST_SEASON_NAME covers ' + t + ' (a missing one silently shows no season)');
+  });
+  // The traditions that must NOT be shown other faiths' practices.
+  ['islam','hinduism','buddhism'].forEach(t => {
+    H.ok(new RegExp(t + '\\s*:\\s*false').test(echoSrc[1]),
+      t + ' does not receive other traditions\' material');
+  });
+  // Secular gets no religious season name at all.
+  H.ok(/secular\s*:\s*''/.test(fastSrc[1]), 'secular is given no religious fasting season');
+
+  // The gate must actually be CALLED — an uncalled gate is the signature failure of this codebase.
+  H.ok(/function applyFaithUIGate/.test(H.html), 'applyFaithUIGate is defined');
+  const called = (H.html.match(/applyFaithUIGate\(\)/g) || []).length;
+  H.ok(called >= 2, 'applyFaithUIGate is invoked, not just defined (' + called + ' references)');
+  H.ok(/applyFaithUIGate\(\);[\s\S]{0,200}wk-faith-label/.test(H.html),
+    'it runs from applyFaithGlobal, which fires at boot and on every tradition change');
+  // And the static markup must carry the ids the gate targets.
+  ['hub-common-label','hub-common-grid','hub-fast-desc'].forEach(id => {
+    H.ok(H.html.includes('id="' + id + '"'), 'the markup has #' + id + ' for the gate to reach');
+  });
+}
+
 H.section('habit week stamp — must roll on Monday, with the ring');
 {
   // The habit ring is seven weekday slots with Monday=0 (tIdx). Stamping it with the app's existing

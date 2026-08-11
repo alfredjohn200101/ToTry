@@ -1490,8 +1490,8 @@ input:focus,textarea:focus,select:focus{
       <div class="hc-desc" id="soul-bless-desc">Hold them one at a time — yourself, someone you love, a stranger, someone difficult, everyone. Ends by naming one person to actually go to.</div>
     </div>
   </div>
-  <div class="hub-section-label">Common ground — the same struggle, across every path</div>
-  <div class="hub-grid">
+  <div class="hub-section-label" id="hub-common-label">Common ground — the same struggle, across every path</div>
+  <div class="hub-grid" id="hub-common-grid">
     <div class="hub-card wide" onclick="openThreads()">
       <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/></svg>
       <div class="hc-title">Shared threads</div>
@@ -1500,7 +1500,7 @@ input:focus,textarea:focus,select:focus{
     <div class="hub-card wide" onclick="go('nourish');setTimeout(function(){var e=document.getElementById('fast-season');if(e)e.scrollIntoView({block:'center'});},350)">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       <div class="hc-title">A season of fasting</div>
-      <div class="hc-desc">Ramadan, Lent, Navratri, Uposatha, or a window you set yourself — and the whole app moves with it.</div>
+      <div class="hc-desc" id="hub-fast-desc">Ramadan, Lent, Navratri, Uposatha, or a window you set yourself — and the whole app moves with it.</div>
     </div>
   </div>
   <div class="hub-section-label">Your anchor — what keeps you here</div>
@@ -4452,7 +4452,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v396';
+const APP_VERSION = 'v397';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -8691,6 +8691,31 @@ function _faithDoorNo(){
 //
 // This is one line to change per tradition if that judgement ever changes.
 const ECHO_OK = { christianity:true, islam:false, hinduism:false, buddhism:false, secular:true };
+
+// ECHO_OK governed only what the AI was TOLD. The visible hub had a static section — "Common ground —
+// the same struggle, across every path" — shown to every tradition, so a Muslim user was offered a card
+// about how Lent and Navratri hold the same struggle, and a secular user got religious cross-references
+// they never asked for. The rule has to hold in the UI too, not just in the prompt.
+//
+// Each tradition's own fasting season, so the card names THEIRS instead of listing everyone's.
+const FAST_SEASON_NAME = { christianity:'Lent', islam:'Ramadan', hinduism:'Navratri', buddhism:'Uposatha', secular:'' };
+function applyFaithUIGate(){
+  try{
+    const t = (typeof faithTradition==='function') ? faithTradition() : 'secular';
+    const show = !!ECHO_OK[t];
+    ['hub-common-label','hub-common-grid'].forEach(function(id){
+      const el = document.getElementById(id);
+      if(el) el.style.display = show ? '' : 'none';
+    });
+    const fd = document.getElementById('hub-fast-desc');
+    if(fd){
+      const own = FAST_SEASON_NAME[t];
+      fd.textContent = own
+        ? (own + ', or a window you set yourself — and the whole app moves with it.')
+        : 'Set your own window — and the whole app moves with it.';
+    }
+  }catch(_){ }
+}
 function sharedWisdomNote(){
   try{
     if(typeof SHARED_THREADS==='undefined' || !SHARED_THREADS.length) return '';
@@ -8736,6 +8761,9 @@ function faithConnLabel(){
   return {christianity:'Faith / connection with God',islam:'Faith / connection with Allah',hinduism:'Faith / connection with the Divine',buddhism:'Spirit / inner peace',secular:'Meaning / groundedness'}[faithTradition()] || 'Faith / connection';
 }
 function applyFaithGlobal(){
+  // Extend the existing global apply rather than adding parallel call sites — it already runs at boot
+  // (35193) and whenever the tradition changes (11531), which is exactly when the gate must re-evaluate.
+  try{ applyFaithUIGate(); }catch(_){}
   try{ const e=document.getElementById('wk-faith-label'); if(e) e.textContent=faithConnLabel(); }catch(_){}
   try{ const e2=document.getElementById('shared-prayer-label'); if(e2){ const t=faithTradition(); e2.textContent=(t==='buddhism'||t==='secular')?'Words to share':'A prayer to share'; } }catch(_){}
 }
