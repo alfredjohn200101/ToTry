@@ -551,6 +551,64 @@ H.section('training history — one cap, no silent truncation');
   H.eq(raw, 0, 'no write site caps totry_workouts with its own slice() — all go through _capWorkouts');
 }
 
+H.section('habit week stamp — must roll on Monday, with the ring');
+{
+  // The habit ring is seven weekday slots with Monday=0 (tIdx). Stamping it with the app's existing
+  // _currentWeekStamp() would have been a quiet disaster: that is a SUNDAY-start week number, so the
+  // stamp changed on Sunday morning and loadH would have zeroed Monday–Saturday's real ticks a day
+  // early — destroying data in the name of fixing staleness.
+  const { _habitWeekStamp } = H.load(['_habitWeekStamp'], {});
+
+  const stamp = d => _habitWeekStamp(new Date(d + 'T12:00:00'));
+  // Mon 3 Aug 2026 → Sun 9 Aug 2026 must all share one stamp.
+  const week = ['2026-08-03','2026-08-04','2026-08-05','2026-08-06','2026-08-07','2026-08-08','2026-08-09'].map(stamp);
+  H.eq(new Set(week).size, 1, 'Monday through Sunday share a single stamp');
+  H.eq(week[0], '2026-08-03', 'the stamp is that week\'s Monday');
+  H.ok(stamp('2026-08-09') !== stamp('2026-08-10'), 'the stamp rolls on Monday, not Sunday');
+  H.ok(stamp('2026-08-02') !== stamp('2026-08-03'), 'the preceding Sunday belongs to the previous week');
+  // Year boundary: Thu 31 Dec 2026 and Fri 1 Jan 2027 are the same week.
+  H.eq(stamp('2026-12-31'), stamp('2027-01-01'), 'a week spanning new year keeps one stamp');
+}
+
+H.section('one-tap food logging — the (+) must log the real serving');
+{
+  // Open Food Facts results carry per-100g macros at the top level and the product's REAL serving in
+  // servings[0]. The quick-log path read the top level and called it "1 serving", so (+) on a 25g bar
+  // logged ~535 cal while tapping the row logged ~134 — two buttons, same row, different numbers.
+  const { _quickServing } = H.load(['_quickServing'], {});
+
+  const bar = { name:'Milk chocolate', per100:true, cal:535, pro:7.6, carb:59, fat:30,
+                servings:[{ name:'25 g', gramsEquiv:25, cal:134, pro:1.9, carb:14.8, fat:7.5 },
+                          { name:'100g', gramsEquiv:100, cal:535, pro:7.6, carb:59, fat:30 }] };
+  const q = _quickServing(bar);
+  H.eq(q.cal, 134, 'logs the product serving, not the per-100g base');
+  H.eq(q.label, '25 g', 'and names that serving');
+
+  // No serving info: say what the number is of rather than calling it "1 serving".
+  H.eq(_quickServing({ name:'Loose flour', per100:true, cal:364, pro:10, carb:76, fat:1 }).label, '100g',
+    'a per-100 food with no serving is labelled 100g, not "1 serving"');
+  // Non-per100 foods (USDA etc.) keep the old behaviour.
+  H.eq(_quickServing({ name:'Egg', cal:78, pro:6, carb:0.6, fat:5 }).label, '1 serving',
+    'a plain food still reads "1 serving"');
+  H.eq(_quickServing({ name:'Egg', cal:78, pro:6, carb:0.6, fat:5 }).cal, 78, 'and keeps its macros');
+}
+
+H.section('Hevy routine buttons — the handler must survive HTML attribute quoting');
+{
+  // JSON.stringify emits double quotes, which terminated the double-quoted onclick attribute at the
+  // first inner quote, so no handler was ever installed and every "Start →" was inert.
+  // Interpolating JSON.stringify into a double-quoted onclick is only safe if the quotes it emits are
+  // escaped straight afterwards. Two sites do exactly that (.replace(/"/g,'&quot;')) and are fine; the
+  // routine buttons did not, and were dead. Flag only the unescaped form.
+  const bad = [...H.html.matchAll(/onclick="[^"]*?\+JSON\.stringify\(/g)]
+    .filter(m => !H.html.slice(m.index, m.index + m[0].length + 90).includes('&quot;'))
+    .map(m => H.html.slice(0, m.index).split('\n').length);
+  H.eq(bad, [], 'no onclick interpolates JSON.stringify without escaping the quotes it emits');
+  H.ok(!/startHevyRoutine\('\+JSON\.stringify/.test(H.html), 'startHevyRoutine is not called via JSON.stringify');
+  // And it must look up the id routines actually carry.
+  H.ok(/String\(x\.hevyId\) === key/.test(H.html), 'startHevyRoutine matches on hevyId, the field fetchHevyRoutines stores');
+}
+
 H.section('storage caps agree across write sites');
 {
   // The class, not just the instance. Whenever one key is capped at two different lengths, the SMALLER

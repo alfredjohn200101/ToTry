@@ -4452,7 +4452,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v395';
+const APP_VERSION = 'v396';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4753,6 +4753,12 @@ const SYNC_KEYS = [
   'totry_journal','totry_evenings','totry_mornings','totry_examens','totry_prayers',
   'totry_cal_events','totry_feeling_wins',
   // Sacraments (Confession/Reconciliation + Mass/Eucharist)
+  // Durable, user-authored things that were staying on one device. totry_releases is the one that
+  // stung most: it is the anti-engagement metric the app SHOWS — the count of times someone came,
+  // regulated, and left — and switching phones silently reset it to zero. train_goal/train_days are
+  // the answers that generated totry_split, which already synced without them.
+  'totry_releases','totry_feelings','totry_hunger_log','totry_breath_log',
+  'totry_meal_plan','totry_meal_prefs','totry_train_goal','totry_train_days',
   'totry_confessions','totry_masses','totry_saved_meals','totry_migrate_dismissed','totry_food_imported','totry_body_goal','totry_fight_log',
   // NOTE: totry_push_prefs is deliberately NOT synced — notification permission is granted per-device,
   // so a stale cloud value (from before you enabled it, or another device) was silently flipping your
@@ -5215,7 +5221,7 @@ async function pullFromCloud(){
     const ARR = ['totry_workouts','totry_body','totry_journal','totry_mornings','totry_evenings','totry_confessions','totry_masses','totry_routines','totry_saved_meals','totry_family_contrib','totry_poker_sessions','totry_examens','totry_prayers','totry_strava_activities','totry_feeling_wins','totry_custom_exercises',
       'totry_wins','totry_moments_won','totry_fight_log','totry_cravings','totry_blessings','totry_reachouts',
       'totry_rosaries','totry_syntheses','totry_reviews','totry_vice_uses','totry_impulse_holds','totry_freezes',
-      'totry_checkins','totry_mood_log','totry_fast_log'];
+      'totry_checkins','totry_mood_log','totry_fast_log','totry_releases'];
     const idOf = x => (x && typeof x === 'object') ? (x.id !== undefined ? 'i'+x.id : (x.ts || JSON.stringify(x))) : x;
     const union = (a,b) => { const m = new Map(); [].concat(a||[], b||[]).forEach(x => { const k = idOf(x); if(!m.has(k)) m.set(k, x); }); return Array.from(m.values()); };
     let changed = 0;
@@ -5377,12 +5383,17 @@ const Notify = {
 
   // Schedule a local nudge. On native this fires even when the app is CLOSED (the real unlock).
   // On web it's best-effort while installed. `when` is a Date; id keeps schedules idempotent.
-  async schedule(id, title, body, when){
+  // `extra` carries the tap route, exactly as scheduleDaily does. Without it the reach-out — the
+  // quiet knock before a person's hardest hour, and the whole reason the native wrapper exists —
+  // opened wherever the app was last left instead of the Feeling Door. It also made
+  // _reachOutResponded() unreachable, so the strongest receptivity signal there is never fired and
+  // someone who tapped the notification was scored as having ignored it.
+  async schedule(id, title, body, when, extra){
     try{
       if(this.isNative()){
         const L = this._local();
         if(L && L.schedule){
-          await L.schedule({ notifications: [{ id: (typeof id==='number'?id:Math.abs(_hashId(id))), title, body, schedule: { at: when, allowWhileIdle: true }, smallIcon: 'ic_stat_icon', }] });
+          await L.schedule({ notifications: [{ id: (typeof id==='number'?id:Math.abs(_hashId(id))), title, body, schedule: { at: when, allowWhileIdle: true }, extra: extra || null, smallIcon: 'ic_stat_icon', }] });
           return true;
         }
       }
@@ -5737,7 +5748,16 @@ function _reachCount7(){ const now=Date.now(), wk=now-7*86400000; return _reachL
 // Channel health: three armed reach-outs in a row that were never answered means the channel is
 // going cold. Stand down for two weeks rather than keep spending their attention — and say so.
 function _reachUnansweredRun(){ const d=_reachLog().filter(function(e){ return e && e.opened!=null; }); let r=0; for(let i=d.length-1;i>=0;i--){ if(d[i].opened===false) r++; else break; } return r; }
-function _cancelReachOuts(){ try{ if(typeof Notify!=='undefined' && Notify.cancel){ for(let i=0;i<3;i++) Notify.cancel('reachout_'+i); } }catch(_){} }
+// Cancelling must also un-log. Entries are written at ARM time with a FUTURE ts and sent:true, so a
+// nudge the app itself cancelled — because reminders were switched off, or quiet hours moved to cover
+// the hard hour — stayed in the log. Once its ts passed, _reachCount7() counted it toward the 3-a-week
+// ceiling and _resolveReachOuts() marked it unanswered (nobody can open a notification that was never
+// delivered). Three phantoms stood the channel down for 14 days and told the person "the last few went
+// unanswered, so I stopped" — about messages they never received. Anything not yet delivered is dropped.
+function _cancelReachOuts(){
+  try{ if(typeof Notify!=='undefined' && Notify.cancel){ for(let i=0;i<3;i++) Notify.cancel('reachout_'+i); } }catch(_){}
+  try{ const now=Date.now(); _saveReachLog(_reachLog().filter(function(e){ return e && e.ts <= now; })); }catch(_){}
+}
 function _reachHold(why){ _setReachState({ next:null, hold:why }); _cancelReachOuts(); return 0; }
 function _wonMomentToday(){ try{ const m=(ls('totry_moments_won')||[])[0]; if(!m||!m.ts) return false; return new Date(m.ts).toLocaleDateString('en-AU')===new Date().toLocaleDateString('en-AU'); }catch(_){ return false; } }
 // A tap is the strongest receptivity signal we can get. Mark it against the newest unresolved nudge.
@@ -7301,7 +7321,7 @@ function buildCtx(){
   return BROTHER_VOICE + faithVoiceNote() + sharedWisdomNote() + `You're their whole-life coach here as well as their brother — you have their REAL data right now, so use it.
 
 WHO THEY ARE:
-${userName} | Day ${getDayCount()} of their journey | ${streak}-day habit streak${identity?'\nIDENTITY (who they are becoming): "'+identity+'"':''}${season?'\nCURRENT SEASON: '+season:''}${why?'\nTHEIR WHY: "'+why+'"':''}
+${userName} | Day ${getDayCount()} of their journey | ${streak} day${streak===1?'':'s'} of habits kept THIS WEEK (resets Monday — not an all-time streak, never call it one)${identity?'\nIDENTITY (who they are becoming): "'+identity+'"':''}${season?'\nCURRENT SEASON: '+season:''}${why?'\nTHEIR WHY: "'+why+'"':''}
 
 THE FIGHT:
 ${viceDetails}
@@ -8367,7 +8387,11 @@ function obNext(step){
     if(custom)obVices.push(custom);
     if(obVices.length){
       const ex=ls('totry_v')||[];
-      obVices.forEach(n=>{if(!ex.find(v=>v.n===n))ex.push({n,t:'Various situations',w:0,total:0,lastWin:null,lastLoss:null,urgelog:[]});});
+      // Match the shape addVice() produces. Without startDate, viceCleanDays() returns 0 forever, so
+      // someone who named their vices during onboarding saw "0 days clean" every day no matter how long
+      // they held on — and the live clock and Recovery Timeline never appeared at all. Doing MORE setup
+      // left you worse off than the quick route, which creates vices through addVice().
+      obVices.forEach(n=>{if(!ex.find(v=>v.n===n))ex.push({n,type:(typeof classifyVice==='function'?classifyVice(n):''),mode:'quit',t:'Various situations',w:0,total:0,lastWin:null,lastLoss:null,urgelog:[],startDate:new Date().toISOString(),cleanDaysTotal:0,relapseCount:0,relapseHistory:[]});});
       ls('totry_v',ex);
     }
     ls('totry_partner',hasPartner);
@@ -10659,6 +10683,10 @@ function loadV(){
   // is tailored even for older entries.
   let changed=false;
   vices.forEach(v=>{ if(v && !v.type){ v.type=classifyVice(v.n); changed=true; } });
+  // Heal vices created by onboarding before it stamped startDate (see obNext step 6). Without this they
+  // read "0 days clean" forever. Only ever stamped when there is no start AND no recorded slip, so this
+  // can never overwrite a real clean-date or resurrect one a relapse legitimately reset.
+  vices.forEach(v=>{ if(v && !v.startDate && !v.lastLoss){ v.startDate=new Date().toISOString(); changed=true; } });
   if(changed) ls('totry_v', vices);
 }
 function saveV(){ls('totry_v',vices);}
@@ -16165,7 +16193,7 @@ const ACHS=[
   {icon:'\u26A1',title:'Unstoppable',desc:'70%+ win rate with 5+ battles',check:(v)=>v.some(x=>x.total>=5&&((x.w||0)/x.total)>=0.7)},
   {icon:'\u{1F6E1}\uFE0F',title:'Warrior',desc:'50 total wins',check:(v,tw)=>tw>=50},
   {icon:'\u{1F305}',title:'New Day',desc:'30 days in — and you showed up for them',check:(v,tw,day)=>day>=30&&_daysShowedUp()>=15},
-  {icon:'\u{1F4D6}',title:'Faithful',desc:'7-day habit streak',check:(v,tw,day,str)=>str>=7},
+  {icon:'\u{1F4D6}',title:'Faithful',desc:'7 days clean',check:(v,tw,day,str)=>str>=7},   // str is cleanStreak (see renderScoreboard), never getStreak()
   {icon:'\u{1F4B0}',title:'Debt Fighter',desc:'Made first debt payment',check:()=>(ls('totry_payments')||[]).length>=1},
   {icon:'\u2600\uFE0F',title:'Morning Person',desc:'7 morning rituals',check:()=>(ls('totry_mornings')||[]).length>=7},
   {icon:'\u{1F4D3}',title:'Honest',desc:'10 journal entries',check:()=>(ls('totry_journal')||[]).length>=10},
@@ -16228,12 +16256,45 @@ function loadH(){
   // everyone. Normalise once, at the source, so no downstream read can crash.
   let _hFixed=false;
   habits.forEach(h=>{ if(!h) return; if(!Array.isArray(h.d) || h.d.length!==7){ h.d=[0,0,0,0,0,0,0]; _hFixed=true; } if(h.n==null){ h.n='Habit'; _hFixed=true; } });
+  // STAMP THE WEEK. h.d is seven weekday slots with no date on them, and nothing ever cleared it: the
+  // only writes of 0 were corruption repair and the sober habit on a relapse day, while autoTickHabits
+  // deliberately only ever sets 1. Any habit with no auto-tick rule — i.e. every habit a person adds
+  // themselves — kept its ticks forever, so the home page's "last 7 days" grid stopped being a record
+  // and became a loop of whatever they once ticked on that weekday. Someone who used the app for two
+  // weeks and stopped came back to a fully-ticked week. That is the app flattering exactly the person
+  // who most needs the truth — the failure this file names elsewhere as SILENCE IS NOT A STREAK.
+  // Zeroing here, on the shared read path, means a multi-week gap resets rather than rolls.
+  try{
+    const _wk = _habitWeekStamp();
+    if(_wk){
+      habits.forEach(h=>{ if(!h) return; if(h.w !== _wk){ h.d=[0,0,0,0,0,0,0]; h.w=_wk; _hFixed=true; } });
+    }
+  }catch(_){ }
   if(_hFixed){ try{ ls('totry_h', habits); }catch(_){ } }
 }
 function saveH(){ls('totry_h',habits);}
 function tIdx(){const d=new Date().getDay();return d===0?6:d-1;}
+// The habit ring runs Monday(0) → Sunday(6), per tIdx. Its week stamp MUST roll on the same boundary:
+// the existing _currentWeekStamp() is a Sunday-start week number, so using it here would have zeroed
+// the ring every Sunday morning and thrown away Monday–Saturday — worse than the staleness it fixes.
+// Identifying the week by its Monday's date is unambiguous and survives year boundaries.
+function _habitWeekStamp(d){
+  try{
+    const dt = d ? new Date(d) : new Date();
+    dt.setHours(0,0,0,0);
+    const dow = dt.getDay();                 // 0=Sun
+    dt.setDate(dt.getDate() - (dow===0 ? 6 : dow-1));   // back to Monday
+    return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0');
+  }catch(_){ return null; }
+}
+// What this actually measures: consecutive completed days WITHIN the current week. The store is seven
+// weekday slots (see loadH), so it cannot see past Monday and cannot exceed 7 — the "never miss twice"
+// allowance below is genuinely unreachable across a week boundary. Callers must not present it as an
+// all-time streak; they say "this week" instead. A real multi-week streak needs a date-keyed history.
 function getStreak(){
   loadH();const ti=tIdx();let s=0;let _g=false;
+  // [].every(...) is true, so a person who deleted every habit scored a full phantom week.
+  if(!habits.length) return 0;
   for(let i=ti;i>=0;i--){
     // NEVER MISS TWICE: one off day is forgiven; two in a row ends the stretch. The allowance
     // resets on each completed day so every isolated gap is forgiven, not only the first.
@@ -19273,8 +19334,12 @@ function _makeFoodResultRow(food){
   el.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:8px';
   const tap=document.createElement('div');
   tap.style.cssText='flex:1;cursor:pointer;min-width:0';
+  // Show the SAME serving the (+) logs and name it. The row used to print the bare per-100g figure
+  // with no unit, so a 25g bar read "535 cal" and the person had no way to know what that number was of.
+  const _rs = _quickServing(food);
   tap.innerHTML='<div class="fr-name">'+_escFew(food.name)+'</div>'+(food.brand?'<div class="fr-brand">'+_escFew(food.brand)+'</div>':'')+
-    '<div class="fr-macros"><span class="fr-cal">'+food.cal+' cal</span><span>P: '+food.pro+'g</span><span>C: '+food.carb+'g</span><span>F: '+food.fat+'g</span>'+_foodSrcBadge(food.source)+'</div>';
+    '<div class="fr-macros"><span class="fr-cal">'+_rs.cal+' cal</span><span>P: '+_rs.pro+'g</span><span>C: '+_rs.carb+'g</span><span>F: '+_rs.fat+'g</span>'+
+    '<span style="color:var(--tx3)">'+_escFew(String(_rs.label))+'</span>'+_foodSrcBadge(food.source)+'</div>';
   tap.onclick=()=>openServingModal(food);
   el.appendChild(tap);
   const plus=document.createElement('button');
@@ -20564,11 +20629,18 @@ function logRecipeAsMeal(i){
 // are here, each showing whether there's actually anything to copy — so a dead tap never happens.
 function openRepeatDay(){
   const log = ls('totry_nutlog') || {};
-  const yKey = new Date(Date.now()-1*86400000).toLocaleDateString('en-AU');
+  // Relative to the day being VIEWED, like repeatMealsFrom — these counts and the enabled/disabled
+  // state describe the days the copy will actually read from. Computed from Date.now(), they described
+  // days around today while the person was filling in a past one.
+  const _rk = (n) => (typeof nutRelKey==='function') ? nutRelKey(n)
+              : new Date(Date.now()-n*86400000).toLocaleDateString('en-AU');
+  const _rd = (n) => { const d = (typeof nutViewDate==='function') ? nutViewDate() : new Date();
+              d.setDate(d.getDate()-n); return d; };
+  const yKey = _rk(1);
   const yCount = (log[yKey]&&log[yKey].length) ? log[yKey].length : 0;
-  const lwKey = new Date(Date.now()-7*86400000).toLocaleDateString('en-AU');
+  const lwKey = _rk(7);
   const lwCount = (log[lwKey]&&log[lwKey].length) ? log[lwKey].length : 0;
-  const lwDow = new Date(Date.now()-7*86400000).toLocaleDateString('en-AU',{weekday:'long'});
+  const lwDow = _rd(7).toLocaleDateString('en-AU',{weekday:'long'});
   const row=(label, count, act)=>{
     const dead = !count;
     return '<button '+(dead?'disabled':'onclick="closeModal(this);'+act+'"')+
@@ -20612,6 +20684,11 @@ function repeatMealsFrom(daysAgo, label){
   // actually a day AFTER the one you were filling in.
   const _base = (typeof nutViewDate==='function') ? nutViewDate() : new Date();
   const src = new Date(_base.getTime() - daysAgo*86400000).toLocaleDateString('en-AU');
+  // Stash the RESOLVED key. confirmRepeatYesterday used to recompute it from Date.now(), so on any
+  // day you had navigated to it listed one day's meals and then logged a different day's — indexing
+  // the checkbox positions into an array they were never built against. Items past the end were
+  // silently skipped; the rest were the wrong food, written with no indication.
+  window.__repeatSrcKey = src;
   const srcMeals = log[src] || [];
   if(!srcMeals.length){
     showToast('Nothing to copy', 'No food logged ' + (label||('on '+src)) + '.');
@@ -20641,7 +20718,9 @@ function repeatMealsFrom(daysAgo, label){
 function confirmRepeatYesterday(){
   const log = ls('totry_nutlog') || {};
   const daysAgo = window.__repeatSrcDays || 1;
-  const src = new Date(Date.now() - daysAgo*86400000).toLocaleDateString('en-AU');
+  // Same key the preview listed (see repeatMealsFrom); fall back to the day-nav-relative helper.
+  const src = window.__repeatSrcKey || (typeof nutRelKey==='function' ? nutRelKey(daysAgo)
+              : new Date(Date.now() - daysAgo*86400000).toLocaleDateString('en-AU'));
   const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
   const srcMeals = log[src] || [];
   const checks = document.querySelectorAll('#repeat-yesterday-list input[type="checkbox"]');
@@ -20660,7 +20739,9 @@ function confirmRepeatYesterday(){
   if(typeof syncToCloud==='function') syncToCloud();
   document.querySelector('.modal-bg.open')?.remove();
   if(typeof renderNutritionLog === 'function') renderNutritionLog();
-  showToast('Added', added + ' meal' + (added > 1 ? 's' : '') + ' copied to today.');
+  // "today" was a lie whenever the diary was day-navigated — the copy lands on the VIEWED day.
+  const _dayWord = (typeof nutDayLabel==='function') ? nutDayLabel() : 'today';
+  showToast('Added', added + ' meal' + (added > 1 ? 's' : '') + ' copied to ' + String(_dayWord).toLowerCase() + '.');
   haptic('success');
 }
 let currentFood=null;
@@ -21035,6 +21116,7 @@ function rememberRecentFood(food){
       brand: food.brand || '',
       cal: food.cal, pro: food.pro, carb: food.carb, fat: food.fat,
       servings: food.servings || null,
+      per100: !!food.per100,   // so _quickServing can label a serving-less entry '100g', not '1 serving'
       source: food.source || '',
       count: 1,
       lastAt: Date.now(),
@@ -21123,7 +21205,26 @@ function renderSavedMeals(){
 
 // MFP-style one-tap log from a search result: logs at default serving into the time-based
 // meal slot, remembers it for next time. Tapping the row instead opens the portion editor.
+// What ONE tap of (+) should actually log.
+//
+// Open Food Facts results carry per-100g/ml macros at the top level (per100:true) and the product's
+// REAL serving, correctly scaled, in servings[0]. The quick-log paths read the top level and labelled
+// it "1 serving", so tapping (+) on a 25g chocolate bar logged ~535 cal while tapping the ROW — which
+// opens the serving modal and honours servings[0] — logged ~134. Two buttons on the same row, wildly
+// different numbers, and the diary line said "1 serving" so nothing on screen revealed which you got.
+// Wrong numbers flow straight into the day total, the rings, the weekly average and adaptive TDEE.
+function _quickServing(food){
+  const s = (food && Array.isArray(food.servings) && food.servings.length) ? food.servings[0] : null;
+  if(s && s.cal != null){
+    return { label: s.name || (s.gramsEquiv ? s.gramsEquiv+'g' : '1 serving'),
+             cal: s.cal, pro: s.pro, carb: s.carb, fat: s.fat };
+  }
+  // No serving info: say plainly that this is the per-100 figure rather than calling it "1 serving".
+  return { label: food && food.per100 ? (food._ml ? '100ml' : '100g') : '1 serving',
+           cal: food.cal, pro: food.pro, carb: food.carb, fat: food.fat };
+}
 function quickLogSearchFood(food){
+  const _qs = _quickServing(food);
   const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
   const log = ls('totry_nutlog') || {};
   if(!log[today]) log[today] = [];
@@ -21132,20 +21233,21 @@ function quickLogSearchFood(food){
   log[today].push({
     id: Date.now() + Math.floor(Math.random()*100000),
     name: food.name, brand: food.brand || '',
-    serving: '1 serving', qty: 1,
-    cal: food.cal, pro: food.pro, carb: food.carb, fat: food.fat,
+    serving: _qs.label, qty: 1,
+    cal: _qs.cal, pro: _qs.pro, carb: _qs.carb, fat: _qs.fat,
     meal: meal, source: food.source || '', ts: (typeof nutStampFor==='function'?nutStampFor():new Date().toISOString())
   });
   ls('totry_nutlog', log);
   if(typeof rememberRecentFood === 'function') rememberRecentFood(food);
   haptic('success');
-  showToast('Logged ✓', food.name + ' — ' + food.cal + ' cal');
+  showToast('Logged ✓', food.name + ' — ' + _qs.cal + ' cal · ' + _qs.label);
   renderNutritionLog();
 }
 function quickLogRecent(name){
   const recents = ls('totry_recent_foods') || [];
   const f = recents.find(x => x.name.toLowerCase().trim() === name.toLowerCase().trim());
   if(!f){ showToast('Not found', 'Search for it instead.'); return; }
+  const _qs = _quickServing(f);
   const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
   const log = ls('totry_nutlog') || {};
   if(!log[today]) log[today] = [];
@@ -21155,14 +21257,14 @@ function quickLogRecent(name){
   log[today].push({
     id: Date.now() + Math.floor(Math.random()*100000),
     name: f.name, brand: f.brand || '',
-    serving: '1 serving', qty: 1,
-    cal: f.cal, pro: f.pro, carb: f.carb, fat: f.fat,
+    serving: _qs.label, qty: 1,
+    cal: _qs.cal, pro: _qs.pro, carb: _qs.carb, fat: _qs.fat,
     meal: meal, source: f.source || '', ts: (typeof nutStampFor==='function'?nutStampFor():new Date().toISOString())
   });
   ls('totry_nutlog', log);
   rememberRecentFood(f); // bump its recency/count
   haptic('success');
-  showToast('Logged ✓', f.name + ' — ' + f.cal + ' cal');
+  showToast('Logged ✓', f.name + ' — ' + _qs.cal + ' cal · ' + _qs.label);
   renderNutritionLog();
 }
 function renderRecentFoods(){
@@ -26880,7 +26982,10 @@ function getUnifiedTraining(){
     // the ORIGINAL id here — the unified id above prefixes everything with "hevy_", which is exactly
     // what silently broke the dedup (a "hevy_stravahevy_9" id no longer startsWith "stravahevy_").
     fromStrava: String(w.id||'').startsWith('stravahevy_'),
-    source: w.source || 'hevy',
+    // Default to 'manual', not 'hevy'. Every real Hevy import stamps source:'hevy' explicitly
+    // (syncHevyWorkouts / importHevyCSV), so an unstamped row is one logged here — defaulting the
+    // other way credited Hevy for the person's own work and tagged their history HEVY.
+    source: w.source || 'manual',
     kind: (w.exercises && w.exercises.length) ? 'strength' : (_isCardioType(w.type) ? 'cardio' : 'strength'),
     title: w.splitFocus || w.type || 'Workout',
     ts: w.ts,
@@ -27882,7 +27987,12 @@ function renderWorkoutSession(){
         const name = String(isHevy ? (r.title||r.name) : (r.name||'Routine'));
         const exs = Array.isArray(r.exercises)?r.exercises:[];
         const sub = exs.length ? (exs.length+' exercise'+(exs.length>1?'s':'')+' · '+exs.slice(0,2).map(e=>String((e&&(e.name||e.title))||'').split(' ').slice(0,2).join(' ')).filter(Boolean).join(', ')) : 'tap to start';
-        const fn = isHevy ? ('startHevyRoutine('+JSON.stringify(String(r.id))+')') : ('loadRoutine('+r.id+')');
+        // JSON.stringify emits DOUBLE quotes, which terminated this double-quoted onclick attribute at the
+        // first inner quote — so the handler never compiled and every Hevy "Start →" was inert. Single
+        // quotes, escaped. Also hevyId, not id: normalised routines carry hevyId (see fetchHevyRoutines),
+        // so the old argument was the literal string "undefined".
+        const _rid = String(r.hevyId != null ? r.hevyId : (r.id != null ? r.id : '')).replace(/[\\'"]/g, '');
+        const fn = isHevy ? ("startHevyRoutine('"+_rid+"')") : ('loadRoutine('+r.id+')');
         return '<button class="routine-row" onclick="'+fn+'" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:12px 13px;margin-bottom:6px;background:var(--bg3);border:1px solid var(--bd);border-radius:11px;cursor:pointer">'+
           '<div style="flex:1;min-width:0"><div style="font-size:14px;color:var(--tx);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+name.replace(/</g,'&lt;')+'</div>'+
           '<div style="font-size:11px;color:var(--tx3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+sub.replace(/</g,'&lt;')+'</div></div>'+
@@ -28270,7 +28380,11 @@ function saveWorkoutSession(){
   const ts=currentSession.reduce((a,ex)=>a+ex.sets.length,0);
   const vol=Math.round(currentSession.reduce((total,ex)=>total + (typeof exerciseVolume==='function' ? exerciseVolume({...ex, sets: ex.sets.filter(s=>s.done)}) : ex.sets.filter(s=>s.done&&parseFloat(s.weight)>0&&s.reps).reduce((a,s)=>a+(parseFloat(s.weight)*parseInt(s.reps)),0)),0));
   const durationMin = __sessionStart ? Math.max(1, Math.round((Date.now()-__sessionStart)/60000)) : null;
-  const session={id:Date.now(),date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}),ts:new Date().toISOString(),day:getDayCount(),exercises:JSON.parse(JSON.stringify(currentSession)),completedSets:cs,totalSets:ts,volume:vol,durationMin:durationMin,splitFocus:getUserSplit()[tIdx()]?.focus||'Workout'};
+  // source:'manual' — without it getUnifiedTraining's `w.source || 'hevy'` branded every session you
+  // logged HERE as coming from Hevy: the history showed a HEVY tag, the card read "From your Hevy", and
+  // the detail modal told you to go edit it in Hevy. For someone who has never heard of Hevy that is a
+  // claim the app cannot keep, and it left in-app sessions with no edit path at all.
+  const session={id:Date.now(),source:'manual',date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}),ts:new Date().toISOString(),day:getDayCount(),exercises:JSON.parse(JSON.stringify(currentSession)),completedSets:cs,totalSets:ts,volume:vol,durationMin:durationMin,splitFocus:getUserSplit()[tIdx()]?.focus||'Workout'};
   const history=ls('totry_workouts')||[];history.unshift(session);ls('totry_workouts',_capWorkouts(history));
   if(typeof logEvent==='function') logEvent('workout_logged');
   const prsHit = updatePersonalRecords(session);
@@ -28455,7 +28569,14 @@ function openEditTraining(unifiedId){
   const workouts = ls('totry_workouts') || [];
   const w = workouts.find(x => String(x.id) === rawId || String(x.id) === unifiedId);
   if(!w){ showToast('Not found','Could not find that workout.'); return; }
-  const isHevy = w.source === 'hevy' || (!w.source && w.exercises && w.exercises.length);
+  // Two separate questions, previously conflated. WHICH VIEW: a session with exercises needs the
+  // strength detail view; the else-branch is a cardio form and would show the wrong fields entirely.
+  // WHAT IT SAYS: only a session actually stamped source:'hevy' may claim it came from Hevy. Legacy
+  // in-app sessions carry no stamp, and telling those people to "edit it in Hevy" was a claim the
+  // app could not keep.
+  const hasExercises = !!(w.exercises && w.exercises.length);
+  const fromHevy = w.source === 'hevy';
+  const isHevy = fromHevy || (!w.source && hasExercises);
   if(isHevy){
     // Show the actual session: exercises with their sets (weight × reps), plus volume/duration.
     const m = document.createElement('div');
@@ -28473,16 +28594,16 @@ function openEditTraining(unifiedId){
     const meta = [];
     if(w.volume) meta.push(Math.round(w.volume).toLocaleString()+'kg volume');
     if(w.completedSets||w.totalSets) meta.push((w.completedSets||w.totalSets)+' sets');
-    if(w.durationMin) meta.push(w.durationMin+' min');
+    if(w.durationMin || w.durationMinutes) meta.push((w.durationMin || w.durationMinutes)+' min');
     m.innerHTML = '<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
-      '<div class="src-tag" style="color:var(--go);margin-bottom:4px">HEVY</div>'+
+      '<div class="src-tag" style="color:var(--go);margin-bottom:4px">'+(fromHevy?'HEVY':'LOGGED')+'</div>'+
       '<div style="font-size:18px;font-weight:500;color:var(--tx);margin-bottom:2px">'+(w.splitFocus||w.type||'Workout').replace(/</g,'&lt;')+'</div>'+
       '<div style="font-size:12px;color:var(--tx3);margin-bottom:4px">'+when+'</div>'+
       (meta.length ? '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--go);margin-bottom:16px">'+meta.join(' \u00b7 ')+'</div>' : '<div style="margin-bottom:12px"></div>')+
       (exList || '<div style="font-size:12px;color:var(--tx3);margin-bottom:12px">No exercise detail came through on this session.</div>')+
       '<div class="lbl" style="margin-top:4px">Proof <span style="font-weight:400;color:var(--tx3)">\u00b7 for your weekly review</span></div>'+
       '<div id="session-proof-wrap">'+_renderProofChips(unifiedId)+'</div>'+
-      '<div style="font-size:11px;color:var(--tx3);margin:6px 0 12px;line-height:1.5">Synced from Hevy. Edit the exercises in Hevy; you can remove it from To Try here.</div>'+
+      (fromHevy ? '<div style="font-size:11px;color:var(--tx3);margin:6px 0 12px;line-height:1.5">Synced from Hevy. Edit the exercises in Hevy; you can remove it from To Try here.</div>' : '<div style="font-size:11px;color:var(--tx3);margin:6px 0 12px;line-height:1.5">You logged this one here. Set-by-set editing is not in yet \u2014 for now you can remove it and log it again.</div>')+
       '<button class="btn" onclick="deleteTraining(&quot;workout&quot;,&quot;'+w.id+'&quot;)" style="background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re);margin-bottom:8px">Remove from To Try</button>'+
       '<button class="btn" onclick="closeModal(this)">Cancel</button></div>';
     document.body.appendChild(m);
@@ -29026,13 +29147,19 @@ function _showAllHevyRoutines(){
   const rows=hevy.map(r=>{
     const exs=Array.isArray(r.exercises)?r.exercises:[];
     const sub=exs.length?(exs.length+' exercise'+(exs.length>1?'s':'')):'tap to start';
-    return '<button class="routine-row" onclick="document.getElementById(\'hevy-all-modal\')?.remove();startHevyRoutine('+JSON.stringify(String(r.id))+')" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:12px 13px;margin-bottom:6px;background:var(--bg3);border:1px solid var(--bd);border-radius:11px;cursor:pointer"><div style="flex:1;min-width:0"><div style="font-size:14px;color:var(--tx);font-weight:500">'+String(r.title||r.name).replace(/</g,'&lt;')+'</div><div style="font-size:11px;color:var(--tx3);margin-top:2px">'+sub+'</div></div><span style="color:var(--go);font-size:13px">Start &rarr;</span></button>';
+    return '<button class="routine-row" onclick="document.getElementById(\'hevy-all-modal\')?.remove();startHevyRoutine(&#39;'+String(r.hevyId!=null?r.hevyId:(r.id!=null?r.id:'')).replace(/[\\\'"]/g,'')+'&#39;)" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:12px 13px;margin-bottom:6px;background:var(--bg3);border:1px solid var(--bd);border-radius:11px;cursor:pointer"><div style="flex:1;min-width:0"><div style="font-size:14px;color:var(--tx);font-weight:500">'+String(r.title||r.name).replace(/</g,'&lt;')+'</div><div style="font-size:11px;color:var(--tx3);margin-top:2px">'+sub+'</div></div><span style="color:var(--go);font-size:13px">Start &rarr;</span></button>';
   }).join('');
   m.innerHTML='<div class="modal" style="max-height:85vh;overflow-y:auto"><div class="modal-handle"></div><div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:4px">Your Hevy routines</div><div style="font-size:12px;color:var(--tx3);margin-bottom:16px">'+hevy.length+' imported</div>'+rows+'<button class="btn" onclick="document.getElementById(\'hevy-all-modal\')?.remove()" style="background:none;border:none;color:var(--tx3);font-size:13px;margin-top:6px">Close</button></div>';
   document.body.appendChild(m); m.addEventListener('click',e=>{if(e.target===m)m.remove();});
 }
 function startHevyRoutine(id){
-  const r = (ls('totry_hevy_routines')||[]).find(x => String(x.id) === String(id));
+  // Match on hevyId — what fetchHevyRoutines actually stores. Matching on x.id meant comparing
+  // String(undefined) to String(undefined), which "matched" the FIRST routine in the list rather
+  // than failing loudly: tapping any routine would have started the wrong one.
+  const key = String(id == null ? '' : id);
+  const list = ls('totry_hevy_routines')||[];
+  const r = list.find(x => x && x.hevyId != null && String(x.hevyId) === key)
+         || list.find(x => x && x.id != null && String(x.id) === key);
   if(!r){ showToast('Routine not found','Try Refresh in Routines & Split.'); return; }
   currentSession = (r.exercises||[]).map(ex => {
     const n = Math.max(1, Math.min(10, parseInt(ex.targetSets)||3));
@@ -31179,7 +31306,7 @@ function initReviewTab(){
   try{ if(typeof applyFaithReflect==='function') applyFaithReflect(); }catch(_){}
   loadV();const tw=vices.reduce((a,v)=>a+(v.w||0),0);
   const ws=document.getElementById('week-stats');
-  if(ws){ws.innerHTML='';[{num:getDayCount(),lbl:'Day'},{num:tw,lbl:'Vice wins'},{num:getStreak(),lbl:'Habit streak'}].forEach(s=>{const m=document.createElement('div');m.className='week-stat';m.innerHTML='<div class="ws-num">'+s.num+'</div><div class="ws-lbl">'+s.lbl+'</div>';ws.appendChild(m);});}
+  if(ws){ws.innerHTML='';[{num:getDayCount(),lbl:'Day'},{num:tw,lbl:'Vice wins'},{num:getStreak(),lbl:'Habits this week'}].forEach(s=>{const m=document.createElement('div');m.className='week-stat';m.innerHTML='<div class="ws-num">'+s.num+'</div><div class="ws-lbl">'+s.lbl+'</div>';ws.appendChild(m);});}
   renderReviewHistory();
 }
 function saveWeeklyReview(){

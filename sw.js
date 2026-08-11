@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v395-storage-caps'
+const CACHE = 'totry-v396-flows-sweep'
 
 const CORE = [
   './',
