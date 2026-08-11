@@ -139,6 +139,13 @@ begin
   if exists (select 1 from information_schema.tables
              where table_schema='public' and table_name='shared_library') then
 
+    -- Defensive, and free if they already exist: the app FILTERS on `flagged` but never writes it, and
+    -- the contribute path upserts with onConflict 'kind,norm'. If the live table predates the documented
+    -- schema, a missing column or unique index makes both queries error — which the app swallows, so the
+    -- shared library would silently never load. These are no-ops when already present.
+    alter table public.shared_library add column if not exists flagged boolean not null default false;
+    create unique index if not exists shared_library_kind_norm_key on public.shared_library (kind, norm);
+
     alter table public.shared_library enable row level security;
 
     drop policy if exists "shared read approved" on public.shared_library;
