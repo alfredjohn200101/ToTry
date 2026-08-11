@@ -583,6 +583,42 @@ H.section('training history — one cap, no silent truncation');
   H.eq(raw, 0, 'no write site caps totry_workouts with its own slice() — all go through _capWorkouts');
 }
 
+H.section('the service exit — outward, and never scored');
+{
+  // A craving runs on self-reference. Doing one small thing for someone else breaks the loop faster
+  // than arguing with it, it is faith-congruent in every tradition here, and it points OUTWARD — which
+  // CLAUDE.md names as the point of the whole app.
+  const frame = H.html.match(/const SERVICE_FRAME = \{([\s\S]*?)\n\};/);
+  H.ok(!!frame, 'SERVICE_FRAME exists');
+  // Each tradition names this practice itself — the naming is the respect.
+  ['christianity','islam','hinduism','buddhism','secular'].forEach(t => {
+    H.ok(new RegExp(t + ':\\s*\\{').test(frame[1]), t + ' has its own framing');
+  });
+  H.ok(/Sadaqah/.test(frame[1]) && /Seva/.test(frame[1]) && /D\\u0101na|Dāna/.test(frame[1]),
+    'the practices are named in their own traditions, not translated into one');
+  const sec = (frame[1].match(/secular:\s*\{([\s\S]*?)\n  \}/) || [, ''])[1];
+  H.eq(/God|Allah|scripture|prayer|faith/i.test(sec), false,
+    'the secular framing carries no religious language and still stands on its own');
+
+  const acts = H.html.match(/const SERVICE_ACTS = \[([\s\S]*?)\n\];/);
+  H.ok(!!acts, 'SERVICE_ACTS exists');
+  H.ok((acts[1].match(/'/g) || []).length / 2 >= 5, 'several acts, so it does not repeat itself');
+
+  // Reuses the people they already told us about, rather than asking for contacts.
+  H.ok(/getYourFew\(\)/.test(H.html.slice(H.html.indexOf('function openServiceExit'), H.html.indexOf('function _serviceDone'))),
+    'it draws on "your few" instead of inventing a contacts system');
+  // Credits the reach-out ledger that already exists — one concept, not two.
+  H.ok(/function _serviceDone[\s\S]{0,400}logReachOut/.test(H.html),
+    'completing it credits the existing reach-out log');
+  // Ends off the phone, like every other real exit here.
+  H.ok(/function _serviceDone[\s\S]{0,700}theRelease\(/.test(H.html), 'and ends the session');
+
+  // Gamified virtue is explicitly on the do-not-build list.
+  const block = H.html.slice(H.html.indexOf('const SERVICE_FRAME'), H.html.indexOf('function _serviceDone') + 700);
+  H.eq(/points|xp\b|score|badge|streak|leaderboard/i.test(block), false,
+    'no points, score, badge or streak attached to kindness');
+}
+
 H.section('wind-down + morning light — must END off the phone');
 {
   // Sleep already reached getLifeState() and the coach already spoke about it; nothing helped. These are
@@ -667,11 +703,15 @@ H.section('DEADS — the person chooses their own way through');
   // autonomy is what predicts doing it again unprompted.
   const src = H.html.match(/const DEADS = \[([\s\S]*?)\n\];/);
   H.ok(!!src, 'DEADS exists');
-  const names = [...src[1].matchAll(/name:'([A-Za-z]+)'/g)].map(m => m[1]);
-  H.eq(names, ['Delay','Escape','Accept','Distract','Substitute'], 'all five named moves');
+  const names = [...src[1].matchAll(/name:'([A-Za-z ]+)'/g)].map(m => m[1]);
+  H.eq(names.slice(0, 5), ['Delay','Escape','Accept','Distract','Substitute'],
+    "Marlatt's five, in order");
+  // Plus one deliberate addition: turning outward is the exit the clinical menu misses, and it is the
+  // move every tradition this app serves arrived at independently.
+  H.eq(names[5], 'Turn outward', 'the service exit is offered alongside them');
   // every option must route somewhere REAL — a menu of dead buttons is worse than no menu
   const acts = [...src[1].matchAll(/act:"(_deads[A-Za-z]+)\(\)"/g)].map(m => m[1]);
-  H.eq(acts.length, 5, 'every option has an action');
+  H.eq(acts.length, names.length, 'every option has an action');
   acts.forEach(fn => H.ok(new RegExp('function ' + fn + '\\s*\\(').test(H.html), fn + ' is defined'));
   // and it must be reachable from the companion, not merely defined
   H.ok(/id="comp-deads-toggle"/.test(H.html), 'the toggle is in the companion markup');

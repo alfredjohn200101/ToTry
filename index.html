@@ -4504,7 +4504,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v410';
+const APP_VERSION = 'v411';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -14566,6 +14566,10 @@ const DEADS = [
     cta:'Find something',       act:"_deadsDistract()" },
   { k:'S', name:'Substitute',what:'Meet the need underneath instead. Hungry, tired, lonely, wired — the urge is often standing in for one of those.',
     cta:'What’s underneath',act:"_deadsSubstitute()" },
+  // Not one of Marlatt's five, added deliberately: turning outward is the exit the clinical menu misses,
+  // and it is the one every tradition this app serves arrived at on its own.
+  { k:'+', name:'Turn outward', what:'Do one small thing for someone else. A craving runs on a loop about you — this is the fastest way to break the loop rather than argue with it.',
+    cta:'Give me one thing', act:"_deadsService()" },
 ];
 function _deadsToggle(){
   const box=document.getElementById('comp-deads'); const tog=document.getElementById('comp-deads-toggle');
@@ -14595,6 +14599,7 @@ function _deadsEscape(){ _deadsSay('Stand up and change rooms now — take the p
 function _deadsAccept(){ if(typeof openBreath==='function') openBreath('surf'); else _deadsSay('Find where it sits in your body. Watch it like weather. You are not required to act on it.'); }
 function _deadsDistract(){ if(typeof theRelease==='function') theRelease({did:'You chose to put it down and go do something real.'}); else _deadsSay('Something with your hands, off the screen. Ten minutes.'); }
 function _deadsSubstitute(){ if(typeof openHALT==='function') openHALT(); else _deadsSay('Hungry, angry, lonely, tired — which one is it actually?'); }
+function _deadsService(){ if(typeof openServiceExit==='function') openServiceExit(); else _deadsSay('Do one small thing for someone else, right now. That is the exit.'); }
 // Fallback: speak it into the conversation rather than failing silently.
 function _deadsSay(text){
   try{
@@ -14694,6 +14699,96 @@ function _morningLightGo(){
   document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
   // Same principle as the wind-down: the app gets out of the way rather than keeping them here.
   if(typeof theRelease==='function') theRelease({ did:'You went out for the light.' });
+}
+
+
+// ── TIER 1.3 — THE WAY OUT IS OUTWARD ──────────────────────────────────────────────────────────
+// A craving is a loop that runs on self-reference: me, my urge, my resistance, me again. Doing one small
+// thing for someone else is among the fastest documented exits from that loop, and it is the one move
+// every tradition this app serves arrived at independently — which is why the naming below comes from
+// the FAITHS pattern rather than one tradition's vocabulary bolted onto everyone.
+//
+// It also does what CLAUDE.md says the app is for: it points OUTWARD, at a real person, off the phone.
+//
+// Deliberately NOT built here: no points, no streak, no "acts of service" counter. Gamified virtue is on
+// the do-not-build list, and scoring kindness is the fastest way to hollow it out. The app records that
+// the loop was broken — which it already does through the Release — and nothing about how good you were.
+const SERVICE_FRAME = {
+  christianity: { name:'Faith without works',
+    line:'“Faith by itself, if it does not have works, is dead.” The oldest cure for a self-centred hour is a small act for someone who cannot repay it.' },
+  islam:        { name:'Sadaqah',
+    line:'Sadaqah is not only money — the Prophet ﷺ called a smile a charity. A small good turn, given quietly, turns the hour outward.' },
+  hinduism:     { name:'Seva',
+    line:'Seva is service without thought of return. The self loosens its grip when it is busy with someone else’s need.' },
+  buddhism:     { name:'Dāna',
+    line:'Dāna — generosity — is the first practice for a reason. Craving feeds on self-reference; giving starves it.' },
+  secular:      { name:'Do one useful thing',
+    line:'Craving runs on a loop about you. Doing something small for another person breaks the loop faster than arguing with it does.' },
+};
+// Small enough to actually do while the urge is still up. Nothing here takes planning or money.
+const SERVICE_ACTS = [
+  'Send the message you have been meaning to send.',
+  'Ask someone how the thing they were dreading went.',
+  'Do the chore that is not yours, without mentioning it.',
+  'Pay for the next person, or leave something for someone who needs it.',
+  'Thank someone specifically — name the thing they did.',
+  'Check on the person nobody is checking on.',
+];
+function _serviceFrame(){
+  const t=(typeof faithTradition==='function')?faithTradition():'secular';
+  return SERVICE_FRAME[t] || SERVICE_FRAME.secular;
+}
+function openServiceExit(){
+  const f=_serviceFrame();
+  const day=(typeof getDayCount==='function')?getDayCount():0;
+  // Suggest a person they already told us they carry — reusing "your few" rather than asking for
+  // contacts the app has no business holding.
+  let who=null;
+  try{ const few=(typeof getYourFew==='function')?getYourFew():[]; if(few.length) who=few[day%few.length]; }catch(_){}
+  const act = SERVICE_ACTS[day % SERVICE_ACTS.length];
+  const m=document.createElement('div'); m.className='modal-bg open';
+  m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px">'+_escFew(f.name)+'</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;color:var(--tx);line-height:1.35;margin-bottom:10px">The way out is outward.</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">'+_escFew(f.line)+'</div>'+
+    '<div class="card" style="margin-bottom:10px;padding:13px 14px">'+
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:5px">One small thing</div>'+
+      '<div style="font-size:14px;color:var(--tx);line-height:1.5">'+_escFew(act)+'</div>'+
+      (who ? '<div style="font-size:12px;color:var(--tx3);margin-top:7px;line-height:1.5">'+_escFew(who.name)+' has not heard from you in a while, if you want somewhere to start.</div>' : '')+
+    '</div>'+
+    '<button class="btn primary" onclick="_serviceDone('+(who?JSON.stringify(String(who.name)).replace(/"/g,'&quot;'):'null')+')" style="padding:14px">I’ll go do it now</button>'+
+    '<button class="btn" onclick="openServiceExit._again()" style="background:var(--bg3);border:1px solid var(--bd);margin-top:8px;font-size:12px">Something else</button>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:6px">Not now</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  m.addEventListener('click', function(e){ if(e.target===m) m.remove(); });
+  if(typeof haptic==='function') haptic('tap');
+}
+// "Something else" walks the list rather than reopening the same suggestion.
+openServiceExit._n = 0;
+openServiceExit._again = function(){
+  openServiceExit._n++;
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  const day=((typeof getDayCount==='function')?getDayCount():0) + openServiceExit._n;
+  const f=_serviceFrame(); const act=SERVICE_ACTS[day % SERVICE_ACTS.length];
+  const m=document.createElement('div'); m.className='modal-bg open';
+  m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px">'+_escFew(f.name)+'</div>'+
+    '<div class="card" style="margin-bottom:10px;padding:13px 14px"><div style="font-size:14px;color:var(--tx);line-height:1.5">'+_escFew(act)+'</div></div>'+
+    '<button class="btn primary" onclick="_serviceDone(null)" style="padding:14px">I’ll go do it now</button>'+
+    '<button class="btn" onclick="openServiceExit._again()" style="background:var(--bg3);border:1px solid var(--bd);margin-top:8px;font-size:12px">Something else</button>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:6px">Not now</button>'+
+  '</div>';
+  document.body.appendChild(m);
+};
+function _serviceDone(name){
+  // If they picked a person, credit it to the reach-out ledger that already exists — one concept, not two.
+  try{ if(name && typeof logReachOut==='function') logReachOut(String(name)); }catch(_){}
+  if(typeof logEvent==='function') logEvent('service_exit');
+  document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+  // Ends off the phone, like every other real exit in this app.
+  if(typeof theRelease==='function') theRelease({ did:'You turned it outward and went to do something for someone else.' });
+  else if(typeof showToast==='function') showToast('Go on then','That is the way out.');
 }
 
 // ── THE BROTHER — the one voice the whole app speaks in ─────────────────────────────────────────
