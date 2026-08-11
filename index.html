@@ -4452,7 +4452,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v392';
+const APP_VERSION = 'v393';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4761,7 +4761,7 @@ const SYNC_KEYS = [
   // Training & body
   'totry_workouts','totry_body','totry_measurements','totry_ms','totry_split','totry_routines','totry_prs',
   'totry_strava_token','totry_google_token','totry_strava_activities','totry_strava_burns_byday','totry_strength_burns_byday','totry_watch_burns_byday','totry_calorie_burns','totry_google_steps',
-  'totry_hevy_api_key','totry_hevy_synced_once','totry_hevy_tier','totry_hevy_templates','totry_hevy_templates_at','totry_hevy_routines','totry_hevy_folders','totry_hevy_routines_at','totry_hevy_today_pick','totry_mobility_profile','totry_mood_log','totry_meal_plans','totry_pt_adjustments','totry_calorie_burns','totry_bar_weight','totry_last_plate_target','totry_last_warmup_target',
+  'totry_hevy_api_key','totry_hevy_synced_once','totry_hevy_tier','totry_hevy_templates','totry_hevy_templates_at','totry_hevy_routines','totry_hevy_folders','totry_hevy_routines_at','totry_hevy_today_pick','totry_mobility_profile','totry_mood_log','totry_meal_plans','totry_pt_adjustments','totry_bar_weight','totry_last_plate_target','totry_last_warmup_target',
   'totry_custom_exercises','totry_bw_volume','totry_session_proof','totry_first_win_done','totry_quiet_greeted',
   // totry_progress_photos is deliberately NOT synced: both privacy policies state photos stay on
   // the device, and a policy that isn't true is worse than no policy. (Also: base64 photos would eat
@@ -4783,7 +4783,7 @@ const SYNC_KEYS = [
   // Relationships, promises, letters
   'totry_relationships','totry_letters','totry_promises','totry_affirmations','totry_checkins','totry_freezes',
   // Vices & fights
-  'totry_vice_savings_log','totry_fight_log','totry_syntheses',
+  'totry_vice_savings_log','totry_syntheses',
   // Goals & weekly review
   'totry_goals','totry_reviews','totry_tomorrow_tasks',
   // Apps & personalisation
@@ -4791,9 +4791,7 @@ const SYNC_KEYS = [
   // Preferences (v29)
   'totry_currency','totry_weight_unit','totry_distance_unit','totry_theme','totry_timezone',
   // Late additions — real state that should survive a reinstall
-  'totry_notif_enabled','totry_notif_schedule','totry_user_email','totry_last_synthesis','totry_usage_log','totry_streaks',
-  'totry_reminder_times','totry_reminder_morning','totry_reminder_evening','totry_step_goal','totry_sleep_goal',
-  // v30: conversation memory + share preferences + reading position
+  'totry_notif_enabled','totry_user_email','totry_last_synthesis','totry_usage_log','totry_reminder_times','totry_reminder_morning','totry_reminder_evening',// v30: conversation memory + share preferences + reading position
   'totry_coach_history','totry_coach_memory','totry_pt_history','totry_share_prefs','totry_bible_last_position',
   // Your corrected food numbers — they're yours, so they follow you to every device.
   'totry_food_overrides',
@@ -34465,7 +34463,14 @@ function exportFullBackup(){
   a.click();
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  showToast('Backup saved', count + ' data sets downloaded. Keep it somewhere safe.');
+  // Name the exclusions. Progress photos and un-backed-up cycle data never leave the device by design
+  // (see the privacy policy), so a "full backup" does not contain them — and someone about to wipe their
+  // phone needs to know that BEFORE they wipe it, not after.
+  const _omitted = [];
+  try{ if((ls('totry_progress_photos')||[]).length) _omitted.push('progress photos'); }catch(_){}
+  try{ const _c=ls('totry_cycle'); if(_c && !_c.backup && (_c.log||[]).length) _omitted.push('cycle data'); }catch(_){}
+  showToast('Backup saved', count + ' data sets downloaded.' +
+    (_omitted.length ? ' Not included: ' + _omitted.join(' and ') + ' — those stay on this device only.' : ' Keep it somewhere safe.'));
   haptic('success');
 }
 
