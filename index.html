@@ -3906,8 +3906,15 @@ Amen.</div></div>
     <button class="btn" onclick="loadPendingSubmissions()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px;margin-top:8px">↻ Refresh</button>
   </div>
 
-  <!-- ═══ GROUP 6: SUPPORT (always visible — it's small, it matters) ═══ -->
-  <div class="card" style="background:linear-gradient(135deg, rgba(200,169,110,0.06), rgba(140,107,182,0.04));border-color:var(--go-bd)">
+  <!-- ═══ GROUP 6: SUPPORT — WEB ONLY ═══
+       App Store Guideline 3.1.1: an app "may not include buttons, external links, or other calls to
+       action that direct customers to purchasing mechanisms other than in-app purchase". The donation
+       exemption in 3.2.1(vii) covers approved nonprofits collecting charitable donations — not a solo
+       developer taking coffee money. An external buymeacoffee link is a well-known rejection trigger,
+       and "Optional. Never unlocks features" does not exempt it: the link itself is the violation.
+       So this card is hidden inside the App Store build and stays exactly as it is on the web, where
+       it is perfectly fine. Gated in initSettingsTab via #support-card. -->
+  <div class="card" id="support-card" style="display:none;background:linear-gradient(135deg, rgba(200,169,110,0.06), rgba(140,107,182,0.04));border-color:var(--go-bd)">
     <div class="card-hd" style="margin-bottom:6px">☕ Support the project</div>
     <div style="font-size:13px;color:var(--tx2);line-height:1.7">
       <p style="margin-bottom:10px">To Try costs about $20-50 AUD/month to keep running (AI calls + hosting). If it has helped you, you can chip in.</p>
@@ -4404,7 +4411,7 @@ if(window.visualViewport){ window.visualViewport.addEventListener('resize', setV
 
 // ── FULL LOCAL BACKUP ── the escape hatch: every totry_ key, downloadable + restorable,
 // so a person can NEVER truly lose their journey even with no account or a wiped device.
-function exportAllData(){
+async function exportAllData(){
   try{
     const dump = {};
     for(let i = 0; i < localStorage.length; i++){
@@ -4413,11 +4420,9 @@ function exportAllData(){
     }
     const payload = { app:'To Try', version:(typeof APP_VERSION!=='undefined'?APP_VERSION:'?'), exported:new Date().toISOString(), keys:Object.keys(dump).length, data:dump };
     const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'totry-backup-' + new Date().toISOString().slice(0,10) + '.json';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+    // Through SaveFile: an <a download> does nothing in a WKWebView, so on iOS this used to produce no
+    // file and no error — the export promise, silently broken in the App Store build.
+    await SaveFile.save(blob, 'totry-backup-' + new Date().toISOString().slice(0,10) + '.json', 'To Try backup');
     if(typeof haptic==='function') haptic('success');
     if(typeof showToast==='function') showToast('Backup saved', payload.keys + ' items exported. Keep it somewhere safe.');
   }catch(e){ if(typeof showToast==='function') showToast('Export failed', 'Could not build the backup. Try again.'); }
@@ -4506,7 +4511,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v418';
+const APP_VERSION = 'v419';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -10835,13 +10840,8 @@ function exportBodyCollage(){
       loaded++;
       if(loaded === entries.length){
         canvas.toBlob(blob => {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = 'progress-collage-'+Date.now()+'.png';
-          a.click();
-          URL.revokeObjectURL(url);
-          showToast('Saved', 'Collage downloaded. Share it however you want.');
+          SaveFile.save(blob, 'progress-collage-'+Date.now()+'.png', 'Progress');
+          showToast('Ready', 'Save it or share it — your call.');
         }, 'image/png');
       }
     };
@@ -14696,6 +14696,53 @@ const HealthWrite = {
     const n = parseFloat(kg) || 0;
     if(n <= 20 || n >= 500) return;              // same sanity floor the plugin enforces
     try{ await p.saveWeight({ kg:n, atMs: atMs || Date.now() }); }catch(_){}
+  }
+};
+
+
+// ── SAVING A FILE, ON A PHONE ───────────────────────────────────────────────────────────────────
+// Every "save this" path used the web pattern: URL.createObjectURL(blob) then a synthetic click on an
+// <a download>. That works in a browser and does NOTHING in a WKWebView — downloads there need a
+// WKDownloadDelegate (iOS 14.5+) and Capacitor's bridge does not install one. So in the App Store build,
+// tapping Export produced no file, no error and no explanation. It silently broke the app's entire
+// data-custody promise — privacy.html says "Export everything" — plus the CSV exports, the progress
+// collage and the shareable day card.
+//
+// One helper now, so no save path can drift back to the broken pattern. Native gets the share sheet,
+// which is better than a download anyway: save to Files, AirDrop, message it, open it elsewhere — one
+// action instead of "downloaded, now go find it". The web keeps the download it always had.
+const SaveFile = {
+  _p(){ try{ const P=(window.Capacitor&&window.Capacitor.Plugins)||{}; return P.ShareFile || P.ShareFilePlugin || null; }catch(_){ return null; } },
+  isNative(){ try{ return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }catch(_){ return false; } },
+  _b64(blob){
+    return new Promise(function(res, rej){
+      const r = new FileReader();
+      r.onload = function(){ const s=String(r.result||''); res(s.slice(s.indexOf(',')+1)); };
+      r.onerror = function(){ rej(new Error('could not read the file')); };
+      r.readAsDataURL(blob);
+    });
+  },
+  // The one entry point. Returns true if the file reached the person, false if it could not.
+  async save(blob, filename, title){
+    try{
+      const p = this._p();
+      if(this.isNative() && p){
+        const base64 = await this._b64(blob);
+        const r = await p.share({ filename: filename, base64: base64, title: title || filename });
+        return !!(r && r.ok);
+      }
+    }catch(e){
+      // Fall through to the web path rather than failing outright — better a download attempt than nothing.
+      try{ console.warn('[SaveFile] native share failed, falling back', e); }catch(_){}
+    }
+    try{
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(_){} }, 4000);
+      return true;
+    }catch(_){ return false; }
   }
 };
 
@@ -33917,12 +33964,14 @@ function _renderShareCanvas(style, theme){
 }
 function setShareTheme(t){ ls('totry_share_theme', t); }
 
-function downloadShareCard(url){
-  const a=document.createElement('a');
-  a.href=url;
-  a.download='totry-day-'+getDayCount()+'.png';
-  a.click();
-  showToast('Downloaded','Share it wherever you want.');
+async function downloadShareCard(url){
+  // Comes in as a data: URL from the canvas. Convert to a blob so the one save path handles it, since
+  // a synthetic <a download> click is a no-op inside a WKWebView.
+  try{
+    const blob = await (await fetch(url)).blob();
+    const ok = await SaveFile.save(blob, 'totry-day-'+getDayCount()+'.png', 'Day '+getDayCount());
+    showToast(ok ? 'Ready' : 'Could not save', ok ? 'Save it or share it — your call.' : 'Try again in a moment.');
+  }catch(_){ showToast('Could not save','Try again in a moment.'); }
 }
 
 async function shareCardNative(url){
@@ -34251,6 +34300,9 @@ async function submitFeedback(){
 // ── SETTINGS ──────────────────────────────────────────────────
 function initSettingsTab(){
   // Honest beta framing on web only — inside the native app it's not a beta, so hide it.
+  // Same gate, same reason as the support card below: what is fine on the web is a 3.1.1 problem in
+  // the App Store build.
+  try{ const sc=document.getElementById('support-card'); if(sc) sc.style.display = (typeof isNativeApp==='function' && isNativeApp()) ? 'none' : ''; }catch(_){}
   try{ const bn=document.getElementById('beta-web-note'); if(bn) bn.style.display = (typeof Notify!=='undefined' && Notify.isNative()) ? 'none' : 'block'; }catch(_){}
   // Reflect the CURRENT faith level when Settings opens — it was only highlighted on click, so on
   // open neither option looked selected (that's the "faith level looks messed up"). Now it's clear.
@@ -35191,7 +35243,7 @@ function runUniversalSearch(query){
 // ── FULL BACKUP / RESTORE ─────────────────────────────────────
 // Downloads every ToTry key as one JSON file — the safety net against device loss or
 // sync failure. Restore reads it back. Uses SYNC_KEYS as the canonical list of app data.
-function exportFullBackup(){
+async function exportFullBackup(){
   const data = {};
   let count = 0;
   SYNC_KEYS.forEach(k => {
@@ -35206,14 +35258,7 @@ function exportFullBackup(){
     data: data
   };
   const blob = new Blob([JSON.stringify(backup, null, 2)], {type: 'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'totry-backup-' + new Date().toISOString().slice(0,10) + '.json';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  await SaveFile.save(blob, 'totry-backup-' + new Date().toISOString().slice(0,10) + '.json', 'To Try backup');
   // Name the exclusions. Progress photos and un-backed-up cycle data never leave the device by design
   // (see the privacy policy), so a "full backup" does not contain them — and someone about to wipe their
   // phone needs to know that BEFORE they wipe it, not after.
@@ -40014,7 +40059,7 @@ function importFoodCSV(event){
 }
 
 // Export: ToTry's full food log as a CSV anyone can open in Excel / re-import elsewhere
-function exportFoodCSV(){
+async function exportFoodCSV(){
   const log = ls('totry_nutlog') || {};
   const dates = Object.keys(log);
   if(!dates.length){ showToast('Nothing to export', 'Log some food first.'); return; }
@@ -40036,14 +40081,7 @@ function exportFoodCSV(){
   });
   
   const blob = new Blob([csv], {type: 'text/csv'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'totry-food-log-' + new Date().toISOString().slice(0,10) + '.csv';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  await SaveFile.save(blob, 'totry-food-log-' + new Date().toISOString().slice(0,10) + '.csv', 'Food log');
   showToast('Exported', 'Your food log downloaded as CSV.');
   haptic('success');
 }

@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v418-pinch-zoom'
+const CACHE = 'totry-v419-share-sheet'
 
 const CORE = [
   './',

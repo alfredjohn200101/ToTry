@@ -827,6 +827,27 @@ H.section('navigation — one way back, not two');
   H.ok(/insertBefore\(bar, tab\.firstChild\)/.test(H.html), 'the bar is inserted at the top of the sub-page');
 }
 
+H.section('no external payment links in the App Store build');
+{
+  // Guideline 3.1.1: an app may not include buttons or external links directing customers to purchasing
+  // mechanisms other than in-app purchase. The 3.2.1(vii) donation exemption covers approved nonprofits
+  // collecting charitable donations, not a solo developer taking coffee money — and "Optional. Never
+  // unlocks features" does not exempt the link, because the link itself is the violation. Fine on the
+  // web, a rejection trigger in the build.
+  const links = [...H.html.matchAll(/https:\/\/[a-z0-9.-]*(buymeacoffee|ko-?fi|patreon|paypal|stripe|gumroad|venmo)[a-z0-9.\/-]*/gi)]
+    .map(m => m[0]);
+  // They may exist, but every one must sit inside something the native build hides.
+  if(links.length){
+    H.ok(/id="support-card"[^>]*display:none/.test(H.html),
+      'the support card starts hidden, so it cannot flash before the gate runs');
+    H.ok(/getElementById\('support-card'\)[\s\S]{0,160}isNativeApp\(\)/.test(H.html),
+      'and it is revealed only when NOT running as the native app');
+  }
+  // Nothing may imply a paywall or subscription — the app is free.
+  const paywall = [...H.html.matchAll(/\b(subscribe now|upgrade to pro|premium plan|start free trial|unlock premium)\b/gi)].map(m => m[0]);
+  H.eq(paywall, [], 'no paywall or subscription language anywhere');
+}
+
 H.section('platform gating — the App Store build must never show PWA install copy');
 {
   // Confirmed on a real device before this was fixed: the native app displayed

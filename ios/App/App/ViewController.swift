@@ -24,5 +24,6 @@ class ViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(SleepPlugin())
         // Same reason: an app-target plugin is compiled but never auto-discovered.
         bridge?.registerPluginInstance(HealthWritePlugin())
+        bridge?.registerPluginInstance(ShareFilePlugin())
     }
 }
