@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v421-health-truth'
+const CACHE = 'totry-v422-haptics-truth'
 
 const CORE = [
   './',

@@ -1200,4 +1200,67 @@ H.section('promises the code must keep');
   H.ok(/ob-chip-googlehealth'\);\s*if\(gh && !\(typeof isNativeApp/.test(H.html), 'and is revealed only off-native');
 }
 
+H.section('native reach — things the wrapper unlocks must actually be used');
+{
+  // Comment-stripped view. Every one of these assertions describes a bug whose explanation names the
+  // very pattern being banned, so matching raw source finds the comment and not the code.
+  const code = H.html
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  const fs = require('fs');
+  const path = require('path');
+  const root = path.join(__dirname, '..');
+
+  // 1. Haptics. navigator.vibrate is the Vibration API, which WebKit has never implemented — so the
+  //    single line `if(!navigator.vibrate) return;` made every haptic in the app a no-op on iPhone, the
+  //    one platform with a Taptic Engine. The native path must come FIRST, before that early return.
+  const h = code.slice(code.indexOf('function haptic('));
+  const hb = h.slice(0, h.indexOf('\n}'));
+  H.ok(/Plugins\.Haptics/.test(hb), 'haptic() uses the native Haptics plugin');
+  H.ok(hb.indexOf('Plugins.Haptics') < hb.indexOf('!navigator.vibrate'),
+    'the native path runs BEFORE the navigator.vibrate early-return that kills it on iOS');
+  const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+  H.ok(!!(pkg.dependencies && pkg.dependencies['@capacitor/haptics']), '@capacitor/haptics is a dependency');
+  // The v408 bug class: a lookup name that doesn't match what the plugin registers is a silent no-op.
+  const hjs = fs.readFileSync(path.join(root, 'node_modules/@capacitor/haptics/dist/plugin.js'), 'utf8');
+  const declared = (hjs.match(/registerPlugin\('([A-Za-z]+)'/) || [])[1];
+  H.eq(declared, 'Haptics', 'the plugin registers under the name index.html looks up');
+
+  // 2. Crisis contacts must be tappable. The same numbers are tel: links on the sign-in screen because
+  //    "crisis help must never sit behind a login"; the AI crisis response rendered them as plain text,
+  //    so the worst moment the app has was the one place you had to transcribe a number by hand.
+  H.ok(/const _crisisContact/.test(H.html), 'the crisis response builds tappable contacts');
+  const cr = H.html.slice(H.html.indexOf('const _crisisContact'));
+  H.ok(/href="tel:/.test(cr.slice(0, 900)), 'phone numbers become tel: links');
+  H.ok(/_crisisContact\(r\.contact\)/.test(H.html), 'and the renderer actually calls it');
+  H.ok(!/iasp\.info/.test(code), 'the dead IASP crisis-centres link is gone (it 301s to their homepage)');
+
+  // 3. No promise of a raffle without the terms that make it real.
+  H.ok(/const RAFFLE_ACTIVE = false;/.test(H.html) || /RAFFLE_TERMS\s*=\s*'[^']+'/.test(H.html),
+    'the raffle is off, or it has terms');
+  if (/const RAFFLE_ACTIVE = false;/.test(H.html)) {
+    const promises = [...code.matchAll(/you.{0,3}re in the (raffle|draw)/gi)]
+      .map(m => code.slice(0, m.index).split('\n').length)
+      .filter(line => {
+        const ctx = code.split('\n').slice(line - 4, line + 1).join('\n');
+        return !/RAFFLE_ACTIVE|_raffleCopy/.test(ctx);   // the gated branch is allowed to say it
+      });
+    H.eq(promises, [], 'nothing tells a person they are in a raffle while RAFFLE_ACTIVE is false');
+  }
+
+  // 4. A dismissed share sheet is not a success. The plugin resolves {ok:true, completed:false} on
+  //    cancel, so reading only .ok congratulated people on a save they had just declined.
+  H.ok(/r\.completed === false\) return null/.test(H.html), 'SaveFile distinguishes cancel from success');
+  const callers = [...H.html.matchAll(/SaveFile\.save\([^)]*\)/g)].length;
+  H.ok(callers >= 5, 'the save path is the only one used (' + callers + ' call sites)');
+  const reporters = [...H.html.matchAll(/=\s*await SaveFile\.save\(/g)].length;
+  const nullChecks = [...H.html.matchAll(/=== null\) return/g)].length;
+  H.ok(nullChecks >= reporters, 'every caller that reports an outcome handles the cancel case');
+
+  // 5. Reminders must not claim to reach someone if iOS won't allow it.
+  H.ok(/async function _verifyNativeNotifPermission/.test(H.html), 'the reminders row verifies real permission');
+  H.ok(/L\.checkPermissions/.test(H.html), 'it asks the system, not localStorage');
+  H.ok(/_verifyNativeNotifPermission\(\);/.test(H.html), 'and it is actually called after render');
+}
+
 H.report();

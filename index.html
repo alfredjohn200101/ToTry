@@ -541,7 +541,13 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .se-del{background:none;border:none;color:var(--tx3);cursor:pointer;font-size:16px;padding:0 4px}
 .set-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
 .set-num{font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3);width:24px;flex-shrink:0}
-.set-input{width:70px;padding:7px 8px;font-size:12px;flex:none}
+/* 16px, not 12px: iOS auto-zooms the whole page whenever a text field under 16px takes focus. These are
+   the weight and reps boxes, so it fired on every single set. v418 removed maximum-scale=1.0 (which had
+   been suppressing that zoom at the cost of disabling pinch-to-zoom for low-vision users) after sweeping
+   every INLINE font-size — and missed this one, because it arrives from a CSS class on inputs built with
+   createElement, which neither a source scan for class="..." nor a DOM scan can see (the rows don't
+   exist until a set is added). Verified in the logger: 82.5 and 12 still fit the 70px box. */
+.set-input{width:70px;padding:7px 8px;font-size:16px;flex:none}
 .set-unit{font-size:11px;color:var(--tx3);width:28px}
 .set-done{width:28px;height:28px;border-radius:50%;border:1px solid var(--bd);background:var(--bg3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;transition:all 0.15s}
 .set-done.on{background:var(--gr);border-color:var(--gr)}
@@ -3664,14 +3670,19 @@ Amen.</div></div>
     <div class="crisis-line">&#127462;&#127482; Lifeline: <a href="tel:131114">13 11 14</a></div>
     <div class="crisis-line">&#127462;&#127482; Beyond Blue: <a href="tel:1300224636">1300 22 4636</a></div>
     <div class="crisis-line">&#127462;&#127482; Crisis Text: Text HOME to <a href="sms:0477013755">0477 01 3755</a></div>
-    <div class="crisis-line">&#127760; <a href="https://www.iasp.info/resources/Crisis_Centres/" target="_blank" style="color:var(--bl)">Find support in your country</a></div>
+    <!-- findahelpline.com, not IASP. iasp.info/resources/Crisis_Centres/ now 301s to the IASP homepage
+         (checked: final URL is https://www.iasp.info/), so the one international link in the crisis card
+         landed a person in crisis on an advocacy org's front page with no helpline in sight. This is the
+         same directory the sign-in screen and the AI crisis response already use — one resource,
+         reachable, 130+ countries. -->
+    <div class="crisis-line">&#127760; <a href="https://findahelpline.com" target="_blank" rel="noopener" style="color:var(--bl)">Find support in your country</a></div>
     <div style="font-size:11px;color:var(--tx2);margin-top:8px;line-height:1.5">To Try is a self-improvement tool, not a substitute for professional support.</div>
   </div>
 
   <!-- Feedback + raffle — the founder's direct line from the people using it -->
   <div class="card" style="margin-bottom:14px;border:1px solid var(--go-bd)">
     <div class="card-hd" style="margin-bottom:6px">Share your journey with Alfy</div>
-    <div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:12px">This is built by one person, for you. Tell me what’s improving and what’s missing — I read every note. Share honest feedback and you’re in the raffle.</div>
+    <div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:12px">This is built by one person, for you. <span id="feedback-raffle-line">Tell me what’s improving and what’s missing — I read every note.</span></div>
     <button class="btn primary" onclick="openProgressCheckin()">How far have you come?</button>
   </div>
 
@@ -4447,9 +4458,10 @@ async function exportAllData(){
     const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
     // Through SaveFile: an <a download> does nothing in a WKWebView, so on iOS this used to produce no
     // file and no error — the export promise, silently broken in the App Store build.
-    await SaveFile.save(blob, 'totry-backup-' + new Date().toISOString().slice(0,10) + '.json', 'To Try backup');
+    const _r = await SaveFile.save(blob, 'totry-backup-' + new Date().toISOString().slice(0,10) + '.json', 'To Try backup');
+    if(_r === null) return;   // share sheet dismissed — they chose not to; don't tell them it's saved
     if(typeof haptic==='function') haptic('success');
-    if(typeof showToast==='function') showToast('Backup saved', payload.keys + ' items exported. Keep it somewhere safe.');
+    if(typeof showToast==='function') showToast(_r ? 'Backup saved' : 'Not saved', _r ? (payload.keys + ' items exported. Keep it somewhere safe.') : 'Nothing was written. Try again in a moment.');
   }catch(e){ if(typeof showToast==='function') showToast('Export failed', 'Could not build the backup. Try again.'); }
 }
 function importAllData(ev){
@@ -4536,7 +4548,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v421';
+const APP_VERSION = 'v422';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -8137,11 +8149,27 @@ function showCrisisResponse(containerId, type){
     ];
   }
   
+  // ONE TAP, NOT TRANSCRIBE IT. These contacts were rendered as plain text, so the crisis response the
+  // app shows when someone says the worst thing they will ever type into it asked them to memorise a
+  // number and dial it by hand. The same numbers ARE tappable on the sign-in screen (tel: links, because
+  // "crisis help must never sit behind a login") — the AI path was the one that lost it. A phone number
+  // becomes a tel: link; the international directory becomes a real link.
+  const _crisisContact = (c) => {
+    const raw = String(c || '');
+    const a = 'style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)"';
+    if(/^[\d\s]+$/.test(raw) && /\d/.test(raw)){
+      return '<a href="tel:' + raw.replace(/\s+/g,'') + '" ' + a + '>' + raw + '</a>';
+    }
+    if(/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(raw)){
+      return '<a href="https://' + raw + '" target="_blank" rel="noopener" ' + a + '>' + raw + '</a>';
+    }
+    return raw;
+  };
   const resHtml = resources.map(r =>
     '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:6px">' +
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:3px">' + r.region + '</div>' +
       '<div style="font-size:14px;font-weight:500;color:var(--tx);margin-bottom:2px">' + r.name + '</div>' +
-      '<div style="font-size:13px;color:var(--tx2);font-family:DM Mono,monospace">' + r.contact + '</div>' +
+      '<div style="font-size:13px;color:var(--tx2);font-family:DM Mono,monospace">' + _crisisContact(r.contact) + '</div>' +
       '<div style="font-size:11px;color:var(--tx3);margin-top:2px">' + r.detail + '</div>' +
     '</div>'
   ).join('');
@@ -10952,8 +10980,12 @@ function exportBodyCollage(){
       loaded++;
       if(loaded === entries.length){
         canvas.toBlob(blob => {
-          SaveFile.save(blob, 'progress-collage-'+Date.now()+'.png', 'Progress');
-          showToast('Ready', 'Save it or share it — your call.');
+          // Awaited: this used to announce "Ready" the instant it was called, before the save had
+          // resolved and regardless of whether anything happened.
+          SaveFile.save(blob, 'progress-collage-'+Date.now()+'.png', 'Progress').then(function(r){
+            if(r === null) return;   // dismissed
+            showToast(r ? 'Ready' : 'Could not save', r ? 'Save it or share it — your call.' : 'Try again in a moment.');
+          });
         }, 'image/png');
       }
     };
@@ -14325,7 +14357,37 @@ function openNaturalHighs(){
   m.innerHTML=html; document.body.appendChild(m); if(typeof haptic==='function') haptic('tap');
 }
 
-// ════ PROGRESS CHECK-IN + FEEDBACK RAFFLE ════ Not a competition — people share what's IMPROVING for
+// A RAFFLE THE APP CANNOT RUN. Four places told people "you're in the raffle" — the Settings card, the
+// check-in intro, the send note and the thank-you screen — and nowhere in this codebase, the docs or the
+// backend is there a prize, an eligibility rule, a draw date, a draw mechanism or any terms. So the app
+// made a promise to a real person that nothing could keep, which is the same class as a toast that lies,
+// except it also collects their email on the strength of it. It is a submission risk too (review expects
+// contest rules stated in the app, and an Australian trade promotion can need a permit depending on the
+// prize), but the reason to fix it is the first one.
+//
+// The feedback channel is untouched and is the genuinely valuable part — Alfy reading every note. Only
+// the unbacked promise is gone. TO TURN A REAL RAFFLE ON: set RAFFLE_ACTIVE = true and fill RAFFLE_TERMS
+// with the prize, who is eligible, the draw date and how winners are contacted — the copy below then says
+// it, with the terms attached. Do not flip the flag without those.
+const RAFFLE_ACTIVE = false;
+const RAFFLE_TERMS = '';   // e.g. 'One $50 voucher, drawn 1 Sep 2026, 18+, winner emailed.'
+function _raffleCopy(kind){
+  if(!RAFFLE_ACTIVE || !RAFFLE_TERMS){
+    // The truth, which is the better offer anyway: a real person actually reads your words.
+    if(kind==='card')   return 'Tell me what\u2019s improving and what\u2019s missing \u2014 I read every note.';
+    if(kind==='intro')  return 'Alfy reads every one personally.';
+    if(kind==='send')   return 'Sent from your account, so Alfy knows who to thank.';
+    if(kind==='thanks') return 'Every word helps me build this for you and the next person who needs it. Keep going.';
+    return '';
+  }
+  if(kind==='card')   return 'Tell me what\u2019s improving and what\u2019s missing \u2014 I read every note. Share honest feedback and you\u2019re in the draw. ' + RAFFLE_TERMS;
+  if(kind==='intro')  return 'Alfy reads every one personally, and everyone who shares goes in the draw. ' + RAFFLE_TERMS;
+  if(kind==='send')   return 'Sent from your account, so Alfy knows who to thank \u2014 and who to add to the draw.';
+  if(kind==='thanks') return 'You\u2019re in the draw. Every word helps me build this for you and the next person who needs it. Keep going.';
+  return '';
+}
+
+// ════ PROGRESS CHECK-IN + FEEDBACK ════ Not a competition — people share what's IMPROVING for
 // them (which tells Alfy what's working) and can opt into a raffle for sharing honest feedback. Feedback
 // lands in Supabase app_events (event='feedback') so it's queryable; raffle opt-in attaches their
 // sign-in email so winners can be contacted. See ANALYTICS-QUERIES.md for the raffle/feedback queries.
@@ -14336,10 +14398,10 @@ function openProgressCheckin(){
   m.innerHTML='<div class="modal" style="text-align:center;max-height:92vh;overflow-y:auto">'+
     '<div class="modal-handle"></div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">How far have you come?</div>'+
-    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Since you started with To Try — what have you noticed? Tap any that fit. Alfy reads every one personally, and everyone who shares goes in the feedback raffle.</div>'+
+    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Since you started with To Try — what have you noticed? Tap any that fit. '+_raffleCopy('intro')+'</div>'+
     '<div class="pc-areas" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px"></div>'+
     '<textarea class="pc-note" placeholder="Anything you’d want Alfy to know? What’s working, what’s missing?" style="width:100%;min-height:70px;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:16px;font-family:inherit;margin-bottom:14px;resize:vertical;box-sizing:border-box"></textarea>'+
-    '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:16px">Sent from your account, so Alfy knows who to thank — and who to add to the raffle.</div>'+
+    '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:16px">'+_raffleCopy('send')+'</div>'+
     '<button class="btn primary pc-send" style="margin-bottom:8px">Send it to Alfy</button>'+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Maybe later</button>'+
   '</div>';
@@ -14377,7 +14439,7 @@ function openProgressCheckin(){
     try{ ls('totry_last_checkin', Date.now()); }catch(_){}
     m.remove();
     const t=document.createElement('div'); t.className='modal-bg open'; t.style.alignItems='center';
-    t.innerHTML='<div class="modal" style="text-align:center"><div style="font-size:30px;margin-bottom:8px">🙏</div><div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:10px">Thank you — really.</div><div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:16px">You’re in the raffle. Every word helps me build this for you and the next person who needs it. Keep going.</div><button class="btn primary" onclick="closeModal(this)">Back to it</button></div>';
+    t.innerHTML='<div class="modal" style="text-align:center"><div style="font-size:30px;margin-bottom:8px">🙏</div><div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:10px">Thank you — really.</div><div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:16px">'+_raffleCopy('thanks')+'</div><button class="btn primary" onclick="closeModal(this)">Back to it</button></div>';
     document.body.appendChild(t);
     if(typeof haptic==='function') haptic('tap');
   };
@@ -14834,13 +14896,18 @@ const SaveFile = {
       r.readAsDataURL(blob);
     });
   },
-  // The one entry point. Returns true if the file reached the person, false if it could not.
+  // The one entry point. Returns true if the file reached the person, false if it could not — and null
+  // if they CANCELLED, which is neither. That distinction matters: the plugin resolves {ok:true,
+  // completed:false} when someone dismisses the share sheet, and reading only .ok made every caller
+  // announce "Ready — save it or share it, your call" to a person who had just decided not to. Callers
+  // treat null as "say nothing"; they chose, and a toast congratulating them on it is a small lie.
   async save(blob, filename, title){
     try{
       const p = this._p();
       if(this.isNative() && p){
         const base64 = await this._b64(blob);
         const r = await p.share({ filename: filename, base64: base64, title: title || filename });
+        if(r && r.ok && r.completed === false) return null;   // dismissed, not failed
         return !!(r && r.ok);
       }
     }catch(e){
@@ -32126,7 +32193,29 @@ function saveReminderTimes(){
 // PASS 3: HAPTIC FEEDBACK + POLISH HELPERS
 // ═══════════════════════════════════════════════════
 function haptic(pattern){
-  // pattern can be: 'tap', 'success', 'warning', 'celebrate'
+  // pattern can be: 'tap', 'success', 'warning', 'celebrate', 'light'
+  //
+  // EVERY HAPTIC IN THIS APP WAS DEAD ON IPHONE. The only path was navigator.vibrate — the Vibration
+  // API, which WebKit has never implemented and Apple has never shipped. So `if(!navigator.vibrate)
+  // return;` was an unconditional early return on every iOS device: the Feeling Door, the breath work,
+  // every confirmation and every threshold moment silently had no physical feedback, on the one platform
+  // whose haptics are the best in the industry. It cost nothing and it never fired.
+  //
+  // Native gets the real Taptic Engine. This is one of the things wrapping genuinely unlocks: a PWA on
+  // iOS cannot vibrate at all, by any means.
+  try{
+    const H = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics) || null;
+    if(H && typeof isNativeApp==='function' && isNativeApp()){
+      // Mapped by MEANING, not by mimicking the old millisecond patterns: iOS haptics are designed
+      // types, and a "success" tap should feel like the system's success, not like a buzz of the same
+      // length. Fire-and-forget — a haptic must never block or throw into a tap handler.
+      if(pattern==='success' || pattern==='celebrate'){ H.notification({ type:'SUCCESS' }); }
+      else if(pattern==='warning'){ H.notification({ type:'WARNING' }); }
+      else if(pattern==='light'){ H.impact({ style:'LIGHT' }); }
+      else { H.impact({ style:'MEDIUM' }); }   // 'tap' and anything unrecognised
+      return;
+    }
+  }catch(_){ /* fall through to the web path */ }
   if(!navigator.vibrate)return;
   const patterns={
     tap: [10],
@@ -34082,6 +34171,7 @@ async function downloadShareCard(url){
   try{
     const blob = await (await fetch(url)).blob();
     const ok = await SaveFile.save(blob, 'totry-day-'+getDayCount()+'.png', 'Day '+getDayCount());
+    if(ok === null) return;   // they dismissed the share sheet — nothing to announce
     showToast(ok ? 'Ready' : 'Could not save', ok ? 'Save it or share it — your call.' : 'Try again in a moment.');
   }catch(_){ showToast('Could not save','Try again in a moment.'); }
 }
@@ -34411,6 +34501,8 @@ async function submitFeedback(){
 
 // ── SETTINGS ──────────────────────────────────────────────────
 function initSettingsTab(){
+  // One source of truth for this copy — see RAFFLE_ACTIVE.
+  try{ const _rl=document.getElementById('feedback-raffle-line'); if(_rl && typeof _raffleCopy==='function') _rl.textContent=_raffleCopy('card'); }catch(_){}
   // Honest beta framing on web only — inside the native app it's not a beta, so hide it.
   // Same gate, same reason as the support card below: what is fine on the web is a 3.1.1 problem in
   // the App Store build.
@@ -35713,6 +35805,33 @@ async function syncPushSubscription(){
   }catch(e){ console.warn('push sync skipped', e); }
 }
 
+// DOES iOS ACTUALLY ALLOW IT? renderPushSettings' native branch renders purely from the saved
+// preference (totry_push_prefs), with a comment saying permission "is handled when they tap Enable". So
+// if the person declined the system prompt, or granted it once and later turned notifications off in iOS
+// Settings, the card still said reminders were on and still promised to "reach you even when the app is
+// closed" — while iOS delivered nothing, forever, silently. Nothing in the app ever asked the system.
+//
+// This asks, after the row has rendered, and corrects it in place. Deliberately additive and async: it
+// never blocks the render, and if the plugin can't answer it says nothing rather than guessing.
+async function _verifyNativeNotifPermission(){
+  try{
+    if(!(typeof Notify!=='undefined' && Notify.isNative && Notify.isNative())) return;
+    if(!_pushPrefs().enabled) return;                    // nothing is being claimed, nothing to correct
+    const P = (window.Capacitor && window.Capacitor.Plugins) || {};
+    const L = P.LocalNotifications;
+    if(!L || !L.checkPermissions) return;                // can't ask — don't invent an answer
+    const r = await L.checkPermissions();
+    if(r && r.display === 'granted') return;             // the card is telling the truth
+    const box = document.getElementById('push-settings-card');
+    if(!box || box.querySelector('.notif-perm-warn')) return;
+    const warn = document.createElement('div');
+    warn.className = 'notif-perm-warn';
+    warn.style.cssText = 'margin-top:10px;padding:10px 12px;border:1px solid var(--go-bd);background:var(--go-bg);border-radius:8px;font-size:12px;color:var(--go);line-height:1.55';
+    warn.textContent = 'Reminders are switched on in here, but iOS is not allowing notifications — so nothing can actually reach you. Turn them on in iOS Settings \u2192 Notifications \u2192 To Try.';
+    box.appendChild(warn);
+  }catch(_){}
+}
+
 function renderPushSettings(){
   const box=document.getElementById('push-settings-card'); if(!box) return;
   const prefs=_pushPrefs();
@@ -35742,6 +35861,8 @@ function renderPushSettings(){
         '<div style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:10px">Two gentle nudges a day — one to begin your morning, one to close the day — and, if you want it, a quiet check-in at your hardest hour. They reach you even when the app is closed. Nothing else, ever.</div>' +
         '<button class="btn primary" onclick="enablePushReminders()">Enable reminders</button>';
     }
+    // Then ask the SYSTEM whether any of that is actually true (see below).
+    try{ _verifyNativeNotifPermission(); }catch(_){}
     return;
   }
   if(!('Notification' in window) || !('PushManager' in window)){
@@ -40222,9 +40343,13 @@ async function exportFoodCSV(){
   });
   
   const blob = new Blob([csv], {type: 'text/csv'});
-  await SaveFile.save(blob, 'totry-food-log-' + new Date().toISOString().slice(0,10) + '.csv', 'Food log');
-  showToast('Exported', 'Your food log downloaded as CSV.');
-  haptic('success');
+  const _r = await SaveFile.save(blob, 'totry-food-log-' + new Date().toISOString().slice(0,10) + '.csv', 'Food log');
+  if(_r === null) return;   // dismissed
+  // "Downloaded" is browser language: on iOS this hands the file to the share sheet, so the person
+  // chose where it went. Say the true thing for the platform they're on.
+  const _native = (typeof isNativeApp==='function' && isNativeApp());
+  showToast(_r ? 'Exported' : 'Not saved', _r ? (_native ? 'Your food log is ready as a CSV.' : 'Your food log downloaded as CSV.') : 'Nothing was written. Try again in a moment.');
+  if(_r) haptic('success');
 }
 
 function showESVInstructions(){
