@@ -4560,7 +4560,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v424';
+const APP_VERSION = 'v425';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -35365,16 +35365,27 @@ async function deleteAccount(){
       // (supabase/functions/delete-user/index.ts). Must run BEFORE signOut — afterwards there is no JWT to
       // authorise it with. If it fails, or is not deployed yet, it joins _failed and the person is told the
       // truth rather than a comforting lie.
+      // Two routes, because removing an auth.users row needs privileges a browser must never hold.
+      // PREFERRED: delete_own_account(), a SECURITY DEFINER Postgres function. It takes no arguments and
+      // can only ever delete auth.uid(), so there is no id for anyone to tamper with, and no service-role
+      // key exists anywhere in the system. FALLBACK: the delete-user edge function, for a project whose
+      // SQL role lacks rights on the auth schema. If neither answers, this joins _failed and the person is
+      // told the truth instead of a comforting lie.
+      let _acctGone = false;
       try{
-        const { data: _du, error: _duErr } = await sb.functions.invoke('delete-user');
-        if(_duErr || !(_du && _du.ok)){
-          _failed.push('your account itself (your email address and sign-in)');
-          console.warn('[delete] delete-user:', _duErr || _du);
-        }
-      }catch(e){
-        _failed.push('your account itself (your email address and sign-in)');
-        console.warn('[delete] delete-user threw:', e);
+        const { data, error } = await sb.rpc('delete_own_account');
+        const r = Array.isArray(data) ? data[0] : data;
+        if(!error && r && (r.ok === true || r === true)) _acctGone = true;
+        else console.warn('[delete] delete_own_account:', error || r);
+      }catch(e){ console.warn('[delete] delete_own_account threw:', e); }
+      if(!_acctGone){
+        try{
+          const { data, error } = await sb.functions.invoke('delete-user');
+          if(!error && data && data.ok) _acctGone = true;
+          else console.warn('[delete] delete-user:', error || data);
+        }catch(e){ console.warn('[delete] delete-user threw:', e); }
       }
+      if(!_acctGone) _failed.push('your account itself (your email address and sign-in)');
       window.__deleteFailures = _failed;
       // Sign out
       try{ await sb.auth.signOut(); }catch(e){ console.warn('[delete] signOut failed:', e); }

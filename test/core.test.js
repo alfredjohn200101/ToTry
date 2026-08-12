@@ -1184,10 +1184,18 @@ H.section('promises the code must keep');
   //    it must run BEFORE signOut.
   const da = H.html.slice(H.html.indexOf('async function deleteAccount('));
   const body = da.slice(0, da.indexOf('\n// ── PRIVACY'));
-  H.ok(/functions\.invoke\('delete-user'\)/.test(body), 'deleteAccount deletes the account itself');
-  const iInvoke = body.indexOf("functions.invoke('delete-user')");
+  // Either route: the SECURITY DEFINER RPC (preferred — no service-role key anywhere) or the edge
+  // function. Both must run BEFORE signOut, while there is still a JWT to authorise them with.
+  H.ok(/rpc\('delete_own_account'\)/.test(body) || /functions\.invoke\('delete-user'\)/.test(body),
+    'deleteAccount deletes the account itself');
+  H.ok(/rpc\('delete_own_account'\)/.test(body), 'it prefers the RPC, which needs no service-role key');
+  const iInvoke = Math.min(
+    ...[body.indexOf("rpc('delete_own_account')"), body.indexOf("functions.invoke('delete-user')")]
+      .filter(i => i > 0)
+  );
   const iSignOut = body.indexOf('auth.signOut()');
   H.ok(iInvoke > 0 && iSignOut > 0 && iInvoke < iSignOut, 'it runs before signOut, while there is still a JWT');
+  H.ok(!/delete_own_account'\s*,\s*\{/.test(body), 'the RPC takes no arguments — no user id can be passed in');
   H.ok(/_failed\.push\('your account itself/.test(body), 'a refusal is confessed, never reported as success');
   H.ok(fs.existsSync(path.join(root, 'supabase/functions/delete-user/index.ts')), 'the edge function is versioned in the repo');
 
