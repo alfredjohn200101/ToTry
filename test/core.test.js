@@ -1092,4 +1092,58 @@ H.section('storage caps agree across write sites');
   H.ok(Object.keys(caps).length > 25, 'the scan actually found the write sites (' + Object.keys(caps).length + ' keys)');
 }
 
+H.section('the app boots with no network');
+{
+  // The worst bug this project has had: the entire app was gated on fetching the Supabase SDK from
+  // jsdelivr, and initSupabase()/checkAuthAndStart() retried every 200ms FOREVER with no fallback.
+  // checkAuthAndStart() is the only caller of initApp() and the only thing that hides #onboard or
+  // reveals the sign-in screen — so with no connection the app never opened at all, and the Feeling
+  // Door, the companion and the hardcoded crisis numbers were unreachable exactly when someone had no
+  // signal. The service worker hid it for the PWA; the native shell unregisters the service worker, so
+  // the App Store build had no mitigation whatsoever.
+  const fs = require('fs');
+  const path = require('path');
+  const root = path.join(__dirname, '..');
+
+  // 1. NOTHING the app needs to start may come off the network.
+  const remote = [...H.html.matchAll(/<script[^>]*\ssrc="(https?:)?\/\/[^"]*"/g)].map(m => m[0].slice(0, 90));
+  H.eq(remote, [], 'index.html loads no remote <script src> — a boot dependency on a CDN is what broke this');
+
+  // 2. The SDK is vendored, present, and is really the library (not an empty or truncated file).
+  const vend = path.join(root, 'vendor', 'supabase-js.js');
+  H.ok(fs.existsSync(vend), 'vendor/supabase-js.js exists');
+  if (fs.existsSync(vend)) {
+    const v = fs.readFileSync(vend, 'utf8');
+    H.ok(v.length > 100000, 'vendored SDK is the real bundle (' + Math.round(v.length / 1024) + 'KB)');
+    H.ok(/createClient/.test(v), 'vendored SDK exposes createClient');
+    H.ok(/^var supabase\s*=/.test(v), 'vendored SDK assigns the window.supabase global the app checks for');
+  }
+  H.ok(/<script[^>]+src="vendor\/supabase-js\.js"/.test(H.html), 'index.html loads the SDK from vendor/');
+
+  // 3. It must be copied into the native bundle and precached, or the native build boots to the
+  //    fallback instead of the real app — silently.
+  const build = fs.readFileSync(path.join(root, 'scripts', 'build-www.js'), 'utf8');
+  H.ok(/'vendor\/supabase-js\.js'/.test(build), 'build-www.js copies the vendored SDK into www/');
+  const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+  H.ok(/vendor\/supabase-js\.js/.test(sw), 'sw.js precaches the vendored SDK');
+
+  // 4. Belt and braces: even if the file is missing, both boot loops give up and open the app.
+  H.ok(/function bootWithoutCloud\(/.test(H.html), 'bootWithoutCloud() exists');
+  H.ok(/_sbTries\s*>\s*\d+\)\s*\{\s*bootWithoutCloud\(/.test(H.html), 'initSupabase caps its retries and falls back');
+  H.ok(/_authTries\s*>\s*\d+\)\s*\{\s*bootWithoutCloud\(/.test(H.html), 'checkAuthAndStart caps its retries and falls back');
+  const noBareRetry = !/setTimeout\(initSupabase, 200\);\s*\n\s*return;\s*\n\s*\}/.test(
+    H.html.replace(/if\(\+\+_sbTries[^\n]*\n/, '')
+  );
+  H.ok(noBareRetry || /_sbTries/.test(H.html), 'no uncapped 200ms boot retry remains');
+
+  // 5. The fallback must work with a null client — if it touches sb, it throws and the app stays dead.
+  const fb = H.html.slice(H.html.indexOf('function bootWithoutCloud('));
+  const body = fb.slice(0, fb.indexOf('\nasync function checkAuthAndStart'));
+  const touchesSb = [...body.matchAll(/[^_\w.]sb\s*\./g)].map(m => m[0]);
+  H.eq(touchesSb, [], 'bootWithoutCloud never dereferences sb (it runs precisely when sb is null)');
+  H.ok(/initApp/.test(body), 'the fallback actually opens the app (calls initApp)');
+  H.ok(/auth-offline-note/.test(body) && /id="auth-offline-note"/.test(H.html),
+    'the brand-new-and-offline path shows the honest note, and the element exists');
+}
+
 H.report();

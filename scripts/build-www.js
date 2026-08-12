@@ -20,6 +20,11 @@ const ASSETS = [
   // link anyone adds 404s inside the wrapper, silently, which is exactly how this project loses things.
   'privacy.html',
   'support.html',
+  // The Supabase SDK, vendored. It used to come from jsdelivr at boot, which made the whole app
+  // unopenable with no connection — and the native shell has no service worker to fall back on.
+  // If this ever stops being copied, the native build boots to bootWithoutCloud() instead of the
+  // real app, so the MISSING-asset failure below is the alarm that matters most.
+  'vendor/supabase-js.js',
 ];
 
 fs.rmSync(WWW, { recursive: true, force: true });
@@ -33,7 +38,9 @@ for (const f of ASSETS) {
     process.exitCode = 1;
     continue;
   }
-  fs.copyFileSync(src, path.join(WWW, f));
+  const dest = path.join(WWW, f);
+  fs.mkdirSync(path.dirname(dest), { recursive: true }); // assets may live in a subdir (vendor/)
+  fs.copyFileSync(src, dest);
   ok++;
 }
 console.log(`www/ assembled: ${ok}/${ASSETS.length} assets`);

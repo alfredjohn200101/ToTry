@@ -1,7 +1,17 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "offline-repro", "runtimeExecutable": "python3", "runtimeArgs": ["/private/tmp/claude-501/-Users-alfredjohn-Desktop-ToTry/0fcac028-f9bf-4731-ab57-8b340678f2e7/scratchpad/serve.py"], "port": 8791 },
-    { "name": "fresh-repro", "runtimeExecutable": "python3", "runtimeArgs": ["/private/tmp/claude-501/-Users-alfredjohn-Desktop-ToTry/0fcac028-f9bf-4731-ab57-8b340678f2e7/scratchpad/serve2.py"], "port": 8792 }
+    {
+      "name": "app",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8790", "--directory", "."],
+      "port": 8790
+    },
+    {
+      "name": "native-bundle",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8791", "--directory", "www"],
+      "port": 8791
+    }
   ]
 }

@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v419-share-sheet'
+const CACHE = 'totry-v420-offline-boot'
 
 const CORE = [
   './',
@@ -10,6 +10,9 @@ const CORE = [
   './icon-512.png',
   './apple-touch-icon.png',
   './icon.svg',
+  // The Supabase SDK. Vendored now (it was fetched from jsdelivr), and precached because the app
+  // cannot open without it — see the boot note in index.html.
+  './vendor/supabase-js.js',
 ];
 
 // ── INSTALL — cache all core files immediately ──

@@ -1054,7 +1054,21 @@ input:focus,textarea:focus,select:focus{
   *,.modal-bg.open,.modal-bg.open > .modal{ animation-duration:.01ms !important; transition-duration:.05ms !important; }
 }
 </style>
-<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- SUPABASE SDK — VENDORED, NOT FETCHED.
+     This was `https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2`, and it was the single point of
+     failure for the entire app: initSupabase() and checkAuthAndStart() both spin on it, and
+     checkAuthAndStart() is the ONLY caller of initApp() and the only thing that hides #onboard or
+     reveals the sign-in screen. No jsdelivr, no app — a blank splash forever. The service worker
+     special-cased the CDN so the PWA survived offline, but the native shell deliberately unregisters
+     the service worker and deletes every cache, so the App Store build had no mitigation at all: on a
+     plane, in a tunnel, or on hotel wifi it never opened, and a person who had used it for months was
+     shown the first-run welcome screen. The Feeling Door, the companion and the hardcoded crisis
+     numbers all sit behind initApp(), so the 2am moment this app exists for was unreachable precisely
+     when someone had no signal.
+     Byte-identical to what the CDN served (the same dist/umd build, pinned at 2.112.3), so behaviour is
+     unchanged — it just cannot fail to arrive. Update it with `npm i @supabase/supabase-js@2` then
+     `cp node_modules/@supabase/supabase-js/dist/umd/supabase.js vendor/supabase-js.js`. -->
+<script defer src="vendor/supabase-js.js"></script>
 </head>
 <body>
 <div id="boot-splash" style="position:fixed;inset:0;background:var(--bg,#0a0a0c);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.35s ease">
@@ -1090,6 +1104,11 @@ input:focus,textarea:focus,select:focus{
     <input type="email" id="auth-email-input" placeholder="your.email@example.com" autocomplete="email" inputmode="email" style="font-size:16px;padding:14px 16px;text-align:center;margin-bottom:14px" autofocus>
     
     <button class="btn primary" id="auth-send-otp-btn" onclick="authSendOtp()" style="font-size:14px;padding:14px">Send verification code</button>
+
+    <!-- Shown only by bootWithoutCloud() when the app opened with no connection. The button stays
+         enabled on purpose: signal can return between reading this and tapping it, and a dead control
+         is worse than a failed request that explains itself. -->
+    <div id="auth-offline-note" style="display:none;font-size:12px;color:var(--go);text-align:center;margin-top:10px;line-height:1.55">No connection right now, so the code can&apos;t reach you. You can still come in below — everything saves on this phone, and you can make an account whenever you&apos;re back on.</div>
 
     <!-- THE DOOR BEFORE THE WALL. A person in a hard moment should never have to make an account
          first — the help IS the product, and the evidence is blunt that a signup wall in front of the
@@ -4511,7 +4530,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v419';
+const APP_VERSION = 'v420';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4572,9 +4591,13 @@ let syncQueue = [];
 let syncInterval = null;
 
 // Initialize Supabase client when SDK loads
+let _sbTries = 0;
 function initSupabase(){
   if(typeof window.supabase === 'undefined'){
-    console.warn('Supabase SDK not loaded yet, retrying...');
+    // CAPPED. This retried every 200ms forever, and because nothing opens the app until sb exists,
+    // "forever" meant a blank splash for as long as the person kept looking at it. 25 tries = 5s, just
+    // inside the 6s splash timeout, then the app opens on what's already on the phone.
+    if(++_sbTries > 25){ bootWithoutCloud('sdk-never-loaded'); return; }
     setTimeout(initSupabase, 200);
     return;
   }
@@ -6302,9 +6325,68 @@ function guestKeepThis(){
   try{ const i=document.getElementById('auth-email-input'); if(i) setTimeout(function(){ i.focus(); },120); }catch(_){}
 }
 
+// THE OFFLINE FLOOR — the app opens even when the cloud never arrives.
+//
+// checkAuthAndStart() is the ONLY caller of initApp() and the only thing that hides #onboard or reveals
+// the sign-in screen, and both it and initSupabase() used to retry every 200ms with no cap and no
+// fallback. So if the SDK or the client never materialised, the app simply never opened: no Feeling
+// Door, no companion, and no crisis numbers — which are hardcoded and need no network at all — exactly
+// when someone has no signal. The PWA's service worker hid this by caching the CDN; the native shell
+// unregisters the service worker, so the App Store build had no mitigation whatsoever.
+//
+// Nothing in here touches sb. Everything needed to meet a person is already on the phone.
+let _bootedLocal = false;
+let _authTries = 0;
+function bootWithoutCloud(reason){
+  if(_bootedLocal) return;
+  _bootedLocal = true;
+  console.warn('[boot] opening without the cloud:', reason);
+  try{ if(typeof logEvent==='function') logEvent('boot_offline', {reason:String(reason||'')}); }catch(_){}
+  try{
+    const ac = document.getElementById('auth-container');
+    const ob = document.getElementById('onboard');
+    // Anyone this phone already knows — their whole app is in local storage. Open it.
+    const known = !!(ls('totry_onboarded') || ls('totry_guest') || (ls('totry_identity') && ls('totry_name')));
+    if(known){
+      if(ac) ac.style.display = 'none';
+      if(ob){ ob.classList.remove('active'); ob.style.display = 'none'; }
+      document.querySelectorAll('.app').forEach(function(a){ a.classList.add('app-ready'); });
+      if(typeof initApp === 'function') initApp();
+      // Said once, quietly, so an unsynced day reads as "offline" rather than "my data is gone".
+      setTimeout(function(){
+        try{ if(typeof showToast==='function') showToast('Offline', 'Everything works and saves here. It syncs when you’re back on.'); }catch(_){}
+      }, 900);
+    } else {
+      // Brand new with no connection. The code can't send — say so plainly instead of failing silently.
+      // The guest door sitting right under it ("Something's pulling at me right now") needs no network,
+      // so the person in the hard moment still gets in.
+      if(ob){ ob.classList.remove('active'); ob.style.display = 'none'; }
+      if(ac) ac.style.display = 'flex';
+      if(typeof authShowStep === 'function') authShowStep('email');
+      try{ const n = document.getElementById('auth-offline-note'); if(n) n.style.display = 'block'; }catch(_){}
+    }
+  }catch(e){ console.error('[boot] offline fallback failed:', e); }
+  // Clear the splash now that there is something behind it (it also self-removes at 6s).
+  try{
+    const bs = document.getElementById('boot-splash');
+    if(bs){ bs.style.opacity = '0'; setTimeout(function(){ try{ bs.remove(); }catch(_){} }, 400); }
+  }catch(_){}
+  // If the connection turns up later, pick the cloud back up: a fresh client restores the saved session,
+  // which starts the sync loop. initApp() is guarded by _bootedLocal, so nothing runs twice.
+  try{
+    window.addEventListener('online', function(){
+      try{ const n = document.getElementById('auth-offline-note'); if(n) n.style.display = 'none'; }catch(_){}
+      try{ if(!sb && typeof initSupabase === 'function'){ _sbTries = 0; initSupabase(); } }catch(_){}
+    }, {once:true});
+  }catch(_){}
+}
+
 async function checkAuthAndStart(){
   // Wait for Supabase to be ready
   if(!sb){
+    // CAPPED — see bootWithoutCloud above. This also covers createClient() throwing, which leaves sb
+    // null with no retry of its own.
+    if(++_authTries > 25){ bootWithoutCloud('no-client'); return; }
     setTimeout(checkAuthAndStart, 200);
     return;
   }
