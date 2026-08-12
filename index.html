@@ -1451,7 +1451,12 @@ input:focus,textarea:focus,select:focus{
 <div id="tab-grow" class="tab">
   <div style="margin-bottom:8px">
     <h2 style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.2;margin-bottom:2px">Grow</h2>
-    <p style="font-size:12.5px;color:var(--tx3);line-height:1.6">Your body, honestly. Train, then fuel what you earned, then watch the result — one loop, not three trackers. Discipline of the body is discipline of the man.</p>
+    <!-- "discipline of the man" until v423 — shown to every single person who opened this tab. The app is
+         built for men and women, it knows the person's sex (userSex), and the soul note is explicit that
+         the founder's story stays "big brother" while the app's VOICE is universal. Rephrased rather than
+         gender-swapped: this is static HTML, so a swap would need JS and would flash the wrong word before
+         it ran, and the line is stronger without the noun anyway. -->
+    <p style="font-size:12.5px;color:var(--tx3);line-height:1.6">Your body, honestly. Train, then fuel what you earned, then watch the result — one loop, not three trackers. Discipline of the body is discipline of everything else.</p>
   </div>
   <div class="hub-section-label">Health — train, nourish, then track the result</div>
   <div class="hub-grid">
@@ -4548,7 +4553,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v422';
+const APP_VERSION = 'v423';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -20877,9 +20882,47 @@ function logEstimatedMeal(){
 }
 
 // ── BARCODE SCANNER ──────────────────────────────────────────
-// Barcode scanning via PHOTO + AI vision — works on every device (iOS included),
-// because it's just an image the AI reads, exactly like the workout-screenshot reader.
-// No live-video BarcodeDetector dependency (that's unsupported on iOS Safari).
+// THREE PATHS, best first: a real live camera scan in the native app; a photo read by AI vision
+// anywhere; and typing the digits, which always works.
+//
+// The photo path is still the only one the web can offer. Its "fast path" tried BarcodeDetector with a
+// comment claiming iOS Safari 17+ supported it — WebKit has never shipped the Shape Detection API, so on
+// every iPhone that check was false and EVERY scan went to the AI: a network round trip, a paid call per
+// scan, nothing at all offline, and worse accuracy than the decoder Apple has shipped in AVFoundation for
+// a decade. That is why BarcodeScannerPlugin exists (AVCaptureMetadataOutput, on-device, no CocoaPods).
+// Barcode scanning is the interaction people judge a food tracker by, so it should feel instant.
+const LiveScan = {
+  _p(){ try{ const P=(window.Capacitor&&window.Capacitor.Plugins)||{}; return P.BarcodeScanner || P.BarcodeScannerPlugin || null; }catch(_){ return null; } },
+  async available(){
+    const p=this._p(); if(!p) return false;
+    try{
+      const r = await p.isAvailable();
+      // A denied permission is a dead end — offer the photo path instead of a black screen.
+      return !!(r && r.available && r.permission !== 'denied' && r.permission !== 'restricted');
+    }catch(_){ return false; }
+  },
+  // Digits on a successful read; null if they cancelled or it cannot run (the caller stays put).
+  async scan(){
+    const p=this._p(); if(!p) return null;
+    try{
+      const r = await p.scan();
+      if(r && r.code) return String(r.code).replace(/\D/g,'');
+      if(r && r.available === false && r.reason && typeof showToast==='function'){
+        showToast('Camera unavailable', r.reason);
+      }
+      return null;                       // cancelled: say nothing, they chose
+    }catch(e){ console.warn('[LiveScan] scan failed', e); return null; }
+  }
+};
+
+async function startLiveBarcodeScan(){
+  const code = await LiveScan.scan();
+  if(!code) return;                      // cancelled or unavailable — the photo path is still on screen
+  const st = document.getElementById('barcode-photo-status');
+  if(st) st.innerHTML = '<span style="color:var(--gr)">Found ' + _escFew(code) + ' \u2014 looking it up\u2026</span>';
+  if(typeof haptic==='function') haptic('success');
+  lookupBarcode(code);
+}
 async function openBarcodeScanner(){
   const m = document.createElement('div');
   m.className = 'modal-bg open';
@@ -20887,8 +20930,11 @@ async function openBarcodeScanner(){
     '<h3 style="margin-bottom:8px">Scan a barcode</h3>' +
     '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">Snap a photo of the product barcode (or pick one from your library). We\'ll read the number and look it up.</p>' +
     // capture="environment" hints the rear camera on phones; without it the OS shows Camera + Library
+    // Revealed only when a live scan can really happen (native + camera + permission not denied), so it
+    // is never a button that does nothing. Fails closed.
+    '<button class="btn primary" id="barcode-live-btn" style="display:none;margin-bottom:8px" onclick="startLiveBarcodeScan()">\u2b1c Scan with camera</button>' +
     '<input type="file" id="barcode-photo-input" accept="image/*" capture="environment" style="display:none" onchange="readBarcodePhoto(event)">' +
-    '<button class="btn primary" onclick="document.getElementById(\'barcode-photo-input\').click()" style="margin-bottom:8px">📷 Take / choose barcode photo</button>' +
+    '<button class="btn primary" id="barcode-photo-btn" onclick="document.getElementById(\'barcode-photo-input\').click()" style="margin-bottom:8px">📷 Take / choose barcode photo</button>' +
     '<div id="barcode-photo-status" style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);text-align:center;margin:6px 0;min-height:16px"></div>' +
     '<div style="display:flex;align-items:center;gap:8px;margin:10px 0"><div style="flex:1;height:1px;background:var(--bd)"></div><span style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">or type it</span><div style="flex:1;height:1px;background:var(--bd)"></div></div>' +
     '<input type="text" id="barcode-manual" placeholder="e.g. 5060337504331" inputmode="numeric" style="font-family:DM Mono,monospace;margin-bottom:10px">' +
@@ -20896,6 +20942,16 @@ async function openBarcodeScanner(){
     '<button class="btn" onclick="closeBarcodeScanner()" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Cancel</button>' +
   '</div>';
   document.body.appendChild(m);
+  // Async, after the modal exists: reveal the live scanner and step the photo button down to secondary,
+  // since photo-plus-AI is the fallback once a real scanner is available.
+  try{
+    LiveScan.available().then(function(ok){
+      if(!ok) return;
+      const b = document.getElementById('barcode-live-btn'); if(b) b.style.display='';
+      const ph = document.getElementById('barcode-photo-btn');
+      if(ph){ ph.className='btn'; ph.style.background='var(--bg3)'; ph.style.border='1px solid var(--bd)'; }
+    });
+  }catch(_){}
 }
 
 // Reads the barcode digits out of a photo using the AI vision model, then looks them up.

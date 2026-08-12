@@ -1263,4 +1263,70 @@ H.section('native reach — things the wrapper unlocks must actually be used');
   H.ok(/_verifyNativeNotifPermission\(\);/.test(H.html), 'and it is actually called after render');
 }
 
+H.section('live barcode scanning — the native path must be real and registered');
+{
+  const fs = require('fs');
+  const path = require('path');
+  const root = path.join(__dirname, '..');
+  const swiftPath = path.join(root, 'ios/App/App/BarcodeScannerPlugin.swift');
+
+  H.ok(fs.existsSync(swiftPath), 'BarcodeScannerPlugin.swift exists');
+  const sw = fs.existsSync(swiftPath) ? fs.readFileSync(swiftPath, 'utf8') : '';
+
+  // The v408 bug, three times over now: a jsName that doesn't match the JS lookup is a silent no-op.
+  const jsName = (sw.match(/jsName\s*=\s*"([A-Za-z]+)"/) || [])[1];
+  H.eq(jsName, 'BarcodeScanner', 'the plugin declares the jsName the app looks up');
+  // Either form: `Plugins.BarcodeScanner`, or `P.BarcodeScanner` after destructuring Plugins as P
+  // (the house pattern in SaveFile/HealthWrite/LiveScan).
+  H.ok(/(?:Plugins|\bP)\.BarcodeScanner\b/.test(H.html), 'index.html looks it up under that name');
+
+  // The v415 bug: an app-target plugin is compiled but NEVER auto-discovered, so it must be registered
+  // by instance. Without this the scan button is revealed by a check that can never pass — or worse.
+  const vc = fs.readFileSync(path.join(root, 'ios/App/App/ViewController.swift'), 'utf8');
+  H.ok(/registerPluginInstance\(BarcodeScannerPlugin\(\)\)/.test(vc), 'it is registered in capacitorDidLoad');
+
+  // And it has to actually be in the build. Four pbxproj entries or it never compiles in.
+  const pbx = fs.readFileSync(path.join(root, 'ios/App/App.xcodeproj/project.pbxproj'), 'utf8');
+  const refs = (pbx.match(/BarcodeScannerPlugin\.swift/g) || []).length;
+  H.ok(refs >= 4, 'the Xcode project references it in all four places (found ' + refs + ')');
+  H.ok(/BarcodeScannerPlugin\.swift in Sources/.test(pbx), 'and it is in the Sources build phase');
+
+  // It must never reject an ordinary outcome — the JS falls back, and a rejection reads as a crash.
+  H.ok(/"cancelled": true/.test(sw), 'a cancelled scan resolves rather than rejecting');
+  H.ok(/viewWillDisappear/.test(sw), 'a swipe-dismiss still answers the promise (no hung await)');
+  H.ok(/metadataObjectTypes = formats/.test(sw), 'the formats are set AFTER addOutput, or the list is empty');
+  H.ok(/digits\.count >= 8/.test(sw), 'a too-short read is ignored rather than looked up');
+
+  // Fails closed on the web: the button starts hidden and is only revealed by the async check.
+  const btn = (H.html.match(/<button[^>]*id="barcode-live-btn"[^>]*>/) || [''])[0];
+  H.ok(/display:none/.test(btn), 'the live-scan button is hidden until proven available');
+  H.ok(/LiveScan\.available\(\)\.then/.test(H.html), 'and revealed only when a live scan can really happen');
+  H.ok(/permission !== 'denied'/.test(H.html), 'a denied camera permission counts as unavailable');
+
+  // The claim that started it: BarcodeDetector never existed in WebKit.
+  const code = H.html.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  H.ok(!/iOS Safari 17\+/.test(code), 'the false "iOS Safari 17+ supports BarcodeDetector" claim is gone');
+  H.ok(/'BarcodeDetector' in window/.test(code), 'the web fast path is still tried where it does exist');
+}
+
+H.section('the voice is universal — copy must not assume a man');
+{
+  // The soul note is explicit: the founder's story stays "big brother", but the APP's voice serves men
+  // and women both, and the app even knows the person's sex (userSex). The Grow tab still told every
+  // reader "Discipline of the body is discipline of the man". BROTHER_VOICE is exempt on purpose — it
+  // adapts ("a big brother to a man, a big sister to a woman"), which is the correct pattern.
+  // Strip BOTH comment kinds. The JS-comment-only version of this failed on the HTML comment recording
+  // what the old copy said — the third time in this file that a ratchet caught its own documentation.
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  const assumesMale = [
+    'discipline of the man', 'the man you want to be', 'be a better man', 'man up',
+    'be the man ', 'as a man,', 'every man '
+  ].filter(p => code.toLowerCase().includes(p));
+  H.eq(assumesMale, [], 'no user-facing copy assumes the reader is a man');
+  H.ok(/big sister to a woman/.test(H.html), 'the voice still adapts to sex where it should (BROTHER_VOICE)');
+}
+
 H.report();

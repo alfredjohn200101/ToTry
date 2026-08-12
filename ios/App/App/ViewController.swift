@@ -25,5 +25,7 @@ class ViewController: CAPBridgeViewController {
         // Same reason: an app-target plugin is compiled but never auto-discovered.
         bridge?.registerPluginInstance(HealthWritePlugin())
         bridge?.registerPluginInstance(ShareFilePlugin())
+        // The live barcode scanner. Same reason again: an app-target plugin is never auto-discovered.
+        bridge?.registerPluginInstance(BarcodeScannerPlugin())
     }
 }
