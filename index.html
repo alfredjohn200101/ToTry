@@ -4560,7 +4560,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v426';
+const APP_VERSION = 'v427';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9047,6 +9047,21 @@ function applyFaithUIGate(){
       const el = document.getElementById(id);
       if(el) el.style.display = show ? '' : 'none';
     });
+    // THE SACRAMENTS TAB IS CHRISTIAN-SPECIFIC — Confession, the Eucharist, Mass. It lived in the static
+    // HTML (index.html:2825) and NOTHING ever gated it: #bst-sacraments appears exactly once in the whole
+    // file, and applyFaithUIGate only ever touched the common-ground and fasting elements. Verified by
+    // driving it: the tab rendered visible for islam, buddhism and secular alike, while the vocabulary
+    // layer correctly called their book the Qur'an, the Dhammapada and the Stoics. So the app offered a
+    // Muslim a Confession tracker as if it were his. "Faith is full but never forced" cuts both ways —
+    // full for a Catholic, never imposed on anyone else.
+    const sac = document.getElementById('bst-sacraments');
+    if(sac){
+      const christian = (t === 'christianity');
+      sac.style.display = christian ? '' : 'none';
+      // If they were standing on that tab when they changed tradition, move them somewhere that is theirs
+      // rather than leaving a hidden tab's panel on screen.
+      if(!christian && sac.classList.contains('active') && typeof setBibleTab === 'function') setBibleTab('read');
+    }
     const fd = document.getElementById('hub-fast-desc');
     if(fd){
       const own = FAST_SEASON_NAME[t];
@@ -36885,6 +36900,9 @@ function renderGoals(){
 
 
 function setBibleTab(tab){
+  // Belt and braces with applyFaithUIGate: hiding a button is not the same as making a destination
+  // unreachable, and this is called from several places.
+  if(tab === 'sacraments' && typeof faithTradition === 'function' && faithTradition() !== 'christianity') tab = 'read';
   ['find','read','saved','prayer','sacraments'].forEach(t=>{
     const p=document.getElementById('bible-'+t+'-panel');
     const b=document.getElementById('bst-'+t);

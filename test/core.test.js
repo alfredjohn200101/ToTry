@@ -1440,4 +1440,35 @@ H.section('loading the bar — plate maths');
   H.ok(/function openPlateMath\(/.test(H.html), 'and the sheet it opens exists');
 }
 
+H.section('faith is full but never forced — Christian-only features stay Christian-only');
+{
+  // The Sacraments tab (Confession, Eucharist, Mass) sat in the static HTML with NO gate at all:
+  // #bst-sacraments appeared exactly once in the whole file and applyFaithUIGate never touched it. Driven
+  // and confirmed: it rendered for islam, buddhism and secular while the vocabulary layer correctly named
+  // their book the Qur'an / Dhammapada / the Stoics. The app was offering a Muslim a Confession tracker.
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+
+  // 1. The button is gated by tradition in the faith gate.
+  const gate = code.slice(code.indexOf('function applyFaithUIGate('));
+  const gateBody = gate.slice(0, gate.indexOf('\nfunction '));
+  H.ok(/bst-sacraments/.test(gateBody), 'applyFaithUIGate gates the Sacraments tab');
+  H.ok(/christian/i.test(gateBody), 'and it gates it on the tradition being christianity');
+
+  // 2. Hiding a button is not the same as making the destination unreachable.
+  const setter = code.slice(code.indexOf('function setBibleTab('));
+  const setterBody = setter.slice(0, setter.indexOf('\n}'));
+  H.ok(/sacraments'.*faithTradition\(\)/.test(setterBody.replace(/\n/g, ' ')),
+    'setBibleTab itself refuses the sacraments destination for a non-Christian');
+
+  // 3. The gate has to actually run when the tradition changes.
+  H.ok(/applyFaithUIGate\(\)/.test(code.replace('function applyFaithUIGate()', '')),
+    'applyFaithUIGate is actually called somewhere');
+
+  // 4. faithTradition must keep defaulting to secular — the whole gate inverts if this flips.
+  const ft = code.slice(code.indexOf('function faithTradition('));
+  H.ok(/secular/.test(ft.slice(0, 260)), 'faithTradition still defaults to secular');
+}
+
 H.report();
