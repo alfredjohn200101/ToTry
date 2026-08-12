@@ -3,20 +3,41 @@
 Everything on the code side is done and **verified against a real Release archive** (Xcode 26.6,
 `ARCHIVE SUCCEEDED`). What's below is only the GUI work, which needs your hands and your Apple ID.
 
+## 0 · Two things only you can do (everything else is done)
+
+| # | What | Why it matters | Where |
+|---|------|----------------|-------|
+| 1 | **Deploy the `delete-user` edge function** | Guideline 5.1.1(v) requires deleting the ACCOUNT, not just its rows. Until it is deployed, "Delete account permanently" honestly tells the person their email and sign-in still exist on the server — correct, but not what the privacy policy promises. Reviewers test this flow. | Supabase dashboard → Edge Functions → Deploy a new function → name it **exactly** `delete-user` → paste `supabase/functions/delete-user/index.ts` → Deploy. Leave "Verify JWT" ON. **No secrets to set** — all three env vars are injected automatically. |
+| 2 | **Register your iPhone** *(optional — only to run a dev build on the phone)* | Your iPhone is paired and visible to the Mac, but it is not registered in the developer account and there is no iOS **Development** profile for `app.totry` — only `ToTryAppStore`. So a dev build cannot install. This does **not** block submission: archiving uses the distribution profile, which exists and is valid. | Xcode → open `ios/App/App.xcodeproj` → pick **Alfred's iPhone** as the destination → **Product ▸ Run** → click **Register** when prompted. Needs your Apple ID in Xcode ▸ Settings ▸ Accounts. Or skip it entirely: archive and upload, then install through **TestFlight**, which also tests the exact build you are submitting. |
+
+**Not verified by me, and honestly so:** live barcode scanning and the Face ID lock. A simulator has no
+camera and no biometry, so neither can be exercised there. Both compile, are registered, and fail closed —
+the scan button stays hidden and the lock never engages when the capability is absent, which I did verify.
+The scan itself and a real Face ID prompt need a physical device.
+
 Verified in the actual shipping bundle, not just the repo:
 
 | Check | Result |
 |---|---|
 | Release archive builds | ✅ `ARCHIVE SUCCEEDED` |
 | `PrivacyInfo.xcprivacy` **inside** the .app | ✅ present, 9 data types |
-| Web assets shipped | ✅ `v396`, all 11 files incl. `privacy.html`, `support.html` |
+| Web assets shipped | ✅ `v424`, incl. `privacy.html`, `support.html` and `vendor/supabase-js.js` (if that vendor file is ever missing from `www/`, the app boots to the offline fallback instead of itself) |
 | Build number | ✅ **3** (ASC already holds 2 — uploading 2 is rejected before review) |
 | Version | `1.0` · bundle id `app.totry` · display name **To Try** |
-| Usage descriptions in built plist | ✅ Camera, HealthShare, HealthUpdate, PhotoLibrary, PhotoLibraryAdd |
+| Usage descriptions in built plist | ✅ Camera, HealthShare, HealthUpdate, PhotoLibrary, PhotoLibraryAdd, **FaceID** (v424 — mandatory; iOS terminates the app without it) |
+| Every usage string describes what the code DOES | ✅ v421/v424 — HealthShare no longer claims the data never leaves the device (it syncs, and sleep + training reach the AI); PhotoLibraryAdd now describes the share-sheet "Save Image" it is really for |
+| Opens with **no network** | ✅ v420 — the Supabase SDK is vendored (`vendor/supabase-js.js`), not fetched. It used to hang forever on jsdelivr, and the native shell has no service worker to fall back on: a reviewer in Airplane Mode saw a dead app (2.1) |
+| Export actually produces a file | ✅ v419 — `<a download>` is a no-op in a WKWebView; `ShareFilePlugin` presents the share sheet |
+| No external payment links (3.1.1) | ✅ v419 — the Buy-me-a-coffee card is hidden in the native build, unchanged on the web |
+| No advertised integration that cannot work (2.1) | ✅ v421 — Google Health is gated off iOS (`capacitor://localhost/` can never be a valid Google redirect URI) |
+| No unbacked contest/raffle promise | ✅ v422 — four places promised a raffle with no prize, rules, draw or terms; gated behind `RAFFLE_ACTIVE` |
+| Crisis paths intact and tappable | ✅ v422 — the AI crisis response renders 6 `tel:` links; the dead IASP directory link (301s to their homepage) is now findahelpline.com |
+| Pinch-to-zoom actually works | ✅ v420 — `ios.zoomEnabled: true`. The v418 viewport change alone did nothing: Capacitor disables the pinch recogniser unless that key is set |
+| Haptics work on iPhone | ✅ v422 — every haptic was a no-op (`navigator.vibrate` does not exist in WebKit); now @capacitor/haptics |
 | **HealthUpdate is now actually USED** | ✅ v417 — `HealthWritePlugin` writes finished workouts + weigh-ins. Before this, the app requested write access it had no code for, and both the usage string and privacy.html described a feature that did not exist. Apple checks that a requested permission is used |
 | `ITSAppUsesNonExemptEncryption` | ✅ `false` — you will **not** be asked the export-compliance question |
 | Icons | ✅ `Assets.car` + AppIcon variants |
-| Account deletion (5.1.1(v), mandatory) | ✅ deletes `user_data`, `push_subscriptions`, `feedback` |
+| Account deletion (5.1.1(v), mandatory) | ⚠️ **ONE STEP LEFT — see §0.** Deletes `user_data`, `push_subscriptions`, `feedback` **and now the auth user itself** via the `delete-user` edge function (v421). Until it is deployed the app honestly reports that the account itself survived. |
 | Row Level Security on every table | ✅ enabled + policies, 12 Aug 2026 (`supabase-rls-fix.sql`) — verified signed-out: `user_data` and `feedback` return 0 rows to the public anon key |
 | DELETE policies so deletion is truthful | ✅ in the same script — without them `deleteAccount()` reported success while rows survived |
 
