@@ -29,7 +29,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>To Try uses your camera to scan food barcodes and take meal and form-check photos, so you can log what you eat and check your lifts.</string>
 	<key>NSHealthShareUsageDescription</key>
-	<string>To Try reads your steps, active energy, workouts, heart rate, mindful minutes and sleep from Apple Health so your movement, training and rest count toward your day automatically — no manual logging. Your health data stays on your device and is never uploaded or shared.</string>
+	<string>To Try reads your steps, active energy, workouts, heart rate, mindful minutes and sleep from Apple Health so your movement, training and rest count toward your day automatically — no manual logging. Your sleep and imported workout summaries are saved to your account so they follow you between devices, and your sleep and recent training form part of the context sent to the AI when you ask for coaching. Never used for advertising, never sold, never shared with anyone else.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>To Try can record activity you log here back to Apple Health, so your data stays in one place.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

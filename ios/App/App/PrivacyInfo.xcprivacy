@@ -40,8 +40,11 @@
 			</array>
 		</dict>
 		<!-- Training, nutrition, weight, sleep, steps, and self-logged cycle data. Cycle data stays on
-		     the device unless the person switches backup on themselves. Apple Health is read only with
-		     permission, computed on-device, and never uploaded or sent to any AI provider. -->
+		     the device unless the person switches backup on themselves. Apple Health is read only with permission. It is NOT held apart from the
+		     rest of the day: sleep, steps and imported workout summaries sync to the account, and sleep
+		     and recent training are part of the coach context — which is why this entry is declared
+		     collected and linked. The usage string and privacy.html said otherwise until v421; they were
+		     wrong, and this declaration was right. -->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeHealthAndFitness</string>

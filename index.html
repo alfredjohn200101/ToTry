@@ -1273,7 +1273,7 @@ input:focus,textarea:focus,select:focus{
     <div class="eyebrow" style="font-size:10px;margin-bottom:8px">Health</div>
     <div class="vchips" style="margin-bottom:14px">
       <div class="vchip" onclick="toggleAppChip(this,&apos;applehealth&apos;)">Apple Health</div>
-      <div class="vchip" onclick="toggleAppChip(this,&apos;googlehealth&apos;)">Google Health</div>
+      <div class="vchip" id="ob-chip-googlehealth" style="display:none" onclick="toggleAppChip(this,&apos;googlehealth&apos;)">Google Health</div>
     </div>
     
     <div style="display:flex;flex-direction:column;gap:8px">
@@ -3038,6 +3038,12 @@ input:focus,textarea:focus,select:focus{
       </div>
       <button class="btn" id="health-write-btn" style="width:auto;padding:7px 12px;font-size:12px;margin:0;background:var(--bg3);border:1px solid var(--bd)" onclick="toggleHealthWrite()">Turn on</button>
     </div>
+    <!-- THE WAY OUT. totry_health_connected was only ever written true — nothing in the app could turn
+         Apple Health off again, so the only way to stop the reading was to revoke it in iOS Settings.
+         An integration you can switch on and never off is not a choice. Shown only when connected. -->
+    <div id="health-off-row" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--bd);text-align:right">
+      <button class="btn" id="health-off-btn" style="width:auto;padding:6px 11px;font-size:11.5px;margin:0;background:transparent;border:1px solid var(--bd);color:var(--tx3)" onclick="disconnectAppleHealth()">Turn off Apple Health</button>
+    </div>
   </div>
   <!-- ── DAILY LOGS (top — 5-second daily actions) ── -->
   <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">
@@ -4530,7 +4536,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v420';
+const APP_VERSION = 'v421';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4669,6 +4675,7 @@ async function proceedAfterAuth(user){
       document.getElementById('onboard').classList.add('active');
       document.getElementById('onboard').style.display = 'block';
       try{ const sc=document.getElementById('ob-chip-strava'); if(sc && typeof isStravaApproved==='function' && isStravaApproved()) sc.style.display=''; }catch(_){}
+        try{ const gh=document.getElementById('ob-chip-googlehealth'); if(gh && !(typeof isNativeApp==='function' && isNativeApp())) gh.style.display=''; }catch(_){}
     }
     startSyncLoop();
     haptic('celebrate');
@@ -5810,6 +5817,24 @@ async function connectAppleHealth(){
   }catch(e){ if(typeof showToast==='function') showToast('Couldn’t connect', String(e&&e.message||e)); }
   renderHealthCard();
 }
+
+// THE WAY OUT of Apple Health. totry_health_connected was only ever set true, and every sync is gated on
+// Health.connected() — so once connected, the app kept reading and syncing for good and the only exit was
+// buried in iOS Settings. privacy.html now tells people they can stop it here, so it has to be true here.
+//
+// Honest about its own limits: this stops the app reading and syncing. It cannot revoke the iOS permission
+// itself (no API does), so it says where that lives. And it does NOT delete what was already imported —
+// silently erasing weeks of a person's training history would be the worse surprise — but it says so
+// plainly, and Settings → Your data → Delete still removes it all.
+async function disconnectAppleHealth(){
+  if(!confirm('Turn off Apple Health?\n\nThe app stops reading your steps, sleep and workouts, and stops syncing them to your account.\n\nWhat you\'ve already imported stays in your history. To revoke the permission itself, use iOS Settings → Health → Data Access & Devices → To Try.')) return;
+  try{ ls('totry_health_connected', false); }catch(_){}
+  // The write side rides on the same grant — leaving it "on" would be a switch pointing at nothing.
+  try{ ls('totry_health_write', false); }catch(_){}
+  try{ if(typeof logEvent==='function') logEvent('health_disconnect',{}); }catch(_){}
+  try{ if(typeof showToast==='function') showToast('Apple Health off', 'No more reading or syncing. Revoke the permission in iOS Settings → Health.'); }catch(_){}
+  try{ renderHealthCard(); }catch(_){}
+}
 // The write row's own state. Separate function, called from renderHealthCard, so the read card's logic
 // stays readable — and so this can be called on its own after the toggle.
 function renderHealthWriteRow(){
@@ -5853,20 +5878,24 @@ function renderHealthCard(){
   try{
     const card=document.getElementById('health-connect-card'); if(!card) return;
     const title=document.getElementById('health-connect-title'), sub=document.getElementById('health-connect-sub'), btn=document.getElementById('health-connect-btn');
+    const off=document.getElementById('health-off-row');
     card.style.display='block';
     // Web/PWA is the beta — HealthKit is native-only. Be honest (a heads-up), never a dead button.
     if(typeof Health==='undefined' || !Health.isNative()){
       if(title) title.textContent='Apple Health';
       if(sub) sub.textContent='Automatic steps & activity sync arrives with the To Try app on the App Store — you’ll sign in with this same email and pick up right here.';
       if(btn) btn.style.display='none';
+      if(off) off.style.display='none';
       return;
     }
     if(btn) btn.style.display='';
     if(Health.connected()){
+      if(off) off.style.display='block';
       if(title) title.textContent='Apple Health connected';
       if(sub) sub.textContent='Steps & activity sync automatically each time you open the app.';
       if(btn){ btn.textContent='Sync now'; btn.disabled=false; btn.onclick=async function(){ btn.textContent='Syncing…'; btn.disabled=true; const s=await Health.syncToday(); const b=[]; if(s&&s.steps)b.push(s.steps.toLocaleString()+' steps'); if(s&&s.active)b.push(s.active+' cal'); if(typeof showToast==='function') showToast('Synced', b.length?('Apple Health · '+b.join(' · ')):'Up to date.'); btn.textContent='Sync now'; btn.disabled=false; }; }
     } else {
+      if(off) off.style.display='none';
       if(title) title.textContent='Connect Apple Health';
       if(sub) sub.textContent='Pull your steps and activity in automatically — no manual logging.';
       if(btn){ btn.textContent='Connect'; btn.disabled=false; btn.onclick=connectAppleHealth; }
@@ -6422,6 +6451,7 @@ async function checkAuthAndStart(){
         document.getElementById('onboard').classList.add('active');
         document.getElementById('onboard').style.display = 'block';
         try{ const sc=document.getElementById('ob-chip-strava'); if(sc && typeof isStravaApproved==='function' && isStravaApproved()) sc.style.display=''; }catch(_){}
+        try{ const gh=document.getElementById('ob-chip-googlehealth'); if(gh && !(typeof isNativeApp==='function' && isNativeApp())) gh.style.display=''; }catch(_){}
       }
       
       startSyncLoop();
@@ -35026,6 +35056,23 @@ async function deleteAccount(){
       await _del('user_data', 'user_id', _uid, 'your logged data');
       await _del('push_subscriptions', 'user_id', _uid, 'your notification registration');
       if(_email) await _del('feedback', 'email', _email, 'messages you sent me');
+      // THE ACCOUNT ITSELF — the auth.users row, which is what holds their email address. Deleting rows
+      // is not deleting an account: signing in with the same email returned the same user id, so the app
+      // said "Account deleted" while the account was still there. That needs the service-role key, which a
+      // browser must never hold, so it lives in the delete-user edge function
+      // (supabase/functions/delete-user/index.ts). Must run BEFORE signOut — afterwards there is no JWT to
+      // authorise it with. If it fails, or is not deployed yet, it joins _failed and the person is told the
+      // truth rather than a comforting lie.
+      try{
+        const { data: _du, error: _duErr } = await sb.functions.invoke('delete-user');
+        if(_duErr || !(_du && _du.ok)){
+          _failed.push('your account itself (your email address and sign-in)');
+          console.warn('[delete] delete-user:', _duErr || _du);
+        }
+      }catch(e){
+        _failed.push('your account itself (your email address and sign-in)');
+        console.warn('[delete] delete-user threw:', e);
+      }
       window.__deleteFailures = _failed;
       // Sign out
       try{ await sb.auth.signOut(); }catch(e){ console.warn('[delete] signOut failed:', e); }
@@ -35141,7 +35188,13 @@ function showTermsOfUse(){
       '<p style="margin-bottom:12px">The app is provided "as is." It might break, it might lose data despite my best efforts, the AI might say something you disagree with, a third-party service might go down. I will work to fix things, but I cannot promise uninterrupted service or be liable for damages from app failure. Export your important data regularly.</p>' +
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">6. Free, sustained by goodwill</strong></p>' +
-      '<p style="margin-bottom:12px">This app is free and ad-free. Running it costs me money in AI API calls and hosting. If you find it valuable and want to help keep it free for others, you can support the project (link in Settings). Donations are entirely optional and never unlock features.</p>' +
+      '<p style="margin-bottom:12px">This app is free and ad-free. Running it costs me money in AI API calls and hosting. ' +
+      // The support link is hidden in the App Store build (Guideline 3.1.1), so the terms must not
+      // point at it there — otherwise this promises a button that isn't on the screen.
+      ((typeof isNativeApp==='function' && isNativeApp())
+        ? 'Nothing is paywalled, and no feature is ever unlocked by paying.'
+        : 'If you find it valuable and want to help keep it free for others, you can support the project (link in Settings). Donations are entirely optional and never unlock features.') +
+      '</p>' +
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">7. Your data, your account</strong></p>' +
       '<p style="margin-bottom:12px">One account per person. You can export your data or delete your account at any time. See the Privacy policy for how data is handled.</p>' +
@@ -38848,7 +38901,13 @@ function showAddAppPicker(){
   const stravaOk = (typeof isStravaApproved==='function') && isStravaApproved();
   const available = Object.entries(APP_REGISTRY)
     .filter(([id]) => !used.includes(id))
-    .filter(([id]) => id !== 'strava' || stravaOk);
+    .filter(([id]) => id !== 'strava' || stravaOk)
+    // Google Health cannot work in the iOS shell at all: GOOGLE_REDIRECT_URI becomes
+    // capacitor://localhost/, which a Google web client rejects outright (redirect_uri_mismatch), and
+    // Capacitor hands accounts.google.com to Safari with no route back into the app. So it was a
+    // guaranteed error page sitting next to Apple Health, which already covers iOS — a visibly broken
+    // advertised integration (Guideline 2.1). Still offered on the web, where it works.
+    .filter(([id]) => id !== 'googlehealth' || !(typeof isNativeApp==='function' && isNativeApp()));
   
   if(available.length === 0){
     showToast('All linked','You\'re using all the apps we support.');

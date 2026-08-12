@@ -1146,4 +1146,58 @@ H.section('the app boots with no network');
     'the brand-new-and-offline path shows the honest note, and the element exists');
 }
 
+H.section('promises the code must keep');
+{
+  // This project's second signature failure is not a crash — it is a claim the mechanism does not
+  // honour: a usage description, a policy line or a toast that says more than the code does. Each
+  // assertion below pairs a PROMISE with the MECHANISM that has to exist for it to be true.
+  const fs = require('fs');
+  const path = require('path');
+  const root = path.join(__dirname, '..');
+  const plist = fs.readFileSync(path.join(root, 'ios/App/App/Info.plist'), 'utf8');
+  const priv = fs.readFileSync(path.join(root, 'privacy.html'), 'utf8');
+
+  // 1. HealthKit. The app syncs sleep/steps/workout summaries to Supabase and puts sleep + recent
+  //    training in the AI brief, while Info.plist and privacy.html both said it never leaves the phone.
+  //    If the sync exists, the promise must not.
+  const healthSyncs = /syncToCloud\('totry_trackers'/.test(H.html) && /syncToCloud\('totry_workouts'/.test(H.html);
+  H.ok(healthSyncs, 'health data really does sync (if this flips, revisit the wording below)');
+  const share = (plist.match(/<key>NSHealthShareUsageDescription<\/key>\s*<string>([\s\S]*?)<\/string>/) || [])[1] || '';
+  H.ok(share.length > 40, 'NSHealthShareUsageDescription exists');
+  H.ok(!/never uploaded|stays on your device|never leaves|not shared/i.test(share),
+    'the HealthKit consent sheet does not promise the data stays on the device — it does not');
+  const healthItem = (priv.match(/<li><strong>Apple Health[\s\S]*?<\/li>/) || [''])[0];
+  H.ok(healthItem.length > 100, 'privacy.html has an Apple Health item');
+  H.ok(!/not uploaded to my database/i.test(healthItem), 'privacy.html no longer claims Health is never uploaded');
+  H.ok(!/not sent to any AI provider/i.test(healthItem), 'privacy.html no longer claims Health never reaches an AI provider');
+
+  // 2. privacy.html tells people they can turn Apple Health off in the app, so that has to exist.
+  //    totry_health_connected was previously only ever written true.
+  if (/turning Apple Health off in the app/i.test(healthItem)) {
+    H.ok(/function disconnectAppleHealth/.test(H.html), 'the Apple Health off switch exists');
+    H.ok(/ls\('totry_health_connected',\s*false\)/.test(H.html), 'it actually clears totry_health_connected');
+    H.ok(/onclick="disconnectAppleHealth\(\)"/.test(H.html), 'and it is reachable from the UI');
+  }
+
+  // 3. "Delete your account permanently" has to delete the account, not just its rows. The auth.users
+  //    row holds the email; only the delete-user edge function can remove it, and it needs the JWT, so
+  //    it must run BEFORE signOut.
+  const da = H.html.slice(H.html.indexOf('async function deleteAccount('));
+  const body = da.slice(0, da.indexOf('\n// ── PRIVACY'));
+  H.ok(/functions\.invoke\('delete-user'\)/.test(body), 'deleteAccount deletes the account itself');
+  const iInvoke = body.indexOf("functions.invoke('delete-user')");
+  const iSignOut = body.indexOf('auth.signOut()');
+  H.ok(iInvoke > 0 && iSignOut > 0 && iInvoke < iSignOut, 'it runs before signOut, while there is still a JWT');
+  H.ok(/_failed\.push\('your account itself/.test(body), 'a refusal is confessed, never reported as success');
+  H.ok(fs.existsSync(path.join(root, 'supabase/functions/delete-user/index.ts')), 'the edge function is versioned in the repo');
+
+  // 4. Nothing may be offered on iOS that cannot work there. Google Health OAuth cannot: the redirect
+  //    URI becomes capacitor://localhost/, which a Google web client rejects.
+  H.ok(/id !== 'googlehealth' \|\| !\(typeof isNativeApp==='function' && isNativeApp\(\)\)/.test(H.html),
+    'the app picker hides Google Health in the native build');
+  const ghChip = (H.html.match(/<div class="vchip" id="ob-chip-googlehealth"[^>]*>/) || [''])[0];
+  H.ok(/display:none/.test(ghChip), 'the onboarding Google Health chip fails closed (hidden until proven safe)');
+  H.ok(/ob-chip-googlehealth'\);\s*if\(gh && !\(typeof isNativeApp/.test(H.html), 'and is revealed only off-native');
+}
+
 H.report();
