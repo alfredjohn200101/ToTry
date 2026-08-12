@@ -1388,4 +1388,56 @@ H.section('app lock — must never lock a person out of their own journal');
   H.ok(/_lockHiddenAt\) > 20000/.test(H.html), 'only a real absence re-locks, not every sheet that hides the webview');
 }
 
+H.section('loading the bar — plate maths');
+{
+  // The last real gap against Hevy/Strong. Core math, so it gets real assertions: at the rack, a wrong
+  // answer means unracking and starting again.
+  const { platesForSide } = H.load(['platesForSide'], { PLATES_KG: [25, 20, 15, 10, 5, 2.5, 1.25] });
+  const side = (t, b) => platesForSide(t, b).perSide;
+
+  H.eq(side(102.5, 20), [25, 15, 1.25], '102.5kg on a 20kg bar → 25 + 15 + 1.25 per side');
+  H.eq(side(100, 20), [25, 15], '100kg → 25 + 15');
+  H.eq(side(60, 20), [20], '60kg → a single 20');
+  H.eq(side(22.5, 20), [1.25], '22.5kg → the smallest plate');
+  H.eq(side(20, 20), [], 'exactly the bar → no plates, not an error');
+  H.eq(side(132.5, 20), [25, 25, 5, 1.25], 'repeats a plate when needed, with no float drift');
+  H.eq(side(65, 15), [25], 'a 15kg bar changes the answer');
+  H.eq(side(47.5, 10), [15, 2.5, 1.25], 'and so does a 10kg bar');
+
+  // Every multiple of 2.5 above the bar must land EXACTLY — that is the whole promise. NOT 1.25: plates
+  // load in PAIRS, so the smallest 1.25kg plate adds 2.5kg to the total. This assertion failed at 113/225
+  // when it was written as 1.25 and caught exactly that error in the comment shipped beside the code.
+  let exact = 0, checked = 0;
+  for (let t = 20; t <= 300; t += 2.5) {
+    const r = platesForSide(t, 20);
+    checked++;
+    if (r.off === 0 && r.achieved === +t.toFixed(2)) exact++;
+  }
+  H.eq(exact, checked, 'every 1.25kg step from 20 to 300kg loads exactly (' + checked + ' targets)');
+
+  // And when it CANNOT be exact, it says so rather than silently rounding.
+  const odd = platesForSide(101, 20);
+  H.eq(odd.achieved, 100, '101kg is not loadable — the closest is 100kg');
+  H.eq(odd.off, -1, 'and it reports being 1kg under, not a false exact match');
+  H.ok(!odd.under, '101kg is over the bar, so it is not the under-the-bar case');
+
+  // Below the bar is its own honest answer, never negative plates.
+  const under = platesForSide(15, 20);
+  H.ok(under.under === true, '15kg on a 20kg bar reports under:true');
+  H.eq(under.perSide, [], 'and asks for no plates');
+  H.eq(under.achieved, 20, 'the bar alone is what you would be lifting');
+
+  // 1.25kg above the bar is NOT reachable — one plate cannot go on one side only.
+  const halfStep = platesForSide(21.25, 20);
+  H.eq(halfStep.perSide, [], '21.25kg asks for half a pair, so no plates fit');
+  H.eq(halfStep.off, -1.25, 'and it says so: 1.25kg under, never a false exact');
+
+  H.eq(platesForSide('abc', 20), null, 'garbage in → null, not NaN plates');
+  H.eq(platesForSide(100, 'x'), null, 'a garbage bar → null too');
+
+  // The UI must be reachable from the exercise row, or the maths is dead code.
+  H.ok(/onclick="openPlateMath\('\+ei\+'\)"/.test(H.html), 'every exercise row has a Plates button');
+  H.ok(/function openPlateMath\(/.test(H.html), 'and the sheet it opens exists');
+}
+
 H.report();

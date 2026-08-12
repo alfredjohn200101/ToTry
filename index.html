@@ -4560,7 +4560,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v425';
+const APP_VERSION = 'v426';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -28977,6 +28977,122 @@ async function showExerciseForm(name){
   html += '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-align:center;margin-top:10px;letter-spacing:0.08em">' + info.source + '</div>';
   body.innerHTML = html;
 }
+// ── LOADING THE BAR ──────────────────────────────────────────────────────────────────────────────
+// The last real gap against Hevy and Strong: you know you want 102.5kg, and standing at the rack you
+// have to work out what that is in plates.
+//
+// The thing that is easy to get wrong — and that my own test caught me getting wrong in this comment —
+// is the step size. Plates load in PAIRS, so the smallest 1.25kg plate adds 2.5kg to the TOTAL. Every
+// multiple of 2.5 above the bar is loadable exactly; 101kg is not, and never will be. When a target
+// isn't reachable this says the closest it can actually do and by how much, instead of silently
+// rounding and being wrong at the rack.
+// Unlimited plates is assumed on purpose: pretending to know your gym's inventory would be false
+// precision, and the count per side is what you need.
+const PLATES_KG = [25, 20, 15, 10, 5, 2.5, 1.25];
+const BARS_KG = [20, 15, 10];
+
+function platesForSide(target, bar, plates){
+  const t = parseFloat(target), b = parseFloat(bar);
+  if(!isFinite(t) || !isFinite(b) || b < 0) return null;
+  const avail = ((plates && plates.length) ? plates.slice() : PLATES_KG.slice()).sort((x, y) => y - x);
+  if(t < b) return { bar: b, perSide: [], achieved: b, off: +(b - t).toFixed(2), under: true };
+  // Greedy is exact here because every plate is a multiple of the smallest (1.25).
+  let rem = +(((t - b) / 2).toFixed(4));
+  const perSide = [];
+  for(const p of avail){
+    while(rem + 1e-9 >= p){ perSide.push(p); rem = +((rem - p).toFixed(4)); }
+  }
+  const loaded = perSide.reduce((a, x) => a + x, 0);
+  const achieved = +((b + 2 * loaded).toFixed(2));
+  return { bar: b, perSide: perSide, achieved: achieved, off: +((achieved - t).toFixed(2)), under: false };
+}
+
+function _plateChipsHTML(r){
+  if(!r) return '';
+  if(r.under){
+    return '<div style="font-size:12.5px;color:var(--go);line-height:1.6">That’s under the bar on its own — the bar is ' +
+      r.bar + 'kg.</div>';
+  }
+  const chips = r.perSide.length
+    ? r.perSide.map(function(p){
+        return '<span style="display:inline-block;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;' +
+          'padding:6px 11px;font-family:DM Mono,monospace;font-size:14px;color:var(--tx);margin:0 5px 5px 0">' + p + '</span>';
+      }).join('')
+    : '<span style="font-size:12.5px;color:var(--tx3)">Just the bar.</span>';
+  const off = r.off === 0
+    ? ''
+    : '<div style="font-size:12px;color:var(--go);line-height:1.55;margin-top:8px">Closest you can actually load is <b>' +
+      r.achieved + 'kg</b> — ' + (r.off > 0 ? r.off + 'kg over' : Math.abs(r.off) + 'kg under') +
+      ' what you asked for. Plates go on both sides, so the total can only move in 2.5kg steps.</div>';
+  return '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;' +
+      'letter-spacing:0.12em;margin-bottom:7px">Per side</div>' +
+    '<div>' + chips + '</div>' +
+    '<div style="font-size:12.5px;color:var(--tx2);margin-top:9px">' + r.bar + 'kg bar + ' +
+      r.perSide.length + ' plate' + (r.perSide.length === 1 ? '' : 's') + ' each side = <b style="color:var(--tx)">' +
+      r.achieved + 'kg</b></div>' + off;
+}
+
+let _plateBar = 20;
+function _plateRender(){
+  try{
+    const t = document.getElementById('plate-target');
+    const out = document.getElementById('plate-out');
+    if(!t || !out) return;
+    const v = parseFloat(t.value);
+    out.innerHTML = isFinite(v) ? _plateChipsHTML(platesForSide(v, _plateBar)) : '';
+  }catch(_){}
+}
+function _plateSetBar(b){
+  _plateBar = b;
+  try{
+    BARS_KG.forEach(function(x){
+      const el = document.getElementById('plate-bar-' + x);
+      if(el){
+        const on = (x === b);
+        el.style.background = on ? 'var(--go-bg)' : 'transparent';
+        el.style.borderColor = on ? 'var(--go-bd)' : 'var(--bd)';
+        el.style.color = on ? 'var(--go)' : 'var(--tx3)';
+      }
+    });
+  }catch(_){}
+  _plateRender();
+}
+
+// exIndex is optional — when it comes from an exercise row, prefill the heaviest weight already logged
+// against it, because that is almost always what you are about to load again.
+function openPlateMath(exIndex){
+  let prefill = '';
+  try{
+    if(exIndex != null && typeof currentSession !== 'undefined' && currentSession[exIndex]){
+      const ws = (currentSession[exIndex].sets || [])
+        .map(function(st){ return parseFloat(st && st.weight); })
+        .filter(function(n){ return isFinite(n) && n > 0; });
+      if(ws.length) prefill = String(Math.max.apply(null, ws));
+    }
+  }catch(_){}
+  const m = document.createElement('div');
+  m.className = 'modal-bg open';
+  m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
+    '<h3 style="margin-bottom:6px">Load the bar</h3>' +
+    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">What you want on the bar, and what goes on each side.</p>' +
+    '<input type="number" id="plate-target" inputmode="decimal" step="2.5" value="' + _escFew(prefill) + '" placeholder="102.5" ' +
+      'oninput="_plateRender()" style="font-family:DM Mono,monospace;font-size:22px;text-align:center;padding:12px;margin-bottom:12px">' +
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:7px">Bar</div>' +
+    '<div style="display:flex;gap:8px;margin-bottom:14px">' +
+      BARS_KG.map(function(b){
+        return '<button id="plate-bar-' + b + '" onclick="_plateSetBar(' + b + ')" class="btn" ' +
+          'style="flex:1;font-family:DM Mono,monospace;font-size:13px;padding:9px;margin:0;background:transparent;border:1px solid var(--bd);color:var(--tx3)">' +
+          b + 'kg</button>';
+      }).join('') +
+    '</div>' +
+    '<div id="plate-out" style="min-height:64px;margin-bottom:12px"></div>' +
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Done</button>' +
+  '</div>';
+  document.body.appendChild(m);
+  _plateSetBar(_plateBar);
+  try{ if(prefill){ _plateRender(); } else { const i=document.getElementById('plate-target'); if(i) setTimeout(function(){ i.focus(); }, 150); } }catch(_){}
+}
+
 function addExerciseToSession(ex){
   if(currentSession.find(e=>e.name===ex.name)){showToast('Already added',ex.name+' is in your session');return;}
   currentSession.push({name:ex.name,bodyPart:ex.bodyPart||'',equipment:ex.equipment||'',tracking:ex.tracking||'weight_reps',custom:!!ex.custom,sets:[{weight:'',reps:'',type:'normal',done:false}]});
@@ -29102,7 +29218,9 @@ function renderWorkoutSession(){
           '<textarea id="ex-notes-input-'+ei+'" placeholder="Form cue, how it felt, what to try next..." style="min-height:50px;font-size:16px;line-height:1.5" oninput="saveExerciseNote('+ei+',this.value)">' + (ex.notes || '') + '</textarea>' +
         '</div>' +
       '</div>' +
-      '<button class="add-set-btn" onclick="addSetToEx('+ei+')">+ Add set</button>';
+      '<button class="add-set-btn" onclick="addSetToEx('+ei+')">+ Add set</button>' +
+      // Right where the weight is being typed: the rack question, answered.
+      '<button class="add-set-btn" onclick="openPlateMath('+ei+')" style="margin-left:16px;color:var(--tx3)">\u{1F3CB} Plates</button>';
     container.appendChild(card);renderSets(ei);
   });
 }

@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v425-delete-rpc'
+const CACHE = 'totry-v426-plate-math'
 
 const CORE = [
   './',
