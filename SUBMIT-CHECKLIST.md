@@ -7,7 +7,7 @@ Everything on the code side is done and **verified against a real Release archiv
 
 | # | What | Why it matters | Where |
 |---|------|----------------|-------|
-| 1 | **Run the account-deletion SQL** (one paste) | Guideline 5.1.1(v) requires deleting the ACCOUNT, not just its rows. Until it exists, "Delete account permanently" honestly tells the person their email and sign-in still survive on the server — correct, but not what the privacy policy promises. Reviewers test this flow. | Supabase → SQL Editor (or the AI assistant) → paste the `delete_own_account()` block → Run. It is a SECURITY DEFINER function that can only ever delete `auth.uid()`, so **no service-role key exists anywhere**. The `delete-user` edge function in `supabase/functions/` stays as a fallback for a project whose SQL role lacks rights on the `auth` schema; the client tries the RPC first and falls back to it automatically. |
+| 1 | ~~Run the account-deletion SQL~~ | ✅ **DONE 12 Aug 2026.** `public.delete_own_account()` created; verified `security_definer = true`, no arguments, `authenticated_can_run = true`, `anon_can_run = false`. "Delete account permanently" now removes the auth user and their email, so 5.1.1(v) is genuinely satisfied. |
 | 2 | **Register your iPhone** *(optional — only to run a dev build on the phone)* | Your iPhone is paired and visible to the Mac, but it is not registered in the developer account and there is no iOS **Development** profile for `app.totry` — only `ToTryAppStore`. So a dev build cannot install. This does **not** block submission: archiving uses the distribution profile, which exists and is valid. | Xcode → open `ios/App/App.xcodeproj` → pick **Alfred's iPhone** as the destination → **Product ▸ Run** → click **Register** when prompted. Needs your Apple ID in Xcode ▸ Settings ▸ Accounts. Or skip it entirely: archive and upload, then install through **TestFlight**, which also tests the exact build you are submitting. |
 
 **Not verified by me, and honestly so:** live barcode scanning and the Face ID lock. A simulator has no
@@ -37,7 +37,7 @@ Verified in the actual shipping bundle, not just the repo:
 | **HealthUpdate is now actually USED** | ✅ v417 — `HealthWritePlugin` writes finished workouts + weigh-ins. Before this, the app requested write access it had no code for, and both the usage string and privacy.html described a feature that did not exist. Apple checks that a requested permission is used |
 | `ITSAppUsesNonExemptEncryption` | ✅ `false` — you will **not** be asked the export-compliance question |
 | Icons | ✅ `Assets.car` + AppIcon variants |
-| Account deletion (5.1.1(v), mandatory) | ⚠️ **ONE STEP LEFT — see §0.** Deletes `user_data`, `push_subscriptions`, `feedback` **and now the auth user itself** via the `delete-user` edge function (v421). Until it is deployed the app honestly reports that the account itself survived. |
+| Account deletion (5.1.1(v), mandatory) | ✅ **Complete.** Deletes `user_data`, `push_subscriptions`, `feedback` **and now the auth user itself** via the `delete-user` edge function (v421). Until it is deployed the app honestly reports that the account itself survived. |
 | Row Level Security on every table | ✅ enabled + policies, 12 Aug 2026 (`supabase-rls-fix.sql`) — verified signed-out: `user_data` and `feedback` return 0 rows to the public anon key |
 | DELETE policies so deletion is truthful | ✅ in the same script — without them `deleteAccount()` reported success while rows survived |
 
