@@ -154,7 +154,7 @@ button:focus:not(:focus-visible){outline:none}
 .met .mv{font-family:'Outfit',sans-serif;font-size:22px;font-weight:500;color:var(--tx);line-height:1;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;letter-spacing:-0.01em}
 .met .mv.g{color:var(--gr)}.met .mv.r{color:var(--re)}.met .mv.au{color:var(--go)}.met .mv.bl{color:var(--bl)}
 .divider{height:1px;background:var(--bd);margin:12px 0}
-input,textarea,select{font-family:'Outfit',sans-serif;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);color:var(--tx);font-size:13px;padding:10px 12px;width:100%;outline:none;transition:border-color 0.2s}
+input,textarea,select{font-family:'Outfit',sans-serif;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);color:var(--tx);font-size:16px;padding:10px 12px;width:100%;outline:none;transition:border-color 0.2s}  /* 16px, NOT 13px: any text field under 16px makes iOS auto-zoom the page on focus. This sat at 13px and was harmless only because an identical-specificity rule 845 lines later (:1002) re-set it to 16px. Move, reorder or delete that rule and every input in the app silently starts zooming — the exact class of latent bug that hid .set-input at 12px until v426. One source of truth instead of a landmine. */
 input:focus,textarea:focus{border-color:var(--go-bd)}
 input::placeholder,textarea::placeholder{color:var(--tx3)}
 .row{display:flex;gap:8px;margin-bottom:8px}
@@ -4560,7 +4560,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v427';
+const APP_VERSION = 'v428';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }

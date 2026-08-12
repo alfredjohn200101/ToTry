@@ -1471,4 +1471,56 @@ H.section('faith is full but never forced — Christian-only features stay Chris
   H.ok(/secular/.test(ft.slice(0, 260)), 'faithTradition still defaults to secular');
 }
 
+H.section('no text field may auto-zoom iOS');
+{
+  // v418 removed maximum-scale=1.0 (which was suppressing iOS auto-zoom at the cost of disabling
+  // pinch-to-zoom for low-vision users), on the premise that every field is >=16px. Two things then
+  // showed that premise was fragile: .set-input was 12px via a CSS CLASS on createElement'd inputs
+  // (invisible to both a source scan for class="..." and a DOM scan, fixed v426), and the BASE rule for
+  // input,textarea,select sat at 13px, harmless only because an identical-specificity rule 845 lines
+  // later re-set it to 16px. Reorder that and every input starts zooming. This pins the invariant.
+  const fs = require('fs');
+  const path = require('path');
+  const css = [...H.html.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map(m => m[1]).join('\n');
+
+  // 1. No rule targeting a text field may set font-size below 16px.
+  const offenders = [];
+  for (const rule of css.split('}')) {
+    if (!rule.includes('{')) continue;
+    const [sel, body] = rule.split('{');
+    const clean = sel.replace(/\/\*[\s\S]*?\*\//g, '');       // drop comments from the selector
+    if (!/(^|[\s,>+~])(input|textarea|select)\b/.test(clean)) continue;
+    const m = body.match(/font-size:\s*([0-9.]+)px/);
+    if (m && parseFloat(m[1]) < 16) offenders.push(clean.trim().slice(0, 50) + ' -> ' + m[1] + 'px');
+  }
+  H.eq(offenders, [], 'no CSS rule puts a text field under 16px');
+
+  // 2. No class applied to a createElement'd field may be under 16px either — how .set-input hid.
+  const sizes = {};
+  for (const rule of css.split('}')) {
+    if (!rule.includes('{')) continue;
+    const [sel, body] = rule.split('{');
+    const m = body.match(/font-size:\s*([0-9.]+)px/);
+    if (!m) continue;
+    for (const c of sel.match(/\.([A-Za-z0-9_-]+)/g) || []) sizes[c.slice(1)] = parseFloat(m[1]);
+  }
+  const made = new Set([...H.html.matchAll(/(?:const|let|var)\s+(\w+)\s*=\s*document\.createElement\('(?:input|textarea|select)'\)/g)].map(m => m[1]));
+  const small = [];
+  for (const v of made) {
+    for (const m of H.html.matchAll(new RegExp(v + "\\.className\\s*=\\s*'([^']+)'", 'g'))) {
+      for (const c of m[1].split(/\s+/)) if (sizes[c] !== undefined && sizes[c] < 16) small.push('.' + c + ' -> ' + sizes[c] + 'px');
+    }
+  }
+  H.eq(small, [], 'no dynamically-created field gets a class under 16px');
+
+  // 3. And the scale locks must stay off, or the accessibility fix is undone.
+  const vp = (H.html.match(/<meta name="viewport"[^>]*>/) || [''])[0];
+  H.ok(!/user-scalable\s*=\s*no/.test(vp), 'pinch-to-zoom is not disabled in the viewport');
+  H.ok(!/maximum-scale/.test(vp), 'no maximum-scale lock');
+  H.ok(/viewport-fit=cover/.test(vp), 'and viewport-fit=cover is kept for the safe-area insets');
+  // The Capacitor key that actually controls pinch in the wrapper (v418 alone did nothing).
+  const cap = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'capacitor.config.json'), 'utf8'));
+  H.ok(cap.ios && cap.ios.zoomEnabled === true, 'ios.zoomEnabled is true, which is what actually enables pinch natively');
+}
+
 H.report();
