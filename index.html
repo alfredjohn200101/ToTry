@@ -3966,7 +3966,14 @@ Amen.</div></div>
 
   <!-- ═══ GROUP 7: DATA & ACCOUNT (collapsed — destructive, careful actions) ═══ -->
   <details class="settings-group">
-    <summary>💾 Your data & account <span class="settings-group-hint">Export, sign out, delete</span></summary>
+    <summary>💾 Your data & account <span class="settings-group-hint">Lock, export, sign out, delete</span></summary>
+
+    <!-- Revealed by renderLockRow() only on native, because the web has no way to unlock. -->
+    <div class="card" id="lock-row" style="display:none">
+      <div class="card-hd" style="margin-bottom:8px">🔒 Lock To Try with <span id="lock-kind">Face ID</span></div>
+      <div id="lock-sub" style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:10px">Your journal, your fight and your money, behind Face ID. Off by default.</div>
+      <button class="btn" id="lock-btn" style="background:var(--bg3);border:1px solid var(--bd);font-size:12px" onclick="toggleAppLock()">Turn on</button>
+    </div>
     
     <!-- Anonymous usage counting, and a real way to decline it. Named plainly because the privacy
          policy names it plainly — a promise you can check is worth more than a promise that sounds good. -->
@@ -4553,7 +4560,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v423';
+const APP_VERSION = 'v424';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -14929,6 +14936,152 @@ const SaveFile = {
     }catch(_){ return false; }
   }
 };
+
+// ── APP LOCK — Face ID / Touch ID / passcode ─────────────────────────────────────────────────────
+// This app holds vice logs, confessions, journal entries, prayers and money. People hand their unlocked
+// phone to a partner, a friend, a child. A PWA cannot lock itself by any means, so this is one of the few
+// things the wrapper genuinely unlocks — and it serves the soul directly: a place you can be completely
+// honest has to be a place that is safe.
+//
+// THE FIRST RULE IS NOT LOCKING SOMEONE OUT OF THEIR OWN JOURNAL. The plugin uses iOS's
+// deviceOwnerAuthentication, so the passcode is always a fallback to Face ID; and every path that could
+// possibly trap a person — no biometry, no passcode, biometrics un-enrolled later, the plugin missing
+// entirely (the web) — turns the lock OFF and lets them in, rather than holding the door shut.
+// The preference is deliberately NOT in SYNC_KEYS: a lock belongs to a device, and syncing it would lock
+// a new phone before Face ID had ever been set up on it.
+const Lock = {
+  _p(){ try{ const P=(window.Capacitor&&window.Capacitor.Plugins)||{}; return P.Biometric || P.BiometricPlugin || null; }catch(_){ return null; } },
+  enabled(){ try{ return ls('totry_lock_on') === true; }catch(_){ return false; } },
+  async capability(){
+    const p=this._p(); if(!p) return { available:false, kind:'none' };
+    try{ return (await p.isAvailable()) || { available:false, kind:'none' }; }
+    catch(_){ return { available:false, kind:'none' }; }
+  },
+  // What to call it on screen. Never "biometrics" — people know Face ID.
+  label(kind){ return kind==='faceId' ? 'Face ID' : kind==='touchId' ? 'Touch ID' : 'your passcode'; },
+  async prove(reason){
+    const p=this._p(); if(!p) return { ok:false, unavailable:true };
+    try{ return (await p.authenticate({ reason: reason || 'Unlock To Try' })) || { ok:false }; }
+    catch(e){ console.warn('[Lock] authenticate threw', e); return { ok:false, unavailable:true }; }
+  }
+};
+
+let _lockShown = false;
+let _lockHiddenAt = 0;
+
+function _lockOverlay(){
+  let el = document.getElementById('app-lock');
+  if(el) return el;
+  el = document.createElement('div');
+  el.id = 'app-lock';
+  // Covers everything, including any open sheet, and cannot be dismissed by tapping away.
+  el.style.cssText = 'position:fixed;inset:0;z-index:100000;background:var(--bg,#0a0a0c);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center';
+  el.innerHTML =
+    '<div style="font-size:34px">\u{1F512}</div>' +
+    '<div style="font-family:Cormorant Garamond,serif;font-size:28px;color:var(--go)">To Try</div>' +
+    '<div id="app-lock-msg" style="font-size:13px;color:var(--tx2);line-height:1.6;max-width:280px">Locked — just for you.</div>' +
+    '<button class="btn primary" id="app-lock-btn" style="max-width:240px" onclick="unlockApp()">Unlock</button>';
+  document.body.appendChild(el);
+  return el;
+}
+
+async function unlockApp(){
+  const msg = document.getElementById('app-lock-msg');
+  if(msg) msg.textContent = 'Verifying…';
+  const r = await Lock.prove('Unlock To Try');
+  if(r && r.ok){
+    _lockShown = false;
+    const el = document.getElementById('app-lock'); if(el) el.remove();
+    if(typeof haptic==='function') haptic('light');
+    return;
+  }
+  if(r && r.unavailable){
+    // The trap case. Turn the lock off and open the app — never leave someone shut out of their own words.
+    try{ ls('totry_lock_on', false); }catch(_){}
+    _lockShown = false;
+    const el = document.getElementById('app-lock'); if(el) el.remove();
+    try{ if(typeof renderLockRow==='function') renderLockRow(); }catch(_){}
+    if(typeof showToast==='function'){
+      showToast('Lock turned off', ((r && r.reason) || 'This device can no longer verify it’s you.') + ' Turn it back on any time.');
+    }
+    return;
+  }
+  if(msg) msg.textContent = (r && r.cancelled) ? 'Tap Unlock when you’re ready.' : ((r && r.reason) || 'That didn’t verify. Try again.');
+}
+
+// force=true re-locks even if the overlay was shown before (used on return from the background).
+function maybeLockApp(force){
+  try{
+    if(!Lock.enabled()) return;
+    // On the web there is nothing to unlock WITH, so a lock there is a locked door with no key.
+    if(!(typeof isNativeApp==='function' && isNativeApp())) return;
+    if(_lockShown && !force) return;
+    _lockShown = true;
+    _lockOverlay();
+    unlockApp();
+  }catch(e){ console.warn('[Lock] gate failed', e); }
+}
+
+document.addEventListener('visibilitychange', function(){
+  try{
+    if(document.visibilityState === 'hidden'){ _lockHiddenAt = Date.now(); return; }
+    // Only after a real absence. Presenting the share sheet, the camera scanner or a permission prompt
+    // also hides the web view, and demanding Face ID on the way back from those would be maddening.
+    if(_lockHiddenAt && (Date.now() - _lockHiddenAt) > 20000) maybeLockApp(true);
+  }catch(_){}
+});
+
+// ── The Settings row. Hidden unless this device can really honour a lock. ──
+async function renderLockRow(){
+  try{
+    const row = document.getElementById('lock-row'); if(!row) return;
+    const native = (typeof isNativeApp==='function' && isNativeApp());
+    if(!native){ row.style.display='none'; return; }
+    const cap = await Lock.capability();
+    if(!cap.available){
+      // Say why, rather than hiding a feature they may be looking for.
+      row.style.display = '';
+      const k = document.getElementById('lock-kind'); if(k) k.textContent = 'Face ID';
+      const sub = document.getElementById('lock-sub');
+      if(sub) sub.textContent = cap.reason || 'Set up Face ID or a passcode on this iPhone first.';
+      const btn = document.getElementById('lock-btn');
+      if(btn){ btn.textContent = 'Unavailable'; btn.disabled = true; btn.style.opacity = '.45'; }
+      return;
+    }
+    row.style.display = '';
+    const k = document.getElementById('lock-kind'); if(k) k.textContent = Lock.label(cap.kind);
+    const on = Lock.enabled();
+    const sub = document.getElementById('lock-sub');
+    if(sub) sub.textContent = on
+      ? 'On. Asked when you open the app, and when you come back to it.'
+      : 'Your journal, your fight and your money, behind ' + Lock.label(cap.kind) + '. Off by default.';
+    const btn = document.getElementById('lock-btn');
+    if(btn){ btn.disabled = false; btn.style.opacity = ''; btn.textContent = on ? 'Turn off' : 'Turn on'; }
+  }catch(e){ console.warn('[Lock] row failed', e); }
+}
+
+async function toggleAppLock(){
+  const on = Lock.enabled();
+  // Prove it works BEFORE committing to it — turning a lock on without testing it is how someone ends up
+  // locked out. And require the same proof to turn it off, so grabbing an open phone can't quietly
+  // remove the protection for good.
+  const r = await Lock.prove(on ? 'Turn off the lock on To Try' : 'Turn on the lock for To Try');
+  if(r && r.unavailable){
+    try{ ls('totry_lock_on', false); }catch(_){}
+    if(typeof showToast==='function') showToast('Not available', (r.reason||'This device can’t verify it’s you.'));
+    renderLockRow(); return;
+  }
+  if(!(r && r.ok)){
+    if(!(r && r.cancelled) && typeof showToast==='function') showToast('Not changed', (r && r.reason) || 'That didn’t verify.');
+    return;
+  }
+  try{ ls('totry_lock_on', !on); }catch(_){}
+  if(typeof haptic==='function') haptic('success');
+  if(typeof showToast==='function'){
+    showToast(!on ? 'Lock on' : 'Lock off', !on ? 'To Try will ask for you when it opens.' : 'The app opens without asking now.');
+  }
+  renderLockRow();
+}
 
 // ── THE BROTHER — the one voice the whole app speaks in ─────────────────────────────────────────
 // This is Alfy, captured from his own words (the voice-capture moments), not a generic "warm
@@ -34557,6 +34710,7 @@ async function submitFeedback(){
 
 // ── SETTINGS ──────────────────────────────────────────────────
 function initSettingsTab(){
+  try{ if(typeof renderLockRow==='function') renderLockRow(); }catch(_){}
   // One source of truth for this copy — see RAFFLE_ACTIVE.
   try{ const _rl=document.getElementById('feedback-raffle-line'); if(_rl && typeof _raffleCopy==='function') _rl.textContent=_raffleCopy('card'); }catch(_){}
   // Honest beta framing on web only — inside the native app it's not a beta, so hide it.
@@ -36291,6 +36445,8 @@ try{ if(typeof enableSyncMonitoring === 'function') enableSyncMonitoring(); }cat
 try{ if(typeof recomputeWorkoutBurns === 'function' && (ls('totry_workouts')||[]).length) recomputeWorkoutBurns(); }catch(_){}
 // Apple Health: if already connected, pull today's steps + active energy on open (native only).
 try{ if(typeof Health!=='undefined' && Health.connected() && Health.isNative()) Health.syncToday(); }catch(_){}
+// The lock, last: the DOM exists by now, so the overlay covers a fully built screen rather than racing it.
+try{ if(typeof maybeLockApp==='function') maybeLockApp(); }catch(_){}
 initSupabase();
 // Handle OAuth callbacks if returning from Strava or Google
 if(window.location.search.includes('code=')){

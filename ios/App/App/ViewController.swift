@@ -27,5 +27,7 @@ class ViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(ShareFilePlugin())
         // The live barcode scanner. Same reason again: an app-target plugin is never auto-discovered.
         bridge?.registerPluginInstance(BarcodeScannerPlugin())
+        // The Face ID / passcode lock for the journal. Same reason.
+        bridge?.registerPluginInstance(BiometricPlugin())
     }
 }

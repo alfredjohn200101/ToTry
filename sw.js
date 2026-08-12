@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v423-live-scan'
+const CACHE = 'totry-v424-app-lock'
 
 const CORE = [
   './',

@@ -1329,4 +1329,55 @@ H.section('the voice is universal — copy must not assume a man');
   H.ok(/big sister to a woman/.test(H.html), 'the voice still adapts to sex where it should (BROTHER_VOICE)');
 }
 
+H.section('app lock — must never lock a person out of their own journal');
+{
+  const fs = require('fs');
+  const path = require('path');
+  const root = path.join(__dirname, '..');
+  const sw = fs.readFileSync(path.join(root, 'ios/App/App/BiometricPlugin.swift'), 'utf8');
+  const plist = fs.readFileSync(path.join(root, 'ios/App/App/Info.plist'), 'utf8');
+  const vc = fs.readFileSync(path.join(root, 'ios/App/App/ViewController.swift'), 'utf8');
+  const pbx = fs.readFileSync(path.join(root, 'ios/App/App.xcodeproj/project.pbxproj'), 'utf8');
+
+  // THE ANTI-LOCKOUT INVARIANTS. These are the ones that would hurt a real person: a lock they cannot
+  // open, on the journal holding their confessions.
+  H.ok(/evaluatePolicy\(\.deviceOwnerAuthentication,/.test(sw),
+    'the policy allows the PASSCODE as a fallback to Face ID (never biometrics-only)');
+  H.ok(!/evaluatePolicy\(\.deviceOwnerAuthenticationWithBiometrics/.test(sw),
+    'it never evaluates a biometrics-only policy, which would strand anyone whose face fails');
+  H.ok(/"unavailable": true/.test(sw), 'a device that cannot authenticate reports unavailable, not failure');
+  // ...and every unavailable path in the JS must OPEN the app and switch the lock off.
+  const unlock = H.html.slice(H.html.indexOf('async function unlockApp('));
+  const unlockBody = unlock.slice(0, unlock.indexOf('\n// force=true'));
+  H.ok(/r\.unavailable/.test(unlockBody), 'unlockApp handles the unavailable case');
+  H.ok(/ls\('totry_lock_on', false\)/.test(unlockBody), 'and turns the lock OFF rather than holding the door shut');
+  H.ok(/app-lock'\); if\(el\) el\.remove\(\)/.test(unlockBody), 'and removes the overlay so they get in');
+  // The web has no way to unlock at all, so the gate must never fire there.
+  const gate = H.html.slice(H.html.indexOf('function maybeLockApp('));
+  H.ok(/isNativeApp==='function' && isNativeApp\(\)/.test(gate.slice(0, 700)), 'the lock never engages on the web');
+
+  // A lock belongs to a device. Syncing it would lock a new phone before Face ID was ever set up on it.
+  const keys = (H.html.match(/SYNC_KEYS\s*=\s*\[([\s\S]*?)\]/) || ['', ''])[1];
+  H.ok(!/totry_lock_on/.test(keys), 'the lock preference does not sync between devices');
+
+  // MANDATORY: iOS terminates the app outright if it evaluates a Face ID policy with no usage string.
+  H.ok(/NSFaceIDUsageDescription/.test(plist), 'NSFaceIDUsageDescription is declared (or the app crashes)');
+
+  // The plugin has to be reachable at all: right jsName, registered by instance, in the build.
+  H.eq((sw.match(/jsName\s*=\s*"([A-Za-z]+)"/) || [])[1], 'Biometric', 'jsName matches the JS lookup');
+  H.ok(/(?:Plugins|\bP)\.Biometric\b/.test(H.html), 'index.html looks it up under that name');
+  H.ok(/registerPluginInstance\(BiometricPlugin\(\)\)/.test(vc), 'registered in capacitorDidLoad');
+  H.ok((pbx.match(/BiometricPlugin\.swift/g) || []).length >= 4, 'all four pbxproj entries present');
+
+  // Fails closed in the UI, and proves the lock works before committing to it.
+  const row = (H.html.match(/<div class="card" id="lock-row"[^>]*>/) || [''])[0];
+  H.ok(/display:none/.test(row), 'the settings row is hidden until the device is known to support it');
+  const toggle = H.html.slice(H.html.indexOf('async function toggleAppLock('));
+  H.ok(toggle.indexOf('Lock.prove(') < toggle.indexOf("ls('totry_lock_on'"),
+    'turning the lock ON requires a successful auth FIRST, so it is tested before it is trusted');
+
+  // Coming back from the share sheet or the camera must not demand Face ID.
+  H.ok(/_lockHiddenAt\) > 20000/.test(H.html), 'only a real absence re-locks, not every sheet that hides the webview');
+}
+
 H.report();

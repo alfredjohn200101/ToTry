@@ -28,12 +28,16 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>To Try uses your camera to scan food barcodes and take meal and form-check photos, so you can log what you eat and check your lifts.</string>
+	<!-- REQUIRED, not optional: iOS terminates the app outright if it evaluates a Face ID policy
+	     without this key. The lock is opt-in and off by default. -->
+	<key>NSFaceIDUsageDescription</key>
+	<string>So you can lock To Try behind Face ID. This app holds your journal, your confessions and what you are fighting — if you turn the lock on, only you can open it. Your face is checked by iOS and never seen by To Try.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>To Try reads your steps, active energy, workouts, heart rate, mindful minutes and sleep from Apple Health so your movement, training and rest count toward your day automatically — no manual logging. Your sleep and imported workout summaries are saved to your account so they follow you between devices, and your sleep and recent training form part of the context sent to the AI when you ask for coaching. Never used for advertising, never sold, never shared with anyone else.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>To Try can record activity you log here back to Apple Health, so your data stays in one place.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>To Try can save progress photos you take back to your photo library.</string>
+	<string>To Try asks for this only when you choose "Save Image" while sharing something it made for you — your day card or a progress collage. Nothing is written to your library on its own.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>To Try lets you choose a photo of a meal, a workout screenshot, or your progress so it can read and log it for you.</string>
 	<key>UILaunchStoryboardName</key>
