@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v437-location'
+const CACHE = 'totry-v438-personas'
 
 const CORE = [
   './',

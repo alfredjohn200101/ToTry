@@ -30,7 +30,7 @@
 :root{
   --bg:#0C0C0E;--bg2:#131316;--bg3:#1A1A1F;--bg4:#222228;
   --bd:rgba(255,255,255,0.07);--bd2:rgba(255,255,255,0.13);
-  --tx:#F2EFE8;--tx2:#9A9490;--tx3:#817E77;  /* --tx3 was #5C5A55 = 2.84:1 on --bg, well under WCAG AA's 4.5:1 for normal text, and it carries a LOT of small copy: 'Today's habits' at 9px in 14 places, 'Tap to refresh' at 8px, whole 12-13px paragraphs. Measured, not guessed. Now 4.82:1 — deliberately above the 4.5 threshold rather than exactly on it, since antialiasing and real screens eat the margin. The hierarchy is intact: --tx 17.0 > --tx2 6.5 > --tx3 4.8, so tertiary text still reads as quieter, just legible. Warm hue kept by scaling the original channel ratio rather than picking a neutral grey. */
+  --tx:#F2EFE8;--tx2:#9A9490;--tx3:#85827B;  /* --tx3 was #5C5A55 = 2.84:1 on --bg, well under WCAG AA's 4.5:1 for normal text, and it carries a LOT of small copy: 'Today's habits' at 9px in 14 places, 'Tap to refresh' at 8px, whole 12-13px paragraphs. Measured, not guessed. Now 5.10:1 on the page background and 4.52:1 on the LIGHTEST card background (--bg3), which is the one that matters: v430 set this to #817E77 by measuring against --bg alone and left every card at 4.28. Deliberately above the 4.5 threshold rather than exactly on it, since antialiasing and real screens eat the margin. The hierarchy is intact: --tx 17.0 > --tx2 6.5 > --tx3 4.8, so tertiary text still reads as quieter, just legible. Warm hue kept by scaling the original channel ratio rather than picking a neutral grey. */
   --go:#C8A96E;--go-bg:rgba(200,169,110,0.08);--go-bd:rgba(200,169,110,0.28);
   --re:#C85A4E;--re-bg:rgba(200,90,78,0.10);--re-bd:rgba(200,90,78,0.30);
   --gr:#5BB97D;--gr-bg:rgba(91,185,125,0.10);--gr-bd:rgba(91,185,125,0.28);
@@ -1778,7 +1778,7 @@ input:focus,textarea:focus,select:focus{
   <div id="tester-setup-card" style="display:none;background:linear-gradient(135deg,rgba(252,76,2,0.12),rgba(200,169,110,0.05));border:1px solid rgba(252,76,2,0.35);border-radius:var(--r);padding:16px;margin-bottom:14px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px">
       <div style="font-family:'DM Mono',monospace;font-size:9px;color:#FC4C02;text-transform:uppercase;letter-spacing:0.14em">You're a Strava tester</div>
-      <button onclick="dismissTesterCard()" style="background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:0 4px;line-height:1" aria-label="Dismiss">×</button>
+      <button onclick="dismissTesterCard()" style="background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:13px 17px;margin:-13px -17px;line-height:1" aria-label="Dismiss">×</button>
     </div>
     <div style="font-family:'Cormorant Garamond',serif;font-size:19px;color:var(--tx);font-style:italic;margin-bottom:8px">Thanks for testing this. Two taps to connect Strava:</div>
     <div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:12px">1. Tap below to open Connected apps.<br>2. Find Strava → tap <b>Connect</b> → authorize.<br>Your runs and rides will start syncing in.</div>
@@ -1815,7 +1815,7 @@ input:focus,textarea:focus,select:focus{
   <div id="firstrun-card" style="display:none;background:linear-gradient(135deg,rgba(200,169,110,0.1),rgba(140,107,182,0.06));border:1px solid var(--go-bd);border-radius:var(--r);padding:16px;margin-bottom:14px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:4px">
       <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--tx);font-style:italic">Welcome. Let's set the foundation.</div>
-      <button onclick="dismissFirstRun()" style="background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:0 4px;line-height:1" aria-label="Dismiss">×</button>
+      <button onclick="dismissFirstRun()" style="background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:13px 17px;margin:-13px -17px;line-height:1" aria-label="Dismiss">×</button>
     </div>
     <p style="font-size:12px;color:var(--tx3);line-height:1.5;margin-bottom:12px">This app comes alive as you use it. Four quick things to start — tap any to do it now.</p>
     <div id="firstrun-steps"></div>
@@ -4616,7 +4616,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v437';
+const APP_VERSION = 'v438';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -24051,7 +24051,7 @@ function renderNutSetupNudge(){
     '<div style="background:linear-gradient(135deg, rgba(200,169,110,0.12), rgba(140,107,182,0.08));border:1px solid var(--go-bd);border-radius:var(--r);padding:14px 16px;margin-bottom:14px">'+
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">'+
         '<div style="font-family:Cormorant Garamond,serif;font-size:17px;font-style:italic;color:var(--tx)">These are just starter numbers.</div>'+
-        '<button onclick="dismissNutSetup()" aria-label="Dismiss" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer;line-height:1;flex-shrink:0">×</button>'+
+        '<button onclick="dismissNutSetup()" aria-label="Dismiss" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer;line-height:1;flex-shrink:0;padding:14px 17px;margin:-14px -17px">×</button>'+
       '</div>'+
       '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin:8px 0 12px">You’re on generic starter numbers right now — they could be hundreds off what your body actually needs. Give me a few details and I’ll set a target that fits <em>you</em> — then it learns from your real results. Takes about 20 seconds.</div>'+
       '<button class="btn primary" onclick="openNutSetup()" style="font-size:13px;padding:11px">Set my real target</button>'+

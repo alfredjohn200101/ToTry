@@ -60,6 +60,28 @@ Grouped by the class they belong to, because the class matters more than the ins
 **Day one — 1 open**
 - First morning, first thing: *"You skipped your habits yesterday"* — about a day before the app existed for them
 
+### Accessibility — measured properly on 14 Aug, and worse than v429/v430 claimed
+
+Those two commits said "zero controls below HIG across all five tabs" and "no small text below AA". Both
+measured **only the Home tab**, because they called a `showTab()` that does not exist — inside a
+`try/catch` that swallowed the ReferenceError. The real navigator is `go()`. Re-measured with it:
+
+| | v429/v430 claimed | actually |
+|---|---|---|
+| Tap targets under 44pt | 0 | **29** — Money 19, Home 5, Fight 5 |
+| Text below WCAG AA | 0 | **10**, all `--tx3` on the lighter *card* backgrounds |
+
+- **Contrast: fixed** (v438). `--tx3` was tuned against the page background only, so every card sat at
+  4.28:1. Now `#85827B` — 4.52 on the lightest card, 5.10 on the page. Re-measured: **0 below AA**.
+- **Tap targets: 24 still open.** Five are fixed (two in v429, three × buttons in v438) with padding
+  cancelled by an equal negative margin — the technique that measurably works. Worst remaining:
+  "Hide amounts" 68×**12**, "Set a monthly target" 107×**14**, "↑ Import CSV" 88×28. Mostly the Money
+  tab's text-style controls. **Half a day.**
+
+> A `::after` pseudo-element was tried first as a systemic fix and **reverted**: a Playwright click 14px
+> outside the visual box did not fire the handler, so it enlarged nothing. Worth recording — it is the
+> obvious solution, it is widely recommended, and here it does nothing.
+
 ### Medium / low — 10 open
 Ritual copy the faith pass never reaches ("then pray", "examens" ×4); every new user silently assigned a
 "Prayer / scripture" habit and told that setup step is done; food edit shows per-serving numbers while
@@ -105,7 +127,11 @@ repeatable by you alone. What's missing:
   gated, every `SaveFile.save` result bound (some of this now exists as ratchets — 570 tests)
 - a **persona smoke test** that boots as secular / Muslim / female / debt-free / offline and asserts what
   is on screen, run on every change
-**Estimate: 1 week. Highest leverage item on this page.**
+**DONE 14 Aug (v438):** `npm run personas` boots the real built bundle in headless Chromium as five
+people — secular, Muslim, Buddhist, Christian (control), female — walks all five tabs and asserts what is
+on screen: no Christian-only vocabulary for non-Christians, no NaN/undefined, crisis numbers reachable,
+zero page errors. **82 assertions.** It found its own first bug immediately: the `showTab()` mistake above.
+Still to add: an offline/expired-token persona, and a debt-free/no-numbers persona.
 
 ### 4. Nothing has run on real hardware
 Barcode scanning, Face ID lock, haptics and push notifications have **never executed on a phone**. All

@@ -2,13 +2,14 @@
   "name": "totry",
   "version": "1.0.0",
   "private": true,
-  "description": "To Try — faith-rooted whole-life companion. PWA + Capacitor native shell.",
+  "description": "To Try \u2014 faith-rooted whole-life companion. PWA + Capacitor native shell.",
   "scripts": {
     "build:www": "node scripts/build-www.js",
     "sync": "npm run build:www && npx cap sync",
     "ios": "npm run sync && npx cap open ios",
     "android": "npm run sync && npx cap open android",
-    "test": "node test/core.test.js"
+    "test": "node test/core.test.js",
+    "personas": "node test/personas.js"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",
