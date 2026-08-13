@@ -1874,7 +1874,7 @@ input:focus,textarea:focus,select:focus{
        route to creating a habit, and before this there was none anywhere in the app. -->
   <div class="lbl" style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
     <span>Today&#39;s habits</span>
-    <button onclick="openManageHabits()" aria-label="Add or edit your habits" style="background:none;border:none;padding:8px 4px;margin:-8px -4px;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">+ add / edit</button>
+    <button onclick="openManageHabits()" aria-label="Add or edit your habits" style="background:none;border:none;padding:17px 12px;margin:-17px -12px;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">+ add / edit</button>
   </div>
   <div class="card" style="margin-bottom:12px">
     <div id="home-habit-list"></div>
@@ -1940,7 +1940,7 @@ input:focus,textarea:focus,select:focus{
   </div>
 
   <!-- Share Day X (moved to bottom — celebratory, not primary) -->
-  <button class="btn" style="background:linear-gradient(135deg,rgba(200,169,110,0.15),rgba(140,107,182,0.1));border:1px solid var(--go-bd);color:var(--go);font-size:13px;margin-bottom:14px" onclick="generateShareCard()">
+  <button class="btn" style="background:linear-gradient(135deg,rgba(200,169,110,0.15),rgba(140,107,182,0.1));border:1px solid var(--go-bd);color:var(--go);font-size:13px;margin-bottom:14px;min-height:44px" onclick="generateShareCard()">
     &#128247; Share my Day <span id="share-day-num"></span>
   </button>
 </div>
@@ -4560,7 +4560,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v428';
+const APP_VERSION = 'v429';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }

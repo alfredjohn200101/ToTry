@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v428-zoom-ratchet'
+const CACHE = 'totry-v429-tap-targets'
 
 const CORE = [
   './',
