@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v431-sos-faith'
+const CACHE = 'totry-v432-ed-floor'
 
 const CORE = [
   './',

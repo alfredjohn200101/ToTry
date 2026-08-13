@@ -1599,4 +1599,38 @@ H.section('the crisis surface must speak the person\'s own tradition');
     'fetchSosVerse returns early for a non-Christian instead of asking BIBLE_SYS');
 }
 
+H.section('the ED-safe floor governs the app\'s OWN prescriptions');
+{
+  // _calFloor() is 1500 for a man, 1200 for a woman, and goalAdjustedTarget() clamps to it under the
+  // comment "never prescribe a reckless deficit". adjustCaloriesFromWeightTrend — the path where the APP
+  // moves the target off a weight trend with nobody asking — used a hardcoded 1200 instead. A man could
+  // be walked to 1450 automatically and told "Your targets shifted" with a success haptic. It also scaled
+  // protein DOWN with calories (backwards: protein is what you protect in a deficit) and left carb/fat
+  // untouched, so the four saved macros stopped summing to the target the ring draws.
+  // Driven live after the fix: male wanted 1450 -> got 1500; female wanted 1150 -> got 1200; protein rose
+  // to 176 in both; macros summed exactly to the target.
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+
+  const fn = code.slice(code.indexOf('function adjustCaloriesFromWeightTrend('));
+  const body = fn.slice(0, fn.indexOf('\nasync function'));
+
+  H.ok(!/Math\.max\(1200,/.test(body), 'the auto-adjust no longer hardcodes 1200 as the floor');
+  H.ok(/_calFloor\(\)/.test(body), 'it uses _calFloor(), which knows the person\'s sex');
+  H.ok(!/goals\.pro = Math\.round\(goals\.pro \* /.test(body), 'protein is no longer scaled down with calories');
+  H.ok(/macrosForCalories\(/.test(body), 'all four macros are re-derived so they still sum to the target');
+  H.ok(/let goals =/.test(body), 'goals is let — as const, the re-derive threw only when a trend fired');
+
+  // The manual path keeps its different, deliberate contract: open a door, never override.
+  const save = code.slice(code.indexOf('function saveNutGoals('));
+  const saveBody = save.slice(0, 2500);
+  H.ok(!/cal < 1200/.test(saveBody), 'the care door is keyed to _calFloor(), not a bare 1200');
+  H.ok(/showLowCalorieCare\(\)/.test(saveBody), 'and it still opens the gentle door rather than overriding');
+
+  // _calFloor itself must keep its two values, or every clamp above silently changes meaning.
+  const cf = code.slice(code.indexOf('function _calFloor('));
+  H.ok(/1200/.test(cf.slice(0,200)) && /1500/.test(cf.slice(0,200)), '_calFloor still returns 1500 male / 1200 female');
+}
+
 H.report();

@@ -4584,7 +4584,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v431';
+const APP_VERSION = 'v432';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -19154,7 +19154,10 @@ function adjustCaloriesFromWeightTrend(){
   const entries = ls('totry_body') || [];
   if(entries.length < 3) return; // Need at least 3 data points
   
-  const goals = ls('totry_nut_macros') || ls('totry_nut_goals');
+  // let, not const: the floor fix below re-derives all four macros and rebinds this. As a const it
+  // parsed perfectly and threw "Assignment to constant variable" only when a weight trend actually
+  // fired — the exact shape of bug this file keeps getting caught by.
+  let goals = ls('totry_nut_macros') || ls('totry_nut_goals');
   if(!goals || !goals.cal) return;
   
   // Get last 4 weeks of weight data
@@ -19230,14 +19233,34 @@ function adjustCaloriesFromWeightTrend(){
   // Apply the adjustment to displayed targets
   if(calAdjustment !== 0 && Math.abs(calAdjustment) >= 100){
     const oldCal = goals.cal;
-    const newCal = Math.max(1200, Math.min(5000, oldCal + calAdjustment));
+    // THE ED-SAFE FLOOR, not a hardcoded 1200.
+    // _calFloor() is 1500 for a man and 1200 for a woman, and goalAdjustedTarget() already clamps to it
+    // under the comment "never prescribe a reckless deficit". This path did not — and this is the path
+    // where the APP itself moves the target off a weight trend, with no one asking it to. So a man whose
+    // trend looked slow could be walked down to 1200: three hundred calories under the app's own stated
+    // minimum, announced as "Coach update — Your targets shifted" with a success haptic. The floor is the
+    // one promise that must hold hardest in an app used by people fighting their own discipline.
+    const _floor = (typeof _calFloor === 'function') ? _calFloor() : 1200;
+    const _wanted = oldCal + calAdjustment;
+    const newCal = Math.max(_floor, Math.min(5000, _wanted));
+    const _clampedAtFloor = _wanted < _floor;
     
     if(newCal !== oldCal){
-      goals.cal = newCal;
-      // Adjust protein proportionally if it exists
-      if(goals.pro){
-        goals.pro = Math.round(goals.pro * (newCal / oldCal));
+      // Re-derive all four macros for the new figure instead of scaling protein down with the calories.
+      // Scaling protein DOWN in a deficit is backwards — it is the one macro to protect when calories
+      // fall — and because carb and fat were left untouched, the four saved numbers stopped summing to
+      // the target the macro ring draws, so the ring and the goal disagreed. macrosForCalories() already
+      // does this properly: protein from bodyweight, "protein is sacred", fat trimmed first if tight,
+      // and it never drops below a protein the person deliberately set higher.
+      const _derived = (typeof macrosForCalories === 'function')
+        ? macrosForCalories(newCal, { proPerKg: calAdjustment < 0 ? 2.2 : 1.8 })
+        : null;
+      if(_derived){
+        goals = Object.assign({}, goals, _derived, { cal: newCal });
+      } else {
+        goals.cal = newCal;
       }
+      if(typeof withDerivedMacros === 'function') goals = withDerivedMacros(goals);
       ls('totry_nut_macros', goals);
       ls('totry_nut_goals', goals);
       
@@ -19278,6 +19301,11 @@ function adjustCaloriesFromWeightTrend(){
         document.body.appendChild(m);
         haptic('success');
       }, 800);
+      // If the trend asked for a target under the floor, the app has just refused to prescribe it.
+      // Open the same gentle door the manual path uses rather than leaving it at a celebration.
+      if(_clampedAtFloor && typeof showLowCalorieCare === 'function'){
+        setTimeout(() => { try{ showLowCalorieCare(); }catch(_){} }, 1800);
+      }
     }
   }
 }
@@ -23807,7 +23835,10 @@ function saveNutGoals(){
   haptic('success');
   // Duty of care: a goal this low is below what the body needs to function. We don't lecture
   // or set a "safe" number — we gently open a door to support and let the person decide.
-  if(cal > 0 && cal < 1200){
+  // _calFloor(), not a bare 1200, so a man setting 1400 gets the same door a woman setting 1100 does.
+  // Deliberately still does NOT override the person's own number — the comment above is the design:
+  // open a door, never lecture, never silently "correct" what they chose.
+  if(cal > 0 && cal < ((typeof _calFloor === 'function') ? _calFloor() : 1200)){
     setTimeout(() => showLowCalorieCare(), 600);
   }
 }
