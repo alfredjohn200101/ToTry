@@ -1484,6 +1484,16 @@ H.section('faith is full but never forced — Christian-only features stay Chris
   H.ok(/applyFaithUIGate\(\)/.test(code.replace('function applyFaithUIGate()', '')),
     'applyFaithUIGate is actually called somewhere');
 
+  // 3b. The Soul hub's "Pray about today" opened the Christian Word tab for everyone — saints' prayers,
+  //     the 66-book reader, "How did God answer this prayer?" — while its three siblings (openScripture,
+  //     openTodayAnchor, openPractice) all branched on tradition. Driven after the fix: christianity ->
+  //     tab-bible, islam/buddhism/secular -> tab-practice.
+  const ops = code.slice(code.indexOf('function openPrayerSection('));
+  const opsBody = ops.slice(0, ops.indexOf('\n}') + 2);
+  H.ok(/faithTradition\(\)/.test(opsBody), 'openPrayerSection branches on tradition');
+  H.ok(/=== 'christianity'/.test(opsBody), 'and the Bible prayer tab is the Christian branch only');
+  H.ok(/openPractice\(\)/.test(opsBody), 'everyone else is routed to their own practice');
+
   // 4. faithTradition must keep defaulting to secular — the whole gate inverts if this flips.
   const ft = code.slice(code.indexOf('function faithTradition('));
   H.ok(/secular/.test(ft.slice(0, 260)), 'faithTradition still defaults to secular');

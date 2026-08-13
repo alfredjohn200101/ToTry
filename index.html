@@ -4616,7 +4616,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v434';
+const APP_VERSION = 'v435';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -10452,9 +10452,23 @@ function openSoulToday(){
   if(typeof haptic==='function') haptic('tap');
 }
 function openPrayerSection(){
-  if(typeof go==='function') go('bible');
-  if(typeof setBibleTab==='function') setBibleTab('prayer');
-  try{ const t=document.getElementById('ai-prayer-intention'); if(t&&t.scrollIntoView) t.scrollIntoView({block:'center'}); }catch(_){ }
+  // GATED, like its three siblings. openScripture, openTodayAnchor and openPractice all branch on
+  // faithTradition(); this one did not, and its destination is the Christian "The Word" tab — the saints'
+  // prayers (St Francis, Padre Pio, Aquinas), the 66-book Bible reader, and markPrayerAnswered's "How did
+  // God answer this prayer?" / "Praise God". It is reached from an ungated "Pray about today →" button in
+  // the Soul hub, so it was two taps from every Muslim, Hindu, Buddhist and secular user — and secular is
+  // the DEFAULT. Same violation as the Sacraments tab (v427) and the SOS anchor (v431).
+  const t = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
+  if(t === 'christianity'){
+    if(typeof go==='function') go('bible');
+    if(typeof setBibleTab==='function') setBibleTab('prayer');
+    try{ const el=document.getElementById('ai-prayer-intention'); if(el&&el.scrollIntoView) el.scrollIntoView({block:'center'}); }catch(_){ }
+    return;
+  }
+  // Everyone else goes to their own practice, which faithPrayer()/openPractice() already speak properly
+  // (du'a, japa, metta, or a plain Stoic reflection with no religious language at all).
+  if(typeof openPractice === 'function') { openPractice(); return; }
+  if(typeof go === 'function') go('soul');
 }
 // openPrayerModal() lived here — superseded by the Prayer tab (setBibleTab('prayer') +
 // generateIntentionPrayer()). Never referenced once.
