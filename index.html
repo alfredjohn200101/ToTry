@@ -4616,7 +4616,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v435';
+const APP_VERSION = 'v436';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -6501,7 +6501,26 @@ async function checkAuthAndStart(){
   }
   
   try {
-    const { data: { session } } = await sb.auth.getSession();
+    // BOUNDED. Offline with an EXPIRED access token (they last an hour), supabase-js sits in its
+    // _callRefreshToken retry/backoff loop for ~25-30 seconds before resolving with session:null. For all
+    // that time #onboard is still showing — it is visible by default — so a person who has used this app
+    // for months stares at the first-run welcome screen, with no Feeling Door and no reachable crisis
+    // numbers, and then lands on the sign-up wall. Which is verbatim the harm v420's own commit message
+    // claimed to have fixed.
+    //
+    // v420 vendored the SDK and capped the two retry loops, and that was necessary — but it fixed the
+    // WRONG CAUSE and then hid the right one: bootWithoutCloud() is only ever called when the SDK or the
+    // client is missing, and vendoring the SDK means it now always loads. So the offline floor became
+    // unreachable for an actual network outage. Racing the session lookup is what actually reaches it.
+    const _sess = await Promise.race([
+      sb.auth.getSession(),
+      new Promise(res => setTimeout(() => res({ __timeout: true }), 2500))
+    ]);
+    if(_sess && _sess.__timeout){
+      bootWithoutCloud('session-timeout');       // the 'online' listener inside it picks the cloud back up
+      return;
+    }
+    const session = (_sess && _sess.data) ? _sess.data.session : null;
     
     if(session && session.user){
       // Logged in - hide auth, show app
@@ -6555,14 +6574,26 @@ async function checkAuthAndStart(){
       document.querySelectorAll('.app').forEach(function(a){ a.classList.add('app-ready'); });
       if(typeof initApp === 'function') await initApp();
     } else {
-      // Not logged in - show auth
+      // NO SESSION IS NOT THE SAME AS NO ACCOUNT. Offline, an expired token resolves to session:null and
+      // this branch used to wall a long-time user out of months of their own data — data sitting
+      // untouched in localStorage on the device in their hand, while signing in is impossible with no
+      // network. If this phone already knows them, open their app.
+      if(ls('totry_onboarded') || ls('totry_guest') || (ls('totry_identity') && ls('totry_name'))){
+        bootWithoutCloud('no-session-offline');
+        return;
+      }
+      // Genuinely new here, and no session: the sign-in screen is the right answer.
       document.getElementById('auth-container').style.display = 'flex';
       document.getElementById('onboard').style.display = 'none';
       authShowStep('email');
     }
   } catch(e){
     console.error('Auth check failed:', e);
-    // Fallback - show auth
+    // Same rule on the error path — it hard-landed on the wall too.
+    if(ls('totry_onboarded') || ls('totry_guest') || (ls('totry_identity') && ls('totry_name'))){
+      bootWithoutCloud('auth-check-failed');
+      return;
+    }
     document.getElementById('auth-container').style.display = 'flex';
     document.getElementById('onboard').style.display = 'none';
   }
@@ -23403,6 +23434,20 @@ function macrosForCalories(cal, opts){
     fat = Math.max(bw ? Math.round(bw*0.5) : Math.round(cal*0.20/9), Math.round((cal - proCal) / 9 * 0.5));
     carbCal = cal - proCal - fat*9;
   }
+  // THE FLOORS CAN BE UNPAYABLE. For a heavy person at the ED-safe calorie floor, protein at 2.2g/kg plus
+  // fat at 0.5g/kg already exceeds the entire budget — from about 113kg at the 1500 male floor. The rescue
+  // above trims fat but cannot touch protein, so carbCal stayed negative, carb clamped to 0, and the four
+  // numbers returned summed to MORE than the cal returned beside them (115kg/1500 gave pro 253, carb 0,
+  // fat 58 — 1534 kcal of macros against a 1500 target). renderNutritionLog draws the ring straight from
+  // these fields, so the ring and the goal contradicted each other on screen. A bodyweight sweep found 24
+  // of 46 rows wrong. v432 made this reachable from the automatic weight-trend adjustment and verified
+  // only an 80kg/55kg pair — exactly where it does not bite.
+  // Protein is still protected first; it is simply capped at what the budget can actually contain.
+  if(carbCal < 0){
+    const fatCalNow = fat * 9;
+    pro = Math.max(0, Math.floor((cal - fatCalNow) / 4));
+    carbCal = cal - pro * 4 - fatCalNow;
+  }
   const carb = Math.max(0, Math.round(carbCal / 4));
   return { cal: Math.round(cal), pro, carb, fat };
 }
@@ -36037,7 +36082,11 @@ async function exportFullBackup(){
     data: data
   };
   const blob = new Blob([JSON.stringify(backup, null, 2)], {type: 'application/json'});
-  await SaveFile.save(blob, 'totry-backup-' + new Date().toISOString().slice(0,10) + '.json', 'To Try backup');
+  // The one SaveFile caller that threw its result away, so a CANCELLED share sheet and an outright
+  // failed write both produced "Backup saved". Its sibling exportAllData already does this correctly.
+  const _r = await SaveFile.save(blob, 'totry-backup-' + new Date().toISOString().slice(0,10) + '.json', 'To Try backup');
+  if(_r === null) return;                                   // dismissed — they chose; say nothing
+  if(!_r){ showToast('Not saved', 'Nothing was written. Try again in a moment.'); return; }
   // Name the exclusions. Progress photos and un-backed-up cycle data never leave the device by design
   // (see the privacy policy), so a "full backup" does not contain them — and someone about to wipe their
   // phone needs to know that BEFORE they wipe it, not after.
@@ -36088,7 +36137,12 @@ function confirmRestore(){
   const data = window.__pendingRestore;
   if(!data){ document.querySelector('.modal-bg.open')?.remove(); return; }
   let restored = 0;
-  Object.entries(data).forEach(([k, v]) => {
+  // FILTERED, like importAllData. v430 closed this on export and on the secondary import path, but this
+  // is the restore half of the prominent Settings pair and it wrote every key in the file verbatim —
+  // including totry_auth_session. Restoring someone else's backup installed THEIR live session on this
+  // device: the account-takeover direction the BACKUP_NEVER comment already warns about. It also had no
+  // totry_ prefix check at all, so any key in a hand-edited file landed in localStorage.
+  Object.entries(data).filter(([k]) => backupSafeKey(k)).forEach(([k, v]) => {
     try{
       localStorage.setItem(k, v);
       // Push each restored key to the cloud so it persists

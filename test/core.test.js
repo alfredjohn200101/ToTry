@@ -214,7 +214,11 @@ H.section('reachability — core actions must have a live entry point');
   H.ok(/else if\(ls\('totry_guest'\)\)/.test(html), 'checkAuthAndStart has a returning-guest branch');
   {
     const i = html.indexOf("async function checkAuthAndStart");
-    const body = html.slice(i, i + 4000);
+    // 9000, not 4000: v436 added the bounded session race and the two local-data guards (with the
+    // reasoning beside them), which pushed this function past the old window. The assertion is unchanged
+    // — only the slice it searches. A window that silently stops short reports a missing branch that is
+    // right there, which is a false alarm of exactly the kind this suite is supposed to avoid.
+    const body = html.slice(i, i + 9000);
     const g = body.indexOf("else if(ls('totry_guest'))");
     H.ok(g > 0, 'the guest branch lives inside checkAuthAndStart');
     H.ok(body.slice(g, g + 900).indexOf('initApp') > 0, 'the guest branch runs initApp');
@@ -1717,6 +1721,92 @@ H.section('a gated disclosure must not ride along to the model');
   // And the companion's original, which is where the pattern came from.
   H.ok(/never let the disclosure ride along|disclosed something serious/.test(code),
     'the companion still redacts too');
+}
+
+H.section('the offline floor must be reachable for a REAL outage');
+{
+  // v420 vendored the SDK, capped the boot loops, and claimed the app now opens with no connection. It
+  // fixed the wrong cause and then HID the right one: bootWithoutCloud() was only ever called when the
+  // SDK or the client was missing, and vendoring the SDK means the SDK always loads. The dominant real
+  // case — offline with an EXPIRED access token (they last an hour) — went down a different path
+  // entirely: supabase-js retried for ~25-30s while the first-run welcome screen showed, then resolved
+  // session:null and hit the sign-up wall, over months of the person's own data sitting in localStorage.
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  const i = code.indexOf('async function checkAuthAndStart(');
+  const body = code.slice(i, i + 4200);
+
+  H.ok(/Promise\.race\(/.test(body), 'the session lookup is bounded, not awaited indefinitely');
+  H.ok(/__timeout/.test(body) && /bootWithoutCloud\('session-timeout'\)/.test(body),
+    'a slow session lookup falls through to the offline floor');
+  H.ok(/bootWithoutCloud\('no-session-offline'\)/.test(body),
+    'no session + local data opens their app instead of the sign-up wall');
+  H.ok(/bootWithoutCloud\('auth-check-failed'\)/.test(body), 'the error path is guarded the same way');
+
+  // A genuinely new person must still be walled — the guard has to read local data, not fire blindly.
+  const guards = (body.match(/ls\('totry_onboarded'\)/g) || []).length;
+  H.ok(guards >= 2, 'both fallback branches check what this device already knows (' + guards + ')');
+
+  // And bootWithoutCloud must have more than the two SDK-missing callers it had at v420.
+  const callers = (code.match(/bootWithoutCloud\('/g) || []).length;
+  H.ok(callers >= 4, 'the offline floor has real callers now, not only SDK-missing ones (' + callers + ')');
+}
+
+H.section('macro floors must stay payable');
+{
+  // At the ED-safe calorie floor a heavy person cannot pay both the protein floor (2.2g/kg) and the fat
+  // floor (0.5g/kg) — from about 113kg at 1500 kcal. The rescue trimmed fat but could not touch protein,
+  // so carbs clamped to 0 and the four returned macros summed to MORE than the cal returned beside them
+  // (115kg/1500 gave 1534). renderNutritionLog draws the ring from these fields, so the ring contradicted
+  // the goal on screen. A sweep found 24 of 46 rows wrong.
+  const { macrosForCalories } = H.load(['macrosForCalories'], { ls: () => null, getBodyweight: () => H.__bw });
+  let mismatches = 0, rows = 0;
+  for (const cal of [1500, 1200, 1800]) {
+    for (let bw = 50; bw <= 160; bw += 5) {
+      H.__bw = bw; rows++;
+      const m = macrosForCalories(cal, { proPerKg: 2.2 });
+      if (Math.abs(m.pro * 4 + m.carb * 4 + m.fat * 9 - cal) > 12) mismatches++;
+    }
+  }
+  H.eq(mismatches, 0, 'macros sum to the target across ' + rows + ' bodyweight/calorie combinations');
+
+  // Protein is still protected in the ordinary case — the cap must only bite when the budget cannot hold it.
+  H.__bw = 80;
+  const normal = macrosForCalories(2400, { proPerKg: 2.2 });
+  H.ok(normal.pro >= 170, 'protein is still ~2.2g/kg when the calories allow it');
+  H.ok(normal.carb > 0, 'and carbs are not needlessly zeroed');
+}
+
+H.section('every SaveFile caller honours the three-way contract');
+{
+  // SaveFile.save returns true / false / null-for-cancelled. exportFullBackup — the prominent Settings
+  // "Backup" button — threw the result away, so a cancelled share sheet AND a failed write both said
+  // "Backup saved". It was the only one of the five call sites that did.
+  const code = H.html.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  const sites = [...code.matchAll(/SaveFile\.save\(/g)].map(m => m.index);
+  H.ok(sites.length >= 5, 'found the SaveFile call sites (' + sites.length + ')');
+  const unbound = sites.filter(i => {
+    const pre = code.slice(Math.max(0, i - 90), i);
+    return !/(=|return|\.then|await\s+SaveFile\.save\)|\bconst\s+\w+\s*=\s*await\s*)$/.test(pre.trim().slice(-40) + ' ') &&
+           !/=\s*await\s*$/.test(pre) && !/=\s*$/.test(pre.trim()) && !/\.then\($/.test(pre.trim());
+  });
+  // The specific regression: exportFullBackup must branch on the result.
+  const efb = code.slice(code.indexOf('async function exportFullBackup('), code.indexOf('async function exportFullBackup(') + 2400);
+  H.ok(/=\s*await SaveFile\.save\(/.test(efb), 'exportFullBackup binds the result');
+  H.ok(/=== null\) return/.test(efb), 'and says nothing when the person cancelled');
+  H.ok(/Not saved/.test(efb), 'and admits it when the write actually failed');
+}
+
+H.section('restore must not install someone else\'s credentials');
+{
+  // v430 filtered the export and importAllData, but confirmRestore — the restore half of the PROMINENT
+  // Settings pair — wrote every key in the file verbatim, including totry_auth_session, with no
+  // backupSafeKey filter and not even a totry_ prefix check.
+  const code = H.html.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  const cr = code.slice(code.indexOf('function confirmRestore('), code.indexOf('function confirmRestore(') + 1400);
+  H.ok(/filter\(\(\[k\]\) => backupSafeKey\(k\)\)/.test(cr), 'confirmRestore filters through backupSafeKey');
+  H.ok(!/Object\.entries\(data\)\.forEach/.test(cr), 'it no longer writes every key in the file');
 }
 
 H.report();
