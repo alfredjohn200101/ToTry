@@ -4200,7 +4200,7 @@ Amen.</div></div>
     <button class="btn" style="margin-top:16px;font-size:12px;opacity:0.7" onclick="goSosP2()">Done early &#8594;</button>
   </div>
   <div class="sos-phase" id="sos-p2">
-    <div class="sos-phase-lbl">Step 2 of 3 &#8212; Receive the word</div>
+    <div class="sos-phase-lbl" id="sos-p2-lbl">Step 2 of 3 &#8212; Receive the word</div>
     <div class="sos-verse-block">
       <div class="sos-verse-text" id="sos-verse-text">Loading your verse...</div>
       <div class="sos-verse-ref" id="sos-verse-ref"></div>
@@ -4584,7 +4584,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v430';
+const APP_VERSION = 'v431';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -12183,6 +12183,10 @@ function playTheTape(){
 async function fetchSosVerse(i){
   loadV();const v=vices[i];
   const pb=getVicePlaybook(v);
+  // BIBLE_SYS is "You are a Bible scholar and pastoral counsellor" — asking it on behalf of a Muslim,
+  // Hindu, Buddhist or secular person is both wrong and a wasted paid call. Their anchor comes from
+  // their own tradition set in _sosAnchor().
+  try{ if(typeof faithTradition==='function' && faithTradition() !== 'christianity') return; }catch(_){}
   try{
     const prompt='Someone is fighting an urge for "'+v.n+'" (category: '+pb.label+'). It usually hits when: '+v.t+'. Find the single most relevant ESV verse for resisting THIS specific kind of temptation right now. A strong default for this category is '+pb.verseRef+', but choose what fits best.';
     const raw=await api(BIBLE_SYS,[],prompt,900);
@@ -12408,6 +12412,44 @@ function setLocation(loc){
     if(secs<=0){clearInterval(sosTimerInt);goSosP2();}
   },1000);
 }
+// THE CRISIS SURFACE HAD NO FAITH GATE AT ALL.
+// Step 2 of 3 handed a Bible verse — labelled "Receive the word" and stamped "(ESV)" — to a Muslim,
+// Hindu, Buddhist or secular person mid-urge, with read-aloud and a shareable card attached. Both of its
+// sources are Bible-only: the AI fetch uses BIBLE_SYS ("You are a Bible scholar..."), and the vice
+// playbook's anchor is a Bible reference for every entry. And because faithTradition() DEFAULTS TO
+// SECULAR, this was the default path — in direct contradiction of the app own secular voice contract:
+// "Use NO religious language at all. Never mention God, scripture, or prayer."
+//
+// It breaks "faith is full but never forced" at the exact moment trust matters most. Nothing needed
+// inventing: VS_CHRISTIANITY / VS_ISLAM / VS_HINDU / VS_BUDDHIST / VS_SECULAR already ship, and
+// activeVerses() already resolves the right set for the person. The Bible-only sources are now used
+// only for someone who is actually Christian.
+const _SOS_P2_LBL = {
+  christianity: 'Receive the word',
+  islam:        'Receive the word',
+  hinduism:     'Receive the teaching',
+  buddhism:     'Receive the teaching',
+  secular:      'Steady your mind'
+};
+function _sosAnchor(pb){
+  try{
+    const t = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
+    if(t === 'christianity'){
+      return { text: (sosVerseData && sosVerseData.verse) || pb.verse,
+               ref:  (sosVerseData && sosVerseData.reference) || (pb.verseRef + ' (ESV)') };
+    }
+    const set = (typeof activeVerses === 'function') ? activeVerses() : null;
+    if(set && set.length){
+      // Deterministic, so it does not reshuffle under someone mid-urge on a re-render, but still
+      // varies day to day rather than being the same line forever.
+      const i = (new Date().getDate() + (typeof curVice === 'number' ? curVice : 0)) % set.length;
+      return { text: set[i].t, ref: set[i].r };
+    }
+  }catch(_){}
+  // Last resort: the playbook line WITHOUT the (ESV) stamp, which is the part that presumes a tradition.
+  return { text: pb.verse, ref: pb.verseRef };
+}
+
 function goSosP2(){
   if(sosTimerInt)clearInterval(sosTimerInt);showSosPhase(2);
   loadV();
@@ -12417,8 +12459,14 @@ function goSosP2(){
   // (always relevant to THIS vice, never a generic placeholder).
   const vt=document.getElementById('sos-verse-text');
   const vr=document.getElementById('sos-verse-ref');
-  if(vt)vt.textContent='\u201C'+(sosVerseData?.verse || pb.verse)+'\u201D';
-  if(vr)vr.textContent='\u2014 '+(sosVerseData?.reference || (pb.verseRef + ' (ESV)'));
+  const _anchor = _sosAnchor(pb);
+  if(vt)vt.textContent='\u201C'+_anchor.text+'\u201D';
+  if(vr)vr.textContent='\u2014 '+_anchor.ref;
+  try{
+    const _lbl=document.getElementById('sos-p2-lbl');
+    const _t=(typeof faithTradition==='function')?faithTradition():'secular';
+    if(_lbl) _lbl.textContent='Step 2 of 3 \u2014 '+(_SOS_P2_LBL[_t] || _SOS_P2_LBL.secular);
+  }catch(_){}
   // Listen / Make a card, now that there is a verse to listen to.
   try{
     const vtools=document.getElementById('sos-verse-tools');

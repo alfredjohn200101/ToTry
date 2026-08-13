@@ -1558,4 +1558,45 @@ H.section('a backup file must never be a credential');
   }
 }
 
+H.section('the crisis surface must speak the person\'s own tradition');
+{
+  // Live SOS "Step 2 of 3 — Receive the word" handed a Bible verse, stamped "(ESV)", with read-aloud and
+  // a shareable card, to a Muslim, Hindu, Buddhist or secular person mid-urge. Both sources were
+  // Bible-only: the AI fetch (BIBLE_SYS = "You are a Bible scholar...") and the vice playbook, whose
+  // every anchor is a Bible reference. faithTradition() defaults to SECULAR, so this was the DEFAULT
+  // path — and FAITHS.secular.voice says "Use NO religious language at all. Never mention God,
+  // scripture, or prayer." Verified across all five traditions after the fix.
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+
+  H.ok(/function _sosAnchor\(/.test(code), 'the SOS anchor goes through a tradition-aware resolver');
+  const fn = code.slice(code.indexOf('function _sosAnchor('));
+  const body = fn.slice(0, fn.indexOf('\nfunction '));
+  H.ok(/faithTradition\(\)/.test(body), 'it asks which tradition the person is');
+  H.ok(/activeVerses\(\)/.test(body), 'and draws from their own verse set, not a new hardcoded list');
+  H.ok(/=== 'christianity'/.test(body), 'the Bible sources are reserved for someone who is Christian');
+  H.ok(/ESV/.test(body.split("=== 'christianity'")[1].slice(0, 400)),
+    'the (ESV) stamp sits inside the Christian branch only');
+
+  // It must actually be called — a resolver nothing uses is the signature dead-code failure.
+  const g = code.slice(code.indexOf('function goSosP2('));
+  const gBody = g.slice(0, 1800);
+  H.ok(/_sosAnchor\(pb\)/.test(gBody), 'goSosP2 uses it');
+  H.ok(!/sosVerseData\?\.verse \|\| pb\.verse/.test(gBody), 'and no longer renders the Bible verse directly');
+
+  // The label is part of the same promise — "the word" presumes a scripture.
+  H.ok(/_SOS_P2_LBL/.test(code), 'the step label is per-tradition');
+  const lbl = (code.match(/const _SOS_P2_LBL = \{([\s\S]*?)\}/) || ['',''])[1];
+  for (const t of ['christianity','islam','hinduism','buddhism','secular']) {
+    H.ok(new RegExp(t + '\\s*:').test(lbl), 'the label covers ' + t);
+  }
+  H.ok(/Steady your mind/.test(lbl), 'and the secular label carries no religious language');
+
+  // No paid Bible-scholar call on behalf of someone who is not Christian.
+  const f = code.slice(code.indexOf('async function fetchSosVerse('));
+  H.ok(/faithTradition\(\) !== 'christianity'\) return/.test(f.slice(0, 900)),
+    'fetchSosVerse returns early for a non-Christian instead of asking BIBLE_SYS');
+}
+
 H.report();
