@@ -163,9 +163,12 @@ H.section('crisis gate — call-site coverage must never regress');
   const gates = (html.match(/detectCrisis\s*\(/g) || []).length;
   // 1 definition + N call sites. At v358 there are 7 gated surfaces: sendCoach, sendPT,
   // companionFreeText, companionReply, findVerse, generateIntentionPrayer, _feelingNowGo, searchBible.
-  H.ok(gates >= 9, 'detectCrisis is referenced at least 9 times (definition + every gated surface) — found ' + gates);
+  H.ok(gates >= 10, 'detectCrisis is referenced at least 10 times (definition + every gated surface) — found ' + gates);
   // The specific surfaces, by their enclosing function, must each contain a gate.
-  const mustGate = ['_feelingNowGo', 'searchBible', 'companionFreeText', 'companionReply', 'findVerse', 'generateIntentionPrayer'];
+  // logBody added v434: the weekly check-in's "What got in your way? Honest answers only." is a
+  // free-text field that fed straight into generateWeeklyCoachResponse -> "Biggest struggle: ..."
+  // -> a third-party model, with no gate anywhere in the path. It was the 8th such surface.
+  const mustGate = ['_feelingNowGo', 'searchBible', 'companionFreeText', 'companionReply', 'findVerse', 'generateIntentionPrayer', 'logBody'];
   mustGate.forEach(fn => {
     const i = html.indexOf('function ' + fn + '(');
     H.ok(i > 0, fn + ' exists');
@@ -1679,6 +1682,31 @@ H.section('running out of room must never destroy what cannot be recreated');
   // 4. The photo cap and the prune trim must not silently disagree about how many are kept.
   H.ok(/totry_progress_photos', a => Array\.isArray\(a\) \? a\.slice\(0, 8\)/.test(code),
     'the prune trim keeps the newest 8 (change this and update the toast copy)');
+}
+
+H.section('a gated disclosure must not ride along to the model');
+{
+  // The gate stopped the immediate reply and then left the raw sentence in cH/ptH, so the NEXT message
+  // shipped it to Gemini / Groq / OpenRouter / Anthropic anyway. persistCoachHistory() writes
+  // totry_coach_history, which IS in SYNC_KEYS, so it was uploaded to the database as well. The companion
+  // path already solved this and says why; the two coach handlers had not.
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+
+  for (const [fn, hist] of [['sendCoach', 'cH'], ['sendPT', 'ptH']]) {
+    const i = code.indexOf('async function ' + fn + '(');
+    H.ok(i > 0, fn + ' exists');
+    const body = code.slice(i, i + 1600);
+    const pushRaw = body.indexOf(hist + ".push({role:'user',content:t})");
+    const gate = body.indexOf('detectCrisis');
+    H.ok(pushRaw > gate, fn + ' pushes the raw turn only AFTER the crisis gate');
+    H.ok(/disclosed something serious/.test(body), fn + ' puts a redacted placeholder in the history instead');
+  }
+
+  // And the companion's original, which is where the pattern came from.
+  H.ok(/never let the disclosure ride along|disclosed something serious/.test(code),
+    'the companion still redacts too');
 }
 
 H.report();

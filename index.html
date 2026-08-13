@@ -4616,7 +4616,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v433';
+const APP_VERSION = 'v434';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -8040,16 +8040,28 @@ function restoreCoachMessages(){
 async function sendCoach(){
   const el=document.getElementById('coach-in'),t=el.value.trim();if(!t)return;
   el.value='';el.style.height='40px';
-  addMsg('coach-msgs',t,'user');cH.push({role:'user',content:t});
+  addMsg('coach-msgs',t,'user');
   
   // CRISIS GATE — runs before AI call. If risk detected, show resources instead.
+  //
+  // THE RAW TEXT MUST NOT ENTER THE HISTORY. It used to be pushed to cH on the line above, BEFORE this
+  // gate, and the gate's `return` left it sitting there. So the gate stopped the immediate AI reply and
+  // then the very next message shipped the disclosure anyway, inside cH, to Gemini / Groq / OpenRouter /
+  // Anthropic. Worse, persistCoachHistory() writes totry_coach_history, which IS in SYNC_KEYS — so the
+  // most sensitive sentence a person will ever type into this app was also uploaded to the database.
+  //
+  // The companion path already got this right and says why (see _compHistory) — "never let the disclosure
+  // ride along in the history of the next message". addMsg() still runs first, so they see what they
+  // typed; only the model's copy is redacted.
   const crisis = detectCrisis(t);
   if(crisis){
     showCrisisResponse('coach-msgs', crisis);
+    cH.push({role:'user',content:'[the person disclosed something serious; crisis resources were shown instead of an AI reply]'});
     cH.push({role:'assistant',content:'[Crisis resources shown]'});
     persistCoachHistory();
     return;
   }
+  cH.push({role:'user',content:t});
   
   const lid=addMsg('coach-msgs','...','coach');
   
@@ -8366,16 +8378,19 @@ function restorePTMessages(){
 async function sendPT(){
   const el=document.getElementById('pt-in'),t=el.value.trim();if(!t)return;
   el.value='';el.style.height='40px';
-  addMsg('pt-msgs',t,'user');ptH.push({role:'user',content:t});
+  addMsg('pt-msgs',t,'user');
   
-  // Crisis gate also applies to PT Coach
+  // Crisis gate also applies to PT Coach. Same redaction as sendCoach: the raw disclosure never enters
+  // ptH, because the next message would carry it to the model and persistPTHistory() would sync it.
   const crisis = detectCrisis(t);
   if(crisis){
     showCrisisResponse('pt-msgs', crisis);
+    ptH.push({role:'user',content:'[the person disclosed something serious; crisis resources were shown instead of an AI reply]'});
     ptH.push({role:'assistant',content:'[Crisis resources shown]'});
     persistPTHistory();
     return;
   }
+  ptH.push({role:'user',content:t});
   
   const lid=addMsg('pt-msgs','...','coach');
   let r=null;
@@ -19171,6 +19186,40 @@ async function logBody(){
   
   // Auto-adjust calorie target if weight trend supports it
   adjustCaloriesFromWeightTrend();
+  
+  // THE 8TH FREE-TEXT -> LLM SURFACE, and it had no crisis gate at all.
+  // "What got in your way? Honest answers only." invites exactly the sentence that matters most, and
+  // every other AI entry point in this app runs detectCrisis() before api(). This one went straight from
+  // the textarea into generateWeeklyCoachResponse -> "Biggest struggle: ..." -> a third-party model.
+  // Someone answering that prompt honestly at their worst got no resources and no bridge to a human.
+  //
+  // GRACE OVER SHAME: their words are already saved above, and they stay saved. Nothing they wrote is
+  // discarded or thrown back at them. What changes is that the app stops to meet them instead of sending
+  // the sentence off for a cheerful weekly read.
+  let _wkCrisis = null;
+  try{ if(typeof detectCrisis === 'function') _wkCrisis = detectCrisis([winText, struggleText, focusText].filter(Boolean).join(' ')); }catch(_){ }
+  if(_wkCrisis){
+    haptic('warning');
+    // Presented as a modal, the same way the weekly read itself is — an inline card at the top of the
+    // Track tab could be scrolled past by someone who has just closed the form.
+    try{
+      if(typeof showCrisisResponse === 'function'){
+        document.querySelectorAll('.modal-bg').forEach(function(m){ m.remove(); });
+        const m = document.createElement('div');
+        m.className = 'modal-bg open';
+        m.style.alignItems = 'center';
+        m.innerHTML = '<div class="modal" style="max-width:92vw">' +
+          '<div class="modal-handle"></div>' +
+          '<div id="wk-crisis-slot"></div>' +
+          '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;margin-top:10px">Close</button>' +
+        '</div>';
+        document.body.appendChild(m);
+        showCrisisResponse('wk-crisis-slot', _wkCrisis);
+      }
+    }catch(_){ }
+    showToast('Check-in saved', 'I read what you wrote. Please look at this.');
+    return;                                    // no AI weekly read on top of a disclosure
+  }
   
   haptic('celebrate');
   showToast('Check-in logged','Your coach is reading your week...');
