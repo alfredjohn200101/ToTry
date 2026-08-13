@@ -504,7 +504,22 @@ H.section('ls() quota handling — recover, or tell the truth');
   H.ok(JSON.parse(store['totry_progress_photos']).length < 30, 'photos were trimmed to make room');
   H.eq(JSON.parse(store['totry_journal'])[0].text, 'MY WORDS', 'the JOURNAL is never sacrificed');
   H.eq(JSON.parse(store['totry_v'])[0].n, 'MY FIGHT', 'the FIGHT is never sacrificed');
-  H.eq(toast, null, 'no alarm raised when recovery succeeded');
+  // CONTRACT CHANGED IN v433, deliberately. This used to assert toast === null — "no alarm raised when
+  // recovery succeeded". The save succeeding and the photos being gone are two different facts, and the
+  // second one is irreversible: photos are device-only by policy (privacy.html promises it), so they are
+  // in no cloud and in no backup file. Trimming 30 down to 8 destroys 22 things a person cannot recreate.
+  // Staying quiet about that is the silent-data-loss failure this suite exists to catch, so the rule is
+  // now: recovery that costs nothing irreplaceable stays quiet; recovery that costs photos speaks.
+  H.eq(toast, 'Storage was full', 'losing photos to a prune is reported, even though the save succeeded');
+  H.ok(JSON.parse(store['totry_progress_photos']).length === 8, 'and the newest 8 are what survive');
+
+  // The other half of the contract: a recovery that costs nothing irreplaceable must still stay quiet.
+  toast = null;
+  store['totry_progress_photos'] = JSON.stringify([{ id: 1, data: 'p' }]);   // already below the trim floor
+  store['totry_coach_history'] = JSON.stringify(Array.from({length:40},(_,i)=>({q:i,a:'a'.repeat(400)})));
+  failOn = 'totry_nutlog2';
+  H.eq(ls('totry_nutlog2', { x: 1 }), true, 'recovers again');
+  H.eq(toast, null, 'no alarm when the prune only touched replaceable history');
 
   // an unrecoverable one — every write throws
   localStorage.setItem = () => quotaErr();
