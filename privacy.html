@@ -49,6 +49,7 @@
     <li><strong>Workout screenshot / meal photo reading</strong> — the image is sent to Google Gemini Vision to read the numbers.</li>
     <li><strong>Barcode scanning</strong> — the barcode is sent to OpenFoodFacts (open database).</li>
     <li><strong>USDA food search</strong> — the search query is sent to api.nal.usda.gov.</li>
+    <li><strong>Prayer times (api.aladhan.com)</strong> — only if you use the prayer-time feature. Your location is <strong>rounded to about a kilometre</strong> before it is used — prayer times shift by only seconds over that distance, so the rounding costs nothing and means the request describes your area rather than your address. It is sent to api.aladhan.com to calculate the times, is <strong>not</strong> stored in my database, is not linked to your account, and is never used for advertising or tracking. You can decline location entirely and type your city instead, and the app will remember the city rather than ask again.</li>
     <li><strong>Exercise info</strong> — an exercise name is sent to ExerciseDB / Wger.</li>
     <li><strong>Currency rates</strong> — your selected currency is sent to api.frankfurter.dev.</li>
     <li><strong>Strava</strong> — if you connect it, Strava serves your activities via OAuth you explicitly authorise.</li>

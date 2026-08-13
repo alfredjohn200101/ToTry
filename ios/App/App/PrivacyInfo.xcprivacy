@@ -45,6 +45,22 @@
 		     and recent training are part of the coach context — which is why this entry is declared
 		     collected and linked. The usage string and privacy.html said otherwise until v421; they were
 		     wrong, and this declaration was right. -->
+		<!-- Coarse location, used ONLY to fetch prayer times for the person's area (api.aladhan.com), and
+		     only for whoever turns that on. Rounded to ~1km before it leaves the device, never written to my
+		     database, never linked to the account, never used for tracking. Declared because it does reach a
+		     third party, which is what "collected" means here. -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeCoarseLocation</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeHealthAndFitness</string>

@@ -4616,7 +4616,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v436';
+const APP_VERSION = 'v437';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9473,6 +9473,11 @@ async function _loadSalah(){
   let coords=null; try{ const g=ls('totry_geo'); if(g&&g.lat) coords=g; }catch(_){}
   if(!coords){
     try{ coords=await new Promise((res,rej)=>{ if(!navigator.geolocation) return rej(); navigator.geolocation.getCurrentPosition(p=>res({lat:p.coords.latitude,lng:p.coords.longitude}), ()=>rej(), {timeout:8000,maximumAge:3600000}); }); if(coords){ try{ ls('totry_geo',coords); }catch(_){} } }catch(_){ coords=null; }
+    // COARSENED TO ~1km BEFORE IT LEAVES THE DEVICE. Prayer times shift by a few seconds over a
+    // kilometre, so two decimal places is every bit as accurate for this purpose — and it is the
+    // difference between telling a third party the suburb someone prays in and telling it their address.
+    // The full-precision fix reads badly in a URL query string too, which is where these coordinates go.
+    try{ if(coords && coords.lat!=null){ coords={ lat:Math.round(coords.lat*100)/100, lng:Math.round(coords.lng*100)/100 }; } }catch(_){}
   }
   // A saved city is as good as coordinates, and the app already stores one (Settings writes totry_city
   // for fasting times). Without this, someone who declines location — and plenty of people do — had to
@@ -35815,6 +35820,8 @@ function showPrivacyPolicy(){
         '<li><strong style="color:var(--tx)">Workout screenshot OCR</strong> — the image is sent to Google Gemini Vision.</li>' +
         '<li><strong style="color:var(--tx)">Barcode scanning</strong> — the barcode is sent to OpenFoodFacts (open database).</li>' +
         '<li><strong style="color:var(--tx)">USDA food search</strong> — the search query is sent to api.nal.usda.gov.</li>' +
+        '<li><strong style="color:var(--tx)">Apple Health</strong> — on iPhone, only if you grant it. Your steps, sleep and imported workout summaries (type, duration, distance, calories, average heart rate) are saved to your account so they follow you between devices, and your sleep and recent training form part of the context sent to the AI when you ask for coaching. Never sold, never advertising, never shared with anyone else. Turn it off any time in Settings, and revoke it in iOS Settings &#8594; Health.</li>' +
+        '<li><strong style="color:var(--tx)">Prayer times</strong> — if you use them, your location is rounded to about a kilometre and sent to api.aladhan.com to work out the times where you are. The rounded figure is not stored on my server and is not linked to your account. You can skip location entirely and type your city instead.</li>' +
         '<li><strong style="color:var(--tx)">Exercise GIFs</strong> — exercise name is sent to ExerciseDB / Wger.</li>' +
         '<li><strong style="color:var(--tx)">Currency rates</strong> — your selected currency is sent to api.frankfurter.dev.</li>' +
         '<li><strong style="color:var(--tx)">Strava</strong> — if you connect it, Strava sees your access tokens and serves your activities. You explicitly authorise this via OAuth.</li>' +

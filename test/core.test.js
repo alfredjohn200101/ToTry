@@ -1809,4 +1809,47 @@ H.section('restore must not install someone else\'s credentials');
   H.ok(!/Object\.entries\(data\)\.forEach/.test(cr), 'it no longer writes every key in the file');
 }
 
+H.section('location: declared, coarsened, and disclosed everywhere');
+{
+  // The app calls navigator.geolocation.getCurrentPosition and puts latitude/longitude in a query string
+  // to api.aladhan.com for prayer times. NSLocationWhenInUseUsageDescription was MISSING, which does not
+  // get you rejected — iOS terminates the app the moment the call is made, in front of whoever is
+  // holding it. Neither privacy policy nor the privacy manifest mentioned location at all.
+  const fs = require('fs');
+  const path = require('path');
+  const root = path.join(__dirname, '..');
+  const code = H.html.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+
+  const usesGeo = /navigator\.geolocation/.test(code);
+  H.ok(usesGeo, 'the app does use geolocation (if this ever goes false, drop the plist key too)');
+  if (usesGeo) {
+    const plist = fs.readFileSync(path.join(root, 'ios/App/App/Info.plist'), 'utf8');
+    H.ok(/NSLocationWhenInUseUsageDescription/.test(plist),
+      'Info.plist declares the location usage string — without it iOS terminates the app on the call');
+    const priv = fs.readFileSync(path.join(root, 'ios/App/App/PrivacyInfo.xcprivacy'), 'utf8');
+    H.ok(/CoarseLocation|PreciseLocation/.test(priv), 'the privacy manifest declares location');
+
+    // Coarsened before it leaves the device — full GPS precision buys nothing for prayer times.
+    H.ok(/Math\.round\(coords\.lat\s*\*\s*100\)/.test(code), 'coordinates are rounded to ~1km before use');
+
+    // Disclosed in BOTH policies: the hosted one App Store Connect points at, and the in-app modal that
+    // people actually read. v421 fixed the hosted copy for Health and left the in-app one wrong.
+    const hosted = fs.readFileSync(path.join(root, 'privacy.html'), 'utf8');
+    H.ok(/aladhan/i.test(hosted), 'privacy.html names api.aladhan.com');
+    H.ok(/rounded to about a kilometre/i.test(hosted), 'and says the location is coarsened');
+    const modal = code.slice(code.indexOf('function showPrivacyPolicy('), code.indexOf('function showPrivacyPolicy(') + 9000);
+    H.ok(/aladhan/i.test(modal), 'the IN-APP policy names api.aladhan.com too');
+    H.ok(/Apple Health/.test(modal), 'and the in-app policy finally mentions Apple Health');
+  }
+
+  // Every usage string the binary needs must exist — a missing one is a crash, not a warning.
+  const plist = fs.readFileSync(path.join(root, 'ios/App/App/Info.plist'), 'utf8');
+  for (const [api, key] of [
+    ['navigator.geolocation', 'NSLocationWhenInUseUsageDescription'],
+    ['camera', 'NSCameraUsageDescription'],
+  ]) {
+    H.ok(plist.includes(key), key + ' present for ' + api);
+  }
+}
+
 H.report();

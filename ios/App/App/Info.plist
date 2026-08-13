@@ -36,6 +36,8 @@
 	<string>To Try reads your steps, active energy, workouts, heart rate, mindful minutes and sleep from Apple Health so your movement, training and rest count toward your day automatically — no manual logging. Your sleep and imported workout summaries are saved to your account so they follow you between devices, and your sleep and recent training form part of the context sent to the AI when you ask for coaching. Never used for advertising, never sold, never shared with anyone else.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>To Try can record activity you log here back to Apple Health, so your data stays in one place.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>To Try uses your location only to work out prayer times where you are. It is rounded to about a kilometre before it is used, never stored on my server, and never used for anything else. You can skip it and type your city instead.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>To Try asks for this only when you choose "Save Image" while sharing something it made for you — your day card or a progress collage. Nothing is written to your library on its own.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
