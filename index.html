@@ -4616,7 +4616,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v438';
+const APP_VERSION = 'v439';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7485,7 +7485,10 @@ function buildCtx(){
   const nutGoals=ls('totry_nut_goals')||defaultNutGoals();
   const bodyEntries=ls('totry_body')||[];
   const currentWeight=bodyEntries[0]?.weight||null;
-  const recentJournal=(ls('totry_journal')||[]).slice(0,3).map(e=>e.text?.slice(0,100)).filter(Boolean).join('; ');
+  // Flagged entries are excluded permanently. Gating at write time is not enough on its own: this line
+  // re-reads the journal on EVERY coach message, so without the filter a disclosure written once was
+  // sent to the model again and again for as long as it stayed in the newest three.
+  const recentJournal=(ls('totry_journal')||[]).filter(e=>!e.flagged).slice(0,3).map(e=>e.text?.slice(0,100)).filter(Boolean).join('; ');
   const winRate=tf>0?Math.round((tw/tf)*100):0;
   
   // Per-vice clean days with grace
@@ -7641,7 +7644,9 @@ function buildCtx(){
   // between who they are and who they want to be seen as. Grace-first, never a weapon.
   let honestCtx = '';
   try{
-    const lastSee = (ls('totry_evenings')||[]).find(e => e && (e.see||'').trim());
+    // Never a flagged one — see completeEvening. Without this the gate would stop the moment and the
+    // sentence would still be read back to the model on every later coach message.
+    const lastSee = (ls('totry_evenings')||[]).find(e => e && !e.flagged && (e.see||'').trim());
     if(lastSee && lastSee.see) honestCtx = '\nTheir last honest evening reflection — asked what the people they love would see in their day — was: "' + lastSee.see.trim().slice(0,220) + '". Hold this tenderly; speak to who they want to become, never shame them with it.';
   }catch(_){ }
 
@@ -19115,6 +19120,13 @@ function _resolveEntryDate(inputId){
 }
 function saveEntry(){
   const text=document.getElementById('journal-text').value.trim();if(!text)return;
+  // "Write honestly. This is just for you..." is an invitation to say the hardest thing, and this was the
+  // one place that asked for it and then did nothing with it. No gate here, and the entry is fed back to
+  // the AI three separate ways afterwards (buildCtx's RECENT JOURNAL on every coach message, the morning
+  // prompt, and the weekly synthesis) — so a disclosure written here was quietly narrated to a model for
+  // days. GRACE OVER SHAME: the entry is always saved, exactly as written. It is marked, not censored.
+  let _jCrisis = null;
+  try{ if(typeof detectCrisis === 'function') _jCrisis = detectCrisis(text); }catch(_){ }
   // Auto-pull vice stats from today's data
   loadV();
   const autoUrges=vices.reduce((a,v)=>a+(v.urgelog||[]).filter(t=>new Date(t).toLocaleDateString('en-AU')===new Date().toLocaleDateString('en-AU')).length,0);
@@ -19124,13 +19136,31 @@ function saveEntry(){
   // If the user typed urge/win numbers, honour them (esp. useful when backdating a past day).
   const manualUrges=parseInt((document.getElementById('j-urges')||{}).value||'');
   const manualWins=parseInt((document.getElementById('j-wins')||{}).value||'');
-  entries.push({date:when.date,ts:when.ts,day:when.day,mood:curMood,text,urges:isNaN(manualUrges)?(when.backdated?0:autoUrges):manualUrges,wins:isNaN(manualWins)?(when.backdated?0:todayWins):manualWins,backdated:when.backdated});
+  entries.push({date:when.date,ts:when.ts,day:when.day,mood:curMood,text,flagged:!!_jCrisis,urges:isNaN(manualUrges)?(when.backdated?0:autoUrges):manualUrges,wins:isNaN(manualWins)?(when.backdated?0:todayWins):manualWins,backdated:when.backdated});
   // Keep newest-first by timestamp so a backdated entry lands in the right place in the timeline.
   entries.sort((a,b)=>new Date(b.ts)-new Date(a.ts));
   ls('totry_journal',entries.slice(0,1200)); // unified journal cap — reflections persist for years
   const dm=document.getElementById('journal-modal'); if(dm) dm.classList.remove('open');
   const di=document.getElementById('journal-date'); if(di) di.value='';
   renderJournal();
+  // If they wrote something serious, stop and meet them. The entry is already saved above — nothing they
+  // wrote is refused or thrown back at them — and it is marked so it never becomes AI context again.
+  if(_jCrisis){
+    try{
+      document.querySelectorAll('.modal-bg').forEach(function(m){ m.remove(); });
+      const m = document.createElement('div');
+      m.className = 'modal-bg open';
+      m.style.alignItems = 'center';
+      m.innerHTML = '<div class="modal" style="max-width:92vw"><div class="modal-handle"></div>' +
+        '<div id="journal-crisis-slot"></div>' +
+        '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;margin-top:10px">Close</button></div>';
+      document.body.appendChild(m);
+      if(typeof showCrisisResponse === 'function') showCrisisResponse('journal-crisis-slot', _jCrisis);
+    }catch(_){ }
+    if(typeof haptic==='function') haptic('warning');
+    showToast('Saved', 'I read what you wrote. Please look at this.');
+    return;
+  }
   showToast(when.backdated?'Added':'Saved', when.backdated?('Backdated to '+when.date):'In your journal.');
 }
 function renderJournal(){
@@ -32378,6 +32408,11 @@ function completeEvening(){
   // to be saved to an orphan store nothing ever read. Now it lives on the evening record — synced,
   // shown back in the journal, and given to the brother's context so the answer actually serves him.
   const see=document.getElementById('evening-see')?.value.trim()||'';
+  // Same gate as the journal. "If the people you love watched today, what would they see?" is the
+  // heaviest question the app asks, and it was ungated — the answer went straight into the coach's
+  // context (see honestCtx in buildCtx) and was narrated back to a model afterwards.
+  let _evCrisis = null;
+  try{ if(typeof detectCrisis === 'function') _evCrisis = detectCrisis([win, release, see].filter(Boolean).join(' ')); }catch(_){ }
   const t1=document.getElementById('eve-task1')?.value.trim()||'';
   const t2=document.getElementById('eve-task2')?.value.trim()||'';
   const t3=document.getElementById('eve-task3')?.value.trim()||'';
@@ -32407,7 +32442,7 @@ function completeEvening(){
   const goalsHit=window.__goalsHit||null;
   const log=ls('totry_evenings')||[];
   const _todayStr=new Date().toLocaleDateString('en-AU');
-  const entry={date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}),day:getDayCount(),rating:dayRating,win,release,see,tasks,steps:stepsVal||null,rings,goalsHit,ts:new Date().toISOString()};
+  const entry={date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}),day:getDayCount(),rating:dayRating,win,release,see,flagged:!!_evCrisis,tasks,steps:stepsVal||null,rings,goalsHit,ts:new Date().toISOString()};
   // Editable until midnight: replace today's existing entry rather than stacking duplicates.
   const _exIdx=log.findIndex(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===_todayStr);
   if(_exIdx>=0) log[_exIdx]=entry; else log.unshift(entry);
@@ -32425,7 +32460,21 @@ function completeEvening(){
   if(!examenToday){
     haptic('tap');
     // Save the reflection, but the day isn't fully closed until the examen is done.
-    if(typeof showToast==='function') showToast('Reflection saved','One last thing — your examen closes the day. Scroll up to begin it.');
+    if(_evCrisis){
+      try{
+        document.querySelectorAll('.modal-bg').forEach(function(m){ m.remove(); });
+        const _m = document.createElement('div');
+        _m.className = 'modal-bg open';
+        _m.style.alignItems = 'center';
+        _m.innerHTML = '<div class="modal" style="max-width:92vw"><div class="modal-handle"></div>' +
+          '<div id="evening-crisis-slot"></div>' +
+          '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;margin-top:10px">Close</button></div>';
+        document.body.appendChild(_m);
+        if(typeof showCrisisResponse === 'function') showCrisisResponse('evening-crisis-slot', _evCrisis);
+      }catch(_){ }
+      if(typeof showToast==='function') showToast('Reflection saved','I read what you wrote. Please look at this.');
+    }
+    else if(typeof showToast==='function') showToast('Reflection saved','One last thing — your examen closes the day. Scroll up to begin it.');
     const card=document.getElementById('examen-card');
     if(card){ card.scrollIntoView({behavior:'smooth',block:'center'}); card.style.boxShadow='0 0 0 2px var(--go-bd)'; setTimeout(()=>{card.style.boxShadow='';},2000); }
     return;

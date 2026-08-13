@@ -1852,4 +1852,35 @@ H.section('location: declared, coarsened, and disclosed everywhere');
   }
 }
 
+H.section('a disclosure written down must not become AI context')
+{
+  // The journal says "Write honestly. This is just for you..." — an invitation to say the hardest thing —
+  // and had no gate. The evening asks "if the people you love watched today, what would they see?" and had
+  // none either. Gating the moment is only half of it: buildCtx re-reads the journal on EVERY coach
+  // message (RECENT JOURNAL) and the evening feeds honestCtx, so a sentence written once was narrated back
+  // to a model for days afterwards. Entries are therefore MARKED, never censored, and the readers skip them.
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+
+  for (const [fn, flag] of [['saveEntry', '_jCrisis'], ['completeEvening', '_evCrisis']]) {
+    const i = code.indexOf('function ' + fn + '(');
+    H.ok(i > 0, fn + ' exists');
+    const body = code.slice(i, i + 5200);
+    H.ok(/detectCrisis\(/.test(body), fn + ' runs the crisis gate');
+    H.ok(new RegExp('flagged:!!' + flag).test(body), fn + ' marks the entry rather than discarding it');
+    H.ok(/showCrisisResponse\(/.test(body), fn + ' shows the bridge to a human');
+  }
+
+  // The readers must skip flagged entries — this is the half that outlives the moment.
+  H.ok(/totry_journal'\)\|\|\[\]\)\.filter\(e=>!e\.flagged\)/.test(code),
+    "buildCtx's RECENT JOURNAL excludes flagged entries");
+  H.ok(/totry_evenings'\)\|\|\[\]\)\.find\(e => e && !e\.flagged/.test(code),
+    'the evening reflection fed to the coach excludes flagged ones');
+
+  // Grace over shame: the words are always kept.
+  const se = code.slice(code.indexOf('function saveEntry('), code.indexOf('function saveEntry(') + 3000);
+  H.ok(!/return;[\s\S]{0,200}entries\.push/.test(se), 'saveEntry never refuses to store what they wrote');
+}
+
 H.report();
