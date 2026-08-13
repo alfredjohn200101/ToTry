@@ -30,7 +30,7 @@
 :root{
   --bg:#0C0C0E;--bg2:#131316;--bg3:#1A1A1F;--bg4:#222228;
   --bd:rgba(255,255,255,0.07);--bd2:rgba(255,255,255,0.13);
-  --tx:#F2EFE8;--tx2:#9A9490;--tx3:#5C5A55;
+  --tx:#F2EFE8;--tx2:#9A9490;--tx3:#817E77;  /* --tx3 was #5C5A55 = 2.84:1 on --bg, well under WCAG AA's 4.5:1 for normal text, and it carries a LOT of small copy: 'Today's habits' at 9px in 14 places, 'Tap to refresh' at 8px, whole 12-13px paragraphs. Measured, not guessed. Now 4.82:1 — deliberately above the 4.5 threshold rather than exactly on it, since antialiasing and real screens eat the margin. The hierarchy is intact: --tx 17.0 > --tx2 6.5 > --tx3 4.8, so tertiary text still reads as quieter, just legible. Warm hue kept by scaling the original channel ratio rather than picking a neutral grey. */
   --go:#C8A96E;--go-bg:rgba(200,169,110,0.08);--go-bd:rgba(200,169,110,0.28);
   --re:#C85A4E;--re-bg:rgba(200,90,78,0.10);--re-bd:rgba(200,90,78,0.30);
   --gr:#5BB97D;--gr-bg:rgba(91,185,125,0.10);--gr-bd:rgba(91,185,125,0.28);
@@ -4459,12 +4459,34 @@ if(window.visualViewport){ window.visualViewport.addEventListener('resize', setV
 
 // ── FULL LOCAL BACKUP ── the escape hatch: every totry_ key, downloadable + restorable,
 // so a person can NEVER truly lose their journey even with no account or a wiped device.
+// CREDENTIALS MUST NEVER GO INTO A BACKUP FILE.
+// exportAllData() dumps EVERY totry_ key, and sitting among them are the live Supabase session
+// (access + refresh token — this is the account itself) and the OAuth tokens and API keys for Google,
+// Strava, Hevy and the scripture/food services. That file is built to be AirDropped, emailed and parked
+// in cloud storage, so the app's own safety net was handing out a bearer credential: anyone holding the
+// file could sign in as them until the refresh token expired, with no password and no second factor.
+//
+// Restoring is the same hole pointing the other way — importing someone else's backup would install
+// THEIR session on this device.
+//
+// The rest of the file already knew to skip totry_auth_session (the sync scan does exactly that); the
+// backup path simply never did. Matched exactly, not by substring, so totry_pt_sessions and
+// totry_poker_sessions — which are real user data — still get backed up.
+const BACKUP_NEVER = [
+  'totry_auth_session',                                        // Supabase access + refresh token
+  'totry_google_token', 'totry_strava_token', 'totry_hevy_api_key',
+  'totry_esv_key', 'totry_nutritionix_key', 'totry_usda_key'
+];
+function backupSafeKey(k){
+  return typeof k === 'string' && k.indexOf('totry_') === 0 && BACKUP_NEVER.indexOf(k) === -1;
+}
+
 async function exportAllData(){
   try{
     const dump = {};
     for(let i = 0; i < localStorage.length; i++){
       const k = localStorage.key(i);
-      if(k && k.startsWith('totry_')) dump[k] = localStorage.getItem(k);
+      if(backupSafeKey(k)) dump[k] = localStorage.getItem(k);   // never the sign-in or any API token
     }
     const payload = { app:'To Try', version:(typeof APP_VERSION!=='undefined'?APP_VERSION:'?'), exported:new Date().toISOString(), keys:Object.keys(dump).length, data:dump };
     const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
@@ -4473,7 +4495,7 @@ async function exportAllData(){
     const _r = await SaveFile.save(blob, 'totry-backup-' + new Date().toISOString().slice(0,10) + '.json', 'To Try backup');
     if(_r === null) return;   // share sheet dismissed — they chose not to; don't tell them it's saved
     if(typeof haptic==='function') haptic('success');
-    if(typeof showToast==='function') showToast(_r ? 'Backup saved' : 'Not saved', _r ? (payload.keys + ' items exported. Keep it somewhere safe.') : 'Nothing was written. Try again in a moment.');
+    if(typeof showToast==='function') showToast(_r ? 'Backup saved' : 'Not saved', _r ? (payload.keys + ' items exported. Your sign-in and app tokens are deliberately left out, so the file is safe to keep.') : 'Nothing was written. Try again in a moment.');
   }catch(e){ if(typeof showToast==='function') showToast('Export failed', 'Could not build the backup. Try again.'); }
 }
 function importAllData(ev){
@@ -4484,7 +4506,9 @@ function importAllData(ev){
     try{
       const parsed = JSON.parse(reader.result);
       const data = parsed.data || parsed; // tolerate raw or wrapped
-      const keys = Object.keys(data).filter(k => k.startsWith('totry_'));
+      // Same rule inbound: a file from someone else must never be able to install their session
+      // or tokens on this device.
+      const keys = Object.keys(data).filter(backupSafeKey);
       if(!keys.length){ showToast('Nothing to restore', 'That file has no To Try data.'); return; }
       if(!confirm('Restore ' + keys.length + ' items from this backup? This overwrites matching data on this device.')) return;
       keys.forEach(k => { try{ localStorage.setItem(k, data[k]); }catch(_){ } });
@@ -4560,7 +4584,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v429';
+const APP_VERSION = 'v430';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }

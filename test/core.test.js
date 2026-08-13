@@ -1523,4 +1523,39 @@ H.section('no text field may auto-zoom iOS');
   H.ok(cap.ios && cap.ios.zoomEnabled === true, 'ios.zoomEnabled is true, which is what actually enables pinch natively');
 }
 
+H.section('a backup file must never be a credential');
+{
+  // exportAllData() dumped EVERY totry_ key straight into a JSON file that is then handed to the iOS
+  // share sheet — AirDrop, email, cloud storage. Among those keys sat totry_auth_session: the live
+  // Supabase access AND refresh token. The backup was a bearer credential for the account, usable with
+  // no password and no second factor until the refresh token expired. Import was the same hole facing
+  // the other way: restoring someone else's file would install THEIR session on this device.
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+
+  H.ok(/const BACKUP_NEVER = \[/.test(code), 'there is an explicit never-back-up list');
+  const list = (code.match(/const BACKUP_NEVER = \[([\s\S]*?)\]/) || ['',''])[1];
+  for (const k of ['totry_auth_session', 'totry_google_token', 'totry_strava_token', 'totry_hevy_api_key']) {
+    H.ok(list.includes(k), k + ' is excluded from backups');
+  }
+  H.ok(/function backupSafeKey\(/.test(code), 'one shared rule decides what may be backed up');
+
+  // The export loop and the import filter must BOTH use it — a raw startsWith on either side reopens it.
+  const exp = code.slice(code.indexOf('async function exportAllData('));
+  const expBody = exp.slice(0, exp.indexOf('\nasync function') > 0 ? exp.indexOf('\nasync function') : 2000);
+  H.ok(/backupSafeKey\(k\)/.test(expBody), 'the exporter filters through backupSafeKey');
+  H.ok(!/k\.startsWith\('totry_'\)\)\s*dump\[k\]/.test(expBody), 'and no longer dumps every totry_ key');
+
+  const imp = code.slice(code.indexOf('function importAllData('));
+  const impBody = imp.slice(0, 1600);
+  H.ok(/filter\(backupSafeKey\)/.test(impBody), 'the importer filters through it too');
+
+  // Exact matching, not substring — these are real user data whose names merely look credential-ish.
+  H.ok(/indexOf\(k\) === -1/.test(code) || /includes\(k\)/.test(code), 'exclusion matches keys exactly');
+  for (const keep of ['totry_pt_sessions', 'totry_poker_sessions']) {
+    H.ok(!list.includes(keep), keep + ' is real data and must still be backed up');
+  }
+}
+
 H.report();
