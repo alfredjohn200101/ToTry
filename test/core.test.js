@@ -1633,4 +1633,37 @@ H.section('the ED-safe floor governs the app\'s OWN prescriptions');
   H.ok(/1200/.test(cf.slice(0,200)) && /1500/.test(cf.slice(0,200)), '_calFloor still returns 1500 male / 1200 female');
 }
 
+H.section('running out of room must never destroy what cannot be recreated');
+{
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  const fn = code.slice(code.indexOf('function _lsEmergencyPrune('));
+  const body = fn.slice(0, fn.indexOf('\nfunction ls('));
+
+  // 1. The last resort used to be removeItem('totry_progress_photos') — every progress photo, silently,
+  //    after which ls() retried, succeeded and returned true. Photos are device-only (correctly: the
+  //    privacy policy promises it) and exportFullBackup walks SYNC_KEYS, so they are in no cloud and no
+  //    backup file. Device-only is exactly why deleting them is unrecoverable, not why it is safe.
+  H.ok(!/removeItem\('totry_progress_photos'\)/.test(body),
+    'the prune never deletes the whole photo library to make room');
+
+  // 2. localStorage.setItem is overridden at boot to push SYNC_KEYS writes to the cloud, and
+  //    coach_history / pt_history / strava_activities are all in SYNC_KEYS — so an untrimmed prune write
+  //    uploaded the truncation and deleted the same history on every other device.
+  H.ok(/_originalSetItem/.test(body), 'the prune writes device-locally, not through the syncing setItem');
+  H.ok(/_w\.call\(localStorage/.test(body) || /_originalSetItem\.call\(/.test(body),
+    'and it calls the unmonitored write with localStorage as the receiver');
+
+  // 3. A save that cost someone photos must say so.
+  const lsFn = code.slice(code.indexOf('function ls(k,v){'));
+  const lsBody = lsFn.slice(0, 2200);
+  H.ok(/progress_photos/.test(lsBody), 'ls() looks at what the prune cost');
+  H.ok(/Storage was full/.test(lsBody), 'and tells the person when photos were removed');
+
+  // 4. The photo cap and the prune trim must not silently disagree about how many are kept.
+  H.ok(/totry_progress_photos', a => Array\.isArray\(a\) \? a\.slice\(0, 8\)/.test(code),
+    'the prune trim keeps the newest 8 (change this and update the toast copy)');
+}
+
 H.report();

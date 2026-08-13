@@ -4548,13 +4548,32 @@ function _lsEmergencyPrune(){
       if(!raw) continue;
       const next = trim(JSON.parse(raw));
       const out = JSON.stringify(next);
-      if(out.length < raw.length){ localStorage.setItem(key, out); freed += raw.length - out.length; }
+      if(out.length < raw.length){
+        // DEVICE-LOCAL WRITE. localStorage.setItem is overridden at boot (enableSyncMonitoring) to push
+        // any SYNC_KEYS write to the cloud — and totry_coach_history, totry_pt_history and
+        // totry_strava_activities are all in SYNC_KEYS. So freeing space on THIS phone was uploading the
+        // truncated array, and "newer scalar wins" then deleted the same history on every other device.
+        // Running low on storage on one device must never be a data loss on the account. pullFromCloud
+        // already writes through _originalSetItem for exactly this reason; the prune did not.
+        let _w = null; try{ if(_originalSetItem) _w = _originalSetItem; }catch(_){ }
+        if(_w) _w.call(localStorage, key, out); else localStorage.setItem(key, out);
+        freed += raw.length - out.length;
+      }
     }catch(_){ }
     if(freed > 400000) break;                 // enough headroom for a normal write
   }
-  // Last resort: drop photos entirely. They are device-only by policy, so nothing syncs back.
-  if(!freed){ try{ const raw=localStorage.getItem('totry_progress_photos');
-    if(raw){ localStorage.removeItem('totry_progress_photos'); freed = raw.length; } }catch(_){ } }
+  // The last resort used to be `removeItem('totry_progress_photos')` — deleting EVERY progress photo,
+  // silently, after which ls() retried, succeeded and returned true. Nothing was ever said.
+  //
+  // Its comment reasoned "they are device-only by policy, so nothing syncs back", which is true and
+  // exactly backwards as a justification: device-only is precisely why there is NO other copy. Photos are
+  // not in SYNC_KEYS, and exportFullBackup() walks SYNC_KEYS, so they are not in the cloud and not in the
+  // backup file either. That block destroyed the only copy of the one thing in this app a person cannot
+  // recreate — a year of Tuesday-morning photos — to make room for a single write.
+  //
+  // Now: no silent destruction. If the trims above were not enough, the write fails and ls() tells them
+  // the truth, which it already does well ("that did not save... Export to back up, then clear old
+  // progress photos"). Losing one save is recoverable. Losing the photos is not.
   return freed;
 }
 function ls(k,v){
@@ -4564,8 +4583,21 @@ function ls(k,v){
     const quota = e && (e.name==='QuotaExceededError' || e.name==='NS_ERROR_DOM_QUOTA_REACHED' || e.code===22);
     if(!quota) return false;                  // a genuine serialisation problem — nothing to reclaim
     try{
+      const _photoCount = () => { try{ return (JSON.parse(localStorage.getItem('totry_progress_photos'))||[]).length; }catch(_){ return 0; } };
+      const _before = _photoCount();
       _lsEmergencyPrune();
       localStorage.setItem(k, JSON.stringify(v));
+      // If making room cost them photos, SAY SO. The prune trims progress photos first because they are
+      // the biggest — but they are also the only thing in this app a person cannot recreate, and they are
+      // device-only, so a deleted one is gone from everywhere at once. A save that quietly ate a year of
+      // Tuesday mornings is not a success just because the save worked.
+      try{
+        const _lost = _before - _photoCount();
+        if(_lost > 0 && typeof showToast === 'function'){
+          showToast('Storage was full', 'I had to remove ' + _lost + ' older progress photo' + (_lost === 1 ? '' : 's') +
+            ' to save that. The newest are still here \u2014 back them up in Settings \u2192 Your data.');
+        }
+      }catch(_){ }
       return true;                            // recovered; the person keeps their data
     }catch(_){
       // Could not write even after reclaiming. Tell them — a lost save must never look like a saved one.
@@ -4584,7 +4616,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v432';
+const APP_VERSION = 'v433';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
