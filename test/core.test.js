@@ -2053,4 +2053,34 @@ H.section('every tradition has somewhere to say what is on their heart')
   H.ok(/pfx/.test(gen), 'and is parameterised so it can be hosted twice without an id collision');
 }
 
+H.section('every tradition has a practice of its own')
+{
+  // _PRACTICE held only dhikr and japa, so openPractice() sent Buddhism and secular to a generic breath
+  // menu and _paintPractice returned early on their kind — they had no practice at all. Two are new.
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+
+  for (const kind of ['dhikr', 'japa', 'metta', 'stillness']) {
+    H.ok(new RegExp('\\b' + kind + ':\\{').test(code.replace(/\s/g, '')), '_PRACTICE has ' + kind);
+  }
+  // Every tradition must route somewhere real — a fall-through to the breath menu is what this fixed.
+  const op = code.slice(code.indexOf('function openPractice()'), code.indexOf('function openPractice()') + 700);
+  for (const t of ['islam', 'hinduism', 'buddhism', 'secular']) {
+    H.ok(new RegExp("t==='" + t + "'").test(op), 'openPractice routes ' + t);
+  }
+  // The secular practice must contain NO religious language — FAITHS.secular says so explicitly.
+  const i = code.indexOf('stillness:{');
+  const still = code.slice(i, i + 1100);
+  const religious = ['God', 'Allah', 'prayer', 'pray', 'scripture', 'divine', 'holy', 'soul', 'bless'];
+  const leaked = religious.filter(w => new RegExp('\\b' + w, 'i').test(still));
+  H.eq(leaked, [], 'the secular practice uses no religious language');
+
+  // Metta must start with the self — a person who cannot wish themselves well has nowhere to begin.
+  const m = code.slice(code.indexOf('metta:{'), code.indexOf('metta:{') + 1200);
+  H.ok(/May I be safe/.test(m), 'metta begins with the self');
+  H.ok(/difficult/.test(m), 'and includes the difficult person, which is the point of the practice');
+  H.ok((m.match(/name:'May/g) || []).length >= 4, 'all four directions are present');
+}
+
 H.report();

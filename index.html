@@ -4708,7 +4708,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v446';
+const APP_VERSION = 'v447';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9526,7 +9526,10 @@ function applyFaithMorning(){
 // ── READER — the person's sacred text (Qur'an/Gita live; Dhammapada/Stoic bundled; Bible = tab-bible) ──
 function openScripture(){ const t=faithTradition(); if(t==='christianity'){ if(typeof go==='function') go('bible'); return; } openReader(t); }
 function openTodayAnchor(){ const t=faithTradition(); if(t==='christianity'){ if(typeof go==='function') go('liturgy'); return; } if(typeof go==='function') go('today'); _renderTodayAnchor(); }
-function openPractice(){ const t=faithTradition(); if(t==='christianity'){ if(typeof openRosary==='function') openRosary(); return; } if(t==='islam'){ openDhikr(); return; } if(t==='hinduism'){ openJapa(); return; } if(typeof openBreathMenu==='function') openBreathMenu(); }
+function openPractice(){ const t=faithTradition(); if(t==='christianity'){ if(typeof openRosary==='function') openRosary(); return; } if(t==='islam'){ openDhikr(); return; } if(t==='hinduism'){ openJapa(); return; } // Buddhism and secular used to fall through to the breath menu because they had no practice at all.
+if(t==='buddhism'){ openMetta(); return; } if(t==='secular'){ openStillness(); return; } if(typeof openBreathMenu==='function') openBreathMenu(); }
+function openMetta(){ if(typeof go==='function') go('practice'); _renderPractice('metta'); }
+function openStillness(){ if(typeof go==='function') go('practice'); _renderPractice('stillness'); }
 function _readLoading(){ return '<div style="text-align:center;padding:26px;color:var(--tx3);font-size:13px">Loading…</div>'; }
 function _readErr(msg){ return '<div class="card" style="text-align:center;color:var(--tx3);font-size:13px;padding:18px">'+(msg||'Couldn’t load right now. Check your connection and try again.')+'</div>'; }
 function _selStyle(){ return 'background:var(--bg3);border:1px solid var(--bd);color:var(--tx);border-radius:9px;padding:9px 11px;font-size:13px;max-width:100%'; }
@@ -9675,7 +9678,31 @@ const JAPA_MANTRAS=[
 ];
 const _PRACTICE={
   dhikr:{ title:'Dhikr', sub:'Remembrance of Allah. Tap for each — a full tasbih is 33 + 33 + 34.', done:'Tasbih complete', doneSub:'100 remembrances. Carry the stillness with you.', phases:[{name:'SubhanAllah',sub:'Glory be to Allah',n:33},{name:'Alhamdulillah',sub:'Praise be to Allah',n:33},{name:'Allahu Akbar',sub:'Allah is greatest',n:34}] },
-  japa:{ title:'Japa', sub:'Mantra repetition. Tap for each — a full mala is 108.', done:'Mala complete', doneSub:'108 repetitions. Carry the stillness with you.' }
+  japa:{ title:'Japa', sub:'Mantra repetition. Tap for each — a full mala is 108.', done:'Mala complete', doneSub:'108 repetitions. Carry the stillness with you.' },
+  // METTA — Buddhism. Until v447 _PRACTICE held only dhikr and japa, so a Buddhist opening their practice
+  // got nothing: _paintPractice returns early on an unknown kind. The four directions are the traditional
+  // sequence (self, someone loved, someone neutral, someone difficult) and the order matters — it starts
+  // with the self because a person who cannot wish themselves well has nowhere to begin, which is the same
+  // reason this app leads with grace rather than discipline.
+  metta:{ title:'Mettā', sub:'Loving-kindness. Say each line silently, once per tap — for yourself first, then outward.',
+    done:'Mettā complete', doneSub:'Four directions held. Carry the warmth with you.',
+    phases:[
+      {name:'May I be safe. May I be well. May I be at ease.', sub:'For yourself — start here, always', n:8},
+      {name:'May you be safe. May you be well. May you be at ease.', sub:'Someone you love — hold their face', n:8},
+      {name:'May you be safe. May you be well. May you be at ease.', sub:'Someone you barely know — the person at the counter', n:8},
+      {name:'May you be safe. May you be well. May you be at ease.', sub:'Someone difficult — this is the hard one, and the point', n:8}
+    ] },
+  // STILLNESS — secular. FAITHS.secular is explicit: "Use NO religious language at all. Never mention God,
+  // scripture, or prayer." So this is attention training and nothing else: no deity, no mantra, no
+  // devotion. Stoic in spirit because that is the app's secular voice, and the counts are short enough
+  // that someone restless can actually finish one.
+  stillness:{ title:'Stillness', sub:'Not emptying your mind — practising bringing it back. Tap each time you return.',
+    done:'Done', doneSub:'That was attention training, and you did the reps.',
+    phases:[
+      {name:'Feel the breath at the nostrils', sub:'When you notice you have wandered, that IS the rep — tap and return', n:10},
+      {name:'Name what is here without arguing with it', sub:'Tight chest. Restless. Bored. Naming it loosens its grip', n:8},
+      {name:'One thing you can control today', sub:'Hold it. Everything else is outside you', n:6}
+    ] }
 };
 function openDhikr(){ if(typeof go==='function') go('practice'); _renderPractice('dhikr'); }
 function openJapa(){ if(typeof go==='function') go('practice'); _renderPractice('japa'); }
@@ -9714,8 +9741,8 @@ function openFaithHome(){
   // Buddhism and secular have none, and _paintPractice returns early for them, which is exactly why the
   // composer cannot be hung off the practice renderer alone.
   try{
-    if(t === 'islam' && typeof _renderPractice === 'function') _renderPractice('dhikr');
-    else if(t === 'hinduism' && typeof _renderPractice === 'function') _renderPractice('japa');
+    const KIND = { islam:'dhikr', hinduism:'japa', buddhism:'metta', secular:'stillness' }[t];
+    if(KIND && typeof _renderPractice === 'function') _renderPractice(KIND);
     else {
       const el = document.getElementById('practice-content');
       const ttl = document.getElementById('practice-title');
