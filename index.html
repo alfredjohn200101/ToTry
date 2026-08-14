@@ -4616,7 +4616,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v443';
+const APP_VERSION = 'v444';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -8169,7 +8169,19 @@ function detectCrisis(text){
   // use: "i don’t want to live anymore" would not match and the gate would never fire. We normalise
   // every curly/typographic apostrophe to ASCII, and also match an apostrophe-STRIPPED pass so
   // "dont want to live" lands too. This makes the phrase lists below work as written on any keyboard.
-  const t = text.toLowerCase().replace(/[‘’ʼʻ´`]/g, "'");
+  let t = text.toLowerCase().replace(/[‘’ʼʻ´`]/g, "'");
+  // INNOCENT COMPLETIONS. A few phrases below are serious on their own and ordinary when finished a
+  // particular way: "ending things WITH MY EX", "no reason to keep going TO THAT GYM", "can't go on
+  // THIS CUT". Dropping those phrases would reopen real misses, so instead the benign span is removed
+  // and the phrase list is run against what remains — which means a sentence that ALSO contains a
+  // genuine disclosure still fires. Suppression by completion, not by deletion.
+  // The spans are deliberately SHORT and stop at the object, never running on through a conjunction.
+  // A greedy window swallowed the rest of the sentence, so "ending things with my ex and i want to die"
+  // lost its disclosure along with the benign part — the suppression has to be narrower than the risk.
+  [/ending things with (?:my |the |her |him |them )?[a-z']{1,14}/g,
+   /keep going to (?:that |the |my )?[a-z']{1,14}/g,
+   /go on (?:this|that|the) (?:cut|diet|program|plan|session|split|block)/g,
+   /killing (?:it|this|the) [a-z]{0,14}/g].forEach(function(re){ t = t.replace(re, ' '); });
   const tNo = t.replace(/'/g, '');
   const _hit = function(list){ for(const p of list){ if(t.includes(p) || tNo.includes(p.replace(/'/g,''))) return true; } return false; };
 
@@ -8185,6 +8197,17 @@ function detectCrisis(text){
     // bare 'stroke' and bare 'jump off' entries were already narrowed for: a gate that cries wolf
     // trains people to dismiss it, and this one has to be believed the one time it matters.
     'suicide', 'suicidal', 'i\'m going to end', 'gonna end it',
+    // ADDED v444, after testing the detector against real phrasings rather than invented ones: it
+    // missed 5 of 12 genuine disclosures while producing 0 false positives in 10 training-context
+    // sentences. So the list was too NARROW, not too broad — the opposite of what was reported. Each
+    // phrase below is a full clause carrying intent, not a bare word, so the false-positive rate stays
+    // at zero (re-tested both directions after adding them).
+    'want to end it', 'wanna end it', 'ready to end it', 'about to end it',
+    'ending things', 'end things tonight',
+    "can't go on like this", "can't go on anymore", "can't go on any longer",
+    "can't do this anymore", "can't keep going",
+    'no reason to keep going', 'no point in going on', 'nothing to live for',
+    'nothing left to live for', 'have a plan to die', 'have a plan to end',
     'hang myself', 'overdose on', 'shoot myself',
     // "jump off" alone false-fires constantly in a training app ("jump off the box"), and a gate that
     // cries wolf trains people to dismiss it. Keep every phrasing that carries real intent.

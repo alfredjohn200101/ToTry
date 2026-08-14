@@ -1965,4 +1965,46 @@ H.section('no screen may claim data stays on the device while it syncs')
   H.ok(/progress photos/i.test(code), 'the app still tells people photos are device-only');
 }
 
+H.section('detectCrisis — measured in both directions, with real phrasings')
+{
+  // Tested rather than assumed, because the sweep reported this detector as "wildly over-inclusive and
+  // misses common phrasings" and only HALF of that was true. Measured at v443: 0 false positives across
+  // 10 training-context sentences, but 5 MISSES out of 12 genuine disclosures. It was too NARROW, not too
+  // broad — the opposite of the report, and the more dangerous direction. These probes are the evidence.
+  const { detectCrisis } = H.load(['detectCrisis']);
+
+  const MUST_FIRE = [
+    "i don't want to be here anymore",
+    'i want to kill myself', 'i want to die', 'i want to end it',
+    'thinking about ending things', "i can't go on like this", "i can't do this anymore",
+    'everyone would be better off without me', 'unaliving myself',
+    'no reason to keep going', 'nothing to live for',
+    'i\u2019m going to hurt myself',                     // iOS smart apostrophe — has failed OPEN before
+    // A benign completion must not swallow a real disclosure sharing the same sentence.
+    'ending things with my ex and i want to die',
+    'no reason to keep going to that gym or anywhere, i want to die',
+  ];
+  const MUST_NOT = [
+    // A gate that cries wolf teaches people to dismiss it, and then the one that matters is dismissed too.
+    'this workout is killing me', 'that leg day nearly killed me', "i'd kill for a coffee",
+    "i'm dying to see her", 'my calves are dead', 'killer session today', 'i died laughing',
+    'this diet is murder', 'i want to kill this PR', 'dead lift felt heavy', 'killing it in the gym today',
+    // Innocent completions of otherwise-serious phrases.
+    'ending things with my ex was hard', 'ending things with her was the right call',
+    'no reason to keep going to that gym', "i can't go on this cut much longer",
+  ];
+
+  const missed = MUST_FIRE.filter(t => !detectCrisis(t));
+  H.eq(missed, [], 'every genuine disclosure fires the gate');
+  const falsePos = MUST_NOT.filter(t => detectCrisis(t));
+  H.eq(falsePos, [], 'no training-context sentence trips it');
+  H.ok(MUST_FIRE.length + MUST_NOT.length >= 28,
+    'the probe set stays broad (' + (MUST_FIRE.length + MUST_NOT.length) + ' phrasings)');
+
+  // The suppression must stay narrower than the risk: short spans that stop at the object.
+  H.ok(/ending things with \(\?:my \|the \|her \|him \|them \)\?\[a-z'\]\{1,14\}/.test(H.html) ||
+       /\[a-z'\]\{1,14\}/.test(H.html),
+    'benign-completion spans are bounded, not greedy');
+}
+
 H.report();
