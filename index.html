@@ -116,6 +116,18 @@ button:focus:not(:focus-visible){outline:none}
 .vsave.saved{color:var(--go)}
 .vshare{position:absolute;top:8px;right:34px;background:none;border:none;color:var(--tx3);font-size:15px;cursor:pointer;padding:12px;margin:-12px;line-height:1;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
 .vshare:active{color:var(--go)}
+/* 44x44 tap targets for the tiny "×" delete glyphs in Money. Measured at 414x896 they were 8.2x16 in
+   the font-size:14px rows and 9.3x18 in the font-size:16px rows — the smallest controls in the app, and
+   each one deletes a record (three of them with no confirm()). The padding grows the hit box; the equal
+   negative margin cancels it in layout, so nothing moves and nothing repaints. Same technique as .vsave
+   and .vshare above; a ::after pseudo-element was tried here and does NOT enlarge the target.
+   Keyed on the onclick attribute because the rows are built as HTML strings — each of these seven
+   handlers appears exactly ONCE in this file, so the rule cannot reach anything else. If you ever give
+   one of these buttons an inline padding or margin, the inline style wins and this silently stops
+   working. Do not extend this list to deleteSavedMeal / deleteSacrament / deleteAffirm /
+   deleteSavedVerse — they carry inline padding, so they would get the negative margin without the
+   padding and shrink. */
+button[onclick^="deleteTransaction("],button[onclick^="deleteSubscription("],button[onclick^="deleteBill("],button[onclick^="deleteAsset("],button[onclick^="deleteGiving("],button[onclick^="deleteFamilyContribution("],button[onclick^="deletePokerSession("]{padding:14px 18px;margin:-14px -18px}
 /* Bottom tab bar (iOS convention + the SOUL-ARCHITECTURE intent: "bottom bar, thumb-reachable").
    .app is a flex column [header, nav, tabs]; order:3 floats the nav below the scrolling content so
    it becomes a proper thumb-reachable bottom bar — no DOM change. border-top is now the divider
@@ -4481,6 +4493,60 @@ function backupSafeKey(k){
   return typeof k === 'string' && k.indexOf('totry_') === 0 && BACKUP_NEVER.indexOf(k) === -1;
 }
 
+// ── RESTORE: count what LANDED, not what we tried ────────────────────────────────────────────────
+// A restore runs on the one day the person has already wiped the phone, and a backup file is by
+// definition close to the ~5MB localStorage cap iOS Safari enforces — so QuotaExceededError on the
+// biggest values is the NORMAL case here, not the edge case. importAllData wrote inside catch(_){} and
+// then reported keys.length, so a device with no room said "6 items loaded" having written four.
+// confirmRestore counted right but still showed a bare success tick. Neither goes through ls(), so
+// neither gets ls()'s prune-and-retry or its honest "storage full" line.
+//
+// Two things matter, in this order: WHAT lands when not everything can, and whether we say so.
+// Object key order decided the first one, so a 300KB base64 photo blob that happened to sit first in
+// the file could take the last of the room and the journal — someone's own words, the one thing they
+// cannot rewrite — silently did not load. Expendable-last, then smallest-first, then tell the truth.
+const RESTORE_EXPENDABLE = ['totry_progress_photos','totry_coach_history','totry_pt_history','totry_strava_activities'];
+const RESTORE_LABELS = {
+  totry_progress_photos:'progress photos', totry_coach_history:'coach conversations',
+  totry_pt_history:'PT conversations', totry_journal:'journal entries', totry_workouts:'workouts',
+  totry_strava_activities:'Strava activities', totry_fight_log:'the fight log', totry_v:'your day count',
+  totry_measurements:'measurements', totry_body:'body stats', totry_money:'money'
+};
+function restoreKeys(data){
+  const keys = Object.keys(data).filter(backupSafeKey).sort((a, b) => {
+    const ea = RESTORE_EXPENDABLE.indexOf(a) !== -1, eb = RESTORE_EXPENDABLE.indexOf(b) !== -1;
+    if(ea !== eb) return ea ? 1 : -1;                         // the big reproducible stores go last
+    return String(data[a]).length - String(data[b]).length;   // then smallest first
+  });
+  const out = { total: keys.length, ok: 0, failed: [], full: false };
+  keys.forEach(k => {
+    try{
+      localStorage.setItem(k, data[k]);
+      out.ok++;                                               // counted only after the write returned
+      if(typeof syncToCloud === 'function' && typeof SYNC_KEYS !== 'undefined' && SYNC_KEYS.indexOf(k) !== -1){
+        let parsed; try{ parsed = JSON.parse(data[k]); }catch(_){ parsed = data[k]; }
+        try{ syncToCloud(k, parsed); }catch(_){ }             // a cloud hiccup must not un-count a local write
+      }
+    }catch(e){
+      out.failed.push(k);
+      if(e && (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED' || e.code === 22)) out.full = true;
+      try{ console.warn('[restore] did not fit:', k, e && e.name); }catch(_){ }
+    }
+  });
+  return out;
+}
+function restoreReport(r){
+  if(!r.failed.length) return { title:'Restored', body: r.ok + ' data sets loaded. Reloading…' };
+  const named = r.failed.map(k => RESTORE_LABELS[k] || k.replace(/^totry_/, '').replace(/_/g, ' '));
+  const shown = named.slice(0, 3).join(', ') + (named.length > 3 ? ', and ' + (named.length - 3) + ' more' : '');
+  return {
+    title: r.ok ? ('Restored ' + r.ok + ' of ' + r.total) : 'Restore failed',
+    body: 'Did not load: ' + shown + '. ' + (r.full
+      ? 'This device is out of storage — free up space, then restore the same file again. Everything else is already back.'
+      : 'Keep the backup file and try again. Everything else is already back.')
+  };
+}
+
 async function exportAllData(){
   try{
     const dump = {};
@@ -4511,10 +4577,18 @@ function importAllData(ev){
       const keys = Object.keys(data).filter(backupSafeKey);
       if(!keys.length){ showToast('Nothing to restore', 'That file has no To Try data.'); return; }
       if(!confirm('Restore ' + keys.length + ' items from this backup? This overwrites matching data on this device.')) return;
-      keys.forEach(k => { try{ localStorage.setItem(k, data[k]); }catch(_){ } });
-      if(typeof haptic==='function') haptic('success');
-      showToast('Restored', keys.length + ' items loaded. Reloading\u2026');
-      setTimeout(()=>location.reload(), 1200);
+      // One restore path for both entry points. My first version of this fix duplicated the counting
+      // loop inline here, which is the same duplicate-implementation problem the two plate calculators
+      // had. restoreKeys() also does something better than my version did: it writes SMALLEST FIRST and
+      // puts the big reproducible stores last, so on a device that is nearly full the irreplaceable
+      // journal lands and the photos are what fail — rather than the other way round.
+      const _r = restoreKeys(data);
+      const _rep = restoreReport(_r);
+      if(typeof haptic==='function') haptic(_r.failed.length ? 'warning' : 'success');
+      if(_r.failed.length) alert(_rep.title + '\n\n' + _rep.body);
+      showToast(_r.failed.length ? _rep.title : 'Restored', _rep.body);
+      // Longer pause when something did not fit, so the alert is actually read before the reload.
+      setTimeout(()=>location.reload(), _r.failed.length ? 5600 : 1200);
     }catch(e){ showToast('Restore failed', 'That file could not be read as a backup.'); }
   };
   reader.readAsText(file);
@@ -4612,11 +4686,29 @@ function ls(k,v){
   }
 }
 
+// ── SHAPE-SAFE LIST READ ──────────────────────────────────────────────────────────────────────
+// A totry_ key that should be a list can come back the WRONG SHAPE — an object where an array is
+// expected (a partial cloud merge, a hand-edited export, an older build, a JSON round-trip that turned
+// a sparse array into {"0":…}). Every list reader in this file is written `ls(k)||[]` and then
+// .forEach/.filter/.map, and an object sails straight through `||[]` — so the very next line throws.
+// Those throws land in initApp()'s try/catch and are never reported: Home quietly loses its day
+// counter, habit grid and week strip, and getLifeState() dies, which takes the companion front door
+// with it. Read lists through this: it recovers {"0":…} maps in key order and refuses anything else,
+// so a bad shape costs one key instead of the screen.
+function lsArr(k){
+  try{
+    const v = ls(k);
+    if(Array.isArray(v)) return v;
+    if(v && typeof v === 'object') return Object.keys(v).map(x => v[x]);
+    return [];
+  }catch(_){ return []; }
+}
+
 // ── APP VERSION & CHANGELOG ───────────────────────────────────
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v444';
+const APP_VERSION = 'v445';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7066,7 +7158,7 @@ function brotherSpeaks(moment){
       if(life){
         const r = life.readiness;
         if(r && r.level && /low|depleted|poor/i.test(r.level)) why = ' You\u2019re running low today \u2014 tired is when the pull wins. ';
-        else if(life.fight && life.fight.losses7 > life.fight.wins7) why = ' It\u2019s been a heavy week. ';
+        else if(life.fight && life.fight.losses7 >= 2 && life.fight.losses7 > life.fight.wins7) why = ' It\u2019s been a heavy week. ';
       }
       // Stage of change decides the TONE, not just the card's offer. Prochaska's whole finding is that
       // action-stage pressure aimed at someone who is merely contemplating backfires \u2014 and the
@@ -7214,7 +7306,7 @@ function getLifeState(){
   const _usesLog = L('totry_vice_uses') || [];
   const _momWon = L('totry_moments_won') || [];
   const momentsWon7 = _momWon.filter(x => x && within(x.ts, 7)).length;
-  const viceStates = (L('totry_v')||[]).filter(v => v && v.n).map(v => {
+  const viceStates = ((typeof lsArr==='function') ? lsArr('totry_v') : (L('totry_v')||[])).filter(v => v && v.n).map(v => {
     const uses7 = _usesLog.filter(u => u && u.v === v.n && within(u.ts, 7));
     const lastUse = uses7.length ? uses7.reduce((m,u)=>Math.max(m, new Date(u.ts).getTime()), 0) : null;
     const turned7 = _momWon.filter(x => x && x.v === v.n && within(x.ts, 7)).length;
@@ -8517,6 +8609,21 @@ function getDayCount(){
   const anchor = new Date(anchorStr);
   if(isNaN(anchor)) return 1;
   return Math.max(1, Math.floor((Date.now() - anchor) / 86400000) + 1);
+}
+
+// DAYS SINCE INSTALL — deliberately NOT getDayCount(). getDayCount() honours the Settings
+// journey-start override, so someone who anchors day 1 to the day they actually quit reads "Day 401"
+// on the morning they install. Any copy that speaks about a yesterday, a streak, a previous session or
+// a history must ask THIS instead, or it will tell a brand-new person what they did on a day they were
+// never here — which is how the morning card opened with "You skipped your habits yesterday."
+function daysInstalled(){
+  try{
+    const st = ls('totry_start');
+    if(!st) return 1;
+    const t = new Date(st).getTime();
+    if(isNaN(t)) return 1;
+    return Math.max(1, Math.floor((Date.now() - t) / 86400000) + 1);
+  }catch(_){ return 1; }
 }
 
 // Same as getDayCount but for a specific (often past) date — used when backdating an entry, so a
@@ -10712,17 +10819,36 @@ function renderAdaptiveMorning(){
   // Yesterday's evening rating (1-5)
   const yRating = yEvening?.rating || 0;
   
+  // DAY ONE HAS NO YESTERDAY — and neither does a Monday. This card reads the seven-slot habit ring
+  // (h.d, Mon..Sun) and then speaks about "yesterday". But a person on day 1 did not have a yesterday
+  // here, and on a MONDAY loadH()'s week-roll has just zeroed the whole ring, so slot 6 is the Sunday
+  // that has not happened yet. Both read as "0 of N done", and the app opened with "You skipped your
+  // habits yesterday" — an accusation about a day that never existed. The habit grid already knows
+  // the ring cannot see before Monday (see `knowable = Math.min(6, ti)`); this card did not.
+  const _daysHere = (typeof daysInstalled === 'function') ? daysInstalled() : 1;
+  const _yKnown = _daysHere >= 2 && tIdx() >= 1;   // tIdx: Mon=0, so on Monday there is no in-ring yesterday
+
   // Pick the most resonant message
   let tagText = '', headlineText = '', bodyText = '';
-  
-  if(recentRelapses.length > 0){
+
+  if(_daysHere <= 1){
+    // The first morning. Nothing is behind them — saying otherwise makes the app's first sentence false.
+    tagText = 'Day one';
+    const _v1 = activeVerses()[_dailyIndex(activeVerses().length)];
+    headlineText = '“' + _v1.t + '” — ' + _v1.r;
+    bodyText = 'This is your first morning here — nothing behind you to answer for. Set one intention below, and let that be the whole of today.';
+  }
+  else if(recentRelapses.length > 0){
     // Most recent relapse — speak with grace
     const v = recentRelapses[0];
-    tagText = 'Yesterday — grace';
+    // "within 48h" includes THIS MORNING, so this said "yesterday" about a restart made an hour ago.
+    const _rd = Math.max(0, Math.round((new Date().setHours(0,0,0,0) - new Date(v.startDate).setHours(0,0,0,0)) / 86400000));
+    const _rwhen = _rd <= 0 ? 'today' : (_rd === 1 ? 'yesterday' : _rd + ' days ago');
+    tagText = (_rd <= 0 ? 'Today' : 'Yesterday') + ' — grace';
     headlineText = '"The righteous fall seven times and rise again." — Proverbs 24:16';
-    bodyText = 'You restarted ' + v.n + ' yesterday. That\'s not the end — it\'s the next attempt. Today, the same fight. Same Lord. Same grace. You\'re back at it. That\'s what counts.';
+    bodyText = 'You restarted ' + v.n + ' ' + _rwhen + '. That\'s not the end — it\'s the next attempt. Today, the same fight. Same Lord. Same grace. You\'re back at it. That\'s what counts.';
   }
-  else if(yEvening && yRating >= 4 && yHabitsDone === yHabitsTotal && yHabitsTotal > 0){
+  else if(_yKnown && yEvening && yRating >= 4 && yHabitsDone === yHabitsTotal && yHabitsTotal > 0){
     // Perfect day yesterday — challenge them
     tagText = 'Yesterday — locked in';
     headlineText = 'Yesterday was a strong day.';
@@ -10734,13 +10860,13 @@ function renderAdaptiveMorning(){
     headlineText = 'Yesterday was rough. Today is new.';
     bodyText = (yEvening.release ? 'You wrote: "' + yEvening.release + '". ' : '') + 'You don\'t have to carry it forward. New mercies this morning (Lamentations 3:23). Start small today — one habit, one win, one prayer.';
   }
-  else if(yHabitsTotal > 0 && yHabitsDone === 0){
+  else if(_yKnown && yHabitsTotal > 0 && yHabitsDone === 0){
     // Skipped everything yesterday
     tagText = 'Yesterday — missed';
     headlineText = 'You skipped your habits yesterday.';
     bodyText = 'No shame — but notice it. Pick the one habit that matters most today and just do that one. Build momentum from the smallest possible action.';
   }
-  else if(yHabitsTotal > 0 && yHabitsDone < yHabitsTotal / 2){
+  else if(_yKnown && yHabitsTotal > 0 && yHabitsDone < yHabitsTotal / 2){
     // Half-effort yesterday
     tagText = 'Yesterday — partial';
     headlineText = 'Yesterday was half there.';
@@ -11212,7 +11338,10 @@ function showMorningFocus(){
       'Today, your future self is watching. Show up for them.',
       'One step. Not the whole journey. Just one step today.',
     ];
-    actionEl.textContent=actionPrompts[getDayCount()%actionPrompts.length];
+    // getDayCount()%7 is 1 on day one, which landed EXACTLY on "prove yesterday wrong" — pointing a
+    // brand-new person at a yesterday they never had. Day one starts the rotation at index 0 instead.
+    const _apd = (typeof daysInstalled === 'function') ? daysInstalled() : getDayCount();
+    actionEl.textContent=actionPrompts[(_apd<=1?0:getDayCount())%actionPrompts.length];
   }
   
   // SECONDARY: the day's pledge. This card used to only NAME the vice — it reported and did nothing.
@@ -11246,10 +11375,13 @@ function deleteAffirm(i){
 // ── VICES + INTERVENTION ──────────────────────────────────────
 let vices=[],curVice=-1,sosLoc='alone',sosTimerInt=null,sosVerseData=null;
 function loadV(){
-  vices=ls('totry_v')||[];
+  const _vRaw=ls('totry_v');
+  vices=Array.isArray(_vRaw)?_vRaw:lsArr('totry_v');
   // Backfill vice type for any vice created before the playbook existed, so urge-fighting
   // is tailored even for older entries.
-  let changed=false;
+  // `changed` starts true when the stored value was the wrong shape (see lsArr), so the repaired
+  // array is written straight back and the eleven places that read totry_v directly never meet it.
+  let changed=(_vRaw!=null && !Array.isArray(_vRaw));
   vices.forEach(v=>{ if(v && !v.type){ v.type=classifyVice(v.n); changed=true; } });
   // Heal vices created by onboarding before it stamped startDate (see obNext step 6). Without this they
   // read "0 days clean" forever. Only ever stamped when there is no start AND no recorded slip, so this
@@ -15208,7 +15340,22 @@ function _lockOverlay(){
     '<div style="font-size:34px">\u{1F512}</div>' +
     '<div style="font-family:Cormorant Garamond,serif;font-size:28px;color:var(--go)">To Try</div>' +
     '<div id="app-lock-msg" style="font-size:13px;color:var(--tx2);line-height:1.6;max-width:280px">Locked — just for you.</div>' +
-    '<button class="btn primary" id="app-lock-btn" style="max-width:240px" onclick="unlockApp()">Unlock</button>';
+    '<button class="btn primary" id="app-lock-btn" style="max-width:240px" onclick="unlockApp()">Unlock</button>' +
+    // CRISIS HELP IS NEVER BEHIND A GATE. The sign-in screen states the rule in its own comment
+    // ("Crisis help must never sit behind a login") and carries the numbers for exactly that reason —
+    // but this overlay is opaque at z-index 100000, so it covers them along with everything else. A
+    // cancelled Face ID, or a face it will not read at 2am, left a person on a black screen with one
+    // button and no way to reach a human. These numbers are hardcoded, need no network and no account,
+    // and reveal nothing private, so carrying them here costs the lock nothing at all.
+    '<div style="margin-top:6px;padding-top:14px;border-top:1px solid var(--bd);max-width:300px">' +
+      '<div style="font-size:11.5px;color:var(--tx3);line-height:1.6;margin-bottom:6px">Need real help right now? You don&#8217;t have to unlock anything.</div>' +
+      '<div style="font-size:12.5px;line-height:1.9;color:var(--tx3)">' +
+        '&#127462;&#127482; Lifeline <a href="tel:131114" style="color:var(--go);text-decoration:none">13 11 14</a> &nbsp;&#183;&nbsp; ' +
+        '&#127482;&#127480; <a href="tel:988" style="color:var(--go);text-decoration:none">988</a> &nbsp;&#183;&nbsp; ' +
+        '&#127468;&#127463; <a href="tel:116123" style="color:var(--go);text-decoration:none">116 123</a><br>' +
+        '&#127760; <a href="https://findahelpline.com" target="_blank" rel="noopener" style="color:var(--bl);text-decoration:none">findahelpline.com</a> &mdash; anywhere in the world' +
+      '</div>' +
+    '</div>';
   document.body.appendChild(el);
   return el;
 }
@@ -17393,12 +17540,14 @@ function loadH(){
     }
   }catch(_){ }
   localStorage.setItem('totry_grat_habit_migrated','1');
-  habits=ls('totry_h')||[];
-  // Guarantee every habit has a valid 7-day array. Dozens of core render paths (the day counter,
-  // the home grid, the morning tab) do h.d[i] unguarded — a single habit missing d[] (from an old
-  // version, a partial cloud-sync merge, or corrupted data) would white-screen the home for
-  // everyone. Normalise once, at the source, so no downstream read can crash.
-  let _hFixed=false;
+  const _hRaw=ls('totry_h');
+  habits=Array.isArray(_hRaw)?_hRaw:lsArr('totry_h');
+  // Guarantee every habit has a valid 7-day array — AND that habits is a list at all. Dozens of core
+  // render paths (the day counter, the home grid, the morning tab) do h.d[i] unguarded, and every one
+  // of them is downstream of this array existing: a totry_h that came back as an object made the very
+  // next .forEach throw and took renderDayCounter with it. Normalise the container and its contents
+  // once, here, so no downstream read can crash.
+  let _hFixed=(_hRaw!=null && !Array.isArray(_hRaw));
   habits.forEach(h=>{ if(!h) return; if(!Array.isArray(h.d) || h.d.length!==7){ h.d=[0,0,0,0,0,0,0]; _hFixed=true; } if(h.n==null){ h.n='Habit'; _hFixed=true; } });
   // STAMP THE WEEK. h.d is seven weekday slots with no date on them, and nothing ever cleared it: the
   // only writes of 0 were corruption repair and the sober habit on a relapse day, while autoTickHabits
@@ -24018,14 +24167,25 @@ function editFoodEntry(date, id){
   const en = (log[date] || []).find(e => e.id === id);
   if(!en) return;
   const qty = en.qty || 1;
-  const per = v => Math.round(((v || 0) / qty) * 100) / 100;
+  const per = v => Math.round(((v || 0) / qty) * 1e6) / 1e6;
   const food = { name: en.name, brand: 'Editing \u2014 adjust serving or qty', servings: [{ name: en.serving || '1 serving', cal: per(en.cal), pro: per(en.pro), carb: per(en.carb), fat: per(en.fat) }] };
+  // A gram/ml-weighed entry must re-open weighed. Without __exact the quantity field is labelled
+  // "servings", so editing 91g of oats read "91 servings" next to 150 cal.
+  if(/type the exact amount|^\s*(grams|millilitres)\b/i.test(en.serving || '')){
+    food.servings[0].__exact = true;
+    food.__unit = /millilitre|\bml\b/i.test(en.serving || '') ? 'ml' : 'g';
+  }
   const CORE = ['id','name','cal','pro','carb','fat','serving','qty','meal','ts','date','source'];
   Object.keys(en).forEach(k => { if(CORE.indexOf(k) === -1 && typeof en[k] === 'number'){ food[k] = en[k] / qty; } });
   openServingModal(food);
   window.__editingEntry = { date, id };
   const q = document.getElementById('sm-qty'); if(q) q.value = qty;
   if(en.meal && typeof selectMealChip === 'function') selectMealChip(en.meal);
+  // openServingModal() reset the quantity to 1 and previewed ONE serving. Setting .value from JS
+  // fires no input event, so the modal showed per-serving macros beside a field saying "2" — the
+  // person approved 101 cal while 202 was what saved (or "fixed" the quantity to 4 and saved 404).
+  // What is SHOWN must be what is SAVED.
+  if(typeof updateServingPreview === 'function') updateServingPreview();
 }
 
 function deleteFoodEntry(date,id){const log=ls('totry_nutlog')||{};if(log[date])log[date]=log[date].filter(e=>e.id!==id);ls('totry_nutlog',log);renderNutritionLog();}
@@ -24752,7 +24912,7 @@ function renderGiving(){
     '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px">'+strip+'</div>'+
     body+
     '<div style="border-top:1px solid var(--bd);margin-top:12px;padding-top:10px;font-size:11px;color:var(--tx3);line-height:1.6">'+
-      cg.quiet+' <button onclick="toggleGivingQuiet()" style="background:none;border:none;color:var(--go);cursor:pointer;font-size:11px">'+(p.quiet?'Show amounts':'Hide amounts')+'</button><br>'+
+      cg.quiet+' <button onclick="toggleGivingQuiet()" style="background:none;border:none;color:var(--go);cursor:pointer;font-size:11px;padding:16px 0;margin:-16px 0;position:relative">'+(p.quiet?'Show amounts':'Hide amounts')+'</button><br>'+
       'Spending on others tends to lift mood a little more than spending on yourself — real, but modest, and strongest when it’s your own choice and you can see who it reaches (Dunn, Aknin &amp; Norton). That’s the whole claim. Giving isn’t a mood technique, and there’s no score here: nothing is shared, ranked or counted against you.'+
     '</div>';
 }
@@ -26543,14 +26703,14 @@ function renderFamilyContribution(){
     const met = monthGiven >= target.amount;
     const dueStr = target.dueDay + (target.dueDay===1?'st':target.dueDay===2?'nd':target.dueDay===3?'rd':'th');
     targetHtml = '<div style="background:var(--bg3);border:1px solid '+(met?'var(--go-bd)':'var(--bd)')+';border-radius:10px;padding:12px;margin-bottom:12px">'+
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">This month\u2019s target \u00b7 due '+dueStr+'</span><button onclick="setFamilyTarget()" style="background:none;border:none;color:var(--go);font-size:11px;cursor:pointer">Edit</button></div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">This month\u2019s target \u00b7 due '+dueStr+'</span><button onclick="setFamilyTarget()" style="background:none;border:none;color:var(--go);font-size:11px;cursor:pointer;padding:16px 13px;margin:-16px -13px;position:relative">Edit</button></div>'+
       '<div style="font-size:15px;color:'+(met?'var(--gr)':'var(--tx)')+'">$'+monthGiven.toLocaleString()+' / $'+target.amount.toLocaleString()+(met?'  \u2713':'')+'</div>'+
       '<div style="height:6px;background:var(--bg);border-radius:3px;margin-top:6px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+(met?'var(--gr)':'var(--go)')+'"></div></div>'+
       (met?'':'<div style="font-size:11px;color:var(--tx3);margin-top:5px">$'+remaining.toLocaleString()+' to go this month</div>')+
       '</div>';
   }
   if(!list.length){
-    wrap.innerHTML = targetHtml + '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:8px 0">No contributions logged yet.'+(target?'':' <button onclick="setFamilyTarget()" style="background:none;border:none;color:var(--go);cursor:pointer;font-size:12px">Set a monthly target</button>')+'</p>';
+    wrap.innerHTML = targetHtml + '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:8px 0">No contributions logged yet.'+(target?'':' <button onclick="setFamilyTarget()" style="background:none;border:none;color:var(--go);cursor:pointer;font-size:12px;padding:15px 0;margin:-15px 0;position:relative">Set a monthly target</button>')+'</p>';
     if(totalEl) totalEl.textContent='';
     return;
   }
@@ -30435,7 +30595,7 @@ function startRestTimer(secs){
   restTimerInt=setInterval(()=>{
     restTimeLeft--;if(display)display.textContent=restTimeLeft;
     if(restTimeLeft<=10&&display)display.style.color='var(--re)';
-    if(restTimeLeft<=0){stopRestTimer();if(navigator.vibrate)navigator.vibrate([200,100,200]);showToast('Rest done \u23f1\uFE0F','Next set.');}
+    if(restTimeLeft<=0){stopRestTimer();/* Through haptic(), not navigator.vibrate. This was the ONLY direct call left outside haptic() itself, and WebKit has never implemented the Vibration API — so the end-of-set buzz, the one moment in a workout you are not looking at the screen, did nothing at all on iPhone. v422 routed haptic() through the Taptic Engine; this line never got the memo. */if(typeof haptic==='function') haptic('success');showToast('Rest done \u23f1\uFE0F','Next set.');}
   },1000);
 }
 function stopRestTimer(){if(restTimerInt){clearInterval(restTimerInt);restTimerInt=null;}const o=document.getElementById('rest-timer-overlay');if(o)o.style.display='none';}
@@ -32830,7 +32990,11 @@ function haptic(pattern){
       // Mapped by MEANING, not by mimicking the old millisecond patterns: iOS haptics are designed
       // types, and a "success" tap should feel like the system's success, not like a buzz of the same
       // length. Fire-and-forget — a haptic must never block or throw into a tap handler.
-      if(pattern==='success' || pattern==='celebrate'){ H.notification({ type:'SUCCESS' }); }
+      // 'alert' = the end-of-set buzz: "rest is over, go". Two firm taps, matching the
+      // buzz-pause-buzz rhythm the web path has always had. Deliberately NOT notification(WARNING) --
+      // on iOS that reads as "something went wrong", and a finished rest timer is a go signal.
+      if(pattern==='alert'){ H.impact({ style:'HEAVY' }); setTimeout(function(){ try{ H.impact({ style:'HEAVY' }); }catch(_){ } }, 140); }
+      else if(pattern==='success' || pattern==='celebrate'){ H.notification({ type:'SUCCESS' }); }
       else if(pattern==='warning'){ H.notification({ type:'WARNING' }); }
       else if(pattern==='light'){ H.impact({ style:'LIGHT' }); }
       else { H.impact({ style:'MEDIUM' }); }   // 'tap' and anything unrecognised
@@ -32843,6 +33007,7 @@ function haptic(pattern){
     success: [30, 30, 60],
     warning: [60],
     celebrate: [40, 80, 40, 80, 80],
+    alert: [200, 100, 200],
     light: [5]
   };
   navigator.vibrate(patterns[pattern]||[10]);
@@ -36180,28 +36345,19 @@ function restoreFullBackup(event){
 function confirmRestore(){
   const data = window.__pendingRestore;
   if(!data){ document.querySelector('.modal-bg.open')?.remove(); return; }
-  let restored = 0;
-  // FILTERED, like importAllData. v430 closed this on export and on the secondary import path, but this
-  // is the restore half of the prominent Settings pair and it wrote every key in the file verbatim —
-  // including totry_auth_session. Restoring someone else's backup installed THEIR live session on this
-  // device: the account-takeover direction the BACKUP_NEVER comment already warns about. It also had no
-  // totry_ prefix check at all, so any key in a hand-edited file landed in localStorage.
-  Object.entries(data).filter(([k]) => backupSafeKey(k)).forEach(([k, v]) => {
-    try{
-      localStorage.setItem(k, v);
-      // Push each restored key to the cloud so it persists
-      if(typeof syncToCloud === 'function' && SYNC_KEYS.includes(k)){
-        let parsed; try{ parsed = JSON.parse(v); }catch(_){ parsed = v; }
-        syncToCloud(k, parsed);
-      }
-      restored++;
-    }catch(e){ console.warn('restore key failed', k, e); }
-  });
+  // FILTERED, like importAllData (restoreKeys does the filtering for both). v430 closed this on export
+  // and on the secondary import path, but this is the restore half of the prominent Settings pair and it
+  // wrote every key in the file verbatim — including totry_auth_session. Restoring someone else's backup
+  // installed THEIR live session on this device: the account-takeover direction the BACKUP_NEVER comment
+  // already warns about. It also had no totry_ prefix check at all, so any key in a hand-edited file
+  // landed in localStorage.
+  const r = restoreKeys(data);
   window.__pendingRestore = null;
   document.querySelector('.modal-bg.open')?.remove();
-  showToast('Restored ✓', restored + ' data sets loaded. Reloading...');
-  haptic('celebrate');
-  setTimeout(() => window.location.reload(), 1400);
+  const rep = restoreReport(r);
+  showToast(r.failed.length ? rep.title : 'Restored ✓', rep.body);
+  haptic(r.failed.length ? 'warning' : 'celebrate');
+  setTimeout(() => window.location.reload(), r.failed.length ? 5600 : 1400);
 }
 
 function exportJournal(){
@@ -39205,6 +39361,30 @@ function _showStravaModal(){
     return;
   }
   
+  // NATIVE: the OAuth round trip cannot complete inside the app shell. The WebView's origin is
+  // capacitor://localhost, so STRAVA_REDIRECT_URI becomes capacitor://localhost/ -- Strava validates
+  // redirect_uri against the app's registered Authorization Callback DOMAIN and rejects it outright,
+  // and Capacitor hands strava.com to Safari with no CFBundleURLTypes scheme and no appUrlOpen
+  // listener to route back. Tapping Connect was a one-way trip to an error page.
+  // The honest path works and is permanent: totry_strava_token is in SYNC_KEYS, and getStravaToken()
+  // refreshes through the edge function with no redirect_uri -- so connecting once in the browser on
+  // this same account lands the token on this phone at the next foreground pull, forever after.
+  if(typeof isNativeApp==='function' && isNativeApp()){
+    m.innerHTML = '<div class="modal">' +
+      '<div class="modal-handle"></div>' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
+        '<div style="width:40px;height:40px;border-radius:8px;background:#FC4C02;display:flex;align-items:center;justify-content:center;font-size:18px">\u{1F6B4}</div>' +
+        '<div><div style="font-size:16px;font-weight:500;color:var(--tx)">Connect Strava on the web</div><div style="font-size:11px;color:var(--tx3)">Once — then it syncs here on its own</div></div>' +
+      '</div>' +
+      '<p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:12px">Strava’s sign-in can’t hand you back into the app on iOS, so you connect it once in your browser instead.</p>' +
+      '<p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">Open To Try on the web, sign in with <b>this same account</b>, then Settings → Connected apps → Strava. Your runs and rides start syncing into this app by themselves — nothing else to do here.</p>' +
+      '<button class="btn primary" onclick="openStravaOnWeb()" style="margin-bottom:8px">Open To Try on the web</button>' +
+      '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Later</button>' +
+    '</div>';
+    document.body.appendChild(m);
+    return;
+  }
+
   // Approved path
   m.innerHTML = '<div class="modal">' +
     '<div class="modal-handle"></div>' +
@@ -39220,7 +39400,20 @@ function _showStravaModal(){
     try{ const st = ls('totry_strava_last'); if(st){ const f = document.createElement('div'); f.style.cssText='font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-align:center;margin-top:10px'; f.textContent='Last sync: ' + new Date(st.ts).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}) + ' \u00b7 ' + st.count + ' pulled \u00b7 one-way (Strava \u2192 To Try)'; const mm = m.querySelector('.modal'); if(mm) mm.appendChild(f); } }catch(_){}
 }
 
+// Opens the web build so a native user can complete the Strava OAuth round trip in a real browser.
+// window.open is the pattern the rest of this file already uses for external links; the href fallback
+// covers a shell where the popup is refused.
+function openStravaOnWeb(){
+  var u = 'https://alfredjohn200101.github.io/ToTry/';
+  var w = null;
+  try{ w = window.open(u, '_blank'); }catch(_){ }
+  if(!w){ window.location.href = u; }
+}
+
 function startStravaOAuth(){
+  // Belt and braces. _showStravaModal never offers this natively, but any future entry point that
+  // calls it must not bounce the person into Safari and lose them -- see the note in that function.
+  if(typeof isNativeApp==='function' && isNativeApp()){ openStravaOnWeb(); return; }
   if(!STRAVA_CLIENT_ID) return;
   const scope = 'read,activity:read_all';
   const state = Math.random().toString(36).slice(2);
@@ -41280,10 +41473,18 @@ function saveCheckin(){
 function getSoberStreak(){
   loadV();
   if(!vices||!vices.length){
-    // No vices configured → count days since app start as best-effort
+    // No vices configured → count days since app start as best-effort.
+    // CLAMPED AT THE SOURCE. If the device clock sits behind totry_start — a phone with the wrong
+    // date, a restore from a device that was ahead, a flight across the date line — this went
+    // negative and Home rendered "-27 · SOBER STREAK · Days clean": the app telling someone their
+    // clean time is a debt. Every other elapsed-day count in this file is already clamped
+    // (getDayCount, totalDaysTrying, viceCleanDays); this was the one that was not. An unparseable
+    // date returns 0 too, so the card can never show NaN.
     const start=ls('totry_start');
     if(!start)return 0;
-    return Math.floor((Date.now()-new Date(start))/86400000);
+    const t=new Date(start).getTime();
+    if(isNaN(t))return 0;
+    return Math.max(0, Math.floor((Date.now()-t)/86400000));
   }
   // Return the longest CURRENT clean streak across all vices
   return Math.max(0, ...vices.map(v => viceCleanDays(v)));

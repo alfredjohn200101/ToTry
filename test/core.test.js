@@ -1828,8 +1828,17 @@ H.section('restore must not install someone else\'s credentials');
   // backupSafeKey filter and not even a totry_ prefix check.
   const code = H.html.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
   const cr = code.slice(code.indexOf('function confirmRestore('), code.indexOf('function confirmRestore(') + 1400);
-  H.ok(/filter\(\(\[k\]\) => backupSafeKey\(k\)\)/.test(cr), 'confirmRestore filters through backupSafeKey');
-  H.ok(!/Object\.entries\(data\)\.forEach/.test(cr), 'it no longer writes every key in the file');
+  // Asserts the INVARIANT, not one literal shape: v445 moved the filtering into a shared restoreKeys()
+  // used by both restore entry points, which is better than two copies — but it broke an assertion that
+  // was pinned to the old inline expression. Pin what must be TRUE (every restore path filters, and
+  // reports only what landed), not how it happens to be written today.
+  const rk = code.slice(code.indexOf('function restoreKeys('), code.indexOf('function restoreKeys(') + 1800);
+  H.ok(/filter\(backupSafeKey\)/.test(rk), 'the shared restore path filters through backupSafeKey');
+  H.ok(/out\.ok\+\+/.test(rk) && /catch/.test(rk), 'and counts a key only after its write returned');
+  H.ok(!/Object\.entries\(data\)\.forEach/.test(cr), 'confirmRestore no longer writes every key in the file');
+  // Both entry points must go through it — two implementations is how they drift apart.
+  const usesShared = (code.match(/restoreKeys\(data\)/g) || []).length;
+  H.ok(usesShared >= 2, 'both restore entry points use the shared path (' + usesShared + ')');
 }
 
 H.section('location: declared, coarsened, and disclosed everywhere');
