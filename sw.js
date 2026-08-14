@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v442-one-calculator'
+const CACHE = 'totry-v443-storage-truth'
 
 const CORE = [
   './',

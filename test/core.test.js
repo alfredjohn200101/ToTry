@@ -1934,4 +1934,35 @@ H.section('a quality rating is not an hour count')
     'the short-night care rule fires on a rough night too, not only on measured hours');
 }
 
+H.section('no screen may claim data stays on the device while it syncs')
+{
+  // Settings said "Your personal data is stored on your own device" — two lines above a privacy policy
+  // that correctly describes a Supabase database. The app upserts to Postgres on every synced write, so
+  // the reassuring line on the screen was the false one. This is the same shape as the HealthKit claim
+  // (v421) and the backup-file claim (v430): the mechanism was fine, the sentence beside it was not.
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+
+  // The app does sync — establish that first, so this test cannot rot into a stale assertion.
+  H.ok(/syncToCloud\(/.test(code) && /SYNC_KEYS/.test(code), 'the app really does sync to a server');
+
+  // Therefore no blanket device-only claim may appear in shipped copy. Narrow, specific promises about
+  // things that genuinely never leave (progress photos, cycle data) are correct and stay allowed.
+  const blanket = [
+    /Your personal data is stored on your own device/i,
+    /all your data (?:is |stays )?(?:stored )?(?:only )?on (?:your|this) device/i,
+    // The lookahead must be wide enough to clear the markup between a heading and its subject: the
+    // policy's true section 4 is "What never leaves your device" and only names "Progress photos"
+    // about ninety characters later, past a </p> and the next <p style=...>. At 80 it read as a
+    // blanket claim and failed a correct line.
+    /never leaves your (?:phone|device)(?![\s\S]{0,240}(photo|cycle))/i,
+  ];
+  const offenders = blanket.filter(re => re.test(code)).map(re => String(re).slice(0, 54));
+  H.eq(offenders, [], 'no blanket "stays on your device" claim survives in the UI');
+
+  // And the two narrow promises that ARE true must still be made, because they are real and load-bearing.
+  H.ok(/progress photos/i.test(code), 'the app still tells people photos are device-only');
+}
+
 H.report();
