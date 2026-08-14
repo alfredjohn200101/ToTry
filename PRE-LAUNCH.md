@@ -52,60 +52,41 @@ Worth understanding rather than skimming:
 - Two plate calculators disagreed about the same lift — and **one of them I added in v426 without
   checking the app already had one**.
 
-### Still open
+### Part 1 is closed (v437–v445)
 
-**Day one** — first morning, first thing: *"You skipped your habits yesterday"*, about a day before the
-app existed for them.
+| was | closed by |
+|---|---|
+| 3 submission blockers (location usage string / undisclosed GPS / in-app policy silent on Health) | v437 |
+| Day one opening with *"You skipped your habits yesterday"* | v445 |
+| Restore reporting keys **tried**, not landed — losing the journal first on a full device | v445 |
+| Food edit showing per-serving while saving double | v445 |
+| Rest-timer buzz still on `navigator.vibrate`, dead on iPhone | v445 |
+| Negative streak, wrong-shaped storage key taking out Home, app-lock over crisis numbers | v445 |
+| Tap targets — including **"×" delete glyphs at 8.2×16**, ten per screen, three deleting with no confirm | v445 |
+| Contrast below WCAG AA on every card | v438 |
+| `detectCrisis` missing *"I can't go on"*, *"I want to end it"* — 5 of 12 real phrasings | v444 |
 
-**Data integrity** — *"Restored — N items loaded"* counts keys it **tried**, not ones that landed;
-append-only logs missing from the ARR union list are clobbered on the losing device (the mechanism is
-real; the proposed fix is destructive for 3 of 6 keys and needs care).
+**Six defect classes shut, not six bugs:** crisis-gate leaks, faith forced on the secular default, numbers
+stated as fact that were never measured, promises the code doesn't keep, crisis-detector recall, and
+duplicate implementations that drift apart.
 
-**Crisis detection quality** — `detectCrisis` is simultaneously over-inclusive for a training app
-("this workout is killing me") and misses common phrasings. This is the one remaining item I would not
-ship without: the gates are all in place now, but the detector behind them is blunt.
+The accessibility numbers are worth keeping as a caution. v429/v430 claimed "zero below HIG across all
+five tabs" and "no text below AA". Both had measured **only Home**, via a `showTab()` that does not exist,
+inside a `try/catch` that swallowed the error. Re-measured with `go()`: 29 tap targets and 10 text runs.
+Then a specced re-measurement found the *worst* controls had been invisible to that too, because the run
+had no money data seeded so the list rows never rendered. **Three successive measurements, each one
+wrong in a different way.**
 
-### Accessibility — measured properly on 14 Aug, and worse than v429/v430 claimed
+> A `::after` pseudo-element was tried as the systemic tap-target fix and **reverted** — a Playwright
+> click 14px outside the box did not fire the handler. It is the obvious solution, it is widely
+> recommended, and here it does nothing. Padding cancelled by an equal negative margin is what works, and
+> is measurable.
 
-Those two commits said "zero controls below HIG across all five tabs" and "no small text below AA". Both
-measured **only the Home tab**, because they called a `showTab()` that does not exist — inside a
-`try/catch` that swallowed the ReferenceError. The real navigator is `go()`. Re-measured with it:
-
-| | v429/v430 claimed | actually |
-|---|---|---|
-| Tap targets under 44pt | 0 | **29** — Money 19, Home 5, Fight 5 |
-| Text below WCAG AA | 0 | **10**, all `--tx3` on the lighter *card* backgrounds |
-
-- **Contrast: fixed** (v438). `--tx3` was tuned against the page background only, so every card sat at
-  4.28:1. Now `#85827B` — 4.52 on the lightest card, 5.10 on the page. Re-measured: **0 below AA**.
-- **Tap targets: 24 still open.** Five are fixed (two in v429, three × buttons in v438) with padding
-  cancelled by an equal negative margin — the technique that measurably works. Worst remaining:
-  "Hide amounts" 68×**12**, "Set a monthly target" 107×**14**, "↑ Import CSV" 88×28. Mostly the Money
-  tab's text-style controls. **Half a day.**
-
-> A `::after` pseudo-element was tried first as a systemic fix and **reverted**: a Playwright click 14px
-> outside the visual box did not fire the handler, so it enlarged nothing. Worth recording — it is the
-> obvious solution, it is widely recommended, and here it does nothing.
-
-### Medium / low — 10 open
-Ritual copy the faith pass never reaches ("then pray", "examens" ×4); every new user silently assigned a
-"Prayer / scripture" habit and told that setup step is done; food edit shows per-serving numbers while
-quantity says 2 (approve 202, save 404); "Reclaimed by staying clean" has three different values from the
-same data; the rest timer's buzz is still `navigator.vibrate`, dead on iPhone; **Strava OAuth can't work
-natively** (`redirect_uri` is `capacitor://localhost`); negative streak when the clock is behind; the
-app-lock overlay covers the sign-in screen's crisis numbers; a wrong-*shaped* storage key takes out most
-of Home; the Fight tab's craving panel is unreachable through every code path.
-
-**Estimate: 1 week** for what remains here — down from 2–3, because the four classes above are shut.
-
-### The one I would not ship without
-
-`detectCrisis` quality. Every AI surface is now gated and every disclosure is kept out of the model's
-context — but the detector deciding what counts as a disclosure is blunt in both directions. It has
-previously failed OPEN on iOS smart apostrophes, and it fires on "this workout is killing me". Both
-failure modes are bad in different ways: one misses someone, the other teaches people the app
-overreacts, which is how a real disclosure gets dismissed later. **2–3 days, and it needs real phrasings,
-not invented ones.**
+**Remaining in Part 1: nothing blocking.** What is left is small and known — 17 bordered pill buttons and
+the `.fst` sub-tabs are 28–37px and cannot be padded without repainting them taller (a design decision,
+not a bug fix); four delete glyphs in Grow/Soul carry inline padding so they need per-site edits rather
+than the shared rule; the Fight craving panel is still unreachable; ~10 medium/low copy and vocabulary
+items remain.
 
 ---
 

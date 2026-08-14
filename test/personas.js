@@ -60,6 +60,31 @@ const PERSONAS = [
     seed: { totry_guest: true, totry_onboarded: true, totry_sex: 'female', totry_faith_tradition: 'secular' },
     forbid: CHRISTIAN_ONLY,
   },
+  {
+    // The path v436 fixed and the least-exercised one in the app: a returning ACCOUNT holder, offline,
+    // whose access token has expired (they last an hour). Before v436 supabase-js sat in its refresh
+    // retry loop for ~25-30s showing the FIRST-RUN WELCOME SCREEN, then landed them on the sign-up wall
+    // over months of their own data. This asserts they get their app instead.
+    name: 'returning account holder · offline · expired token',
+    seed: {
+      totry_onboarded: true, totry_name: 'Alfy', totry_identity: 'discipline',
+      totry_faith_tradition: 'secular',
+      totry_auth_session: { access_token: 'expired', refresh_token: 'r', expires_at: 1 },
+    },
+    offline: true,
+    forbid: CHRISTIAN_ONLY,
+    mustNotSee: ['Enter your email to begin', 'The only thing required is that you try'],
+  },
+  {
+    // Debt-free, nothing logged, numbers off. The state that produces NaN, Infinity and confident targets
+    // derived from no data — and the state a brand-new person is actually in.
+    name: 'debt-free · nothing logged · numbers off',
+    seed: {
+      totry_guest: true, totry_onboarded: true, totry_faith_tradition: 'secular',
+      totry_f: { d: [] }, totry_v: [], totry_h: [], totry_body: [], totry_workouts: [],
+    },
+    forbid: CHRISTIAN_ONLY,
+  },
 ];
 
 const serve = () => new Promise(res => {
@@ -95,8 +120,21 @@ const serve = () => new Promise(res => {
       for (const [k, v] of Object.entries(seed)) localStorage.setItem(k, JSON.stringify(v));
     }, p.seed);
 
+    // A real outage: everything off-origin fails. The vendored SDK still loads (it is same-origin), which
+    // is the whole point — the app must open from local data rather than waiting on a session it cannot get.
+    if (p.offline) {
+      await ctx.route('**/*', route => {
+        const u = route.request().url();
+        if (u.includes('127.0.0.1') || u.includes('localhost')) return route.continue();
+        return route.abort('internetdisconnected');
+      });
+      await page.addInitScript(() => Object.defineProperty(navigator, 'onLine', { get: () => false }));
+    }
+
     await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: 'domcontentloaded' });
-    await page.waitForTimeout(2600);           // past the boot splash and initApp
+    // Offline needs longer: checkAuthAndStart races the session lookup for 2.5s before falling through
+    // to bootWithoutCloud(), and initApp runs after that.
+    await page.waitForTimeout(p.offline ? 7000 : 2600);
 
     // Walk every tab, collecting what is actually VISIBLE. Hidden panes are skipped deliberately:
     // measuring a display:none tab is how this project has produced false findings before.
@@ -141,6 +179,12 @@ const serve = () => new Promise(res => {
     for (const word of p.forbid) {
       const hit = new RegExp('\\b' + word, 'i').test(seen.text);
       ok(!hit, `${label} — must not show "${word}"`);
+    }
+    if (p.mustNotSee) {
+      const whole = (await page.evaluate(() => document.body.innerText || ''));
+      for (const phrase of p.mustNotSee) {
+        ok(!whole.includes(phrase), `${label} — must not be shown "${phrase}"`);
+      }
     }
     if (p.expectSome) {
       ok(p.expectSome.some(w => seen.text.includes(w)),
