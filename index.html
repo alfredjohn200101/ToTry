@@ -4616,7 +4616,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v440';
+const APP_VERSION = 'v441';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7284,8 +7284,16 @@ function getLifeState(){
         const goal = parseFloat(L('totry_sleep_goal')) || 8;
         const debt = recent.length ? Math.round(recent.reduce((a,h)=>a+Math.max(0,goal-h),0)*10)/10 : null;
         const short = (last != null) && (last < 6);
-        return { lastNight: last, avg7: avg7, nights7: recent.length, goal: goal, debt7: debt, short: short };
-      }catch(_){ return { lastNight:null, avg7:null, nights7:0, goal:8, debt7:null, short:false }; }
+        // Quality is a SEPARATE signal from hours. The morning card's Rough/Okay/Good/Great used to be
+        // written into the hours field, so "Rough" became "3 hours slept" everywhere downstream. Someone
+        // can sleep eight hours badly; the two facts are not interchangeable and must not be averaged
+        // together. Read here so the app can say what they actually told it.
+        const qOn = function(off){ const d = tr[auKey(now - off*86400000)]; const q = d && parseFloat(d.sleepQuality); return (q && q > 0) ? q : null; };
+        const qual = qOn(0) != null ? qOn(0) : qOn(1);
+        const qualWord = qual == null ? null : (qual <= 3 ? 'rough' : qual <= 5 ? 'okay' : qual <= 7 ? 'good' : 'great');
+        return { lastNight: last, avg7: avg7, nights7: recent.length, goal: goal, debt7: debt, short: short,
+                 quality: qual, qualityWord: qualWord };
+      }catch(_){ return { lastNight:null, avg7:null, nights7:0, goal:8, debt7:null, short:false, quality:null, qualityWord:null }; }
     })(),
     money: (function(){ try{ const f=ls('totry_f')||{}; const debts=f.d||[]; const totalDebt=debts.reduce((s,d)=>s+Math.max(0,(d.t||0)-(d.p||0)),0); const reclaimed=(typeof totalReclaimed==='function')?totalReclaimed():0; return { totalDebt:Math.round(totalDebt), reclaimed, hasDebt: totalDebt>0 }; }catch(_){ return { totalDebt:0, reclaimed:0, hasDebt:false }; } })(),
     // Her cycle, if she chose to track it. Present ONLY when she opted in — the whole-life brain
@@ -7343,9 +7351,17 @@ function lifeStateBrief(s){
   try{
     const sl = s.sleep;
     if(sl && sl.lastNight != null){
-      let sleepLine = 'Sleep: '+sl.lastNight+'h last night'+(sl.avg7!=null?(', '+sl.avg7+'h avg over '+sl.nights7+' logged nights'):'');
+      let sleepLine = 'Sleep: '+sl.lastNight+'h last night'+(sl.avg7!=null?(', '+sl.avg7+'h avg over '+sl.nights7+' logged nights'):'')+(sl.qualityWord?(' (they described it as '+sl.qualityWord+')'):'');
       if(sl.short) sleepLine += ' — SHORT. Cravings will feel louder, hunger runs high, emotions amplify and impulse control is thinner today. Meet them with grace and lower the bar; do NOT read a hard day as weakness in them.';
       lines.push(sleepLine);
+    } else if(sl && sl.qualityWord){
+      // Quality WITHOUT hours. Before quality and hours were separated, a "Rough" tap wrote 3 into the
+      // hours field, so this branch never existed — the model was simply told "Sleep: 3h" and believed
+      // it. Now the honest version: the coach still learns the night was hard, and is explicitly told
+      // that no hours were measured, so it cannot invent a number back at them.
+      let qLine = 'Sleep: no hours logged, but they described last night as ' + sl.qualityWord + '.';
+      if(sl.quality != null && sl.quality <= 3) qLine += ' Treat today like a short night — cravings louder, hunger higher, impulse control thinner. Grace, and lower the bar.';
+      lines.push(qLine);
     }
   }catch(_){}
   // The cycle line — the single most useful missing context for a woman, and the reason this app can
@@ -27943,7 +27959,7 @@ function logMorningSleep(v){
   ls('totry_checkins', checkins.slice(0,300));
   // Single source of truth for sleep: mirror into the daily trackers store the Track tab reads, so
   // a morning sleep rating shows as "Xh" there instead of a stale 0h. (Was two disconnected stores.)
-  try{ const _dk=new Date().toLocaleDateString('en-AU'); const _tr=ls('totry_trackers')||{}; if(!_tr[_dk])_tr[_dk]={water:0,sleep:0,steps:0}; _tr[_dk].sleep=v; ls('totry_trackers',_tr); if(typeof updateTrackerDisplay==='function') updateTrackerDisplay(); }catch(_){}
+  try{ const _dk=new Date().toLocaleDateString('en-AU'); const _tr=ls('totry_trackers')||{}; if(!_tr[_dk])_tr[_dk]={water:0,sleep:0,steps:0}; /* QUALITY, NOT HOURS. This wrote v straight into .sleep — the same field the Track tab fills with real hours via adjustTracker('sleep',+/-0.5) and renders as "Xh" against "Target: 8 hours". The buttons ask "How did you sleep?" and answer Rough/Okay/Good/Great (3/5/7/9), so tapping Rough recorded THREE HOURS OF SLEEP. getLifeState then averaged it, computed a sleep debt from it, and the app said "you got about 3h" — to the person, and in the brief handed to the AI. The comment here said it was to avoid "a stale 0h", which is the trade exactly backwards: an empty field is honest, an invented number is not. Hours now come only from someone actually entering hours. */ _tr[_dk].sleepQuality=v; ls('totry_trackers',_tr); if(typeof updateTrackerDisplay==='function') updateTrackerDisplay(); }catch(_){}
   if(typeof syncToCloud==='function') syncToCloud();
   if(typeof haptic==='function') haptic('light');
   // Reflect selection in the UI.
@@ -38442,14 +38458,18 @@ function computeProactiveNudge(){
   // gets read as physiology instead of character. Once per day, dismissible.
   try{
     const _sl = (typeof getLifeState==='function') ? (getLifeState().sleep||null) : null;
-    if(_sl && _sl.short && _sl.lastNight != null){
+    // Fires on a short night OR a rough one. Before v441 a quality tap was written into the hours
+    // field, so "Rough" produced lastNight:3 and tripped this by accident. Now that hours and
+    // quality are separate, someone who only taps Rough still deserves the same grace-framing —
+    // it just no longer pretends to know how long they slept.
+    if(_sl && ((_sl.short && _sl.lastNight != null) || (_sl.quality != null && _sl.quality <= 3))){
       const _sid = 'shortsleep'+dayKey(now);
       return { id:_sid, tone:'care',
         eyebrow:'Before today gets going',
         // In the morning there is still something to DO about it — ten minutes of outdoor light is
         // worth more for tonight's sleep than anything you can take, and more for the clock than
         // avoiding screens later. Later in the day that advice is useless, so it isn't offered.
-        text: hi + 'you got about ' + _sl.lastNight + 'h. Go gentle today — on a short night the cravings get louder, hunger runs high and everything lands harder. That’s your body running low, not you getting weaker. Lower the bar, eat properly, and don’t trust the 9pm urge.'
+        text: hi + (_sl.lastNight != null ? ('you got about ' + _sl.lastNight + 'h') : ('you said last night was ' + (_sl.qualityWord || 'rough'))) + '. Go gentle today — on a short night the cravings get louder, hunger runs high and everything lands harder. That’s your body running low, not you getting weaker. Lower the bar, eat properly, and don’t trust the 9pm urge.'
               + ((new Date().getHours()>=5 && new Date().getHours()<=10) ? ' One thing that genuinely helps: get outside for ten minutes in the next hour, no sunglasses. It resets tonight before today has even started.' : ''),
         actions: [{label:'Noted', ghost:true, onclick:'dismissNudge(\''+_sid+'\')'}] };
     }

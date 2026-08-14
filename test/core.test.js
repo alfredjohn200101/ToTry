@@ -1883,4 +1883,32 @@ H.section('a disclosure written down must not become AI context')
   H.ok(!/return;[\s\S]{0,200}entries\.push/.test(se), 'saveEntry never refuses to store what they wrote');
 }
 
+H.section('a quality rating is not an hour count')
+{
+  // The morning card asks "How did you sleep?" and offers Rough / Okay / Good / Great, wired to 3/5/7/9.
+  // logMorningSleep wrote that value straight into trackers[day].sleep — the SAME field the Track tab
+  // fills with real hours and renders as "Xh" against "Target: 8 hours". So tapping Rough recorded three
+  // hours of sleep. getLifeState averaged it, computed a sleep debt from it, and the app told the person
+  // "you got about 3h" and told the AI "Sleep: 3h last night". The comment justifying it said the mirror
+  // avoided "a stale 0h" — which is the trade backwards: an empty field is honest, an invented one is not.
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+
+  const i = code.indexOf('function logMorningSleep(');
+  H.ok(i > 0, 'logMorningSleep exists');
+  const body = code.slice(i, i + 1400);
+  H.ok(/_tr\[_dk\]\.sleepQuality\s*=\s*v/.test(body), 'the rating is stored as quality');
+  H.ok(!/_tr\[_dk\]\.sleep\s*=\s*v/.test(body), 'and NOT as hours');
+
+  // Hours and quality must stay separate all the way through the state and the brief.
+  H.ok(/qualityWord/.test(code), 'getLifeState exposes a quality word');
+  H.ok(/no hours logged, but they described last night as/.test(code),
+    'the brief tells the model there are no measured hours rather than inventing some');
+
+  // The grace-framing must still reach someone who only reported a rough night.
+  H.ok(/_sl\.quality != null && _sl\.quality <= 3/.test(code),
+    'the short-night care rule fires on a rough night too, not only on measured hours');
+}
+
 H.report();
