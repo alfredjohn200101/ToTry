@@ -2652,7 +2652,7 @@ input:focus,textarea:focus,select:focus{
         <div class="lbl" style="margin-bottom:0">This session <span id="session-duration" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--go);font-weight:400;margin-left:6px"></span></div>
         <div style="display:flex;gap:6px">
           <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx2)" onclick="openWarmupCalc()">🔥 Warmup</button>
-          <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx2)" onclick="openPlateCalculator()">⚖ Plates</button>
+          <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx2)" onclick="openPlateMath()">⚖ Plates</button>
         </div>
       </div>
       <div id="pt-session-exercises"></div>
@@ -4616,7 +4616,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v441';
+const APP_VERSION = 'v442';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -29740,92 +29740,18 @@ function removeExFromSession(ei){currentSession.splice(ei,1);renderWorkoutSessio
 
 // ── PLATE CALCULATOR ─────────────────────────────────────────
 // User inputs total barbell weight, we calculate plates per side
-function openPlateCalculator(){
-  const lastBar = ls('totry_bar_weight') || 20; // 20kg Olympic default
-  const lastTarget = ls('totry_last_plate_target') || '';
-  const m = document.createElement('div');
-  m.className = 'modal-bg open';
-  m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
-    '<h3 style="margin-bottom:8px">Plate calculator</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Enter the total weight you want on the bar. We tell you what plates to load per side.</p>' +
-    '<div style="margin-bottom:12px">' +
-      '<div class="eyebrow">Bar weight</div>' +
-      '<select id="plate-bar" style="margin-bottom:10px">' +
-        '<option value="20"' + (lastBar==20?' selected':'') + '>Olympic 20kg</option>' +
-        '<option value="15"' + (lastBar==15?' selected':'') + '>Women\'s 15kg</option>' +
-        '<option value="10"' + (lastBar==10?' selected':'') + '>EZ/Tech 10kg</option>' +
-        '<option value="7"' + (lastBar==7?' selected':'') + '>Curl bar 7kg</option>' +
-        '<option value="0"' + (lastBar==0?' selected':'') + '>No bar / dumbbells</option>' +
-      '</select>' +
-    '</div>' +
-    '<div style="margin-bottom:12px">' +
-      '<div class="eyebrow">Target total weight (kg)</div>' +
-      '<input type="number" id="plate-target" value="' + lastTarget + '" placeholder="e.g. 100" style="font-size:16px;padding:12px" oninput="renderPlateBreakdown()">' +
-    '</div>' +
-    '<div id="plate-breakdown" style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:12px;min-height:60px"></div>' +
-    '<button class="btn" onclick="closeModal(this)">Done</button>' +
-  '</div>';
-  document.body.appendChild(m);
-  
-  document.getElementById('plate-bar').onchange = renderPlateBreakdown;
-  renderPlateBreakdown();
-  setTimeout(() => document.getElementById('plate-target')?.focus(), 100);
-}
-
-function renderPlateBreakdown(){
-  const target = parseFloat(document.getElementById('plate-target')?.value || 0);
-  const bar = parseFloat(document.getElementById('plate-bar')?.value || 20);
-  const box = document.getElementById('plate-breakdown');
-  if(!box) return;
-  
-  ls('totry_bar_weight', bar);
-  if(target > 0) ls('totry_last_plate_target', target);
-  
-  if(target <= bar){
-    box.innerHTML = '<div style="font-size:13px;color:var(--tx3);text-align:center">Target weight must be heavier than the bar.</div>';
-    return;
-  }
-  
-  const perSide = (target - bar) / 2;
-  const plates = [25, 20, 15, 10, 5, 2.5, 1.25, 0.5];
-  const breakdown = [];
-  let remaining = perSide;
-  
-  plates.forEach(p => {
-    let count = 0;
-    while(remaining >= p - 0.001){
-      remaining -= p;
-      count++;
-    }
-    if(count > 0) breakdown.push({plate: p, count});
-  });
-  
-  const exact = Math.abs(remaining) < 0.001;
-  
-  // Visual representation
-  let html = '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">Per side</div>';
-  
-  if(breakdown.length === 0){
-    html += '<div style="font-size:14px;color:var(--tx2)">No plates needed — bar weight is your target.</div>';
-  } else {
-    html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">';
-    breakdown.forEach(b => {
-      const color = b.plate >= 20 ? '#d33' : b.plate >= 10 ? '#36b' : b.plate >= 5 ? '#888' : '#bbb';
-      for(let i = 0; i < b.count; i++){
-        html += '<div style="background:' + color + ';color:#fff;padding:6px 10px;border-radius:4px;font-family:DM Mono,monospace;font-size:11px;font-weight:700">' + b.plate + '</div>';
-      }
-    });
-    html += '</div>';
-    
-    const sum = breakdown.reduce((a, b) => a + b.plate * b.count, 0);
-    html += '<div style="font-size:13px;color:var(--tx)">' + sum.toFixed(2).replace(/\.?0+$/, '') + ' kg per side · ' + breakdown.map(b => b.count + '×' + b.plate).join(', ') + '</div>';
-    if(!exact){
-      html += '<div style="font-size:11px;color:var(--go);margin-top:4px">Closest possible with standard plates. Off by ' + remaining.toFixed(2) + 'kg.</div>';
-    }
-  }
-  
-  box.innerHTML = html;
-}
+// openPlateCalculator() and renderPlateBreakdown() lived here and were REMOVED in v442.
+// They were a second plate calculator, predating the one I added in v426 — which I built without
+// checking whether the app already had one. Two consequences, both real:
+//   · they disagreed. This one carried a 0.5kg plate, so it answered 101kg as loadable while the
+//     other correctly said the closest is 100kg. Same lift, same card, two answers.
+//   · they COLLIDED. Both used id="plate-target" for their input, so whichever modal was in the DOM
+//     could be read by the other function.
+// Consolidated on openPlateMath(): it is the tested one (a 46-row bodyweight/step sweep), it is honest
+// when a target is not loadable ("closest you can load is 100kg — 1kg under"), and it prefills from the
+// heaviest set already logged against that exercise. Both "Plates" buttons now open it.
+// The 0.5kg plate is deliberately not carried: 1.25kg is the smallest plate in a normal commercial gym,
+// and pretending otherwise makes the app confidently wrong at the rack.
 function saveWorkoutSession(){
   if(!currentSession.length){
     showToast('Nothing to save','Add some exercises first.');

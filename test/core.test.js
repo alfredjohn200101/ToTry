@@ -1457,6 +1457,29 @@ H.section('loading the bar — plate maths');
   H.eq(platesForSide('abc', 20), null, 'garbage in → null, not NaN plates');
   H.eq(platesForSide(100, 'x'), null, 'a garbage bar → null too');
 
+  // ONE CALCULATOR, ONE ANSWER. v426 added this without checking the app already had
+  // openPlateCalculator()/renderPlateBreakdown(). They disagreed — the older one carried a 0.5kg plate,
+  // so it called 101kg loadable while this one correctly says the closest is 100kg — and they COLLIDED,
+  // both using id="plate-target". The existing "no duplicate top-level function" ratchet could not catch
+  // it: two different NAMES doing the same job. This checks the job, not the name.
+  // Measured on a COMMENT-STRIPPED view. The note explaining this very bug quotes id="plate-target",
+  // and the first version of this assertion counted that comment as a second live element — the same
+  // trap that has now produced five false readings in this project, twice from comments I wrote myself.
+  const plateCode = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  // '[Pp]late' also matches TemPLATE — renderTemplates, importTemplate, mapToHevyTemplate. Exclude both
+  // Template and Plateau, or this counts eleven unrelated functions as plate calculators.
+  const platesFns = (plateCode.match(/function [A-Za-z_]*[Pp]late[A-Za-z_]*\s*\(/g) || [])
+    .filter(f => !/Plateau|emplate/.test(f));
+  H.ok(platesFns.length <= 6, 'only one plate calculator implementation survives (' + platesFns.join(' ') + ')');
+  H.ok(!/function openPlateCalculator\s*\(/.test(plateCode), 'the duplicate openPlateCalculator is gone');
+  H.ok(!/function renderPlateBreakdown\s*\(/.test(plateCode), 'and so is its renderer');
+  const targetIds = (plateCode.match(/id="plate-target"/g) || []).length;
+  H.eq(targetIds, 1, 'exactly one element owns id="plate-target"');
+  const inventories = (plateCode.match(/\[\s*25\s*,\s*20\s*,\s*15\s*,/g) || []).length;
+  H.eq(inventories, 1, 'exactly one plate inventory exists, so two answers cannot diverge again');
+
   // The UI must be reachable from the exercise row, or the maths is dead code.
   H.ok(/onclick="openPlateMath\('\+ei\+'\)"/.test(H.html), 'every exercise row has a Plates button');
   H.ok(/function openPlateMath\(/.test(H.html), 'and the sheet it opens exists');
