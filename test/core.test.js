@@ -1519,7 +1519,10 @@ H.section('faith is full but never forced — Christian-only features stay Chris
   const opsBody = ops.slice(0, ops.indexOf('\n}') + 2);
   H.ok(/faithTradition\(\)/.test(opsBody), 'openPrayerSection branches on tradition');
   H.ok(/=== 'christianity'/.test(opsBody), 'and the Bible prayer tab is the Christian branch only');
-  H.ok(/openPractice\(\)/.test(opsBody), 'everyone else is routed to their own practice');
+  // v446 routes them to openFaithHome() instead — the practice IF their tradition has one, plus the
+  // composer. openPractice() alone was not enough: only dhikr and japa exist, so Buddhism and secular
+  // landed on a breath menu with nowhere to bring a specific worry.
+  H.ok(/openFaithHome\(\)|openPractice\(\)/.test(opsBody), 'everyone else is routed to a home of their own');
 
   // 4. faithTradition must keep defaulting to secular — the whole gate inverts if this flips.
   const ft = code.slice(code.indexOf('function faithTradition('));
@@ -2014,6 +2017,40 @@ H.section('detectCrisis — measured in both directions, with real phrasings')
   H.ok(/ending things with \(\?:my \|the \|her \|him \|them \)\?\[a-z'\]\{1,14\}/.test(H.html) ||
        /\[a-z'\]\{1,14\}/.test(H.html),
     'benign-completion spans are bounded, not greedy');
+}
+
+H.section('every tradition has somewhere to say what is on their heart')
+{
+  // The app had exactly ONE intention composer and it lived in the Christian Word tab. v435 correctly
+  // stopped routing non-Christians into that tab, but routing someone AWAY from a surface is not giving
+  // them one — a Muslim was left with dhikr (a practice) and no way to bring a specific worry.
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+
+  H.ok(/function faithHomeHTML\(/.test(code), 'the per-tradition composer exists');
+  H.ok(/function openFaithHome\(/.test(code), 'and it has an entry point');
+  H.ok(/openFaithHome\(\)/.test(code.replace('function openFaithHome()', '')), 'which is actually called');
+
+  // It must not depend on a practice existing — only dhikr and japa do, so Buddhism and secular
+  // previously landed on a breath menu with no composer at all.
+  const fh = code.slice(code.indexOf('function openFaithHome('), code.indexOf('function openFaithHome(') + 1800);
+  H.ok(/fh-prayer-intention/.test(fh), 'openFaithHome renders the composer itself');
+  H.ok(/_renderPractice/.test(fh), 'and still shows the practice for traditions that have one');
+
+  // Distinct ids from the Christian panel — sharing them is what made two plate calculators read each
+  // other's input (v442).
+  // Exactly ONE occurrence — inside faithHomeHTML's builder string. Two would mean a real duplicate in
+  // the DOM, which is the plate-target collision all over again. (The first version of this assertion
+  // expected zero, forgetting that the builder string necessarily contains the id it writes.)
+  H.eq((H.html.match(/id="fh-prayer-intention"/g) || []).length, 1,
+    'the composer id is defined in exactly one place');
+  H.ok(/ai-prayer-intention/.test(code) && /fh-prayer/.test(code), 'the two composers use different id prefixes');
+
+  // The generator must read faithPrayer(), not a hardcoded Catholic prompt.
+  const gen = code.slice(code.indexOf('async function generateIntentionPrayer('), code.indexOf('async function generateIntentionPrayer(') + 2600);
+  H.ok(/faithPrayer\(\)/.test(gen), 'generateIntentionPrayer uses the per-tradition spec');
+  H.ok(/pfx/.test(gen), 'and is parameterised so it can be hosted twice without an id collision');
 }
 
 H.report();
