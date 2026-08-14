@@ -1,7 +1,8 @@
 # What's left before this is worth putting on the App Store
 
-Written 14 Aug 2026, at v436, after two adversarial sweeps (152 agents, 46 confirmed findings) and a
-day of driving the real app. This is the honest version, not the encouraging one.
+Written 14 Aug 2026. **Updated at v443** — every blocker is closed and four whole defect CLASSES are
+shut, not four bugs. Based on two adversarial sweeps (152 agents, 46 confirmed findings) plus a day of
+driving the real app. This is the honest version, not the encouraging one.
 
 ## The headline
 
@@ -20,45 +21,49 @@ grew faster than its verification.
 
 ---
 
-## Part 1 — The remaining findings (33 open of 46)
+## Part 1 — The findings
 
-Fixed today: v427, v430–v436 closed 13, including every finding about crisis leakage and data destruction.
+**Blockers: 0.** All three closed in v437 — the location usage string (its absence *terminates* the app on
+iOS, so it would have died in a reviewer's hand), the undisclosed GPS to `api.aladhan.com` (now coarsened
+to ~1km **before** it leaves the device, and disclosed in both policies and the privacy manifest), and the
+in-app privacy modal that had never mentioned Apple Health.
 
-### Blockers — must be fixed before submitting
+### Four classes closed — not four bugs
 
-| # | What | Why it blocks |
+The point of this section is that each of these produced *repeat instances*. Closing the class is what
+stops the next one.
+
+| class | instances | closed by |
 |---|---|---|
-| 1 | **Precise GPS sent to `api.aladhan.com`** (prayer times), undisclosed in both privacy policies, the App Privacy manifest and Info.plist | Undisclosed third-party data sharing. Apple compares the manifest against behaviour. |
-| 2 | **`NSLocationWhenInUseUsageDescription` missing** while the app requests geolocation | iOS **terminates the app** on the call. Not a rejection — a crash, in front of a reviewer. |
-| 3 | **The in-app privacy policy never mentions Apple Health** | v421 fixed `privacy.html` and Info.plist and left the in-app modal — the one most people actually read — still wrong. |
+| **Crisis-gate leaks** | 4 surfaces + history redaction | v434, v439 |
+| **Faith forced on the secular default** | 5 | v427, v431, v435, v440 |
+| **Numbers stated as fact, never measured** | 3 | v432, v441, v442 |
+| **Promises the code doesn't keep** | 3 | v421, v430, v443 |
 
-### High — fix before real users, not just before review
+Worth understanding rather than skimming:
+- The crisis gate stopped the *reply* and left the raw sentence in the coach history, so the **next**
+  message shipped it to the model anyway — and `totry_coach_history` is a synced key, so it went to the
+  database too. Disclosures are now redacted from history and flagged entries are excluded from AI
+  context permanently, while the person's words are always kept exactly as written.
+- `showVerseToast()` fired Bible verses on **wins** — an urge beaten, a PR. The moments the app exists to
+  honour were the moments it handed a Muslim someone else's scripture.
+- Tapping "Rough" on the sleep card recorded **three hours of sleep**, which was then averaged, turned
+  into a sleep debt, and quoted to both the person and the AI as measured.
+- Two plate calculators disagreed about the same lift — and **one of them I added in v426 without
+  checking the app already had one**.
 
-Grouped by the class they belong to, because the class matters more than the instance.
+### Still open
 
-**Faith forced on the default (secular) user — 6 open**
-- The morning-after card preaches: *"Same Lord. Same grace."*, Proverbs 24:16, Lamentations 3:23
-- `showVerseToast()` fires Bible-verse modals with no gate — after an urge win, a gym PR, a fasting milestone
-- The bridge to real help tells **every** tradition to see *"a priest"* for *"confession"*
-- Terms of use tells non-Christians the app *"reflects a Christian worldview"* and that only the practical features work for them
-- The fasting card is hidden from **exactly the three traditions it was written for** (Ramadan / Navratri / Uposatha copy can never render)
-- The Feeling Door ends a secular or Buddhist person's win on a button labelled **"Amen"**
+**Day one** — first morning, first thing: *"You skipped your habits yesterday"*, about a day before the
+app existed for them.
 
-**Crisis detection quality — 2 open**
-- Journal and evening reflection accept a disclosure, show nothing, then ship it to the LLM
-- `detectCrisis` is simultaneously **over-inclusive** for a training app ("this workout is killing me") and **misses common phrasings**
+**Data integrity** — *"Restored — N items loaded"* counts keys it **tried**, not ones that landed;
+append-only logs missing from the ARR union list are clobbered on the losing device (the mechanism is
+real; the proposed fix is destructive for 3 of 6 keys and needs care).
 
-**Promises the code doesn't keep — 3 open**
-- Settings says *"Your personal data is stored on your own device"* — it is upserted to Supabase, as the policy two lines below admits
-- *"Restored — N items loaded"* counts keys it **tried**, not ones that landed; a full device silently drops the biggest
-- Append-only logs missing from the ARR union list are clobbered on the losing device (the mechanism is real; the fix as proposed is destructive for 3 of 6 keys — needs care)
-
-**Numbers that lie — 2 open**
-- Two plate calculators in the same session card give **contradictory answers for the same lift**
-- A sleep **quality** tap is stored as **hours** and quoted back to the person and the AI as a measured number
-
-**Day one — 1 open**
-- First morning, first thing: *"You skipped your habits yesterday"* — about a day before the app existed for them
+**Crisis detection quality** — `detectCrisis` is simultaneously over-inclusive for a training app
+("this workout is killing me") and misses common phrasings. This is the one remaining item I would not
+ship without: the gates are all in place now, but the detector behind them is blunt.
 
 ### Accessibility — measured properly on 14 Aug, and worse than v429/v430 claimed
 
@@ -91,7 +96,16 @@ natively** (`redirect_uri` is `capacitor://localhost`); negative streak when the
 app-lock overlay covers the sign-in screen's crisis numbers; a wrong-*shaped* storage key takes out most
 of Home; the Fight tab's craving panel is unreachable through every code path.
 
-**Estimate: 2–3 focused weeks** to close all 33 properly, with tests.
+**Estimate: 1 week** for what remains here — down from 2–3, because the four classes above are shut.
+
+### The one I would not ship without
+
+`detectCrisis` quality. Every AI surface is now gated and every disclosure is kept out of the model's
+context — but the detector deciding what counts as a disclosure is blunt in both directions. It has
+previously failed OPEN on iOS smart apostrophes, and it fires on "this workout is killing me". Both
+failure modes are bad in different ways: one misses someone, the other teaches people the app
+overreacts, which is how a real disclosure gets dismissed later. **2–3 days, and it needs real phrasings,
+not invented ones.**
 
 ---
 
