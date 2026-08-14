@@ -4616,7 +4616,7 @@ function ls(k,v){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v439';
+const APP_VERSION = 'v440';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -12722,7 +12722,7 @@ const COMPANION_LOCAL_STEPS = {
     "Keep breathing — in 4, out 6. Urges crest in 15–30 minutes and ALWAYS pass. You don't have to fight it, just not obey it. Cold water on your face or a walk to another room speeds the wave along.",
     "What is this urge trying to manage tonight — stress, loneliness, boredom, being tired? Name the real need underneath. That need is legitimate; the urge is just a bad answer to it.",
     "You've outlasted this before — that's how you got here. Every wave you ride makes the next one smaller. Stay with me a few more minutes; the crest is closer than it feels.",
-    "However tonight goes, you reached for help instead of hiding — that's who you're becoming. And if this keeps beating you no matter what, bringing in a real person — a mate, a priest, a counsellor — is strength, not failure. For now: one more slow breath. I'm still here."
+    "However tonight goes, you reached for help instead of hiding — that's who you're becoming. And if this keeps beating you no matter what, bringing in a real person — a mate, someone you trust, a counsellor — is strength, not failure. For now: one more slow breath. I'm still here."
   ],
   defuse: [
     "Picture the thought as a leaf dropping onto a stream — watch it drift past. It comes back? Fine, put it on another leaf. You're the stream bank, not the leaf.",
@@ -15365,7 +15365,7 @@ async function _companionSay(userText, opening){
     + "THE EVIDENCE-BASED APPROACH that fits this, which you apply NATURALLY in your own warm words (never name-drop the technique like a textbook): "+spine+" "
     + "ALSO — if at ANY point they voice a permission-giving thought ('just once', 'I deserve it', 'I've already ruined today', 'I can't cope without it', 'I'll start tomorrow'), gently catch it WITH them and ask the question that lets them see it isn't true or isn't a command (CBT cognitive restructuring) — like an older sibling would, never as a lecture. Then help them land on what's truer. "
     + "If it feels right, gently help them see what the urge is really trying to MANAGE right now — stress, loneliness, boredom, exhaustion, a hard feeling it's numbing — because naming the real need underneath often loosens the urge's grip more than fighting it head-on. Ask softly, with curiosity, never interrogating. "
-    + "RULES: Be a present friend, not a therapist or a form. Short, human, warm - 2-4 sentences at a time, like texting someone you love at their hardest moment. Never shame, never lecture. This is the MOMENT - keep them company through it, help them outlast it or step back from it using the approach above. You can offer a breath, a grounding, a truth, a verse if it fits naturally - but mostly you are PRESENCE. If they're clearly in crisis or mention self-harm, gently encourage reaching a real person or helpline - you're a companion, not a replacement for real help. Don't make them feel worse if they've already slipped - meet them with grace, every time is a fresh try. If this struggle has clearly been beating them for a long time or feels bigger than a moment's urge, gently name that bringing in a REAL person (a trusted friend, a priest, a counsellor) is strength, not failure - you're a tool walking beside them, never the whole answer. "
+    + "RULES: Be a present friend, not a therapist or a form. Short, human, warm - 2-4 sentences at a time, like texting someone you love at their hardest moment. Never shame, never lecture. This is the MOMENT - keep them company through it, help them outlast it or step back from it using the approach above. You can offer a breath, a grounding, a truth, a verse if it fits naturally - but mostly you are PRESENCE. If they're clearly in crisis or mention self-harm, gently encourage reaching a real person or helpline - you're a companion, not a replacement for real help. Don't make them feel worse if they've already slipped - meet them with grace, every time is a fresh try. If this struggle has clearly been beating them for a long time or feels bigger than a moment's urge, gently name that bringing in a REAL person (a trusted friend, a someone you trust, a counsellor) is strength, not failure - you're a tool walking beside them, never the whole answer. "
     + (opening === true ? "OPEN the conversation: greet them gently by acknowledging they reached for help in this moment (that itself is strength), and ask one soft question or offer one small thing to do right now. 2-3 sentences."
       : opening === 'deepen' ? "You have ALREADY spoken your first words to them (the assistant message in the history). Do NOT greet again or repeat yourself. Continue naturally from what you already said — deepen the moment with one soft question or one small concrete next step. 1-3 sentences."
       : "Continue - respond to what they just said.");
@@ -18101,7 +18101,24 @@ function pickContextualVerse(context){
 
 // Show a verse toast — small unobtrusive scripture appearance
 function showVerseToast(context, customTitle){
-  const v = pickContextualVerse(context);
+  // CONTEXTUAL_VERSES is Bible-only, and this fires on wins — an urge beaten, a PR, a fasting milestone.
+  // Ungated, it handed a Muslim, Hindu, Buddhist or secular person someone else's scripture at the moment
+  // they felt proudest. activeVerses() already resolves the right set per tradition (VS_ISLAM, VS_HINDU,
+  // VS_BUDDHIST, VS_SECULAR — the last with no religious language at all), so everyone gets a line that
+  // is actually theirs rather than nothing.
+  let v = null;
+  try{
+    const _t = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
+    if(_t === 'christianity'){
+      v = pickContextualVerse(context);
+    } else if(typeof activeVerses === 'function'){
+      const set = activeVerses();
+      if(set && set.length){
+        const pick = set[Math.floor(Math.random() * set.length)];
+        v = { text: pick.t, ref: pick.r, verse: pick.t, reference: pick.r };
+      }
+    }
+  }catch(_){ v = null; }
   if(!v) return;
   
   // Don't show too often — once per context per 4 hours
@@ -35923,8 +35940,14 @@ function showTermsOfUse(){
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">2. Not professional advice</strong></p>' +
       '<p style="margin-bottom:12px">Nothing in this app is medical, psychiatric, legal, financial, or pastoral advice. The Coach is an AI — it can be wrong, it can be insensitive, it can hallucinate facts. If you have a real problem (mental health crisis, physical injury, financial emergency, suicidal thoughts), you need a real human professional. The app has a crisis-detection layer that will point you to one when it can — but it is not a substitute for one.</p>' +
     
-      '<p style="margin-bottom:6px"><strong style="color:var(--tx)">3. Christian foundation</strong></p>' +
-      '<p style="margin-bottom:12px">The app uses ESV Bible references, contextual scripture, and reflects a Christian worldview. People of other faiths and no faith are welcome — the practical features (training, nutrition, money, habits) work for everyone. If the Christian framing isn\'t for you, that\'s okay; I built this honestly from what I believe.</p>' +
+      // This said the app "reflects a Christian worldview" and that people of other faiths get "the
+      // practical features". That was true when it was written and is no longer: the faith registry
+      // serves Christianity, Islam, Hinduism, Buddhism and a fully secular path, each with its own
+      // scripture, prayer language and practice — and the default is SECULAR. Telling a Muslim only the
+      // training and money features work for him is now simply false, and it is the kind of sentence
+      // that makes someone close the app before they find what is actually there.
+      '<p style="margin-bottom:6px"><strong style="color:var(--tx)">3. Where this comes from</strong></p>' +
+      '<p style="margin-bottom:12px">I built this honestly from what I believe — I am Catholic, and that is the heart it was made with. It is not built to convert you. The app follows <em>your</em> path: set it in Settings &#8594; Faith and the whole app moves with you — Christianity, Islam, Hinduism, Buddhism, or none at all, which is the default. Your scripture or none, your prayer or a plain reflection, your practice, your fasting season. If you want the faith side turned down or off entirely, that dial is yours too, and everything else works exactly the same.</p>' +
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">4. Acceptable use</strong></p>' +
       '<p style="margin-bottom:12px">Don\'t use this app to plan harm to yourself or others. Don\'t attempt to reverse-engineer, scrape, or abuse the service. Don\'t share your account with others. Don\'t use the AI Coach to generate content for purposes outside personal growth.</p>' +
