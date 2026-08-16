@@ -2083,4 +2083,28 @@ H.section('every tradition has a practice of its own')
   H.ok((m.match(/name:'May/g) || []).length >= 4, 'all four directions are present');
 }
 
+H.section('the day-woven hub speaks each tradition')
+{
+  // "Pray about today →" was shown identically to ALL FIVE traditions. For a secular person that breaks
+  // the app's own contract in FAITHS.secular — "Never mention God, scripture, or prayer" — and for a
+  // Buddhist it is the wrong verb entirely: Buddhism is non-theistic, one reflects rather than petitions.
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+
+  H.ok(/function _soulTodayCta\(/.test(code), 'the hub CTA is computed per tradition');
+  const cta = code.slice(code.indexOf('function _soulTodayCta('), code.indexOf('function _soulTodayCta(') + 700);
+  H.ok(/faithTradition\(\)/.test(cta), 'it asks which tradition the person is');
+  H.ok(/du\\u2019a|du’a/.test(cta), 'islam gets du\'a');
+  H.ok(/Reflect on today/.test(cta), 'buddhism and secular reflect rather than pray');
+  // The default must be the safe one — faithTradition() defaults to secular, and so must this.
+  H.ok(/catch\(_\)\{ return 'Reflect on today'/.test(cta), 'the fallback carries no religious language');
+  H.ok(!/'Pray about today';\s*\}\s*catch/.test(cta), 'and the fallback is not the praying one');
+
+  // And the hub must actually use it rather than the old literal.
+  const hub = code.slice(code.indexOf('function openSoulToday('), code.indexOf('function openSoulToday(') + 9000);
+  H.ok(/_soulTodayCta\(\)/.test(hub), 'openSoulToday renders the computed label');
+  H.ok(!/>Pray about today \\u2192<\/button>/.test(hub), 'the hardcoded label is gone');
+}
+
 H.report();

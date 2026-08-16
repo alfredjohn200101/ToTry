@@ -4708,7 +4708,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v447';
+const APP_VERSION = 'v448';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -10662,6 +10662,19 @@ function aiTag(){
 }
 // "Today" in Soul — weaves the practical day (schedule) with the inner day (streaks, this morning's
 // mood/intention, prayer) so you can feel how the whole day is going in one place.
+// "Pray about today" was shown to ALL FIVE traditions. For a secular person that breaks the app's own
+// contract in FAITHS.secular — "Never mention God, scripture, or prayer" — and for a Buddhist it is
+// simply the wrong verb, since Buddhism is non-theistic and one reflects rather than petitions. The noun
+// each tradition already declares in faithPrayer() carries this correctly, so nothing new is invented.
+function _soulTodayCta(){
+  try{
+    const t = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
+    if(t === 'christianity' || t === 'hinduism') return 'Pray about today';
+    if(t === 'islam') return 'Make du\u2019a for today';
+    return 'Reflect on today';                    // buddhism + secular: no petition, no deity
+  }catch(_){ return 'Reflect on today'; }
+}
+
 function openSoulToday(){
   const now = new Date();
   const todayKey = now.toLocaleDateString('en-AU');
@@ -10725,7 +10738,7 @@ function openSoulToday(){
     '<div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:16px">'+schedHtml+'</div>'+
 
     // Prayer still one tap away (just not its own hub card)
-    '<button class="btn primary" style="padding:14px;margin-bottom:8px" onclick="document.getElementById(\'soul-today-modal\')?.remove();openPrayerSection()">Pray about today \u2192</button>'+
+    '<button class="btn primary" style="padding:14px;margin-bottom:8px" onclick="document.getElementById(\'soul-today-modal\')?.remove();openPrayerSection()">'+_escFew(_soulTodayCta())+' \u2192</button>'+
     '<button class="btn" onclick="document.getElementById(\'soul-today-modal\')?.remove()" style="background:none;border:none;color:var(--tx3);font-size:13px">Close</button>'+
   '</div>';
   document.body.appendChild(m);
