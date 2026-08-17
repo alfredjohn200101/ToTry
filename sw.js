@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v453-geo-coarse'
+const CACHE = 'totry-v454-truthful-deletes'
 
 const CORE = [
   './',

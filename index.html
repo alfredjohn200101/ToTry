@@ -1187,7 +1187,20 @@ input:focus,textarea:focus,select:focus{
   <div class="auth-step" id="auth-error" style="display:none;width:100%;max-width:380px;text-align:center">
     <div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--re);margin-bottom:14px">Something went wrong</div>
     <div id="auth-error-msg" style="font-size:13px;color:var(--tx2);margin-bottom:18px;line-height:1.6"></div>
-    <button class="btn primary" onclick="authReset()" style="font-size:14px">Try again</button>
+    <button class="btn primary" onclick="authReset()" style="font-size:14px;margin-bottom:10px">Try again</button>
+    <!-- THE GUEST DOOR AND THE HELPLINES MUST SURVIVE AN ERROR. Both live inside the EMAIL step, and
+         authShowStep('error') hides that step — so the one screen a person reaches when sign-in fails
+         was the one screen with no way in and no numbers on it. Offline that is the whole app: the code
+         cannot send them a login email, and the crisis card is the reason this screen carries numbers in
+         the first place ("crisis help must never sit behind a login"). -->
+    <button class="btn" id="auth-error-guest-btn" onclick="enterAsGuest()" style="font-size:13.5px;padding:13px;background:transparent;border:1px solid var(--go-bd);color:var(--go);margin-bottom:6px">Come in without an account &#8594;</button>
+    <div style="font-size:11.5px;color:var(--tx3);line-height:1.55;margin-bottom:14px">Everything saves on this phone. You can make an account later.</div>
+    <div style="border-top:1px solid var(--bd);padding-top:12px;font-size:12px;color:var(--tx2);line-height:1.8">
+      If you need real help right now, you don&apos;t need an account:<br>
+      &#127462;&#127482; Lifeline <a href="tel:131114" style="color:var(--go);text-decoration:none">13 11 14</a> &nbsp;&middot;&nbsp; Beyond Blue <a href="tel:1300224636" style="color:var(--go);text-decoration:none">1300 22 4636</a><br>
+      &#127482;&#127480; <a href="tel:988" style="color:var(--go);text-decoration:none">988</a> &nbsp;&middot;&nbsp; &#127468;&#127463; Samaritans <a href="tel:116123" style="color:var(--go);text-decoration:none">116 123</a><br>
+      &#127760; <a href="https://findahelpline.com" target="_blank" rel="noopener" style="color:var(--bl)">findahelpline.com</a>
+    </div>
   </div>
 </div>
 
@@ -4708,7 +4721,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v453';
+const APP_VERSION = 'v454';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4972,7 +4985,12 @@ function authShowStep(step){
 function authShowError(msg){
   // Launch-wave honesty: a raw "rate limit exceeded" reads like the app is broken.
   // Say what's actually happening and keep their spot warm.
-  if(/rate limit/i.test(msg || '')){
+  // "Failed to fetch" is what a browser says, not what a person needs. Offline, the honest version also
+  // tells them the thing that still works.
+  if(/failed to fetch|networkerror|load failed|network request failed/i.test(msg || '')){
+    msg = 'No connection right now, so the code can\u2019t reach you. You can come in without an account below \u2014 everything saves on this phone.';
+  }
+  else if(/rate limit/i.test(msg || '')){
     msg = 'So many people are joining right now that sign-up emails are briefly throttled. Wait a few minutes and tap Try again \u2014 your spot is safe. \ud83d\ude4f';
   }
   document.getElementById('auth-error-msg').textContent = msg;
@@ -10885,6 +10903,35 @@ async function showAdaptivePrayer(){
   }
 }
 function completeMorning(){
+  // GATED. The morning asks for a gratitude and an intention in free text, and those reach the coach's
+  // context — so it is an AI surface by the same definition as the journal and the evening, and it was
+  // the only one of the three still ungated. Same contract: their words are always kept, the app simply
+  // stops and meets them instead of carrying on with the ritual.
+  let _mCrisis = null;
+  try{
+    if(typeof detectCrisis === 'function'){
+      const _g = (document.getElementById('morning-gratitude')||{}).value || '';
+      const _i = (document.getElementById('morning-intention')||{}).value || '';
+      _mCrisis = detectCrisis([_g, _i].filter(Boolean).join(' '));
+    }
+  }catch(_){ }
+  if(_mCrisis){
+    try{
+      document.querySelectorAll('.modal-bg:not([id])').forEach(function(m){ m.remove(); });
+      const _m = document.createElement('div');
+      _m.className = 'modal-bg open';
+      _m.style.alignItems = 'center';
+      _m.innerHTML = '<div class="modal" style="max-width:92vw"><div class="modal-handle"></div>' +
+        '<div id="morning-crisis-slot"></div>' +
+        '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;margin-top:10px">Close</button></div>';
+      document.body.appendChild(_m);
+      if(typeof showCrisisResponse === 'function') showCrisisResponse('morning-crisis-slot', _mCrisis);
+    }catch(_){ }
+    if(typeof haptic==='function') haptic('warning');
+    if(typeof showToast==='function') showToast('Saved', 'I read what you wrote. Please look at this.');
+    return;
+  }
+
   const g=document.getElementById('morning-gratitude').value.trim();
   const intent=document.getElementById('morning-intention').value.trim();
   const log=ls('totry_mornings')||[];
@@ -19244,7 +19291,16 @@ async function generateIntentionPrayer(pfx){
     // everyone in one tradition's voice. The specs were built; they were simply never wired up.
     const _fp = (typeof faithPrayer === 'function') ? faithPrayer() : null;
     const sys = _fp ? _fp.sys : 'You write intimate, honest, scripturally-grounded Catholic prayers that sound deeply human — never rushed, never performative. A real person talking to God.';
-    const prompt = 'Write a short first-person prayer (4-6 sentences) for someone bringing this to God: "'+intention.trim()+'". Make it honest and specific to what they said. If it fits, gently weave in a relevant scripture echo or a saint\u2019s intercession, but keep it natural. No "thee/thou".'+(name?' Their name is '+name+' if natural.':'');
+    // v446 switched the SYSTEM prompt to faithPrayer() and left this one hardcoded — "bringing this to
+    // God", "a relevant scripture echo". A system prompt saying "write a du'a" followed by a user
+    // prompt saying "bringing this to God, weave in scripture" is not a fixed surface; it is two
+    // instructions pulling opposite ways, and for a secular user it contradicts the one rule that
+    // matters: no religious language at all.
+    const _noun = (_fp && _fp.noun) ? _fp.noun : 'reflection';
+    const _secular = ((typeof faithTradition === 'function') ? faithTradition() : 'secular') === 'secular';
+    const prompt = _secular
+      ? ('Write a short first-person reflection (4-6 sentences) for someone carrying this: "' + intention.trim() + '". Honest, practical, Stoic in spirit. Use NO religious language at all \u2014 no God, no prayer, no scripture.')
+      : ('Write a short first-person ' + _noun + ' (4-6 sentences) for someone bringing this: "' + intention.trim() + '". Make it honest and specific to what they said, in their own tradition\u2019s voice and vocabulary.');
     const prayer = await api(sys, [], prompt, 700);
     if(out && prayer && prayer.trim()){
       window.__lastAIPrayer = prayer.trim();
@@ -36093,6 +36149,24 @@ async function deleteAccount(){
     return;
   }
   
+  // SIGNED OUT, NOTHING REACHES THE SERVER. Every server call below sits behind `sb && currentUser`, but
+  // the confirm promises "Delete ALL your data from the cloud" and the success toast says "Account
+  // deleted". Signed out, this wiped the device and claimed the account was gone while it sat untouched
+  // on the server with their email on it. Say so instead, before they type DELETE.
+  if(!(sb && currentUser)){
+    const _local = Object.keys(localStorage).filter(function(k){ return k.indexOf('totry_') === 0; }).length;
+    if(!confirm('You are signed out, so I cannot reach your account from here.\n\nI can clear all ' + _local +
+                ' items on THIS DEVICE now, but your account and anything synced to it will still exist.\n\n' +
+                'To delete the account itself: sign in first, then use this button again.\n\nClear this device anyway?')) return;
+    try{
+      const keep = ['totry_theme'];
+      Object.keys(localStorage).forEach(function(k){ if(k.indexOf('totry_') === 0 && keep.indexOf(k) === -1) localStorage.removeItem(k); });
+    }catch(_){ }
+    alert('This device is cleared.\n\nYour ACCOUNT was not deleted — I could not reach the server while signed out. Sign in and use Delete account again to remove it, or email totrybyaj@gmail.com and I will do it by hand.');
+    setTimeout(function(){ location.reload(); }, 1200);
+    return;
+  }
+
   try{
     if(sb && currentUser){
       // Delete EVERY row that is tied to them, not just user_data. The confirm promises "delete ALL
@@ -36561,8 +36635,16 @@ function fallbackCopy(text){
   document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');document.body.removeChild(ta);
 }
 function resetAll(){
-  if(!confirm('This will permanently delete ALL your data. Are you absolutely sure?'))return;
-  if(!confirm('Final confirmation \u2014 delete everything and start fresh?'))return;
+  // SAY WHAT THIS ACTUALLY DOES. It clears localStorage and nothing else — the account, and everything
+  // already synced to it, survives — while the old text promised "permanently delete ALL your data".
+  // Someone reaching for this button is usually trying to erase something they regret, and telling them
+  // it is gone when it is on a server is the worst possible moment to be imprecise.
+  const _signedIn = !!(typeof currentUser !== 'undefined' && currentUser);
+  if(!confirm('Start fresh on this device?\n\nThis clears everything stored on THIS PHONE.' +
+    (_signedIn
+      ? '\n\nYour account and anything already synced to it are NOT deleted — signing in again will bring the synced data back. To delete the account itself, use Settings \u2192 Delete account permanently.'
+      : '\n\nIf you have an account, anything already synced to it is NOT deleted.')))return;
+  if(!confirm('Last check \u2014 clear this device and start fresh?'))return;
   Object.keys(localStorage).filter(k=>k.startsWith('totry_')||k.startsWith('strava_')).forEach(k=>localStorage.removeItem(k));
   window.location.reload();
 }

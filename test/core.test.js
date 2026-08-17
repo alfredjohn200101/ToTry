@@ -2214,4 +2214,33 @@ H.section('the weekly check-in marks what it stores')
   H.ok(/entry && entry\.flagged\) return/.test(g), 'and refuses to write a response onto a flagged entry');
 }
 
+H.section('the last ungated surface, the error screen, and two false delete promises')
+{
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+
+  // 1. completeMorning was the third free-text ritual and the only one still ungated.
+  const cm = code.slice(code.indexOf('function completeMorning('), code.indexOf('function completeMorning(') + 2600);
+  H.ok(/detectCrisis\(/.test(cm), 'completeMorning gates its free text');
+  H.ok(/showCrisisResponse\(/.test(cm), 'and shows the bridge');
+  H.ok(cm.indexOf('detectCrisis') < cm.indexOf('return;'), 'before it completes the ritual');
+
+  // 2. The auth ERROR step must carry the guest door and the helplines. Both live in the EMAIL step, and
+  //    authShowStep('error') hides that step — so the screen someone reaches when sign-in fails offline
+  //    had no way in and no numbers, which is the one thing this screen exists to guarantee.
+  const err = H.html.slice(H.html.indexOf('id="auth-error"'), H.html.indexOf('id="auth-error"') + 2200);
+  H.ok(/enterAsGuest\(\)/.test(err), 'the error step offers the guest door');
+  H.ok(/tel:131114/.test(err) && /tel:988/.test(err), 'and carries the crisis numbers');
+  H.ok(/failed to fetch/i.test(code), 'a network failure is translated out of browser-speak');
+
+  // 3. Two delete paths promised more than they did.
+  const da = code.slice(code.indexOf('async function deleteAccount('), code.indexOf('async function deleteAccount(') + 2000);
+  H.ok(/!\(sb && currentUser\)/.test(da), 'deleteAccount handles the signed-out case explicitly');
+  H.ok(/was not deleted/i.test(da), 'and says the account was not deleted when it could not reach the server');
+  const ra = code.slice(code.indexOf('function resetAll('), code.indexOf('function resetAll(') + 1400);
+  H.ok(!/permanently delete ALL your data/.test(ra), 'resetAll no longer claims to delete everything');
+  H.ok(/NOT deleted/.test(ra), 'it says what survives on the server');
+}
+
 H.report();
