@@ -91,8 +91,6 @@ revoke it and take the ESV reader down for everyone. Proxy it through the edge f
 
 ---
 
----
-
 ## v459–v461: the seventh class — *built, complete, and unreachable*
 
 The most useful thing found since v443, because it is not a bug list — it is one shape that kept
