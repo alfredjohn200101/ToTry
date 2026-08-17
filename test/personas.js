@@ -37,12 +37,15 @@ const PERSONAS = [
     name: 'secular · brand new · nothing logged',
     seed: { totry_guest: true, totry_onboarded: true, totry_faith_tradition: 'secular' },
     forbid: CHRISTIAN_ONLY,
+    feelingDoor: true,   // the door with NOTHING set up — no vice, no name, no history
   },
   {
     name: 'muslim · established',
     seed: { totry_guest: true, totry_onboarded: true, totry_name: 'Amir',
-            totry_faith_tradition: 'islam', totry_sex: 'male' },
+            totry_faith_tradition: 'islam', totry_sex: 'male',
+            totry_v: [{ n: 'Scrolling', startDate: new Date(Date.now() - 5 * 864e5).toISOString(), mode: 'quit' }] },
     forbid: CHRISTIAN_ONLY,
+    feelingDoor: true,
   },
   {
     name: 'buddhist · established',
@@ -189,6 +192,53 @@ const serve = () => new Promise(res => {
     if (p.expectSome) {
       ok(p.expectSome.some(w => seen.text.includes(w)),
          `${label} — its own faith content is still present`);
+    }
+
+    // ── THE FEELING DOOR ─────────────────────────────────────────────────────────────────────────
+    // The orb's primary action and the app's entire entry point: meet the person IN the feeling and
+    // MOVE them. Every path is asserted to open a real surface with a real next action — a modal that
+    // only offers "Close" has not moved anyone. Note the two surfaces: most feelings open a .modal-bg,
+    // but "the pull" with no vice set up hands off to #companion-overlay instead, and a check that
+    // knows about only one of them reports a working path as broken. (It did, twice, while I wrote it.)
+    if (p.feelingDoor) {
+      const paths = await page.evaluate(async () => {
+        const wait = ms => new Promise(r => setTimeout(r, ms));
+        if (typeof FEELINGS === 'undefined' || typeof openFeelingDoor !== 'function') return null;
+        const out = [];
+        for (const f of FEELINGS) {
+          document.querySelectorAll('.modal-bg').forEach(m => m.remove());
+          document.getElementById('companion-overlay')?.classList.remove('open');
+          document.getElementById('feel-door')?.classList.remove('open');
+          openFeelingDoor(); await wait(300);
+          const door = document.getElementById('feel-door');
+          if (!door || !door.classList.contains('open')) { out.push({ id: f.id, opened: false }); continue; }
+          let clicked = false;
+          for (const el of door.querySelectorAll('.feel-chip,button')) {
+            if ((el.innerText || '').includes(f.label)) { el.click(); clicked = true; break; }
+          }
+          if (!clicked) { out.push({ id: f.id, opened: true, clicked: false }); continue; }
+          await wait(850);
+          const modal = [...document.querySelectorAll('.modal-bg.open')].pop();
+          const comp = document.getElementById('companion-overlay');
+          const surface = modal || (comp && comp.classList.contains('open') ? comp : null);
+          const txt = surface ? (surface.innerText || '').trim() : '';
+          const btns = surface ? [...surface.querySelectorAll('button')].map(b => (b.innerText || '').trim()).filter(Boolean) : [];
+          out.push({ id: f.id, opened: true, clicked: true, chars: txt.length, text: txt,
+                     moves: btns.some(t => !/^(close|done|cancel|not now|later|×|✕)$/i.test(t)) });
+        }
+        return out;
+      });
+      ok(paths && paths.length >= 8, `${label} — the Feeling Door offers its paths`);
+      for (const r of (paths || [])) {
+        ok(r.opened, `${label} — feeling "${r.id}" opens the door`);
+        ok(r.clicked, `${label} — feeling "${r.id}" is tappable`);
+        ok(r.chars > 40, `${label} — feeling "${r.id}" lands somewhere real (${r.chars || 0} chars)`);
+        ok(r.moves, `${label} — feeling "${r.id}" offers a move, not just a way out`);
+        for (const word of p.forbid) {
+          ok(!new RegExp('\\b' + word, 'i').test(r.text || ''),
+             `${label} — feeling "${r.id}" must not show "${word}"`);
+        }
+      }
     }
     await ctx.close();
   }
