@@ -1,9 +1,95 @@
 # What's left before this is worth putting on the App Store
 
-Written 14 Aug 2026. **Updated at v461** — every blocker is closed and seven defect CLASSES are shut,
-not seven bugs. Based on two adversarial sweeps (152 agents, 46 confirmed findings), a day of driving
-the real app, and a pass (v459–v461) that stopped auditing and started making the half-built things
-work. This is the honest version, not the encouraging one.
+Written 14 Aug 2026. **Updated at v465.** Based on three adversarial sweeps (165 agents, 70 confirmed
+findings), days of driving the real app, and a pass (v459–v465) that stopped auditing and started
+making the half-built things work. This is the honest version, not the encouraging one.
+
+## ⚠️ A correction to this document
+
+An earlier version of this file listed *"`detectCrisis` missing **"I can't go on"**"* as **closed by
+v444**. It was not. v444 added only the qualified forms — `can't go on like this / anymore / any
+longer` — so the bare phrase returned `null` in all three apostrophe forms for months, on the app's
+most important gate. Found in v463 by **running** the shipped function rather than reading it.
+
+That matters more than the bug. This document is what a reader trusts about the app's safety, and it
+was wrong in the direction that feels good. Treat every "closed" line here as a claim to re-test, not
+a fact — and prefer running the code to reading it.
+
+---
+
+## v462–v465: the third sweep
+
+Six dimensions never previously scanned — first-run/onboarding, data flows, crisis coverage, error
+paths, money correctness, and forms — each with an adversarial verifier told to **refute** its own
+dimension's findings and default to refuted when uncertain.
+
+**24 of 34 candidate findings survived: 3 blockers, 10 high, 11 medium. All 24 are now closed.**
+
+The refutation earned its place: **all six money findings were refuted.** The headline claim — that
+the Money tab's `/mo` figures are exactly double — was a monthly *rate* misread as a total;
+`spendingRead`'s `Math.max(0.5, spanDays/30.44)` floor is correct and deliberate. I had begun fixing
+it when the verifier came back. Unverified findings are how a codebase acquires damage.
+
+### The blocker: signing up was indistinguishable from signing back in
+
+PostgREST resolves a `.select()` with no matching rows to an **empty array**, which is truthy. So
+`pullFromCloud`'s `if(!data)` let a brand-new account fall through to `return true`, and
+`proceedAfterAuth` reads that return as *"this is a returning user"*. On the app's **only** sign-in
+path (email OTP — `authGoogle` is a disabled stub), a first-time person:
+
+- had onboarding hidden and was greeted **"Welcome back — your journey continues"**
+- never saw the name step, the first felt moment, the faith step or the apps step
+- got `totry_onboarded`, `totry_name` and `totry_faith_tradition` left unwritten, so Home called them
+  "Friend" and the faith registry silently defaulted to secular
+- and on their **next** launch landed on the first-run welcome screen with `initApp()` never running
+
+The correct `data.length === 0` check existed all along inside `_restoreFromCloud_legacy_unused` —
+which nothing calls. Dead code held the fix for a live blocker.
+
+### Safety: three of the four journal doors never met a disclosure
+
+Four surfaces write to `totry_journal`; only `saveEntry` gated. The quick "get it out" note, the grief
+door (placeholder *"I miss…"*) and a reading-plan answer (*"However it comes out. Nobody reads this but
+you."*) each saved a crisis disclosure with a cheerful toast, left it **unflagged** so `safeJournal()`
+handed it to the model on the next request, and never showed anyone the bridge to real help. **The two
+likeliest places for a first disclosure were the two least guarded.**
+
+`completeMorning` was worse than ungated: its crisis branch `return`ed **before** the write. The one
+moment a person disclosed was the one moment their words were discarded — under a comment promising
+*"their words are always kept"*.
+
+`detectCrisis` missed eight phrasings, including the v444 miss above, `"ending my life"` (the list had
+`end my life`, which is not a substring of it), `"off myself"` and `"taking my life"`. Added as a regex
+pass, since each needs an inflection or a negative completion a substring list cannot express — and
+`"take my life back"` is a **recovery** phrase people write here, so it must never read as its opposite.
+
+### The rest, by shape
+
+| shape | instances |
+|---|---|
+| **A store read but never written** — a feature that can never fire | 4: the water habit's auto-tick, the per-vice cost override, share-card wins counted from the *money* log (so porn/scrolling/gaming showed 0 wins), and a calorie throttle written and never read (so one weekly decision compounded to ±450 cal) |
+| **An input that feeds a defaulted save, never prefilled** | 2: "Save targets" silently reset a 12,000-step goal to 8,000; the TDEE Sex dropdown silently flipped a woman's stated sex to male, changing her calorie targets and hiding her cycle card |
+| **A failure the person is promised the opposite of** | 4: the storage-full warning deleted before it painted by the caller's "Saved"; an unreadable photo producing nothing at all; an expired Google token returning in silence right after "Refreshing…"; add-a-debt doing nothing and saying nothing |
+| **A setting that changes less than it implies** | 2: weight unit "lb" relabelled one line while every figure stayed kg; timezone stored a value nothing reads |
+| **Faith on a default path** | instance **six** — "Prayer / scripture" seeded as a default habit for every new person, secular included. The first one to reach a person's own data rather than a screen they could walk away from. |
+
+### iOS submission state (verified 17 Aug, v465)
+
+Debug **and** Release build clean on Xcode 26.6, all four Capacitor plugins resolving via SPM. Seven
+usage strings present, launch storyboard, privacy manifest, `ITSAppUsesNonExemptEncryption` set,
+version 1.0 (build 3). The native notification path uses **LocalNotifications** and never calls
+`register()`, so the absent `aps-environment` entitlement is correct rather than a gap — reach-out-first
+works on device without it.
+
+Two process fixes came out of this: `npm run preflight` (the iOS bundle had silently drifted four
+versions behind the repo — an archive would have shipped v458) and `APP-PRIVACY.md` (the App Privacy
+questionnaire answered from what the code actually does, every claim checked).
+
+**One thing only the account owner can do:** `ESV_API_KEY` ships in the public bundle and is readable
+by anyone viewing source. api.esv.org issues keys per person; someone else's use can rate-limit or
+revoke it and take the ESV reader down for everyone. Proxy it through the edge function and rotate it.
+
+---
 
 ---
 
@@ -141,7 +227,7 @@ Worth understanding rather than skimming:
 | Negative streak, wrong-shaped storage key taking out Home, app-lock over crisis numbers | v445 |
 | Tap targets — including **"×" delete glyphs at 8.2×16**, ten per screen, three deleting with no confirm | v445 |
 | Contrast below WCAG AA on every card | v438 |
-| `detectCrisis` missing *"I can't go on"*, *"I want to end it"* — 5 of 12 real phrasings | v444 |
+| `detectCrisis` missing *"I want to end it"* — 4 of 12 real phrasings | v444 (**"I can't go on" was NOT closed — see the correction at the top; fixed v463**) |
 
 **Six defect classes shut, not six bugs:** crisis-gate leaks, faith forced on the secular default, numbers
 stated as fact that were never measured, promises the code doesn't keep, crisis-detector recall, and
