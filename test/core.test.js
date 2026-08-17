@@ -2743,4 +2743,68 @@ H.section('a Buddhist reads their own scripture, not a selection of it')
   }
 }
 
+H.section('the voice is told the truth, and only what is true')
+{
+  const code = H.html.replace(/<!--[\s\S]*?-->/g, '').split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  const fnBody = (name) => {
+    const m = code.match(new RegExp('function\\s+' + name + '\\s*\\('));
+    if (!m) return '';
+    let i = code.indexOf('{', m.index) + 1, d = 1;
+    while (i < code.length && d) { const c = code[i]; if (c === '{') d++; else if (c === '}') d--; i++; }
+    return code.slice(m.index, i);
+  };
+
+  // GENTLE MODE is a promise that this person never sees calorie or macro figures — usually because
+  // counting them is what hurt them. lifeStateBrief honoured it; buildCtx (the live Coach prompt) did
+  // not, and told the model to "Reference their actual numbers when it matters". buildPTCtx carried the
+  // raw calories AND the brief's "never state a calorie count" in the same prompt.
+  H.ok(/function nutPromptBlock\(/.test(code), 'one gentle-aware nutrition block for every prompt builder');
+  const npb = fnBody('nutPromptBlock');
+  H.ok(/nutGentle\(\)/.test(npb), 'it checks gentle mode');
+  H.ok(/never state a calorie count/.test(npb), 'and forbids the figures outright when it is on');
+  for (const builder of ['buildCtx', 'buildPTCtx']) {
+    const b = fnBody(builder);
+    H.ok(b.length > 0, `${builder} exists`);
+    H.ok(/nutPromptBlock\(/.test(b), `${builder} uses the shared block`);
+    H.ok(!/\$\{todayCals\} cal \(/.test(b), `${builder} no longer interpolates raw calories directly`);
+    H.ok(/nutGentle/.test(b), `${builder} is gentle-aware at all`);
+  }
+
+  // BROTHER_VOICE tells the model "you're told their sex" and "read the FAITH CONTEXT below". Five of
+  // seven call sites supplied neither, and NO call site stated the sex — so a woman had a voice told to
+  // be her big sister with nothing telling it she was one. Gender-awareness is a stated promise here.
+  H.ok(/function brotherSys\(/.test(code), 'one assembler builds the sibling system prompt');
+  H.ok(/function sexNote\(/.test(code), 'and a sex note exists to be included');
+  const sn = fnBody('sexNote');
+  H.ok(/big SISTER/.test(sn) && /big BROTHER/.test(sn), 'it names the right sibling for each sex');
+  H.ok(/not stated/.test(sn) && /they\/them/.test(sn), 'and refuses to guess when sex is unknown');
+  const bs = fnBody('brotherSys');
+  H.ok(/sexNote\(\)/.test(bs) && /faithVoiceNote\(\)/.test(bs), 'the assembler always carries both');
+  // No call site may concatenate the raw voice again and skip them.
+  H.eq((code.match(/(?<!function )BROTHER_VOICE\s*\+/g) || []).length, 0,
+    'no prompt concatenates BROTHER_VOICE directly any more');
+
+  // READINESS is labelled "READINESS TODAY" to the model and "low today" on the card, and had no age
+  // limit: a six-month-old check-in scored 86/100 "good day to push — chase a PR". Its date parse also
+  // yielded NaN for display-format dates, and `NaN < when` is false, so the newest-wins ordering
+  // collapsed entirely rather than merely going stale.
+  const cr = fnBody('computeReadiness');
+  H.ok(/READINESS_MAX_AGE_MS/.test(cr), 'readiness has a recency window');
+  H.ok(/if\(!isFinite\(t\)\) return;/.test(cr), 'an unparseable date is ignored, not allowed to poison it');
+  H.ok(/asOf/.test(cr), 'and it reports when it was measured');
+
+  // A FAILURE PATH is exactly where nobody looks: both exits of showAdaptivePrayer assigned a hardcoded
+  // Christian scripture prayer, for all five traditions. Seventh instance of that class.
+  H.ok(/function faithFallbackReflection\(/.test(code), 'the reflection fallback is tradition-aware');
+  H.ok(!/textEl\.textContent=PRAYERS\.scripture\.text/.test(code), 'and no exit hardcodes the Christian one');
+
+  // The crisis bridge is the one surface that must reach someone who cannot see the screen. It was
+  // appended silently — no role, no live region, no heading, no focus move.
+  const scr = fnBody('showCrisisResponse');
+  H.ok(/setAttribute\('role', 'alert'\)/.test(scr), 'the crisis bridge announces itself');
+  H.ok(/aria-live', 'assertive'/.test(scr), 'assertively, so it interrupts');
+  H.ok(/msg\.focus\(/.test(scr), 'and moves the screen-reader cursor inside it');
+  H.ok(/<h2 /.test(scr), 'with a real heading to navigate to');
+}
+
 H.report();

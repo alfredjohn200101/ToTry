@@ -4754,7 +4754,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v468';
+const APP_VERSION = 'v469';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7643,14 +7643,14 @@ function buildPTCtx(){
 WHO THEY ARE:
 ${userName} | Day ${dayCount} of their journey${goalIntent?'\nGoal: '+goalIntent:''}
 Current weight: ${currentWeight?currentWeight+'kg':'not logged'}${goalWeight?' → goal '+goalWeight+'kg':''}
-Daily nutrition target: ${nutGoals.cal} cal / ${nutGoals.pro}g protein
+${(typeof nutGentle==='function'&&nutGentle())?'Daily nutrition target: held privately \u2014 this person has numbers turned off.':('Daily nutrition target: '+nutGoals.cal+' cal / '+nutGoals.pro+'g protein')}
 Today's planned focus: ${todayFocus}
 
 RECENT TRAINING:
 ${recentTraining}${cardioCtx}${_ptIntel()}
 
 TODAY SO FAR:
-Eaten: ${todayCals} cal, ${todayPro}g protein
+${nutPromptBlock(todayCals, todayPro, nutGoals.cal, nutGoals.pro, 0).replace(/^- /,'')}
 
 THEIR WHOLE LIFE RIGHT NOW (body, mind, and soul — this is what makes you more than a PT; reference it when it's relevant, connect across these domains, but never list it back robotically):
 ${(function(){ try{ return (typeof getLifeState==='function') ? getLifeState().brief : ''; }catch(_){ return ''; } })()}
@@ -7907,7 +7907,7 @@ function buildCtx(){
   let stepsCtx=todaySteps?('\nTODAY\'S STEPS: '+todaySteps+(stepGoal?(' (goal '+stepGoal+(todaySteps>=stepGoal?' — hit it':'')+')'):'')):(stepGoal?('\nSTEP GOAL: '+stepGoal+'/day (none logged yet today)'):'');
   if(sleepGoal) stepsCtx+='\nSLEEP GOAL: '+sleepGoal+'h a night';
   
-  return BROTHER_VOICE + faithVoiceNote() + sharedWisdomNote() + `You're their whole-life coach here as well as their brother — you have their REAL data right now, so use it.
+  return brotherSys() + sharedWisdomNote() + `You're their whole-life coach here as well as their brother — you have their REAL data right now, so use it.
 
 WHO THEY ARE:
 ${userName} | Day ${getDayCount()} of their journey | ${streak} day${streak===1?'':'s'} of habits kept THIS WEEK (resets Monday — not an all-time streak, never call it one)${identity?'\nIDENTITY (who they are becoming): "'+identity+'"':''}${season?'\nCURRENT SEASON: '+season:''}${why?'\nTHEIR WHY: "'+why+'"':''}
@@ -7917,14 +7917,14 @@ ${viceDetails}
 Overall: ${tw} wins from ${tf} battles (${winRate}% win rate)${fightCtx}
 
 TODAY (live data, right now):
-- Nutrition so far: ${todayCals} cal (${calVsGoal}% of ${nutGoals.cal}), ${todayPro}g protein (${proVsGoal}% of ${nutGoals.pro}g) across ${todayMeals} meal${todayMeals===1?'':'s'}
+${nutPromptBlock(todayCals, todayPro, nutGoals.cal, nutGoals.pro, todayMeals)}
 - Habits ticked: ${habitsDone}/${habits.length} — ${habitsToday}
 - Water: ${waterTodayL}/${waterGoalL}${fastingCtx}${workoutCtx}${trainingInsightCtx}${moodCtx}${honestCtx}
 
 BODY & TRAINING:
 Today's planned training: ${todayFocus}
 Weight: ${currentWeight?currentWeight+'kg':'Not logged'}
-Nutrition target: ${nutGoals.cal} cal / ${nutGoals.pro}g protein${stravaCtx}${stepsCtx}${checkinCtx}
+${(typeof nutGentle==='function'&&nutGentle())?'Nutrition target: held privately \u2014 numbers are turned off for this person.':('Nutrition target: '+nutGoals.cal+' cal / '+nutGoals.pro+'g protein')}${stravaCtx}${stepsCtx}${checkinCtx}
 ${(function(){ let s=''; try{ if(typeof computeReadiness==='function'){ const rd=computeReadiness(); if(rd) s+='\\nReadiness today: '+rd.score+'/100 ('+rd.level+'). '+rd.advice; } if(typeof detectVicePatterns==='function'){ const vp=detectVicePatterns(); if(vp&&vp.patterns&&vp.patterns.length) s+='\\nVice patterns (use gently, only if they raise it): '+vp.patterns.join(' '); } const fw = (typeof ls==='function') ? (ls('totry_feeling_wins')||[]) : []; if(fw.length){ const _since = Date.now()-7*86400000; const _recent = fw.filter(w=>w.ts && new Date(w.ts).getTime()>=_since); if(_recent.length){ s+='\\nIN THE LAST WEEK they reached for help the instant an urge rose and got through it '+_recent.length+' time(s) \u2014 this is them fighting in real time; honour it. Recent feelings they named: '+_recent.slice(0,3).map(w=>String.fromCharCode(34)+(w.feeling||'an urge').slice(0,60)+String.fromCharCode(34)).join(', ')+'.'; } } }catch(e){} return s; })()}
 
 FINANCES: $${Math.round(owed).toLocaleString()} debt remaining${prayerCtx}${sacramentCtx}
@@ -7933,7 +7933,7 @@ RECENT JOURNAL: ${recentJournal||'No entries yet'}
 ${(function(){ const m = (typeof ls==='function') ? ls('totry_coach_memory') : null; return m && m.summary ? '\nWHAT YOU\u2019VE BEEN WORKING ON TOGETHER (from past conversations — reference it naturally, like a coach who remembers):\n'+m.summary : ''; })()}
 
 HOW TO COACH:
-Speak like a trusted friend and mentor who knows their whole situation — direct, warm, personal, never generic. When they ask about today's progress, USE the live data above (calories, habits, water, etc.) — don't say "I don't have access to that." You DO have it. Reference their actual numbers when it matters. Hold them to who they said they want to become, with grace not shame. If they've relapsed, meet it as feedback and not a verdict — the falling isn't the line, the getting up is. (Scriptural framing comes from FAITH CONTEXT above and nowhere else: never reach for a Bible verse unless that is their tradition.)
+Speak like a trusted friend and mentor who knows their whole situation — direct, warm, personal, never generic. When they ask about today's progress, USE the live data above (${(typeof nutGentle==='function'&&nutGentle())?'habits, water, training':'calories, habits, water'}, etc.) — don't say "I don't have access to that." You DO have it. Reference their actual numbers when it matters. Hold them to who they said they want to become, with grace not shame. If they've relapsed, meet it as feedback and not a verdict — the falling isn't the line, the getting up is. (Scriptural framing comes from FAITH CONTEXT above and nowhere else: never reach for a Bible verse unless that is their tradition.)
 
 Match the depth of your reply to what they're asking. A quick check-in deserves a few warm, focused sentences. But when they're wrestling with something real — a craving, a setback, a hard decision, a question about who they're becoming — give them a substantial, thoughtful answer: name what's really going on, draw on their actual situation, offer a concrete next step or two, and where it fits naturally, ground it in their tradition’s teaching or a solid principle (per the faith context). Don't pad, don't ramble, and always finish your thought completely — but don't artificially cut yourself short either. Be the kind of voice anyone would actually want in their corner at 11pm. You are not a chatbot. You are their coach.`;
 }
@@ -8544,13 +8544,28 @@ function showCrisisResponse(containerId, type){
   msg.style.border = '1px solid var(--re-bd, rgba(216,93,75,0.3))';
   msg.style.borderLeft = '3px solid var(--re)';
   msg.innerHTML =
-    '<div style="font-family:Cormorant Garamond,serif;font-size:17px;font-style:italic;color:var(--tx);line-height:1.5;margin-bottom:10px">' + title + '</div>' +
+    '<h2 style="font-family:Cormorant Garamond,serif;font-size:17px;font-weight:400;font-style:italic;color:var(--tx);line-height:1.5;margin-bottom:10px">' + title + '</h2>' +
     '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">' + body + '</div>' +
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">Real people, right now</div>' +
     resHtml +
     '<div style="font-size:11px;color:var(--tx3);margin-top:10px;line-height:1.5;font-style:italic">I will not give AI advice on this. You deserve a real person.</div>';
+  // ANNOUNCED, NOT JUST DRAWN. This is the one surface in the app that must reach a person who cannot
+  // see the screen: it was appended silently — no live region, no role, no heading, no focus move — so
+  // for a VoiceOver user mid-crisis the helpline numbers simply were not there. They would have had to
+  // guess that something had appeared and go hunting for it.
+  //   · role="alert" + aria-live="assertive" makes the whole block read out the moment it lands.
+  //   · a real <h2> gives it a landmark to jump to with rotor navigation.
+  //   · tabindex="-1" + focus() puts the screen reader cursor INSIDE it, so the next swipe reaches the
+  //     phone numbers rather than whatever preceded the block.
+  // The focus move is deliberately last, after the node is in the document, or it is a no-op.
+  msg.setAttribute('role', 'alert');
+  msg.setAttribute('aria-live', 'assertive');
+  msg.setAttribute('aria-atomic', 'true');
+  msg.setAttribute('tabindex', '-1');
+  msg.setAttribute('aria-label', 'Urgent: real people you can contact right now');
   container.appendChild(msg);
   container.scrollTop = container.scrollHeight;
+  try{ msg.focus({ preventScroll: true }); }catch(_){ try{ msg.focus(); }catch(__){} }
 }
 
 function goCoach(t){go('coach');document.getElementById('coach-in').value=t;sendCoach();}
@@ -9349,6 +9364,33 @@ const FAITHS = {
 // once, plainly, in the Soul tab. Anyone who HAS chosen a path is unaffected.
 function faithTradition(){ try{ return ls('totry_faith_tradition') || 'secular'; }catch(_){ return 'secular'; } }
 function curFaith(){ return FAITHS[faithTradition()] || FAITHS.secular; }
+// The fallback text when a generated reflection fails or comes back empty.
+//
+// showAdaptivePrayer() is built for all five traditions — its title reads "A <noun> for right now" for
+// anyone non-Christian, and applyFaithMorning() relabels the button "A reflection for today" for a
+// secular person. But BOTH failure exits assigned PRAYERS.scripture.text, a hardcoded Christian
+// scripture prayer. So the one moment the app had nothing generated to offer was the moment it handed a
+// Muslim, a Hindu, a Buddhist or an atheist someone else's prayer — the seventh instance of this
+// codebase's most persistent bug class, and a failure path is exactly where nobody looks.
+//
+// Falls back to the person's OWN tradition's verse pool, which activeVerses() already scopes correctly.
+function faithFallbackReflection(){
+  try{
+    const t=(typeof faithTradition==='function')?faithTradition():'secular';
+    if(t==='christianity' && typeof PRAYERS!=='undefined' && PRAYERS.scripture) return PRAYERS.scripture.text;
+    const pool=(typeof activeVerses==='function')?activeVerses():[];
+    if(pool && pool.length){
+      const i=(typeof _dailyIndex==='function')?_dailyIndex(pool.length):0;
+      const v=pool[i]||pool[0];
+      const body=(v&&(v.t||v.verse||v.text))||'';
+      const ref=(v&&(v.r||v.reference))||'';
+      const w=(v&&(v.w||v.reflection))||'';
+      if(body) return body + (ref?('\n\n\u2014 '+ref):'') + (w?('\n\n'+w):'');
+    }
+    // Nothing at all to draw on: say something true rather than something borrowed.
+    return 'Take one slow breath. You showed up, and that is the part that counts today.';
+  }catch(_){ return 'Take one slow breath. You showed up, and that is the part that counts today.'; }
+}
 function activeVerses(){ try{ const v=curFaith().verses; return (v&&v.length)?v:VS_SECULAR; }catch(_){ return VS_SECULAR; } }
 function faithChosen(){ try{ return !!ls('totry_faith_tradition'); }catch(_){ return false; } }
 
@@ -11165,11 +11207,11 @@ async function showAdaptivePrayer(){
     if(response&&response.trim()){
       textEl.textContent=response.trim();
     }else{
-      textEl.textContent=PRAYERS.scripture.text;
+      textEl.textContent=faithFallbackReflection();
     }
   }catch(e){
     console.error('Adaptive prayer failed:',e);
-    textEl.textContent=PRAYERS.scripture.text;
+    textEl.textContent=faithFallbackReflection();
   }
 }
 function completeMorning(){
@@ -12991,7 +13033,7 @@ async function _feelingNowGo(){
   try{
     const name=(ls('totry_name')||'').trim();
     const identity=ls('totry_identity')||'';
-    const sys=BROTHER_VOICE + 'RIGHT NOW they are in the EXACT moment a compulsion is hitting \u2014 help them resist it, this second. Fierce and loving, you refuse to let them lose. Short, direct, concrete. This is the hardest moment \u2014 be all the way in it with them.';
+    const sys=brotherSys() + 'RIGHT NOW they are in the EXACT moment a compulsion is hitting \u2014 help them resist it, this second. Fierce and loving, you refuse to let them lose. Short, direct, concrete. This is the hardest moment \u2014 be all the way in it with them.';
     const prompt='Right now, in this moment, they are feeling: "'+(feeling.trim()||'a strong urge, hard to name')+'".'+(name?' Their name is '+name+'.':'')+(identity?(' They are trying to become: "'+identity+'".'):'')+'\n\nWrite 3-4 short sentences that meet them in THIS feeling and pull them out of it \u2014 name what their body is doing, remind them this wave peaks and passes in minutes if they don\u2019t feed it, point them to one tiny physical thing to do in the next 60 seconds, and remind them of who they\u2019re becoming. No scripture quote (they already have their prayer). No lists. Talk straight to them.';
     const msg=await api(sys,[],prompt,500);
     const box=document.getElementById('feelingnow-redirect');
@@ -15914,6 +15956,29 @@ const BROTHER_VOICE =
   + "someone who actually pays attention, warmly and specifically, NEVER like a database reading out stats. You say "
   + "you're proud of them out loud, and you reach out first when they go quiet. Always here. ";
 
+// EVERY prompt that uses BROTHER_VOICE must also carry what BROTHER_VOICE claims it has been given.
+// The voice says "you're told their sex; adapt naturally and NEVER call them the wrong one" and "read
+// the FAITH CONTEXT below" — and then five of the seven call sites concatenated BROTHER_VOICE with
+// neither. So the model was instructed to consult a section that was not in the prompt, and NO call site
+// stated the person's sex at all: a woman using this app had a voice told to be her big sister, with
+// nothing telling it she was one. "Gender-aware" is a stated promise of this app, not a nicety.
+// One assembler, so no call site can forget again — the same lesson as safeJournal() and journalCrisisOf().
+function sexNote(){
+  try{
+    const sx=(typeof userSex==='function')?userSex():null;
+    if(sx==='female') return 'THEIR SEX: female. You are her big SISTER. Never call her brother, man, mate, bro or lad. ';
+    if(sx==='male')   return 'THEIR SEX: male. You are his big BROTHER. ';
+    // Not stated is a real state, not a reason to guess. Guessing is the failure this note prevents.
+    return 'THEIR SEX: not stated. Use they/them and sex-neutral words. Do NOT call them brother or sister, man or woman, and do not guess from anything else. ';
+  }catch(_){ return 'THEIR SEX: not stated. Use they/them and sex-neutral words. '; }
+}
+function brotherSys(extra){
+  let out = BROTHER_VOICE;
+  try{ out += sexNote(); }catch(_){ }
+  try{ if(typeof faithVoiceNote==='function') out += faithVoiceNote(); }catch(_){ }
+  return out + (extra || '');
+}
+
 // The companion speaks. opening=true generates the first meeting line.
 async function _companionSay(userText, opening){
   const conv = document.getElementById('comp-conversation');
@@ -15931,7 +15996,7 @@ async function _companionSay(userText, opening){
     const cached = _getCompanionProtocols(); const key = (s.name||'').toLowerCase().trim().slice(0,40);
     if(cached[key] && cached[key].spine) spine = cached[key].spine;
   }
-  const sys = BROTHER_VOICE
+  const sys = brotherSys()
     + faithVoiceNote()
     + sharedWisdomNote()
     + "RIGHT NOW you're with them in a tempted or struggling moment — this is the 2am door, their hardest moment. Be present, short, real. "
@@ -20281,7 +20346,7 @@ async function generateWeeklyCoachResponse(entry){
   const prompt = `You are this person\'s personal coach. Write a warm, honest, specific response to their weekly check-in. Notice patterns. Celebrate wins. Be direct about struggles without being harsh. End with ONE specific thing for them to focus on next week. 200-300 words. Use their name (${ls('totry_name')||'Friend'}) once. No corporate fluff.\n\n${context}`;
   
   try {
-    const response = await api(BROTHER_VOICE + 'You’re giving them an honest weekly read here — what you see across the whole week and the one thing that matters most. Direct because you care.', [], prompt, 1000);
+    const response = await api(brotherSys() + 'You’re giving them an honest weekly read here — what you see across the whole week and the one thing that matters most. Direct because you care.', [], prompt, 1000);
     if(response && response.trim()){
       // Save and show
       const syntheses = ls('totry_syntheses')||[];
@@ -23499,6 +23564,32 @@ function renderNourishmentScore(totals, goals){
 // app contributed to theirs. So To Try ships the antidote no mainstream tracker will: keep the
 // LOGGING (the whole-life counsel still works — energy, training, recovery) but let a person turn
 // the NUMBERS OFF. Food as fuel for a life, not a maths test to win. Never a red "over budget".
+// ONE gentle-aware nutrition block for EVERY prompt builder.
+//
+// "Numbers off" is a promise that this person does not see calorie or macro figures — usually because
+// counting them is the thing that hurt them. lifeStateBrief() honoured it. buildCtx() (the live Coach
+// prompt) did not: it handed the model the raw figures under a "TODAY (live data, right now)" header
+// and then instructed it to "Reference their actual numbers when it matters." buildPTCtx() did not
+// either, and it embeds the brief — so that single prompt carried the raw calories AND an instruction
+// never to state a calorie count, in the same breath.
+//
+// So the diary hid the number and the coach said it out loud. Three builders, one rule, one place.
+function nutPromptBlock(eaten, protein, goalCal, goalPro, meals){
+  const _n = (v) => (v == null || (typeof v === 'number' && !isFinite(v))) ? 0 : v;
+  eaten=_n(eaten); protein=_n(protein); meals=_n(meals);
+  if(typeof nutGentle==='function' && nutGentle()){
+    const _gw=(typeof _gentleWord==='function')?_gentleWord(eaten, goalCal):null;
+    const _where=_gw ? (_gw.w+' ('+_gw.s+')') : 'logged';
+    return '- Nutrition: this person has NUMBERS TURNED OFF \u2014 they log food without ever seeing calories '+
+      'or macros. Today reads as: '+_where+' across '+meals+' meal'+(meals===1?'':'s')+'. '+
+      'CRITICAL: never state a calorie count, a macro gram figure, a deficit, a surplus or a target number, '+
+      'even if asked directly. Speak in food, portions, energy and how they feel. If they ask for a number, '+
+      'tell them kindly that you are holding the maths for them.';
+  }
+  const calPct = goalCal ? Math.round((eaten/goalCal)*100) : 0;
+  const proPct = goalPro ? Math.round((protein/goalPro)*100) : 0;
+  return '- Nutrition so far: '+eaten+' cal ('+calPct+'% of '+goalCal+'), '+protein+'g protein ('+proPct+'% of '+goalPro+'g) across '+meals+' meal'+(meals===1?'':'s');
+}
 function nutGentle(){ try{ return !!ls('totry_nut_gentle'); }catch(_){ return false; } }
 function toggleNutGentle(){
   const on = !nutGentle();
@@ -28720,11 +28811,31 @@ function renderMobilityPanel(){
 function computeReadiness(){
   const checkins = ls('totry_checkins') || [];
   const body = ls('totry_body') || [];
-  // Pull the most recent self-reported sleep/stress/energy from either source.
-  let sleep=null, stress=null, energy=null, when=0;
+  // Pull the most recent self-reported sleep/stress/energy — but ONLY from the last few days.
+  //
+  // There was no age limit at all, and the result is labelled "READINESS TODAY" in the coach prompt,
+  // "Readiness today" in the whole-person brief, and "Your readiness is low today" in the card that
+  // auto-fires on entering the Train tab. Someone who rated their sleep 9/10 in February and had not
+  // checked in since was told in August that they were well recovered and should chase a PR. Ran the
+  // real function with a single six-month-old check-in: score 86, level 'go'. The sleep block in
+  // getLifeState is carefully date-keyed per night, so the app already knows how to scope a signal to
+  // today — this simply did not.
+  //
+  // The date parse was also unsafe: `ts ? new Date(ts).getTime() : 0` yields NaN for a display-format
+  // date like "Tue, 11 Aug" (which completeMorning and older writers store), and `NaN < when` is false,
+  // so the guard did not return, `when` became NaN, and then EVERY remaining entry passed `t < NaN`
+  // too — collapsing the newest-wins ordering entirely rather than merely going stale.
+  const READINESS_MAX_AGE_MS = 3 * 86400000;   // a self-report older than three days is not "today"
+  const nowMs = Date.now();
+  let sleep=null, stress=null, energy=null, when=0, readinessTs=null;
   const considerScores = (s, ts) => {
-    if(!s) return; const t = ts ? new Date(ts).getTime() : 0;
-    if(t < when) return; when = t;
+    if(!s) return;
+    const t = ts ? new Date(ts).getTime() : NaN;
+    if(!isFinite(t)) return;                       // unparseable date: ignore rather than poison `when`
+    if(nowMs - t > READINESS_MAX_AGE_MS) return;   // too old to be called today
+    if(t > nowMs + 86400000) return;               // a future date means a wrong clock; do not trust it
+    if(t < when) return;
+    when = t; readinessTs = ts;
     if(s.sleep!=null) sleep = s.sleep;
     if(s.stress!=null) stress = s.stress;
     if(s.energy!=null) energy = s.energy;
@@ -28757,7 +28868,7 @@ function computeReadiness(){
   if(level === 'go') advice = 'You\u2019re well recovered. Good day to push \u2014 chase a PR or add load.';
   else if(level === 'moderate') advice = 'You\u2019re moderately recovered. Train, but keep it controlled \u2014 quality over maxing out.';
   else advice = 'Your body\u2019s asking for recovery. Consider mobility, an easy walk, or rest today \u2014 it\u2019s part of the work.';
-  return { score, level, reasons, advice, sleep, stress, energy };
+  return { score, level, reasons, advice, sleep, stress, energy, asOf: readinessTs };
 }
 // One-tap morning sleep rating → writes a check-in that computeReadiness reads, so sleep instantly
 // shapes readiness, the coach's voice, and the urge companion ("running on no sleep — that's why
@@ -29064,7 +29175,7 @@ async function explainVicePatterns(){
   if(btn){ btn.textContent='Thinking...'; btn.disabled=true; }
   try{
     if(!p){ if(box){ box.style.display='block'; box.innerHTML='<div style="font-size:13px;color:var(--tx2);line-height:1.6">There\u2019s no clear pattern in your slips yet \u2014 and that\u2019s okay. Keep logging honestly; if a pattern emerges, I\u2019ll help you see it gently.</div>'; } return; }
-    const sys = BROTHER_VOICE + 'RIGHT NOW you’re helping them look honestly at the PATTERN in their fight — the times, the triggers. Acknowledge the courage it takes to look at all. Read what you see and offer 2-3 gentle, practical, hopeful moves tied to it. Brief and warm — never shame, only grace and growth.';
+    const sys = brotherSys() + 'RIGHT NOW you’re helping them look honestly at the PATTERN in their fight — the times, the triggers. Acknowledge the courage it takes to look at all. Read what you see and offer 2-3 gentle, practical, hopeful moves tied to it. Brief and warm — never shame, only grace and growth.';
     const prompt = 'A person fighting a vice has these patterns in when they slip: ' + p.patterns.join(' ') + ' (' + p.count + ' slips logged). Compassionately reflect this back and suggest 2-3 specific, doable strategies for those high-risk moments. Hopeful, never shaming.';
     const resp = await api(sys, [], prompt, 600);
     if(box){ box.style.display='block'; box.innerHTML='<div style="font-size:13px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">'+(resp||'').replace(/</g,'&lt;')+'</div>'; }
@@ -29096,7 +29207,7 @@ async function explainReadiness(){
   const body = document.getElementById('readiness-explain-body');
   if(!r){ if(body) body.innerHTML = 'Log a check-in (sleep, stress, energy) and a workout or two, and I\u2019ll be able to read your recovery.'; return; }
   try{
-    const sys = BROTHER_VOICE + 'RIGHT NOW you\u2019re explaining their readiness score to them in plain, encouraging words \u2014 what\u2019s driving it and what would move it. 3-4 sentences. No medical claims.';
+    const sys = brotherSys() + 'RIGHT NOW you\u2019re explaining their readiness score to them in plain, encouraging words \u2014 what\u2019s driving it and what would move it. 3-4 sentences. No medical claims.';
     const prompt = 'Readiness today is ' + r.score + '/100 (' + r.level + '). Inputs: ' + (r.sleep!=null?'sleep '+r.sleep+'/10, ':'') + (r.stress!=null?'stress '+r.stress+'/10, ':'') + (r.energy!=null?'energy '+r.energy+'/10, ':'') + 'reasons: ' + (r.reasons.join(', ')||'recent days') + '. Explain why it\u2019s here and 2 things that would raise it.';
     const resp = await api(sys, [], prompt, 400);
     if(body) body.innerHTML = '<div style="white-space:pre-wrap">'+(resp||r.advice).replace(/</g,'&lt;')+'</div>';
@@ -29189,7 +29300,7 @@ async function generateWeeklyReflection(){
     const ctx = (typeof _ptIntel==='function') ? _ptIntel() : '';
     const rd = (typeof computeReadiness==='function') ? computeReadiness() : null;
     const identity = ls('totry_identity') || '';
-    const sys = BROTHER_VOICE + 'RIGHT NOW you\u2019re reflecting their WHOLE week back to them in one honest, encouraging paragraph (4-6 sentences) \u2014 connecting body, discipline, money and spirit the way only someone who sees all of a person could. Specific, never generic. Name the effort, not just the outcomes. Then, on a new line, ask ONE real, specific question drawn from a genuine tension in their week (e.g. trained hard but slipped twice \u2014 "what was going on those nights, bro?"). Invite honest reflection, never judgment. Format the question on its own line prefixed exactly with "Q: ".';
+    const sys = brotherSys() + 'RIGHT NOW you\u2019re reflecting their WHOLE week back to them in one honest, encouraging paragraph (4-6 sentences) \u2014 connecting body, discipline, money and spirit the way only someone who sees all of a person could. Specific, never generic. Name the effort, not just the outcomes. Then, on a new line, ask ONE real, specific question drawn from a genuine tension in their week (e.g. trained hard but slipped twice \u2014 "what was going on those nights, bro?"). Invite honest reflection, never judgment. Format the question on its own line prefixed exactly with "Q: ".';
     const prompt = 'This week: ' + s.workouts + ' workouts, ' + s.nutDays + ' days food logged, ' + s.journalEntries + ' journal entries, ' + s.wins + ' urges resisted, ' + s.slips7 + ' slips, longest clean streak ' + s.longestStreak + ' days' + (s.reclaimed>0 ? (', $'+s.reclaimed+' reclaimed from vices toward their freedom') : '') + '.' + (identity?' They are becoming: "'+identity+'".':'') + (rd?' Current readiness: '+rd.level+'.':'') + ' Training context:' + ctx + '\n\nWrite their weekly reflection as an older sibling who sees their whole life, then the one honest question.';
     const resp = await api(sys, [], prompt, 550);
     if(box){
