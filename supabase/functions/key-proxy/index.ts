@@ -53,6 +53,23 @@ const env = (...names: string[]) => {
 }
 const FS_ID_NAMES     = ['FATSECRET_ID', 'FATSECRET_CONSUMER_KEY', 'FATSECRET_KEY', 'FATSECRET_CLIENT_ID']
 const FS_SECRET_NAMES = ['FATSECRET_SECRET', 'FATSECRET_CONSUMER_SECRET', 'FATSECRET_CLIENT_SECRET']
+
+// Last resort: find the secret whatever it was named. Three rounds went by with the consumer key
+// matching one spelling and the secret matching none, which is a silly way to spend someone's evening —
+// the env var NAME is not sensitive, so it can be discovered and reported. Any variable whose name looks
+// like a FatSecret secret and is not one of the id names qualifies. Values are never returned or logged.
+const findFsSecret = (): { name?: string; value?: string } => {
+  for (const n of FS_SECRET_NAMES) { const v = Deno.env.get(n); if (v) return { name: n, value: v } }
+  try {
+    for (const [k, v] of Object.entries(Deno.env.toObject())) {
+      if (!v) continue
+      if (FS_ID_NAMES.includes(k)) continue
+      const u = k.toUpperCase().replace(/[^A-Z]/g, '')
+      if (u.includes('FATSECRET') && u.includes('SECRET')) return { name: k, value: v }
+    }
+  } catch (_) { /* env enumeration not permitted — the explicit names above still work */ }
+  return {}
+}
 const ESV_NAMES       = ['ESV_API_KEY', 'ESV_KEY']
 const USDA_NAMES      = ['USDA_API_KEY', 'USDA_KEY', 'USDA_FDC_API_KEY']
 
@@ -74,7 +91,7 @@ Deno.serve(async (req: Request) => {
     // different thing from a leaked permanent client secret.
     if (provider === 'fatsecret') {
       const id = env(...FS_ID_NAMES)
-      const secret = env(...FS_SECRET_NAMES)
+      const secret = findFsSecret().value
       if (!id || !secret) return json({ error: 'fatsecret not configured' }, 501)
       if (fsToken && Date.now() < fsExpiry) return json({ access_token: fsToken })
       const r = await fetch('https://oauth.fatsecret.com/connect/token', {
@@ -133,7 +150,14 @@ Deno.serve(async (req: Request) => {
     // prefix. Added because diagnosing "not configured" meant guessing at env var names from outside.
     if (provider === 'status') {
       return json({
-        fatsecret: { id: !!env(...FS_ID_NAMES), secret: !!env(...FS_SECRET_NAMES) },
+        // The NAME each credential was found under, so a mismatch is visible. Names are not secrets;
+        // values are never included.
+        fatsecret: {
+          id: !!env(...FS_ID_NAMES),
+          id_found_as: FS_ID_NAMES.find((n) => !!Deno.env.get(n)) || null,
+          secret: !!findFsSecret().value,
+          secret_found_as: findFsSecret().name || null,
+        },
         esv: !!env(...ESV_NAMES),
         usda: !!env(...USDA_NAMES),
         // Names it looked for, so a mismatch is obvious at a glance.
