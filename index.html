@@ -4754,7 +4754,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v470';
+const APP_VERSION = 'v471';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5154,6 +5154,7 @@ const SYNC_KEYS = [
   'totry_apps_used','totry_affirms','totry_notif_schedule','totry_honest_q',
   // Preferences (v29)
   'totry_currency','totry_weight_unit','totry_distance_unit','totry_theme','totry_timezone',
+  'totry_tombstones',   // deletions, so a union cannot resurrect what someone removed
   // Late additions — real state that should survive a reinstall
   'totry_notif_enabled','totry_user_email','totry_last_synthesis','totry_usage_log','totry_reminder_times','totry_reminder_morning','totry_reminder_evening',// v30: conversation memory + share preferences + reading position
   'totry_coach_history','totry_coach_memory','totry_pt_history','totry_share_prefs','totry_bible_last_position',
@@ -5257,7 +5258,55 @@ async function _restoreFromCloud_legacy_unused(){
 // to disk first, so if a network write fails AND the app closes, the pending write survives and
 // is retried on next open — it can never silently vanish. Sync status is observable (Settings).
 // ═══════════════════════════════════════════════════════════════════════════
-const SYNC_OUTBOX_KEY = 'totry_sync_outbox';      // durable pending writes {key:{value,ts}}
+const SYNC_OUTBOX_KEY = 'totry_sync_outbox';
+
+// ── TOMBSTONES: so a deletion survives the next sync ─────────────────────────────────────────────
+// pullFromCloud UNIONS 32 keys across devices, which is right for an append-only log and wrong the
+// moment something can be deleted. EIGHT of those keys have delete paths — journal entries, weigh-ins,
+// workouts, giving, poker sessions, Strava activities, saved meals, custom exercises — so deleting a
+// journal entry did not stick: the next pull unioned it straight back, and the person watched it
+// reappear with no way to make it go. The comment justifying the union claimed none of these keys could
+// be deleted from; it was wrong for a quarter of them.
+//
+// A tombstone records "this id was deleted". The store is itself in SYNC_KEYS and merges as a UNION of
+// both devices' maps, so the deletion PROPAGATES rather than being re-argued on every pull.
+const TOMB_KEY = 'totry_tombstones';
+const TOMB_MAX_AGE_MS = 180 * 86400000;   // half a year is long past any device catching up
+
+// The SAME identity function the cloud union uses. If these two ever disagree the tombstone silently
+// never matches and the whole mechanism does nothing — which is exactly the class of bug this file is
+// full of — so there is one definition and both sides call it.
+function syncIdOf(x){
+  return (x && typeof x === 'object') ? (x.id !== undefined ? 'i'+x.id : (x.ts || JSON.stringify(x))) : x;
+}
+function _tombs(){
+  try{ const t = JSON.parse(localStorage.getItem(TOMB_KEY) || '{}'); return (t && typeof t === 'object') ? t : {}; }
+  catch(_){ return {}; }
+}
+function isTombed(key, id){
+  try{ const b = _tombs()[key]; return !!(b && Object.prototype.hasOwnProperty.call(b, String(id))); }
+  catch(_){ return false; }
+}
+// Derives the deleted ids from the BEFORE/AFTER diff rather than from the caller's filter predicate.
+// Each delete site filters on a different field (e.ts, e.id, (e.ts||e.date)); diffing means the
+// tombstone id can never drift from what the union will actually look for.
+function tombstoneRemoved(key, before, after){
+  try{
+    if(!Array.isArray(before)) return;
+    const keep = new Set((Array.isArray(after) ? after : []).map(syncIdOf));
+    const gone = before.filter(x => !keep.has(syncIdOf(x))).map(syncIdOf)
+                       .filter(id => id !== undefined && id !== null && id !== '');
+    if(!gone.length) return;
+    const t = _tombs();
+    const bucket = t[key] || {};
+    const now = Date.now();
+    gone.forEach(id => { bucket[String(id)] = now; });
+    // Prune anything long since propagated, so this cannot grow without bound on a device used for years.
+    Object.keys(bucket).forEach(id => { if(now - (bucket[id] || 0) > TOMB_MAX_AGE_MS) delete bucket[id]; });
+    t[key] = bucket;
+    ls(TOMB_KEY, t);   // ls() queues it for sync because TOMB_KEY is in SYNC_KEYS
+  }catch(_){ }
+}      // durable pending writes {key:{value,ts}}
 window.__syncState = { status: 'idle', lastSyncAt: null, pending: 0, error: null };
 
 // Renders the human-readable sync status in Settings. Called on every state change + tab open.
@@ -5604,17 +5653,20 @@ async function pullFromCloud(){
       'totry_wins','totry_moments_won','totry_fight_log','totry_cravings','totry_blessings','totry_reachouts',
       'totry_rosaries','totry_syntheses','totry_reviews','totry_vice_uses','totry_impulse_holds','totry_freezes',
       'totry_checkins','totry_mood_log','totry_fast_log','totry_releases'];
-    const idOf = x => (x && typeof x === 'object') ? (x.id !== undefined ? 'i'+x.id : (x.ts || JSON.stringify(x))) : x;
+    const idOf = syncIdOf;   // ONE identity function, shared with tombstoneRemoved (see TOMB_KEY)
     // union(local, cloud) kept the FIRST occurrence of each id — always the LOCAL one — so an entry
     // EDITED on the other device never arrived: the correction was silently dropped while both copies
     // existed. Same-id collisions now resolve the way the scalar branch does — the side that is actually
     // newer wins. preferB=true means the cloud row is newer than our local copy and unsynced local
     // edits are not pending.
-    const union = (a,b,preferB) => {
+    // tombKey: entries whose id is tombstoned are DROPPED rather than merged, so a deletion made on
+    // either device survives the pull instead of being undone by the other device's copy.
+    const union = (a,b,preferB,tombKey) => {
       const m = new Map();
       const aLen = (a||[]).length;
       [].concat(a||[], b||[]).forEach((x,i) => {
         const k = idOf(x);
+        if(tombKey && isTombed(tombKey, k)) return;
         if(!m.has(k)){ m.set(k, x); return; }
         if(i >= aLen && preferB) m.set(k, x);   // this id is on both sides and cloud is the newer side
       });
@@ -5641,10 +5693,20 @@ async function pullFromCloud(){
       const lts = tsMap[k] || 0;                 // when our local copy last synced/changed
       const pendingLocal = outbox[k] && outbox[k].ts > cts;  // unsynced local edit newer than cloud
       let nv;
-      if(k === 'totry_nutlog' && lv && cv && typeof lv === 'object' && typeof cv === 'object'){
+      if(k === TOMB_KEY && lv && cv && typeof lv === 'object' && typeof cv === 'object'){
+        // Both devices' deletions matter. Last-write-wins here would let the newer device's tombstone
+        // map erase the other device's deletions, and those entries would come straight back.
+        nv = {};
+        const allKeys = new Set([].concat(Object.keys(lv), Object.keys(cv)));
+        allKeys.forEach(bk => {
+          const merged = Object.assign({}, cv[bk] || {}, lv[bk] || {});
+          if(Object.keys(merged).length) nv[bk] = merged;
+        });
+        _queueWrite(k, nv);
+      } else if(k === 'totry_nutlog' && lv && cv && typeof lv === 'object' && typeof cv === 'object'){
         nv = {}; const days = new Set([].concat(Object.keys(lv), Object.keys(cv)));
         const _cloudNewer = (cts >= lts) && !pendingLocal;
-        days.forEach(d => { nv[d] = union(lv[d], cv[d], _cloudNewer); });
+        days.forEach(d => { nv[d] = union(lv[d], cv[d], _cloudNewer, 'totry_nutlog'); });
       } else if(k === 'totry_v' && Array.isArray(lv) && Array.isArray(cv)){
         // Vices: merge by name so a win/relapse logged on one device is never lost. For a vice on
         // both sides, keep the higher relapseCount + total and the most recent lastWin/startDate,
@@ -5686,7 +5748,7 @@ async function pullFromCloud(){
         nv = { d: Array.from(debts.values()), u: Math.max(lv.u||0, cv.u||0), i: Math.max(lv.i||0, cv.i||0) };
         _queueWrite(k, nv);
       } else if(ARR.indexOf(k) > -1 && Array.isArray(lv) && Array.isArray(cv)){
-        nv = union(lv, cv, (cts >= lts) && !pendingLocal);   // keep every entry; the newer side wins an id tie
+        nv = union(lv, cv, (cts >= lts) && !pendingLocal, k);   // keep every entry except a tombstoned one
       } else if(lv === null || lv === undefined){
         nv = cv;                                   // nothing local → take cloud
       } else if(pendingLocal){
@@ -20431,6 +20493,7 @@ function deleteWeightEntry(key){
   if(!confirm('Delete this weigh-in?')) return;
   const entries = ls('totry_body') || [];
   const filtered = entries.filter(e => (e.ts||e.date) !== key);
+  tombstoneRemoved('totry_body', entries, filtered);   // or the next cloud pull unions it back
   ls('totry_body', filtered);
   if(typeof syncToCloud==='function') syncToCloud();
   renderBody();
@@ -23325,8 +23388,9 @@ function logSavedMeal(id){
 function deleteSavedMeal(id){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
   if(!confirm('Delete this saved meal? You will have to build it again.')) return;
-  let saved = ls('totry_saved_meals')||[];
-  saved = saved.filter(x=>x.id!==id);
+  const _before = ls('totry_saved_meals')||[];
+  const saved = _before.filter(x=>x.id!==id);
+  tombstoneRemoved('totry_saved_meals', _before, saved);
   ls('totry_saved_meals', saved);
   renderSavedMeals();
 }
@@ -27483,7 +27547,9 @@ function openFamilyContribution(){
 function deleteFamilyContribution(id){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
   if(!confirm('Delete this contribution? It is part of your record of what you gave.')) return;
-  const list = (ls('totry_family_contrib')||[]).filter(x=>x.id!==id);
+  const _before = ls('totry_family_contrib')||[];
+  const list = _before.filter(x=>x.id!==id);
+  tombstoneRemoved('totry_family_contrib', _before, list);
   ls('totry_family_contrib', list); if(typeof syncToCloud==='function') syncToCloud(); renderFamilyContribution();
 }
 // Set a recurring monthly family-contribution target (treated like a commitment/subscription).
@@ -27569,7 +27635,9 @@ function openPokerSession(){
 function deletePokerSession(id){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
   if(!confirm('Delete this session? Its result comes out of your totals.')) return;
-  const list = (ls('totry_poker_sessions')||[]).filter(x=>x.id!==id);
+  const _before = ls('totry_poker_sessions')||[];
+  const list = _before.filter(x=>x.id!==id);
+  tombstoneRemoved('totry_poker_sessions', _before, list);
   ls('totry_poker_sessions', list); if(typeof syncToCloud==='function') syncToCloud(); renderPoker();
 }
 function renderPoker(){
@@ -31125,11 +31193,15 @@ function saveEditTraining(id){
 function deleteTraining(kind, id){
   if(!confirm('Delete this workout? This cannot be undone.')) return;
   if(kind === 'strava'){
-    const acts = (ls('totry_strava_activities')||[]).filter(x => String(x.id) !== id);
+    const _before = ls('totry_strava_activities')||[];
+    const acts = _before.filter(x => String(x.id) !== id);
+    tombstoneRemoved('totry_strava_activities', _before, acts);   // or the next pull unions it back
     ls('totry_strava_activities', acts);
   } else {
     const workouts = ls('totry_workouts') || [];
-    ls('totry_workouts', workouts.filter(x => String(x.id) !== id));
+    const _kept = workouts.filter(x => String(x.id) !== id);
+    tombstoneRemoved('totry_workouts', workouts, _kept);
+    ls('totry_workouts', _kept);
     // Rebuild the burn ledger from the remaining workouts — single source of truth.
     recomputeWorkoutBurns();
   }
@@ -37947,7 +38019,9 @@ setTimeout(() => {
 
 function deleteJournalEntry(ts){
   if(!confirm('Delete this journal entry?'))return;
-  const entries=(ls('totry_journal')||[]).filter(e=>e.ts!==ts);
+  const _before=ls('totry_journal')||[];
+  const entries=_before.filter(e=>e.ts!==ts);
+  tombstoneRemoved('totry_journal', _before, entries);   // or the next cloud pull unions it back
   ls('totry_journal',entries);renderJournal();
 }
 

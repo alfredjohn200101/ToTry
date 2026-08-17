@@ -2810,6 +2810,14 @@ H.section('the voice is told the truth, and only what is true')
 H.section('two devices do not destroy each other\'s work')
 {
   const code = H.html.replace(/<!--[\s\S]*?-->/g, '').split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  // Section-local: each H.section block has its own scope, so the earlier helper is not visible here.
+  const fnBody = (name) => {
+    const m = code.match(new RegExp('function\\s+' + name + '\\s*\\('));
+    if (!m) return '';
+    let i = code.indexOf('{', m.index) + 1, d = 1;
+    while (i < code.length && d) { const c = code[i]; if (c === '{') d++; else if (c === '}') d--; i++; }
+    return code.slice(m.index, i);
+  };
   const pull = (() => {
     const m = code.match(/async function pullFromCloud\s*\(/);
     if (!m) return '';
@@ -2828,11 +2836,11 @@ H.section('two devices do not destroy each other\'s work')
 
   // union(local, cloud) kept the FIRST match for an id — always local — so an entry EDITED on the other
   // device never arrived. Verified by running the real union against two-device fixtures.
-  H.ok(/const union = \(a,b,preferB\)/.test(pull), 'union takes a freshness side');
+  H.ok(/const union = \(a,b,preferB,tombKey\)/.test(pull), 'union takes a freshness side and a tombstone key');
   H.ok(/if\(i >= aLen && preferB\)/.test(pull), 'and the newer side wins an id collision');
-  H.ok(/union\(lv, cv, \(cts >= lts\) && !pendingLocal\)/.test(pull),
+  H.ok(/union\(lv, cv, \(cts >= lts\) && !pendingLocal, k\)/.test(pull),
     'the array branch passes real freshness, not a guess');
-  H.ok(/union\(lv\[d\], cv\[d\], _cloudNewer\)/.test(pull), 'and so does the per-day nutrition merge');
+  H.ok(/union\(lv\[d\], cv\[d\], _cloudNewer, 'totry_nutlog'\)/.test(pull), 'and so does the per-day nutrition merge');
 
   // The outbox is what makes a write "durable". It silently swallowed its own storage failure, so on a
   // full device the queue failed to save while the UI still said the change was on its way.
@@ -2853,6 +2861,33 @@ H.section('two devices do not destroy each other\'s work')
   // Fixing it needs synced tombstones, which is its own change.
   H.ok(!/pure event log with NO delete function anywhere in the app/.test(H.html),
     'the ARR comment no longer claims these keys cannot be deleted from');
+
+  // TOMBSTONES (v471). Seven of the union'd keys have delete paths, so a union resurrected whatever
+  // someone deleted on the very next pull — they watched a journal entry reappear with no way to make
+  // it go. Proved both directions in a browser: with the tombstone the deletion survives the pull;
+  // without it the deleted entry comes back.
+  H.ok(/const TOMB_KEY = 'totry_tombstones'/.test(code), 'there is a tombstone store');
+  H.ok(/'totry_tombstones',/.test(code), 'and it is a SYNCED key, so deletions propagate');
+  // ONE identity function. If the tombstone id and the union's dedupe key ever disagree, the tombstone
+  // silently never matches and the whole mechanism does nothing — this repo's signature failure.
+  H.ok(/function syncIdOf\(/.test(code), 'one shared identity function');
+  H.ok(/const idOf = syncIdOf;/.test(pull), 'the union uses it');
+  H.ok(/\.map\(syncIdOf\)/.test(code), 'and so does the tombstone recorder');
+  H.ok(/if\(tombKey && isTombed\(tombKey, k\)\) return;/.test(pull), 'a tombstoned entry is dropped, not merged');
+  H.ok(/union\(lv, cv, \(cts >= lts\) && !pendingLocal, k\)/.test(pull), 'the array branch passes its key');
+  // The tombstone map itself must union, or the newer device erases the other device's deletions.
+  H.ok(/k === TOMB_KEY/.test(pull), 'the tombstone map has its own merge branch');
+  H.ok(/Object\.assign\(\{\}, cv\[bk\] \|\| \{\}, lv\[bk\] \|\| \{\}\)/.test(pull),
+    'and merges as a union of both devices, never last-write-wins');
+  // Derived from the before/after diff, so it cannot drift from each site's filter predicate.
+  const tr = fnBody('tombstoneRemoved');
+  H.ok(/keep\.has\(syncIdOf\(x\)\)/.test(tr), 'deleted ids come from the actual diff');
+  H.ok(/TOMB_MAX_AGE_MS/.test(tr), 'and old tombstones are pruned so the store cannot grow forever');
+  // EVERY delete path on a union'd key must record one. Seven of them.
+  for (const key of ['totry_journal', 'totry_body', 'totry_workouts', 'totry_strava_activities',
+                     'totry_family_contrib', 'totry_poker_sessions', 'totry_saved_meals']) {
+    H.ok(new RegExp("tombstoneRemoved\\('" + key + "'").test(code), `${key} records its deletions`);
+  }
 }
 
 H.report();
