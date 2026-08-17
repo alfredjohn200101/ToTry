@@ -1,8 +1,9 @@
 # What's left before this is worth putting on the App Store
 
-Written 14 Aug 2026. **Updated at v468.** Based on three adversarial sweeps (165 agents, 70 confirmed
-findings), days of driving the real app, and a pass (v459–v465) that stopped auditing and started
-making the half-built things work. This is the honest version, not the encouraging one.
+Written 14 Aug 2026. **Updated at v468.** Based on four adversarial sweeps (178 agents, 94 confirmed
+findings), days of driving the real app, and a pass (v459–v468) that stopped auditing and started
+making the half-built things work. This is the honest version, not the encouraging one — and given the
+correction immediately below, the counts in it are claims to re-check, not trophies.
 
 ## ⚠️ A correction to this document
 
