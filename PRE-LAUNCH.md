@@ -1,8 +1,8 @@
 # What's left before this is worth putting on the App Store
 
-Written 14 Aug 2026. **Updated at v468.** Based on four adversarial sweeps (178 agents, 94 confirmed
-findings), days of driving the real app, and a pass (v459–v468) that stopped auditing and started
-making the half-built things work. This is the honest version, not the encouraging one — and given the
+Written 14 Aug 2026. **Updated at v471.** Based on five adversarial sweeps (189 agents, 124 confirmed
+findings), days of driving the real app, and a pass (v459–v471) that stopped auditing and started making
+the half-built things work. This is the honest version, not the encouraging one — and given the
 correction immediately below, the counts in it are claims to re-check, not trophies.
 
 ## ⚠️ A correction to this document
@@ -124,6 +124,90 @@ Building it would replace one honest asymmetry (only the Bible has search) with 
 for Islam, book-level for secular, nothing for two others. **Left unbuilt on purpose.** The route in, when
 it matters, is a per-tradition index built server-side — the texts are small enough (423 Dhammapada
 verses, 700 Gita verses, 12 books of Meditations) that one edge function could index all of them once.
+
+### v469–v471: the second sweep's findings, and the ones that mattered
+
+A second adversarial sweep over five dimensions no test had touched — AI/coach prompts, sync and
+conflict, native-only branches, training/nutrition maths, accessibility semantics — produced **30
+confirmed findings: 16 high, 12 medium, 2 low, no blockers.** These are the ones fixed so far.
+
+**The app said one thing and the voice said another.** "Numbers off" is a promise that this person never
+sees calorie or macro figures, usually because counting them is what hurt them. `lifeStateBrief`
+honoured it. `buildCtx` — the **live Coach prompt** — did not: it handed the model the raw figures under
+a "TODAY (live data, right now)" header and then instructed it to *"Reference their actual numbers when
+it matters."* `buildPTCtx` was worse: raw calories **and** the brief's "never state a calorie count" in
+the same prompt. The diary hid the number and the coach said it out loud. Now one `nutPromptBlock()`
+shared by all three builders — and the first fix missed a *second* raw-calorie line, found only by
+dumping the matching lines rather than trusting the pass.
+
+**The voice was told it knew things it was never given.** `BROTHER_VOICE` says *"you're told their sex;
+adapt naturally and NEVER call them the wrong one"* and *"read the FAITH CONTEXT below"*. Five of seven
+call sites supplied neither, and **no call site stated the sex at all** — so a woman had a voice
+instructed to be her big sister with nothing telling it she was one. One `brotherSys()` assembler now
+carries both, and when sex is unstated it says so and mandates they/them rather than guessing.
+
+**"READINESS TODAY" was not today.** `computeReadiness` had no age limit. Ran it with a single
+six-month-old check-in: **86/100, "good day to push — chase a PR or add load."** Its date parse also
+returned `NaN` for display-format dates, and `NaN < when` is false, so the newest-wins ordering
+collapsed entirely rather than merely going stale. Now a three-day window, unparseable dates ignored,
+future dates distrusted, and `asOf` exposed.
+
+**A failure path is where nobody looks.** Both exits of `showAdaptivePrayer` assigned a hardcoded
+Christian scripture prayer — for all five traditions. Instance **seven** of that class, and it only
+fires when generation fails, which is the moment least likely to be tested.
+
+**The crisis bridge was drawn but never announced.** No role, no live region, no heading, no focus move —
+so for a VoiceOver user mid-crisis the helpline numbers were simply not there to find. Now
+`role="alert"`, `aria-live="assertive"`, a real `<h2>`, and focus moved inside the block.
+
+#### Sync was destroying data on every pass
+
+| defect | what it cost |
+|---|---|
+| **The clobber-back loop** — when the cloud row won, the superseded local value was left in the outbox, so the next flush re-uploaded the exact value that pull had just rejected | the other phone's newer edit, wiped, on every sync, with both ends reporting success |
+| **`union(local, cloud)` kept the first match for an id** — always the local one | an entry *edited* on the other device never arrived |
+| **`_setOutbox` swallowed its own storage failure** | on a full device the queue failed to persist while the UI said the change was syncing |
+| **Seven union'd keys have delete paths** (journal, weigh-ins, workouts, Strava, giving, poker, saved meals) | a deletion did not stick — the next pull unioned it straight back, and the person watched it reappear |
+
+That last one is fixed by **tombstones** (v471): the deleted ids are recorded, the store is itself synced
+and merges as a *union* of both devices' maps, and one `syncIdOf()` is shared by the recorder and the
+union — because if those two ever disagree the tombstone silently never matches and the mechanism does
+nothing while looking correct.
+
+> The comment justifying that union read: *"Every key added below is a pure event log with NO delete
+> function anywhere in the app."* It was wrong for seven of the thirty-two. A ratchet now fails if a
+> filtered write to a union'd key lands without a tombstone.
+
+**Still open from this sweep:** the accessibility semantics group (no `h1` or landmarks, three tabs with
+no headings, 508 toasts never announced, the Feeling Door not trapping focus, the breathing pacer
+delivered by sight only, win/loss signalled by border colour alone), the native-only group (Apple Health
+reporting "connected" when the person denied the sheet, reach-out notifications logged as sent without
+confirming they were scheduled, the Face ID lock not hiding the last screen from the app switcher), and
+four nutrition/training maths items.
+
+### Backend: deployed and verified (17 Aug)
+
+`delete-user` and `key-proxy` are **deployed**, and `ai-proxy` has been pulled into the repo and patched.
+Verified by probing the live endpoints:
+
+| | state |
+|---|---|
+| `delete-user` | ✅ deployed — **App Store Guideline 5.1.1(v) satisfied** |
+| ESV via proxy | ✅ verified end-to-end into the app |
+| USDA via proxy | ✅ verified — whole-food results first |
+| ai-proxy: Gemini / Groq / OpenRouter | ✅ all three answer; web search and vision restored |
+| FatSecret | ❌ `invalid_client` — the id and secret are not a matching pair |
+
+**The AI chain had quietly collapsed to one provider.** Groq's `llama-3.3-70b-versatile` and *all three*
+OpenRouter IDs (text, `:online` web search, and vision) had been retired by their vendors — so meal-photo
+estimation and the food web-lookup had **no fallback at all**. Gemini still worked, which is why nobody
+noticed. Each provider now takes a *list* of candidate models, so a vendor retirement costs one entry
+instead of the provider; Groq recovered onto `openai/gpt-oss-120b` and OpenRouter onto
+`nemotron-3-super-120b` **by itself**, neither of which was my first guess.
+
+> **The root cause worth remembering:** one hardcoded model ID per provider makes every vendor
+> retirement a permanent, silent outage. The same shape as a hardcoded API key, and it had been broken
+> for long enough that nobody could say when.
 
 ### iOS submission state (verified 17 Aug, v465)
 
