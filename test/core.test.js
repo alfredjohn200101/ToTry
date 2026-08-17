@@ -2143,4 +2143,29 @@ H.section('one journal accessor — no AI path may read a flagged entry')
   H.ok(/j && !j\.flagged && within/.test(code), "getLifeState's 7-day journal filters too");
 }
 
+H.section('a crisis response is never conditional, and never destroys the app')
+{
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+
+  // 1. NO SHIPPED PATH MAY MASS-REMOVE .modal-bg. #journal-modal, #payday-modal and #rest-timer-overlay
+  //    are STATIC elements carrying that class, so the bare selector deletes them permanently. Three of
+  //    the four offending sites were crisis paths added in v434/v439 — so after someone disclosed
+  //    something serious, openJournal() threw on its first line and the composer was dead for the session.
+  const bare = (code.match(/querySelectorAll\('\.modal-bg'\)/g) || []).length;
+  H.eq(bare, 0, 'no code mass-removes .modal-bg (it would delete static modals)');
+  H.ok(/modal-bg:not\(\[id\]\)/.test(code), 'the id-sparing form is used instead');
+
+  // 2. THE EVENING CRISIS RESPONSE MUST NOT DEPEND ON THE EXAMEN. It used to sit inside the !examenToday
+  //    branch, so whether a disclosure got the crisis card depended on an unrelated ritual being ticked —
+  //    and when it was ticked the app fired a success haptic and asked "Want to share today?" instead.
+  const ce = code.slice(code.indexOf('function completeEvening('), code.indexOf('function completeEvening(') + 9000);
+  const iCrisis = ce.indexOf('if(_evCrisis)');
+  const iExamen = ce.indexOf('if(!examenToday)');
+  H.ok(iCrisis > 0 && iExamen > 0, 'both branches exist');
+  H.ok(iCrisis < iExamen, 'the crisis response runs BEFORE the examen branch, not inside it');
+  H.eq((ce.match(/if\(_evCrisis\)/g) || []).length, 1, 'there is exactly one crisis branch, not a stale copy');
+}
+
 H.report();

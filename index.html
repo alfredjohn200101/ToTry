@@ -4708,7 +4708,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v449';
+const APP_VERSION = 'v450';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -6518,7 +6518,7 @@ function enterAsGuest(){
 // Offered after a guest has actually been helped. "Keep this", not "pay the toll".
 function guestKeepThis(){
   try{ if(typeof logEvent==='function') logEvent('guest_to_signup',{}); }catch(_){}
-  try{ document.querySelectorAll('.modal-bg').forEach(function(m){ m.remove(); }); }catch(_){}
+  try{ document.querySelectorAll('.modal-bg:not([id])').forEach(function(m){ m.remove(); });  /* :not([id]) is load-bearing. #journal-modal, #payday-modal and #rest-timer-overlay are STATIC elements that carry .modal-bg, so the bare selector deleted them from the DOM permanently. Three of these four sites are crisis paths I added in v434/v439 — meaning that after a person disclosed something serious, openJournal() threw on its first line ('Cannot set properties of null') and the journal composer was dead for the rest of the session. I diagnosed this exact symptom earlier as MY TEST's fault, which it also was; I did not check whether the shipped code did the same thing. It did. */ }catch(_){}
   try{ document.querySelectorAll('.totry-release-ov').forEach(function(o){ o.remove(); }); }catch(_){}
   try{ document.querySelectorAll('.breath-overlay').forEach(function(o){ o.remove(); }); }catch(_){}
   try{ const ac=document.getElementById('auth-container'); if(ac) ac.style.display='flex'; }catch(_){}
@@ -19487,7 +19487,7 @@ function saveEntry(){
   // wrote is refused or thrown back at them — and it is marked so it never becomes AI context again.
   if(_jCrisis){
     try{
-      document.querySelectorAll('.modal-bg').forEach(function(m){ m.remove(); });
+      document.querySelectorAll('.modal-bg:not([id])').forEach(function(m){ m.remove(); });  /* :not([id]) is load-bearing. #journal-modal, #payday-modal and #rest-timer-overlay are STATIC elements that carry .modal-bg, so the bare selector deleted them from the DOM permanently. Three of these four sites are crisis paths I added in v434/v439 — meaning that after a person disclosed something serious, openJournal() threw on its first line ('Cannot set properties of null') and the journal composer was dead for the rest of the session. I diagnosed this exact symptom earlier as MY TEST's fault, which it also was; I did not check whether the shipped code did the same thing. It did. */
       const m = document.createElement('div');
       m.className = 'modal-bg open';
       m.style.alignItems = 'center';
@@ -19624,7 +19624,7 @@ async function logBody(){
     // Track tab could be scrolled past by someone who has just closed the form.
     try{
       if(typeof showCrisisResponse === 'function'){
-        document.querySelectorAll('.modal-bg').forEach(function(m){ m.remove(); });
+        document.querySelectorAll('.modal-bg:not([id])').forEach(function(m){ m.remove(); });  /* :not([id]) is load-bearing. #journal-modal, #payday-modal and #rest-timer-overlay are STATIC elements that carry .modal-bg, so the bare selector deleted them from the DOM permanently. Three of these four sites are crisis paths I added in v434/v439 — meaning that after a person disclosed something serious, openJournal() threw on its first line ('Cannot set properties of null') and the journal composer was dead for the rest of the session. I diagnosed this exact symptom earlier as MY TEST's fault, which it also was; I did not check whether the shipped code did the same thing. It did. */
         const m = document.createElement('div');
         m.className = 'modal-bg open';
         m.style.alignItems = 'center';
@@ -32734,24 +32734,34 @@ function completeEvening(){
   const today=new Date().toLocaleDateString('en-AU');
   const examenToday=(ls('totry_examens')||[]).some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
   const done=document.getElementById('evening-done');
+
+  // THE CRISIS RESPONSE FIRES FIRST, AND UNCONDITIONALLY.
+  // It used to live inside the !examenToday branch below — the one that ends in `return;` — so whether a
+  // person disclosing something serious got the crisis card depended on whether they had already ticked
+  // an unrelated evening ritual. Examen done: no card at all, a success haptic, and a "Want to share
+  // today?" prompt two seconds later. That is the app celebrating on top of a disclosure.
+  // Nothing about someone's state should be conditional on their streak bookkeeping.
+  if(_evCrisis){
+    try{
+      document.querySelectorAll('.modal-bg:not([id])').forEach(function(m){ m.remove(); });
+      const _m = document.createElement('div');
+      _m.className = 'modal-bg open';
+      _m.style.alignItems = 'center';
+      _m.innerHTML = '<div class="modal" style="max-width:92vw"><div class="modal-handle"></div>' +
+        '<div id="evening-crisis-slot"></div>' +
+        '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;margin-top:10px">Close</button></div>';
+      document.body.appendChild(_m);
+      if(typeof showCrisisResponse === 'function') showCrisisResponse('evening-crisis-slot', _evCrisis);
+    }catch(_){ }
+    if(typeof haptic==='function') haptic('warning');
+    if(typeof showToast==='function') showToast('Reflection saved','I read what you wrote. Please look at this.');
+    return;                       // no examen nudge, no completion, no share prompt on top of this
+  }
+
   if(!examenToday){
     haptic('tap');
     // Save the reflection, but the day isn't fully closed until the examen is done.
-    if(_evCrisis){
-      try{
-        document.querySelectorAll('.modal-bg').forEach(function(m){ m.remove(); });
-        const _m = document.createElement('div');
-        _m.className = 'modal-bg open';
-        _m.style.alignItems = 'center';
-        _m.innerHTML = '<div class="modal" style="max-width:92vw"><div class="modal-handle"></div>' +
-          '<div id="evening-crisis-slot"></div>' +
-          '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;margin-top:10px">Close</button></div>';
-        document.body.appendChild(_m);
-        if(typeof showCrisisResponse === 'function') showCrisisResponse('evening-crisis-slot', _evCrisis);
-      }catch(_){ }
-      if(typeof showToast==='function') showToast('Reflection saved','I read what you wrote. Please look at this.');
-    }
-    else if(typeof showToast==='function') showToast('Reflection saved','One last thing — your examen closes the day. Scroll up to begin it.');
+    if(typeof showToast==='function') showToast('Reflection saved','One last thing — your examen closes the day. Scroll up to begin it.');
     const card=document.getElementById('examen-card');
     if(card){ card.scrollIntoView({behavior:'smooth',block:'center'}); card.style.boxShadow='0 0 0 2px var(--go-bd)'; setTimeout(()=>{card.style.boxShadow='';},2000); }
     return;
