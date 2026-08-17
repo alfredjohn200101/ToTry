@@ -1961,7 +1961,7 @@ input:focus,textarea:focus,select:focus{
   <!-- Sabbath prayer (only Sundays — render shown/hidden via JS) -->
   <div class="sabbath-prayer-card" id="sabbath-card" style="display:none">
     <div class="sabbath-title">Sabbath day &#x1f54a;&#xfe0f;</div>
-    <div class="sabbath-text">Rest is also discipline.<br>You don't have to perform today.<br>God designed you to need this.</div>
+    <div class="sabbath-text" id="sabbath-text">Rest is also discipline.<br>You don't have to perform today.<br>God designed you to need this.</div>
   </div>
 
   <!-- Share Day X (moved to bottom — celebratory, not primary) -->
@@ -4721,7 +4721,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v456';
+const APP_VERSION = 'v457';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9319,6 +9319,25 @@ const ECHO_OK = { christianity:true, islam:false, hinduism:false, buddhism:false
 //
 // Each tradition's own fasting season, so the card names THEIRS instead of listing everyone's.
 const FAST_SEASON_NAME = { christianity:'Lent', islam:'Ramadan', hinduism:'Navratri', buddhism:'Uposatha', secular:'' };
+// Copy that assumed one tradition, on surfaces the faith pass never reached.
+// · The Sunday Sabbath card said "God designed you to need this." to EVERY tradition including secular,
+//   whose own contract is "never mention God".
+// · getNextStep — the Home tab's primary call to action — named the examen, a Catholic practice, as the
+//   way everyone closes their day.
+// The registry already knows the right words; these surfaces simply never asked it.
+function _sabbathLine(){
+  const t = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
+  if(t === 'christianity') return 'Rest is also discipline.<br>You don\'t have to perform today.<br>God designed you to need this.';
+  if(t === 'islam')        return 'Rest is also discipline.<br>You don\'t have to perform today.<br>You were made to need it.';
+  if(t === 'hinduism' || t === 'buddhism') return 'Rest is also discipline.<br>You don\'t have to perform today.<br>Stillness is part of the practice, not a pause from it.';
+  return 'Rest is also discipline.<br>You don\'t have to perform today.<br>You were built to need it.';
+}
+function _nextStepCloseSub(){
+  const t = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
+  if(t === 'christianity') return 'Your evening reflection and examen.';
+  return 'Your evening reflection.';
+}
+
 function applyFaithUIGate(){
   try{
     const t = (typeof faithTradition==='function') ? faithTradition() : 'secular';
@@ -9334,6 +9353,7 @@ function applyFaithUIGate(){
     // layer correctly called their book the Qur'an, the Dhammapada and the Stoics. So the app offered a
     // Muslim a Confession tracker as if it were his. "Faith is full but never forced" cuts both ways —
     // full for a Catholic, never imposed on anyone else.
+    try{ const _sb=document.getElementById('sabbath-text'); if(_sb) _sb.innerHTML=_sabbathLine(); }catch(_){ }
     const sac = document.getElementById('bst-sacraments');
     if(sac){
       const christian = (t === 'christianity');
@@ -38393,7 +38413,7 @@ function getNextStep(){
     const examenToday = (ls('totry_examens')||[]).some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
     const eveningToday = (ls('totry_evenings')||[]).some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
     if(!eveningToday || !examenToday){
-      return { text:'Close your day', sub:'Your evening reflection and examen.', action:'reflect' };
+      return { text:'Close your day', sub:_nextStepCloseSub(), action:'reflect' };
     }
   }
   // 4. Morning's done but it's still early and nothing else pressing — gentle prayer nudge.
@@ -39030,7 +39050,7 @@ function computeProactiveNudge(){
   if(wins7 >= 2 && wo7 >= 2){
     return { id:'twofights'+dayKey(now), tone:'win',
       eyebrow:'What I\u2019m noticing',
-      text: hi + 'this week you trained your body ' + wo7 + ' times and won ' + wins7 + ' fights against the urge. These aren\u2019t two separate disciplines \u2014 they\u2019re the same man learning to govern himself. The strength you build under the bar is the same strength that holds in the hard moment. Keep stewarding both.',
+      text: hi + 'this week you trained your body ' + wo7 + ' times and won ' + wins7 + ' fights against the urge. These aren\u2019t two separate disciplines \u2014 they\u2019re one person learning to govern themselves. The strength you build under the bar is the same strength that holds in the hard moment. Keep stewarding both.',
       actions: [{label:'Amen', ghost:true, onclick:'dismissNudge(\'twofights'+dayKey(now)+'\')'}] };
   }
 

@@ -2298,4 +2298,29 @@ H.section('a debt-free date needs a real month, not one tap')
     'Write another passes the prefix it was rendered under');
 }
 
+H.section('copy the faith pass never reached')
+{
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+
+  // The Sunday Sabbath card said "God designed you to need this." to every tradition, including secular —
+  // whose own contract in FAITHS.secular is "never mention God".
+  H.ok(/function _sabbathLine\(/.test(code), 'the Sabbath line is per-tradition');
+  const sl = code.slice(code.indexOf('function _sabbathLine('), code.indexOf('function _sabbathLine(') + 900);
+  H.ok(/=== 'christianity'/.test(sl), 'and "God designed you" is the Christian branch only');
+  const fallback = sl.slice(sl.lastIndexOf('return '));
+  H.ok(!/God/.test(fallback), 'the default carries no religious language');
+  H.ok(/_sabbathLine\(\)/.test(code.replace('function _sabbathLine()', '')), 'and it is applied');
+
+  // getNextStep is the Home tab's primary CTA and named the examen — a Catholic practice — for everyone.
+  H.ok(/function _nextStepCloseSub\(/.test(code), 'the close-your-day label is per-tradition');
+  const ns = code.slice(code.indexOf('function _nextStepCloseSub('), code.indexOf('function _nextStepCloseSub(') + 500);
+  H.ok(/examen/.test(ns) && /=== 'christianity'/.test(ns), 'examen is named only for Christians');
+
+  // The flagship integration insight called every user "the same man learning to govern himself".
+  H.ok(!/same man learning to govern himself/.test(code), 'the nudge no longer assumes the reader is a man');
+  H.ok(/one person learning to govern themselves/.test(code), 'and says it without assuming a sex');
+}
+
 H.report();
