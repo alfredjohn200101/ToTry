@@ -84,8 +84,9 @@ lets anyone act as this app. Alongside it, `ESV_API_KEY` and `USDA_DEFAULT_KEY`.
 All three now come from a `key-proxy` edge function, and every caller degrades instead of breaking
 (verified with all off-origin requests blocked): `searchFood` runs four sources through
 `Promise.allSettled` so FatSecret's absence is a quieter list, and ESV falls back to KJV/ASV/WEB.
-**Still yours: rotate all four values and deploy `key-proxy` with its secrets — the work is inert until
-then, and those values are public forever.**
+**Done 17 Aug:** `key-proxy` is deployed and ESV and USDA are verified working through it (see the
+backend table below). FatSecret still returns `invalid_client` — the id and secret are not a matching
+pair. The four old values remain public in git history forever and must be treated as burned regardless.
 
 **Do we need more API keys for more texts? No.** ESV is the only text API in the app that needs one:
 
