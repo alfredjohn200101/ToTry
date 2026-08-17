@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v466-nokeys'
+const CACHE = 'totry-v467-dhammapada'
 
 const CORE = [
   './',
@@ -53,6 +53,7 @@ self.addEventListener('fetch', e => {
     'exercisedb-api.vercel.app',
     'wger.de',
     'bible.helloao.org',
+    'suttacentral.net',   // Dhammapada (keyless) — never cache scripture requests
     'cpbjr.github.io',
     'bible-api.com',
     'api.esv.org',

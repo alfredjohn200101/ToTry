@@ -2663,6 +2663,44 @@ H.section('no third-party credential ships in a public bundle')
   H.ok(/async function esvPassage\(/.test(code), 'ESV goes through one fetcher');
   H.ok(/totry_esv_key/.test(code) && /totry_usda_key/.test(code),
     "and a person's own key is still honoured as a fallback");
+
+  // Every text source except ESV is keyless, so serving another tradition is never blocked on getting a
+  // credential. If a future source needs one it must go through keyProxy, not a const.
+  for (const host of ['api.alquran.cloud', 'vedicscriptures.github.io', 'bible.helloao.org',
+                      'bible-api.com', 'suttacentral.net']) {
+    const i = code.indexOf(host);
+    H.ok(i > 0, `${host} is used`);
+    // No Authorization header within the same fetch expression as a keyless host.
+    const around = code.slice(Math.max(0, i - 200), i + 300);
+    H.ok(!/Authorization/.test(around), `${host} needs no credential`);
+  }
+}
+
+H.section('a Buddhist reads their own scripture, not a selection of it')
+{
+  const code = H.html.replace(/<!--[\s\S]*?-->/g, '').split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+
+  // Islam had a live Qur'an reader and Hinduism a live Gita reader; Buddhism fell through to
+  // _readBundled() with the 22 hardcoded verses in VS_BUDDHIST, and the subtitle admitted it
+  // ("Selected teachings from the Dhammapada"). A Christian could read 66 books and search them.
+  // That was the multi-faith gap in one line of dispatch.
+  H.ok(/t==='buddhism'\) _readDhammapadaInit\(/.test(code), 'Buddhism dispatches to a real reader');
+  H.ok(!/t==='buddhism'\) _readBundled\(/.test(code), 'and no longer to a bundled selection');
+
+  const m = code.match(/const DHP_CHAPTERS = \[([\s\S]*?)\n\];/);
+  H.ok(!!m, 'the chapter list exists');
+  const chapters = (m ? m[1].match(/\['dhp[\d-]+',/g) || [] : []);
+  H.eq(chapters.length, 26, 'all 26 chapters of the Dhammapada, not a sample');
+
+  const li = code.indexOf('async function _readDhammapadaLoad');
+  const load = li > 0 ? code.slice(li, li + 3000) : '';
+  H.ok(/suttacentral\.net\/api\/bilarasuttas/.test(load), 'it reads the real text');
+  H.ok(!/Authorization/.test(load), 'with no credential — SuttaCentral is keyless');
+  H.ok(/VS_BUDDHIST/.test(load), 'and falls back to the bundled verses when offline, so the tab is never empty');
+  H.ok(/SUJATO/.test(load), 'the translator is credited');
+  // Keys are dhp{verse}:{line}; the dotted ones (dhp1:0.1) are headers, not text.
+  H.ok(/\^dhp\(\\d\+\):\(\\d\+\)\$/.test(load) || /dhp\(\\d\+\)/.test(load),
+    'verse lines are grouped by verse, and headers are excluded');
 }
 
 H.report();

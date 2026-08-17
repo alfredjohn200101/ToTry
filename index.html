@@ -4754,7 +4754,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v466';
+const APP_VERSION = 'v467';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9696,7 +9696,7 @@ function openReader(t){
   if(content) content.innerHTML=_readLoading();
   if(t==='islam') _readQuranInit(sel,content);
   else if(t==='hinduism') _readGitaInit(sel,content);
-  else if(t==='buddhism') _readBundled(sel,content,VS_BUDDHIST);
+  else if(t==='buddhism') _readDhammapadaInit(sel,content);
   else _readBundled(sel,content,VS_SECULAR);
 }
 function _readBundled(sel,content,bank){
@@ -9721,6 +9721,80 @@ async function _readQuranLoad(n){
     if(!en){ const r2=await fetch('https://api.alquran.cloud/v1/surah/'+n+'/en.sahih'); const j2=await r2.json(); en=j2.data.ayahs; }
     content.innerHTML='<div class="card">'+en.map((a,i)=>'<div style="margin-bottom:15px">'+(ar&&ar[i]?'<div dir="rtl" style="font-size:21px;line-height:2.1;color:var(--tx);text-align:right;margin-bottom:5px">'+ar[i].text+'</div>':'')+'<div style="font-size:13.5px;color:var(--tx2);line-height:1.65">'+a.text+' <span style="color:var(--tx3);font-size:11px">('+n+':'+a.numberInSurah+')</span></div></div>').join('')+'</div>';
   }catch(e){ content.innerHTML=_readErr(); }
+}
+// Dhammapada — SuttaCentral (free, NO KEY): all 26 chapters, 423 verses, Bhikkhu Sujato's translation.
+//
+// WHY THIS EXISTS. Islam had a live Qur'an reader and Hinduism a live Gita reader, while Buddhism fell
+// through to _readBundled() with the 22 hardcoded verses in VS_BUDDHIST — and the subtitle admitted it
+// ("Selected teachings from the Dhammapada"). A Christian could read 66 books and search them; a
+// Buddhist got 22 verses on a single screen. That is the multi-faith gap in one line of dispatch.
+//
+// No key needed, which is the general shape here: ESV is the ONLY text API in this app that requires
+// one. alquran.cloud, vedicscriptures, bible.helloao.org, bible-api.com and SuttaCentral are all
+// keyless — so serving another tradition properly is never blocked on getting a credential.
+//
+// Sujato's translation is dedicated to the public domain (CC0), so it can be shown in full; the credit
+// below is courtesy, not obligation. Pāli is shown alongside the English the same way the Qur'an reader
+// shows the Arabic — the source language belongs on the page.
+//
+// Falls back to VS_BUDDHIST when the network is gone, so the tab is never empty.
+const DHP_CHAPTERS = [
+  ['dhp1-20','1. Pairs'],['dhp21-32','2. Diligence'],['dhp33-43','3. The Mind'],
+  ['dhp44-59','4. Flowers'],['dhp60-75','5. Fools'],['dhp76-89','6. The Astute'],
+  ['dhp90-99','7. The Perfected Ones'],['dhp100-115','8. The Thousands'],['dhp116-128','9. Wickedness'],
+  ['dhp129-145','10. The Rod'],['dhp146-156','11. Old Age'],['dhp157-166','12. The Self'],
+  ['dhp167-178','13. The World'],['dhp179-196','14. The Buddhas'],['dhp197-208','15. Happiness'],
+  ['dhp209-220','16. The Beloved'],['dhp221-234','17. Anger'],['dhp235-255','18. Stains'],
+  ['dhp256-272','19. The Just'],['dhp273-289','20. The Path'],['dhp290-305','21. Miscellaneous'],
+  ['dhp306-319','22. Hell'],['dhp320-333','23. Elephants'],['dhp334-359','24. Craving'],
+  ['dhp360-382','25. Mendicants'],['dhp383-423','26. Brahmins'],
+];
+async function _readDhammapadaInit(sel,content){
+  let i=0; try{ if(typeof getDayCount==='function') i=getDayCount()%DHP_CHAPTERS.length; }catch(_){ }
+  if(sel) sel.innerHTML='<select id="dhp-ch" onchange="_readDhammapadaLoad(this.value)" style="'+_selStyle()+'">'+
+    DHP_CHAPTERS.map((c,n)=>'<option value="'+c[0]+'"'+(n===i?' selected':'')+'>'+_escFew(c[1])+'</option>').join('')+'</select>';
+  _readDhammapadaLoad(DHP_CHAPTERS[i][0]);
+}
+async function _readDhammapadaLoad(uid){
+  const content=document.getElementById('read-content'); if(!content) return;
+  content.innerHTML=_readLoading();
+  try{
+    const r=await fetch('https://suttacentral.net/api/bilarasuttas/'+encodeURIComponent(uid)+'/sujato');
+    if(!r.ok) throw new Error('net');
+    const j=await r.json();
+    const tr=j.translation_text||{}, root=j.root_text||{};
+    const order=Array.isArray(j.keys_order)?j.keys_order:Object.keys(tr);
+    // Segment keys are dhp{verse}:{line} — dhp1:1..dhp1:6 are the six lines of verse 1. Keys with a
+    // dotted line number (dhp1:0.1) are the collection/chapter headers, not text.
+    const verses={}, seen=[];
+    order.forEach(function(k){
+      const m=/^dhp(\d+):(\d+)$/.exec(k); if(!m) return;
+      const n=m[1], en=(tr[k]||'').trim(), pli=(root[k]||'').trim();
+      if(!en && !pli) return;
+      if(!verses[n]){ verses[n]={en:[],pli:[]}; seen.push(n); }
+      if(en) verses[n].en.push(en);
+      if(pli) verses[n].pli.push(pli);
+    });
+    if(!seen.length) throw new Error('empty');
+    const title=(DHP_CHAPTERS.find(function(c){ return c[0]===uid; })||['',''])[1];
+    content.innerHTML='<div class="card">'+
+      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:12px">Dhammapada &middot; '+_escFew(title)+'</div>'+
+      seen.map(function(n){
+        const v=verses[n];
+        return '<div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)">'+
+          '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-bottom:5px">'+n+'</div>'+
+          (v.pli.length?'<div style="font-family:Cormorant Garamond,serif;font-size:14px;font-style:italic;color:var(--tx3);line-height:1.75;margin-bottom:7px">'+_escFew(v.pli.join(' '))+'</div>':'')+
+          '<div style="font-size:15px;line-height:1.85;color:var(--tx)">'+_escFew(v.en.join(' '))+'</div>'+
+        '</div>';
+      }).join('')+
+      '<div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-align:center;margin-top:6px;letter-spacing:0.08em">TRANSLATED BY BHIKKHU SUJATO &middot; SUTTACENTRAL &middot; PUBLIC DOMAIN</div>'+
+    '</div>';
+  }catch(e){
+    // Offline or the endpoint moved — show the bundled selection rather than an empty tab.
+    const sel=document.getElementById('read-selector');
+    _readBundled(null,content,VS_BUDDHIST);
+    if(sel && !document.getElementById('dhp-ch')){ /* keep whatever selector is there */ }
+  }
 }
 // Bhagavad Gita — vedicscriptures (free): chapter select + per-verse navigation.
 const GITA_COUNTS=[47,72,43,42,29,47,30,28,34,42,55,20,35,27,20,24,28,78]; // verses per chapter (1–18)
