@@ -4708,7 +4708,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v450';
+const APP_VERSION = 'v451';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -8270,9 +8270,13 @@ function detectCrisis(text){
   // The spans are deliberately SHORT and stop at the object, never running on through a conjunction.
   // A greedy window swallowed the rest of the sentence, so "ending things with my ex and i want to die"
   // lost its disclosure along with the benign part — the suppression has to be narrower than the risk.
-  [/ending things with (?:my |the |her |him |them )?[a-z']{1,14}/g,
-   /keep going to (?:that |the |my )?[a-z']{1,14}/g,
-   /go on (?:this|that|the) (?:cut|diet|program|plan|session|split|block)/g,
+  // The object decides. "ending things with my ex" is a breakup; "ending things with MYSELF" is the thing
+  // this gate exists for — and v444's span matched both, because "myself" is under fourteen characters.
+  // The negative lookahead is the whole safety of this mechanism: suppress only when the object is
+  // plainly another person or a place, never when it is the person, their life, or it all.
+  [/ending things with (?!myself|my life|my own life|it all)(?:my |the |her |him |them )?[a-z']{1,14}/g,
+   /keep going to (?!be |feel |live)(?:that |the |my )?[a-z']{1,14}/g,
+   /go on (?:this|that|the) (?:cut|diet|program|plan|session|split|block)\b/g  /* \b is load-bearing: without it "plan" matched inside "go on this PLANET", so "i can't go on this planet anymore" was silently suppressed as gym talk. Same substring trap that made [Pp]late match TemPLATE in a ratchet earlier the same day. */,
    /killing (?:it|this|the) [a-z]{0,14}/g].forEach(function(re){ t = t.replace(re, ' '); });
   const tNo = t.replace(/'/g, '');
   const _hit = function(list){ for(const p of list){ if(t.includes(p) || tNo.includes(p.replace(/'/g,''))) return true; } return false; };
@@ -8297,6 +8301,11 @@ function detectCrisis(text){
     'want to end it', 'wanna end it', 'ready to end it', 'about to end it',
     'ending things', 'end things tonight',
     "can't go on like this", "can't go on anymore", "can't go on any longer",
+    // Existential forms the list missed entirely — these are not suppression failures, they were
+    // simply never present. Found by probing with phrasings people actually use rather than the
+    // ones already in the list, which is the only way this kind of gap ever surfaces.
+    "go on this earth", "go on in this world", "go on this planet", "be on this earth",
+    "don't want to be alive", "stop existing", "not wake up tomorrow", "never wake up again",
     "can't do this anymore", "can't keep going",
     'no reason to keep going', 'no point in going on', 'nothing to live for',
     'nothing left to live for', 'have a plan to die', 'have a plan to end',

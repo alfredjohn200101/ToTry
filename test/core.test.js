@@ -1992,6 +1992,14 @@ H.section('detectCrisis — measured in both directions, with real phrasings')
     'everyone would be better off without me', 'unaliving myself',
     'no reason to keep going', 'nothing to live for',
     'i\u2019m going to hurt myself',                     // iOS smart apostrophe — has failed OPEN before
+    // v451: the v444 benign-completion suppression SWALLOWED these. "myself" is under fourteen characters,
+    // so the span written to excuse "ending things with my ex" also excused "ending things with myself".
+    'ending things with myself', 'ending things with my life',
+    // And "plan" without a word boundary matched inside "planet", so this read as gym talk.
+    "i can't go on this planet anymore", "i can't go on this earth much longer",
+    'no reason to keep going to be honest',
+    // Existential phrasings the list simply never had.
+    "i don't want to be alive", 'i just want to stop existing', 'i hope i never wake up again',
     // A benign completion must not swallow a real disclosure sharing the same sentence.
     'ending things with my ex and i want to die',
     'no reason to keep going to that gym or anywhere, i want to die',
@@ -2004,6 +2012,7 @@ H.section('detectCrisis — measured in both directions, with real phrasings')
     // Innocent completions of otherwise-serious phrases.
     'ending things with my ex was hard', 'ending things with her was the right call',
     'no reason to keep going to that gym', "i can't go on this cut much longer",
+    "i can't go on this plan much longer",     // the real word the suppression is for
   ];
 
   const missed = MUST_FIRE.filter(t => !detectCrisis(t));
