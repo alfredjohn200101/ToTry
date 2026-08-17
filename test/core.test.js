@@ -2323,4 +2323,24 @@ H.section('copy the faith pass never reached')
   H.ok(/one person learning to govern themselves/.test(code), 'and says it without assuming a sex');
 }
 
+H.section('numbers people are asked to act on have bounds, and settings say what they do')
+{
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+
+  // calcTDEE feeds a calorie target the person is asked to EAT TO, from three free-number inputs with no
+  // bound on any of them. A mistyped weight produced a confident target with no sign anything was wrong.
+  const t = code.slice(code.indexOf('function calcTDEE('), code.indexOf('function calcTDEE(') + 2200);
+  H.ok(/age >= 13 && age <= 100/.test(t), 'age is bounded');
+  H.ok(/weight >= 30 && weight <= 300/.test(t), 'weight is bounded');
+  H.ok(/height >= 120 && height <= 230/.test(t), 'height is bounded');
+  H.ok(t.indexOf('age >= 13') < t.indexOf('const activity'), 'the bounds run before the calculation');
+
+  // The currency setting drives conversion rates only — ~250 hardcoded "$" are not wired to it. It must
+  // not imply otherwise. (A partial symbol sweep is worse than none: mixed symbols on one screen.)
+  H.ok(/Amounts still show a \$ sign/.test(code) || /Amounts still display with a \$ sign/.test(code),
+    'the currency setting says what it actually changes');
+}
+
 H.report();

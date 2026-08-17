@@ -3733,7 +3733,12 @@ Amen.</div></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
         <div>
           <div class="eyebrow">Currency</div>
-          <select id="settings-currency" onchange="savePref('totry_currency',this.value);if(typeof fetchCurrencyRates==='function')fetchCurrencyRates(this.value);showToast('Saved','Currency set to '+this.value)">
+            <!-- Honest until the symbol retrofit lands: this setting drives the conversion rates
+                 (fetchCurrencyRates), and roughly 250 hardcoded "$" across the app are NOT wired to
+                 it. Sweeping only the 43 mechanical concat sites would show some figures in one
+                 currency and some in another, which is worse than being consistently wrong. -->
+            <div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">Used for conversion rates. Amounts still show a $ sign for now.</div>
+          <select id="settings-currency" onchange="savePref('totry_currency',this.value);if(typeof fetchCurrencyRates==='function')fetchCurrencyRates(this.value);showToast('Saved', this.value + ' set for conversion rates. Amounts still display with a $ sign.')">
             <option value="AUD">AUD — Australian Dollar</option>
             <option value="USD">USD — US Dollar</option>
             <option value="GBP">GBP — British Pound</option>
@@ -4721,7 +4726,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v457';
+const APP_VERSION = 'v458';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -37424,6 +37429,13 @@ function calcTDEE(){
   // Persist sex as a known user property — not just for this one calc. The whole app reads it to be
   // gender-aware: calorie math, protein targets, training context, and the sibling's understanding.
   try{ ls('totry_sex', sex); }catch(_){}
+  // SANITY FLOOR. These three feed a calorie target the person is asked to eat to, and there was no
+  // bound on any of them: a mistyped weight of 7 (or 700) produced a confidently-wrong number with no
+  // sign anything was off. Refuse rather than guess — a nonsense target is worse than no target, and this
+  // is the same principle as the ED-safe floor two screens away.
+  if(!(age >= 13 && age <= 100)){ showToast('Check your age', 'Enter an age between 13 and 100.'); return; }
+  if(!(weight >= 30 && weight <= 300)){ showToast('Check your weight', 'Enter a weight between 30 and 300 kg.'); return; }
+  if(!(height >= 120 && height <= 230)){ showToast('Check your height', 'Enter a height between 120 and 230 cm.'); return; }
   const activity=parseFloat(document.getElementById('tdee-activity')?.value||1.55);
   const goal=document.getElementById('tdee-goal')?.value||'maintain';
   // Mifflin-St Jeor equation
