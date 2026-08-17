@@ -3749,9 +3749,21 @@ Amen.</div></div>
         </div>
         <div>
           <div class="eyebrow">Weight unit</div>
-          <select id="settings-weight-unit" onchange="savePref('totry_weight_unit',this.value);showToast('Saved','Weight in '+this.value)">
+          <!-- totry_weight_unit has exactly ONE consumer in the whole file — the "Logged today: 82 kg"
+               line under the weight log. Everywhere else is hardcoded kg: the input placeholder, the
+               weight-trend chart axis, the history rows, the log toast, the body-progress tiles, and the
+               TDEE calculator, whose Mifflin-St Jeor maths takes kilograms. There is no conversion helper
+               anywhere (no kgToLb, no 2.20462). Picking "lb" therefore relabelled one line while every
+               figure stayed kg — and a person entering 180 as pounds had it stored and computed as 180kg,
+               which produces a confidently wrong calorie target.
+               Same call as the currency setting above: say what it actually does rather than sweep half
+               the sites, because mixed units on one screen are worse than being consistently metric and
+               much harder to notice. The real fix is one weight formatter plus interpretation at every
+               input, all-or-nothing. -->
+          <div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">Labels the weight-log line. Everything else is entered and calculated in kg for now.</div>
+          <select id="settings-weight-unit" onchange="savePref('totry_weight_unit',this.value);showToast('Saved', this.value==='lb' ? 'Weight-log label set to lb \u2014 entries are still stored and calculated in kg.' : 'Weight in kg.')">
             <option value="kg">kg</option>
-            <option value="lb">lb</option>
+            <option value="lb">lb (label only)</option>
           </select>
         </div>
         <div>
@@ -4692,8 +4704,16 @@ function ls(k,v){
       // Could not write even after reclaiming. Tell them — a lost save must never look like a saved one.
       if(!_lsQuotaWarned){
         _lsQuotaWarned = true;
-        try{ if(typeof showToast==='function') showToast('Storage full',
-          'This device is out of room, so that did not save. Settings \u2192 Your data \u2192 Export to back up, then clear old progress photos.'); }catch(_){}
+        // SAID TWICE, DELIBERATELY. showToast() opens with `const ex=document.querySelector(
+        // '.milestone-toast'); if(ex)ex.remove();` — so the caller's own success toast, fired
+        // microseconds later in the same tick, deleted this warning before it ever painted. On a full
+        // device the person was told "Saved" while nothing had been written.
+        // The first call is synchronous so anything observing ls() directly still sees it; the second
+        // lands after the caller has had its say, so the last word is the true one.
+        const _quotaWarn = function(){ try{ if(typeof showToast==='function') showToast('Storage full',
+          'This device is out of room, so that did not save. Settings \u2192 Your data \u2192 Export to back up, then clear old progress photos.'); }catch(_){} };
+        _quotaWarn();
+        try{ setTimeout(_quotaWarn, 60); }catch(_){ }
         try{ console.error('[ls] quota exceeded, write dropped:', k); }catch(_){}
       }
       return false;
@@ -4723,7 +4743,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v463';
+const APP_VERSION = 'v464';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5522,7 +5542,18 @@ async function pullFromCloud(){
     const { data, error } = await sb.from('user_data')
       .select('data_key,data_value,updated_at').eq('user_id', currentUser.id);
     if(error){ _setSyncState({ status:'error', error:error.message }); return false; }
-    if(!data){ _setSyncState({ status:'synced', lastSyncAt:Date.now() }); return false; }
+    // data.length===0, NOT just !data. PostgREST resolves a .select() with no matching rows to an
+    // EMPTY ARRAY, which is truthy — so a brand-new account fell straight through this guard to the
+    // `return true` at the end, and proceedAfterAuth reads that return as "this is a returning user".
+    // The result on the app's ONLY sign-in path (email OTP; authGoogle is a disabled stub): a person
+    // signing up for the first time had onboarding hidden, was greeted "Welcome back — your journey
+    // continues", and never saw the name, first-moment, faith or apps steps. totry_onboarded,
+    // totry_name and totry_faith_tradition stayed unwritten, so Home called them "Friend", the faith
+    // registry silently defaulted to secular, and on the NEXT launch checkAuthAndStart's
+    // `isOnboarded || (hasIdentity && hasName)` was false — landing them on the first-run welcome
+    // screen with initApp() never running.
+    // This exact check existed all along in _restoreFromCloud_legacy_unused, which nothing calls.
+    if(!data || data.length === 0){ _setSyncState({ status:'synced', lastSyncAt:Date.now() }); return false; }
     const tsMap = _getKeyTsMap();
     const outbox = _getOutbox();
     // Append-only logs get UNIONED across devices; anything absent from this list falls through to
@@ -6444,7 +6475,7 @@ function scheduleNotifications(){
 // return (tracked so it never repeats until they've gone quiet again).
 function checkGoneQuietWelcome(){
   try{
-    if(!ls('totry_onboarded') && !ls('totry_name')) return;
+    if(!isSetUpPerson()) return;
     const life = (typeof getLifeState==='function') ? getLifeState() : null;
     const daysQuiet = life && life.activity ? life.activity.daysQuiet : null;
     if(daysQuiet == null || daysQuiet < 3) return;
@@ -6516,6 +6547,15 @@ function renderNotifSetting(){
 // move immediately, stored locally. Signing up is offered AFTERWARDS, at the natural moment, framed as
 // "keep this" — never as the toll to get in. Everything a guest does is kept and carried into the
 // account they later make (it all lives in the same local storage the app already syncs from).
+// Someone the app may speak to first. This gate used to read `!totry_onboarded && !totry_name`, and
+// enterAsGuest() writes NEITHER — it writes only totry_guest. So a guest was permanently excluded from
+// the companion check-in AND the gone-quiet welcome: the two things the app does to reach out first,
+// and the ones its own comments call "the keystone of the whole app" and "the single thing the
+// research says cures abandonment". A guest has deliberately come in and used the Feeling Door; they
+// count. Kept as one helper so the two gates cannot drift apart again.
+function isSetUpPerson(){
+  try{ return !!(ls('totry_onboarded') || ls('totry_name') || ls('totry_guest')); }catch(_){ return false; }
+}
 function isGuest(){ try{ return !!ls('totry_guest') && !currentUser; }catch(_){ return false; } }
 function enterAsGuest(){
   try{ ls('totry_guest', true); }catch(_){}
@@ -8954,6 +8994,9 @@ function finishAppsStep(){
 
 // Fork: jump straight into the app. The firstrun-card on Home drips identity/vices/habits/coach.
 async function obQuickFinish(){
+  // Persist what they already told us before leaving. This button sits beside "Continue" on the vices
+  // step and used to drop every tick on the floor — see obPersistVices().
+  try{ if(typeof obPersistVices === 'function') obPersistVices(); }catch(_){ }
   if(typeof finishOnboard === 'function') await finishOnboard();
 }
 // Fork: go set the deeper foundation now (identity → why → season → vices → ready).
@@ -9030,18 +9073,7 @@ function obNext(step){
   }
   // Step 5 -> 6: save vices + partner
   if(step===6){
-    const custom=document.getElementById('ob-custom').value.trim();
-    if(custom)obVices.push(custom);
-    if(obVices.length){
-      const ex=ls('totry_v')||[];
-      // Match the shape addVice() produces. Without startDate, viceCleanDays() returns 0 forever, so
-      // someone who named their vices during onboarding saw "0 days clean" every day no matter how long
-      // they held on — and the live clock and Recovery Timeline never appeared at all. Doing MORE setup
-      // left you worse off than the quick route, which creates vices through addVice().
-      obVices.forEach(n=>{if(!ex.find(v=>v.n===n))ex.push({n,type:(typeof classifyVice==='function'?classifyVice(n):''),mode:'quit',t:'Various situations',w:0,total:0,lastWin:null,lastLoss:null,urgelog:[],startDate:new Date().toISOString(),cleanDaysTotal:0,relapseCount:0,relapseHistory:[]});});
-      ls('totry_v',ex);
-    }
-    ls('totry_partner',hasPartner);
+    obPersistVices();
     document.getElementById('ob-ready-title').textContent='You\'re ready, '+userName+'.';
     document.getElementById('ob-ready-desc').textContent='Your space is set. Every day you open this is a day you chose to try.';
   }
@@ -9053,6 +9085,29 @@ function obNext(step){
     document.querySelectorAll('.ob-dot').forEach((d,i)=>d.classList.toggle('on',i<step-1));
   }
   window.scrollTo(0,0);
+}
+
+// The one place the "what are you fighting?" step reaches storage. It used to live INSIDE obNext(6),
+// which is only reached by "Continue" — so "I'll do this later", sitting right beside it on the same
+// step, called finishOnboard() directly and silently threw away every vice the person had just ticked,
+// their custom entry, and the partner flag. Someone who named porn and scrolling and then chose the
+// quieter-looking button began with an empty Fight tab and no idea why.
+function obPersistVices(){
+  try{
+    const customEl = document.getElementById('ob-custom');
+    const custom = customEl ? customEl.value.trim() : '';
+    if(custom && obVices.indexOf(custom) < 0) obVices.push(custom);
+    if(obVices.length){
+      const ex=ls('totry_v')||[];
+      // Match the shape addVice() produces. Without startDate, viceCleanDays() returns 0 forever, so
+      // someone who named their vices during onboarding saw "0 days clean" every day no matter how long
+      // they held on — and the live clock and Recovery Timeline never appeared at all. Doing MORE setup
+      // left you worse off than the quick route, which creates vices through addVice().
+      obVices.forEach(n=>{if(!ex.find(v=>v.n===n))ex.push({n,type:(typeof classifyVice==='function'?classifyVice(n):''),mode:'quit',t:'Various situations',w:0,total:0,lastWin:null,lastLoss:null,urgelog:[],startDate:new Date().toISOString(),cleanDaysTotal:0,relapseCount:0,relapseHistory:[]});});
+      ls('totry_v',ex);
+    }
+    ls('totry_partner',hasPartner);
+  }catch(_){ }
 }
 
 function selectObSeason(chip){
@@ -13179,7 +13234,7 @@ function maybeShowCompanion(){
     if(document.querySelector('.companion-overlay.open')) return;
     // Only for a set-up user — a brand-new person who hasn't onboarded shouldn't be greeted with
     // "what's pulling at you?" before they've told the app anything. Require onboarding done + a name.
-    if(!ls('totry_onboarded') && !ls('totry_name')) return;
+    if(!isSetUpPerson()) return;
     // And never in the same session onboarding just completed (avoids an abrupt first experience).
     try{ if(sessionStorage.getItem('totry_just_onboarded')) return; }catch(_){}
     // Throttle: at most once per 90 minutes so it forms a reflex without nagging.
@@ -24609,6 +24664,28 @@ function dismissNutSetup(){
   if(typeof haptic==='function') haptic('tap');
 }
 function prefillNutGoals(){
+  // TDEE FIELDS FIRST — deliberately above the `if(!g)return` below, which is about nut goals only and
+  // would silently skip everything after it for anyone who has not set goals yet.
+  //
+  // #tdee-sex had no `selected` and nothing ever prefilled it, so it always read "Male" — and calcTDEE
+  // PERSISTED that to totry_sex. A woman who set her sex in Settings and then opened the calculator had
+  // it silently flipped: her calorie and protein defaults changed (1900/110 -> 2100/170) and her cycle
+  // card disappeared, because cycleOn() requires userSex()==='female'. The control now shows the truth.
+  try{
+    const sx = document.getElementById('tdee-sex');
+    const stored = (typeof userSex==='function') ? userSex() : null;
+    if(sx && (stored === 'male' || stored === 'female')) sx.value = stored;
+    // And show what we already know rather than making someone retype it — an empty field here falls
+    // back to a hardcoded 70kg/175cm, which is a confidently wrong calorie target for most people.
+    const wEl = document.getElementById('tdee-weight');
+    if(wEl && !wEl.value){
+      const body = ls('totry_body') || [];
+      const last = body.filter(b => b && (b.w != null)).sort((a,b) => new Date(b.d||0) - new Date(a.d||0))[0];
+      if(last && last.w) wEl.value = last.w;
+    }
+    const hEl = document.getElementById('tdee-height');
+    if(hEl && !hEl.value){ const h = ls('totry_height'); if(h) hEl.value = h; }
+  }catch(_){ }
   const g=ls('totry_nut_goals');if(!g)return;
   const set=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v;};
   set('nut-goal-cal',g.cal);set('nut-goal-pro',g.pro);set('nut-goal-carb',g.carb);set('nut-goal-fat',g.fat);
@@ -37288,6 +37365,20 @@ async function initApp(){
   if(typeof _maybeRiskWindowGreeting === 'function') setTimeout(_maybeRiskWindowGreeting, 2600);
   // Restore height
   const h=ls('totry_height');const hEl=document.getElementById('settings-height');if(hEl&&h)hEl.value=h;
+  // AND the three daily targets beside it, which were NOT restored. saveAllTargets() reads each field
+  // with a `|| default` fallback, so an empty box is indistinguishable from a deliberate 8000. Someone
+  // who had set 12,000 steps, came back to change only their water goal, and tapped "Save targets" had
+  // their step goal silently reset to 8000 and their sleep goal to 8 — on a settings screen, with a
+  // toast confirming success. An input that feeds a defaulted save MUST show its current value.
+  try{
+    const restore = (id, key) => {
+      const el = document.getElementById(id); if(!el) return;
+      const v = ls(key); if(v !== null && v !== undefined && v !== '') el.value = v;
+    };
+    restore('settings-steps-goal', 'totry_step_goal');
+    restore('settings-sleep-goal', 'totry_sleep_goal');
+    restore('settings-water-goal', 'totry_water_goal');
+  }catch(_){ }
   // Service worker — a PWA/WEB feature only. Inside the native Capacitor shell it intercepts the
   // local capacitor:// requests and, after a CACHE bump, can serve a stale/broken shell → blank
   // screen. Native already loads the bundled files directly, so there we UNREGISTER any existing SW
@@ -37370,6 +37461,17 @@ async function initApp(){
     if(quiet){ setTimeout(()=>{ if(typeof checkGoneQuietWelcome==='function') checkGoneQuietWelcome(); }, 1200); }
     else { setTimeout(()=>{ if(typeof maybeShowCompanion==='function') maybeShowCompanion(); }, 1200); }
   }catch(_){ }
+
+  // LAND ON A HOME THAT IS ACTUALLY RENDERED. renderHomeGreeting, renderLifeWoven, renderNextStep and
+  // checkPreviewBanner have exactly ONE call site between them — the `name==='home'` branch of go() —
+  // and no launch path called it. Only finishOnboard() did, which is why the person who had just
+  // onboarded saw a complete Home and everybody else did not: measured in a browser, a returning guest
+  // on day 3 got 416 characters of Home on launch (a quote, the streak tiles, a habit grid) and 1274
+  // after one tap of the Today nav, gaining "Good evening, Sam.", the single one-action CTA, the whole
+  // "your life, woven" spine and the first-run foundation card that had been sitting at display:none.
+  // Home is already the visible tab at this point, so this renders it rather than switching to it — no
+  // flash. A ?go= deep link is handled on a 350ms timer above and still wins.
+  if(typeof go === 'function') go(window.__currentTab || 'home');
 }
 
 // ── START ─────────────────────────────────────────────────────
@@ -37417,10 +37519,15 @@ function calcTDEE(){
   const age=parseInt(document.getElementById('tdee-age')?.value||25);
   const weight=parseFloat(document.getElementById('tdee-weight')?.value||70);
   const height=parseFloat(document.getElementById('tdee-height')?.value||175);
-  const sex=document.getElementById('tdee-sex')?.value||'male';
-  // Persist sex as a known user property — not just for this one calc. The whole app reads it to be
-  // gender-aware: calorie math, protein targets, training context, and the sibling's understanding.
-  try{ ls('totry_sex', sex); }catch(_){}
+  // A SEX ALREADY STATED WINS over this dropdown, always. prefillNutGoals() makes the control show the
+  // truth, but this is the belt as well as the braces: if prefill has not run for any reason, the maths
+  // still uses what the person actually told us, and the calculator cannot overwrite it. Settings ->
+  // About you is where that changes. Persisted here only when nothing is known yet.
+  const _storedSex = (typeof userSex==='function') ? userSex() : null;
+  const sex = (_storedSex === 'male' || _storedSex === 'female')
+    ? _storedSex
+    : (document.getElementById('tdee-sex')?.value || 'male');
+  if(!_storedSex){ try{ ls('totry_sex', sex); }catch(_){} }
   // SANITY FLOOR. These three feed a calorie target the person is asked to eat to, and there was no
   // bound on any of them: a mistyped weight of 7 (or 700) produced a confidently-wrong number with no
   // sign anything was off. Refuse rather than guess — a nonsense target is worse than no target, and this

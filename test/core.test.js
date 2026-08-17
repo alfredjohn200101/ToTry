@@ -2509,4 +2509,69 @@ H.section('every journal-shaped surface meets a disclosure, and keeps the words'
   H.ok(/tel:131114/.test(ed), 'and so is Lifeline');
 }
 
+H.section('the first five minutes: a new person is not mistaken for a returning one')
+{
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  const fnBody = (name) => {
+    const m = code.match(new RegExp('function\\s+' + name + '\\s*\\('));
+    if (!m) return '';
+    let i = code.indexOf('{', m.index) + 1, d = 1;
+    while (i < code.length && d) { const c = code[i]; if (c === '{') d++; else if (c === '}') d--; i++; }
+    return code.slice(m.index, i);
+  };
+
+  // BLOCKER. PostgREST resolves a .select() with no matching rows to an EMPTY ARRAY, which is truthy —
+  // so `if(!data)` let a brand-new account fall through to `return true`, and proceedAfterAuth reads
+  // that as "returning user". On the app's only sign-in path (email OTP; authGoogle is a disabled stub)
+  // a first-time person had onboarding hidden, was greeted "Welcome back", never saw the name/faith/
+  // first-moment steps, and — with totry_onboarded never written — landed on the first-run welcome
+  // screen on their NEXT launch with initApp() never running. The correct check existed all along in
+  // _restoreFromCloud_legacy_unused, which nothing called.
+  const pull = fnBody('pullFromCloud');
+  H.ok(pull.length > 0, 'pullFromCloud exists');
+  H.ok(/if\(!data \|\| data\.length === 0\)/.test(pull),
+    'an empty cloud result is not treated as a restored account');
+  H.ok(!/if\(!data\)\{/.test(pull), 'and the null-only guard is gone');
+
+  // renderHomeGreeting / renderLifeWoven / renderNextStep / checkPreviewBanner have one call site
+  // between them — go()'s home branch — and no launch path called it, so every returning person and
+  // every guest got a Home with no greeting, no one-action CTA, an empty life-woven spine and the
+  // first-run card still hidden. Measured: 416 chars on launch vs 1274 after one nav tap.
+  const init = fnBody('initApp');
+  H.ok(init.length > 0, 'initApp exists');
+  H.ok(/go\(window\.__currentTab \|\| 'home'\)/.test(init), 'launch renders the Home it lands on');
+
+  // "I'll do this later" sat beside "Continue" on the vices step and called finishOnboard() directly,
+  // skipping the only code that persisted obVices — so every tick, the custom entry and the partner
+  // flag were dropped, and the person began with an empty Fight tab.
+  H.ok(/function obPersistVices\(/.test(code), 'the vices step has one persistence path');
+  const quick = fnBody('obQuickFinish');
+  H.ok(/obPersistVices\(/.test(quick), 'and "I\'ll do this later" uses it before leaving');
+
+  // The two reach-out-first mechanisms gated on `!totry_onboarded && !totry_name`, and enterAsGuest
+  // writes NEITHER — only totry_guest. A guest was permanently excluded from the companion check-in
+  // ("the keystone of the whole app") and the gone-quiet welcome.
+  H.ok(/function isSetUpPerson\(/.test(code), 'one helper decides who the app may speak to first');
+  H.ok(/totry_guest/.test(fnBody('isSetUpPerson')), 'and a guest counts');
+  H.ok(!/if\(!ls\('totry_onboarded'\) && !ls\('totry_name'\)\) return;/.test(code),
+    'the old two-key gate is gone from both sites');
+
+  // A dropdown must not overwrite something the person actually told us.
+  const tdee = fnBody('calcTDEE');
+  H.ok(/_storedSex/.test(tdee), 'calcTDEE prefers a sex already stated');
+  H.ok(/if\(!_storedSex\)/.test(tdee), 'and only persists when nothing is known yet');
+  H.ok(/tdee-sex/.test(fnBody('prefillNutGoals')), 'and the control is prefilled to show the truth');
+
+  // An input feeding a defaulted save must show its current value, or saving one field resets another.
+  const pf = fnBody('initApp');
+  H.ok(/settings-steps-goal/.test(pf) && /settings-sleep-goal/.test(pf) && /settings-water-goal/.test(pf),
+    'the daily targets are restored before they can be re-saved');
+
+  // Settings that change less than they imply must say so — same call as the currency setting.
+  H.ok(/label only/.test(H.html) && /still stored and calculated in kg/.test(H.html),
+    'the weight unit says what it actually does');
+}
+
 H.report();
