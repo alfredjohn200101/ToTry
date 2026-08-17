@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v455-csv-dates'
+const CACHE = 'totry-v456-honest-projection'
 
 const CORE = [
   './',

@@ -2273,4 +2273,29 @@ H.section('CSV dates are day-first, and destructive taps ask first')
   H.eq(unconfirmed, ['deleteFoodEntry'], 'only the trivially-reversible delete skips its confirm');
 }
 
+H.section('a debt-free date needs a real month, not one tap')
+{
+  // monthlyPaymentRate required only 2 payments. The payday allocator books several in ONE TAP, so that
+  // was satisfied instantly while the span was ~0 days — and with months floored at 1, the whole lump
+  // became the amount this person supposedly pays EVERY month. One tap produced a debt-free date years
+  // early, on the screen someone is most likely to believe and least able to check.
+  const { monthlyPaymentRate } = H.load(['monthlyPaymentRate'], { ls: () => H.__pays });
+  const day = d => new Date(Date.now() - d * 86400000).toISOString();
+
+  H.__pays = [{ amt: 500, ts: day(0) }, { amt: 300, ts: day(0) }, { amt: 200, ts: day(0) }];
+  H.eq(monthlyPaymentRate(), null, 'three payments in one tap is not a monthly rate');
+
+  H.__pays = [{ amt: 500, ts: day(7) }, { amt: 500, ts: day(0) }];
+  H.eq(monthlyPaymentRate(), null, 'a week of history is not a month');
+
+  H.__pays = [{ amt: 500, ts: day(90) }, { amt: 500, ts: day(60) }, { amt: 500, ts: day(30) }];
+  const r = monthlyPaymentRate();
+  H.ok(r > 400 && r < 620, 'three months of real payments gives ~500/mo (got ' + Math.round(r) + ')');
+
+  // And the composer's "Write another" must carry its own prefix, or in the faith home it reads the
+  // Christian panel's empty textarea and silently does nothing.
+  H.ok(/generateIntentionPrayer\(\\''\+pfx\+'\\'\)/.test(H.html) || /pfx\+'\\'\)">Write another/.test(H.html),
+    'Write another passes the prefix it was rendered under');
+}
+
 H.report();

@@ -4721,7 +4721,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v455';
+const APP_VERSION = 'v456';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -19313,7 +19313,7 @@ async function generateIntentionPrayer(pfx){
       out.style.display='block';
       out.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">A prayer for this</div>'+
         '<div style="font-family:Cormorant Garamond,serif;font-size:16px;font-style:italic;line-height:1.75;color:var(--tx);margin-bottom:12px">'+prayer.trim().replace(/</g,'&lt;')+'</div>'+
-        '<div style="display:flex;gap:8px"><button class="btn primary" style="flex:1;font-size:12px" onclick="savePrayerToList(window.__lastAIPrayer, &apos;'+(intention.trim().slice(0,30).replace(/'/g,"")).replace(/"/g,'')+'&apos;)">Save to my prayers</button><button class="btn" style="flex:1;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="generateIntentionPrayer()">Write another</button></div>'+aiTag();
+        '<div style="display:flex;gap:8px"><button class="btn primary" style="flex:1;font-size:12px" onclick="savePrayerToList(window.__lastAIPrayer, &apos;'+(intention.trim().slice(0,30).replace(/'/g,"")).replace(/"/g,'')+'&apos;)">Save to my prayers</button><button class="btn" style="flex:1;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="generateIntentionPrayer(\''+pfx+'\')">Write another</button></div>'+aiTag();
     } else if(out){ out.style.display='block'; out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t write that just now. Try again in a moment.</div>'; }
   }catch(e){ if(out){ out.style.display='block'; out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t reach the coach right now.</div>'; } }
   finally{ if(btn){ btn.textContent='Write my prayer'; btn.disabled=false; } }
@@ -27542,6 +27542,14 @@ function monthlyPaymentRate(){
   // the money ever will, and it also suppresses the "the interest is outrunning your payments" warning,
   // which is the one thing that person most needs to hear. Scale the span up by one average interval so
   // the last payment is credited with the period it actually bought.
+  // A SPAN OF ONE DAY IS NOT A MONTHLY RATE. The payday allocator books several payments in a single tap,
+  // so pays.length >= 2 is satisfied instantly while spanDays is ~0 — and with months floored at 1 below,
+  // the entire lump was reported as the amount this person pays EVERY month. One tap of the allocator
+  // therefore produced a debt-free date years too soon, on the screen someone is most likely to believe.
+  // Distinct DAYS is the honest unit, and a real month of history is the honest minimum: until then this
+  // returns null, which callers already treat as "not enough dated history to say" and print no date.
+  const distinctDays = new Set(pays.map(p => new Date(_T(p)).toLocaleDateString('en-AU'))).size;
+  if(distinctDays < 2 || spanDays < 25) return null;
   const n=pays.length;
   const covered=spanDays * (n/(n-1));
   const months=Math.max(1, covered/30.44);            // never claim a rate faster than monthly
