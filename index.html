@@ -2328,7 +2328,10 @@ input:focus,textarea:focus,select:focus{
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
       <span id="nut-day-title" style="font-size:13px;font-weight:500;color:var(--tx)">Today</span>
       <span style="display:flex;align-items:baseline;gap:10px">
-        <button type="button" id="nut-gentle-toggle" onclick="toggleNutGentle()" title="Turn the numbers off — log food without seeing calories" style="background:none;border:none;padding:0;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:0.06em;cursor:pointer;text-transform:uppercase">numbers on</button>
+        <!-- 59×12 measured. This one matters more than its size suggests: it is how someone in
+             recovery from disordered eating turns the calorie numbers off, and a 12px-tall target is
+             a poor way to offer that. Padding + equal negative margin, so nothing moves. -->
+        <button type="button" id="nut-gentle-toggle" onclick="toggleNutGentle()" title="Turn the numbers off — log food without seeing calories" style="background:none;border:none;padding:16px 8px;margin:-16px -8px;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:0.06em;cursor:pointer;text-transform:uppercase">numbers on</button>
         <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3)" id="nut-date"></span>
       </span>
     </div>
@@ -2473,7 +2476,10 @@ input:focus,textarea:focus,select:focus{
   <div id="nut-migrate-card" class="card" style="margin-bottom:12px;display:none;background:linear-gradient(135deg,var(--go-bg),transparent);border:1px solid var(--go-bd)">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
       <div class="eyebrow" style="color:var(--go);margin-bottom:0">Already use MyFitnessPal or another tracker?</div>
-      <button onclick="dismissMigrateCard()" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer;line-height:1;padding:0">&times;</button>
+      <!-- 9.3×16 measured — the smallest control in the app. Padding cancelled by an equal negative
+           margin grows the hit box to ~44 without moving anything on screen; a ::after overlay was
+           tried for this class and reverted because a click 14px outside the box did not fire. -->
+      <button onclick="dismissMigrateCard()" aria-label="Dismiss" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer;line-height:1;padding:14px;margin:-14px">&times;</button>
     </div>
     <p style="font-size:13px;color:var(--tx2);line-height:1.6;margin:8px 0 10px">Bring your whole food history with you — no re-logging. Export a CSV from your current app, then import it here once.</p>
     <details style="margin-bottom:10px">
@@ -4717,7 +4723,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v461';
+const APP_VERSION = 'v462';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }

@@ -1,8 +1,85 @@
 # What's left before this is worth putting on the App Store
 
-Written 14 Aug 2026. **Updated at v443** — every blocker is closed and four whole defect CLASSES are
-shut, not four bugs. Based on two adversarial sweeps (152 agents, 46 confirmed findings) plus a day of
-driving the real app. This is the honest version, not the encouraging one.
+Written 14 Aug 2026. **Updated at v461** — every blocker is closed and seven defect CLASSES are shut,
+not seven bugs. Based on two adversarial sweeps (152 agents, 46 confirmed findings), a day of driving
+the real app, and a pass (v459–v461) that stopped auditing and started making the half-built things
+work. This is the honest version, not the encouraging one.
+
+---
+
+## v459–v461: the seventh class — *built, complete, and unreachable*
+
+The most useful thing found since v443, because it is not a bug list — it is one shape that kept
+recurring, in three different forms. In every case the code was finished, correct, and could not be
+reached, so it parsed, tested green, and did nothing.
+
+| form | instance | what the person lost |
+|---|---|---|
+| a renderer with no container | `renderWorkoutHistory` → `#pt-history-list` never existed | a workout logged in the app could **never be reopened**; PRs sat under a permanently empty heading after a "New PR!" toast |
+| a renderer with no container | `searchBible` → `#br-search-results` never existed, and it **threw** on the null node | you could not search scripture at all in a faith-rooted app — only browse book by chapter |
+| a panel with no control | `setPTTab` handled `'routines'`, no button ever passed it | the whole routine feature: build one, save it, assign it to a day, starter templates |
+| two functions never connected | `logLoss()` accepts a backdate, `promptLossDate()` collects one | a slip admitted today restarted the clock **from today** — the record quietly lied |
+| a read of an element that moved | `saveAllTargets` read `#settings-cal-goal` | it saved nothing for calories/protein while toasting *"All daily targets updated."* |
+
+**All five are fixed and verified in a real browser**, not just by test.
+
+### What the class teaches
+
+`npm test` was green at 732 while every tap on the Fight tab threw — a `const` I deleted with its user
+left behind. Source-pattern tests cannot see this. What catches it is **driving the app**: a walk of
+all 19 sub-panels as two different people found it in one run, and found a defect in v459's own work
+(imported Hevy/Strava sessions render `undefined — Day undefined`, because only the in-app logger
+writes `date`/`day`/`completedSets` — and imported rows are the ones most people have).
+
+New ratchets encode the class itself, not just its instances: every value of every sub-tab switcher
+must have a control that passes it (14 panels), and the containers must exist.
+
+### Dead code was deleted, for a reason (v461)
+
+Ten complete unreachable functions and ~40 lines of markup, ~11KB. Not tidying — each was a **closed
+defect class sitting pre-built, one caller away from reopening**:
+
+- `showContextualScripture()` — hardcoded Christian verses keyed by context, **no tradition check
+  anywhere in it**. That is the v431/v440 bug fully built and waiting, in a codebase that produced
+  three instances of that same mistake on three separate passes.
+- `requestNotifications` / `scheduleReminders` / `saveReminderTimes` — a **second reminder system**
+  writing different keys than the live one. Two sources of truth for when the app may speak to someone.
+- `saveMealPlan()` — wrote a store nothing has ever read, and toasted *"Find it in your saved meal
+  plans"*, a place that does not exist.
+- the craving panel — five functions behind a panel `setFightTab` went out of its way to keep hidden.
+
+### The Feeling Door is healthy — and now covered
+
+Roadmap item 4 asked for it to be live-tested. All ten paths were driven as a secular person with
+nothing set up and as a Muslim with one vice: **every one opens a real surface with a real next
+action**, and none leaks Christian vocabulary. Persona assertions went 122 → 484.
+
+Both "failures" seen while writing that test were the measurement, not the app — the door is
+`#feel-door`/`.feel-chip`, not a `.modal-bg`, and "the pull" with no vice hands off to
+`#companion-overlay`. This is the fifth time in this project the broken thing was the ruler. The suite
+was then **proved able to fail** by injecting a throw into `openFeelingDoor` (4 clean failures naming
+the persona) — and the first injection attempt silently didn't apply, which would have recorded a
+false pass.
+
+### Two accessibility leads were stale, and one is real
+
+Re-measured across all seven tabs with money and list data seeded (the omission that hid the worst
+controls from two earlier audits):
+
+- **"VoiceOver names eight destructive buttons 'Close'" — not reproducible.** Zero unnamed controls.
+- **"The Soul tab has no focusable elements" — not reproducible.** It has 12; no tab has zero.
+- **Tap targets are real**: 107 under 44pt, but only 6 under 24pt. The two worst were fixed by
+  measurement (the migrate-card × at **9.3×16**, and the "numbers on" toggle at 59×12 — which is how
+  someone in recovery from disordered eating turns calorie numbers off, a poor thing to hide behind a
+  12px target). Four remain: three are inline text links with other routes to the same place, one is a
+  bill ✓ sitting beside a delete ×, which needs the row laid out taller rather than a padding trick.
+
+### One thing only the account owner can fix
+
+`ESV_API_KEY` is hardcoded in the bundle, so it is readable by anyone viewing source on the live site.
+api.esv.org issues keys per person; someone else's use can rate-limit or revoke it and take the ESV
+reader down for everyone. The fix is to proxy it through the Supabase edge function the way AI calls
+already are, and rotate the key. Documented at the constant. A duplicate unused copy was deleted.
 
 ## The headline
 
