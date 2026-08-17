@@ -2574,4 +2574,62 @@ H.section('the first five minutes: a new person is not mistaken for a returning 
     'the weight unit says what it actually does');
 }
 
+H.section('a store that is read must be a store that is written')
+{
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  const fnBody = (name) => {
+    const m = code.match(new RegExp('function\\s+' + name + '\\s*\\('));
+    if (!m) return '';
+    let i = code.indexOf('{', m.index) + 1, d = 1;
+    while (i < code.length && d) { const c = code[i]; if (c === '{') d++; else if (c === '}') d--; i++; }
+    return code.slice(m.index, i);
+  };
+
+  // Instance SIX of this app's most persistent class — a Christian surface on a default path — and the
+  // first to reach a person's own habit list rather than a screen they could walk away from: every new
+  // person, secular included, was seeded a "Prayer / scripture" habit.
+  H.ok(/function faithHabitName\(/.test(code), 'the spiritual habit is named per tradition');
+  const fh = fnBody('faithHabitName');
+  H.ok(/Stillness \/ reflection/.test(fh), 'and a secular person gets a secular one');
+  H.ok(/Salah/.test(fh) && /Puja/.test(fh) && /Meditation/.test(fh), 'each tradition gets its own name');
+  const ih = fnBody('initHabits');
+  H.ok(/faithHabitName\(\)/.test(ih), 'the seed uses it');
+  H.ok(!/\{n:'Prayer \/ scripture'/.test(ih), 'and no longer hardcodes prayer for everyone');
+
+  // Three keys that were READ and never written. Each one is a feature that could never fire.
+  // Asserted on the CONCATENATED form, not the bare prefix: `totry_water_` is also the start of
+  // totry_water_goal, a legitimate key, and the loose version failed on it the moment it was written.
+  // Exactly the substring trap that made [Pp]late match TemPLATE and `plan` match PLANet in this suite.
+  H.ok(!/totry_water_'\s*\+/.test(code), 'the water habit no longer reads a key nothing writes');
+  H.ok(!/totry_vice_amt_/.test(code), 'the per-vice cost override no longer reads a key nothing writes');
+  H.ok(/function waterMlOn\(/.test(code), 'water is read from the store that is actually written');
+  H.ok(/costAmount/.test(fnBody('logWin')) || /costAmount/.test(code), "and a person's own vice cost is used");
+
+  // The share card counted wins out of the MONEY log, which is only written for seven regex-matched
+  // vice names — so porn, scrolling and gaming showed 0 wins however many were actually won.
+  H.ok(!/todayWins=\(ls\('totry_vice_savings_log'\)/.test(code.replace(/\s/g, '')),
+    'share-card wins do not come from the money log');
+  H.ok(/todayWins=\(ls\('totry_fight_log'\)/.test(code.replace(/\s/g, '')),
+    'they come from the fight log, where every win is recorded');
+
+  // A throttle that is written and never read is not a throttle. All three call sites are weigh-in
+  // saves, so the same +/-150 shift re-fired on every weigh-in.
+  const adj = fnBody('adjustCaloriesFromWeightTrend');
+  H.ok(/lastCheck/.test(adj) && /_days < 7/.test(adj), 'the calorie adjustment reads its own throttle');
+
+  // Failures a person must be told about, because they had already been promised the opposite.
+  const hp = fnBody('handleProgressPhoto');
+  H.ok(/reader\.onerror/.test(hp) && /img\.onerror/.test(hp), 'an unreadable photo is reported');
+  const gh = fnBody('syncGoogleHealth');
+  H.ok(/needs reconnecting/.test(gh), 'an expired Google token is reported, not swallowed');
+  const ad = fnBody('addDebt');
+  H.ok(/Who is it owed to/.test(ad) && /How much is owed/.test(ad), 'add-a-debt says which field is missing');
+
+  // Honesty at the guest door, where the choice is actually made.
+  H.ok(/Kept on this device only/.test(H.html), 'a guest is told where their data lives');
+  H.ok(/Your days follow this device/.test(H.html), 'and the timezone setting stops implying otherwise');
+}
+
 H.report();

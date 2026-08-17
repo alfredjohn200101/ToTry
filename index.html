@@ -1138,7 +1138,12 @@ input:focus,textarea:focus,select:focus{
       <div style="flex:1;height:1px;background:var(--bd)"></div>
     </div>
     <button class="btn" id="auth-guest-btn" onclick="enterAsGuest()" style="font-size:13.5px;padding:13px;background:transparent;border:1px solid var(--go-bd);color:var(--go)">Something&apos;s pulling at me right now &#8594;</button>
-    <div style="font-size:11.5px;color:var(--tx3);text-align:center;margin-top:8px;line-height:1.55">No account, no setup. Just help, right now.</div>
+    <!-- The second line is the part that was missing. The guest door promised "no account, no setup"
+         and never mentioned the cost: everything a guest does lives in this browser only, and the sole
+         offer of an account was buried inside theRelease overlay — reachable only by completing a full
+         release flow. Someone could log a week of real work and lose all of it by clearing their
+         browser, having never been told. Say it at the door, where the choice is actually being made. -->
+    <div style="font-size:11.5px;color:var(--tx3);text-align:center;margin-top:8px;line-height:1.55">No account, no setup. Just help, right now.<br><span style="opacity:0.85">Kept on this device only \u2014 you can add an account later to keep it safe.</span></div>
 
     <div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-align:center;margin-top:18px;line-height:1.6;letter-spacing:0.05em">
       Your email is your account.<br>No password needed. Sign in anytime with a code.
@@ -3784,7 +3789,13 @@ Amen.</div></div>
       
       <div style="margin-bottom:10px">
         <div class="eyebrow">Timezone</div>
-        <select id="settings-timezone" onchange="savePref('totry_timezone',this.value);showToast('Saved','Timezone updated')">
+        <!-- totry_timezone has three occurrences in the whole file: this write, the cloud-sync key list,
+             and this select's own restore. NOTHING reads it. Every date in the app comes from the
+             device's own clock via toLocaleDateString('en-AU'), which is what a person actually wants —
+             so the honest thing is to say the device decides, rather than imply a setting that does
+             nothing. Same call as the currency and weight-unit settings above. -->
+        <div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">Your days follow this device's clock. Kept for a future export option.</div>
+        <select id="settings-timezone" onchange="savePref('totry_timezone',this.value);showToast('Noted','Your days still follow this device\u2019s clock.')">
           <option value="auto">Auto-detect from device</option>
           <option value="Australia/Melbourne">Melbourne (AEDT/AEST)</option>
           <option value="Australia/Sydney">Sydney</option>
@@ -4743,7 +4754,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v464';
+const APP_VERSION = 'v465';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -16302,9 +16313,23 @@ function logWin(){
     else if(/gambl|bet/.test(viceName))savedNow=30;
     else if(/spend|shop/.test(viceName))savedNow=25;
     else if(/food binge|junk|fast food/.test(viceName))savedNow=15;
-    // Use custom amount if set
-    const customAmt=ls('totry_vice_amt_'+vices[curVice].n);
-    if(customAmt && customAmt > 0)savedNow=customAmt;
+    // The person's OWN figure wins over the guess table above. This used to read
+    // ls('totry_vice_amt_'+name) — a key that occurs exactly once in this file, this read, and that
+    // nothing has ever written, so the override was permanently unreachable and everyone got the
+    // hardcoded guess. The real number is captured by saveViceCost() on the vice itself, which even
+    // toasts a confirmation, so a person who took the trouble to enter what it costs them was told it
+    // had been recorded and then never saw it used here.
+    try{
+      const _v = vices[curVice];
+      const _amt = _v && parseFloat(_v.costAmount);
+      if(_amt > 0){
+        const _uses = parseFloat(_v.costUses);
+        // costPer is the period the amount covers; costUses is how many times in that period. One
+        // avoided use is worth amount/uses, falling back to the whole amount when they never said.
+        savedNow = (_uses > 0) ? (_amt / _uses) : _amt;
+        savedNow = Math.round(savedNow * 100) / 100;
+      }
+    }catch(_){ }
     
     if(savedNow > 0){
       const savings=ls('totry_vice_savings_log')||[];
@@ -17857,17 +17882,43 @@ function getStreak(){
   }
   return s;
 }
+// The spiritual habit, named in the person's own tradition. "Prayer / scripture" was seeded for
+// EVERYONE, including the secular default — the sixth instance of this app's most persistent bug class
+// (a Christian surface on a default path), and the first one to reach a person's own habit list rather
+// than a screen they could walk away from. Written out explicitly rather than assembled from the
+// registry's generic fields because these are the names people actually recognise; the same reason
+// _sabbathLine() and _nextStepCloseSub() are explicit.
+function faithHabitName(){
+  const f = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
+  if(f === 'christianity') return 'Prayer / scripture';
+  if(f === 'islam')        return 'Salah / Qur\u2019an';
+  if(f === 'hinduism')     return 'Puja / Gita';
+  if(f === 'buddhism')     return 'Meditation / sutta';
+  return 'Stillness / reflection';
+}
 function initHabits(){
   loadH();
   if(!habits.length){
     habits=[
       {n:'Morning ritual done',d:[0,0,0,0,0,0,0]},
       {n:'No vice today',d:[0,0,0,0,0,0,0]},
-      {n:'Prayer / scripture',d:[0,0,0,0,0,0,0]},
+      {n:faithHabitName(),d:[0,0,0,0,0,0,0]},
       {n:'Gym session',d:[0,0,0,0,0,0,0]},
       {n:'Hit nutrition goal',d:[0,0,0,0,0,0,0]},
       {n:'Evening check-in',d:[0,0,0,0,0,0,0]},
     ];saveH();
+  } else {
+    // Repair a list that was already seeded before this fix, but ONLY when it is plainly untouched
+    // default: the exact seeded name, never ticked once, and a tradition that does not use it. Someone
+    // who kept the habit, renamed it, or ticked it kept their own list exactly as it is.
+    try{
+      const f = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
+      if(f !== 'christianity'){
+        const i = habits.findIndex(h => h && (h.n||'').trim() === 'Prayer / scripture'
+                                    && Array.isArray(h.d) && h.d.every(x => !x));
+        if(i >= 0){ habits[i].n = faithHabitName(); saveH(); }
+      }
+    }catch(_){ }
   }
 }
 
@@ -17941,8 +17992,9 @@ function autoTickHabits(){
       } else if(/bible|scripture|verse|word|read/.test(name)){
         shouldTick = allSaved.some(v=>v.date===dateStr || (v.ts && new Date(v.ts).toLocaleDateString('en-AU')===dateStr));
       } else if(/water|hydrate/.test(name)){
-        const water=ls('totry_water_'+dateStr)||0; const goal=(typeof waterGoalGlasses==='function')?waterGoalGlasses():8;
-        shouldTick = water>=goal;
+        const water=(typeof waterMlOn==='function')?waterMlOn(dateStr):0;
+        const goal=(typeof waterBaseGoal==='function')?waterBaseGoal():2500;   // both in ml now
+        shouldTick = water>0 && water>=goal;
       }
       // Re-assert directly from live data every time (idempotent). This prevents the
       // "habits disappear after sync" desync — auto-tick ADDS based on real activity and
@@ -17991,9 +18043,9 @@ function autoTickHabits(){
       shouldTick=saved.some(v=>v.date===today || (v.ts && new Date(v.ts).toLocaleDateString('en-AU')===today));
     }
     else if(/water|hydrate/.test(name)){
-      const water=ls('totry_water_'+today)||0;
-      const goal=(typeof waterGoalGlasses==='function')?waterGoalGlasses():8;
-      shouldTick=water>=goal;
+      const water=(typeof waterMlOn==='function')?waterMlOn(today):0;
+      const goal=(typeof waterBaseGoal==='function')?waterBaseGoal():2500;     // both in ml now
+      shouldTick=water>0 && water>=goal;
     }
     else if(/check.?in|mood|energy/.test(name)){
       shouldTick=ls('totry_checkin_last')===today;
@@ -19870,6 +19922,18 @@ async function logBody(){
 function adjustCaloriesFromWeightTrend(){
   const entries = ls('totry_body') || [];
   if(entries.length < 3) return; // Need at least 3 data points
+  // HONOUR THE THROTTLE THAT WAS ALREADY BEING WRITTEN. totry_weight_trend stores a lastCheck on every
+  // adjustment and nothing ever read it, while all three call sites are weigh-in saves — so someone who
+  // logged their weight three times in a week had the same +/-150 calorie shift applied three times,
+  // compounding one weekly decision into a 450-calorie swing they never agreed to. A weight trend is a
+  // weekly signal; act on it weekly.
+  try{
+    const _prev = ls('totry_weight_trend');
+    if(_prev && _prev.lastCheck){
+      const _days = (Date.now() - new Date(_prev.lastCheck).getTime()) / 86400000;
+      if(_days >= 0 && _days < 7) return;
+    }
+  }catch(_){ }
   
   // let, not const: the floor fix below re-derives all four macros and rebinds this. As a const it
   // parsed perfectly and threw "Assignment to constant variable" only when a weight trend actually
@@ -20517,10 +20581,30 @@ function handleProgressPhoto(event){
   const total = images.length;
   
   // Process each image: compress to max 720px long edge, store as JPEG
+  // Every other image path in this file (the meal photo, the scale screenshot, the body photo) binds
+  // reader.onerror and img.onerror. This one bound neither, so a HEIC the browser cannot decode, a
+  // truncated file, or a photo picked from a cloud album that failed to download produced NOTHING: no
+  // toast, no row, no error — the person tapped, waited, and concluded the app was broken. The
+  // `processed === total` counter also never completed, so even the successful photos in a multi-select
+  // were never rendered or reported.
+  let failed = 0;
+  const _photoFailed = (why) => {
+    failed++;
+    if(failed + processed >= total){
+      if(typeof renderProgressPhotos === 'function') renderProgressPhotos();
+      if(typeof showToast === 'function'){
+        showToast(processed ? 'Some photos did not save' : 'Could not read that photo',
+          processed ? (processed + ' of ' + total + ' saved. ' + failed + ' could not be read \u2014 try a JPEG or PNG.')
+                    : 'This device could not read that image. A JPEG or PNG usually works.');
+      }
+    }
+  };
   images.forEach((file, fileIdx) => {
     const reader = new FileReader();
+    reader.onerror = () => _photoFailed('read');
     reader.onload = (e) => {
       const img = new Image();
+      img.onerror = () => _photoFailed('decode');
       img.onload = () => {
         const maxDim = 720;
         const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
@@ -24693,6 +24777,20 @@ function prefillNutGoals(){
 
 // ── WATER TRACKER ─────────────────────────────────────────────
 // Daily cups (default 8). Resets per day. Persists across sessions.
+// Water on a given day, in ML, from the store that is actually written. The two habit auto-tick sites
+// below both read `totry_water_<date>` — a key that appears nowhere else in this file and that nothing
+// has ever written — and compared the resulting 0 against a goal in GLASSES. So a water habit could
+// never tick itself no matter how much someone logged, in an app whose whole pitch is that it notices.
+// The real store is totry_water: an object keyed by the en-AU date string, holding millilitres, with
+// the same pre-ml back-compat getWaterCount() applies.
+function waterMlOn(dateStr){
+  try{
+    const all = ls('totry_water') || {};
+    let v = all[dateStr] || 0;
+    if(v > 0 && v < 50) v = v * 250;   // old data stored cups
+    return v;
+  }catch(_){ return 0; }
+}
 function getWaterCount(){
   const today = new Date().toLocaleDateString('en-AU');
   const water = ls('totry_water') || {};
@@ -27646,7 +27744,13 @@ function renderNetWorth(){
     '</div>'
   ).join('');
 }
-function addDebt(){loadF();const n=document.getElementById('dn').value.trim(),t=parseFloat(document.getElementById('dt').value||'0'),p=parseFloat(document.getElementById('dp').value||'0'),due=document.getElementById('dd').value,interest=parseFloat(document.getElementById('di')?.value||'0')||0;if(!n||t<=0)return;debts.push({n,t,p,due,interest});['dn','dt','dp','dd','di'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});saveF();renderFinance();}
+function addDebt(){loadF();const n=document.getElementById('dn').value.trim(),t=parseFloat(document.getElementById('dt').value||'0'),p=parseFloat(document.getElementById('dp').value||'0'),due=document.getElementById('dd').value,interest=parseFloat(document.getElementById('di')?.value||'0')||0;
+  // Was a bare `if(!n||t<=0)return;`. Someone who filled in the amount and the due date but tapped
+  // "Add this debt" before typing who they owe got NOTHING: no row, no toast, no hint which field
+  // was the problem — indistinguishable from the button being broken.
+  if(!n){ if(typeof showToast==='function') showToast('Who is it owed to?','Give the debt a name so you can tell them apart.'); return; }
+  if(!(t>0)){ if(typeof showToast==='function') showToast('How much is owed?','Enter the total amount \u2014 it needs a number above zero.'); return; }
+  debts.push({n,t,p,due,interest});['dn','dt','dp','dd','di'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});saveF();renderFinance();}
 // One correct debt ordering for BOTH the list and the payday allocator. Avalanche ranks by interest
 // (highest first, ties → smaller balance), but ONLY when interest is actually known; otherwise it
 // falls back to smallest-balance-first so the "attack this first" star is never on an arbitrary debt.
@@ -35184,7 +35288,12 @@ function _renderShareCanvas(style, theme){
   const todayJournal=(ls('totry_journal')||[]).find(j=>new Date(j.ts).toLocaleDateString('en-AU')===today);
   const todayEvening=(ls('totry_evenings')||[]).find(e=>new Date(e.ts).toLocaleDateString('en-AU')===today);
   const todayWorkout=(ls('totry_workouts')||[]).find(w=>w.date===today||new Date(w.ts||'').toLocaleDateString('en-AU')===today);
-  const todayWins=(ls('totry_vice_savings_log')||[]).filter(e=>e.date===today).length;
+  // Counted from totry_fight_log, NOT totry_vice_savings_log. The savings log is only appended when
+  // savedNow > 0, and savedNow comes from a hardcoded seven-entry regex table (weed, vape,
+  // cigarettes, alcohol, gambling, spending, junk food). Lust, porn, doomscrolling and gaming match
+  // none of it — so the people this app was built for saw "0 urges fought and won" on their share
+  // card no matter how many they had actually won. A win is a win whether or not it saved money.
+  const todayWins=(ls('totry_fight_log')||[]).filter(f=>f&&f.won&&f.ts&&new Date(f.ts).toLocaleDateString('en-AU')===today).length;
   const longestStreak = vices.length ? Math.max(...vices.map(v => viceCleanDays(v))) : 0;
   // shareVerseFrom() stashes the exact verse the person tapped in window._verseCardOverride, and the
   // card used to ignore it — so "Make a card" on a mid-craving verse produced a card of whatever
@@ -40243,11 +40352,22 @@ async function getGoogleToken(){
 
 async function syncGoogleHealth(){
   const token = await getGoogleToken();
-  if(!token) return;
+  // A Google refresh token stops working for ordinary reasons — the person changed their password,
+  // revoked app access, or the grant expired. This returned in silence right after telling them
+  // "Refreshing your Google connection", so the connection looked live forever while nothing synced
+  // and no step data ever arrived. Tell them, and say what fixes it.
+  if(!token){
+    if(typeof showToast === 'function') showToast('Google needs reconnecting',
+      'Your Google Health connection expired. Settings \u2192 Connected apps \u2192 reconnect.');
+    return;
+  }
   try{
     const {data, error} = await sb.functions.invoke('google-health-auth', {body:{action:'steps', access_token:token, days:7}});
     if(error || !data || !data.bucket){
       console.error('Google steps error:', error||data);
+      // Also silent before. An honest app says when a sync it announced did not happen.
+      if(typeof showToast === 'function') showToast('Google sync failed',
+        'Could not read your steps just now. Your own logged data is untouched.');
       return;
     }
     // Parse step buckets
