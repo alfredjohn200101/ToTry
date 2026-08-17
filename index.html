@@ -1144,7 +1144,7 @@ input:focus,textarea:focus,select:focus{
          offer of an account was buried inside theRelease overlay — reachable only by completing a full
          release flow. Someone could log a week of real work and lose all of it by clearing their
          browser, having never been told. Say it at the door, where the choice is actually being made. -->
-    <div style="font-size:11.5px;color:var(--tx3);text-align:center;margin-top:8px;line-height:1.55">No account, no setup. Just help, right now.<br><span style="opacity:0.85">Kept on this device only \u2014 you can add an account later to keep it safe.</span></div>
+    <div style="font-size:11.5px;color:var(--tx3);text-align:center;margin-top:8px;line-height:1.55">No account, no setup. Just help, right now.<br><span style="opacity:0.85">Kept on this device only — you can add an account later to keep it safe.</span></div>
 
     <div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-align:center;margin-top:18px;line-height:1.6;letter-spacing:0.05em">
       Your email is your account.<br>No password needed. Sign in anytime with a code.
@@ -4755,7 +4755,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v473';
+const APP_VERSION = 'v474';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7787,7 +7787,7 @@ function buildPTCtx(){
     if(acts.length){ const a = acts[0];
       cardioCtx = '\nMost recent cardio (Strava): ' + (a.type||'activity') + ', ' + (a.distance? (a.distance/1000).toFixed(1)+'km':'') + (a.moving_time? ', '+Math.round(a.moving_time/60)+'min':'')
         + (a.avg_hr? ', avg HR '+a.avg_hr+'bpm':'') + (a.max_hr? ' (max '+a.max_hr+')':'')
-        + (a.calories? ', '+a.calories+' cal':'') + (a.suffer_score? ', effort '+a.suffer_score:'')
+        + ((a.calories && !(typeof nutGentle==='function'&&nutGentle()))? ', '+a.calories+' cal':'') + (a.suffer_score? ', effort '+a.suffer_score:'')
         + '. (Use this real performance data — HR and effort tell you how hard it actually was.)';
     }
   }catch(_){}
@@ -7804,13 +7804,13 @@ RECENT TRAINING:
 ${recentTraining}${cardioCtx}${_ptIntel()}
 
 TODAY SO FAR:
-${nutPromptBlock(todayCals, todayPro, nutGoals.cal, nutGoals.pro, 0).replace(/^- /,'')}
+${nutPromptBlock(todayCals, todayPro, nutGoals.cal, nutGoals.pro, todayEntries.length).replace(/^- /,'')}
 
 THEIR WHOLE LIFE RIGHT NOW (body, mind, and soul — this is what makes you more than a PT; reference it when it's relevant, connect across these domains, but never list it back robotically):
 ${(function(){ try{ return (typeof getLifeState==='function') ? getLifeState().brief : ''; }catch(_){ return ''; } })()}
 
 HOW TO COACH:
-Talk like a knowledgeable coach who actually knows this person's numbers and history — reference them. When they ask for a workout or a meal, be specific (exact exercises, sets, reps, rest; exact foods, calories, protein) BUT also explain the WHY in a sentence or two so they learn, and connect it to their goal and where they are right now. When they're discouraged or inconsistent, address that honestly and constructively — training is mental too. Don't dump a wall of text for a simple question, but when they're asking something real (programming, a plateau, how to structure their week, recovery), give them a genuinely substantial, reasoned answer they could act on today. You have their real data above — use it, never say you don't have access. Be the coach they train hard for because they don't want to let you down.`;
+${(typeof nutGentle==='function'&&nutGentle())?'Talk like a knowledgeable coach who knows this person\u2019s training history \u2014 reference it. Their calorie and macro numbers are DELIBERATELY hidden from them, so describe food in portions and plates, never in figures.':'Talk like a knowledgeable coach who actually knows this person\u2019s numbers and history \u2014 reference them.'} When they ask for a workout or a meal, be specific (exact exercises, sets, reps, rest; exact foods, calories, protein) BUT also explain the WHY in a sentence or two so they learn, and connect it to their goal and where they are right now. When they're discouraged or inconsistent, address that honestly and constructively — training is mental too. Don't dump a wall of text for a simple question, but when they're asking something real (programming, a plateau, how to structure their week, recovery), give them a genuinely substantial, reasoned answer they could act on today. You have their real data above — use it, never say you don't have access. Be the coach they train hard for because they don't want to let you down.`;
 }
 
 function buildCtx(){
@@ -7884,10 +7884,16 @@ function buildCtx(){
   const todayDateStr = new Date().toLocaleDateString('en-AU', {weekday:'short', day:'numeric', month:'short', year:'numeric'});
   const workoutsToday = workouts.filter(w => w.date === todayDateStr);
   const calsBurnedToday = Math.round((ls('totry_calorie_burns') || {})[todayKey] || 0);
+  // Gentle mode is about CALORIE FIGURES, not about food specifically. The nutrition line was fixed and
+  // these two were not, so with numbers off the prompt still carried "Burned 620 cal from training
+  // today" — and my own ratchet passed, because it only checked the line it had already fixed. What the
+  // person turned off was seeing calorie counts; the coach must not read them one screen over.
+  const _gentleNow = (typeof nutGentle==='function' && nutGentle());
   let workoutCtx = '';
   if(workoutsToday.length){
-    workoutCtx = '\nTrained today: ' + workoutsToday.map(w => w.splitFocus || w.type).join(', ') + ' (' + calsBurnedToday + ' cal burned)';
-  } else if(calsBurnedToday > 0){
+    workoutCtx = '\nTrained today: ' + workoutsToday.map(w => w.splitFocus || w.type).join(', ')
+      + (_gentleNow ? '' : ' (' + calsBurnedToday + ' cal burned)');
+  } else if(calsBurnedToday > 0 && !_gentleNow){
     workoutCtx = '\nBurned ' + calsBurnedToday + ' cal from training today';
   }
   
@@ -16783,12 +16789,19 @@ function logWin(){
     try{
       const _v = vices[curVice];
       const _amt = _v && parseFloat(_v.costAmount);
-      if(_amt > 0){
-        const _uses = parseFloat(_v.costUses);
-        // costPer is the period the amount covers; costUses is how many times in that period. One
-        // avoided use is worth amount/uses, falling back to the whole amount when they never said.
-        savedNow = (_uses > 0) ? (_amt / _uses) : _amt;
-        savedNow = Math.round(savedNow * 100) / 100;
+      // THE CONTRACT (line ~17505, and saveViceCost): costPer is 'day' | 'week' | 'use', and costUses is
+      // written ONLY when costPer==='use', where it means USES PER WEEK — not "uses per the period".
+      // My first version divided amount by costUses, which for the only configuration that HAS costUses
+      // divides a per-use price by a weekly frequency: a $15 pack smoked 20 times a week became $0.75
+      // saved per avoided cigarette instead of $15. Wrong in every configuration it fired in.
+      //
+      // What one avoided use is worth:
+      //   costPer 'use'  → costAmount already IS the per-use price. Use it as-is.
+      //   costPer 'day'  → the day's spend, only if they avoid it all day; too generous per single urge,
+      //   costPer 'week' → likewise. For both, fall back to the guess table rather than invent a
+      //                    frequency the person never gave us. A wrong number is worse than a rough one.
+      if(_amt > 0 && String(_v.costPer||'') === 'use'){
+        savedNow = Math.round(_amt * 100) / 100;
       }
     }catch(_){ }
     
@@ -18349,6 +18362,19 @@ function getStreak(){
 // than a screen they could walk away from. Written out explicitly rather than assembled from the
 // registry's generic fields because these are the names people actually recognise; the same reason
 // _sabbathLine() and _nextStepCloseSub() are explicit.
+// Does this habit name mean the spiritual practice, in ANY tradition?
+//
+// autoTickHabits matches habits by NAME through a chain of substring regexes, and renaming the seeded
+// habit per tradition (v465) silently walked out of that chain: 'Salah / Qur'an', 'Puja / Gita' and
+// 'Meditation / sutta' matched NO branch at all and could never tick, while 'Stillness / reflection'
+// matched the EVENING branch and ticked whenever an evening reflection was logged — the wrong rule.
+// And getStreak scores habits.slice(0,3), with the spiritual habit at index 2, so for a Muslim, a Hindu
+// or a Buddhist the streak could not advance at all. Renaming a thing that is matched by its name is
+// exactly the kind of change that looks safe and is not.
+function isFaithHabitName(name){
+  const n = String(name || '').toLowerCase();
+  return /prayer|scripture|salah|qur|puja|gita|sutta|dhikr|japa|meditation|stillness|reflection/.test(n);
+}
 function faithHabitName(){
   const f = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
   if(f === 'christianity') return 'Prayer / scripture';
@@ -18421,7 +18447,7 @@ function autoTickHabits(){
       if(/gratitude/.test(name)){
         // Gratitude habit: ticks when the morning's gratitude field was actually filled that day.
         shouldTick = allMornings.some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===dateStr && (m.gratitude||'').trim());
-      } else if(/morning|intention/.test(name) || (/ritual|prayer/.test(name) && !/evening|night/.test(name))){
+      } else if(/morning|intention/.test(name) || (isFaithHabitName(name) && !/evening|night/.test(name))){
         shouldTick = allMornings.some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===dateStr);
       } else if(/workout|gym|train|lift|exercise/.test(name)){
         shouldTick = allWorkouts.some(w=>w.date===dateStr || (w.ts && new Date(w.ts).toLocaleDateString('en-AU')===dateStr))
@@ -18477,7 +18503,7 @@ function autoTickHabits(){
     // Check various habit patterns
     // Mutually exclusive (else-if): the FIRST matching category wins, so a habit named
     // "evening reflection" matches evening only — it won't also trip the journal rule.
-    if(/morning|gratitude|intention/.test(name) || (/ritual|prayer/.test(name) && !/evening|night/.test(name))){
+    if(/morning|gratitude|intention/.test(name) || (isFaithHabitName(name) && !/evening|night/.test(name))){
       const mornings=ls('totry_mornings')||[];
       shouldTick=mornings.some(m=>new Date(m.ts).toLocaleDateString('en-AU')===today);
     }

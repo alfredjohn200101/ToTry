@@ -3041,4 +3041,57 @@ H.section('numbers a person eats to, and trains by')
   H.ok(/const climbing =/.test(dp), 'and a run of consecutive improvements is never called a stall');
 }
 
+H.section('the fixes I shipped today, checked against themselves')
+{
+  const code = H.html.replace(/<!--[\s\S]*?-->/g, '').split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  const fnBody = (name) => {
+    const m = code.match(new RegExp('function\\s+' + name + '\\s*\\('));
+    if (!m) return '';
+    let i = code.indexOf('{', m.index) + 1, d = 1;
+    while (i < code.length && d) { const c = code[i]; if (c === '{') d++; else if (c === '}') d--; i++; }
+    return code.slice(m.index, i);
+  };
+  const { detectCrisis, isFaithHabitName } = H.load(['detectCrisis', 'isFaithHabitName'], {});
+
+  // A NEWLINE IS A CLAUSE END. `$` with no /m flag meant \s* swallowed the newline and found neither
+  // punctuation nor end-of-input — and every field this gate protects is a multi-line textarea.
+  H.eq(detectCrisis("I can't go on\nI don't know what else to say"), 'suicide',
+    'a disclosure that continues on the next line still fires the gate');
+  H.eq(detectCrisis('i cant go on\ni\'m done'), 'suicide', 'without an apostrophe too');
+  H.eq(detectCrisis("i can't go on this cut"), null, 'and the benign completion still does not');
+
+  // v463 made a flagged morning row PERSIST. Two readers were filtered and there are twenty-two, so the
+  // companion still sent it to a model and _wholeLifeReframe quoted it back mid-urge as an aspiration.
+  H.ok(/function safeMornings\(/.test(code), 'one accessor for mornings, like safeJournal');
+  H.ok(/safeMornings\(\)/.test(fnBody('_companionSay')), 'the companion prompt uses it');
+  H.ok(/safeMornings\(\)/.test(fnBody('_wholeLifeReframe')), 'and so does the mid-urge reframe');
+
+  // Renaming a thing that is matched BY NAME. Three traditions got a habit that could never tick, and
+  // getStreak scores habits.slice(0,3) with the spiritual habit at index 2 — so their streak was stuck.
+  for (const n of ['Prayer / scripture', 'Salah / Qur\u2019an', 'Puja / Gita', 'Meditation / sutta', 'Stillness / reflection']) {
+    H.eq(isFaithHabitName(n), true, `"${n}" is recognised as the spiritual habit`);
+  }
+  H.eq(isFaithHabitName('Evening check-in'), false, 'and an evening habit is not');
+  H.ok(!/\(\/ritual\|prayer\/\.test\(name\) && !\/evening\|night\//.test(code),
+    'both auto-tick chains go through the shared test, not their own regex');
+
+  // costUses exists ONLY when costPer==='use', where it means uses per WEEK — so dividing the amount by
+  // it turned a $15 pack into $0.75 saved per avoided cigarette.
+  const lw = fnBody('logWin');
+  H.ok(/String\(_v\.costPer\|\|''\) === 'use'/.test(lw), 'the cost override respects costPer');
+  H.ok(!/_amt \/ _uses/.test(lw), 'and never divides a per-use price by a weekly frequency');
+
+  // Gentle mode is about CALORIE FIGURES, not about the food line specifically. Verified by dumping
+  // EVERY line matching a calorie figure from both built prompts, rather than checking the line I fixed.
+  H.ok(/_gentleNow \? '' : ' \(' \+ calsBurnedToday/.test(code), 'the training-burn figure is gentle-aware');
+  H.ok(/a\.calories && !\(typeof nutGentle/.test(code), 'and so is the Strava cardio figure');
+  const pt = fnBody('buildPTCtx');
+  H.ok(/todayEntries\.length\)\.replace/.test(pt), 'the PT prompt reports the real meal count, not a hardcoded 0');
+  H.ok(/DELIBERATELY hidden/.test(pt), 'and stops ordering the model to quote exact numbers');
+
+  // A static HTML text node is not JavaScript: \u2014 there renders as six literal characters, on the
+  // first screen a new person sees.
+  H.ok(!/Kept on this device only \\u2014/.test(H.html), 'the guest door shows an em dash, not its escape');
+}
+
 H.report();
