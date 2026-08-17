@@ -4708,7 +4708,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v451';
+const APP_VERSION = 'v452';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -19563,6 +19563,13 @@ async function logBody(){
   const winText=document.getElementById('wk-win')?.value.trim()||'';
   const struggleText=document.getElementById('wk-struggle')?.value.trim()||'';
   const focusText=document.getElementById('wk-focus')?.value.trim()||'';
+  // Detected HERE, where the text is read — not further down where it used to be. My first attempt at
+  // flagging the stored entry referenced _wkCrisis before its `let`, which is a TDZ ReferenceError; and
+  // because that line sat inside a try/catch the error would have been SWALLOWED and the flag silently
+  // never set. A gate that appears to work and does nothing is the exact failure this file keeps having.
+  let _wkCrisis = null;
+  try{ if(typeof detectCrisis === 'function') _wkCrisis = detectCrisis([winText, struggleText, focusText].filter(Boolean).join(' ')); }catch(_){ }
+
   
   // Require AT LEAST weight OR scores OR text - some data to be useful
   const hasAnyData = w > 0 || trainScore || winText || struggleText || focusText;
@@ -19592,6 +19599,11 @@ async function logBody(){
     struggle:struggleText,
     focus:focusText
   };
+  // FLAG IT, like the journal does. v434 gated this surface — the crisis card fires and the AI weekly
+  // read is skipped — but it never MARKED what it stored, so the struggle text sat unflagged in
+  // totry_body and every later reader could still hand it to a model. Gating the moment is not the
+  // same as gating the record; that is the whole lesson of v449.
+  try{ if(_wkCrisis) newEntry.flagged = true; }catch(_){ }
   entries.unshift(newEntry);
   ls('totry_body',entries.slice(0,1000));
   
@@ -19625,8 +19637,6 @@ async function logBody(){
   // GRACE OVER SHAME: their words are already saved above, and they stay saved. Nothing they wrote is
   // discarded or thrown back at them. What changes is that the app stops to meet them instead of sending
   // the sentence off for a cheerful weekly read.
-  let _wkCrisis = null;
-  try{ if(typeof detectCrisis === 'function') _wkCrisis = detectCrisis([winText, struggleText, focusText].filter(Boolean).join(' ')); }catch(_){ }
   if(_wkCrisis){
     haptic('warning');
     // Presented as a modal, the same way the weekly read itself is — an inline card at the top of the
@@ -19825,8 +19835,12 @@ async function generateWeeklyCoachResponse(entry){
   const identity = ls('totry_identity')||'';
   const season = ls('totry_season')||'Building';
   const dayCount = getDayCount();
-  const allEntries = ls('totry_body')||[];
+  // Flagged check-ins never become AI context — same rule as safeJournal(). logBody gates the moment and
+  // marks the record; this is the reader that would otherwise carry a disclosure into every later weekly
+  // read, and it is invoked with the entry object directly as well as reading the store.
+  const allEntries = (ls('totry_body')||[]).filter(function(e){ return e && !e.flagged; });
   const last4 = allEntries.slice(0,4);
+  if(entry && entry.flagged) return;                 // never write a coach response onto a disclosure
   
   // Build context
   let context = `User: Day ${dayCount} of journey. Season: ${season}.`;

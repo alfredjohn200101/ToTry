@@ -2177,4 +2177,32 @@ H.section('a crisis response is never conditional, and never destroys the app')
   H.eq((ce.match(/if\(_evCrisis\)/g) || []).length, 1, 'there is exactly one crisis branch, not a stale copy');
 }
 
+H.section('the weekly check-in marks what it stores')
+{
+  // v434 gated this surface — the crisis card fires and the AI weekly read is skipped — but it never
+  // MARKED the entry, so the struggle text sat unflagged in totry_body and every later reader could hand
+  // it to a model. Gating the moment is not the same as gating the record.
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+
+  const i = code.indexOf('function logBody(');
+  const lb = code.slice(i, i + 7000);
+  H.ok(/detectCrisis\(/.test(lb), 'logBody still gates');
+  H.ok(/newEntry\.flagged = true/.test(lb), 'and marks the stored entry');
+
+  // Declaration must precede use, or the flag silently never sets. My first attempt referenced _wkCrisis
+  // before its `let` — a TDZ ReferenceError, swallowed by the surrounding try/catch, so the gate would
+  // have looked fine and done nothing.
+  const decl = lb.indexOf('let _wkCrisis');
+  const use = lb.indexOf('newEntry.flagged = true');
+  const store = lb.indexOf('entries.unshift');
+  H.ok(decl > 0 && decl < use && use < store, '_wkCrisis is declared before it is used, and used before the store');
+
+  // And the reader must skip flagged check-ins, both from the store and when handed the entry directly.
+  const g = code.slice(code.indexOf('async function generateWeeklyCoachResponse('), code.indexOf('async function generateWeeklyCoachResponse(') + 1200);
+  H.ok(/!e\.flagged/.test(g), 'the weekly coach reader filters flagged check-ins out of the store');
+  H.ok(/entry && entry\.flagged\) return/.test(g), 'and refuses to write a response onto a flagged entry');
+}
+
 H.report();
