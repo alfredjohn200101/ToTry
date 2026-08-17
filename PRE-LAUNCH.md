@@ -1,6 +1,6 @@
 # What's left before this is worth putting on the App Store
 
-Written 14 Aug 2026. **Updated at v465.** Based on three adversarial sweeps (165 agents, 70 confirmed
+Written 14 Aug 2026. **Updated at v468.** Based on three adversarial sweeps (165 agents, 70 confirmed
 findings), days of driving the real app, and a pass (v459–v465) that stopped auditing and started
 making the half-built things work. This is the honest version, not the encouraging one.
 
@@ -72,6 +72,57 @@ pass, since each needs an inflection or a negative completion a substring list c
 | **A failure the person is promised the opposite of** | 4: the storage-full warning deleted before it painted by the caller's "Saved"; an unreadable photo producing nothing at all; an expired Google token returning in silence right after "Refreshing…"; add-a-debt doing nothing and saying nothing |
 | **A setting that changes less than it implies** | 2: weight unit "lb" relabelled one line while every figure stayed kg; timezone stored a value nothing reads |
 | **Faith on a default path** | instance **six** — "Prayer / scripture" seeded as a default habit for every new person, secular included. The first one to reach a person's own data rather than a screen they could walk away from. |
+
+### v466–v468: credentials off the client, and every tradition reads its own book
+
+**Three third-party credentials were shipping in the public bundle.** The worst was not the Bible key:
+`FS_SECRET`, a FatSecret OAuth **client secret**, was base64'd into a client-credentials exchange
+performed in the browser. A client secret is the app's own identity, not a read-only key — publishing it
+lets anyone act as this app. Alongside it, `ESV_API_KEY` and `USDA_DEFAULT_KEY`.
+
+All three now come from a `key-proxy` edge function, and every caller degrades instead of breaking
+(verified with all off-origin requests blocked): `searchFood` runs four sources through
+`Promise.allSettled` so FatSecret's absence is a quieter list, and ESV falls back to KJV/ASV/WEB.
+**Still yours: rotate all four values and deploy `key-proxy` with its secrets — the work is inert until
+then, and those values are public forever.**
+
+**Do we need more API keys for more texts? No.** ESV is the only text API in the app that needs one:
+
+| source | tradition | key |
+|---|---|---|
+| api.esv.org | Christianity | **yes** — proxied |
+| bible.helloao.org, bible-api.com | Christianity | keyless |
+| api.alquran.cloud | Islam | keyless |
+| vedicscriptures.github.io | Hinduism | keyless |
+| suttacentral.net | Buddhism | keyless |
+| en.wikisource.org | Secular | keyless |
+
+Proved by adding two whole traditions' texts with no credential at all. **Buddhism** now reads all 26
+chapters of the Dhammapada (Sujato, public domain, Pāli alongside the English), and **secular** all 12
+books of the Meditations (Long 1862, via Wikisource). Both were previously `_readBundled()` — 22 and 24
+hardcoded passages — while Christianity had a 66-book reader. Each falls back to its bundled pool
+offline, so no tab is ever empty. Ratcheted per tradition, and each keyless host is asserted to be
+called with no `Authorization` header, so a future keyed source must go through `keyProxy`.
+
+> **Gutenberg is not usable from the client** — same translation, but it sends no
+> `access-control-allow-origin`, so a browser fetch is blocked outright. Wikisource sends `*` and serves
+> one book of clean plain text at a time. Checked before writing a line.
+
+#### Scripture search: deliberately NOT built, and why
+
+Search exists for the Bible only (v459). Measured feasibility for the rest:
+
+| tradition | search |
+|---|---|
+| Islam | **works** — `alquran.cloud/v1/search` returns verse-level matches (143 for "mercy") |
+| Secular | **partial** — Wikisource in-work search returns which *book* matched, not the passage |
+| Buddhism | **no** — SuttaCentral search is whole-canon: 0 of the top 26 hits for "craving" were Dhammapada |
+| Hinduism | **no** — vedicscriptures has no search endpoint, and its chapter endpoint returns metadata only |
+
+Building it would replace one honest asymmetry (only the Bible has search) with a messier one: verse-level
+for Islam, book-level for secular, nothing for two others. **Left unbuilt on purpose.** The route in, when
+it matters, is a per-tradition index built server-side — the texts are small enough (423 Dhammapada
+verses, 700 Gita verses, 12 books of Meditations) that one edge function could index all of them once.
 
 ### iOS submission state (verified 17 Aug, v465)
 
