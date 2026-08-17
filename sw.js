@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v467-dhammapada'
+const CACHE = 'totry-v468-meditations'
 
 const CORE = [
   './',
@@ -54,6 +54,7 @@ self.addEventListener('fetch', e => {
     'wger.de',
     'bible.helloao.org',
     'suttacentral.net',   // Dhammapada (keyless) — never cache scripture requests
+    'en.wikisource.org',  // Meditations (keyless) — never cache scripture requests
     'cpbjr.github.io',
     'bible-api.com',
     'api.esv.org',

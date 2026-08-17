@@ -4754,7 +4754,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v467';
+const APP_VERSION = 'v468';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9689,7 +9689,7 @@ function _readBtnStyle(){ return 'background:var(--bg3);border:1px solid var(--b
 function openReader(t){
   const f=FAITHS[t]||curFaith();
   if(typeof go==='function') go('read');
-  const subs={islam:'The Qur’an — Sahih International translation.',hinduism:'The Bhagavad Gita — chapter and verse.',buddhism:'Selected teachings from the Dhammapada.',secular:'Reflections from the Stoics — grounded, tested wisdom.'};
+  const subs={islam:'The Qur’an — Sahih International translation.',hinduism:'The Bhagavad Gita — chapter and verse.',buddhism:'The Dhammapada \u2014 all 26 chapters, translated by Bhikkhu Sujato.',secular:'Meditations \u2014 Marcus Aurelius, all 12 books, trans. George Long.'};
   const ttl=document.getElementById('read-title'); if(ttl) ttl.textContent=f.bookName.replace(/^the /,'').replace(/^./,c=>c.toUpperCase());
   const sub=document.getElementById('read-sub'); if(sub) sub.textContent=subs[t]||'';
   const sel=document.getElementById('read-selector'), content=document.getElementById('read-content');
@@ -9697,7 +9697,7 @@ function openReader(t){
   if(t==='islam') _readQuranInit(sel,content);
   else if(t==='hinduism') _readGitaInit(sel,content);
   else if(t==='buddhism') _readDhammapadaInit(sel,content);
-  else _readBundled(sel,content,VS_SECULAR);
+  else _readStoicInit(sel,content);
 }
 function _readBundled(sel,content,bank){
   if(sel) sel.innerHTML='';
@@ -9721,6 +9721,73 @@ async function _readQuranLoad(n){
     if(!en){ const r2=await fetch('https://api.alquran.cloud/v1/surah/'+n+'/en.sahih'); const j2=await r2.json(); en=j2.data.ayahs; }
     content.innerHTML='<div class="card">'+en.map((a,i)=>'<div style="margin-bottom:15px">'+(ar&&ar[i]?'<div dir="rtl" style="font-size:21px;line-height:2.1;color:var(--tx);text-align:right;margin-bottom:5px">'+ar[i].text+'</div>':'')+'<div style="font-size:13.5px;color:var(--tx2);line-height:1.65">'+a.text+' <span style="color:var(--tx3);font-size:11px">('+n+':'+a.numberInSurah+')</span></div></div>').join('')+'</div>';
   }catch(e){ content.innerHTML=_readErr(); }
+}
+// Meditations — Wikisource (free, NO KEY): all 12 books, George Long's 1862 translation, public domain.
+//
+// Secular was the last tradition with no live text: it fell through to _readBundled() with the 24
+// hardcoded passages in VS_SECULAR, while Christianity had a 66-book reader with search, and Islam,
+// Hinduism and Buddhism each had their own. The registry already names the secular canon — bookName
+// 'the Stoics', bookShort 'Reflections' — there just was nothing behind it.
+//
+// WHY WIKISOURCE AND NOT GUTENBERG. Project Gutenberg has the same translation and serves it happily to
+// curl, but sends NO access-control-allow-origin, so a browser fetch is blocked outright — and its file
+// is one 425KB blob including the licence header and the translator's endnotes. Wikisource is
+// institutional, sends `*`, and its extracts API returns ONE BOOK of clean plain text at a time (12-23KB),
+// which is the same shape as the Qur'an's surah picker and the Dhammapada's chapter picker. Checked all
+// twelve book pages resolve before writing this.
+//
+// The extracts API only returns one extract per request whatever you pass to titles (exlimit defaults to
+// 1), so this fetches per book — which is what we want anyway.
+const STOIC_BOOKS = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+const STOIC_PAGE = 'The Thoughts of the Emperor Marcus Aurelius Antoninus/Book ';
+async function _readStoicInit(sel,content){
+  let i=0; try{ if(typeof getDayCount==='function') i=getDayCount()%STOIC_BOOKS.length; }catch(_){ }
+  if(sel) sel.innerHTML='<select id="stoic-bk" onchange="_readStoicLoad(this.value)" style="'+_selStyle()+'">'+
+    STOIC_BOOKS.map((b,n)=>'<option value="'+b+'"'+(n===i?' selected':'')+'>Book '+b+'</option>').join('')+'</select>';
+  _readStoicLoad(STOIC_BOOKS[i]);
+}
+async function _readStoicLoad(book){
+  const content=document.getElementById('read-content'); if(!content) return;
+  content.innerHTML=_readLoading();
+  try{
+    const u='https://en.wikisource.org/w/api.php?action=query&format=json&origin=*&prop=extracts'+
+            '&explaintext=1&redirects=1&titles='+encodeURIComponent(STOIC_PAGE+book);
+    const r=await fetch(u);
+    if(!r.ok) throw new Error('net');
+    const j=await r.json();
+    const pages=(j&&j.query&&j.query.pages)||{};
+    let text='';
+    for(const k in pages){ const t=(pages[k]&&pages[k].extract)||''; if(t.length>text.length) text=t; }
+    text=String(text).trim();
+    if(text.length<200) throw new Error('empty');
+    // Long's sections are separated by SINGLE newlines, not blank lines — the extract for Book II has
+    // 20 newlines and only 2 blank-line breaks, so splitting on blank lines returned the whole book as
+    // one 12KB paragraph. Checked against the real response rather than assumed.
+    // Also drop what Wikisource appends around the text: "== Footnotes ==" headings and marginal notes
+    // like "This in Carnuntum." that are shorter than a section.
+    const paras=text.split(/\n+/).map(function(x){ return x.replace(/\s+/g,' ').trim(); })
+      .filter(function(x){ return x.length>40 && !/^=+.*=+$/.test(x) && !/^(Notes?|Footnotes?|References?)$/i.test(x); });
+    if(!paras.length) throw new Error('empty');
+    content.innerHTML='<div class="card">'+
+      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:12px">Meditations &middot; Book '+_escFew(book)+'</div>'+
+      paras.map(function(t,n){
+        // The text carries its own section numbers from section 2 on ("2. Whatever this is that I am"),
+        // so adding an index as well would print "1" above "2.". Use the number the translation gives
+        // when it has one, and strip it from the body so it is not shown twice.
+        const m=/^(\d{1,3})\.\s+([\s\S]+)$/.exec(t);
+        const label=m?m[1]:String(n+1);
+        const bodyText=m?m[2]:t;
+        return '<div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)">'+
+          '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-bottom:5px">'+_escFew(label)+'</div>'+
+          '<div style="font-size:15px;line-height:1.85;color:var(--tx)">'+_escFew(bodyText)+'</div>'+
+        '</div>';
+      }).join('')+
+      '<div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-align:center;margin-top:6px;letter-spacing:0.08em">MARCUS AURELIUS &middot; TRANS. GEORGE LONG 1862 &middot; VIA WIKISOURCE &middot; PUBLIC DOMAIN</div>'+
+    '</div>';
+  }catch(e){
+    // Offline, or the page moved — the bundled passages rather than an empty tab.
+    _readBundled(null,content,VS_SECULAR);
+  }
 }
 // Dhammapada — SuttaCentral (free, NO KEY): all 26 chapters, 423 verses, Bhikkhu Sujato's translation.
 //

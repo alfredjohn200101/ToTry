@@ -2701,6 +2701,39 @@ H.section('a Buddhist reads their own scripture, not a selection of it')
   // Keys are dhp{verse}:{line}; the dotted ones (dhp1:0.1) are headers, not text.
   H.ok(/\^dhp\(\\d\+\):\(\\d\+\)\$/.test(load) || /dhp\(\\d\+\)/.test(load),
     'verse lines are grouped by verse, and headers are excluded');
+
+  // Secular was the LAST tradition with no live text — 24 hardcoded passages while the registry already
+  // named its canon ("the Stoics" / "Reflections"). Every tradition now reads its own book.
+  H.ok(/_readStoicInit\(/.test(code), 'secular dispatches to a real reader');
+  H.ok(!/else _readBundled\(sel,content,VS_SECULAR\)/.test(code), 'and not to a bundled selection');
+  const sm = code.match(/const STOIC_BOOKS = \[([^\]]*)\]/);
+  H.eq(sm ? (sm[1].match(/'/g) || []).length / 2 : 0, 12, 'all 12 books of the Meditations');
+  const si = code.indexOf('async function _readStoicLoad');
+  const sload = si > 0 ? code.slice(si, si + 3000) : '';
+  H.ok(/en\.wikisource\.org/.test(sload), 'it reads the real text');
+  H.ok(!/Authorization/.test(sload), 'with no credential — Wikisource is keyless');
+  H.ok(/VS_SECULAR/.test(sload), 'and falls back to the bundled passages when offline');
+  H.ok(/GEORGE LONG/.test(sload), 'the translator is credited');
+  // Sections are separated by SINGLE newlines. Splitting on blank lines returned Book II as one 12KB
+  // paragraph — checked against the live response, not assumed.
+  H.ok(/split\(\/\\n\+\//.test(sload), 'sections split on single newlines, not blank lines');
+  H.ok(/\^=\+\.\*=\+\$/.test(sload), 'and Wikisource\'s "== Footnotes ==" apparatus is dropped');
+  // From section 2 the translation numbers itself, so an added index would print "1" above "2.".
+  H.ok(/const label=m\?m\[1\]:String\(n\+1\)/.test(sload), 'the text\'s own section numbers are used');
+
+  // Under-claiming is as much a promise/mechanism mismatch as over-claiming: the subtitles said
+  // "Selected teachings from the Dhammapada" and "Reflections from the Stoics" when both are now whole.
+  // Asserted on the comment-stripped view: the comment above _readDhammapadaLoad QUOTES the old copy to
+  // explain what changed, and matching H.html failed on my own explanation. That is this project's most
+  // frequent self-inflicted trap — a finding that is only a description of a bug in a comment.
+  H.ok(!/Selected teachings from the Dhammapada/.test(code), 'the Dhammapada subtitle is no longer stale');
+  H.ok(/all 26 chapters/.test(code) && /all 12 books/.test(code), 'and both say what is actually there');
+
+  // Every tradition now has a live reader — the asymmetry that made "fully served" untrue for reading.
+  for (const [t, host] of [['islam','api.alquran.cloud'], ['hinduism','vedicscriptures.github.io'],
+                           ['buddhism','suttacentral.net'], ['secular','en.wikisource.org']]) {
+    H.ok(code.includes(host), `${t} has a live text source (${host})`);
+  }
 }
 
 H.report();
