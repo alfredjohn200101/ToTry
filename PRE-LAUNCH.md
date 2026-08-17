@@ -90,6 +90,22 @@ items remain.
 
 ---
 
+### Deferred with a reason (not forgotten)
+
+**Currency symbols — a real retrofit, ~250 sites.** `totry_currency` drives conversion rates and nothing
+else; the app hardcodes `$` in roughly 250 places (43 mechanical string concats, ~169 inside longer
+strings, ~42 in markup). Sweeping only the mechanical ones would show euros in some figures and dollars
+in others on the same screen — worse than being consistently wrong, and much harder to notice. v458 makes
+the setting *say* what it does. The real fix is one money formatter plus an all-or-nothing sweep —
+**half a day.**
+
+**Tap targets — 24 still under 44pt.** 17 bordered pill buttons and the `.fst` sub-tabs sit at 28–37px and
+cannot be padded without repainting them visibly taller; that is a design decision, not a bug fix. Four
+delete glyphs in Grow/Soul carry *inline* padding, which beats a stylesheet rule, so they need per-site
+edits rather than the shared selector.
+
+---
+
 ## Part 2 — What isn't a bug, and is the actual gap
 
 This is the part that makes "several months" the honest number rather than "a fortnight".
