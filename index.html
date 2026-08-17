@@ -4708,7 +4708,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v452';
+const APP_VERSION = 'v453';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9631,9 +9631,24 @@ function _renderIslamToday(el){
   _loadSalah();
 }
 function _salahDateStr(){ const d=new Date(); return String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear(); }
+// EVERY read of a stored location is coarsened, not just the fresh fetch.
+// v437 rounded coordinates to ~1km, but the rounding sat INSIDE the `if(!coords)` branch — it only
+// touched a freshly-obtained position. A value already in totry_geo (including anything written by a
+// build before v437) went out untouched, and a second call site at the fasting-times URL read that key
+// and sent it raw. So the privacy claim in both policies — "rounded to about a kilometre before it is
+// used" — was true of the first request and false of every one after it.
+// Coarsening on READ is the version that cannot be bypassed by a path nobody remembered.
+function geoCoarse(){
+  try{
+    const g = ls('totry_geo');
+    if(!g || g.lat == null) return null;
+    return { lat: Math.round(g.lat * 100) / 100, lng: Math.round(g.lng * 100) / 100 };
+  }catch(_){ return null; }
+}
+
 async function _loadSalah(){
   const box=document.getElementById('salah-box'); if(!box) return;
-  let coords=null; try{ const g=ls('totry_geo'); if(g&&g.lat) coords=g; }catch(_){}
+  let coords = geoCoarse();                      // never the raw stored value
   if(!coords){
     try{ coords=await new Promise((res,rej)=>{ if(!navigator.geolocation) return rej(); navigator.geolocation.getCurrentPosition(p=>res({lat:p.coords.latitude,lng:p.coords.longitude}), ()=>rej(), {timeout:8000,maximumAge:3600000}); }); if(coords){ try{ ls('totry_geo',coords); }catch(_){} } }catch(_){ coords=null; }
     // COARSENED TO ~1km BEFORE IT LEAVES THE DEVICE. Prayer times shift by a few seconds over a
@@ -24800,7 +24815,7 @@ async function _seasonTimes(){
   const key = _salahDateStr(); const c = ls('totry_fast_times');
   if(c && c.key === key && c.fajr) return c;
   let url = null;
-  try{ const g = ls('totry_geo'); if(g && g.lat) url = 'https://api.aladhan.com/v1/timings/'+key+'?latitude='+g.lat+'&longitude='+g.lng+'&method=2'; }catch(_){}
+  try{ const g = geoCoarse(); if(g) url = 'https://api.aladhan.com/v1/timings/'+key+'?latitude='+g.lat+'&longitude='+g.lng+'&method=2'; }catch(_){}   // coarsened — see geoCoarse()
   if(!url){ const city = ls('totry_city'); if(city) url = 'https://api.aladhan.com/v1/timingsByCity/'+key+'?city='+encodeURIComponent(city)+'&country=&method=2'; }
   if(!url) return null;
   try{

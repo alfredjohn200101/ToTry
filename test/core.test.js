@@ -1865,7 +1865,16 @@ H.section('location: declared, coarsened, and disclosed everywhere');
     H.ok(/CoarseLocation|PreciseLocation/.test(priv), 'the privacy manifest declares location');
 
     // Coarsened before it leaves the device — full GPS precision buys nothing for prayer times.
-    H.ok(/Math\.round\(coords\.lat\s*\*\s*100\)/.test(code), 'coordinates are rounded to ~1km before use');
+    // v453: coarsening must happen on every READ, not only on a fresh fetch. v437 put the rounding inside
+    // the `if(!coords)` branch, so a value already in totry_geo went out untouched and a second call site
+    // read that key raw — the policy claim was true of the first request and false of every one after.
+    H.ok(/function geoCoarse\(/.test(code), 'there is a single coarsening accessor');
+    const gc = code.slice(code.indexOf('function geoCoarse('), code.indexOf('function geoCoarse(') + 500);
+    H.ok(/Math\.round\(g\.lat \* 100\) \/ 100/.test(gc), 'it rounds to two decimal places (~1km)');
+    // No raw read of the stored key may survive anywhere.
+    const rawReads = (code.match(/ls\('totry_geo'\)/g) || []).length;
+    H.eq(rawReads, 1, 'totry_geo is read in exactly one place — inside geoCoarse()');
+    H.ok(/geoCoarse\(\)/.test(code.replace('function geoCoarse()', '')), 'and the accessor is actually used');
 
     // Disclosed in BOTH policies: the hosted one App Store Connect points at, and the in-app modal that
     // people actually read. v421 fixed the hosted copy for Health and left the in-app one wrong.
