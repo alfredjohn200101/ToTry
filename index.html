@@ -4721,7 +4721,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v454';
+const APP_VERSION = 'v455';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -11182,6 +11182,8 @@ function addToGoal(id){
 }
 
 function deleteFinanceGoal(id){
+  // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
+  if(!confirm('Delete this savings goal? Your progress on it will be lost.')) return;
   const goals=ls('totry_finance_goals')||[];
   const removed=goals.find(g=>g.id===id);
   const newGoals=goals.filter(g=>g.id!==id);
@@ -11548,6 +11550,8 @@ function renderAffirmList(){
   });
 }
 function deleteAffirm(i){
+  // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
+  if(!confirm('Delete this affirmation? You wrote it — it cannot be recovered.')) return;
   const affirms=getAffirmations();affirms.splice(i,1);
   ls('totry_affirms',affirms);renderAffirmList();
 }
@@ -18180,6 +18184,8 @@ function renderSavedVerses(){
 }
 
 function deleteSavedVerse(idx){
+  // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
+  if(!confirm('Remove this from your saved verses?')) return;
   const saved = ls('totry_sv') || [];
   if(idx < 0 || idx >= saved.length) return;
   const removed = saved[idx];
@@ -22840,6 +22846,8 @@ function logSavedMeal(id){
   renderNutritionLog();
 }
 function deleteSavedMeal(id){
+  // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
+  if(!confirm('Delete this saved meal? You will have to build it again.')) return;
   let saved = ls('totry_saved_meals')||[];
   saved = saved.filter(x=>x.id!==id);
   ls('totry_saved_meals', saved);
@@ -25032,7 +25040,9 @@ function openGivingLog(kind, subtitle, viaRelease){
       return true;
     });
 }
-function deleteGiving(id){ ls('totry_giving', givingLog().filter(x=>x.id!==id)); if(typeof syncToCloud==='function') syncToCloud(); renderGiving(); }
+function deleteGiving(id){
+  // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
+  if(!confirm('Delete this giving record? It is part of your giving history.')) return; ls('totry_giving', givingLog().filter(x=>x.id!==id)); if(typeof syncToCloud==='function') syncToCloud(); renderGiving(); }
 function openPledge(){
   const p = givingPledge();
   openFormModal('Your own measure', 'Set a share of what comes in, or a flat monthly amount. Yours to change or drop — nothing chases you about it.',
@@ -26292,6 +26302,39 @@ function _autoCategory(desc){
   return 'Other';
 }
 // Parse a CSV line respecting simple quoted fields.
+// dd/mm/yyyy IS THE DEFAULT HERE, NOT mm/dd/yyyy.
+// The importer used `new Date(dateStr)`, which reads "03/08/2026" as 8 MARCH (US order) instead of
+// 3 August, and returns Invalid Date for "13/08/2026" because there is no thirteenth month. So every
+// Australian or UK bank statement — the ones this feature exists for — arrived either shifted by months
+// or unparseable, and an unparseable row silently fell back to today's date.
+// The order is inferred from the file rather than assumed: a first number above 12 anywhere proves the
+// file is day-first, and that decides the whole file.
+function _csvDate(str, dayFirst){
+  const t = String(str || '').trim();
+  if(!t) return null;
+  let m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);            // ISO first — unambiguous
+  if(m) return new Date(+m[1], +m[2] - 1, +m[3]);
+  m = t.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/);
+  if(m){
+    let a = +m[1], b = +m[2], y = +m[3];
+    if(y < 100) y += 2000;
+    const day = dayFirst ? a : b, mon = dayFirst ? b : a;
+    if(day > 31 || mon > 12) return null;
+    return new Date(y, mon - 1, day);
+  }
+  const d = new Date(t);
+  return isNaN(d.getTime()) ? null : d;
+}
+function _csvDayFirst(values){
+  try{
+    for(const v of values){
+      const m = String(v || '').trim().match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.]\d{2,4}/);
+      if(m){ if(+m[1] > 12) return true; if(+m[2] > 12) return false; }
+    }
+  }catch(_){ }
+  return true;     // AU/UK default — this app is Australian and every other date in it is en-AU
+}
+
 function _parseCSVLine(line){
   const out = []; let cur = ''; let inQ = false;
   for(let i=0;i<line.length;i++){
@@ -26341,6 +26384,10 @@ function handleCSVFile(ev){
       let startRow = 1;
       if(cols.date < 0 && cols.amount < 0 && cols.debit < 0){ cols = {date:0, desc:1, amount:2, credit:-1, debit:-1}; startRow = 0; }
       const parsed = [];
+      // One decision for the whole file — a statement does not change date order halfway through.
+      const __csvDayFirst = _csvDayFirst(rows.slice(startRow, startRow + 200).map(function(r){
+        const ff = _parseCSVLine(r); return cols.date >= 0 ? (ff[cols.date] || '') : '';
+      }));
       for(let i=startRow;i<rows.length;i++){
         const f = _parseCSVLine(rows[i]);
         if(f.length < 2) continue;
@@ -26351,7 +26398,7 @@ function handleCSVFile(ev){
         if(cols.credit>=0 && f[cols.credit]){ const c = _csvAmount(f[cols.credit]); if(c) amt = Math.abs(c); }
         if(!amt) continue;
         const dateStr = cols.date>=0 ? (f[cols.date]||'') : '';
-        const when = dateStr ? new Date(dateStr) : new Date();
+        const when = dateStr ? (_csvDate(dateStr, __csvDayFirst) || new Date()) : new Date();
         const validWhen = isNaN(when.getTime()) ? new Date() : when;
         parsed.push({
           desc: desc.slice(0,60),
@@ -26895,6 +26942,8 @@ function openFamilyContribution(){
     });
 }
 function deleteFamilyContribution(id){
+  // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
+  if(!confirm('Delete this contribution? It is part of your record of what you gave.')) return;
   const list = (ls('totry_family_contrib')||[]).filter(x=>x.id!==id);
   ls('totry_family_contrib', list); if(typeof syncToCloud==='function') syncToCloud(); renderFamilyContribution();
 }
@@ -26979,6 +27028,8 @@ function openPokerSession(){
     });
 }
 function deletePokerSession(id){
+  // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
+  if(!confirm('Delete this session? Its result comes out of your totals.')) return;
   const list = (ls('totry_poker_sessions')||[]).filter(x=>x.id!==id);
   ls('totry_poker_sessions', list); if(typeof syncToCloud==='function') syncToCloud(); renderPoker();
 }
@@ -33868,6 +33919,8 @@ function logContact(id){
 }
 
 function deleteRelationship(id){
+  // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
+  if(!confirm('Remove this person? Everything you have logged about them goes too.')) return;
   const people=ls('totry_relationships')||[];
   const removed=people.find(p=>p.id===id);
   const newPeople=people.filter(p=>p.id!==id);
@@ -33978,6 +34031,8 @@ function deliverLetter(id){
 }
 
 function deleteLetter(id){
+  // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
+  if(!confirm('Delete this letter? You wrote it to yourself — it cannot be recovered.')) return;
   const letters=ls('totry_letters')||[];
   const removed=letters.find(l=>l.id===id);
   ls('totry_letters',letters.filter(l=>l.id!==id));
@@ -37693,6 +37748,8 @@ function _promptSacramentDate(kind){
   document.body.appendChild(m);
 }
 function deleteSacrament(kind, id){
+  // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
+  if(!confirm('Delete this record?')) return;
   const key = kind === 'confession' ? 'totry_confessions' : 'totry_masses';
   let list = ls(key) || [];
   list = list.filter(x => x.id !== id);

@@ -2243,4 +2243,34 @@ H.section('the last ungated surface, the error screen, and two false delete prom
   H.ok(/NOT deleted/.test(ra), 'it says what survives on the server');
 }
 
+H.section('CSV dates are day-first, and destructive taps ask first')
+{
+  // `new Date("03/08/2026")` is 8 MARCH in JS, and `new Date("13/08/2026")` is Invalid Date. Every
+  // Australian and UK bank statement — the files this importer exists for — came in shifted by months or
+  // unparseable, and an unparseable row silently became today.
+  const { _csvDate, _csvDayFirst } = H.load(['_csvDate', '_csvDayFirst']);
+  const au = ['03/08/2026', '13/08/2026', '01/12/2026'];
+  const df = _csvDayFirst(au);
+  H.eq(df, true, 'a day above 12 anywhere proves the file is day-first');
+  H.eq(_csvDate('03/08/2026', df).getMonth(), 7, '03/08/2026 is August, not March');
+  H.eq(_csvDate('03/08/2026', df).getDate(), 3, 'and the third');
+  H.eq(_csvDate('13/08/2026', df).getDate(), 13, '13/08/2026 parses at all (new Date returns Invalid)');
+  H.eq(_csvDayFirst(['12/25/2026']), false, 'a US file is detected as month-first');
+  H.eq(_csvDate('12/25/2026', false).getDate(), 25, 'and read correctly');
+  H.eq(_csvDate('2026-08-13', true).getMonth(), 7, 'ISO is unambiguous and wins');
+  H.eq(_csvDate('not a date', true), null, 'garbage returns null rather than today');
+  H.eq(_csvDayFirst([]), true, 'the default is day-first — this app is en-AU everywhere else');
+
+  // Every destructive one-tap handler asks first. These are glyphs a few pixels wide with no undo.
+  const code = H.html.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  const unconfirmed = [];
+  for (const m of code.matchAll(/function (delete[A-Za-z]+)\s*\([^)]*\)\s*\{/g)) {
+    const body = code.slice(m.index, m.index + 900);
+    if (!/confirm\(/.test(body)) unconfirmed.push(m[1]);
+  }
+  // deleteFoodEntry is deliberately exempt: highest-frequency delete in the app, trivially re-logged, and
+  // a modal per tap is friction with no payoff. Everything that destroys authored or financial records asks.
+  H.eq(unconfirmed, ['deleteFoodEntry'], 'only the trivially-reversible delete skips its confirm');
+}
+
 H.report();
