@@ -20,11 +20,19 @@
 //
 // THEN SET THE SECRETS (dashboard → Edge Functions → key-proxy → Secrets). Rotate every one of these
 // first: the values that were in the bundle are burned, and must be treated as public forever.
-//   FATSECRET_ID       — FatSecret client id
-//   FATSECRET_SECRET   — FatSecret client secret (rotate at platform.fatsecret.com)
-//   ESV_API_KEY        — api.esv.org key (rotate in the ESV API console)
-//   USDA_API_KEY       — FoodData Central key (free, instant reissue at api.data.gov)
-// Any secret you leave unset simply disables that provider; the others keep working.
+//   FatSecret consumer key    — FATSECRET_ID | FATSECRET_CONSUMER_KEY | FATSECRET_KEY | FATSECRET_CLIENT_ID
+//   FatSecret consumer secret — FATSECRET_SECRET | FATSECRET_CONSUMER_SECRET | FATSECRET_CLIENT_SECRET
+//   ESV key                   — ESV_API_KEY | ESV_KEY            (rotate in the ESV API console)
+//   FoodData Central key      — USDA_API_KEY | USDA_KEY | USDA_FDC_API_KEY  (free, instant at api.data.gov)
+// Any of the listed spellings works — FatSecret's own console says "Consumer Key/Secret", so that is what
+// gets typed, and an earlier version of this function only looked for FATSECRET_ID/FATSECRET_SECRET and
+// reported "not configured" with both values sitting right there in Supabase.
+// Any secret left unset simply disables that provider; the others keep working.
+//
+// Supabase secrets are PROJECT-scoped ("Edge Function Secrets"), not per-function — there is no
+// per-function secret store to find, and setting them at the project level is correct.
+//
+// To see what this function can actually read, POST {"provider":"status"} — booleans only, never values.
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -34,6 +42,19 @@ const cors = {
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } })
+
+// Read the first env var that is actually set. FatSecret's own console calls these the "Consumer Key"
+// and "Consumer Secret", so that is what someone naturally types into Supabase — while this function
+// originally looked only for FATSECRET_ID / FATSECRET_SECRET and reported "not configured" with both
+// values sitting right there. Accept every reasonable spelling instead of making the human match mine.
+const env = (...names: string[]) => {
+  for (const n of names) { const v = Deno.env.get(n); if (v) return v }
+  return undefined
+}
+const FS_ID_NAMES     = ['FATSECRET_ID', 'FATSECRET_CONSUMER_KEY', 'FATSECRET_KEY', 'FATSECRET_CLIENT_ID']
+const FS_SECRET_NAMES = ['FATSECRET_SECRET', 'FATSECRET_CONSUMER_SECRET', 'FATSECRET_CLIENT_SECRET']
+const ESV_NAMES       = ['ESV_API_KEY', 'ESV_KEY']
+const USDA_NAMES      = ['USDA_API_KEY', 'USDA_KEY', 'USDA_FDC_API_KEY']
 
 // FatSecret tokens last an hour. Cached per warm instance so a busy minute is one exchange, not many.
 let fsToken: string | null = null
@@ -52,8 +73,8 @@ Deno.serve(async (req: Request) => {
     // Returns a short-lived access token rather than the secret. A leaked hour-long token is a very
     // different thing from a leaked permanent client secret.
     if (provider === 'fatsecret') {
-      const id = Deno.env.get('FATSECRET_ID')
-      const secret = Deno.env.get('FATSECRET_SECRET')
+      const id = env(...FS_ID_NAMES)
+      const secret = env(...FS_SECRET_NAMES)
       if (!id || !secret) return json({ error: 'fatsecret not configured' }, 501)
       if (fsToken && Date.now() < fsExpiry) return json({ access_token: fsToken })
       const r = await fetch('https://oauth.fatsecret.com/connect/token', {
@@ -76,7 +97,7 @@ Deno.serve(async (req: Request) => {
     // Proxies the passage itself, so the key never leaves this function. `q` is passed straight to the
     // ESV API, which is a read-only text endpoint.
     if (provider === 'esv') {
-      const key = Deno.env.get('ESV_API_KEY')
+      const key = env(...ESV_NAMES)
       if (!key) return json({ error: 'esv not configured' }, 501)
       const q = String(body.q || '').slice(0, 200)
       if (!q) return json({ error: 'q required' }, 400)
@@ -94,7 +115,7 @@ Deno.serve(async (req: Request) => {
     // branded products against ~8k generic ones, and asking for both together let supermarket packets
     // drown the actual food. Collapsing that into one proxy call would quietly undo it.
     if (provider === 'usda') {
-      const key = Deno.env.get('USDA_API_KEY')
+      const key = env(...USDA_NAMES)
       if (!key) return json({ error: 'usda not configured' }, 501)
       const q = String(body.query || '').slice(0, 120)
       if (!q) return json({ error: 'query required' }, 400)
@@ -106,6 +127,18 @@ Deno.serve(async (req: Request) => {
         '&pageSize=' + pageSize)
       if (!r.ok) return json({ error: 'usda ' + r.status, status: r.status }, 502)
       return json(await r.json())
+    }
+
+    // Which credentials can this function actually see? Booleans only — never a value, not even a
+    // prefix. Added because diagnosing "not configured" meant guessing at env var names from outside.
+    if (provider === 'status') {
+      return json({
+        fatsecret: { id: !!env(...FS_ID_NAMES), secret: !!env(...FS_SECRET_NAMES) },
+        esv: !!env(...ESV_NAMES),
+        usda: !!env(...USDA_NAMES),
+        // Names it looked for, so a mismatch is obvious at a glance.
+        looked_for: { id: FS_ID_NAMES, secret: FS_SECRET_NAMES, esv: ESV_NAMES, usda: USDA_NAMES },
+      })
     }
 
     return json({ error: 'unknown provider' }, 400)

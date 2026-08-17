@@ -2807,4 +2807,52 @@ H.section('the voice is told the truth, and only what is true')
   H.ok(/<h2 /.test(scr), 'with a real heading to navigate to');
 }
 
+H.section('two devices do not destroy each other\'s work')
+{
+  const code = H.html.replace(/<!--[\s\S]*?-->/g, '').split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  const pull = (() => {
+    const m = code.match(/async function pullFromCloud\s*\(/);
+    if (!m) return '';
+    let i = code.indexOf('{', m.index) + 1, d = 1;
+    while (i < code.length && d) { const c = code[i]; if (c === '{') d++; else if (c === '}') d--; i++; }
+    return code.slice(m.index, i);
+  })();
+  H.ok(pull.length > 0, 'pullFromCloud exists');
+
+  // THE CLOBBER-BACK LOOP. When the cloud row won, the queued local value was left in the outbox — so
+  // the very next flushOutbox re-uploaded the exact value this pull had just rejected, overwriting the
+  // other device's newer edit. Sync destroying data on every pass, silently.
+  H.ok(/if\(nv === cv && outbox\[k\] && outbox\[k\]\.ts <= cts\)/.test(pull),
+    'a superseded outbox entry is dropped when the cloud row wins');
+  H.ok(/delete outbox\[k\]/.test(pull), 'and actually removed, not just marked');
+
+  // union(local, cloud) kept the FIRST match for an id — always local — so an entry EDITED on the other
+  // device never arrived. Verified by running the real union against two-device fixtures.
+  H.ok(/const union = \(a,b,preferB\)/.test(pull), 'union takes a freshness side');
+  H.ok(/if\(i >= aLen && preferB\)/.test(pull), 'and the newer side wins an id collision');
+  H.ok(/union\(lv, cv, \(cts >= lts\) && !pendingLocal\)/.test(pull),
+    'the array branch passes real freshness, not a guess');
+  H.ok(/union\(lv\[d\], cv\[d\], _cloudNewer\)/.test(pull), 'and so does the per-day nutrition merge');
+
+  // The outbox is what makes a write "durable". It silently swallowed its own storage failure, so on a
+  // full device the queue failed to save while the UI still said the change was on its way.
+  const so = (() => {
+    const m = code.match(/function _setOutbox\(/);
+    if (!m) return '';
+    let i = code.indexOf('{', m.index) + 1, d = 1;
+    while (i < code.length && d) { const c = code[i]; if (c === '{') d++; else if (c === '}') d--; i++; }
+    return code.slice(m.index, i);
+  })();
+  H.ok(/return true/.test(so) && /return false/.test(so), '_setOutbox reports whether it persisted');
+  H.ok(/out of room/.test(so), 'and says so rather than failing quietly');
+
+  // STILL OPEN, recorded so it is not mistaken for done: 8 of the 32 union'd keys DO have delete paths
+  // (journal, weigh-ins, workouts, giving, poker sessions, Strava activities, saved meals, custom
+  // exercises), so a union resurrects what someone deleted on the next pull. The comment above ARR
+  // claims none of them have a delete function; that claim is false and must not be trusted again.
+  // Fixing it needs synced tombstones, which is its own change.
+  H.ok(!/pure event log with NO delete function anywhere in the app/.test(H.html),
+    'the ARR comment no longer claims these keys cannot be deleted from');
+}
+
 H.report();

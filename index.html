@@ -4754,7 +4754,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v469';
+const APP_VERSION = 'v470';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5278,7 +5278,13 @@ function _setSyncState(patch){
   if(typeof renderSyncStatus === 'function'){ try{ renderSyncStatus(); }catch(_){ } }
 }
 function _getOutbox(){ try{ return JSON.parse(localStorage.getItem(SYNC_OUTBOX_KEY) || '{}'); }catch(_){ return {}; } }
-function _setOutbox(o){ try{ localStorage.setItem(SYNC_OUTBOX_KEY, JSON.stringify(o)); }catch(_){ } }
+// Returns false when the outbox could NOT be persisted. It used to swallow that: on a full device the
+// queue silently failed to save while the UI still reported the write as on its way to the cloud, so an
+// edit was lost with a success message over it. The caller decides what to tell the person.
+function _setOutbox(o){
+  try{ localStorage.setItem(SYNC_OUTBOX_KEY, JSON.stringify(o)); return true; }
+  catch(_){ try{ _setSyncState({ status:'error', error:'This device is out of room, so that change is not queued to sync yet.' }); }catch(__){} return false; }
+}
 function _queueWrite(key, value){
   if(!SYNC_KEYS.includes(key)) return;
   const o = _getOutbox();
@@ -5581,10 +5587,17 @@ async function pullFromCloud(){
     const outbox = _getOutbox();
     // Append-only logs get UNIONED across devices; anything absent from this list falls through to
     // "newer scalar wins", which silently discards the other device's copy. A two-phone test found
-    // exactly that: a win logged on phone B was thrown away by phone A's newer write. Every key added
-    // below is a pure event log with NO delete function anywhere in the app, so unioning cannot
-    // resurrect something a person removed — the risk that makes union wrong for editable lists like
-    // bills, assets and subscriptions, which are deliberately left out.
+    // exactly that: a win logged on phone B was thrown away by phone A's newer write.
+    //
+    // ⚠️ THIS COMMENT USED TO CLAIM every key below is "a pure event log with NO delete function
+    // anywhere in the app, so unioning cannot resurrect something a person removed". THAT IS FALSE, and
+    // it was the entire justification for unioning them. EIGHT of these keys have delete paths:
+    //   totry_journal (deleteJournalEntry), totry_body (a weigh-in), totry_workouts, totry_family_contrib,
+    //   totry_poker_sessions, totry_strava_activities, totry_saved_meals, totry_custom_exercises.
+    // So deleting a journal entry or a weigh-in on one device does NOT stick: the next pull unions it
+    // straight back. Fixing that properly needs synced tombstones (record the deleted id, sync it, and
+    // filter it out of the union) — it is not done yet, and until it is, this is a known data-integrity
+    // bug rather than a safe design. Do not re-derive "these are append-only" from this list.
     // totry_fight_log matters most: it is what teaches the risk window and the hard hour, so losing half
     // of it on a device switch quietly degrades the app's whole sense of when a person is vulnerable.
     const ARR = ['totry_workouts','totry_body','totry_journal','totry_mornings','totry_evenings','totry_confessions','totry_masses','totry_routines','totry_saved_meals','totry_family_contrib','totry_poker_sessions','totry_examens','totry_prayers','totry_strava_activities','totry_feeling_wins','totry_custom_exercises',
@@ -5592,7 +5605,21 @@ async function pullFromCloud(){
       'totry_rosaries','totry_syntheses','totry_reviews','totry_vice_uses','totry_impulse_holds','totry_freezes',
       'totry_checkins','totry_mood_log','totry_fast_log','totry_releases'];
     const idOf = x => (x && typeof x === 'object') ? (x.id !== undefined ? 'i'+x.id : (x.ts || JSON.stringify(x))) : x;
-    const union = (a,b) => { const m = new Map(); [].concat(a||[], b||[]).forEach(x => { const k = idOf(x); if(!m.has(k)) m.set(k, x); }); return Array.from(m.values()); };
+    // union(local, cloud) kept the FIRST occurrence of each id — always the LOCAL one — so an entry
+    // EDITED on the other device never arrived: the correction was silently dropped while both copies
+    // existed. Same-id collisions now resolve the way the scalar branch does — the side that is actually
+    // newer wins. preferB=true means the cloud row is newer than our local copy and unsynced local
+    // edits are not pending.
+    const union = (a,b,preferB) => {
+      const m = new Map();
+      const aLen = (a||[]).length;
+      [].concat(a||[], b||[]).forEach((x,i) => {
+        const k = idOf(x);
+        if(!m.has(k)){ m.set(k, x); return; }
+        if(i >= aLen && preferB) m.set(k, x);   // this id is on both sides and cloud is the newer side
+      });
+      return Array.from(m.values());
+    };
     let changed = 0;
     data.forEach(row => {
       // Only consume rows from THIS build's namespace (test rows in test build, real rows in live).
@@ -5616,7 +5643,8 @@ async function pullFromCloud(){
       let nv;
       if(k === 'totry_nutlog' && lv && cv && typeof lv === 'object' && typeof cv === 'object'){
         nv = {}; const days = new Set([].concat(Object.keys(lv), Object.keys(cv)));
-        days.forEach(d => { nv[d] = union(lv[d], cv[d]); });
+        const _cloudNewer = (cts >= lts) && !pendingLocal;
+        days.forEach(d => { nv[d] = union(lv[d], cv[d], _cloudNewer); });
       } else if(k === 'totry_v' && Array.isArray(lv) && Array.isArray(cv)){
         // Vices: merge by name so a win/relapse logged on one device is never lost. For a vice on
         // both sides, keep the higher relapseCount + total and the most recent lastWin/startDate,
@@ -5658,7 +5686,7 @@ async function pullFromCloud(){
         nv = { d: Array.from(debts.values()), u: Math.max(lv.u||0, cv.u||0), i: Math.max(lv.i||0, cv.i||0) };
         _queueWrite(k, nv);
       } else if(ARR.indexOf(k) > -1 && Array.isArray(lv) && Array.isArray(cv)){
-        nv = union(lv, cv);                        // never drop entries from either device
+        nv = union(lv, cv, (cts >= lts) && !pendingLocal);   // keep every entry; the newer side wins an id tie
       } else if(lv === null || lv === undefined){
         nv = cv;                                   // nothing local → take cloud
       } else if(pendingLocal){
@@ -5666,6 +5694,13 @@ async function pullFromCloud(){
         _queueWrite(k, lv);
       } else {
         nv = cts >= lts ? cv : lv;                 // newer-wins; ties go to cloud (authority)
+        // AND if cloud won, the queued local value has been SUPERSEDED — drop it. It used to survive,
+        // so the very next flushOutbox re-uploaded the exact value this pull had just rejected, wiping
+        // the other device's newer edit. A two-phone loop that destroyed real data on every sync.
+        if(nv === cv && outbox[k] && outbox[k].ts <= cts){
+          delete outbox[k];
+          _setOutbox(outbox);
+        }
       }
       const out = JSON.stringify(nv);
       if(out !== lraw){
