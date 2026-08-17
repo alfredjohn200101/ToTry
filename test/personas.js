@@ -201,6 +201,8 @@ const serve = () => new Promise(res => {
     // but "the pull" with no vice set up hands off to #companion-overlay instead, and a check that
     // knows about only one of them reports a working path as broken. (It did, twice, while I wrote it.)
     if (p.feelingDoor) {
+      // If the app is broken badly enough, this evaluate rejects rather than returning — which used to
+      // stack-trace instead of naming the persona. A thrown page is a failure, not a crash.
       const paths = await page.evaluate(async () => {
         const wait = ms => new Promise(r => setTimeout(r, ms));
         if (typeof FEELINGS === 'undefined' || typeof openFeelingDoor !== 'function') return null;
@@ -227,7 +229,7 @@ const serve = () => new Promise(res => {
                      moves: btns.some(t => !/^(close|done|cancel|not now|later|×|✕)$/i.test(t)) });
         }
         return out;
-      });
+      }).catch(e => { failures.push(`${label} — the Feeling Door threw: ${String(e.message).slice(0, 120)}`); fail++; return null; });
       ok(paths && paths.length >= 8, `${label} — the Feeling Door offers its paths`);
       for (const r of (paths || [])) {
         ok(r.opened, `${label} — feeling "${r.id}" opens the door`);

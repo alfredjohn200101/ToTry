@@ -2247,43 +2247,6 @@ input:focus,textarea:focus,select:focus{
   </div>
 
   <!-- CRAVING LOG PANEL -->
-  <div id="fight-panel-craving" style="display:none">
-    <p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:6px">Log a battle that already happened &mdash; whether you won or lost.</p>
-    <p style="font-size:11px;color:var(--tx3);line-height:1.6;margin-bottom:14px;font-style:italic">For an urge happening RIGHT NOW &mdash; go to Fight and tap your vice. That opens the live intervention with breathing, a grounding word, and your win/loss button.</p>
-    <div class="lbl">Vice</div>
-    <select id="cl-vice-sel" style="margin-bottom:12px"></select>
-    <div class="lbl">Intensity (1 = mild, 10 = overwhelming)</div>
-    <div style="display:flex;gap:5px;margin-bottom:12px;flex-wrap:wrap" id="cl-intensity-btns">
-      <button class="qb" onclick="setCravingInt(this,1)" style="min-width:32px">1</button>
-      <button class="qb" onclick="setCravingInt(this,2)" style="min-width:32px">2</button>
-      <button class="qb" onclick="setCravingInt(this,3)" style="min-width:32px">3</button>
-      <button class="qb" onclick="setCravingInt(this,4)" style="min-width:32px">4</button>
-      <button class="qb" onclick="setCravingInt(this,5)" style="min-width:32px">5</button>
-      <button class="qb" onclick="setCravingInt(this,6)" style="min-width:32px">6</button>
-      <button class="qb" onclick="setCravingInt(this,7)" style="min-width:32px">7</button>
-      <button class="qb" onclick="setCravingInt(this,8)" style="min-width:32px">8</button>
-      <button class="qb" onclick="setCravingInt(this,9)" style="min-width:32px">9</button>
-      <button class="qb" onclick="setCravingInt(this,10)" style="min-width:32px">10</button>
-    </div>
-    <div class="lbl">What emotion was present?</div>
-    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px">
-      <button class="qb" onclick="setCravingEmotion(this,'Bored')">Bored</button>
-      <button class="qb" onclick="setCravingEmotion(this,'Stressed')">Stressed</button>
-      <button class="qb" onclick="setCravingEmotion(this,'Lonely')">Lonely</button>
-      <button class="qb" onclick="setCravingEmotion(this,'Anxious')">Anxious</button>
-      <button class="qb" onclick="setCravingEmotion(this,'Angry')">Angry</button>
-      <button class="qb" onclick="setCravingEmotion(this,'Tired')">Tired</button>
-      <button class="qb" onclick="setCravingEmotion(this,'Sad')">Sad</button>
-      <button class="qb" onclick="setCravingEmotion(this,'Tempted')">Tempted</button>
-      <button class="qb" onclick="setCravingEmotion(this,'Happy')">Happy</button>
-    </div>
-    <input type="text" id="cl-note" placeholder="What triggered it? (optional)" style="margin-bottom:10px">
-    <button class="btn primary" onclick="logCraving()" style="margin-bottom:14px">Log this craving</button>
-    <div id="craving-log-section" style="display:none">
-      <div class="lbl">Recent cravings</div>
-      <div id="craving-log-list"></div>
-    </div>
-  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════ -->
@@ -4754,7 +4717,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v460';
+const APP_VERSION = 'v461';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4779,6 +4742,13 @@ const API=SUPABASE_URL+'/functions/v1/ai-proxy';
 
 // ESV API - approved for free use
 // Limits: 500 verses/query, 5000 queries/day. No local storage of 500+ verses.
+// NOTE — this key ships inside a public single-file bundle, so it is readable by anyone who views
+// source on the live site. api.esv.org issues keys per person and does not expect them to be
+// published: it can be rate-limited or revoked by someone else's use, which would take the ESV
+// reader down for everyone. The fix is to proxy these requests through the Supabase edge function
+// the way AI calls already are, and rotate the key — both need the account owner, so it is
+// recorded here and in PRE-LAUNCH.md rather than silently left. A duplicate, unused copy of this
+// same key (const ESV_KEY) was removed in v461.
 const ESV_API_KEY = '343001d9272ba5cfb76f1cba977d866d22b77e13';
 const ESV_API_URL = 'https://api.esv.org/v3/passage/text/';
 // Session-only cache (cleared on reload - respects ESV terms)
@@ -6451,21 +6421,6 @@ function initNotifications(){
   }
 }
 
-function requestNotifications(){
-  // Goes through the wrapper-aware Notify layer: native push if wrapped, web Notification if PWA.
-  Notify.requestPermission().then(granted => {
-    ls('totry_notif_asked', true);
-    if(granted){
-      ls('totry_notif_enabled', true);
-      showToast('Notifications on', Notify.isNative() ? 'We\'ll check in with you, even when the app is closed.' : 'We\'ll send a gentle nudge each morning.');
-      scheduleNotifications();
-      setTimeout(()=>{ Notify.now('To Try', 'You\'re all set. The least we can do everyday, is to try.'); }, 1000);
-    } else {
-      showToast('No worries','You can enable reminders anytime in Settings.');
-    }
-    if(typeof renderNotifSetting==='function') renderNotifSetting();
-  });
-}
 
 function scheduleNotifications(){
   // Store the schedule preference. Actual delivery handled by checking on app open
@@ -11828,53 +11783,6 @@ function updateSobrietyClock(){
 }
 
 // Craving log
-let cravingIntensity=5,cravingEmotion='Stressed';
-function setCravingInt(btn,val){
-  cravingIntensity=val;
-  document.querySelectorAll('#cl-intensity-btns .qb').forEach((b,i)=>{
-    const on=(i+1)<=val;
-    b.style.background=on?'var(--re-bg)':'';
-    b.style.borderColor=on?'var(--re-bd)':'';
-    b.style.color=on?'var(--re)':'';
-  });
-}
-function setCravingEmotion(btn,emotion){
-  cravingEmotion=emotion;
-  btn.parentElement.querySelectorAll('.qb').forEach(b=>{b.style.borderColor='';b.style.background='';b.style.color='';});
-  btn.style.borderColor='var(--bl-bd)';btn.style.background='var(--bl-bg)';btn.style.color='var(--bl)';
-}
-function logCraving(){
-  loadV();
-  const sel=document.getElementById('cl-vice-sel');
-  const viceName=sel?sel.value:(vices[0]?.n||'Vice');
-  const note=document.getElementById('cl-note')?.value.trim()||'';
-  const entry={id:Date.now(),ts:new Date().toISOString(),vice:viceName,intensity:cravingIntensity,emotion:cravingEmotion,note,date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'})};
-  const log=ls('totry_cravings')||[];log.unshift(entry);
-  ls('totry_cravings',log.slice(0,200));
-  const noteEl=document.getElementById('cl-note');if(noteEl)noteEl.value='';
-  renderCravingLog();showToast('Craving logged','Intensity '+cravingIntensity+'/10 \u00b7 '+cravingEmotion);
-}
-function renderCravingLog(){
-  const log=ls('totry_cravings')||[];
-  const sec=document.getElementById('craving-log-section');
-  const list=document.getElementById('craving-log-list');
-  if(!sec||!list)return;
-  if(!log.length){sec.style.display='none';return;}
-  sec.style.display='block';list.innerHTML='';
-  log.slice(0,15).forEach(e=>{
-    const intClass=e.intensity<=3?'low':e.intensity<=6?'med':'high';
-    const el=document.createElement('div');el.className='craving-log';
-    el.innerHTML='<div class="cl-top"><span class="cl-vice">'+e.vice+'</span><span class="cl-int '+intClass+'">'+e.intensity+'/10</span></div>'+
-      '<div class="cl-emotion">Feeling: '+e.emotion+'</div>'+(e.note?'<div class="cl-note">'+e.note+'</div>':'')+
-      '<div class="cl-date">'+e.date+'</div>';
-    list.appendChild(el);
-  });
-}
-function initViceSel(){
-  loadV();const sel=document.getElementById('cl-vice-sel');if(!sel)return;
-  sel.innerHTML='';
-  vices.forEach(v=>{const o=document.createElement('option');o.value=v.n;o.textContent=v.n;sel.appendChild(o);});
-}
 
 // Vice fallback verses
 const FB=[
@@ -19020,7 +18928,6 @@ const BIBLE_BOOKS=[
   {id:'2-peter',name:'2 Peter',chapters:3},{id:'1-john',name:'1 John',chapters:5},{id:'2-john',name:'2 John',chapters:1},
   {id:'3-john',name:'3 John',chapters:1},{id:'jude',name:'Jude',chapters:1},{id:'revelation',name:'Revelation',chapters:22},
 ];
-const ESV_KEY='343001d9272ba5cfb76f1cba977d866d22b77e13';
 let brInitialized=false;
 
 function initBibleReader(){
@@ -21655,14 +21562,6 @@ function _hungerPick(id){
 // (#mealplan-input/-btn/-out) only ever existed inside that modal. Unreferenced; openFuelPlan() is the
 // live meal-planning path.
 
-function saveMealPlan(){
-  const plan=window.__pendingMealPlan; if(!plan) return;
-  const plans=ls('totry_meal_plans')||[];
-  plans.unshift({ id:Date.now(), createdAt:new Date().toISOString(), plan });
-  ls('totry_meal_plans', plans.slice(0,10));
-  if(typeof syncToCloud==='function') syncToCloud();
-  haptic('success'); showToast('Plan saved', 'Find it in your saved meal plans.');
-}
 
 async function estimateMealMacros(description){
   const res=document.getElementById('nut-search-results');
@@ -33330,25 +33229,6 @@ function initCalAppDisplay(){
 }
 
 
-function saveReminderTimes(){
-  const m=document.getElementById('notif-morning')?.value||'07:00';
-  const e=document.getElementById('notif-evening')?.value||'21:00';
-  ls('totry_reminder_morning',m);
-  ls('totry_reminder_evening',e);
-  // Actually schedule them — a reminder that saves a time and fires nothing is worse than none.
-  // Native: real daily notifications at these times. Web: records intent (fires once wrapped).
-  let native=false;
-  try{
-    if(typeof Notify!=='undefined' && Notify.scheduleDaily){
-      const [mh,mm]=m.split(':').map(n=>parseInt(n,10));
-      const [eh,em]=e.split(':').map(n=>parseInt(n,10));
-      Notify.scheduleDaily('reminder_morning','To Try','A quiet minute to set your intention for today.', isNaN(mh)?7:mh, isNaN(mm)?0:mm);
-      Notify.scheduleDaily('reminder_evening','To Try','Close the day with grace — a moment to look back honestly.', isNaN(eh)?21:eh, isNaN(em)?0:em);
-      native = !!(Notify.isNative && Notify.isNative());
-    }
-  }catch(_){}
-  showToast('Reminders set', native ? ('Morning '+m+' · Evening '+e+' — I’ll nudge you then.') : ('Morning '+m+' · Evening '+e+'. They fire on your phone once the app is installed to your home screen; in-app for now.'));
-}
 
 
 // ═══════════════════════════════════════════════════
@@ -34626,50 +34506,6 @@ function checkLettersDue(){
 // ═══════════════════════════════════════════════════
 // PASS 4: CONTEXTUAL SCRIPTURE MOMENTS
 // ═══════════════════════════════════════════════════
-function showContextualScripture(context){
-  // Don\'t show too often - max once per context per day
-  const today=new Date().toLocaleDateString('en-AU');
-  const shownKey='totry_scripture_'+context+'_'+today;
-  if(ls(shownKey))return;
-  ls(shownKey,true);
-  
-  const verses={
-    vice_win:[
-      {ref:'1 Corinthians 10:13',verse:'No temptation has overtaken you that is not common to man. God is faithful, and he will not let you be tempted beyond your ability.'},
-      {ref:'Romans 6:14',verse:'For sin will have no dominion over you.'},
-      {ref:'Galatians 5:1',verse:'For freedom Christ has set us free.'},
-      {ref:'James 4:7',verse:'Resist the devil, and he will flee from you.'},
-      {ref:'2 Corinthians 12:9',verse:'My grace is sufficient for you, for my power is made perfect in weakness.'},
-    ],
-    workout:[
-      {ref:'Hebrews 12:1',verse:'Let us run with endurance the race that is set before us.'},
-      {ref:'1 Corinthians 9:27',verse:'I discipline my body and keep it under control.'},
-      {ref:'Philippians 4:13',verse:'I can do all things through him who strengthens me.'},
-      {ref:'Isaiah 40:31',verse:'Those who wait for the Lord shall renew their strength.'},
-    ],
-    debt_payment:[
-      {ref:'Proverbs 22:7',verse:'The borrower is slave to the lender.'},
-      {ref:'Romans 13:8',verse:'Owe no one anything, except to love each other.'},
-      {ref:'Proverbs 13:11',verse:'Whoever gathers little by little will increase wealth.'},
-    ]
-  };
-  
-  const list=verses[context];
-  if(!list||!list.length)return;
-  const v=list[Math.floor(Math.random()*list.length)];
-  
-  const m=document.createElement('div');
-  m.className='modal-bg open';
-  m.style.alignItems='center';
-  m.innerHTML='<div class="modal" style="max-width:90vw">'+
-    '<div class="modal-handle"></div>'+
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.14em;text-align:center;margin-bottom:14px">A word for this moment</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:20px;color:var(--tx);text-align:center;line-height:1.6;font-style:italic;margin-bottom:14px">“'+v.verse+'”</div>'+
-    '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--go);text-align:center;letter-spacing:0.1em;margin-bottom:18px">— '+v.ref+'</div>'+
-    '<button class="btn primary" onclick="closeModal(this)">Amen</button>'+
-  '</div>';
-  document.body.appendChild(m);
-}
 
 async function showAIMorningSentence(){
   const card=document.getElementById('ai-morning-card');
@@ -37607,32 +37443,20 @@ function applyTDEEGoals(cal,pro){
   const res=document.getElementById('tdee-result');if(res)res.style.display='none';
 }
 
-function scheduleReminders(){
-  const perm=ls('totry_notif_perm');
-  if(perm!=='granted')return;
-  // Store user's preferred reminder times
-  const morningTime=document.getElementById('notif-morning')?.value||'07:00';
-  const eveningTime=document.getElementById('notif-evening')?.value||'21:00';
-  ls('totry_reminder_times',{morning:morningTime,evening:eveningTime});
-  showToast('Reminders saved',morningTime+' morning · '+eveningTime+' evening');
-}
 
 function tapMetric(dest){go(dest);}
 
 // ── NEW TAB CONTROLLERS ───────────────────────────────────────
 
 function setFightTab(tab){
-  // craving merged into vice card → simpler 2-tab flow
+  // Craving logging lives in the vice card tap now; the old standalone panel and its cluster are gone.
   ['vices','score'].forEach(t=>{
     const p=document.getElementById('fight-panel-'+t);
     const b=document.getElementById('fst-'+t);
     if(p)p.style.display=t===tab?'block':'none';
     if(b)b.classList.toggle('active',t===tab);
   });
-  // Make sure craving panel never shows (legacy)
-  const craving=document.getElementById('fight-panel-craving');
-  if(craving)craving.style.display='none';
-  
+
   if(tab==='vices'){renderVices();}
   if(tab==='score'){renderScoreboard();}
 }

@@ -2407,6 +2407,31 @@ H.section('a renderer without a container is a feature that silently does not ex
   H.ok(!/'\+s\.date\+'/.test(wh) && !/'\+s\.day\+'/.test(wh), 'no raw date/day is concatenated into a row');
   H.ok(!/s\.completedSets\+'\//.test(wh), 'set counts are derived, not assumed');
   H.ok(/' exercise'\+\(_exN===1\?'':'s'\)/.test(wh), "and nobody is shown \"1 exercises\"");
+
+  // DEAD CODE THAT WOULD REOPEN A CLOSED CLASS. Each of these was complete, unreachable, and one
+  // wiring-up away from undoing work that took several passes to get right — which is exactly how
+  // this codebase produced three separate instances of the same faith-gate bug.
+  //  · showContextualScripture() held hardcoded Christian verses keyed by context, with no tradition
+  //    check anywhere in it. It is the v431/v440 bug pre-built and waiting for a caller.
+  //  · requestNotifications/scheduleReminders/saveReminderTimes were a second reminder system writing
+  //    totry_reminder_* and totry_notif_perm, while the live one (enablePushReminders) writes
+  //    totry_push_prefs. Two sources of truth for when the app is allowed to speak to someone.
+  //  · saveMealPlan() wrote totry_meal_plans, which nothing has ever read, and toasted "Find it in
+  //    your saved meal plans" — a place that does not exist. The live plan is totry_meal_plan.
+  //  · the craving panel: five functions and ~40 lines of markup behind a panel setFightTab() went
+  //    out of its way to keep hidden.
+  for (const gone of ['function showContextualScripture', 'function requestNotifications',
+                      'function scheduleReminders', 'function saveReminderTimes',
+                      'function saveMealPlan', 'function logCraving', 'function renderCravingLog',
+                      'fight-panel-craving']) {
+    H.ok(!H.html.includes(gone), `${gone} stays deleted`);
+  }
+  H.ok(/enablePushReminders/.test(code), 'the one live reminder path is still there');
+
+  // The same ESV key was declared twice; the second copy was never used. The live one is documented
+  // in place because it ships publicly and only the account owner can rotate or proxy it.
+  H.ok((H.html.match(/343001d9272ba5cfb76f1cba977d866d22b77e13/g) || []).length <= 1,
+    'the API key is not duplicated through the bundle');
 }
 
 H.report();
