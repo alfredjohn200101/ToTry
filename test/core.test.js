@@ -1406,8 +1406,18 @@ H.section('app lock — must never lock a person out of their own journal');
   H.ok(toggle.indexOf('Lock.prove(') < toggle.indexOf("ls('totry_lock_on'"),
     'turning the lock ON requires a successful auth FIRST, so it is tested before it is trusted');
 
-  // Coming back from the share sheet or the camera must not demand Face ID.
-  H.ok(/_lockHiddenAt\) > 20000/.test(H.html), 'only a real absence re-locks, not every sheet that hides the webview');
+  // Two failure modes pull in opposite directions and BOTH have shipped here.
+  // Re-locking on every hide is maddening: the share sheet, the barcode scanner and permission prompts
+  // all hide the web view, and demanding Face ID on the way back from those makes the lock unusable.
+  // But 20 seconds — the original value — defeats the lock's own stated threat model, which its header
+  // comment gives as "people hand their unlocked phone to a partner, a friend, a child": hand the phone
+  // over, they reopen To Try inside twenty seconds, and the journal is simply there.
+  // So the window must exist and must be short. Asserted as a range, not a constant, so the next person
+  // changing it has to stay inside both constraints rather than re-discovering one of them.
+  const _lockWin = (H.html.match(/_lockHiddenAt\) > (\d+)/) || [])[1];
+  H.ok(!!_lockWin, 'there is a grace window before re-locking');
+  H.ok(Number(_lockWin) >= 1000, 'long enough that a returning system sheet does not demand Face ID');
+  H.ok(Number(_lockWin) <= 5000, 'and short enough that handing someone the phone does not bypass it');
 }
 
 H.section('loading the bar — plate maths');
@@ -2888,6 +2898,69 @@ H.section('two devices do not destroy each other\'s work')
                      'totry_family_contrib', 'totry_poker_sessions', 'totry_saved_meals']) {
     H.ok(new RegExp("tombstoneRemoved\\('" + key + "'").test(code), `${key} records its deletions`);
   }
+}
+
+H.section('usable without sight, and honest about the native paths')
+{
+  const code = H.html.replace(/<!--[\s\S]*?-->/g, '').split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  const fnBody = (name) => {
+    const m = code.match(new RegExp('function\\s+' + name + '\\s*\\('));
+    if (!m) return '';
+    let i = code.indexOf('{', m.index) + 1, d = 1;
+    while (i < code.length && d) { const c = code[i]; if (c === '{') d++; else if (c === '}') d--; i++; }
+    return code.slice(m.index, i);
+  };
+
+  // ALL 508 notifications came through showToast as a bare div with no role and no aria-live, removed
+  // after five seconds. Nothing was ever announced — and this same channel carries the only notice of
+  // irreversible loss ("I had to remove 3 older progress photos"), which are device-only and in no backup.
+  const st = fnBody('showToast');
+  H.ok(/aria-live/.test(st), 'toasts are announced at all');
+  H.ok(/_urgent/.test(st) && /'alert'/.test(st) && /'status'/.test(st),
+    'a failure interrupts, an ordinary confirmation does not talk over the person');
+  H.ok(/tabindex','0'/.test(st) && /keydown/.test(st) && /'Enter'/.test(st),
+    'a tappable toast is operable without a mouse');
+
+  // THE FEELING DOOR is the app's entire entry point. The orb that opens it is a proper labelled button,
+  // and the door it opened was a plain div: no role, no aria-modal, focus left on BODY, and SEVENTEEN
+  // background controls before the first feeling chip in tab order.
+  H.ok(/id="feel-door" role="dialog" aria-modal="true" aria-labelledby="feel-greeting"/.test(H.html),
+    'the Feeling Door is a real modal');
+  const ofd = fnBody('openFeelingDoor');
+  H.ok(/\.feel-chip'\)/.test(ofd) && /focus\(/.test(ofd), 'and focus lands on a feeling, not the container');
+  H.ok(/aria-hidden','true'/.test(ofd), 'with the rest of the app hidden from the screen reader');
+  H.ok(/e\.key === 'Escape'/.test(code) && /e\.key !== 'Tab'/.test(code), 'Escape closes it and Tab cycles inside it');
+  const cfd = fnBody('closeFeelingDoor');
+  H.ok(/_feelReturnFocus/.test(cfd), 'and closing returns focus where it was');
+
+  // Measured: h1 count 0, <main> 0, and NO heading element at all on Today, Fight or Money — so heading
+  // navigation, the fastest non-visual way around, did not exist.
+  H.ok(/function _a11yScreenChrome\(/.test(code), 'the visible screen gets a landmark and a heading');
+  H.ok(/_a11yScreenChrome\(name\);/.test(fnBody('go')), 'and go() applies it, so every screen has one');
+  H.ok(/\.a11y-only\{position:absolute/.test(H.html), 'via a visually-hidden heading, so nothing is redesigned');
+  H.ok(/A11Y_TAB_NAMES/.test(code) && /home:'Today'/.test(code), 'named in the words the app uses');
+
+  // Colour and sight were the only channel for two things a person acts on.
+  H.ok(/id="sos-breathe-lbl" role="status" aria-live="assertive"/.test(H.html),
+    'the breathing pacer is announced, not just displayed');
+  H.ok(/aria-pressed/.test(fnBody('setQLOutcome')), 'and the win/loss choice exposes which is selected');
+
+  // NATIVE. A nudge was logged sent:true unconditionally, though Notify.schedule is async and swallows
+  // every failure — so phantom sends were counted as ignored and stood the channel down for 14 days.
+  const sro = fnBody('scheduleReachOut');
+  H.ok(/ok === false/.test(sro), 'a reach-out is only logged as sent if it actually scheduled');
+  H.ok(/_reachConfirm/.test(code), 'and the confirmations are serialised, so none is lost to a race');
+
+  // The lock's threat model is a handed-over phone; a stale Health figure is a number from nowhere.
+  H.ok(/totry_mindful_week', 0/.test(fnBody('disconnectAppleHealth')),
+    'disconnecting Health clears the figure only Health could produce');
+  // The 90-minute dedupe was borrowed from the cross-integration case and swallowed a real second session.
+  H.ok(/String\(e\.id\|\|''\) === wid/.test(code.replace(/\s/g, ' ')),
+    'an identical id is treated as the duplicate it is');
+  H.ok(/a === b \|\| a\.indexOf\(b\) >= 0/.test(code), 'and a different session type inside the window is kept');
+
+  // lastTitle came from an unsorted array, so the brief told the model about an arbitrary import.
+  H.ok(/_sorted\[0\] \|\| workouts\[0\]/.test(code), 'the brief names the genuinely most recent session');
 }
 
 H.report();

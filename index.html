@@ -509,6 +509,7 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .bsr-ref{font-family:'DM Mono',monospace;font-size:9px;color:var(--go);margin-bottom:4px;letter-spacing:0.06em}
 .bsr-text{font-size:13px;color:var(--tx2);line-height:1.5}
 .bible-tab-row{display:flex;gap:0;border-bottom:1px solid var(--bd);margin-bottom:12px}
+.a11y-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 .btab{flex:1;padding:8px 4px;background:none;border:none;border-bottom:2px solid transparent;color:var(--tx3);font-size:12px;font-weight:500;cursor:pointer;font-family:'Outfit',sans-serif}
 .btab.active{color:var(--go);border-bottom-color:var(--go)}
 /* ── NUTRITION ── */
@@ -4149,7 +4150,7 @@ Amen.</div></div>
      and moves you to the one thing that helps. This is what makes the app significant in the moment.
      ════════════════════════════════════════════════════════════════════════════════════════════ -->
 <div class="feel-backdrop" id="feel-backdrop" onclick="closeFeelingDoor()"></div>
-<div class="feel-door" id="feel-door">
+<div class="feel-door" id="feel-door" role="dialog" aria-modal="true" aria-labelledby="feel-greeting" tabindex="-1">
   <div class="feel-grab"></div>
   <div class="feel-greeting" id="feel-greeting">What are you feeling?</div>
   <div class="feel-sub" id="feel-sub">No wrong answer. Just name it — I'll take it from there.</div>
@@ -4261,7 +4262,7 @@ Amen.</div></div>
     <div class="verse-tools" id="sos-verse-tools" style="display:none;justify-content:center;margin:-8px 0 18px"></div>
     <div class="sos-breathe-wrap">
       <div class="sos-breathe-circle" id="sos-breathe-circle"></div>
-      <div class="sos-breathe-lbl" id="sos-breathe-lbl">Breathe in...</div>
+      <div class="sos-breathe-lbl" id="sos-breathe-lbl" role="status" aria-live="assertive" aria-atomic="true">Breathe in...</div>
     </div>
     <div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);padding:14px 16px;margin-top:18px">
       <div class="eyebrow" style="color:var(--bl);margin-bottom:6px">Why this works</div>
@@ -4754,7 +4755,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v471';
+const APP_VERSION = 'v472';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -6067,7 +6068,23 @@ const Health = {
           if(selfBundle && String(w.sourceBundleId||'').indexOf(selfBundle)===0) return;   // our own echo
           // Same session already here from Hevy, Strava or a manual log — match on time, as the rest of
           // the app does (_sessionsOverlap, 90 minutes).
-          if(existing.some(function(e){ return _sessionsOverlap(e.ts, w.startDate, 90); })) { seen.add(wid); return; }
+          // 90 minutes was borrowed from the Hevy/Strava dedupe, where it is right: the SAME session
+          // arriving from two integrations. Applied to Apple Health it also swallows a genuine second
+          // session — a lift then a walk an hour later is one workout as far as this check is concerned,
+          // and `existing` is mutated by the unshift below, so the pass even de-duplicates against
+          // sessions imported moments earlier in the same loop. A matching id is a real duplicate; a
+          // different id inside the window is only a duplicate if it is the same TYPE, which is what the
+          // cross-integration case actually looks like.
+          if(existing.some(function(e){
+            if(!e) return false;
+            if(String(e.id||'') === wid) return true;                      // the same session, certainly
+            if(!_sessionsOverlap(e.ts, w.startDate, 90)) return false;
+            const a = String(e.type||e.splitFocus||e.title||'').toLowerCase();
+            const b = String(w.workoutType||'').toLowerCase();
+            // No type on the existing row: fall back to the old behaviour rather than duplicating.
+            if(!a || !b) return true;
+            return a === b || a.indexOf(b) >= 0 || b.indexOf(a) >= 0;
+          })) { seen.add(wid); return; }
           const mins = Math.round((w.duration||0)/60) || Math.round((new Date(w.endDate)-new Date(w.startDate))/60000);
           const hr = (w.heartRate&&w.heartRate.length)
             ? Math.round(w.heartRate.reduce(function(a,x){return a+(x.bpm||0);},0)/w.heartRate.length) : null;
@@ -6181,6 +6198,11 @@ async function disconnectAppleHealth(){
   try{ ls('totry_health_connected', false); }catch(_){}
   // The write side rides on the same grant — leaving it "on" would be a switch pointing at nothing.
   try{ ls('totry_health_write', false); }catch(_){}
+  // AND the figures that only Health can produce. totry_mindful_week is written solely inside
+  // Health.syncToday, which is gated on Health.connected() — so after disconnecting it froze at its last
+  // value and "N min of stillness this week · across all your apps" kept displaying a number no longer
+  // coming from anywhere. Weeks later it was still that week's number. Clear what we can no longer know.
+  try{ ls('totry_mindful_week', 0); }catch(_){}
   try{ if(typeof logEvent==='function') logEvent('health_disconnect',{}); }catch(_){}
   try{ if(typeof showToast==='function') showToast('Apple Health off', 'No more reading or syncing. Revoke the permission in iOS Settings → Health.'); }catch(_){}
   try{ renderHealthCard(); }catch(_){}
@@ -6344,6 +6366,7 @@ function _reachBody(hi, viceName, shifted){
 }
 
 const _REACH_WIN_START = { 'late night':0, 'morning':6, 'afternoon':12, 'evening':17, 'night':21 };
+let _reachConfirm = Promise.resolve();   // serialises the native schedule confirmations below
 function scheduleReachOut(){
   try{
     const _remindersOn = (typeof _pushPrefs==='function' && _pushPrefs().enabled)
@@ -6402,8 +6425,24 @@ function scheduleReachOut(){
       // log that already said "three ignored", so the one feature the wrapper unlocks was mute on
       // day one. Nothing sent, nothing logged.
       if(native){
-        Notify.schedule('reachout_'+i, 'To Try', body, t, { route:'reachout', vice:best.v.n });
-        log.push({ ts:t.getTime(), vice:String(best.v.n), opened:null, sent:true });
+        // sent:true was written UNCONDITIONALLY. Notify.schedule is async and swallows every failure
+        // (catch(_){ return false; }), and this neither awaited nor checked it — so a nudge that never
+        // scheduled was logged as sent, _resolveReachOuts later saw it unanswered (nobody opens a
+        // notification that never arrived), and three phantom sends stood the channel down for fourteen
+        // days. The app then concluded the person was ignoring it. Only log what actually happened.
+        // Queued on ONE chain rather than each callback re-reading storage — two concurrent confirmations
+        // reading the same snapshot would lose an entry, which is the same shape of bug as the phantom
+        // sends this is fixing.
+        _reachConfirm = _reachConfirm.then(function(){
+          return Promise.resolve(Notify.schedule('reachout_'+i, 'To Try', body, t, { route:'reachout', vice:best.v.n }))
+            .then(function(ok){
+              if(ok === false) return;   // never scheduled — do not blame the person for not answering it
+              const l = _reachLog();
+              l.push({ ts:t.getTime(), vice:String(best.v.n), opened:null, sent:true });
+              _saveReachLog(l);
+            })
+            .catch(function(){ /* nothing scheduled, nothing logged */ });
+        });
       }
     });
     _saveReachLog(log);
@@ -7518,7 +7557,17 @@ function getLifeState(){
     now,
     training: {
       sessions7: train7.length, sessions14: train14.length, daysTrained7: trainDays7,
-      lastTitle: workouts[0] ? (workouts[0].title||workouts[0].splitFocus||'Workout') : null
+      // workouts is the RAW unsorted array and Health.syncWorkouts unshifts imported HealthKit sessions
+      // onto the front in unspecified query order, so [0] was an arbitrary import rather than the latest
+      // session — and the brief then told the model "last: Workout". Pick the genuinely most recent.
+      lastTitle: (function(){
+        try{
+          const _sorted = (workouts||[]).filter(function(w){ return w && (w.ts || w.date); })
+            .sort(function(a,b){ return new Date(b.ts||b.date||0) - new Date(a.ts||a.date||0); });
+          const _l = _sorted[0] || workouts[0];
+          return _l ? (_l.title||_l.splitFocus||_l.type||'Workout') : null;
+        }catch(_){ return workouts[0] ? (workouts[0].title||workouts[0].splitFocus||'Workout') : null; }
+      })()
     },
     nutrition: {
       todayCal: Math.round(todayCal), todayPro: Math.round(todayPro),
@@ -10871,7 +10920,40 @@ function highlightSoulByTime(){
   }
 }
 
+// HEADING NAVIGATION AND A MAIN LANDMARK. Measured: h1 count 0, <main> 0, <header> 0, and visible
+// headings per tab — home [], fight [], money [], grow ["Grow"], soul ["Soul"]. Section titles are styled
+// divs (.eyebrow is font/colour/letter-spacing only), so a screen-reader user had no way to jump between
+// sections: the fastest non-visual navigation in the app was simply absent, and on Today, Fight and Money
+// there was not one heading element on screen.
+//
+// Done here rather than in 21 places of markup because this function is the one thing that knows which
+// screen is showing. Only the visible tab gets role="main" — display:none keeps the rest out of the
+// accessibility tree, so exactly one landmark is exposed at a time, and each screen legitimately has its
+// own top-level heading.
+const A11Y_TAB_NAMES = {
+  home:'Today', fight:'The fight', train:'Train', grow:'Grow', nourish:'Nourish', money:'Money',
+  soul:'Soul', track:'Track', reflect:'Reflect', coach:'Coach', bible:'Scripture', read:'Read',
+  plans:'Reading plans', threads:'Shared threads', today:'Today in your tradition', practice:'Practice',
+  liturgy:'Liturgy', why:'Your why', morning:'Morning', calendar:'Calendar', settings:'Settings',
+};
+function _a11yScreenChrome(name){
+  try{
+    document.querySelectorAll('.tab[role="main"]').forEach(function(el){ el.removeAttribute('role'); });
+    const pane = document.getElementById('tab-' + name);
+    if(!pane) return;
+    const label = A11Y_TAB_NAMES[name] || name;
+    pane.setAttribute('role','main');
+    pane.setAttribute('aria-label', label);
+    if(!pane.querySelector('h1,h2,h3')){
+      const h = document.createElement('h1');
+      h.className = 'a11y-only';
+      h.textContent = label;
+      pane.insertBefore(h, pane.firstChild);
+    }
+  }catch(_){ }
+}
 function go(name){
+  _a11yScreenChrome(name);
   haptic("tap");
   // Nothing should still be talking after you leave the screen you started it on.
   try{ if(typeof Speak!=='undefined' && Speak.stop) Speak.stop(); }catch(_){}
@@ -12510,6 +12592,14 @@ function startQuickLog(i){
 let _qlOutcome = null;
 function setQLOutcome(won){
   _qlOutcome = won;
+  // Which one is chosen was communicated ONLY as a border tint, with no aria-pressed, no text change and
+  // nothing announced — so a screen-reader user taps "held" or "lapsed" and is never told which is now
+  // selected, on the core act of the Fight tab. aria-pressed makes the state part of the control.
+  try{
+    const _w=document.getElementById('ql-win-btn'), _l=document.getElementById('ql-loss-btn');
+    if(_w){ _w.setAttribute('role','button'); _w.setAttribute('aria-pressed', won ? 'true' : 'false'); }
+    if(_l){ _l.setAttribute('role','button'); _l.setAttribute('aria-pressed', won ? 'false' : 'true'); }
+  }catch(_){ }
   document.getElementById('ql-win-btn').style.borderColor = won ? 'var(--gr)' : 'var(--bd)';
   document.getElementById('ql-win-btn').style.background = won ? 'var(--gr-bg)' : '';
   document.getElementById('ql-loss-btn').style.borderColor = !won ? 'var(--re)' : 'var(--bd)';
@@ -13617,17 +13707,56 @@ const FEELINGS = [
   { id:'angry',       emoji:'\uD83D\uDD25', label:'Fired up',        sub:'angry, frustrated',       act:()=>_feelMove('angry') },
   { id:'good',        emoji:'\u2728',       label:'Actually good',   sub:'steady, grateful',        act:()=>_feelMove('good') }
 ];
+// The orb that opens this is a proper button with aria-label="I need help right now", so a keyboard or
+// VoiceOver user reaches it fine — and then the door it opened was unusable. It covered the screen and set
+// body overflow:hidden, but it was a plain div: no role, no aria-modal, no label, and focus stayed on
+// BODY. Measured with the door open, SEVENTEEN background controls came before the first feeling chip in
+// tab order — the settings button, the nav, everything behind it. The app's entire entry point, the thing
+// it exists to be, could not be operated without sight.
+let _feelReturnFocus = null;
 function openFeelingDoor(){
   try{
     renderFeelingDoor();
     document.getElementById('feel-backdrop')?.classList.add('open');
     const d = document.getElementById('feel-door'); if(d) d.classList.add('open');
     if(typeof haptic==='function') haptic('light');
+    // Remember where they were so closing returns them there rather than to the top of the page.
+    try{ _feelReturnFocus = document.activeElement; }catch(_){ _feelReturnFocus = null; }
+    // Hide everything behind it from the screen reader, so swiping cannot wander out of the sheet.
+    try{ document.querySelectorAll('.tab, .nav, .navbar, #topbar').forEach(function(el){
+      if(el && !el.closest('#feel-door')) el.setAttribute('aria-hidden','true'); }); }catch(_){ }
+    // Focus the first feeling, not the container, so the next swipe is a choice rather than a heading.
+    setTimeout(function(){
+      try{
+        const first = d && d.querySelector('.feel-chip');
+        if(first) first.focus({ preventScroll:true }); else if(d) d.focus({ preventScroll:true });
+      }catch(_){ }
+    }, 60);
   }catch(_){}
 }
+// Escape closes it, and Tab cycles WITHIN it — otherwise the first Tab leaves the sheet and the person is
+// silently operating the page underneath a full-screen overlay.
+document.addEventListener('keydown', function(e){
+  const d = document.getElementById('feel-door');
+  if(!d || !d.classList.contains('open')) return;
+  if(e.key === 'Escape'){ e.preventDefault(); closeFeelingDoor(); return; }
+  if(e.key !== 'Tab') return;
+  const items = [].slice.call(d.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+                  .filter(function(el){ return el.offsetParent !== null || el === document.activeElement; });
+  if(!items.length) return;
+  const first = items[0], last = items[items.length - 1];
+  if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+});
 function closeFeelingDoor(){
   document.getElementById('feel-backdrop')?.classList.remove('open');
   const d = document.getElementById('feel-door'); if(d) d.classList.remove('open');
+  // Give the rest of the app back to the screen reader, and put focus where they left it.
+  try{ document.querySelectorAll('[aria-hidden="true"]').forEach(function(el){
+    if(el && !el.closest('#feel-door') && (el.classList.contains('tab') || el.classList.contains('nav') ||
+       el.classList.contains('navbar') || el.id === 'topbar')) el.removeAttribute('aria-hidden'); }); }catch(_){ }
+  try{ if(_feelReturnFocus && document.contains(_feelReturnFocus)) _feelReturnFocus.focus({ preventScroll:true }); }catch(_){ }
+  _feelReturnFocus = null;
 }
 function renderFeelingDoor(){
   const name = ls('totry_name') || '';
@@ -15958,7 +16087,12 @@ document.addEventListener('visibilitychange', function(){
     if(document.visibilityState === 'hidden'){ _lockHiddenAt = Date.now(); return; }
     // Only after a real absence. Presenting the share sheet, the camera scanner or a permission prompt
     // also hides the web view, and demanding Face ID on the way back from those would be maddening.
-    if(_lockHiddenAt && (Date.now() - _lockHiddenAt) > 20000) maybeLockApp(true);
+    // The stated threat model is "people hand their unlocked phone to a partner, a friend, a child" —
+    // and a 20-second grace window defeats exactly that: hand the phone over, they reopen To Try within
+    // twenty seconds, and the journal is simply there. The window exists for a real reason (the share
+    // sheet, the barcode scanner and permission prompts all hide the web view), so it is kept but cut to
+    // a length that covers a returning dialog without covering a handover.
+    if(_lockHiddenAt && (Date.now() - _lockHiddenAt) > 2500) maybeLockApp(true);
   }catch(_){}
 });
 
@@ -36027,11 +36161,33 @@ function setCheckin(field, value){
   haptic('light');
 }
 
+// ANNOUNCED, NOT JUST DRAWN. All 508 of the app's notifications came through here as a bare div appended
+// to body with no role and no aria-live, then removed after five seconds — so nothing was ever announced.
+// Most are harmless confirmations, but this same channel carries the only notice of irreversible loss:
+// "Storage was full — I had to remove 3 older progress photos", which are device-only by policy and in
+// no backup. A person who cannot see the screen was never told.
+//
+// Two urgencies, deliberately. Anything reporting a failure or a loss is role=alert/assertive so it
+// interrupts; ordinary confirmations are role=status/polite so a stream of "Saved" does not talk over
+// whatever the person is doing. A tappable toast also gets an explicit role=button and Enter/Space, since
+// it was previously a div with an onclick — invisible to the keyboard.
 function showToast(title,msg,onTap){
   const ex=document.querySelector('.milestone-toast');if(ex)ex.remove();
   const t=document.createElement('div');t.className='milestone-toast';
+  const _urgent = /full|fail|could ?n.t|error|removed|deleted|lost|expired|not saved|did not save|wrong|reconnect|offline|out of room/i.test(String(title)+' '+String(msg));
+  t.setAttribute('role', onTap ? 'button' : (_urgent ? 'alert' : 'status'));
+  t.setAttribute('aria-live', _urgent ? 'assertive' : 'polite');
+  t.setAttribute('aria-atomic', 'true');
   t.innerHTML='<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-weight:500;margin-bottom:4px">'+title+'</div><div style="font-size:13px;line-height:1.5;opacity:0.85">'+msg+'</div>';
-  t.onclick=()=>{ if(typeof onTap==='function'){ try{ onTap(); }catch(_){} } t.remove(); };document.body.appendChild(t);setTimeout(()=>{if(t.parentNode)t.remove();},onTap?7000:5000);
+  const _fire=()=>{ if(typeof onTap==='function'){ try{ onTap(); }catch(_){} } t.remove(); };
+  t.onclick=_fire;
+  if(onTap){
+    // A toast you can act on must be reachable and operable without a mouse.
+    t.setAttribute('tabindex','0');
+    t.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); _fire(); } });
+  }
+  document.body.appendChild(t);
+  setTimeout(()=>{if(t.parentNode)t.remove();},onTap?7000:5000);
 }
 function closeModal(el){const m=el.closest('.modal-bg');if(m)m.remove();}
 // ── UNIVERSAL SHEET DISMISS ──────────────────────────────────────────────────────────────────────
