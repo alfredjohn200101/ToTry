@@ -102,8 +102,25 @@ Deno.serve(async (req: Request) => {
         },
         body: 'grant_type=client_credentials&scope=basic',
       })
-      const d = await r.json()
-      if (!d.access_token) return json({ error: 'fatsecret token failed' }, 502)
+      const d = await r.json().catch(() => ({}))
+      if (!d.access_token) {
+        // Pass FatSecret's OWN reason through. Swallowing it meant "fatsecret token failed" with no way
+        // to tell apart the three real causes, and the credentials are found — so the fault is at their
+        // end, not in the wiring:
+        //   invalid_client        → the id and secret are not a matching pair (e.g. one rotated, one not)
+        //   invalid_scope         → 'basic' is not granted on this plan
+        //   403 / IP not allowed  → FatSecret allowlists server IPs per app, and Supabase edge functions
+        //                           have no fixed IP. This is the one that cannot be fixed from here; it
+        //                           needs the app's IP restriction turned OFF in the FatSecret console.
+        // An OAuth error body carries no credential, so this is safe to surface.
+        return json({
+          error: 'fatsecret token failed',
+          status: r.status,
+          fatsecret_error: d.error || null,
+          fatsecret_description: d.error_description || null,
+          detail: typeof d === 'object' ? JSON.stringify(d).slice(0, 300) : String(d).slice(0, 300),
+        }, 502)
+      }
       fsToken = d.access_token
       // Expire a minute early so a token is never handed out on its last breath.
       fsExpiry = Date.now() + (Math.max(60, Number(d.expires_in) || 3600) - 60) * 1000
