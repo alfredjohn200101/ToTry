@@ -4754,7 +4754,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v465';
+const APP_VERSION = 'v466';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4786,8 +4786,26 @@ const API=SUPABASE_URL+'/functions/v1/ai-proxy';
 // the way AI calls already are, and rotate the key — both need the account owner, so it is
 // recorded here and in PRE-LAUNCH.md rather than silently left. A duplicate, unused copy of this
 // same key (const ESV_KEY) was removed in v461.
-const ESV_API_KEY = '343001d9272ba5cfb76f1cba977d866d22b77e13';
-const ESV_API_URL = 'https://api.esv.org/v3/passage/text/';
+// No hardcoded key. api.esv.org issues keys per person and does not expect them published; this one
+// shipped in a public file for months, where anyone could lift it and get it rate-limited or revoked —
+// taking the ESV reader down for everyone. It now comes from the key-proxy edge function, or from a key
+// the person entered themselves in Settings. With neither, ESV is simply skipped and the reader falls
+// back to KJV, ASV or WEB — all of which need no key at all, which is why this degrades quietly.
+async function esvPassage(q){
+  try{
+    const d = await keyProxy({ provider:'esv', q: q });
+    if(d && d.passages && d.passages[0]) return d.passages[0];
+    const own = ls('totry_esv_key');
+    if(!own) return null;
+    const r = await fetch('https://api.esv.org/v3/passage/text/?q=' + encodeURIComponent(q) +
+      '&include-verse-numbers=true&include-headings=false&include-footnotes=false' +
+      '&include-short-copyright=false&include-passage-references=false',
+      { headers: { 'Authorization': 'Token ' + own } });
+    if(!r.ok) return null;
+    const j = await r.json();
+    return (j.passages && j.passages[0]) ? j.passages[0] : null;
+  }catch(_){ return null; }
+}
 // Session-only cache (cleared on reload - respects ESV terms)
 const _esvSessionCache = {};
 
@@ -4796,15 +4814,9 @@ async function fetchESV(reference){
   if(_esvSessionCache[reference]) return _esvSessionCache[reference];
   
   try {
-    const r = await fetch(ESV_API_URL + '?q=' + encodeURIComponent(reference) + 
-      '&include-headings=false&include-footnotes=false&include-verse-numbers=false' +
-      '&include-short-copyright=false&include-passage-references=false', {
-      headers: { 'Authorization': 'Token ' + ESV_API_KEY }
-    });
-    if(!r.ok) return null;
-    const d = await r.json();
-    if(d.passages && d.passages.length){
-      const text = d.passages[0].trim();
+    const passage = await esvPassage(reference);
+    if(passage){
+      const text = passage.trim();
       _esvSessionCache[reference] = text;
       return text;
     }
@@ -19131,29 +19143,22 @@ async function loadBibleChapter(){
   const wantsESV = (translation === 'esv' || translation === undefined || translation === null || translation === '');
   
   // 1. Try ESV via session cache → direct API
-  if(wantsESV && ESV_API_KEY && ESV_API_KEY !== 'PENDING'){
+  if(wantsESV){
     const cacheKey = book.name + ' ' + chapter;
     if(_esvSessionCache[cacheKey]){
       verses = parseESVText(_esvSessionCache[cacheKey]);
       apiUsed = 'ESV';
     } else {
-      try{
-        const r = await fetch('https://api.esv.org/v3/passage/text/?q=' + encodeURIComponent(book.name+' '+chapter) + '&include-verse-numbers=true&include-headings=false&include-footnotes=false&include-short-copyright=false&include-passage-references=false', {
-          headers: {'Authorization': 'Token ' + ESV_API_KEY}
-        });
-        if(r.ok){
-          const d = await r.json();
-          if(d.passages && d.passages[0]){
-            _esvSessionCache[cacheKey] = d.passages[0];
-            verses = parseESVText(d.passages[0]);
-            apiUsed = 'ESV';
-          } else { lastError = 'ESV returned no passages'; }
-        } else {
-          lastError = 'ESV HTTP ' + r.status;
-        }
-      }catch(e){
-        lastError = 'ESV fetch threw: ' + (e?.message || e);
-        console.warn('[ESV]', e);
+      // Through esvPassage(), which prefers the key-proxy edge function and then a key the person
+      // supplied. Returns null when neither exists, and the helloao/bible-api fallbacks below pick it
+      // up — they need no key, so a missing ESV credential costs a translation, never the reader.
+      const passage = await esvPassage(book.name + ' ' + chapter);
+      if(passage){
+        _esvSessionCache[cacheKey] = passage;
+        verses = parseESVText(passage);
+        apiUsed = 'ESV';
+      } else {
+        lastError = 'ESV unavailable (no proxy and no key) — using a public translation';
       }
     }
   }
@@ -20752,17 +20757,40 @@ function updateTrackerDisplay(){
 function logPhotoReminder(){showToast('Progress photo \u{1F4F8}','Same spot, same lighting, same time. Store in your camera roll. Compare monthly.');}
 
 // ── NUTRITION ─────────────────────────────────────────────────
-const FS_ID='5d4b773f32c44b6a804a27c7af3ce494';
-const FS_SECRET='14ee834e5e214a90be8d65df27482c01';
+// ── THIRD-PARTY CREDENTIALS LIVE ON THE SERVER, NOT HERE ─────────────────────────────────────────
+// index.html is one public file on GitHub Pages, so anything in it is readable by anyone who views
+// source. Three credentials used to sit in it, and the worst was FS_SECRET — a FatSecret OAuth CLIENT
+// SECRET, base64'd into a client-credentials exchange performed in the browser. A client secret is the
+// app's own identity, not a read-only key: publishing it lets anyone act as this app. ESV_API_KEY and
+// USDA_DEFAULT_KEY were the same mistake with smaller blast radii (revocation, and quota theft).
+//
+// All three now come from the `key-proxy` edge function (supabase/functions/key-proxy), which holds
+// them as Supabase secrets. Each caller degrades gracefully when the function is not deployed, so
+// nothing here breaks while it is being set up — see the note at each call site.
+async function keyProxy(payload){
+  try{
+    if(!sb || !sb.functions) return null;
+    const { data, error } = await sb.functions.invoke('key-proxy', { body: payload });
+    if(error || !data || data.error) return null;
+    return data;
+  }catch(_){ return null; }
+}
 let fsToken=null,fsTokenExpiry=0;
 
 async function getFSToken(){
   if(fsToken&&Date.now()<fsTokenExpiry)return fsToken;
-  try{
-    const creds=btoa(FS_ID+':'+FS_SECRET);
-    const r=await fetch('https://oauth.fatsecret.com/connect/token',{method:'POST',headers:{'Authorization':'Basic '+creds,'Content-Type':'application/x-www-form-urlencoded'},body:'grant_type=client_credentials&scope=basic'});
-    if(r.ok){const d=await r.json();fsToken=d.access_token;fsTokenExpiry=Date.now()+(d.expires_in-60)*1000;return fsToken;}
-  }catch(e){}return null;
+  // Returns a short-lived token instead of embedding a permanent client secret. Until key-proxy is
+  // deployed with FATSECRET_ID/FATSECRET_SECRET set this returns null, searchFatSecret() returns [] as
+  // it always did on failure, and searchFood() carries on with USDA, OpenFoodFacts and Nutritionix —
+  // it runs all four through Promise.allSettled, so three sources is a quieter result list, not a
+  // broken search.
+  const d = await keyProxy({ provider:'fatsecret' });
+  if(d && d.access_token){
+    fsToken = d.access_token;
+    fsTokenExpiry = Date.now() + 55*60*1000;   // the proxy already expires its own cache early
+    return fsToken;
+  }
+  return null;
 }
 async function searchFatSecret(query){
   const token=await getFSToken();if(!token)return[];
@@ -20838,8 +20866,12 @@ async function searchOFF(query){
 
 // USDA FoodData Central — 380,000 government-verified whole foods + branded products.
 // 1000 requests/hour with this key. Users can override via Settings.
-const USDA_DEFAULT_KEY = 'k2s21cYJb75iJ4Ajbulc0fmgKIMArv0MezaL3E63';
-function getUSDAKey(){ return ls('totry_usda_key') || USDA_DEFAULT_KEY; }
+// No default key any more — it shipped in this public file, where a FoodData Central key can be lifted
+// and its 1,000-requests-an-hour quota spent by anyone. Order of preference: the key-proxy edge
+// function, then a key the person entered themselves in Settings. If neither is available searchUSDA
+// returns nothing and searchFood() carries on with its other three sources. A FoodData Central key is
+// free and issued instantly at api.data.gov, which is the two-minute workaround.
+function getUSDAKey(){ return ls('totry_usda_key') || null; }
 async function searchUSDA(query){
   try{
     const key = getUSDAKey();
@@ -20849,6 +20881,14 @@ async function searchUSDA(query){
     // supermarket packets from Tyson and Giant Eagle, and the real food never even reached the
     // ranker. Ask SEPARATELY so the actual whole food always gets a seat at the table.
     const call = async (dataType, pageSize) => {
+      // Through the proxy when it is available, so no key is needed on the device at all. dataType and
+      // pageSize are passed through because the two separate calls below are deliberate.
+      // call() must return an ARRAY — the direct path below returns d.foods||[] and both results are
+      // .map()'d straight after. Returning the raw proxy object (or null) here would throw on the very
+      // next line, which is the kind of thing that parses cleanly and dies only when someone searches.
+      const _p = await keyProxy({ provider:'usda', query, dataType, pageSize });
+      if(_p) return Array.isArray(_p.foods) ? _p.foods : [];
+      if(!key) return [];
       const r = await fetch('https://api.nal.usda.gov/fdc/v1/foods/search?api_key=' + key +
         '&query=' + encodeURIComponent(query) +
         '&dataType=' + encodeURIComponent(dataType) +

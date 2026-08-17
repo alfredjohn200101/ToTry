@@ -2632,4 +2632,37 @@ H.section('a store that is read must be a store that is written')
   H.ok(/Your days follow this device/.test(H.html), 'and the timezone setting stops implying otherwise');
 }
 
+H.section('no third-party credential ships in a public bundle')
+{
+  // index.html is one public file on GitHub Pages: anything in it is readable by anyone viewing source.
+  // Three credentials were in it, and the worst was a FatSecret OAuth CLIENT SECRET base64'd into a
+  // client-credentials exchange performed in the BROWSER — the app's own identity, not a read-only key.
+  // These are the exact values that shipped; they are burned forever and must never reappear.
+  for (const [secret, what] of [
+    ['14ee834e5e214a90be8d65df27482c01', 'the FatSecret client secret'],
+    ['5d4b773f32c44b6a804a27c7af3ce494', 'the FatSecret client id'],
+    ['343001d9272ba5cfb76f1cba977d866d22b77e13', 'the ESV API key'],
+    ['k2s21cYJb75iJ4Ajbulc0fmgKIMArv0MezaL3E63', 'the USDA FoodData Central key'],
+  ]) H.ok(!H.html.includes(secret), `${what} is not in the bundle`);
+
+  // A generic net, so the NEXT one does not get in either. Deliberately narrow: SUPABASE_ANON_KEY is
+  // publishable by design (RLS is the boundary) and PUSH_VAPID_PUBLIC is a public key by definition.
+  const suspicious = [...H.html.matchAll(/const\s+([A-Z_]*(?:SECRET|API_KEY)[A-Z_]*)\s*=\s*'([^']{16,})'/g)]
+    .filter(m => !/^SUPABASE_ANON_KEY$/.test(m[1]));
+  H.eq(suspicious.map(m => m[1]), [], 'no new hardcoded secret or api key has crept in');
+
+  const code = H.html.replace(/<!--[\s\S]*?-->/g, '').split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  H.ok(/async function keyProxy\(/.test(code), 'one helper fetches credentials from the edge function');
+
+  // EVERY caller must degrade rather than throw when key-proxy is not deployed — verified in a browser
+  // with all off-origin requests blocked. searchUSDA's call() is the sharp edge: both its results are
+  // .map()'d immediately, so returning the raw proxy object or null throws on the next line. My first
+  // version of this change did exactly that.
+  H.ok(/Array\.isArray\(_p\.foods\) \? _p\.foods : \[\]/.test(code), 'the USDA proxy path returns an array');
+  H.ok(/if\(!key\) return \[\];/.test(code), 'and a missing USDA key returns an array too, not null');
+  H.ok(/async function esvPassage\(/.test(code), 'ESV goes through one fetcher');
+  H.ok(/totry_esv_key/.test(code) && /totry_usda_key/.test(code),
+    "and a person's own key is still honoured as a fallback");
+}
+
 H.report();
