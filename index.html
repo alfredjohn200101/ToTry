@@ -4708,7 +4708,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v448';
+const APP_VERSION = 'v449';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7291,7 +7291,7 @@ function getLifeState(){
   const ev7 = evenings.filter(e => within(e.ts, 7));
   const examens7 = (L('totry_examens')||[]).filter(e => e && within(e.ts, 7));
   const prayers7 = (L('totry_prayers')||[]).filter(p => p && within(p.ts, 7));
-  const journal7 = (L('totry_journal')||[]).filter(j => j && within(j.ts, 7));
+  const journal7 = (L('totry_journal')||[]).filter(j => j && !j.flagged && within(j.ts, 7));
 
   // ── VICE / FIGHT ──
   const fightLog = (L('totry_fight_log')||[]).filter(f => f && f.ts);
@@ -19442,6 +19442,22 @@ function _resolveEntryDate(inputId){
     backdated: !!v
   };
 }
+// THE ONLY JOURNAL READER ANY AI PATH MAY USE.
+// v439 gated saveEntry, marked the entry flagged, and its comment named all three downstream leaks by
+// name — "buildCtx's RECENT JOURNAL on every coach message, the morning prompt, and the weekly synthesis"
+// — then claimed "it is marked so it never becomes AI context again". Only buildCtx was actually filtered.
+// showAIMorningSentence took entry [0], the NEWEST one, which is precisely the entry just flagged, and
+// generateWeeklySynthesis filtered by date but not by flag. Both run unconditionally on every Home tap.
+// A person wrote the worst sentence they will ever type, got the crisis card, tapped Today — and the app
+// sent that sentence to a third-party model twice. Proven by capturing the outbound request body.
+//
+// So the fix is not three filters, it is ONE ACCESSOR. Any path that feeds a model reads through this;
+// forgetting it is now a visible choice rather than an oversight.
+function safeJournal(){
+  try{ return (ls('totry_journal') || []).filter(function(e){ return e && !e.flagged; }); }
+  catch(_){ return []; }
+}
+
 function saveEntry(){
   const text=document.getElementById('journal-text').value.trim();if(!text)return;
   // "Write honestly. This is just for you..." is an invitation to say the hardest thing, and this was the
@@ -28518,7 +28534,7 @@ async function explainReadiness(){
 function _weekStats(){
   const now = Date.now(), wk = now - 7*86400000;
   const workouts = (ls('totry_workouts')||[]).filter(w => w.ts && new Date(w.ts).getTime() >= wk);
-  const journal = (ls('totry_journal')||[]).filter(j => j.ts && new Date(j.ts).getTime() >= wk);
+  const journal = safeJournal().filter(j => j.ts && new Date(j.ts).getTime() >= wk);
   const prayers = (ls('totry_prayers')||[]);
   loadV();
   const wins = (vices||[]).reduce((a,v)=>a+(v.w||0),0);
@@ -33244,7 +33260,7 @@ async function generateWeeklySynthesis(){
   
   // Gather week's data — much richer now
   const sevenDaysAgo=new Date(today.getTime()-7*86400000);
-  const journal=(ls('totry_journal')||[]).filter(j=>new Date(j.ts)>=sevenDaysAgo);
+  const journal=safeJournal().filter(j=>new Date(j.ts)>=sevenDaysAgo);
   const evenings=(ls('totry_evenings')||[]).filter(e=>new Date(e.ts)>=sevenDaysAgo);
   const workouts=(ls('totry_workouts')||[]).filter(w=>new Date(w.ts||w.date)>=sevenDaysAgo);
   const checkins=(ls('totry_checkins')||[]).filter(c=>new Date(c.ts)>=sevenDaysAgo);
@@ -33320,7 +33336,7 @@ async function generateWeeklySynthesis(){
     const inWin = ts => { const t = new Date(ts).getTime(); return !isNaN(t) && t >= lo && t < hi; };
     const wo = (ls('totry_workouts')||[]).filter(w => inWin(w.ts||w.date));
     const ev = (ls('totry_evenings')||[]).filter(e => inWin(e.ts));
-    const jo = (ls('totry_journal')||[]).filter(j => inWin(j.ts));
+    const jo = safeJournal().filter(j => inWin(j.ts));
     const ex = (ls('totry_examens')||[]).filter(e => inWin(e.ts));
     const ci = (ls('totry_checkins')||[]).filter(c => inWin(c.ts));
     const fl = (ls('totry_fight_log')||[]).filter(f => inWin(f.ts));
@@ -34442,7 +34458,7 @@ async function showAIMorningSentence(){
   loadV();
   const wins=vices.reduce((s,v)=>s+(v.w||0),0);
   const total=vices.reduce((s,v)=>s+(v.total||0),0);
-  const journal=(ls('totry_journal')||[])[0];
+  const journal=safeJournal()[0];                       // never a flagged entry — see safeJournal()
   
   const why=ls('totry_why')||'';
   let context='Day '+dayCount+'. Season: '+season+'.';

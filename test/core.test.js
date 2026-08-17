@@ -2107,4 +2107,40 @@ H.section('the day-woven hub speaks each tradition')
   H.ok(!/>Pray about today \\u2192<\/button>/.test(hub), 'the hardcoded label is gone');
 }
 
+H.section('one journal accessor — no AI path may read a flagged entry')
+{
+  // v439 gated saveEntry and marked the entry, and its comment named all three downstream leaks BY NAME
+  // then claimed "it is marked so it never becomes AI context again". Only buildCtx was filtered.
+  // showAIMorningSentence read entry [0] — the NEWEST, i.e. the one just flagged — and
+  // generateWeeklySynthesis filtered by date but not by flag. Both run on every Home tap, so a person
+  // wrote the worst sentence they will type, got the crisis card, tapped Today, and the app sent it to a
+  // third-party model TWICE. Caught by capturing the real outbound request body.
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+
+  H.ok(/function safeJournal\(/.test(code), 'there is a single filtered journal accessor');
+  const sj = code.slice(code.indexOf('function safeJournal('), code.indexOf('function safeJournal(') + 400);
+  H.ok(/!e\.flagged/.test(sj), 'and it excludes flagged entries');
+
+  // Every function that can reach api() must read through it, or filter inline. Checked by NAME so a new
+  // AI-feeding reader has to be added here deliberately.
+  for (const fn of ['showAIMorningSentence', 'generateWeeklySynthesis', '_weekStats']) {
+    const i = code.indexOf('function ' + fn + '(');
+    H.ok(i > 0, fn + ' exists');
+    // Bound the slice at the NEXT top-level function. A fixed window spilled into neighbours that read
+    // the journal for a COUNT (journalCount, the share canvas) — legitimate reads that never reach a
+    // model — and reported this function as leaking when it does not.
+    const after = code.slice(i + 10);
+    const nxt = after.search(/\n(?:async )?function /);
+    const body = nxt > 0 ? code.slice(i, i + 10 + nxt) : code.slice(i, i + 6000);
+    const readsRaw = /\(ls\('totry_journal'\)\|\|\[\]\)/.test(body);
+    H.ok(!readsRaw, fn + ' does not read the journal unfiltered');
+    H.ok(/safeJournal\(\)/.test(body), fn + ' reads through safeJournal()');
+  }
+  // buildCtx and getLifeState feed the brief on every message.
+  H.ok(/totry_journal'\)\|\|\[\]\)\.filter\(e=>!e\.flagged\)/.test(code), 'buildCtx still filters');
+  H.ok(/j && !j\.flagged && within/.test(code), "getLifeState's 7-day journal filters too");
+}
+
 H.report();
