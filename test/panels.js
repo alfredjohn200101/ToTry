@@ -96,6 +96,53 @@ const ESTAB= { totry_guest:true, totry_onboarded:true, totry_name:'Alfy', totry_
     console.log(`${label}: walked ${res.length} panels`);
     await ctx.close();
   }
+  // ── EVERY TRADITION'S READER ────────────────────────────────────────────────────────────────────
+  // Four live text sources were added in v467/v468 (Dhammapada via SuttaCentral, Meditations via
+  // Wikisource, joining the Qur'an and the Gita) and had no automated coverage at all. Each must render
+  // something substantial for its own tradition, and — critically — must never render another
+  // tradition's scripture, which is this app's most repeated bug class.
+  // Asserts SUBSTANCE, not live text: if the network is unavailable each reader falls back to its
+  // bundled VS_* pool, and that is a pass. An empty reader is not.
+  // Christianity is deliberately NOT in this loop: it has its own reader (#br-* in bible-read-panel,
+  // walked above), and both real callers of openReader() route it there first — openScripture() and
+  // _planOpenFull() each do `if(t==='christianity'){ go('bible'); return; }`. Calling openReader
+  // ('christianity') directly falls to the else branch and serves Marcus Aurelius, which no user path
+  // reaches but is a latent trap worth hardening at the function rather than in its callers.
+  for (const trad of ['islam', 'hinduism', 'buddhism', 'secular']) {
+    const ctx = await browser.newContext({ viewport: { width: 414, height: 896 } });
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on('pageerror', e => errors.push(String(e.message).slice(0, 140)));
+    await page.addInitScript(t => {
+      const seed = { totry_guest: true, totry_onboarded: true, totry_name: 'Sam', totry_faith_tradition: t };
+      for (const k in seed) localStorage.setItem(k, JSON.stringify(seed[k]));
+    }, trad);
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(2800);
+    const r = await page.evaluate(async (t) => {
+      if (typeof openReader !== 'function') return { missing: true };
+      openReader(t);
+      await new Promise(res => setTimeout(res, 7000));   // live fetch, then fallback
+      const el = document.getElementById('read-content');
+      const txt = el ? (el.innerText || '').trim() : '';
+      return { chars: txt.length, text: txt.slice(0, 4000) };
+    }, trad);
+    if (r.missing) { findings.push(`${trad} reader: openReader() does not exist`); }
+    else {
+      if (r.chars < 400) findings.push(`${trad} reader renders almost nothing (${r.chars} chars)`);
+      {
+        for (const word of ['Jesus', 'Christ', 'Bible', 'Psalm', 'Amen', 'Rosary', 'Eucharist']) {
+          if (new RegExp('\\b' + word, 'i').test(r.text || '')) {
+            findings.push(`${trad} reader shows Christian vocabulary: "${word}"`);
+          }
+        }
+      }
+    }
+    if (errors.length) findings.push(`${trad} reader: PAGE ERROR ${[...new Set(errors)][0]}`);
+    console.log(`${trad} reader: ${r.missing ? 'MISSING' : r.chars + ' chars'}`);
+    await ctx.close();
+  }
+
   await browser.close(); server.close();
 
   // The sacraments panel staying hidden for a secular person is the v427 gate working, not a finding.
