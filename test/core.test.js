@@ -2430,8 +2430,8 @@ H.section('a renderer without a container is a feature that silently does not ex
 
   // The same ESV key was declared twice; the second copy was never used. The live one is documented
   // in place because it ships publicly and only the account owner can rotate or proxy it.
-  H.ok((H.html.match(/343001d9272ba5cfb76f1cba977d866d22b77e13/g) || []).length <= 1,
-    'the API key is not duplicated through the bundle');
+  H.ok(!/const ESV_API_KEY\s*=\s*'[^']{16,}'/.test(H.html),
+    'the ESV key is not declared as a constant any more');
 }
 
 H.section('every journal-shaped surface meets a disclosure, and keeps the words')
@@ -2638,12 +2638,19 @@ H.section('no third-party credential ships in a public bundle')
   // Three credentials were in it, and the worst was a FatSecret OAuth CLIENT SECRET base64'd into a
   // client-credentials exchange performed in the BROWSER — the app's own identity, not a read-only key.
   // These are the exact values that shipped; they are burned forever and must never reappear.
-  for (const [secret, what] of [
-    ['14ee834e5e214a90be8d65df27482c01', 'the FatSecret client secret'],
-    ['5d4b773f32c44b6a804a27c7af3ce494', 'the FatSecret client id'],
-    ['343001d9272ba5cfb76f1cba977d866d22b77e13', 'the ESV API key'],
-    ['k2s21cYJb75iJ4Ajbulc0fmgKIMArv0MezaL3E63', 'the USDA FoodData Central key'],
-  ]) H.ok(!H.html.includes(secret), `${what} is not in the bundle`);
+  // Matched by SHA-256, not by literal. A test that asserts "no secrets ship" must not itself contain
+  // the secrets: they are already public in git history (the FatSecret one is in two commits of
+  // index.html), but embedding them here keeps them in the working tree forever and trips every secret
+  // scanner. The hashes pin the exact burned values without republishing them.
+  const crypto = require('crypto');
+  const sha16 = (v) => crypto.createHash('sha256').update(v).digest('hex').slice(0, 16);
+  const bundleTokens = new Set((H.html.match(/[A-Za-z0-9_\-]{16,64}/g) || []).map(sha16));
+  for (const [hash, what] of [
+    ['fa3e1533e5755406', 'the FatSecret client secret'],
+    ['fc5f624720f36dd0', 'the FatSecret client id'],
+    ['bf13e6fe355b13f3', 'the ESV API key'],
+    ['bc8ff9049913f57b', 'the USDA FoodData Central key'],
+  ]) H.ok(!bundleTokens.has(hash), `${what} is not in the bundle`);
 
   // A generic net, so the NEXT one does not get in either. Deliberately narrow: SUPABASE_ANON_KEY is
   // publishable by design (RLS is the boundary) and PUSH_VAPID_PUBLIC is a public key by definition.
