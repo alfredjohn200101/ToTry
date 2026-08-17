@@ -4755,7 +4755,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v472';
+const APP_VERSION = 'v473';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5761,8 +5761,16 @@ async function pullFromCloud(){
         // so the very next flushOutbox re-uploaded the exact value this pull had just rejected, wiping
         // the other device's newer edit. A two-phone loop that destroyed real data on every sync.
         if(nv === cv && outbox[k] && outbox[k].ts <= cts){
-          delete outbox[k];
-          _setOutbox(outbox);
+          // RE-READ, do not write back the pre-loop snapshot. `outbox` was captured once before this
+          // forEach, but _queueWrite re-reads and re-writes it from disk on every call — so persisting
+          // the stale object silently erased every write queued EARLIER IN THIS SAME PASS: the tombstone
+          // map union, the vices merge, the finance merge. v470 introduced it and it quietly disabled
+          // v471's tombstone propagation, so a deletion never left the device. Worse, PostgREST returns
+          // rows unordered, so whether it fired at all depended on row order — intermittent and silent.
+          const _o = _getOutbox();
+          delete _o[k];
+          _setOutbox(_o);
+          delete outbox[k];   // keep the local snapshot consistent for the rest of the loop
         }
       }
       const out = JSON.stringify(nv);
@@ -7958,7 +7966,7 @@ function buildCtx(){
   // disclosure written into the morning intention must never ride along to a model on a later
   // message. This is exactly the v439 leak (the gate stopped the reply and left the sentence in the
   // context), one store over. The person's own words stay in totry_mornings exactly as written.
-  const mornings = (ls('totry_mornings') || []).filter(function(m){ return m && !m.flagged; });
+  const mornings = safeMornings();   // one definition — see safeMornings()
   // Match on the ISO timestamp, not the display string. completeMorning() writes
   // date: toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}) — "Tue, 11 Aug" —
   // while todayKey here is the plain en-AU key "11/08/2026". Those can never be equal, so todayMorning
@@ -8603,7 +8611,11 @@ function detectCrisis(text){
     /\btak(?:e|ing) my (?:own )?life\b(?!\s*back)/,
     /\boffing myself\b/,
     /\b(?:want|wanna|going|gonna|about|ready|plan|planning|thinking about|might)\b[^.!?]{0,24}\boff myself\b/,
-    /\bcan'?t go on\s*(?:[.!?,]|$)/,
+    // A NEWLINE IS A CLAUSE END. This was written as `\\s*(?:[.!?,]|$)` with no /m flag, so \\s* swallowed
+    // the newline and then found neither punctuation nor end-of-input — and every field this gate
+    // protects is a multi-line textarea. "I can't go on" fired; "I can't go on\\nI don't know what else
+    // to say" did not. The person who keeps typing is the one still reaching for help.
+    /\bcan'?t go on\s*(?:[.!?,\n\r]|$)/,
     /\bdon'?t want to be here\b/,
     /\bdon'?t belong here anymore\b/,
     /\bwon'?t be around (?:much longer|for long|tomorrow)\b/
@@ -16233,7 +16245,7 @@ async function _companionSay(userText, opening){
     + "RIGHT NOW you're with them in a tempted or struggling moment — this is the 2am door, their hardest moment. Be present, short, real. "
     + "The person is "+name+". They're facing: \""+(s.name||'something hard')+"\". "
     + (function(){ try{ const rd=(typeof computeReadiness==='function')?computeReadiness():null; if(rd && rd.sleep!=null && rd.sleep<=4){ return "IMPORTANT CONTEXT: they slept poorly recently — low sleep makes urges feel much stronger and willpower thinner. If it fits, gently name this so they know the pull feeling strong tonight is partly exhaustion, NOT weakness or failure in them. "; } return ''; }catch(_){ return ''; } })()
-    + (function(){ try{ const today=new Date().toLocaleDateString('en-AU'); const m=(ls('totry_mornings')||[]).find(x=>x.ts&&new Date(x.ts).toLocaleDateString('en-AU')===today); if(m&&m.intention&&m.intention.trim()){ return "THIS MORNING they set this intention for today: \""+m.intention.trim().replace(/"/g,"'")+"\". If it fits naturally and gently, you can remind them of what THEY said they wanted today — not as a guilt trip, but as an older sibling reflecting back the person they said they wanted to be. Only if it lands warmly. "; } return ''; }catch(_){ return ''; } })()
+    + (function(){ try{ const today=new Date().toLocaleDateString('en-AU'); const m=safeMornings().find(x=>x.ts&&new Date(x.ts).toLocaleDateString('en-AU')===today); if(m&&m.intention&&m.intention.trim()){ return "THIS MORNING they set this intention for today: \""+m.intention.trim().replace(/"/g,"'")+"\". If it fits naturally and gently, you can remind them of what THEY said they wanted today — not as a guilt trip, but as an older sibling reflecting back the person they said they wanted to be. Only if it lands warmly. "; } return ''; }catch(_){ return ''; } })()
     + (function(){ try{
         if(typeof loadV==='function') loadV();
         const vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices:(ls('totry_v')||[]);
@@ -17843,7 +17855,7 @@ function _wholeLifeReframe(){
   const out=[];
   // His own words from this morning, resurfaced at the exact moment they're tested. Most powerful.
   try{
-    const today=(ls('totry_mornings')||[])[0];
+    const today=safeMornings()[0];
     if(today && today.day===getDayCount() && today.intention && today.intention.trim()){
       out.push({icon:'\u{1F305}', text:'This morning you said who you’d be today: “'+today.intention.trim().replace(/</g,'&lt;').slice(0,120)+'”. This is the exact moment that meant.'});
     }
@@ -20115,6 +20127,19 @@ function _resolveEntryDate(inputId){
 //
 // So the fix is not three filters, it is ONE ACCESSOR. Any path that feeds a model reads through this;
 // forgetting it is now a visible choice rather than an oversight.
+// The morning ritual's equivalent of safeJournal(). v463 made completeMorning PERSIST a flagged row
+// instead of discarding the person's words — right, and it created a store that can now hold a
+// disclosure. Two readers were filtered at the time (buildCtx and getLifeState) and the others were not,
+// so the companion's prompt still shipped it to a model, and _wholeLifeReframe quoted it back mid-urge
+// as "This morning you said…" — turning the worst sentence someone wrote into their stated aspiration.
+//
+// Fixing readers one at a time is what produced this; there are twenty-two of them. Anything that sends
+// a morning anywhere — a model, or back to the person as encouragement — uses this. Counts, dates and
+// streaks may keep using the raw store: they never surface the words.
+function safeMornings(){
+  try{ return (ls('totry_mornings') || []).filter(function(m){ return m && !m.flagged; }); }
+  catch(_){ return []; }
+}
 function safeJournal(){
   try{ return (ls('totry_journal') || []).filter(function(e){ return e && !e.flagged; }); }
   catch(_){ return []; }
@@ -21394,7 +21419,20 @@ async function searchUSDA(query){
       });
       // USDA values are per 100g for Foundation/SR, varying for Branded
       const isBranded = f.dataType === 'Branded';
-      const servingLabel = isBranded && f.servingSize ? f.servingSize + ' ' + (f.servingSizeUnit || 'g') : '100g';
+      // ALWAYS "100g". FDC's search endpoint returns foodNutrients per 100g for Branded foods exactly as
+      // it does for Foundation/SR — the identical n.cal/n.pro/n.carb/n.fat values were simply LABELLED
+      // with the product's own servingSize, so a 30g bar showed 100g of calories, roughly 2-3x over. The
+      // raw unit code came through too, so real labels read "50 GRM" and "46 MG". One set of numbers
+      // cannot be both per 100g and per serving; the numbers were right and the label was wrong.
+      // The serving size is kept as a separate, correctly-scaled option below rather than thrown away.
+      const servingLabel = '100g';
+      const _brandServing = (isBranded && f.servingSize > 0 && /^(g|grm|gram|grams)$/i.test(String(f.servingSizeUnit||'g')))
+        ? { name: Math.round(f.servingSize) + 'g serving',
+            cal: Math.round(n.cal * f.servingSize / 100),
+            pro: +(n.pro * f.servingSize / 100).toFixed(1),
+            carb: +(n.carb * f.servingSize / 100).toFixed(1),
+            fat: +(n.fat * f.servingSize / 100).toFixed(1) }
+        : null;
       const name = f.description || f.lowercaseDescription || 'USDA food';
       const brand = f.brandOwner || f.brandName || '';
       return {
@@ -21414,7 +21452,9 @@ async function searchUSDA(query){
         potassium: n.potassium, zinc: n.zinc, selenium: n.selenium, copper: n.copper,
         source: 'USDA',
         __generic: !!f.__generic,   // a real whole food, not a branded packet — ranking uses this
+        per100: true,   // these figures are per 100g — openServingModal's micro maths depends on knowing
         servings: [{name: servingLabel, cal: n.cal, pro: n.pro, carb: n.carb, fat: n.fat}]
+                    .concat(_brandServing ? [_brandServing] : [])
       };
     });
   }catch(e){ console.warn('[usda] search failed:', e); return []; }
@@ -23296,7 +23336,9 @@ function updateServingPreview(){
   const microPreview = document.getElementById('sm-micros-preview');
   if(microPreview){
     const ge = s.gramsEquiv;
-    const microMult = (currentFood.per100 && ge) ? (ge * qty / 100) : qty;
+    // Same rule as below — see the note there on why the serving decides this, not the flag.
+    const _gramServing = !!(ge && (s && (s.__gram || /^\s*100\s*(g|ml)\b/i.test(String(s.name||'')))));
+    const microMult = (ge && (currentFood.per100 || _gramServing)) ? (ge * qty / 100) : qty;
     const micros = [];
     if(currentFood.fiber > 0) micros.push('Fiber ' + (Math.round(currentFood.fiber * microMult * 10) / 10) + 'g');
     if(currentFood.sugar > 0) micros.push('Sugar ' + (Math.round(currentFood.sugar * microMult * 10) / 10) + 'g');
@@ -23342,7 +23384,15 @@ function addFoodToLog(){
                       'vit_a','vit_c','vit_d','vit_e','vit_k',
                       'b1','b2','b3','b6','b9','b12',
                       'calcium','iron','magnesium','phosphorus','potassium','zinc','selenium','copper'];
-  const microMult = (currentFood.per100 && s.gramsEquiv) ? (s.gramsEquiv * qty / 100) : qty;
+  // Derived from the SERVING rather than a per100 flag the source may never have set. searchUSDA did not
+  // set it, so its per-100g micros took the legacy per-serving path and were multiplied by the raw gram
+  // count: 30g of a food reported 30x its per-100g sodium instead of 0.3x — the 100x-sodium bug by
+  // another door. Any source whose serving is measured in grams is per-100g by construction here, so
+  // that is what decides it, and the flag is only a fallback.
+  const _servIsGrams = !!(s && s.gramsEquiv && (s.__gram || /^\s*100\s*(g|ml)\b/i.test(String(s.name||''))));
+  const microMult = (s && s.gramsEquiv && (currentFood.per100 || _servIsGrams))
+    ? (s.gramsEquiv * qty / 100)
+    : qty;
   MICRO_KEYS.forEach(k => {
     if(typeof currentFood[k] === 'number' && currentFood[k] > 0){
       entry[k] = Math.round(currentFood[k] * microMult * 100) / 100;
@@ -24496,7 +24546,14 @@ function computeAdaptiveTDEE(){
       if(dayCal > 0){ calSum += dayCal; calDays++; }
     }
   });
-  if(calDays < 5) return null; // need enough logged days for a trustworthy estimate
+  // Five logged days was the ONLY bar, against a window of up to 21. Ran it with weight flat for 21 days
+  // and food logged on 5 of them at 1800 (real intake 2600): it returned a TDEE of 1800 and offered to
+  // set the eating target from it. Partial logging does not mean a small appetite — it means missing
+  // data — and the resulting number is lower than the truth by however much went unlogged, which is
+  // precisely the wrong direction for someone trying to eat enough. Require the window to be mostly
+  // covered, not merely sampled.
+  if(calDays < 5) return null;                       // too few days to say anything at all
+  if(calDays < Math.ceil(days * 0.6)) return null;   // and too patchy to call it their intake
   const avgIntake = calSum / calDays;
   // Use the SMOOTHED trend at each end of the window, not the two raw weigh-ins. A single reading carries
   // water, salt, glycogen and time-of-day noise easily worth 0.5-1kg — and this difference is multiplied
@@ -24705,9 +24762,13 @@ function cycledTarget(base){
       out.cycleDay = 'training'; out.cycleDelta = addG;
     } else {
       const cutG = Math.round(addG * T / R);                       // pulled from each rest day to keep the weekly total
+      // The clamp and the calorie subtraction have to agree. out.carb was floored at 30g while out.cal
+      // still had the FULL cut taken off it, so the macro ring and the calorie goal described different
+      // days: the carbs shown could not add up to the calories shown. Subtract what was actually removed.
       out.carb = Math.max(30, baseCarb - cutG);
-      out.cal = (base.cal||0) - cutG*4;
-      out.cycleDay = 'rest'; out.cycleDelta = -cutG;
+      const _actualCut = baseCarb - out.carb;
+      out.cal = (base.cal||0) - _actualCut*4;
+      out.cycleDay = 'rest'; out.cycleDelta = -_actualCut;
     }
     // ED-safe floor — a rest day can never dip below a sane minimum.
     const floor = (typeof userSex==='function' && userSex()==='female') ? 1200 : 1500;
@@ -29321,21 +29382,35 @@ function renderWeeklyReflectionCard(){
 // bodyweight plateau vs the user's goal direction. Returns {type, detail} or null.
 function detectPlateau(){
   // Lift plateau: look at exercises with >=4 logged sessions; flag if best e1RM hasn't improved in last 3.
+  // TWO THINGS WERE WRONG HERE, and both told a person who was progressing that they had stalled.
+  //   1. priorBest was the ALL-TIME best, so someone returning after a layoff and adding weight every
+  //      session — 95 -> 97.5 -> 100kg — is measured against a 123kg PR from months ago and told their
+  //      lift "hasn't improved in your last 3 sessions". Three consecutive PRs, reported as a plateau.
+  //   2. series carried no date window at all, so a lift not trained for six months was also called
+  //      "stalled in your last 3 sessions" — sessions that happened half a year ago.
+  // A plateau is a RECENT failure to progress against RECENT work. Both are now bounded, and the first
+  // qualifying exercise no longer wins by object key order: the staleness is checked before reporting.
   const history = ls('totry_workouts') || [];
+  const PLATEAU_WINDOW_MS = 90 * 86400000;   // a lift untouched for a quarter has not plateaued, it has stopped
+  const _now = Date.now();
   const byEx = {};
   [...history].reverse().forEach(w => {
+    const wt = w && (w.ts || w.date) ? new Date(w.ts || w.date).getTime() : NaN;
+    if(!isFinite(wt) || (_now - wt) > PLATEAU_WINDOW_MS) return;   // outside the window: not evidence of a stall
     (w.exercises || []).forEach(ex => {
       const e = (typeof bestE1RMFromSets==='function') ? bestE1RMFromSets(ex.sets) : 0;
-      if(e > 0){ (byEx[ex.name] = byEx[ex.name] || []).push(e); }
+      if(e > 0){ (byEx[ex.name] = byEx[ex.name] || []).push({ e, ts: wt }); }
     });
   });
   for(const name of Object.keys(byEx)){
-    const series = byEx[name];
-    if(series.length >= 5){
+    const entries = byEx[name];
+    if(entries.length >= 5){
+      const series = entries.map(x => x.e);
       const recent = series.slice(-3);
-      const priorBest = Math.max(...series.slice(0, -3));
-      // Stalled if none of the last 3 beat the prior best.
-      if(recent.every(v => v <= priorBest)){
+      const priorBest = Math.max(...series.slice(0, -3));   // best WITHIN the window, not all time
+      // And a run of consecutive improvements is progress however it compares to an older peak.
+      const climbing = recent.length === 3 && recent[0] < recent[1] && recent[1] < recent[2];
+      if(!climbing && recent.every(v => v <= priorBest)){
         return { type:'lift', name, detail: name + ' has stalled — your estimated 1RM hasn\u2019t improved in your last 3 sessions (best ~' + priorBest + 'kg).' };
       }
     }
@@ -31813,7 +31888,9 @@ function deleteRoutine(id){
   const r=all.find(function(x){ return x && x.id===id; });
   const nm=r&&r.name?String(r.name):'this routine';
   if(!confirm('Delete "'+nm+'"?\n\nThe routine and its exercises are removed. Sessions you already logged with it are kept.')) return;
-  ls('totry_routines', all.filter(function(x){ return x.id!==id; }));
+  const _keptRoutines = all.filter(function(x){ return x.id!==id; });
+  tombstoneRemoved('totry_routines', all, _keptRoutines);
+  ls('totry_routines', _keptRoutines);
   try{ if(typeof syncToCloud==='function') syncToCloud('totry_routines', ls('totry_routines')); }catch(_){}
   try{ if(typeof haptic==='function') haptic('tap'); }catch(_){}
   try{ showToast('Routine deleted', nm+' is off your list.'); }catch(_){}
@@ -32282,7 +32359,9 @@ function renderWorkoutHistory(){
 function deleteWorkoutFromHistory(id){
   if(!confirm('Delete this workout session permanently? Your PRs from it will stay, but the session record will be gone.')) return;
   const history = ls('totry_workouts') || [];
-  ls('totry_workouts', history.filter(s => s.id != id));
+  const _kept = history.filter(s => s.id != id);
+  tombstoneRemoved('totry_workouts', history, _kept);   // the OTHER workout delete — see deleteTraining
+  ls('totry_workouts', _kept);
   document.querySelector('.modal-bg.open')?.remove();
   if(typeof renderUnifiedTraining==='function') renderUnifiedTraining();
   showToast('Deleted', 'Session removed from history.');
@@ -38677,7 +38756,9 @@ function unanswerPrayer(id){
 function deletePrayer(id){
   if(!confirm('Remove this prayer from your journal?')) return;
   const prayers = ls('totry_prayers') || [];
-  ls('totry_prayers', prayers.filter(p => p.id !== id));
+  const _kept = prayers.filter(p => p.id !== id);
+  tombstoneRemoved('totry_prayers', prayers, _kept);
+  ls('totry_prayers', _kept);
   renderPrayers();
 }
 function renderPrayers(){

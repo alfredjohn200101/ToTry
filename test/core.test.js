@@ -2893,11 +2893,45 @@ H.section('two devices do not destroy each other\'s work')
   const tr = fnBody('tombstoneRemoved');
   H.ok(/keep\.has\(syncIdOf\(x\)\)/.test(tr), 'deleted ids come from the actual diff');
   H.ok(/TOMB_MAX_AGE_MS/.test(tr), 'and old tombstones are pruned so the store cannot grow forever');
-  // EVERY delete path on a union'd key must record one. Seven of them.
-  for (const key of ['totry_journal', 'totry_body', 'totry_workouts', 'totry_strava_activities',
-                     'totry_family_contrib', 'totry_poker_sessions', 'totry_saved_meals']) {
-    H.ok(new RegExp("tombstoneRemoved\\('" + key + "'").test(code), `${key} records its deletions`);
+  // EVERY delete path on a union'd key must record one — and the previous version of this check only
+  // asserted each KEY appeared once, so it passed while THREE separate delete paths were uncovered:
+  // deleteWorkoutFromHistory (the other workout button, same key as deleteTraining), deletePrayer and
+  // deleteRoutine. A per-key check cannot see a second delete site for a key already covered. This scans
+  // for the pattern instead: any filtered write to a union'd key with no tombstone within reach above it.
+  const ARR_KEYS = ['totry_workouts','totry_body','totry_journal','totry_mornings','totry_evenings',
+    'totry_confessions','totry_masses','totry_routines','totry_saved_meals','totry_family_contrib',
+    'totry_poker_sessions','totry_examens','totry_prayers','totry_strava_activities','totry_feeling_wins',
+    'totry_custom_exercises','totry_wins','totry_moments_won','totry_fight_log','totry_cravings',
+    'totry_blessings','totry_reachouts','totry_rosaries','totry_syntheses','totry_reviews',
+    'totry_vice_uses','totry_impulse_holds','totry_freezes','totry_checkins','totry_mood_log',
+    'totry_fast_log','totry_releases'];
+  // Precise about what a DELETE looks like: the value written is either a .filter() result inline, or a
+  // variable assigned from one just above. "Any .filter() nearby" was the first attempt and it cried wolf
+  // on three unshift() writes whose only sin was sitting near unrelated code — and a ratchet that cries
+  // wolf gets switched off, which is the same outcome as one that cannot fail.
+  const uncovered = [];
+  for (const key of ARR_KEYS) {
+    const re = new RegExp("ls\\('" + key + "'\\s*,\\s*([A-Za-z_$][\\w$]*|[^;]{0,80}?\\.filter\\()", 'g');
+    let m;
+    while ((m = re.exec(code)) !== null) {
+      const arg = m[1];
+      const before = code.slice(Math.max(0, m.index - 400), m.index);
+      const isInlineFilter = /\.filter\($/.test(arg);
+      // The NEAREST assignment to that name, not any assignment within reach. Two different functions
+      // both used `const rs = _reachOutLog()...`, one filtering and one not, and looking back blindly
+      // attributed the filtering one to the unshift in the function below it.
+      let isFilteredVar = false;
+      if (/^[A-Za-z_$][\w$]*$/.test(arg)) {
+        const assigns = [...before.matchAll(new RegExp("(?:const|let|var)\\s+" + arg + "\\s*=([^;]{0,160})", 'g'))];
+        const nearest = assigns.length ? assigns[assigns.length - 1] : null;
+        isFilteredVar = !!(nearest && /\.filter\(/.test(nearest[1]));
+      }
+      if (!isInlineFilter && !isFilteredVar) continue;
+      if (/tombstoneRemoved/.test(before)) continue;
+      uncovered.push(key + ' @line ' + (code.slice(0, m.index).split('\n').length));
+    }
   }
+  H.eq(uncovered, [], 'every filtered write to a union\'d key records a tombstone');
 }
 
 H.section('usable without sight, and honest about the native paths')
@@ -2961,6 +2995,50 @@ H.section('usable without sight, and honest about the native paths')
 
   // lastTitle came from an unsorted array, so the brief told the model about an arbitrary import.
   H.ok(/_sorted\[0\] \|\| workouts\[0\]/.test(code), 'the brief names the genuinely most recent session');
+}
+
+H.section('numbers a person eats to, and trains by')
+{
+  const code = H.html.replace(/<!--[\s\S]*?-->/g, '').split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  const fnBody = (name) => {
+    const m = code.match(new RegExp('function\\s+' + name + '\\s*\\('));
+    if (!m) return '';
+    let i = code.indexOf('{', m.index) + 1, d = 1;
+    while (i < code.length && d) { const c = code[i]; if (c === '{') d++; else if (c === '}') d--; i++; }
+    return code.slice(m.index, i);
+  };
+
+  // FDC returns foodNutrients per 100g for Branded foods exactly as for Foundation/SR. The identical
+  // values were LABELLED with the product's own servingSize, so a 30g bar showed 100g of calories — and
+  // the raw FDC unit code came through, so real labels read "50 GRM" and "46 MG".
+  const su = fnBody('searchUSDA');
+  H.ok(/const servingLabel = '100g';/.test(su), 'USDA figures are labelled per 100g, which is what they are');
+  H.ok(/per100: true/.test(su), 'and marked per100 so the micro maths knows');
+  H.ok(/_brandServing/.test(su), 'with the product serving offered separately, correctly scaled');
+
+  // The micro multiplier keyed off a per100 flag searchUSDA never set, so per-100g micros took the
+  // per-serving path and were multiplied by the raw gram count: 30g reported 30x the sodium, not 0.3x.
+  H.ok(/_servIsGrams/.test(code) && /_gramServing/.test(code),
+    'the serving decides the micro scale, not a flag the source may not set');
+  H.ok(!/const microMult = \(currentFood\.per100 && s\.gramsEquiv\) \? \(s\.gramsEquiv \* qty \/ 100\) : qty;/.test(code),
+    'and the flag-only version is gone');
+
+  // Five logged days against a 21-day window is missing data, not a small appetite — and the number
+  // comes out LOWER than the truth, which is the wrong direction for someone trying to eat enough.
+  const at = fnBody('computeAdaptiveTDEE');
+  H.ok(/calDays < Math\.ceil\(days \* 0\.6\)/.test(at), 'a burn estimate needs the window mostly covered');
+
+  // The clamp and the calorie subtraction have to describe the same day.
+  const ct = fnBody('cycledTarget');
+  H.ok(/_actualCut = baseCarb - out\.carb/.test(ct), 'cycling subtracts the carbs it actually removed');
+  H.ok(!/out\.cal = \(base\.cal\|\|0\) - cutG\*4;/.test(ct), 'not the ones it wanted to remove');
+
+  // Three consecutive PRs after a layoff were reported as a plateau, because priorBest was ALL-TIME and
+  // the series had no date window — so a lift untrained for six months was "stalled in your last 3
+  // sessions" too. Verified against that exact scenario: 95 -> 97.5 -> 100kg now reports no plateau.
+  const dp = fnBody('detectPlateau');
+  H.ok(/PLATEAU_WINDOW_MS/.test(dp), 'a plateau is measured against recent work');
+  H.ok(/const climbing =/.test(dp), 'and a run of consecutive improvements is never called a stall');
 }
 
 H.report();
