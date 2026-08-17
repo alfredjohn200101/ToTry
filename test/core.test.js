@@ -2343,4 +2343,45 @@ H.section('numbers people are asked to act on have bounds, and settings say what
     'the currency setting says what it actually changes');
 }
 
+H.section('a renderer without a container is a feature that silently does not exist')
+{
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  const markupIds = new Set([...H.html.matchAll(/id="([\w-]+)"/g)].map(m => m[1]));
+
+  // THE CLASS. A function renders into getElementById('x'), x is nowhere in the file, and the guard
+  // `if(!el) return` turns the whole feature into a no-op that parses, tests green, and does nothing.
+  // Three shipped instances, each invisible for months:
+  //  · #pt-history-list — renderWorkoutHistory() built the session list AND a per-session modal with
+  //    every set, its RPE and the notes written at the time. No container: a workout logged in the app
+  //    could never be reopened, and PRs sat under a permanently empty heading.
+  //  · #br-search-results — searchBible() does reference lookup ("John 3:16"), keyword search and its
+  //    own crisis gate, and .bible-search-result has been styled in the CSS since the start. No input
+  //    and no container, so browsing book-by-book was the only way to find a verse.
+  //  · the fix is the container, so the container is what gets asserted.
+  H.ok(markupIds.has('pt-history-list'), 'the workout history list has a container in the markup');
+  H.ok(/renderWorkoutHistory\(\)/.test(code.slice(code.indexOf('function setPTTab('), code.indexOf('function setPTTab(') + 900)),
+    'and setPTTab(history) actually calls the renderer');
+  H.ok(markupIds.has('br-search-results'), 'scripture search has a results container');
+  H.ok(markupIds.has('br-search-in'), 'and an input a person can actually type into');
+
+  // searchBible set .innerHTML on the container with no null check, so it THREW rather than no-op'd.
+  const sb = code.slice(code.indexOf('async function searchBible('), code.indexOf('async function searchBible(') + 1400);
+  H.ok(/br-search-results'\);\s*if\(!res\) return;/.test(sb.replace(/\n/g, '')),
+    'searchBible never sets innerHTML on a null container');
+
+  // logLoss() has always accepted a backdate and promptLossDate() has always collected one — nothing
+  // connected them, so a slip admitted today restarted the clock from today and the record lied.
+  const vm = code.slice(code.indexOf('function openViceManage('), code.indexOf('function openViceManage(') + 2000);
+  H.ok(/promptLossDate\(\)/.test(vm), 'a past slip can be logged on the day it really happened');
+  H.ok(/promptMassAddLosses\(\)/.test(vm), 'and someone arriving with real history can enter it');
+
+  // "Save targets" read two inputs that no longer exist, so cal/protein resolved to 0, were dropped by
+  // a guard, and the toast still said "All daily targets updated."
+  const st = code.slice(code.indexOf('function saveAllTargets('), code.indexOf('function saveAllTargets(') + 900);
+  H.ok(!/settings-cal-goal/.test(st), 'saveAllTargets no longer reads an input that does not exist');
+  H.ok(!/All daily targets/.test(st), 'and its toast claims only what it saved');
+}
+
 H.report();

@@ -2772,6 +2772,15 @@ input:focus,textarea:focus,select:focus{
     <div id="pt-history-populated">
     <!-- Synced cardio (Strava) — only shows when connected & has activities -->
     <div id="pt-strava-card" style="display:none;margin-bottom:14px"></div>
+
+    <!-- YOUR OWN SESSIONS — the concrete record, above the analytics. renderWorkoutHistory() has
+         always built this list AND a per-session modal (every set, its RPE, the notes he wrote at
+         the time), but its container was never in the file, so the function was unreachable and a
+         workout logged in the app could never be opened again. The analytics below describe the
+         training; this is the training. -->
+    <div class="lbl">Your sessions</div>
+    <div id="pt-history-list" style="margin-bottom:14px"></div>
+
     <div class="lbl">Personal records</div>
     <div id="pt-pr-list" style="margin-bottom:14px"></div>
 
@@ -2898,6 +2907,19 @@ input:focus,textarea:focus,select:focus{
   <!-- READ PANEL -->
   <div id="bible-read-panel" style="display:none">
     <p style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:12px">Read scripture freely. Tap any verse to save it.</p>
+
+    <!-- SEARCH. searchBible() could always do this — exact reference lookup ("John 3:16"), keyword
+         search, its own crisis gate, and even a "show me more" button — and .bible-search-result has
+         been styled in the CSS since the start. It had no input and no results container, so its one
+         reference was a button inside results that could never render, and the function threw on the
+         null node before reaching any of it. Browsing by book was the only way to find a verse. -->
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <input type="text" id="br-search-in" placeholder="Search — a word, or John 3:16" style="flex:1;font-size:16px"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();searchBible(this.value);}">
+      <button class="btn" style="width:auto;padding:11px 15px;white-space:nowrap" onclick="searchBible(document.getElementById('br-search-in').value)">Search</button>
+    </div>
+    <div id="br-search-results" style="margin-bottom:12px"></div>
+
     <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
       <select id="br-translation" onchange="loadBibleChapter()" style="flex:1;min-width:90px">
         <option value="esv" selected>ESV</option>
@@ -4726,7 +4748,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v458';
+const APP_VERSION = 'v459';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -17075,6 +17097,12 @@ function openViceManage(i){
     '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:14px">'+String(v.n).replace(/</g,'&lt;')+'</div>'+
     row('Your plan — how you want to handle this', 'openVicePlan('+i+')')+
     row('Edit the start date', 'editViceStart('+i+')')+
+    // The truth of the timeline. logLoss() has always accepted a backdate and promptLossDate() has
+    // always collected one, but nothing connected them — so a slip that happened yesterday restarted
+    // the clock from the moment he got around to admitting it, and the record quietly lied. The
+    // mass-add is for someone arriving with months of real history behind them. Both need curVice.
+    row('It happened earlier — set the real day', 'curVice='+i+';promptLossDate()')+
+    row('Log slips from before I started here', 'curVice='+i+';promptMassAddLosses()')+
     row(v.costAmount?('Money it costs &middot; $'+viceMoneySaved(v).toLocaleString()+' reclaimed'):'Track the money it costs', 'editViceCost('+i+')')+
     row(v.mode==='moderate'?'Switch to quitting (aim for zero)':'Switch to keeping it in check', 'changeViceMode('+i+')')+
     row(v.trackPatterns?'Hide my patterns':'Show my patterns', 'toggleVicePatterns('+i+')')+
@@ -19177,6 +19205,7 @@ async function searchBible(query){
   query=(query||'').trim();
   if(!query)return;
   const res=document.getElementById('br-search-results');
+  if(!res) return;   // never throw on a missing container — the crisis gate above has already run
   res.innerHTML='<p class="pulsing" style="font-family:\'Cormorant Garamond\',serif;font-size:15px;font-style:italic;color:var(--tx3);text-align:center;padding:16px">Listening to what you wrote...</p>';
   
   // Direct reference lookup (e.g. "John 3:16", "Romans 8:28-30")
@@ -27755,11 +27784,12 @@ function setPTTab(tab){
     const p=document.getElementById('pt-panel-'+t);const b=document.getElementById('pt-sub-'+t);
     if(p)p.style.display=t===tab?'block':'none';if(b)b.classList.toggle('active',t===tab);
   });
-  // renderPersonalRecords() was reachable ONLY from renderWorkoutHistory(), which is dead code
-  // (refcount 1, and its container #pt-history-list does not exist in the file). So the "Personal
-  // records" heading sat above a permanently empty box while PRs were being recorded on every
-  // completed set and announced with a "New PR!" toast — told you hit one, then never able to find it.
-  if(tab==='history'){renderMuscleGroupCard();if(typeof renderPersonalRecords==='function')renderPersonalRecords();if(typeof renderStravaActivities==='function')renderStravaActivities();if(typeof populateExerciseSelect==='function')populateExerciseSelect();if(typeof renderPlateauCard==='function')renderPlateauCard();}
+  // renderWorkoutHistory() renders the session list AND calls renderPersonalRecords(). Both were
+  // unreachable until v459: the function had no container in the file, so PRs sat under a permanently
+  // empty heading (announced by a "New PR!" toast, then impossible to find) and a workout logged in
+  // the app could never be reopened. The container now exists; the else-branch keeps PRs rendering
+  // even if the history renderer is ever removed.
+  if(tab==='history'){renderMuscleGroupCard();if(typeof renderWorkoutHistory==='function')renderWorkoutHistory();else if(typeof renderPersonalRecords==='function')renderPersonalRecords();if(typeof renderStravaActivities==='function')renderStravaActivities();if(typeof populateExerciseSelect==='function')populateExerciseSelect();if(typeof renderPlateauCard==='function')renderPlateauCard();}
   if(tab==='log'){ if(typeof renderSplitOverview==='function') renderSplitOverview(); }
   if(tab==='routines'){renderRoutines();}
   if(tab==='mobility'){if(typeof renderMobilityPanel==='function')renderMobilityPanel();}
@@ -41591,18 +41621,19 @@ function saveESVKey(){
 }
 
 function saveAllTargets(){
-  const cal=parseInt(document.getElementById('settings-cal-goal')?.value||0);
-  const pro=parseInt(document.getElementById('settings-pro-goal')?.value||0);
+  // Calorie and protein goals deliberately live in Nourish (and the TDEE calculator) — this card's
+  // own copy says so. The reads for #settings-cal-goal / #settings-pro-goal were left behind when
+  // targets moved out of Settings; neither element exists any more, so they resolved to 0 and the
+  // `cal>0&&pro>0` guard quietly dropped them — while the toast still claimed "All daily targets".
   const steps=parseInt(document.getElementById('settings-steps-goal')?.value||8000);
   const sleep=parseFloat(document.getElementById('settings-sleep-goal')?.value||8);
   // Stored in ML. A small number can only mean glasses, so convert rather than corrupt the goal.
   let water=parseInt(document.getElementById('settings-water-goal')?.value||2500);
   if(water>0 && water<=30) water = water*250;
   const h=parseInt(document.getElementById('settings-height')?.value||0);
-  if(cal>0&&pro>0)ls('totry_nut_goals',{cal,pro});
   if(h>0)ls('totry_height',h);
   ls('totry_step_goal',steps);ls('totry_sleep_goal',sleep);ls('totry_water_goal',water);
-  showToast('Targets saved','All daily targets updated.');
+  showToast('Targets saved','Steps, sleep and water updated.');
 }
 
 function exportWorkouts(){
