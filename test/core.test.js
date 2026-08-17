@@ -2434,4 +2434,79 @@ H.section('a renderer without a container is a feature that silently does not ex
     'the API key is not duplicated through the bundle');
 }
 
+H.section('every journal-shaped surface meets a disclosure, and keeps the words')
+{
+  const code = H.html
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  const { detectCrisis } = H.load(['detectCrisis'], {});
+
+  // ── RECALL. Eight phrasings a flat substring list structurally could not express. Every one was
+  // MISSED by the shipped detector and found by RUNNING it, not reading it. "can't go on" is the one
+  // that matters most: PRE-LAUNCH.md recorded v444 as closing "I can't go on" and it had not — only
+  // the qualified forms (like this / anymore / any longer) were ever added, so all three apostrophe
+  // forms of the bare phrase returned null for months.
+  for (const phrase of [
+    'im thinking about ending my life', 'i keep thinking about ending my life tonight',
+    'i want to off myself', 'thinking about offing myself', 'thinking about taking my life',
+    'i cant go on', "i can't go on.", 'i can’t go on',
+    'i dont want to be here', 'i don’t want to be here',
+    'i wont be around much longer', 'i dont belong here anymore',
+  ]) H.eq(detectCrisis(phrase), 'suicide', `"${phrase}" fires the gate`);
+
+  // ── PRECISION. A gate that cries wolf gets dismissed the once it matters. "take my life back" is a
+  // RECOVERY phrase people write in this app, and it must never be read as its opposite.
+  for (const phrase of [
+    'i want to take my life back', 'im taking my life back from this addiction',
+    'i cant go on this cut', 'i cant go on this diet', 'i cant go on this trip',
+    'i took the day off myself', 'i need to take some time off myself',
+  ]) H.eq(detectCrisis(phrase), null, `"${phrase}" does NOT fire`);
+
+  // ── COVERAGE. FOUR surfaces write to totry_journal and only saveEntry gated. The other three saved a
+  // disclosure with a cheerful toast, left it unflagged so safeJournal() fed it to the model on the next
+  // request, and never showed anyone the bridge. The two likeliest places for a first disclosure — the
+  // quick "get it out" note and the grief door ("I miss…") — were the two least guarded.
+  const fnBody = (name) => {
+    const m = code.match(new RegExp('function\\s+' + name + '\\s*\\('));
+    if (!m) return '';
+    let i = code.indexOf('{', m.index) + 1, d = 1;
+    while (i < code.length && d) { const c = code[i]; if (c === '{') d++; else if (c === '}') d--; i++; }
+    return code.slice(m.index, i);
+  };
+  for (const fn of ['saveQuickJournal', '_letGoSaveJournal', '_planAnswerSave']) {
+    const b = fnBody(fn);
+    H.ok(b.length > 0, `${fn} exists`);
+    H.ok(/journalCrisisOf\(/.test(b), `${fn} runs the crisis gate`);
+    H.ok(/flagged\s*:\s*!!/.test(b), `${fn} marks the entry so it never becomes AI context`);
+    H.ok(/journalMeetCrisis\(/.test(b), `${fn} shows the bridge to real help`);
+  }
+  H.ok(/function journalCrisisOf\(/.test(code) && /function journalMeetCrisis\(/.test(code),
+    'the gate lives in ONE place, not three copies');
+
+  // ── THE WORDS ARE KEPT. completeMorning's crisis branch returned BEFORE the write, so the single
+  // moment a person disclosed was the single moment their words were discarded — while the toast said
+  // "Saved". The write must come first.
+  const cm = fnBody('completeMorning');
+  const iWrite = cm.indexOf("ls('totry_mornings'");
+  const iGate = cm.indexOf('if(_mCrisis)');
+  H.ok(iWrite > 0 && iGate > 0, 'completeMorning has both a write and a gate');
+  H.ok(iWrite < iGate, 'the morning ritual is persisted BEFORE the crisis branch can return');
+  H.ok(/flagged:!!_mCrisis/.test(cm), 'and the morning row is marked');
+
+  // ── AND NEVER RIDE ALONG. Same leak as v439, one store over: a flagged row must not reach a model.
+  H.ok(/totry_mornings'\s*\)\s*\|\|\s*\[\]\)\.filter\(function\(m\)\{ return m && !m\.flagged/.test(code.replace(/\s+/g, ' ')) ||
+       /!m\.flagged/.test(fnBody('buildCtx')),
+    'buildCtx excludes a flagged morning');
+  H.ok(/!e\.flagged/.test(fnBody('getLifeState')), 'getLifeState excludes a flagged evening');
+  H.ok(/j\.flagged/.test(fnBody('getLifeState')), 'and still excludes a flagged journal entry');
+
+  // ── THE BRIDGE MUST BE TAPPABLE. The eating-disorder modal printed its helplines as bare <div> text
+  // styled gold like links, so someone already struggling had to memorise the digits and leave the app.
+  const edStart = code.indexOf('Support that cares');
+  const ed = edStart > 0 ? code.slice(edStart, edStart + 2600) : '';
+  H.ok(ed.length > 0, 'the eating-disorder support modal exists');
+  H.ok(/tel:1800334673/.test(ed), 'the Butterfly Foundation number is dialable');
+  H.ok(/tel:131114/.test(ed), 'and so is Lifeline');
+}
+
 H.report();

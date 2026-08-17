@@ -4723,7 +4723,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v462';
+const APP_VERSION = 'v463';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7299,7 +7299,10 @@ function getLifeState(){
   // ── SOUL / MIND ──
   const checkins = L('totry_checkins')||[];
   const ci7 = checkins.filter(c => within(c.ts||c.date, 7));
-  const evenings = (L('totry_evenings')||[]).filter(e => e && e.ts);
+  // !e.flagged for the same reason journal7 below carries it: completeEvening() marks a row whose
+  // reflection tripped the crisis gate, and getLifeState feeds lifeStateBrief(), which is handed to
+  // the model. A store that can hold a disclosure gets filtered wherever it is read for AI.
+  const evenings = (L('totry_evenings')||[]).filter(e => e && e.ts && !e.flagged);
   const ev7 = evenings.filter(e => within(e.ts, 7));
   const examens7 = (L('totry_examens')||[]).filter(e => e && within(e.ts, 7));
   const prayers7 = (L('totry_prayers')||[]).filter(p => p && within(p.ts, 7));
@@ -7742,7 +7745,11 @@ function buildCtx(){
   }
   
   // Today's mood/morning if logged
-  const mornings = ls('totry_mornings') || [];
+  // Flagged rows are excluded the same way safeJournal() excludes flagged journal entries: a crisis
+  // disclosure written into the morning intention must never ride along to a model on a later
+  // message. This is exactly the v439 leak (the gate stopped the reply and left the sentence in the
+  // context), one store over. The person's own words stay in totry_mornings exactly as written.
+  const mornings = (ls('totry_mornings') || []).filter(function(m){ return m && !m.flagged; });
   // Match on the ISO timestamp, not the display string. completeMorning() writes
   // date: toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}) — "Tue, 11 Aug" —
   // while todayKey here is the plain en-AU key "11/08/2026". Those can never be equal, so todayMorning
@@ -8368,7 +8375,33 @@ function detectCrisis(text){
     'took a bunch of pills', 'took a bottle of pills', 'swallowed a bunch of pills', 'took all my pills'
   ];
   
-  if(_hit(SUICIDE_PHRASES))    return 'suicide';
+  // REGEX PASS — for phrasings a flat substring list structurally CANNOT express, because each needs
+  // either an inflection or a negative completion. Every one was MISSED by the shipped list, and found
+  // by RUNNING the real function against phrasings people actually use, not by reading it:
+  //   · "ending my life"   — the list had 'end my life', and "ending my life" does not contain it.
+  //   · "taking my life"   — the list had 'take my OWN life' only. Bare "take my life" must never fire
+  //                          on "take my life back", which is a RECOVERY phrase people write in here.
+  //   · "off myself"       — absent entirely. Qualified by intent so "a day off myself" stays clear.
+  //   · "can't go on"      — the list had ONLY the qualified forms (like this / anymore / any longer).
+  //                          v444 was recorded in PRE-LAUNCH.md as closing "I can't go on" and did not:
+  //                          all three apostrophe forms of the bare phrase returned null. Matched only
+  //                          at a clause END, so "can't go on this trip" stays clear.
+  //   · "don't want to be here" — the list required the trailing "anymore".
+  // Re-tested BOTH directions after adding: 22 must-fire phrasings all fire, 16 training-context
+  // sentences still return null. A gate that cries wolf gets dismissed the once it matters.
+  const SUICIDE_RE = [
+    /\bend(?:ing)? my (?:own )?life\b/,
+    /\btak(?:e|ing) my (?:own )?life\b(?!\s*back)/,
+    /\boffing myself\b/,
+    /\b(?:want|wanna|going|gonna|about|ready|plan|planning|thinking about|might)\b[^.!?]{0,24}\boff myself\b/,
+    /\bcan'?t go on\s*(?:[.!?,]|$)/,
+    /\bdon'?t want to be here\b/,
+    /\bdon'?t belong here anymore\b/,
+    /\bwon'?t be around (?:much longer|for long|tomorrow)\b/
+  ];
+  const _hitRe = function(list){ for(const re of list){ if(re.test(t) || re.test(tNo)) return true; } return false; };
+
+  if(_hit(SUICIDE_PHRASES) || _hitRe(SUICIDE_RE))    return 'suicide';
   if(_hit(SELFHARM_PHRASES))   return 'selfharm';
   if(_hit(HARMOTHERS_PHRASES)) return 'harmothers';
   if(_hit(MEDICAL_PHRASES))    return 'medical';
@@ -10178,14 +10211,18 @@ function _planAnswer(id,i){
 function _planAnswerSave(id,i,btn){
   const ta=document.getElementById('plan-answer'), txt=ta?ta.value.trim():'';
   if(!txt){ showToast('Nothing kept yet','Write one line \u2014 even a short one.'); return; }
+  // Prompted with "However it comes out. Nobody reads this but you." \u2014 an explicit invitation to
+  // say the hardest thing, right after a scripture reflection, and it had no gate either.
+  const _paCrisis = journalCrisisOf(txt);
   const p=_planById(id), days=p?_planDays(p):[], day=days.length?days[_planClamp(i,days.length)]:{q:'',r:''};
   const entries=ls('totry_journal')||[];
   entries.unshift({ date:new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short',year:'numeric'}),
     ts:new Date().toISOString(), day:(typeof getDayCount==='function')?getDayCount():null,
-    text:day.q+'\n\n'+txt, plan:(p?p.title:''), planRef:day.r });
+    text:day.q+'\n\n'+txt, flagged:!!_paCrisis, plan:(p?p.title:''), planRef:day.r });
   ls('totry_journal', entries.slice(0,1200));
   if(typeof renderJournal==='function'){ try{ renderJournal(); }catch(_){} }
   if(btn) closeModal(btn);
+  if(journalMeetCrisis(_paCrisis)) return;
   haptic('success'); showToast('Kept','In your journal, with the passage.');
 }
 // Carry = the existing saved-passages shelf (totry_sv), same shape the Bible reader writes.
@@ -10929,6 +10966,17 @@ function completeMorning(){
       _mCrisis = detectCrisis([_g, _i].filter(Boolean).join(' '));
     }
   }catch(_){ }
+  // PERSIST FIRST, ALWAYS. The crisis branch below used to `return` before this write, so the single
+  // moment a person disclosed was the single moment their words were thrown away — while the toast said
+  // "Saved". The gate's own comment three lines up promises "their words are always kept, the app simply
+  // stops and meets them"; now it is true. Marked, never censored, same contract as the journal.
+  const g=document.getElementById('morning-gratitude').value.trim();
+  const intent=document.getElementById('morning-intention').value.trim();
+  const log=ls('totry_mornings')||[];
+  log.unshift({date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}),day:getDayCount(),gratitude:g,intention:intent,flagged:!!_mCrisis,ts:new Date().toISOString()});
+  ls('totry_mornings',log.slice(0,1200)); // keep years of reflections (~3+ yrs daily), not ~3 months — an inner journey shouldn't silently vanish
+  if(typeof syncToCloud==='function') syncToCloud();
+
   if(_mCrisis){
     try{
       document.querySelectorAll('.modal-bg:not([id])').forEach(function(m){ m.remove(); });
@@ -10946,11 +10994,6 @@ function completeMorning(){
     return;
   }
 
-  const g=document.getElementById('morning-gratitude').value.trim();
-  const intent=document.getElementById('morning-intention').value.trim();
-  const log=ls('totry_mornings')||[];
-  log.unshift({date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}),day:getDayCount(),gratitude:g,intention:intent,ts:new Date().toISOString()});
-  ls('totry_mornings',log.slice(0,1200)); // keep years of reflections (~3+ yrs daily), not ~3 months — a man's inner journey shouldn't silently vanish
   if(typeof logEvent==='function') logEvent('morning_done');
   if(typeof syncToCloud==='function') syncToCloud();
   document.getElementById('morning-prayer-display').style.display='none';
@@ -13462,13 +13505,17 @@ function _letGoJournal(){
 function _letGoSaveJournal(){
   const text=document.getElementById('lg-jtext')?.value.trim();
   if(!text){ if(typeof showToast==='function') showToast('Empty','Even one line counts.'); return; }
+  // The grief door \u2014 placeholder "I miss\u2026" \u2014 is the likeliest place after the companion for a
+  // first disclosure, and it went straight to theRelease() with an encouraging line and no gate.
+  const _lgCrisis = journalCrisisOf(text);
   try{
     const entries=ls('totry_journal')||[];
-    entries.unshift({ date:new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short',year:'numeric'}), ts:new Date().toISOString(), day:(typeof getDayCount==='function'?getDayCount():0), mood:'😔', text:text, tag:'letting_go', quick:true });
+    entries.unshift({ date:new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short',year:'numeric'}), ts:new Date().toISOString(), day:(typeof getDayCount==='function'?getDayCount():0), mood:'😔', text:text, flagged:!!_lgCrisis, tag:'letting_go', quick:true });
     ls('totry_journal', entries.slice(0,1200));
     if(typeof renderJournal==='function') renderJournal();
   }catch(_){}
   document.querySelector('.modal-bg.open')?.remove();
+  if(journalMeetCrisis(_lgCrisis)) return;   // saved above; met here rather than released
   if(typeof haptic==='function') haptic('success');
   theRelease({did:'You put it into words \u2014 and set it down. That\u2019s processing it, not feeding it.'});
 }
@@ -19459,6 +19506,10 @@ function saveQuickJournal(){
   const autoUrges = vices.reduce((a,v) => a + (v.urgelog || []).filter(t => new Date(t).toLocaleDateString('en-AU') === todayKey).length, 0);
   const todayWins = _winsOnDay(todayKey);
   
+  // "Get it out" is the fastest way into this app's journal and it had NO gate: someone typing the
+  // hardest sentence of their life got "Saved \u2014 In your journal." and nothing else.
+  const _qjCrisis = journalCrisisOf(text);
+
   const entries = ls('totry_journal') || [];
   entries.unshift({
     date: new Date().toLocaleDateString('en-AU', {weekday:'long', day:'numeric', month:'short', year:'numeric'}),
@@ -19466,6 +19517,7 @@ function saveQuickJournal(){
     day: getDayCount(),
     mood: _qjMood,
     text: text,
+    flagged: !!_qjCrisis,
     urges: autoUrges,
     wins: todayWins,
     quick: true
@@ -19474,6 +19526,8 @@ function saveQuickJournal(){
   
   document.querySelector('.modal-bg.open')?.remove();
   if(typeof renderJournal === 'function') renderJournal();
+  // Saved first, above \u2014 then met. Never celebrate over a disclosure.
+  if(journalMeetCrisis(_qjCrisis)) return;
   // Never trim someone's words without telling them.
   showToast('Saved', _trimmed ? 'In your journal \u2014 though it was very long, so the last part was trimmed.' : 'In your journal.');
   haptic('success');
@@ -19515,6 +19569,44 @@ function _resolveEntryDate(inputId){
 function safeJournal(){
   try{ return (ls('totry_journal') || []).filter(function(e){ return e && !e.flagged; }); }
   catch(_){ return []; }
+}
+
+// ── THE JOURNAL CONTRACT, IN ONE PLACE ───────────────────────────────────────────────────────────
+// FOUR surfaces write to totry_journal: the full journal (saveEntry), the quick "get it out" note
+// (saveQuickJournal), the letting-go door (_letGoSaveJournal, placeholder "I miss…") and a reading-plan
+// answer (_planAnswerSave, prompted with "However it comes out. Nobody reads this but you.").
+// Only saveEntry gated. The other three saved a disclosure with a cheerful toast, left it UNFLAGGED —
+// so safeJournal() above handed it to the model on the next request — and never showed anyone the
+// bridge to real help. The two most likely places for a first disclosure were the two least guarded.
+//
+// Three copies of a gate are three things to remember; one is none. Same lesson as safeJournal() and
+// geoCoarse(): make the safe path the only path.
+//
+// The contract, unchanged from saveEntry: the entry is ALWAYS saved, exactly as written. It is marked,
+// never censored, never refused, never thrown back at the person. Grace over shame.
+function journalCrisisOf(text){
+  try{ return (typeof detectCrisis === 'function') ? detectCrisis(text) : null; }catch(_){ return null; }
+}
+// Call AFTER the entry is persisted. Returns true when it met the person, so the caller skips its
+// ordinary success toast and any celebratory UI.
+function journalMeetCrisis(kind){
+  if(!kind) return false;
+  try{
+    // :not([id]) is load-bearing — #journal-modal, #payday-modal and #rest-timer-overlay are STATIC
+    // elements carrying .modal-bg, and the bare selector deleted them from the DOM permanently.
+    document.querySelectorAll('.modal-bg:not([id])').forEach(function(m){ m.remove(); });
+    const m = document.createElement('div');
+    m.className = 'modal-bg open';
+    m.style.alignItems = 'center';
+    m.innerHTML = '<div class="modal" style="max-width:92vw"><div class="modal-handle"></div>' +
+      '<div id="jgate-crisis-slot"></div>' +
+      '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;margin-top:10px">Close</button></div>';
+    document.body.appendChild(m);
+    if(typeof showCrisisResponse === 'function') showCrisisResponse('jgate-crisis-slot', kind);
+  }catch(_){ }
+  try{ if(typeof haptic === 'function') haptic('warning'); }catch(_){ }
+  try{ if(typeof showToast === 'function') showToast('Saved', 'I read what you wrote. Please look at this.'); }catch(_){ }
+  return true;
 }
 
 function saveEntry(){
@@ -24465,7 +24557,7 @@ function showEDSupport(){
     '<p style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">You reaching out is a real act of courage. These people are trained to help with food, body image, and eating struggles — with kindness, not judgment.</p>' +
     '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:10px">' +
       '<div style="font-size:14px;color:var(--tx);margin-bottom:4px">Butterfly Foundation (Australia)</div>' +
-      '<div style="font-size:13px;color:var(--go)">1800 33 4673</div>' +
+      '<div style="font-size:13px"><a href="tel:1800334673" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">1800 33 4673</a></div>' +
       '<div style="font-size:11px;color:var(--tx3);margin-top:4px">National ED helpline · phone, chat, email</div>' +
     '</div>' +
     '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:10px">' +
@@ -24474,7 +24566,7 @@ function showEDSupport(){
     '</div>' +
     '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px">' +
       '<div style="font-size:14px;color:var(--tx);margin-bottom:4px">Lifeline (if in crisis)</div>' +
-      '<div style="font-size:13px;color:var(--go)">13 11 14</div>' +
+      '<div style="font-size:13px"><a href="tel:131114" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">13 11 14</a></div>' +
       '<div style="font-size:11px;color:var(--tx3);margin-top:4px">24/7 crisis support</div>' +
     '</div>' +
     '<button class="btn primary" onclick="closeModal(this)">Close</button>' +
