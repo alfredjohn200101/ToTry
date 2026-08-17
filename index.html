@@ -2599,6 +2599,12 @@ input:focus,textarea:focus,select:focus{
   </div>
   <div class="bible-tab-row" style="margin-bottom:14px">
     <button class="btab active" id="pt-sub-log" onclick="setPTTab('log')">Log</button>
+    <!-- setPTTab() has always toggled 'routines' and looked for #pt-sub-routines; the button was
+         never added. So #pt-panel-routines sat at display:none with no way to reach it, and with it
+         the whole routine feature: build one, save it, assign it to a day, browse starter templates.
+         openRoutineBuilder() and openRoutineTemplates() are called ONLY from inside that panel, so
+         they were unreachable too. Sits next to Log because the panel's own copy pairs them. -->
+    <button class="btab" id="pt-sub-routines" onclick="setPTTab('routines')">Routines</button>
     <button class="btab" id="pt-sub-history" onclick="setPTTab('history')">History</button>
     <button class="btab" id="pt-sub-mobility" onclick="setPTTab('mobility')">Mobility</button>
     <button class="btab" id="pt-sub-ptcoach" onclick="setPTTab('ptcoach')">Coach</button>
@@ -4748,7 +4754,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v459';
+const APP_VERSION = 'v460';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -31515,7 +31521,29 @@ function renderWorkoutHistory(){
   container.innerHTML='';
   history.forEach(s=>{
     const item=document.createElement('div');item.className='workout-history-item';
-    item.innerHTML='<div class="whi-date">'+s.date+' \u2014 Day '+s.day+'</div><div class="whi-name">'+s.splitFocus+'</div><div class="whi-meta">'+((s&&Array.isArray(s.exercises))?s.exercises.length:0)+' exercises'+((displayVolume(s))?' \u00b7 '+displayVolume(s).toLocaleString()+'kg vol':'')+' \u00b7 '+s.completedSets+'/'+s.totalSets+' sets</div>';
+    // completedSets/totalSets are only written by the in-app logger. A session converted from Hevy or
+    // Strava, or saved by an older version, has neither \u2014 and read "undefined/undefined sets" on the
+    // row. Derive them from the sets that are actually there, and say nothing when there are none.
+    const _allSets=(s&&Array.isArray(s.exercises))?s.exercises.reduce((a,ex)=>a.concat(Array.isArray(ex.sets)?ex.sets:[]),[]):[];
+    const _doneSets=(typeof s.completedSets==='number')?s.completedSets:_allSets.filter(x=>x&&x.done).length;
+    const _totSets=(typeof s.totalSets==='number')?s.totalSets:_allSets.length;
+    // Only the in-app logger writes date/day/splitFocus. Everything that arrives from Hevy or Strava
+    // carries ts and a name instead \u2014 so every imported row read "undefined \u2014 Day undefined". Fall
+    // back to the timestamp, and drop the clauses that have nothing behind them rather than print a
+    // gap. (The rows a person is most likely to have are exactly the imported ones.)
+    const _when=s.date||(s.ts?new Date(s.ts).toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}):'');
+    const _dayLbl=(s.day!==undefined&&s.day!==null&&s.day!=='')?(' \u2014 Day '+s.day):'';
+    const _focus=s.splitFocus||s.type||'Session';
+    // Built as parts rather than a fixed sentence: a cardio session has no exercises and no sets but
+    // does have a duration, and "1 exercises" is not something a person should be shown.
+    const _exN=(s&&Array.isArray(s.exercises))?s.exercises.length:0;
+    const _mins=s.durationMin||s.durationMinutes||null;
+    const _meta=[];
+    if(_exN) _meta.push(_exN+' exercise'+(_exN===1?'':'s'));
+    if(displayVolume(s)) _meta.push(displayVolume(s).toLocaleString()+'kg vol');
+    if(_totSets) _meta.push(_doneSets+'/'+_totSets+' sets');
+    if(!_exN&&_mins) _meta.push(_mins+' min');
+    item.innerHTML='<div class="whi-date">'+_when+_dayLbl+'</div><div class="whi-name">'+_focus+'</div><div class="whi-meta">'+_meta.join(' \u00b7 ')+'</div>';
     item.onclick=()=>{
       const m=document.createElement('div');m.className='modal-bg open';
       // Build per-exercise block: sets (with RPE) + notes (if any)
@@ -31532,7 +31560,7 @@ function renderWorkoutHistory(){
           noteHtml +
         '</div>';
       }).join('');
-      m.innerHTML='<div class="modal" style="max-height:92vh"><div class="modal-handle"></div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);margin-bottom:4px;letter-spacing:0.1em">'+s.date+'</div><div style="font-size:18px;font-weight:500;color:var(--tx);margin-bottom:8px">'+s.splitFocus+'</div>'+((displayVolume(s))?'<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--go);margin-bottom:10px">Volume: '+displayVolume(s).toLocaleString()+'kg'+(ls('totry_bw_volume')?' (incl. bodyweight)':'')+'</div>':'')+'<div style="max-height:55vh;overflow-y:auto;padding-right:4px;margin-bottom:14px">'+exList+'</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" style="flex:1" onclick="reloadSession('+s.id+');this.closest(\'.modal-bg\').remove()">Repeat session</button><button class="btn" style="flex:1" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div><button class="btn" onclick="deleteWorkoutFromHistory('+s.id+')" style="background:transparent;border:1px solid var(--bd);color:var(--re);font-size:11px;margin-top:8px">Delete this session</button></div>';
+      m.innerHTML='<div class="modal" style="max-height:92vh"><div class="modal-handle"></div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);margin-bottom:4px;letter-spacing:0.1em">'+_when+'</div><div style="font-size:18px;font-weight:500;color:var(--tx);margin-bottom:8px">'+_focus+'</div>'+((displayVolume(s))?'<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--go);margin-bottom:10px">Volume: '+displayVolume(s).toLocaleString()+'kg'+(ls('totry_bw_volume')?' (incl. bodyweight)':'')+'</div>':'')+'<div style="max-height:55vh;overflow-y:auto;padding-right:4px;margin-bottom:14px">'+exList+'</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" style="flex:1" onclick="reloadSession('+s.id+');this.closest(\'.modal-bg\').remove()">Repeat session</button><button class="btn" style="flex:1" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div><button class="btn" onclick="deleteWorkoutFromHistory('+s.id+')" style="background:transparent;border:1px solid var(--bd);color:var(--re);font-size:11px;margin-top:8px">Delete this session</button></div>';
       document.body.appendChild(m);
     };
     container.appendChild(item);

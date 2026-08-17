@@ -2382,6 +2382,31 @@ H.section('a renderer without a container is a feature that silently does not ex
   const st = code.slice(code.indexOf('function saveAllTargets('), code.indexOf('function saveAllTargets(') + 900);
   H.ok(!/settings-cal-goal/.test(st), 'saveAllTargets no longer reads an input that does not exist');
   H.ok(!/All daily targets/.test(st), 'and its toast claims only what it saved');
+
+  // A SECOND SHAPE OF THE SAME CLASS: the panel and its handler both exist, and no control ever passes
+  // that value. setPTTab() toggles 'routines' and looks for #pt-sub-routines; the button was never
+  // added, so #pt-panel-routines sat at display:none and the whole routine feature — build one, save
+  // it, assign it to a day, browse starter templates — could not be reached. openRoutineBuilder() and
+  // openRoutineTemplates() are called only from inside that panel, so they went with it.
+  H.ok(markupIds.has('pt-sub-routines'), 'every PT panel has a control that opens it');
+  for (const [fn, vals] of [['setPTTab', ['log','routines','history','mobility','ptcoach']],
+                            ['setBibleTab', ['find','read','saved','prayer','sacraments']],
+                            ['setReflectTab', ['evening','journal','goals','review']]]) {
+    for (const v of vals) {
+      H.ok(new RegExp(fn + "\\('" + v + "'\\)").test(H.html), `${fn}('${v}') is reachable from a control`);
+    }
+  }
+
+  // The history row read s.date / s.day / s.completedSets, which ONLY the in-app logger writes. Every
+  // session imported from Hevy or Strava carries ts and a name instead, so each imported row rendered
+  // "undefined — Day undefined ... undefined/undefined sets" — and imported rows are the ones most
+  // people have. Found by driving the app with the shape the importer actually writes.
+  const wh = code.slice(code.indexOf('function renderWorkoutHistory('), code.indexOf('function renderWorkoutHistory(') + 2600);
+  H.ok(/_when\s*=\s*s\.date\s*\|\|/.test(wh), 'the session date falls back to the timestamp');
+  H.ok(/_focus\s*=\s*s\.splitFocus\s*\|\|/.test(wh), 'the session name falls back to its type');
+  H.ok(!/'\+s\.date\+'/.test(wh) && !/'\+s\.day\+'/.test(wh), 'no raw date/day is concatenated into a row');
+  H.ok(!/s\.completedSets\+'\//.test(wh), 'set counts are derived, not assumed');
+  H.ok(/' exercise'\+\(_exN===1\?'':'s'\)/.test(wh), "and nobody is shown \"1 exercises\"");
 }
 
 H.report();
