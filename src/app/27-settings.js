@@ -1046,7 +1046,7 @@ function restoreFullBackup(event){
   reader.onload = (e) => {
     try{
       const backup = JSON.parse(e.target.result);
-      if(!backup || backup.app !== 'ToTry' || !backup.data){
+      if(!backup || String(backup.app||'').replace(/\s+/g,'') !== 'ToTry' || !backup.data){
         showToast('Not a ToTry backup', 'That file isn\'t a valid ToTry backup.');
         event.target.value = '';
         return;

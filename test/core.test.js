@@ -3284,6 +3284,22 @@ H.section('dead code that was one caller away from confusing someone');
   H.ok(!/M17 5H9\.5/.test(H.html), 'no dollar-sign glyph is drawn in any icon');
 }
 
+// ── the one withdrawal that can kill ─────────────────────────────────────────────────────────────
+// Alcohol is not nicotine. Days 1-3 are when seizures and delirium tremens happen to a physically
+// dependent drinker, and the timeline told them "the worst of the restlessness eases" on day 3 — the
+// app reassuring someone at the exact hour they most needed a doctor. CLAUDE.md rule 6: the bridge to
+// real help must be intact and prominent, and this is the one place where "push through" can be fatal.
+{
+  H.section('alcohol withdrawal is met with a doctor, not willpower');
+  const tl = (H.html.match(/alcohol:\s*\[([\s\S]*?)\n\s*\]/) || [])[1] || '';
+  H.ok(tl.length > 200, 'the alcohol timeline is present');
+  H.ok(/dangerous/i.test(tl), 'day 1 says stopping suddenly can be dangerous');
+  H.ok(/doctor|GP|helpline/i.test(tl), 'and points at a human who can help');
+  H.ok(/seizure/i.test(tl), 'and names the sign that means emergency, so it cannot be read as nerves');
+  H.ok(!/the worst of the restlessness eases/.test(tl),
+       'and no longer tells a dependent drinker the worst has passed on day three');
+}
+
 // ── the numbers and doors fixed in v491-v492, held in place ─────────────────────────────────────
 {
   H.section('v491-v492 fixes stay fixed');

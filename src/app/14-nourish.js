@@ -4248,7 +4248,19 @@ function renderWaterTracker(){
 // Default 16:8. Stored as {startTs, protocol}. Live-updates while active.
 let _fastingInterval = null;
 function getFastingState(){
-  return ls('totry_fasting') || {startTs: null, protocol: 16};
+  const s = ls('totry_fasting') || {startTs: null, protocol: 16};
+  // ABANDONED, NOT HEROIC. Nothing stopped this clock: start a 16-hour fast, forget, and three days
+  // later it was still counting — and the coach read those hours as a fast in progress and urged the
+  // person on. A fast that has run past twice its own target, or past 36 hours, is someone who closed
+  // the app, not someone still going. Forget it rather than celebrate it.
+  try{
+    if(s && s.startTs){
+      const hrs = (Date.now() - s.startTs) / 3600000;
+      const ceiling = Math.min(36, Math.max(24, (parseInt(s.protocol,10) || 16) * 2));
+      if(!(hrs >= 0) || hrs > ceiling){ s.startTs = null; ls('totry_fasting', s); }
+    }
+  }catch(_){ }
+  return s;
 }
 function saveFastingState(s){ ls('totry_fasting', s); }
 function saveFastingProtocol(hours){

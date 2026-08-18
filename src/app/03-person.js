@@ -2138,14 +2138,20 @@ function resetJourneyStart(){
 }
 
 // ── ONBOARDING ────────────────────────────────────────────────
-let obVices=[],hasPartner=false;
+// `hasPartner` starts false and is only ever set by tapping the partner question — which the quick
+// routes ("Take me in →", any "I'll do this later", the guest door) never show at all. Writing it
+// unconditionally recorded a decisive "no" for people who were never asked, and that mattered because
+// a null there is what lets the evening screen turn the reach-out ON once they add someone to their
+// few (23-evening.js:854 self-heals only when the pref is null/undefined). A false blocks that
+// forever. So: only record an answer that was actually given.
+let obVices=[],hasPartner=false,partnerAnswered=false;
 function toggleChip(el,name){
   el.classList.toggle('on');
   if(el.classList.contains('on'))obVices.push(name);
   else obVices=obVices.filter(v=>v!==name);
 }
 function setHasPartner(val){
-  hasPartner=val;
+  hasPartner=val; partnerAnswered=true;
   document.getElementById('pyes').className='btn'+(val?' primary':'');
   document.getElementById('pno').className='btn'+(!val?' primary':'');
 }
@@ -2411,7 +2417,7 @@ function obPersistVices(){
       obVices.forEach(n=>{if(!ex.find(v=>v.n===n))ex.push({n,type:(typeof classifyVice==='function'?classifyVice(n):''),mode:'quit',t:'Various situations',w:0,total:0,lastWin:null,lastLoss:null,urgelog:[],startDate:new Date().toISOString(),cleanDaysTotal:0,relapseCount:0,relapseHistory:[]});});
       ls('totry_v',ex);
     }
-    ls('totry_partner',hasPartner);
+    if(partnerAnswered) ls('totry_partner',hasPartner);   // silence is not a no
   }catch(_){ }
 }
 

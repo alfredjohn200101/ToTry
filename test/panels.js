@@ -34,11 +34,30 @@ const ESTAB= { totry_guest:true, totry_onboarded:true, totry_name:'Alfy', totry_
   totry_body:[{w:82,d:new Date().toISOString()}],
 };
 
+const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Brien",
+  totry_sex:'female', totry_faith_tradition:'islam', totry_currency:'GBP', totry_nut_gentle:true,
+  totry_v:[{n:"Mum's wine o'clock", mode:'moderate', modLimit:4, modThreshold:2,
+    startDate:new Date(Date.now()-9*864e5).toISOString(), lastLoss:new Date(Date.now()-30*864e5).toISOString(), total:3}],
+  totry_f:{d:[{n:"Dad's loan",t:4000,p:1200,r:0},{n:'Card',t:3000,p:900,r:19.9}],u:0,i:0},
+  // Written the way the demo seeder writes them — no `date`, no `category` — which is how the
+  // "undefined · undefined" in the Money tab reached the screenshots.
+  totry_transactions:[{id:1,type:'expense',amount:42.5,note:"Domino's",ts:new Date().toISOString()}],
+  totry_finance_goals:[{id:1,name:'Old goal',target:500,current:500},{id:2,name:"Aisha's fund",target:2000,current:100}],
+  totry_body:[{w:64,ts:new Date().toISOString(),date:'18 Aug'}],
+  totry_workouts:[{id:1,date:'14 Aug 2026',day:2,splitFocus:'Push',durationMin:52,
+    exercises:[{name:'5" deficit deadlift',sets:[{weight:80,reps:8,done:true,rpe:8}]}]}],
+};
+
 (async()=>{
   const server=await serve();
   const browser=await chromium.launch({headless:true});
   const findings=[];
-  for(const [label,seed] of [['new user',NEW],['established',ESTAB]]){
+  // A THIRD PERSON, WHOSE DATA IS THE KIND THAT ACTUALLY BREAKS THINGS. The two above hold plausible
+  // data and have missed every input-shaped defect of the last three sweeps: apostrophes killing
+  // onclick handlers, a non-dollar currency, a completed goal ahead of the live one, two debts paid
+  // on the same day, rows written by a different writer with a different shape. Walking every
+  // sub-panel with that data is cheap and it is where those bugs live.
+  for(const [label,seed] of [['new user',NEW],['established',ESTAB],['awkward data',AWKWARD]]){
     const ctx=await browser.newContext({viewport:{width:414,height:896}});
     const page=await ctx.newPage();
     const errors=[]; page.on('pageerror',e=>errors.push(String(e.message).slice(0,150)));

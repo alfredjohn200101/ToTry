@@ -128,7 +128,10 @@ async function generateWeeklySynthesis(){
   const journal=safeJournal().filter(j=>new Date(j.ts)>=sevenDaysAgo);
   const evenings=(ls('totry_evenings')||[]).filter(e=>new Date(e.ts)>=sevenDaysAgo);
   const workouts=(ls('totry_workouts')||[]).filter(w=>new Date(w.ts||w.date)>=sevenDaysAgo);
-  const checkins=(ls('totry_checkins')||[]).filter(c=>new Date(c.ts)>=sevenDaysAgo);
+  const _allCheckins=(ls('totry_checkins')||[]).filter(c=>new Date(c.ts)>=sevenDaysAgo);
+  // Only the mood rows carry physical/emotional/spiritual. The morning sleep tap writes {kind:'sleep',
+  // scores:{…}} into the same store, and averaging across both produced NaN.
+  const checkins=_allCheckins.filter(c=>c && c.physical!=null && c.emotional!=null && c.spiritual!=null);
   const examens=(ls('totry_examens')||[]).filter(e=>new Date(e.ts)>=sevenDaysAgo);
   const prayers=(ls('totry_prayers')||[]).filter(p=>new Date(p.createdAt)>=sevenDaysAgo);
   const answeredPrayers=prayers.filter(p=>p.status==='answered');

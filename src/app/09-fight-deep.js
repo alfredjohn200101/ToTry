@@ -983,8 +983,8 @@ const RECOVERY_TIMELINES = {
     { d:365, body:'Your risk of heart disease has dropped to roughly half that of a smoker.', soul:'A year. What felt impossible is now simply who you are.' }
   ],
   alcohol: [
-    { d:1, body:'Your body begins clearing alcohol; blood sugar and hydration start to stabilise.', soul:'Day one is sacred. You chose clarity over escape.' },
-    { d:3, body:'Sleep architecture begins to recover; the worst of the restlessness eases.', soul:'The body fights to rebalance \u2014 be gentle with yourself today.' },
+    { d:1, body:'Your body begins clearing alcohol; blood sugar and hydration start to stabilise. If you have been drinking heavily every day, stopping suddenly can be genuinely dangerous \u2014 shaking, sweating, confusion or a seizure need a doctor, not willpower. Please talk to a GP or call a helpline before you white-knuckle this one.', soul:'Day one is sacred. Getting help to do it safely is not a smaller kind of courage.' },
+    { d:3, body:'Sleep architecture begins to recover. Days two and three are also when withdrawal is at its most serious for a dependent drinker \u2014 if you feel very unwell, see things that are not there, or your hands will not stop shaking, that is a medical emergency, not weakness.', soul:'The body fights to rebalance \u2014 be gentle with yourself today.' },
     { d:7, body:'Deeper, more restorative sleep returns; energy and hydration improve.', soul:'A week of waking up clear. Remember this feeling.' },
     { d:30, body:'Liver fat can drop significantly; skin, focus and mood noticeably improve.', soul:'A month. The mind you\u2019re thinking with now is more truly yours.' },
     { d:90, body:'Liver function, blood pressure and immune markers continue improving.', soul:'Ninety days of facing life sober. That is real strength, quietly built.' },
@@ -1029,10 +1029,11 @@ async function openRecoveryTimeline(i){
   if(typeof haptic==='function') haptic('tap');
   const days = viceCleanDays(v);
   const type = v.type || (typeof classifyVice==='function' ? classifyVice(v.n) : 'general');
+  const _moderate = v.mode === 'moderate';
   const m = document.createElement('div');
   m.className='modal-bg open'; m.id='recovery-timeline-modal';
   m.innerHTML = '<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div class="src-tag" style="color:var(--gr);margin-bottom:4px">WHAT YOU\u2019RE EARNING</div>'+
+    '<div class="src-tag" style="color:var(--gr);margin-bottom:4px">'+(_moderate?'WHAT HOLDING YOUR LINE IS WORTH':'WHAT YOU\u2019RE EARNING')+'</div>'+
     '<div style="font-size:20px;font-weight:500;color:var(--tx);margin-bottom:2px">'+String(v.n||'Your streak').replace(/</g,'&lt;')+'</div>'+
     '<div style="font-size:13px;color:var(--go);font-family:DM Mono,monospace;margin-bottom:16px">'+days+' day'+(days===1?'':'s')+' clean'+(viceMoneySaved(v)>0?(' \u00b7 '+curSym()+viceMoneySaved(v).toLocaleString()+' reclaimed'):'')+'</div>'+
     '<div id="recovery-timeline-body"><div style="font-size:13px;color:var(--tx3);text-align:center;padding:20px">Loading what your body and soul are gaining\u2026</div></div>'+
@@ -1045,6 +1046,26 @@ async function openRecoveryTimeline(i){
   }
   const body = document.getElementById('recovery-timeline-body');
   if(!body) return;
+  // The abstinence milestones are earned by NOT doing the thing at all. Someone holding a limit has
+  // not earned them and should not be told they have — say what their mode actually achieves instead.
+  if(_moderate){
+    const _within = (v.modWithin || 0), _sessions = (v.total || 0);
+    const _rate = _sessions > 0 ? Math.round((_within / _sessions) * 100) : null;
+    body.innerHTML =
+      '<div style="font-size:13px;color:var(--tx2);line-height:1.75">' +
+        'You are not counting clean days here \u2014 you are counting whether you stayed inside your own line, ' +
+        'which is a different and harder kind of honest.' +
+      '</div>' +
+      (_rate != null
+        ? '<div style="margin-top:14px;font-family:DM Mono,monospace;font-size:13px;color:var(--go)">' +
+            'You held it ' + _within + ' of ' + _sessions + ' times \u00b7 ' + _rate + '%</div>'
+        : '<div style="margin-top:14px;font-size:12.5px;color:var(--tx3)">Log a few sessions and I will show you your hold rate here.</div>') +
+      '<div style="margin-top:14px;font-size:12.5px;color:var(--tx3);line-height:1.7">' +
+        'The body milestones below belong to stopping altogether. They are real, and they are not yours yet \u2014 ' +
+        'if you ever want them, switching this to "quit" in Manage is how they start counting.' +
+      '</div>';
+    return;
+  }
   if(!timeline || !timeline.length){
     body.innerHTML = '<div style="font-size:13px;color:var(--tx2);line-height:1.7">Every clean day is rebuilding you \u2014 your focus, your steadiness, your self-respect. Keep going; the body and mind heal in ways you\u2019ll feel before you can measure.</div>';
     return;
@@ -1510,7 +1531,7 @@ function _wholeLifeReframe(){
   try{
     const r=(typeof computeReadiness==='function')?computeReadiness():null;
     if(r && (r.level==='rest' || (r.sleep && r.sleep<=5))){
-      out.push({icon:'\u{1FAAB}', text:'You’re running on empty right now'+(r.sleep&&r.sleep<=5?' — barely '+r.sleep+'h of sleep':'')+'. The pull is this loud because you’re depleted, not because you’re weak. That’s your body, not your character.'});
+      out.push({icon:'\u{1FAAB}', text:'You’re running on empty right now'+(r.sleep&&r.sleep<=5?' \u2014 you rated last night rough':'')+'. The pull is this loud because you’re depleted, not because you’re weak. That’s your body, not your character.'});
     }
   }catch(_){}
   // The hour itself — after midnight everything feels heavier and more permissible.

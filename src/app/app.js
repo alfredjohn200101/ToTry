@@ -43,7 +43,7 @@ function getFirstRunSteps(){
       done: !!(identity && identity.trim()),
       label: 'Set who you\'re becoming',
       desc: 'One sentence. Your north star.',
-      action: "go('settings');setTimeout(()=>document.getElementById('settings-identity')?.scrollIntoView({behavior:'smooth',block:'center'}),300)"
+      action: "go('why');setTimeout(()=>document.getElementById('settings-identity')?.scrollIntoView({behavior:'smooth',block:'center'}),300)"
     },
     {
       done: vices && vices.length > 0,
