@@ -2781,7 +2781,12 @@ H.section('the voice is told the truth, and only what is true')
     const b = fnBody(builder);
     H.ok(b.length > 0, `${builder} exists`);
     H.ok(/nutPromptBlock\(/.test(b), `${builder} uses the shared block`);
-    H.ok(!/\$\{todayCals\} cal \(/.test(b), `${builder} no longer interpolates raw calories directly`);
+    // Asserted on what the FIX introduced, not on the absence of one pre-fix string. The old version
+    // checked for `${todayCals} cal (` — which buildPTCtx never contained even before the fix (it read
+    // "Eaten: ${todayCals} cal," with no paren), so that assertion passed against the pre-fix source and
+    // could not have caught the very thing it was written for. A ratchet that cannot fail is not a ratchet.
+    H.ok(/nutPromptBlock\(todayCals, todayPro/.test(b), `${builder} builds its nutrition line through the shared block`);
+    H.ok(!/Eaten: \$\{todayCals\} cal/.test(b), `${builder} no longer interpolates raw calories directly`);
     H.ok(/nutGentle/.test(b), `${builder} is gentle-aware at all`);
   }
 
@@ -3129,6 +3134,35 @@ H.section('the fixes I shipped today, checked against themselves')
   // The crisis return sits above the line that honours _trimmed.
   const sqj = fnBody('saveQuickJournal');
   H.ok(/_trimmed && _qjCrisis/.test(sqj), 'a trimmed disclosure is still reported as trimmed');
+
+  // isTombed re-reads localStorage, and the incoming tombstone map only lands there when its own row is
+  // reached in the same loop — with no .order() on the select, so a union could run first and resurrect
+  // exactly what the other device deleted, by luck.
+  const pullBody = (() => {
+    const m = code.match(/async function pullFromCloud\s*\(/);
+    if (!m) return '';
+    let i = code.indexOf('{', m.index) + 1, d = 1;
+    while (i < code.length && d) { const c = code[i]; if (c === '{') d++; else if (c === '}') d--; i++; }
+    return code.slice(m.index, i);
+  })();
+  H.ok(/const at = _unCloudKey\(a && a\.data_key\) === TOMB_KEY/.test(pullBody),
+    'the tombstone row is merged before any union that must honour it');
+
+  // Two readers fell back to their tradition's bundled pool offline and two showed an error box, so the
+  // same loss of signal produced a dead tab for Islam and Hinduism and a readable one for the others.
+  for (const [fn, pool] of [['_readQuranLoad','VS_ISLAM'], ['_readGitaLoad','VS_HINDU'],
+                            ['_readDhammapadaLoad','VS_BUDDHIST'], ['_readStoicLoad','VS_SECULAR']]) {
+    const body = fnBody(fn);
+    H.ok(/_readBundled\(/.test(body) && body.includes(pool),
+      `${fn} falls back to its own tradition offline`);
+  }
+
+  // The habit repair only looked for one literal wrong name, which INVERTED the bug for the two fast
+  // doors: they skip the faith step, so the habit is seeded secular and a person who later picks
+  // Christianity keeps "Stillness / reflection" forever.
+  const ih = fnBody('initHabits');
+  H.ok(/const want = faithHabitName\(\)/.test(ih), 'the repair compares against what it should be called now');
+  H.ok(/!== want/.test(ih), 'so it corrects a mismatch in either direction');
 }
 
 H.report();

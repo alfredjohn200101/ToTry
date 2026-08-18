@@ -4755,7 +4755,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v475';
+const APP_VERSION = 'v476';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5618,7 +5618,7 @@ async function pullFromCloud(){
   if(typeof inDemoMode==='function' && inDemoMode()) return false;
   _setSyncState({ status:'syncing', error:null });
   try{
-    const { data, error } = await sb.from('user_data')
+    let { data, error } = await sb.from('user_data')
       .select('data_key,data_value,updated_at').eq('user_id', currentUser.id);
     if(error){ _setSyncState({ status:'error', error:error.message }); return false; }
     // data.length===0, NOT just !data. PostgREST resolves a .select() with no matching rows to an
@@ -5674,6 +5674,16 @@ async function pullFromCloud(){
       return Array.from(m.values());
     };
     let changed = 0;
+    // TOMBSTONES FIRST. isTombed() re-reads localStorage, and the incoming tombstone map only lands there
+    // when its OWN row is reached inside this same loop — while the .select() above has no .order(), so
+    // PostgREST returns rows in whatever order it likes. A union that ran before the tombstone row
+    // arrived resurrected exactly what the other device had deleted, and whether it did was pure luck.
+    // Sorting costs nothing and makes the ordering a property of this code rather than of the server.
+    data = [].concat(data).sort((a, b) => {
+      const at = _unCloudKey(a && a.data_key) === TOMB_KEY ? 0 : 1;
+      const bt = _unCloudKey(b && b.data_key) === TOMB_KEY ? 0 : 1;
+      return at - bt;
+    });
     data.forEach(row => {
       // Only consume rows from THIS build's namespace (test rows in test build, real rows in live).
       const rawK = row.data_key;
@@ -9926,7 +9936,12 @@ async function _readQuranLoad(n){
     try{ const r=await fetch('https://api.alquran.cloud/v1/surah/'+n+'/editions/quran-uthmani,en.sahih'); const j=await r.json(); if(j&&j.data&&j.data.length>=2){ ar=j.data[0].ayahs; en=j.data[1].ayahs; } }catch(e){}
     if(!en){ const r2=await fetch('https://api.alquran.cloud/v1/surah/'+n+'/en.sahih'); const j2=await r2.json(); en=j2.data.ayahs; }
     content.innerHTML='<div class="card">'+en.map((a,i)=>'<div style="margin-bottom:15px">'+(ar&&ar[i]?'<div dir="rtl" style="font-size:21px;line-height:2.1;color:var(--tx);text-align:right;margin-bottom:5px">'+ar[i].text+'</div>':'')+'<div style="font-size:13.5px;color:var(--tx2);line-height:1.65">'+a.text+' <span style="color:var(--tx3);font-size:11px">('+n+':'+a.numberInSurah+')</span></div></div>').join('')+'</div>';
-  }catch(e){ content.innerHTML=_readErr(); }
+  }catch(e){
+    // Offline: the bundled pool, not an error box. The Dhammapada and Meditations readers added later
+    // do this; the Qur'an and Gita ones did not, so the same loss of signal produced a dead tab for two
+    // traditions and a readable one for two others. _readBundled also clears the picker.
+    _readBundled(document.getElementById('read-selector'), content, VS_ISLAM);
+  }
 }
 // Meditations — Wikisource (free, NO KEY): all 12 books, George Long's 1862 translation, public domain.
 //
@@ -10097,7 +10112,10 @@ async function _readGitaLoad(){
     if(!r.ok) throw new Error('net'); const j=await r.json();
     const en=(j.siva&&j.siva.et)||(j.purohit&&j.purohit.et)||(j.raman&&j.raman.et)||(j.gambir&&j.gambir.et)||'';
     content.innerHTML='<div class="card"><div style="font-size:12px;color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+g.ch+'.'+g.v+' <span style="color:var(--tx3);letter-spacing:0">· verse '+g.v+' of '+_gitaCount(g.ch)+'</span></div>'+(j.slok?'<div style="font-size:16px;line-height:1.95;color:var(--tx);margin-bottom:8px">'+j.slok+'</div>':'')+(j.transliteration?'<div style="font-size:12.5px;font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+String(j.transliteration).trim()+'</div>':'')+'<div style="font-size:14px;color:var(--tx2);line-height:1.75">'+en+'</div></div>';
-  }catch(e){ const c2=document.getElementById('read-content'); if(c2) c2.innerHTML=_readErr('Couldn’t load that verse — check your connection.'); }
+  }catch(e){
+    const c2=document.getElementById('read-content');
+    if(c2) _readBundled(document.getElementById('read-selector'), c2, VS_HINDU);   // see the Qur'an note
+  }
 }
 // Continuous nav: past a chapter's last verse rolls to the next chapter (and wraps 18→1).
 function _gitaNav(d){
@@ -18420,12 +18438,20 @@ function initHabits(){
     // default: the exact seeded name, never ticked once, and a tradition that does not use it. Someone
     // who kept the habit, renamed it, or ticked it kept their own list exactly as it is.
     try{
-      const f = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
-      if(f !== 'christianity'){
-        const i = habits.findIndex(h => h && (h.n||'').trim() === 'Prayer / scripture'
-                                    && Array.isArray(h.d) && h.d.every(x => !x));
-        if(i >= 0){ habits[i].n = faithHabitName(); saveH(); }
-      }
+      // ANY mismatch, in either direction. The first version only looked for the literal
+      // 'Prayer / scripture' and only for a non-Christian — which inverted the original bug for the two
+      // FAST doors ("Take me in" / the guest entry), because they skip the faith step entirely:
+      // initHabits runs from initApp with no tradition chosen, seeds the SECULAR name, and then a person
+      // who later picks Christianity keeps "Stillness / reflection" forever, since the repair was looking
+      // for a name they never had. Compare against what the habit SHOULD be called now, not against one
+      // specific wrong value — and only when it is plainly untouched default: a seeded faith name, never
+      // ticked once. Anyone who renamed it or ticked it keeps their list exactly as it is.
+      const want = faithHabitName();
+      const SEEDED = ['Prayer / scripture','Salah / Qur\u2019an','Puja / Gita','Meditation / sutta','Stillness / reflection'];
+      const i = habits.findIndex(h => h && SEEDED.indexOf((h.n||'').trim()) >= 0
+                                  && (h.n||'').trim() !== want
+                                  && Array.isArray(h.d) && h.d.every(x => !x));
+      if(i >= 0){ habits[i].n = want; saveH(); }
     }catch(_){ }
   }
 }
