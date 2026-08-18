@@ -441,6 +441,11 @@ function openAddHabit(){
       const r = addHabit(vals.habit);
       if(r === 'dupe') return 'That one is already on your list.';
       if(!r) return 'Give it a name first.';
+      // The first-run checklist asked "have you added your first habits?" by testing whether the
+      // habits array was non-empty — and the app seeds six of them before the person arrives, so the
+      // step was ticked on a brand-new install. A checklist that congratulates you for work you have
+      // not done teaches you to ignore it. This flag means THEY did something.
+      try{ ls('totry_habits_touched', true); }catch(_){}
       try{ if(typeof haptic==='function') haptic('success'); }catch(_){}
       try{ showToast('Added','It shows up on your home from today.'); }catch(_){}
       return true;

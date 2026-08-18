@@ -33,7 +33,10 @@ function getFirstRunSteps(){
   loadV();
   const identity = ls('totry_identity');
   const habitsArr = ls('totry_h');
-  const hasHabits = Array.isArray(habitsArr) && habitsArr.length > 0;
+  // NOT "the array is non-empty" — the app seeds six habits itself, so that was true before the person
+  // had done anything. This means "they made this list theirs": added one, or edited the defaults.
+  const hasHabits = !!ls('totry_habits_touched') ||
+    (Array.isArray(habitsArr) && habitsArr.some(h => h && Array.isArray(h.d) && h.d.some(x => x)));
   const coachHistory = ls('totry_coach_history') || [];
   return [
     {
@@ -526,7 +529,13 @@ function renderLifeWoven(){
   const t=s.training||{}, n=s.nutrition||{}; const bodyBits=[];
   if(t.sessions7>0) bodyBits.push(t.sessions7+' session'+(t.sessions7===1?'':'s')+' this wk');
   const goalCal=(ls('totry_nut_goals')||{}).cal;
-  if(n.todayCal!=null && goalCal) bodyBits.push(Math.max(0,goalCal-n.todayCal).toLocaleString()+' cal left');
+  // Gentle mode is someone saying "do not show me calorie numbers" — often because counting them is
+  // part of what is hurting them. The Nourish tab honours it; Home did not, so the first thing they
+  // saw on opening the app was "1,247 cal left". Same words the diary uses, so the two agree.
+  if(typeof nutGentle==='function' && nutGentle()){
+    if(n.todayCal>0 && typeof _gentleWord==='function') bodyBits.push(_gentleWord(n.todayCal, goalCal).w.toLowerCase());
+  }
+  else if(n.todayCal!=null && goalCal) bodyBits.push(Math.max(0,goalCal-n.todayCal).toLocaleString()+' cal left');
   else if(n.todayCal>0) bodyBits.push(n.todayCal.toLocaleString()+' cal today');
   const bodyTxt=bodyBits.length?bodyBits.join(' · '):'not logged yet';
   // THE FIGHT — clean streak (quit) or holding the line (moderate)
@@ -3078,6 +3087,14 @@ function importEufyCSV(event){
         heartRate:num(row,'heartrate'), bodyAge:num(row,'bodyage')
       };
       Object.keys(comp).forEach(k => { if(comp[k]==null) delete comp[k]; });
+      // Same as the screenshot path: a scale exporting pounds exports every mass in pounds, and only
+      // bodyweight was being converted above. These are stored under *Kg names and read back as kg
+      // everywhere, so leaving them unconverted silently inflates a person's muscle mass by 2.2x.
+      if(unitIsLb){
+        for(const k of ['muscleKg','fatMassKg','leanKg','boneKg','skeletalKg']){
+          if(comp[k] != null && !isNaN(comp[k])) comp[k] = Math.round(comp[k] * 0.453592 * 10) / 10;
+        }
+      }
       const entry = {
         date: d.toLocaleDateString('en-AU',{day:'numeric',month:'short'}),
         ts: d.toISOString(), weight: w,
@@ -3132,7 +3149,17 @@ async function importScaleScreenshot(event){
       return;
     }
     let w = parseFloat(parsed.weight);
-    if(parsed.unit && /lb/i.test(parsed.unit)) w = w * 0.453592;
+    // A SCALE IN POUNDS REPORTS EVERY MASS IN POUNDS. Only bodyweight was converted, and the confirm
+    // sheet then labelled muscle, fat, lean and bone mass "kg" while they still held pounds — a 2.2x
+    // overstatement, presented as a measurement of the person's own body. Convert the whole family,
+    // or none of it. Percentages, BMI, water, visceral and BMR are unitless or already absolute.
+    if(parsed.unit && /lb/i.test(parsed.unit)){
+      w = w * 0.453592;
+      for(const k of ['muscleKg','fatMassKg','leanKg','boneKg','skeletalKg']){
+        const v = parseFloat(parsed[k]);
+        if(!isNaN(v)) parsed[k] = Math.round(v * 0.453592 * 10) / 10;
+      }
+    }
     w = Math.round(w*10)/10;
     confirmScaleScreenshotEntry(w, parsed);
   }catch(err){
@@ -3635,7 +3662,7 @@ function renderIdentity(){
     }
   }else{
     // No identity - check if user has affirmations and rotate through them
-    const affirms=ls('totry_affirms')||[];
+    const affirms=(typeof getAffirmations==='function'?getAffirmations():(ls('totry_affirms')||[]));
     if(affirms.length){
       const today=new Date().toLocaleDateString('en-AU');
       const idx=Math.abs(hashStr(today))%affirms.length;
@@ -3701,14 +3728,6 @@ const SEASONS={
   Resting:{emoji:'&#x1f338;',desc:'Recovering. Not pushing. This is also part of becoming.'}
 };
 
-function renderSeasonBadge(){
-  const s=ls('totry_season')||'Building';
-  const data=SEASONS[s]||SEASONS.Building;
-  const emoji=document.getElementById('season-emoji');
-  const name=document.getElementById('season-name');
-  if(emoji)emoji.innerHTML=data.emoji;
-  if(name)name.textContent='Season: '+s;
-}
 
 function renderSeasonSettings(){
   const container=document.getElementById('settings-seasons');
@@ -3722,7 +3741,6 @@ function renderSeasonSettings(){
     chip.onclick=()=>{
       ls('totry_season',name);
       renderSeasonSettings();
-      renderSeasonBadge();
       showToast('Season set',name+' — the app will speak to you accordingly.');
     };
     container.appendChild(chip);
@@ -4007,7 +4025,6 @@ if(typeof go==='function'){
     }
     if(name==='home'){
       renderIdentity();
-      renderSeasonBadge();
       renderDualStreaks();
       applySabbathMode();
     }
@@ -4024,7 +4041,6 @@ if(typeof initApp==='function'){
   window.initApp=async function(){
     try{ await _origInitApp(); }catch(e){ console.warn('[initApp]', e); }
     try{ renderIdentity(); }catch(_){}
-    try{ renderSeasonBadge(); }catch(_){}
     try{ renderDualStreaks(); }catch(_){}
     try{ applySabbathMode(); }catch(_){}
     setTimeout(maybeShowCheckin,2000);

@@ -819,7 +819,7 @@ function renderCustomShareCard(prefs){
   
   // Affirmation line
   if(prefs.showAffirmation){
-    const affirms = ls('totry_affirms') || [];
+    const affirms = (typeof getAffirmations === 'function' ? getAffirmations() : (ls('totry_affirms') || []));
     const affirm = affirms.length ? affirms[Math.floor(Math.random() * affirms.length)] : 'I showed up today.';
     y += 14;
     ctx.fillStyle = 'rgba(255,255,255,0.7)';

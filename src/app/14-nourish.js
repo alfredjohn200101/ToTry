@@ -1219,6 +1219,8 @@ function logEstimatedMeal(){
   if(!log[today]) log[today]=[];
   log[today].push({
     id: Date.now(),
+    ts: (typeof nutStampFor==='function' ? nutStampFor() : new Date().toISOString()),
+    date: today,
     name: meal.name || 'Meal',
     serving: (meal.items||[]).map(i=>i.amount?(i.amount+' '+i.food):i.food).join(', ').slice(0,120) || '1 serving',
     qty: 1,
@@ -1287,6 +1289,7 @@ async function startLiveBarcodeScan(){
 }
 async function openBarcodeScanner(){
   const m = document.createElement('div');
+  m.id = 'barcode-scanner-modal';   // so closeBarcodeScanner removes THIS sheet and not the caller's
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:8px">Scan a barcode</h3>' +
@@ -1424,6 +1427,12 @@ async function _barcodeVisionLookup(base64, mime, statusEl){
 }
 
 function closeBarcodeScanner(){
+  // Remove THIS sheet, not "the first .modal-bg.open in the document". Six sheets share that class,
+  // and the recipe builder opens its own before launching the scanner from inside it — so scanning an
+  // ingredient closed the recipe editor and left the camera running over the top, losing everything
+  // typed into the recipe so far.
+  const m = document.getElementById('barcode-scanner-modal');
+  if(m){ m.remove(); return; }
   document.querySelector('.modal-bg.open')?.remove();
 }
 
@@ -1765,6 +1774,8 @@ function logRecipeAsMeal(i){
   if(!log[today]) log[today] = [];
   log[today].push({
     id: Date.now(),
+    ts: (typeof nutStampFor==='function' ? nutStampFor() : new Date().toISOString()),
+    date: today,
     name: r.name,
     serving: qty + (qty === 1 ? ' serving' : ' servings'),
     qty: 1,

@@ -261,9 +261,24 @@ function applyRecommendedSplit(){
 let _pendingBodyPhoto = null;
 
 
+// THE PHOTOS A PERSON HAS ACTUALLY TAKEN. All three readers below filtered totry_body for `e.photo`,
+// a field nothing has ever written: the only thing that would set it is `photo:_pendingBodyPhoto`, and
+// _pendingBodyPhoto is declared, read once, reset once, and never ASSIGNED anywhere in the codebase.
+// So the collage card and its "Share collage" button could not appear no matter how many progress
+// photos you took — they were sitting in totry_progress_photos the whole time, which is what the photo
+// grid on the same screen reads. One accessor, so the four surfaces cannot drift apart again.
+function bodyPhotos(){
+  try{
+    const shots = (ls('totry_progress_photos') || [])
+      .filter(p => p && p.dataUrl)
+      .map(p => ({ photo: p.dataUrl, date: p.date || '', ts: p.ts || '', weight: p.weight, note: p.note }));
+    // Anything legacy that really did carry an inline photo still shows up.
+    const legacy = (ls('totry_body') || []).filter(e => e && e.photo);
+    return shots.concat(legacy);
+  }catch(_){ return []; }
+}
 function renderBodyCollage(){
-  const entries = ls('totry_body') || [];
-  const withPhotos = entries.filter(e => e.photo);
+  const withPhotos = bodyPhotos();
   const container = document.getElementById('body-collage');
   const card = document.getElementById('body-collage-card');
   if(!container || !card)return;
@@ -277,15 +292,14 @@ function renderBodyCollage(){
     const div = document.createElement('div');
     div.style.cssText = 'position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--bd);cursor:pointer';
     div.innerHTML = '<img loading="lazy" decoding="async" src="'+e.photo+'" style="width:100%;height:120px;object-fit:cover;display:block">'+
-      '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.85),transparent);padding:4px 6px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-align:center">'+e.date+'</div><div style="font-size:11px;color:var(--tx);text-align:center;font-weight:500">'+e.weight+'kg</div></div>';
+      '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.85),transparent);padding:4px 6px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-align:center">'+e.date+'</div><div style="font-size:11px;color:var(--tx);text-align:center;font-weight:500">'+(e.weight!=null&&e.weight!==''?e.weight+'kg':'')+'</div></div>';
     div.onclick = () => viewBodyPhoto(i);
     container.appendChild(div);
   });
 }
 
 function viewBodyPhoto(idx){
-  const entries = ls('totry_body') || [];
-  const withPhotos = entries.filter(e => e.photo);
+  const withPhotos = bodyPhotos();
   const entry = withPhotos[idx];
   if(!entry)return;
   
@@ -295,14 +309,14 @@ function viewBodyPhoto(idx){
   m.innerHTML = '<div class="modal" style="max-width:90vw;padding:20px">'+
     '<div style="text-align:center"><img loading="lazy" decoding="async" src="'+entry.photo+'" style="max-width:100%;max-height:60vh;border-radius:8px;margin-bottom:14px"></div>'+
     '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-align:center;margin-bottom:4px">'+entry.date+'</div>'+
-    '<div style="font-size:14px;font-weight:500;color:var(--tx);text-align:center;margin-bottom:8px">'+entry.weight+'kg</div>'+
+    '<div style="font-size:14px;font-weight:500;color:var(--tx);text-align:center;margin-bottom:8px">'+(entry.weight!=null&&entry.weight!==''?entry.weight+'kg':'')+'</div>'+
     (entry.note?'<div style="font-size:12px;color:var(--tx2);text-align:center;font-style:italic;margin-bottom:10px">'+entry.note+'</div>':'')+
     '<button class="btn" onclick="closeModal(this)" style="margin-top:8px">Close</button></div>';
   document.body.appendChild(m);
 }
 
 function exportBodyCollage(){
-  const entries = (ls('totry_body') || []).filter(e => e.photo);
+  const entries = bodyPhotos();
   if(!entries.length){ showToast('No photos', 'Add photos to your check-ins first.'); return; }
   
   // Build a single collage canvas

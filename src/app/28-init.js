@@ -88,7 +88,11 @@ async function enablePushReminders(){
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
     if(!sub){ sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:_b64uToU8(PUSH_VAPID_PUBLIC) }); }
-    const prefs = _pushPrefs(); prefs.enabled = true; ls('totry_push_prefs', prefs);
+    // 'enabled' is written AFTER the server row exists, not before. Writing it first meant a failed
+    // insert — offline, RLS, a dropped connection — left Settings confidently showing reminders ON with
+    // no subscription behind it. The person then waits for a nudge at their hard hour that the server
+    // has no way to send, and the one screen that could tell them says everything is fine.
+    const prefs = _pushPrefs();
     await sb.from('push_subscriptions').delete().eq('user_id', currentUser.id);
     const { error } = await sb.from('push_subscriptions').insert({
       user_id: currentUser.id,
@@ -98,6 +102,7 @@ async function enablePushReminders(){
       remind_evening: prefs.evening
     });
     if(error) throw error;
+    prefs.enabled = true; ls('totry_push_prefs', prefs);   // only now is it true
     haptic('success');
     logEvent('reminders_on');
     // Generate the user's personalized (anti-nagging) message sets now that reminders are on.
@@ -105,6 +110,8 @@ async function enablePushReminders(){
     showToast('Reminders on \u2713','Morning ' + prefs.morning + ' \u00b7 Evening ' + prefs.evening + '. Change times below.');
   }catch(e){
     console.error('enablePush failed', e);
+    // Leave it OFF on disk, so what Settings shows and what the server knows are the same thing.
+    try{ const p2 = _pushPrefs(); p2.enabled = false; ls('totry_push_prefs', p2); }catch(_){}
     showToast('Could not enable','Make sure the app is installed to your Home Screen, then try again.');
   }
   renderPushSettings();

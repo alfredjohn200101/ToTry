@@ -558,7 +558,8 @@ function getLifeState(){
       uses7: uses7.reduce((a,u)=>a+(parseInt(u.qty,10)||1),0),
       daysSinceUse: lastUse ? Math.floor((now-lastUse)/86400000) : null,
       turnedAway7: turned7,
-      limit: v.mode==='moderate' ? (v.modLimit||v.modThreshold||null) : null,
+      weeklyLimit: v.mode==='moderate' ? (v.modLimit||null) : null,
+      nightlyLine:  v.mode==='moderate' ? (v.modThreshold||null) : null,
       hardHour: pattern && pattern.riskWindow ? pattern.riskWindow : null,
       topTrigger: pattern && pattern.topTrigger ? pattern.topTrigger : null,
       plan: (v.plan && (v.plan.why||v.plan.move)) ? { why:v.plan.why||null, move:v.plan.move||null } : null
@@ -728,7 +729,11 @@ function lifeStateBrief(s){
     f.vices.forEach(v => {
       const bits = [];
       if(v.mode === 'moderate'){
-        bits.push('keeping it within a limit'+(v.limit?(' of '+v.limit+'/wk'):''));
+        // Say which kind of limit it is, or say neither. Never label one as the other.
+        const _lim = [];
+        if(v.weeklyLimit) _lim.push(v.weeklyLimit+'/wk');
+        if(v.nightlyLine) _lim.push('a line of '+v.nightlyLine+' in one sitting');
+        bits.push('keeping it within a limit'+(_lim.length?(' of '+_lim.join(', ')):''));
         bits.push(v.uses7+' logged this week');
       } else {
         if(v.cleanDays != null) bits.push(v.cleanDays+' day'+(v.cleanDays===1?'':'s')+' clean');
@@ -1221,6 +1226,26 @@ async function api(sys, hist, msg, tok, opts){
 }
 
 // Get a human message about why AI is currently down (or null if it works)
+// WHAT TO SHOW WHEN THE COACH IS NOT THERE.
+//
+// api() returns an empty string when every provider fails — it does not throw. So `if(response &&
+// response.trim())` quietly did nothing and the surrounding catch was unreachable: three surfaces
+// promised a person something ("your coach is reading your week…", "Show me my patterns") and then
+// rendered an empty box. Silence reads as "there is nothing to say about you", which on the vice
+// patterns screen is the opposite of true and lands on someone already struggling.
+//
+// `local` is the honest offline answer where one exists — the patterns are computed on device before
+// the model is ever asked, so the model going down should not take them with it.
+function aiUnavailableHtml(local){
+  const why = (typeof getAIErrorMessage === 'function' && getAIErrorMessage()) ||
+              'I could not reach the coach just now.';
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  return (local ? '<div style="font-size:13px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">' + esc(local) + '</div>' : '') +
+    '<div style="font-size:12px;color:var(--tx3);line-height:1.6' + (local ? ';margin-top:10px' : '') + '">' +
+      esc(why) + (local ? ' The reading above is from your own logged data, not the coach.' : ' Nothing is lost — try again in a moment.') +
+    '</div>';
+}
+
 function getAIErrorMessage(){
   const err = window.__lastAIError;
   if(!err) return null;
@@ -4682,7 +4707,18 @@ const DEFAULT_AFFIRMS=[
   "I am stronger than this urge.",
   "Progress, not perfection.",
 ];
-function getAffirmations(){return ls('totry_affirms')||DEFAULT_AFFIRMS;}
+// TWO STORES, ONE MEANING. The "Your why" page writes what a person types into `totry_affirmations`;
+// an older editor writes `totry_affirms`, and every surface that SPEAKS them back read only the latter.
+// So somebody wrote the sentence they most needed to hear, and the app never said it to them once.
+// One accessor over both, newest input first. Defaults only when the person has written nothing —
+// their own words should never be crowded out by ours.
+function getAffirmations(){
+  try{
+    const own = [].concat(ls('totry_affirmations') || [], ls('totry_affirms') || [])
+                  .filter(x => typeof x === 'string' && x.trim());
+    return own.length ? own : DEFAULT_AFFIRMS;
+  }catch(_){ return DEFAULT_AFFIRMS; }
+}
 function showMorningAffirm(){
   const affirms=getAffirmations();if(!affirms.length)return;
   const el=document.getElementById('morning-affirm-text');

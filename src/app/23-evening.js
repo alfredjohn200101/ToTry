@@ -505,7 +505,10 @@ function showDayActivityDetail(dateKey){
   const nutLog = (ls('totry_nutlog') || {})[dateKey];
   if(nutLog && nutLog.length){
     const cals = nutLog.reduce((s,e)=>s+(e.cal||0),0);
-    items.push({kind: 'Nutrition', text: nutLog.length + ' item' + (nutLog.length===1?'':'s') + ' · ' + Math.round(cals) + ' cal'});
+    const _n = nutLog.length + ' item' + (nutLog.length===1?'':'s');
+    // Tapping a day in the heatmap is a back door to the same number gentle mode exists to hide.
+    items.push({kind: 'Nutrition', text: (typeof nutGentle==='function' && nutGentle())
+      ? (_n + ' logged') : (_n + ' \u00b7 ' + Math.round(cals) + ' cal')});
   }
   // Body / weight check-ins
   (ls('totry_body') || []).forEach(b => { if(matchDate(b.ts)) items.push({kind: 'Body check-in', text: (b.weight ? b.weight + 'kg' : '') + (b.win ? ' · ' + b.win.slice(0,50) : '')}); });

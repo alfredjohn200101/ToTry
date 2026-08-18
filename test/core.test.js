@@ -430,8 +430,12 @@ H.section('sync merge — append-only unions, editable lists do not');
   });
 
   // Editable lists have real delete functions; unioning them would undo a deletion on the other device.
-  ['totry_bills', 'totry_assets', 'totry_subscriptions', 'totry_transactions', 'totry_letters',
-   'totry_relationships', 'totry_measurements'].forEach(k => {
+  // UNLESS the delete records a tombstone — then unioning is not only safe, it is REQUIRED, because
+  // without it one device's whole list replaces the other's. totry_letters and totry_relationships
+  // moved into that second group at v483: a letter written on a phone was simply gone on a laptop.
+  // They stay out of this list, and are asserted below with the tombstone that makes them safe.
+  ['totry_bills', 'totry_assets', 'totry_subscriptions', 'totry_transactions',
+   'totry_measurements'].forEach(k => {
     H.ok(!ARR.has(k), k + ' is NOT unioned — it has a delete path, and a removed item must stay removed');
   });
 }
@@ -2916,7 +2920,24 @@ H.section('two devices do not destroy each other\'s work')
   // Derived from the before/after diff, so it cannot drift from each site's filter predicate.
   const tr = fnBody('tombstoneRemoved');
   H.ok(/keep\.has\(syncIdOf\(x\)\)/.test(tr), 'deleted ids come from the actual diff');
-  H.ok(/TOMB_MAX_AGE_MS/.test(tr), 'and old tombstones are pruned so the store cannot grow forever');
+  // Pruning moved into _tombAdd when the vices merge needed to tombstone by NAME rather than by
+  // syncIdOf — one writer for both, so the two can never prune differently.
+  H.ok(/_tombAdd\(/.test(tr), 'and every tombstone is written through the one writer');
+  const ta = fnBody('_tombAdd');
+  H.ok(/TOMB_MAX_AGE_MS/.test(ta), 'which prunes old tombstones so the store cannot grow forever');
+  H.ok(/ls\(TOMB_KEY/.test(ta), 'and persists them where sync will carry them');
+
+  // A list that is unioned AND deletable is only safe if its delete records a tombstone. These three
+  // are exactly that case; a missing call here means a deleted item silently returns on the next pull.
+  for (const [fn, key] of [['deleteLetter', 'totry_letters'], ['deleteRelationship', 'totry_relationships'],
+                           ['deleteSacrament', 'totry_confessions'], ['removeVice', 'totry_v']]) {
+    const body = fnBody(fn);
+    H.ok(/tombstoneRemoved\(|_tombAdd\(/.test(body), `${fn} records a tombstone, so the deletion survives a sync`);
+  }
+  // The vices merge identifies rows by NAME, so its tombstone must be the name — an id would never
+  // be looked at, and the vice would come back regardless of how the tombstone was written.
+  H.ok(/_tombAdd\('totry_v',\s*_goneName\)/.test(fnBody('removeVice')), "and removeVice tombstones by NAME, which is what the merge looks up");
+  H.ok(/isTombed\('totry_v'/.test(H.html), 'and the vices merge actually consults it');
   // EVERY delete path on a union'd key must record one — and the previous version of this check only
   // asserted each KEY appeared once, so it passed while THREE separate delete paths were uncovered:
   // deleteWorkoutFromHistory (the other workout button, same key as deleteTraining), deletePrayer and
@@ -3249,6 +3270,34 @@ H.section('dead code that was one caller away from confusing someone');
 
   // Amounts must never be silently converted: a person's debt is not ours to reinterpret.
   H.ok(!/curSym\(\)[\s\S]{0,40}\* *rate/.test(H.html), 'no exchange rate is applied to a stored amount');
+}
+
+// ── the bundle must actually PARSE ───────────────────────────────────────────────────────────────
+// On 18 Aug 2026 a bad edit left `+''</div>` — a stray string terminator — in the middle of a
+// template concatenation. index.html would not parse at all: a white screen for every user. This file
+// reported 1032 passed, because H.html extracts individual FUNCTIONS by name and evaluates those; it
+// never parses the whole script. Only the manual parse-check caught it, and a manual step is one a
+// tired person skips. A test suite that stays green while the app cannot boot is worse than no suite.
+{
+  H.section('the bundle parses');
+  const fs = require('fs'), os = require('os'), path = require('path');
+  const { execFileSync } = require('child_process');
+  const scripts = [...H.html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/g)].map(m => m[1]);
+  H.ok(scripts.length >= 1, `found ${scripts.length} inline script block(s) to check`);
+  scripts.forEach((code, i) => {
+    const f = path.join(os.tmpdir(), `totry-parse-${process.pid}-${i}.js`);
+    fs.writeFileSync(f, code);
+    let err = null;
+    try { execFileSync(process.execPath, ['--check', f], { stdio: 'pipe' }); }
+    catch (e) { err = ((e.stderr || '') + '').split('\n').filter(Boolean).slice(0, 3).join(' | ').slice(0, 220); }
+    try { fs.unlinkSync(f); } catch (_) {}
+    H.ok(!err, `inline script ${i + 1} parses — a syntax error here is a white screen for everyone` + (err ? `\n      ${err}` : ''));
+  });
+  // Div balance, for the same reason: unbalanced markup ships a broken layout that no function-level
+  // assertion can see.
+  const noScript = H.html.replace(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/g, '');
+  const opened = (noScript.match(/<div/g) || []).length, closed = (noScript.match(/<\/div>/g) || []).length;
+  H.eq(opened - closed, 0, `every <div> is closed (${opened} open, ${closed} closed)`);
 }
 
 // ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────

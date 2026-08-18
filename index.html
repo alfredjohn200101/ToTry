@@ -4804,7 +4804,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v482';
+const APP_VERSION = 'v483';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5287,12 +5287,14 @@ function isTombed(key, id){
 // Derives the deleted ids from the BEFORE/AFTER diff rather than from the caller's filter predicate.
 // Each delete site filters on a different field (e.ts, e.id, (e.ts||e.date)); diffing means the
 // tombstone id can never drift from what the union will actually look for.
-function tombstoneRemoved(key, before, after){
+// Record one deletion. Most lists identify their rows with syncIdOf, and tombstoneRemoved() below
+// derives those ids from a before/after diff. But the vices merge identifies rows by NAME — it builds
+// its own map instead of going through union() — so a tombstone for a vice has to be written under
+// the name, not under syncIdOf(vice). Both go through here, so the pruning and the write-back to the
+// cloud can never drift apart between the two.
+function _tombAdd(key, ...ids){
   try{
-    if(!Array.isArray(before)) return;
-    const keep = new Set((Array.isArray(after) ? after : []).map(syncIdOf));
-    const gone = before.filter(x => !keep.has(syncIdOf(x))).map(syncIdOf)
-                       .filter(id => id !== undefined && id !== null && id !== '');
+    const gone = ids.filter(id => id !== undefined && id !== null && id !== '');
     if(!gone.length) return;
     const t = _tombs();
     const bucket = t[key] || {};
@@ -5302,6 +5304,14 @@ function tombstoneRemoved(key, before, after){
     Object.keys(bucket).forEach(id => { if(now - (bucket[id] || 0) > TOMB_MAX_AGE_MS) delete bucket[id]; });
     t[key] = bucket;
     ls(TOMB_KEY, t);   // ls() queues it for sync because TOMB_KEY is in SYNC_KEYS
+  }catch(_){ }
+}
+function tombstoneRemoved(key, before, after){
+  try{
+    if(!Array.isArray(before)) return;
+    const keep = new Set((Array.isArray(after) ? after : []).map(syncIdOf));
+    const gone = before.filter(x => !keep.has(syncIdOf(x))).map(syncIdOf);
+    _tombAdd(key, ...gone);
   }catch(_){ }
 }      // durable pending writes {key:{value,ts}}
 window.__syncState = { status: 'idle', lastSyncAt: null, pending: 0, error: null };
@@ -5415,9 +5425,18 @@ function _recordKeyTs(key, ts){ const m=_getKeyTsMap(); m[key]=ts; try{ localSto
 async function syncNow(){
   if(!sb || !currentUser){ if(typeof showToast==='function') showToast('Not signed in','Sign in to sync your data.'); return; }
   _setSyncState({ status:'syncing' });
-  await pullFromCloud();      // pull authority first
-  await flushOutbox();        // push anything pending
-  if(typeof showToast==='function') showToast('Synced', 'Your data is up to date.');
+  const pulled = await pullFromCloud();   // pull authority first
+  await flushOutbox();                    // push anything pending
+  // TELL THEM WHAT ACTUALLY HAPPENED. This said "Your data is up to date." unconditionally — after a
+  // pull that returned false, with writes still sitting in the outbox. Someone taps Sync now precisely
+  // because they are worried about their data; a false all-clear is worse than no button at all.
+  let stuck = 0;
+  try{ stuck = Object.keys(_getOutbox() || {}).length; }catch(_){}
+  if(typeof showToast === 'function'){
+    if(pulled && !stuck) showToast('Synced', 'Your data is up to date.');
+    else if(stuck) showToast('Not finished', stuck + ' change' + (stuck===1?'':'s') + ' still waiting. They are saved on this device and will go up when the connection is back.');
+    else showToast('Could not reach the cloud', 'Nothing was lost — your data is on this device and will sync when you are back online.');
+  }
 }
 
 // Override localStorage.setItem to trigger sync
@@ -5649,7 +5668,12 @@ async function pullFromCloud(){
     const ARR = ['totry_workouts','totry_body','totry_journal','totry_mornings','totry_evenings','totry_confessions','totry_masses','totry_routines','totry_saved_meals','totry_family_contrib','totry_poker_sessions','totry_examens','totry_prayers','totry_strava_activities','totry_feeling_wins','totry_custom_exercises',
       'totry_wins','totry_moments_won','totry_fight_log','totry_cravings','totry_blessings','totry_reachouts',
       'totry_rosaries','totry_syntheses','totry_reviews','totry_vice_uses','totry_impulse_holds','totry_freezes',
-      'totry_checkins','totry_mood_log','totry_fast_log','totry_releases'];
+      'totry_checkins','totry_mood_log','totry_fast_log','totry_releases',
+      // Authored, id-bearing and append-shaped, and every bit as irreplaceable as a journal entry:
+      // a letter to your future self, a promise you made, the people you carry. They were in
+      // SYNC_KEYS but not here, so the whole list was taken from one side and the other side's was
+      // dropped — write a letter on your phone, open the app on your laptop, and it is simply gone.
+      'totry_letters','totry_promises','totry_relationships'];
     const idOf = syncIdOf;   // ONE identity function, shared with tombstoneRemoved (see TOMB_KEY)
     // union(local, cloud) kept the FIRST occurrence of each id — always the LOCAL one — so an entry
     // EDITED on the other device never arrived: the correction was silently dropped while both copies
@@ -5718,10 +5742,17 @@ async function pullFromCloud(){
         // Vices: merge by name so a win/relapse logged on one device is never lost. For a vice on
         // both sides, keep the higher relapseCount + total and the most recent lastWin/startDate,
         // and union the urge log. This is why a logged vice win now survives a cross-device pull.
+        // A REMOVAL HAS TO SURVIVE THE MERGE. This branch builds its own map instead of going through
+        // union(), so the isTombed() check every other list gets was structurally unreachable here: a
+        // person removed a vice, watched it disappear, and the next pull unioned it straight back from
+        // the cloud AND re-uploaded the resurrected list on line ~490 — so deleting it again could
+        // never work either. Identity in this branch is the NAME, so that is what the tombstone holds
+        // (see removeVice, which now records it under the same key).
         const byName = new Map();
         [].concat(lv, cv).forEach(v => {
           if(!v || !v.n) return;
           const key = String(v.n).toLowerCase();
+          if(isTombed('totry_v', key)) return;
           const ex = byName.get(key);
           if(!ex){ byName.set(key, {...v}); return; }
           ex.relapseCount = Math.max(ex.relapseCount||0, v.relapseCount||0);
@@ -7558,7 +7589,8 @@ function getLifeState(){
       uses7: uses7.reduce((a,u)=>a+(parseInt(u.qty,10)||1),0),
       daysSinceUse: lastUse ? Math.floor((now-lastUse)/86400000) : null,
       turnedAway7: turned7,
-      limit: v.mode==='moderate' ? (v.modLimit||v.modThreshold||null) : null,
+      weeklyLimit: v.mode==='moderate' ? (v.modLimit||null) : null,
+      nightlyLine:  v.mode==='moderate' ? (v.modThreshold||null) : null,
       hardHour: pattern && pattern.riskWindow ? pattern.riskWindow : null,
       topTrigger: pattern && pattern.topTrigger ? pattern.topTrigger : null,
       plan: (v.plan && (v.plan.why||v.plan.move)) ? { why:v.plan.why||null, move:v.plan.move||null } : null
@@ -7728,7 +7760,11 @@ function lifeStateBrief(s){
     f.vices.forEach(v => {
       const bits = [];
       if(v.mode === 'moderate'){
-        bits.push('keeping it within a limit'+(v.limit?(' of '+v.limit+'/wk'):''));
+        // Say which kind of limit it is, or say neither. Never label one as the other.
+        const _lim = [];
+        if(v.weeklyLimit) _lim.push(v.weeklyLimit+'/wk');
+        if(v.nightlyLine) _lim.push('a line of '+v.nightlyLine+' in one sitting');
+        bits.push('keeping it within a limit'+(_lim.length?(' of '+_lim.join(', ')):''));
         bits.push(v.uses7+' logged this week');
       } else {
         if(v.cleanDays != null) bits.push(v.cleanDays+' day'+(v.cleanDays===1?'':'s')+' clean');
@@ -8221,6 +8257,26 @@ async function api(sys, hist, msg, tok, opts){
 }
 
 // Get a human message about why AI is currently down (or null if it works)
+// WHAT TO SHOW WHEN THE COACH IS NOT THERE.
+//
+// api() returns an empty string when every provider fails — it does not throw. So `if(response &&
+// response.trim())` quietly did nothing and the surrounding catch was unreachable: three surfaces
+// promised a person something ("your coach is reading your week…", "Show me my patterns") and then
+// rendered an empty box. Silence reads as "there is nothing to say about you", which on the vice
+// patterns screen is the opposite of true and lands on someone already struggling.
+//
+// `local` is the honest offline answer where one exists — the patterns are computed on device before
+// the model is ever asked, so the model going down should not take them with it.
+function aiUnavailableHtml(local){
+  const why = (typeof getAIErrorMessage === 'function' && getAIErrorMessage()) ||
+              'I could not reach the coach just now.';
+  const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
+  return (local ? '<div style="font-size:13px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">' + esc(local) + '</div>' : '') +
+    '<div style="font-size:12px;color:var(--tx3);line-height:1.6' + (local ? ';margin-top:10px' : '') + '">' +
+      esc(why) + (local ? ' The reading above is from your own logged data, not the coach.' : ' Nothing is lost — try again in a moment.') +
+    '</div>';
+}
+
 function getAIErrorMessage(){
   const err = window.__lastAIError;
   if(!err) return null;
@@ -11682,7 +11738,18 @@ const DEFAULT_AFFIRMS=[
   "I am stronger than this urge.",
   "Progress, not perfection.",
 ];
-function getAffirmations(){return ls('totry_affirms')||DEFAULT_AFFIRMS;}
+// TWO STORES, ONE MEANING. The "Your why" page writes what a person types into `totry_affirmations`;
+// an older editor writes `totry_affirms`, and every surface that SPEAKS them back read only the latter.
+// So somebody wrote the sentence they most needed to hear, and the app never said it to them once.
+// One accessor over both, newest input first. Defaults only when the person has written nothing —
+// their own words should never be crowded out by ours.
+function getAffirmations(){
+  try{
+    const own = [].concat(ls('totry_affirmations') || [], ls('totry_affirms') || [])
+                  .filter(x => typeof x === 'string' && x.trim());
+    return own.length ? own : DEFAULT_AFFIRMS;
+  }catch(_){ return DEFAULT_AFFIRMS; }
+}
 function showMorningAffirm(){
   const affirms=getAffirmations();if(!affirms.length)return;
   const el=document.getElementById('morning-affirm-text');
@@ -11951,9 +12018,24 @@ function applyRecommendedSplit(){
 let _pendingBodyPhoto = null;
 
 
+// THE PHOTOS A PERSON HAS ACTUALLY TAKEN. All three readers below filtered totry_body for `e.photo`,
+// a field nothing has ever written: the only thing that would set it is `photo:_pendingBodyPhoto`, and
+// _pendingBodyPhoto is declared, read once, reset once, and never ASSIGNED anywhere in the codebase.
+// So the collage card and its "Share collage" button could not appear no matter how many progress
+// photos you took — they were sitting in totry_progress_photos the whole time, which is what the photo
+// grid on the same screen reads. One accessor, so the four surfaces cannot drift apart again.
+function bodyPhotos(){
+  try{
+    const shots = (ls('totry_progress_photos') || [])
+      .filter(p => p && p.dataUrl)
+      .map(p => ({ photo: p.dataUrl, date: p.date || '', ts: p.ts || '', weight: p.weight, note: p.note }));
+    // Anything legacy that really did carry an inline photo still shows up.
+    const legacy = (ls('totry_body') || []).filter(e => e && e.photo);
+    return shots.concat(legacy);
+  }catch(_){ return []; }
+}
 function renderBodyCollage(){
-  const entries = ls('totry_body') || [];
-  const withPhotos = entries.filter(e => e.photo);
+  const withPhotos = bodyPhotos();
   const container = document.getElementById('body-collage');
   const card = document.getElementById('body-collage-card');
   if(!container || !card)return;
@@ -11967,15 +12049,14 @@ function renderBodyCollage(){
     const div = document.createElement('div');
     div.style.cssText = 'position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--bd);cursor:pointer';
     div.innerHTML = '<img loading="lazy" decoding="async" src="'+e.photo+'" style="width:100%;height:120px;object-fit:cover;display:block">'+
-      '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.85),transparent);padding:4px 6px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-align:center">'+e.date+'</div><div style="font-size:11px;color:var(--tx);text-align:center;font-weight:500">'+e.weight+'kg</div></div>';
+      '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.85),transparent);padding:4px 6px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-align:center">'+e.date+'</div><div style="font-size:11px;color:var(--tx);text-align:center;font-weight:500">'+(e.weight!=null&&e.weight!==''?e.weight+'kg':'')+'</div></div>';
     div.onclick = () => viewBodyPhoto(i);
     container.appendChild(div);
   });
 }
 
 function viewBodyPhoto(idx){
-  const entries = ls('totry_body') || [];
-  const withPhotos = entries.filter(e => e.photo);
+  const withPhotos = bodyPhotos();
   const entry = withPhotos[idx];
   if(!entry)return;
   
@@ -11985,14 +12066,14 @@ function viewBodyPhoto(idx){
   m.innerHTML = '<div class="modal" style="max-width:90vw;padding:20px">'+
     '<div style="text-align:center"><img loading="lazy" decoding="async" src="'+entry.photo+'" style="max-width:100%;max-height:60vh;border-radius:8px;margin-bottom:14px"></div>'+
     '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-align:center;margin-bottom:4px">'+entry.date+'</div>'+
-    '<div style="font-size:14px;font-weight:500;color:var(--tx);text-align:center;margin-bottom:8px">'+entry.weight+'kg</div>'+
+    '<div style="font-size:14px;font-weight:500;color:var(--tx);text-align:center;margin-bottom:8px">'+(entry.weight!=null&&entry.weight!==''?entry.weight+'kg':'')+'</div>'+
     (entry.note?'<div style="font-size:12px;color:var(--tx2);text-align:center;font-style:italic;margin-bottom:10px">'+entry.note+'</div>':'')+
     '<button class="btn" onclick="closeModal(this)" style="margin-top:8px">Close</button></div>';
   document.body.appendChild(m);
 }
 
 function exportBodyCollage(){
-  const entries = (ls('totry_body') || []).filter(e => e.photo);
+  const entries = bodyPhotos();
   if(!entries.length){ showToast('No photos', 'Add photos to your check-ins first.'); return; }
   
   // Build a single collage canvas
@@ -17363,7 +17444,13 @@ function removeVice(i){
   loadV();
   if(!vices[i])return;
   if(!confirm('Remove "'+vices[i].n+'"? Your fight history for it will be lost.'))return;
+  const _goneName = String(vices[i].n || '').toLowerCase();
   vices.splice(i,1);
+  // Record the removal so the cloud merge cannot bring it back. pullFromCloud unions vices by NAME,
+  // so that is the identity the tombstone has to carry — an id-based one would never be looked at.
+  // Without this the vice reappeared on the next pull AND was re-uploaded, so deleting it again
+  // could not work either: the only way out was to stop using the app on a second device.
+  try{ if(typeof _tombAdd === 'function') _tombAdd('totry_v', _goneName); }catch(_){}
   saveV();renderVices();renderDayCounter();
   showToast('Removed','Vice removed from your list.');
 }
@@ -17456,7 +17543,7 @@ const RECOVERY_TIMELINES = {
     { d:1, body:'You interrupted the dopamine loop. The brain\u2019s reward system begins, slowly, to recalibrate.', soul:'One day clean. You chose the real over the counterfeit.' },
     { d:7, body:'Cravings often spike this week then begin to settle \u2014 this is the brain re-learning, not failure.', soul:'A week. If it feels hard, that\u2019s the rewiring, not weakness. Hold on.' },
     { d:14, body:'Many report clearer focus and more stable mood as sensitivity to ordinary pleasure returns.', soul:'Two weeks. Your eyes and mind are becoming your own again.' },
-    { d:30, body:'Motivation, presence and real-world attraction often noticeably improve.', soul:'A month of integrity in secret. That\u2019s the man God sees.' },
+    { d:30, body:'Motivation, presence and real-world attraction often noticeably improve.', soul:'A month of integrity in secret. Nobody had to see it for it to count.' },
     { d:90, body:'The reward system has had real time to rebalance; many describe feeling \u201creset.\u201d', soul:'Ninety days. You\u2019ve proven you are not a slave to the impulse.' },
     { d:365, body:'A year of rewiring \u2014 presence, self-respect and genuine intimacy deepen.', soul:'A year. You became free where you were once bound.' }
   ],
@@ -17524,10 +17611,12 @@ async function openRecoveryTimeline(i){
 
 async function _researchRecoveryTimeline(name, type){
   try{
-    const cacheKey = 'rt_'+(type||'')+'_'+(name||'').toLowerCase().slice(0,30);
+    const _who = (typeof faithTradition==='function' ? faithTradition() : 'x') + '_' +
+                 (function(){ try{ return ls('totry_sex') || 'u'; }catch(_){ return 'u'; } })();
+    const cacheKey = 'rt_'+(type||'')+'_'+_who+'_'+(name||'').toLowerCase().slice(0,30);
     const store = (()=>{ try{ return JSON.parse(localStorage.getItem('totry_recovery_timelines')||'{}'); }catch(_){ return {}; } })();
     if(store[cacheKey]) return store[cacheKey];
-    const sys = 'You are a recovery scientist AND a Christian companion. For the given struggle, return a JSON array of 4-6 recovery milestones a person gains by abstaining, as evidence-based as possible. Each item: {"d": days_as_number, "body": "the physical/mental recovery at this milestone, 1 sentence, factual", "soul": "an encouraging faith-aware reflection, 1 sentence, never preachy"}. Days should be like 1,7,14,30,90,365. Return ONLY the JSON array, no markdown.';
+    const sys = 'You are a recovery scientist. ' + (typeof faithVoiceNote==='function' ? faithVoiceNote() : '') + (typeof sexNote==='function' ? sexNote() : '') + ' For the given struggle, return a JSON array of 4-6 recovery milestones a person gains by abstaining, as evidence-based as possible. Each item: {"d": days_as_number, "body": "the physical/mental recovery at this milestone, 1 sentence, factual", "soul": "an encouraging faith-aware reflection, 1 sentence, never preachy"}. Days should be like 1,7,14,30,90,365. Return ONLY the JSON array, no markdown.';
     const txt = await api(sys, [], 'The struggle: "'+name+'". Give the recovery timeline.', 700, { web_search:true, timeout:40000 });
     let arr = null;
     try{ arr = JSON.parse((txt||'').replace(/```json|```/g,'').trim()); }catch(_){ arr = null; }
@@ -17668,6 +17757,10 @@ function applyViceMode(i, toModerate){
     if(isNaN(lim) || lim < 1){ showToast('Set a limit','Enter how many times per week is within your limit.'); return; }
     v.mode = 'moderate';
     v.modLimit = lim;
+    // The card reads v.limit ("Your limit: …"), and this dialog was the only way to switch an existing
+    // vice to moderate mode — so someone did that, set a limit, and the card showed no limit at all.
+    // Written here in the same shape the add-a-vice flow writes it, so the two agree.
+    v.limit = lim + ' a week';
     if(v.modWithin == null) v.modWithin = 0;
   } else {
     v.mode = 'quit';
@@ -18732,6 +18825,11 @@ function openAddHabit(){
       const r = addHabit(vals.habit);
       if(r === 'dupe') return 'That one is already on your list.';
       if(!r) return 'Give it a name first.';
+      // The first-run checklist asked "have you added your first habits?" by testing whether the
+      // habits array was non-empty — and the app seeds six of them before the person arrives, so the
+      // step was ticked on a brand-new install. A checklist that congratulates you for work you have
+      // not done teaches you to ignore it. This flag means THEY did something.
+      try{ ls('totry_habits_touched', true); }catch(_){}
       try{ if(typeof haptic==='function') haptic('success'); }catch(_){}
       try{ showToast('Added','It shows up on your home from today.'); }catch(_){}
       return true;
@@ -20742,6 +20840,12 @@ async function generateWeeklyCoachResponse(entry){
         '</div>';
       document.body.appendChild(m);
       haptic('celebrate');
+    } else {
+      // api() returns '' when every provider fails — it does not throw — so the catch below never ran
+      // and NOTHING happened. The toast forty lines up already told them "Your coach is reading your
+      // week…", so silence here reads as being ignored right after being asked to be honest.
+      const why = (typeof getAIErrorMessage === 'function' && getAIErrorMessage()) || 'I could not reach the coach just now.';
+      showToast('Check-in saved', why + ' Your week is logged — open it again in a bit and I will read it back.');
     }
   } catch(e){
     console.error('Coach response failed:', e);
@@ -21275,12 +21379,27 @@ function deleteProgressPhoto(id){
 }
 // Confirm the daily logs (weight + sleep). They already persist on entry; this gives a clear
 // "committed" moment + feedback, and marks the day so Home can reflect it.
+// The flag markDailyLogsDone writes was read by nothing at all, so "Done for today" gave a moment of
+// completion and then looked exactly like it had before — tap it twice and you would not know. One
+// reader, called after the write and on every Track render, so the button reflects the day it is in.
+function renderDailyDoneState(){
+  try{
+    const btn = document.querySelector('button[onclick="markDailyLogsDone()"]');
+    if(!btn) return;
+    const today = new Date().toLocaleDateString('en-AU');
+    const done = !!ls('totry_daily_logged_'+today);
+    btn.textContent = done ? 'Logged for today \u2713' : 'Done for today';
+    btn.classList.toggle('primary', !done);
+    btn.style.opacity = done ? '0.72' : '';
+  }catch(_){}
+}
 function markDailyLogsDone(){
   const today=new Date().toLocaleDateString('en-AU');
   const t=(ls('totry_trackers')||{})[today]||{sleep:0};
   const body=ls('totry_body')||[];
   const hasWeight = body.some(b=>b.date===today || (b.ts && new Date(b.ts).toLocaleDateString('en-AU')===today));
   ls('totry_daily_logged_'+today, 1);
+  try{ renderDailyDoneState(); }catch(_){}
   const bits=[];
   if(hasWeight) bits.push('weight'); 
   if(t.sleep>0) bits.push(t.sleep+'h sleep');
@@ -21304,10 +21423,17 @@ function adjustTracker(type,delta){
   haptic('tap');
 }
 function updateTrackerDisplay(){
+  // Called on every Track render, so the button is correct when the screen opens — not only in the
+  // second after it is tapped. Without this the state resets visually at midnight-crossing or reload.
+  try{ renderDailyDoneState(); }catch(_){}
   const today=new Date().toLocaleDateString('en-AU');
   const t=(ls('totry_trackers')||{})[today]||{water:0,sleep:0,steps:0};
-  const w=document.getElementById('water-count');const s=document.getElementById('sleep-count');const st=document.getElementById('steps-count');
-  if(w)w.textContent=t.water;if(s)s.textContent=t.sleep;if(st)st.textContent=(t.steps||0).toLocaleString();
+  // 'water-count' belongs to renderWaterTracker() in the Nourish tab, which paints "1.2 / 2.5 L" from
+  // totry_water_<date>. This function read totry_trackers, where nothing has ever written water — so
+  // whenever it ran it replaced a real reading with a hardcoded 0 and a person's logged water vanished
+  // from the screen. Two owners for one element; the one that has the data keeps it.
+  const s=document.getElementById('sleep-count');const st=document.getElementById('steps-count');
+  if(s)s.textContent=t.sleep;if(st)st.textContent=(t.steps||0).toLocaleString();
   // Honour the user's own sleep goal instead of a hardcoded "7-9 hours" — a target they set should
   // actually show, and the value goes green once they've met it.
   try{
@@ -22553,6 +22679,8 @@ function logEstimatedMeal(){
   if(!log[today]) log[today]=[];
   log[today].push({
     id: Date.now(),
+    ts: (typeof nutStampFor==='function' ? nutStampFor() : new Date().toISOString()),
+    date: today,
     name: meal.name || 'Meal',
     serving: (meal.items||[]).map(i=>i.amount?(i.amount+' '+i.food):i.food).join(', ').slice(0,120) || '1 serving',
     qty: 1,
@@ -22621,6 +22749,7 @@ async function startLiveBarcodeScan(){
 }
 async function openBarcodeScanner(){
   const m = document.createElement('div');
+  m.id = 'barcode-scanner-modal';   // so closeBarcodeScanner removes THIS sheet and not the caller's
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:8px">Scan a barcode</h3>' +
@@ -22758,6 +22887,12 @@ async function _barcodeVisionLookup(base64, mime, statusEl){
 }
 
 function closeBarcodeScanner(){
+  // Remove THIS sheet, not "the first .modal-bg.open in the document". Six sheets share that class,
+  // and the recipe builder opens its own before launching the scanner from inside it — so scanning an
+  // ingredient closed the recipe editor and left the camera running over the top, losing everything
+  // typed into the recipe so far.
+  const m = document.getElementById('barcode-scanner-modal');
+  if(m){ m.remove(); return; }
   document.querySelector('.modal-bg.open')?.remove();
 }
 
@@ -23099,6 +23234,8 @@ function logRecipeAsMeal(i){
   if(!log[today]) log[today] = [];
   log[today].push({
     id: Date.now(),
+    ts: (typeof nutStampFor==='function' ? nutStampFor() : new Date().toISOString()),
+    date: today,
     name: r.name,
     serving: qty + (qty === 1 ? ' serving' : ' servings'),
     qty: 1,
@@ -26496,7 +26633,7 @@ function _fuelElicit(){
   m.className='modal-bg open'; m.id='fuel-elicit-modal'; m.style.alignItems='flex-end';
   m.innerHTML = '<div class="modal" style="text-align:left;max-height:88vh;overflow-y:auto">'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">Let’s build your fuel plan</div>'+
-    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:16px">Around your real life — not a generic diet. I already know you’re <b style="color:var(--tx)">'+ctx.goalLabel+'</b> at about <b style="color:var(--tx)">'+ctx.cal+' cal</b> and <b style="color:var(--tx)">'+ctx.pro+'g protein</b>, so I’ll plan around that. A few quick things:</div>'+
+    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:16px">Around your real life — not a generic diet. I already know you’re <b style="color:var(--tx)">'+ctx.goalLabel+'</b>'+((typeof nutGentle==='function' && nutGentle()) ? '' : ' at about <b style="color:var(--tx)">'+ctx.cal+' cal</b> and <b style="color:var(--tx)">'+ctx.pro+'g protein</b>')+', so I’ll plan around that. A few quick things:</div>'+
     '<div class="eyebrow" style="margin-bottom:6px">Weekly grocery budget</div>'+
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px"><span style="font-size:16px;color:var(--tx2)">'+curSym()+'</span><input type="number" id="fuel-budget" inputmode="numeric" placeholder="e.g. 120" value="'+(p.budget||'')+'" style="flex:1"></div>'+
     '<div class="eyebrow" style="margin-bottom:6px">Meals per day</div>'+
@@ -28250,7 +28387,16 @@ function renderBills(){
     return;
   }
   box.innerHTML = unpaid.slice(0, 8).map(b => {
-    const daysUntil = Math.ceil((new Date(b.due).getTime() - now) / 86400000);
+    // `new Date('2026-08-19')` is parsed as UTC MIDNIGHT, and `now` is local. East of Greenwich that
+  // makes a bill due today look like it is due tomorrow all day — "Due today" arrives the day after
+  // it was due, which for a bill is the one day the reminder had to be right. Compare local midnights.
+  const _dueParts = String(b.due||'').split('-').map(Number);
+  const _due = (_dueParts.length === 3 && !_dueParts.some(isNaN))
+    ? new Date(_dueParts[0], _dueParts[1]-1, _dueParts[2])
+    : new Date(b.due);
+  _due.setHours(0,0,0,0);
+  const _today = new Date(); _today.setHours(0,0,0,0);
+  const daysUntil = Math.round((_due.getTime() - _today.getTime()) / 86400000);
     let urgency;
     if(daysUntil < 0) urgency = {color: 'var(--re)', label: Math.abs(daysUntil) + 'd overdue', bg: 'rgba(216,93,75,0.1)', border: 'var(--re)'};
     else if(daysUntil <= 3) urgency = {color: 'var(--re)', label: daysUntil === 0 ? 'Due today' : daysUntil + ' day' + (daysUntil===1?'':'s'), bg: 'rgba(216,93,75,0.08)', border: 'var(--re-bd)'};
@@ -29538,7 +29684,12 @@ async function explainPlateau(){
     const sys = 'You are an encouraging, knowledgeable strength & nutrition coach. Diagnose plateaus from data, give 2-3 concrete, safe things to try. Concise, practical, never medical claims.';
     const prompt = 'This person seems to have hit a plateau: ' + p.detail + '\n\nTheir recent training data:' + ctx + '\n\nIn a short, encouraging paragraph plus 2-3 specific bullet actions, explain likely reasons and what to try next.';
     const resp = await api(sys, [], prompt, 700);
-    if(box){ box.style.display='block'; box.innerHTML = '<div style="font-size:13px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">'+(resp||'').replace(/</g,'&lt;')+'</div>'; }
+    if(box){
+      box.style.display='block';
+      box.innerHTML = (resp && resp.trim())
+        ? '<div style="font-size:13px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">'+resp.replace(/</g,'&lt;')+'</div>'
+        : aiUnavailableHtml(p.detail || '');
+    }
   }catch(e){ if(box){ box.style.display='block'; box.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t reach the coach right now. Try again shortly.</div>'; } }
   finally{ if(btn){ btn.textContent='Why am I stuck?'; btn.disabled=false; } }
 }
@@ -29595,7 +29746,14 @@ async function explainVicePatterns(){
     const sys = brotherSys() + 'RIGHT NOW you’re helping them look honestly at the PATTERN in their fight — the times, the triggers. Acknowledge the courage it takes to look at all. Read what you see and offer 2-3 gentle, practical, hopeful moves tied to it. Brief and warm — never shame, only grace and growth.';
     const prompt = 'A person fighting a vice has these patterns in when they slip: ' + p.patterns.join(' ') + ' (' + p.count + ' slips logged). Compassionately reflect this back and suggest 2-3 specific, doable strategies for those high-risk moments. Hopeful, never shaming.';
     const resp = await api(sys, [], prompt, 600);
-    if(box){ box.style.display='block'; box.innerHTML='<div style="font-size:13px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">'+(resp||'').replace(/</g,'&lt;')+'</div>'; }
+    if(box){
+      box.style.display='block';
+      // detectVicePatterns() already found these on this device, before the model was asked. If the
+      // model is down, say so AND still show them — the person came here to understand themselves.
+      box.innerHTML = (resp && resp.trim())
+        ? '<div style="font-size:13px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">'+resp.replace(/</g,'&lt;')+'</div>'
+        : aiUnavailableHtml('What your own log shows: ' + p.patterns.join(' ') + ' (' + p.count + ' logged).');
+    }
   }catch(e){ if(box){ box.style.display='block'; box.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t reach the coach right now.</div>'; } }
   finally{ if(btn){ btn.textContent='Show me my patterns'; btn.disabled=false; } }
 }
@@ -29717,7 +29875,7 @@ async function generateWeeklyReflection(){
     const ctx = (typeof _ptIntel==='function') ? _ptIntel() : '';
     const rd = (typeof computeReadiness==='function') ? computeReadiness() : null;
     const identity = ls('totry_identity') || '';
-    const sys = brotherSys() + 'RIGHT NOW you\u2019re reflecting their WHOLE week back to them in one honest, encouraging paragraph (4-6 sentences) \u2014 connecting body, discipline, money and spirit the way only someone who sees all of a person could. Specific, never generic. Name the effort, not just the outcomes. Then, on a new line, ask ONE real, specific question drawn from a genuine tension in their week (e.g. trained hard but slipped twice \u2014 "what was going on those nights, bro?"). Invite honest reflection, never judgment. Format the question on its own line prefixed exactly with "Q: ".';
+    const sys = brotherSys() + 'RIGHT NOW you\u2019re reflecting their WHOLE week back to them in one honest, encouraging paragraph (4-6 sentences) \u2014 connecting body, discipline, money and spirit the way only someone who sees all of a person could. Specific, never generic. Name the effort, not just the outcomes. Then, on a new line, ask ONE real, specific question drawn from a genuine tension in their week (e.g. trained hard but slipped twice \u2014 "what was going on those nights?"). Invite honest reflection, never judgment. Format the question on its own line prefixed exactly with "Q: ".';
     const prompt = 'This week: ' + s.workouts + ' workouts, ' + s.nutDays + ' days food logged, ' + s.journalEntries + ' journal entries, ' + s.wins + ' urges resisted, ' + s.slips7 + ' slips, longest clean streak ' + s.longestStreak + ' days' + (s.reclaimed>0 ? (', '+curSym()+s.reclaimed+' reclaimed from vices toward their freedom') : '') + '.' + (identity?' They are becoming: "'+identity+'".':'') + (rd?' Current readiness: '+rd.level+'.':'') + ' Training context:' + ctx + '\n\nWrite their weekly reflection as an older sibling who sees their whole life, then the one honest question.';
     const resp = await api(sys, [], prompt, 550);
     if(box){
@@ -33656,7 +33814,10 @@ function showDayActivityDetail(dateKey){
   const nutLog = (ls('totry_nutlog') || {})[dateKey];
   if(nutLog && nutLog.length){
     const cals = nutLog.reduce((s,e)=>s+(e.cal||0),0);
-    items.push({kind: 'Nutrition', text: nutLog.length + ' item' + (nutLog.length===1?'':'s') + ' · ' + Math.round(cals) + ' cal'});
+    const _n = nutLog.length + ' item' + (nutLog.length===1?'':'s');
+    // Tapping a day in the heatmap is a back door to the same number gentle mode exists to hide.
+    items.push({kind: 'Nutrition', text: (typeof nutGentle==='function' && nutGentle())
+      ? (_n + ' logged') : (_n + ' \u00b7 ' + Math.round(cals) + ' cal')});
   }
   // Body / weight check-ins
   (ls('totry_body') || []).forEach(b => { if(matchDate(b.ts)) items.push({kind: 'Body check-in', text: (b.weight ? b.weight + 'kg' : '') + (b.win ? ' · ' + b.win.slice(0,50) : '')}); });
@@ -34692,6 +34853,10 @@ function checkYearInReviewPrompt(){
   if(now.getMonth() === 11 && now.getDate() >= 27){
     const year = now.getFullYear();
     const seenKey = 'totry_year_review_shown_' + year;
+    // Install on 28 December and the very first thing the app did was hand you a review of a year you
+    // had not been here for: "No data logged in 2026 yet. Come back at year-end." It is year-end. A
+    // retrospective needs something to look back on, so wait until there is.
+    if(typeof daysInstalled === 'function' && daysInstalled() < 30){ ls(seenKey, true); return; }
     if(!ls(seenKey)){
       ls(seenKey, true);
       setTimeout(() => showYearInReview(year), 1500);
@@ -34817,6 +34982,9 @@ function deleteRelationship(id){
   const people=ls('totry_relationships')||[];
   const removed=people.find(p=>p.id===id);
   const newPeople=people.filter(p=>p.id!==id);
+  // totry_relationships joined the ARR union this release — merged instead of overwritten — so from
+  // now on a removal must be recorded or the cloud copy restores the person on the next pull.
+  try{ if(typeof tombstoneRemoved === 'function') tombstoneRemoved('totry_relationships', people, newPeople); }catch(_){}
   ls('totry_relationships',newPeople);
   renderRelationships();
   if(removed){
@@ -34907,7 +35075,11 @@ function deleteLetter(id){
   if(!confirm('Delete this letter? You wrote it to yourself — it cannot be recovered.')) return;
   const letters=ls('totry_letters')||[];
   const removed=letters.find(l=>l.id===id);
-  ls('totry_letters',letters.filter(l=>l.id!==id));
+  const kept=letters.filter(l=>l.id!==id);
+  // Same as above: totry_letters is unioned now. "It cannot be recovered" is what the confirm promises,
+  // and a letter that reappears after they chose to destroy it breaks that promise the other way.
+  try{ if(typeof tombstoneRemoved === 'function') tombstoneRemoved('totry_letters', letters, kept); }catch(_){}
+  ls('totry_letters',kept);
   renderLetters();
   if(removed){
     showUndo('Letter deleted',()=>{
@@ -35792,7 +35964,7 @@ function renderCustomShareCard(prefs){
   
   // Affirmation line
   if(prefs.showAffirmation){
-    const affirms = ls('totry_affirms') || [];
+    const affirms = (typeof getAffirmations === 'function' ? getAffirmations() : (ls('totry_affirms') || []));
     const affirm = affirms.length ? affirms[Math.floor(Math.random() * affirms.length)] : 'I showed up today.';
     y += 14;
     ctx.fillStyle = 'rgba(255,255,255,0.7)';
@@ -37705,7 +37877,11 @@ async function enablePushReminders(){
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
     if(!sub){ sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:_b64uToU8(PUSH_VAPID_PUBLIC) }); }
-    const prefs = _pushPrefs(); prefs.enabled = true; ls('totry_push_prefs', prefs);
+    // 'enabled' is written AFTER the server row exists, not before. Writing it first meant a failed
+    // insert — offline, RLS, a dropped connection — left Settings confidently showing reminders ON with
+    // no subscription behind it. The person then waits for a nudge at their hard hour that the server
+    // has no way to send, and the one screen that could tell them says everything is fine.
+    const prefs = _pushPrefs();
     await sb.from('push_subscriptions').delete().eq('user_id', currentUser.id);
     const { error } = await sb.from('push_subscriptions').insert({
       user_id: currentUser.id,
@@ -37715,6 +37891,7 @@ async function enablePushReminders(){
       remind_evening: prefs.evening
     });
     if(error) throw error;
+    prefs.enabled = true; ls('totry_push_prefs', prefs);   // only now is it true
     haptic('success');
     logEvent('reminders_on');
     // Generate the user's personalized (anti-nagging) message sets now that reminders are on.
@@ -37722,6 +37899,8 @@ async function enablePushReminders(){
     showToast('Reminders on \u2713','Morning ' + prefs.morning + ' \u00b7 Evening ' + prefs.evening + '. Change times below.');
   }catch(e){
     console.error('enablePush failed', e);
+    // Leave it OFF on disk, so what Settings shows and what the server knows are the same thing.
+    try{ const p2 = _pushPrefs(); p2.enabled = false; ls('totry_push_prefs', p2); }catch(_){}
     showToast('Could not enable','Make sure the app is installed to your Home Screen, then try again.');
   }
   renderPushSettings();
@@ -38630,8 +38809,11 @@ function deleteSacrament(kind, id){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
   if(!confirm('Delete this record?')) return;
   const key = kind === 'confession' ? 'totry_confessions' : 'totry_masses';
-  let list = ls(key) || [];
-  list = list.filter(x => x.id !== id);
+  const before = ls(key) || [];
+  const list = before.filter(x => x.id !== id);
+  // Both keys are in the ARR union, so without a tombstone the cloud copy simply puts the record back
+  // on the next pull. This was the only delete path into a unioned key that did not record one.
+  try{ if(typeof tombstoneRemoved === 'function') tombstoneRemoved(key, before, list); }catch(_){}
   ls(key, list);
   renderSacraments();
 }
@@ -38874,7 +39056,10 @@ function getFirstRunSteps(){
   loadV();
   const identity = ls('totry_identity');
   const habitsArr = ls('totry_h');
-  const hasHabits = Array.isArray(habitsArr) && habitsArr.length > 0;
+  // NOT "the array is non-empty" — the app seeds six habits itself, so that was true before the person
+  // had done anything. This means "they made this list theirs": added one, or edited the defaults.
+  const hasHabits = !!ls('totry_habits_touched') ||
+    (Array.isArray(habitsArr) && habitsArr.some(h => h && Array.isArray(h.d) && h.d.some(x => x)));
   const coachHistory = ls('totry_coach_history') || [];
   return [
     {
@@ -39367,7 +39552,13 @@ function renderLifeWoven(){
   const t=s.training||{}, n=s.nutrition||{}; const bodyBits=[];
   if(t.sessions7>0) bodyBits.push(t.sessions7+' session'+(t.sessions7===1?'':'s')+' this wk');
   const goalCal=(ls('totry_nut_goals')||{}).cal;
-  if(n.todayCal!=null && goalCal) bodyBits.push(Math.max(0,goalCal-n.todayCal).toLocaleString()+' cal left');
+  // Gentle mode is someone saying "do not show me calorie numbers" — often because counting them is
+  // part of what is hurting them. The Nourish tab honours it; Home did not, so the first thing they
+  // saw on opening the app was "1,247 cal left". Same words the diary uses, so the two agree.
+  if(typeof nutGentle==='function' && nutGentle()){
+    if(n.todayCal>0 && typeof _gentleWord==='function') bodyBits.push(_gentleWord(n.todayCal, goalCal).w.toLowerCase());
+  }
+  else if(n.todayCal!=null && goalCal) bodyBits.push(Math.max(0,goalCal-n.todayCal).toLocaleString()+' cal left');
   else if(n.todayCal>0) bodyBits.push(n.todayCal.toLocaleString()+' cal today');
   const bodyTxt=bodyBits.length?bodyBits.join(' · '):'not logged yet';
   // THE FIGHT — clean streak (quit) or holding the line (moderate)
@@ -41919,6 +42110,14 @@ function importEufyCSV(event){
         heartRate:num(row,'heartrate'), bodyAge:num(row,'bodyage')
       };
       Object.keys(comp).forEach(k => { if(comp[k]==null) delete comp[k]; });
+      // Same as the screenshot path: a scale exporting pounds exports every mass in pounds, and only
+      // bodyweight was being converted above. These are stored under *Kg names and read back as kg
+      // everywhere, so leaving them unconverted silently inflates a person's muscle mass by 2.2x.
+      if(unitIsLb){
+        for(const k of ['muscleKg','fatMassKg','leanKg','boneKg','skeletalKg']){
+          if(comp[k] != null && !isNaN(comp[k])) comp[k] = Math.round(comp[k] * 0.453592 * 10) / 10;
+        }
+      }
       const entry = {
         date: d.toLocaleDateString('en-AU',{day:'numeric',month:'short'}),
         ts: d.toISOString(), weight: w,
@@ -41973,7 +42172,17 @@ async function importScaleScreenshot(event){
       return;
     }
     let w = parseFloat(parsed.weight);
-    if(parsed.unit && /lb/i.test(parsed.unit)) w = w * 0.453592;
+    // A SCALE IN POUNDS REPORTS EVERY MASS IN POUNDS. Only bodyweight was converted, and the confirm
+    // sheet then labelled muscle, fat, lean and bone mass "kg" while they still held pounds — a 2.2x
+    // overstatement, presented as a measurement of the person's own body. Convert the whole family,
+    // or none of it. Percentages, BMI, water, visceral and BMR are unitless or already absolute.
+    if(parsed.unit && /lb/i.test(parsed.unit)){
+      w = w * 0.453592;
+      for(const k of ['muscleKg','fatMassKg','leanKg','boneKg','skeletalKg']){
+        const v = parseFloat(parsed[k]);
+        if(!isNaN(v)) parsed[k] = Math.round(v * 0.453592 * 10) / 10;
+      }
+    }
     w = Math.round(w*10)/10;
     confirmScaleScreenshotEntry(w, parsed);
   }catch(err){
@@ -42476,7 +42685,7 @@ function renderIdentity(){
     }
   }else{
     // No identity - check if user has affirmations and rotate through them
-    const affirms=ls('totry_affirms')||[];
+    const affirms=(typeof getAffirmations==='function'?getAffirmations():(ls('totry_affirms')||[]));
     if(affirms.length){
       const today=new Date().toLocaleDateString('en-AU');
       const idx=Math.abs(hashStr(today))%affirms.length;
@@ -42542,14 +42751,6 @@ const SEASONS={
   Resting:{emoji:'&#x1f338;',desc:'Recovering. Not pushing. This is also part of becoming.'}
 };
 
-function renderSeasonBadge(){
-  const s=ls('totry_season')||'Building';
-  const data=SEASONS[s]||SEASONS.Building;
-  const emoji=document.getElementById('season-emoji');
-  const name=document.getElementById('season-name');
-  if(emoji)emoji.innerHTML=data.emoji;
-  if(name)name.textContent='Season: '+s;
-}
 
 function renderSeasonSettings(){
   const container=document.getElementById('settings-seasons');
@@ -42563,7 +42764,6 @@ function renderSeasonSettings(){
     chip.onclick=()=>{
       ls('totry_season',name);
       renderSeasonSettings();
-      renderSeasonBadge();
       showToast('Season set',name+' — the app will speak to you accordingly.');
     };
     container.appendChild(chip);
@@ -42848,7 +43048,6 @@ if(typeof go==='function'){
     }
     if(name==='home'){
       renderIdentity();
-      renderSeasonBadge();
       renderDualStreaks();
       applySabbathMode();
     }
@@ -42865,7 +43064,6 @@ if(typeof initApp==='function'){
   window.initApp=async function(){
     try{ await _origInitApp(); }catch(e){ console.warn('[initApp]', e); }
     try{ renderIdentity(); }catch(_){}
-    try{ renderSeasonBadge(); }catch(_){}
     try{ renderDualStreaks(); }catch(_){}
     try{ applySabbathMode(); }catch(_){}
     setTimeout(maybeShowCheckin,2000);

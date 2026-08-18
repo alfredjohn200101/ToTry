@@ -489,6 +489,10 @@ function checkYearInReviewPrompt(){
   if(now.getMonth() === 11 && now.getDate() >= 27){
     const year = now.getFullYear();
     const seenKey = 'totry_year_review_shown_' + year;
+    // Install on 28 December and the very first thing the app did was hand you a review of a year you
+    // had not been here for: "No data logged in 2026 yet. Come back at year-end." It is year-end. A
+    // retrospective needs something to look back on, so wait until there is.
+    if(typeof daysInstalled === 'function' && daysInstalled() < 30){ ls(seenKey, true); return; }
     if(!ls(seenKey)){
       ls(seenKey, true);
       setTimeout(() => showYearInReview(year), 1500);
@@ -614,6 +618,9 @@ function deleteRelationship(id){
   const people=ls('totry_relationships')||[];
   const removed=people.find(p=>p.id===id);
   const newPeople=people.filter(p=>p.id!==id);
+  // totry_relationships joined the ARR union this release — merged instead of overwritten — so from
+  // now on a removal must be recorded or the cloud copy restores the person on the next pull.
+  try{ if(typeof tombstoneRemoved === 'function') tombstoneRemoved('totry_relationships', people, newPeople); }catch(_){}
   ls('totry_relationships',newPeople);
   renderRelationships();
   if(removed){
@@ -704,7 +711,11 @@ function deleteLetter(id){
   if(!confirm('Delete this letter? You wrote it to yourself — it cannot be recovered.')) return;
   const letters=ls('totry_letters')||[];
   const removed=letters.find(l=>l.id===id);
-  ls('totry_letters',letters.filter(l=>l.id!==id));
+  const kept=letters.filter(l=>l.id!==id);
+  // Same as above: totry_letters is unioned now. "It cannot be recovered" is what the confirm promises,
+  // and a letter that reappears after they chose to destroy it breaks that promise the other way.
+  try{ if(typeof tombstoneRemoved === 'function') tombstoneRemoved('totry_letters', letters, kept); }catch(_){}
+  ls('totry_letters',kept);
   renderLetters();
   if(removed){
     showUndo('Letter deleted',()=>{

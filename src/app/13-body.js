@@ -359,6 +359,12 @@ async function generateWeeklyCoachResponse(entry){
         '</div>';
       document.body.appendChild(m);
       haptic('celebrate');
+    } else {
+      // api() returns '' when every provider fails — it does not throw — so the catch below never ran
+      // and NOTHING happened. The toast forty lines up already told them "Your coach is reading your
+      // week…", so silence here reads as being ignored right after being asked to be honest.
+      const why = (typeof getAIErrorMessage === 'function' && getAIErrorMessage()) || 'I could not reach the coach just now.';
+      showToast('Check-in saved', why + ' Your week is logged — open it again in a bit and I will read it back.');
     }
   } catch(e){
     console.error('Coach response failed:', e);
@@ -892,12 +898,27 @@ function deleteProgressPhoto(id){
 }
 // Confirm the daily logs (weight + sleep). They already persist on entry; this gives a clear
 // "committed" moment + feedback, and marks the day so Home can reflect it.
+// The flag markDailyLogsDone writes was read by nothing at all, so "Done for today" gave a moment of
+// completion and then looked exactly like it had before — tap it twice and you would not know. One
+// reader, called after the write and on every Track render, so the button reflects the day it is in.
+function renderDailyDoneState(){
+  try{
+    const btn = document.querySelector('button[onclick="markDailyLogsDone()"]');
+    if(!btn) return;
+    const today = new Date().toLocaleDateString('en-AU');
+    const done = !!ls('totry_daily_logged_'+today);
+    btn.textContent = done ? 'Logged for today \u2713' : 'Done for today';
+    btn.classList.toggle('primary', !done);
+    btn.style.opacity = done ? '0.72' : '';
+  }catch(_){}
+}
 function markDailyLogsDone(){
   const today=new Date().toLocaleDateString('en-AU');
   const t=(ls('totry_trackers')||{})[today]||{sleep:0};
   const body=ls('totry_body')||[];
   const hasWeight = body.some(b=>b.date===today || (b.ts && new Date(b.ts).toLocaleDateString('en-AU')===today));
   ls('totry_daily_logged_'+today, 1);
+  try{ renderDailyDoneState(); }catch(_){}
   const bits=[];
   if(hasWeight) bits.push('weight'); 
   if(t.sleep>0) bits.push(t.sleep+'h sleep');
@@ -921,10 +942,17 @@ function adjustTracker(type,delta){
   haptic('tap');
 }
 function updateTrackerDisplay(){
+  // Called on every Track render, so the button is correct when the screen opens — not only in the
+  // second after it is tapped. Without this the state resets visually at midnight-crossing or reload.
+  try{ renderDailyDoneState(); }catch(_){}
   const today=new Date().toLocaleDateString('en-AU');
   const t=(ls('totry_trackers')||{})[today]||{water:0,sleep:0,steps:0};
-  const w=document.getElementById('water-count');const s=document.getElementById('sleep-count');const st=document.getElementById('steps-count');
-  if(w)w.textContent=t.water;if(s)s.textContent=t.sleep;if(st)st.textContent=(t.steps||0).toLocaleString();
+  // 'water-count' belongs to renderWaterTracker() in the Nourish tab, which paints "1.2 / 2.5 L" from
+  // totry_water_<date>. This function read totry_trackers, where nothing has ever written water — so
+  // whenever it ran it replaced a real reading with a hardcoded 0 and a person's logged water vanished
+  // from the screen. Two owners for one element; the one that has the data keeps it.
+  const s=document.getElementById('sleep-count');const st=document.getElementById('steps-count');
+  if(s)s.textContent=t.sleep;if(st)st.textContent=(t.steps||0).toLocaleString();
   // Honour the user's own sleep goal instead of a hardcoded "7-9 hours" — a target they set should
   // actually show, and the value goes green once they've met it.
   try{

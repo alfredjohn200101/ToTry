@@ -36,12 +36,14 @@ function isTombed(key, id){
 // Derives the deleted ids from the BEFORE/AFTER diff rather than from the caller's filter predicate.
 // Each delete site filters on a different field (e.ts, e.id, (e.ts||e.date)); diffing means the
 // tombstone id can never drift from what the union will actually look for.
-function tombstoneRemoved(key, before, after){
+// Record one deletion. Most lists identify their rows with syncIdOf, and tombstoneRemoved() below
+// derives those ids from a before/after diff. But the vices merge identifies rows by NAME — it builds
+// its own map instead of going through union() — so a tombstone for a vice has to be written under
+// the name, not under syncIdOf(vice). Both go through here, so the pruning and the write-back to the
+// cloud can never drift apart between the two.
+function _tombAdd(key, ...ids){
   try{
-    if(!Array.isArray(before)) return;
-    const keep = new Set((Array.isArray(after) ? after : []).map(syncIdOf));
-    const gone = before.filter(x => !keep.has(syncIdOf(x))).map(syncIdOf)
-                       .filter(id => id !== undefined && id !== null && id !== '');
+    const gone = ids.filter(id => id !== undefined && id !== null && id !== '');
     if(!gone.length) return;
     const t = _tombs();
     const bucket = t[key] || {};
@@ -51,6 +53,14 @@ function tombstoneRemoved(key, before, after){
     Object.keys(bucket).forEach(id => { if(now - (bucket[id] || 0) > TOMB_MAX_AGE_MS) delete bucket[id]; });
     t[key] = bucket;
     ls(TOMB_KEY, t);   // ls() queues it for sync because TOMB_KEY is in SYNC_KEYS
+  }catch(_){ }
+}
+function tombstoneRemoved(key, before, after){
+  try{
+    if(!Array.isArray(before)) return;
+    const keep = new Set((Array.isArray(after) ? after : []).map(syncIdOf));
+    const gone = before.filter(x => !keep.has(syncIdOf(x))).map(syncIdOf);
+    _tombAdd(key, ...gone);
   }catch(_){ }
 }      // durable pending writes {key:{value,ts}}
 window.__syncState = { status: 'idle', lastSyncAt: null, pending: 0, error: null };
@@ -164,9 +174,18 @@ function _recordKeyTs(key, ts){ const m=_getKeyTsMap(); m[key]=ts; try{ localSto
 async function syncNow(){
   if(!sb || !currentUser){ if(typeof showToast==='function') showToast('Not signed in','Sign in to sync your data.'); return; }
   _setSyncState({ status:'syncing' });
-  await pullFromCloud();      // pull authority first
-  await flushOutbox();        // push anything pending
-  if(typeof showToast==='function') showToast('Synced', 'Your data is up to date.');
+  const pulled = await pullFromCloud();   // pull authority first
+  await flushOutbox();                    // push anything pending
+  // TELL THEM WHAT ACTUALLY HAPPENED. This said "Your data is up to date." unconditionally — after a
+  // pull that returned false, with writes still sitting in the outbox. Someone taps Sync now precisely
+  // because they are worried about their data; a false all-clear is worse than no button at all.
+  let stuck = 0;
+  try{ stuck = Object.keys(_getOutbox() || {}).length; }catch(_){}
+  if(typeof showToast === 'function'){
+    if(pulled && !stuck) showToast('Synced', 'Your data is up to date.');
+    else if(stuck) showToast('Not finished', stuck + ' change' + (stuck===1?'':'s') + ' still waiting. They are saved on this device and will go up when the connection is back.');
+    else showToast('Could not reach the cloud', 'Nothing was lost — your data is on this device and will sync when you are back online.');
+  }
 }
 
 // Override localStorage.setItem to trigger sync
@@ -398,7 +417,12 @@ async function pullFromCloud(){
     const ARR = ['totry_workouts','totry_body','totry_journal','totry_mornings','totry_evenings','totry_confessions','totry_masses','totry_routines','totry_saved_meals','totry_family_contrib','totry_poker_sessions','totry_examens','totry_prayers','totry_strava_activities','totry_feeling_wins','totry_custom_exercises',
       'totry_wins','totry_moments_won','totry_fight_log','totry_cravings','totry_blessings','totry_reachouts',
       'totry_rosaries','totry_syntheses','totry_reviews','totry_vice_uses','totry_impulse_holds','totry_freezes',
-      'totry_checkins','totry_mood_log','totry_fast_log','totry_releases'];
+      'totry_checkins','totry_mood_log','totry_fast_log','totry_releases',
+      // Authored, id-bearing and append-shaped, and every bit as irreplaceable as a journal entry:
+      // a letter to your future self, a promise you made, the people you carry. They were in
+      // SYNC_KEYS but not here, so the whole list was taken from one side and the other side's was
+      // dropped — write a letter on your phone, open the app on your laptop, and it is simply gone.
+      'totry_letters','totry_promises','totry_relationships'];
     const idOf = syncIdOf;   // ONE identity function, shared with tombstoneRemoved (see TOMB_KEY)
     // union(local, cloud) kept the FIRST occurrence of each id — always the LOCAL one — so an entry
     // EDITED on the other device never arrived: the correction was silently dropped while both copies
@@ -467,10 +491,17 @@ async function pullFromCloud(){
         // Vices: merge by name so a win/relapse logged on one device is never lost. For a vice on
         // both sides, keep the higher relapseCount + total and the most recent lastWin/startDate,
         // and union the urge log. This is why a logged vice win now survives a cross-device pull.
+        // A REMOVAL HAS TO SURVIVE THE MERGE. This branch builds its own map instead of going through
+        // union(), so the isTombed() check every other list gets was structurally unreachable here: a
+        // person removed a vice, watched it disappear, and the next pull unioned it straight back from
+        // the cloud AND re-uploaded the resurrected list on line ~490 — so deleting it again could
+        // never work either. Identity in this branch is the NAME, so that is what the tombstone holds
+        // (see removeVice, which now records it under the same key).
         const byName = new Map();
         [].concat(lv, cv).forEach(v => {
           if(!v || !v.n) return;
           const key = String(v.n).toLowerCase();
+          if(isTombed('totry_v', key)) return;
           const ex = byName.get(key);
           if(!ex){ byName.set(key, {...v}); return; }
           ex.relapseCount = Math.max(ex.relapseCount||0, v.relapseCount||0);

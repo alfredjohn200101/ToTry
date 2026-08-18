@@ -891,7 +891,13 @@ function removeVice(i){
   loadV();
   if(!vices[i])return;
   if(!confirm('Remove "'+vices[i].n+'"? Your fight history for it will be lost.'))return;
+  const _goneName = String(vices[i].n || '').toLowerCase();
   vices.splice(i,1);
+  // Record the removal so the cloud merge cannot bring it back. pullFromCloud unions vices by NAME,
+  // so that is the identity the tombstone has to carry — an id-based one would never be looked at.
+  // Without this the vice reappeared on the next pull AND was re-uploaded, so deleting it again
+  // could not work either: the only way out was to stop using the app on a second device.
+  try{ if(typeof _tombAdd === 'function') _tombAdd('totry_v', _goneName); }catch(_){}
   saveV();renderVices();renderDayCounter();
   showToast('Removed','Vice removed from your list.');
 }
@@ -984,7 +990,7 @@ const RECOVERY_TIMELINES = {
     { d:1, body:'You interrupted the dopamine loop. The brain\u2019s reward system begins, slowly, to recalibrate.', soul:'One day clean. You chose the real over the counterfeit.' },
     { d:7, body:'Cravings often spike this week then begin to settle \u2014 this is the brain re-learning, not failure.', soul:'A week. If it feels hard, that\u2019s the rewiring, not weakness. Hold on.' },
     { d:14, body:'Many report clearer focus and more stable mood as sensitivity to ordinary pleasure returns.', soul:'Two weeks. Your eyes and mind are becoming your own again.' },
-    { d:30, body:'Motivation, presence and real-world attraction often noticeably improve.', soul:'A month of integrity in secret. That\u2019s the man God sees.' },
+    { d:30, body:'Motivation, presence and real-world attraction often noticeably improve.', soul:'A month of integrity in secret. Nobody had to see it for it to count.' },
     { d:90, body:'The reward system has had real time to rebalance; many describe feeling \u201creset.\u201d', soul:'Ninety days. You\u2019ve proven you are not a slave to the impulse.' },
     { d:365, body:'A year of rewiring \u2014 presence, self-respect and genuine intimacy deepen.', soul:'A year. You became free where you were once bound.' }
   ],
@@ -1052,10 +1058,12 @@ async function openRecoveryTimeline(i){
 
 async function _researchRecoveryTimeline(name, type){
   try{
-    const cacheKey = 'rt_'+(type||'')+'_'+(name||'').toLowerCase().slice(0,30);
+    const _who = (typeof faithTradition==='function' ? faithTradition() : 'x') + '_' +
+                 (function(){ try{ return ls('totry_sex') || 'u'; }catch(_){ return 'u'; } })();
+    const cacheKey = 'rt_'+(type||'')+'_'+_who+'_'+(name||'').toLowerCase().slice(0,30);
     const store = (()=>{ try{ return JSON.parse(localStorage.getItem('totry_recovery_timelines')||'{}'); }catch(_){ return {}; } })();
     if(store[cacheKey]) return store[cacheKey];
-    const sys = 'You are a recovery scientist AND a Christian companion. For the given struggle, return a JSON array of 4-6 recovery milestones a person gains by abstaining, as evidence-based as possible. Each item: {"d": days_as_number, "body": "the physical/mental recovery at this milestone, 1 sentence, factual", "soul": "an encouraging faith-aware reflection, 1 sentence, never preachy"}. Days should be like 1,7,14,30,90,365. Return ONLY the JSON array, no markdown.';
+    const sys = 'You are a recovery scientist. ' + (typeof faithVoiceNote==='function' ? faithVoiceNote() : '') + (typeof sexNote==='function' ? sexNote() : '') + ' For the given struggle, return a JSON array of 4-6 recovery milestones a person gains by abstaining, as evidence-based as possible. Each item: {"d": days_as_number, "body": "the physical/mental recovery at this milestone, 1 sentence, factual", "soul": "an encouraging faith-aware reflection, 1 sentence, never preachy"}. Days should be like 1,7,14,30,90,365. Return ONLY the JSON array, no markdown.';
     const txt = await api(sys, [], 'The struggle: "'+name+'". Give the recovery timeline.', 700, { web_search:true, timeout:40000 });
     let arr = null;
     try{ arr = JSON.parse((txt||'').replace(/```json|```/g,'').trim()); }catch(_){ arr = null; }
@@ -1196,6 +1204,10 @@ function applyViceMode(i, toModerate){
     if(isNaN(lim) || lim < 1){ showToast('Set a limit','Enter how many times per week is within your limit.'); return; }
     v.mode = 'moderate';
     v.modLimit = lim;
+    // The card reads v.limit ("Your limit: …"), and this dialog was the only way to switch an existing
+    // vice to moderate mode — so someone did that, set a limit, and the card showed no limit at all.
+    // Written here in the same shape the add-a-vice flow writes it, so the two agree.
+    v.limit = lim + ' a week';
     if(v.modWithin == null) v.modWithin = 0;
   } else {
     v.mode = 'quit';

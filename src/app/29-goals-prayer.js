@@ -225,8 +225,11 @@ function deleteSacrament(kind, id){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
   if(!confirm('Delete this record?')) return;
   const key = kind === 'confession' ? 'totry_confessions' : 'totry_masses';
-  let list = ls(key) || [];
-  list = list.filter(x => x.id !== id);
+  const before = ls(key) || [];
+  const list = before.filter(x => x.id !== id);
+  // Both keys are in the ARR union, so without a tombstone the cloud copy simply puts the record back
+  // on the next pull. This was the only delete path into a unioned key that did not record one.
+  try{ if(typeof tombstoneRemoved === 'function') tombstoneRemoved(key, before, list); }catch(_){}
   ls(key, list);
   renderSacraments();
 }

@@ -746,7 +746,16 @@ function renderBills(){
     return;
   }
   box.innerHTML = unpaid.slice(0, 8).map(b => {
-    const daysUntil = Math.ceil((new Date(b.due).getTime() - now) / 86400000);
+    // `new Date('2026-08-19')` is parsed as UTC MIDNIGHT, and `now` is local. East of Greenwich that
+  // makes a bill due today look like it is due tomorrow all day — "Due today" arrives the day after
+  // it was due, which for a bill is the one day the reminder had to be right. Compare local midnights.
+  const _dueParts = String(b.due||'').split('-').map(Number);
+  const _due = (_dueParts.length === 3 && !_dueParts.some(isNaN))
+    ? new Date(_dueParts[0], _dueParts[1]-1, _dueParts[2])
+    : new Date(b.due);
+  _due.setHours(0,0,0,0);
+  const _today = new Date(); _today.setHours(0,0,0,0);
+  const daysUntil = Math.round((_due.getTime() - _today.getTime()) / 86400000);
     let urgency;
     if(daysUntil < 0) urgency = {color: 'var(--re)', label: Math.abs(daysUntil) + 'd overdue', bg: 'rgba(216,93,75,0.1)', border: 'var(--re)'};
     else if(daysUntil <= 3) urgency = {color: 'var(--re)', label: daysUntil === 0 ? 'Due today' : daysUntil + ' day' + (daysUntil===1?'':'s'), bg: 'rgba(216,93,75,0.08)', border: 'var(--re-bd)'};

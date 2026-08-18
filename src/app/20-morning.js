@@ -255,7 +255,12 @@ async function explainPlateau(){
     const sys = 'You are an encouraging, knowledgeable strength & nutrition coach. Diagnose plateaus from data, give 2-3 concrete, safe things to try. Concise, practical, never medical claims.';
     const prompt = 'This person seems to have hit a plateau: ' + p.detail + '\n\nTheir recent training data:' + ctx + '\n\nIn a short, encouraging paragraph plus 2-3 specific bullet actions, explain likely reasons and what to try next.';
     const resp = await api(sys, [], prompt, 700);
-    if(box){ box.style.display='block'; box.innerHTML = '<div style="font-size:13px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">'+(resp||'').replace(/</g,'&lt;')+'</div>'; }
+    if(box){
+      box.style.display='block';
+      box.innerHTML = (resp && resp.trim())
+        ? '<div style="font-size:13px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">'+resp.replace(/</g,'&lt;')+'</div>'
+        : aiUnavailableHtml(p.detail || '');
+    }
   }catch(e){ if(box){ box.style.display='block'; box.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t reach the coach right now. Try again shortly.</div>'; } }
   finally{ if(btn){ btn.textContent='Why am I stuck?'; btn.disabled=false; } }
 }
@@ -312,7 +317,14 @@ async function explainVicePatterns(){
     const sys = brotherSys() + 'RIGHT NOW you’re helping them look honestly at the PATTERN in their fight — the times, the triggers. Acknowledge the courage it takes to look at all. Read what you see and offer 2-3 gentle, practical, hopeful moves tied to it. Brief and warm — never shame, only grace and growth.';
     const prompt = 'A person fighting a vice has these patterns in when they slip: ' + p.patterns.join(' ') + ' (' + p.count + ' slips logged). Compassionately reflect this back and suggest 2-3 specific, doable strategies for those high-risk moments. Hopeful, never shaming.';
     const resp = await api(sys, [], prompt, 600);
-    if(box){ box.style.display='block'; box.innerHTML='<div style="font-size:13px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">'+(resp||'').replace(/</g,'&lt;')+'</div>'; }
+    if(box){
+      box.style.display='block';
+      // detectVicePatterns() already found these on this device, before the model was asked. If the
+      // model is down, say so AND still show them — the person came here to understand themselves.
+      box.innerHTML = (resp && resp.trim())
+        ? '<div style="font-size:13px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">'+resp.replace(/</g,'&lt;')+'</div>'
+        : aiUnavailableHtml('What your own log shows: ' + p.patterns.join(' ') + ' (' + p.count + ' logged).');
+    }
   }catch(e){ if(box){ box.style.display='block'; box.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t reach the coach right now.</div>'; } }
   finally{ if(btn){ btn.textContent='Show me my patterns'; btn.disabled=false; } }
 }
