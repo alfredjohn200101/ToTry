@@ -1135,8 +1135,9 @@ async function api(sys, hist, msg, tok, opts){
   };
   if(opts.prefer) body.prefer = opts.prefer; // e.g. 'anthropic' for crisis SOS
   if(opts.web_search) body.web_search = true; // route to search-capable provider (food lookup)
-  // Send the user id so the server can rate-limit per user (protects paid fallback from abuse)
-  try{ if(currentUser?.id) body.user_id = currentUser.id; }catch(_){}
+  // No user id in the body. The proxy takes identity from the signed token and nothing else — it used
+  // to prefer this field, which meant the public anon key was enough to spend someone else's quota.
+  // Sending it anyway would only tell the next reader something untrue about how metering works.
   
   // Track this call for usage monitoring (always log attempt, regardless of success)
   trackAPIUsage('ai', tok);

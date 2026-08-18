@@ -904,6 +904,17 @@ function isGuest(){ try{ return !!ls('totry_guest') && !currentUser; }catch(_){ 
 function enterAsGuest(){
   try{ ls('totry_guest', true); }catch(_){}
   try{ if(typeof logEvent==='function') logEvent('guest_enter',{}); }catch(_){}
+  // Told once, on the way in, rather than as a fourth paragraph on the landing page. A guest's work
+  // lives in this browser and nowhere else; clearing it loses the lot. That is a real cost and they
+  // are entitled to know it — but a line under a button competes with three other lines and is read by
+  // nobody. Here it is the only new thing on screen, and it arrives after they have already chosen, so
+  // it informs rather than delays. Once per device: a warning repeated is a warning ignored.
+  try{
+    if(!ls('totry_guest_told') && typeof showToast==='function'){
+      ls('totry_guest_told', true);
+      setTimeout(function(){ showToast('Kept on this device', 'Add an account any time to keep it safe.'); }, 900);
+    }
+  }catch(_){}
   try{ const ac=document.getElementById('auth-container'); if(ac) ac.style.display='none'; }catch(_){}
   try{ const ob=document.getElementById('onboard'); if(ob){ ob.classList.remove('active'); ob.style.display='none'; } }catch(_){}
   try{ document.querySelectorAll('.app').forEach(function(a){ a.classList.add('app-ready'); }); }catch(_){}

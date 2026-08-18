@@ -2645,8 +2645,14 @@ H.section('a store that is read must be a store that is written')
   const ad = fnBody('addDebt');
   H.ok(/Who is it owed to/.test(ad) && /How much is owed/.test(ad), 'add-a-debt says which field is missing');
 
-  // Honesty at the guest door, where the choice is actually made.
-  H.ok(/Kept on this device only/.test(H.html), 'a guest is told where their data lives');
+  // Honesty at the guest door. This used to be a second line of copy on the landing page and is now a
+  // toast inside enterAsGuest(), because four paragraphs on a landing page means nobody reads any of
+  // them. Asserting the STRING alone would pass if the toast were never reached — the exact dead shape
+  // this file exists to catch — so assert it is inside the function that runs when they tap through.
+  const eag = fnBody('enterAsGuest');
+  H.ok(/Kept on this device/.test(eag), 'a guest is told where their data lives, from enterAsGuest itself');
+  H.ok(/showToast/.test(eag), 'and told it in a way that reaches the screen');
+  H.ok(/totry_guest_told/.test(eag), 'once per device — a warning repeated is a warning ignored');
   H.ok(/Your days follow this device/.test(H.html), 'and the timezone setting stops implying otherwise');
 }
 
