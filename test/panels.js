@@ -143,6 +143,46 @@ const ESTAB= { totry_guest:true, totry_onboarded:true, totry_name:'Alfy', totry_
     await ctx.close();
   }
 
+  // ── TAP TARGET FLOOR ────────────────────────────────────────────────────────────────────────────
+  // Not "everything is 44pt" — that is a design decision the app has deliberately not taken for its
+  // bordered pills, and ten .ci-dot buttons cannot each be 44 WIDE inside a 414px screen, which is
+  // geometry rather than a bug. What IS enforced: nothing a person must hit is under 24pt in its
+  // smallest dimension. Six controls were, including a 9x16 dismiss and a 30x12 "View" link.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 414, height: 896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => {
+      const seed = { totry_guest: true, totry_onboarded: true, totry_name: 'Alfy',
+                     totry_faith_tradition: 'christianity', totry_sex: 'male',
+                     totry_bills: [{ id: 2, name: 'Rent', amount: 420, due: '2026-09-01' }],
+                     totry_v: [{ n: 'Scrolling', startDate: new Date(Date.now() - 9 * 864e5).toISOString(), mode: 'quit' }] };
+      for (const k in seed) localStorage.setItem(k, JSON.stringify(seed[k]));
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(3000);
+    const tiny = await page.evaluate(async () => {
+      const out = [];
+      for (const t of ['home', 'fight', 'grow', 'money', 'soul', 'nourish', 'reflect', 'track', 'morning']) {
+        try { go(t); } catch (e) { continue; }
+        await new Promise(r => setTimeout(r, 320));
+        const pane = document.getElementById('tab-' + t);
+        if (!pane || getComputedStyle(pane).display === 'none') continue;
+        pane.querySelectorAll('button,a[href],[onclick]').forEach(el => {
+          const cs = getComputedStyle(el);
+          if (cs.display === 'none' || cs.visibility === 'hidden') return;
+          const r = el.getBoundingClientRect();
+          if (!r.width && !r.height) return;
+          const m = Math.min(r.width, r.height);
+          if (m < 24) out.push(`${t} ${r.width.toFixed(0)}x${r.height.toFixed(0)} "${(el.innerText || el.getAttribute('aria-label') || '').trim().slice(0, 24)}"`);
+        });
+      }
+      return out;
+    });
+    tiny.forEach(x => findings.push(`tap target under 24pt: ${x}`));
+    console.log(`tap targets under 24pt: ${tiny.length}`);
+    await ctx.close();
+  }
+
   await browser.close(); server.close();
 
   // The sacraments panel staying hidden for a secular person is the v427 gate working, not a finding.
