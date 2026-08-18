@@ -238,7 +238,7 @@ function renderSacraments(){
   const masses = ls('totry_masses') || [];
 
   // Confession summary
-  const cLast = confessions[0];
+  const cLast = latestByDate(confessions);
   const cLastEl = document.getElementById('confession-last');
   const cSinceEl = document.getElementById('confession-since');
   if(cLastEl){
@@ -256,7 +256,7 @@ function renderSacraments(){
   }
 
   // Mass summary
-  const mLast = masses[0];
+  const mLast = latestByDate(masses);
   const mLastEl = document.getElementById('mass-last');
   const mSinceEl = document.getElementById('mass-since');
   const mCountEl = document.getElementById('mass-count');

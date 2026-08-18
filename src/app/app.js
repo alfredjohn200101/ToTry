@@ -1491,7 +1491,7 @@ function renderCoachQuickReplies(){
   // Sacraments — gently surface if confession has been a while (the user wants to grow closer to God)
   const _confList = ls('totry_confessions') || [];
   if(_confList.length){
-    const cdays = Math.floor((Date.now() - new Date(_confList[0].date).getTime()) / 86400000);
+    const cdays = Math.floor((Date.now() - new Date((latestByDate(_confList)||{}).date).getTime()) / 86400000);
     if(cdays >= 35){
       chips.push({p: 4, label: '🕊 It\'s been a while since confession', prompt: 'It has been about ' + cdays + ' days since my last confession. Help me prepare my heart and examine my conscience honestly.'});
     }

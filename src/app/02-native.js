@@ -541,7 +541,16 @@ function _saveReachLog(a){ try{ ls('totry_reachout_log', a.slice(-60)); }catch(_
 function _reachCount7(){ const now=Date.now(), wk=now-7*86400000; return _reachLog().filter(function(e){ return e && e.ts<=now && e.ts>=wk; }).length; }
 // Channel health: three armed reach-outs in a row that were never answered means the channel is
 // going cold. Stand down for two weeks rather than keep spending their attention — and say so.
-function _reachUnansweredRun(){ const d=_reachLog().filter(function(e){ return e && e.opened!=null; }); let r=0; for(let i=d.length-1;i>=0;i--){ if(d[i].opened===false) r++; else break; } return r; }
+function _reachUnansweredRun(){
+  // Only nudges since the last stand-down ENDED. Without this the three that caused a stand-down were
+  // still at the tail of the log when it expired, so the feature armed another 14 days on the same
+  // three, and again, and again. The app's flagship "I reach out first" turned itself off for good
+  // after three missed notifications, and the only way back was tapping a nudge that could not arrive.
+  let since = 0;
+  try{ since = _reachState().standDownEndedAt || 0; }catch(_){ }
+  const d=_reachLog().filter(function(e){ return e && e.opened!=null && !(since && e.ts && e.ts < since); });
+  let r=0; for(let i=d.length-1;i>=0;i--){ if(d[i].opened===false) r++; else break; } return r;
+}
 // Cancelling must also un-log. Entries are written at ARM time with a FUTURE ts and sent:true, so a
 // nudge the app itself cancelled — because reminders were switched off, or quiet hours moved to cover
 // the hard hour — stayed in the log. Once its ts passed, _reachCount7() counted it toward the 3-a-week
@@ -593,6 +602,14 @@ function _resolveReachOuts(){
     // Only judge nudges we actually sent. An unsent one has no answer to give.
     a.forEach(function(e){ if(!e||e.sent!==true||e.opened!=null||e.ts>now) return; e.opened=(now-e.ts)<=45*60000; changed=true; });
     if(changed) _saveReachLog(a);
+    // A stand-down that has run its course must actually END: stamp the moment it lapsed so the nudges
+    // that caused it stop counting. Otherwise the next resolve re-arms it on exactly the same three.
+    try{
+      const _st = _reachState();
+      if(_st.pausedUntil && _st.pausedUntil <= now && (_st.standDownEndedAt||0) < _st.pausedUntil){
+        _setReachState({ standDownEndedAt: now, pausedUntil: 0 });
+      }
+    }catch(_){ }
     if(_reachUnansweredRun()>=3 && !_reachPaused()){
       _setReachState({ pausedUntil: Date.now()+REACHOUT_STANDDOWN_DAYS*86400000, next:null, hold:null });
       _cancelReachOuts();

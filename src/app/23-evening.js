@@ -252,8 +252,15 @@ function examenNext(idx){
 }
 
 function saveExamen(){
+  // SAFETY GATE — the examen's fourth step asks where they fell short and tells them to be specific,
+  // at the end of a day, in the one place the app actively pushes them to. It was the only free-text
+  // soul surface with no gate: a disclosure here was met with a celebration haptic and "Rest in peace
+  // tonight". Flag it on the record too, so safeJournal-style readers never hand it to a model.
+  const _exText = Object.values(_examenAnswers || {}).filter(function(v){ return typeof v === 'string'; }).join(' ');
+  const _exCrisis = (typeof journalCrisisOf === 'function') ? journalCrisisOf(_exText) : null;
   const log = ls('totry_examens') || [];
   log.unshift({
+    flagged: !!_exCrisis,
     date: new Date().toLocaleDateString('en-AU'),
     ts: new Date().toISOString(),
     day: getDayCount(),
@@ -261,6 +268,8 @@ function saveExamen(){
   });
   if(typeof logEvent==='function') logEvent('examen_done');
   ls('totry_examens', log.slice(0, 1200)); // the examen is a reflection too — keep years of it
+  // Saved first — their words are never lost — then meet them, instead of celebrating.
+  if(typeof journalMeetCrisis === 'function' && journalMeetCrisis(_exCrisis)) return;
   if(typeof updateExamenCount === 'function') updateExamenCount();
   document.querySelector('.modal-bg.open')?.remove();
   

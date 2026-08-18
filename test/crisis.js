@@ -69,6 +69,15 @@ const DOORS = [
       if(g) g.value = p; if(i) i.value = p;
       if(typeof completeMorning === 'function') await completeMorning();
     }, phrase) },
+  { name: 'the examen (Repent)',
+    go: async page => page.evaluate(async () => { go('soul'); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      // Step 4 asks where they fell short and tells them to be specific. The app pushes them here at
+      // the end of the day, and it was the only free-text soul surface with no gate.
+      if(typeof _examenAnswers === 'object' && _examenAnswers) _examenAnswers.repent = p;
+      else window._examenAnswers = { repent: p };
+      if(typeof saveExamen === 'function') saveExamen();
+    }, phrase) },
   { name: 'the journal',
     go: async page => page.evaluate(async () => { go('soul'); }),
     fire: async (page, phrase) => page.evaluate(async p => {

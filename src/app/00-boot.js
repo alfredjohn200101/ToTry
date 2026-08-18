@@ -384,6 +384,24 @@ const CURRENCY_SYMBOLS = {
 // morning's clock time: a relapse logged at 7:00am was stamped 24 hours early, the streak repainted
 // as "1 day clean", and max="yesterday" meant the real day could not even be selected. Every timezone
 // east of UTC hits it for the first hours of every day; west of UTC the same line offers tomorrow.
+// THE LATEST SACRAMENT, BY DATE — NOT BY POSITION.
+//
+// logConfession/logMass always unshift, whatever date was chosen, and the same panel invites a person
+// to "Log a past confession". So position 0 is the most recently ENTERED, not the most recent. A man
+// who went to confession this morning and then back-logged one from three months ago was told "Last
+// confession about 3 months ago — it may be time to return", the coach offered to help him examine
+// his conscience, and the brother's context carried it as fact. On the one front built for grace, the
+// app manufactured shame out of its own array order.
+//
+// Four readers had derived this independently; this is the one they all use now.
+function latestByDate(list){
+  try{
+    const rows = (list || []).filter(function(x){ return x && x.date; });
+    if(!rows.length) return null;
+    return rows.slice().sort(function(a,b){ return new Date(b.date) - new Date(a.date); })[0];
+  }catch(_){ return null; }
+}
+
 function _todayLocalISO(d){
   const t = d ? new Date(d) : new Date();
   const p = n => String(n).padStart(2, '0');
@@ -424,7 +442,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v502';
+const APP_VERSION = 'v503';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }

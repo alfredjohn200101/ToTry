@@ -3284,6 +3284,35 @@ H.section('dead code that was one caller away from confusing someone');
   H.ok(!/M17 5H9\.5/.test(H.html), 'no dollar-sign glyph is drawn in any icon');
 }
 
+// ── the examen was the ninth door, and nobody had counted it ────────────────────────────────────
+// Step 4 asks "where did you fall short?" and tells them to be specific, at the end of the day, in
+// the one place the app actively pushes them to. It was the only free-text soul surface with no
+// crisis gate: a disclosure there was answered with a celebration haptic and "Rest in peace tonight".
+// My own audit of the free-text doors found eight and missed this one.
+{
+  H.section('the examen is gated like every other door');
+  const se = fnBodyOf(H.html, 'saveExamen');
+  H.ok(/journalCrisisOf\(/.test(se), 'the examen text is checked before the app celebrates');
+  H.ok(/journalMeetCrisis\(/.test(se), 'and the person is met instead');
+  H.ok(/flagged:/.test(se), 'the record is flagged, so no reader hands it to a model');
+  // Order matters: saved FIRST, then met — otherwise a disclosure loses the reflection they wrote.
+  const iSave = se.indexOf("ls('totry_examens'"), iMeet = se.indexOf('journalMeetCrisis');
+  H.ok(iSave > -1 && iMeet > iSave, 'saved before the gate returns, so their words are never lost');
+}
+
+// ── grace is not an artifact of array order ─────────────────────────────────────────────────────
+// logConfession/logMass unshift whatever date was picked, and the same panel invites "Log a past
+// confession". So position 0 is the most recently ENTERED, not the most recent. Someone who went this
+// morning and then back-logged one from three months ago was told "it may be time to return" — the
+// app manufacturing shame out of its own array order, on the one front built for grace.
+{
+  H.section('the latest sacrament is the latest by date');
+  H.ok(/function latestByDate\(/.test(H.html), 'one accessor decides what "latest" means');
+  H.eq((H.html.match(/confessions\[0\]|masses\[0\]|_confList\[0\]|_conf\[0\]|_mass\[0\]/g) || []).length, 0,
+       'and no reader takes position 0 — four had derived that independently');
+  H.ok((H.html.match(/latestByDate\(/g) || []).length >= 5, 'all of them go through it now');
+}
+
 // ── a store the app fills and never reads is a question it asked and ignored ────────────────────
 // Two kinds of dead store, and only one is harmless. A value written and never read is dead weight;
 // a value the app ASKED A PERSON FOR and never read is worse — it is the app taking their answer and

@@ -898,8 +898,10 @@ function buildCtx(){
   const _mass = ls('totry_masses') || [];
   let sacramentCtx = '';
   if(_conf.length || _mass.length){
-    const cd = _conf[0] ? Math.floor((Date.now()-new Date(_conf[0].date))/86400000) : null;
-    const md = _mass[0] ? Math.floor((Date.now()-new Date(_mass[0].date))/86400000) : null;
+    // Latest by DATE — these arrays are ordered by when a row was entered, not by when it happened.
+    const _cL = latestByDate(_conf), _mL = latestByDate(_mass);
+    const cd = _cL ? Math.floor((Date.now()-new Date(_cL.date))/86400000) : null;
+    const md = _mL ? Math.floor((Date.now()-new Date(_mL.date))/86400000) : null;
     sacramentCtx = '\nSACRAMENTS: ' +
       (cd!==null ? 'Last confession '+cd+' days ago. ' : 'No confession logged. ') +
       (md!==null ? 'Last Mass '+md+' days ago ('+_mass.length+' total). ' : 'No Mass logged. ');
