@@ -14,7 +14,7 @@
     "preflight": "node scripts/preflight.js",
     "build:index": "node scripts/build-index.js",
     "verify:index": "node scripts/build-index.js --verify",
-    "test:edge": "node --experimental-strip-types test/keyproxy.test.mjs"
+    "test:edge": "node --experimental-strip-types test/keyproxy.test.mjs && node --experimental-strip-types test/aiproxy.test.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.1",

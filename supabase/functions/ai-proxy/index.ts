@@ -265,16 +265,34 @@ async function checkRateLimit(userId) {
   } catch (_e) { return { allowed: true }; }
 }
 
+// Who this call is billed to. THE JWT WINS, ALWAYS.
+//
+// This used to read `body.user_id` first and only fall back to the token. The anon key is public (it
+// is in the shipped bundle, as it must be), so anyone could POST here with someone else's user id and
+// spend THEIR daily quota — or send a fresh random uuid on every request, get a fresh 200-call
+// allowance each time, and walk straight down the free chain into the paid Anthropic fallback. A
+// client-supplied identity is a claim, not a fact; the signed token is the fact.
+//
+// The body value is still accepted, but only when there is no signed token at all — a guest has no
+// account to identify them, and a weak key is better than lumping every guest into one bucket. It can
+// be forged, which is the honest limit of rate-limiting someone who has not signed in.
 function getUserId(req, body) {
-  if (body && body.user_id) return String(body.user_id);
   try {
     const auth = req.headers.get("authorization") || "";
     const token = auth.replace(/^Bearer\s+/i, "");
     if (token && token.split(".").length === 3) {
       const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
-      if (payload.sub) return String(payload.sub);
+      // Reject an expired token rather than treat it as anonymous — otherwise letting a token lapse is
+      // an upgrade to an unmetered guest bucket.
+      const notExpired = !payload.exp || Number(payload.exp) * 1000 > Date.now();
+      if (payload.sub && notExpired) return String(payload.sub);
     }
   } catch (_) {}
+  // The body value is not used at all. It has no legitimate case: the client sets `user_id` only when
+  // `currentUser?.id` exists, and that same branch sends the session token — so every caller that has
+  // an id also has a JWT. Keeping it as a fallback would preserve the exact hole above while adding a
+  // new one, since `check_ai_quota` takes a uuid and a forged non-uuid would error into the catch and
+  // return allowed:true. Fail-open on a spoofable key is worse than not metering at all.
   return null;
 }
 
