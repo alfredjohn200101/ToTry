@@ -3284,6 +3284,32 @@ H.section('dead code that was one caller away from confusing someone');
   H.ok(!/M17 5H9\.5/.test(H.html), 'no dollar-sign glyph is drawn in any icon');
 }
 
+// ── assistance is not load ──────────────────────────────────────────────────────────────────────
+// The set row shows assisted weight as a positive number and stores it NEGATIVE ("less help =
+// stronger"). Two writers disagreed: onchange negated, the ✓ handler assigned the raw field — and a
+// click is always preceded by that field's own blur, so the ✓ won and every ticked set was stored
+// positive. exerciseVolume does Math.max(0, bw + w) for assisted work, so 30kg of help at bodyweight
+// 90 became 120kg/rep instead of 60 — double the volume, a celebrated "New PR" for needing help, and
+// then an overload suggestion to use MORE assistance. Aimed exactly at the person who cannot do a
+// pull-up yet.
+{
+  H.section('assistance is not load');
+  H.ok(/const _readWeight = \(\) =>/.test(H.html), 'one reader turns the weight field into a stored value');
+  H.ok(!/sets\[si\]\.weight=wIn\.value/.test(H.html), 'the done handler no longer bypasses it');
+  H.ok(/trk==='assisted'\) \? 0 :/.test(H.html), 'and an assisted set cannot set a personal record');
+
+  // getUserSplit() returns [null × 7] for "no plan yet" — its own documented value — and
+  // renderSplitOverview dereferenced it, so opening Train with no split threw and took out the tab.
+  const rso = fnBodyOf(H.html, 'renderSplitOverview');
+  H.ok(/const d0 = day \|\| \{\}/.test(rso), 'a null day is read as a rest day, not a TypeError');
+
+  // The split editor's routine control wrote a value nothing read.
+  H.ok(/_startAssignedRoutine/.test(H.html), 'an assigned routine can actually be started');
+  H.ok(/loadRoutine\(match\.id\)/.test(H.html), 'by id — loadRoutine takes an id, and an index finds nothing');
+  H.ok(/d\.focus \|\| d\.routine/.test(H.html), 'and a routine-only day counts as a set-up split');
+  H.ok(/\.\.\.\(split\[dayIdx\]\|\|\{\}\)/.test(H.html), 'editing a day keeps its exercise list');
+}
+
 // ── the examen was the ninth door, and nobody had counted it ────────────────────────────────────
 // Step 4 asks "where did you fall short?" and tells them to be specific, at the end of the day, in
 // the one place the app actively pushes them to. It was the only free-text soul surface with no

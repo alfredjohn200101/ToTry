@@ -57,7 +57,11 @@ function getUserSplit(){
   // Otherwise return empty days so the home screen doesn't promise a "Push/Pull Hybrid" plan
   // that the user never created.
   const saved = ls('totry_split');
-  if(saved && Array.isArray(saved) && saved.some(d => d && d.focus)) return saved;
+  // A day with a routine assigned IS a set-up day. The edit modal labels focus "(or leave blank for
+  // rest day)", so someone who assigned a routine and left focus blank had their entire split treated
+  // as empty — and the today card then told them "No routine set for today. Build a routine and
+  // assign it to today", which is precisely what they had just done.
+  if(saved && Array.isArray(saved) && saved.some(d => d && (d.focus || d.routine))) return saved;
   return [null, null, null, null, null, null, null]; // no plan yet
 }
 

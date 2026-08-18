@@ -720,20 +720,32 @@ function renderSets(ei){
     wIn.value = (s.weight!==''&&s.weight!=null) ? (trk==='assisted' ? Math.abs(parseFloat(s.weight)) : s.weight) : '';
     wIn.style.cssText='width:58px;padding:7px 6px;font-size:13px;flex:none';
     if(trk==='bodyweight'){ wIn.disabled=true; wIn.style.opacity='0.4'; }
-    wIn.onchange=()=>{
+    // ONE READER FOR THIS FIELD. The input shows assistance as a positive number and stores it as
+    // NEGATIVE ("less help = stronger", 19-workout.js). This did the negation; the ✓ handler below
+    // assigned wIn.value raw — and a click is always preceded by the input's own blur/change, so the
+    // ✓ won every time and every set a person actually ticked was stored positive. exerciseVolume
+    // computes Math.max(0, bw + w) for assisted work, so 30kg of help at bodyweight 90 became 120kg
+    // per rep instead of 60: double the volume, a celebrated "New PR" for needing help, and an
+    // overload suggestion to use MORE assistance next time — aimed at the person who cannot do a
+    // pull-up yet. Two writers of one value is how that happened; there is one now.
+    const _readWeight = () => {
       let v = wIn.value;
-      if(trk==='assisted' && v!=='' && !isNaN(parseFloat(v))) v = String(-Math.abs(parseFloat(v))); // store assistance as negative
-      currentSession[ei].sets[si].weight = (trk==='bodyweight') ? '0' : v;
+      if(trk==='assisted' && v!=='' && !isNaN(parseFloat(v))) v = String(-Math.abs(parseFloat(v))); // assistance is negative
+      return (trk==='bodyweight') ? '0' : v;
     };
+    wIn.onchange=()=>{ currentSession[ei].sets[si].weight = _readWeight(); };
     row.appendChild(wIn);
     const ks=document.createElement('span');ks.className='set-unit';ks.textContent=unitLabel;row.appendChild(ks);
     const rIn=document.createElement('input');rIn.type='number';rIn.className='set-input';rIn.placeholder=lastSet?.reps||'reps';rIn.value=s.reps||'';rIn.style.cssText='width:65px;padding:7px 6px;font-size:13px;flex:none';rIn.onchange=()=>{currentSession[ei].sets[si].reps=rIn.value;};row.appendChild(rIn);
     const db=document.createElement('button');db.className='set-done'+(s.done?' on':'');db.textContent='\u2713';
     db.onclick=()=>{
-      currentSession[ei].sets[si].weight=wIn.value;currentSession[ei].sets[si].reps=rIn.value;
+      currentSession[ei].sets[si].weight=_readWeight();currentSession[ei].sets[si].reps=rIn.value;
       const wasDone=currentSession[ei].sets[si].done;currentSession[ei].sets[si].done=!wasDone;
       if(!wasDone){haptic('success');
-        const w=parseFloat(wIn.value),r=parseInt(rIn.value);
+        // Assistance is not load. A "PR" for needing 30kg of help is the app congratulating someone
+        // for the thing they came here to stop needing — and it was firing because this read the
+        // positive displayed value. Assisted sets do not set records.
+        const w=(trk==='assisted') ? 0 : parseFloat(_readWeight()),r=parseInt(rIn.value);
         if(w&&r){const orm=Math.round(w*(1+r/30));const prs=ls('totry_prs')||{};if(!prs[ex.name]||orm>prs[ex.name].orm){showToast('New PR! \u{1F3C6}',ex.name+' \u2014 est. 1RM: '+orm+'kg');prs[ex.name]={orm,weight:w,reps:r,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})};ls('totry_prs',prs);setTimeout(()=>showVerseToast('pr','Word for your PR'),800);}}
         // Rest timer: use this exercise's remembered rest, default 90s. Hevy-style per-exercise.
         // Hevy rip: warmup sets don't trigger rest \u2014 you ramp, you don't sit.

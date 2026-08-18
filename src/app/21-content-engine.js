@@ -382,6 +382,35 @@ function loadTodaySplitCard(){
     return;
   }
   
+  // Start the routine this day is bound to. The split stores it by NAME, so a rename or a delete
+  // leaves the day pointing at something that is gone — say so plainly rather than doing nothing.
+  window._startAssignedRoutine = function(){
+    try{
+      const d = (typeof getUserSplit==='function' ? getUserSplit() : [])[(typeof tIdx==='function'?tIdx():0)] || {};
+      const list = ls('totry_routines') || [];
+      const match = list.find(r => r && (r.name === d.routine || r.title === d.routine));
+      if(!match){
+        if(typeof showToast==='function') showToast('That routine is gone', '“' + (d.routine||'It') + '” was deleted or renamed. Pick another in Routines & Split.');
+        return;
+      }
+      if(typeof setPTTab==='function') setPTTab('log');
+      // loadRoutine takes the routine's ID, not its index — passing an index finds nothing and
+      // returns silently, which would have made this button another control that does nothing.
+      if(typeof loadRoutine==='function') loadRoutine(match.id);
+    }catch(_){ }
+  };
+
+  // A ROUTINE ASSIGNED TO TODAY IS THE WHOLE POINT OF ASSIGNING IT. The split editor's only routine
+  // control wrote totry_split[i].routine and NOTHING read it — not this card, not the coach, nothing
+  // loaded it into a session. So a person followed the app's own instruction ("assign it to today"),
+  // and the card kept telling them to do the thing they had just done. Name it, and let them start it.
+  if(today && today.routine && !today.focus){
+    if(nameEl)nameEl.textContent=String(today.routine);
+    if(detailEl)detailEl.innerHTML='Assigned to today. <span class="tlink" onclick="_startAssignedRoutine()">Start this routine</span>';
+    if(wrap) wrap.style.display='';
+    return;
+  }
+
   if(!today || !today.focus){
     // No routine assigned for today
     if(nameEl)nameEl.textContent='No routine set for today';

@@ -132,7 +132,12 @@ function renderSplitOverview(){
     row.className='split-day-row';
     const isToday=i===ti;
     row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 12px;background:'+(isToday?'var(--go-bg)':'var(--bg3)')+';border:1px solid '+(isToday?'var(--go-bd)':'var(--bd)')+';border-radius:8px;margin-bottom:6px';
-    const focusText=day.focus||(day.routine?day.routine:'Rest day');
+    // getUserSplit() returns [null × 7] when no plan is set up — that is its documented "no plan yet"
+    // value — and this dereferenced it, so a person with no split (or with any null day) got a
+    // TypeError that took out the whole Train tab on open. Reading a null day as a rest day is both
+    // safe and true.
+    const d0 = day || {};
+    const focusText=d0.focus||(d0.routine?d0.routine:'Rest day');
     row.innerHTML='<div style="font-family:DM Mono,monospace;font-size:11px;color:'+(isToday?'var(--go)':'var(--tx3)')+';width:40px;text-transform:uppercase;letter-spacing:0.1em">'+DAYS[i]+'</div>'+
       '<div style="flex:1;font-size:13px;color:var(--tx)">'+focusText+'</div>'+
       // Seven buttons on this screen all read just "Edit", so a screen reader announced "Edit, Edit,
@@ -172,7 +177,11 @@ function saveSplitDay(dayIdx){
   const routine=document.getElementById('split-edit-routine')?.value||'';
   const split=ls('totry_split')||[];
   while(split.length<7)split.push({focus:'',routine:null});
-  split[dayIdx]={focus,routine:routine||null};
+  // KEEP THE REST OF THE DAY. This rebuilt the day object from scratch, dropping `detail` — the
+  // exercise list a generated plan puts there and which both the day cards and the today card
+  // render. So editing one day of a plan silently erased that day's exercises, with no warning and
+  // nothing to undo it.
+  split[dayIdx]={...(split[dayIdx]||{}), focus, routine:routine||null};
   ls('totry_split',split);
   document.querySelector('.modal-bg.open')?.remove();
   renderSplitOverview();

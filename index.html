@@ -4879,7 +4879,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v503';
+const APP_VERSION = 'v504';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -12180,7 +12180,12 @@ function renderSplitOverview(){
     row.className='split-day-row';
     const isToday=i===ti;
     row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 12px;background:'+(isToday?'var(--go-bg)':'var(--bg3)')+';border:1px solid '+(isToday?'var(--go-bd)':'var(--bd)')+';border-radius:8px;margin-bottom:6px';
-    const focusText=day.focus||(day.routine?day.routine:'Rest day');
+    // getUserSplit() returns [null × 7] when no plan is set up — that is its documented "no plan yet"
+    // value — and this dereferenced it, so a person with no split (or with any null day) got a
+    // TypeError that took out the whole Train tab on open. Reading a null day as a rest day is both
+    // safe and true.
+    const d0 = day || {};
+    const focusText=d0.focus||(d0.routine?d0.routine:'Rest day');
     row.innerHTML='<div style="font-family:DM Mono,monospace;font-size:11px;color:'+(isToday?'var(--go)':'var(--tx3)')+';width:40px;text-transform:uppercase;letter-spacing:0.1em">'+DAYS[i]+'</div>'+
       '<div style="flex:1;font-size:13px;color:var(--tx)">'+focusText+'</div>'+
       // Seven buttons on this screen all read just "Edit", so a screen reader announced "Edit, Edit,
@@ -12220,7 +12225,11 @@ function saveSplitDay(dayIdx){
   const routine=document.getElementById('split-edit-routine')?.value||'';
   const split=ls('totry_split')||[];
   while(split.length<7)split.push({focus:'',routine:null});
-  split[dayIdx]={focus,routine:routine||null};
+  // KEEP THE REST OF THE DAY. This rebuilt the day object from scratch, dropping `detail` — the
+  // exercise list a generated plan puts there and which both the day cards and the today card
+  // render. So editing one day of a plan silently erased that day's exercises, with no warning and
+  // nothing to undo it.
+  split[dayIdx]={...(split[dayIdx]||{}), focus, routine:routine||null};
   ls('totry_split',split);
   document.querySelector('.modal-bg.open')?.remove();
   renderSplitOverview();
@@ -29279,7 +29288,11 @@ function getUserSplit(){
   // Otherwise return empty days so the home screen doesn't promise a "Push/Pull Hybrid" plan
   // that the user never created.
   const saved = ls('totry_split');
-  if(saved && Array.isArray(saved) && saved.some(d => d && d.focus)) return saved;
+  // A day with a routine assigned IS a set-up day. The edit modal labels focus "(or leave blank for
+  // rest day)", so someone who assigned a routine and left focus blank had their entire split treated
+  // as empty — and the today card then told them "No routine set for today. Build a routine and
+  // assign it to today", which is precisely what they had just done.
+  if(saved && Array.isArray(saved) && saved.some(d => d && (d.focus || d.routine))) return saved;
   return [null, null, null, null, null, null, null]; // no plan yet
 }
 
@@ -30680,6 +30693,35 @@ function loadTodaySplitCard(){
     return;
   }
   
+  // Start the routine this day is bound to. The split stores it by NAME, so a rename or a delete
+  // leaves the day pointing at something that is gone — say so plainly rather than doing nothing.
+  window._startAssignedRoutine = function(){
+    try{
+      const d = (typeof getUserSplit==='function' ? getUserSplit() : [])[(typeof tIdx==='function'?tIdx():0)] || {};
+      const list = ls('totry_routines') || [];
+      const match = list.find(r => r && (r.name === d.routine || r.title === d.routine));
+      if(!match){
+        if(typeof showToast==='function') showToast('That routine is gone', '“' + (d.routine||'It') + '” was deleted or renamed. Pick another in Routines & Split.');
+        return;
+      }
+      if(typeof setPTTab==='function') setPTTab('log');
+      // loadRoutine takes the routine's ID, not its index — passing an index finds nothing and
+      // returns silently, which would have made this button another control that does nothing.
+      if(typeof loadRoutine==='function') loadRoutine(match.id);
+    }catch(_){ }
+  };
+
+  // A ROUTINE ASSIGNED TO TODAY IS THE WHOLE POINT OF ASSIGNING IT. The split editor's only routine
+  // control wrote totry_split[i].routine and NOTHING read it — not this card, not the coach, nothing
+  // loaded it into a session. So a person followed the app's own instruction ("assign it to today"),
+  // and the card kept telling them to do the thing they had just done. Name it, and let them start it.
+  if(today && today.routine && !today.focus){
+    if(nameEl)nameEl.textContent=String(today.routine);
+    if(detailEl)detailEl.innerHTML='Assigned to today. <span class="tlink" onclick="_startAssignedRoutine()">Start this routine</span>';
+    if(wrap) wrap.style.display='';
+    return;
+  }
+
   if(!today || !today.focus){
     // No routine assigned for today
     if(nameEl)nameEl.textContent='No routine set for today';
@@ -31780,20 +31822,32 @@ function renderSets(ei){
     wIn.value = (s.weight!==''&&s.weight!=null) ? (trk==='assisted' ? Math.abs(parseFloat(s.weight)) : s.weight) : '';
     wIn.style.cssText='width:58px;padding:7px 6px;font-size:13px;flex:none';
     if(trk==='bodyweight'){ wIn.disabled=true; wIn.style.opacity='0.4'; }
-    wIn.onchange=()=>{
+    // ONE READER FOR THIS FIELD. The input shows assistance as a positive number and stores it as
+    // NEGATIVE ("less help = stronger", 19-workout.js). This did the negation; the ✓ handler below
+    // assigned wIn.value raw — and a click is always preceded by the input's own blur/change, so the
+    // ✓ won every time and every set a person actually ticked was stored positive. exerciseVolume
+    // computes Math.max(0, bw + w) for assisted work, so 30kg of help at bodyweight 90 became 120kg
+    // per rep instead of 60: double the volume, a celebrated "New PR" for needing help, and an
+    // overload suggestion to use MORE assistance next time — aimed at the person who cannot do a
+    // pull-up yet. Two writers of one value is how that happened; there is one now.
+    const _readWeight = () => {
       let v = wIn.value;
-      if(trk==='assisted' && v!=='' && !isNaN(parseFloat(v))) v = String(-Math.abs(parseFloat(v))); // store assistance as negative
-      currentSession[ei].sets[si].weight = (trk==='bodyweight') ? '0' : v;
+      if(trk==='assisted' && v!=='' && !isNaN(parseFloat(v))) v = String(-Math.abs(parseFloat(v))); // assistance is negative
+      return (trk==='bodyweight') ? '0' : v;
     };
+    wIn.onchange=()=>{ currentSession[ei].sets[si].weight = _readWeight(); };
     row.appendChild(wIn);
     const ks=document.createElement('span');ks.className='set-unit';ks.textContent=unitLabel;row.appendChild(ks);
     const rIn=document.createElement('input');rIn.type='number';rIn.className='set-input';rIn.placeholder=lastSet?.reps||'reps';rIn.value=s.reps||'';rIn.style.cssText='width:65px;padding:7px 6px;font-size:13px;flex:none';rIn.onchange=()=>{currentSession[ei].sets[si].reps=rIn.value;};row.appendChild(rIn);
     const db=document.createElement('button');db.className='set-done'+(s.done?' on':'');db.textContent='\u2713';
     db.onclick=()=>{
-      currentSession[ei].sets[si].weight=wIn.value;currentSession[ei].sets[si].reps=rIn.value;
+      currentSession[ei].sets[si].weight=_readWeight();currentSession[ei].sets[si].reps=rIn.value;
       const wasDone=currentSession[ei].sets[si].done;currentSession[ei].sets[si].done=!wasDone;
       if(!wasDone){haptic('success');
-        const w=parseFloat(wIn.value),r=parseInt(rIn.value);
+        // Assistance is not load. A "PR" for needing 30kg of help is the app congratulating someone
+        // for the thing they came here to stop needing — and it was firing because this read the
+        // positive displayed value. Assisted sets do not set records.
+        const w=(trk==='assisted') ? 0 : parseFloat(_readWeight()),r=parseInt(rIn.value);
         if(w&&r){const orm=Math.round(w*(1+r/30));const prs=ls('totry_prs')||{};if(!prs[ex.name]||orm>prs[ex.name].orm){showToast('New PR! \u{1F3C6}',ex.name+' \u2014 est. 1RM: '+orm+'kg');prs[ex.name]={orm,weight:w,reps:r,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})};ls('totry_prs',prs);setTimeout(()=>showVerseToast('pr','Word for your PR'),800);}}
         // Rest timer: use this exercise's remembered rest, default 90s. Hevy-style per-exercise.
         // Hevy rip: warmup sets don't trigger rest \u2014 you ramp, you don't sit.
