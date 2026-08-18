@@ -3278,6 +3278,43 @@ H.section('dead code that was one caller away from confusing someone');
   H.ok(!/M17 5H9\.5/.test(H.html), 'no dollar-sign glyph is drawn in any icon');
 }
 
+// ── what we promise about a person's data has to be what the code does ──────────────────────────
+// These are not style points. The app asks people for reproductive health data and bank statements
+// on the strength of a sentence next to the input, and a sentence that is not true is the worst
+// defect this codebase can ship — worse than a crash, which at least announces itself.
+{
+  H.section('the privacy promises are kept');
+  const code = H.script || H.html;
+  const fnBody = (name) => {
+    const m = code.match(new RegExp('function\\s+' + name + '\\s*\\('));
+    if (!m) return '';
+    let i = code.indexOf('{', m.index) + 1, d = 1;
+    while (i < code.length && d) { const c = code[i]; if (c === '{') d++; else if (c === '}') d--; i++; }
+    return code.slice(m.index, i);
+  };
+
+  // Settings, in the person's own words: "the phase word only (never your dates)". privacy.html says
+  // period dates never leave the device. The brief sent `day 9` — which IS the start date, by
+  // subtraction — to a third-party model. The phase is what makes the counsel useful; the date is not.
+  const brief = fnBody('lifeStateBrief');
+  H.ok(/Cycle \(self-logged/.test(brief), 'the cycle still reaches the coach as a phase (it is the point of the feature)');
+  H.ok(!/day '\s*\+\s*cy\.day/.test(brief), 'but NOT the day number, which is her start date by subtraction');
+  H.ok(!/cy\.start|cy\.lastPeriod|cy\.dates/.test(brief), 'and no raw cycle dates of any kind');
+
+  // Two claims that ARE kept, asserted so they cannot quietly stop being true.
+  const syncBlock = (H.html.match(/const SYNC_KEYS\s*=\s*\[([\s\S]*?)\]/) || [])[1] || '';
+  const syncKeys = [...syncBlock.replace(/\/\/[^\n]*/g, '').matchAll(/'([^']+)'/g)].map(m => m[1]);
+  H.ok(syncKeys.length > 100, `SYNC_KEYS parsed as ${syncKeys.length} real keys, not as text`);
+  H.ok(!syncKeys.includes('totry_progress_photos'), 'progress photos are not synced — both privacy documents say so');
+  H.ok(!syncKeys.includes('totry_cycle'), 'cycle data is not synced unless she explicitly turns backup on');
+
+  // "Nothing is sent anywhere — it's parsed on your phone" sat next to a bank-statement upload, while
+  // totry_transactions is in SYNC_KEYS and the importer calls syncToCloud() on the next line. The
+  // parsing really is local; the saved rows are not. Say the true half, not the reassuring one.
+  H.ok(!/Nothing is sent anywhere/.test(H.html), 'no blanket "nothing is sent anywhere" claim over data that syncs');
+  H.ok(/The file itself is never uploaded/.test(H.html), 'the CSV import says what is actually true of it');
+}
+
 // ── the bundle must actually PARSE ───────────────────────────────────────────────────────────────
 // On 18 Aug 2026 a bad edit left `+''</div>` — a stray string terminator — in the middle of a
 // template concatenation. index.html would not parse at all: a white screen for every user. This file

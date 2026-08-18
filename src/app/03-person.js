@@ -719,7 +719,12 @@ function lifeStateBrief(s){
         // to someone who explicitly asked never to see them \u2014 the leak defeats the whole setting.
         luteal:'appetite genuinely rises'+((typeof nutGentle==='function' && nutGentle())?'':' (~100-300 cal/day)')+', cravings sharpen and willpower is genuinely thinner. Read a heavy day or a slip this week as PHYSIOLOGY \u2014 never as weakness or a failure of will'
       }[cy.phase] || '';
-      lines.push('Cycle (self-logged, ESTIMATE only \u2014 never state it as fact, never give fertility, contraception or medical advice): day '+cy.day+', likely '+cy.phase+' phase'+(meaning?' \u2014 '+meaning:'')+'.');
+      // THE PHASE WORD ONLY. The setting that turns this on says, in the person's own Settings screen,
+      // "the phase word only (never your dates)" — and privacy.html says her period dates never leave
+      // the device. The day NUMBER is her start date: day 9 on the 18th is the 10th, by subtraction.
+      // Sending it broke both promises at once, with reproductive health data, to a third-party model.
+      // The phase is what makes the counsel useful; the date adds nothing the coach can act on.
+      lines.push('Cycle (self-logged, ESTIMATE only \u2014 never state it as fact, never give fertility, contraception or medical advice): likely '+cy.phase+' phase'+(meaning?' \u2014 '+meaning:'')+'.');
     }
   }catch(_){}
   if(f.fights7) lines.push('The fight (7d): '+f.wins7+' wins, '+f.losses7+' slips'+(f.cravings7?', '+f.cravings7+' cravings logged':'')+(f.momentsWon7?', came here and turned away '+f.momentsWon7+'x':''));
