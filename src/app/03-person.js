@@ -536,7 +536,10 @@ function getLifeState(){
   const fight7 = fightLog.filter(f => within(f.ts, 7));
   const wins7 = fight7.filter(f => f.won).length;
   const losses7 = fight7.filter(f => f.won === false).length;
-  const cravings7 = (L('totry_cravings')||[]).filter(c => c && within(c.ts, 7));
+  // totry_cravings has no writer outside the demo seeder — every real urge is a totry_fight_log row,
+  // already counted as wins7/losses7 above. Kept as a read so an old device's data still resolves,
+  // but it is not reported separately: a second count of the same moments is not more truth.
+  const cravings7 = [];
 
   // ── PER-VICE HONEST STATE ── so the Brother's counsel knows exactly where each fight stands, not
   // just an aggregate. Carries the honest use log (the truth a clean streak alone can hide) and the
@@ -727,7 +730,7 @@ function lifeStateBrief(s){
       lines.push('Cycle (self-logged, ESTIMATE only \u2014 never state it as fact, never give fertility, contraception or medical advice): likely '+cy.phase+' phase'+(meaning?' \u2014 '+meaning:'')+'.');
     }
   }catch(_){}
-  if(f.fights7) lines.push('The fight (7d): '+f.wins7+' wins, '+f.losses7+' slips'+(f.cravings7?', '+f.cravings7+' cravings logged':'')+(f.momentsWon7?', came here and turned away '+f.momentsWon7+'x':''));
+  if(f.fights7) lines.push('The fight (7d): '+f.wins7+' wins, '+f.losses7+' slips'+(f.momentsWon7?', came here and turned away '+f.momentsWon7+'x':''));
   // Per-vice honest state — the truth a streak alone can hide. If he's been logging real use, the
   // Brother must MEET that with grace, never congratulate a clean streak that isn't real.
   if(f.vices && f.vices.length){
@@ -778,6 +781,8 @@ function buildPTCtx(){
   const bodyEntries = ls('totry_body') || [];
   const currentWeight = bodyEntries[0] && bodyEntries[0].weight ? bodyEntries[0].weight : null;
   const goalWeight = ls('totry_goal_weight') || null;
+  const trainGoal = ls('totry_train_goal') || null;     // what they chose the plan FOR
+  const trainDays = ls('totry_train_days') || null;     // how many days a week they said they have
   // Same dead key: the coach was never told whether this person is cutting, gaining or maintaining —
   // one of the most basic things a whole-life coach should know before it talks about food or training.
   const goalIntent = (function(){
@@ -819,7 +824,7 @@ function buildPTCtx(){
     }
   }catch(_){}
 
-  return (typeof brotherSys==='function' ? brotherSys() : '') + `You are the personal strength & nutrition coach inside To Try, ${userName}'s app. You know them and their training, and you coach like a real PT who's invested in their progress — not a generic exercise database.
+  return (typeof brotherSys==='function' ? brotherSys() : '') + `You are the personal strength & nutrition coach inside To Try, ${userName}'s app.${trainGoal ? ` They built this plan for ${trainGoal}${trainDays ? `, training ${trainDays} days a week` : ''} — coach toward that, not toward a generic programme.` : ''} You know them and their training, and you coach like a real PT who's invested in their progress — not a generic exercise database.
 
 WHO THEY ARE:
 ${userName} | Day ${dayCount} of their journey${goalIntent?'\nGoal: '+goalIntent:''}

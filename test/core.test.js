@@ -3284,6 +3284,26 @@ H.section('dead code that was one caller away from confusing someone');
   H.ok(!/M17 5H9\.5/.test(H.html), 'no dollar-sign glyph is drawn in any icon');
 }
 
+// ── a store the app fills and never reads is a question it asked and ignored ────────────────────
+// Two kinds of dead store, and only one is harmless. A value written and never read is dead weight;
+// a value the app ASKED A PERSON FOR and never read is worse — it is the app taking their answer and
+// doing nothing with it. _applyGeneratedPlan has always stored the training goal they chose and the
+// days a week they said they had, and nothing has ever read either, so the PT coach reasoned from the
+// split alone: it could tell someone chasing strength to add conditioning, or someone with three days
+// to train five.
+{
+  H.section('what the app asks for, it uses');
+  const ptx = fnBodyOf(H.html, 'buildPTCtx');
+  H.ok(/totry_train_goal/.test(ptx), 'the PT coach is told the goal the plan was built for');
+  H.ok(/totry_train_days/.test(ptx), 'and how many days a week they said they have');
+  H.ok(/coach toward that/.test(H.html), 'and told to coach toward it rather than a generic programme');
+
+  // totry_cravings had NO writer outside the demo seeder, so for a real person it was permanently
+  // zero — and every urge is already a totry_fight_log row, counted as wins/slips. Reporting it again
+  // would have been a second count of the same moments. Removed rather than invented.
+  H.ok(!/cravings logged/.test(H.html), 'the brief no longer carries a craving count nothing fills');
+}
+
 // ── every surface that SPEAKS knows who it is speaking to ───────────────────────────────────────
 // brotherSys() is where the app decides who it is talking to: it carries sexNote() (never "brother"
 // to a woman) and faithVoiceNote() (for a secular person, "use NO religious language at all"). Any

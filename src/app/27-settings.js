@@ -324,7 +324,8 @@ function loadDemoData(){
     {text:'Put the phone in the kitchen before bed.', ts:iso(dayAgo(1)), date:auKey(dayAgo(1)), source:'manual'},
     {text:'Trained when I did not feel like it.', ts:iso(dayAgo(2)), date:auKey(dayAgo(2)), source:'train'},
   ]);
-  ls('totry_cravings',[{ts:iso(dayAgo(0)),intensity:6,note:'late, tired, phone in hand'}]);
+  // totry_cravings has no writer in the real app — seeding it made a dead field look alive in the
+  // one dataset anybody demos with, which is how it survived this long. Left unseeded deliberately.
 
   // The Fight's deeper tools, each with the person's OWN words in it \u2014 the ledger and the walk-back
   // are mirrored back at the threshold, so they need content or that moment shows nothing.
