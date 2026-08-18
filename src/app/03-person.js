@@ -1138,7 +1138,12 @@ window.addEventListener('offline', ()=>{ isOnline=false; });
 async function api(sys, hist, msg, tok, opts){
   tok = tok || 1200;
   opts = opts || {};
-  const TIMEOUT_MS = opts.timeout || 30000; // 30s ceiling
+  const TIMEOUT_MS = opts.timeout || 30000; // 30s ceiling — for the WHOLE call, not per attempt
+  // Deadline for everything below. Two methods are tried in sequence; giving each the full ceiling
+  // made the real wait double the number the caller asked for, on the surface where it matters most.
+  const _deadline = Date.now() + TIMEOUT_MS;
+  const _left = () => Math.max(1200, _deadline - Date.now());   // never below a second — a doomed
+                                                                // request is still better than none
   const body = {
     max_tokens: tok,
     system: sys,
@@ -1166,7 +1171,7 @@ async function api(sys, hist, msg, tok, opts){
     try{
       const {data, error} = await withTimeout(
         sb.functions.invoke('ai-proxy', {body}),
-        TIMEOUT_MS,
+        _left(),
         'supabase-invoke'
       );
       if(!error && data){
@@ -1205,7 +1210,7 @@ async function api(sys, hist, msg, tok, opts){
       }catch(e){}
     }
     const ctrl = new AbortController();
-    const tid = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+    const tid = setTimeout(() => ctrl.abort(), _left());   // the REMAINING budget, not a fresh one
     let r, d;
     try{
       r = await fetch(API, {method:'POST', headers, body: JSON.stringify(body), signal: ctrl.signal});
@@ -2690,8 +2695,15 @@ function renderFaithDoor(){
 function _faithDoorOpen(){
   try{ ls('totry_faith_door_seen', 1); renderFaithDoor();
        if(typeof go==='function') go('settings');
-       setTimeout(function(){ try{ document.getElementById('faith-tradition-options')
-         ?.scrollIntoView({behavior:'smooth', block:'center'}); }catch(_){} }, 420);
+       setTimeout(function(){ try{
+         const _opts = document.getElementById('faith-tradition-options');
+         // The group is a <details> that is closed by default — scrolling to a collapsed element
+         // lands on a strip of nothing, and this offer is only made once (the flag above is already
+         // spent). Open it first, so the choices are actually on screen.
+         const _grp = _opts && _opts.closest ? _opts.closest('details') : null;
+         if(_grp) _grp.open = true;
+         _opts?.scrollIntoView({behavior:'smooth', block:'center'});
+       }catch(_){} }, 420);
   }catch(_){}
 }
 function _faithDoorNo(){

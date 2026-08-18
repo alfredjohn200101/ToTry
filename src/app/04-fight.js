@@ -1271,6 +1271,10 @@ function faithLevel(){ return ls('totry_faith_level') || 'full'; }
 function setUserSex(sex){
   ls('totry_sex', sex);
   try{ document.querySelectorAll('.sex-opt').forEach(b=>{ const on=b.dataset.sex===sex; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'rgba(200,169,110,0.10)':'var(--bg3)'; }); }catch(_){}
+  // Draw what this just unlocked. Without it the toast promises a change nothing performs — the cycle
+  // card and its surfaces are gated on sex and only appear when renderCycleSurfaces() runs.
+  try{ if(typeof renderCycleSurfaces==='function') renderCycleSurfaces(); }catch(_){}
+  try{ if(typeof renderCycleCard==='function') renderCycleCard(); }catch(_){}
   if(typeof showToast==='function') showToast('Saved', 'Your targets and guidance will reflect this.');
 }
 

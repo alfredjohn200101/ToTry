@@ -1064,6 +1064,12 @@ function bootWithoutCloud(reason){
     window.addEventListener('online', function(){
       try{ const n = document.getElementById('auth-offline-note'); if(n) n.style.display = 'none'; }catch(_){}
       try{ if(!sb && typeof initSupabase === 'function'){ _sbTries = 0; initSupabase(); } }catch(_){}
+      // A client without a restored session is not "signed in" to anything. checkAuthAndStart() is
+      // guarded by _bootedLocal/__authProceeded, so re-running it is safe and is what actually picks
+      // the session back up — without it a signed-in person who booted offline was told, once they
+      // were back online, to sign in to data they already had.
+      try{ if(sb && (typeof currentUser === 'undefined' || !currentUser) && typeof checkAuthAndStart === 'function') checkAuthAndStart(); }catch(_){}
+      try{ if(typeof renderSyncStatus === 'function') renderSyncStatus(); }catch(_){}
     }, {once:true});
   }catch(_){}
 }
