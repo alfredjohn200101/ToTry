@@ -2981,8 +2981,17 @@ async function syncHevyWorkouts(){
     
     if(imported > 0){
       // Sort newest-first by timestamp and cap
-      existing.sort((a,b) => new Date(b.ts) - new Date(a.ts));
-      ls('totry_workouts', _capWorkouts(existing));
+      // RE-READ BEFORE WRITING. `existing` was taken before a long run of network calls; anything the
+      // person logged or deleted meanwhile is in storage and not in this array, and writing it back
+      // whole would erase their work. Merge onto what is actually there now.
+      const _fresh = ls('totry_workouts') || [];
+      const _key = w => w && (w.hevyId ? 'h'+w.hevyId : (w.stravaId ? 's'+w.stravaId : (w.id != null ? 'i'+w.id : JSON.stringify(w))));
+      const _byId = new Map();
+      _fresh.forEach(w => { const k=_key(w); if(k) _byId.set(k, w); });
+      existing.forEach(w => { const k=_key(w); if(k && !_byId.has(k)) _byId.set(k, w); });
+      const _merged = Array.from(_byId.values());
+      _merged.sort((a,b) => new Date(b.ts) - new Date(a.ts));
+      ls('totry_workouts', _capWorkouts(_merged));
       ls('totry_hevy_synced_once', true);
       // Fold strength-session burn estimates into the day's burned-calorie total so Hevy workouts
       // affect the nutrition net (cardio already does this via its own path). Idempotent: we
@@ -3293,8 +3302,17 @@ function importHevyCSV(event){
       imported++;
     });
     if(imported > 0){
-      existing.sort((a,b) => new Date(b.ts) - new Date(a.ts));
-      ls('totry_workouts', _capWorkouts(existing));
+      // RE-READ BEFORE WRITING. `existing` was taken before a long run of network calls; anything the
+      // person logged or deleted meanwhile is in storage and not in this array, and writing it back
+      // whole would erase their work. Merge onto what is actually there now.
+      const _fresh = ls('totry_workouts') || [];
+      const _key = w => w && (w.hevyId ? 'h'+w.hevyId : (w.stravaId ? 's'+w.stravaId : (w.id != null ? 'i'+w.id : JSON.stringify(w))));
+      const _byId = new Map();
+      _fresh.forEach(w => { const k=_key(w); if(k) _byId.set(k, w); });
+      existing.forEach(w => { const k=_key(w); if(k && !_byId.has(k)) _byId.set(k, w); });
+      const _merged = Array.from(_byId.values());
+      _merged.sort((a,b) => new Date(b.ts) - new Date(a.ts));
+      ls('totry_workouts', _capWorkouts(_merged));
       if(typeof syncToCloud==='function') syncToCloud();
       document.querySelector('.modal-bg.open')?.remove();
       showToast('Imported', imported + ' workout' + (imported>1?'s':'') + ' from your CSV.');

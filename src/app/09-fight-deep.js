@@ -929,7 +929,10 @@ function addVice(){
   const startInput=document.getElementById('v-start');
   let startDate=new Date().toISOString();
   if(startInput && startInput.value){
-    const picked=new Date(startInput.value);
+    // 'YYYY-MM-DD' parses as UTC MIDNIGHT, which is the previous evening anywhere west of Greenwich —
+    // so a quit date picked as the 1st became the 31st, and the streak was a day short forever. Noon
+    // local is inside the chosen day in every timezone on earth.
+    const picked=new Date(startInput.value + 'T12:00:00');
     if(!isNaN(picked) && picked<=new Date()){
       startDate=picked.toISOString();
     }
@@ -1268,8 +1271,8 @@ function editViceStart(i){
   loadV();
   const v = vices[i];
   if(!v) return;
-  const currentStart = v.startDate ? v.startDate.slice(0,10) : new Date().toISOString().slice(0,10);
-  const today = new Date().toISOString().slice(0,10);
+  const currentStart = v.startDate ? v.startDate.slice(0,10) : _todayLocalISO();
+  const today = _todayLocalISO();
   
   const m = document.createElement('div');
   m.className = 'modal-bg open';
@@ -1291,7 +1294,7 @@ function saveViceStart(i){
   loadV();
   const input = document.getElementById('edit-vice-start');
   if(!input || !input.value) return;
-  const picked = new Date(input.value);
+  const picked = new Date(input.value + 'T12:00:00');   // local noon — see addVice
   if(isNaN(picked) || picked > new Date()){
     showToast('Invalid date', 'Pick a date today or earlier.');
     return;
@@ -1317,7 +1320,7 @@ function saveViceStart(i){
 // real use, today or backdated, with what it cost and whether it went on credit. It never scolds.
 function openLogUse(i){
   loadV(); const v=vices[i]; if(!v) return;
-  const today=new Date().toISOString().slice(0,10);
+  const today=_todayLocalISO();
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
     '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:4px">'+String(v.n).replace(/</g,'&lt;')+'</div>'+
@@ -1721,7 +1724,7 @@ function _maybeRiskWindowGreeting(){
     const vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices.filter(v=>v&&v.n):[];
     if(!vs.length) return;
     const nowBlock=_viceBlockLabel(new Date().getHours());
-    const today=new Date().toISOString().slice(0,10);
+    const today=_todayLocalISO();
     // Don't intrude right after he just handled a moment — he's already met.
     const lastWon=(ls('totry_moments_won')||[])[0];
     if(lastWon && (Date.now()-new Date(lastWon.ts).getTime()) < 90*60000) return;

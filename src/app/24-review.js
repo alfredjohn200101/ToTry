@@ -167,7 +167,10 @@ async function generateWeeklySynthesis(){
     if(wstats.totalMinutes) tb.push(wstats.totalMinutes+' min');
     if(wstats.totalVolumeKg) tb.push(wstats.totalVolumeKg.toLocaleString()+'kg lifted');
     if(wstats.totalDistanceKm) tb.push(wstats.totalDistanceKm+'km');
-    if(wstats.totalCalories) tb.push(wstats.totalCalories+' cal burned');
+    // Gentle mode is numbers off. lifeStateBrief already gates its calorie lines this way; this
+    // builder was written separately and never got the guard, so the Sunday reflection handed the
+    // model a calorie total for someone who asked never to see one — and it read it back.
+    if(wstats.totalCalories && !(typeof nutGentle==='function' && nutGentle())) tb.push(wstats.totalCalories+' cal burned');
     if(tb.length) summary+=' — '+tb.join(', ');
     summary+='\n';
   } else {
@@ -236,7 +239,10 @@ async function generateWeeklySynthesis(){
   
   try{
     const prompt='You are looking at one person\'s week across their whole life — body, mind, and soul — plus how the last 4 weeks have trended. Write a warm, honest reflection under 280 words that does what a real coach does and no tracking app can:\n\n1. Name the TURN in the trend — what changed this week versus the weeks before (a stream that rose, fell, or went quiet).\n2. Connect ACROSS domains causally. If training stalled the same week reflection or the evening check-in went quiet, say the depletion is spiritual/mental, not physical. If fight-wins rose alongside spiritual check-ins, name that their inner life (their prayer, practice, or reflection) is holding the fight. Look for these links explicitly — they are the whole point.\n3. Celebrate one specific win with its real number.\n4. End with ONE thing to focus on next week, grounded in what you diagnosed — not generic advice.\n\nSpeak as their mentor, not a dashboard. Plain, grounded, faith-aware without being preachy. Their week and trend:\n'+summary;
-    const response=await api('You are this person\'s wise mentor, the personal coach inside To Try by Alfred John. You see their body, mind, and soul as one life — never as separate trackers.',[],prompt,800);
+    // brotherSys() carries sexNote() and faithVoiceNote(). Every other AI surface builds on it; this
+  // one did not, so the weekly synthesis was the single place that could call a woman brother and
+  // speak Christian framing to a Muslim or secular person.
+  const response=await api((typeof brotherSys==='function'?brotherSys():'')+'You are this person\'s wise mentor, the personal coach inside To Try by Alfred John. You see their body, mind, and soul as one life — never as separate trackers.',[],prompt,800);
     if(response&&response.trim()){
       const synthesis = {
         weekKey:thisWeekKey,

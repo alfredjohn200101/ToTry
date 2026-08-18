@@ -541,7 +541,7 @@ function renderWorkoutSession(){
       '<button class="se-form" title="Show form & instructions" onclick="showExerciseForm(\''+safeName+'\')" style="background:none;border:none;color:var(--go);font-size:11px;cursor:pointer;padding:0 6px;margin-left:4px;font-family:DM Mono,monospace">FORM</button>'+
       '<button title="Swap exercise \u2014 keeps your sets" onclick="swapExercise('+ei+')" style="background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;padding:0 5px;font-family:DM Mono,monospace">\u21c4</button>'+
       supersetBtn + upBtn + downBtn +
-      '<button class="se-del" onclick="removeExFromSession('+ei+')" aria-label="Close">&#215;</button></div>'+
+      '<button class="se-del" onclick="removeExFromSession('+ei+')" aria-label="Remove this exercise from the session">&#215;</button></div>'+
       targetBadge +
       progBadge +
       '<div id="sets-'+ei+'"></div>'+

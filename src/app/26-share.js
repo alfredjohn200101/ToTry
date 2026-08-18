@@ -245,7 +245,7 @@ async function flushFeedbackOutbox(){
     if(!outbox.length) return;
     const remaining = [];
     for(const entry of outbox){
-      if(entry.__sent){ continue; } // already confirmed
+      if(entry.__sent){ continue; } // already confirmed — submitFeedback marks it on a successful insert
       try{
         const { error } = await Promise.race([
           sb.from('feedback').insert([{ type:entry.type, message:entry.message, email:entry.email, app_info:entry.app_info, created_at:entry.ts }]),
@@ -302,7 +302,14 @@ async function submitFeedback(){
         }]),
         new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000))
       ]);
-      if(!error) sent = true;
+      if(!error){
+        sent = true;
+        try{
+          const _ob = ls('totry_feedback_outbox') || [];
+          const _i = _ob.findIndex(x => x && x.ts === entry.ts);
+          if(_i > -1){ _ob[_i].__sent = true; ls('totry_feedback_outbox', _ob); }
+        }catch(_){ }
+      }
     }catch(e){ /* fall through to email */ }
   }
   

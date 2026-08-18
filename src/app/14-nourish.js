@@ -3126,7 +3126,7 @@ function renderNutritionLog(){
       mealEntries.forEach(en => {
         const row=document.createElement('div');
         row.className='food-log-item';
-        row.innerHTML='<div style="min-width:0;flex:1"><div class="fli-name">'+_escFew(en.name)+'</div>'+((en.serving||en.qty)?'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3)">'+_escFew(en.serving||'serving')+(en.qty?(' \u00d7 '+en.qty):'')+'</div>':'')+'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3);margin-top:2px">P '+(Math.round((en.pro||0)*10)/10)+'g \u00b7 C '+(Math.round((en.carb||0)*10)/10)+'g \u00b7 F '+(Math.round((en.fat||0)*10)/10)+'g</div></div><div style="display:flex;align-items:center;gap:6px"><span class="fli-cal">'+en.cal+' cal</span><button class="fli-del" style="font-size:14px;color:var(--tx3)" onclick="editFoodEntry(\''+today+'\','+en.id+')" title="Edit">✎</button><button class="fli-del" onclick="deleteFoodEntry(\''+today+'\','+en.id+')" aria-label="Close">&#215;</button></div>';
+        row.innerHTML='<div style="min-width:0;flex:1"><div class="fli-name">'+_escFew(en.name)+'</div>'+((en.serving||en.qty)?'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3)">'+_escFew(en.serving||'serving')+(en.qty?(' \u00d7 '+en.qty):'')+'</div>':'')+'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3);margin-top:2px">P '+(Math.round((en.pro||0)*10)/10)+'g \u00b7 C '+(Math.round((en.carb||0)*10)/10)+'g \u00b7 F '+(Math.round((en.fat||0)*10)/10)+'g</div></div><div style="display:flex;align-items:center;gap:6px"><span class="fli-cal">'+en.cal+' cal</span><button class="fli-del" style="font-size:14px;color:var(--tx3)" onclick="editFoodEntry(\''+today+'\','+en.id+')" title="Edit">✎</button><button class="fli-del" onclick="deleteFoodEntry(\''+today+'\','+en.id+')" aria-label="Delete '+_escFew(en.name)+'">&#215;</button></div>';
         // NUMBERS OFF — strip the calorie figure and the macro breakdown from the row. What you ate
         // still shows (that IS the log, and the whole-life counsel still uses it); what it "cost" doesn't.
         if(_gentleOn){
@@ -4000,8 +4000,20 @@ function saveNutGoals(){
   const carbV=document.getElementById('nut-goal-carb')?.value;
   const fatV=document.getElementById('nut-goal-fat')?.value;
   const existing=ls('totry_nut_goals')||{};
-  const cal=parseInt(calV||existing.cal||2100);
-  const pro=parseInt(proV||existing.pro||170);
+  // "0" IS A TRUTHY STRING. `calV || existing.cal || 2100` keeps "0", parseInt makes it 0, and the
+  // care gate below then read `cal > 0 && cal < floor` — so a goal of zero calories skipped the one
+  // door in this app built to notice restriction, and was stored as the person's target. That is the
+  // single most dangerous number this field can hold, and it was the one number that got through.
+  const _num = v => { const n = parseInt(v, 10); return Number.isFinite(n) ? n : null; };
+  const cal = _num(calV) != null ? _num(calV) : (_num(existing.cal) != null ? _num(existing.cal) : 2100);
+  const pro = _num(proV) != null ? _num(proV) : (_num(existing.pro) != null ? _num(existing.pro) : 170);
+  // A target that is zero, negative or absurd is not a target. Refuse it rather than store it — and
+  // still open the care door, because someone typing 0 is telling us something.
+  if(!(cal > 0) || cal > 20000){
+    if(typeof showToast === 'function') showToast('That is not a target I can hold you to', 'Give me a calorie number above zero — or leave it blank and I will work one out with you.');
+    if(cal === 0 && typeof showLowCalorieCare === 'function') setTimeout(() => showLowCalorieCare(), 400);
+    return;
+  }
   const goals={cal,pro};
   // Carbs/fat optional in the form — but a goal with 0 carbs/0 fat is meaningless and shows as
   // "0g" everywhere. If the user provides them, use them; otherwise DERIVE sensible targets from
@@ -4032,7 +4044,7 @@ function saveNutGoals(){
   // _calFloor(), not a bare 1200, so a man setting 1400 gets the same door a woman setting 1100 does.
   // Deliberately still does NOT override the person's own number — the comment above is the design:
   // open a door, never lecture, never silently "correct" what they chose.
-  if(cal > 0 && cal < ((typeof _calFloor === 'function') ? _calFloor() : 1200)){
+  if(cal < ((typeof _calFloor === 'function') ? _calFloor() : 1200)){
     setTimeout(() => showLowCalorieCare(), 600);
   }
 }

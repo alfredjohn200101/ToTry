@@ -394,7 +394,11 @@ async function _fuelSwapMeal(i){
   if(!meal || !meal.name){ if(typeof showToast==='function') showToast('Hmm','Couldn’t swap that one — try again shortly.'); return; }
   const _clean = _fuelSaneMeal(meal);
   if(!_clean){ if(typeof showToast==='function') showToast('Hmm','That swap came back unusable — try again shortly.'); return; }
-  plan.meals[i] = _clean; ls('totry_meal_plan', plan); if(typeof syncToCloud==='function') syncToCloud();
+  plan.meals[i] = _clean; // Re-read after the await: a second edit started while this one was in flight holds its own
+  // stale copy of the whole plan, and whichever returns last silently reverts the other.
+  const _fresh = ls('totry_meal_plan') || plan;
+  if(_fresh && _fresh.meals && plan && plan.meals) _fresh.meals = plan.meals.slice();
+  ls('totry_meal_plan', _fresh || plan); if(typeof syncToCloud==='function') syncToCloud();
   if(typeof haptic==='function') haptic('success');
   const m=document.getElementById('fuel-plan-modal'); if(m) m.remove();
   _fuelRenderPlan(plan);
@@ -423,7 +427,11 @@ function _fuelFlexToday(){
 // Interactive shopping checklist — tick items off as you shop (persists per item).
 function _fuelToggleShopItem(el, idx){
   const plan = ls('totry_meal_plan'); if(!plan || !plan.shopping || !plan.shopping[idx]) return;
-  plan.shopping[idx].got = !plan.shopping[idx].got; ls('totry_meal_plan', plan);
+  plan.shopping[idx].got = !plan.shopping[idx].got; // Re-read after the await: a second edit started while this one was in flight holds its own
+  // stale copy of the whole plan, and whichever returns last silently reverts the other.
+  const _fresh = ls('totry_meal_plan') || plan;
+  if(_fresh && _fresh.meals && plan && plan.meals) _fresh.meals = plan.meals.slice();
+  ls('totry_meal_plan', _fresh || plan);
   const got = plan.shopping[idx].got;
   const tick = el.querySelector('.fuel-tick'), item = el.querySelector('.fuel-item'), price = el.querySelector('.fuel-price');
   if(tick){ tick.style.background = got?'var(--go)':'transparent'; tick.style.borderColor = got?'var(--go)':'var(--bd2)'; tick.textContent = got?'✓':''; }

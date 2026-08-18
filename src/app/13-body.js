@@ -487,8 +487,9 @@ function renderBody(){
   // Update the daily-log card today summary
   const todaySummary = document.getElementById('bod-current-summary');
   if(todaySummary){
-    const todayStr = new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'});
-    const todayEntry = entries.find(e => e.date === todayStr);
+    const todayStr = new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'});  // display only
+  const todayFull = new Date().toLocaleDateString('en-AU');                                   // identity
+    const todayEntry = entries.find(e => (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') === todayFull : e.date === todayStr));
     if(todayEntry && todayEntry.weight > 0){
       todaySummary.textContent = todayEntry.weight + 'kg logged today';
       todaySummary.style.color = 'var(--gr)';
@@ -610,8 +611,9 @@ function renderBodyCompInsight(){
 // Lets users tap a daily weight without filling out the full weekly form.
 function openQuickWeightLog(){
   const entries = ls('totry_body') || [];
-  const todayStr = new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'});
-  const todayEntry = entries.find(e => e.date === todayStr);
+  const todayStr = new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'});  // display only
+  const todayFull = new Date().toLocaleDateString('en-AU');                                   // identity
+  const todayEntry = entries.find(e => (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') === todayFull : e.date === todayStr));
   const last = entries[0];
   
   const m = document.createElement('div');
@@ -640,9 +642,10 @@ function saveQuickWeight(){
     return;
   }
   const entries = ls('totry_body') || [];
-  const todayStr = new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'});
+  const todayStr = new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'});  // display only
+  const todayFull = new Date().toLocaleDateString('en-AU');                                   // identity
   // Replace today's entry if it exists, else create a minimal one
-  const existingIdx = entries.findIndex(e => e.date === todayStr);
+  const existingIdx = entries.findIndex(e => (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') === todayFull : e.date === todayStr));
   if(existingIdx >= 0){
     entries[existingIdx].weight = w;
     entries[existingIdx].ts = new Date().toISOString();

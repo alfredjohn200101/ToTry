@@ -1401,6 +1401,8 @@ function openBreath(id, opts){
   if(p.intense && !ls('totry_breath_intense_ok')){ _breathSafetyGate(()=>openBreath(id, opts)); return; }
   const reason = opts.reason || null;
   const ov=document.createElement('div'); ov.className='breath-overlay';
+  ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true');
+  ov.setAttribute('aria-label','Guided breathing'); ov.setAttribute('tabindex','-1');
   ov.style.cssText='position:fixed;inset:0;z-index:9500;background:radial-gradient(circle at 50% 40%,#151a28,#09090c 72%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px;text-align:center;color:var(--tx)';
   ov.innerHTML=
     // top:14px put this behind the notch / Dynamic Island on every modern iPhone — on the breathing
@@ -1418,8 +1420,8 @@ function openBreath(id, opts){
       '<div style="width:220px;height:220px;display:flex;align-items:center;justify-content:center;margin-bottom:26px">'+
         '<div class="b-orb" style="width:120px;height:120px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(200,169,110,0.92),rgba(200,169,110,0.22));box-shadow:0 0 60px rgba(200,169,110,0.35);transform:scale(1);transition:transform 4s ease-in-out"></div>'+
       '</div>'+
-      '<div class="b-phase" style="font-family:Cormorant Garamond,serif;font-size:26px;min-height:36px;line-height:1.3;max-width:360px"></div>'+
-      '<div class="b-count" style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);margin-top:16px;min-height:14px"></div>'+
+      '<div class="b-phase" role="status" aria-live="assertive" aria-atomic="true" style="font-family:Cormorant Garamond,serif;font-size:26px;min-height:36px;line-height:1.3;max-width:360px"></div>'+
+      '<div class="b-count" role="status" aria-live="polite" aria-atomic="true" style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);margin-top:16px;min-height:14px"></div>'+
       '<button class="b-change" style="margin-top:22px;background:none;border:1px solid var(--bd);border-radius:20px;color:var(--tx3);font-size:12px;padding:7px 16px;cursor:pointer">Change breath</button>'+
     '</div>'+
     '<div class="b-post" style="display:none;max-width:340px">'+
@@ -1432,6 +1434,7 @@ function openBreath(id, opts){
       '<button class="btn primary b-done-btn" style="max-width:240px;margin:0 auto">I’m ready</button>'+
     '</div>';
   document.body.appendChild(ov);
+  try{ ov.focus({preventScroll:true}); }catch(_){}
   const q=(s)=>ov.querySelector(s);
   const state={alive:true, timer:null, pulse:null, cycle:0, pi:0, before:null, after:null};
   function cleanup(){ state.alive=false; if(state.timer){clearTimeout(state.timer);state.timer=null;} if(state.pulse){clearInterval(state.pulse);state.pulse=null;} }

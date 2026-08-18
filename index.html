@@ -4857,7 +4857,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v490';
+const APP_VERSION = 'v491';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -15463,6 +15463,8 @@ function openBreath(id, opts){
   if(p.intense && !ls('totry_breath_intense_ok')){ _breathSafetyGate(()=>openBreath(id, opts)); return; }
   const reason = opts.reason || null;
   const ov=document.createElement('div'); ov.className='breath-overlay';
+  ov.setAttribute('role','dialog'); ov.setAttribute('aria-modal','true');
+  ov.setAttribute('aria-label','Guided breathing'); ov.setAttribute('tabindex','-1');
   ov.style.cssText='position:fixed;inset:0;z-index:9500;background:radial-gradient(circle at 50% 40%,#151a28,#09090c 72%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:26px;text-align:center;color:var(--tx)';
   ov.innerHTML=
     // top:14px put this behind the notch / Dynamic Island on every modern iPhone — on the breathing
@@ -15480,8 +15482,8 @@ function openBreath(id, opts){
       '<div style="width:220px;height:220px;display:flex;align-items:center;justify-content:center;margin-bottom:26px">'+
         '<div class="b-orb" style="width:120px;height:120px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(200,169,110,0.92),rgba(200,169,110,0.22));box-shadow:0 0 60px rgba(200,169,110,0.35);transform:scale(1);transition:transform 4s ease-in-out"></div>'+
       '</div>'+
-      '<div class="b-phase" style="font-family:Cormorant Garamond,serif;font-size:26px;min-height:36px;line-height:1.3;max-width:360px"></div>'+
-      '<div class="b-count" style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);margin-top:16px;min-height:14px"></div>'+
+      '<div class="b-phase" role="status" aria-live="assertive" aria-atomic="true" style="font-family:Cormorant Garamond,serif;font-size:26px;min-height:36px;line-height:1.3;max-width:360px"></div>'+
+      '<div class="b-count" role="status" aria-live="polite" aria-atomic="true" style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);margin-top:16px;min-height:14px"></div>'+
       '<button class="b-change" style="margin-top:22px;background:none;border:1px solid var(--bd);border-radius:20px;color:var(--tx3);font-size:12px;padding:7px 16px;cursor:pointer">Change breath</button>'+
     '</div>'+
     '<div class="b-post" style="display:none;max-width:340px">'+
@@ -15494,6 +15496,7 @@ function openBreath(id, opts){
       '<button class="btn primary b-done-btn" style="max-width:240px;margin:0 auto">I’m ready</button>'+
     '</div>';
   document.body.appendChild(ov);
+  try{ ov.focus({preventScroll:true}); }catch(_){}
   const q=(s)=>ov.querySelector(s);
   const state={alive:true, timer:null, pulse:null, cycle:0, pi:0, before:null, after:null};
   function cleanup(){ state.alive=false; if(state.timer){clearTimeout(state.timer);state.timer=null;} if(state.pulse){clearInterval(state.pulse);state.pulse=null;} }
@@ -17718,7 +17721,10 @@ function addVice(){
   const startInput=document.getElementById('v-start');
   let startDate=new Date().toISOString();
   if(startInput && startInput.value){
-    const picked=new Date(startInput.value);
+    // 'YYYY-MM-DD' parses as UTC MIDNIGHT, which is the previous evening anywhere west of Greenwich —
+    // so a quit date picked as the 1st became the 31st, and the streak was a day short forever. Noon
+    // local is inside the chosen day in every timezone on earth.
+    const picked=new Date(startInput.value + 'T12:00:00');
     if(!isNaN(picked) && picked<=new Date()){
       startDate=picked.toISOString();
     }
@@ -18057,8 +18063,8 @@ function editViceStart(i){
   loadV();
   const v = vices[i];
   if(!v) return;
-  const currentStart = v.startDate ? v.startDate.slice(0,10) : new Date().toISOString().slice(0,10);
-  const today = new Date().toISOString().slice(0,10);
+  const currentStart = v.startDate ? v.startDate.slice(0,10) : _todayLocalISO();
+  const today = _todayLocalISO();
   
   const m = document.createElement('div');
   m.className = 'modal-bg open';
@@ -18080,7 +18086,7 @@ function saveViceStart(i){
   loadV();
   const input = document.getElementById('edit-vice-start');
   if(!input || !input.value) return;
-  const picked = new Date(input.value);
+  const picked = new Date(input.value + 'T12:00:00');   // local noon — see addVice
   if(isNaN(picked) || picked > new Date()){
     showToast('Invalid date', 'Pick a date today or earlier.');
     return;
@@ -18106,7 +18112,7 @@ function saveViceStart(i){
 // real use, today or backdated, with what it cost and whether it went on credit. It never scolds.
 function openLogUse(i){
   loadV(); const v=vices[i]; if(!v) return;
-  const today=new Date().toISOString().slice(0,10);
+  const today=_todayLocalISO();
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
     '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:4px">'+String(v.n).replace(/</g,'&lt;')+'</div>'+
@@ -18510,7 +18516,7 @@ function _maybeRiskWindowGreeting(){
     const vs=(typeof vices!=='undefined'&&Array.isArray(vices))?vices.filter(v=>v&&v.n):[];
     if(!vs.length) return;
     const nowBlock=_viceBlockLabel(new Date().getHours());
-    const today=new Date().toISOString().slice(0,10);
+    const today=_todayLocalISO();
     // Don't intrude right after he just handled a moment — he's already met.
     const lastWon=(ls('totry_moments_won')||[])[0];
     if(lastWon && (Date.now()-new Date(lastWon.ts).getTime()) < 90*60000) return;
@@ -21220,8 +21226,9 @@ function renderBody(){
   // Update the daily-log card today summary
   const todaySummary = document.getElementById('bod-current-summary');
   if(todaySummary){
-    const todayStr = new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'});
-    const todayEntry = entries.find(e => e.date === todayStr);
+    const todayStr = new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'});  // display only
+  const todayFull = new Date().toLocaleDateString('en-AU');                                   // identity
+    const todayEntry = entries.find(e => (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') === todayFull : e.date === todayStr));
     if(todayEntry && todayEntry.weight > 0){
       todaySummary.textContent = todayEntry.weight + 'kg logged today';
       todaySummary.style.color = 'var(--gr)';
@@ -21343,8 +21350,9 @@ function renderBodyCompInsight(){
 // Lets users tap a daily weight without filling out the full weekly form.
 function openQuickWeightLog(){
   const entries = ls('totry_body') || [];
-  const todayStr = new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'});
-  const todayEntry = entries.find(e => e.date === todayStr);
+  const todayStr = new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'});  // display only
+  const todayFull = new Date().toLocaleDateString('en-AU');                                   // identity
+  const todayEntry = entries.find(e => (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') === todayFull : e.date === todayStr));
   const last = entries[0];
   
   const m = document.createElement('div');
@@ -21373,9 +21381,10 @@ function saveQuickWeight(){
     return;
   }
   const entries = ls('totry_body') || [];
-  const todayStr = new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'});
+  const todayStr = new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'});  // display only
+  const todayFull = new Date().toLocaleDateString('en-AU');                                   // identity
   // Replace today's entry if it exists, else create a minimal one
-  const existingIdx = entries.findIndex(e => e.date === todayStr);
+  const existingIdx = entries.findIndex(e => (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') === todayFull : e.date === todayStr));
   if(existingIdx >= 0){
     entries[existingIdx].weight = w;
     entries[existingIdx].ts = new Date().toISOString();
@@ -24838,7 +24847,7 @@ function renderNutritionLog(){
       mealEntries.forEach(en => {
         const row=document.createElement('div');
         row.className='food-log-item';
-        row.innerHTML='<div style="min-width:0;flex:1"><div class="fli-name">'+_escFew(en.name)+'</div>'+((en.serving||en.qty)?'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3)">'+_escFew(en.serving||'serving')+(en.qty?(' \u00d7 '+en.qty):'')+'</div>':'')+'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3);margin-top:2px">P '+(Math.round((en.pro||0)*10)/10)+'g \u00b7 C '+(Math.round((en.carb||0)*10)/10)+'g \u00b7 F '+(Math.round((en.fat||0)*10)/10)+'g</div></div><div style="display:flex;align-items:center;gap:6px"><span class="fli-cal">'+en.cal+' cal</span><button class="fli-del" style="font-size:14px;color:var(--tx3)" onclick="editFoodEntry(\''+today+'\','+en.id+')" title="Edit">✎</button><button class="fli-del" onclick="deleteFoodEntry(\''+today+'\','+en.id+')" aria-label="Close">&#215;</button></div>';
+        row.innerHTML='<div style="min-width:0;flex:1"><div class="fli-name">'+_escFew(en.name)+'</div>'+((en.serving||en.qty)?'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3)">'+_escFew(en.serving||'serving')+(en.qty?(' \u00d7 '+en.qty):'')+'</div>':'')+'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3);margin-top:2px">P '+(Math.round((en.pro||0)*10)/10)+'g \u00b7 C '+(Math.round((en.carb||0)*10)/10)+'g \u00b7 F '+(Math.round((en.fat||0)*10)/10)+'g</div></div><div style="display:flex;align-items:center;gap:6px"><span class="fli-cal">'+en.cal+' cal</span><button class="fli-del" style="font-size:14px;color:var(--tx3)" onclick="editFoodEntry(\''+today+'\','+en.id+')" title="Edit">✎</button><button class="fli-del" onclick="deleteFoodEntry(\''+today+'\','+en.id+')" aria-label="Delete '+_escFew(en.name)+'">&#215;</button></div>';
         // NUMBERS OFF — strip the calorie figure and the macro breakdown from the row. What you ate
         // still shows (that IS the log, and the whole-life counsel still uses it); what it "cost" doesn't.
         if(_gentleOn){
@@ -25712,8 +25721,20 @@ function saveNutGoals(){
   const carbV=document.getElementById('nut-goal-carb')?.value;
   const fatV=document.getElementById('nut-goal-fat')?.value;
   const existing=ls('totry_nut_goals')||{};
-  const cal=parseInt(calV||existing.cal||2100);
-  const pro=parseInt(proV||existing.pro||170);
+  // "0" IS A TRUTHY STRING. `calV || existing.cal || 2100` keeps "0", parseInt makes it 0, and the
+  // care gate below then read `cal > 0 && cal < floor` — so a goal of zero calories skipped the one
+  // door in this app built to notice restriction, and was stored as the person's target. That is the
+  // single most dangerous number this field can hold, and it was the one number that got through.
+  const _num = v => { const n = parseInt(v, 10); return Number.isFinite(n) ? n : null; };
+  const cal = _num(calV) != null ? _num(calV) : (_num(existing.cal) != null ? _num(existing.cal) : 2100);
+  const pro = _num(proV) != null ? _num(proV) : (_num(existing.pro) != null ? _num(existing.pro) : 170);
+  // A target that is zero, negative or absurd is not a target. Refuse it rather than store it — and
+  // still open the care door, because someone typing 0 is telling us something.
+  if(!(cal > 0) || cal > 20000){
+    if(typeof showToast === 'function') showToast('That is not a target I can hold you to', 'Give me a calorie number above zero — or leave it blank and I will work one out with you.');
+    if(cal === 0 && typeof showLowCalorieCare === 'function') setTimeout(() => showLowCalorieCare(), 400);
+    return;
+  }
   const goals={cal,pro};
   // Carbs/fat optional in the form — but a goal with 0 carbs/0 fat is meaningless and shows as
   // "0g" everywhere. If the user provides them, use them; otherwise DERIVE sensible targets from
@@ -25744,7 +25765,7 @@ function saveNutGoals(){
   // _calFloor(), not a bare 1200, so a man setting 1400 gets the same door a woman setting 1100 does.
   // Deliberately still does NOT override the person's own number — the comment above is the design:
   // open a door, never lecture, never silently "correct" what they chose.
-  if(cal > 0 && cal < ((typeof _calFloor === 'function') ? _calFloor() : 1200)){
+  if(cal < ((typeof _calFloor === 'function') ? _calFloor() : 1200)){
     setTimeout(() => showLowCalorieCare(), 600);
   }
 }
@@ -27196,7 +27217,11 @@ async function _fuelSwapMeal(i){
   if(!meal || !meal.name){ if(typeof showToast==='function') showToast('Hmm','Couldn’t swap that one — try again shortly.'); return; }
   const _clean = _fuelSaneMeal(meal);
   if(!_clean){ if(typeof showToast==='function') showToast('Hmm','That swap came back unusable — try again shortly.'); return; }
-  plan.meals[i] = _clean; ls('totry_meal_plan', plan); if(typeof syncToCloud==='function') syncToCloud();
+  plan.meals[i] = _clean; // Re-read after the await: a second edit started while this one was in flight holds its own
+  // stale copy of the whole plan, and whichever returns last silently reverts the other.
+  const _fresh = ls('totry_meal_plan') || plan;
+  if(_fresh && _fresh.meals && plan && plan.meals) _fresh.meals = plan.meals.slice();
+  ls('totry_meal_plan', _fresh || plan); if(typeof syncToCloud==='function') syncToCloud();
   if(typeof haptic==='function') haptic('success');
   const m=document.getElementById('fuel-plan-modal'); if(m) m.remove();
   _fuelRenderPlan(plan);
@@ -27225,7 +27250,11 @@ function _fuelFlexToday(){
 // Interactive shopping checklist — tick items off as you shop (persists per item).
 function _fuelToggleShopItem(el, idx){
   const plan = ls('totry_meal_plan'); if(!plan || !plan.shopping || !plan.shopping[idx]) return;
-  plan.shopping[idx].got = !plan.shopping[idx].got; ls('totry_meal_plan', plan);
+  plan.shopping[idx].got = !plan.shopping[idx].got; // Re-read after the await: a second edit started while this one was in flight holds its own
+  // stale copy of the whole plan, and whichever returns last silently reverts the other.
+  const _fresh = ls('totry_meal_plan') || plan;
+  if(_fresh && _fresh.meals && plan && plan.meals) _fresh.meals = plan.meals.slice();
+  ls('totry_meal_plan', _fresh || plan);
   const got = plan.shopping[idx].got;
   const tick = el.querySelector('.fuel-tick'), item = el.querySelector('.fuel-item'), price = el.querySelector('.fuel-price');
   if(tick){ tick.style.background = got?'var(--go)':'transparent'; tick.style.borderColor = got?'var(--go)':'var(--bd2)'; tick.textContent = got?'✓':''; }
@@ -28883,7 +28912,12 @@ function monthlyPaymentRate(){
   // returns null, which callers already treat as "not enough dated history to say" and print no date.
   const distinctDays = new Set(pays.map(p => new Date(_T(p)).toLocaleDateString('en-AU'))).size;
   if(distinctDays < 2 || spanDays < 25) return null;
-  const n=pays.length;
+  // PAYMENT OCCASIONS, NOT PAYMENT RECORDS. Paying three debts on payday is three records and ONE
+  // occasion; using the record count inflates the covered span, which inflates the monthly rate,
+  // which brings the debt-free date forward. Measured on six months of two-debts-on-one-day history:
+  // it reported $605/mo against a true $550/mo, and a $12,000 balance cleared "in 20 months" instead
+  // of 22. The more debts a person is juggling, the more optimistic the date they are told.
+  const n=distinctDays;
   const covered=spanDays * (n/(n-1));
   const months=Math.max(1, covered/30.44);            // never claim a rate faster than monthly
   const total=pays.reduce((a,p)=>a+(parseFloat(p.amt)||0),0);
@@ -28972,7 +29006,13 @@ function applyPaydayAllocation(){
     }
     if(s.kind==='savings' && s.amt > 0){
       const goals = ls('totry_finance_goals') || [];
-      if(goals.length){ goals[0].current = (parseFloat(goals[0].current)||0) + s.amt; ls('totry_finance_goals', goals); toSavings += s.amt; goalName = goals[0].name||'your goal'; }
+      if(goals.length){
+        const _pg = (typeof _priorityGoal === 'function') ? _priorityGoal() : null;
+        let _gi = 0;
+        if(_pg){ const _f = goals.findIndex(x => (x.id != null && x.id === _pg.id) || x.name === _pg.name); if(_f > -1) _gi = _f; }
+        goals[_gi].current = (parseFloat(goals[_gi].current)||0) + s.amt;
+        ls('totry_finance_goals', goals); toSavings += s.amt; goalName = goals[_gi].name||'your goal';
+      }
     }
   });
   if(pays.length) ls('totry_payments', pays.slice(-200));
@@ -31364,7 +31404,7 @@ function renderWorkoutSession(){
       '<button class="se-form" title="Show form & instructions" onclick="showExerciseForm(\''+safeName+'\')" style="background:none;border:none;color:var(--go);font-size:11px;cursor:pointer;padding:0 6px;margin-left:4px;font-family:DM Mono,monospace">FORM</button>'+
       '<button title="Swap exercise \u2014 keeps your sets" onclick="swapExercise('+ei+')" style="background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;padding:0 5px;font-family:DM Mono,monospace">\u21c4</button>'+
       supersetBtn + upBtn + downBtn +
-      '<button class="se-del" onclick="removeExFromSession('+ei+')" aria-label="Close">&#215;</button></div>'+
+      '<button class="se-del" onclick="removeExFromSession('+ei+')" aria-label="Remove this exercise from the session">&#215;</button></div>'+
       targetBadge +
       progBadge +
       '<div id="sets-'+ei+'"></div>'+
@@ -34796,7 +34836,10 @@ async function generateWeeklySynthesis(){
     if(wstats.totalMinutes) tb.push(wstats.totalMinutes+' min');
     if(wstats.totalVolumeKg) tb.push(wstats.totalVolumeKg.toLocaleString()+'kg lifted');
     if(wstats.totalDistanceKm) tb.push(wstats.totalDistanceKm+'km');
-    if(wstats.totalCalories) tb.push(wstats.totalCalories+' cal burned');
+    // Gentle mode is numbers off. lifeStateBrief already gates its calorie lines this way; this
+    // builder was written separately and never got the guard, so the Sunday reflection handed the
+    // model a calorie total for someone who asked never to see one — and it read it back.
+    if(wstats.totalCalories && !(typeof nutGentle==='function' && nutGentle())) tb.push(wstats.totalCalories+' cal burned');
     if(tb.length) summary+=' — '+tb.join(', ');
     summary+='\n';
   } else {
@@ -34865,7 +34908,10 @@ async function generateWeeklySynthesis(){
   
   try{
     const prompt='You are looking at one person\'s week across their whole life — body, mind, and soul — plus how the last 4 weeks have trended. Write a warm, honest reflection under 280 words that does what a real coach does and no tracking app can:\n\n1. Name the TURN in the trend — what changed this week versus the weeks before (a stream that rose, fell, or went quiet).\n2. Connect ACROSS domains causally. If training stalled the same week reflection or the evening check-in went quiet, say the depletion is spiritual/mental, not physical. If fight-wins rose alongside spiritual check-ins, name that their inner life (their prayer, practice, or reflection) is holding the fight. Look for these links explicitly — they are the whole point.\n3. Celebrate one specific win with its real number.\n4. End with ONE thing to focus on next week, grounded in what you diagnosed — not generic advice.\n\nSpeak as their mentor, not a dashboard. Plain, grounded, faith-aware without being preachy. Their week and trend:\n'+summary;
-    const response=await api('You are this person\'s wise mentor, the personal coach inside To Try by Alfred John. You see their body, mind, and soul as one life — never as separate trackers.',[],prompt,800);
+    // brotherSys() carries sexNote() and faithVoiceNote(). Every other AI surface builds on it; this
+  // one did not, so the weekly synthesis was the single place that could call a woman brother and
+  // speak Christian framing to a Muslim or secular person.
+  const response=await api((typeof brotherSys==='function'?brotherSys():'')+'You are this person\'s wise mentor, the personal coach inside To Try by Alfred John. You see their body, mind, and soul as one life — never as separate trackers.',[],prompt,800);
     if(response&&response.trim()){
       const synthesis = {
         weekKey:thisWeekKey,
@@ -36791,7 +36837,7 @@ async function flushFeedbackOutbox(){
     if(!outbox.length) return;
     const remaining = [];
     for(const entry of outbox){
-      if(entry.__sent){ continue; } // already confirmed
+      if(entry.__sent){ continue; } // already confirmed — submitFeedback marks it on a successful insert
       try{
         const { error } = await Promise.race([
           sb.from('feedback').insert([{ type:entry.type, message:entry.message, email:entry.email, app_info:entry.app_info, created_at:entry.ts }]),
@@ -36848,7 +36894,14 @@ async function submitFeedback(){
         }]),
         new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 8000))
       ]);
-      if(!error) sent = true;
+      if(!error){
+        sent = true;
+        try{
+          const _ob = ls('totry_feedback_outbox') || [];
+          const _i = _ob.findIndex(x => x && x.ts === entry.ts);
+          if(_i > -1){ _ob[_i].__sent = true; ls('totry_feedback_outbox', _ob); }
+        }catch(_){ }
+      }
     }catch(e){ /* fall through to email */ }
   }
   
@@ -42279,8 +42332,17 @@ async function syncHevyWorkouts(){
     
     if(imported > 0){
       // Sort newest-first by timestamp and cap
-      existing.sort((a,b) => new Date(b.ts) - new Date(a.ts));
-      ls('totry_workouts', _capWorkouts(existing));
+      // RE-READ BEFORE WRITING. `existing` was taken before a long run of network calls; anything the
+      // person logged or deleted meanwhile is in storage and not in this array, and writing it back
+      // whole would erase their work. Merge onto what is actually there now.
+      const _fresh = ls('totry_workouts') || [];
+      const _key = w => w && (w.hevyId ? 'h'+w.hevyId : (w.stravaId ? 's'+w.stravaId : (w.id != null ? 'i'+w.id : JSON.stringify(w))));
+      const _byId = new Map();
+      _fresh.forEach(w => { const k=_key(w); if(k) _byId.set(k, w); });
+      existing.forEach(w => { const k=_key(w); if(k && !_byId.has(k)) _byId.set(k, w); });
+      const _merged = Array.from(_byId.values());
+      _merged.sort((a,b) => new Date(b.ts) - new Date(a.ts));
+      ls('totry_workouts', _capWorkouts(_merged));
       ls('totry_hevy_synced_once', true);
       // Fold strength-session burn estimates into the day's burned-calorie total so Hevy workouts
       // affect the nutrition net (cardio already does this via its own path). Idempotent: we
@@ -42591,8 +42653,17 @@ function importHevyCSV(event){
       imported++;
     });
     if(imported > 0){
-      existing.sort((a,b) => new Date(b.ts) - new Date(a.ts));
-      ls('totry_workouts', _capWorkouts(existing));
+      // RE-READ BEFORE WRITING. `existing` was taken before a long run of network calls; anything the
+      // person logged or deleted meanwhile is in storage and not in this array, and writing it back
+      // whole would erase their work. Merge onto what is actually there now.
+      const _fresh = ls('totry_workouts') || [];
+      const _key = w => w && (w.hevyId ? 'h'+w.hevyId : (w.stravaId ? 's'+w.stravaId : (w.id != null ? 'i'+w.id : JSON.stringify(w))));
+      const _byId = new Map();
+      _fresh.forEach(w => { const k=_key(w); if(k) _byId.set(k, w); });
+      existing.forEach(w => { const k=_key(w); if(k && !_byId.has(k)) _byId.set(k, w); });
+      const _merged = Array.from(_byId.values());
+      _merged.sort((a,b) => new Date(b.ts) - new Date(a.ts));
+      ls('totry_workouts', _capWorkouts(_merged));
       if(typeof syncToCloud==='function') syncToCloud();
       document.querySelector('.modal-bg.open')?.remove();
       showToast('Imported', imported + ' workout' + (imported>1?'s':'') + ' from your CSV.');
