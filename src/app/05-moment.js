@@ -459,12 +459,13 @@ const _IMPULSE_FEELINGS = [
 ];
 function _impulseFeeling(what, amt){
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
-  const safe=String(what).replace(/</g,'&lt;').replace(/'/g,'&#39;');
+  const safe=_jsAttr(what);          // for the onclick attribute — see _jsAttr in 00-boot
+  const shown=_escFew(what);         // for anything the person reads
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center;max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);line-height:1.3;margin-bottom:6px">What’s underneath it?</div>'+
     '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Naming the feeling takes some of the heat out of it. That’s not a trick — it’s the same thing that works on any other urge.</div>'+
-    _IMPULSE_FEELINGS.map(function(f,i){ return '<button class="btn" onclick="_impulseHold(\''+safe.replace(/"/g,'')+'\','+amt+','+i+')" style="text-align:left;margin-bottom:8px;padding:12px;background:var(--bg3);border:1px solid var(--bd);font-size:13.5px">'+f[0]+'&nbsp;&nbsp;'+f[1]+'</button>'; }).join('')+
+    _IMPULSE_FEELINGS.map(function(f,i){ return '<button class="btn" onclick="_impulseHold(\''+safe+'\','+amt+','+i+')" style="text-align:left;margin-bottom:8px;padding:12px;background:var(--bg3);border:1px solid var(--bd);font-size:13.5px">'+f[0]+'&nbsp;&nbsp;'+f[1]+'</button>'; }).join('')+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
@@ -831,14 +832,15 @@ const _SHRINK = [
 function _shrinkIt(thing, level){
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
   const lv=Math.min(level, _SHRINK.length-1);
-  const safe=String(thing).replace(/</g,'&lt;').replace(/'/g,'&#39;');
+  const safe=_jsAttr(thing);         // for the onclick attribute
+  const shown=_escFew(thing);        // for display
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center">'+
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:8px">Two minutes. That’s the whole ask.</div>'+
-    '<div style="font-size:14px;color:var(--tx);line-height:1.65;margin-bottom:16px">'+_SHRINK[lv](safe)+'</div>'+
-    '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);_startTwoMin(\''+safe.replace(/"/g,'')+'\')">Start two minutes</button>'+
+    '<div style="font-size:14px;color:var(--tx);line-height:1.65;margin-bottom:16px">'+_SHRINK[lv](shown)+'</div>'+
+    '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);_startTwoMin(\''+safe+'\')">Start two minutes</button>'+
     (lv < _SHRINK.length-1
-      ? '<button class="btn" onclick="closeModal(this);_shrinkIt(\''+safe.replace(/"/g,'')+'\','+(lv+1)+')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px;margin-bottom:8px">Still too big — make it smaller</button>'
+      ? '<button class="btn" onclick="closeModal(this);_shrinkIt(\''+safe+'\','+(lv+1)+')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px;margin-bottom:8px">Still too big — make it smaller</button>'
       : '<div style="font-size:11.5px;color:var(--tx3);line-height:1.5;margin-bottom:10px">If even that’s too much today, that’s information about your capacity, not your character. Rest counts.</div>')+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
   '</div>';

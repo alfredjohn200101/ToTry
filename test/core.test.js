@@ -10,9 +10,15 @@ const H = require('./harness');
 // ── STREAK / CLEAN-DAYS (viceCleanDays) ──────────────────────────────────────────────────────────
 H.section('viceCleanDays — the streak counter');
 {
-  const { viceCleanDays } = H.load(['viceCleanDays']);
+  const { viceCleanDays, viceStreakAnchor } = H.load(['viceStreakAnchor', 'viceCleanDays']);
   const daysAgo = n => new Date(Date.now() - n * 86400000).toISOString();
   H.eq(viceCleanDays({ startDate: daysAgo(5) }), 5, '5 days since startDate → 5');
+  // The anchor itself, since two screens now depend on it agreeing.
+  H.ok(viceStreakAnchor({ startDate: daysAgo(5), lastLoss: daysAgo(1) }).getTime() === new Date(daysAgo(5)).getTime(),
+       'startDate wins over lastLoss — it is what every relapse path writes, including backdating');
+  H.ok(viceStreakAnchor({ lastLoss: daysAgo(3) }).getTime() === new Date(daysAgo(3)).getTime(),
+       'lastLoss is the fallback for rows that predate startDate');
+  H.eq(viceStreakAnchor({}), null, 'and a vice with neither has no streak to count');
   H.eq(viceCleanDays({ startDate: daysAgo(0) }), 0, 'started today → 0');
   H.eq(viceCleanDays({ startDate: null }), 0, 'no startDate → 0 (not NaN)');
   H.eq(viceCleanDays({}), 0, 'empty vice → 0');
@@ -68,7 +74,7 @@ H.section('_pmTotals — per-item photo meal totals with per-item multipliers');
 // ── MONEY: reclaimed / spend picture (viceSpendPicture) — the honest money math ──────────────────
 H.section('viceSpendPicture — reclaimed money (debt cancels savings first)');
 {
-  const { viceSpendPicture, viceMoneySaved } = H.load(['viceSpendPicture', 'viceMoneySaved', 'viceCleanDays']);
+  const { viceSpendPicture, viceMoneySaved } = H.load(['viceStreakAnchor', 'viceSpendPicture', 'viceMoneySaved', 'viceCleanDays']);
   const daysAgo = n => new Date(Date.now() - n * 86400000).toISOString();
   let p = viceSpendPicture({ costAmount: 20, costPer: 'week', startDate: daysAgo(14) });
   H.eq(p.avoided, 40, '$20/week × 2 weeks = $40 avoided');
@@ -3276,6 +3282,32 @@ H.section('dead code that was one caller away from confusing someone');
   // Mumbai still tapped a "$" to open their own accounts. Found by looking at the app on a phone,
   // which is the only place an icon can be seen.
   H.ok(!/M17 5H9\.5/.test(H.html), 'no dollar-sign glyph is drawn in any icon');
+}
+
+// ── a person's own words in an onclick attribute ─────────────────────────────────────────────────
+// An inline handler is parsed TWICE — entities first, then the result compiled as JavaScript. So
+// escaping an apostrophe as &#39; is exactly wrong there: it decodes back to ' before compilation and
+// the handler is a SyntaxError, leaving onclick === null. The button renders, looks right, and does
+// nothing, with no error anywhere a person could see.
+//
+// It shipped on two of the app's most important doors — "Before you buy" and "What can't you start?"
+// — where every action button was dead for anyone who typed "Mum's birthday gift" or "Dad's call".
+// iOS Smart Punctuation substitutes U+2019 and dodges it, which is why testing on a phone missed it.
+{
+  H.section("a person's own words in an onclick");
+  const code = H.html.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  const bad = [...code.matchAll(/replace\(\/'\/g,\s*'&#39;'\)/g)];
+  H.eq(bad.length, 0, "no value is escaped as &#39; for a JS-string context — use _jsAttr()");
+  H.ok(/function _jsAttr\(/.test(H.html), 'the one escaper for handler attributes exists');
+  H.ok(/\\\\'/.test(fnBodyOf(H.html, '_jsAttr')), 'and it backslash-escapes the quote, which is what JS needs');
+  H.ok((H.html.match(/_jsAttr\(/g) || []).length >= 3, 'and it is actually used at the call sites');
+}
+function fnBodyOf(code, name){
+  const m = code.match(new RegExp('function\\s+' + name + '\\s*\\('));
+  if (!m) return '';
+  let i = code.indexOf('{', m.index) + 1, d = 1;
+  while (i < code.length && d) { const c = code[i]; if (c === '{') d++; else if (c === '}') d--; i++; }
+  return code.slice(m.index, i);
 }
 
 // ── no sweep may delete a modal the shell owns ───────────────────────────────────────────────────

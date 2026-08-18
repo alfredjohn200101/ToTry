@@ -4794,6 +4794,43 @@ const CURRENCY_SYMBOLS = {
   AUD: '\u0024', USD: '\u0024', CAD: '\u0024', NZD: '\u0024', SGD: '\u0024',
   GBP: '\u00a3', EUR: '\u20ac', INR: '\u20b9', JPY: '\u00a5'
 };
+// PUTTING A PERSON'S OWN WORDS INTO AN onclick ATTRIBUTE.
+//
+// An inline handler is parsed TWICE: the HTML parser decodes entities first, then the result is
+// compiled as JavaScript. So escaping an apostrophe as &#39; — which is right for text content — is
+// exactly wrong here: the parser turns it back into ' before the compiler ever sees it, and
+// _impulseHold('Mum's gift', 25, 0) is a SyntaxError. The button then has onclick === null. It
+// renders, it looks correct, it does nothing, and nothing is thrown where anyone can see it.
+//
+// That shipped on two of the app's most important doors: "Before you buy" (someone about to spend
+// impulsively, typing "Mum's birthday gift") and "What can't you start?" (someone frozen, typing
+// "Dad's call"). Every action button was dead. iOS Smart Punctuation substitutes U+2019 and dodges
+// it, which is why hand-testing on a phone never caught it — an Android or desktop keyboard does not.
+//
+// Escape for the JS string context, not the HTML one: backslashes first, then quotes, then the
+// newlines that would end the statement. Attribute quoting is handled by using ' inside "…".
+// THE LOCAL CALENDAR DAY, AS YYYY-MM-DD.
+//
+// `new Date().toISOString().split('T')[0]` is the UTC day, and it was being used to fill and to CAP
+// date pickers that a person answers in their own timezone. At 7am in Sydney the UTC day is still
+// yesterday, so "It happened earlier — set the real day" pre-filled yesterday's date next to this
+// morning's clock time: a relapse logged at 7:00am was stamped 24 hours early, the streak repainted
+// as "1 day clean", and max="yesterday" meant the real day could not even be selected. Every timezone
+// east of UTC hits it for the first hours of every day; west of UTC the same line offers tomorrow.
+function _todayLocalISO(d){
+  const t = d ? new Date(d) : new Date();
+  const p = n => String(n).padStart(2, '0');
+  return t.getFullYear() + '-' + p(t.getMonth() + 1) + '-' + p(t.getDate());
+}
+
+function _jsAttr(s){
+  return String(s == null ? '' : s)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '&quot;')
+    .replace(/\r?\n/g, ' ');
+}
+
 function curSym(){
   try{ return CURRENCY_SYMBOLS[ls('totry_currency') || 'AUD'] || '\u0024'; }
   catch(_){ return '\u0024'; }
@@ -4820,7 +4857,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v489';
+const APP_VERSION = 'v490';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -12574,7 +12611,9 @@ function startSobrietyClock(){
 function updateSobrietyClock(){
   loadV();if(!vices.length)return;
   const v=vices.find(x=>x&&x.kind!=='letgo'); if(!v)return; // letting-go struggles never drive the "days clean" clock
-  const since=v.lastLoss?new Date(v.lastLoss):new Date(ls('totry_start')||Date.now());
+  // Same anchor the vice card uses, or the two disagree on the same screen — see viceStreakAnchor.
+  const since=(typeof viceStreakAnchor==='function' ? viceStreakAnchor(v) : null)
+              || new Date(ls('totry_start')||Date.now());
   const diff=Math.max(0,Date.now()-since.getTime());
   const days=Math.floor(diff/86400000);
   const hours=Math.floor((diff%86400000)/3600000);
@@ -14482,12 +14521,13 @@ const _IMPULSE_FEELINGS = [
 ];
 function _impulseFeeling(what, amt){
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
-  const safe=String(what).replace(/</g,'&lt;').replace(/'/g,'&#39;');
+  const safe=_jsAttr(what);          // for the onclick attribute — see _jsAttr in 00-boot
+  const shown=_escFew(what);         // for anything the person reads
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center;max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);line-height:1.3;margin-bottom:6px">What’s underneath it?</div>'+
     '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Naming the feeling takes some of the heat out of it. That’s not a trick — it’s the same thing that works on any other urge.</div>'+
-    _IMPULSE_FEELINGS.map(function(f,i){ return '<button class="btn" onclick="_impulseHold(\''+safe.replace(/"/g,'')+'\','+amt+','+i+')" style="text-align:left;margin-bottom:8px;padding:12px;background:var(--bg3);border:1px solid var(--bd);font-size:13.5px">'+f[0]+'&nbsp;&nbsp;'+f[1]+'</button>'; }).join('')+
+    _IMPULSE_FEELINGS.map(function(f,i){ return '<button class="btn" onclick="_impulseHold(\''+safe+'\','+amt+','+i+')" style="text-align:left;margin-bottom:8px;padding:12px;background:var(--bg3);border:1px solid var(--bd);font-size:13.5px">'+f[0]+'&nbsp;&nbsp;'+f[1]+'</button>'; }).join('')+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
@@ -14854,14 +14894,15 @@ const _SHRINK = [
 function _shrinkIt(thing, level){
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
   const lv=Math.min(level, _SHRINK.length-1);
-  const safe=String(thing).replace(/</g,'&lt;').replace(/'/g,'&#39;');
+  const safe=_jsAttr(thing);         // for the onclick attribute
+  const shown=_escFew(thing);        // for display
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center">'+
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:8px">Two minutes. That’s the whole ask.</div>'+
-    '<div style="font-size:14px;color:var(--tx);line-height:1.65;margin-bottom:16px">'+_SHRINK[lv](safe)+'</div>'+
-    '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);_startTwoMin(\''+safe.replace(/"/g,'')+'\')">Start two minutes</button>'+
+    '<div style="font-size:14px;color:var(--tx);line-height:1.65;margin-bottom:16px">'+_SHRINK[lv](shown)+'</div>'+
+    '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);_startTwoMin(\''+safe+'\')">Start two minutes</button>'+
     (lv < _SHRINK.length-1
-      ? '<button class="btn" onclick="closeModal(this);_shrinkIt(\''+safe.replace(/"/g,'')+'\','+(lv+1)+')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px;margin-bottom:8px">Still too big — make it smaller</button>'
+      ? '<button class="btn" onclick="closeModal(this);_shrinkIt(\''+safe+'\','+(lv+1)+')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px;margin-bottom:8px">Still too big — make it smaller</button>'
       : '<div style="font-size:11.5px;color:var(--tx3);line-height:1.5;margin-bottom:10px">If even that’s too much today, that’s information about your capacity, not your character. Rest counts.</div>')+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
   '</div>';
@@ -16918,7 +16959,7 @@ function promptLossDate(){
   loadV();
   if(curVice<0)return;
   const now=new Date();
-  const todayStr=now.toISOString().split('T')[0];
+  const todayStr=_todayLocalISO(now);
   const hh=String(now.getHours()).padStart(2,'0');
   const mm=String(now.getMinutes()).padStart(2,'0');
   const m=document.createElement('div');
@@ -16949,7 +16990,7 @@ function promptMassAddLosses(){
   if(curVice<0){ showToast('Pick a habit first','Open the habit you want to add past slips to.'); return; }
   const v = vices[curVice];
   const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
+  const todayStr = _todayLocalISO(now);
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.style.alignItems = 'center';
@@ -16969,7 +17010,7 @@ function promptMassAddLosses(){
 function addMassLossRow(){
   const box = document.getElementById('mal-rows');
   if(!box) return;
-  const today = window.__malToday || new Date().toISOString().split('T')[0];
+  const today = window.__malToday || _todayLocalISO();
   const row = document.createElement('div');
   row.className = 'mal-row';
   row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:center';
@@ -17839,8 +17880,23 @@ function toggleVicePatterns(i){
   else { showToast('Patterns off','No problem.'); }
 }
 
+// THE ONE ANCHOR A STREAK COUNTS FROM.
+//
+// startDate is authoritative — every relapse path writes it (including the backdating flow, which
+// sets it to the real moment rather than to now), and "start again from today" writes it too.
+// lastLoss is only the fallback for rows old enough to predate it.
+//
+// The Fight tab's big clock read `v.lastLoss` FIRST and fell back to totry_start, so after someone
+// backdated a slip — or used start-again — the headline and the vice card below it showed different
+// numbers of days clean, on the same screen, about the same fight. Both go through here now.
+function viceStreakAnchor(v){
+  if(!v) return null;
+  if(v.startDate){ const d = new Date(v.startDate); if(!isNaN(d)) return d; }
+  if(v.lastLoss){ const d = new Date(v.lastLoss); if(!isNaN(d)) return d; }
+  return null;
+}
 function viceCleanDays(v){
-  const start = v.startDate ? new Date(v.startDate) : (v.lastLoss ? new Date(v.lastLoss) : null);
+  const start = viceStreakAnchor(v);
   if(!start) return 0;
   return Math.max(0, Math.floor((Date.now() - start) / 86400000));
 }
@@ -34888,6 +34944,9 @@ function getWeekKey(date){
   const d=new Date(date);
   d.setHours(0,0,0,0);
   d.setDate(d.getDate()-d.getDay()); // Sunday start
+  // OPAQUE KEY, NOT A DATE. Only ever compared with another getWeekKey() result — never parsed back
+  // and never displayed — so the UTC shift here is consistent with itself. Deliberately NOT switched
+  // to _todayLocalISO with the other sites: that would orphan every week key already stored.
   return d.toISOString().split('T')[0];
 }
 
@@ -39002,7 +39061,7 @@ function promptConfessionDate(){ _promptSacramentDate('confession'); }
 function promptMassDate(){ _promptSacramentDate('mass'); }
 function _promptSacramentDate(kind){
   const now=new Date();
-  const todayStr=now.toISOString().split('T')[0];
+  const todayStr=_todayLocalISO(now);
   const label = kind === 'confession' ? 'Confession' : 'Mass';
   const m=document.createElement('div');
   m.className='modal-bg open';
@@ -42414,7 +42473,7 @@ async function importScaleScreenshot(event){
   }
 }
 function confirmScaleScreenshotEntry(weight, p){
-  const today = new Date().toISOString().split('T')[0];
+  const today = _todayLocalISO();
   const row = (label, val, unit) => (val!=null && !isNaN(val))
     ? '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--tx2);padding:4px 0"><span style="color:var(--tx3)">'+label+'</span><span>'+val+(unit?' '+unit:'')+'</span></div>' : '';
   const m = document.createElement('div');

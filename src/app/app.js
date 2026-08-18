@@ -3175,7 +3175,7 @@ async function importScaleScreenshot(event){
   }
 }
 function confirmScaleScreenshotEntry(weight, p){
-  const today = new Date().toISOString().split('T')[0];
+  const today = _todayLocalISO();
   const row = (label, val, unit) => (val!=null && !isNaN(val))
     ? '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--tx2);padding:4px 0"><span style="color:var(--tx3)">'+label+'</span><span>'+val+(unit?' '+unit:'')+'</span></div>' : '';
   const m = document.createElement('div');

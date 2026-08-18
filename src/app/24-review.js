@@ -315,6 +315,9 @@ function getWeekKey(date){
   const d=new Date(date);
   d.setHours(0,0,0,0);
   d.setDate(d.getDate()-d.getDay()); // Sunday start
+  // OPAQUE KEY, NOT A DATE. Only ever compared with another getWeekKey() result — never parsed back
+  // and never displayed — so the UTC shift here is consistent with itself. Deliberately NOT switched
+  // to _todayLocalISO with the other sites: that would orphan every week key already stored.
   return d.toISOString().split('T')[0];
 }
 

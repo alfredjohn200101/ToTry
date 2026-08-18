@@ -357,6 +357,43 @@ const CURRENCY_SYMBOLS = {
   AUD: '\u0024', USD: '\u0024', CAD: '\u0024', NZD: '\u0024', SGD: '\u0024',
   GBP: '\u00a3', EUR: '\u20ac', INR: '\u20b9', JPY: '\u00a5'
 };
+// PUTTING A PERSON'S OWN WORDS INTO AN onclick ATTRIBUTE.
+//
+// An inline handler is parsed TWICE: the HTML parser decodes entities first, then the result is
+// compiled as JavaScript. So escaping an apostrophe as &#39; — which is right for text content — is
+// exactly wrong here: the parser turns it back into ' before the compiler ever sees it, and
+// _impulseHold('Mum's gift', 25, 0) is a SyntaxError. The button then has onclick === null. It
+// renders, it looks correct, it does nothing, and nothing is thrown where anyone can see it.
+//
+// That shipped on two of the app's most important doors: "Before you buy" (someone about to spend
+// impulsively, typing "Mum's birthday gift") and "What can't you start?" (someone frozen, typing
+// "Dad's call"). Every action button was dead. iOS Smart Punctuation substitutes U+2019 and dodges
+// it, which is why hand-testing on a phone never caught it — an Android or desktop keyboard does not.
+//
+// Escape for the JS string context, not the HTML one: backslashes first, then quotes, then the
+// newlines that would end the statement. Attribute quoting is handled by using ' inside "…".
+// THE LOCAL CALENDAR DAY, AS YYYY-MM-DD.
+//
+// `new Date().toISOString().split('T')[0]` is the UTC day, and it was being used to fill and to CAP
+// date pickers that a person answers in their own timezone. At 7am in Sydney the UTC day is still
+// yesterday, so "It happened earlier — set the real day" pre-filled yesterday's date next to this
+// morning's clock time: a relapse logged at 7:00am was stamped 24 hours early, the streak repainted
+// as "1 day clean", and max="yesterday" meant the real day could not even be selected. Every timezone
+// east of UTC hits it for the first hours of every day; west of UTC the same line offers tomorrow.
+function _todayLocalISO(d){
+  const t = d ? new Date(d) : new Date();
+  const p = n => String(n).padStart(2, '0');
+  return t.getFullYear() + '-' + p(t.getMonth() + 1) + '-' + p(t.getDate());
+}
+
+function _jsAttr(s){
+  return String(s == null ? '' : s)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '&quot;')
+    .replace(/\r?\n/g, ' ');
+}
+
 function curSym(){
   try{ return CURRENCY_SYMBOLS[ls('totry_currency') || 'AUD'] || '\u0024'; }
   catch(_){ return '\u0024'; }
@@ -383,7 +420,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v489';
+const APP_VERSION = 'v490';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }

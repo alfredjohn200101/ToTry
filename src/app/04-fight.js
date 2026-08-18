@@ -651,7 +651,9 @@ function startSobrietyClock(){
 function updateSobrietyClock(){
   loadV();if(!vices.length)return;
   const v=vices.find(x=>x&&x.kind!=='letgo'); if(!v)return; // letting-go struggles never drive the "days clean" clock
-  const since=v.lastLoss?new Date(v.lastLoss):new Date(ls('totry_start')||Date.now());
+  // Same anchor the vice card uses, or the two disagree on the same screen — see viceStreakAnchor.
+  const since=(typeof viceStreakAnchor==='function' ? viceStreakAnchor(v) : null)
+              || new Date(ls('totry_start')||Date.now());
   const diff=Math.max(0,Date.now()-since.getTime());
   const days=Math.floor(diff/86400000);
   const hours=Math.floor((diff%86400000)/3600000);

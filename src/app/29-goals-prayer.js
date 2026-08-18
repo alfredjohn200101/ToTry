@@ -202,7 +202,7 @@ function promptConfessionDate(){ _promptSacramentDate('confession'); }
 function promptMassDate(){ _promptSacramentDate('mass'); }
 function _promptSacramentDate(kind){
   const now=new Date();
-  const todayStr=now.toISOString().split('T')[0];
+  const todayStr=_todayLocalISO(now);
   const label = kind === 'confession' ? 'Confession' : 'Mass';
   const m=document.createElement('div');
   m.className='modal-bg open';

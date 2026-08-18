@@ -170,7 +170,7 @@ function promptLossDate(){
   loadV();
   if(curVice<0)return;
   const now=new Date();
-  const todayStr=now.toISOString().split('T')[0];
+  const todayStr=_todayLocalISO(now);
   const hh=String(now.getHours()).padStart(2,'0');
   const mm=String(now.getMinutes()).padStart(2,'0');
   const m=document.createElement('div');
@@ -201,7 +201,7 @@ function promptMassAddLosses(){
   if(curVice<0){ showToast('Pick a habit first','Open the habit you want to add past slips to.'); return; }
   const v = vices[curVice];
   const now = new Date();
-  const todayStr = now.toISOString().split('T')[0];
+  const todayStr = _todayLocalISO(now);
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.style.alignItems = 'center';
@@ -221,7 +221,7 @@ function promptMassAddLosses(){
 function addMassLossRow(){
   const box = document.getElementById('mal-rows');
   if(!box) return;
-  const today = window.__malToday || new Date().toISOString().split('T')[0];
+  const today = window.__malToday || _todayLocalISO();
   const row = document.createElement('div');
   row.className = 'mal-row';
   row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:center';
@@ -1091,8 +1091,23 @@ function toggleVicePatterns(i){
   else { showToast('Patterns off','No problem.'); }
 }
 
+// THE ONE ANCHOR A STREAK COUNTS FROM.
+//
+// startDate is authoritative — every relapse path writes it (including the backdating flow, which
+// sets it to the real moment rather than to now), and "start again from today" writes it too.
+// lastLoss is only the fallback for rows old enough to predate it.
+//
+// The Fight tab's big clock read `v.lastLoss` FIRST and fell back to totry_start, so after someone
+// backdated a slip — or used start-again — the headline and the vice card below it showed different
+// numbers of days clean, on the same screen, about the same fight. Both go through here now.
+function viceStreakAnchor(v){
+  if(!v) return null;
+  if(v.startDate){ const d = new Date(v.startDate); if(!isNaN(d)) return d; }
+  if(v.lastLoss){ const d = new Date(v.lastLoss); if(!isNaN(d)) return d; }
+  return null;
+}
 function viceCleanDays(v){
-  const start = v.startDate ? new Date(v.startDate) : (v.lastLoss ? new Date(v.lastLoss) : null);
+  const start = viceStreakAnchor(v);
   if(!start) return 0;
   return Math.max(0, Math.floor((Date.now() - start) / 86400000));
 }
