@@ -54,21 +54,60 @@ const env = (...names: string[]) => {
 const FS_ID_NAMES     = ['FATSECRET_ID', 'FATSECRET_CONSUMER_KEY', 'FATSECRET_KEY', 'FATSECRET_CLIENT_ID']
 const FS_SECRET_NAMES = ['FATSECRET_SECRET', 'FATSECRET_CONSUMER_SECRET', 'FATSECRET_CLIENT_SECRET']
 
-// Last resort: find the secret whatever it was named. Three rounds went by with the consumer key
-// matching one spelling and the secret matching none, which is a silly way to spend someone's evening —
-// the env var NAME is not sensitive, so it can be discovered and reported. Any variable whose name looks
-// like a FatSecret secret and is not one of the id names qualifies. Values are never returned or logged.
-const findFsSecret = (): { name?: string; value?: string } => {
-  for (const n of FS_SECRET_NAMES) { const v = Deno.env.get(n); if (v) return { name: n, value: v } }
+// Find the credentials whatever they were named, and pair them correctly.
+//
+// THE BUG THIS REPLACES, because it is worth remembering: the previous version classified a secret with
+//     u.includes('FATSECRET') && u.includes('SECRET')
+// and the brand name FATSECRET *ends in* SECRET. So FATSECRET_CONSUMER_KEY — the id — matched the test
+// for the secret. The status endpoint duly reported secret_found_as "fatsecret_consumer_key", the token
+// exchange sent that same key as both halves of the Basic pair, and FatSecret answered invalid_client
+// forever. A second bug hid it: the `FS_ID_NAMES.includes(k)` guard meant to skip the id names is
+// case-sensitive, and Supabase had preserved the name in lowercase, so it skipped nothing.
+// Strip the brand out of the name BEFORE asking whether what remains says "secret".
+const fsEnvVars = (): [string, string][] => {
+  const out: [string, string][] = []
+  const seen = new Set<string>()
   try {
     for (const [k, v] of Object.entries(Deno.env.toObject())) {
-      if (!v) continue
-      if (FS_ID_NAMES.includes(k)) continue
-      const u = k.toUpperCase().replace(/[^A-Z]/g, '')
-      if (u.includes('FATSECRET') && u.includes('SECRET')) return { name: k, value: v }
+      if (v) { out.push([k, v as string]); seen.add(k) }
     }
-  } catch (_) { /* env enumeration not permitted — the explicit names above still work */ }
-  return {}
+  } catch (_) { /* enumeration not permitted on this runtime — the explicit names below still work */ }
+  for (const n of [...FS_ID_NAMES, ...FS_SECRET_NAMES]) {
+    if (seen.has(n)) continue
+    const v = Deno.env.get(n); if (v) out.push([n, v])
+  }
+  return out
+}
+
+type FsCred = { name: string; value: string }
+const fsCandidates = (): { ids: FsCred[]; secrets: FsCred[] } => {
+  const ids: FsCred[] = [], secrets: FsCred[] = []
+  for (const [k, v] of fsEnvVars()) {
+    const u = k.toUpperCase().replace(/[^A-Z]/g, '')
+    if (!u.includes('FATSECRET')) continue
+    const rest = u.split('FATSECRET').join('')          // <- the whole fix is this line
+    if (rest.includes('SECRET')) secrets.push({ name: k, value: v })
+    else ids.push({ name: k, value: v })                // ID, KEY, CONSUMERKEY, or a bare FATSECRET
+  }
+  return { ids, secrets }
+}
+
+// FatSecret rotates in pairs, and this project has an old consumer key still sitting in FATSECRET_ID
+// alongside a newer fatsecret_consumer_key. Guessing which one goes with the secret is a coin flip that
+// has already cost days, so don't guess: try every id against every secret, most-likely first, and let
+// FatSecret itself say which pair is real. A wrong pair costs one HTTP round trip, once per cold start.
+const fsFamily = (n: string) =>
+  n.toUpperCase().replace(/[^A-Z]/g, '').split('FATSECRET').join('').replace(/SECRET|KEY|ID|CLIENT/g, '')
+const fsPairs = (): { id: FsCred; secret: FsCred; family: boolean }[] => {
+  const { ids, secrets } = fsCandidates()
+  const pairs = []
+  for (const secret of secrets) for (const id of ids) {
+    pairs.push({ id, secret, family: fsFamily(id.name) === fsFamily(secret.name) })
+  }
+  // A matching family first: fatsecret_consumer_key belongs with fatsecret_consumer_secret, not with
+  // whatever else happens to be lying around.
+  pairs.sort((a, b) => Number(b.family) - Number(a.family))
+  return pairs
 }
 const ESV_NAMES       = ['ESV_API_KEY', 'ESV_KEY']
 const USDA_NAMES      = ['USDA_API_KEY', 'USDA_KEY', 'USDA_FDC_API_KEY']
@@ -76,6 +115,7 @@ const USDA_NAMES      = ['USDA_API_KEY', 'USDA_KEY', 'USDA_FDC_API_KEY']
 // FatSecret tokens last an hour. Cached per warm instance so a busy minute is one exchange, not many.
 let fsToken: string | null = null
 let fsExpiry = 0
+let fsWorkingPair: string | null = null   // names only — which id+secret FatSecret actually accepted
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
@@ -90,20 +130,32 @@ Deno.serve(async (req: Request) => {
     // Returns a short-lived access token rather than the secret. A leaked hour-long token is a very
     // different thing from a leaked permanent client secret.
     if (provider === 'fatsecret') {
-      const id = env(...FS_ID_NAMES)
-      const secret = findFsSecret().value
-      if (!id || !secret) return json({ error: 'fatsecret not configured' }, 501)
+      const pairs = fsPairs()
+      if (!pairs.length) return json({ error: 'fatsecret not configured' }, 501)
       if (fsToken && Date.now() < fsExpiry) return json({ access_token: fsToken })
-      const r = await fetch('https://oauth.fatsecret.com/connect/token', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Basic ' + btoa(id + ':' + secret),
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: 'grant_type=client_credentials&scope=basic',
-      })
-      const d = await r.json().catch(() => ({}))
+
+      // Try each pair until one is accepted. Only the LAST failure is reported, because a failure from
+      // a pair we were merely guessing at is noise — but every attempt is named (names only, never
+      // values) so the answer to "which of my four secrets are actually a pair" is in the response.
+      let r: Response | null = null, d: Record<string, unknown> = {}, tried: string[] = []
+      for (const p of pairs) {
+        tried.push(p.id.name + ' + ' + p.secret.name)
+        r = await fetch('https://oauth.fatsecret.com/connect/token', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Basic ' + btoa(p.id.value + ':' + p.secret.value),
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: 'grant_type=client_credentials&scope=basic',
+        })
+        d = await r.json().catch(() => ({}))
+        if (d.access_token) { fsWorkingPair = p.id.name + ' + ' + p.secret.name; break }
+        // invalid_client means THIS pair is not a pair — the next one might be. Anything else (scope,
+        // IP allowlist, 5xx) is not about pairing, so stop rather than hammer their OAuth endpoint.
+        if (d.error && d.error !== 'invalid_client') break
+      }
       if (!d.access_token) {
+        fsWorkingPair = null
         // Pass FatSecret's OWN reason through. Swallowing it meant "fatsecret token failed" with no way
         // to tell apart the three real causes, and the credentials are found — so the fault is at their
         // end, not in the wiring:
@@ -115,13 +167,14 @@ Deno.serve(async (req: Request) => {
         // An OAuth error body carries no credential, so this is safe to surface.
         return json({
           error: 'fatsecret token failed',
-          status: r.status,
+          status: r ? r.status : 0,
           fatsecret_error: d.error || null,
           fatsecret_description: d.error_description || null,
           detail: typeof d === 'object' ? JSON.stringify(d).slice(0, 300) : String(d).slice(0, 300),
+          pairs_tried: tried,
         }, 502)
       }
-      fsToken = d.access_token
+      fsToken = String(d.access_token)
       // Expire a minute early so a token is never handed out on its last breath.
       fsExpiry = Date.now() + (Math.max(60, Number(d.expires_in) || 3600) - 60) * 1000
       return json({ access_token: fsToken })
@@ -166,18 +219,22 @@ Deno.serve(async (req: Request) => {
     // Which credentials can this function actually see? Booleans only — never a value, not even a
     // prefix. Added because diagnosing "not configured" meant guessing at env var names from outside.
     if (provider === 'status') {
+      // Report ALL the names found, not the first match. The old version reported one guess as if it
+      // were a fact — "secret_found_as: fatsecret_consumer_key" — and that confident wrong answer is
+      // why the real problem went unseen. A diagnostic that can only say one thing will eventually say
+      // the wrong thing. Names are not secrets; values are never included, here or anywhere.
+      const { ids, secrets } = fsCandidates()
       return json({
-        // The NAME each credential was found under, so a mismatch is visible. Names are not secrets;
-        // values are never included.
         fatsecret: {
-          id: !!env(...FS_ID_NAMES),
-          id_found_as: FS_ID_NAMES.find((n) => !!Deno.env.get(n)) || null,
-          secret: !!findFsSecret().value,
-          secret_found_as: findFsSecret().name || null,
+          id: ids.length > 0,
+          secret: secrets.length > 0,
+          ids_found: ids.map((c) => c.name),
+          secrets_found: secrets.map((c) => c.name),
+          pair_order: fsPairs().map((p) => p.id.name + ' + ' + p.secret.name + (p.family ? '  (same family)' : '')),
+          working_pair: fsWorkingPair,   // null until a fatsecret call has actually succeeded
         },
         esv: !!env(...ESV_NAMES),
         usda: !!env(...USDA_NAMES),
-        // Names it looked for, so a mismatch is obvious at a glance.
         looked_for: { id: FS_ID_NAMES, secret: FS_SECRET_NAMES, esv: ESV_NAMES, usda: USDA_NAMES },
       })
     }
