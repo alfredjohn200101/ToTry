@@ -2,7 +2,7 @@
   "name": "totry",
   "version": "1.0.0",
   "private": true,
-  "description": "To Try \u2014 faith-rooted whole-life companion. PWA + Capacitor native shell.",
+  "description": "To Try — faith-rooted whole-life companion. PWA + Capacitor native shell.",
   "scripts": {
     "build:www": "node scripts/build-www.js",
     "sync": "npm run build:index && npm run build:www && npx cap sync",
@@ -25,6 +25,7 @@
     "@capacitor/ios": "^8.4.1",
     "@capacitor/local-notifications": "^8.2.0",
     "@capacitor/push-notifications": "^8.1.1",
+    "@capacitor/splash-screen": "^8.0.2",
     "@supabase/supabase-js": "^2.112.3",
     "capacitor-health": "^8.1.2"
   },

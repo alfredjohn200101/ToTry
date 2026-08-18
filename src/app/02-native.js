@@ -18,6 +18,26 @@ const Notify = {
   // The LocalNotifications plugin, if available (Capacitor community/official plugin).
   _local(){ try{ return window.Capacitor?.Plugins?.LocalNotifications || null; }catch(_){ return null; } },
   _push(){ try{ return window.Capacitor?.Plugins?.PushNotifications || null; }catch(_){ return null; } },
+  _splash(){ try{ return window.Capacitor?.Plugins?.SplashScreen || null; }catch(_){ return null; } },
+
+  // HOLD THE LAUNCH SCREEN UNTIL THERE IS SOMETHING TO SEE.
+  //
+  // iOS drops the launch storyboard the moment the process is up, and the WKWebView behind it has not
+  // painted yet — so the app opened onto a BLACK screen for about 2.8 seconds on a release build
+  // (measured on an iPhone 17 simulator, 18 Aug 2026; a debug build took far longer, which is what
+  // made this look worse than it is). Nearly three seconds of black on launch reads as a crash, and
+  // it is the first thing an App Store reviewer sees.
+  //
+  // launchAutoHide is false in capacitor.config.json, so the splash stays up until this is called.
+  // That makes hiding it OUR responsibility, and a splash that never hides is an app that never
+  // opens — so this is called from the first screen paint AND from a hard timeout, and it is safe to
+  // call twice. On the web it is a no-op.
+  hideSplash(){
+    try{
+      const sp = this._splash();
+      if(sp && typeof sp.hide === 'function') sp.hide({ fadeOutDuration: 220 });
+    }catch(_){ }
+  },
 
   // Request permission through whichever channel is real. Returns a Promise<boolean>.
   async requestPermission(){
@@ -989,7 +1009,34 @@ function bootWithoutCloud(reason){
   }catch(_){}
 }
 
+// ONE WATCHER, NOT FIVE CALL SITES. Four different places add .app-ready and a fifth reveals the
+// sign-in screen; hooking each would be five chances to miss one, and a missed one means the splash
+// never hides and the app never opens — strictly worse than the black screen this replaces.
+// So watch for the person having something on screen, whatever put it there, and hide then. The
+// backstop is not optional: it is the difference between a slow launch and a bricked app.
+function _splashWatch(){
+  try{
+    if(!(typeof Notify === 'object' && Notify.isNative && Notify.isNative())) return;
+    let done = false;
+    const finish = () => { if(done) return; done = true; try{ Notify.hideSplash(); }catch(_){ } };
+    const showing = () => {
+      try{
+        const big = el => el && el.getBoundingClientRect().height > 120 &&
+                          getComputedStyle(el).display !== 'none' && getComputedStyle(el).visibility !== 'hidden';
+        if(big(document.getElementById('auth-container'))) return true;
+        if(big(document.querySelector('.app.app-ready'))) return true;
+        const ob = document.getElementById('onboard');
+        if(ob && ob.classList.contains('active') && big(ob)) return true;
+      }catch(_){ }
+      return false;
+    };
+    const t = setInterval(() => { if(showing()){ clearInterval(t); finish(); } }, 100);
+    setTimeout(() => { clearInterval(t); finish(); }, 6000);
+  }catch(_){ }
+}
+
 async function checkAuthAndStart(){
+  try{ _splashWatch(); }catch(_){}
   // Wait for Supabase to be ready
   if(!sb){
     // CAPPED — see bootWithoutCloud above. This also covers createClient() throwing, which leaves sb
