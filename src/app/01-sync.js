@@ -460,6 +460,17 @@ async function pullFromCloud(){
       else { if(typeof rawK==='string' && rawK.indexOf(TEST_PREFIX)===0) return; }
       const k = _unCloudKey(rawK), cv = row.data_value;
       if(cv === null || cv === undefined) return;
+      // A DEVICE THAT JUST RAN OUT OF ROOM MUST NOT BE REFILLED IMMEDIATELY.
+      // _lsEmergencyPrune trims the expendable stores and deliberately writes LOCALLY, so the account
+      // keeps the history and other devices are untouched — which is right. But the very next pull
+      // merged the full cloud copy straight back in, so the space was reclaimed and then handed back
+      // within seconds, and the person's next save failed again. For a day after a prune, this device
+      // skips the stores it just trimmed. The data is not deleted anywhere; this phone simply stops
+      // being told about it until it has room.
+      try{
+        const _until = parseInt(localStorage.getItem('totry_constrained_until') || '0', 10);
+        if(_until > Date.now() && typeof RESTORE_EXPENDABLE !== 'undefined' && RESTORE_EXPENDABLE.indexOf(k) !== -1) return;
+      }catch(_){ }
       // A tombstoned cycle log is never restored, no matter what the server still holds. If the
       // original purge never landed (offline when they deleted), retry it here — quietly, once per
       // pull — so the row cannot outlive the person's decision.

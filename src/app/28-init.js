@@ -112,7 +112,10 @@ async function enablePushReminders(){
     console.error('enablePush failed', e);
     // Leave it OFF on disk, so what Settings shows and what the server knows are the same thing.
     try{ const p2 = _pushPrefs(); p2.enabled = false; ls('totry_push_prefs', p2); }catch(_){}
-    showToast('Could not enable','Make sure the app is installed to your Home Screen, then try again.');
+    const _why = String((e && (e.message || e.error_description || e.error)) || '').slice(0, 140);
+    showToast('Could not enable', _why
+      ? (_why + ' \u2014 this one is on my end, not yours. Nothing about your reminders changed.')
+      : 'Make sure the app is installed to your Home Screen, then try again.');
   }
   renderPushSettings();
 }

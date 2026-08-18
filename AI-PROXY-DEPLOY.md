@@ -177,11 +177,22 @@ create table if not exists public.push_subscriptions (
   user_id uuid primary key,
   subscription jsonb,
   tz_offset_minutes int,
-  remind_morning boolean default false,
-  remind_evening boolean default false,
-  ai_morning_messages boolean default false,
-  ai_evening_messages boolean default false
+  remind_morning text default '07:30',        -- a TIME, not a flag: the app writes '07:30'
+  remind_evening text default '21:00',        -- likewise
+  ai_morning_messages text[],                 -- the generated message set, an array of strings
+  ai_evening_messages text[]
 );
+-- IF YOU CREATED THIS TABLE BEFORE 18 Aug 2026, these four columns were typed `boolean` and the app
+-- writes a time string and an array into them — so every attempt to enable reminders failed on the
+-- insert, was swallowed by the catch, and told the person "Make sure the app is installed to your
+-- Home Screen, then try again", which they had already done. Run this once to correct it:
+--
+--   alter table public.push_subscriptions
+--     alter column remind_morning type text using (case when remind_morning then '07:30' else null end),
+--     alter column remind_evening type text using (case when remind_evening then '21:00' else null end),
+--     alter column ai_morning_messages type text[] using null,
+--     alter column ai_evening_messages type text[] using null;
+
 alter table public.push_subscriptions enable row level security;
 create policy "own push row" on public.push_subscriptions
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

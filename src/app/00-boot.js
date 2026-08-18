@@ -250,6 +250,12 @@ function _lsEmergencyPrune(){
     }catch(_){ }
     if(freed > 400000) break;                 // enough headroom for a normal write
   }
+  // Mark the device constrained for a day, so pullFromCloud does not immediately restore the very
+  // stores this just trimmed. Without it the prune freed space and the next pull gave it straight
+  // back — the person saw "Storage full" again within seconds and nothing they did could help.
+  if(freed > 0){
+    try{ (_originalSetItem || localStorage.setItem.bind(localStorage))('totry_constrained_until', String(Date.now() + 86400000)); }catch(_){ }
+  }
   // The last resort used to be `removeItem('totry_progress_photos')` — deleting EVERY progress photo,
   // silently, after which ls() retried, succeeded and returned true. Nothing was ever said.
   //
@@ -377,7 +383,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v488';
+const APP_VERSION = 'v489';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }

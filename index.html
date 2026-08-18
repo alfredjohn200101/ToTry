@@ -4687,6 +4687,12 @@ function _lsEmergencyPrune(){
     }catch(_){ }
     if(freed > 400000) break;                 // enough headroom for a normal write
   }
+  // Mark the device constrained for a day, so pullFromCloud does not immediately restore the very
+  // stores this just trimmed. Without it the prune freed space and the next pull gave it straight
+  // back — the person saw "Storage full" again within seconds and nothing they did could help.
+  if(freed > 0){
+    try{ (_originalSetItem || localStorage.setItem.bind(localStorage))('totry_constrained_until', String(Date.now() + 86400000)); }catch(_){ }
+  }
   // The last resort used to be `removeItem('totry_progress_photos')` — deleting EVERY progress photo,
   // silently, after which ls() retried, succeeded and returned true. Nothing was ever said.
   //
@@ -4814,7 +4820,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v488';
+const APP_VERSION = 'v489';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5737,6 +5743,17 @@ async function pullFromCloud(){
       else { if(typeof rawK==='string' && rawK.indexOf(TEST_PREFIX)===0) return; }
       const k = _unCloudKey(rawK), cv = row.data_value;
       if(cv === null || cv === undefined) return;
+      // A DEVICE THAT JUST RAN OUT OF ROOM MUST NOT BE REFILLED IMMEDIATELY.
+      // _lsEmergencyPrune trims the expendable stores and deliberately writes LOCALLY, so the account
+      // keeps the history and other devices are untouched — which is right. But the very next pull
+      // merged the full cloud copy straight back in, so the space was reclaimed and then handed back
+      // within seconds, and the person's next save failed again. For a day after a prune, this device
+      // skips the stores it just trimmed. The data is not deleted anywhere; this phone simply stops
+      // being told about it until it has room.
+      try{
+        const _until = parseInt(localStorage.getItem('totry_constrained_until') || '0', 10);
+        if(_until > Date.now() && typeof RESTORE_EXPENDABLE !== 'undefined' && RESTORE_EXPENDABLE.indexOf(k) !== -1) return;
+      }catch(_){ }
       // A tombstoned cycle log is never restored, no matter what the server still holds. If the
       // original purge never landed (offline when they deleted), retry it here — quietly, once per
       // pull — so the row cannot outlive the person's decision.
@@ -38094,7 +38111,10 @@ async function enablePushReminders(){
     console.error('enablePush failed', e);
     // Leave it OFF on disk, so what Settings shows and what the server knows are the same thing.
     try{ const p2 = _pushPrefs(); p2.enabled = false; ls('totry_push_prefs', p2); }catch(_){}
-    showToast('Could not enable','Make sure the app is installed to your Home Screen, then try again.');
+    const _why = String((e && (e.message || e.error_description || e.error)) || '').slice(0, 140);
+    showToast('Could not enable', _why
+      ? (_why + ' \u2014 this one is on my end, not yours. Nothing about your reminders changed.')
+      : 'Make sure the app is installed to your Home Screen, then try again.');
   }
   renderPushSettings();
 }
