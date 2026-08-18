@@ -41,7 +41,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
-- `APP_VERSION` in index.html — currently **v180**. Bump it AND `CACHE` in sw.js together, always.
+- `APP_VERSION` in `src/app/00-boot.js` — currently **v502**. Bump it AND `CACHE` in sw.js together, always.
 
 ## The nervous system (key functions — grep these)
 - `getLifeState()` — returns the whole person {training, nutrition, body, soul, fight, readiness,
@@ -58,12 +58,24 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
   cognitive restructuring, grounding). `_companionSay()` builds its prompt.
 
 ## NON-NEGOTIABLE WORKFLOW RULES
-1. **Parse-check after EVERY edit.** Extract the big inline `<script>` and run `node --check`. Also
-   check div balance (count `<div` vs `</div>` outside scripts == 0). A syntax error ships a white
-   screen to a real person. This has caught many bugs; never skip it.
-2. **Run `npm test` after touching core math** (nutrition scaling, streaks, TDEE, photo totals, money).
-   The harness in `test/` extracts the REAL functions from index.html and asserts them — it already
-   guards the food double-scale bug. Green before you ship. Add a test when you add core math.
+1. **Parse-check after EVERY edit.** `npm test` now does it for you — it extracts every inline
+   `<script>`, runs `node --check`, and asserts div balance. Added at v483 after a stray string
+   terminator shipped: index.html would not parse — a white screen for everyone — and the suite
+   reported 1032 PASSED, because the harness extracts functions by name and never parsed the whole
+   script. A suite that stays green while the app cannot boot is worse than no suite.
+2. **Run the whole gate before you ship**, not just `npm test`:
+   - `npm test` — 1121 assertions over the real bundle (core math, dead code, privacy promises,
+     the voice gates, the parse check)
+   - `npm run crisis` — types the worst sentence into all EIGHT free-text doors and asserts a
+     helpline is on screen and TAPPABLE (geometry, not DOM presence — the bug it was written for
+     had the text in the document and off the screen)
+   - `npm run personas` — 503 assertions, 8 people incl. one built entirely from data that has
+     really broken this app (apostrophes, GBP, a completed goal ahead of the live one)
+   - `npm run panels` — 19 sub-panels × 3 people, plus a tap-target floor
+   - `npm run test:edge` — runs the Supabase functions locally with Deno stubbed (Node strips the TS)
+   - `npm run preflight` — version/cache/bundle parity across source, www and the iOS build
+   Add a test when you add core math, and FAULT-INJECT it: an assertion you have never seen fail is
+   not yet a test.
 3. **Bump `APP_VERSION` (`src/app/00-boot.js`) and `CACHE` (sw.js) together** on every release,
    then `npm run build:index && npm run build:www && npx cap sync ios`. `npm run preflight` checks
    all of it — the repo has already sat four versions ahead of the iOS bundle without anyone seeing.
@@ -74,16 +86,19 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    prominent. Never weaken them.
 
 ## WHAT TO DO NEXT (in priority order)
-1. **Run it live.** Serve index.html, open it, click through: the Feeling Door (tap the orb), the
-   companion sheet, every tab. Screenshot. Fix what's visibly broken that parse-checks can't catch.
-2. **Native wrapper (Capacitor).** Follow NATIVE-WRAPPER-GUIDE.md. The `Notify` layer is already
-   wrapper-aware — wrapping unlocks background push so the sibling can reach out first at a person's
-   known risk window (the craving-pattern data already identifies it). This is the biggest unlock.
-3. **Keep splitting the monolith.** The build step exists and is byte-verified; `boot`, `sync`,
-   `native` and `person` are out. ~31k lines remain in `src/app/app.js`. Take the next slice off the
-   front — routines, photos, the Feeling Door, the companion — one at a time, running
-   `node scripts/build-index.js --verify` after each. It must stay identical; if it doesn't, the
-   slice was wrong, not the check.
+1. **The App Store.** The wrapper builds, launches and runs (Xcode 26.6, Release, iPhone 17 sim:
+   ~2.8s to first paint, branded splash, crisis gate verified ON DEVICE with iOS smart quotes, `tel:`
+   links hand off correctly). What is left is yours and cannot be automated: archive → TestFlight,
+   the age rating, the App Privacy form, and testing barcode / Face ID / haptics / notifications on
+   real hardware. `npm run preflight` checks the rest before you archive.
+2. **Two edge functions need redeploying** (they are fixed in `supabase/functions/` and NOT live):
+   `key-proxy` — the FatSecret `invalid_client` was our own substring bug (FATSECRET contains
+   SECRET); `ai-proxy` — identity came from a client-supplied field, so the public anon key could
+   spend someone else's quota. Also the `push_subscriptions` column types in AI-PROXY-DEPLOY.md
+   (they were `boolean`; the app writes a time string and an array), with the migration written out.
+3. **The monolith split is DONE** — 31 modules, largest 4.6k lines, ~4k left in `src/app/app.js`.
+   If you slice more, take it off the FRONT of `app.js` with `scripts/extract-prefix.js` and run
+   `node scripts/build-index.js --verify` after each; it must print `identical`.
 4. **Live-test the Feeling Door with real use** — it's the newest, most important entry point. Make
    sure each feeling path genuinely moves a person, not just shows a modal.
 5. **Then:** the deeper secondary panels, the "reach out first" scheduled nudges (post-wrapper).
