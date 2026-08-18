@@ -4861,7 +4861,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v500';
+const APP_VERSION = 'v501';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -8046,7 +8046,7 @@ function buildPTCtx(){
     }
   }catch(_){}
 
-  return `You are the personal strength & nutrition coach inside To Try, ${userName}'s app. You know them and their training, and you coach like a real PT who's invested in their progress — not a generic exercise database.
+  return (typeof brotherSys==='function' ? brotherSys() : '') + `You are the personal strength & nutrition coach inside To Try, ${userName}'s app. You know them and their training, and you coach like a real PT who's invested in their progress — not a generic exercise database.
 
 WHO THEY ARE:
 ${userName} | Day ${dayCount} of their journey${goalIntent?'\nGoal: '+goalIntent:''}
@@ -20504,7 +20504,7 @@ async function generatePrayerFor(situation, verse){
   const name=ls('totry_name')||'';
   const prompt='Write a short, honest, first-person prayer (3-5 sentences) for someone carrying: "'+situation+'". Anchor it in '+(verse?verse.reference+' ("'+verse.text+'")':'scripture')+'. Make it sound like a real person talking to God, not religious performance. No "thee/thou".'+(name?' Their name is '+name+' if natural to reference.':'');
   try{
-    const prayer=await api('You write intimate, honest, scripturally-grounded prayers that sound deeply human — never rushed or generic. A real prayer someone can sit with.',[],prompt,900);
+    const prayer=await api((typeof faithVoiceNote==='function'?faithVoiceNote():'')+(typeof sexNote==='function'?sexNote():'')+'You write intimate, honest prayers in THEIR tradition that sound deeply human — never rushed or generic. A real prayer someone can sit with.',[],prompt,900);
     if(prayer&&prayer.trim()){
       prayerBox.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">A prayer for this moment</div>'+
         '<div style="font-family:\'Cormorant Garamond\',serif;font-size:16px;font-style:italic;line-height:1.7;color:var(--tx)">'+prayer.trim()+'</div>';
@@ -30127,7 +30127,7 @@ async function explainPlateau(){
   if(btn){ btn.textContent='Thinking...'; btn.disabled=true; }
   try{
     const ctx = (typeof _ptIntel==='function') ? _ptIntel() : '';
-    const sys = 'You are an encouraging, knowledgeable strength & nutrition coach. Diagnose plateaus from data, give 2-3 concrete, safe things to try. Concise, practical, never medical claims.';
+    const sys = (typeof brotherSys==='function'?brotherSys():'') + 'You are an encouraging, knowledgeable strength & nutrition coach. Diagnose plateaus from data, give 2-3 concrete, safe things to try. Concise, practical, never medical claims.';
     const prompt = 'This person seems to have hit a plateau: ' + p.detail + '\n\nTheir recent training data:' + ctx + '\n\nIn a short, encouraging paragraph plus 2-3 specific bullet actions, explain likely reasons and what to try next.';
     const resp = await api(sys, [], prompt, 700);
     if(box){
@@ -30289,7 +30289,7 @@ async function generateWeeklyContent(){
     const d = _disciplineThread();
     const clips = _weekProofClips();
     const identity = ls('totry_identity') || '';
-    const sys = 'You are a content producer helping someone document their self-improvement journey for TikTok/Reels. You do NOT edit video. You produce: (1) a short STORYBOARD — an ordered shot list telling this week\u2019s story using the clips and stats provided, each line "Shot N: <what to show> — <on-screen text>"; (2) a CAPTION — authentic, humble, faith-aware, not braggy, with 3-5 relevant hashtags. Return JSON: {"storyboard":["..."],"caption":"..."}. Return ONLY JSON.';
+    const sys = (typeof brotherSys==='function'?brotherSys():'') + 'You are a content producer helping someone document their self-improvement journey for TikTok/Reels. You do NOT edit video. You produce: (1) a short STORYBOARD — an ordered shot list telling this week\u2019s story using the clips and stats provided, each line "Shot N: <what to show> — <on-screen text>"; (2) a CAPTION — authentic, humble, faith-aware, not braggy, with 3-5 relevant hashtags. Return JSON: {"storyboard":["..."],"caption":"..."}. Return ONLY JSON.';
     const prompt = 'This week\u2019s real data: '+ (d.strands.join(', ')||'a quiet week') + '. '
       + (identity?('They are becoming: "'+identity+'". '):'')
       + 'They have '+clips.length+' proof clip(s) from their sessions to use. '
@@ -36166,7 +36166,7 @@ async function showAIMorningSentence(){
   
   try{
     const prompt='Write ONE personal sentence (15-25 words) for this person\'s morning. Direct. Warm. Like a close friend who knows them. Reference their state. No fluff. NO opening like "Today" or "Remember". Start with a verb or noun. Their state: '+context;
-    const response=await api('You are this person\'s closest friend who happens to be wise — warm, real, and willing to say something with substance.',[],prompt,700);
+    const response=await api((typeof brotherSys==='function'?brotherSys():'')+'You are this person\'s closest friend who happens to be wise — warm, real, and willing to say something with substance.',[],prompt,700);
     if(response&&response.trim()){
       const sentence=response.trim().replace(/^["\'\u201c\u201d]+|["\'\u201c\u201d]+$/g,'');
       textEl.textContent=sentence;

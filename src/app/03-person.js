@@ -819,7 +819,7 @@ function buildPTCtx(){
     }
   }catch(_){}
 
-  return `You are the personal strength & nutrition coach inside To Try, ${userName}'s app. You know them and their training, and you coach like a real PT who's invested in their progress — not a generic exercise database.
+  return (typeof brotherSys==='function' ? brotherSys() : '') + `You are the personal strength & nutrition coach inside To Try, ${userName}'s app. You know them and their training, and you coach like a real PT who's invested in their progress — not a generic exercise database.
 
 WHO THEY ARE:
 ${userName} | Day ${dayCount} of their journey${goalIntent?'\nGoal: '+goalIntent:''}

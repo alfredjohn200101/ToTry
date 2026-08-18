@@ -33,7 +33,7 @@ async function generateWeeklyContent(){
     const d = _disciplineThread();
     const clips = _weekProofClips();
     const identity = ls('totry_identity') || '';
-    const sys = 'You are a content producer helping someone document their self-improvement journey for TikTok/Reels. You do NOT edit video. You produce: (1) a short STORYBOARD — an ordered shot list telling this week\u2019s story using the clips and stats provided, each line "Shot N: <what to show> — <on-screen text>"; (2) a CAPTION — authentic, humble, faith-aware, not braggy, with 3-5 relevant hashtags. Return JSON: {"storyboard":["..."],"caption":"..."}. Return ONLY JSON.';
+    const sys = (typeof brotherSys==='function'?brotherSys():'') + 'You are a content producer helping someone document their self-improvement journey for TikTok/Reels. You do NOT edit video. You produce: (1) a short STORYBOARD — an ordered shot list telling this week\u2019s story using the clips and stats provided, each line "Shot N: <what to show> — <on-screen text>"; (2) a CAPTION — authentic, humble, faith-aware, not braggy, with 3-5 relevant hashtags. Return JSON: {"storyboard":["..."],"caption":"..."}. Return ONLY JSON.';
     const prompt = 'This week\u2019s real data: '+ (d.strands.join(', ')||'a quiet week') + '. '
       + (identity?('They are becoming: "'+identity+'". '):'')
       + 'They have '+clips.length+' proof clip(s) from their sessions to use. '

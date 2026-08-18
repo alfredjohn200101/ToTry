@@ -492,7 +492,7 @@ async function showAIMorningSentence(){
   
   try{
     const prompt='Write ONE personal sentence (15-25 words) for this person\'s morning. Direct. Warm. Like a close friend who knows them. Reference their state. No fluff. NO opening like "Today" or "Remember". Start with a verb or noun. Their state: '+context;
-    const response=await api('You are this person\'s closest friend who happens to be wise — warm, real, and willing to say something with substance.',[],prompt,700);
+    const response=await api((typeof brotherSys==='function'?brotherSys():'')+'You are this person\'s closest friend who happens to be wise — warm, real, and willing to say something with substance.',[],prompt,700);
     if(response&&response.trim()){
       const sentence=response.trim().replace(/^["\'\u201c\u201d]+|["\'\u201c\u201d]+$/g,'');
       textEl.textContent=sentence;

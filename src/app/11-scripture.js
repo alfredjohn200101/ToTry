@@ -1267,7 +1267,7 @@ async function generatePrayerFor(situation, verse){
   const name=ls('totry_name')||'';
   const prompt='Write a short, honest, first-person prayer (3-5 sentences) for someone carrying: "'+situation+'". Anchor it in '+(verse?verse.reference+' ("'+verse.text+'")':'scripture')+'. Make it sound like a real person talking to God, not religious performance. No "thee/thou".'+(name?' Their name is '+name+' if natural to reference.':'');
   try{
-    const prayer=await api('You write intimate, honest, scripturally-grounded prayers that sound deeply human — never rushed or generic. A real prayer someone can sit with.',[],prompt,900);
+    const prayer=await api((typeof faithVoiceNote==='function'?faithVoiceNote():'')+(typeof sexNote==='function'?sexNote():'')+'You write intimate, honest prayers in THEIR tradition that sound deeply human — never rushed or generic. A real prayer someone can sit with.',[],prompt,900);
     if(prayer&&prayer.trim()){
       prayerBox.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">A prayer for this moment</div>'+
         '<div style="font-family:\'Cormorant Garamond\',serif;font-size:16px;font-style:italic;line-height:1.7;color:var(--tx)">'+prayer.trim()+'</div>';

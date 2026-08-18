@@ -3284,6 +3284,34 @@ H.section('dead code that was one caller away from confusing someone');
   H.ok(!/M17 5H9\.5/.test(H.html), 'no dollar-sign glyph is drawn in any icon');
 }
 
+// ── every surface that SPEAKS knows who it is speaking to ───────────────────────────────────────
+// brotherSys() is where the app decides who it is talking to: it carries sexNote() (never "brother"
+// to a woman) and faithVoiceNote() (for a secular person, "use NO religious language at all"). Any
+// builder that writes its own system prompt without it is a surface that can get both wrong — and
+// five did, including the PT coach, which talks to a person for paragraphs at a time, and the prayer
+// generator, which is the single most tradition-specific thing this app produces.
+//
+// Data-extraction calls (parsing a recipe, mapping CSV columns, looking up a barcode) have no voice
+// and are deliberately excluded: adding a persona there would be noise, not safety.
+{
+  H.section('every surface that speaks knows who it is speaking to');
+  const VOICE = ['buildCtx', 'buildPTCtx', 'generateWeeklySynthesis', 'generateWeeklyReflection',
+                 'generateWeeklyCoachResponse', 'explainVicePatterns', 'explainReadiness',
+                 'explainPlateau', 'generateWeeklyContent', '_companionSay'];
+  for (const fn of VOICE) {
+    const b = fnBodyOf(H.html, fn);
+    H.ok(b.length > 0, `${fn} exists`);
+    H.ok(/brotherSys\(/.test(b), `${fn} speaks through brotherSys — so sex and faith are never guessed`);
+  }
+  // The prayer generator cannot use brotherSys (it is not the sibling talking), but it must still
+  // follow the tradition — a Muslim, Hindu or secular person asking for prayer was getting a
+  // scripturally-grounded Christian one.
+  const gp = fnBodyOf(H.html, 'generatePrayerFor');
+  H.ok(/faithVoiceNote\(/.test(gp), 'generatePrayerFor prays in the person\'s own tradition');
+  // And the morning sentence, which is the first thing they read.
+  H.ok(/brotherSys\(/.test(fnBodyOf(H.html, 'showAIMorningSentence')), 'the morning sentence too');
+}
+
 // ── an error is never served as an answer ────────────────────────────────────────────────────────
 // api() returned the rate-limit notice AS ITS VALUE, and callers render a return value as content —
 // so "You've reached today's free AI limit…" was displayed as a person's generated PRAYER, as a

@@ -252,7 +252,7 @@ async function explainPlateau(){
   if(btn){ btn.textContent='Thinking...'; btn.disabled=true; }
   try{
     const ctx = (typeof _ptIntel==='function') ? _ptIntel() : '';
-    const sys = 'You are an encouraging, knowledgeable strength & nutrition coach. Diagnose plateaus from data, give 2-3 concrete, safe things to try. Concise, practical, never medical claims.';
+    const sys = (typeof brotherSys==='function'?brotherSys():'') + 'You are an encouraging, knowledgeable strength & nutrition coach. Diagnose plateaus from data, give 2-3 concrete, safe things to try. Concise, practical, never medical claims.';
     const prompt = 'This person seems to have hit a plateau: ' + p.detail + '\n\nTheir recent training data:' + ctx + '\n\nIn a short, encouraging paragraph plus 2-3 specific bullet actions, explain likely reasons and what to try next.';
     const resp = await api(sys, [], prompt, 700);
     if(box){
