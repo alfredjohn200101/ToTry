@@ -3270,6 +3270,12 @@ H.section('dead code that was one caller away from confusing someone');
 
   // Amounts must never be silently converted: a person's debt is not ours to reinterpret.
   H.ok(!/curSym\(\)[\s\S]{0,40}\* *rate/.test(H.html), 'no exchange rate is applied to a stored amount');
+
+  // ICONS COUNT TOO. Every figure used curSym() while the navigation tab a person taps to REACH their
+  // money was a drawn dollar sign, as was the "I just got paid" button — so someone in London or
+  // Mumbai still tapped a "$" to open their own accounts. Found by looking at the app on a phone,
+  // which is the only place an icon can be seen.
+  H.ok(!/M17 5H9\.5/.test(H.html), 'no dollar-sign glyph is drawn in any icon');
 }
 
 // ── the bundle must actually PARSE ───────────────────────────────────────────────────────────────
