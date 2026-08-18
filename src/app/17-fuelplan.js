@@ -227,7 +227,9 @@ async function _fuelGenerate(){
   let plan = parsePlan(txt);
   if(plan) plan._estimated = true;
   const lm = document.getElementById('fuel-loading'); if(lm) lm.remove();
-  if(!plan || !plan.meals){ if(typeof showToast==='function') showToast('Hmm', 'Couldn’t build it just now — try again in a moment.'); return; }
+  // A model returning {"meals":"see below"} passed `!plan.meals`, was persisted AND synced, and then
+  // every consumer does plan.meals.map(...) — so "View my plan" threw and did nothing, on every device.
+  if(!plan || !Array.isArray(plan.meals) || !plan.meals.length){ if(typeof showToast==='function') showToast('Hmm', 'Couldn’t build it just now — try again in a moment.'); return; }
   plan.generatedAt = Date.now(); plan.targets = { cal:cal, pro:ctx.pro }; plan.budget = p.budget||0; plan.preworkout = preworkout; plan.lead = lead;
   ls('totry_meal_plan', plan); if(typeof syncToCloud==='function') syncToCloud();
   if(typeof haptic==='function') haptic('success');
@@ -372,7 +374,7 @@ function _fuelSaneMeal(meal){
     items: str(meal.items||meal.ingredients||'',300),
     cal:  Math.round(num(meal.cal,  3000)),   // one meal, not one day
     pro:  Math.round(num(meal.pro,   300)),
-    carb: Math.round(num(meal.carb,  500)),
+    carb: Math.round(num(meal.carbs != null ? meal.carbs : meal.carb, 500)),   // the model returns "carbs"
     fat:  Math.round(num(meal.fat,   300)),
   };
   if(meal.slot!=null) out.slot=str(meal.slot,24);

@@ -1184,7 +1184,7 @@ async function api(sys, hist, msg, tok, opts){
         // Server-side daily limit reached — surface the friendly message, don't keep retrying
         if(data.error === 'rate_limited'){
           window.__lastAIError = data;
-          return data.message || "You've reached today's AI limit. It resets at midnight.";
+          return '';   // NOT the message — see getAIErrorMessage(); callers render a return value as content
         }
         if(data.error){
           lastError = data;
@@ -1260,6 +1260,10 @@ function aiUnavailableHtml(local){
 function getAIErrorMessage(){
   const err = window.__lastAIError;
   if(!err) return null;
+  // The server's daily-limit notice is the most useful message we have — it names the reset and says
+  // the rest of the app keeps working. api() stopped returning it as CONTENT (it was being rendered
+  // as a person's prayer), so it surfaces here instead.
+  if(err.error === 'rate_limited' && err.message) return err.message;
   
   // Try to extract specific failure reason from attempts
   if(err.attempts && err.attempts.length){

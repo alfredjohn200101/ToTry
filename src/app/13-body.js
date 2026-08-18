@@ -354,7 +354,7 @@ async function generateWeeklyCoachResponse(entry){
         '<div class="modal-handle"></div>'+
         '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;text-align:center;margin-bottom:8px">Your coach response</div>'+
         '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;text-align:center;margin-bottom:16px">For this week.</div>'+
-        '<div style="font-size:14px;line-height:1.75;color:var(--tx2);white-space:pre-wrap;margin-bottom:18px">'+response.trim()+'</div>'+
+        '<div style="font-size:14px;line-height:1.75;color:var(--tx2);white-space:pre-wrap;margin-bottom:18px">'+_escFew(response.trim())+'</div>'+
         '<button class="btn primary" onclick="closeModal(this)">Got it</button>'+
         '</div>';
       document.body.appendChild(m);

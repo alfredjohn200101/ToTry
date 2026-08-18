@@ -246,7 +246,10 @@ async function _researchProtocol(name, key){
     const _fv = (typeof faithVoiceNote==='function') ? faithVoiceNote() : '';
     const sys = "You are a clinical researcher with deep knowledge of evidence-based behavior-change protocols. " + _fv + " Given a struggle, return the single best evidence-based mechanism for helping someone through an acute moment of it, in 2-3 sentences, naming the approach (e.g. urge surfing, cognitive defusion, behavioral interruption, grounding) and how it's applied in the moment. Be specific and practical. " + ((typeof faithTradition==='function' && faithTradition()!=='secular') ? 'Then in one more sentence, note how their faith can anchor it. ' : '') + "Return ONLY the guidance text, no preamble.";
     const txt = await api(sys, [], 'The struggle: "'+name+'". What is the best evidence-based in-the-moment approach?', 350, { web_search:true, timeout:38000 });
-    if(txt && txt.length > 40){
+    // Length is not validity. This cached ANY long string as the clinical spine for a struggle, and
+    // the rate-limit notice is 140 characters — so a billing message became the permanent protocol
+    // for someone's 2am, injected into every prompt after it. Only cache a real answer.
+    if(txt && txt.length > 40 && !window.__lastAIError){
       const store = _getCompanionProtocols();
       store[key] = { spine: txt.trim(), label: 'Here with you', at: Date.now() };
       try{ localStorage.setItem('totry_companion_protocols', JSON.stringify(store)); }catch(_){}

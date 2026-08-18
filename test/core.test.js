@@ -3284,6 +3284,32 @@ H.section('dead code that was one caller away from confusing someone');
   H.ok(!/M17 5H9\.5/.test(H.html), 'no dollar-sign glyph is drawn in any icon');
 }
 
+// ── an error is never served as an answer ────────────────────────────────────────────────────────
+// api() returned the rate-limit notice AS ITS VALUE, and callers render a return value as content —
+// so "You've reached today's free AI limit…" was displayed as a person's generated PRAYER, as a
+// recovery timeline, and, worst, cached by the companion as the clinical "spine" for a struggle
+// (anything over 40 characters was cached), then injected into every future 2am prompt for it.
+{
+  H.section('an error is never served as an answer');
+  const apiBody = fnBodyOf(H.html, 'api');
+  H.ok(/rate_limited/.test(apiBody), 'the rate-limited branch is still handled');
+  H.ok(!/return data\.message/.test(apiBody), 'but the notice is never returned as the answer');
+  H.ok(/err\.error === 'rate_limited' && err\.message/.test(fnBodyOf(H.html, 'getAIErrorMessage')),
+       'it surfaces through getAIErrorMessage instead, where the wording belongs');
+  H.ok(/txt\.length > 40 && !window\.__lastAIError/.test(H.html),
+       'and the companion caches a protocol only when the call actually succeeded');
+
+  // Model output straight into innerHTML: a reply containing "<" ("you went from <60kg") is parsed as
+  // a tag and the rest of the sentence disappears, so the person reads a thought that stops halfway.
+  H.ok(/_escFew\(response\.trim\(\)\)/.test(H.html), 'the weekly coach reply is escaped before it is shown');
+
+  // The fuel plan asks the model for "carbs" and one normaliser read "carb", so every swapped or
+  // added meal was stored with zero carbohydrate.
+  H.ok(/meal\.carbs != null \? meal\.carbs : meal\.carb/.test(H.html), 'a swapped meal keeps its carbs');
+  // And {"meals":"see below"} passed the old check, was persisted AND synced, and broke the plan for good.
+  H.ok(/Array\.isArray\(plan\.meals\)/.test(H.html), 'a plan is shape-checked before it is stored');
+}
+
 // ── an in-progress workout is not a JS variable ─────────────────────────────────────────────────
 // currentSession held every set someone logged mid-workout, in memory and nowhere else. A phone call,
 // a backgrounded tab reclaimed by iOS, a service-worker update — and the whole session was gone with

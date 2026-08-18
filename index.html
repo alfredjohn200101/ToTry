@@ -4861,7 +4861,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v499';
+const APP_VERSION = 'v500';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -8411,7 +8411,7 @@ async function api(sys, hist, msg, tok, opts){
         // Server-side daily limit reached — surface the friendly message, don't keep retrying
         if(data.error === 'rate_limited'){
           window.__lastAIError = data;
-          return data.message || "You've reached today's AI limit. It resets at midnight.";
+          return '';   // NOT the message — see getAIErrorMessage(); callers render a return value as content
         }
         if(data.error){
           lastError = data;
@@ -8487,6 +8487,10 @@ function aiUnavailableHtml(local){
 function getAIErrorMessage(){
   const err = window.__lastAIError;
   if(!err) return null;
+  // The server's daily-limit notice is the most useful message we have — it names the reset and says
+  // the rest of the app keeps working. api() stopped returning it as CONTENT (it was being rendered
+  // as a person's prayer), so it surfaces here instead.
+  if(err.error === 'rate_limited' && err.message) return err.message;
   
   // Try to extract specific failure reason from attempts
   if(err.attempts && err.attempts.length){
@@ -16192,7 +16196,10 @@ async function _researchProtocol(name, key){
     const _fv = (typeof faithVoiceNote==='function') ? faithVoiceNote() : '';
     const sys = "You are a clinical researcher with deep knowledge of evidence-based behavior-change protocols. " + _fv + " Given a struggle, return the single best evidence-based mechanism for helping someone through an acute moment of it, in 2-3 sentences, naming the approach (e.g. urge surfing, cognitive defusion, behavioral interruption, grounding) and how it's applied in the moment. Be specific and practical. " + ((typeof faithTradition==='function' && faithTradition()!=='secular') ? 'Then in one more sentence, note how their faith can anchor it. ' : '') + "Return ONLY the guidance text, no preamble.";
     const txt = await api(sys, [], 'The struggle: "'+name+'". What is the best evidence-based in-the-moment approach?', 350, { web_search:true, timeout:38000 });
-    if(txt && txt.length > 40){
+    // Length is not validity. This cached ANY long string as the clinical spine for a struggle, and
+    // the rate-limit notice is 140 characters — so a billing message became the permanent protocol
+    // for someone's 2am, injected into every prompt after it. Only cache a real answer.
+    if(txt && txt.length > 40 && !window.__lastAIError){
       const store = _getCompanionProtocols();
       store[key] = { spine: txt.trim(), label: 'Here with you', at: Date.now() };
       try{ localStorage.setItem('totry_companion_protocols', JSON.stringify(store)); }catch(_){}
@@ -21197,7 +21204,7 @@ async function generateWeeklyCoachResponse(entry){
         '<div class="modal-handle"></div>'+
         '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;text-align:center;margin-bottom:8px">Your coach response</div>'+
         '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;text-align:center;margin-bottom:16px">For this week.</div>'+
-        '<div style="font-size:14px;line-height:1.75;color:var(--tx2);white-space:pre-wrap;margin-bottom:18px">'+response.trim()+'</div>'+
+        '<div style="font-size:14px;line-height:1.75;color:var(--tx2);white-space:pre-wrap;margin-bottom:18px">'+_escFew(response.trim())+'</div>'+
         '<button class="btn primary" onclick="closeModal(this)">Got it</button>'+
         '</div>';
       document.body.appendChild(m);
@@ -27180,7 +27187,9 @@ async function _fuelGenerate(){
   let plan = parsePlan(txt);
   if(plan) plan._estimated = true;
   const lm = document.getElementById('fuel-loading'); if(lm) lm.remove();
-  if(!plan || !plan.meals){ if(typeof showToast==='function') showToast('Hmm', 'Couldn’t build it just now — try again in a moment.'); return; }
+  // A model returning {"meals":"see below"} passed `!plan.meals`, was persisted AND synced, and then
+  // every consumer does plan.meals.map(...) — so "View my plan" threw and did nothing, on every device.
+  if(!plan || !Array.isArray(plan.meals) || !plan.meals.length){ if(typeof showToast==='function') showToast('Hmm', 'Couldn’t build it just now — try again in a moment.'); return; }
   plan.generatedAt = Date.now(); plan.targets = { cal:cal, pro:ctx.pro }; plan.budget = p.budget||0; plan.preworkout = preworkout; plan.lead = lead;
   ls('totry_meal_plan', plan); if(typeof syncToCloud==='function') syncToCloud();
   if(typeof haptic==='function') haptic('success');
@@ -27325,7 +27334,7 @@ function _fuelSaneMeal(meal){
     items: str(meal.items||meal.ingredients||'',300),
     cal:  Math.round(num(meal.cal,  3000)),   // one meal, not one day
     pro:  Math.round(num(meal.pro,   300)),
-    carb: Math.round(num(meal.carb,  500)),
+    carb: Math.round(num(meal.carbs != null ? meal.carbs : meal.carb, 500)),   // the model returns "carbs"
     fat:  Math.round(num(meal.fat,   300)),
   };
   if(meal.slot!=null) out.slot=str(meal.slot,24);

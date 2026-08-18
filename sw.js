@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v499-eightdoors'
+const CACHE = 'totry-v500-notananswer'
 
 const CORE = [
   './',
