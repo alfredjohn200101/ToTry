@@ -790,7 +790,7 @@ function initEveningTab(){
     if((ls('totry_workouts')||[]).some(w=>_isToday(w.ts))) ev.push('\ud83d\udcaa Trained');
     const _meals=((ls('totry_nutlog')||{})[_au]||[]).length; if(_meals) ev.push('\ud83c\udf7d Logged '+_meals+' meal'+(_meals>1?'s':''));
     const _wins=(ls('totry_feeling_wins')||[]).filter(w=>_isToday(w.ts)).length; if(_wins) ev.push('\ud83d\udee1 Outlasted '+_wins+' urge'+(_wins>1?'s':''));
-    if((ls('totry_prayers')||[]).some(p=>_isToday(p.ts))) ev.push('\ud83d\ude4f Prayed');
+    if((ls('totry_prayers')||[]).some(p=>_isToday(p.createdAt || p.ts))) ev.push('\ud83d\ude4f Prayed');
     const _tr=(ls('totry_trackers')||{})[_au]||{}; if(_tr.steps>=1000) ev.push('\ud83d\udc5f '+Number(_tr.steps).toLocaleString()+' steps');
     const _box=document.getElementById('evening-day-evidence');
     const _list=document.getElementById('evening-day-evidence-list');

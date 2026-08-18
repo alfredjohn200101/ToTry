@@ -365,9 +365,11 @@ function _weekStats(){
   const now = Date.now(), wk = now - 7*86400000;
   const workouts = (ls('totry_workouts')||[]).filter(w => w.ts && new Date(w.ts).getTime() >= wk);
   const journal = safeJournal().filter(j => j.ts && new Date(j.ts).getTime() >= wk);
-  const prayers = (ls('totry_prayers')||[]);
+  const prayers = (ls('totry_prayers')||[]).filter(p => p && new Date(p.createdAt || p.ts).getTime() >= wk);
   loadV();
-  const wins = (vices||[]).reduce((a,v)=>a+(v.w||0),0);
+  // v.w is a LIFETIME total; every other figure on this screen is the last seven days. Count the wins
+  // in the fight log, which is dated, so "this week" means this week.
+  const wins = (ls('totry_fight_log')||[]).filter(f => f && f.won && f.ts && new Date(f.ts).getTime() >= wk).length;
   const slips7 = (vices||[]).reduce((a,v)=>a+((v.relapseHistory||[]).filter(r=>r.date&&new Date(r.date).getTime()>=wk).length),0);
   const _lq = (vices||[]).filter(v=>v.kind!=='letgo'); // letting-go isn't a clean-day streak
   const longest = _lq.length ? Math.max(..._lq.map(v=>(typeof viceCleanDays==='function')?viceCleanDays(v):0)) : 0;

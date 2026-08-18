@@ -432,7 +432,37 @@ function addExerciseToSession(ex){
   document.getElementById('pt-ex-search').value='';document.getElementById('pt-ex-results').innerHTML='';
   renderWorkoutSession();
 }
+// Persist the live session on every render. This function is called after every mutation — a set
+// added, edited, removed, an exercise appended — so it is the one place that sees them all. Without
+// this the entire in-progress workout lived in a JS variable and nowhere else: one backgrounded tab
+// reclaimed by iOS and every set logged so far was gone, with nothing to restore from.
+function _saveSessionDraft(){
+  try{
+    if(typeof currentSession === 'undefined') return;
+    if(currentSession && currentSession.length){
+      ls('totry_session_draft', { session: currentSession, startedAt: (typeof __sessionStart!=='undefined' && __sessionStart) || null, ts: Date.now() });
+    } else {
+      ls('totry_session_draft', null);
+    }
+  }catch(_){ }
+}
+// Bring one back if the app died mid-workout. Anything older than 18 hours is not a session someone
+// is still in — it is a session they abandoned, and offering it back would be noise.
+function restoreSessionDraft(){
+  try{
+    const d = ls('totry_session_draft');
+    if(!d || !d.session || !d.session.length) return false;
+    if(d.ts && (Date.now() - d.ts) > 18*3600000){ ls('totry_session_draft', null); return false; }
+    if(typeof currentSession !== 'undefined' && currentSession.length) return false;   // never overwrite a live one
+    currentSession = d.session;
+    if(d.startedAt && typeof __sessionStart !== 'undefined') __sessionStart = d.startedAt;
+    renderWorkoutSession();
+    if(typeof showToast === 'function') showToast('Picked up where you left off', currentSession.length + ' exercise' + (currentSession.length===1?'':'s') + ' from your last session were still open.');
+    return true;
+  }catch(_){ return false; }
+}
 function renderWorkoutSession(){
+  try{ _saveSessionDraft(); }catch(_){ }
   const container=document.getElementById('pt-session-exercises');if(!container)return;
   const sessionWrap=document.getElementById('pt-session-wrap');
   const emptyState=document.getElementById('pt-session-empty');
@@ -1567,6 +1597,13 @@ function _showAllHevyRoutines(){
   document.body.appendChild(m); m.addEventListener('click',e=>{if(e.target===m)m.remove();});
 }
 function startHevyRoutine(id){
+  // AN IN-PROGRESS SESSION IS SOMEONE'S WORKOUT. Loading a routine overwrote currentSession with no
+  // warning, so tapping a routine mid-session — easy to do, they are on the same screen — erased every
+  // set already logged, with nothing to undo it. Ask first.
+  try{
+    if(typeof currentSession !== 'undefined' && currentSession && currentSession.length &&
+       !confirm('You have a workout in progress. Loading a routine will replace it \u2014 the sets you have logged will be lost. Continue?')) return;
+  }catch(_){ }
   // Match on hevyId — what fetchHevyRoutines actually stores. Matching on x.id meant comparing
   // String(undefined) to String(undefined), which "matched" the FIRST routine in the list rather
   // than failing loudly: tapping any routine would have started the wrong one.
@@ -1585,6 +1622,13 @@ function startHevyRoutine(id){
   showToast('Routine loaded', (r.title||'Hevy routine'));
 }
 function loadRoutine(id){
+  // AN IN-PROGRESS SESSION IS SOMEONE'S WORKOUT. Loading a routine overwrote currentSession with no
+  // warning, so tapping a routine mid-session — easy to do, they are on the same screen — erased every
+  // set already logged, with nothing to undo it. Ask first.
+  try{
+    if(typeof currentSession !== 'undefined' && currentSession && currentSession.length &&
+       !confirm('You have a workout in progress. Loading a routine will replace it \u2014 the sets you have logged will be lost. Continue?')) return;
+  }catch(_){ }
   const routine=(ls('totry_routines')||[]).find(r=>r.id===id);if(!routine)return;
   currentSession=routine.exercises.map(ex=>({...ex,sets:ex.sets.map(s=>({...s,done:false}))}));
   setPTTab('log');renderWorkoutSession();showToast('Routine loaded',routine.name);

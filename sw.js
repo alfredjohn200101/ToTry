@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v495-withdrawal'
+const CACHE = 'totry-v496-session'
 
 const CORE = [
   './',

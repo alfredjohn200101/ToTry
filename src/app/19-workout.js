@@ -62,6 +62,7 @@ function getUserSplit(){
 }
 
 function initPTTab(){
+  try{ if(typeof restoreSessionDraft==='function') restoreSessionDraft(); }catch(_){}
   renderSplitDayCards();renderWorkoutSession();loadTodaySplitCard();updateStravaBtn();
   if(typeof renderSplitOverview==='function') renderSplitOverview();
   const history=ls('totry_workouts')||[];if(history.length>=2)getProgressiveSuggestion();

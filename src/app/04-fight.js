@@ -1139,6 +1139,12 @@ function _lifeHappenedNotSlip(i){
     }
   }
   v.relapseCount = Math.max(0, (v.relapseCount||0) - 1);
+  // lastLoss still pointed at the event we just undid. Roll it back to the previous relapse, or clear
+  // it entirely when there was none — otherwise the app keeps a record of a slip it has agreed did
+  // not happen, and any surface reading lastLoss disagrees with the streak the person can see.
+  const _prev = (v.relapseHistory && v.relapseHistory.length) ? v.relapseHistory[v.relapseHistory.length-1] : null;
+  if(_prev && (_prev.date || _prev.ts)) v.lastLoss = _prev.date || _prev.ts;
+  else delete v.lastLoss;
   if(typeof addFreeze==='function') addFreeze('life happens');
   saveV();
   renderVices(); if(typeof renderScoreboard==='function') renderScoreboard(); if(typeof renderDayCounter==='function') renderDayCounter();

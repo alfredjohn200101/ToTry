@@ -4177,7 +4177,9 @@ function waterMlOn(dateStr){
   }catch(_){ return 0; }
 }
 function getWaterCount(){
-  const today = new Date().toLocaleDateString('en-AU');
+  // nutDayKey() is the day the tab is SHOWING, not necessarily today — every other logger on this tab
+  // uses it, and water did not, so a glass logged while reviewing Tuesday landed on today instead.
+  const today = (typeof nutDayKey === 'function') ? nutDayKey() : new Date().toLocaleDateString('en-AU');
   const water = ls('totry_water') || {};
   let v = water[today] || 0;
   // Backward-compat: old data stored cups (small numbers). If it looks like cups (<50), convert to ml.
@@ -4185,7 +4187,9 @@ function getWaterCount(){
   return v; // ml
 }
 function setWaterCount(ml){
-  const today = new Date().toLocaleDateString('en-AU');
+  // nutDayKey() is the day the tab is SHOWING, not necessarily today — every other logger on this tab
+  // uses it, and water did not, so a glass logged while reviewing Tuesday landed on today instead.
+  const today = (typeof nutDayKey === 'function') ? nutDayKey() : new Date().toLocaleDateString('en-AU');
   const water = ls('totry_water') || {};
   water[today] = Math.max(0, Math.round(ml));
   ls('totry_water', water);

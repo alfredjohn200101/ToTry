@@ -3284,6 +3284,23 @@ H.section('dead code that was one caller away from confusing someone');
   H.ok(!/M17 5H9\.5/.test(H.html), 'no dollar-sign glyph is drawn in any icon');
 }
 
+// ── an in-progress workout is not a JS variable ─────────────────────────────────────────────────
+// currentSession held every set someone logged mid-workout, in memory and nowhere else. A phone call,
+// a backgrounded tab reclaimed by iOS, a service-worker update — and the whole session was gone with
+// nothing to restore from. renderWorkoutSession() runs after every mutation, so it is the one place
+// that sees them all.
+{
+  H.section('an in-progress workout survives the app dying');
+  H.ok(/function _saveSessionDraft\(/.test(H.html), 'the live session is written to storage');
+  H.ok(/function restoreSessionDraft\(/.test(H.html), 'and can be brought back');
+  const rws = fnBodyOf(H.html, 'renderWorkoutSession');
+  H.ok(/_saveSessionDraft\(\)/.test(rws), 'saved from the one function every mutation goes through');
+  H.ok(/restoreSessionDraft\(\)/.test(fnBodyOf(H.html, 'initPTTab')), 'and offered back when the Train tab opens');
+  const rsd = fnBodyOf(H.html, 'restoreSessionDraft');
+  H.ok(/18\*3600000|18 \* 3600000/.test(rsd), 'a day-old draft is not offered back — that is an abandoned session, not a live one');
+  H.ok(/currentSession\.length\) return/.test(rsd), 'and it never overwrites a session already in progress');
+}
+
 // ── the one withdrawal that can kill ─────────────────────────────────────────────────────────────
 // Alcohol is not nicotine. Days 1-3 are when seizures and delirium tremens happen to a physically
 // dependent drinker, and the timeline told them "the worst of the restlessness eases" on day 3 — the

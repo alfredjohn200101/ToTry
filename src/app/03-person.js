@@ -392,7 +392,7 @@ function brotherSpeaks(moment){
       let why = '';
       if(life){
         const r = life.readiness;
-        if(r && r.level && /low|depleted|poor/i.test(r.level)) why = ' You\u2019re running low today \u2014 tired is when the pull wins. ';
+        if(r && r.level && /low|rest|depleted|poor/i.test(r.level)) why = ' You\u2019re running low today \u2014 tired is when the pull wins. ';
         else if(life.fight && life.fight.losses7 >= 2 && life.fight.losses7 > life.fight.wins7) why = ' It\u2019s been a heavy week. ';
       }
       // Stage of change decides the TONE, not just the card's offer. Prochaska's whole finding is that
@@ -528,7 +528,7 @@ function getLifeState(){
   const evenings = (L('totry_evenings')||[]).filter(e => e && e.ts && !e.flagged);
   const ev7 = evenings.filter(e => within(e.ts, 7));
   const examens7 = (L('totry_examens')||[]).filter(e => e && within(e.ts, 7));
-  const prayers7 = (L('totry_prayers')||[]).filter(p => p && within(p.ts, 7));
+  const prayers7 = (L('totry_prayers')||[]).filter(p => p && within(p.createdAt || p.ts, 7));
   const journal7 = (L('totry_journal')||[]).filter(j => j && !j.flagged && within(j.ts, 7));
 
   // ── VICE / FIGHT ──
