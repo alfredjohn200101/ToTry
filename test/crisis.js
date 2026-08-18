@@ -40,6 +40,35 @@ const DOORS = [
   { name: 'find a verse for how I feel',
     go: async page => page.evaluate(async () => { go('bible'); if(typeof setBibleTab==='function') setBibleTab('find'); }),
     fire: async (page, phrase) => page.evaluate(async p => { if(typeof findVerse==='function') await findVerse(p); }, phrase) },
+  // The four doors below were added after the first walk: every remaining place a person can type
+  // free text that reaches a model. A gate that exists in source but is bypassed by the actual call
+  // path is the shape this file was written for, so each is DRIVEN rather than grepped.
+  { name: 'the coach chat',
+    go: async page => page.evaluate(async () => { go('coach'); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('coach-in'); if(i) i.value = p;
+      if(typeof sendCoach === 'function') await sendCoach();
+    }, phrase) },
+  { name: 'the PT chat',
+    go: async page => page.evaluate(async () => { go('train'); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('pt-in'); if(i) i.value = p;
+      if(typeof sendPT === 'function') await sendPT();
+    }, phrase) },
+  { name: 'the companion free text',
+    go: async page => page.evaluate(async () => { if(typeof openCompanion==='function') openCompanion(); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const f = document.getElementById('comp-freetext');
+      if(f) f.value = p;                                  // it reads the field, it takes no argument
+      if(typeof companionFreeText === 'function') await companionFreeText();
+    }, phrase) },
+  { name: 'the morning check-in',
+    go: async page => page.evaluate(async () => { go('home'); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const g = document.getElementById('morning-grateful'), i = document.getElementById('morning-intention');
+      if(g) g.value = p; if(i) i.value = p;
+      if(typeof completeMorning === 'function') await completeMorning();
+    }, phrase) },
   { name: 'the journal',
     go: async page => page.evaluate(async () => { go('soul'); }),
     fire: async (page, phrase) => page.evaluate(async p => {
@@ -85,7 +114,7 @@ const PROBE = `(() => {
     await page.waitForTimeout(2900);
     // Anything that opened on its own would sit over the card and make this measure the overlay, not
     // the app. (It did, the first time — the guest flow auto-opens the companion at z-410.)
-    await page.evaluate(() => document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.remove()));
+    await page.evaluate(() => document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open')));
     await door.go(page);
     await page.waitForTimeout(600);
     try { await door.fire(page, PHRASE); } catch (e) { findings.push(`${door.name}: threw — ${String(e.message).slice(0,90)}`); }
