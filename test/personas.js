@@ -88,6 +88,34 @@ const PERSONAS = [
     },
     forbid: CHRISTIAN_ONLY,
   },
+  {
+    // THE PERSON WHOSE DATA BREAKS THINGS. Every field here is something that has actually shipped a
+    // defect: an apostrophe in a name (killed every button on two screens, v490), a non-dollar
+    // currency (166 sites showed $, v480), several debts paid on one day (made the debt-free date
+    // months early, v491), a moderate-mode vice with a nightly line (reported to the coach as a
+    // weekly allowance, v483), a backdated relapse (headline and card disagreed, v490), and a cycle
+    // logged with backup off (the day number reached a third-party model, v486). One walk over all
+    // of it — none of these are exotic; they are just what real people type.
+    name: "female · muslim · gentle mode · GBP · apostrophes",
+    seed: {
+      totry_guest: true, totry_onboarded: true,
+      totry_name: "Aisha O'Brien",
+      totry_sex: 'female',
+      totry_faith_tradition: 'islam',
+      totry_currency: 'GBP',
+      totry_nut_gentle: true,
+      totry_v: [{ n: "Mum's wine o'clock", mode: 'moderate', modLimit: 4, modThreshold: 2,
+                  startDate: new Date(Date.now() - 9 * 864e5).toISOString(),
+                  lastLoss: new Date(Date.now() - 30 * 864e5).toISOString(), total: 3 }],
+      totry_f: { d: [{ n: "Dad's loan", t: 4000, p: 1200, r: 0 },
+                     { n: 'Card', t: 3000, p: 900, r: 19.9 }], u: 0, i: 0 },
+      totry_transactions: [{ type: 'expense', amount: 42.5, cat: 'Food', note: "Domino's", ts: new Date().toISOString() }],
+      totry_finance_goals: [{ id: 1, name: 'Old goal', target: 500, current: 500 },
+                            { id: 2, name: "Aisha's fund", target: 2000, current: 100 }],
+      totry_body: [{ w: 64, d: new Date().toISOString(), ts: new Date().toISOString(), date: '18 Aug' }],
+    },
+    forbid: CHRISTIAN_ONLY,
+  },
 ];
 
 const serve = () => new Promise(res => {
