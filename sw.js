@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v496-session'
+const CACHE = 'totry-v497-honest'
 
 const CORE = [
   './',
@@ -62,14 +62,15 @@ self.addEventListener('fetch', e => {
     'vedicscriptures.github.io',
     'api.aladhan.com',
     'www.strava.com',
-    'fonts.googleapis.com',
-    'fonts.gstatic.com',
   ];
 
   // The Supabase JS library (jsdelivr) is a CORE dependency — cache it stale-while-revalidate so
   // the app can boot OFFLINE. Serve cached instantly, refresh in the background. Without this the
   // whole app failed to initialize with no connection.
-  if(url.hostname.includes('cdn.jsdelivr.net')){
+  // Fonts belong here, NOT in apiHosts. They are the app's own three typefaces, not somebody's API,
+  // and listing them as never-cache meant every offline start rendered in system fonts. Same
+  // stale-while-revalidate treatment as the SDK: instant from cache, refreshed quietly behind.
+  if(url.hostname.includes('cdn.jsdelivr.net') || url.hostname.includes('fonts.googleapis.com') || url.hostname.includes('fonts.gstatic.com')){
     e.respondWith(
       caches.match(e.request).then(cached => {
         const network = fetch(e.request).then(resp => {

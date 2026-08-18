@@ -466,7 +466,10 @@ async function showAIMorningSentence(){
   // Gather context
   const identity=ls('totry_identity')||'';
   const season=ls('totry_season')||'Building';
-  const checkins=ls('totry_checkins')||[];
+  // Only the mood rows carry physical/emotional/spiritual — the morning sleep tap writes
+  // {kind:'sleep', scores:{…}} into the same store, and taking [0] blindly made that the
+  // person's "most recent state".
+  const checkins=(ls('totry_checkins')||[]).filter(c => c && c.physical!=null);
   const recent=checkins[0];
   const dayCount=getDayCount();
   loadV();

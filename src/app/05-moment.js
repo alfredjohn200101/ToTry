@@ -1704,9 +1704,9 @@ function _recoveryPhaseNote(days){
 }
 function openNaturalHighs(){
   const HIGHS=[
-    ['move','🏃','Move your body','The runner’s high hits the same receptor the vice did — your body’s own version. Strongest, cleanest lift there is.'],
-    ['cold','🧊','Cold water','60–90 seconds cold → dopamine up ~2.5× for hours. No crash after.'],
-    ['sun','☀️','Morning light','10–20 min of early sun resets your dopamine and your sleep.'],
+    ['move','🏃','Move your body','Movement lifts mood and takes the edge off a craving more reliably than anything else here — and it works on the day you least feel like it.'],
+    ['cold','🧊','Cold water','60–90 seconds of cold gives most people a sharp, clean lift in alertness and mood. Short-lived, but no crash, and it breaks the loop you are in.'],
+    ['sun','☀️','Morning light','10–20 min of early sun anchors your body clock — which is what actually fixes the sleep that is feeding the craving.'],
     ['connect','🤝','Reach out to someone','Real connection rebuilds the reward the vice was faking.'],
     ['breath','🌬️','A charged breath','A fast breathing round to lift a flat, numb day.']
   ];

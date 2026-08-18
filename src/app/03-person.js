@@ -3873,7 +3873,8 @@ function pickDailyContextualVerse(){
     if(/build/i.test(season)) bump(['strength','perseverance'], 2);
     if(/fight|battle/i.test(season)) bump(['temptation','strength'], 2);
     // Recent mood (low emotional/spiritual → rest, love, renewal)
-    const checkins = ls('totry_checkins') || [];
+    // Mood rows only — a morning sleep tap has no emotional/spiritual and would silently take the head.
+    const checkins = (ls('totry_checkins') || []).filter(c => c && c.physical!=null);
     if(checkins.length){
       const c = checkins[0];
       if(c.emotional && c.emotional <= 4) bump(['rest','love'], 2);
@@ -4265,7 +4266,16 @@ function renderDayCounter(){
   const hd=document.getElementById('h-debt');if(hd)hd.textContent=owed>0?curSym()+Math.round(owed).toLocaleString():'Clear';
   loadTodaySplitCard();
   const tmrw=ls('totry_tomorrow_tasks');
-  if(tmrw&&tmrw.tasks?.length){
+  // Only show a list that was written FOR today (or last night). Nothing checked the stamp, so a list
+  // set on Sunday for Monday was still being presented as "Today's priorities" on Thursday.
+  const _tmrwFresh = (() => {
+    try{
+      if(!tmrw || !tmrw.date) return false;
+      const t = new Date(); const y = new Date(Date.now() - 86400000);
+      return tmrw.date === t.toLocaleDateString('en-AU') || tmrw.date === y.toLocaleDateString('en-AU');
+    }catch(_){ return false; }
+  })();
+  if(_tmrwFresh && tmrw&&tmrw.tasks?.length){
     const det=document.getElementById('today-detail');
     const split=getUserSplit();const todayDetail=split[ti]?.detail||'';
     if(det)det.textContent=todayDetail+'\n\nToday\'s priorities:\n'+tmrw.tasks.map((t,i)=>(i+1)+'. '+t).join('\n');
@@ -4479,7 +4489,10 @@ async function showAdaptivePrayer(){
   // Gather user state
   const identity=ls('totry_identity')||'';
   const season=ls('totry_season')||'Building';
-  const checkins=ls('totry_checkins')||[];
+  // Only the mood rows carry physical/emotional/spiritual — the morning sleep tap writes
+  // {kind:'sleep', scores:{…}} into the same store, and taking [0] blindly made that the
+  // person's "most recent state".
+  const checkins=(ls('totry_checkins')||[]).filter(c => c && c.physical!=null);
   const recentCheckin=checkins[0];
   loadV();
   const dayCount=getDayCount();

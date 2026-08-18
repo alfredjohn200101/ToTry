@@ -118,7 +118,7 @@ const RESTORE_EXPENDABLE = ['totry_progress_photos','totry_coach_history','totry
 const RESTORE_LABELS = {
   totry_progress_photos:'progress photos', totry_coach_history:'coach conversations',
   totry_pt_history:'PT conversations', totry_journal:'journal entries', totry_workouts:'workouts',
-  totry_strava_activities:'Strava activities', totry_fight_log:'the fight log', totry_v:'your day count',
+  totry_strava_activities:'Strava activities', totry_fight_log:'the fight log', totry_v:'your vices and streaks',
   totry_measurements:'measurements', totry_body:'body stats', totry_money:'money'
 };
 function restoreKeys(data){
@@ -183,6 +183,10 @@ function importAllData(ev){
   if(!file) return;
   const reader = new FileReader();
   reader.onload = () => {
+    // Clear the picker first. A file input does not fire change when the SAME file is chosen again,
+    // so cancelling the confirm below and re-picking the same backup did nothing at all — the person
+    // taps, nothing happens, and there is no way to tell the app is ignoring them.
+    try{ if(ev && ev.target) ev.target.value = ''; }catch(_){ }
     try{
       const parsed = JSON.parse(reader.result);
       const data = parsed.data || parsed; // tolerate raw or wrapped
@@ -420,7 +424,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v496';
+const APP_VERSION = 'v497';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }

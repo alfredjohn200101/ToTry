@@ -708,6 +708,16 @@ async function searchFood(query){
     aiCard.innerHTML='<div class="fr-name">✨ Or estimate with AI</div><div class="fr-brand">Quick estimate from the description.</div>';
     aiCard.onclick=()=>estimateMealMacros(query);
     res.appendChild(aiCard);
+    // BOTH OF THOSE NEED A CONNECTION. Offline they are two buttons that cannot work, on a dead end.
+    // Making a custom food is entirely local, so it belongs here — first, when there is no signal.
+    const ownCard=document.createElement('div');
+    ownCard.className='food-result';
+    ownCard.style.cssText='margin-top:8px';
+    const _off = (typeof navigator!=='undefined' && navigator.onLine === false);
+    ownCard.innerHTML='<div class="fr-name">\u270f\ufe0f Create it yourself</div><div class="fr-brand">' +
+      (_off ? 'You are offline \u2014 the two above need a connection. This one does not.' : 'Type the numbers off the packet. Saved for next time.') + '</div>';
+    ownCard.onclick=()=>{ if(typeof openCustomFoodCreator==='function') openCustomFoodCreator(query); };
+    if(_off) res.insertBefore(ownCard, res.firstChild); else res.appendChild(ownCard);
     return;
   }
 

@@ -1039,10 +1039,16 @@ async function openRecoveryTimeline(i){
     '<div id="recovery-timeline-body"><div style="font-size:13px;color:var(--tx3);text-align:center;padding:20px">Loading what your body and soul are gaining\u2026</div></div>'+
     '<button class="btn" onclick="closeModal(this)" style="margin-top:14px">Close</button></div>';
   document.body.appendChild(m);
+  let _timelineWasResearched = false;
   let timeline = _recoveryTimelineFor(type);
   if(!timeline){
     // Research it live (internet-first), cache to local protocols so it's instant next time.
     timeline = await _researchRecoveryTimeline(v.n, type);
+    // MARK WHAT A MODEL MADE UP. The three built-in timelines are checked physiology; this path asks a
+    // model to invent one for any struggle a person names, and it was rendered in the same card, in
+    // the same voice, with the same authority — day-by-day bodily claims about their recovery that
+    // nobody verified. Say where it came from; a person deciding whether to trust it deserves to know.
+    if(timeline && timeline.length) _timelineWasResearched = true;
   }
   const body = document.getElementById('recovery-timeline-body');
   if(!body) return;
@@ -1079,6 +1085,17 @@ async function openRecoveryTimeline(i){
       '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:3px">'+ms.body+'</div>'+
       '<div style="font-size:13px;color:var(--tx);line-height:1.6;font-style:italic">'+ms.soul+'</div></div></div>';
   }).join('');
+  // WHERE THIS CAME FROM. The built-in timelines for nicotine, alcohol and porn are checked
+  // physiology. Anything else is a model's best guess, generated live and cached — and it was
+  // rendered in the same card, same voice, same authority, making day-by-day claims about a person's
+  // body that nobody verified. An honest source line costs one sentence.
+  if(_timelineWasResearched){
+    body.innerHTML += '<div style="margin-top:14px;padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);' +
+      'border-radius:8px;font-size:11.5px;color:var(--tx3);line-height:1.6">' +
+      'These milestones were researched for this struggle rather than drawn from the checked timelines ' +
+      'I keep for nicotine, alcohol and porn. Treat them as a reasonable guide, not as measurements of ' +
+      'you \u2014 and take anything medical to someone qualified.</div>';
+  }
 }
 
 async function _researchRecoveryTimeline(name, type){
