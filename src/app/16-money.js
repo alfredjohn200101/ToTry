@@ -1,0 +1,330 @@
+let debts=[],usaS=0,indiaS=0;
+function loadF(){const f=ls('totry_f');if(f){debts=f.d||[];usaS=f.u||0;indiaS=f.i||0;}else{debts=[];usaS=0;indiaS=0;}}
+function saveF(){ls('totry_f',{d:debts,u:usaS,i:indiaS});}
+function getDebtStr(){loadF();return debts.map(d=>d.n+' $'+Math.round(d.t-d.p)+' remaining').join(', ')||'No debts logged';}
+function setDebtStrategy(type, fromUser){
+  ls('totry_debt_strategy',type);
+  ['snowball','avalanche'].forEach(t=>{const el=document.getElementById('strategy-'+t);if(el)el.classList.toggle('active',t===type);});
+  // Only react to a real TAP — this also runs on every app launch to restore the saved choice, and
+  // the hint/re-render must not fire then (a toast on every boot would be maddening).
+  if(fromUser){
+    try{
+      if(type==='avalanche'){
+        loadF();
+        if(!debts.some(d=>(parseFloat(d.interest)||0)>0) && typeof showToast==='function'){
+          showToast('Add interest rates','Avalanche ranks by interest — add each debt’s rate % so I can order them. Until then I’ll go smallest-first.');
+        }
+      }
+    }catch(_){}
+    if(typeof renderFinance==='function') renderFinance();
+  }
+}
+// The two things a stewardship tool owes you that we were never saying: what the debt actually
+// COSTS you each month, and whether the strategy you picked is genuinely the cheaper one. Honest and
+// non-partial — snowball really does win on adherence, so we say that rather than just pushing math.
+function renderDebtTruth(){
+  const dl=document.getElementById('debt-list'); if(!dl) return;
+  const old=document.getElementById('debt-truth'); if(old) old.remove();
+  loadF();
+  const active=debts.filter(d=>_debtBalance(d)>0); if(!active.length) return;
+  const bits=[];
+  const mi=totalMonthlyInterest(active);
+  if(mi>=1) bits.push('Interest alone takes <b style="color:var(--re)">$'+Math.round(mi).toLocaleString()+'/month</b> before a dollar touches the balance.');
+  const rate=monthlyPaymentRate();
+  if(rate && active.length>1 && active.some(d=>(parseFloat(d.interest)||0)>0)){
+    const av=projectPayoff(active, rate, 'avalanche');
+    const sn=projectPayoff(active, rate, 'snowball');
+    if(av&&sn&&!av.neverClears&&!sn.neverClears){
+      const save=(sn.interestPaid||0)-(av.interestPaid||0);
+      const cur=ls('totry_debt_strategy')||'snowball';
+      if(save>0) bits.push(cur==='avalanche'
+        ? 'Your Avalanche order saves about <b style="color:var(--gr)">$'+save.toLocaleString()+'</b> in interest versus smallest-first.'
+        : 'Avalanche would save about <b style="color:var(--gr)">$'+save.toLocaleString()+'</b> in interest — but Snowball wins on momentum, and the best plan is the one you keep doing.');
+    }
+  }
+  if(!bits.length) return;
+  const el=document.createElement('div'); el.id='debt-truth';
+  el.style.cssText='margin-top:10px;font-size:12px;color:var(--tx3);line-height:1.6';
+  el.innerHTML=bits.join(' ');
+  dl.after(el);
+}
+
+// What the vice was costing, per MONTH — the money that's now free to go somewhere.
+function monthlyReclaimRate(){
+  try{
+    loadV();
+    return (vices||[]).reduce((sum,v)=>{
+      const amt=parseFloat(v.costAmount)||0; if(amt<=0) return sum;
+      const per=v.costPer||'week';
+      if(per==='day') return sum + amt*30.44;
+      if(per==='use') return sum + amt*(parseFloat(v.costUses)||7)*(30.44/7);
+      // 'purchase' is a real option in the cost picker and had NO branch here, so it fell through to the
+      // weekly formula: a $120 buy that lasts a month was counted as $120 a WEEK — $521/month instead of
+      // $122, a 4.3x overstatement of what staying clean is giving back. viceSpendPicture() already
+      // models it properly (one buy lasts lastsDays); match it, or the two disagree on screen.
+      if(per==='purchase') return sum + amt*(30.44/Math.max(1, parseFloat(v.lastsDays)||30));
+      return sum + amt*(30.44/7);                      // per week
+    },0);
+  }catch(_){ return 0; }
+}
+// Sobriety, priced. Put the reclaimed money on the debt and show how much sooner freedom comes and
+// how much interest it saves. This is the whole thesis of the app in one sentence — and no money
+// app can say it, because none of them know why you're clean.
+function renderReclaimedBuysFreedom(){
+  const host=document.getElementById('saved-desc'); if(!host) return;
+  const old=document.getElementById('reclaim-buys-freedom'); if(old) old.remove();
+  loadF();
+  const owed=debts.reduce((a,d)=>a+_debtBalance(d),0); if(owed<=0) return;
+  const reclaim=monthlyReclaimRate(); if(!(reclaim>0)) return;
+  const base=monthlyPaymentRate(); if(!base) return;          // need real payment history to compare
+  const strategy=ls('totry_debt_strategy')||'snowball';
+  const now=projectPayoff(debts, base, strategy);
+  const boosted=projectPayoff(debts, base+reclaim, strategy);
+  if(!now||!boosted) return;
+  let line='';
+  if(now.neverClears && !boosted.neverClears){
+    line='Right now the interest is outrunning your payments — but adding the $'+Math.round(reclaim).toLocaleString()+'/month you’re reclaiming flips it: debt-free in about '+boosted.months+' months. Staying clean is what gets you above the line.';
+  } else if(!now.neverClears && !boosted.neverClears){
+    const sooner=now.months-boosted.months;
+    const saved=Math.max(0,(now.interestPaid||0)-(boosted.interestPaid||0));
+    if(sooner<=0 && saved<=0) return;
+    line='That $'+Math.round(reclaim).toLocaleString()+'/month, put straight on your debt, makes you free '+
+      (sooner>0?('<b style="color:var(--gr)">'+sooner+' month'+(sooner===1?'':'s')+' sooner</b>'):'sooner')+
+      (saved>0?(' and saves <b style="color:var(--gr)">$'+saved.toLocaleString()+'</b> in interest'):'')+
+      '. That’s what staying clean is worth, in months of your life.';
+  } else { return; }
+  const el=document.createElement('div');
+  el.id='reclaim-buys-freedom';
+  el.style.cssText='margin-top:10px;padding-top:10px;border-top:1px solid var(--go-bd);font-size:12.5px;color:var(--tx2);line-height:1.6';
+  el.innerHTML=line;
+  host.after(el);
+}
+
+function calcDebtFreeDate(){
+  loadF();
+  const owed=debts.reduce((a,d)=>a+_debtBalance(d),0); if(owed<=0) return;
+  const rate=monthlyPaymentRate(); if(!rate) return;      // needs dated history to be honest
+  const strategy=ls('totry_debt_strategy')||'snowball';
+  const proj=projectPayoff(debts, rate, strategy);
+  if(!proj) return;
+  const dh=document.getElementById('df-hero'); if(dh) dh.style.display='block';
+  const dd=document.getElementById('df-date');
+  const ddesc=document.getElementById('df-desc');
+  // The honest case first: if the payment can't cover the interest, there IS no freedom date yet.
+  // Saying so plainly is worth more than a comforting number that will never arrive.
+  if(proj.neverClears){
+    if(dd) dd.textContent='Not yet on track';
+    if(ddesc) ddesc.innerHTML='At $'+Math.round(rate).toLocaleString()+'/month the interest ($'+proj.monthlyInterest.toLocaleString()+'/mo) is eating the payment — the balance grows. Getting above that line is the whole battle, and every dollar reclaimed goes straight at it.';
+    return;
+  }
+  const fd=new Date(); fd.setMonth(fd.getMonth()+proj.months);
+  if(dd) dd.textContent=fd.toLocaleDateString('en-AU',{month:'long',year:'numeric'});
+  if(ddesc){
+    const interestBit = proj.interestPaid>0 ? (' · $'+proj.interestPaid.toLocaleString()+' of that is interest') : '';
+    ddesc.textContent='~'+proj.months+' month'+(proj.months===1?'':'s')+' at $'+Math.round(rate).toLocaleString()+'/month'+interestBit;
+  }
+}
+// A money tab full of zeros teaches a person nothing and quietly tells them they're fine. Until it
+// knows something real, this tab has one job. Once it does, it leads with the read — and says how
+// stale that read has gone, because a balance sheet nobody feeds stops being true.
+function renderMoneyGate(){
+  const gate = document.getElementById('money-gate');
+  const readCard = document.getElementById('money-read-card');
+  if(!gate || !readCard) return;
+  const tx = ls('totry_transactions')||[];
+  let hasDebts = false;
+  try{ loadF(); hasDebts = (debts && debts.length > 0); }catch(_){}
+  const empty = tx.length < 5 && !hasDebts;
+
+  // The empty-state heroes are the ones that lie loudest — a debt-free date of "—" and $0
+  // reclaimed read as "all good" to someone who has never told the app anything.
+  ['df-hero','saved-hero'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display = empty ? 'none' : ''; });
+  const mg = document.querySelector('#tab-money .mg'); if(mg) mg.style.display = empty ? 'none' : '';
+
+  if(empty){
+    readCard.innerHTML = '';
+    gate.innerHTML = '<div class="card" style="margin-bottom:14px">'+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:21px;font-style:italic;color:var(--tx);margin-bottom:8px">I don’t know anything about your money yet.</div>'+
+      '<div style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">Most people can’t say where theirs actually goes — that’s not a failing, it’s just never been shown to them. Export a statement from your banking app and I’ll read it back to you: what comes in, where it leaves, and the one place worth locking in. It’s parsed on your phone and goes nowhere.</div>'+
+      '<button class="btn primary" onclick="openCSVImport()" style="margin-bottom:8px">Import a bank statement</button>'+
+      '<button class="btn" onclick="openTransactionLogger()">I’ll add it manually</button>'+
+    '</div>';
+    return;
+  }
+  gate.innerHTML = '';
+
+  const r = spendingRead();
+  if(!r){ readCard.innerHTML = ''; return; }
+  const money = n => '$'+Math.abs(Math.round(n)).toLocaleString();
+  const staleDays = Math.floor((Date.now() - r.to.getTime())/86400000);
+  const neg = r.netPerMonth < 0;
+  readCard.innerHTML = '<div class="card" style="margin-bottom:14px">'+
+    '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">'+
+      '<div class="card-hd" style="margin-bottom:0">Your money, honestly</div>'+
+      '<span style="font-family:DM Mono,monospace;font-size:15px;color:'+(neg?'var(--re)':'var(--gr)')+'">'+(neg?'−':'+')+money(r.netPerMonth)+'/mo</span>'+
+    '</div>'+
+    (r.lockIn ? '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:10px">Biggest movable cost: <b style="color:var(--tx)">'+r.lockIn.name+'</b>, '+money(r.lockIn.perMonth)+' a month.</div>' : '')+
+    (staleDays > 9
+      ? '<div style="font-size:11.5px;color:var(--go);line-height:1.5;margin-bottom:10px">Your last statement stops '+staleDays+' days ago. A balance sheet nobody feeds stops being true — import the latest when you get a minute.</div>'
+      : '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Up to date as of '+r.to.toLocaleDateString('en-AU')+'.</div>')+
+    '<div style="display:flex;gap:8px">'+
+      '<button class="btn" style="flex:1;width:auto;padding:9px;font-size:12px" onclick="openSpendingRead()">See the full read</button>'+
+      '<button class="btn" style="flex:1;width:auto;padding:9px;font-size:12px;background:transparent;border:1px solid var(--bd)" onclick="openCSVImport()">Update</button>'+
+    '</div>'+
+  '</div>';
+}
+
+function renderFinance(){
+  loadF();
+  try{ renderMoneyGate(); }catch(_){}
+  const owed=debts.reduce((a,d)=>a+(d.t-d.p),0),paid=debts.reduce((a,d)=>a+d.p,0);
+  ['f-debt','h-debt'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='$'+Math.round(owed).toLocaleString();});
+  const fp=document.getElementById('f-paid');if(fp)fp.textContent='$'+Math.round(paid).toLocaleString();
+  const fu=document.getElementById('f-usa');if(fu)fu.textContent='$'+Math.round(usaS).toLocaleString();
+  const fi=document.getElementById('f-india');if(fi)fi.textContent='$'+Math.round(indiaS).toLocaleString();
+  const dl=document.getElementById('debt-list');if(!dl)return;dl.innerHTML='';
+  if(!debts.length){dl.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:10px 0">No debts added yet</p>';return;}
+  const strategy=ls('totry_debt_strategy')||'snowball';
+  const sorted=_sortDebtsByStrategy(debts.map((d,i)=>({...d,idx:i})), strategy);
+  sorted.forEach((d,si)=>{
+    const rem=d.t-d.p,pct=d.t>0?Math.round((d.p/d.t)*100):0;
+    const item=document.createElement('div');item.className='debt-row';
+    item.innerHTML='<div class="dr-top"><span class="dr-name">'+d.n+(si===0?' \u2b50':'')+' </span><span class="dr-amt">$'+Math.round(rem).toLocaleString()+'</span></div>'+
+      (d.due?'<span class="dr-date">Due: '+d.due+'</span>':'')+
+      '<div class="bar-wrap"><div class="bar" style="width:'+pct+'%"></div></div>'+
+      '<div class="dr-meta"><span class="dr-paid">$'+Math.round(d.p).toLocaleString()+' paid ('+pct+'%)</span><span>Tap to log payment</span></div>';
+    item.onclick=()=>{openFormModal('Log a payment','Payment toward '+d.n+'.',[{id:'amt',label:'Amount',type:'number',prefix:'$',placeholder:'e.g. 200'}],'Log payment',(vals)=>{const a=parseFloat(vals.amt);if(isNaN(a)||a<=0)return 'Enter an amount greater than 0.';loadF();debts[d.idx].p=Math.min(debts[d.idx].p+a,debts[d.idx].t);saveF();const payments=ls('totry_payments')||[];payments.push({amt:a,ts:new Date().toISOString(),date:new Date().toISOString(),debt:d.n});ls('totry_payments',payments.slice(-200));if(typeof syncToCloud==='function')syncToCloud();renderFinance();calcDebtFreeDate();checkMilestones();return true;});};
+    dl.appendChild(item);
+  });
+  calcDebtFreeDate();
+  try{ renderDebtTruth(); }catch(_){}
+  // Stewardship pipe: if any vice has a cost set, show the real reclaimed total (per-vice × clean
+  // days) — more accurate than the legacy flat weekly estimate. Falls back to totry_vs otherwise.
+  const reclaimed = (typeof totalReclaimed==='function') ? totalReclaimed() : 0;
+  if(reclaimed > 0){
+    const sn=document.getElementById('saved-num'); const sd=document.getElementById('saved-desc');
+    if(sn) sn.textContent='$'+reclaimed.toLocaleString();
+    // Lead with the freedom story, not the debt table (the soul of this screen): when there is real
+    // reclaimed money, float that hero up right beneath the metrics. Idempotent (only moves once).
+    try{ const mg=document.querySelector('#tab-money .mg'); const sh=document.getElementById('saved-hero'); if(mg&&sh&&mg.nextElementSibling!==sh) mg.after(sh); }catch(_){}
+    if(sd) sd.textContent='Reclaimed by staying clean — that\u2019s money toward your debt and your freedom.';
+    // Honest position, not a fictional total: if money is still owed for past use, say so and show
+    // what's left before they're genuinely ahead. Being clean while you owe = less behind, not ahead.
+    try{
+      loadV();
+      const owedTotal=(vices||[]).reduce((a,v)=>a+Math.max(0,parseFloat(v.owed)||0),0);
+      const avoidedTotal=(vices||[]).reduce((a,v)=>{ const p=viceSpendPicture(v); return a+(p?p.avoided:0); },0);
+      const oldN=document.getElementById('reclaim-owed-note'); if(oldN) oldN.remove();
+      if(owedTotal>0 && sd){
+        const left=Math.max(0, owedTotal-avoidedTotal);
+        const n=document.createElement('div'); n.id='reclaim-owed-note';
+        n.style.cssText='margin-top:8px;font-size:12px;color:var(--tx3);line-height:1.55';
+        n.innerHTML = left>0
+          ? 'You’ve avoided <b>$'+avoidedTotal.toLocaleString()+'</b> of spending, but still owe <b style="color:var(--go)">$'+owedTotal.toLocaleString()+'</b> for past use — <b>$'+left.toLocaleString()+'</b> to go before you’re actually ahead. Clearing that is the first real win.'
+          : 'That’s after clearing the <b>$'+owedTotal.toLocaleString()+'</b> you owed for past use — you’re genuinely ahead now.';
+        sd.after(n);
+      }
+    }catch(_){}
+    // THE THING NO MONEY APP CAN SAY: what staying clean actually BUYS. Redirect the money the vice
+    // was taking onto the debt and show the freedom date move — sobriety, priced in months and
+    // interest saved. Only possible because the fight and the money live in the same app.
+    try{ renderReclaimedBuysFreedom(); }catch(_){}
+  } else {
+  const vs=ls('totry_vs');if(vs){const sn=document.getElementById('saved-num');const sd=document.getElementById('saved-desc');if(sn)sn.textContent='$'+vs.saved.toLocaleString();if(sd)sd.textContent='$'+vs.weekly+'/week saved. $'+vs.saved.toLocaleString()+' redirected.';
+    // Restore the input fields too, so it doesn't look like nothing saved when you return.
+    if(vs.fields){ const set=(id,v)=>{const el=document.getElementById(id); if(el && v) el.value=v;}; set('weed-s',vs.fields.w); set('vape-s',vs.fields.va); set('gamb-s',vs.fields.g); set('other-s',vs.fields.o); }
+    const ss=document.getElementById('sober-since'); if(ss && vs.since) ss.value=vs.since;
+  }
+  }
+  renderTransactions();
+}
+
+// ── INCOME & EXPENSE TRACKING ───────────────────────────────
+const EXPENSE_CATEGORIES = ['Food','Rent/bills','Transport','Health','Entertainment','Shopping','Other'];
+const INCOME_CATEGORIES = ['Salary','Side income','Gift','Refund','Other'];
+
+// Quick spend — single tap to log a recent expense without the full modal
+// ── SMART CALENDAR ────────────────────────────────────────────
+// Events: { id, title, type, day(0-6 Mon-Sun), start('HH:MM'), end('HH:MM'), recurring(bool), date(ISO if one-off) }
+const CAL_DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const CAL_TYPE_COLORS = { work:'#C8A96E', class:'#8C6BB6', gym:'#5BA88A', personal:'#6B8CB6', other:'rgba(255,255,255,0.4)' };
+// Keep the nutrition log from growing forever (it's a {date:[entries]} map that otherwise
+// accumulates a key per day indefinitely and re-syncs the whole thing on every meal). 120 days
+// of history is plenty for trends; older days are dropped. Mutates the passed object in place.
+// Parse an en-AU d/m/yyyy diary key to a real timestamp. new Date('10/08/2026') CANNOT be used: V8 reads
+// it as US m/d/yyyy, so 10 August silently becomes 8 October, and anything past the 12th ('25/08/2026')
+// is an Invalid Date whose NaN makes a sort comparator return NaN — a garbage ordering, not a stable one.
+function _auKeyMs(k){
+  try{
+    const q=String(k).split('/').map(function(n){ return parseInt(n,10); });
+    if(q.length<3 || !q[2] || isNaN(q[0]) || isNaN(q[1]) || isNaN(q[2])) return 0;
+    return new Date(q[2], q[1]-1, q[0]).getTime();
+  }catch(_){ return 0; }
+}
+// Training history is capped in ONE place. It used to be capped at each of the eight write sites with a
+// different number (300, 365, 400, 500, 1000, and twice not at all), which meant the smallest cap won
+// whenever its path ran: a person could import 1000 sessions from Hevy, finish one workout, and lose 636
+// of them to saveWorkoutSession's slice(0,365). Same shape as the payments bug — silent, permanent.
+const WORKOUT_CAP = 1000;
+function _workoutMs(w){
+  try{
+    if(!w) return 0;
+    if(w.ts){ const t=Date.parse(w.ts); if(!isNaN(t)) return t; }
+    // Two date shapes exist in the wild: "3/08/2026" (en-AU short) and "Mon, 3 Aug 2026" (en-AU long).
+    const au=_auKeyMs(w.date); if(au) return au;
+    const p=Date.parse(w.date); if(!isNaN(p)) return p;
+  }catch(_){}
+  return 0;
+}
+function _capWorkouts(arr){
+  try{
+    const a=(arr||[]).slice();
+    if(a.length<=WORKOUT_CAP) return a;
+    // Sort newest-first before culling, so "keep the newest N" keeps the actually-newest N. Undated rows
+    // resolve to 0 and would be culled first, so they hold their original position instead.
+    a.sort(function(x,y){
+      const mx=_workoutMs(x), my=_workoutMs(y);
+      if(!mx || !my) return 0;
+      return my-mx;
+    });
+    return a.slice(0, WORKOUT_CAP);
+  }catch(_){ return (arr||[]).slice(0, WORKOUT_CAP); }
+}
+function _pruneNutLog(log){
+  try{
+    const keys=Object.keys(log||{});
+    if(keys.length<=120) return;
+    // Sort by REAL date (see _auKeyMs) and never drop the day being written to. Both mattered: the old
+    // comparator ordered days arbitrarily, so "keep the newest 120" could evict recent days and keep old
+    // ones, and with no guard the very diary the caller was mid-write on could be deleted underneath it.
+    keys.sort(function(a,b){ return _auKeyMs(a)-_auKeyMs(b); });
+    const today=(typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
+    // Compare by PARSED date, not string equality: '10/8/2026' and '10/08/2026' are the same day but
+    // different strings, so a string guard silently stops protecting today the moment any write path
+    // produces an unpadded key. Timestamps cannot drift apart on formatting.
+    const todayMs=_auKeyMs(today);
+    while(keys.length>120){ const k=keys.shift(); if(_auKeyMs(k)!==todayMs) delete log[k]; }
+  }catch(_){ }
+}
+function _calEvents(){
+  const all = ls('totry_cal_events') || [];
+  // Non-recurring (one-off) events carry a weekStamp; they only appear during the week they were
+  // added for. Recurring events (the default for a weekly timetable) always show.
+  const nowWeek = _currentWeekStamp();
+  return all.filter(e => e && (e.recurring !== false || !e.weekStamp
+                              || _isLegacyWeekStamp(e.weekStamp) || e.weekStamp === nowWeek));
+}
+// ISO-ish week stamp (year + week number) so one-off events can be scoped to "this week only".
+// ONE week definition for the whole app: the week runs Monday -> Sunday, matching tIdx() and the habit
+// ring. This used to compute a Sunday-start ISO-ish week NUMBER, which rolled over on SATURDAY — so a
+// one-off event added on Tuesday for "Saturday 10am" had its stamp go stale the moment Saturday arrived
+// and silently disappeared from the calendar on exactly the two days of the week people plan around.
+function _currentWeekStamp(d){
+  return _habitWeekStamp(d);
+}
+// Stamps written before that change look like "2026-W33" and can no longer be compared. A one-off event
+// lingering an extra week is a far smaller harm than a dentist appointment vanishing, so legacy stamps
+// are shown rather than hidden; they age out as events are re-added.
+function _isLegacyWeekStamp(v){ return typeof v === 'string' && /^\d{4}-W\d{1,2}$/.test(v); }
+function _saveCalEvents(list){ ls('totry_cal_events', list.slice(0,300)); if(typeof syncToCloud==='function') syncToCloud(); }
+

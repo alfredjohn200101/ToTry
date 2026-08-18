@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v478-taptargets'
+const CACHE = 'totry-v479-modular'
 
 const CORE = [
   './',

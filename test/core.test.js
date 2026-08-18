@@ -3194,4 +3194,21 @@ H.section('dead code that was one caller away from confusing someone');
   }
 }
 
+// ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────
+// Every test in this file reads H.html, which reads index.html — the ASSEMBLED file. So a change
+// made directly to index.html passes everything here and then vanishes the next time anyone runs
+// `npm run build:index`. That is the silent-failure shape this repo keeps meeting: it parses, the
+// tests are green, and the work is gone. The build is the only thing that can tell the difference.
+{
+  H.section('index.html is generated, not written');
+  const { execFileSync } = require('child_process');
+  const script = require('path').join(__dirname, '..', 'scripts', 'build-index.js');
+  let assembled = null, err = '';
+  try { execFileSync(process.execPath, [script, '--verify'], { stdio: 'pipe' }); assembled = true; }
+  catch (e) { assembled = false; err = ((e.stdout || '') + (e.stderr || '')).toString().trim().split('\n').pop(); }
+  H.ok(assembled, 'index.html is exactly what src/ assembles to — if this fails, your edit is in ' +
+                  'index.html and the next build will discard it; move it into the module under ' +
+                  'src/app/ and run `npm run build:index`. ' + (assembled ? '' : err));
+}
+
 H.report();

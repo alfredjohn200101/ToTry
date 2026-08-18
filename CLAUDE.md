@@ -26,8 +26,17 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
   sibling's voice adapt. The founder's story stays "big brother"; the app's voice is universal.
 
 ## Tech stack
-- **Single file: `index.html`** (~29k lines, ~1.8MB) — all HTML/CSS/JS inline. This is intentional
-  for the PWA today but is the #1 refactor target (see below).
+- **`index.html` is GENERATED. Do not edit it.** Edit the module under `src/app/` and run
+  `npm run build:index`. The app is still one file when it ships (~43k lines, ~2.9MB, all inline —
+  that's deliberate for the PWA), but the source of truth is now `src/`:
+  `src/shell-head.html` + `src/app/00-boot.js` → `01-sync.js` → `02-native.js` → `03-person.js` →
+  `app.js` + `src/shell-tail.html`, concatenated in exactly that order.
+  **Order is semantics** — one script, one shared top-level scope, no module system: a `function`
+  hoists, a `const` does not. Never reorder modules; only ever slice a new one off the FRONT of
+  `app.js` (`scripts/extract-prefix.js` does this and refuses if it doesn't round-trip).
+  `npm run verify:index` must print `identical` — it compares byte-for-byte by sha256, and
+  `npm run preflight` fails if it doesn't. If you edited `index.html` by hand, that check tells you
+  the exact line; move the change into the module and rebuild.
 - `sw.js` — service worker (cache-first shell). Bump `const CACHE` with every release.
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
@@ -55,7 +64,9 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 2. **Run `npm test` after touching core math** (nutrition scaling, streaks, TDEE, photo totals, money).
    The harness in `test/` extracts the REAL functions from index.html and asserts them — it already
    guards the food double-scale bug. Green before you ship. Add a test when you add core math.
-3. **Bump `APP_VERSION` (index.html) and `CACHE` (sw.js) together** on every release.
+3. **Bump `APP_VERSION` (`src/app/00-boot.js`) and `CACHE` (sw.js) together** on every release,
+   then `npm run build:index && npm run build:www && npx cap sync ios`. `npm run preflight` checks
+   all of it — the repo has already sat four versions ahead of the iOS bundle without anyone seeing.
 4. **Quality over speed. Honest assessment** — never claim done when it isn't.
 5. **Hold the soul.** Before adding anything, ask: does this serve the person (what's next / what's
    wrong / what can they do better)? If it only reports, it isn't done. Removing can be intention.
@@ -68,9 +79,11 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 2. **Native wrapper (Capacitor).** Follow NATIVE-WRAPPER-GUIDE.md. The `Notify` layer is already
    wrapper-aware — wrapping unlocks background push so the sibling can reach out first at a person's
    known risk window (the craving-pattern data already identifies it). This is the biggest unlock.
-3. **Split the monolith.** Carefully extract index.html into modules (state, UI, companion, nutrition,
-   train, money, soul, AI) with a tiny build step. Do this incrementally, parse-checking constantly —
-   never a big-bang rewrite. The single file works; don't break it to make it pretty.
+3. **Keep splitting the monolith.** The build step exists and is byte-verified; `boot`, `sync`,
+   `native` and `person` are out. ~31k lines remain in `src/app/app.js`. Take the next slice off the
+   front — routines, photos, the Feeling Door, the companion — one at a time, running
+   `node scripts/build-index.js --verify` after each. It must stay identical; if it doesn't, the
+   slice was wrong, not the check.
 4. **Live-test the Feeling Door with real use** — it's the newest, most important entry point. Make
    sure each feeling path genuinely moves a person, not just shows a modal.
 5. **Then:** the deeper secondary panels, the "reach out first" scheduled nudges (post-wrapper).

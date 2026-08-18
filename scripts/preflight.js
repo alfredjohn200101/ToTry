@@ -25,6 +25,21 @@ const cacheName = s => (s && (s.match(/const CACHE\s*=\s*'([^']+)'/) || [])[1]) 
 
 console.log('\nPREFLIGHT — before archiving\n');
 
+// ── 0. index.html must still be exactly what src/ assembles to ───────────────────────────────────
+// index.html is generated from src/ (see scripts/build-index.js). Editing it directly is not an error
+// anyone would notice until the next build silently discarded the change — so this checks first, and
+// says which file to edit instead.
+try {
+  const { execFileSync } = require('child_process');
+  execFileSync(process.execPath, [R('scripts/build-index.js'), '--verify'], { stdio: 'pipe' });
+  good('index.html matches what src/ assembles to');
+} catch (e) {
+  const out = (e.stdout ? e.stdout.toString() : '') + (e.stderr ? e.stderr.toString() : '');
+  bad('index.html does NOT match src/ — edit the module under src/app/ and run `npm run build:index`, do not edit index.html directly');
+  const where = (out.match(/DIFFERS at [^\n]*/) || [''])[0];
+  if (where) console.log('     ' + where);
+}
+
 // ── 1. the three copies of the app must be the same version ──────────────────────────────────────
 const SRC = 'index.html', WWW = 'www/index.html', IOS = 'ios/App/App/public/index.html';
 const vSrc = appVersion(read(SRC)), vWww = appVersion(read(WWW)), vIos = appVersion(read(IOS));
