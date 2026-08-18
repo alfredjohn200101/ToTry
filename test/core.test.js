@@ -2736,7 +2736,12 @@ H.section('a Buddhist reads their own scripture, not a selection of it')
   H.ok(/split\(\/\\n\+\//.test(sload), 'sections split on single newlines, not blank lines');
   H.ok(/\^=\+\.\*=\+\$/.test(sload), 'and Wikisource\'s "== Footnotes ==" apparatus is dropped');
   // From section 2 the translation numbers itself, so an added index would print "1" above "2.".
-  H.ok(/const label=m\?m\[1\]:String\(n\+1\)/.test(sload), 'the text\'s own section numbers are used');
+  // The text's own number when it has one, and NO label when it does not. Falling back to the running
+  // index interleaved two unrelated numberings — Long's first section of every book, his quoted verse
+  // lines and his continuation paragraphs carry no "N. ", so Book VII rendered 50, 51, 52, 51, 54:
+  // duplicated and going backwards, in 9 of the 12 books. A continuation is not a new section.
+  H.ok(/const label=m\?m\[1\]:''/.test(sload), "the text's own section numbers are used, and no others");
+  H.ok(/\(label\?'<div/.test(sload), 'an unnumbered continuation renders without a number');
 
   // Under-claiming is as much a promise/mechanism mismatch as over-claiming: the subtitles said
   // "Selected teachings from the Dhammapada" and "Reflections from the Stoics" when both are now whole.
@@ -3092,6 +3097,38 @@ H.section('the fixes I shipped today, checked against themselves')
   // A static HTML text node is not JavaScript: \u2014 there renders as six literal characters, on the
   // first screen a new person sees.
   H.ok(!/Kept on this device only \\u2014/.test(H.html), 'the guest door shows an em dash, not its escape');
+
+  // dhpN:0 is the commentary's background-story title, not verse text — the header rule was written as
+  // "dotted keys are headers" and the live response carries undotted zero keys too, so a story title was
+  // glued onto the Pāli of 13 of 20 verses.
+  H.ok(/if\(m\[2\] === '0'\) return;/.test(code), 'the Dhammapada reader drops the story-title segment');
+
+  // Passing null left a fully populated 26-chapter picker above 22 bundled verses, every option
+  // rendering the same text, under a subtitle promising the whole book.
+  H.eq((code.match(/_readBundled\(null,/g) || []).length, 0,
+    'the offline fallbacks clear the picker instead of leaving a dead one');
+
+  // b.w / b.d exist on no totry_body entry — every writer stores weight and ts — so this could never fire.
+  const pf = fnBody('prefillNutGoals');
+  H.ok(/b\.weight != null/.test(pf), 'the TDEE weight prefill reads the field that exists');
+  H.ok(!/b\.w != null/.test(pf), 'not the one I invented');
+
+  // The companion opened UNDER the Feeling Door for a brand-new guest: the door is on a 320ms timer and
+  // the companion on 1200ms, and v464 correctly made a guest count as set up.
+  const msc = fnBody('maybeShowCompanion');
+  H.ok(/feel-door/.test(msc), 'the companion never opens behind the Feeling Door');
+  H.ok(/modal-bg\.open/.test(msc), 'nor over any other open sheet');
+
+  // brotherSys() appends faithVoiceNote(); the explicit one at this call site became a duplicate.
+  H.ok(!/brotherSys\(\)\s*\+\s*faithVoiceNote\(\)/.test(code.replace(/\s+/g, ' ')),
+    'no prompt carries the tradition guidance twice');
+
+  // The nutlog union is handed a tombstone key, so something has to write one.
+  H.ok(/tombstoneRemoved\('totry_nutlog'/.test(code), 'a deleted food records a tombstone too');
+
+  // The crisis return sits above the line that honours _trimmed.
+  const sqj = fnBody('saveQuickJournal');
+  H.ok(/_trimmed && _qjCrisis/.test(sqj), 'a trimmed disclosure is still reported as trimmed');
 }
 
 H.report();

@@ -4755,7 +4755,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v474';
+const APP_VERSION = 'v475';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9980,11 +9980,16 @@ async function _readStoicLoad(book){
         // The text carries its own section numbers from section 2 on ("2. Whatever this is that I am"),
         // so adding an index as well would print "1" above "2.". Use the number the translation gives
         // when it has one, and strip it from the body so it is not shown twice.
+        // Long's text numbers itself from section 2 on, but the FIRST section of every book, his quoted
+        // verse lines and his continuation paragraphs carry no "N. " at all. Falling back to the running
+        // index for those interleaved two unrelated numberings: Book VII rendered 50, 51, 52, 51, 54...
+        // — duplicated and going backwards. A paragraph with no number of its own is a continuation and
+        // gets no label, rather than being given a number that means nothing.
         const m=/^(\d{1,3})\.\s+([\s\S]+)$/.exec(t);
-        const label=m?m[1]:String(n+1);
+        const label=m?m[1]:'';
         const bodyText=m?m[2]:t;
         return '<div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)">'+
-          '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-bottom:5px">'+_escFew(label)+'</div>'+
+          (label?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-bottom:5px">'+_escFew(label)+'</div>':'')+
           '<div style="font-size:15px;line-height:1.85;color:var(--tx)">'+_escFew(bodyText)+'</div>'+
         '</div>';
       }).join('')+
@@ -9992,7 +9997,7 @@ async function _readStoicLoad(book){
     '</div>';
   }catch(e){
     // Offline, or the page moved — the bundled passages rather than an empty tab.
-    _readBundled(null,content,VS_SECULAR);
+    _readBundled(document.getElementById('read-selector'),content,VS_SECULAR);   // see the note in the Dhammapada fallback
   }
 }
 // Dhammapada — SuttaCentral (free, NO KEY): all 26 chapters, 423 verses, Bhikkhu Sujato's translation.
@@ -10041,7 +10046,11 @@ async function _readDhammapadaLoad(uid){
     // dotted line number (dhp1:0.1) are the collection/chapter headers, not text.
     const verses={}, seen=[];
     order.forEach(function(k){
+      // Line 0 is NOT text. The comment above said only DOTTED zero keys (dhp1:0.1) are headers, and the
+      // live response also carries UNDOTTED ones — dhp2:0, dhp3:0, dhp5:0 — whose root_text is the
+      // commentary's background-story title. They were being glued onto the Pāli of 13 of 20 verses.
       const m=/^dhp(\d+):(\d+)$/.exec(k); if(!m) return;
+      if(m[2] === '0') return;
       const n=m[1], en=(tr[k]||'').trim(), pli=(root[k]||'').trim();
       if(!en && !pli) return;
       if(!verses[n]){ verses[n]={en:[],pli:[]}; seen.push(n); }
@@ -10065,7 +10074,10 @@ async function _readDhammapadaLoad(uid){
   }catch(e){
     // Offline or the endpoint moved — show the bundled selection rather than an empty tab.
     const sel=document.getElementById('read-selector');
-    _readBundled(null,content,VS_BUDDHIST);
+    // Pass the selector so _readBundled clears it. Passing null left a fully populated 26-chapter picker
+    // above 22 bundled verses, under a subtitle promising all 26 chapters — every option rendering the
+    // same text. _readBundled has cleared the picker since long before these readers existed.
+    _readBundled(document.getElementById('read-selector'),content,VS_BUDDHIST);
     if(sel && !document.getElementById('dhp-ch')){ /* keep whatever selector is there */ }
   }
 }
@@ -13643,6 +13655,14 @@ function maybeShowCompanion(){
     const onboard = document.getElementById('onboard');
     if(onboard && getComputedStyle(onboard).display !== 'none') return;
     if(document.querySelector('.companion-overlay.open')) return;
+  // NOR BEHIND THE FEELING DOOR. enterAsGuest opens the door on a 320ms timer while initApp schedules
+  // this on 1200ms — so once a guest counted as "set up" (v464, correctly, so they could be reached out
+  // to at all), a brand-new person tapping the orb got the companion sheet sliding up underneath the
+  // door they had just opened, 0.9s later. Two of the app's most important surfaces, arguing.
+  const _door = document.getElementById('feel-door');
+  if(_door && _door.classList.contains('open')) return;
+  // Nor over any open sheet or modal — the same reasoning, generalised.
+  if(document.querySelector('.modal-bg.open')) return;
     // Only for a set-up user — a brand-new person who hasn't onboarded shouldn't be greeted with
     // "what's pulling at you?" before they've told the app anything. Require onboarding done + a name.
     if(!isSetUpPerson()) return;
@@ -16245,8 +16265,9 @@ async function _companionSay(userText, opening){
     const cached = _getCompanionProtocols(); const key = (s.name||'').toLowerCase().trim().slice(0,40);
     if(cached[key] && cached[key].spine) spine = cached[key].spine;
   }
+  // brotherSys() already appends faithVoiceNote() — this explicit one was correct before v469 introduced
+  // the assembler and became a duplicate after it, so the 2am prompt carried the tradition guidance twice.
   const sys = brotherSys()
-    + faithVoiceNote()
     + sharedWisdomNote()
     + "RIGHT NOW you're with them in a tempted or struggling moment — this is the 2am door, their hardest moment. Be present, short, real. "
     + "The person is "+name+". They're facing: \""+(s.name||'something hard')+"\". "
@@ -20114,6 +20135,12 @@ function saveQuickJournal(){
   document.querySelector('.modal-bg.open')?.remove();
   if(typeof renderJournal === 'function') renderJournal();
   // Saved first, above \u2014 then met. Never celebrate over a disclosure.
+  // Tell them their words were cut BEFORE the bridge takes over the screen. The crisis return sits above
+  // the only line that honours _trimmed, so someone who wrote past the cap and ended on a disclosure had
+  // their text silently truncated and was never told — at the one moment every word mattered most.
+  if(_trimmed && _qjCrisis && typeof showToast==='function'){
+    showToast('Saved', 'In your journal \u2014 though it was very long, so the last part was trimmed.');
+  }
   if(journalMeetCrisis(_qjCrisis)) return;
   // Never trim someone's words without telling them.
   showToast('Saved', _trimmed ? 'In your journal \u2014 though it was very long, so the last part was trimmed.' : 'In your journal.');
@@ -25213,7 +25240,20 @@ function editFoodEntry(date, id){
   if(typeof updateServingPreview === 'function') updateServingPreview();
 }
 
-function deleteFoodEntry(date,id){const log=ls('totry_nutlog')||{};if(log[date])log[date]=log[date].filter(e=>e.id!==id);ls('totry_nutlog',log);renderNutritionLog();}
+// The per-day nutlog union is handed 'totry_nutlog' as its tombstone key, and nothing was recording one
+// — so a deleted food came back on the next pull exactly as a deleted journal entry used to. The union
+// keys each entry by syncIdOf, so the tombstone has to be recorded the same way, from the same diff.
+function deleteFoodEntry(date,id){
+  const log=ls('totry_nutlog')||{};
+  if(log[date]){
+    const before=log[date];
+    const after=before.filter(e=>e.id!==id);
+    tombstoneRemoved('totry_nutlog', before, after);
+    log[date]=after;
+  }
+  ls('totry_nutlog',log);
+  renderNutritionLog();
+}
 
 
 function saveNutGoals(){
@@ -25356,8 +25396,11 @@ function prefillNutGoals(){
     const wEl = document.getElementById('tdee-weight');
     if(wEl && !wEl.value){
       const body = ls('totry_body') || [];
-      const last = body.filter(b => b && (b.w != null)).sort((a,b) => new Date(b.d||0) - new Date(a.d||0))[0];
-      if(last && last.w) wEl.value = last.w;
+      // b.weight and b.ts — the fields every writer of totry_body actually stores (logBody, the scale CSV
+      // import, the Eufy screenshot) and every other reader uses. I wrote b.w/b.d, which exist on no
+      // entry, so the filter returned [] for everyone with weigh-ins and this could never fire once.
+      const last = body.filter(b => b && (b.weight != null)).sort((a,b) => new Date(b.ts||b.date||0) - new Date(a.ts||a.date||0))[0];
+      if(last && last.weight) wEl.value = last.weight;
     }
     const hEl = document.getElementById('tdee-height');
     if(hEl && !hEl.value){ const h = ls('totry_height'); if(h) hEl.value = h; }
