@@ -4814,7 +4814,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v487';
+const APP_VERSION = 'v488';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -6051,8 +6051,19 @@ const Health = {
       // Sleep lives in a separate native plugin because capacitor-health cannot read it. Ask in the same
       // breath so the person sees one connect journey, not two.
       try{ const sp=this._sleepP(); if(sp && sp.requestAuthorization) await sp.requestAuthorization(); }catch(_){}
-      try{ ls('totry_health_connected', true); }catch(_){}
+      // CONNECTED MEANS DATA CAME BACK. This was written straight after requestHealthPermissions(),
+      // which resolves whether the person granted or DENIED — iOS does not reject on denial, it just
+      // returns nothing. So tapping "Don't Allow" left the card saying connected, promising automatic
+      // syncing forever, syncing nothing, and giving the person no reason to suspect a thing.
       const synced = await this.syncToday();
+      const gotSomething = !!(synced && Object.keys(synced).some(k => {
+        const v = synced[k]; return typeof v === 'number' ? v > 0 : (v != null && v !== false);
+      }));
+      try{ ls('totry_health_connected', gotSomething); }catch(_){}
+      if(!gotSomething){
+        return { ok:false, reason:'no-permission',
+                 message:'Apple Health did not share anything. If you tapped "Don\u2019t Allow", open Settings \u2192 Health \u2192 Data Access & Devices \u2192 To Try and turn on what you want me to see.' };
+      }
       try{ synced && (synced.workouts = await this.syncWorkouts(30)); }catch(_){}   // 30 days on first connect
       try{ synced && (synced.sleepNights = await this.syncSleep(30)); }catch(_){}
       return { ok:true, synced };
@@ -6581,7 +6592,14 @@ function _reachOutRowHTML(){
   let status;
   if(!on) status='Off. Nothing is scheduled.';
   else if(_reachPaused()) status='Standing down until '+new Date(st.pausedUntil).toLocaleDateString('en-AU')+' — the last few went unanswered, so I stopped.';
-  else if(st.next && st.next>Date.now()) status='Next: '+new Date(st.next).toLocaleString('en-AU',{weekday:'short',hour:'numeric',minute:'2-digit'})+' · '+_reachCount7()+' of '+REACHOUT_MAX_PER_WEEK+' used this week.';
+      // On the web nothing wakes the browser at their hard hour — there is no scheduler at all — so a
+      // time here promised a check-in that could not arrive. Native says when; the web says why not.
+      else if(st.next && st.next>Date.now()){
+        const _native = (typeof Notify==='object' && Notify.isNative && Notify.isNative());
+        status = _native
+          ? ('Next: ' + new Date(st.next).toLocaleString('en-AU',{weekday:'short',hour:'numeric',minute:'2-digit'})+' · '+_reachCount7()+' of '+REACHOUT_MAX_PER_WEEK+' used this week.')
+          : 'Ready when you install To Try as an app \u2014 a browser cannot wake itself at your hard hour.';
+      }
   else if(st.hold) status='Holding — '+st.hold+'.';
   else status='Nothing scheduled right now.';
   return '<div style="border-top:1px solid var(--bd);margin:6px 0 10px;padding-top:12px">'+
@@ -6778,10 +6796,19 @@ function checkGoneQuietWelcome(){
 
 // Check if we should show a "welcome back" or streak reminder when app opens
 function checkReturnNudge(){
-  if(Notification.permission !== 'granted') return;
-  const lastOpen = ls('totry_last_open');
+  // TWO BUGS IN THREE LINES.
+  // 1. `totry_last_open` is a DAY STRING everywhere else — initApp writes toLocaleDateString('en-AU')
+  //    and app.js compares it to a date string. This wrote a raw millisecond timestamp over it, so
+  //    initApp's `if(ls('totry_last_open') !== today)` was true on every launch and the once-a-day
+  //    "Day N, <name>" toast fired every single time the app opened. Its own key now.
+  // 2. The guard is the WEB Notification API. The native build never calls Notification
+  //    .requestPermission — it uses Capacitor — so permission is 'default' forever and this returned
+  //    immediately in the App Store build. The nudge shows a toast; it does not need notification
+  //    permission at all.
+  try{ if(typeof Notification !== 'undefined' && Notification.permission === 'denied') return; }catch(_){}
+  const lastOpen = ls('totry_last_open_ts');
   const now = Date.now();
-  ls('totry_last_open', now);
+  ls('totry_last_open_ts', now);
   if(!lastOpen) return;
   
   const hoursSince = (now - lastOpen) / (1000*60*60);
@@ -9135,7 +9162,14 @@ function getDayCount(){
   if(!anchorStr) return 1;
   const anchor = new Date(anchorStr);
   if(isNaN(anchor)) return 1;
-  return Math.max(1, Math.floor((Date.now() - anchor) / 86400000) + 1);
+  // MIDNIGHT TO MIDNIGHT, not "how many 24-hour blocks have elapsed". `totry_start` is a full
+  // timestamp: sign up at 9pm and at 9am the next calendar day only 12 hours have passed, so the
+  // floor gave 0 and the counter said "Day 1" for a second time. Everything gated on a day number
+  // — the unlocks, the checklist, the day-N cards — then landed a calendar day late, forever.
+  // Whole days between two local midnights is what "days in" means to a person.
+  const a = new Date(anchor); a.setHours(0,0,0,0);
+  const t = new Date();      t.setHours(0,0,0,0);
+  return Math.max(1, Math.round((t - a) / 86400000) + 1);
 }
 
 // DAYS SINCE INSTALL — deliberately NOT getDayCount(). getDayCount() honours the Settings
@@ -11747,7 +11781,12 @@ function renderAdaptiveMorning(){
   // Look at yesterday's data
   const yesterdayKey = new Date(Date.now() - 86400000).toLocaleDateString('en-AU');
   const evenings = ls('totry_evenings') || [];
-  const yEvening = evenings.find(e => e.day === getDayCount() - 1);
+  // Match on the CALENDAR day already computed two lines up, not on a day NUMBER. e.day is written
+  // from getDayCount() at the time the evening was saved, so any day the person did not open the app
+  // shifts every later match — and the morning card then quotes a different night's reflection back
+  // to them as if it were last night's. yesterdayKey was computed and never used.
+  const yEvening = evenings.find(e => (e.ts && new Date(e.ts).toLocaleDateString('en-AU') === yesterdayKey)
+                                      || e.date === yesterdayKey);
   
   // Yesterday's habits
   loadH();
@@ -16299,6 +16338,24 @@ const SaveFile = {
 const Lock = {
   _p(){ try{ const P=(window.Capacitor&&window.Capacitor.Plugins)||{}; return P.Biometric || P.BiometricPlugin || null; }catch(_){ return null; } },
   enabled(){ try{ return ls('totry_lock_on') === true; }catch(_){ return false; } },
+
+  // MIRROR THE FLAG WHERE UIKIT CAN SEE IT.
+  //
+  // iOS photographs the screen when the app resigns active and shows that image in the app switcher,
+  // to anyone holding the phone, with no Face ID in the way — so the lock was being handed away at the
+  // exact moment it existed to prevent. AppDelegate covers the window before the snapshot, but it runs
+  // in UIKit and cannot read the WebView's localStorage (and willResignActive is synchronous, so an
+  // async read would arrive after the photograph).
+  //
+  // @capacitor/preferences writes to UserDefaults, which UIKit CAN read synchronously. This is called
+  // wherever totry_lock_on changes, so one setting still governs both halves — a second source of
+  // truth that could drift is exactly how a lock ends up on in one layer and off in the other.
+  async _mirrorToNative(on){
+    try{
+      const P = (window.Capacitor && window.Capacitor.Plugins) || {};
+      if(P.Preferences && P.Preferences.set) await P.Preferences.set({ key:'totry_lock_on', value: on ? 'true' : 'false' });
+    }catch(_){ }
+  },
   async capability(){
     const p=this._p(); if(!p) return { available:false, kind:'none' };
     try{ return (await p.isAvailable()) || { available:false, kind:'none' }; }
@@ -16360,6 +16417,7 @@ async function unlockApp(){
   if(r && r.unavailable){
     // The trap case. Turn the lock off and open the app — never leave someone shut out of their own words.
     try{ ls('totry_lock_on', false); }catch(_){}
+    try{ Lock._mirrorToNative(false); }catch(_){}
     _lockShown = false;
     const el = document.getElementById('app-lock'); if(el) el.remove();
     try{ if(typeof renderLockRow==='function') renderLockRow(); }catch(_){}
@@ -16435,6 +16493,7 @@ async function toggleAppLock(){
   const r = await Lock.prove(on ? 'Turn off the lock on To Try' : 'Turn on the lock for To Try');
   if(r && r.unavailable){
     try{ ls('totry_lock_on', false); }catch(_){}
+    try{ Lock._mirrorToNative(false); }catch(_){}
     if(typeof showToast==='function') showToast('Not available', (r.reason||'This device can’t verify it’s you.'));
     renderLockRow(); return;
   }
@@ -16443,6 +16502,7 @@ async function toggleAppLock(){
     return;
   }
   try{ ls('totry_lock_on', !on); }catch(_){}
+  try{ Lock._mirrorToNative(!on); }catch(_){}
   if(typeof haptic==='function') haptic('success');
   if(typeof showToast==='function'){
     showToast(!on ? 'Lock on' : 'Lock off', !on ? 'To Try will ask for you when it opens.' : 'The app opens without asking now.');
@@ -17127,6 +17187,7 @@ function logWin(){
 // recent fight-log entry so the pattern engine gets richer over time.
 function postUrgeReflection(viceName){
   const m = document.createElement('div');
+  m.id = 'post-urge-modal';   // so saving closes THIS sheet, not whichever opened last
   m.className = 'modal-bg open';
   m.style.alignItems = 'center';
   m.innerHTML = '<div class="modal">'+
@@ -17152,7 +17213,7 @@ function savePostUrge(viceName){
     if(helped) fl[idx].note = 'what helped: ' + helped;
     ls('totry_fight_log', fl);
   }
-  document.querySelector('.modal-bg.open')?.remove();
+  document.getElementById('post-urge-modal')?.remove();
   if(typeof renderUrgeInsights === 'function') renderUrgeInsights();
   haptic('tick');
   showToast('Saved', 'That\'s how you build the map out.');
@@ -31553,7 +31614,19 @@ function clearWorkoutSession(){
 // can assemble a content package. Beats Hevy's one-photo-per-workout cap.
 function _getSessionProof(id){ try{ return (JSON.parse(localStorage.getItem('totry_session_proof')||'{}'))[id] || []; }catch(_){ return []; } }
 function _saveSessionProof(id, arr){
-  try{ const all = JSON.parse(localStorage.getItem('totry_session_proof')||'{}'); all[id]=arr; localStorage.setItem('totry_session_proof', JSON.stringify(all)); }catch(_){}
+  // Through ls(), which reports whether the write actually landed. This used a raw setItem inside a
+  // bare catch, so on a full device the photo silently went nowhere and the caller still said "Proof
+  // saved" — a person building a record of their training gets a record with holes and no idea.
+  let ok = false;
+  try{
+    const all = JSON.parse(localStorage.getItem('totry_session_proof')||'{}');
+    all[id] = arr;
+    ok = (typeof ls === 'function') ? ls('totry_session_proof', all) !== false
+       : (localStorage.setItem('totry_session_proof', JSON.stringify(all)), true);
+  }catch(_){ ok = false; }
+  if(!ok && typeof showToast === 'function'){
+    showToast('Not saved', 'There was no room on this device for that one. Free some space in Settings and try again.');
+  }
   if(typeof syncToCloud==='function') syncToCloud();
 }
 function attachSessionProof(unifiedId){
@@ -37471,12 +37544,13 @@ function showPrivacyPolicy(){
       '<p style="margin-bottom:6px">Some app features call external services to work. Each one sees something specific:</p>' +
       '<ul style="margin:0 0 12px 18px;padding:0;line-height:1.7">' +
         '<li><strong style="color:var(--tx)">Coach &amp; AI features</strong> — your message + relevant context (recent state from your logs) goes to whichever AI provider responds first: Google (Gemini), Groq (Llama), OpenRouter, or Anthropic. These companies have their own privacy policies. By default many providers retain prompts for safety review for 30 days, and some may use prompts to improve models unless their enterprise tier is used. I use their standard API tiers — assume your Coach messages may be reviewed by automated systems and could be retained briefly by the provider.</li>' +
-        '<li><strong style="color:var(--tx)">Workout screenshot OCR</strong> — the image is sent to Google Gemini Vision.</li>' +
+        '<li><strong style="color:var(--tx)">Photos you send to the coach</strong> \u2014 five things can send an image, and all of them go to whichever vision model answers first (Google Gemini, then OpenRouter as a fallback): a <strong>form check</strong> (a photo of you doing the movement \u2014 your body is in it), a <strong>meal photo</strong>, a <strong>barcode or package photo</strong> when the scanner cannot read the code, a <strong>workout screenshot</strong>, and a <strong>smart-scale screenshot</strong> (your weight and body composition are in it). Each is sent when you choose that action, never in the background, and is not stored by me.</li>' +
         '<li><strong style="color:var(--tx)">Barcode scanning</strong> — the barcode is sent to OpenFoodFacts (open database).</li>' +
         '<li><strong style="color:var(--tx)">USDA food search</strong> — the search query is sent to api.nal.usda.gov.</li>' +
         '<li><strong style="color:var(--tx)">Apple Health</strong> — on iPhone, only if you grant it. Your steps, sleep and imported workout summaries (type, duration, distance, calories, average heart rate) are saved to your account so they follow you between devices, and your sleep and recent training form part of the context sent to the AI when you ask for coaching. Never sold, never advertising, never shared with anyone else. Turn it off any time in Settings, and revoke it in iOS Settings &#8594; Health.</li>' +
         '<li><strong style="color:var(--tx)">Prayer times</strong> — if you use them, your location is rounded to about a kilometre and sent to api.aladhan.com to work out the times where you are. The rounded figure is not stored on my server and is not linked to your account. You can skip location entirely and type your city instead.</li>' +
         '<li><strong style="color:var(--tx)">Exercise GIFs</strong> — exercise name is sent to ExerciseDB / Wger.</li>' +
+        '<li><strong style="color:var(--tx)">Scripture you read</strong> \u2014 the passage you open is fetched live, so the service sees which one: the Qur\u2019an from api.alquran.cloud, the Bhagavad Gita from vedicscriptures.github.io, and the Dhammapada from suttacentral.net. The Bible goes through my own server instead, so only I see it. Nothing about you is attached to any of them.</li>' +
         '<li><strong style="color:var(--tx)">Currency rates</strong> — your selected currency is sent to api.frankfurter.dev.</li>' +
         '<li><strong style="color:var(--tx)">Strava</strong> — if you connect it, Strava sees your access tokens and serves your activities. You explicitly authorise this via OAuth.</li>' +
         '<li><strong style="color:var(--tx)">Hevy</strong> — if you enter an API key, Hevy sees your sync requests. You explicitly authorise this.</li>' +
@@ -38374,6 +38448,9 @@ async function initApp(){
   // It sits with the other applyX() passes because it is the same kind of thing: markup that declared
   // what it wants, and one function that gives it.
   try{ if(typeof applyCurrencySymbols==='function') applyCurrencySymbols(); }catch(_){}
+  // Re-assert the app-lock flag into UserDefaults each launch: a device that had the lock on before
+  // this shipped has nothing in the native mirror, so its very first backgrounding would be uncovered.
+  try{ if(typeof Lock==='object' && Lock._mirrorToNative) Lock._mirrorToNative(Lock.enabled()); }catch(_){}
   // Background: refresh currency rates if user has set a preference different from base
   if(typeof fetchCurrencyRates === 'function') fetchCurrencyRates(getUserCurrency());
   // Personalise coach
@@ -40709,6 +40786,13 @@ function renderConnectedApps(){
   used.forEach(appId => {
     const app = APP_REGISTRY[appId];
     if(!app) return;
+    // The picker already hides Google Health on iOS (line ~2253), but this list renders whatever is in
+    // the SYNCED `totry_apps_used` — so a person who linked it on the web and then installed the iOS
+    // app got a row for it, and its Open button walked them into Google's own error page. The filter
+    // has to live here too, where the row is actually built, or the picker's version is bypassed by
+    // the one route nobody tests: a web account arriving on a phone.
+    if((appId==='googlehealth' || appId==='googlefit' || appId==='fitbit') &&
+       typeof isNativeApp==='function' && isNativeApp()) return;
     const row = document.createElement('div');
     row.className = 'connected-app';
     // Honest status: does this app actually integrate, or do we just open it?

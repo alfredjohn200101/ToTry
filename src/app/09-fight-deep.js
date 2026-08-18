@@ -456,6 +456,7 @@ function logWin(){
 // recent fight-log entry so the pattern engine gets richer over time.
 function postUrgeReflection(viceName){
   const m = document.createElement('div');
+  m.id = 'post-urge-modal';   // so saving closes THIS sheet, not whichever opened last
   m.className = 'modal-bg open';
   m.style.alignItems = 'center';
   m.innerHTML = '<div class="modal">'+
@@ -481,7 +482,7 @@ function savePostUrge(viceName){
     if(helped) fl[idx].note = 'what helped: ' + helped;
     ls('totry_fight_log', fl);
   }
-  document.querySelector('.modal-bg.open')?.remove();
+  document.getElementById('post-urge-modal')?.remove();
   if(typeof renderUrgeInsights === 'function') renderUrgeInsights();
   haptic('tick');
   showToast('Saved', 'That\'s how you build the map out.');

@@ -864,7 +864,19 @@ function clearWorkoutSession(){
 // can assemble a content package. Beats Hevy's one-photo-per-workout cap.
 function _getSessionProof(id){ try{ return (JSON.parse(localStorage.getItem('totry_session_proof')||'{}'))[id] || []; }catch(_){ return []; } }
 function _saveSessionProof(id, arr){
-  try{ const all = JSON.parse(localStorage.getItem('totry_session_proof')||'{}'); all[id]=arr; localStorage.setItem('totry_session_proof', JSON.stringify(all)); }catch(_){}
+  // Through ls(), which reports whether the write actually landed. This used a raw setItem inside a
+  // bare catch, so on a full device the photo silently went nowhere and the caller still said "Proof
+  // saved" — a person building a record of their training gets a record with holes and no idea.
+  let ok = false;
+  try{
+    const all = JSON.parse(localStorage.getItem('totry_session_proof')||'{}');
+    all[id] = arr;
+    ok = (typeof ls === 'function') ? ls('totry_session_proof', all) !== false
+       : (localStorage.setItem('totry_session_proof', JSON.stringify(all)), true);
+  }catch(_){ ok = false; }
+  if(!ok && typeof showToast === 'function'){
+    showToast('Not saved', 'There was no room on this device for that one. Free some space in Settings and try again.');
+  }
   if(typeof syncToCloud==='function') syncToCloud();
 }
 function attachSessionProof(unifiedId){

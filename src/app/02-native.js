@@ -165,8 +165,19 @@ const Health = {
       // Sleep lives in a separate native plugin because capacitor-health cannot read it. Ask in the same
       // breath so the person sees one connect journey, not two.
       try{ const sp=this._sleepP(); if(sp && sp.requestAuthorization) await sp.requestAuthorization(); }catch(_){}
-      try{ ls('totry_health_connected', true); }catch(_){}
+      // CONNECTED MEANS DATA CAME BACK. This was written straight after requestHealthPermissions(),
+      // which resolves whether the person granted or DENIED — iOS does not reject on denial, it just
+      // returns nothing. So tapping "Don't Allow" left the card saying connected, promising automatic
+      // syncing forever, syncing nothing, and giving the person no reason to suspect a thing.
       const synced = await this.syncToday();
+      const gotSomething = !!(synced && Object.keys(synced).some(k => {
+        const v = synced[k]; return typeof v === 'number' ? v > 0 : (v != null && v !== false);
+      }));
+      try{ ls('totry_health_connected', gotSomething); }catch(_){}
+      if(!gotSomething){
+        return { ok:false, reason:'no-permission',
+                 message:'Apple Health did not share anything. If you tapped "Don\u2019t Allow", open Settings \u2192 Health \u2192 Data Access & Devices \u2192 To Try and turn on what you want me to see.' };
+      }
       try{ synced && (synced.workouts = await this.syncWorkouts(30)); }catch(_){}   // 30 days on first connect
       try{ synced && (synced.sleepNights = await this.syncSleep(30)); }catch(_){}
       return { ok:true, synced };
@@ -695,7 +706,14 @@ function _reachOutRowHTML(){
   let status;
   if(!on) status='Off. Nothing is scheduled.';
   else if(_reachPaused()) status='Standing down until '+new Date(st.pausedUntil).toLocaleDateString('en-AU')+' — the last few went unanswered, so I stopped.';
-  else if(st.next && st.next>Date.now()) status='Next: '+new Date(st.next).toLocaleString('en-AU',{weekday:'short',hour:'numeric',minute:'2-digit'})+' · '+_reachCount7()+' of '+REACHOUT_MAX_PER_WEEK+' used this week.';
+      // On the web nothing wakes the browser at their hard hour — there is no scheduler at all — so a
+      // time here promised a check-in that could not arrive. Native says when; the web says why not.
+      else if(st.next && st.next>Date.now()){
+        const _native = (typeof Notify==='object' && Notify.isNative && Notify.isNative());
+        status = _native
+          ? ('Next: ' + new Date(st.next).toLocaleString('en-AU',{weekday:'short',hour:'numeric',minute:'2-digit'})+' · '+_reachCount7()+' of '+REACHOUT_MAX_PER_WEEK+' used this week.')
+          : 'Ready when you install To Try as an app \u2014 a browser cannot wake itself at your hard hour.';
+      }
   else if(st.hold) status='Holding — '+st.hold+'.';
   else status='Nothing scheduled right now.';
   return '<div style="border-top:1px solid var(--bd);margin:6px 0 10px;padding-top:12px">'+
@@ -892,10 +910,19 @@ function checkGoneQuietWelcome(){
 
 // Check if we should show a "welcome back" or streak reminder when app opens
 function checkReturnNudge(){
-  if(Notification.permission !== 'granted') return;
-  const lastOpen = ls('totry_last_open');
+  // TWO BUGS IN THREE LINES.
+  // 1. `totry_last_open` is a DAY STRING everywhere else — initApp writes toLocaleDateString('en-AU')
+  //    and app.js compares it to a date string. This wrote a raw millisecond timestamp over it, so
+  //    initApp's `if(ls('totry_last_open') !== today)` was true on every launch and the once-a-day
+  //    "Day N, <name>" toast fired every single time the app opened. Its own key now.
+  // 2. The guard is the WEB Notification API. The native build never calls Notification
+  //    .requestPermission — it uses Capacitor — so permission is 'default' forever and this returned
+  //    immediately in the App Store build. The nudge shows a toast; it does not need notification
+  //    permission at all.
+  try{ if(typeof Notification !== 'undefined' && Notification.permission === 'denied') return; }catch(_){}
+  const lastOpen = ls('totry_last_open_ts');
   const now = Date.now();
-  ls('totry_last_open', now);
+  ls('totry_last_open_ts', now);
   if(!lastOpen) return;
   
   const hoursSince = (now - lastOpen) / (1000*60*60);

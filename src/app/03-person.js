@@ -1999,7 +1999,14 @@ function getDayCount(){
   if(!anchorStr) return 1;
   const anchor = new Date(anchorStr);
   if(isNaN(anchor)) return 1;
-  return Math.max(1, Math.floor((Date.now() - anchor) / 86400000) + 1);
+  // MIDNIGHT TO MIDNIGHT, not "how many 24-hour blocks have elapsed". `totry_start` is a full
+  // timestamp: sign up at 9pm and at 9am the next calendar day only 12 hours have passed, so the
+  // floor gave 0 and the counter said "Day 1" for a second time. Everything gated on a day number
+  // — the unlocks, the checklist, the day-N cards — then landed a calendar day late, forever.
+  // Whole days between two local midnights is what "days in" means to a person.
+  const a = new Date(anchor); a.setHours(0,0,0,0);
+  const t = new Date();      t.setHours(0,0,0,0);
+  return Math.max(1, Math.round((t - a) / 86400000) + 1);
 }
 
 // DAYS SINCE INSTALL — deliberately NOT getDayCount(). getDayCount() honours the Settings
@@ -4611,7 +4618,12 @@ function renderAdaptiveMorning(){
   // Look at yesterday's data
   const yesterdayKey = new Date(Date.now() - 86400000).toLocaleDateString('en-AU');
   const evenings = ls('totry_evenings') || [];
-  const yEvening = evenings.find(e => e.day === getDayCount() - 1);
+  // Match on the CALENDAR day already computed two lines up, not on a day NUMBER. e.day is written
+  // from getDayCount() at the time the evening was saved, so any day the person did not open the app
+  // shifts every later match — and the morning card then quotes a different night's reflection back
+  // to them as if it were last night's. yesterdayKey was computed and never used.
+  const yEvening = evenings.find(e => (e.ts && new Date(e.ts).toLocaleDateString('en-AU') === yesterdayKey)
+                                      || e.date === yesterdayKey);
   
   // Yesterday's habits
   loadH();

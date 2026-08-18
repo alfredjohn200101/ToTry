@@ -3356,6 +3356,20 @@ H.section('dead code that was one caller away from confusing someone');
     .filter(e => e.detail && e.detail !== '{}' && e.name !== 'jserror');
   H.ok(/One exception, and it is the only one/.test(H.html),
        'and the one event that does carry text is disclosed in the policy, not hidden');
+
+  // EVERY IMAGE SENDER MUST BE IN THE LIST. Five functions POST an image to a vision model, and the
+  // policy named one of them and one recipient. The omission that mattered was runFormCheck — a photo
+  // OF THE PERSON, taken to check their lifting form. A list that reads as exhaustive and leaves out
+  // the picture of your body is worse than no list at all.
+  const imageSenders = [...H.html.matchAll(/function\s+([a-zA-Z_]+)[\s\S]{0,2600}?image_base64/g)].map(m => m[1]);
+  H.ok(imageSenders.length >= 3, `found ${imageSenders.length} image senders in the bundle`);
+  H.ok(/form check/i.test(H.html), 'the form-check photo — the one with the person in it — is disclosed');
+  H.ok(/smart-scale screenshot/i.test(H.html), 'the scale screenshot is disclosed');
+  H.ok(/OpenRouter as a fallback/i.test(H.html), 'and the fallback recipient is named, not just the first one');
+  // The non-Christian readers fetch live from three third parties; only the Bible was proxied and named.
+  for (const host of ['api.alquran.cloud', 'vedicscriptures.github.io', 'suttacentral.net']) {
+    H.ok(H.html.includes(host), `${host} is named in the policy — it sees which passage was opened`);
+  }
   H.eq(events.length, 0, 'no analytics event carries content — only its name' +
        (events.length ? '\n      ' + events.map(e => `${e.name}(${e.detail})`).join('\n      ') : ''));
 

@@ -11,9 +11,55 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return true
     }
 
+    // ── THE APP SWITCHER SNAPSHOT ────────────────────────────────────────────────────────────────
+    // iOS photographs the screen the moment an app resigns active, and shows that image in the app
+    // switcher — to anyone holding the phone, with no Face ID in the way.
+    //
+    // So the whole point of the app lock was being handed away: someone reads their journal, swipes
+    // up, passes the phone to a partner or leaves it on a desk, and the journal entry is sitting in
+    // the switcher in full. The lock they turned on to prevent exactly that never gets a chance to
+    // run, because this happens below the web layer, in UIKit, before any JavaScript is told anything.
+    //
+    // The cover goes up on willResignActive (before the snapshot) and comes down on didBecomeActive.
+    // It is only applied when the person actually turned the lock on — reading the same flag the web
+    // layer writes, so one setting governs both halves.
+    private var privacyCover: UIView?
+
+    private func lockIsOn() -> Bool {
+        // Written by Lock._mirrorToNative() through @capacitor/preferences, which stores strings under
+        // a "CapacitorStorage." prefix in UserDefaults — the one store UIKit can read synchronously,
+        // which willResignActive requires because the snapshot is taken the instant it returns.
+        let d = UserDefaults.standard
+        if let v = d.string(forKey: "CapacitorStorage.totry_lock_on") { return v == "true" }
+        return false
+    }
+
+    private func showPrivacyCover() {
+        guard lockIsOn(), privacyCover == nil, let window = self.window else { return }
+        let cover = UIView(frame: window.bounds)
+        cover.backgroundColor = UIColor(red: 0.039, green: 0.039, blue: 0.059, alpha: 1.0)  // --bg, #0a0a0f
+        cover.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        let label = UILabel()
+        label.text = "To Try"
+        label.textColor = UIColor(red: 0.784, green: 0.663, blue: 0.431, alpha: 1.0)        // --go
+        label.font = UIFont.systemFont(ofSize: 24, weight: .light)
+        label.translatesAutoresizingMaskIntoConstraints = false
+        cover.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.centerXAnchor.constraint(equalTo: cover.centerXAnchor),
+            label.centerYAnchor.constraint(equalTo: cover.centerYAnchor)
+        ])
+        window.addSubview(cover)
+        privacyCover = cover
+    }
+
+    private func hidePrivacyCover() {
+        privacyCover?.removeFromSuperview()
+        privacyCover = nil
+    }
+
     func applicationWillResignActive(_ application: UIApplication) {
-        // Sent when the application is about to move from active to inactive state. This can occur for certain types of temporary interruptions (such as an incoming phone call or SMS message) or when the user quits the application and it begins the transition to the background state.
-        // Use this method to pause ongoing tasks, disable timers, and invalidate graphics rendering callbacks. Games should use this method to pause the game.
+        showPrivacyCover()
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {
@@ -26,7 +72,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+        // The web layer's own lock screen takes over from here; this only covers the snapshot window.
+        hidePrivacyCover()
     }
 
     func applicationWillTerminate(_ application: UIApplication) {

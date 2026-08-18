@@ -466,6 +466,9 @@ async function initApp(){
   // It sits with the other applyX() passes because it is the same kind of thing: markup that declared
   // what it wants, and one function that gives it.
   try{ if(typeof applyCurrencySymbols==='function') applyCurrencySymbols(); }catch(_){}
+  // Re-assert the app-lock flag into UserDefaults each launch: a device that had the lock on before
+  // this shipped has nothing in the native mirror, so its very first backgrounding would be uncovered.
+  try{ if(typeof Lock==='object' && Lock._mirrorToNative) Lock._mirrorToNative(Lock.enabled()); }catch(_){}
   // Background: refresh currency rates if user has set a preference different from base
   if(typeof fetchCurrencyRates === 'function') fetchCurrencyRates(getUserCurrency());
   // Personalise coach

@@ -1567,6 +1567,13 @@ function renderConnectedApps(){
   used.forEach(appId => {
     const app = APP_REGISTRY[appId];
     if(!app) return;
+    // The picker already hides Google Health on iOS (line ~2253), but this list renders whatever is in
+    // the SYNCED `totry_apps_used` — so a person who linked it on the web and then installed the iOS
+    // app got a row for it, and its Open button walked them into Google's own error page. The filter
+    // has to live here too, where the row is actually built, or the picker's version is bypassed by
+    // the one route nobody tests: a web account arriving on a phone.
+    if((appId==='googlehealth' || appId==='googlefit' || appId==='fitbit') &&
+       typeof isNativeApp==='function' && isNativeApp()) return;
     const row = document.createElement('div');
     row.className = 'connected-app';
     // Honest status: does this app actually integrate, or do we just open it?

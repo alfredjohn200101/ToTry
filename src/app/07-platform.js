@@ -64,6 +64,24 @@ const SaveFile = {
 const Lock = {
   _p(){ try{ const P=(window.Capacitor&&window.Capacitor.Plugins)||{}; return P.Biometric || P.BiometricPlugin || null; }catch(_){ return null; } },
   enabled(){ try{ return ls('totry_lock_on') === true; }catch(_){ return false; } },
+
+  // MIRROR THE FLAG WHERE UIKIT CAN SEE IT.
+  //
+  // iOS photographs the screen when the app resigns active and shows that image in the app switcher,
+  // to anyone holding the phone, with no Face ID in the way — so the lock was being handed away at the
+  // exact moment it existed to prevent. AppDelegate covers the window before the snapshot, but it runs
+  // in UIKit and cannot read the WebView's localStorage (and willResignActive is synchronous, so an
+  // async read would arrive after the photograph).
+  //
+  // @capacitor/preferences writes to UserDefaults, which UIKit CAN read synchronously. This is called
+  // wherever totry_lock_on changes, so one setting still governs both halves — a second source of
+  // truth that could drift is exactly how a lock ends up on in one layer and off in the other.
+  async _mirrorToNative(on){
+    try{
+      const P = (window.Capacitor && window.Capacitor.Plugins) || {};
+      if(P.Preferences && P.Preferences.set) await P.Preferences.set({ key:'totry_lock_on', value: on ? 'true' : 'false' });
+    }catch(_){ }
+  },
   async capability(){
     const p=this._p(); if(!p) return { available:false, kind:'none' };
     try{ return (await p.isAvailable()) || { available:false, kind:'none' }; }
@@ -125,6 +143,7 @@ async function unlockApp(){
   if(r && r.unavailable){
     // The trap case. Turn the lock off and open the app — never leave someone shut out of their own words.
     try{ ls('totry_lock_on', false); }catch(_){}
+    try{ Lock._mirrorToNative(false); }catch(_){}
     _lockShown = false;
     const el = document.getElementById('app-lock'); if(el) el.remove();
     try{ if(typeof renderLockRow==='function') renderLockRow(); }catch(_){}
@@ -200,6 +219,7 @@ async function toggleAppLock(){
   const r = await Lock.prove(on ? 'Turn off the lock on To Try' : 'Turn on the lock for To Try');
   if(r && r.unavailable){
     try{ ls('totry_lock_on', false); }catch(_){}
+    try{ Lock._mirrorToNative(false); }catch(_){}
     if(typeof showToast==='function') showToast('Not available', (r.reason||'This device can’t verify it’s you.'));
     renderLockRow(); return;
   }
@@ -208,6 +228,7 @@ async function toggleAppLock(){
     return;
   }
   try{ ls('totry_lock_on', !on); }catch(_){}
+  try{ Lock._mirrorToNative(!on); }catch(_){}
   if(typeof haptic==='function') haptic('success');
   if(typeof showToast==='function'){
     showToast(!on ? 'Lock on' : 'Lock off', !on ? 'To Try will ask for you when it opens.' : 'The app opens without asking now.');
