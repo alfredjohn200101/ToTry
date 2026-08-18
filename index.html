@@ -4755,7 +4755,7 @@ function lsArr(k){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v476';
+const APP_VERSION = 'v477';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -4923,9 +4923,6 @@ async function proceedAfterAuth(user){
   }
 }
 // One-tap Google sign-in. No email quota involved — auth scales with launch waves.
-function _inAppBrowser(){
-  return /Instagram|FBAN|FBAV|FB_IAB|FBIOS|TikTok|musical_ly|BytedanceWebview|Line\//i.test(navigator.userAgent);
-}
 // Google sign-in is intentionally DISABLED for now (removed from the UI). Email OTP is the
 // single sign-in path, which avoids the "same Gmail, two account types" confusion. The full
 // working code + setup steps live in GOOGLE_SIGNIN.md if we choose to re-enable it later.
@@ -5202,56 +5199,6 @@ async function restoreFromCloud(){
   return await mergeFromCloud();
 }
 
-async function _restoreFromCloud_legacy_unused(){
-  if(!sb || !currentUser) return false;
-  
-  try {
-    const { data, error } = await sb
-      .from('user_data')
-      .select('data_key,data_value')
-      .eq('user_id', currentUser.id);
-    
-    if(error){
-      console.error('Restore error:', error);
-      return false;
-    }
-    
-    if(!data || data.length === 0){
-      return false; // New user, no cloud data
-    }
-    
-    // Write each row to localStorage — but NEVER clobber good local data with empty/shorter cloud
-    // data (this caused "my debts/money/weight vanished after reopening"). Union arrays; for objects
-    // keep whichever has more keys; for primitives prefer cloud only if local is empty.
-    const idOf = x => (x && typeof x === 'object') ? (x.id !== undefined ? 'i'+x.id : (x.ts || JSON.stringify(x))) : x;
-    const union = (a,b) => { const m = new Map(); [].concat(a||[], b||[]).forEach(x => { const k = idOf(x); if(!m.has(k)) m.set(k, x); }); return Array.from(m.values()); };
-    data.forEach(row => {
-      if(row.data_value === null || row.data_value === undefined) return;
-      const k = row.data_key, cv = row.data_value;
-      const lraw = localStorage.getItem(k);
-      let lv = null; try { lv = lraw ? JSON.parse(lraw) : null; } catch(_){ lv = lraw; }
-      let nv = cv;
-      if(Array.isArray(lv) && Array.isArray(cv)){
-        nv = union(lv, cv);                                  // merge lists, lose nothing
-      } else if(lv && cv && typeof lv === 'object' && typeof cv === 'object'){
-        // Prefer whichever was updated more recently if both carry a timestamp; otherwise keep the
-        // richer object, and on a tie keep LOCAL (the user just changed it — don't let stale cloud win).
-        const lt = lv._ts || lv.ts || 0, ct = cv._ts || cv.ts || 0;
-        if(lt || ct){ nv = lt >= ct ? lv : cv; }
-        else { nv = Object.keys(cv).length > Object.keys(lv).length ? cv : lv; }
-      } else if(lv !== null && lv !== undefined && (cv === '' || cv === null || (Array.isArray(cv) && !cv.length))){
-        nv = lv;                                             // don't overwrite good local with empty cloud
-      }
-      try { localStorage.setItem(k, JSON.stringify(nv)); } catch(e){ console.warn('restore key failed:', k, e); }
-    });
-    
-    console.log('Restored', data.length, 'keys from cloud');
-    return true;
-  } catch(e){
-    console.error('Restore failed:', e);
-    return false;
-  }
-}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CLOUD-FIRST SYNC (v111). Supabase is the source of truth, the device is a cache.
@@ -7203,7 +7150,6 @@ function cycleToggleOn(){
   else { c.on=true; delete c.declined; try{ localStorage.removeItem(CYCLE_TOMB); }catch(_){} cycleSet(c); showToast('On','Cycle counsel is back.'); }
   haptic('tap'); renderCycleSurfaces();
 }
-function _cycleRefreshBtns(){ try{ const b=document.getElementById('cycle-backup-btn'); if(b) b.textContent=cycleGet().backup?'Backed up':'This device only'; const a=document.getElementById('cycle-ai-btn'); if(a) a.textContent=cycleGet().aiOK?'On \u2713':'Off'; }catch(_){} }
 function cycleToggleAI(){
   const c=cycleGet(); c.aiOK=!c.aiOK; cycleSet(c);
   try{ const b=document.getElementById('cycle-ai-btn'); if(b) b.textContent=c.aiOK?'On \u2713':'Off'; }catch(_){}
@@ -8114,9 +8060,6 @@ let isOnline = navigator.onLine;
 window.addEventListener('online', ()=>{ isOnline=true; });
 window.addEventListener('offline', ()=>{ isOnline=false; });
 
-function checkOnline(){
-  return navigator.onLine;
-}
 
 // Multi-provider AI client. The Edge Function picks Gemini → Groq → OpenRouter → Anthropic.
 // Returns {text, provider, error} so callers can show real failures instead of pretending.
@@ -11494,6 +11437,7 @@ function completeMorning(){
   if(typeof renderHomeCalendar==='function') renderHomeCalendar();
 }
 function initMorningTab(){
+  try{ renderMorningLightCard(); }catch(_){}   // so the card stops asking once they have been out
   if(typeof applyFaithMorning === 'function') applyFaithMorning();
   if(typeof renderMorningLiturgy === 'function') renderMorningLiturgy();
   // The one fused thing the morning gives back: today's schedule + whether you're likely training
@@ -11894,35 +11838,6 @@ function applyRecommendedSplit(){
 // ═══════════════════════════════════════════════════
 let _pendingBodyPhoto = null;
 
-function previewBodyPhoto(event){
-  const file = event.target.files[0];
-  if(!file)return;
-  
-  // Resize to max 800px and compress
-  const img = new Image();
-  img.onload = ()=>{
-    const canvas = document.createElement('canvas');
-    let w = img.width, h = img.height;
-    const maxDim = 800;
-    if(w > maxDim || h > maxDim){
-      if(w > h){ h = h * maxDim / w; w = maxDim; }
-      else{ w = w * maxDim / h; h = maxDim; }
-    }
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(img, 0, 0, w, h);
-    _pendingBodyPhoto = canvas.toDataURL('image/jpeg', 0.6);
-    
-    document.getElementById('bod-photo-img').src = _pendingBodyPhoto;
-    document.getElementById('bod-photo-preview').style.display = 'block';
-    const sizeKB = Math.round(_pendingBodyPhoto.length / 1024);
-    document.getElementById('bod-photo-info').textContent = sizeKB + 'KB · Ready to save with your check-in';
-  };
-  const reader = new FileReader();
-  reader.onload = e => img.src = e.target.result;
-  reader.readAsDataURL(file);
-}
 
 function renderBodyCollage(){
   const entries = ls('totry_body') || [];
@@ -12075,13 +11990,6 @@ function showMorningFocus(){
   // Now it asks for the one thing a morning can actually give: today's choice, made on purpose.
   loadV();
   if(typeof renderMorningPledge==='function') renderMorningPledge();
-}
-function addAffirmation(){
-  const input=document.getElementById('new-affirm');
-  const text=input?.value.trim();if(!text)return;
-  const affirms=getAffirmations();affirms.push(text);
-  ls('totry_affirms',affirms);input.value='';
-  renderAffirmList();showToast('Affirmation added',text.slice(0,40));
 }
 function renderAffirmList(){
   const list=document.getElementById('affirm-list');if(!list)return;
@@ -15830,7 +15738,33 @@ async function _researchProtocol(name, key){
 // early sets tonight's sleep more than anything done at bedtime. One screen, no timer, nothing logged
 // but the fact it was done — so the card can stop asking once they have been out.
 function _sleepDayKey(){ try{ return new Date().toLocaleDateString('en-AU'); }catch(_){ return 'x'; } }
+// Has this person already been out today? _morningLightGo() has always WRITTEN totry_morning_light_last,
+// and nothing ever read it — so the card asked "Get light in your eyes" every time they opened the
+// Morning tab, including straight after they had done it and told the app so. A test asserted this
+// function existed "so the card can stop asking"; nothing made the card stop.
 function morningLightDoneToday(){ try{ return ls('totry_morning_light_last') === _sleepDayKey(); }catch(_){ return false; } }
+// Acknowledged rather than hidden: a thing you did is worth seeing you did.
+function renderMorningLightCard(){
+  try{
+    const card = document.getElementById('morning-light-card');
+    if(!card) return;
+    const done = morningLightDoneToday();
+    const title = card.querySelector('div[style*="font-size:14px"]');
+    const sub = card.querySelector('div[style*="font-size:11.5px"]');
+    const chev = card.lastElementChild;
+    if(done){
+      if(title) title.textContent = 'Light in your eyes \u2713';
+      if(sub) sub.textContent = 'Done today. Tonight\u2019s sleep is already better for it.';
+      if(chev) chev.style.opacity = '0.35';
+      card.style.opacity = '0.72';
+    } else {
+      if(title) title.textContent = 'Get light in your eyes';
+      if(sub) sub.textContent = 'Outside, no sunglasses, a few minutes. It sets tonight\u2019s sleep more than anything you do at bedtime.';
+      if(chev) chev.style.opacity = '';
+      card.style.opacity = '';
+    }
+  }catch(_){ }
+}
 function openMorningLight(){
   const m=document.createElement('div'); m.className='modal-bg open';
   m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
@@ -15847,6 +15781,7 @@ function openMorningLight(){
 }
 function _morningLightGo(){
   try{ ls('totry_morning_light_last', _sleepDayKey()); }catch(_){}
+  try{ renderMorningLightCard(); }catch(_){}
   if(typeof logEvent==='function') logEvent('morning_light');
   document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
   // Same principle as the wind-down: the app gets out of the way rather than keeping them here.
@@ -16471,18 +16406,6 @@ function modCountUp(i){
   }
 }
 // A one-time, gentle "are you still in control?" — NOT a guilt trip. The user chooses the framing.
-function _modOverLimitCheck(i, count, thr, unit){
-  const m = document.createElement('div');
-  m.className = 'modal-bg open'; m.style.alignItems='center';
-  m.innerHTML = '<div class="modal" style="text-align:center">'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:8px">That\u2019s '+count+' \u2014 past your '+thr+'.</div>'+
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:18px">No judgment \u2014 you set that line, and only you know tonight. This is just a gentle check: are you still in the driver\u2019s seat?</div>'+
-    '<button class="btn primary" onclick="closeModal(this)" style="margin-bottom:8px">I\u2019m good \u2014 in control</button>'+
-    '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin-bottom:8px">Actually, talk with me a sec</button>'+
-    '<button class="btn" onclick="modEndSession('+i+');closeModal(this)" style="background:none;border:none;color:var(--tx3);font-size:12px">I\u2019m calling it here for tonight</button>'+
-    '</div>';
-  document.body.appendChild(m);
-}
 function modCountDown(i){
   loadV(); const v = vices[i]; if(!v) return;
   let s = _getModSession(i); if(!s || s.count<=0) return;
@@ -18619,7 +18542,6 @@ function renderHabits(){
   const hh = document.getElementById('h-habits'); if(hh) hh.textContent = done + '/' + habits.length;
   const hsc = document.getElementById('h-score'); if(hsc) hsc.textContent = done + '/' + habits.length + ' today';
 }
-function togH(hi,di){loadH();habits[hi].d[di]=habits[hi].d[di]===1?0:1;saveH();renderHabits();renderDayCounter();}
 // ── HABIT ANCHORING ("after I ___, I will ___") ───────────────────────────────────────────────
 // The SAME mechanic as the Feeling Door's if-then plans (getIfThen/saveIfThen, line ~10445 —
 // Gollwitzer/Sheeran, 94 studies, d≈0.65), pointed at habits instead of feelings. Habits here were
@@ -18956,18 +18878,6 @@ async function fetchCurrencyRates(base){
 
 function getUserCurrency(){ return ls('totry_currency') || 'AUD'; }
 
-function convertCurrency(amount, fromCurr, toCurr){
-  if(fromCurr === toCurr) return amount;
-  const cache = ls(CURRENCY_CACHE_KEY);
-  if(!cache || !cache.rates) return amount; // No rates — show original
-  const base = cache.base;
-  // Convert from -> base -> to
-  const fromRate = fromCurr === base ? 1 : cache.rates[fromCurr];
-  const toRate = toCurr === base ? 1 : cache.rates[toCurr];
-  if(!fromRate || !toRate) return amount;
-  // amount in `fromCurr`, divide by fromRate to get base, multiply by toRate to get target
-  return amount * (toRate / fromRate);
-}
 
 
 // Maps events ("logWin", "logLoss", "PR", "overspend", etc) to relevant verses.
@@ -21296,7 +21206,6 @@ function updateTrackerDisplay(){
     }
   }
 }
-function logPhotoReminder(){showToast('Progress photo \u{1F4F8}','Same spot, same lighting, same time. Store in your camera roll. Compare monthly.');}
 
 // ── NUTRITION ─────────────────────────────────────────────────
 // ── THIRD-PARTY CREDENTIALS LIVE ON THE SERVER, NOT HERE ─────────────────────────────────────────
@@ -25475,7 +25384,6 @@ function waterGoalMl(){
   if(!v || isNaN(v) || v <= 0) return 2500;
   return (v <= 30) ? Math.round(v * 250) : Math.round(v);   // <=30 can only be glasses
 }
-function waterGoalGlasses(){ return Math.max(1, Math.round(waterGoalMl() / 250)); }
 function waterBaseGoal(){ return waterGoalMl(); } // ml (2.5 L default)
 // Hydration scaled to training (the Train×Nourish squeeze #7). A training day sweats out more, so
 // the goal lifts ~600ml on days you train — only when there's a real training signal (split, calendar,
@@ -25494,8 +25402,6 @@ function addWater(ml){
   }
 }
 // Legacy aliases (in case anything still calls these)
-function addWaterCup(){ addWater(250); }
-function removeWaterCup(){ addWater(-250); }
 function renderWaterTracker(){
   const ml = getWaterCount();
   const goal = getWaterGoal();
@@ -28618,10 +28524,6 @@ function getUserSplit(){
   if(saved && Array.isArray(saved) && saved.some(d => d && d.focus)) return saved;
   return [null, null, null, null, null, null, null]; // no plan yet
 }
-function getUserSplitOrDefault(){
-  // For features that legitimately need a fallback (e.g. exercise recommender), use the default
-  return ls('totry_split') || DEFAULT_SPLIT;
-}
 
 function initPTTab(){
   renderSplitDayCards();renderWorkoutSession();loadTodaySplitCard();updateStravaBtn();
@@ -28798,15 +28700,6 @@ function renderAdaptiveNutrition(){
   if(card) card.style.display = 'none';
 }
 // Kept for safety in case anything still calls it; routes through the protein-protected path.
-function applyAdaptiveNutrition(newCal){
-  if(typeof setCalGoalFromTDEE === 'function') return setCalGoalFromTDEE(newCal);
-}
-function dismissAdaptiveNutrition(sig){
-  ls('totry_adaptive_dismissed', Date.now());
-  ls('totry_adaptive_sig', sig);
-  const card = document.getElementById('nut-adaptive-card');
-  if(card) card.style.display = 'none';
-}
 
 // Current bodyweight (kg) from the most recent body log or the TDEE profile. Null if unknown.
 function getBodyweight(){
@@ -29406,14 +29299,6 @@ function _restoreMorningSleep(){
 }
 
 // Quick mood/stress log tied to the soul side (one-tap, feeds whole-person coaching).
-function logMoodQuick(mood){
-  const log = ls('totry_mood_log') || [];
-  log.unshift({ mood, ts: new Date().toISOString() });
-  ls('totry_mood_log', log.slice(0, 120));
-  if(typeof syncToCloud==='function') syncToCloud();
-  haptic('light'); showToast('Noted', 'Logged how you\u2019re feeling.');
-  if(typeof renderReadinessCard==='function') renderReadinessCard();
-}
 // Home readiness card (cross-integration anchor — also referenced by warm-up + mission).
 function renderReadinessCard(){
   const card = document.getElementById('home-readiness-card');
@@ -33138,14 +33023,6 @@ function changeCalApp(){
   const cp=document.getElementById('cal-picker');
   if(cp){ cp.style.display='block'; cp.scrollIntoView&&cp.scrollIntoView({block:'center',behavior:'smooth'}); }
 }
-function clearCalApp(){
-  localStorage.removeItem('totry_ca');
-  const cn=document.getElementById('cal-name'); if(cn)cn.textContent='Tap to choose app';
-  const ci=document.getElementById('cal-icon'); if(ci)ci.innerHTML='&#x1F957;';
-  const cs=document.getElementById('cal-sub'); if(cs)cs.textContent='Calorie tracker';
-  if(typeof renderCalAppPref==='function') renderCalAppPref();
-  showToast('Cleared','Pick a different calorie app, or use our built-in tracker.');
-}
 
 // ── EVENING ───────────────────────────────────────────────────
 let dayRating=3;
@@ -33899,12 +33776,6 @@ function completeEvening(){
     }
   },2000);
 }
-function setGoalsHit(btn, val){
-  window.__goalsHit = val;
-  document.querySelectorAll('#goals-hit-row .dr-btn').forEach(b=>b.classList.remove('active'));
-  if(btn) btn.classList.add('active');
-  haptic('tap');
-}
 function initEveningTab(){
   // The Ignatian Examen is Catholic; other paths keep the universal journal + wins + rating.
   // THE EVENING REVIEW IS UNIVERSAL — it was being HIDDEN for 4 of 5 traditions with nothing in its
@@ -34202,17 +34073,6 @@ function checkMilestones(){
   Object.entries(winMsgs).forEach(([m,msg])=>{if(tw>=parseInt(m)&&!achieved.includes('w'+m)){achieved.push('w'+m);ls('totry_ms',achieved);showToast(m+' Wins \ud83c\udfc6',msg);}});
 }
 
-function initCalAppDisplay(){
-  const ca=ls('totry_ca');
-  const cn=document.getElementById('cal-name');
-  const ci=document.getElementById('cal-icon');
-  const cs=document.getElementById('cal-sub');
-  if(ca&&cn){
-    cn.textContent=ca.name;
-    if(ci)ci.innerHTML=ca.icon;
-    if(cs)cs.textContent='Tap to open';
-  }
-}
 
 
 
@@ -34314,35 +34174,6 @@ function openNeedTalk(){
 
 
 // Picks vice (or auto-skips if only one) then routes to SOS intervention
-function floatingHelpSOS(){
-  document.querySelector('.modal-bg.open')?.remove();
-  loadV();
-  if(vices.length === 1){
-    // Only one vice — straight to intervention
-    startLiveIntervention(0);
-    return;
-  }
-  // Multiple vices — show picker
-  const m = document.createElement('div');
-  m.className = 'modal-bg open';
-  m.style.alignItems = 'center';
-  let viceButtons = '';
-  vices.forEach((v, i) => {
-    const cleanDays = viceCleanDays(v);
-    viceButtons += '<button class="btn" style="margin-bottom:6px;padding:14px;font-size:14px;text-align:left;line-height:1.4;background:var(--bg3);border:1px solid var(--bd)" onclick="document.querySelector(&apos;.modal-bg.open&apos;)?.remove();startLiveIntervention(' + i + ')">' +
-      '<div style="font-weight:600;font-size:14px">' + _escFew(v.n) + '</div>' +
-      '<div style="font-size:11px;color:var(--tx3);margin-top:2px">' + cleanDays + ' day' + (cleanDays===1?'':'s') + ' clean</div>' +
-    '</button>';
-  });
-  m.innerHTML = '<div class="modal">' +
-    '<div class="modal-handle"></div>' +
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:20px;color:var(--re);margin-bottom:4px">Which one?</div>' +
-    '<div style="text-align:center;font-size:11px;color:var(--tx3);margin-bottom:14px">Tap the one you\'re fighting</div>' +
-    viceButtons +
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:6px">Cancel</button>' +
-  '</div>';
-  document.body.appendChild(m);
-}
 
 // ── WEEKLY SYNTHESIS (auto-generated Sunday) ──
 async function generateWeeklySynthesis(){
@@ -34743,26 +34574,6 @@ function checkYearInReviewPrompt(){
   }
 }
 
-function showWeeklySynthesis(){
-  const syntheses=ls('totry_syntheses')||[];
-  if(!syntheses.length){
-    showToast('No synthesis yet','One generates each Sunday automatically.');
-    return;
-  }
-  const latest=syntheses[0];
-  const m=document.createElement('div');
-  m.className='modal-bg open';
-  m.style.alignItems='center';
-  m.innerHTML='<div class="modal">'+
-    '<div class="modal-handle"></div>'+
-    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Week of '+latest.date+'</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:20px;color:var(--tx);margin-bottom:14px;font-style:italic">Your week, reflected.</div>'+
-    '<div style="font-size:14px;line-height:1.7;color:var(--tx2);white-space:pre-wrap;margin-bottom:14px">'+latest.text+'</div>'+
-    '<button class="btn primary" onclick="closeModal(this)" style="margin-bottom:8px">Close</button>'+
-    (syntheses.length>1?'<button class="btn" onclick="closeModal(this);showSynthesisHistory()" style="margin-bottom:8px">Past reflections</button>':'')+
-  '</div>';
-  document.body.appendChild(m);
-}
 
 function showSynthesisHistory(){
   const syntheses=ls('totry_syntheses')||[];
@@ -34940,27 +34751,6 @@ function renderRelationships(){
 // ═══════════════════════════════════════════════════
 // PASS 4: LETTERS TO SELF
 // ═══════════════════════════════════════════════════
-function saveLetter(){
-  const text=document.getElementById('letter-text')?.value.trim();
-  const days=parseInt(document.getElementById('letter-when')?.value||30);
-  if(!text){showToast('Empty','Write something to your future self first.');return;}
-  const deliverAt=new Date();
-  deliverAt.setDate(deliverAt.getDate()+days);
-  const letters=ls('totry_letters')||[];
-  letters.push({
-    id:Date.now(),
-    text,
-    written:new Date().toISOString(),
-    deliverAt:deliverAt.toISOString(),
-    delivered:false,
-    writtenDay:getDayCount()
-  });
-  ls('totry_letters',letters);
-  document.getElementById('letter-text').value='';
-  renderLetters();
-  haptic('success');
-  showToast('Letter sealed','I\'ll deliver it on '+deliverAt.toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'}));
-}
 
 function deliverLetter(id){
   const letters=ls('totry_letters')||[];
@@ -38481,15 +38271,8 @@ function withDerivedMacros(g){
   }
   return out;
 }
-function applyTDEEGoals(cal,pro){
-  ls('totry_nut_goals', withDerivedMacros({cal,pro,_ts:Date.now()}));
-  renderNutritionLog();
-  showToast('Goals set',cal+' cal · '+pro+'g protein');
-  const res=document.getElementById('tdee-result');if(res)res.style.display='none';
-}
 
 
-function tapMetric(dest){go(dest);}
 
 // ── NEW TAB CONTROLLERS ───────────────────────────────────────
 
@@ -39759,10 +39542,6 @@ footer.innerHTML = 'Tap a habit\'s name to anchor it to something you already do
   list.appendChild(footer);
 }
 
-function quickToggleHabit(hi,di){
-  loadH();habits[hi].d[di]=habits[hi].d[di]===1?0:1;saveH();
-  renderHomeHabits();renderDayCounter();
-}
 
 // One-tap vice win straight from home — logs a win for a specific vice without
 // needing to navigate to Fight, select the vice, then tap. The most common daily action.
@@ -40305,14 +40084,6 @@ function renderHomeQuickWins(){
       '<button class="btn" onclick="fightVice(' + i + ')" style="width:auto;padding:8px 14px;font-size:12px;background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re);flex-shrink:0">I\'m feeling it</button>' +
     '</div>';
   }).join('');
-}
-function quickWinVice(index){
-  loadV();
-  if(!vices[index]) return;
-  curVice = index;
-  ls('totry_curvice', index);
-  logWin();
-  renderHomeQuickWins();
 }
 
 // ── UNIFIED SEND COACH PROMPT ─────────────────────────────────
@@ -41636,41 +41407,6 @@ async function saveHevyKey(){
 }
 
 // ── legacy validation path kept for reference, no longer used ──
-async function _saveHevyKeyOld(){
-  const input = document.getElementById('hevy-key-input');
-  const key = input?.value.trim();
-  if(!key || key.length < 10){ return; }
-  const btn = document.querySelector('.modal-bg.open .btn.primary');
-  if(btn){ btn.textContent = 'Validating...'; btn.disabled = true; }
-  try{
-    const resp = await fetch('https://api.hevyapp.com/v1/workouts?page=1&pageSize=1', {
-      headers: {'api-key': key, 'Accept': 'application/json'}
-    });
-    if(resp.status === 401 || resp.status === 403){
-      if(btn){ btn.textContent = 'Save and connect'; btn.disabled = false; }
-      showToast('Invalid key', 'Hevy rejected this key. Double-check it at hevy.com/settings?developer.');
-      return;
-    }
-    if(!resp.ok){
-      console.warn('[hevy] validation HTTP', resp.status);
-      if(btn){ btn.textContent = 'Save and connect'; btn.disabled = false; }
-      showToast('Hevy unreachable', 'Try again in a moment. Hevy API may be down.');
-      return;
-    }
-    ls('totry_hevy_api_key', key);
-    const used = ls('totry_apps_used') || [];
-    if(!used.includes('hevy')){ used.push('hevy'); ls('totry_apps_used', used); }
-    document.querySelector('.modal-bg.open')?.remove();
-    showToast('Hevy connected ✓', 'Pulling your recent workouts...');
-    haptic('celebrate');
-    setTimeout(() => syncHevyWorkouts(), 600);
-    if(typeof renderConnectedApps === 'function') renderConnectedApps();
-  }catch(e){
-    console.error('[hevy] validation error:', e);
-    if(btn){ btn.textContent = 'Save and connect'; btn.disabled = false; }
-    showToast('Connection failed', 'Check your internet and try again.');
-  }
-}
 
 // Fetch recent Hevy workouts and import them into the training history
 // Routes a Hevy API request through our edge function (the browser can't call Hevy directly
@@ -42506,21 +42242,6 @@ async function exportFoodCSV(){
   if(_r) haptic('success');
 }
 
-function showESVInstructions(){
-  const m=document.createElement('div');m.className='modal-bg open';
-  m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:10px">Connect ESV Bible API</div>'+
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">'+
-    '1. Go to api.esv.org and create a free account<br>'+
-    '2. Apply for an API key (personal use)<br>'+
-    '3. Once approved, paste it below<br>'+
-    '4. The full ESV Bible will become available in the Scripture tab</div>'+
-    '<div style="font-size:12px;color:var(--go);margin-bottom:12px">Application status: Pending (usually 1-3 days)</div>'+
-    '<input type="text" id="esv-key-input" placeholder="Paste ESV API key when approved..." style="margin-bottom:10px">'+
-    '<button class="btn primary" onclick="saveESVKey()" style="margin-bottom:8px">Save key</button>'+
-    '<button class="btn" onclick="closeModal(this)">Close</button></div>';
-  document.body.appendChild(m);
-}
 
 function saveESVKey(){
   const key=document.getElementById('esv-key-input')?.value.trim();
@@ -42860,29 +42581,6 @@ function showResilienceInfo(){
 }
 
 // ── PROMISE LOG ──────────────────────────────────────────────
-function addPromise(){
-  const inp=document.getElementById('new-promise');
-  if(!inp)return;
-  const text=inp.value.trim();
-  const days=parseInt(document.getElementById('promise-when').value||7);
-  if(!text)return;
-  const promises=ls('totry_promises')||[];
-  const due=new Date();
-  due.setDate(due.getDate()+days);
-  promises.unshift({
-    id:Date.now(),
-    text,
-    created:new Date().toISOString(),
-    due:due.toISOString(),
-    dueDays:days,
-    status:'pending',
-    day:getDayCount()
-  });
-  ls('totry_promises',promises.slice(0,100));
-  inp.value='';
-  renderPromises();
-  showToast('Promise logged','I will check in with you in '+days+' days.');
-}
 
 function markPromise(id,status){
   const promises=ls('totry_promises')||[];

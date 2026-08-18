@@ -634,8 +634,16 @@ H.section('sleep, service and the bridge — the features that already existed')
   H.ok(/function openMorningLight\(\)/.test(H.html), 'the morning light anchor exists');
   H.ok(/function _morningLightGo\(\)[\s\S]{0,600}theRelease\(/.test(H.html),
     'it ends the session rather than keeping them here');
-  H.ok(/function morningLightDoneToday\(\)/.test(H.html),
-    'it can tell whether they already went out, so the card can stop asking');
+  // This assertion used to stop at "the function exists" — and nothing called it, so the card asked
+  // "Get light in your eyes" every time the Morning tab opened, including immediately after the person
+  // had been out and told the app so. _morningLightGo has always WRITTEN the key; nobody read it.
+  // Existing is not the same as being wired, which is this codebase's defining bug.
+  H.ok(/function morningLightDoneToday\(\)/.test(H.html), 'it can tell whether they already went out');
+  H.ok(/function renderMorningLightCard\(\)/.test(H.html), 'and something renders that state');
+  const _imt = H.html.slice(H.html.indexOf('function initMorningTab('), H.html.indexOf('function initMorningTab(') + 400);
+  H.ok(/renderMorningLightCard\(\)/.test(_imt), 'called when the Morning tab renders, so the card stops asking');
+  const _mlg = H.html.slice(H.html.indexOf('function _morningLightGo('), H.html.indexOf('function _morningLightGo(') + 900);
+  H.ok(/renderMorningLightCard\(\)/.test(_mlg), 'and the moment they mark it done');
 
   // The originals, still present and still reachable.
   H.ok(/const _SERVICE_ACTS = \[/.test(H.html), 'the service acts exist');
@@ -3163,6 +3171,27 @@ H.section('the fixes I shipped today, checked against themselves')
   const ih = fnBody('initHabits');
   H.ok(/const want = faithHabitName\(\)/.test(ih), 'the repair compares against what it should be called now');
   H.ok(/!== want/.test(ih), 'so it corrects a mismatch in either direction');
+}
+
+H.section('dead code that was one caller away from confusing someone');
+{
+  // 31 functions with no caller and no string reference, ~16KB, removed at v477. Each had a live
+  // successor: saveLetter -> saveLetterFromWhy, applyTDEEGoals -> setCalGoalFromTDEE, showWeeklySynthesis
+  // -> showWeeklySynthesisModal, addPromise -> addPromiseFromWhy, _modOverLimitCheck -> brotherSpeaks'
+  // viceOver, addWaterCup/removeWaterCup (labelled "legacy aliases" in their own comment), and so on.
+  // Kept: authGoogle, an intentionally-disabled stub whose body points at GOOGLE_SIGNIN.md.
+  for (const gone of ['function saveLetter(', 'function applyTDEEGoals(', 'function showWeeklySynthesis(',
+                      'function addPromise(', 'function _modOverLimitCheck(', 'function addWaterCup(',
+                      'function floatingHelpSOS(', 'function showESVInstructions(', 'function logMoodQuick(',
+                      'function _restoreFromCloud_legacy_unused(', 'function _saveHevyKeyOld(']) {
+    H.ok(!H.html.includes(gone), gone.replace('function ', '').replace('(', '') + ' stays deleted');
+  }
+  H.ok(/async function authGoogle\(/.test(H.html), 'but the documented disabled stub stays');
+  // The live successors must still be there — deleting the wrong one of a pair is the obvious risk.
+  for (const live of ['saveLetterFromWhy', 'setCalGoalFromTDEE', 'showWeeklySynthesisModal',
+                      'addPromiseFromWhy', 'startLiveIntervention']) {
+    H.ok(H.html.includes(live), `${live} is still here`);
+  }
 }
 
 H.report();
