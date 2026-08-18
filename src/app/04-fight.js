@@ -68,11 +68,11 @@ function renderFinanceGoals(){
         '<div style="background:var(--gr);height:100%;width:'+pct+'%;transition:width 0.3s"></div>'+
       '</div>'+
       '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--tx2)">'+
-        '<span>$'+Math.round(g.current).toLocaleString()+' / $'+Math.round(g.target).toLocaleString()+'</span>'+
-        '<span>$'+Math.round(g.target-g.current).toLocaleString()+' to go</span>'+
+        '<span>'+curSym()+Math.round(g.current).toLocaleString()+' / '+curSym()+Math.round(g.target).toLocaleString()+'</span>'+
+        '<span>'+curSym()+Math.round(g.target-g.current).toLocaleString()+' to go</span>'+
       '</div>'+
       '<div style="display:flex;gap:6px;margin-top:8px">'+
-        '<input type="number" placeholder="Add $" id="goal-add-'+g.id+'" style="flex:1;padding:6px;font-size:16px">'+
+        '<input type="number" placeholder="Add '+curSym()+'" id="goal-add-'+g.id+'" style="flex:1;padding:6px;font-size:16px">'+
         '<button class="btn" style="width:auto;padding:6px 10px;font-size:11px" onclick="addToGoal('+g.id+')">+ Add</button>'+
         '<button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:var(--re-bg);border-color:var(--re-bd);color:var(--re)" onclick="deleteFinanceGoal('+g.id+')" aria-label="Close">&#215;</button>'+
       '</div>';
@@ -89,7 +89,7 @@ function addToGoal(id){
   goal.current=(goal.current||0)+amount;
   ls('totry_finance_goals',goals);
   renderFinanceGoals();
-  showToast('Added $'+amount,goal.name+' is now at $'+Math.round(goal.current).toLocaleString());
+  showToast('Added '+curSym()+amount,goal.name+' is now at '+curSym()+Math.round(goal.current).toLocaleString());
 }
 
 function deleteFinanceGoal(id){

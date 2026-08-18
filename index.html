@@ -3266,13 +3266,13 @@ input:focus,textarea:focus,select:focus{
   <div id="money-gate"></div>
   <div id="money-read-card"></div>
   <div class="mg">
-    <div class="met"><div class="ml">Paid off</div><div class="mv g" id="f-paid">$0</div></div>
-    <div class="met"><div class="ml">Debt left</div><div class="mv r" id="f-debt">$0</div></div>
+    <div class="met"><div class="ml">Paid off</div><div class="mv g" id="f-paid" data-cur-text="{c}0">$0</div></div>
+    <div class="met"><div class="ml">Debt left</div><div class="mv r" id="f-debt" data-cur-text="{c}0">$0</div></div>
   </div>
   <!-- Dynamic goals list, sorted by priority -->
   <div id="finance-goals-list" style="margin-bottom:14px"></div>
   <div class="df-hero" id="df-hero"><div class="df-date" id="df-date">&#8212;</div><div class="df-lbl">Projected debt-free date</div><div class="df-desc" id="df-desc">Log payments to calculate</div></div>
-  <div class="saved-hero" id="saved-hero"><div class="saved-big" id="saved-num">$0</div><div class="saved-lbl">Reclaimed by staying clean</div><div class="saved-desc" id="saved-desc">Set weekly vice spend below</div></div>
+  <div class="saved-hero" id="saved-hero"><div class="saved-big" id="saved-num" data-cur-text="{c}0">$0</div><div class="saved-lbl">Reclaimed by staying clean</div><div class="saved-desc" id="saved-desc">Set weekly vice spend below</div></div>
   <!-- Strategy -->
   <div class="card" style="margin-bottom:12px">
     <div class="card-hd" style="margin-bottom:8px">Payoff strategy</div>
@@ -3293,20 +3293,20 @@ input:focus,textarea:focus,select:focus{
   <div class="card"><div class="card-hd" style="margin-bottom:10px">Debts &#8212; tap to log a payment</div><div id="debt-list"></div></div>
   <div class="card">
     <div class="card-hd" style="margin-bottom:10px">Add / update</div>
-    <div class="row"><input type="text" id="dn" placeholder="Who you owe"><input type="number" id="dt" placeholder="Total $" style="max-width:110px;flex:none"></div>
-    <div class="row"><input type="number" id="dp" placeholder="Paid so far $"><input type="date" id="dd" style="max-width:145px;flex:none"></div>
+    <div class="row"><input type="text" id="dn" placeholder="Who you owe"><input type="number" id="dt" data-cur-ph="Total {c}" placeholder="Total $" style="max-width:110px;flex:none"></div>
+    <div class="row"><input type="number" id="dp" data-cur-ph="Paid so far {c}" placeholder="Paid so far $"><input type="date" id="dd" style="max-width:145px;flex:none"></div>
     <div class="row"><input type="number" id="di" inputmode="decimal" placeholder="Interest rate % (for Avalanche)" step="0.1"></div>
     <button class="btn primary" onclick="addDebt()" style="margin-bottom:10px">Add this debt</button>
     <div class="divider"></div>
     <div class="card-hd" style="margin-bottom:6px;margin-top:8px">Your savings goals</div>
     <p style="font-size:11px;color:var(--tx3);margin-bottom:8px;line-height:1.5">Add as many goals as you want. They appear at the top in priority order.</p>
     <input type="text" id="goal-name" placeholder="Goal name (e.g. USA Trip, Emergency Fund)" style="margin-bottom:6px">
-    <div class="row"><input type="number" id="goal-target" placeholder="Target $"><input type="number" id="goal-current" placeholder="Saved so far $"></div>
+    <div class="row"><input type="number" id="goal-target" data-cur-ph="Target {c}" placeholder="Target $"><input type="number" id="goal-current" data-cur-ph="Saved so far {c}" placeholder="Saved so far $"></div>
     <button class="btn primary" onclick="addFinanceGoal()" style="margin-bottom:10px">Add goal</button>
     <div class="divider"></div>
     <div class="card-hd" style="margin-bottom:6px">Vice savings calculator</div>
-    <div class="row"><input type="number" id="weed-s" placeholder="Vice 1 weekly $"><input type="number" id="vape-s" placeholder="Vice 2 weekly $"></div>
-    <div class="row"><input type="number" id="gamb-s" placeholder="Vice 3 weekly $"><input type="number" id="other-s" placeholder="Other $"></div>
+    <div class="row"><input type="number" id="weed-s" data-cur-ph="Vice 1 weekly {c}" placeholder="Vice 1 weekly $"><input type="number" id="vape-s" data-cur-ph="Vice 2 weekly {c}" placeholder="Vice 2 weekly $"></div>
+    <div class="row"><input type="number" id="gamb-s" data-cur-ph="Vice 3 weekly {c}" placeholder="Vice 3 weekly $"><input type="number" id="other-s" data-cur-ph="Other {c}" placeholder="Other $"></div>
     <input type="date" id="sober-since" style="margin-bottom:10px">
     <button class="btn success" onclick="calcViceSavings()">Calculate money saved</button>
   </div>
@@ -3316,7 +3316,7 @@ input:focus,textarea:focus,select:focus{
     <div class="card-hd" style="margin-bottom:8px">⚡ Quick spend</div>
     <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">One tap to log a recent expense. Just the amount and the category.</p>
     <div style="display:flex;gap:6px;margin-bottom:8px">
-      <input type="number" id="qs-amount" inputmode="decimal" step="0.01" placeholder="$ amount" style="flex:1;font-size:16px;padding:12px">
+      <input type="number" id="qs-amount" inputmode="decimal" step="0.01" data-cur-ph="{c} amount" placeholder="$ amount" style="flex:1;font-size:16px;padding:12px">
       <select id="qs-cat" style="width:auto;padding:12px 10px;font-size:16px;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;color:var(--tx)">
         <option value="">Category…</option>
         <option value="Food">Food</option>
@@ -3744,12 +3744,12 @@ Amen.</div></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
         <div>
           <div class="eyebrow">Currency</div>
-            <!-- Honest until the symbol retrofit lands: this setting drives the conversion rates
-                 (fetchCurrencyRates), and roughly 250 hardcoded "$" across the app are NOT wired to
-                 it. Sweeping only the 43 mechanical concat sites would show some figures in one
-                 currency and some in another, which is worse than being consistently wrong. -->
-            <div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">Used for conversion rates. Amounts still show a $ sign for now.</div>
-          <select id="settings-currency" onchange="savePref('totry_currency',this.value);if(typeof fetchCurrencyRates==='function')fetchCurrencyRates(this.value);showToast('Saved', this.value + ' set for conversion rates. Amounts still display with a $ sign.')">
+            <!-- The retrofit landed at v480: 166 string sites now call curSym(), and the static ones
+                 above declare data-cur-text / data-cur-ph for applyCurrencySymbols() to fill. This
+                 changes the SYMBOL only — stored amounts are never multiplied by an exchange rate,
+                 because a person's debt is not a number we get to reinterpret. -->
+            <div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">Changes the symbol shown throughout. Your saved amounts are never converted.</div>
+          <select id="settings-currency" onchange="savePref('totry_currency',this.value);if(typeof fetchCurrencyRates==='function')fetchCurrencyRates(this.value);if(typeof applyCurrencySymbols==='function')applyCurrencySymbols();if(typeof renderFinance==='function')try{renderFinance()}catch(_){};showToast('Saved', this.value + ' set for conversion rates. Amounts still display with a $ sign.')">
             <option value="AUD">AUD — Australian Dollar</option>
             <option value="USD">USD — US Dollar</option>
             <option value="GBP">GBP — British Pound</option>
@@ -4318,7 +4318,7 @@ Amen.</div></div>
     <div class="modal-handle"></div>
     <h3>You just got paid.</h3>
     <p>Before a single dollar goes anywhere else.</p>
-    <input type="number" id="paid-amt" placeholder="Amount received ($)" style="margin-bottom:12px">
+    <input type="number" id="paid-amt" data-cur-ph="Amount received ({c})" placeholder="Amount received ($)" style="margin-bottom:12px">
     <button class="btn primary" onclick="calcPayday()" style="margin-bottom:8px">Tell me exactly what to do</button>
     <button class="btn" onclick="document.getElementById('payday-modal').classList.remove('open')">Cancel</button>
   </div>
@@ -4759,11 +4759,53 @@ function lsArr(k){
   }catch(_){ return []; }
 }
 
+// ── THE CURRENCY SYMBOL, IN ONE PLACE ─────────────────────────────────────────────
+// Settings has offered nine currencies since the money tab existed. Picking one saved the choice and
+// fetched exchange rates — and changed nothing a person could see, because every amount in the app
+// began with a hardcoded '$'. Someone in London set GBP and still read "$40 reclaimed". The setting
+// even said so out loud, which made it honest but no less broken.
+//
+// This is the one accessor. If a symbol is ever wrong it is wrong here and nowhere else — the same
+// shape as safeJournal / syncIdOf / isFaithHabitName, and for the same reason: the recurring failure
+// in this codebase is fixing a class of bug in one place and missing the other forty.
+//
+// It does NOT convert stored amounts. A number the person typed is already in their own money;
+// multiplying their debt by an exchange rate because they changed a dropdown would be a lie about
+// what they owe. The symbol is a label on their number, not a conversion of it.
+// Written as \u0024 rather than a bare '$' on purpose: scripts/fix-currency.js sweeps every '$' in a
+// string literal into curSym(), and on its first run it happily ate this table and the fallback below,
+// turning the accessor into infinite recursion. An escape is invisible to that sweep.
+const CURRENCY_SYMBOLS = {
+  AUD: '\u0024', USD: '\u0024', CAD: '\u0024', NZD: '\u0024', SGD: '\u0024',
+  GBP: '\u00a3', EUR: '\u20ac', INR: '\u20b9', JPY: '\u00a5'
+};
+function curSym(){
+  try{ return CURRENCY_SYMBOLS[ls('totry_currency') || 'AUD'] || '\u0024'; }
+  catch(_){ return '\u0024'; }
+}
+
+// The static shell is HTML, not JavaScript, so it cannot call curSym() — the sign-in screen once
+// shipped a literal \u2014 for exactly this reason. Instead each static site declares what it wants
+// (data-cur-text / data-cur-ph, with {c} standing in for the symbol) and this fills them in: at boot,
+// and again the moment the setting changes, so a person sees it take effect rather than being told to
+// reload. The markup keeps a plain '$' as its written value, so the pre-JS paint is never blank.
+function applyCurrencySymbols(){
+  try{
+    const c = curSym();
+    document.querySelectorAll('[data-cur-text]').forEach(el => {
+      el.textContent = el.getAttribute('data-cur-text').split('{c}').join(c);
+    });
+    document.querySelectorAll('[data-cur-ph]').forEach(el => {
+      el.setAttribute('placeholder', el.getAttribute('data-cur-ph').split('{c}').join(c));
+    });
+  }catch(_){}
+}
+
 // ── APP VERSION & CHANGELOG ───────────────────────────────────
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v479';
+const APP_VERSION = 'v480';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -7404,7 +7446,7 @@ function brotherGuidance(){
       if(life.readiness && life.readiness.level){ if(/low|rest|depleted|poor/i.test(life.readiness.level)) bits.push('your body\u2019s running low today'); }
       if(life.fight && life.fight.wins7 != null && life.fight.wins7 > 0) bits.push(life.fight.wins7+' urges beaten this week');
       if(life.training && life.training.sessions7 >= 4) bits.push('you\u2019ve trained hard this week');
-      if(life.money && life.money.reclaimed > 0) bits.push('$'+life.money.reclaimed+' reclaimed toward your freedom');
+      if(life.money && life.money.reclaimed > 0) bits.push(curSym()+life.money.reclaimed+' reclaimed toward your freedom');
       if(bits.length) read = 'Looking at where you\u2019re at \u2014 '+bits.slice(0,2).join(', ')+'. ';
     }
     const headline = step ? step.text : 'Just take the next small step.';
@@ -7696,7 +7738,7 @@ function lifeStateBrief(s){
       + ' Use THEIR words, not yours, and ask whether a choice moves toward these. NEVER score, grade or rank them against their values, and never imply they are failing them.');
   }
   if(s.readiness) lines.push('Readiness today: '+s.readiness.score+'/100 ('+s.readiness.level+')');
-  if(s.money && (s.money.hasDebt || s.money.reclaimed > 0)) lines.push('Money: '+(s.money.hasDebt?('$'+s.money.totalDebt+' debt remaining'):'no tracked debt')+(s.money.reclaimed>0?(', $'+s.money.reclaimed+' reclaimed from vices'):'')+'. (Debt is a real weight — freedom is the goal.)');
+  if(s.money && (s.money.hasDebt || s.money.reclaimed > 0)) lines.push('Money: '+(s.money.hasDebt?(curSym()+s.money.totalDebt+' debt remaining'):'no tracked debt')+(s.money.reclaimed>0?(', '+curSym()+s.money.reclaimed+' reclaimed from vices'):'')+'. (Debt is a real weight — freedom is the goal.)');
   if(s.sex) lines.push('They are '+(s.sex==='female'?'a woman':'a man')+' — speak as an older sibling who understands what that means for them (training, nutrition, the specific pressures), same love, attuned to who they actually are. Never patronising.');
   if(s.activity.daysQuiet != null && s.activity.daysQuiet >= 2) lines.push('Note: nothing logged in '+s.activity.daysQuiet+' days.');
   try{
@@ -8051,7 +8093,7 @@ Weight: ${currentWeight?currentWeight+'kg':'Not logged'}
 ${(typeof nutGentle==='function'&&nutGentle())?'Nutrition target: held privately \u2014 numbers are turned off for this person.':('Nutrition target: '+nutGoals.cal+' cal / '+nutGoals.pro+'g protein')}${stravaCtx}${stepsCtx}${checkinCtx}
 ${(function(){ let s=''; try{ if(typeof computeReadiness==='function'){ const rd=computeReadiness(); if(rd) s+='\\nReadiness today: '+rd.score+'/100 ('+rd.level+'). '+rd.advice; } if(typeof detectVicePatterns==='function'){ const vp=detectVicePatterns(); if(vp&&vp.patterns&&vp.patterns.length) s+='\\nVice patterns (use gently, only if they raise it): '+vp.patterns.join(' '); } const fw = (typeof ls==='function') ? (ls('totry_feeling_wins')||[]) : []; if(fw.length){ const _since = Date.now()-7*86400000; const _recent = fw.filter(w=>w.ts && new Date(w.ts).getTime()>=_since); if(_recent.length){ s+='\\nIN THE LAST WEEK they reached for help the instant an urge rose and got through it '+_recent.length+' time(s) \u2014 this is them fighting in real time; honour it. Recent feelings they named: '+_recent.slice(0,3).map(w=>String.fromCharCode(34)+(w.feeling||'an urge').slice(0,60)+String.fromCharCode(34)).join(', ')+'.'; } } }catch(e){} return s; })()}
 
-FINANCES: $${Math.round(owed).toLocaleString()} debt remaining${prayerCtx}${sacramentCtx}
+FINANCES: ${curSym()}${Math.round(owed).toLocaleString()} debt remaining${prayerCtx}${sacramentCtx}
 
 RECENT JOURNAL: ${recentJournal||'No entries yet'}
 ${(function(){ const m = (typeof ls==='function') ? ls('totry_coach_memory') : null; return m && m.summary ? '\nWHAT YOU\u2019VE BEEN WORKING ON TOGETHER (from past conversations — reference it naturally, like a coach who remembers):\n'+m.summary : ''; })()}
@@ -11114,7 +11156,7 @@ function renderDayCounter(){
   loadH();const ti=tIdx();const done=habits.filter(h=>h.d[ti]===1).length;
   const hh=document.getElementById('h-habits');if(hh)hh.textContent=done+'/'+habits.length;
   loadF();const owed=debts.reduce((a,d)=>a+(d.t-d.p),0);
-  const hd=document.getElementById('h-debt');if(hd)hd.textContent=owed>0?'$'+Math.round(owed).toLocaleString():'Clear';
+  const hd=document.getElementById('h-debt');if(hd)hd.textContent=owed>0?curSym()+Math.round(owed).toLocaleString():'Clear';
   loadTodaySplitCard();
   const tmrw=ls('totry_tomorrow_tasks');
   if(tmrw&&tmrw.tasks?.length){
@@ -11654,11 +11696,11 @@ function renderFinanceGoals(){
         '<div style="background:var(--gr);height:100%;width:'+pct+'%;transition:width 0.3s"></div>'+
       '</div>'+
       '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--tx2)">'+
-        '<span>$'+Math.round(g.current).toLocaleString()+' / $'+Math.round(g.target).toLocaleString()+'</span>'+
-        '<span>$'+Math.round(g.target-g.current).toLocaleString()+' to go</span>'+
+        '<span>'+curSym()+Math.round(g.current).toLocaleString()+' / '+curSym()+Math.round(g.target).toLocaleString()+'</span>'+
+        '<span>'+curSym()+Math.round(g.target-g.current).toLocaleString()+' to go</span>'+
       '</div>'+
       '<div style="display:flex;gap:6px;margin-top:8px">'+
-        '<input type="number" placeholder="Add $" id="goal-add-'+g.id+'" style="flex:1;padding:6px;font-size:16px">'+
+        '<input type="number" placeholder="Add '+curSym()+'" id="goal-add-'+g.id+'" style="flex:1;padding:6px;font-size:16px">'+
         '<button class="btn" style="width:auto;padding:6px 10px;font-size:11px" onclick="addToGoal('+g.id+')">+ Add</button>'+
         '<button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:var(--re-bg);border-color:var(--re-bd);color:var(--re)" onclick="deleteFinanceGoal('+g.id+')" aria-label="Close">&#215;</button>'+
       '</div>';
@@ -11675,7 +11717,7 @@ function addToGoal(id){
   goal.current=(goal.current||0)+amount;
   ls('totry_finance_goals',goals);
   renderFinanceGoals();
-  showToast('Added $'+amount,goal.name+' is now at $'+Math.round(goal.current).toLocaleString());
+  showToast('Added '+curSym()+amount,goal.name+' is now at '+curSym()+Math.round(goal.current).toLocaleString());
 }
 
 function deleteFinanceGoal(id){
@@ -14107,7 +14149,7 @@ function openImpulsePause(){
   if(typeof openFormModal!=='function') return;
   openFormModal('Before you buy','No judgement — most of this is just a feeling looking for an exit. What is it, and what’s it cost?',
     [{id:'what',label:'',type:'text',placeholder:'What is it?'},
-     {id:'amt',label:'',type:'number',placeholder:'Roughly how much? ($)'}],
+     {id:'amt',label:'',type:'number',placeholder:'Roughly how much? ('+curSym()+')'}],
     'Next',
     function(vals){
       const what=(vals.what||'').trim(); if(!what) return 'Just name it.';
@@ -14172,7 +14214,7 @@ function _resolveHold(ts, bought){
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
   if(!bought){
     let saved=0; try{ saved=_holds().filter(function(x){ return x.done && !x.bought; }).reduce(function(a,x){ return a+(x.amt||0); },0); }catch(_){}
-    try{ showToast('Still yours', saved>0 ? ('That’s about $'+Math.round(saved).toLocaleString()+' held onto by just waiting a day.') : 'The wanting passed. That’s how most of them go.'); }catch(_){}
+    try{ showToast('Still yours', saved>0 ? ('That’s about '+curSym()+Math.round(saved).toLocaleString()+' held onto by just waiting a day.') : 'The wanting passed. That’s how most of them go.'); }catch(_){}
   } else {
     try{ showToast('Fair enough','You looked at it properly and chose it. That’s the difference that matters.'); }catch(_){}
   }
@@ -16254,9 +16296,9 @@ async function _companionSay(userText, opening){
         } else if(moderate){
           out+="They're keeping this within a limit"+(v.modLimit?(" (about "+v.modLimit+"/week)"):"")+" rather than quitting — "+uses7+" logged this week. Support the limit they set; staying within it is the win, going over is information not failure. ";
         } else if(days>0){
-          out+="Right now they are "+days+" day"+(days===1?'':'s')+" clean on this"+(money>0?(", which is about $"+money.toLocaleString()+" reclaimed from it"):"")+". If it lands warmly, you can gently remind them what THIS exact moment is protecting — something real they've built and would be proud to keep — as encouragement, NEVER as guilt, pressure, or a threat of loss. ";
+          out+="Right now they are "+days+" day"+(days===1?'':'s')+" clean on this"+(money>0?(", which is about "+curSym()+money.toLocaleString()+" reclaimed from it"):"")+". If it lands warmly, you can gently remind them what THIS exact moment is protecting — something real they've built and would be proud to keep — as encouragement, NEVER as guilt, pressure, or a threat of loss. ";
         }
-        else if(money>0){ out+="Staying clean on this has already reclaimed about $"+money.toLocaleString()+" — real freedom, if it helps to name it gently. "; }
+        else if(money>0){ out+="Staying clean on this has already reclaimed about "+curSym()+money.toLocaleString()+" — real freedom, if it helps to name it gently. "; }
         if(turned7>0){ out+="Worth knowing: they've come here and turned away from this "+turned7+" time"+(turned7===1?'':'s')+" in the last week — real strength they may not be crediting themselves for. "; }
         out+="And if they do slip, meet them with grace: a streak is a story, not a verdict, and every single moment is a fresh try. ";
         return out;
@@ -16863,7 +16905,7 @@ function getViceSavingsTotal(){
 function renderViceSavingsTotal(){
   const total=getViceSavingsTotal();
   const el=document.getElementById('saved-num');
-  if(el)el.textContent='$'+Math.round(total).toLocaleString();
+  if(el)el.textContent=curSym()+Math.round(total).toLocaleString();
   const desc=document.getElementById('saved-desc');
   const log=ls('totry_vice_savings_log')||[];
   if(desc){
@@ -16995,7 +17037,7 @@ function renderVices(){
               const wk = viceUsesInWeek(v.n); if(!wk) return '';
               const spend = viceSpendInWeek(v.n);
               return '<div style="font-size:11px;color:var(--tx3);text-align:center;margin-bottom:8px;line-height:1.5">'+
-                wk+' '+unit+' logged in the last 7 days'+(spend>0?' · $'+Math.round(spend)+' spent':'')+'</div>';
+                wk+' '+unit+' logged in the last 7 days'+(spend>0?' · '+curSym()+Math.round(spend)+' spent':'')+'</div>';
             })()+
             '<button class="vice-btn" onclick="openMomentStakes(' + i + ')" style="width:100%;background:none;border:1px solid var(--go-bd);color:var(--go);border-radius:10px;padding:9px;font-size:12px;cursor:pointer;margin-bottom:6px">Feeling the pull? Come here first</button>'+
             // TIER 1.4 — HALT lived only behind the mid-craving door, which is the worst moment to
@@ -17392,7 +17434,7 @@ async function openRecoveryTimeline(i){
   m.innerHTML = '<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
     '<div class="src-tag" style="color:var(--gr);margin-bottom:4px">WHAT YOU\u2019RE EARNING</div>'+
     '<div style="font-size:20px;font-weight:500;color:var(--tx);margin-bottom:2px">'+String(v.n||'Your streak').replace(/</g,'&lt;')+'</div>'+
-    '<div style="font-size:13px;color:var(--go);font-family:DM Mono,monospace;margin-bottom:16px">'+days+' day'+(days===1?'':'s')+' clean'+(viceMoneySaved(v)>0?(' \u00b7 $'+viceMoneySaved(v).toLocaleString()+' reclaimed'):'')+'</div>'+
+    '<div style="font-size:13px;color:var(--go);font-family:DM Mono,monospace;margin-bottom:16px">'+days+' day'+(days===1?'':'s')+' clean'+(viceMoneySaved(v)>0?(' \u00b7 '+curSym()+viceMoneySaved(v).toLocaleString()+' reclaimed'):'')+'</div>'+
     '<div id="recovery-timeline-body"><div style="font-size:13px;color:var(--tx3);text-align:center;padding:20px">Loading what your body and soul are gaining\u2026</div></div>'+
     '<button class="btn" onclick="closeModal(this)" style="margin-top:14px">Close</button></div>';
   document.body.appendChild(m);
@@ -17594,7 +17636,7 @@ function openViceManage(i){
     // mass-add is for someone arriving with months of real history behind them. Both need curVice.
     row('It happened earlier — set the real day', 'curVice='+i+';promptLossDate()')+
     row('Log slips from before I started here', 'curVice='+i+';promptMassAddLosses()')+
-    row(v.costAmount?('Money it costs &middot; $'+viceMoneySaved(v).toLocaleString()+' reclaimed'):'Track the money it costs', 'editViceCost('+i+')')+
+    row(v.costAmount?('Money it costs &middot; '+curSym()+viceMoneySaved(v).toLocaleString()+' reclaimed'):'Track the money it costs', 'editViceCost('+i+')')+
     row(v.mode==='moderate'?'Switch to quitting (aim for zero)':'Switch to keeping it in check', 'changeViceMode('+i+')')+
     row(v.trackPatterns?'Hide my patterns':'Show my patterns', 'toggleVicePatterns('+i+')')+
     row('Remove this from the fight', 'removeVice('+i+')', true)+
@@ -17667,7 +17709,7 @@ function openLogUse(i){
     '<div class="lbl">How many times</div>'+
     '<input type="number" inputmode="numeric" id="lu-qty" value="1" min="1" style="margin-bottom:12px;font-size:16px;padding:12px">'+
     '<div class="lbl">Did you buy? (optional)</div>'+
-    '<input type="number" inputmode="decimal" id="lu-cost" placeholder="What it cost $" style="margin-bottom:8px;font-size:16px;padding:12px">'+
+    '<input type="number" inputmode="decimal" id="lu-cost" placeholder="What it cost '+curSym()+'" style="margin-bottom:8px;font-size:16px;padding:12px">'+
     '<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tx2);margin-bottom:14px"><input type="checkbox" id="lu-credit" style="width:auto;flex:none"> Put it on credit — I still owe this</label>'+
     '<button class="btn primary" onclick="saveViceUse('+i+')" style="margin-bottom:8px">Log it honestly</button>'+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Cancel</button>'+
@@ -17765,7 +17807,7 @@ function _priorityGoal(){
 // his own numbers, not a platitude. Returns an array of honest, specific lines.
 function stakesForAmount(amount){
   const out=[]; if(!(amount>0)) return out;
-  const money=n=>'$'+Math.abs(Math.round(n)).toLocaleString();
+  const money=n=>curSym()+Math.abs(Math.round(n)).toLocaleString();
   // Against the freedom date — the most motivating frame the app has. When there's a payment history
   // to project from, say how many months sooner freedom comes. When there isn't yet, fall back to
   // the interest this dollar stops bleeding — still true, still concrete, never nothing.
@@ -17884,12 +17926,12 @@ function openGambleMoment(i){
     (lost
       ? '<div style="background:var(--re-bg);border:1px solid var(--re-bd);border-radius:12px;padding:14px;margin-bottom:14px;text-align:center">'+
           '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);letter-spacing:0.1em;margin-bottom:4px">THE BANK’S RECORD, NOT A GUESS</div>'+
-          '<div style="font-family:DM Mono,monospace;font-size:30px;color:var(--re);line-height:1">−$'+Math.round(lost).toLocaleString()+'</div>'+
+          '<div style="font-family:DM Mono,monospace;font-size:30px;color:var(--re);line-height:1">−'+curSym()+Math.round(lost).toLocaleString()+'</div>'+
           '<div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-top:8px">That’s what it has already taken from you. Not a story — '+bank.count+' transactions it can’t erase. You have never once walked away up. Neither has anyone.</div>'+
         '</div>'
       : '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px;font-size:12.5px;color:var(--tx2);line-height:1.65">The house is built to win over time — that’s not bad luck, it’s the maths it’s made of. Import a statement sometime and I’ll show you your real number. For now, let’s deal with right now.</div>')+
     '<div style="font-size:13.5px;color:var(--tx);line-height:1.6;margin-bottom:8px;text-align:center">Be straight with me — how much have you actually got on you right now?</div>'+
-    '<input type="number" inputmode="decimal" id="gm-cash" placeholder="$ on hand" style="font-size:18px;padding:14px;text-align:center;margin-bottom:12px">'+
+    '<input type="number" inputmode="decimal" id="gm-cash" placeholder="'+curSym()+' on hand" style="font-size:18px;padding:14px;text-align:center;margin-bottom:12px">'+
     '<button class="btn primary" onclick="_gambleStakes('+i+')" style="margin-bottom:8px">Show me the truth about this money</button>'+
     '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin-bottom:8px;font-size:13px">I just need to talk it out</button>'+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
@@ -17902,7 +17944,7 @@ function _gambleStakes(i){
   const cash=parseFloat(document.getElementById('gm-cash')?.value||'')||0;
   if(cash<=0){ showToast('Just a number','However much it is — that’s the honest start. No wrong answer.'); return; }
   document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
-  const money=n=>'$'+Math.abs(Math.round(n)).toLocaleString();
+  const money=n=>curSym()+Math.abs(Math.round(n)).toLocaleString();
   loadF();
   const stakes=stakesForAmount(cash);
   const debt=_priorityDebt(); const goal=_priorityGoal();
@@ -17940,14 +17982,14 @@ function _gambleWin(i, cash){
   }
   document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
   try{ renderVices(); if(typeof syncToCloud==='function') syncToCloud(); if(typeof haptic==='function') haptic('success'); }catch(_){}
-  const kept=cash>0?('$'+Math.round(cash).toLocaleString()+' still yours. '):'';
+  const kept=cash>0?(curSym()+Math.round(cash).toLocaleString()+' still yours. '):'';
   showToast('That’s a win — a real one', kept+'The urge passes. What you did here is what changes the number.');
 }
 // Book a redirect ONLY as something he actually does — moving cash to debt/savings is a real-world
 // action, so the app confirms he did it rather than fabricating a payment (non-partial truth). Moves
 // the real ledger, so the freedom date he just earned shows up the next time he looks.
 function _bookRedirect(i, cash, target){
-  const money=n=>'$'+Math.abs(Math.round(n)).toLocaleString();
+  const money=n=>curSym()+Math.abs(Math.round(n)).toLocaleString();
   document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   const where = target==='debt' ? (_priorityDebt()||{}).n : (_priorityGoal()||{}).name;
@@ -17982,7 +18024,7 @@ function _confirmRedirect(i, cash, target){
   }catch(_){}
   _gambleWin(i, 0); // count the moment won; money already booked above, don't double-count as "kept"
   try{ if(typeof renderFinance==='function') renderFinance(); }catch(_){}
-  showToast('Moved — and it counts', '$'+Math.round(cash).toLocaleString()+' where it builds you instead of the house. Your freedom date just moved.');
+  showToast('Moved — and it counts', curSym()+Math.round(cash).toLocaleString()+' where it builds you instead of the house. Your freedom date just moved.');
 }
 
 // The router: the right door for the right vice, always reachable BEFORE the crisis. Money vices get
@@ -18003,7 +18045,7 @@ function openMomentStakes(i){
     body='This craving is a wave — it peaks and falls whether or not you feed it, usually inside 20 minutes. You don’t have to win forever right now. Just outlast this one.';
     const bits=[];
     if(clean>0) bits.push({icon:'\u{1F33F}', text:clean+' day'+(clean===1?'':'s')+' clean. This is the moment that keeps it, or ends it — nothing else does.'});
-    if(saved>0) bits.push({icon:'\u{1F4B0}', text:'$'+Math.round(saved).toLocaleString()+' already reclaimed by not buying. Falling now spends the streak AND restarts the meter.'});
+    if(saved>0) bits.push({icon:'\u{1F4B0}', text:curSym()+Math.round(saved).toLocaleString()+' already reclaimed by not buying. Falling now spends the streak AND restarts the meter.'});
     if(nextBuy!=null) bits.push({icon:'⏳', text:'You don’t need to buy for another '+nextBuy+' day'+(nextBuy===1?'':'s')+'. This urge is trying to move that up. It’s lying about how much you need it.'});
     bits.push({icon:'\u{1F9E0}', text:'What’s this really about right now — tired, bored, stressed, alone? The urge is usually managing something else. Name that, and it loosens.'});
     extra=bits.map(s=>'<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--bd)"><span style="font-size:16px;flex:none">'+s.icon+'</span><span style="font-size:13px;color:var(--tx2);line-height:1.55">'+s.text+'</span></div>').join('');
@@ -18117,7 +18159,7 @@ function editViceCost(i){
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
     '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:6px">'+String(v.n).replace(/</g,'&lt;')+'</div>'+
     '<div style="text-align:center;font-size:12px;color:var(--tx3);margin-bottom:16px">What did this cost you when it was active? Every clean day turns that into reclaimed money.</div>'+
-    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Amount ($)</div>'+
+    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Amount ('+curSym()+')</div>'+
     '<input type="number" inputmode="decimal" id="vc-amount" value="'+(v.costAmount||'')+'" placeholder="e.g. 25" style="margin-bottom:12px;font-size:16px;padding:12px">'+
     '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Per</div>'+
     '<select id="vc-per" style="margin-bottom:14px;font-size:16px;padding:12px">'+
@@ -18139,7 +18181,7 @@ function editViceCost(i){
       '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:14px">You already paid for what you have. Saving starts at the buy you don’t make.</div>'+
     '</div>'+
     // Money owed for past use — you're not ahead until this is cleared.
-    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Still owe anyone for it? ($)</div>'+
+    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Still owe anyone for it? ('+curSym()+')</div>'+
     '<input type="number" inputmode="decimal" id="vc-owed" value="'+(v.owed||'')+'" placeholder="e.g. 200 — leave blank if none" style="margin-bottom:6px;font-size:16px;padding:12px">'+
     '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:14px">Being clean doesn’t put you ahead until what you owe is cleared. I’ll count that first, honestly.</div>'+
     '<button class="btn primary" onclick="saveViceCost('+i+')" style="margin-bottom:8px">Save</button>'+
@@ -18173,7 +18215,7 @@ function saveViceCost(i){
   document.querySelector('.modal-bg.open')?.remove();
   renderVices();
   const saved = viceMoneySaved(vices[i]);
-  showToast('Saved', saved>0 ? ('$'+saved.toLocaleString()+' reclaimed so far \u2014 see it in Money.') : 'Cost tracked.');
+  showToast('Saved', saved>0 ? (curSym()+saved.toLocaleString()+' reclaimed so far \u2014 see it in Money.') : 'Cost tracked.');
   haptic('success');
 }
 function clearViceCost(i){
@@ -25832,7 +25874,7 @@ function givingTotals(){
 function openGivingLog(kind, subtitle, viaRelease){
   const cg = curGiving();
   openFormModal('Log what you gave', subtitle || cg.sub,
-    [ {id:'amount', label:'Amount', type:'number', prefix:'$', placeholder:'e.g. 50'},
+    [ {id:'amount', label:'Amount', type:'number', prefix:curSym(), placeholder:'e.g. 50'},
       {id:'to', label:'Where it went (optional)', type:'text', placeholder:'e.g. the parish, a friend, a charity'} ],
     'Log it', (v) => {
       const n = parseFloat(v.amount);
@@ -25854,7 +25896,7 @@ function openPledge(){
   const p = givingPledge();
   openFormModal('Your own measure', 'Set a share of what comes in, or a flat monthly amount. Yours to change or drop — nothing chases you about it.',
     [ {id:'percent', label:'Percent of income (blank if using an amount)', type:'number', placeholder:'e.g. 10', value: p.mode==='percent'?p.percent:''},
-      {id:'amount', label:'Or a flat monthly amount', type:'number', prefix:'$', placeholder:'e.g. 100', value: p.mode==='amount'?p.amount:''} ],
+      {id:'amount', label:'Or a flat monthly amount', type:'number', prefix:curSym(), placeholder:'e.g. 100', value: p.mode==='amount'?p.amount:''} ],
     'Set it', (v) => {
       const pc = parseFloat(v.percent), am = parseFloat(v.amount);
       let next = {mode:'off', percent:10, amount:0, quiet:p.quiet};
@@ -25885,11 +25927,11 @@ function openZakat(){
                                              + (typeof usaS==='number'?usaS:0) + (typeof indiaS==='number'?indiaS:0); owedOut = (debts||[]).reduce((s,d)=>s+Math.max(0,(d.t||0)-(d.p||0)), 0); } }catch(_){}
   try{ invest = (ls('totry_assets')||[]).reduce((s,a)=>s+(a.value||0), 0); }catch(_){}
   openFormModal('Zakat', 'Filled in from what you’ve already tracked — correct any line. Your home, your car and the tools of your trade are not zakatable, so take them out.',
-    [ {id:'cash', label:'Cash & savings', type:'number', prefix:'$', value: Math.round(cash)||''},
-      {id:'invest', label:'Gold, silver, shares, business stock', type:'number', prefix:'$', value: Math.round(invest)||''},
-      {id:'owed', label:'Money owed TO you that you expect back', type:'number', prefix:'$', placeholder:'0'},
-      {id:'debts', label:'Debts you owe now', type:'number', prefix:'$', value: Math.round(owedOut)||''},
-      {id:'price', label:'Silver price per gram today (your local source)', type:'number', prefix:'$', value: z.pricePerGram||''} ],
+    [ {id:'cash', label:'Cash & savings', type:'number', prefix:curSym(), value: Math.round(cash)||''},
+      {id:'invest', label:'Gold, silver, shares, business stock', type:'number', prefix:curSym(), value: Math.round(invest)||''},
+      {id:'owed', label:'Money owed TO you that you expect back', type:'number', prefix:curSym(), placeholder:'0'},
+      {id:'debts', label:'Debts you owe now', type:'number', prefix:curSym(), value: Math.round(owedOut)||''},
+      {id:'price', label:'Silver price per gram today (your local source)', type:'number', prefix:curSym(), value: z.pricePerGram||''} ],
     'Work it out', (v) => {
       const num = k => { const n = parseFloat(v[k]); return isNaN(n) ? 0 : n; };
       const price = num('price');
@@ -25904,8 +25946,8 @@ function openZakat(){
       ls('totry_zakat', st);
       if(typeof syncToCloud==='function') syncToCloud();
       renderGiving(); haptic('tap');
-      showToast(due > 0 ? 'Zakat: $'+due.toLocaleString() : 'Below nisab',
-        due > 0 ? 'On $'+Math.round(net).toLocaleString()+' of qualifying wealth.' : 'No zakat is owed on wealth below nisab.');
+      showToast(due > 0 ? 'Zakat: '+curSym()+due.toLocaleString() : 'Below nisab',
+        due > 0 ? 'On '+curSym()+Math.round(net).toLocaleString()+' of qualifying wealth.' : 'No zakat is owed on wealth below nisab.');
       return true;
     });
 }
@@ -25928,12 +25970,12 @@ function renderGiving(){
   if(cg.mode === 'tithe'){
     const sug = Math.round(inc * 0.10);
     strip = inc > 0
-      ? '<div style="font-size:14px;color:var(--tx)">$'+sug.toLocaleString()+'<span style="font-size:11.5px;color:var(--tx3)"> — a tenth of the $'+Math.round(inc).toLocaleString()+' that came in this month.</span></div><div style="font-size:11.5px;color:var(--tx3);line-height:1.5;margin-top:4px">A suggestion, not a debt. Give more, less, or nothing this month — nothing here holds it against you.</div>'
+      ? '<div style="font-size:14px;color:var(--tx)">'+curSym()+sug.toLocaleString()+'<span style="font-size:11.5px;color:var(--tx3)"> — a tenth of the '+curSym()+Math.round(inc).toLocaleString()+' that came in this month.</span></div><div style="font-size:11.5px;color:var(--tx3);line-height:1.5;margin-top:4px">A suggestion, not a debt. Give more, less, or nothing this month — nothing here holds it against you.</div>'
       : '<div style="font-size:11.5px;color:var(--tx3);line-height:1.6">Log your income in the money tab above and I can suggest a figure from what actually came in — rather than a number from nowhere.</div>';
   } else if(cg.mode === 'zakat'){
     const z = zakatState();
     strip = (z.last
-      ? '<div style="font-size:14px;color:var(--tx)">$'+z.last.due.toLocaleString()+'<span style="font-size:11.5px;color:var(--tx3)"> — 2.5% of $'+z.last.net.toLocaleString()+', nisab $'+z.last.nisab.toLocaleString()+'.</span></div>'+_hawlLine(z)
+      ? '<div style="font-size:14px;color:var(--tx)">'+curSym()+z.last.due.toLocaleString()+'<span style="font-size:11.5px;color:var(--tx3)"> — 2.5% of '+curSym()+z.last.net.toLocaleString()+', nisab '+curSym()+z.last.nisab.toLocaleString()+'.</span></div>'+_hawlLine(z)
       : '<div style="font-size:11.5px;color:var(--tx3);line-height:1.6">Work out your zakat from what you’ve already tracked — savings, assets and debts are filled in for you, and every line is yours to correct.</div>')+
       '<button class="btn" onclick="openZakat()" style="margin-top:9px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px;padding:9px">'+(z.last?'Work it out again':'Calculate zakat')+'</button>'+
       (z.last && z.last.due > 0 ? '<button class="btn" onclick="openGivingLog(\'zakat\')" style="margin-top:7px;background:transparent;border:1px solid var(--go-bd);color:var(--go);font-size:12.5px;padding:9px">Log zakat paid</button>' : '');
@@ -25941,7 +25983,7 @@ function renderGiving(){
     const sug = p.mode === 'percent' ? Math.round(inc * (p.percent/100)) : (p.mode === 'amount' ? p.amount : 0);
     strip = (p.mode === 'off'
       ? '<div style="font-size:11.5px;color:var(--tx3);line-height:1.6">'+(cg.mode==='pledge'?'Set your own share — a percent of what comes in, or a flat amount. Entirely optional.':'Set your own measure if it helps. Dāna has no fixed percentage, and nothing here will invent one.')+'</div>'
-      : '<div style="font-size:14px;color:var(--tx)">$'+sug.toLocaleString()+'<span style="font-size:11.5px;color:var(--tx3)"> — '+(p.mode==='percent'?(p.percent+'% of the $'+Math.round(inc).toLocaleString()+' in this month'):'your monthly measure')+'. $'+Math.round(t.month).toLocaleString()+' given so far.</span></div>')+
+      : '<div style="font-size:14px;color:var(--tx)">'+curSym()+sug.toLocaleString()+'<span style="font-size:11.5px;color:var(--tx3)"> — '+(p.mode==='percent'?(p.percent+'% of the '+curSym()+Math.round(inc).toLocaleString()+' in this month'):'your monthly measure')+'. '+curSym()+Math.round(t.month).toLocaleString()+' given so far.</span></div>')+
       '<button class="btn" onclick="openPledge()" style="margin-top:9px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px;padding:9px">'+(p.mode==='off'?'Set a measure':'Change it')+'</button>';
   }
   const list = givingLog();
@@ -25949,11 +25991,11 @@ function renderGiving(){
   if(!list.length) body = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:12px 0;font-style:italic">Nothing logged yet.</p>';
   else if(p.quiet) body = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:12px 0">'+list.length+' kept quietly. Amounts hidden.</p>';
   else body = list.slice(0,10).map(x => '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)">'+
-      '<div><div style="font-size:14px;color:var(--tx)">$'+x.amount.toLocaleString()+'</div>'+
+      '<div><div style="font-size:14px;color:var(--tx)">'+curSym()+x.amount.toLocaleString()+'</div>'+
       (x.to ? '<div style="font-size:11px;color:var(--tx3)">'+_escFew(x.to)+'</div>' : '')+'</div>'+
       '<div style="display:flex;align-items:center;gap:10px"><span style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+new Date(x.ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'})+'</span>'+
       '<button onclick="deleteGiving('+x.id+')" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer">×</button></div></div>').join('')+
-      '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);text-align:center;margin-top:10px">$'+Math.round(t.year).toLocaleString()+' this year · $'+Math.round(t.all).toLocaleString()+' all time</div>';
+      '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);text-align:center;margin-top:10px">'+curSym()+Math.round(t.year).toLocaleString()+' this year · '+curSym()+Math.round(t.all).toLocaleString()+' all time</div>';
   el.innerHTML = '<div style="font-size:11.5px;color:var(--tx3);line-height:1.5;margin-bottom:10px">'+cg.sub+'</div>'+
     '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px">'+strip+'</div>'+
     body+
@@ -25966,7 +26008,7 @@ function renderGiving(){
 let debts=[],usaS=0,indiaS=0;
 function loadF(){const f=ls('totry_f');if(f){debts=f.d||[];usaS=f.u||0;indiaS=f.i||0;}else{debts=[];usaS=0;indiaS=0;}}
 function saveF(){ls('totry_f',{d:debts,u:usaS,i:indiaS});}
-function getDebtStr(){loadF();return debts.map(d=>d.n+' $'+Math.round(d.t-d.p)+' remaining').join(', ')||'No debts logged';}
+function getDebtStr(){loadF();return debts.map(d=>d.n+' '+curSym()+Math.round(d.t-d.p)+' remaining').join(', ')||'No debts logged';}
 function setDebtStrategy(type, fromUser){
   ls('totry_debt_strategy',type);
   ['snowball','avalanche'].forEach(t=>{const el=document.getElementById('strategy-'+t);if(el)el.classList.toggle('active',t===type);});
@@ -25994,7 +26036,7 @@ function renderDebtTruth(){
   const active=debts.filter(d=>_debtBalance(d)>0); if(!active.length) return;
   const bits=[];
   const mi=totalMonthlyInterest(active);
-  if(mi>=1) bits.push('Interest alone takes <b style="color:var(--re)">$'+Math.round(mi).toLocaleString()+'/month</b> before a dollar touches the balance.');
+  if(mi>=1) bits.push('Interest alone takes <b style="color:var(--re)">'+curSym()+Math.round(mi).toLocaleString()+'/month</b> before a dollar touches the balance.');
   const rate=monthlyPaymentRate();
   if(rate && active.length>1 && active.some(d=>(parseFloat(d.interest)||0)>0)){
     const av=projectPayoff(active, rate, 'avalanche');
@@ -26003,8 +26045,8 @@ function renderDebtTruth(){
       const save=(sn.interestPaid||0)-(av.interestPaid||0);
       const cur=ls('totry_debt_strategy')||'snowball';
       if(save>0) bits.push(cur==='avalanche'
-        ? 'Your Avalanche order saves about <b style="color:var(--gr)">$'+save.toLocaleString()+'</b> in interest versus smallest-first.'
-        : 'Avalanche would save about <b style="color:var(--gr)">$'+save.toLocaleString()+'</b> in interest — but Snowball wins on momentum, and the best plan is the one you keep doing.');
+        ? 'Your Avalanche order saves about <b style="color:var(--gr)">'+curSym()+save.toLocaleString()+'</b> in interest versus smallest-first.'
+        : 'Avalanche would save about <b style="color:var(--gr)">'+curSym()+save.toLocaleString()+'</b> in interest — but Snowball wins on momentum, and the best plan is the one you keep doing.');
     }
   }
   if(!bits.length) return;
@@ -26048,14 +26090,14 @@ function renderReclaimedBuysFreedom(){
   if(!now||!boosted) return;
   let line='';
   if(now.neverClears && !boosted.neverClears){
-    line='Right now the interest is outrunning your payments — but adding the $'+Math.round(reclaim).toLocaleString()+'/month you’re reclaiming flips it: debt-free in about '+boosted.months+' months. Staying clean is what gets you above the line.';
+    line='Right now the interest is outrunning your payments — but adding the '+curSym()+Math.round(reclaim).toLocaleString()+'/month you’re reclaiming flips it: debt-free in about '+boosted.months+' months. Staying clean is what gets you above the line.';
   } else if(!now.neverClears && !boosted.neverClears){
     const sooner=now.months-boosted.months;
     const saved=Math.max(0,(now.interestPaid||0)-(boosted.interestPaid||0));
     if(sooner<=0 && saved<=0) return;
-    line='That $'+Math.round(reclaim).toLocaleString()+'/month, put straight on your debt, makes you free '+
+    line='That '+curSym()+Math.round(reclaim).toLocaleString()+'/month, put straight on your debt, makes you free '+
       (sooner>0?('<b style="color:var(--gr)">'+sooner+' month'+(sooner===1?'':'s')+' sooner</b>'):'sooner')+
-      (saved>0?(' and saves <b style="color:var(--gr)">$'+saved.toLocaleString()+'</b> in interest'):'')+
+      (saved>0?(' and saves <b style="color:var(--gr)">'+curSym()+saved.toLocaleString()+'</b> in interest'):'')+
       '. That’s what staying clean is worth, in months of your life.';
   } else { return; }
   const el=document.createElement('div');
@@ -26079,14 +26121,14 @@ function calcDebtFreeDate(){
   // Saying so plainly is worth more than a comforting number that will never arrive.
   if(proj.neverClears){
     if(dd) dd.textContent='Not yet on track';
-    if(ddesc) ddesc.innerHTML='At $'+Math.round(rate).toLocaleString()+'/month the interest ($'+proj.monthlyInterest.toLocaleString()+'/mo) is eating the payment — the balance grows. Getting above that line is the whole battle, and every dollar reclaimed goes straight at it.';
+    if(ddesc) ddesc.innerHTML='At '+curSym()+Math.round(rate).toLocaleString()+'/month the interest ('+curSym()+proj.monthlyInterest.toLocaleString()+'/mo) is eating the payment — the balance grows. Getting above that line is the whole battle, and every dollar reclaimed goes straight at it.';
     return;
   }
   const fd=new Date(); fd.setMonth(fd.getMonth()+proj.months);
   if(dd) dd.textContent=fd.toLocaleDateString('en-AU',{month:'long',year:'numeric'});
   if(ddesc){
-    const interestBit = proj.interestPaid>0 ? (' · $'+proj.interestPaid.toLocaleString()+' of that is interest') : '';
-    ddesc.textContent='~'+proj.months+' month'+(proj.months===1?'':'s')+' at $'+Math.round(rate).toLocaleString()+'/month'+interestBit;
+    const interestBit = proj.interestPaid>0 ? (' · '+curSym()+proj.interestPaid.toLocaleString()+' of that is interest') : '';
+    ddesc.textContent='~'+proj.months+' month'+(proj.months===1?'':'s')+' at '+curSym()+Math.round(rate).toLocaleString()+'/month'+interestBit;
   }
 }
 // A money tab full of zeros teaches a person nothing and quietly tells them they're fine. Until it
@@ -26120,7 +26162,7 @@ function renderMoneyGate(){
 
   const r = spendingRead();
   if(!r){ readCard.innerHTML = ''; return; }
-  const money = n => '$'+Math.abs(Math.round(n)).toLocaleString();
+  const money = n => curSym()+Math.abs(Math.round(n)).toLocaleString();
   const staleDays = Math.floor((Date.now() - r.to.getTime())/86400000);
   const neg = r.netPerMonth < 0;
   readCard.innerHTML = '<div class="card" style="margin-bottom:14px">'+
@@ -26143,10 +26185,10 @@ function renderFinance(){
   loadF();
   try{ renderMoneyGate(); }catch(_){}
   const owed=debts.reduce((a,d)=>a+(d.t-d.p),0),paid=debts.reduce((a,d)=>a+d.p,0);
-  ['f-debt','h-debt'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='$'+Math.round(owed).toLocaleString();});
-  const fp=document.getElementById('f-paid');if(fp)fp.textContent='$'+Math.round(paid).toLocaleString();
-  const fu=document.getElementById('f-usa');if(fu)fu.textContent='$'+Math.round(usaS).toLocaleString();
-  const fi=document.getElementById('f-india');if(fi)fi.textContent='$'+Math.round(indiaS).toLocaleString();
+  ['f-debt','h-debt'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=curSym()+Math.round(owed).toLocaleString();});
+  const fp=document.getElementById('f-paid');if(fp)fp.textContent=curSym()+Math.round(paid).toLocaleString();
+  const fu=document.getElementById('f-usa');if(fu)fu.textContent=curSym()+Math.round(usaS).toLocaleString();
+  const fi=document.getElementById('f-india');if(fi)fi.textContent=curSym()+Math.round(indiaS).toLocaleString();
   const dl=document.getElementById('debt-list');if(!dl)return;dl.innerHTML='';
   if(!debts.length){dl.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:10px 0">No debts added yet</p>';return;}
   const strategy=ls('totry_debt_strategy')||'snowball';
@@ -26154,11 +26196,11 @@ function renderFinance(){
   sorted.forEach((d,si)=>{
     const rem=d.t-d.p,pct=d.t>0?Math.round((d.p/d.t)*100):0;
     const item=document.createElement('div');item.className='debt-row';
-    item.innerHTML='<div class="dr-top"><span class="dr-name">'+d.n+(si===0?' \u2b50':'')+' </span><span class="dr-amt">$'+Math.round(rem).toLocaleString()+'</span></div>'+
+    item.innerHTML='<div class="dr-top"><span class="dr-name">'+d.n+(si===0?' \u2b50':'')+' </span><span class="dr-amt">'+curSym()+Math.round(rem).toLocaleString()+'</span></div>'+
       (d.due?'<span class="dr-date">Due: '+d.due+'</span>':'')+
       '<div class="bar-wrap"><div class="bar" style="width:'+pct+'%"></div></div>'+
-      '<div class="dr-meta"><span class="dr-paid">$'+Math.round(d.p).toLocaleString()+' paid ('+pct+'%)</span><span>Tap to log payment</span></div>';
-    item.onclick=()=>{openFormModal('Log a payment','Payment toward '+d.n+'.',[{id:'amt',label:'Amount',type:'number',prefix:'$',placeholder:'e.g. 200'}],'Log payment',(vals)=>{const a=parseFloat(vals.amt);if(isNaN(a)||a<=0)return 'Enter an amount greater than 0.';loadF();debts[d.idx].p=Math.min(debts[d.idx].p+a,debts[d.idx].t);saveF();const payments=ls('totry_payments')||[];payments.push({amt:a,ts:new Date().toISOString(),date:new Date().toISOString(),debt:d.n});ls('totry_payments',payments.slice(-200));if(typeof syncToCloud==='function')syncToCloud();renderFinance();calcDebtFreeDate();checkMilestones();return true;});};
+      '<div class="dr-meta"><span class="dr-paid">'+curSym()+Math.round(d.p).toLocaleString()+' paid ('+pct+'%)</span><span>Tap to log payment</span></div>';
+    item.onclick=()=>{openFormModal('Log a payment','Payment toward '+d.n+'.',[{id:'amt',label:'Amount',type:'number',prefix:curSym(),placeholder:'e.g. 200'}],'Log payment',(vals)=>{const a=parseFloat(vals.amt);if(isNaN(a)||a<=0)return 'Enter an amount greater than 0.';loadF();debts[d.idx].p=Math.min(debts[d.idx].p+a,debts[d.idx].t);saveF();const payments=ls('totry_payments')||[];payments.push({amt:a,ts:new Date().toISOString(),date:new Date().toISOString(),debt:d.n});ls('totry_payments',payments.slice(-200));if(typeof syncToCloud==='function')syncToCloud();renderFinance();calcDebtFreeDate();checkMilestones();return true;});};
     dl.appendChild(item);
   });
   calcDebtFreeDate();
@@ -26168,7 +26210,7 @@ function renderFinance(){
   const reclaimed = (typeof totalReclaimed==='function') ? totalReclaimed() : 0;
   if(reclaimed > 0){
     const sn=document.getElementById('saved-num'); const sd=document.getElementById('saved-desc');
-    if(sn) sn.textContent='$'+reclaimed.toLocaleString();
+    if(sn) sn.textContent=curSym()+reclaimed.toLocaleString();
     // Lead with the freedom story, not the debt table (the soul of this screen): when there is real
     // reclaimed money, float that hero up right beneath the metrics. Idempotent (only moves once).
     try{ const mg=document.querySelector('#tab-money .mg'); const sh=document.getElementById('saved-hero'); if(mg&&sh&&mg.nextElementSibling!==sh) mg.after(sh); }catch(_){}
@@ -26185,8 +26227,8 @@ function renderFinance(){
         const n=document.createElement('div'); n.id='reclaim-owed-note';
         n.style.cssText='margin-top:8px;font-size:12px;color:var(--tx3);line-height:1.55';
         n.innerHTML = left>0
-          ? 'You’ve avoided <b>$'+avoidedTotal.toLocaleString()+'</b> of spending, but still owe <b style="color:var(--go)">$'+owedTotal.toLocaleString()+'</b> for past use — <b>$'+left.toLocaleString()+'</b> to go before you’re actually ahead. Clearing that is the first real win.'
-          : 'That’s after clearing the <b>$'+owedTotal.toLocaleString()+'</b> you owed for past use — you’re genuinely ahead now.';
+          ? 'You’ve avoided <b>'+curSym()+avoidedTotal.toLocaleString()+'</b> of spending, but still owe <b style="color:var(--go)">'+curSym()+owedTotal.toLocaleString()+'</b> for past use — <b>'+curSym()+left.toLocaleString()+'</b> to go before you’re actually ahead. Clearing that is the first real win.'
+          : 'That’s after clearing the <b>'+curSym()+owedTotal.toLocaleString()+'</b> you owed for past use — you’re genuinely ahead now.';
         sd.after(n);
       }
     }catch(_){}
@@ -26195,7 +26237,7 @@ function renderFinance(){
     // interest saved. Only possible because the fight and the money live in the same app.
     try{ renderReclaimedBuysFreedom(); }catch(_){}
   } else {
-  const vs=ls('totry_vs');if(vs){const sn=document.getElementById('saved-num');const sd=document.getElementById('saved-desc');if(sn)sn.textContent='$'+vs.saved.toLocaleString();if(sd)sd.textContent='$'+vs.weekly+'/week saved. $'+vs.saved.toLocaleString()+' redirected.';
+  const vs=ls('totry_vs');if(vs){const sn=document.getElementById('saved-num');const sd=document.getElementById('saved-desc');if(sn)sn.textContent=curSym()+vs.saved.toLocaleString();if(sd)sd.textContent=curSym()+vs.weekly+'/week saved. '+curSym()+vs.saved.toLocaleString()+' redirected.';
     // Restore the input fields too, so it doesn't look like nothing saved when you return.
     if(vs.fields){ const set=(id,v)=>{const el=document.getElementById(id); if(el && v) el.value=v;}; set('weed-s',vs.fields.w); set('vape-s',vs.fields.va); set('gamb-s',vs.fields.g); set('other-s',vs.fields.o); }
     const ss=document.getElementById('sober-since'); if(ss && vs.since) ss.value=vs.since;
@@ -26324,7 +26366,7 @@ function renderFuelPlanCard(){
     btn.style.background='transparent'; btn.style.border='1px solid var(--bd)'; btn.style.color='var(--tx2)';
   } else if(p && p.mealsPerDay){
     const bits = [p.mealsPerDay+' meals/day'];
-    if(p.budget) bits.push('$'+p.budget+'/wk');
+    if(p.budget) bits.push(curSym()+p.budget+'/wk');
     if(p.chain) bits.push(p.chain);
     sum.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx3);margin-bottom:10px">Set up · '+bits.join(' · ')+'</div>';
     btn.textContent = 'Update my fuel plan';
@@ -26381,7 +26423,7 @@ function _fuelElicit(){
     '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">Let’s build your fuel plan</div>'+
     '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:16px">Around your real life — not a generic diet. I already know you’re <b style="color:var(--tx)">'+ctx.goalLabel+'</b> at about <b style="color:var(--tx)">'+ctx.cal+' cal</b> and <b style="color:var(--tx)">'+ctx.pro+'g protein</b>, so I’ll plan around that. A few quick things:</div>'+
     '<div class="eyebrow" style="margin-bottom:6px">Weekly grocery budget</div>'+
-    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px"><span style="font-size:16px;color:var(--tx2)">$</span><input type="number" id="fuel-budget" inputmode="numeric" placeholder="e.g. 120" value="'+(p.budget||'')+'" style="flex:1"></div>'+
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px"><span style="font-size:16px;color:var(--tx2)">'+curSym()+'</span><input type="number" id="fuel-budget" inputmode="numeric" placeholder="e.g. 120" value="'+(p.budget||'')+'" style="flex:1"></div>'+
     '<div class="eyebrow" style="margin-bottom:6px">Meals per day</div>'+
     '<div style="display:flex;gap:8px;margin-bottom:16px" id="fuel-meals-row">'+meals+'</div>'+
     '<div class="eyebrow" style="margin-bottom:6px">Anything to work around?</div>'+
@@ -26508,7 +26550,7 @@ async function _fuelGenerate(){
   const dietStr = _fuelDietStr(p);
   const shops = _fuelShopChains(p); const shopsStr = shops.join(', ') || (p.chain || 'your supermarket');
   const timingStr = preworkout.length ? ('Their gym sessions and pre-gym meal deadlines: '+preworkout.map(function(x){return x.day+' gym '+x.sessionStart+' (finish the pre-gym meal by '+x.eatBy+')';}).join('; ')+'.') : '';
-  const prompt = "Build a realistic "+(p.mealsPerDay||4)+"-meal day for one person, plus a weekly shopping list, in "+(p.country||'Australia')+". Context: "+brief+". Daily targets: the meals MUST total close to "+cal+" kcal (within ~5%) and reach about "+ctx.pro+"g protein (goal: "+ctx.goalDir+") — adjust portion sizes to hit these numbers. Weekly grocery budget ~$"+(p.budget||0)+". STRICTLY respect these dietary requirements and NEVER include any forbidden food (e.g. if vegan, no animal products; if 'no beef', no beef anywhere): "+dietStr+(p.restrictions?('; '+p.restrictions):'')+". "+((p.includeSupps!==false)?"May include 1-2 evidence-backed supermarket supplements (creatine, whey, electrolytes), optional and food-first.":"No supplements.")+" Give FULL macros per meal: cal, protein, carbs, fat. The DAY must also cover MICRONUTRIENTS — enough fibre, iron, calcium, healthy fats/omega-3, potassium, and a real range of vegetables and fruit; summarise this in 'microNote' with rough fibre grams. "+(preworkout.length?("Time carbohydrate around training. "+timingStr+" In 'carbNote', say what to eat before training referencing those times."):"In 'carbNote', explain carb timing generally and note that adding their training schedule unlocks exact meal times.")+" If their context shows an eating-related struggle or a hard time of day (late-night snacking, stress/boredom eating, alcohol, a risk window), address it directly in the plan — e.g. build in a genuinely satisfying planned snack for that window so they are not reaching for the vice on an empty stomach — and name it warmly in that meal's 'why' or in carbNote (like a big brother who knows their fight). The person shops at these stores: "+shopsStr+". For EVERY shopping item, set 'shop' to exactly ONE of those store names — choose the store that is cheapest or most likely to stock it, so the list is organised store-by-store for one trip each. Use typical current prices at that store (estimates, to confirm in-store). Keep 'items' and 'why' SHORT. Return ONLY compact JSON, no prose: {\"meals\":[{\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"carbs\":0,\"fat\":0,\"why\":\"\"}],\"microNote\":\"\",\"carbNote\":\"\",\"shopping\":[{\"item\":\"\",\"price\":0,\"shop\":\"\"}],\"total\":0,\"note\":\"\"}. Each \"why\" ties the meal to their goal. \"note\" says prices are estimates and the science is general.";
+  const prompt = "Build a realistic "+(p.mealsPerDay||4)+"-meal day for one person, plus a weekly shopping list, in "+(p.country||'Australia')+". Context: "+brief+". Daily targets: the meals MUST total close to "+cal+" kcal (within ~5%) and reach about "+ctx.pro+"g protein (goal: "+ctx.goalDir+") — adjust portion sizes to hit these numbers. Weekly grocery budget ~"+curSym()+(p.budget||0)+". STRICTLY respect these dietary requirements and NEVER include any forbidden food (e.g. if vegan, no animal products; if 'no beef', no beef anywhere): "+dietStr+(p.restrictions?('; '+p.restrictions):'')+". "+((p.includeSupps!==false)?"May include 1-2 evidence-backed supermarket supplements (creatine, whey, electrolytes), optional and food-first.":"No supplements.")+" Give FULL macros per meal: cal, protein, carbs, fat. The DAY must also cover MICRONUTRIENTS — enough fibre, iron, calcium, healthy fats/omega-3, potassium, and a real range of vegetables and fruit; summarise this in 'microNote' with rough fibre grams. "+(preworkout.length?("Time carbohydrate around training. "+timingStr+" In 'carbNote', say what to eat before training referencing those times."):"In 'carbNote', explain carb timing generally and note that adding their training schedule unlocks exact meal times.")+" If their context shows an eating-related struggle or a hard time of day (late-night snacking, stress/boredom eating, alcohol, a risk window), address it directly in the plan — e.g. build in a genuinely satisfying planned snack for that window so they are not reaching for the vice on an empty stomach — and name it warmly in that meal's 'why' or in carbNote (like a big brother who knows their fight). The person shops at these stores: "+shopsStr+". For EVERY shopping item, set 'shop' to exactly ONE of those store names — choose the store that is cheapest or most likely to stock it, so the list is organised store-by-store for one trip each. Use typical current prices at that store (estimates, to confirm in-store). Keep 'items' and 'why' SHORT. Return ONLY compact JSON, no prose: {\"meals\":[{\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"carbs\":0,\"fat\":0,\"why\":\"\"}],\"microNote\":\"\",\"carbNote\":\"\",\"shopping\":[{\"item\":\"\",\"price\":0,\"shop\":\"\"}],\"total\":0,\"note\":\"\"}. Each \"why\" ties the meal to their goal. \"note\" says prices are estimates and the science is general.";
   const parsePlan = function(t){ try{
     let c=(t||'').replace(/```json|```/g,'').trim();
     c = c.slice(c.indexOf('{'), c.lastIndexOf('}')+1);
@@ -26562,7 +26604,7 @@ function _fuelSetLead(delta){
 function _fuelRenderPlan(plan){
   const p = getMealPrefs();
   const R = Math.round;
-  const money = function(v){ return '$'+(R((v||0)*100)/100).toFixed(2); };
+  const money = function(v){ return curSym()+(R((v||0)*100)/100).toFixed(2); };
   const mealsHtml = (plan.meals||[]).map(function(mm, i){
     return '<div style="padding:10px 0;border-top:1px solid var(--bd)">'+
       '<div style="display:flex;justify-content:space-between;gap:8px"><div style="font-size:13px;font-weight:600;color:var(--tx)">'+_esc(mm.name||'Meal')+'</div><div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx3);white-space:nowrap">'+R(mm.cal||0)+' cal · '+R(mm.pro||0)+'p · '+R(mm.carbs||0)+'c · '+R(mm.fat||0)+'f</div></div>'+
@@ -26618,7 +26660,7 @@ function _fuelRenderPlan(plan){
     '<div class="eyebrow" style="color:var(--go);margin-bottom:2px">A day of meals</div>'+
     mealsHtml+ macroRow+ targetHtml+ todayHtml+ microHtml+ timingHtml+
     '<div class="eyebrow" style="margin:16px 0 4px">Weekly shopping list</div>'+shopHtml+
-    '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);font-size:13px"><div style="color:var(--tx);font-weight:600">Weekly total</div><div style="font-family:\'DM Mono\',monospace;color:'+(overBudget?'var(--re)':'var(--gr)')+'">'+money(total)+(budget?(' / $'+budget):'')+'</div></div>'+
+    '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);font-size:13px"><div style="color:var(--tx);font-weight:600">Weekly total</div><div style="font-family:\'DM Mono\',monospace;color:'+(overBudget?'var(--re)':'var(--gr)')+'">'+money(total)+(budget?(' / '+curSym()+budget):'')+'</div></div>'+
     '<button onclick="_fuelCopyShopList()" style="width:100%;margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx3);border-radius:8px;padding:8px;font-size:11.5px;cursor:pointer">Copy shopping list</button>'+
     (overBudget?'<div style="font-size:11.5px;color:var(--re);margin-top:6px;line-height:1.5">A bit over budget — tap Regenerate for a leaner version, or nudge your budget up.</div>':'')+
     (plan._estimated?'<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:10px">Prices are estimates — tap “Get live prices”, or confirm in-store.</div>':'')+
@@ -26732,8 +26774,8 @@ function _fuelCopyShopList(){
   const plan = ls('totry_meal_plan'); if(!plan || !plan.shopping) return;
   const groups={}, order=[]; plan.shopping.forEach(function(s){ const k=(s.shop||'Shopping'); if(!groups[k]){ groups[k]=[]; order.push(k); } groups[k].push(s); });
   let txt='My To Try shopping list\n';
-  order.forEach(function(k){ txt+='\n'+k+':\n'; groups[k].forEach(function(s){ txt+='  - '+(s.item||'')+(s.price?(' ($'+s.price+')'):'')+'\n'; }); });
-  txt+='\nTotal: $'+(plan.total||0);
+  order.forEach(function(k){ txt+='\n'+k+':\n'; groups[k].forEach(function(s){ txt+='  - '+(s.item||'')+(s.price?(' ('+curSym()+s.price+')'):'')+'\n'; }); });
+  txt+='\nTotal: '+curSym()+(plan.total||0);
   try{ if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(function(){ if(typeof showToast==='function') showToast('Copied','Shopping list copied — paste it anywhere.'); }, function(){ if(typeof showToast==='function') showToast('List ready', txt.slice(0,80)); }); return; } }catch(_){}
   if(typeof showToast==='function') showToast('List', txt.slice(0,80));
 }
@@ -27248,13 +27290,13 @@ function _showCSVPreview(rawParsed){
   const preview = parsed.slice(0,8).map(p =>
     '<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px">'+
     '<span style="color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">'+p.desc+' <span style="color:var(--tx3)">\u00b7 '+p.category+'</span></span>'+
-    '<span style="color:'+(p.type==='expense'?'var(--re)':'var(--gr)')+';flex-shrink:0">'+(p.type==='expense'?'\u2212':'+')+'$'+p.amount.toFixed(2)+'</span></div>'
+    '<span style="color:'+(p.type==='expense'?'var(--re)':'var(--gr)')+';flex-shrink:0">'+(p.type==='expense'?'\u2212':'+')+curSym()+p.amount.toFixed(2)+'</span></div>'
   ).join('');
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:6px">Review import</div>'+
-    '<div style="font-size:13px;color:var(--tx2);margin-bottom:12px"><b>'+parsed.length+'</b> new: '+expenses.length+' expenses (\u2212$'+totalExp.toFixed(2)+'), '+income.length+' income (+$'+totalInc.toFixed(2)+').'+
+    '<div style="font-size:13px;color:var(--tx2);margin-bottom:12px"><b>'+parsed.length+'</b> new: '+expenses.length+' expenses (\u2212'+curSym()+totalExp.toFixed(2)+'), '+income.length+' income (+'+curSym()+totalInc.toFixed(2)+').'+
       (dupes.length ? ' <span style="color:var(--tx3)">'+dupes.length+' already imported \u2014 skipped, not double-counted.</span>' : '')+'</div>'+
     '<div style="margin-bottom:14px">'+preview+(parsed.length>8?'<div style="font-size:11px;color:var(--tx3);text-align:center;padding-top:8px">+ '+(parsed.length-8)+' more</div>':'')+'</div>'+
     '<button class="btn primary" onclick="confirmCSVImport()" style="margin-bottom:8px">Import all '+parsed.length+'</button>'+
@@ -27284,7 +27326,7 @@ function confirmCSVImport(){
 function spendingReadHTML(){
   const r = spendingRead();
   if(!r) return '<div style="font-size:13px;color:var(--tx2);line-height:1.6">Not enough yet to see a pattern. Import a statement and I’ll show you where it’s going.</div>';
-  const money = n => '$'+Math.abs(Math.round(n)).toLocaleString();
+  const money = n => curSym()+Math.abs(Math.round(n)).toLocaleString();
   const period = r.months < 1.4 ? 'about a month' : Math.round(r.months)+' months';
   let h = '';
 
@@ -27359,11 +27401,11 @@ function viceLedgerHTML(){
       const contradicts = v.mode!=='moderate' && insideStreak && insideStreak.total > 0;
       out += '<div style="background:'+(contradicts?'var(--re-bg)':'var(--bg3)')+';border:1px solid '+(contradicts?'var(--re-bd)':'var(--bd)')+';border-radius:12px;padding:14px;margin-bottom:12px">'+
         '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px">'+_escFew(v.n.toUpperCase())+' · WHAT THE BANK SAYS</div>'+
-        '<div style="font-family:DM Mono,monospace;font-size:26px;color:'+(contradicts?'var(--re)':'var(--tx)')+';line-height:1">$'+Math.round(bank.total).toLocaleString()+'</div>'+
+        '<div style="font-family:DM Mono,monospace;font-size:26px;color:'+(contradicts?'var(--re)':'var(--tx)')+';line-height:1">'+curSym()+Math.round(bank.total).toLocaleString()+'</div>'+
         '<div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-top:8px">'+
           bank.count+' transactions'+(since?' over the last '+since+' days':'')+'. '+
           (contradicts
-            ? 'But this card says you’ve been clean '+clean+' days — and $'+Math.round(insideStreak.total).toLocaleString()+' of that spending falls inside it. One of the two isn’t true. No judgement either way; I’d just rather you had the real number.'
+            ? 'But this card says you’ve been clean '+clean+' days — and '+curSym()+Math.round(insideStreak.total).toLocaleString()+' of that spending falls inside it. One of the two isn’t true. No judgement either way; I’d just rather you had the real number.'
             : 'That’s the real number — not an estimate. It’s what this cost you.')+
         '</div>'+
         (contradicts ? '<button onclick="openLogUse('+i+')" style="width:100%;margin-top:10px;background:none;border:1px solid var(--re-bd);color:var(--re);border-radius:9px;padding:9px;font-size:12px;cursor:pointer">Set it straight</button>' : '')+
@@ -27491,7 +27533,7 @@ function quickSpend(){
   document.getElementById('qs-amount').value = '';
   document.getElementById('qs-cat').value = '';
   renderTransactions();
-  showToast('Logged', '−$' + amount.toFixed(2) + ' · ' + cat);
+  showToast('Logged', '−'+curSym() + amount.toFixed(2) + ' · ' + cat);
   haptic('success');
 }
 
@@ -27505,7 +27547,7 @@ function openTransactionLogger(){
       '<button class="meal-chip" id="trans-type-income" data-type="income" onclick="selectTransType(\'income\')" style="flex:1">+ Income</button>' +
     '</div>' +
     '<div class="eyebrow">Amount</div>' +
-    '<input type="number" id="trans-amount" step="0.01" placeholder="$0.00" style="font-size:18px;padding:14px;margin-bottom:14px">' +
+    '<input type="number" id="trans-amount" step="0.01" placeholder="'+curSym()+'0.00" style="font-size:18px;padding:14px;margin-bottom:14px">' +
     '<div class="eyebrow">Category</div>' +
     '<div id="trans-category-grid" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px"></div>' +
     '<div class="eyebrow">Note (optional)</div>' +
@@ -27554,7 +27596,7 @@ function saveTransaction(){
   ls('totry_transactions', list.slice(0, 1000)); // unified with confirmCSVImport — was 500 here, so one quick spend after a CSV import deleted 500 transactions
   document.querySelector('.modal-bg.open')?.remove();
   renderTransactions();
-  showToast('Logged', (window.__transType === 'expense' ? '−' : '+') + '$' + amount + ' · ' + window.__transCategory);
+  showToast('Logged', (window.__transType === 'expense' ? '−' : '+') + curSym() + amount + ' · ' + window.__transCategory);
   haptic('success');
 }
 function deleteTransaction(id){
@@ -27580,9 +27622,9 @@ function renderTransactions(){
   const net = income - expenses;
   
   summary.innerHTML = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">In</div><div style="font-size:16px;color:var(--gr);margin-top:3px">$' + Math.round(income).toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Out</div><div style="font-size:16px;color:var(--re);margin-top:3px">$' + Math.round(expenses).toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Net</div><div style="font-size:16px;color:' + (net >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:3px">$' + Math.round(net).toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">In</div><div style="font-size:16px;color:var(--gr);margin-top:3px">'+curSym() + Math.round(income).toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Out</div><div style="font-size:16px;color:var(--re);margin-top:3px">'+curSym() + Math.round(expenses).toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Net</div><div style="font-size:16px;color:' + (net >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:3px">'+curSym() + Math.round(net).toLocaleString() + '</div></div>' +
   '</div>';
   
   // Category breakdown for expenses
@@ -27599,7 +27641,7 @@ function renderTransactions(){
           const pct = expenses > 0 ? Math.round((amt / expenses) * 100) : 0;
           return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px">' +
             '<div style="display:flex;align-items:center;gap:8px;flex:1"><span style="color:var(--tx2)">' + cat + '</span><span style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3)">' + pct + '%</span></div>' +
-            '<span style="font-family:DM Mono,monospace;color:var(--re)">$' + Math.round(amt).toLocaleString() + '</span>' +
+            '<span style="font-family:DM Mono,monospace;color:var(--re)">'+curSym() + Math.round(amt).toLocaleString() + '</span>' +
           '</div>';
         }).join('');
     } else {
@@ -27618,7 +27660,7 @@ function renderTransactions(){
           const color = t.type === 'expense' ? 'var(--re)' : 'var(--gr)';
           return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--bd);font-size:12px">' +
             '<div style="flex:1;min-width:0"><div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(t.note || t.category || 'Transaction') + '</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + t.date + ' · ' + t.category + '</div></div>' +
-            '<div style="display:flex;align-items:center;gap:6px"><span style="font-family:DM Mono,monospace;color:' + color + '">' + sign + '$' + t.amount + '</span><button onclick="deleteTransaction(' + t.id + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
+            '<div style="display:flex;align-items:center;gap:6px"><span style="font-family:DM Mono,monospace;color:' + color + '">' + sign + curSym() + t.amount + '</span><button onclick="deleteTransaction(' + t.id + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
           '</div>';
         }).join('');
     }
@@ -27645,7 +27687,7 @@ function openSubscriptionLogger(){
     '<div class="eyebrow">Name</div>' +
     '<input type="text" id="sub-name" placeholder="e.g. Netflix, Spotify, gym membership" style="margin-bottom:10px">' +
     '<div style="display:flex;gap:8px;margin-bottom:10px">' +
-      '<div style="flex:1"><div class="eyebrow">Amount $</div><input type="number" id="sub-amount" step="0.01" placeholder="14.99"></div>' +
+      '<div style="flex:1"><div class="eyebrow">Amount '+curSym()+'</div><input type="number" id="sub-amount" step="0.01" placeholder="14.99"></div>' +
       '<div style="flex:1"><div class="eyebrow">Period</div><select id="sub-period"><option value="weekly">Weekly</option><option value="monthly" selected>Monthly</option><option value="quarterly">Quarterly</option><option value="annual">Annual</option></select></div>' +
     '</div>' +
     '<div class="eyebrow">Note (optional)</div>' +
@@ -27734,7 +27776,7 @@ function openFormModal(title, subtitle, fields, submitLabel, onSubmit){
 
 function openFamilyContribution(){
   openFormModal('Log a family contribution', 'Money you gave to family.',
-    [ {id:'amount', label:'Amount', type:'number', prefix:'$', placeholder:'e.g. 200'},
+    [ {id:'amount', label:'Amount', type:'number', prefix:curSym(), placeholder:'e.g. 200'},
       {id:'note', label:'Note (optional)', type:'text', placeholder:'e.g. rent help, groceries'} ],
     'Save contribution',
     (v) => {
@@ -27744,7 +27786,7 @@ function openFamilyContribution(){
       list.unshift({ id: Date.now(), amount: n, note: (v.note||'').trim(), date: new Date().toISOString() });
       ls('totry_family_contrib', list.slice(0,200));
       if(typeof syncToCloud==='function') syncToCloud();
-      renderFamilyContribution(); haptic('success'); showToast('Logged', '$'+n+' contribution saved.');
+      renderFamilyContribution(); haptic('success'); showToast('Logged', curSym()+n+' contribution saved.');
       return true;
     });
 }
@@ -27760,7 +27802,7 @@ function deleteFamilyContribution(id){
 function setFamilyTarget(){
   const cur = ls('totry_family_target') || {};
   openFormModal('Monthly family target', 'A recurring amount to contribute each month, like a commitment.',
-    [ {id:'amount', label:'Target amount', type:'number', prefix:'$', placeholder:'e.g. 500', value: cur.amount||''},
+    [ {id:'amount', label:'Target amount', type:'number', prefix:curSym(), placeholder:'e.g. 500', value: cur.amount||''},
       {id:'dueDay', label:'Day of month it\u2019s due (1\u201328)', type:'number', placeholder:'e.g. 1', value: cur.dueDay||'1'} ],
     'Set target',
     (v) => {
@@ -27770,7 +27812,7 @@ function setFamilyTarget(){
       const d = Math.max(1, Math.min(28, parseInt(v.dueDay)||1));
       ls('totry_family_target', { amount: n, dueDay: d });
       if(typeof syncToCloud==='function') syncToCloud();
-      renderFamilyContribution(); haptic('success'); showToast('Target set','$'+n+'/month by the '+d+(d===1?'st':d===2?'nd':d===3?'rd':'th')+'.');
+      renderFamilyContribution(); haptic('success'); showToast('Target set',curSym()+n+'/month by the '+d+(d===1?'st':d===2?'nd':d===3?'rd':'th')+'.');
       return true;
     });
 }
@@ -27791,9 +27833,9 @@ function renderFamilyContribution(){
     const dueStr = target.dueDay + (target.dueDay===1?'st':target.dueDay===2?'nd':target.dueDay===3?'rd':'th');
     targetHtml = '<div style="background:var(--bg3);border:1px solid '+(met?'var(--go-bd)':'var(--bd)')+';border-radius:10px;padding:12px;margin-bottom:12px">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">This month\u2019s target \u00b7 due '+dueStr+'</span><button onclick="setFamilyTarget()" style="background:none;border:none;color:var(--go);font-size:11px;cursor:pointer;padding:16px 13px;margin:-16px -13px;position:relative">Edit</button></div>'+
-      '<div style="font-size:15px;color:'+(met?'var(--gr)':'var(--tx)')+'">$'+monthGiven.toLocaleString()+' / $'+target.amount.toLocaleString()+(met?'  \u2713':'')+'</div>'+
+      '<div style="font-size:15px;color:'+(met?'var(--gr)':'var(--tx)')+'">'+curSym()+monthGiven.toLocaleString()+' / '+curSym()+target.amount.toLocaleString()+(met?'  \u2713':'')+'</div>'+
       '<div style="height:6px;background:var(--bg);border-radius:3px;margin-top:6px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+(met?'var(--gr)':'var(--go)')+'"></div></div>'+
-      (met?'':'<div style="font-size:11px;color:var(--tx3);margin-top:5px">$'+remaining.toLocaleString()+' to go this month</div>')+
+      (met?'':'<div style="font-size:11px;color:var(--tx3);margin-top:5px">'+curSym()+remaining.toLocaleString()+' to go this month</div>')+
       '</div>';
   }
   if(!list.length){
@@ -27805,20 +27847,20 @@ function renderFamilyContribution(){
   wrap.innerHTML = (wrap.__targetHtml||'') + (target ? '' : '<button onclick="setFamilyTarget()" style="width:100%;background:var(--bg3);border:1px dashed var(--bd);color:var(--go);border-radius:8px;padding:8px;font-size:12px;cursor:pointer;margin-bottom:10px">+ Set a recurring monthly target</button>') + list.slice(0,12).map(c=>{
     const when = new Date(c.date).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)">'+
-      '<div><div style="font-size:14px;color:var(--tx)">$'+c.amount.toLocaleString()+'</div>'+(c.note?'<div style="font-size:11px;color:var(--tx3)">'+c.note.replace(/</g,'&lt;')+'</div>':'')+'</div>'+
+      '<div><div style="font-size:14px;color:var(--tx)">'+curSym()+c.amount.toLocaleString()+'</div>'+(c.note?'<div style="font-size:11px;color:var(--tx3)">'+c.note.replace(/</g,'&lt;')+'</div>':'')+'</div>'+
       '<div style="display:flex;align-items:center;gap:10px"><span style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+when+'</span>'+
       '<button onclick="deleteFamilyContribution('+c.id+')" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer">\u00d7</button></div></div>';
   }).join('');
   const total = list.reduce((a,c)=>a+c.amount,0);
   // monthGiven was already computed above for the target strip — reuse it.
-  if(totalEl) totalEl.textContent = '$'+total.toLocaleString()+' all time \u00b7 $'+monthGiven.toLocaleString()+' this month';
+  if(totalEl) totalEl.textContent = curSym()+total.toLocaleString()+' all time \u00b7 '+curSym()+monthGiven.toLocaleString()+' this month';
 }
 
 // ── POKER TRACKER ────────────────────────────────────────────
 function openPokerSession(){
   openFormModal('Log a poker session', 'Track buy-in vs cash-out to see if you\u2019re up or down over time.',
-    [ {id:'buyin', label:'Buy-in', type:'number', prefix:'$', placeholder:'e.g. 100'},
-      {id:'cashout', label:'Cash-out (0 if you busted)', type:'number', prefix:'$', placeholder:'e.g. 240'},
+    [ {id:'buyin', label:'Buy-in', type:'number', prefix:curSym(), placeholder:'e.g. 100'},
+      {id:'cashout', label:'Cash-out (0 if you busted)', type:'number', prefix:curSym(), placeholder:'e.g. 240'},
       {id:'note', label:'Note (optional)', type:'text', placeholder:'e.g. venue or game type'} ],
     'Save session',
     (v) => {
@@ -27832,7 +27874,7 @@ function openPokerSession(){
       if(typeof syncToCloud==='function') syncToCloud();
       renderPoker(); haptic(co>=bi?'success':'warning');
       const net = co-bi;
-      showToast(net>=0?'Session logged \u2014 up $'+net:'Session logged \u2014 down $'+Math.abs(net), 'Tracked honestly.');
+      showToast(net>=0?'Session logged \u2014 up '+curSym()+net:'Session logged \u2014 down '+curSym()+Math.abs(net), 'Tracked honestly.');
       return true;
     });
 }
@@ -27857,15 +27899,15 @@ function renderPoker(){
     const col = totalNet>=0 ? 'var(--gr)' : 'var(--re)';
     sumEl.innerHTML = '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:14px;text-align:center">'+
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px">Lifetime net</div>'+
-      '<div style="font-size:24px;color:'+col+'">'+(totalNet>=0?'+$':'\u2212$')+Math.abs(totalNet).toLocaleString()+'</div>'+
+      '<div style="font-size:24px;color:'+col+'">'+(totalNet>=0?'+'+curSym():'\u2212'+curSym())+Math.abs(totalNet).toLocaleString()+'</div>'+
       '<div style="font-size:11px;color:var(--tx3);margin-top:4px">'+sessions+' session'+(sessions===1?'':'s')+' \u00b7 '+wins+' winning</div></div>';
   }
   wrap.innerHTML = list.slice(0,15).map(p=>{
     const when = new Date(p.date).toLocaleDateString('en-AU',{day:'numeric',month:'short'});
     const col = p.net>=0 ? 'var(--gr)' : 'var(--re)';
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)">'+
-      '<div><div style="font-size:13px;color:'+col+'">'+(p.net>=0?'+$':'\u2212$')+Math.abs(p.net).toLocaleString()+'</div>'+
-      '<div style="font-size:10px;color:var(--tx3)">in $'+p.buyin.toLocaleString()+' \u2192 out $'+p.cashout.toLocaleString()+(p.note?' \u00b7 '+p.note.replace(/</g,'&lt;'):'')+'</div></div>'+
+      '<div><div style="font-size:13px;color:'+col+'">'+(p.net>=0?'+'+curSym():'\u2212'+curSym())+Math.abs(p.net).toLocaleString()+'</div>'+
+      '<div style="font-size:10px;color:var(--tx3)">in '+curSym()+p.buyin.toLocaleString()+' \u2192 out '+curSym()+p.cashout.toLocaleString()+(p.note?' \u00b7 '+p.note.replace(/</g,'&lt;'):'')+'</div></div>'+
       '<div style="display:flex;align-items:center;gap:10px"><span style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+when+'</span>'+
       '<button onclick="deletePokerSession('+p.id+')" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer">\u00d7</button></div></div>';
   }).join('');
@@ -27928,10 +27970,10 @@ function renderSubDetect(){
   el.style.display='block';
   el.innerHTML='<div style="background:var(--bg3);border:1px solid var(--go-bd);border-radius:12px;padding:13px 15px;margin-bottom:12px">'+
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px">Found in your statements</div>'+
-    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:10px">'+found.length+' charge'+(found.length===1?'':'s')+' that repeat like subscriptions \u2014 about <b style="color:var(--tx)">$'+total.toLocaleString()+'/year</b> between them. Not an accusation, just the ones you may have stopped noticing.</div>'+
+    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:10px">'+found.length+' charge'+(found.length===1?'':'s')+' that repeat like subscriptions \u2014 about <b style="color:var(--tx)">'+curSym()+total.toLocaleString()+'/year</b> between them. Not an accusation, just the ones you may have stopped noticing.</div>'+
     found.map(function(f){ return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--bd)">'+
       '<div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+_escFew(f.name)+'</div>'+
-      '<div style="font-family:DM Mono,monospace;font-size:9.5px;color:var(--tx3)">$'+f.amount+'/'+f.period+' \u00b7 seen '+f.seen+'\u00d7 \u00b7 ~$'+f.yearly.toLocaleString()+'/yr</div></div>'+
+      '<div style="font-family:DM Mono,monospace;font-size:9.5px;color:var(--tx3)">'+curSym()+f.amount+'/'+f.period+' \u00b7 seen '+f.seen+'\u00d7 \u00b7 ~'+curSym()+f.yearly.toLocaleString()+'/yr</div></div>'+
       '<button class="btn" style="width:auto;padding:5px 10px;font-size:11px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go)" onclick="_subAccept(\''+String(f.key).replace(/'/g,"")+'\')">Track</button>'+
       '<button class="btn" style="width:auto;padding:5px 8px;font-size:11px;color:var(--tx3)" onclick="_subDismiss(\''+String(f.key).replace(/'/g,"")+'\')">Not one</button>'+
     '</div>'; }).join('')+
@@ -27946,7 +27988,7 @@ function _subAccept(key){
   }catch(_){}
   try{ if(typeof renderSubscriptions==='function') renderSubscriptions(); }catch(_){}
   renderSubDetect();
-  try{ showToast('Tracked', f.name+' \u2014 about $'+f.yearly.toLocaleString()+' a year. Now it is a decision again.'); }catch(_){}
+  try{ showToast('Tracked', f.name+' \u2014 about '+curSym()+f.yearly.toLocaleString()+' a year. Now it is a decision again.'); }catch(_){}
 }
 function _subDismiss(key){
   try{ const d=ls('totry_sub_dismissed')||[]; d.push(key); ls('totry_sub_dismissed', d.slice(-100)); }catch(_){}
@@ -28058,13 +28100,13 @@ function renderSubscriptions(){
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd);font-size:12px">' +
       '<div style="flex:1;min-width:0">' +
         '<div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + s.name + '</div>' +
-        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">$' + s.amount + ' / ' + s.period + (s.note ? ' · ' + s.note : '') + '</div>' +
+        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">'+curSym() + s.amount + ' / ' + s.period + (s.note ? ' · ' + s.note : '') + '</div>' +
       '</div>' +
-      '<div style="display:flex;align-items:center;gap:8px"><span style="font-family:DM Mono,monospace;color:var(--re)">~$' + monthly.toFixed(2) + '/mo</span><button onclick="deleteSubscription(' + s.id + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
+      '<div style="display:flex;align-items:center;gap:8px"><span style="font-family:DM Mono,monospace;color:var(--re)">~'+curSym() + monthly.toFixed(2) + '/mo</span><button onclick="deleteSubscription(' + s.id + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
     '</div>';
   }).join('');
   if(totalBox){
-    totalBox.textContent = 'Total: ~$' + monthlyTotal.toFixed(0) + '/mo · ~$' + annualTotal.toFixed(0) + '/year';
+    totalBox.textContent = 'Total: ~'+curSym() + monthlyTotal.toFixed(0) + '/mo · ~'+curSym() + annualTotal.toFixed(0) + '/year';
   }
 }
 
@@ -28077,7 +28119,7 @@ function openBillLogger(){
     '<div class="eyebrow">Bill name</div>' +
     '<input type="text" id="bill-name" placeholder="e.g. Car rego, electricity, rent" style="margin-bottom:10px">' +
     '<div style="display:flex;gap:8px;margin-bottom:10px">' +
-      '<div style="flex:1"><div class="eyebrow">Amount $</div><input type="number" id="bill-amount" step="0.01" placeholder="0.00"></div>' +
+      '<div style="flex:1"><div class="eyebrow">Amount '+curSym()+'</div><input type="number" id="bill-amount" step="0.01" placeholder="0.00"></div>' +
       '<div style="flex:1"><div class="eyebrow">Due date</div><input type="date" id="bill-due"></div>' +
     '</div>' +
     '<button class="btn primary" onclick="saveBill()" style="margin-bottom:8px">Save bill</button>' +
@@ -28142,7 +28184,7 @@ function renderBills(){
     return '<div style="background:' + urgency.bg + ';border:1px solid ' + urgency.border + ';border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">' +
       '<div style="flex:1;min-width:0">' +
         '<div style="font-size:13px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (b.name||b.n||'Bill') + '</div>' +
-        '<div style="font-family:DM Mono,monospace;font-size:10px;color:' + urgency.color + ';margin-top:2px">$' + (Number(b.amount!=null?b.amount:b.amt)||0).toLocaleString() + ' · ' + urgency.label + '</div>' +
+        '<div style="font-family:DM Mono,monospace;font-size:10px;color:' + urgency.color + ';margin-top:2px">'+curSym() + (Number(b.amount!=null?b.amount:b.amt)||0).toLocaleString() + ' · ' + urgency.label + '</div>' +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:6px">' +
         '<button class="btn" aria-label="Mark paid" style="width:auto;padding:13px 15px;font-size:10px;background:var(--gr);color:#000;border:none" onclick="markBillPaid(' + b.id + ')">✓</button>' +
@@ -28163,7 +28205,7 @@ function openBudgetLogger(){
     EXPENSE_CATEGORIES.map(cat => 
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
         '<div style="flex:1;font-size:13px;color:var(--tx)">' + cat + '</div>' +
-        '<input type="number" id="budget-' + cat.replace(/[^a-z]/gi, '') + '" step="10" value="' + (budgets[cat] || '') + '" placeholder="$" style="max-width:100px;text-align:right">' +
+        '<input type="number" id="budget-' + cat.replace(/[^a-z]/gi, '') + '" step="10" value="' + (budgets[cat] || '') + '" placeholder="'+curSym()+'" style="max-width:100px;text-align:right">' +
       '</div>'
     ).join('') +
     '<button class="btn primary" onclick="saveBudgets()" style="margin-top:14px;margin-bottom:8px">Save budgets</button>' +
@@ -28235,12 +28277,12 @@ function renderBudgets(){
     return '<div style="margin-bottom:14px">' +
       '<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12px;margin-bottom:4px">' +
         '<span style="color:var(--tx)">' + cat + '</span>' +
-        '<span style="font-family:DM Mono,monospace;color:' + (over ? 'var(--re)' : 'var(--tx2)') + '">$' + Math.round(spent) + ' / $' + limit + '</span>' +
+        '<span style="font-family:DM Mono,monospace;color:' + (over ? 'var(--re)' : 'var(--tx2)') + '">'+curSym() + Math.round(spent) + ' / '+curSym() + limit + '</span>' +
       '</div>' +
       '<div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-bottom:4px">' +
         '<div style="height:100%;background:' + barColor + ';width:' + pct + '%;transition:width 0.3s"></div>' +
       '</div>' +
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:' + (over ? 'var(--re)' : 'var(--tx3)') + '">' + (over ? '$' + Math.round(Math.abs(remaining)) + ' over' : '$' + Math.round(remaining) + ' left') + '</div>' +
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:' + (over ? 'var(--re)' : 'var(--tx3)') + '">' + (over ? curSym() + Math.round(Math.abs(remaining)) + ' over' : curSym() + Math.round(remaining) + ' left') + '</div>' +
     '</div>';
   }).join('');
 }
@@ -28254,7 +28296,7 @@ function openAssetLogger(){
     '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Cash, savings accounts, investments, property, vehicles. Anything that has value.</p>' +
     '<div class="eyebrow">Asset name</div>' +
     '<input type="text" id="asset-name" placeholder="e.g. Savings account, car, ETF holdings" style="margin-bottom:10px">' +
-    '<div class="eyebrow">Current value ($)</div>' +
+    '<div class="eyebrow">Current value ('+curSym()+')</div>' +
     '<input type="number" id="asset-value" step="0.01" placeholder="0.00" style="margin-bottom:14px">' +
     '<button class="btn primary" onclick="saveAsset()" style="margin-bottom:8px">Save asset</button>' +
     '<button class="btn" onclick="closeModal(this)">Cancel</button>' +
@@ -28279,7 +28321,7 @@ function updateAsset(id){
   const a = list.find(a => a.id === id);
   if(!a) return;
   openFormModal('Update '+a.name, 'Current value of this asset.',
-    [ {id:'value', label:'Value', type:'number', prefix:'$', placeholder:'e.g. 8400', value: a.value} ],
+    [ {id:'value', label:'Value', type:'number', prefix:curSym(), placeholder:'e.g. 8400', value: a.value} ],
     'Save',
     (vals) => {
       const v = parseFloat(vals.value);
@@ -28307,9 +28349,9 @@ function renderNetWorth(){
   const netWorth = totalAssets - totalDebts;
   
   summary.innerHTML = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Assets</div><div style="font-size:14px;color:var(--gr);margin-top:3px">$' + Math.round(totalAssets).toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Debts</div><div style="font-size:14px;color:var(--re);margin-top:3px">$' + Math.round(totalDebts).toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px;border:1px solid var(--go-bd)"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Net</div><div style="font-size:14px;color:' + (netWorth >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:3px">$' + Math.round(netWorth).toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Assets</div><div style="font-size:14px;color:var(--gr);margin-top:3px">'+curSym() + Math.round(totalAssets).toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Debts</div><div style="font-size:14px;color:var(--re);margin-top:3px">'+curSym() + Math.round(totalDebts).toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px;border:1px solid var(--go-bd)"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Net</div><div style="font-size:14px;color:' + (netWorth >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:3px">'+curSym() + Math.round(netWorth).toLocaleString() + '</div></div>' +
   '</div>';
   
   if(!assets.length){
@@ -28319,7 +28361,7 @@ function renderNetWorth(){
   box.innerHTML = assets.map(a => 
     '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd);font-size:12px">' +
       '<div style="flex:1;min-width:0;cursor:pointer" onclick="updateAsset(' + a.id + ')"><div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + a.name + '</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">Tap to update</div></div>' +
-      '<div style="display:flex;align-items:center;gap:8px"><span style="font-family:DM Mono,monospace;color:var(--gr)">$' + Math.round(a.value).toLocaleString() + '</span><button onclick="deleteAsset(' + a.id + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
+      '<div style="display:flex;align-items:center;gap:8px"><span style="font-family:DM Mono,monospace;color:var(--gr)">'+curSym() + Math.round(a.value).toLocaleString() + '</span><button onclick="deleteAsset(' + a.id + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
     '</div>'
   ).join('');
 }
@@ -28410,11 +28452,11 @@ function calcViceSavings(){
   const since=document.getElementById('sober-since').value;let weeks=1;
   if(since){const days=Math.floor((Date.now()-new Date(since))/86400000);weeks=Math.max(1,Math.floor(days/7));}
   const saved=Math.round(weekly*weeks);
-  const sn=document.getElementById('saved-num');if(sn)sn.textContent='$'+saved.toLocaleString();
-  const sd=document.getElementById('saved-desc');if(sd)sd.textContent='$'+weekly+'/week \u00d7 '+weeks+' weeks. $'+saved.toLocaleString()+' redirected.';
+  const sn=document.getElementById('saved-num');if(sn)sn.textContent=curSym()+saved.toLocaleString();
+  const sd=document.getElementById('saved-desc');if(sd)sd.textContent=curSym()+weekly+'/week \u00d7 '+weeks+' weeks. '+curSym()+saved.toLocaleString()+' redirected.';
   ls('totry_vs',{weekly,since,saved,fields:{w,va,g,o}});
   if(typeof syncToCloud==='function') syncToCloud();
-  haptic('success'); if(typeof showToast==='function') showToast('Saved','$'+saved.toLocaleString()+' redirected from vices.');
+  haptic('success'); if(typeof showToast==='function') showToast('Saved',curSym()+saved.toLocaleString()+' redirected from vices.');
 }
 function openPayday(){document.getElementById('payday-modal').classList.add('open');}
 function calcPayday(){
@@ -28434,7 +28476,7 @@ function calcPayday(){
   // A plan you have to re-type by hand isn't a plan, it's homework. "Apply" actually books the debt
   // payments and the savings contribution \u2014 the feature finishing what it started.
   const canApply = steps.some(s => (s.kind==='debt' || s.kind==='savings') && s.amt > 0);
-  result.innerHTML='<h4>Allocation for $'+amt.toLocaleString()+'</h4>'+steps.map(s=>'<div class="pay-step"><div class="pay-n">'+s.n+'</div><div style="flex:1"><div class="pay-title">'+s.title+'</div><div class="pay-desc">'+s.desc+'</div></div><div class="pay-amt">$'+s.amt.toLocaleString()+'</div></div>').join('')+
+  result.innerHTML='<h4>Allocation for '+curSym()+amt.toLocaleString()+'</h4>'+steps.map(s=>'<div class="pay-step"><div class="pay-n">'+s.n+'</div><div style="flex:1"><div class="pay-title">'+s.title+'</div><div class="pay-desc">'+s.desc+'</div></div><div class="pay-amt">'+curSym()+s.amt.toLocaleString()+'</div></div>').join('')+
     (canApply ? '<button class="btn primary" style="margin-top:14px" onclick="applyPaydayAllocation()">Apply this \u2014 book it all</button>' : '')+
     '<button class="btn" style="margin-top:8px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="document.getElementById(\'payday-result\').style.display=\'none\'">Just showing me</button>';
 }
@@ -28466,8 +28508,8 @@ function applyPaydayAllocation(){
   const el=document.getElementById('payday-result'); if(el) el.style.display='none';
   try{ if(typeof haptic==='function') haptic('success'); }catch(_){}
   const bits=[];
-  if(onDebts>0) bits.push('$'+Math.round(onDebts).toLocaleString()+' onto your debts');
-  if(toSavings>0) bits.push('$'+Math.round(toSavings).toLocaleString()+' to '+goalName);
+  if(onDebts>0) bits.push(curSym()+Math.round(onDebts).toLocaleString()+' onto your debts');
+  if(toSavings>0) bits.push(curSym()+Math.round(toSavings).toLocaleString()+' to '+goalName);
   if(typeof showToast==='function') showToast(bits.length?'Booked \u2713':'Nothing to book', bits.length?bits.join(' \u00b7 '):'Add a debt or a savings goal first.');
 }
 
@@ -29554,7 +29596,7 @@ function _disciplineThread(){
   if(s.wins>0) strands.push(s.wins+' urge'+(s.wins===1?'':'s')+' resisted');
   if(s.workouts>0) strands.push(s.workouts+' session'+(s.workouts===1?'':'s')+' trained');
   if(s.longestStreak>0) strands.push(s.longestStreak+'-day clean streak');
-  if(reclaimed>0) strands.push('$'+reclaimed.toLocaleString()+' reclaimed');
+  if(reclaimed>0) strands.push(curSym()+reclaimed.toLocaleString()+' reclaimed');
   if(s.journalEntries>0) strands.push(s.journalEntries+' reflection'+(s.journalEntries===1?'':'s'));
   return { strands, stats:s, reclaimed };
 }
@@ -29601,7 +29643,7 @@ async function generateWeeklyReflection(){
     const rd = (typeof computeReadiness==='function') ? computeReadiness() : null;
     const identity = ls('totry_identity') || '';
     const sys = brotherSys() + 'RIGHT NOW you\u2019re reflecting their WHOLE week back to them in one honest, encouraging paragraph (4-6 sentences) \u2014 connecting body, discipline, money and spirit the way only someone who sees all of a person could. Specific, never generic. Name the effort, not just the outcomes. Then, on a new line, ask ONE real, specific question drawn from a genuine tension in their week (e.g. trained hard but slipped twice \u2014 "what was going on those nights, bro?"). Invite honest reflection, never judgment. Format the question on its own line prefixed exactly with "Q: ".';
-    const prompt = 'This week: ' + s.workouts + ' workouts, ' + s.nutDays + ' days food logged, ' + s.journalEntries + ' journal entries, ' + s.wins + ' urges resisted, ' + s.slips7 + ' slips, longest clean streak ' + s.longestStreak + ' days' + (s.reclaimed>0 ? (', $'+s.reclaimed+' reclaimed from vices toward their freedom') : '') + '.' + (identity?' They are becoming: "'+identity+'".':'') + (rd?' Current readiness: '+rd.level+'.':'') + ' Training context:' + ctx + '\n\nWrite their weekly reflection as an older sibling who sees their whole life, then the one honest question.';
+    const prompt = 'This week: ' + s.workouts + ' workouts, ' + s.nutDays + ' days food logged, ' + s.journalEntries + ' journal entries, ' + s.wins + ' urges resisted, ' + s.slips7 + ' slips, longest clean streak ' + s.longestStreak + ' days' + (s.reclaimed>0 ? (', '+curSym()+s.reclaimed+' reclaimed from vices toward their freedom') : '') + '.' + (identity?' They are becoming: "'+identity+'".':'') + (rd?' Current readiness: '+rd.level+'.':'') + ' Training context:' + ctx + '\n\nWrite their weekly reflection as an older sibling who sees their whole life, then the one honest question.';
     const resp = await api(sys, [], prompt, 550);
     if(box){
       box.style.display='block';
@@ -34265,7 +34307,7 @@ async function generateWeeklySynthesis(){
   summary+='Prayers added: '+prayers.length+' (answered: '+answeredPrayers.length+')\n';
   summary+='Fight wins: '+wonFights+'/'+fightLog.length+'\n';
   if(avgRating) summary+='Avg day rating: '+avgRating+'/5\n';
-  if(transactions.length) summary+='Money: $'+earnedThisWeek+' in / $'+spentThisWeek+' out\n';
+  if(transactions.length) summary+='Money: '+curSym()+earnedThisWeek+' in / '+curSym()+spentThisWeek+' out\n';
   if(checkins.length){
     const avgPhys=checkins.reduce((s,c)=>s+c.physical,0)/checkins.length;
     const avgEmot=checkins.reduce((s,c)=>s+c.emotional,0)/checkins.length;
@@ -34377,7 +34419,7 @@ function showWeeklySynthesisModal(synthesis){
   if(s.fights > 0) statRows.push({label:'Fights won', value: s.wins + '/' + s.fights});
   if(s.prayers > 0) statRows.push({label:'Prayers added', value: s.prayers + (s.answeredPrayers ? ' (' + s.answeredPrayers + ' answered)' : '')});
   if(s.avgRating) statRows.push({label:'Avg day rating', value: s.avgRating + '/5'});
-  if(s.spent || s.earned) statRows.push({label:'Money', value: '$' + s.earned + ' in / $' + s.spent + ' out'});
+  if(s.spent || s.earned) statRows.push({label:'Money', value: curSym() + s.earned + ' in / '+curSym() + s.spent + ' out'});
   
   const statsHtml = statRows.length ?
     '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:14px">' +
@@ -34534,8 +34576,8 @@ function showYearInReview(year){
   if(stats.prCount > 0) details.push(['Exercises with PRs', stats.prCount]);
   if(stats.totalVolume > 0) details.push(['Total volume moved', stats.totalVolume.toLocaleString() + ' kg']);
   if(stats.weightChange !== null) details.push(['Weight change', (stats.weightChange > 0 ? '+' : '') + stats.weightChange + ' kg']);
-  if(stats.viceSavings > 0) details.push(['Money saved from vices', '$' + stats.viceSavings.toLocaleString()]);
-  if(stats.yearIncome > 0 || stats.yearExpenses > 0) details.push(['Money flow', '$' + stats.yearIncome.toLocaleString() + ' in / $' + stats.yearExpenses.toLocaleString() + ' out']);
+  if(stats.viceSavings > 0) details.push(['Money saved from vices', curSym() + stats.viceSavings.toLocaleString()]);
+  if(stats.yearIncome > 0 || stats.yearExpenses > 0) details.push(['Money flow', curSym() + stats.yearIncome.toLocaleString() + ' in / '+curSym() + stats.yearExpenses.toLocaleString() + ' out']);
   if(stats.winRate > 0) details.push(['Battle win rate', stats.winRate + '%']);
   
   const detailHtml = details.length ?
@@ -35421,7 +35463,7 @@ function openShareCustomizer(){
     todayWorkout ? {key:'showWorkout', icon:'💪', label:'Today\'s workout', desc:(todayWorkout.splitFocus || todayWorkout.type || 'Trained today')} : null,
     habitsTotal > 0 ? {key:'showHabits', icon:'✅', label:'Habits: '+habitsToday+'/'+habitsTotal+' today', desc:'How you showed up today'} : null,
     journalCount > 0 ? {key:'showJournalCount', icon:'📝', label:journalCount+' journal entries', desc:'Times you reflected in writing'} : null,
-    debtPaid > 0 ? {key:'showFinance', icon:'💰', label:'$'+Math.round(debtPaid).toLocaleString()+' debt paid', desc:'Money fight progress'} : null,
+    debtPaid > 0 ? {key:'showFinance', icon:'💰', label:curSym()+Math.round(debtPaid).toLocaleString()+' debt paid', desc:'Money fight progress'} : null,
     (openPrayers + answeredPrayers) > 0 ? {key:'showPrayers', icon:'🙏', label:answeredPrayers+' prayers I marked answered', desc:'Out of '+openPrayers+' active · only YOU log these'} : null,
     {key:'showAffirmation', icon:'💭', label:'A motivational close', desc:'A short affirming line'},
   ].filter(Boolean);
@@ -35598,7 +35640,7 @@ function renderCustomShareCard(prefs){
   if(prefs.showWins && totalWins > 0) statChips.push({big: totalWins, label: 'WINS'});
   if(prefs.showHabits && habitsTotal > 0) statChips.push({big: habitsToday + '/' + habitsTotal, label: 'HABITS'});
   if(prefs.showJournalCount && journalCount > 0) statChips.push({big: journalCount, label: 'JOURNAL'});
-  if(prefs.showFinance && debtPaid > 0) statChips.push({big: '$' + (debtPaid >= 1000 ? Math.round(debtPaid/1000) + 'k' : Math.round(debtPaid)), label: 'PAID OFF'});
+  if(prefs.showFinance && debtPaid > 0) statChips.push({big: curSym() + (debtPaid >= 1000 ? Math.round(debtPaid/1000) + 'k' : Math.round(debtPaid)), label: 'PAID OFF'});
   if(prefs.showPrayers && answeredPrayers > 0) statChips.push({big: answeredPrayers, label: 'ANSWERED'});
   
   if(statChips.length > 0){
@@ -37955,6 +37997,10 @@ async function initApp(){
   if(typeof pickDailyContextualVerse==='function'){ vi = pickDailyContextualVerse(); } showV(activeVerses()[vi]);
   try{ if(typeof applyFaithGlobal==='function') applyFaithGlobal(); }catch(_){}
   try{ if(typeof applyFaithLabels==='function') applyFaithLabels(); }catch(_){}
+  // The static shell paints '$' before any JS runs; this corrects it to the person's own symbol.
+  // It sits with the other applyX() passes because it is the same kind of thing: markup that declared
+  // what it wants, and one function that gives it.
+  try{ if(typeof applyCurrencySymbols==='function') applyCurrencySymbols(); }catch(_){}
   // Background: refresh currency rates if user has set a preference different from base
   if(typeof fetchCurrencyRates === 'function') fetchCurrencyRates(getUserCurrency());
   // Personalise coach
@@ -39046,9 +39092,9 @@ function showAppPreview(){
       // Money mock
       '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:10px">' +
         '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Money</div>' +
-        '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);padding:3px 0"><span>Debt remaining</span><span style="font-family:DM Mono,monospace;color:var(--re)">$6,840</span></div>' +
-        '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);padding:3px 0"><span>Saved from vices</span><span style="font-family:DM Mono,monospace;color:var(--gr)">+$432</span></div>' +
-        '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);padding:3px 0"><span>USA trip fund</span><span style="font-family:DM Mono,monospace;color:var(--go)">$1,840 / $8,000</span></div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);padding:3px 0"><span>Debt remaining</span><span style="font-family:DM Mono,monospace;color:var(--re)">'+curSym()+'6,840</span></div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);padding:3px 0"><span>Saved from vices</span><span style="font-family:DM Mono,monospace;color:var(--gr)">+'+curSym()+'432</span></div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);padding:3px 0"><span>USA trip fund</span><span style="font-family:DM Mono,monospace;color:var(--go)">'+curSym()+'1,840 / '+curSym()+'8,000</span></div>' +
       '</div>' +
     
       // Closing line
@@ -39258,8 +39304,8 @@ function renderLifeWoven(){
   const spiritTxt = evenDone?'day closed ✓' : mornDone?'reflect tonight' : (h<15?'set your intention':'reflect on today');
   // MONEY
   const m=s.money||{}; const moneyBits=[];
-  if(m.reclaimed>0) moneyBits.push('$'+m.reclaimed.toLocaleString()+' reclaimed');
-  if(m.hasDebt) moneyBits.push('$'+m.totalDebt.toLocaleString()+' debt');
+  if(m.reclaimed>0) moneyBits.push(curSym()+m.reclaimed.toLocaleString()+' reclaimed');
+  if(m.hasDebt) moneyBits.push(curSym()+m.totalDebt.toLocaleString()+' debt');
   const moneyTxt=moneyBits.length?moneyBits.join(' · '):'not tracked yet';
   const rows=[
     ['🛡️','The fight',fightTxt,"go('fight')"],
@@ -39666,7 +39712,7 @@ function computeProactiveNudge(){
       const _esc = (typeof _escFew==='function') ? _escFew(_h.what) : _h.what;
       return { id:'hold'+_h.ts, tone:'nudge',
         eyebrow:'You slept on it',
-        text: hi + 'yesterday you held off on <b>'+_esc+'</b>'+(_h.amt?(' (about $'+Math.round(_h.amt).toLocaleString()+')'):'')+'. Still want it? Either answer is fine — the point was deciding it awake instead of in the moment.',
+        text: hi + 'yesterday you held off on <b>'+_esc+'</b>'+(_h.amt?(' (about '+curSym()+Math.round(_h.amt).toLocaleString()+')'):'')+'. Still want it? Either answer is fine — the point was deciding it awake instead of in the moment.',
         actions: [{label:'Still want it', onclick:'_resolveHold('+_h.ts+',true)'},
                   {label:'Nah, it passed', ghost:true, onclick:'_resolveHold('+_h.ts+',false)'}] };
     }
@@ -40208,7 +40254,7 @@ function renderCoachQuickReplies(){
     }
   }
   if(debtRemaining > 0){
-    chips.push({p: 3, label: '💰 How do I clear debt faster?', prompt: 'How do I get out of $' + Math.round(debtRemaining).toLocaleString() + ' debt faster based on my actual income and spending?'});
+    chips.push({p: 3, label: '💰 How do I clear debt faster?', prompt: 'How do I get out of '+curSym() + Math.round(debtRemaining).toLocaleString() + ' debt faster based on my actual income and spending?'});
   }
   
   // PRIORITY 4 — always-on fallbacks

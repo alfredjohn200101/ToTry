@@ -3266,13 +3266,13 @@ input:focus,textarea:focus,select:focus{
   <div id="money-gate"></div>
   <div id="money-read-card"></div>
   <div class="mg">
-    <div class="met"><div class="ml">Paid off</div><div class="mv g" id="f-paid">$0</div></div>
-    <div class="met"><div class="ml">Debt left</div><div class="mv r" id="f-debt">$0</div></div>
+    <div class="met"><div class="ml">Paid off</div><div class="mv g" id="f-paid" data-cur-text="{c}0">$0</div></div>
+    <div class="met"><div class="ml">Debt left</div><div class="mv r" id="f-debt" data-cur-text="{c}0">$0</div></div>
   </div>
   <!-- Dynamic goals list, sorted by priority -->
   <div id="finance-goals-list" style="margin-bottom:14px"></div>
   <div class="df-hero" id="df-hero"><div class="df-date" id="df-date">&#8212;</div><div class="df-lbl">Projected debt-free date</div><div class="df-desc" id="df-desc">Log payments to calculate</div></div>
-  <div class="saved-hero" id="saved-hero"><div class="saved-big" id="saved-num">$0</div><div class="saved-lbl">Reclaimed by staying clean</div><div class="saved-desc" id="saved-desc">Set weekly vice spend below</div></div>
+  <div class="saved-hero" id="saved-hero"><div class="saved-big" id="saved-num" data-cur-text="{c}0">$0</div><div class="saved-lbl">Reclaimed by staying clean</div><div class="saved-desc" id="saved-desc">Set weekly vice spend below</div></div>
   <!-- Strategy -->
   <div class="card" style="margin-bottom:12px">
     <div class="card-hd" style="margin-bottom:8px">Payoff strategy</div>
@@ -3293,20 +3293,20 @@ input:focus,textarea:focus,select:focus{
   <div class="card"><div class="card-hd" style="margin-bottom:10px">Debts &#8212; tap to log a payment</div><div id="debt-list"></div></div>
   <div class="card">
     <div class="card-hd" style="margin-bottom:10px">Add / update</div>
-    <div class="row"><input type="text" id="dn" placeholder="Who you owe"><input type="number" id="dt" placeholder="Total $" style="max-width:110px;flex:none"></div>
-    <div class="row"><input type="number" id="dp" placeholder="Paid so far $"><input type="date" id="dd" style="max-width:145px;flex:none"></div>
+    <div class="row"><input type="text" id="dn" placeholder="Who you owe"><input type="number" id="dt" data-cur-ph="Total {c}" placeholder="Total $" style="max-width:110px;flex:none"></div>
+    <div class="row"><input type="number" id="dp" data-cur-ph="Paid so far {c}" placeholder="Paid so far $"><input type="date" id="dd" style="max-width:145px;flex:none"></div>
     <div class="row"><input type="number" id="di" inputmode="decimal" placeholder="Interest rate % (for Avalanche)" step="0.1"></div>
     <button class="btn primary" onclick="addDebt()" style="margin-bottom:10px">Add this debt</button>
     <div class="divider"></div>
     <div class="card-hd" style="margin-bottom:6px;margin-top:8px">Your savings goals</div>
     <p style="font-size:11px;color:var(--tx3);margin-bottom:8px;line-height:1.5">Add as many goals as you want. They appear at the top in priority order.</p>
     <input type="text" id="goal-name" placeholder="Goal name (e.g. USA Trip, Emergency Fund)" style="margin-bottom:6px">
-    <div class="row"><input type="number" id="goal-target" placeholder="Target $"><input type="number" id="goal-current" placeholder="Saved so far $"></div>
+    <div class="row"><input type="number" id="goal-target" data-cur-ph="Target {c}" placeholder="Target $"><input type="number" id="goal-current" data-cur-ph="Saved so far {c}" placeholder="Saved so far $"></div>
     <button class="btn primary" onclick="addFinanceGoal()" style="margin-bottom:10px">Add goal</button>
     <div class="divider"></div>
     <div class="card-hd" style="margin-bottom:6px">Vice savings calculator</div>
-    <div class="row"><input type="number" id="weed-s" placeholder="Vice 1 weekly $"><input type="number" id="vape-s" placeholder="Vice 2 weekly $"></div>
-    <div class="row"><input type="number" id="gamb-s" placeholder="Vice 3 weekly $"><input type="number" id="other-s" placeholder="Other $"></div>
+    <div class="row"><input type="number" id="weed-s" data-cur-ph="Vice 1 weekly {c}" placeholder="Vice 1 weekly $"><input type="number" id="vape-s" data-cur-ph="Vice 2 weekly {c}" placeholder="Vice 2 weekly $"></div>
+    <div class="row"><input type="number" id="gamb-s" data-cur-ph="Vice 3 weekly {c}" placeholder="Vice 3 weekly $"><input type="number" id="other-s" data-cur-ph="Other {c}" placeholder="Other $"></div>
     <input type="date" id="sober-since" style="margin-bottom:10px">
     <button class="btn success" onclick="calcViceSavings()">Calculate money saved</button>
   </div>
@@ -3316,7 +3316,7 @@ input:focus,textarea:focus,select:focus{
     <div class="card-hd" style="margin-bottom:8px">⚡ Quick spend</div>
     <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">One tap to log a recent expense. Just the amount and the category.</p>
     <div style="display:flex;gap:6px;margin-bottom:8px">
-      <input type="number" id="qs-amount" inputmode="decimal" step="0.01" placeholder="$ amount" style="flex:1;font-size:16px;padding:12px">
+      <input type="number" id="qs-amount" inputmode="decimal" step="0.01" data-cur-ph="{c} amount" placeholder="$ amount" style="flex:1;font-size:16px;padding:12px">
       <select id="qs-cat" style="width:auto;padding:12px 10px;font-size:16px;background:var(--bg2);border:1px solid var(--bd);border-radius:8px;color:var(--tx)">
         <option value="">Category…</option>
         <option value="Food">Food</option>
@@ -3744,12 +3744,12 @@ Amen.</div></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
         <div>
           <div class="eyebrow">Currency</div>
-            <!-- Honest until the symbol retrofit lands: this setting drives the conversion rates
-                 (fetchCurrencyRates), and roughly 250 hardcoded "$" across the app are NOT wired to
-                 it. Sweeping only the 43 mechanical concat sites would show some figures in one
-                 currency and some in another, which is worse than being consistently wrong. -->
-            <div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">Used for conversion rates. Amounts still show a $ sign for now.</div>
-          <select id="settings-currency" onchange="savePref('totry_currency',this.value);if(typeof fetchCurrencyRates==='function')fetchCurrencyRates(this.value);showToast('Saved', this.value + ' set for conversion rates. Amounts still display with a $ sign.')">
+            <!-- The retrofit landed at v480: 166 string sites now call curSym(), and the static ones
+                 above declare data-cur-text / data-cur-ph for applyCurrencySymbols() to fill. This
+                 changes the SYMBOL only — stored amounts are never multiplied by an exchange rate,
+                 because a person's debt is not a number we get to reinterpret. -->
+            <div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">Changes the symbol shown throughout. Your saved amounts are never converted.</div>
+          <select id="settings-currency" onchange="savePref('totry_currency',this.value);if(typeof fetchCurrencyRates==='function')fetchCurrencyRates(this.value);if(typeof applyCurrencySymbols==='function')applyCurrencySymbols();if(typeof renderFinance==='function')try{renderFinance()}catch(_){};showToast('Saved', this.value + ' set for conversion rates. Amounts still display with a $ sign.')">
             <option value="AUD">AUD — Australian Dollar</option>
             <option value="USD">USD — US Dollar</option>
             <option value="GBP">GBP — British Pound</option>
@@ -4318,7 +4318,7 @@ Amen.</div></div>
     <div class="modal-handle"></div>
     <h3>You just got paid.</h3>
     <p>Before a single dollar goes anywhere else.</p>
-    <input type="number" id="paid-amt" placeholder="Amount received ($)" style="margin-bottom:12px">
+    <input type="number" id="paid-amt" data-cur-ph="Amount received ({c})" placeholder="Amount received ($)" style="margin-bottom:12px">
     <button class="btn primary" onclick="calcPayday()" style="margin-bottom:8px">Tell me exactly what to do</button>
     <button class="btn" onclick="document.getElementById('payday-modal').classList.remove('open')">Cancel</button>
   </div>

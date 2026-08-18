@@ -326,9 +326,9 @@ function showAppPreview(){
       // Money mock
       '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:10px">' +
         '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Money</div>' +
-        '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);padding:3px 0"><span>Debt remaining</span><span style="font-family:DM Mono,monospace;color:var(--re)">$6,840</span></div>' +
-        '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);padding:3px 0"><span>Saved from vices</span><span style="font-family:DM Mono,monospace;color:var(--gr)">+$432</span></div>' +
-        '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);padding:3px 0"><span>USA trip fund</span><span style="font-family:DM Mono,monospace;color:var(--go)">$1,840 / $8,000</span></div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);padding:3px 0"><span>Debt remaining</span><span style="font-family:DM Mono,monospace;color:var(--re)">'+curSym()+'6,840</span></div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);padding:3px 0"><span>Saved from vices</span><span style="font-family:DM Mono,monospace;color:var(--gr)">+'+curSym()+'432</span></div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);padding:3px 0"><span>USA trip fund</span><span style="font-family:DM Mono,monospace;color:var(--go)">'+curSym()+'1,840 / '+curSym()+'8,000</span></div>' +
       '</div>' +
     
       // Closing line
@@ -538,8 +538,8 @@ function renderLifeWoven(){
   const spiritTxt = evenDone?'day closed ✓' : mornDone?'reflect tonight' : (h<15?'set your intention':'reflect on today');
   // MONEY
   const m=s.money||{}; const moneyBits=[];
-  if(m.reclaimed>0) moneyBits.push('$'+m.reclaimed.toLocaleString()+' reclaimed');
-  if(m.hasDebt) moneyBits.push('$'+m.totalDebt.toLocaleString()+' debt');
+  if(m.reclaimed>0) moneyBits.push(curSym()+m.reclaimed.toLocaleString()+' reclaimed');
+  if(m.hasDebt) moneyBits.push(curSym()+m.totalDebt.toLocaleString()+' debt');
   const moneyTxt=moneyBits.length?moneyBits.join(' · '):'not tracked yet';
   const rows=[
     ['🛡️','The fight',fightTxt,"go('fight')"],
@@ -946,7 +946,7 @@ function computeProactiveNudge(){
       const _esc = (typeof _escFew==='function') ? _escFew(_h.what) : _h.what;
       return { id:'hold'+_h.ts, tone:'nudge',
         eyebrow:'You slept on it',
-        text: hi + 'yesterday you held off on <b>'+_esc+'</b>'+(_h.amt?(' (about $'+Math.round(_h.amt).toLocaleString()+')'):'')+'. Still want it? Either answer is fine — the point was deciding it awake instead of in the moment.',
+        text: hi + 'yesterday you held off on <b>'+_esc+'</b>'+(_h.amt?(' (about '+curSym()+Math.round(_h.amt).toLocaleString()+')'):'')+'. Still want it? Either answer is fine — the point was deciding it awake instead of in the moment.',
         actions: [{label:'Still want it', onclick:'_resolveHold('+_h.ts+',true)'},
                   {label:'Nah, it passed', ghost:true, onclick:'_resolveHold('+_h.ts+',false)'}] };
     }
@@ -1488,7 +1488,7 @@ function renderCoachQuickReplies(){
     }
   }
   if(debtRemaining > 0){
-    chips.push({p: 3, label: '💰 How do I clear debt faster?', prompt: 'How do I get out of $' + Math.round(debtRemaining).toLocaleString() + ' debt faster based on my actual income and spending?'});
+    chips.push({p: 3, label: '💰 How do I clear debt faster?', prompt: 'How do I get out of '+curSym() + Math.round(debtRemaining).toLocaleString() + ' debt faster based on my actual income and spending?'});
   }
   
   // PRIORITY 4 — always-on fallbacks

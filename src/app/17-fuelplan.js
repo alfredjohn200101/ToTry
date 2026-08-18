@@ -29,7 +29,7 @@ function renderFuelPlanCard(){
     btn.style.background='transparent'; btn.style.border='1px solid var(--bd)'; btn.style.color='var(--tx2)';
   } else if(p && p.mealsPerDay){
     const bits = [p.mealsPerDay+' meals/day'];
-    if(p.budget) bits.push('$'+p.budget+'/wk');
+    if(p.budget) bits.push(curSym()+p.budget+'/wk');
     if(p.chain) bits.push(p.chain);
     sum.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx3);margin-bottom:10px">Set up · '+bits.join(' · ')+'</div>';
     btn.textContent = 'Update my fuel plan';
@@ -86,7 +86,7 @@ function _fuelElicit(){
     '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">Let’s build your fuel plan</div>'+
     '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:16px">Around your real life — not a generic diet. I already know you’re <b style="color:var(--tx)">'+ctx.goalLabel+'</b> at about <b style="color:var(--tx)">'+ctx.cal+' cal</b> and <b style="color:var(--tx)">'+ctx.pro+'g protein</b>, so I’ll plan around that. A few quick things:</div>'+
     '<div class="eyebrow" style="margin-bottom:6px">Weekly grocery budget</div>'+
-    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px"><span style="font-size:16px;color:var(--tx2)">$</span><input type="number" id="fuel-budget" inputmode="numeric" placeholder="e.g. 120" value="'+(p.budget||'')+'" style="flex:1"></div>'+
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px"><span style="font-size:16px;color:var(--tx2)">'+curSym()+'</span><input type="number" id="fuel-budget" inputmode="numeric" placeholder="e.g. 120" value="'+(p.budget||'')+'" style="flex:1"></div>'+
     '<div class="eyebrow" style="margin-bottom:6px">Meals per day</div>'+
     '<div style="display:flex;gap:8px;margin-bottom:16px" id="fuel-meals-row">'+meals+'</div>'+
     '<div class="eyebrow" style="margin-bottom:6px">Anything to work around?</div>'+
@@ -213,7 +213,7 @@ async function _fuelGenerate(){
   const dietStr = _fuelDietStr(p);
   const shops = _fuelShopChains(p); const shopsStr = shops.join(', ') || (p.chain || 'your supermarket');
   const timingStr = preworkout.length ? ('Their gym sessions and pre-gym meal deadlines: '+preworkout.map(function(x){return x.day+' gym '+x.sessionStart+' (finish the pre-gym meal by '+x.eatBy+')';}).join('; ')+'.') : '';
-  const prompt = "Build a realistic "+(p.mealsPerDay||4)+"-meal day for one person, plus a weekly shopping list, in "+(p.country||'Australia')+". Context: "+brief+". Daily targets: the meals MUST total close to "+cal+" kcal (within ~5%) and reach about "+ctx.pro+"g protein (goal: "+ctx.goalDir+") — adjust portion sizes to hit these numbers. Weekly grocery budget ~$"+(p.budget||0)+". STRICTLY respect these dietary requirements and NEVER include any forbidden food (e.g. if vegan, no animal products; if 'no beef', no beef anywhere): "+dietStr+(p.restrictions?('; '+p.restrictions):'')+". "+((p.includeSupps!==false)?"May include 1-2 evidence-backed supermarket supplements (creatine, whey, electrolytes), optional and food-first.":"No supplements.")+" Give FULL macros per meal: cal, protein, carbs, fat. The DAY must also cover MICRONUTRIENTS — enough fibre, iron, calcium, healthy fats/omega-3, potassium, and a real range of vegetables and fruit; summarise this in 'microNote' with rough fibre grams. "+(preworkout.length?("Time carbohydrate around training. "+timingStr+" In 'carbNote', say what to eat before training referencing those times."):"In 'carbNote', explain carb timing generally and note that adding their training schedule unlocks exact meal times.")+" If their context shows an eating-related struggle or a hard time of day (late-night snacking, stress/boredom eating, alcohol, a risk window), address it directly in the plan — e.g. build in a genuinely satisfying planned snack for that window so they are not reaching for the vice on an empty stomach — and name it warmly in that meal's 'why' or in carbNote (like a big brother who knows their fight). The person shops at these stores: "+shopsStr+". For EVERY shopping item, set 'shop' to exactly ONE of those store names — choose the store that is cheapest or most likely to stock it, so the list is organised store-by-store for one trip each. Use typical current prices at that store (estimates, to confirm in-store). Keep 'items' and 'why' SHORT. Return ONLY compact JSON, no prose: {\"meals\":[{\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"carbs\":0,\"fat\":0,\"why\":\"\"}],\"microNote\":\"\",\"carbNote\":\"\",\"shopping\":[{\"item\":\"\",\"price\":0,\"shop\":\"\"}],\"total\":0,\"note\":\"\"}. Each \"why\" ties the meal to their goal. \"note\" says prices are estimates and the science is general.";
+  const prompt = "Build a realistic "+(p.mealsPerDay||4)+"-meal day for one person, plus a weekly shopping list, in "+(p.country||'Australia')+". Context: "+brief+". Daily targets: the meals MUST total close to "+cal+" kcal (within ~5%) and reach about "+ctx.pro+"g protein (goal: "+ctx.goalDir+") — adjust portion sizes to hit these numbers. Weekly grocery budget ~"+curSym()+(p.budget||0)+". STRICTLY respect these dietary requirements and NEVER include any forbidden food (e.g. if vegan, no animal products; if 'no beef', no beef anywhere): "+dietStr+(p.restrictions?('; '+p.restrictions):'')+". "+((p.includeSupps!==false)?"May include 1-2 evidence-backed supermarket supplements (creatine, whey, electrolytes), optional and food-first.":"No supplements.")+" Give FULL macros per meal: cal, protein, carbs, fat. The DAY must also cover MICRONUTRIENTS — enough fibre, iron, calcium, healthy fats/omega-3, potassium, and a real range of vegetables and fruit; summarise this in 'microNote' with rough fibre grams. "+(preworkout.length?("Time carbohydrate around training. "+timingStr+" In 'carbNote', say what to eat before training referencing those times."):"In 'carbNote', explain carb timing generally and note that adding their training schedule unlocks exact meal times.")+" If their context shows an eating-related struggle or a hard time of day (late-night snacking, stress/boredom eating, alcohol, a risk window), address it directly in the plan — e.g. build in a genuinely satisfying planned snack for that window so they are not reaching for the vice on an empty stomach — and name it warmly in that meal's 'why' or in carbNote (like a big brother who knows their fight). The person shops at these stores: "+shopsStr+". For EVERY shopping item, set 'shop' to exactly ONE of those store names — choose the store that is cheapest or most likely to stock it, so the list is organised store-by-store for one trip each. Use typical current prices at that store (estimates, to confirm in-store). Keep 'items' and 'why' SHORT. Return ONLY compact JSON, no prose: {\"meals\":[{\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"carbs\":0,\"fat\":0,\"why\":\"\"}],\"microNote\":\"\",\"carbNote\":\"\",\"shopping\":[{\"item\":\"\",\"price\":0,\"shop\":\"\"}],\"total\":0,\"note\":\"\"}. Each \"why\" ties the meal to their goal. \"note\" says prices are estimates and the science is general.";
   const parsePlan = function(t){ try{
     let c=(t||'').replace(/```json|```/g,'').trim();
     c = c.slice(c.indexOf('{'), c.lastIndexOf('}')+1);
@@ -267,7 +267,7 @@ function _fuelSetLead(delta){
 function _fuelRenderPlan(plan){
   const p = getMealPrefs();
   const R = Math.round;
-  const money = function(v){ return '$'+(R((v||0)*100)/100).toFixed(2); };
+  const money = function(v){ return curSym()+(R((v||0)*100)/100).toFixed(2); };
   const mealsHtml = (plan.meals||[]).map(function(mm, i){
     return '<div style="padding:10px 0;border-top:1px solid var(--bd)">'+
       '<div style="display:flex;justify-content:space-between;gap:8px"><div style="font-size:13px;font-weight:600;color:var(--tx)">'+_esc(mm.name||'Meal')+'</div><div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx3);white-space:nowrap">'+R(mm.cal||0)+' cal · '+R(mm.pro||0)+'p · '+R(mm.carbs||0)+'c · '+R(mm.fat||0)+'f</div></div>'+
@@ -323,7 +323,7 @@ function _fuelRenderPlan(plan){
     '<div class="eyebrow" style="color:var(--go);margin-bottom:2px">A day of meals</div>'+
     mealsHtml+ macroRow+ targetHtml+ todayHtml+ microHtml+ timingHtml+
     '<div class="eyebrow" style="margin:16px 0 4px">Weekly shopping list</div>'+shopHtml+
-    '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);font-size:13px"><div style="color:var(--tx);font-weight:600">Weekly total</div><div style="font-family:\'DM Mono\',monospace;color:'+(overBudget?'var(--re)':'var(--gr)')+'">'+money(total)+(budget?(' / $'+budget):'')+'</div></div>'+
+    '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);font-size:13px"><div style="color:var(--tx);font-weight:600">Weekly total</div><div style="font-family:\'DM Mono\',monospace;color:'+(overBudget?'var(--re)':'var(--gr)')+'">'+money(total)+(budget?(' / '+curSym()+budget):'')+'</div></div>'+
     '<button onclick="_fuelCopyShopList()" style="width:100%;margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx3);border-radius:8px;padding:8px;font-size:11.5px;cursor:pointer">Copy shopping list</button>'+
     (overBudget?'<div style="font-size:11.5px;color:var(--re);margin-top:6px;line-height:1.5">A bit over budget — tap Regenerate for a leaner version, or nudge your budget up.</div>':'')+
     (plan._estimated?'<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:10px">Prices are estimates — tap “Get live prices”, or confirm in-store.</div>':'')+
@@ -437,8 +437,8 @@ function _fuelCopyShopList(){
   const plan = ls('totry_meal_plan'); if(!plan || !plan.shopping) return;
   const groups={}, order=[]; plan.shopping.forEach(function(s){ const k=(s.shop||'Shopping'); if(!groups[k]){ groups[k]=[]; order.push(k); } groups[k].push(s); });
   let txt='My To Try shopping list\n';
-  order.forEach(function(k){ txt+='\n'+k+':\n'; groups[k].forEach(function(s){ txt+='  - '+(s.item||'')+(s.price?(' ($'+s.price+')'):'')+'\n'; }); });
-  txt+='\nTotal: $'+(plan.total||0);
+  order.forEach(function(k){ txt+='\n'+k+':\n'; groups[k].forEach(function(s){ txt+='  - '+(s.item||'')+(s.price?(' ('+curSym()+s.price+')'):'')+'\n'; }); });
+  txt+='\nTotal: '+curSym()+(plan.total||0);
   try{ if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(function(){ if(typeof showToast==='function') showToast('Copied','Shopping list copied — paste it anywhere.'); }, function(){ if(typeof showToast==='function') showToast('List ready', txt.slice(0,80)); }); return; } }catch(_){}
   if(typeof showToast==='function') showToast('List', txt.slice(0,80));
 }
@@ -953,13 +953,13 @@ function _showCSVPreview(rawParsed){
   const preview = parsed.slice(0,8).map(p =>
     '<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px">'+
     '<span style="color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">'+p.desc+' <span style="color:var(--tx3)">\u00b7 '+p.category+'</span></span>'+
-    '<span style="color:'+(p.type==='expense'?'var(--re)':'var(--gr)')+';flex-shrink:0">'+(p.type==='expense'?'\u2212':'+')+'$'+p.amount.toFixed(2)+'</span></div>'
+    '<span style="color:'+(p.type==='expense'?'var(--re)':'var(--gr)')+';flex-shrink:0">'+(p.type==='expense'?'\u2212':'+')+curSym()+p.amount.toFixed(2)+'</span></div>'
   ).join('');
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:6px">Review import</div>'+
-    '<div style="font-size:13px;color:var(--tx2);margin-bottom:12px"><b>'+parsed.length+'</b> new: '+expenses.length+' expenses (\u2212$'+totalExp.toFixed(2)+'), '+income.length+' income (+$'+totalInc.toFixed(2)+').'+
+    '<div style="font-size:13px;color:var(--tx2);margin-bottom:12px"><b>'+parsed.length+'</b> new: '+expenses.length+' expenses (\u2212'+curSym()+totalExp.toFixed(2)+'), '+income.length+' income (+'+curSym()+totalInc.toFixed(2)+').'+
       (dupes.length ? ' <span style="color:var(--tx3)">'+dupes.length+' already imported \u2014 skipped, not double-counted.</span>' : '')+'</div>'+
     '<div style="margin-bottom:14px">'+preview+(parsed.length>8?'<div style="font-size:11px;color:var(--tx3);text-align:center;padding-top:8px">+ '+(parsed.length-8)+' more</div>':'')+'</div>'+
     '<button class="btn primary" onclick="confirmCSVImport()" style="margin-bottom:8px">Import all '+parsed.length+'</button>'+
@@ -989,7 +989,7 @@ function confirmCSVImport(){
 function spendingReadHTML(){
   const r = spendingRead();
   if(!r) return '<div style="font-size:13px;color:var(--tx2);line-height:1.6">Not enough yet to see a pattern. Import a statement and I’ll show you where it’s going.</div>';
-  const money = n => '$'+Math.abs(Math.round(n)).toLocaleString();
+  const money = n => curSym()+Math.abs(Math.round(n)).toLocaleString();
   const period = r.months < 1.4 ? 'about a month' : Math.round(r.months)+' months';
   let h = '';
 
@@ -1064,11 +1064,11 @@ function viceLedgerHTML(){
       const contradicts = v.mode!=='moderate' && insideStreak && insideStreak.total > 0;
       out += '<div style="background:'+(contradicts?'var(--re-bg)':'var(--bg3)')+';border:1px solid '+(contradicts?'var(--re-bd)':'var(--bd)')+';border-radius:12px;padding:14px;margin-bottom:12px">'+
         '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px">'+_escFew(v.n.toUpperCase())+' · WHAT THE BANK SAYS</div>'+
-        '<div style="font-family:DM Mono,monospace;font-size:26px;color:'+(contradicts?'var(--re)':'var(--tx)')+';line-height:1">$'+Math.round(bank.total).toLocaleString()+'</div>'+
+        '<div style="font-family:DM Mono,monospace;font-size:26px;color:'+(contradicts?'var(--re)':'var(--tx)')+';line-height:1">'+curSym()+Math.round(bank.total).toLocaleString()+'</div>'+
         '<div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-top:8px">'+
           bank.count+' transactions'+(since?' over the last '+since+' days':'')+'. '+
           (contradicts
-            ? 'But this card says you’ve been clean '+clean+' days — and $'+Math.round(insideStreak.total).toLocaleString()+' of that spending falls inside it. One of the two isn’t true. No judgement either way; I’d just rather you had the real number.'
+            ? 'But this card says you’ve been clean '+clean+' days — and '+curSym()+Math.round(insideStreak.total).toLocaleString()+' of that spending falls inside it. One of the two isn’t true. No judgement either way; I’d just rather you had the real number.'
             : 'That’s the real number — not an estimate. It’s what this cost you.')+
         '</div>'+
         (contradicts ? '<button onclick="openLogUse('+i+')" style="width:100%;margin-top:10px;background:none;border:1px solid var(--re-bd);color:var(--re);border-radius:9px;padding:9px;font-size:12px;cursor:pointer">Set it straight</button>' : '')+

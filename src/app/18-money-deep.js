@@ -104,7 +104,7 @@ function quickSpend(){
   document.getElementById('qs-amount').value = '';
   document.getElementById('qs-cat').value = '';
   renderTransactions();
-  showToast('Logged', '−$' + amount.toFixed(2) + ' · ' + cat);
+  showToast('Logged', '−'+curSym() + amount.toFixed(2) + ' · ' + cat);
   haptic('success');
 }
 
@@ -118,7 +118,7 @@ function openTransactionLogger(){
       '<button class="meal-chip" id="trans-type-income" data-type="income" onclick="selectTransType(\'income\')" style="flex:1">+ Income</button>' +
     '</div>' +
     '<div class="eyebrow">Amount</div>' +
-    '<input type="number" id="trans-amount" step="0.01" placeholder="$0.00" style="font-size:18px;padding:14px;margin-bottom:14px">' +
+    '<input type="number" id="trans-amount" step="0.01" placeholder="'+curSym()+'0.00" style="font-size:18px;padding:14px;margin-bottom:14px">' +
     '<div class="eyebrow">Category</div>' +
     '<div id="trans-category-grid" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px"></div>' +
     '<div class="eyebrow">Note (optional)</div>' +
@@ -167,7 +167,7 @@ function saveTransaction(){
   ls('totry_transactions', list.slice(0, 1000)); // unified with confirmCSVImport — was 500 here, so one quick spend after a CSV import deleted 500 transactions
   document.querySelector('.modal-bg.open')?.remove();
   renderTransactions();
-  showToast('Logged', (window.__transType === 'expense' ? '−' : '+') + '$' + amount + ' · ' + window.__transCategory);
+  showToast('Logged', (window.__transType === 'expense' ? '−' : '+') + curSym() + amount + ' · ' + window.__transCategory);
   haptic('success');
 }
 function deleteTransaction(id){
@@ -193,9 +193,9 @@ function renderTransactions(){
   const net = income - expenses;
   
   summary.innerHTML = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">In</div><div style="font-size:16px;color:var(--gr);margin-top:3px">$' + Math.round(income).toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Out</div><div style="font-size:16px;color:var(--re);margin-top:3px">$' + Math.round(expenses).toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Net</div><div style="font-size:16px;color:' + (net >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:3px">$' + Math.round(net).toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">In</div><div style="font-size:16px;color:var(--gr);margin-top:3px">'+curSym() + Math.round(income).toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Out</div><div style="font-size:16px;color:var(--re);margin-top:3px">'+curSym() + Math.round(expenses).toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Net</div><div style="font-size:16px;color:' + (net >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:3px">'+curSym() + Math.round(net).toLocaleString() + '</div></div>' +
   '</div>';
   
   // Category breakdown for expenses
@@ -212,7 +212,7 @@ function renderTransactions(){
           const pct = expenses > 0 ? Math.round((amt / expenses) * 100) : 0;
           return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px">' +
             '<div style="display:flex;align-items:center;gap:8px;flex:1"><span style="color:var(--tx2)">' + cat + '</span><span style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3)">' + pct + '%</span></div>' +
-            '<span style="font-family:DM Mono,monospace;color:var(--re)">$' + Math.round(amt).toLocaleString() + '</span>' +
+            '<span style="font-family:DM Mono,monospace;color:var(--re)">'+curSym() + Math.round(amt).toLocaleString() + '</span>' +
           '</div>';
         }).join('');
     } else {
@@ -231,7 +231,7 @@ function renderTransactions(){
           const color = t.type === 'expense' ? 'var(--re)' : 'var(--gr)';
           return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--bd);font-size:12px">' +
             '<div style="flex:1;min-width:0"><div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(t.note || t.category || 'Transaction') + '</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + t.date + ' · ' + t.category + '</div></div>' +
-            '<div style="display:flex;align-items:center;gap:6px"><span style="font-family:DM Mono,monospace;color:' + color + '">' + sign + '$' + t.amount + '</span><button onclick="deleteTransaction(' + t.id + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
+            '<div style="display:flex;align-items:center;gap:6px"><span style="font-family:DM Mono,monospace;color:' + color + '">' + sign + curSym() + t.amount + '</span><button onclick="deleteTransaction(' + t.id + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
           '</div>';
         }).join('');
     }
@@ -258,7 +258,7 @@ function openSubscriptionLogger(){
     '<div class="eyebrow">Name</div>' +
     '<input type="text" id="sub-name" placeholder="e.g. Netflix, Spotify, gym membership" style="margin-bottom:10px">' +
     '<div style="display:flex;gap:8px;margin-bottom:10px">' +
-      '<div style="flex:1"><div class="eyebrow">Amount $</div><input type="number" id="sub-amount" step="0.01" placeholder="14.99"></div>' +
+      '<div style="flex:1"><div class="eyebrow">Amount '+curSym()+'</div><input type="number" id="sub-amount" step="0.01" placeholder="14.99"></div>' +
       '<div style="flex:1"><div class="eyebrow">Period</div><select id="sub-period"><option value="weekly">Weekly</option><option value="monthly" selected>Monthly</option><option value="quarterly">Quarterly</option><option value="annual">Annual</option></select></div>' +
     '</div>' +
     '<div class="eyebrow">Note (optional)</div>' +
@@ -347,7 +347,7 @@ function openFormModal(title, subtitle, fields, submitLabel, onSubmit){
 
 function openFamilyContribution(){
   openFormModal('Log a family contribution', 'Money you gave to family.',
-    [ {id:'amount', label:'Amount', type:'number', prefix:'$', placeholder:'e.g. 200'},
+    [ {id:'amount', label:'Amount', type:'number', prefix:curSym(), placeholder:'e.g. 200'},
       {id:'note', label:'Note (optional)', type:'text', placeholder:'e.g. rent help, groceries'} ],
     'Save contribution',
     (v) => {
@@ -357,7 +357,7 @@ function openFamilyContribution(){
       list.unshift({ id: Date.now(), amount: n, note: (v.note||'').trim(), date: new Date().toISOString() });
       ls('totry_family_contrib', list.slice(0,200));
       if(typeof syncToCloud==='function') syncToCloud();
-      renderFamilyContribution(); haptic('success'); showToast('Logged', '$'+n+' contribution saved.');
+      renderFamilyContribution(); haptic('success'); showToast('Logged', curSym()+n+' contribution saved.');
       return true;
     });
 }
@@ -373,7 +373,7 @@ function deleteFamilyContribution(id){
 function setFamilyTarget(){
   const cur = ls('totry_family_target') || {};
   openFormModal('Monthly family target', 'A recurring amount to contribute each month, like a commitment.',
-    [ {id:'amount', label:'Target amount', type:'number', prefix:'$', placeholder:'e.g. 500', value: cur.amount||''},
+    [ {id:'amount', label:'Target amount', type:'number', prefix:curSym(), placeholder:'e.g. 500', value: cur.amount||''},
       {id:'dueDay', label:'Day of month it\u2019s due (1\u201328)', type:'number', placeholder:'e.g. 1', value: cur.dueDay||'1'} ],
     'Set target',
     (v) => {
@@ -383,7 +383,7 @@ function setFamilyTarget(){
       const d = Math.max(1, Math.min(28, parseInt(v.dueDay)||1));
       ls('totry_family_target', { amount: n, dueDay: d });
       if(typeof syncToCloud==='function') syncToCloud();
-      renderFamilyContribution(); haptic('success'); showToast('Target set','$'+n+'/month by the '+d+(d===1?'st':d===2?'nd':d===3?'rd':'th')+'.');
+      renderFamilyContribution(); haptic('success'); showToast('Target set',curSym()+n+'/month by the '+d+(d===1?'st':d===2?'nd':d===3?'rd':'th')+'.');
       return true;
     });
 }
@@ -404,9 +404,9 @@ function renderFamilyContribution(){
     const dueStr = target.dueDay + (target.dueDay===1?'st':target.dueDay===2?'nd':target.dueDay===3?'rd':'th');
     targetHtml = '<div style="background:var(--bg3);border:1px solid '+(met?'var(--go-bd)':'var(--bd)')+';border-radius:10px;padding:12px;margin-bottom:12px">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">This month\u2019s target \u00b7 due '+dueStr+'</span><button onclick="setFamilyTarget()" style="background:none;border:none;color:var(--go);font-size:11px;cursor:pointer;padding:16px 13px;margin:-16px -13px;position:relative">Edit</button></div>'+
-      '<div style="font-size:15px;color:'+(met?'var(--gr)':'var(--tx)')+'">$'+monthGiven.toLocaleString()+' / $'+target.amount.toLocaleString()+(met?'  \u2713':'')+'</div>'+
+      '<div style="font-size:15px;color:'+(met?'var(--gr)':'var(--tx)')+'">'+curSym()+monthGiven.toLocaleString()+' / '+curSym()+target.amount.toLocaleString()+(met?'  \u2713':'')+'</div>'+
       '<div style="height:6px;background:var(--bg);border-radius:3px;margin-top:6px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+(met?'var(--gr)':'var(--go)')+'"></div></div>'+
-      (met?'':'<div style="font-size:11px;color:var(--tx3);margin-top:5px">$'+remaining.toLocaleString()+' to go this month</div>')+
+      (met?'':'<div style="font-size:11px;color:var(--tx3);margin-top:5px">'+curSym()+remaining.toLocaleString()+' to go this month</div>')+
       '</div>';
   }
   if(!list.length){
@@ -418,20 +418,20 @@ function renderFamilyContribution(){
   wrap.innerHTML = (wrap.__targetHtml||'') + (target ? '' : '<button onclick="setFamilyTarget()" style="width:100%;background:var(--bg3);border:1px dashed var(--bd);color:var(--go);border-radius:8px;padding:8px;font-size:12px;cursor:pointer;margin-bottom:10px">+ Set a recurring monthly target</button>') + list.slice(0,12).map(c=>{
     const when = new Date(c.date).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)">'+
-      '<div><div style="font-size:14px;color:var(--tx)">$'+c.amount.toLocaleString()+'</div>'+(c.note?'<div style="font-size:11px;color:var(--tx3)">'+c.note.replace(/</g,'&lt;')+'</div>':'')+'</div>'+
+      '<div><div style="font-size:14px;color:var(--tx)">'+curSym()+c.amount.toLocaleString()+'</div>'+(c.note?'<div style="font-size:11px;color:var(--tx3)">'+c.note.replace(/</g,'&lt;')+'</div>':'')+'</div>'+
       '<div style="display:flex;align-items:center;gap:10px"><span style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+when+'</span>'+
       '<button onclick="deleteFamilyContribution('+c.id+')" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer">\u00d7</button></div></div>';
   }).join('');
   const total = list.reduce((a,c)=>a+c.amount,0);
   // monthGiven was already computed above for the target strip — reuse it.
-  if(totalEl) totalEl.textContent = '$'+total.toLocaleString()+' all time \u00b7 $'+monthGiven.toLocaleString()+' this month';
+  if(totalEl) totalEl.textContent = curSym()+total.toLocaleString()+' all time \u00b7 '+curSym()+monthGiven.toLocaleString()+' this month';
 }
 
 // ── POKER TRACKER ────────────────────────────────────────────
 function openPokerSession(){
   openFormModal('Log a poker session', 'Track buy-in vs cash-out to see if you\u2019re up or down over time.',
-    [ {id:'buyin', label:'Buy-in', type:'number', prefix:'$', placeholder:'e.g. 100'},
-      {id:'cashout', label:'Cash-out (0 if you busted)', type:'number', prefix:'$', placeholder:'e.g. 240'},
+    [ {id:'buyin', label:'Buy-in', type:'number', prefix:curSym(), placeholder:'e.g. 100'},
+      {id:'cashout', label:'Cash-out (0 if you busted)', type:'number', prefix:curSym(), placeholder:'e.g. 240'},
       {id:'note', label:'Note (optional)', type:'text', placeholder:'e.g. venue or game type'} ],
     'Save session',
     (v) => {
@@ -445,7 +445,7 @@ function openPokerSession(){
       if(typeof syncToCloud==='function') syncToCloud();
       renderPoker(); haptic(co>=bi?'success':'warning');
       const net = co-bi;
-      showToast(net>=0?'Session logged \u2014 up $'+net:'Session logged \u2014 down $'+Math.abs(net), 'Tracked honestly.');
+      showToast(net>=0?'Session logged \u2014 up '+curSym()+net:'Session logged \u2014 down '+curSym()+Math.abs(net), 'Tracked honestly.');
       return true;
     });
 }
@@ -470,15 +470,15 @@ function renderPoker(){
     const col = totalNet>=0 ? 'var(--gr)' : 'var(--re)';
     sumEl.innerHTML = '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:14px;text-align:center">'+
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px">Lifetime net</div>'+
-      '<div style="font-size:24px;color:'+col+'">'+(totalNet>=0?'+$':'\u2212$')+Math.abs(totalNet).toLocaleString()+'</div>'+
+      '<div style="font-size:24px;color:'+col+'">'+(totalNet>=0?'+'+curSym():'\u2212'+curSym())+Math.abs(totalNet).toLocaleString()+'</div>'+
       '<div style="font-size:11px;color:var(--tx3);margin-top:4px">'+sessions+' session'+(sessions===1?'':'s')+' \u00b7 '+wins+' winning</div></div>';
   }
   wrap.innerHTML = list.slice(0,15).map(p=>{
     const when = new Date(p.date).toLocaleDateString('en-AU',{day:'numeric',month:'short'});
     const col = p.net>=0 ? 'var(--gr)' : 'var(--re)';
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)">'+
-      '<div><div style="font-size:13px;color:'+col+'">'+(p.net>=0?'+$':'\u2212$')+Math.abs(p.net).toLocaleString()+'</div>'+
-      '<div style="font-size:10px;color:var(--tx3)">in $'+p.buyin.toLocaleString()+' \u2192 out $'+p.cashout.toLocaleString()+(p.note?' \u00b7 '+p.note.replace(/</g,'&lt;'):'')+'</div></div>'+
+      '<div><div style="font-size:13px;color:'+col+'">'+(p.net>=0?'+'+curSym():'\u2212'+curSym())+Math.abs(p.net).toLocaleString()+'</div>'+
+      '<div style="font-size:10px;color:var(--tx3)">in '+curSym()+p.buyin.toLocaleString()+' \u2192 out '+curSym()+p.cashout.toLocaleString()+(p.note?' \u00b7 '+p.note.replace(/</g,'&lt;'):'')+'</div></div>'+
       '<div style="display:flex;align-items:center;gap:10px"><span style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+when+'</span>'+
       '<button onclick="deletePokerSession('+p.id+')" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer">\u00d7</button></div></div>';
   }).join('');
@@ -541,10 +541,10 @@ function renderSubDetect(){
   el.style.display='block';
   el.innerHTML='<div style="background:var(--bg3);border:1px solid var(--go-bd);border-radius:12px;padding:13px 15px;margin-bottom:12px">'+
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px">Found in your statements</div>'+
-    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:10px">'+found.length+' charge'+(found.length===1?'':'s')+' that repeat like subscriptions \u2014 about <b style="color:var(--tx)">$'+total.toLocaleString()+'/year</b> between them. Not an accusation, just the ones you may have stopped noticing.</div>'+
+    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:10px">'+found.length+' charge'+(found.length===1?'':'s')+' that repeat like subscriptions \u2014 about <b style="color:var(--tx)">'+curSym()+total.toLocaleString()+'/year</b> between them. Not an accusation, just the ones you may have stopped noticing.</div>'+
     found.map(function(f){ return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--bd)">'+
       '<div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+_escFew(f.name)+'</div>'+
-      '<div style="font-family:DM Mono,monospace;font-size:9.5px;color:var(--tx3)">$'+f.amount+'/'+f.period+' \u00b7 seen '+f.seen+'\u00d7 \u00b7 ~$'+f.yearly.toLocaleString()+'/yr</div></div>'+
+      '<div style="font-family:DM Mono,monospace;font-size:9.5px;color:var(--tx3)">'+curSym()+f.amount+'/'+f.period+' \u00b7 seen '+f.seen+'\u00d7 \u00b7 ~'+curSym()+f.yearly.toLocaleString()+'/yr</div></div>'+
       '<button class="btn" style="width:auto;padding:5px 10px;font-size:11px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go)" onclick="_subAccept(\''+String(f.key).replace(/'/g,"")+'\')">Track</button>'+
       '<button class="btn" style="width:auto;padding:5px 8px;font-size:11px;color:var(--tx3)" onclick="_subDismiss(\''+String(f.key).replace(/'/g,"")+'\')">Not one</button>'+
     '</div>'; }).join('')+
@@ -559,7 +559,7 @@ function _subAccept(key){
   }catch(_){}
   try{ if(typeof renderSubscriptions==='function') renderSubscriptions(); }catch(_){}
   renderSubDetect();
-  try{ showToast('Tracked', f.name+' \u2014 about $'+f.yearly.toLocaleString()+' a year. Now it is a decision again.'); }catch(_){}
+  try{ showToast('Tracked', f.name+' \u2014 about '+curSym()+f.yearly.toLocaleString()+' a year. Now it is a decision again.'); }catch(_){}
 }
 function _subDismiss(key){
   try{ const d=ls('totry_sub_dismissed')||[]; d.push(key); ls('totry_sub_dismissed', d.slice(-100)); }catch(_){}
@@ -671,13 +671,13 @@ function renderSubscriptions(){
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd);font-size:12px">' +
       '<div style="flex:1;min-width:0">' +
         '<div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + s.name + '</div>' +
-        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">$' + s.amount + ' / ' + s.period + (s.note ? ' · ' + s.note : '') + '</div>' +
+        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">'+curSym() + s.amount + ' / ' + s.period + (s.note ? ' · ' + s.note : '') + '</div>' +
       '</div>' +
-      '<div style="display:flex;align-items:center;gap:8px"><span style="font-family:DM Mono,monospace;color:var(--re)">~$' + monthly.toFixed(2) + '/mo</span><button onclick="deleteSubscription(' + s.id + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
+      '<div style="display:flex;align-items:center;gap:8px"><span style="font-family:DM Mono,monospace;color:var(--re)">~'+curSym() + monthly.toFixed(2) + '/mo</span><button onclick="deleteSubscription(' + s.id + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
     '</div>';
   }).join('');
   if(totalBox){
-    totalBox.textContent = 'Total: ~$' + monthlyTotal.toFixed(0) + '/mo · ~$' + annualTotal.toFixed(0) + '/year';
+    totalBox.textContent = 'Total: ~'+curSym() + monthlyTotal.toFixed(0) + '/mo · ~'+curSym() + annualTotal.toFixed(0) + '/year';
   }
 }
 
@@ -690,7 +690,7 @@ function openBillLogger(){
     '<div class="eyebrow">Bill name</div>' +
     '<input type="text" id="bill-name" placeholder="e.g. Car rego, electricity, rent" style="margin-bottom:10px">' +
     '<div style="display:flex;gap:8px;margin-bottom:10px">' +
-      '<div style="flex:1"><div class="eyebrow">Amount $</div><input type="number" id="bill-amount" step="0.01" placeholder="0.00"></div>' +
+      '<div style="flex:1"><div class="eyebrow">Amount '+curSym()+'</div><input type="number" id="bill-amount" step="0.01" placeholder="0.00"></div>' +
       '<div style="flex:1"><div class="eyebrow">Due date</div><input type="date" id="bill-due"></div>' +
     '</div>' +
     '<button class="btn primary" onclick="saveBill()" style="margin-bottom:8px">Save bill</button>' +
@@ -755,7 +755,7 @@ function renderBills(){
     return '<div style="background:' + urgency.bg + ';border:1px solid ' + urgency.border + ';border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">' +
       '<div style="flex:1;min-width:0">' +
         '<div style="font-size:13px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (b.name||b.n||'Bill') + '</div>' +
-        '<div style="font-family:DM Mono,monospace;font-size:10px;color:' + urgency.color + ';margin-top:2px">$' + (Number(b.amount!=null?b.amount:b.amt)||0).toLocaleString() + ' · ' + urgency.label + '</div>' +
+        '<div style="font-family:DM Mono,monospace;font-size:10px;color:' + urgency.color + ';margin-top:2px">'+curSym() + (Number(b.amount!=null?b.amount:b.amt)||0).toLocaleString() + ' · ' + urgency.label + '</div>' +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:6px">' +
         '<button class="btn" aria-label="Mark paid" style="width:auto;padding:13px 15px;font-size:10px;background:var(--gr);color:#000;border:none" onclick="markBillPaid(' + b.id + ')">✓</button>' +
@@ -776,7 +776,7 @@ function openBudgetLogger(){
     EXPENSE_CATEGORIES.map(cat => 
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
         '<div style="flex:1;font-size:13px;color:var(--tx)">' + cat + '</div>' +
-        '<input type="number" id="budget-' + cat.replace(/[^a-z]/gi, '') + '" step="10" value="' + (budgets[cat] || '') + '" placeholder="$" style="max-width:100px;text-align:right">' +
+        '<input type="number" id="budget-' + cat.replace(/[^a-z]/gi, '') + '" step="10" value="' + (budgets[cat] || '') + '" placeholder="'+curSym()+'" style="max-width:100px;text-align:right">' +
       '</div>'
     ).join('') +
     '<button class="btn primary" onclick="saveBudgets()" style="margin-top:14px;margin-bottom:8px">Save budgets</button>' +
@@ -848,12 +848,12 @@ function renderBudgets(){
     return '<div style="margin-bottom:14px">' +
       '<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12px;margin-bottom:4px">' +
         '<span style="color:var(--tx)">' + cat + '</span>' +
-        '<span style="font-family:DM Mono,monospace;color:' + (over ? 'var(--re)' : 'var(--tx2)') + '">$' + Math.round(spent) + ' / $' + limit + '</span>' +
+        '<span style="font-family:DM Mono,monospace;color:' + (over ? 'var(--re)' : 'var(--tx2)') + '">'+curSym() + Math.round(spent) + ' / '+curSym() + limit + '</span>' +
       '</div>' +
       '<div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-bottom:4px">' +
         '<div style="height:100%;background:' + barColor + ';width:' + pct + '%;transition:width 0.3s"></div>' +
       '</div>' +
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:' + (over ? 'var(--re)' : 'var(--tx3)') + '">' + (over ? '$' + Math.round(Math.abs(remaining)) + ' over' : '$' + Math.round(remaining) + ' left') + '</div>' +
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:' + (over ? 'var(--re)' : 'var(--tx3)') + '">' + (over ? curSym() + Math.round(Math.abs(remaining)) + ' over' : curSym() + Math.round(remaining) + ' left') + '</div>' +
     '</div>';
   }).join('');
 }
@@ -867,7 +867,7 @@ function openAssetLogger(){
     '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Cash, savings accounts, investments, property, vehicles. Anything that has value.</p>' +
     '<div class="eyebrow">Asset name</div>' +
     '<input type="text" id="asset-name" placeholder="e.g. Savings account, car, ETF holdings" style="margin-bottom:10px">' +
-    '<div class="eyebrow">Current value ($)</div>' +
+    '<div class="eyebrow">Current value ('+curSym()+')</div>' +
     '<input type="number" id="asset-value" step="0.01" placeholder="0.00" style="margin-bottom:14px">' +
     '<button class="btn primary" onclick="saveAsset()" style="margin-bottom:8px">Save asset</button>' +
     '<button class="btn" onclick="closeModal(this)">Cancel</button>' +
@@ -892,7 +892,7 @@ function updateAsset(id){
   const a = list.find(a => a.id === id);
   if(!a) return;
   openFormModal('Update '+a.name, 'Current value of this asset.',
-    [ {id:'value', label:'Value', type:'number', prefix:'$', placeholder:'e.g. 8400', value: a.value} ],
+    [ {id:'value', label:'Value', type:'number', prefix:curSym(), placeholder:'e.g. 8400', value: a.value} ],
     'Save',
     (vals) => {
       const v = parseFloat(vals.value);
@@ -920,9 +920,9 @@ function renderNetWorth(){
   const netWorth = totalAssets - totalDebts;
   
   summary.innerHTML = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Assets</div><div style="font-size:14px;color:var(--gr);margin-top:3px">$' + Math.round(totalAssets).toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Debts</div><div style="font-size:14px;color:var(--re);margin-top:3px">$' + Math.round(totalDebts).toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px;border:1px solid var(--go-bd)"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Net</div><div style="font-size:14px;color:' + (netWorth >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:3px">$' + Math.round(netWorth).toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Assets</div><div style="font-size:14px;color:var(--gr);margin-top:3px">'+curSym() + Math.round(totalAssets).toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Debts</div><div style="font-size:14px;color:var(--re);margin-top:3px">'+curSym() + Math.round(totalDebts).toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px;border:1px solid var(--go-bd)"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Net</div><div style="font-size:14px;color:' + (netWorth >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:3px">'+curSym() + Math.round(netWorth).toLocaleString() + '</div></div>' +
   '</div>';
   
   if(!assets.length){
@@ -932,7 +932,7 @@ function renderNetWorth(){
   box.innerHTML = assets.map(a => 
     '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd);font-size:12px">' +
       '<div style="flex:1;min-width:0;cursor:pointer" onclick="updateAsset(' + a.id + ')"><div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + a.name + '</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">Tap to update</div></div>' +
-      '<div style="display:flex;align-items:center;gap:8px"><span style="font-family:DM Mono,monospace;color:var(--gr)">$' + Math.round(a.value).toLocaleString() + '</span><button onclick="deleteAsset(' + a.id + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
+      '<div style="display:flex;align-items:center;gap:8px"><span style="font-family:DM Mono,monospace;color:var(--gr)">'+curSym() + Math.round(a.value).toLocaleString() + '</span><button onclick="deleteAsset(' + a.id + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
     '</div>'
   ).join('');
 }
@@ -1023,11 +1023,11 @@ function calcViceSavings(){
   const since=document.getElementById('sober-since').value;let weeks=1;
   if(since){const days=Math.floor((Date.now()-new Date(since))/86400000);weeks=Math.max(1,Math.floor(days/7));}
   const saved=Math.round(weekly*weeks);
-  const sn=document.getElementById('saved-num');if(sn)sn.textContent='$'+saved.toLocaleString();
-  const sd=document.getElementById('saved-desc');if(sd)sd.textContent='$'+weekly+'/week \u00d7 '+weeks+' weeks. $'+saved.toLocaleString()+' redirected.';
+  const sn=document.getElementById('saved-num');if(sn)sn.textContent=curSym()+saved.toLocaleString();
+  const sd=document.getElementById('saved-desc');if(sd)sd.textContent=curSym()+weekly+'/week \u00d7 '+weeks+' weeks. '+curSym()+saved.toLocaleString()+' redirected.';
   ls('totry_vs',{weekly,since,saved,fields:{w,va,g,o}});
   if(typeof syncToCloud==='function') syncToCloud();
-  haptic('success'); if(typeof showToast==='function') showToast('Saved','$'+saved.toLocaleString()+' redirected from vices.');
+  haptic('success'); if(typeof showToast==='function') showToast('Saved',curSym()+saved.toLocaleString()+' redirected from vices.');
 }
 function openPayday(){document.getElementById('payday-modal').classList.add('open');}
 function calcPayday(){
@@ -1047,7 +1047,7 @@ function calcPayday(){
   // A plan you have to re-type by hand isn't a plan, it's homework. "Apply" actually books the debt
   // payments and the savings contribution \u2014 the feature finishing what it started.
   const canApply = steps.some(s => (s.kind==='debt' || s.kind==='savings') && s.amt > 0);
-  result.innerHTML='<h4>Allocation for $'+amt.toLocaleString()+'</h4>'+steps.map(s=>'<div class="pay-step"><div class="pay-n">'+s.n+'</div><div style="flex:1"><div class="pay-title">'+s.title+'</div><div class="pay-desc">'+s.desc+'</div></div><div class="pay-amt">$'+s.amt.toLocaleString()+'</div></div>').join('')+
+  result.innerHTML='<h4>Allocation for '+curSym()+amt.toLocaleString()+'</h4>'+steps.map(s=>'<div class="pay-step"><div class="pay-n">'+s.n+'</div><div style="flex:1"><div class="pay-title">'+s.title+'</div><div class="pay-desc">'+s.desc+'</div></div><div class="pay-amt">'+curSym()+s.amt.toLocaleString()+'</div></div>').join('')+
     (canApply ? '<button class="btn primary" style="margin-top:14px" onclick="applyPaydayAllocation()">Apply this \u2014 book it all</button>' : '')+
     '<button class="btn" style="margin-top:8px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="document.getElementById(\'payday-result\').style.display=\'none\'">Just showing me</button>';
 }
@@ -1079,7 +1079,7 @@ function applyPaydayAllocation(){
   const el=document.getElementById('payday-result'); if(el) el.style.display='none';
   try{ if(typeof haptic==='function') haptic('success'); }catch(_){}
   const bits=[];
-  if(onDebts>0) bits.push('$'+Math.round(onDebts).toLocaleString()+' onto your debts');
-  if(toSavings>0) bits.push('$'+Math.round(toSavings).toLocaleString()+' to '+goalName);
+  if(onDebts>0) bits.push(curSym()+Math.round(onDebts).toLocaleString()+' onto your debts');
+  if(toSavings>0) bits.push(curSym()+Math.round(toSavings).toLocaleString()+' to '+goalName);
   if(typeof showToast==='function') showToast(bits.length?'Booked \u2713':'Nothing to book', bits.length?bits.join(' \u00b7 '):'Add a debt or a savings goal first.');
 }

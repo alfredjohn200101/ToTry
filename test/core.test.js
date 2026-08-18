@@ -3194,6 +3194,57 @@ H.section('dead code that was one caller away from confusing someone');
   }
 }
 
+// ── money a person recognises as their own ───────────────────────────────────────────────────────
+// Settings offered nine currencies from the day the money tab existed. Choosing one saved the
+// choice, fetched exchange rates, and changed nothing on screen: every amount in the app began with
+// a hardcoded '$', so someone in London set GBP and still read "$40 reclaimed". Nine of these
+// sites were the app telling them what they owe.
+//
+// The retrofit is all-or-nothing by nature — half-swept, some figures say £ and some say $, which
+// reads as a bug about their money rather than a limitation. So this asserts the sweep is COMPLETE,
+// not merely present: the scanner walks the real source and the only '$' left inside a string
+// literal must be one of the eight that are not currency at all.
+{
+  H.section('money a person recognises as their own');
+  const fs = require('fs'), path = require('path');
+  const { scan } = require('../scripts/scan-currency.js');
+  const dir = path.join(__dirname, '..', 'src', 'app');
+
+  let leftovers = [];
+  for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.js'))) {
+    for (const h of scan(fs.readFileSync(path.join(dir, f), 'utf8'))) leftovers.push(f + ':' + h.line + ' ' + h.ctx.slice(-40));
+  }
+  // The eight survivors, each verified by hand: four '$1' JSON repairs (every AI meal and fuel-plan
+  // parse depends on them), two '\\$&' search-term escapes, one '$1' highlight template, and one
+  // genuinely-USD figure (the AI cost ceiling, which says "USD" on the same line). Rewriting any of
+  // them to curSym() would parse, ship, and silently break the feature — this repo's signature bug.
+  H.eq(leftovers.length, 8, 'exactly 8 non-currency $ remain in string literals, and no others' +
+       (leftovers.length === 8 ? '' : '\n      ' + leftovers.join('\n      ')));
+
+  // The accessor itself, and every currency the picker offers.
+  const table = (H.html.match(/const CURRENCY_SYMBOLS = \{[\s\S]*?\}/) || [''])[0];
+  for (const [code, sym] of [['GBP', '\\u00a3'], ['EUR', '\\u20ac'], ['INR', '\\u20b9'], ['JPY', '\\u00a5']]) {
+    H.ok(table.includes(code + ": '" + sym + "'"), `${code} has its own symbol, not a dollar`);
+  }
+  for (const code of ['AUD', 'USD', 'CAD', 'NZD', 'SGD']) {
+    H.ok(table.includes(code + ": '\\u0024'"), `${code} is a dollar, written as an escape so the sweep cannot eat it`);
+  }
+  // Every option in the picker must be in the table, or that person silently falls back to '$'.
+  const offered = [...H.html.matchAll(/<option value="([A-Z]{3})">/g)].map(m => m[1]);
+  H.ok(offered.length >= 9, `the picker offers ${offered.length} currencies`);
+  for (const code of offered) H.ok(table.includes(code + ':'), `${code} is offered AND has a symbol`);
+
+  // A filler with no caller is the exact dead shape this file exists to catch.
+  H.ok(/function applyCurrencySymbols\(/.test(H.html), 'applyCurrencySymbols exists');
+  H.ok((H.html.match(/applyCurrencySymbols\(\)/g) || []).length >= 3,
+       'and is CALLED — at boot and when the setting changes, not just defined');
+  H.ok((H.html.match(/data-cur-(text|ph)="/g) || []).length >= 13,
+       'the static shell declares its currency sites for that filler');
+
+  // Amounts must never be silently converted: a person's debt is not ours to reinterpret.
+  H.ok(!/curSym\(\)[\s\S]{0,40}\* *rate/.test(H.html), 'no exchange rate is applied to a stored amount');
+}
+
 // ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────
 // Every test in this file reads H.html, which reads index.html — the ASSEMBLED file. So a change
 // made directly to index.html passes everything here and then vanishes the next time anyone runs

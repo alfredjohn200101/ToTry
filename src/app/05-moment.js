@@ -441,7 +441,7 @@ function openImpulsePause(){
   if(typeof openFormModal!=='function') return;
   openFormModal('Before you buy','No judgement — most of this is just a feeling looking for an exit. What is it, and what’s it cost?',
     [{id:'what',label:'',type:'text',placeholder:'What is it?'},
-     {id:'amt',label:'',type:'number',placeholder:'Roughly how much? ($)'}],
+     {id:'amt',label:'',type:'number',placeholder:'Roughly how much? ('+curSym()+')'}],
     'Next',
     function(vals){
       const what=(vals.what||'').trim(); if(!what) return 'Just name it.';
@@ -506,7 +506,7 @@ function _resolveHold(ts, bought){
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
   if(!bought){
     let saved=0; try{ saved=_holds().filter(function(x){ return x.done && !x.bought; }).reduce(function(a,x){ return a+(x.amt||0); },0); }catch(_){}
-    try{ showToast('Still yours', saved>0 ? ('That’s about $'+Math.round(saved).toLocaleString()+' held onto by just waiting a day.') : 'The wanting passed. That’s how most of them go.'); }catch(_){}
+    try{ showToast('Still yours', saved>0 ? ('That’s about '+curSym()+Math.round(saved).toLocaleString()+' held onto by just waiting a day.') : 'The wanting passed. That’s how most of them go.'); }catch(_){}
   } else {
     try{ showToast('Fair enough','You looked at it properly and chose it. That’s the difference that matters.'); }catch(_){}
   }

@@ -495,7 +495,7 @@ function getViceSavingsTotal(){
 function renderViceSavingsTotal(){
   const total=getViceSavingsTotal();
   const el=document.getElementById('saved-num');
-  if(el)el.textContent='$'+Math.round(total).toLocaleString();
+  if(el)el.textContent=curSym()+Math.round(total).toLocaleString();
   const desc=document.getElementById('saved-desc');
   const log=ls('totry_vice_savings_log')||[];
   if(desc){
@@ -627,7 +627,7 @@ function renderVices(){
               const wk = viceUsesInWeek(v.n); if(!wk) return '';
               const spend = viceSpendInWeek(v.n);
               return '<div style="font-size:11px;color:var(--tx3);text-align:center;margin-bottom:8px;line-height:1.5">'+
-                wk+' '+unit+' logged in the last 7 days'+(spend>0?' · $'+Math.round(spend)+' spent':'')+'</div>';
+                wk+' '+unit+' logged in the last 7 days'+(spend>0?' · '+curSym()+Math.round(spend)+' spent':'')+'</div>';
             })()+
             '<button class="vice-btn" onclick="openMomentStakes(' + i + ')" style="width:100%;background:none;border:1px solid var(--go-bd);color:var(--go);border-radius:10px;padding:9px;font-size:12px;cursor:pointer;margin-bottom:6px">Feeling the pull? Come here first</button>'+
             // TIER 1.4 — HALT lived only behind the mid-craving door, which is the worst moment to
@@ -1024,7 +1024,7 @@ async function openRecoveryTimeline(i){
   m.innerHTML = '<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
     '<div class="src-tag" style="color:var(--gr);margin-bottom:4px">WHAT YOU\u2019RE EARNING</div>'+
     '<div style="font-size:20px;font-weight:500;color:var(--tx);margin-bottom:2px">'+String(v.n||'Your streak').replace(/</g,'&lt;')+'</div>'+
-    '<div style="font-size:13px;color:var(--go);font-family:DM Mono,monospace;margin-bottom:16px">'+days+' day'+(days===1?'':'s')+' clean'+(viceMoneySaved(v)>0?(' \u00b7 $'+viceMoneySaved(v).toLocaleString()+' reclaimed'):'')+'</div>'+
+    '<div style="font-size:13px;color:var(--go);font-family:DM Mono,monospace;margin-bottom:16px">'+days+' day'+(days===1?'':'s')+' clean'+(viceMoneySaved(v)>0?(' \u00b7 '+curSym()+viceMoneySaved(v).toLocaleString()+' reclaimed'):'')+'</div>'+
     '<div id="recovery-timeline-body"><div style="font-size:13px;color:var(--tx3);text-align:center;padding:20px">Loading what your body and soul are gaining\u2026</div></div>'+
     '<button class="btn" onclick="closeModal(this)" style="margin-top:14px">Close</button></div>';
   document.body.appendChild(m);
@@ -1226,7 +1226,7 @@ function openViceManage(i){
     // mass-add is for someone arriving with months of real history behind them. Both need curVice.
     row('It happened earlier — set the real day', 'curVice='+i+';promptLossDate()')+
     row('Log slips from before I started here', 'curVice='+i+';promptMassAddLosses()')+
-    row(v.costAmount?('Money it costs &middot; $'+viceMoneySaved(v).toLocaleString()+' reclaimed'):'Track the money it costs', 'editViceCost('+i+')')+
+    row(v.costAmount?('Money it costs &middot; '+curSym()+viceMoneySaved(v).toLocaleString()+' reclaimed'):'Track the money it costs', 'editViceCost('+i+')')+
     row(v.mode==='moderate'?'Switch to quitting (aim for zero)':'Switch to keeping it in check', 'changeViceMode('+i+')')+
     row(v.trackPatterns?'Hide my patterns':'Show my patterns', 'toggleVicePatterns('+i+')')+
     row('Remove this from the fight', 'removeVice('+i+')', true)+
@@ -1299,7 +1299,7 @@ function openLogUse(i){
     '<div class="lbl">How many times</div>'+
     '<input type="number" inputmode="numeric" id="lu-qty" value="1" min="1" style="margin-bottom:12px;font-size:16px;padding:12px">'+
     '<div class="lbl">Did you buy? (optional)</div>'+
-    '<input type="number" inputmode="decimal" id="lu-cost" placeholder="What it cost $" style="margin-bottom:8px;font-size:16px;padding:12px">'+
+    '<input type="number" inputmode="decimal" id="lu-cost" placeholder="What it cost '+curSym()+'" style="margin-bottom:8px;font-size:16px;padding:12px">'+
     '<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tx2);margin-bottom:14px"><input type="checkbox" id="lu-credit" style="width:auto;flex:none"> Put it on credit — I still owe this</label>'+
     '<button class="btn primary" onclick="saveViceUse('+i+')" style="margin-bottom:8px">Log it honestly</button>'+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Cancel</button>'+
@@ -1397,7 +1397,7 @@ function _priorityGoal(){
 // his own numbers, not a platitude. Returns an array of honest, specific lines.
 function stakesForAmount(amount){
   const out=[]; if(!(amount>0)) return out;
-  const money=n=>'$'+Math.abs(Math.round(n)).toLocaleString();
+  const money=n=>curSym()+Math.abs(Math.round(n)).toLocaleString();
   // Against the freedom date — the most motivating frame the app has. When there's a payment history
   // to project from, say how many months sooner freedom comes. When there isn't yet, fall back to
   // the interest this dollar stops bleeding — still true, still concrete, never nothing.
@@ -1516,12 +1516,12 @@ function openGambleMoment(i){
     (lost
       ? '<div style="background:var(--re-bg);border:1px solid var(--re-bd);border-radius:12px;padding:14px;margin-bottom:14px;text-align:center">'+
           '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);letter-spacing:0.1em;margin-bottom:4px">THE BANK’S RECORD, NOT A GUESS</div>'+
-          '<div style="font-family:DM Mono,monospace;font-size:30px;color:var(--re);line-height:1">−$'+Math.round(lost).toLocaleString()+'</div>'+
+          '<div style="font-family:DM Mono,monospace;font-size:30px;color:var(--re);line-height:1">−'+curSym()+Math.round(lost).toLocaleString()+'</div>'+
           '<div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-top:8px">That’s what it has already taken from you. Not a story — '+bank.count+' transactions it can’t erase. You have never once walked away up. Neither has anyone.</div>'+
         '</div>'
       : '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px;font-size:12.5px;color:var(--tx2);line-height:1.65">The house is built to win over time — that’s not bad luck, it’s the maths it’s made of. Import a statement sometime and I’ll show you your real number. For now, let’s deal with right now.</div>')+
     '<div style="font-size:13.5px;color:var(--tx);line-height:1.6;margin-bottom:8px;text-align:center">Be straight with me — how much have you actually got on you right now?</div>'+
-    '<input type="number" inputmode="decimal" id="gm-cash" placeholder="$ on hand" style="font-size:18px;padding:14px;text-align:center;margin-bottom:12px">'+
+    '<input type="number" inputmode="decimal" id="gm-cash" placeholder="'+curSym()+' on hand" style="font-size:18px;padding:14px;text-align:center;margin-bottom:12px">'+
     '<button class="btn primary" onclick="_gambleStakes('+i+')" style="margin-bottom:8px">Show me the truth about this money</button>'+
     '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin-bottom:8px;font-size:13px">I just need to talk it out</button>'+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
@@ -1534,7 +1534,7 @@ function _gambleStakes(i){
   const cash=parseFloat(document.getElementById('gm-cash')?.value||'')||0;
   if(cash<=0){ showToast('Just a number','However much it is — that’s the honest start. No wrong answer.'); return; }
   document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
-  const money=n=>'$'+Math.abs(Math.round(n)).toLocaleString();
+  const money=n=>curSym()+Math.abs(Math.round(n)).toLocaleString();
   loadF();
   const stakes=stakesForAmount(cash);
   const debt=_priorityDebt(); const goal=_priorityGoal();
@@ -1572,14 +1572,14 @@ function _gambleWin(i, cash){
   }
   document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
   try{ renderVices(); if(typeof syncToCloud==='function') syncToCloud(); if(typeof haptic==='function') haptic('success'); }catch(_){}
-  const kept=cash>0?('$'+Math.round(cash).toLocaleString()+' still yours. '):'';
+  const kept=cash>0?(curSym()+Math.round(cash).toLocaleString()+' still yours. '):'';
   showToast('That’s a win — a real one', kept+'The urge passes. What you did here is what changes the number.');
 }
 // Book a redirect ONLY as something he actually does — moving cash to debt/savings is a real-world
 // action, so the app confirms he did it rather than fabricating a payment (non-partial truth). Moves
 // the real ledger, so the freedom date he just earned shows up the next time he looks.
 function _bookRedirect(i, cash, target){
-  const money=n=>'$'+Math.abs(Math.round(n)).toLocaleString();
+  const money=n=>curSym()+Math.abs(Math.round(n)).toLocaleString();
   document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   const where = target==='debt' ? (_priorityDebt()||{}).n : (_priorityGoal()||{}).name;
@@ -1614,7 +1614,7 @@ function _confirmRedirect(i, cash, target){
   }catch(_){}
   _gambleWin(i, 0); // count the moment won; money already booked above, don't double-count as "kept"
   try{ if(typeof renderFinance==='function') renderFinance(); }catch(_){}
-  showToast('Moved — and it counts', '$'+Math.round(cash).toLocaleString()+' where it builds you instead of the house. Your freedom date just moved.');
+  showToast('Moved — and it counts', curSym()+Math.round(cash).toLocaleString()+' where it builds you instead of the house. Your freedom date just moved.');
 }
 
 // The router: the right door for the right vice, always reachable BEFORE the crisis. Money vices get
@@ -1635,7 +1635,7 @@ function openMomentStakes(i){
     body='This craving is a wave — it peaks and falls whether or not you feed it, usually inside 20 minutes. You don’t have to win forever right now. Just outlast this one.';
     const bits=[];
     if(clean>0) bits.push({icon:'\u{1F33F}', text:clean+' day'+(clean===1?'':'s')+' clean. This is the moment that keeps it, or ends it — nothing else does.'});
-    if(saved>0) bits.push({icon:'\u{1F4B0}', text:'$'+Math.round(saved).toLocaleString()+' already reclaimed by not buying. Falling now spends the streak AND restarts the meter.'});
+    if(saved>0) bits.push({icon:'\u{1F4B0}', text:curSym()+Math.round(saved).toLocaleString()+' already reclaimed by not buying. Falling now spends the streak AND restarts the meter.'});
     if(nextBuy!=null) bits.push({icon:'⏳', text:'You don’t need to buy for another '+nextBuy+' day'+(nextBuy===1?'':'s')+'. This urge is trying to move that up. It’s lying about how much you need it.'});
     bits.push({icon:'\u{1F9E0}', text:'What’s this really about right now — tired, bored, stressed, alone? The urge is usually managing something else. Name that, and it loosens.'});
     extra=bits.map(s=>'<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--bd)"><span style="font-size:16px;flex:none">'+s.icon+'</span><span style="font-size:13px;color:var(--tx2);line-height:1.55">'+s.text+'</span></div>').join('');
@@ -1749,7 +1749,7 @@ function editViceCost(i){
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
     '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:6px">'+String(v.n).replace(/</g,'&lt;')+'</div>'+
     '<div style="text-align:center;font-size:12px;color:var(--tx3);margin-bottom:16px">What did this cost you when it was active? Every clean day turns that into reclaimed money.</div>'+
-    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Amount ($)</div>'+
+    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Amount ('+curSym()+')</div>'+
     '<input type="number" inputmode="decimal" id="vc-amount" value="'+(v.costAmount||'')+'" placeholder="e.g. 25" style="margin-bottom:12px;font-size:16px;padding:12px">'+
     '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Per</div>'+
     '<select id="vc-per" style="margin-bottom:14px;font-size:16px;padding:12px">'+
@@ -1771,7 +1771,7 @@ function editViceCost(i){
       '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:14px">You already paid for what you have. Saving starts at the buy you don’t make.</div>'+
     '</div>'+
     // Money owed for past use — you're not ahead until this is cleared.
-    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Still owe anyone for it? ($)</div>'+
+    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Still owe anyone for it? ('+curSym()+')</div>'+
     '<input type="number" inputmode="decimal" id="vc-owed" value="'+(v.owed||'')+'" placeholder="e.g. 200 — leave blank if none" style="margin-bottom:6px;font-size:16px;padding:12px">'+
     '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:14px">Being clean doesn’t put you ahead until what you owe is cleared. I’ll count that first, honestly.</div>'+
     '<button class="btn primary" onclick="saveViceCost('+i+')" style="margin-bottom:8px">Save</button>'+
@@ -1805,7 +1805,7 @@ function saveViceCost(i){
   document.querySelector('.modal-bg.open')?.remove();
   renderVices();
   const saved = viceMoneySaved(vices[i]);
-  showToast('Saved', saved>0 ? ('$'+saved.toLocaleString()+' reclaimed so far \u2014 see it in Money.') : 'Cost tracked.');
+  showToast('Saved', saved>0 ? (curSym()+saved.toLocaleString()+' reclaimed so far \u2014 see it in Money.') : 'Cost tracked.');
   haptic('success');
 }
 function clearViceCost(i){

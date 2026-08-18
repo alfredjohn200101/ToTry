@@ -456,7 +456,7 @@ function brotherGuidance(){
       if(life.readiness && life.readiness.level){ if(/low|rest|depleted|poor/i.test(life.readiness.level)) bits.push('your body\u2019s running low today'); }
       if(life.fight && life.fight.wins7 != null && life.fight.wins7 > 0) bits.push(life.fight.wins7+' urges beaten this week');
       if(life.training && life.training.sessions7 >= 4) bits.push('you\u2019ve trained hard this week');
-      if(life.money && life.money.reclaimed > 0) bits.push('$'+life.money.reclaimed+' reclaimed toward your freedom');
+      if(life.money && life.money.reclaimed > 0) bits.push(curSym()+life.money.reclaimed+' reclaimed toward your freedom');
       if(bits.length) read = 'Looking at where you\u2019re at \u2014 '+bits.slice(0,2).join(', ')+'. ';
     }
     const headline = step ? step.text : 'Just take the next small step.';
@@ -748,7 +748,7 @@ function lifeStateBrief(s){
       + ' Use THEIR words, not yours, and ask whether a choice moves toward these. NEVER score, grade or rank them against their values, and never imply they are failing them.');
   }
   if(s.readiness) lines.push('Readiness today: '+s.readiness.score+'/100 ('+s.readiness.level+')');
-  if(s.money && (s.money.hasDebt || s.money.reclaimed > 0)) lines.push('Money: '+(s.money.hasDebt?('$'+s.money.totalDebt+' debt remaining'):'no tracked debt')+(s.money.reclaimed>0?(', $'+s.money.reclaimed+' reclaimed from vices'):'')+'. (Debt is a real weight — freedom is the goal.)');
+  if(s.money && (s.money.hasDebt || s.money.reclaimed > 0)) lines.push('Money: '+(s.money.hasDebt?(curSym()+s.money.totalDebt+' debt remaining'):'no tracked debt')+(s.money.reclaimed>0?(', '+curSym()+s.money.reclaimed+' reclaimed from vices'):'')+'. (Debt is a real weight — freedom is the goal.)');
   if(s.sex) lines.push('They are '+(s.sex==='female'?'a woman':'a man')+' — speak as an older sibling who understands what that means for them (training, nutrition, the specific pressures), same love, attuned to who they actually are. Never patronising.');
   if(s.activity.daysQuiet != null && s.activity.daysQuiet >= 2) lines.push('Note: nothing logged in '+s.activity.daysQuiet+' days.');
   try{
@@ -1103,7 +1103,7 @@ Weight: ${currentWeight?currentWeight+'kg':'Not logged'}
 ${(typeof nutGentle==='function'&&nutGentle())?'Nutrition target: held privately \u2014 numbers are turned off for this person.':('Nutrition target: '+nutGoals.cal+' cal / '+nutGoals.pro+'g protein')}${stravaCtx}${stepsCtx}${checkinCtx}
 ${(function(){ let s=''; try{ if(typeof computeReadiness==='function'){ const rd=computeReadiness(); if(rd) s+='\\nReadiness today: '+rd.score+'/100 ('+rd.level+'). '+rd.advice; } if(typeof detectVicePatterns==='function'){ const vp=detectVicePatterns(); if(vp&&vp.patterns&&vp.patterns.length) s+='\\nVice patterns (use gently, only if they raise it): '+vp.patterns.join(' '); } const fw = (typeof ls==='function') ? (ls('totry_feeling_wins')||[]) : []; if(fw.length){ const _since = Date.now()-7*86400000; const _recent = fw.filter(w=>w.ts && new Date(w.ts).getTime()>=_since); if(_recent.length){ s+='\\nIN THE LAST WEEK they reached for help the instant an urge rose and got through it '+_recent.length+' time(s) \u2014 this is them fighting in real time; honour it. Recent feelings they named: '+_recent.slice(0,3).map(w=>String.fromCharCode(34)+(w.feeling||'an urge').slice(0,60)+String.fromCharCode(34)).join(', ')+'.'; } } }catch(e){} return s; })()}
 
-FINANCES: $${Math.round(owed).toLocaleString()} debt remaining${prayerCtx}${sacramentCtx}
+FINANCES: ${curSym()}${Math.round(owed).toLocaleString()} debt remaining${prayerCtx}${sacramentCtx}
 
 RECENT JOURNAL: ${recentJournal||'No entries yet'}
 ${(function(){ const m = (typeof ls==='function') ? ls('totry_coach_memory') : null; return m && m.summary ? '\nWHAT YOU\u2019VE BEEN WORKING ON TOGETHER (from past conversations — reference it naturally, like a coach who remembers):\n'+m.summary : ''; })()}
@@ -4166,7 +4166,7 @@ function renderDayCounter(){
   loadH();const ti=tIdx();const done=habits.filter(h=>h.d[ti]===1).length;
   const hh=document.getElementById('h-habits');if(hh)hh.textContent=done+'/'+habits.length;
   loadF();const owed=debts.reduce((a,d)=>a+(d.t-d.p),0);
-  const hd=document.getElementById('h-debt');if(hd)hd.textContent=owed>0?'$'+Math.round(owed).toLocaleString():'Clear';
+  const hd=document.getElementById('h-debt');if(hd)hd.textContent=owed>0?curSym()+Math.round(owed).toLocaleString():'Clear';
   loadTodaySplitCard();
   const tmrw=ls('totry_tomorrow_tasks');
   if(tmrw&&tmrw.tasks?.length){

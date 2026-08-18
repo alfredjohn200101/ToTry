@@ -565,7 +565,7 @@ function openShareCustomizer(){
     todayWorkout ? {key:'showWorkout', icon:'💪', label:'Today\'s workout', desc:(todayWorkout.splitFocus || todayWorkout.type || 'Trained today')} : null,
     habitsTotal > 0 ? {key:'showHabits', icon:'✅', label:'Habits: '+habitsToday+'/'+habitsTotal+' today', desc:'How you showed up today'} : null,
     journalCount > 0 ? {key:'showJournalCount', icon:'📝', label:journalCount+' journal entries', desc:'Times you reflected in writing'} : null,
-    debtPaid > 0 ? {key:'showFinance', icon:'💰', label:'$'+Math.round(debtPaid).toLocaleString()+' debt paid', desc:'Money fight progress'} : null,
+    debtPaid > 0 ? {key:'showFinance', icon:'💰', label:curSym()+Math.round(debtPaid).toLocaleString()+' debt paid', desc:'Money fight progress'} : null,
     (openPrayers + answeredPrayers) > 0 ? {key:'showPrayers', icon:'🙏', label:answeredPrayers+' prayers I marked answered', desc:'Out of '+openPrayers+' active · only YOU log these'} : null,
     {key:'showAffirmation', icon:'💭', label:'A motivational close', desc:'A short affirming line'},
   ].filter(Boolean);
@@ -742,7 +742,7 @@ function renderCustomShareCard(prefs){
   if(prefs.showWins && totalWins > 0) statChips.push({big: totalWins, label: 'WINS'});
   if(prefs.showHabits && habitsTotal > 0) statChips.push({big: habitsToday + '/' + habitsTotal, label: 'HABITS'});
   if(prefs.showJournalCount && journalCount > 0) statChips.push({big: journalCount, label: 'JOURNAL'});
-  if(prefs.showFinance && debtPaid > 0) statChips.push({big: '$' + (debtPaid >= 1000 ? Math.round(debtPaid/1000) + 'k' : Math.round(debtPaid)), label: 'PAID OFF'});
+  if(prefs.showFinance && debtPaid > 0) statChips.push({big: curSym() + (debtPaid >= 1000 ? Math.round(debtPaid/1000) + 'k' : Math.round(debtPaid)), label: 'PAID OFF'});
   if(prefs.showPrayers && answeredPrayers > 0) statChips.push({big: answeredPrayers, label: 'ANSWERED'});
   
   if(statChips.length > 0){

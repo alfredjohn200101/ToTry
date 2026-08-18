@@ -105,9 +105,9 @@ async function _companionSay(userText, opening){
         } else if(moderate){
           out+="They're keeping this within a limit"+(v.modLimit?(" (about "+v.modLimit+"/week)"):"")+" rather than quitting — "+uses7+" logged this week. Support the limit they set; staying within it is the win, going over is information not failure. ";
         } else if(days>0){
-          out+="Right now they are "+days+" day"+(days===1?'':'s')+" clean on this"+(money>0?(", which is about $"+money.toLocaleString()+" reclaimed from it"):"")+". If it lands warmly, you can gently remind them what THIS exact moment is protecting — something real they've built and would be proud to keep — as encouragement, NEVER as guilt, pressure, or a threat of loss. ";
+          out+="Right now they are "+days+" day"+(days===1?'':'s')+" clean on this"+(money>0?(", which is about "+curSym()+money.toLocaleString()+" reclaimed from it"):"")+". If it lands warmly, you can gently remind them what THIS exact moment is protecting — something real they've built and would be proud to keep — as encouragement, NEVER as guilt, pressure, or a threat of loss. ";
         }
-        else if(money>0){ out+="Staying clean on this has already reclaimed about $"+money.toLocaleString()+" — real freedom, if it helps to name it gently. "; }
+        else if(money>0){ out+="Staying clean on this has already reclaimed about "+curSym()+money.toLocaleString()+" — real freedom, if it helps to name it gently. "; }
         if(turned7>0){ out+="Worth knowing: they've come here and turned away from this "+turned7+" time"+(turned7===1?'':'s')+" in the last week — real strength they may not be crediting themselves for. "; }
         out+="And if they do slip, meet them with grace: a streak is a story, not a verdict, and every single moment is a fresh try. ";
         return out;

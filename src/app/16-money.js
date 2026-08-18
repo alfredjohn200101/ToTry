@@ -1,7 +1,7 @@
 let debts=[],usaS=0,indiaS=0;
 function loadF(){const f=ls('totry_f');if(f){debts=f.d||[];usaS=f.u||0;indiaS=f.i||0;}else{debts=[];usaS=0;indiaS=0;}}
 function saveF(){ls('totry_f',{d:debts,u:usaS,i:indiaS});}
-function getDebtStr(){loadF();return debts.map(d=>d.n+' $'+Math.round(d.t-d.p)+' remaining').join(', ')||'No debts logged';}
+function getDebtStr(){loadF();return debts.map(d=>d.n+' '+curSym()+Math.round(d.t-d.p)+' remaining').join(', ')||'No debts logged';}
 function setDebtStrategy(type, fromUser){
   ls('totry_debt_strategy',type);
   ['snowball','avalanche'].forEach(t=>{const el=document.getElementById('strategy-'+t);if(el)el.classList.toggle('active',t===type);});
@@ -29,7 +29,7 @@ function renderDebtTruth(){
   const active=debts.filter(d=>_debtBalance(d)>0); if(!active.length) return;
   const bits=[];
   const mi=totalMonthlyInterest(active);
-  if(mi>=1) bits.push('Interest alone takes <b style="color:var(--re)">$'+Math.round(mi).toLocaleString()+'/month</b> before a dollar touches the balance.');
+  if(mi>=1) bits.push('Interest alone takes <b style="color:var(--re)">'+curSym()+Math.round(mi).toLocaleString()+'/month</b> before a dollar touches the balance.');
   const rate=monthlyPaymentRate();
   if(rate && active.length>1 && active.some(d=>(parseFloat(d.interest)||0)>0)){
     const av=projectPayoff(active, rate, 'avalanche');
@@ -38,8 +38,8 @@ function renderDebtTruth(){
       const save=(sn.interestPaid||0)-(av.interestPaid||0);
       const cur=ls('totry_debt_strategy')||'snowball';
       if(save>0) bits.push(cur==='avalanche'
-        ? 'Your Avalanche order saves about <b style="color:var(--gr)">$'+save.toLocaleString()+'</b> in interest versus smallest-first.'
-        : 'Avalanche would save about <b style="color:var(--gr)">$'+save.toLocaleString()+'</b> in interest — but Snowball wins on momentum, and the best plan is the one you keep doing.');
+        ? 'Your Avalanche order saves about <b style="color:var(--gr)">'+curSym()+save.toLocaleString()+'</b> in interest versus smallest-first.'
+        : 'Avalanche would save about <b style="color:var(--gr)">'+curSym()+save.toLocaleString()+'</b> in interest — but Snowball wins on momentum, and the best plan is the one you keep doing.');
     }
   }
   if(!bits.length) return;
@@ -83,14 +83,14 @@ function renderReclaimedBuysFreedom(){
   if(!now||!boosted) return;
   let line='';
   if(now.neverClears && !boosted.neverClears){
-    line='Right now the interest is outrunning your payments — but adding the $'+Math.round(reclaim).toLocaleString()+'/month you’re reclaiming flips it: debt-free in about '+boosted.months+' months. Staying clean is what gets you above the line.';
+    line='Right now the interest is outrunning your payments — but adding the '+curSym()+Math.round(reclaim).toLocaleString()+'/month you’re reclaiming flips it: debt-free in about '+boosted.months+' months. Staying clean is what gets you above the line.';
   } else if(!now.neverClears && !boosted.neverClears){
     const sooner=now.months-boosted.months;
     const saved=Math.max(0,(now.interestPaid||0)-(boosted.interestPaid||0));
     if(sooner<=0 && saved<=0) return;
-    line='That $'+Math.round(reclaim).toLocaleString()+'/month, put straight on your debt, makes you free '+
+    line='That '+curSym()+Math.round(reclaim).toLocaleString()+'/month, put straight on your debt, makes you free '+
       (sooner>0?('<b style="color:var(--gr)">'+sooner+' month'+(sooner===1?'':'s')+' sooner</b>'):'sooner')+
-      (saved>0?(' and saves <b style="color:var(--gr)">$'+saved.toLocaleString()+'</b> in interest'):'')+
+      (saved>0?(' and saves <b style="color:var(--gr)">'+curSym()+saved.toLocaleString()+'</b> in interest'):'')+
       '. That’s what staying clean is worth, in months of your life.';
   } else { return; }
   const el=document.createElement('div');
@@ -114,14 +114,14 @@ function calcDebtFreeDate(){
   // Saying so plainly is worth more than a comforting number that will never arrive.
   if(proj.neverClears){
     if(dd) dd.textContent='Not yet on track';
-    if(ddesc) ddesc.innerHTML='At $'+Math.round(rate).toLocaleString()+'/month the interest ($'+proj.monthlyInterest.toLocaleString()+'/mo) is eating the payment — the balance grows. Getting above that line is the whole battle, and every dollar reclaimed goes straight at it.';
+    if(ddesc) ddesc.innerHTML='At '+curSym()+Math.round(rate).toLocaleString()+'/month the interest ('+curSym()+proj.monthlyInterest.toLocaleString()+'/mo) is eating the payment — the balance grows. Getting above that line is the whole battle, and every dollar reclaimed goes straight at it.';
     return;
   }
   const fd=new Date(); fd.setMonth(fd.getMonth()+proj.months);
   if(dd) dd.textContent=fd.toLocaleDateString('en-AU',{month:'long',year:'numeric'});
   if(ddesc){
-    const interestBit = proj.interestPaid>0 ? (' · $'+proj.interestPaid.toLocaleString()+' of that is interest') : '';
-    ddesc.textContent='~'+proj.months+' month'+(proj.months===1?'':'s')+' at $'+Math.round(rate).toLocaleString()+'/month'+interestBit;
+    const interestBit = proj.interestPaid>0 ? (' · '+curSym()+proj.interestPaid.toLocaleString()+' of that is interest') : '';
+    ddesc.textContent='~'+proj.months+' month'+(proj.months===1?'':'s')+' at '+curSym()+Math.round(rate).toLocaleString()+'/month'+interestBit;
   }
 }
 // A money tab full of zeros teaches a person nothing and quietly tells them they're fine. Until it
@@ -155,7 +155,7 @@ function renderMoneyGate(){
 
   const r = spendingRead();
   if(!r){ readCard.innerHTML = ''; return; }
-  const money = n => '$'+Math.abs(Math.round(n)).toLocaleString();
+  const money = n => curSym()+Math.abs(Math.round(n)).toLocaleString();
   const staleDays = Math.floor((Date.now() - r.to.getTime())/86400000);
   const neg = r.netPerMonth < 0;
   readCard.innerHTML = '<div class="card" style="margin-bottom:14px">'+
@@ -178,10 +178,10 @@ function renderFinance(){
   loadF();
   try{ renderMoneyGate(); }catch(_){}
   const owed=debts.reduce((a,d)=>a+(d.t-d.p),0),paid=debts.reduce((a,d)=>a+d.p,0);
-  ['f-debt','h-debt'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='$'+Math.round(owed).toLocaleString();});
-  const fp=document.getElementById('f-paid');if(fp)fp.textContent='$'+Math.round(paid).toLocaleString();
-  const fu=document.getElementById('f-usa');if(fu)fu.textContent='$'+Math.round(usaS).toLocaleString();
-  const fi=document.getElementById('f-india');if(fi)fi.textContent='$'+Math.round(indiaS).toLocaleString();
+  ['f-debt','h-debt'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=curSym()+Math.round(owed).toLocaleString();});
+  const fp=document.getElementById('f-paid');if(fp)fp.textContent=curSym()+Math.round(paid).toLocaleString();
+  const fu=document.getElementById('f-usa');if(fu)fu.textContent=curSym()+Math.round(usaS).toLocaleString();
+  const fi=document.getElementById('f-india');if(fi)fi.textContent=curSym()+Math.round(indiaS).toLocaleString();
   const dl=document.getElementById('debt-list');if(!dl)return;dl.innerHTML='';
   if(!debts.length){dl.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:10px 0">No debts added yet</p>';return;}
   const strategy=ls('totry_debt_strategy')||'snowball';
@@ -189,11 +189,11 @@ function renderFinance(){
   sorted.forEach((d,si)=>{
     const rem=d.t-d.p,pct=d.t>0?Math.round((d.p/d.t)*100):0;
     const item=document.createElement('div');item.className='debt-row';
-    item.innerHTML='<div class="dr-top"><span class="dr-name">'+d.n+(si===0?' \u2b50':'')+' </span><span class="dr-amt">$'+Math.round(rem).toLocaleString()+'</span></div>'+
+    item.innerHTML='<div class="dr-top"><span class="dr-name">'+d.n+(si===0?' \u2b50':'')+' </span><span class="dr-amt">'+curSym()+Math.round(rem).toLocaleString()+'</span></div>'+
       (d.due?'<span class="dr-date">Due: '+d.due+'</span>':'')+
       '<div class="bar-wrap"><div class="bar" style="width:'+pct+'%"></div></div>'+
-      '<div class="dr-meta"><span class="dr-paid">$'+Math.round(d.p).toLocaleString()+' paid ('+pct+'%)</span><span>Tap to log payment</span></div>';
-    item.onclick=()=>{openFormModal('Log a payment','Payment toward '+d.n+'.',[{id:'amt',label:'Amount',type:'number',prefix:'$',placeholder:'e.g. 200'}],'Log payment',(vals)=>{const a=parseFloat(vals.amt);if(isNaN(a)||a<=0)return 'Enter an amount greater than 0.';loadF();debts[d.idx].p=Math.min(debts[d.idx].p+a,debts[d.idx].t);saveF();const payments=ls('totry_payments')||[];payments.push({amt:a,ts:new Date().toISOString(),date:new Date().toISOString(),debt:d.n});ls('totry_payments',payments.slice(-200));if(typeof syncToCloud==='function')syncToCloud();renderFinance();calcDebtFreeDate();checkMilestones();return true;});};
+      '<div class="dr-meta"><span class="dr-paid">'+curSym()+Math.round(d.p).toLocaleString()+' paid ('+pct+'%)</span><span>Tap to log payment</span></div>';
+    item.onclick=()=>{openFormModal('Log a payment','Payment toward '+d.n+'.',[{id:'amt',label:'Amount',type:'number',prefix:curSym(),placeholder:'e.g. 200'}],'Log payment',(vals)=>{const a=parseFloat(vals.amt);if(isNaN(a)||a<=0)return 'Enter an amount greater than 0.';loadF();debts[d.idx].p=Math.min(debts[d.idx].p+a,debts[d.idx].t);saveF();const payments=ls('totry_payments')||[];payments.push({amt:a,ts:new Date().toISOString(),date:new Date().toISOString(),debt:d.n});ls('totry_payments',payments.slice(-200));if(typeof syncToCloud==='function')syncToCloud();renderFinance();calcDebtFreeDate();checkMilestones();return true;});};
     dl.appendChild(item);
   });
   calcDebtFreeDate();
@@ -203,7 +203,7 @@ function renderFinance(){
   const reclaimed = (typeof totalReclaimed==='function') ? totalReclaimed() : 0;
   if(reclaimed > 0){
     const sn=document.getElementById('saved-num'); const sd=document.getElementById('saved-desc');
-    if(sn) sn.textContent='$'+reclaimed.toLocaleString();
+    if(sn) sn.textContent=curSym()+reclaimed.toLocaleString();
     // Lead with the freedom story, not the debt table (the soul of this screen): when there is real
     // reclaimed money, float that hero up right beneath the metrics. Idempotent (only moves once).
     try{ const mg=document.querySelector('#tab-money .mg'); const sh=document.getElementById('saved-hero'); if(mg&&sh&&mg.nextElementSibling!==sh) mg.after(sh); }catch(_){}
@@ -220,8 +220,8 @@ function renderFinance(){
         const n=document.createElement('div'); n.id='reclaim-owed-note';
         n.style.cssText='margin-top:8px;font-size:12px;color:var(--tx3);line-height:1.55';
         n.innerHTML = left>0
-          ? 'You’ve avoided <b>$'+avoidedTotal.toLocaleString()+'</b> of spending, but still owe <b style="color:var(--go)">$'+owedTotal.toLocaleString()+'</b> for past use — <b>$'+left.toLocaleString()+'</b> to go before you’re actually ahead. Clearing that is the first real win.'
-          : 'That’s after clearing the <b>$'+owedTotal.toLocaleString()+'</b> you owed for past use — you’re genuinely ahead now.';
+          ? 'You’ve avoided <b>'+curSym()+avoidedTotal.toLocaleString()+'</b> of spending, but still owe <b style="color:var(--go)">'+curSym()+owedTotal.toLocaleString()+'</b> for past use — <b>'+curSym()+left.toLocaleString()+'</b> to go before you’re actually ahead. Clearing that is the first real win.'
+          : 'That’s after clearing the <b>'+curSym()+owedTotal.toLocaleString()+'</b> you owed for past use — you’re genuinely ahead now.';
         sd.after(n);
       }
     }catch(_){}
@@ -230,7 +230,7 @@ function renderFinance(){
     // interest saved. Only possible because the fight and the money live in the same app.
     try{ renderReclaimedBuysFreedom(); }catch(_){}
   } else {
-  const vs=ls('totry_vs');if(vs){const sn=document.getElementById('saved-num');const sd=document.getElementById('saved-desc');if(sn)sn.textContent='$'+vs.saved.toLocaleString();if(sd)sd.textContent='$'+vs.weekly+'/week saved. $'+vs.saved.toLocaleString()+' redirected.';
+  const vs=ls('totry_vs');if(vs){const sn=document.getElementById('saved-num');const sd=document.getElementById('saved-desc');if(sn)sn.textContent=curSym()+vs.saved.toLocaleString();if(sd)sd.textContent=curSym()+vs.weekly+'/week saved. '+curSym()+vs.saved.toLocaleString()+' redirected.';
     // Restore the input fields too, so it doesn't look like nothing saved when you return.
     if(vs.fields){ const set=(id,v)=>{const el=document.getElementById(id); if(el && v) el.value=v;}; set('weed-s',vs.fields.w); set('vape-s',vs.fields.va); set('gamb-s',vs.fields.g); set('other-s',vs.fields.o); }
     const ss=document.getElementById('sober-since'); if(ss && vs.since) ss.value=vs.since;

@@ -321,11 +321,53 @@ function lsArr(k){
   }catch(_){ return []; }
 }
 
+// ── THE CURRENCY SYMBOL, IN ONE PLACE ─────────────────────────────────────────────
+// Settings has offered nine currencies since the money tab existed. Picking one saved the choice and
+// fetched exchange rates — and changed nothing a person could see, because every amount in the app
+// began with a hardcoded '$'. Someone in London set GBP and still read "$40 reclaimed". The setting
+// even said so out loud, which made it honest but no less broken.
+//
+// This is the one accessor. If a symbol is ever wrong it is wrong here and nowhere else — the same
+// shape as safeJournal / syncIdOf / isFaithHabitName, and for the same reason: the recurring failure
+// in this codebase is fixing a class of bug in one place and missing the other forty.
+//
+// It does NOT convert stored amounts. A number the person typed is already in their own money;
+// multiplying their debt by an exchange rate because they changed a dropdown would be a lie about
+// what they owe. The symbol is a label on their number, not a conversion of it.
+// Written as \u0024 rather than a bare '$' on purpose: scripts/fix-currency.js sweeps every '$' in a
+// string literal into curSym(), and on its first run it happily ate this table and the fallback below,
+// turning the accessor into infinite recursion. An escape is invisible to that sweep.
+const CURRENCY_SYMBOLS = {
+  AUD: '\u0024', USD: '\u0024', CAD: '\u0024', NZD: '\u0024', SGD: '\u0024',
+  GBP: '\u00a3', EUR: '\u20ac', INR: '\u20b9', JPY: '\u00a5'
+};
+function curSym(){
+  try{ return CURRENCY_SYMBOLS[ls('totry_currency') || 'AUD'] || '\u0024'; }
+  catch(_){ return '\u0024'; }
+}
+
+// The static shell is HTML, not JavaScript, so it cannot call curSym() — the sign-in screen once
+// shipped a literal \u2014 for exactly this reason. Instead each static site declares what it wants
+// (data-cur-text / data-cur-ph, with {c} standing in for the symbol) and this fills them in: at boot,
+// and again the moment the setting changes, so a person sees it take effect rather than being told to
+// reload. The markup keeps a plain '$' as its written value, so the pre-JS paint is never blank.
+function applyCurrencySymbols(){
+  try{
+    const c = curSym();
+    document.querySelectorAll('[data-cur-text]').forEach(el => {
+      el.textContent = el.getAttribute('data-cur-text').split('{c}').join(c);
+    });
+    document.querySelectorAll('[data-cur-ph]').forEach(el => {
+      el.setAttribute('placeholder', el.getAttribute('data-cur-ph').split('{c}').join(c));
+    });
+  }catch(_){}
+}
+
 // ── APP VERSION & CHANGELOG ───────────────────────────────────
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v479';
+const APP_VERSION = 'v480';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }

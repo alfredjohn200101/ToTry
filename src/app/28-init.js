@@ -455,6 +455,10 @@ async function initApp(){
   if(typeof pickDailyContextualVerse==='function'){ vi = pickDailyContextualVerse(); } showV(activeVerses()[vi]);
   try{ if(typeof applyFaithGlobal==='function') applyFaithGlobal(); }catch(_){}
   try{ if(typeof applyFaithLabels==='function') applyFaithLabels(); }catch(_){}
+  // The static shell paints '$' before any JS runs; this corrects it to the person's own symbol.
+  // It sits with the other applyX() passes because it is the same kind of thing: markup that declared
+  // what it wants, and one function that gives it.
+  try{ if(typeof applyCurrencySymbols==='function') applyCurrencySymbols(); }catch(_){}
   // Background: refresh currency rates if user has set a preference different from base
   if(typeof fetchCurrencyRates === 'function') fetchCurrencyRates(getUserCurrency());
   // Personalise coach

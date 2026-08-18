@@ -21,7 +21,7 @@ function _disciplineThread(){
   if(s.wins>0) strands.push(s.wins+' urge'+(s.wins===1?'':'s')+' resisted');
   if(s.workouts>0) strands.push(s.workouts+' session'+(s.workouts===1?'':'s')+' trained');
   if(s.longestStreak>0) strands.push(s.longestStreak+'-day clean streak');
-  if(reclaimed>0) strands.push('$'+reclaimed.toLocaleString()+' reclaimed');
+  if(reclaimed>0) strands.push(curSym()+reclaimed.toLocaleString()+' reclaimed');
   if(s.journalEntries>0) strands.push(s.journalEntries+' reflection'+(s.journalEntries===1?'':'s'));
   return { strands, stats:s, reclaimed };
 }
@@ -68,7 +68,7 @@ async function generateWeeklyReflection(){
     const rd = (typeof computeReadiness==='function') ? computeReadiness() : null;
     const identity = ls('totry_identity') || '';
     const sys = brotherSys() + 'RIGHT NOW you\u2019re reflecting their WHOLE week back to them in one honest, encouraging paragraph (4-6 sentences) \u2014 connecting body, discipline, money and spirit the way only someone who sees all of a person could. Specific, never generic. Name the effort, not just the outcomes. Then, on a new line, ask ONE real, specific question drawn from a genuine tension in their week (e.g. trained hard but slipped twice \u2014 "what was going on those nights, bro?"). Invite honest reflection, never judgment. Format the question on its own line prefixed exactly with "Q: ".';
-    const prompt = 'This week: ' + s.workouts + ' workouts, ' + s.nutDays + ' days food logged, ' + s.journalEntries + ' journal entries, ' + s.wins + ' urges resisted, ' + s.slips7 + ' slips, longest clean streak ' + s.longestStreak + ' days' + (s.reclaimed>0 ? (', $'+s.reclaimed+' reclaimed from vices toward their freedom') : '') + '.' + (identity?' They are becoming: "'+identity+'".':'') + (rd?' Current readiness: '+rd.level+'.':'') + ' Training context:' + ctx + '\n\nWrite their weekly reflection as an older sibling who sees their whole life, then the one honest question.';
+    const prompt = 'This week: ' + s.workouts + ' workouts, ' + s.nutDays + ' days food logged, ' + s.journalEntries + ' journal entries, ' + s.wins + ' urges resisted, ' + s.slips7 + ' slips, longest clean streak ' + s.longestStreak + ' days' + (s.reclaimed>0 ? (', '+curSym()+s.reclaimed+' reclaimed from vices toward their freedom') : '') + '.' + (identity?' They are becoming: "'+identity+'".':'') + (rd?' Current readiness: '+rd.level+'.':'') + ' Training context:' + ctx + '\n\nWrite their weekly reflection as an older sibling who sees their whole life, then the one honest question.';
     const resp = await api(sys, [], prompt, 550);
     if(box){
       box.style.display='block';

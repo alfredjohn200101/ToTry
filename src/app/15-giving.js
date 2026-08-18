@@ -236,7 +236,7 @@ function givingTotals(){
 function openGivingLog(kind, subtitle, viaRelease){
   const cg = curGiving();
   openFormModal('Log what you gave', subtitle || cg.sub,
-    [ {id:'amount', label:'Amount', type:'number', prefix:'$', placeholder:'e.g. 50'},
+    [ {id:'amount', label:'Amount', type:'number', prefix:curSym(), placeholder:'e.g. 50'},
       {id:'to', label:'Where it went (optional)', type:'text', placeholder:'e.g. the parish, a friend, a charity'} ],
     'Log it', (v) => {
       const n = parseFloat(v.amount);
@@ -258,7 +258,7 @@ function openPledge(){
   const p = givingPledge();
   openFormModal('Your own measure', 'Set a share of what comes in, or a flat monthly amount. Yours to change or drop — nothing chases you about it.',
     [ {id:'percent', label:'Percent of income (blank if using an amount)', type:'number', placeholder:'e.g. 10', value: p.mode==='percent'?p.percent:''},
-      {id:'amount', label:'Or a flat monthly amount', type:'number', prefix:'$', placeholder:'e.g. 100', value: p.mode==='amount'?p.amount:''} ],
+      {id:'amount', label:'Or a flat monthly amount', type:'number', prefix:curSym(), placeholder:'e.g. 100', value: p.mode==='amount'?p.amount:''} ],
     'Set it', (v) => {
       const pc = parseFloat(v.percent), am = parseFloat(v.amount);
       let next = {mode:'off', percent:10, amount:0, quiet:p.quiet};
@@ -289,11 +289,11 @@ function openZakat(){
                                              + (typeof usaS==='number'?usaS:0) + (typeof indiaS==='number'?indiaS:0); owedOut = (debts||[]).reduce((s,d)=>s+Math.max(0,(d.t||0)-(d.p||0)), 0); } }catch(_){}
   try{ invest = (ls('totry_assets')||[]).reduce((s,a)=>s+(a.value||0), 0); }catch(_){}
   openFormModal('Zakat', 'Filled in from what you’ve already tracked — correct any line. Your home, your car and the tools of your trade are not zakatable, so take them out.',
-    [ {id:'cash', label:'Cash & savings', type:'number', prefix:'$', value: Math.round(cash)||''},
-      {id:'invest', label:'Gold, silver, shares, business stock', type:'number', prefix:'$', value: Math.round(invest)||''},
-      {id:'owed', label:'Money owed TO you that you expect back', type:'number', prefix:'$', placeholder:'0'},
-      {id:'debts', label:'Debts you owe now', type:'number', prefix:'$', value: Math.round(owedOut)||''},
-      {id:'price', label:'Silver price per gram today (your local source)', type:'number', prefix:'$', value: z.pricePerGram||''} ],
+    [ {id:'cash', label:'Cash & savings', type:'number', prefix:curSym(), value: Math.round(cash)||''},
+      {id:'invest', label:'Gold, silver, shares, business stock', type:'number', prefix:curSym(), value: Math.round(invest)||''},
+      {id:'owed', label:'Money owed TO you that you expect back', type:'number', prefix:curSym(), placeholder:'0'},
+      {id:'debts', label:'Debts you owe now', type:'number', prefix:curSym(), value: Math.round(owedOut)||''},
+      {id:'price', label:'Silver price per gram today (your local source)', type:'number', prefix:curSym(), value: z.pricePerGram||''} ],
     'Work it out', (v) => {
       const num = k => { const n = parseFloat(v[k]); return isNaN(n) ? 0 : n; };
       const price = num('price');
@@ -308,8 +308,8 @@ function openZakat(){
       ls('totry_zakat', st);
       if(typeof syncToCloud==='function') syncToCloud();
       renderGiving(); haptic('tap');
-      showToast(due > 0 ? 'Zakat: $'+due.toLocaleString() : 'Below nisab',
-        due > 0 ? 'On $'+Math.round(net).toLocaleString()+' of qualifying wealth.' : 'No zakat is owed on wealth below nisab.');
+      showToast(due > 0 ? 'Zakat: '+curSym()+due.toLocaleString() : 'Below nisab',
+        due > 0 ? 'On '+curSym()+Math.round(net).toLocaleString()+' of qualifying wealth.' : 'No zakat is owed on wealth below nisab.');
       return true;
     });
 }
@@ -332,12 +332,12 @@ function renderGiving(){
   if(cg.mode === 'tithe'){
     const sug = Math.round(inc * 0.10);
     strip = inc > 0
-      ? '<div style="font-size:14px;color:var(--tx)">$'+sug.toLocaleString()+'<span style="font-size:11.5px;color:var(--tx3)"> — a tenth of the $'+Math.round(inc).toLocaleString()+' that came in this month.</span></div><div style="font-size:11.5px;color:var(--tx3);line-height:1.5;margin-top:4px">A suggestion, not a debt. Give more, less, or nothing this month — nothing here holds it against you.</div>'
+      ? '<div style="font-size:14px;color:var(--tx)">'+curSym()+sug.toLocaleString()+'<span style="font-size:11.5px;color:var(--tx3)"> — a tenth of the '+curSym()+Math.round(inc).toLocaleString()+' that came in this month.</span></div><div style="font-size:11.5px;color:var(--tx3);line-height:1.5;margin-top:4px">A suggestion, not a debt. Give more, less, or nothing this month — nothing here holds it against you.</div>'
       : '<div style="font-size:11.5px;color:var(--tx3);line-height:1.6">Log your income in the money tab above and I can suggest a figure from what actually came in — rather than a number from nowhere.</div>';
   } else if(cg.mode === 'zakat'){
     const z = zakatState();
     strip = (z.last
-      ? '<div style="font-size:14px;color:var(--tx)">$'+z.last.due.toLocaleString()+'<span style="font-size:11.5px;color:var(--tx3)"> — 2.5% of $'+z.last.net.toLocaleString()+', nisab $'+z.last.nisab.toLocaleString()+'.</span></div>'+_hawlLine(z)
+      ? '<div style="font-size:14px;color:var(--tx)">'+curSym()+z.last.due.toLocaleString()+'<span style="font-size:11.5px;color:var(--tx3)"> — 2.5% of '+curSym()+z.last.net.toLocaleString()+', nisab '+curSym()+z.last.nisab.toLocaleString()+'.</span></div>'+_hawlLine(z)
       : '<div style="font-size:11.5px;color:var(--tx3);line-height:1.6">Work out your zakat from what you’ve already tracked — savings, assets and debts are filled in for you, and every line is yours to correct.</div>')+
       '<button class="btn" onclick="openZakat()" style="margin-top:9px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px;padding:9px">'+(z.last?'Work it out again':'Calculate zakat')+'</button>'+
       (z.last && z.last.due > 0 ? '<button class="btn" onclick="openGivingLog(\'zakat\')" style="margin-top:7px;background:transparent;border:1px solid var(--go-bd);color:var(--go);font-size:12.5px;padding:9px">Log zakat paid</button>' : '');
@@ -345,7 +345,7 @@ function renderGiving(){
     const sug = p.mode === 'percent' ? Math.round(inc * (p.percent/100)) : (p.mode === 'amount' ? p.amount : 0);
     strip = (p.mode === 'off'
       ? '<div style="font-size:11.5px;color:var(--tx3);line-height:1.6">'+(cg.mode==='pledge'?'Set your own share — a percent of what comes in, or a flat amount. Entirely optional.':'Set your own measure if it helps. Dāna has no fixed percentage, and nothing here will invent one.')+'</div>'
-      : '<div style="font-size:14px;color:var(--tx)">$'+sug.toLocaleString()+'<span style="font-size:11.5px;color:var(--tx3)"> — '+(p.mode==='percent'?(p.percent+'% of the $'+Math.round(inc).toLocaleString()+' in this month'):'your monthly measure')+'. $'+Math.round(t.month).toLocaleString()+' given so far.</span></div>')+
+      : '<div style="font-size:14px;color:var(--tx)">'+curSym()+sug.toLocaleString()+'<span style="font-size:11.5px;color:var(--tx3)"> — '+(p.mode==='percent'?(p.percent+'% of the '+curSym()+Math.round(inc).toLocaleString()+' in this month'):'your monthly measure')+'. '+curSym()+Math.round(t.month).toLocaleString()+' given so far.</span></div>')+
       '<button class="btn" onclick="openPledge()" style="margin-top:9px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px;padding:9px">'+(p.mode==='off'?'Set a measure':'Change it')+'</button>';
   }
   const list = givingLog();
@@ -353,11 +353,11 @@ function renderGiving(){
   if(!list.length) body = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:12px 0;font-style:italic">Nothing logged yet.</p>';
   else if(p.quiet) body = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:12px 0">'+list.length+' kept quietly. Amounts hidden.</p>';
   else body = list.slice(0,10).map(x => '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)">'+
-      '<div><div style="font-size:14px;color:var(--tx)">$'+x.amount.toLocaleString()+'</div>'+
+      '<div><div style="font-size:14px;color:var(--tx)">'+curSym()+x.amount.toLocaleString()+'</div>'+
       (x.to ? '<div style="font-size:11px;color:var(--tx3)">'+_escFew(x.to)+'</div>' : '')+'</div>'+
       '<div style="display:flex;align-items:center;gap:10px"><span style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+new Date(x.ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'})+'</span>'+
       '<button onclick="deleteGiving('+x.id+')" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer">×</button></div></div>').join('')+
-      '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);text-align:center;margin-top:10px">$'+Math.round(t.year).toLocaleString()+' this year · $'+Math.round(t.all).toLocaleString()+' all time</div>';
+      '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);text-align:center;margin-top:10px">'+curSym()+Math.round(t.year).toLocaleString()+' this year · '+curSym()+Math.round(t.all).toLocaleString()+' all time</div>';
   el.innerHTML = '<div style="font-size:11.5px;color:var(--tx3);line-height:1.5;margin-bottom:10px">'+cg.sub+'</div>'+
     '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:12px">'+strip+'</div>'+
     body+
