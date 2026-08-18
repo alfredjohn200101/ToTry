@@ -3278,6 +3278,27 @@ H.section('dead code that was one caller away from confusing someone');
   H.ok(!/M17 5H9\.5/.test(H.html), 'no dollar-sign glyph is drawn in any icon');
 }
 
+// ── no sweep may delete a modal the shell owns ───────────────────────────────────────────────────
+// `document.querySelectorAll('.modal-bg')` matches three STATIC divs — #payday-modal, #journal-modal,
+// #serving-modal — that exist only as literal markup in shell-head.html and are never recreated.
+// Removing them makes openJournal() throw on its third line ("+ New entry" dead), openServingModal()
+// throw (tapping a food result does nothing) and openPayday() throw — for the rest of the session.
+// This was patched at four call sites, each with a comment saying ":not([id]) is load-bearing", and a
+// FIFTH was missed: the Close button on the CRISIS card, where it is the only control on screen.
+// Four fixes and a miss is this repo's signature failure, so the assertion is on the class, not the site.
+{
+  H.section('no sweep deletes a modal the shell owns');
+  const code = H.html.split('\n').filter(l => !/^\s*(\/\/|\*)/.test(l)).join('\n');
+  const bare = [...code.matchAll(/querySelectorAll\(\\?['"]\.modal-bg\\?['"]\)/g)];
+  H.eq(bare.length, 0, 'no bare .modal-bg sweep anywhere — use :not([id]), or remove the sheet by its own id');
+  // And the static three must still be in the markup for anything to protect.
+  for (const id of ['payday-modal', 'journal-modal', 'serving-modal']) {
+    H.ok(new RegExp('id="' + id + '"').test(H.html), `#${id} is still a static modal the shell owns`);
+  }
+  H.ok(/function _feelNowClose\(/.test(H.html), 'the Feeling Door has one named closer');
+  H.ok((H.html.match(/_feelNowClose\(\)/g) || []).length >= 2, 'and it is actually called');
+}
+
 // ── what we promise about a person's data has to be what the code does ──────────────────────────
 // These are not style points. The app asks people for reproductive health data and bank statements
 // on the strength of a sentence next to the input, and a sentence that is not true is the worst
@@ -3307,6 +3328,36 @@ H.section('dead code that was one caller away from confusing someone');
   H.ok(syncKeys.length > 100, `SYNC_KEYS parsed as ${syncKeys.length} real keys, not as text`);
   H.ok(!syncKeys.includes('totry_progress_photos'), 'progress photos are not synced — both privacy documents say so');
   H.ok(!syncKeys.includes('totry_cycle'), 'cycle data is not synced unless she explicitly turns backup on');
+
+  // NO CREDENTIAL IS DATA. BACKUP_NEVER already said these must never leave in an export file, and
+  // SYNC_KEYS uploaded the same values anyway — a live Strava OAuth token, a Google Fit token and a
+  // Hevy API key, held server-side for every signed-in person, while the policy says only that those
+  // services see their own data. It never said I hold the keys. The two lists are joined now.
+  const backupNever = [...((H.html.match(/const BACKUP_NEVER = \[([\s\S]*?)\]/) || [])[1] || '')
+    .replace(/\/\/[^\n]*/g, '').matchAll(/'([^']+)'/g)].map(m => m[1]);
+  H.ok(backupNever.length >= 6, `BACKUP_NEVER parsed as ${backupNever.length} credentials`);
+  H.ok(/for\(const _cred of BACKUP_NEVER\)/.test(H.html),
+       'every BACKUP_NEVER credential is stripped from SYNC_KEYS at load — one list, both consumers');
+  // The strip happens after the literal, so grepping the literal proves nothing; assert the mechanism.
+  H.ok(/SYNC_KEYS\.splice\(_i, 1\)/.test(H.html), 'and stripped by removal, not merely flagged');
+
+  // "Anonymous feature counts ... which FEATURES got used, with no content attached ... your vices,
+  // prayers, journal, food, money and body data are never in it." That is the promise, in the person's
+  // own Settings screen. logEvent('toolkit_open',{suggest:sug}) broke it: `sug` is 'ave' only when a
+  // vice was reset in the last 48 hours, so the event recorded "they slipped this week" against their
+  // id and a timestamp. lesson_open/{id} recorded which FEELING they opened; plan_generated/{goal}
+  // recorded a statement about their body. The rule that makes this enforceable is simple: an event
+  // may carry its name and nothing else.
+  // ONE documented exception: jserror carries the error message and its location, because that is how
+  // a crash gets fixed for everyone, and the policy now names it explicitly rather than leaving it to
+  // be discovered. Any OTHER event carrying content is a finding.
+  const events = [...H.html.matchAll(/logEvent\((['"])([a-z_]+)\1\s*,\s*([^)]*)\)/g)]
+    .map(m => ({ name: m[2], detail: m[3].trim() }))
+    .filter(e => e.detail && e.detail !== '{}' && e.name !== 'jserror');
+  H.ok(/One exception, and it is the only one/.test(H.html),
+       'and the one event that does carry text is disclosed in the policy, not hidden');
+  H.eq(events.length, 0, 'no analytics event carries content — only its name' +
+       (events.length ? '\n      ' + events.map(e => `${e.name}(${e.detail})`).join('\n      ') : ''));
 
   // "Nothing is sent anywhere — it's parsed on your phone" sat next to a bank-statement upload, while
   // totry_transactions is in SYNC_KEYS and the importer calls syncToCloud() on the next line. The

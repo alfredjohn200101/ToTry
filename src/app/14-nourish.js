@@ -3791,7 +3791,8 @@ function renderBodySystemReport(){
 function setBodyGoal(mode){
   const rate = mode==='cut' ? -0.5 : mode==='build' ? 0.25 : 0;
   ls('totry_body_goal', {mode, rate});
-  logEvent('goal_set', {mode});
+  // `mode` is cut / maintain / bulk — a statement about their body and what they think of it.
+  logEvent('goal_set');
   haptic('tick');
   renderBodySystemReport();
 }

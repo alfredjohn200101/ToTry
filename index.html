@@ -4567,7 +4567,12 @@ function restoreKeys(data){
   const out = { total: keys.length, ok: 0, failed: [], full: false };
   keys.forEach(k => {
     try{
-      localStorage.setItem(k, data[k]);
+      // Write PAST the sync monitor. enableSyncMonitoring() overrides localStorage.setItem to queue
+      // every write into the durable outbox — so a restore of 178 keys queued 178 uploads AND then
+      // made the explicit syncToCloud call below, putting a second full copy of the backup into the
+      // outbox. On the device where a restore is most likely (the one that just ran out of room) that
+      // is the backup needing twice the space it says it does, at the worst possible moment.
+      (typeof _originalSetItem === 'function' ? _originalSetItem : localStorage.setItem.bind(localStorage))(k, data[k]);
       out.ok++;                                               // counted only after the write returned
       if(typeof syncToCloud === 'function' && typeof SYNC_KEYS !== 'undefined' && SYNC_KEYS.indexOf(k) !== -1){
         let parsed; try{ parsed = JSON.parse(data[k]); }catch(_){ parsed = data[k]; }
@@ -4650,7 +4655,7 @@ function importAllData(ev){
 //
 // So: on a quota failure, free space from the largest EXPENDABLE stores (never the fight, never the
 // journal), retry once, and if it still cannot write, say so out loud rather than pretending.
-let _lsQuotaWarned = false;
+let _lsQuotaWarned = 0;   // timestamp of the last warning, not a one-shot flag
 function _lsEmergencyPrune(){
   let freed = 0;
   // Ordered least-painful first. Photos are by far the biggest and are explicitly device-only, so a lost
@@ -4721,8 +4726,13 @@ function ls(k,v){
       return true;                            // recovered; the person keeps their data
     }catch(_){
       // Could not write even after reclaiming. Tell them — a lost save must never look like a saved one.
-      if(!_lsQuotaWarned){
-        _lsQuotaWarned = true;
+      // THROTTLED, NOT LATCHED. This was a one-shot boolean at module scope with no reset, so the
+      // FIRST failed write of a session warned and every one after it was silent — a person on a full
+      // device saw "Storage full" once, then wrote a journal entry, a weigh-in and a meal that all
+      // silently went nowhere while the app said "Saved" each time. Once every 30 seconds is enough to
+      // avoid a wall of toasts and still tell the truth about each new thing that did not save.
+      if(Date.now() - _lsQuotaWarned > 30000){
+        _lsQuotaWarned = Date.now();
         // SAID TWICE, DELIBERATELY. showToast() opens with `const ex=document.querySelector(
         // '.milestone-toast'); if(ex)ex.remove();` — so the caller's own success toast, fired
         // microseconds later in the same tick, deleted this warning before it ever painted. On a full
@@ -4804,7 +4814,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v486';
+const APP_VERSION = 'v487';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5231,6 +5241,22 @@ const SYNC_KEYS = [
   // the voice. Identity has to survive a reinstall.
   'totry_sex','totry_faith_tradition','totry_faith_level','totry_faith_door_seen'
 ];
+
+// ONE LIST FOR "THIS IS A CREDENTIAL, NOT DATA".
+//
+// BACKUP_NEVER already says these must never go into an export file — the reasoning is written above
+// it — and then SYNC_KEYS uploaded the very same values to the database. So a live Strava OAuth token,
+// a Google Fit token and a Hevy API key were held server-side for every signed-in person, while the
+// privacy policy says only that "Strava sees your Strava data" and "Hevy sees your Hevy data". It does
+// not say I hold the keys to those accounts. Two lists disagreeing about what a secret is meant one of
+// them was wrong; the export list had it right.
+//
+// The cost is honest and small: reconnect Strava or Hevy on a new device, which is two taps. The
+// alternative is a database of other people's live account credentials that nobody was told about.
+for(const _cred of BACKUP_NEVER){
+  const _i = SYNC_KEYS.indexOf(_cred);
+  if(_i !== -1) SYNC_KEYS.splice(_i, 1);
+}
 // totry_cycle is deliberately NOT in the list above. Post-Dobbs, cycle data is the most sensitive
 // thing this app holds, so it stays on the device by default. It is pushed into SYNC_KEYS at runtime
 // ONLY if she switches backup on herself (Settings → Your cycle), and spliced out the moment she
@@ -6403,8 +6429,38 @@ function _cancelReachOuts(){
 }
 function _reachHold(why){ _setReachState({ next:null, hold:why }); _cancelReachOuts(); return 0; }
 function _wonMomentToday(){ try{ const m=(ls('totry_moments_won')||[])[0]; if(!m||!m.ts) return false; return new Date(m.ts).toLocaleDateString('en-AU')===new Date().toLocaleDateString('en-AU'); }catch(_){ return false; } }
-// A tap is the strongest receptivity signal we can get. Mark it against the newest unresolved nudge.
-function _reachOutResponded(){ try{ const a=_reachLog(); for(let i=a.length-1;i>=0;i--){ if(a[i]&&a[i].opened==null&&a[i].ts<=Date.now()){ a[i].opened=true; break; } } _saveReachLog(a); }catch(_){} }
+// A tap is the strongest receptivity signal we can get, and it is GROUND TRUTH — everything else here
+// is a guess. So it may overrule the guess.
+//
+// It had to, because it could never win the race: _resolveReachOuts() runs from initApp() and judges
+// every past nudge with a 45-minute heuristic, while the listener that calls this is wired inside
+// initNotifications(), four seconds later on a timer. Capacitor retains a launch tap until it is
+// consumed, so on a cold start the tap always arrived AFTER the verdict — and the old `opened==null`
+// guard then refused it. Someone who saw the nudge at 23:15, tapped it, and came in was recorded as
+// having ignored it. Three of those and the app stands down for two weeks and tells them: "the last
+// few went unanswered, so I stopped." It said that to a person who answered every time.
+//
+// So: mark the newest unjudged nudge if there is one, else CORRECT the most recent judged-unanswered
+// nudge from the last 12 hours. And if that correction means they are no longer ignoring us, lift a
+// stand-down that should never have started.
+function _reachOutResponded(){
+  try{
+    const a=_reachLog(); const now=Date.now();
+    let hit=-1;
+    for(let i=a.length-1;i>=0;i--){ if(a[i] && a[i].opened==null && a[i].ts<=now){ hit=i; break; } }
+    if(hit<0){
+      for(let i=a.length-1;i>=0;i--){
+        if(a[i] && a[i].opened===false && a[i].ts<=now && (now-a[i].ts) < 12*3600000){ hit=i; break; }
+      }
+    }
+    if(hit<0) return;
+    a[hit].opened=true;
+    _saveReachLog(a);
+    // Undo a stand-down this correction has just invalidated. Staying quiet for two weeks because we
+    // miscounted is the app withdrawing from someone at their hard hour for no reason at all.
+    try{ if(_reachPaused() && _reachUnansweredRun() < 3) _setReachState({ pausedUntil: 0 }); }catch(_){}
+  }catch(_){}
+}
 // Runs on every app open: did the ones we sent actually land?
 function _resolveReachOuts(){
   try{
@@ -6829,7 +6885,9 @@ function bootWithoutCloud(reason){
   if(_bootedLocal) return;
   _bootedLocal = true;
   console.warn('[boot] opening without the cloud:', reason);
-  try{ if(typeof logEvent==='function') logEvent('boot_offline', {reason:String(reason||'')}); }catch(_){}
+  // The reason is a diagnostic string, not a feature name, and it goes to the same row as everything
+  // else. console.error carries it for debugging without putting it in the database.
+  try{ if(typeof logEvent==='function') logEvent('boot_offline'); }catch(_){}
   try{
     const ac = document.getElementById('auth-container');
     const ob = document.getElementById('onboard');
@@ -13375,6 +13433,12 @@ function _feelingQuick(text){
 }
 // Step 2 — immediate grounding + your prayer, shown INSTANTLY (no waiting on AI), while the
 // personalised redirect generates in the background.
+// The Feeling Door's own closer. Every button in this flow removes the sheet it owns and nothing
+// else — the crisis branch used a bare '.modal-bg' sweep instead and took three static modals with
+// it, which is the fifth time that selector has done this. Named, so the next one reuses it.
+function _feelNowClose(){
+  try{ document.getElementById('feelingnow-modal')?.remove(); }catch(_){}
+}
 async function _feelingNowGo(){
   const feeling=(document.getElementById('feelingnow-input')||{}).value || '';
   const b=document.getElementById('feelingnow-body'); if(!b) return;
@@ -13388,7 +13452,7 @@ async function _feelingNowGo(){
       const _c = detectCrisis(feeling);
       if(_c){
         b.innerHTML = '<div id="fn-crisis-slot"></div>'+
-          '<button class="btn" style="margin-top:10px" onclick="document.querySelectorAll(\'.modal-bg\').forEach(function(m){m.remove();})">Close</button>';
+          '<button class="btn" style="margin-top:10px" onclick="_feelNowClose()">Close</button>';
         if(typeof showCrisisResponse==='function') showCrisisResponse('fn-crisis-slot', _c);
         return;
       }
@@ -14575,7 +14639,7 @@ function openToolkit(){
   '</div>';
   document.body.appendChild(m);
   if(typeof haptic==='function') haptic('tap');
-  try{ if(typeof logEvent==='function') logEvent('toolkit_open',{suggest:sug}); }catch(_){}
+  try{ if(typeof logEvent==='function') logEvent('toolkit_open'); }catch(_){}
 }
 function openLesson(id){
   const l=_tkLesson(id); if(!l) return;
@@ -14608,7 +14672,7 @@ function openLesson(id){
   document.body.appendChild(m);
   try{ m.querySelector('.modal').scrollTop=0; }catch(_){}
   if(typeof haptic==='function') haptic('tap');
-  try{ if(typeof logEvent==='function') logEvent('lesson_open',{id:id}); }catch(_){}
+  try{ if(typeof logEvent==='function') logEvent('lesson_open'); }catch(_){}
 }
 function _tkPractice(id){
   const l=_tkLesson(id); if(!l) return;
@@ -14651,7 +14715,7 @@ function _tkDone(id){
   _tkMark(id);
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
   if(typeof haptic==='function') haptic('success');
-  try{ if(typeof logEvent==='function') logEvent('lesson_done',{id:id}); }catch(_){}
+  try{ if(typeof logEvent==='function') logEvent('lesson_done'); }catch(_){}
   const did='You learned '+((l&&l.t)?l.t.charAt(0).toLowerCase()+l.t.slice(1):'a skill')+' while nothing was going wrong \u2014 which is the only time anybody ever really learns anything. It\u2019ll be there when you need it.';
   if(typeof theRelease==='function') theRelease({did:did});
   else if(typeof showToast==='function') showToast('Picked up','It\u2019ll be there when you need it.');
@@ -15701,7 +15765,9 @@ function openProgressCheckin(){
       }
     }catch(_){}
     // A count, with nothing personal in it — how many people answered, not what they said.
-    try{ if(typeof logEvent==='function') logEvent('progress_checkin', { areas:picked.size, wrote:note?1:0 }); }catch(_){}
+    // How many life areas someone checked in on, and whether they wrote something, is a shape of their
+    // week. The event that a check-in happened is the feature signal; the rest is theirs.
+    try{ if(typeof logEvent==='function') logEvent('progress_checkin'); }catch(_){}
     try{ ls('totry_last_checkin', Date.now()); }catch(_){}
     m.remove();
     const t=document.createElement('div'); t.className='modal-bg open'; t.style.alignItems='center';
@@ -15746,7 +15812,7 @@ function _applyGeneratedPlan(days, goal){
     ls('totry_split', split); ls('totry_train_goal', goal); ls('totry_train_days', days); ls('totry_train_source','totry');
     ['renderSplitDayCards','loadTodaySplitCard','renderUnifiedTraining','renderSplitOverview'].forEach(fn=>{ try{ if(typeof window[fn]==='function') window[fn](); }catch(_){} });
     const ti=(typeof tIdx==='function')?tIdx():0; const f=(split[ti]||{}).focus||'your first session';
-    if(typeof logEvent==='function') logEvent('plan_generated',{days,goal});
+    if(typeof logEvent==='function') logEvent('plan_generated');
     if(typeof showToast==='function') showToast('Your plan is ready', 'Today: '+f+'. The coach knows your whole week now.');
     if(typeof haptic==='function') haptic('tap');
   }catch(e){ if(typeof showToast==='function') showToast('Hmm', 'Could not build the plan just now.'); }
@@ -25303,7 +25369,8 @@ function renderBodySystemReport(){
 function setBodyGoal(mode){
   const rate = mode==='cut' ? -0.5 : mode==='build' ? 0.25 : 0;
   ls('totry_body_goal', {mode, rate});
-  logEvent('goal_set', {mode});
+  // `mode` is cut / maintain / bulk — a statement about their body and what they think of it.
+  logEvent('goal_set');
   haptic('tick');
   renderBodySystemReport();
 }
@@ -37422,7 +37489,7 @@ function showPrivacyPolicy(){
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">5. What I do not do</strong></p>' +
       '<p style="margin-bottom:12px">I do not run ads. I do not sell or share your data with advertisers or data brokers. No third party pays me to feature their service. There is no advertising or profiling SDK in this app.</p>' +
-      '<p style="margin-bottom:12px">Two things do count <em>usage</em>, and you should know exactly what they are. <strong>A visitor counter</strong> (GoatCounter) records page views and where visits came from — cookie-free, no personal data, no cross-site tracking, no profile of you. <strong>Anonymous feature counts</strong> go to my own database against a random ID that is not your email — which <em>features</em> got used, with no content attached: &ldquo;app opened&rdquo;, &ldquo;reminder set&rdquo;, &ldquo;import run&rdquo;, &ldquo;a breathing exercise was done&rdquo;. Neither ever includes what you log: your vices, prayers, journal, food, money and body data are never in it. They record <em>that</em> a feature was used, never what you put into it — not the feeling you picked, not the vice, not your day rating, not the name you gave anything. There is no per-person record of whether you slipped or held on; watching someone&rsquo;s fight from the outside is the opposite of what this is for. You can switch both off in Settings &rarr; Your data, and the app works exactly the same — though a message you send me still reaches me, because you pressed send.</p>' +
+      '<p style="margin-bottom:12px">Two things do count <em>usage</em>, and you should know exactly what they are. <strong>A visitor counter</strong> (GoatCounter) records page views and where visits came from — cookie-free, no personal data, no cross-site tracking, no profile of you. <strong>Anonymous feature counts</strong> go to my own database against a random ID that is not your email — which <em>features</em> got used, with no content attached: &ldquo;app opened&rdquo;, &ldquo;reminder set&rdquo;, &ldquo;import run&rdquo;, &ldquo;a breathing exercise was done&rdquo;. Neither ever includes what you log: your vices, prayers, journal, food, money and body data are never in it. They record <em>that</em> a feature was used, never what you put into it — not the feeling you picked, not the vice, not your day rating, not the name you gave anything. <strong>One exception, and it is the only one:</strong> if the app hits an error, it sends the error message and the line it came from, so I can fix it. That text comes from the code, not from you \u2014 but I would rather tell you it exists than let you find it. There is no per-person record of whether you slipped or held on; watching someone&rsquo;s fight from the outside is the opposite of what this is for. You can switch both off in Settings &rarr; Your data, and the app works exactly the same — though a message you send me still reaches me, because you pressed send.</p>' +
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">6. What I cannot control</strong></p>' +
       '<p style="margin-bottom:12px">Once your Coach message reaches Google or Anthropic, that data is governed by their privacy policies, not mine. I have no influence over their model-training practices or retention periods. If a provider has a security breach, I cannot prevent it. Treat your Coach messages the way you would treat a message to any cloud service — not a sealed diary.</p>' +
@@ -42588,7 +42655,7 @@ function importFoodCSV(event){
     if(imported > 0){
       ls('totry_nutlog', log);
       ls('totry_food_imported', true);
-      if(typeof logEvent==='function') logEvent('csv_import', {rows: imported});
+      if(typeof logEvent==='function') logEvent('csv_import');
       if(typeof syncToCloud==='function') syncToCloud();
       document.querySelector('.modal-bg.open')?.remove();
       showToast('Welcome — your history is here ✓', imported + ' entries imported. No re-logging needed.');

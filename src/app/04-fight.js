@@ -1566,6 +1566,12 @@ function _feelingQuick(text){
 }
 // Step 2 — immediate grounding + your prayer, shown INSTANTLY (no waiting on AI), while the
 // personalised redirect generates in the background.
+// The Feeling Door's own closer. Every button in this flow removes the sheet it owns and nothing
+// else — the crisis branch used a bare '.modal-bg' sweep instead and took three static modals with
+// it, which is the fifth time that selector has done this. Named, so the next one reuses it.
+function _feelNowClose(){
+  try{ document.getElementById('feelingnow-modal')?.remove(); }catch(_){}
+}
 async function _feelingNowGo(){
   const feeling=(document.getElementById('feelingnow-input')||{}).value || '';
   const b=document.getElementById('feelingnow-body'); if(!b) return;
@@ -1579,7 +1585,7 @@ async function _feelingNowGo(){
       const _c = detectCrisis(feeling);
       if(_c){
         b.innerHTML = '<div id="fn-crisis-slot"></div>'+
-          '<button class="btn" style="margin-top:10px" onclick="document.querySelectorAll(\'.modal-bg\').forEach(function(m){m.remove();})">Close</button>';
+          '<button class="btn" style="margin-top:10px" onclick="_feelNowClose()">Close</button>';
         if(typeof showCrisisResponse==='function') showCrisisResponse('fn-crisis-slot', _c);
         return;
       }

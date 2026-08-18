@@ -3513,7 +3513,7 @@ function importFoodCSV(event){
     if(imported > 0){
       ls('totry_nutlog', log);
       ls('totry_food_imported', true);
-      if(typeof logEvent==='function') logEvent('csv_import', {rows: imported});
+      if(typeof logEvent==='function') logEvent('csv_import');
       if(typeof syncToCloud==='function') syncToCloud();
       document.querySelector('.modal-bg.open')?.remove();
       showToast('Welcome — your history is here ✓', imported + ' entries imported. No re-logging needed.');

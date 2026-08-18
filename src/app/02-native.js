@@ -543,8 +543,38 @@ function _cancelReachOuts(){
 }
 function _reachHold(why){ _setReachState({ next:null, hold:why }); _cancelReachOuts(); return 0; }
 function _wonMomentToday(){ try{ const m=(ls('totry_moments_won')||[])[0]; if(!m||!m.ts) return false; return new Date(m.ts).toLocaleDateString('en-AU')===new Date().toLocaleDateString('en-AU'); }catch(_){ return false; } }
-// A tap is the strongest receptivity signal we can get. Mark it against the newest unresolved nudge.
-function _reachOutResponded(){ try{ const a=_reachLog(); for(let i=a.length-1;i>=0;i--){ if(a[i]&&a[i].opened==null&&a[i].ts<=Date.now()){ a[i].opened=true; break; } } _saveReachLog(a); }catch(_){} }
+// A tap is the strongest receptivity signal we can get, and it is GROUND TRUTH — everything else here
+// is a guess. So it may overrule the guess.
+//
+// It had to, because it could never win the race: _resolveReachOuts() runs from initApp() and judges
+// every past nudge with a 45-minute heuristic, while the listener that calls this is wired inside
+// initNotifications(), four seconds later on a timer. Capacitor retains a launch tap until it is
+// consumed, so on a cold start the tap always arrived AFTER the verdict — and the old `opened==null`
+// guard then refused it. Someone who saw the nudge at 23:15, tapped it, and came in was recorded as
+// having ignored it. Three of those and the app stands down for two weeks and tells them: "the last
+// few went unanswered, so I stopped." It said that to a person who answered every time.
+//
+// So: mark the newest unjudged nudge if there is one, else CORRECT the most recent judged-unanswered
+// nudge from the last 12 hours. And if that correction means they are no longer ignoring us, lift a
+// stand-down that should never have started.
+function _reachOutResponded(){
+  try{
+    const a=_reachLog(); const now=Date.now();
+    let hit=-1;
+    for(let i=a.length-1;i>=0;i--){ if(a[i] && a[i].opened==null && a[i].ts<=now){ hit=i; break; } }
+    if(hit<0){
+      for(let i=a.length-1;i>=0;i--){
+        if(a[i] && a[i].opened===false && a[i].ts<=now && (now-a[i].ts) < 12*3600000){ hit=i; break; }
+      }
+    }
+    if(hit<0) return;
+    a[hit].opened=true;
+    _saveReachLog(a);
+    // Undo a stand-down this correction has just invalidated. Staying quiet for two weeks because we
+    // miscounted is the app withdrawing from someone at their hard hour for no reason at all.
+    try{ if(_reachPaused() && _reachUnansweredRun() < 3) _setReachState({ pausedUntil: 0 }); }catch(_){}
+  }catch(_){}
+}
 // Runs on every app open: did the ones we sent actually land?
 function _resolveReachOuts(){
   try{
@@ -969,7 +999,9 @@ function bootWithoutCloud(reason){
   if(_bootedLocal) return;
   _bootedLocal = true;
   console.warn('[boot] opening without the cloud:', reason);
-  try{ if(typeof logEvent==='function') logEvent('boot_offline', {reason:String(reason||'')}); }catch(_){}
+  // The reason is a diagnostic string, not a feature name, and it goes to the same row as everything
+  // else. console.error carries it for debugging without putting it in the database.
+  try{ if(typeof logEvent==='function') logEvent('boot_offline'); }catch(_){}
   try{
     const ac = document.getElementById('auth-container');
     const ob = document.getElementById('onboard');

@@ -130,7 +130,12 @@ function restoreKeys(data){
   const out = { total: keys.length, ok: 0, failed: [], full: false };
   keys.forEach(k => {
     try{
-      localStorage.setItem(k, data[k]);
+      // Write PAST the sync monitor. enableSyncMonitoring() overrides localStorage.setItem to queue
+      // every write into the durable outbox — so a restore of 178 keys queued 178 uploads AND then
+      // made the explicit syncToCloud call below, putting a second full copy of the backup into the
+      // outbox. On the device where a restore is most likely (the one that just ran out of room) that
+      // is the backup needing twice the space it says it does, at the worst possible moment.
+      (typeof _originalSetItem === 'function' ? _originalSetItem : localStorage.setItem.bind(localStorage))(k, data[k]);
       out.ok++;                                               // counted only after the write returned
       if(typeof syncToCloud === 'function' && typeof SYNC_KEYS !== 'undefined' && SYNC_KEYS.indexOf(k) !== -1){
         let parsed; try{ parsed = JSON.parse(data[k]); }catch(_){ parsed = data[k]; }
@@ -213,7 +218,7 @@ function importAllData(ev){
 //
 // So: on a quota failure, free space from the largest EXPENDABLE stores (never the fight, never the
 // journal), retry once, and if it still cannot write, say so out loud rather than pretending.
-let _lsQuotaWarned = false;
+let _lsQuotaWarned = 0;   // timestamp of the last warning, not a one-shot flag
 function _lsEmergencyPrune(){
   let freed = 0;
   // Ordered least-painful first. Photos are by far the biggest and are explicitly device-only, so a lost
@@ -284,8 +289,13 @@ function ls(k,v){
       return true;                            // recovered; the person keeps their data
     }catch(_){
       // Could not write even after reclaiming. Tell them — a lost save must never look like a saved one.
-      if(!_lsQuotaWarned){
-        _lsQuotaWarned = true;
+      // THROTTLED, NOT LATCHED. This was a one-shot boolean at module scope with no reset, so the
+      // FIRST failed write of a session warned and every one after it was silent — a person on a full
+      // device saw "Storage full" once, then wrote a journal entry, a weigh-in and a meal that all
+      // silently went nowhere while the app said "Saved" each time. Once every 30 seconds is enough to
+      // avoid a wall of toasts and still tell the truth about each new thing that did not save.
+      if(Date.now() - _lsQuotaWarned > 30000){
+        _lsQuotaWarned = Date.now();
         // SAID TWICE, DELIBERATELY. showToast() opens with `const ex=document.querySelector(
         // '.milestone-toast'); if(ex)ex.remove();` — so the caller's own success toast, fired
         // microseconds later in the same tick, deleted this warning before it ever painted. On a full
@@ -367,7 +377,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v486';
+const APP_VERSION = 'v487';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -794,6 +804,22 @@ const SYNC_KEYS = [
   // the voice. Identity has to survive a reinstall.
   'totry_sex','totry_faith_tradition','totry_faith_level','totry_faith_door_seen'
 ];
+
+// ONE LIST FOR "THIS IS A CREDENTIAL, NOT DATA".
+//
+// BACKUP_NEVER already says these must never go into an export file — the reasoning is written above
+// it — and then SYNC_KEYS uploaded the very same values to the database. So a live Strava OAuth token,
+// a Google Fit token and a Hevy API key were held server-side for every signed-in person, while the
+// privacy policy says only that "Strava sees your Strava data" and "Hevy sees your Hevy data". It does
+// not say I hold the keys to those accounts. Two lists disagreeing about what a secret is meant one of
+// them was wrong; the export list had it right.
+//
+// The cost is honest and small: reconnect Strava or Hevy on a new device, which is two taps. The
+// alternative is a database of other people's live account credentials that nobody was told about.
+for(const _cred of BACKUP_NEVER){
+  const _i = SYNC_KEYS.indexOf(_cred);
+  if(_i !== -1) SYNC_KEYS.splice(_i, 1);
+}
 // totry_cycle is deliberately NOT in the list above. Post-Dobbs, cycle data is the most sensitive
 // thing this app holds, so it stays on the device by default. It is pushed into SYNC_KEYS at runtime
 // ONLY if she switches backup on herself (Settings → Your cycle), and spliced out the moment she

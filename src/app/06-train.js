@@ -32,7 +32,7 @@ function _applyGeneratedPlan(days, goal){
     ls('totry_split', split); ls('totry_train_goal', goal); ls('totry_train_days', days); ls('totry_train_source','totry');
     ['renderSplitDayCards','loadTodaySplitCard','renderUnifiedTraining','renderSplitOverview'].forEach(fn=>{ try{ if(typeof window[fn]==='function') window[fn](); }catch(_){} });
     const ti=(typeof tIdx==='function')?tIdx():0; const f=(split[ti]||{}).focus||'your first session';
-    if(typeof logEvent==='function') logEvent('plan_generated',{days,goal});
+    if(typeof logEvent==='function') logEvent('plan_generated');
     if(typeof showToast==='function') showToast('Your plan is ready', 'Today: '+f+'. The coach knows your whole week now.');
     if(typeof haptic==='function') haptic('tap');
   }catch(e){ if(typeof showToast==='function') showToast('Hmm', 'Could not build the plan just now.'); }

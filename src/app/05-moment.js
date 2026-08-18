@@ -672,7 +672,7 @@ function openToolkit(){
   '</div>';
   document.body.appendChild(m);
   if(typeof haptic==='function') haptic('tap');
-  try{ if(typeof logEvent==='function') logEvent('toolkit_open',{suggest:sug}); }catch(_){}
+  try{ if(typeof logEvent==='function') logEvent('toolkit_open'); }catch(_){}
 }
 function openLesson(id){
   const l=_tkLesson(id); if(!l) return;
@@ -705,7 +705,7 @@ function openLesson(id){
   document.body.appendChild(m);
   try{ m.querySelector('.modal').scrollTop=0; }catch(_){}
   if(typeof haptic==='function') haptic('tap');
-  try{ if(typeof logEvent==='function') logEvent('lesson_open',{id:id}); }catch(_){}
+  try{ if(typeof logEvent==='function') logEvent('lesson_open'); }catch(_){}
 }
 function _tkPractice(id){
   const l=_tkLesson(id); if(!l) return;
@@ -748,7 +748,7 @@ function _tkDone(id){
   _tkMark(id);
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
   if(typeof haptic==='function') haptic('success');
-  try{ if(typeof logEvent==='function') logEvent('lesson_done',{id:id}); }catch(_){}
+  try{ if(typeof logEvent==='function') logEvent('lesson_done'); }catch(_){}
   const did='You learned '+((l&&l.t)?l.t.charAt(0).toLowerCase()+l.t.slice(1):'a skill')+' while nothing was going wrong \u2014 which is the only time anybody ever really learns anything. It\u2019ll be there when you need it.';
   if(typeof theRelease==='function') theRelease({did:did});
   else if(typeof showToast==='function') showToast('Picked up','It\u2019ll be there when you need it.');
@@ -1798,7 +1798,9 @@ function openProgressCheckin(){
       }
     }catch(_){}
     // A count, with nothing personal in it — how many people answered, not what they said.
-    try{ if(typeof logEvent==='function') logEvent('progress_checkin', { areas:picked.size, wrote:note?1:0 }); }catch(_){}
+    // How many life areas someone checked in on, and whether they wrote something, is a shape of their
+    // week. The event that a check-in happened is the feature signal; the rest is theirs.
+    try{ if(typeof logEvent==='function') logEvent('progress_checkin'); }catch(_){}
     try{ ls('totry_last_checkin', Date.now()); }catch(_){}
     m.remove();
     const t=document.createElement('div'); t.className='modal-bg open'; t.style.alignItems='center';
