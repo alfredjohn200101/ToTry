@@ -27,7 +27,7 @@ async function refreshAIPushMessages(opts){
     const name = (ls('totry_name')||'').trim();
     const identity = ls('totry_identity') || '';
     const sys = 'You write short, warm push-notification lines for a whole-life self-improvement app. Each line is ONE sentence, encouraging and grounding — never guilt-inducing, never nagging, never pressuring. Think a wise friend in their corner. '+((typeof faithVoiceNote==='function')?faithVoiceNote():'')+'Return ONLY JSON.';
-    const prompt = 'Write notification lines for '+(name||'someone')+' on their journey of faith and self-improvement'+(identity?(' (becoming: "'+identity+'")'):'')+'.\n\nReturn ONLY this JSON, no markdown:\n{"morning":["6 short morning lines — hopeful, inviting them gently into the day"],"evening":["6 short evening lines — calm, inviting honest reflection and rest"]}\nEach line under 90 characters. No guilt, no stre***-pressure, no "don\u2019t break your streak". Warm and human.';
+    const prompt = 'Write notification lines for '+(name||'someone')+' on their journey of '+((typeof faithTradition==='function'&&faithTradition()==='secular')?'self-improvement':'faith and self-improvement')+''+(identity?(' (becoming: "'+identity+'")'):'')+'.\n\nReturn ONLY this JSON, no markdown:\n{"morning":["6 short morning lines — hopeful, inviting them gently into the day"],"evening":["6 short evening lines — calm, inviting honest reflection and rest"]}\nEach line under 90 characters. No guilt, no stre***-pressure, no "don\u2019t break your streak". Warm and human.';
     const raw = await api(sys, [], prompt, 700);
     const m = raw.match(/\{[\s\S]*\}/);
     if(!m) return;

@@ -66,6 +66,9 @@ function spendingRead(){
   if(!times.length) return null;
   const spanDays = Math.max(1, (Math.max(...times) - Math.min(...times))/86400000);
   const months = Math.max(0.5, spanDays/30.44);
+  // A monthly figure from six days of data is a guess wearing a number's clothes. Callers get the real
+  // span so they can withhold the /mo line until there is a month behind it — see enoughForMonthly.
+  const enoughForMonthly = spanDays >= 21;
   const exp = list.filter(t=>t.type==='expense');
   const inc = list.filter(t=>t.type==='income');
   const spend = exp.reduce((s,t)=>s+(t.amount||0),0);
@@ -81,6 +84,7 @@ function spendingRead(){
     spendPerMonth: spend/months, incomePerMonth: income/months, netPerMonth: (income-spend)/months,
     cats, lockIn, count: list.length,
     from: new Date(Math.min(...times)), to: new Date(Math.max(...times)),
+    spanDays, enoughForMonthly
   };
 }
 

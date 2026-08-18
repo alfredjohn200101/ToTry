@@ -517,7 +517,10 @@ function renderWorkoutSession(){
       card.style.borderLeft = '3px solid var(--go)';
       card.style.marginTop = '-4px';
     }
-    const safeName = ex.name.replace(/'/g, "\\'");
+    // Escapes the apostrophe and NOT the double quote, while the value goes into a double-quoted
+  // attribute — so a name like 5\" deficit deadlift ends the attribute early and sprays the rest of
+  // the handler into the markup as stray attributes. _jsAttr does both.
+  const safeName = (typeof _jsAttr === 'function') ? _jsAttr(ex.name) : ex.name.replace(/'/g, "\\'");
     const supersetBadge = ex.superset && ei > 0 ?
       '<span style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);margin-left:8px;letter-spacing:0.1em">⇆ SUPERSET</span>' : '';
     const supersetBtn = ei > 0 ?

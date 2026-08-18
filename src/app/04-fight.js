@@ -2047,6 +2047,7 @@ function maybeShowCompanion(){
   }catch(_){ }
 }
 
+let _compReturnFocus = null;
 function openCompanion(){
   const ov = document.getElementById('companion-overlay');
   if(!ov) return;
@@ -2064,6 +2065,10 @@ function openCompanion(){
   }
   if(subEl) subEl.textContent = h >= 21 || h < 5 ? "Late one. No wrong answer — I'm just here." : "No wrong answer. I'm just here.";
   ov.classList.add('open'); document.getElementById('companion-backdrop')?.classList.add('open');
+  // Move the reader INTO the sheet, and remember where to put them back. Without this a screen-reader
+  // user opening the companion stayed in the page behind it, with the whole app still swipeable and
+  // nothing announcing that a sheet had opened at all.
+  try{ _compReturnFocus = document.activeElement; ov.focus({preventScroll:true}); }catch(_){}
 }
 
 function _compPhase(id){
@@ -2080,6 +2085,10 @@ function dismissCompanion(){ closeCompanion(); }
 function closeCompanion(){
   const ov = document.getElementById('companion-overlay');
   if(ov){ ov.classList.remove('open'); ov.style.transform=''; }
+  // Put the reader back where they were, or focus is left on a hidden element and the next swipe
+  // starts from the top of the document.
+  try{ if(_compReturnFocus && document.contains(_compReturnFocus)) _compReturnFocus.focus({preventScroll:true}); }catch(_){}
+  _compReturnFocus = null;
   const bd = document.getElementById('companion-backdrop');
   if(bd) bd.classList.remove('open');
   _compStruggle = null; _compHistory = []; _compManualMechanism = null;

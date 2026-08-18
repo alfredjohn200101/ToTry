@@ -923,7 +923,11 @@ function handleCSVFile(ev){
         parsed.push({
           desc: desc.slice(0,60),
           amount: Math.abs(amt),
-          type: amt < 0 ? 'expense' : 'income',
+          // A CREDIT IS NOT INCOME. Moving money from savings, a refund, or a repaid loan all arrive as
+      // positive amounts, and every one of them was booked as income — which inflates the figure the
+      // tithe and giving screens take a percentage OF. Someone is then told to give ten percent of
+      // money they already had. Self-transfers become a neutral type the income totals ignore.
+      type: amt < 0 ? 'expense' : (/\btransfer|from savings|internal|own account|repayment received\b/i.test(String(desc||'')) ? 'transfer' : 'income'),
           category: amt < 0 ? _autoCategory(desc) : 'Income',
           ts: validWhen.toISOString(),
           date: validWhen.toLocaleDateString('en-AU'),
@@ -998,7 +1002,11 @@ function spendingReadHTML(){
   const r = spendingRead();
   if(!r) return '<div style="font-size:13px;color:var(--tx2);line-height:1.6">Not enough yet to see a pattern. Import a statement and I’ll show you where it’s going.</div>';
   const money = n => curSym()+Math.abs(Math.round(n)).toLocaleString();
-  const period = r.months < 1.4 ? 'about a month' : Math.round(r.months)+' months';
+  // Say the span they ACTUALLY have. Math.max(0.5, …) inside spendingRead invents 15.2 days out of a
+  // week, so six days of logging were reported as "about a month" and the totals divided accordingly.
+  const period = r.enoughForMonthly === false
+    ? ('the last ' + Math.max(1, Math.round(r.spanDays)) + ' days')
+    : (r.months < 1.4 ? 'about a month' : Math.round(r.months) + ' months');
   let h = '';
 
   // 1. The shape of it. Honest first — including the uncomfortable direction.

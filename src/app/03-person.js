@@ -810,8 +810,9 @@ function buildPTCtx(){
   let cardioCtx = '';
   try{
     const acts = ls('totry_strava_activities') || [];
-    if(acts.length){ const a = acts[0];
-      cardioCtx = '\nMost recent cardio (Strava): ' + (a.type||'activity') + ', ' + (a.distance? (a.distance/1000).toFixed(1)+'km':'') + (a.moving_time? ', '+Math.round(a.moving_time/60)+'min':'')
+    const _fresh = acts.filter(x => x && x.start_date && (Date.now() - new Date(x.start_date).getTime()) < 14*86400000);
+    if(_fresh.length){ const a = _fresh[0];
+      cardioCtx = '\nMost recent cardio (Strava, ' + new Date(a.start_date).toLocaleDateString('en-AU') + '): ' + (a.type||'activity') + ', ' + (a.distance? (a.distance/1000).toFixed(1)+'km':'') + (a.moving_time? ', '+Math.round(a.moving_time/60)+'min':'')
         + (a.avg_hr? ', avg HR '+a.avg_hr+'bpm':'') + (a.max_hr? ' (max '+a.max_hr+')':'')
         + ((a.calories && !(typeof nutGentle==='function'&&nutGentle()))? ', '+a.calories+' cal':'') + (a.suffer_score? ', effort '+a.suffer_score:'')
         + '. (Use this real performance data — HR and effort tell you how hard it actually was.)';

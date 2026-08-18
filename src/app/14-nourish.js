@@ -3140,7 +3140,7 @@ function renderNutritionLog(){
       // "Add food" under every meal — MFP's core interaction, one tap from each meal to the search.
       const add=document.createElement('div');
       add.style.cssText='padding:'+(has?'8px':'9px')+' 4px 2px 4px';
-      add.innerHTML='<button onclick="selectMealChip(\''+meal+'\');var s=document.getElementById(\'nut-search-in\');if(s){s.scrollIntoView({behavior:\'smooth\',block:\'center\'});setTimeout(function(){s.focus();},300);}" style="background:none;border:none;color:'+(has?'var(--go)':'var(--tx3)')+';font-family:\'Outfit\',sans-serif;font-size:12.5px;cursor:pointer;padding:0">+ Add food</button>';
+      add.innerHTML='<button onclick="selectMealChip(\''+meal+'\');var s=document.getElementById(\'nut-search-in\');if(s){s.scrollIntoView({behavior:\'smooth\',block:\'center\'});setTimeout(function(){s.focus();},300);}" style="background:none;border:none;color:'+(has?'var(--go)':'var(--tx3)')+';font-family:\'Outfit\',sans-serif;font-size:12.5px;cursor:pointer;padding:14px 10px;margin:-14px -10px;min-height:44px">+ Add food</button>';
       list.appendChild(add);
     });
   }

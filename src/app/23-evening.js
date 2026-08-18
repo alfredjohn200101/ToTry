@@ -67,8 +67,16 @@ function renderEveningHabitTickList(){
     // right now, so it's auto-ticked on save; listing it here is redundant/confusing.
     if(/evening check.?in|evening checkin|night check.?in/i.test(h.n)) return;
     const done = h.d[ti] === 1;
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 12px;background:'+(done?'var(--gr-bg)':'var(--bg3)')+';border:1px solid '+(done?'var(--gr-bd)':'var(--bd)')+';border-radius:8px;margin-bottom:6px;cursor:pointer';
+    // A CHECKBOX A KEYBOARD CAN REACH. This was a <div> with an onclick — the only manual way to tick
+    // a habit in the whole app, and it was unfocusable, unannounced, and its state lived in the colour
+    // of a nested empty div. "Tick today's habits" had nothing tickable for anyone not using a mouse
+    // or a touchscreen, and nothing at all for a screen reader.
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', done ? 'true' : 'false');
+    row.setAttribute('aria-label', h.n);
+    row.style.cssText = 'width:100%;text-align:left;font:inherit;border:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px;background:'+(done?'var(--gr-bg)':'var(--bg3)')+';border:1px solid '+(done?'var(--gr-bd)':'var(--bd)')+';border-radius:8px;margin-bottom:6px;cursor:pointer';
     row.onclick = () => toggleEveningHabit(hi);
     row.innerHTML = '<div style="width:22px;height:22px;border-radius:6px;border:2px solid '+(done?'var(--gr)':'var(--bd)')+';background:'+(done?'var(--gr)':'transparent')+';display:flex;align-items:center;justify-content:center;color:#0C0C0E;font-weight:700;flex-shrink:0">'+(done?'&#10003;':'')+'</div>'+
       '<div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--tx)">'+_escFew(h.n)+'</div>'+

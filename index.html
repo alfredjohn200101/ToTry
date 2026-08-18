@@ -4168,7 +4168,7 @@ Amen.</div></div>
 </div>
 
 <div class="companion-backdrop" id="companion-backdrop" onclick="dismissCompanion()"></div>
-<div class="companion-overlay" id="companion-overlay">
+<div class="companion-overlay" id="companion-overlay" role="dialog" aria-modal="true" aria-label="The companion — help right now" tabindex="-1">
   <!-- Phase 0: the gentle check-in -->
   <div class="comp-phase active" id="comp-checkin">
     <button class="comp-dismiss" id="comp-dismiss-x" onclick="dismissCompanion()" aria-label="Close">&#215;</button>
@@ -4857,7 +4857,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v491';
+const APP_VERSION = 'v492';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -8027,8 +8027,9 @@ function buildPTCtx(){
   let cardioCtx = '';
   try{
     const acts = ls('totry_strava_activities') || [];
-    if(acts.length){ const a = acts[0];
-      cardioCtx = '\nMost recent cardio (Strava): ' + (a.type||'activity') + ', ' + (a.distance? (a.distance/1000).toFixed(1)+'km':'') + (a.moving_time? ', '+Math.round(a.moving_time/60)+'min':'')
+    const _fresh = acts.filter(x => x && x.start_date && (Date.now() - new Date(x.start_date).getTime()) < 14*86400000);
+    if(_fresh.length){ const a = _fresh[0];
+      cardioCtx = '\nMost recent cardio (Strava, ' + new Date(a.start_date).toLocaleDateString('en-AU') + '): ' + (a.type||'activity') + ', ' + (a.distance? (a.distance/1000).toFixed(1)+'km':'') + (a.moving_time? ', '+Math.round(a.moving_time/60)+'min':'')
         + (a.avg_hr? ', avg HR '+a.avg_hr+'bpm':'') + (a.max_hr? ' (max '+a.max_hr+')':'')
         + ((a.calories && !(typeof nutGentle==='function'&&nutGentle()))? ', '+a.calories+' cal':'') + (a.suffer_score? ', effort '+a.suffer_score:'')
         + '. (Use this real performance data — HR and effort tell you how hard it actually was.)';
@@ -14007,6 +14008,7 @@ function maybeShowCompanion(){
   }catch(_){ }
 }
 
+let _compReturnFocus = null;
 function openCompanion(){
   const ov = document.getElementById('companion-overlay');
   if(!ov) return;
@@ -14024,6 +14026,10 @@ function openCompanion(){
   }
   if(subEl) subEl.textContent = h >= 21 || h < 5 ? "Late one. No wrong answer — I'm just here." : "No wrong answer. I'm just here.";
   ov.classList.add('open'); document.getElementById('companion-backdrop')?.classList.add('open');
+  // Move the reader INTO the sheet, and remember where to put them back. Without this a screen-reader
+  // user opening the companion stayed in the page behind it, with the whole app still swipeable and
+  // nothing announcing that a sheet had opened at all.
+  try{ _compReturnFocus = document.activeElement; ov.focus({preventScroll:true}); }catch(_){}
 }
 
 function _compPhase(id){
@@ -14040,6 +14046,10 @@ function dismissCompanion(){ closeCompanion(); }
 function closeCompanion(){
   const ov = document.getElementById('companion-overlay');
   if(ov){ ov.classList.remove('open'); ov.style.transform=''; }
+  // Put the reader back where they were, or focus is left on a hidden element and the next swipe
+  // starts from the top of the document.
+  try{ if(_compReturnFocus && document.contains(_compReturnFocus)) _compReturnFocus.focus({preventScroll:true}); }catch(_){}
+  _compReturnFocus = null;
   const bd = document.getElementById('companion-backdrop');
   if(bd) bd.classList.remove('open');
   _compStruggle = null; _compHistory = []; _compManualMechanism = null;
@@ -14292,7 +14302,12 @@ function _feelMove(feeling){
     '<button class="btn" onclick="_lockItIn(\''+feeling+'\')" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0 0 4px">🔒 '+(_saved?'Update':'Make')+' my plan for next time</button>'+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0">Not now</button>'+
     '</div>';
+  // A DIALOG, AND THE READER GOES INTO IT. closeFeelingDoor() runs first and hands focus back to the
+  // orb, so without this the sheet that is the whole point of the door — the move they were sent to —
+  // opened behind them, unannounced, with focus on a button on the screen underneath.
+  m.setAttribute('role','dialog'); m.setAttribute('aria-modal','true'); m.setAttribute('tabindex','-1');
   document.body.appendChild(m);
+  try{ (m.querySelector('button') || m).focus({preventScroll:true}); }catch(_){}
   if(typeof haptic==='function') haptic('tap');
 }
 // The 2-minute start — for procrastination. Asks the one thing, then shrinks it to a startable size.
@@ -16124,7 +16139,7 @@ async function _researchProtocol(name, key){
     // Christian anchor as the centre of their in-the-moment protocol. faithVoiceNote() already carries
     // the person's tradition (and says "no religious framing" for secular).
     const _fv = (typeof faithVoiceNote==='function') ? faithVoiceNote() : '';
-    const sys = "You are a clinical researcher with deep knowledge of evidence-based behavior-change protocols. " + _fv + " Given a struggle, return the single best evidence-based mechanism for helping someone through an acute moment of it, in 2-3 sentences, naming the approach (e.g. urge surfing, cognitive defusion, behavioral interruption, grounding) and how it's applied in the moment. Be specific and practical. Then in one more sentence, note how faith can anchor it. Return ONLY the guidance text, no preamble.";
+    const sys = "You are a clinical researcher with deep knowledge of evidence-based behavior-change protocols. " + _fv + " Given a struggle, return the single best evidence-based mechanism for helping someone through an acute moment of it, in 2-3 sentences, naming the approach (e.g. urge surfing, cognitive defusion, behavioral interruption, grounding) and how it's applied in the moment. Be specific and practical. " + ((typeof faithTradition==='function' && faithTradition()!=='secular') ? 'Then in one more sentence, note how their faith can anchor it. ' : '') + "Return ONLY the guidance text, no preamble.";
     const txt = await api(sys, [], 'The struggle: "'+name+'". What is the best evidence-based in-the-moment approach?', 350, { web_search:true, timeout:38000 });
     if(txt && txt.length > 40){
       const store = _getCompanionProtocols();
@@ -18235,8 +18250,8 @@ function stakesForAmount(amount){
       // the payoff — so a single $50 was reported as bringing the freedom date months closer. Motivating
       // and false, on the number the app treats as its most motivating frame. Knock the amount off the
       // priority debt's balance instead and re-project at the unchanged rate.
-      const _after = (debts||[]).map(function(d){
-        if(d !== debt) return d;
+      const _after = (debts||[]).map(function(d, i){
+        if(i !== debt.idx) return d;
         const c = Object.assign({}, d);
         c.p = (parseFloat(c.p)||0) + amount;      // paid-off portion grows by the one-off
         return c;
@@ -24861,7 +24876,7 @@ function renderNutritionLog(){
       // "Add food" under every meal — MFP's core interaction, one tap from each meal to the search.
       const add=document.createElement('div');
       add.style.cssText='padding:'+(has?'8px':'9px')+' 4px 2px 4px';
-      add.innerHTML='<button onclick="selectMealChip(\''+meal+'\');var s=document.getElementById(\'nut-search-in\');if(s){s.scrollIntoView({behavior:\'smooth\',block:\'center\'});setTimeout(function(){s.focus();},300);}" style="background:none;border:none;color:'+(has?'var(--go)':'var(--tx3)')+';font-family:\'Outfit\',sans-serif;font-size:12.5px;cursor:pointer;padding:0">+ Add food</button>';
+      add.innerHTML='<button onclick="selectMealChip(\''+meal+'\');var s=document.getElementById(\'nut-search-in\');if(s){s.scrollIntoView({behavior:\'smooth\',block:\'center\'});setTimeout(function(){s.focus();},300);}" style="background:none;border:none;color:'+(has?'var(--go)':'var(--tx3)')+';font-family:\'Outfit\',sans-serif;font-size:12.5px;cursor:pointer;padding:14px 10px;margin:-14px -10px;min-height:44px">+ Add food</button>';
       list.appendChild(add);
     });
   }
@@ -27746,7 +27761,11 @@ function handleCSVFile(ev){
         parsed.push({
           desc: desc.slice(0,60),
           amount: Math.abs(amt),
-          type: amt < 0 ? 'expense' : 'income',
+          // A CREDIT IS NOT INCOME. Moving money from savings, a refund, or a repaid loan all arrive as
+      // positive amounts, and every one of them was booked as income — which inflates the figure the
+      // tithe and giving screens take a percentage OF. Someone is then told to give ten percent of
+      // money they already had. Self-transfers become a neutral type the income totals ignore.
+      type: amt < 0 ? 'expense' : (/\btransfer|from savings|internal|own account|repayment received\b/i.test(String(desc||'')) ? 'transfer' : 'income'),
           category: amt < 0 ? _autoCategory(desc) : 'Income',
           ts: validWhen.toISOString(),
           date: validWhen.toLocaleDateString('en-AU'),
@@ -27821,7 +27840,11 @@ function spendingReadHTML(){
   const r = spendingRead();
   if(!r) return '<div style="font-size:13px;color:var(--tx2);line-height:1.6">Not enough yet to see a pattern. Import a statement and I’ll show you where it’s going.</div>';
   const money = n => curSym()+Math.abs(Math.round(n)).toLocaleString();
-  const period = r.months < 1.4 ? 'about a month' : Math.round(r.months)+' months';
+  // Say the span they ACTUALLY have. Math.max(0.5, …) inside spendingRead invents 15.2 days out of a
+  // week, so six days of logging were reported as "about a month" and the totals divided accordingly.
+  const period = r.enoughForMonthly === false
+    ? ('the last ' + Math.max(1, Math.round(r.spanDays)) + ' days')
+    : (r.months < 1.4 ? 'about a month' : Math.round(r.months) + ' months');
   let h = '';
 
   // 1. The shape of it. Honest first — including the uncomfortable direction.
@@ -27989,6 +28012,9 @@ function spendingRead(){
   if(!times.length) return null;
   const spanDays = Math.max(1, (Math.max(...times) - Math.min(...times))/86400000);
   const months = Math.max(0.5, spanDays/30.44);
+  // A monthly figure from six days of data is a guess wearing a number's clothes. Callers get the real
+  // span so they can withhold the /mo line until there is a month behind it — see enoughForMonthly.
+  const enoughForMonthly = spanDays >= 21;
   const exp = list.filter(t=>t.type==='expense');
   const inc = list.filter(t=>t.type==='income');
   const spend = exp.reduce((s,t)=>s+(t.amount||0),0);
@@ -28004,6 +28030,7 @@ function spendingRead(){
     spendPerMonth: spend/months, incomePerMonth: income/months, netPerMonth: (income-spend)/months,
     cats, lockIn, count: list.length,
     from: new Date(Math.min(...times)), to: new Date(Math.max(...times)),
+    spanDays, enoughForMonthly
   };
 }
 
@@ -31380,7 +31407,10 @@ function renderWorkoutSession(){
       card.style.borderLeft = '3px solid var(--go)';
       card.style.marginTop = '-4px';
     }
-    const safeName = ex.name.replace(/'/g, "\\'");
+    // Escapes the apostrophe and NOT the double quote, while the value goes into a double-quoted
+  // attribute — so a name like 5\" deficit deadlift ends the attribute early and sprays the rest of
+  // the handler into the markup as stray attributes. _jsAttr does both.
+  const safeName = (typeof _jsAttr === 'function') ? _jsAttr(ex.name) : ex.name.replace(/'/g, "\\'");
     const supersetBadge = ex.superset && ei > 0 ?
       '<span style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);margin-left:8px;letter-spacing:0.1em">⇆ SUPERSET</span>' : '';
     const supersetBtn = ei > 0 ?
@@ -33681,8 +33711,16 @@ function renderEveningHabitTickList(){
     // right now, so it's auto-ticked on save; listing it here is redundant/confusing.
     if(/evening check.?in|evening checkin|night check.?in/i.test(h.n)) return;
     const done = h.d[ti] === 1;
-    const row = document.createElement('div');
-    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 12px;background:'+(done?'var(--gr-bg)':'var(--bg3)')+';border:1px solid '+(done?'var(--gr-bd)':'var(--bd)')+';border-radius:8px;margin-bottom:6px;cursor:pointer';
+    // A CHECKBOX A KEYBOARD CAN REACH. This was a <div> with an onclick — the only manual way to tick
+    // a habit in the whole app, and it was unfocusable, unannounced, and its state lived in the colour
+    // of a nested empty div. "Tick today's habits" had nothing tickable for anyone not using a mouse
+    // or a touchscreen, and nothing at all for a screen reader.
+    const row = document.createElement('button');
+    row.type = 'button';
+    row.setAttribute('role', 'checkbox');
+    row.setAttribute('aria-checked', done ? 'true' : 'false');
+    row.setAttribute('aria-label', h.n);
+    row.style.cssText = 'width:100%;text-align:left;font:inherit;border:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px;background:'+(done?'var(--gr-bg)':'var(--bg3)')+';border:1px solid '+(done?'var(--gr-bd)':'var(--bd)')+';border-radius:8px;margin-bottom:6px;cursor:pointer';
     row.onclick = () => toggleEveningHabit(hi);
     row.innerHTML = '<div style="width:22px;height:22px;border-radius:6px;border:2px solid '+(done?'var(--gr)':'var(--bd)')+';background:'+(done?'var(--gr)':'transparent')+';display:flex;align-items:center;justify-content:center;color:#0C0C0E;font-weight:700;flex-shrink:0">'+(done?'&#10003;':'')+'</div>'+
       '<div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--tx)">'+_escFew(h.n)+'</div>'+
@@ -35029,8 +35067,10 @@ function computeYearInReview(year){
   const totalVolume = workouts.reduce((s, w) => s + (w.volume || 0), 0);
   
   // Money: vice savings + transactions
-  const viceSavings = (ls('totry_vice_savings_log')||[])
-    .filter(e => inYear(e.ts)).reduce((s, e) => s + (e.amount || 0), 0);
+  // One source for "money saved from vices" — the same one the Money tab uses. See totalReclaimed().
+  const viceSavings = (typeof totalReclaimed === 'function')
+    ? totalReclaimed()
+    : (ls('totry_vice_savings_log')||[]).filter(e => inYear(e.ts)).reduce((s, e) => s + (e.amount || 0), 0);
   const transactions = (ls('totry_transactions')||[]).filter(t => inYear(t.ts));
   const yearIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const yearExpenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
@@ -38138,7 +38178,7 @@ async function refreshAIPushMessages(opts){
     const name = (ls('totry_name')||'').trim();
     const identity = ls('totry_identity') || '';
     const sys = 'You write short, warm push-notification lines for a whole-life self-improvement app. Each line is ONE sentence, encouraging and grounding — never guilt-inducing, never nagging, never pressuring. Think a wise friend in their corner. '+((typeof faithVoiceNote==='function')?faithVoiceNote():'')+'Return ONLY JSON.';
-    const prompt = 'Write notification lines for '+(name||'someone')+' on their journey of faith and self-improvement'+(identity?(' (becoming: "'+identity+'")'):'')+'.\n\nReturn ONLY this JSON, no markdown:\n{"morning":["6 short morning lines — hopeful, inviting them gently into the day"],"evening":["6 short evening lines — calm, inviting honest reflection and rest"]}\nEach line under 90 characters. No guilt, no stre***-pressure, no "don\u2019t break your streak". Warm and human.';
+    const prompt = 'Write notification lines for '+(name||'someone')+' on their journey of '+((typeof faithTradition==='function'&&faithTradition()==='secular')?'self-improvement':'faith and self-improvement')+''+(identity?(' (becoming: "'+identity+'")'):'')+'.\n\nReturn ONLY this JSON, no markdown:\n{"morning":["6 short morning lines — hopeful, inviting them gently into the day"],"evening":["6 short evening lines — calm, inviting honest reflection and rest"]}\nEach line under 90 characters. No guilt, no stre***-pressure, no "don\u2019t break your streak". Warm and human.';
     const raw = await api(sys, [], prompt, 700);
     const m = raw.match(/\{[\s\S]*\}/);
     if(!m) return;

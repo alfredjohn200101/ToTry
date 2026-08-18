@@ -230,7 +230,12 @@ function _feelMove(feeling){
     '<button class="btn" onclick="_lockItIn(\''+feeling+'\')" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0 0 4px">🔒 '+(_saved?'Update':'Make')+' my plan for next time</button>'+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0">Not now</button>'+
     '</div>';
+  // A DIALOG, AND THE READER GOES INTO IT. closeFeelingDoor() runs first and hands focus back to the
+  // orb, so without this the sheet that is the whole point of the door — the move they were sent to —
+  // opened behind them, unannounced, with focus on a button on the screen underneath.
+  m.setAttribute('role','dialog'); m.setAttribute('aria-modal','true'); m.setAttribute('tabindex','-1');
   document.body.appendChild(m);
+  try{ (m.querySelector('button') || m).focus({preventScroll:true}); }catch(_){}
   if(typeof haptic==='function') haptic('tap');
 }
 // The 2-minute start — for procrastination. Asks the one thing, then shrinks it to a startable size.

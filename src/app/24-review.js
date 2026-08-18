@@ -360,8 +360,10 @@ function computeYearInReview(year){
   const totalVolume = workouts.reduce((s, w) => s + (w.volume || 0), 0);
   
   // Money: vice savings + transactions
-  const viceSavings = (ls('totry_vice_savings_log')||[])
-    .filter(e => inYear(e.ts)).reduce((s, e) => s + (e.amount || 0), 0);
+  // One source for "money saved from vices" — the same one the Money tab uses. See totalReclaimed().
+  const viceSavings = (typeof totalReclaimed === 'function')
+    ? totalReclaimed()
+    : (ls('totry_vice_savings_log')||[]).filter(e => inYear(e.ts)).reduce((s, e) => s + (e.amount || 0), 0);
   const transactions = (ls('totry_transactions')||[]).filter(t => inYear(t.ts));
   const yearIncome = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
   const yearExpenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);

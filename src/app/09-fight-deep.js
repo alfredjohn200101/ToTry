@@ -1443,8 +1443,8 @@ function stakesForAmount(amount){
       // the payoff — so a single $50 was reported as bringing the freedom date months closer. Motivating
       // and false, on the number the app treats as its most motivating frame. Knock the amount off the
       // priority debt's balance instead and re-project at the unchanged rate.
-      const _after = (debts||[]).map(function(d){
-        if(d !== debt) return d;
+      const _after = (debts||[]).map(function(d, i){
+        if(i !== debt.idx) return d;
         const c = Object.assign({}, d);
         c.p = (parseFloat(c.p)||0) + amount;      // paid-off portion grows by the one-off
         return c;
