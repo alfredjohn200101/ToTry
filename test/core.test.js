@@ -3284,6 +3284,43 @@ H.section('dead code that was one caller away from confusing someone');
   H.ok(!/M17 5H9\.5/.test(H.html), 'no dollar-sign glyph is drawn in any icon');
 }
 
+// ── the numbers and doors fixed in v491-v492, held in place ─────────────────────────────────────
+{
+  H.section('v491-v492 fixes stay fixed');
+  const code2 = H.html.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  const body2 = n => fnBodyOf(code2, n);
+
+  // A goal of ZERO calories was the one value that skipped the eating-disorder door: "0" is a truthy
+  // string, so it survived `calV || existing.cal || 2100`, and the gate read `cal > 0 && cal < floor`.
+  H.ok(!/cal\s*>\s*0\s*&&\s*cal\s*<\s*\(/.test(code2),
+       'the low-calorie care gate no longer excludes a goal of zero — the value that most needed it');
+
+  // The debt-free date extrapolated from payment RECORDS; three debts paid on payday is one occasion.
+  const rate2 = body2('monthlyPaymentRate');
+  H.ok(/const n=distinctDays/.test(rate2), 'the payment rate counts occasions, not records');
+
+  // Two importers snapshot totry_workouts, then make up to 50 network calls, then wrote it back whole.
+  H.ok((code2.match(/const _fresh = ls\('totry_workouts'\)/g) || []).length >= 2,
+       'both workout importers merge onto a fresh read instead of writing a stale snapshot back');
+
+  // The gambling door's stake compared a COPY by identity, so the payment applied to nothing.
+  H.ok(!/if\(d !== debt\) return d;/.test(code2), 'the one-off payment is applied by index, not object identity');
+
+  // "Tick today's habits" was a div with an onclick — the only manual habit control in the app.
+  H.ok(/setAttribute\('role', 'checkbox'\)/.test(code2),
+       'evening habit rows are checkboxes a keyboard and a screen reader can reach');
+
+  // The companion had no dialog semantics at all.
+  H.ok(/id="companion-overlay"[^>]*role="dialog"/.test(H.html), 'the companion is a dialog');
+
+  // Year in Review and the Money tab gave two different "money saved from vices".
+  H.ok(/totalReclaimed\(\)/.test(body2('computeYearInReview') || ''),
+       'Year in Review reads the same reclaimed total the Money tab shows');
+
+  // A monthly figure invented from six days of logging.
+  H.ok(/enoughForMonthly/.test(code2), 'spendingRead says whether it has the span to claim a monthly figure');
+}
+
 // ── a person's own words in an onclick attribute ─────────────────────────────────────────────────
 // An inline handler is parsed TWICE — entities first, then the result compiled as JavaScript. So
 // escaping an apostrophe as &#39; is exactly wrong there: it decodes back to ' before compilation and
