@@ -162,12 +162,20 @@ const serve = () => new Promise(res => {
         if (out.text.includes(bad)) out.nan.push(bad);
       }
       // The crisis bridge must be reachable without an account, from a cold start.
+      // This probe appends its container to document.body — which, since v482, is exactly the case
+      // showCrisisResponse REFUSES to leave alone: body is `position:fixed; overflow:hidden`, so a card
+      // put there is clipped and unreachable, and the card is now lifted into a fixed overlay instead.
+      // (That is not hypothetical — scripture search did precisely this, and a person typing the worst
+      // thing they will ever type saw an empty box.) So read the card wherever it ended up, not where
+      // this probe happened to put it, and clean up both possible homes.
       try {
         const d = document.createElement('div'); d.id = '__probe'; document.body.appendChild(d);
         if (typeof showCrisisResponse === 'function') showCrisisResponse('__probe', 'suicide');
-        const t = d.innerText || '';
+        const card = document.querySelector('[aria-label="Urgent: real people you can contact right now"]');
+        const t = (card && card.innerText) || d.innerText || '';
         out.crisisReachable = /13\s?11\s?14/.test(t) && /988/.test(t);
         d.remove();
+        document.querySelectorAll('.crisis-rescue-ov').forEach(function(o){ o.remove(); });
       } catch (_) {}
       return out;
     });

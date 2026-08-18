@@ -1047,9 +1047,22 @@ async function searchBible(query){
     if(typeof detectCrisis==='function'){
       const _c = detectCrisis(query);
       if(_c){
-        const _r=document.getElementById('bible-search-results')||document.getElementById('bible-results');
-        if(_r){ _r.innerHTML='<div id="bsr-crisis-slot"></div>'; if(typeof showCrisisResponse==='function') showCrisisResponse('bsr-crisis-slot', _c); }
-        else if(typeof showCrisisResponse==='function'){ const d=document.createElement('div'); d.id='bsr-crisis-slot'; document.body.appendChild(d); showCrisisResponse('bsr-crisis-slot', _c); }
+        // 'br-search-results' is the container that EXISTS — it is what the non-crisis path below
+        // writes into, nine lines down. The two ids this used to reach for appear nowhere in the app,
+        // in markup or in JS, so the lookup always failed and the fallback dropped the card into a
+        // clipped document.body where nobody could ever see it. findVerse() above is the right shape.
+        const _r=document.getElementById('br-search-results');
+        if(_r){
+          _r.style.display='';
+          _r.innerHTML='<div id="bsr-crisis-slot"></div>';
+          if(typeof showCrisisResponse==='function') showCrisisResponse('bsr-crisis-slot', _c);
+          try{ _r.scrollIntoView({behavior:'smooth', block:'start'}); }catch(_){}
+        } else if(typeof showCrisisResponse==='function'){
+          // Last resort only. showCrisisResponse lifts an unseeable card into a fixed overlay itself,
+          // so even this path now reaches the person rather than the document.
+          const d=document.createElement('div'); d.id='bsr-crisis-slot'; document.body.appendChild(d);
+          showCrisisResponse('bsr-crisis-slot', _c);
+        }
         return;
       }
     }

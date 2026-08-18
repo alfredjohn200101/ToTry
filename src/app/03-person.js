@@ -1744,6 +1744,57 @@ function showCrisisResponse(containerId, type){
   container.appendChild(msg);
   container.scrollTop = container.scrollHeight;
   try{ msg.focus({ preventScroll: true }); }catch(_){ try{ msg.focus(); }catch(__){} }
+
+  // A CRISIS CARD IN THE DOM BUT NOT ON THE SCREEN IS NOT A CRISIS CARD.
+  //
+  // Scripture search called this with a container id that exists nowhere ('bible-search-results'), so
+  // its fallback appended a bare div to document.body — and body is `position:fixed; inset:0;
+  // overflow:hidden`, which put the card exactly one viewport down, CLIPPED, unreachable even by
+  // scrollIntoView. Someone typed "i want to kill myself" into a Bible search and the app appeared to
+  // do nothing at all. Every DOM-text test passed the whole time, because the text WAS in the document.
+  //
+  // Fixing only that one call site would leave the next one free to do the same thing, so the check
+  // lives here, where every crisis path already passes through. If the card cannot be seen, it is
+  // lifted into a fixed overlay that cannot be missed. This is the one surface in the app where
+  // failing loudly is correct.
+  try{ _crisisMustBeSeen(msg); }catch(_){}
+}
+
+// Only acts when the card is NOT visible: when it is, the container's own scrolling above is already
+// right, and second-guessing it would move the screen under people it currently serves well.
+function _crisisMustBeSeen(msg){
+  if(!msg || typeof msg.getBoundingClientRect !== 'function') return;
+  const vh = window.innerHeight || 800, vw = window.innerWidth || 400;
+  const r = msg.getBoundingClientRect();
+  const seen = r.width > 0 && r.height > 0 && r.top >= -4 && r.top < vh && r.bottom > 0 && r.left < vw && r.right > 0;
+  if(seen) return;
+  // Before lifting it into an overlay, try simply scrolling to it — the card may be perfectly placed
+  // and merely out of view, and moving the DOM is the heavier answer.
+  try{
+    msg.scrollIntoView({ block: 'start' });
+    const r2 = msg.getBoundingClientRect();
+    if(r2.width > 0 && r2.height > 0 && r2.top >= -4 && r2.top < vh && r2.bottom > 0) return;
+  }catch(_){}
+  const ov = document.createElement('div');
+  ov.className = 'crisis-rescue-ov';
+  ov.setAttribute('role', 'dialog');
+  ov.setAttribute('aria-modal', 'true');
+  ov.setAttribute('aria-label', 'Urgent: real people you can contact right now');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:var(--bg,#0e0e10);overflow-y:auto;' +
+    '-webkit-overflow-scrolling:touch;padding:calc(env(safe-area-inset-top) + 22px) 18px calc(env(safe-area-inset-bottom) + 26px)';
+  const holder = document.createElement('div');
+  holder.style.cssText = 'max-width:430px;margin:0 auto';
+  holder.appendChild(msg);                       // move the real card, so there is only ever one of it
+  const close = document.createElement('button');
+  close.className = 'btn';
+  close.type = 'button';
+  close.textContent = 'Close';
+  close.style.cssText = 'width:100%;margin-top:16px;min-height:48px';
+  close.onclick = function(){ try{ ov.remove(); }catch(_){} };
+  holder.appendChild(close);
+  ov.appendChild(holder);
+  document.body.appendChild(ov);
+  try{ msg.focus({ preventScroll: true }); }catch(_){}
 }
 
 function goCoach(t){go('coach');document.getElementById('coach-in').value=t;sendCoach();}

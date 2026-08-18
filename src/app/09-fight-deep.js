@@ -687,7 +687,7 @@ function renderVices(){
       totalInsight +
       // One quiet "manage" door instead of six loose links. Backdating lives in "I used" (it takes any
       // date), so the old "log a past slip / add several" buttons are gone — they did the same thing.
-      '<button onclick="openViceManage(' + i + ')" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:6px;letter-spacing:0.03em">Manage &middot; start date, cost, mode, remove</button>';
+      '<button onclick="openViceManage(' + i + ')" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:14px 6px;min-height:44px;letter-spacing:0.03em">Manage &middot; start date, cost, mode, remove</button>';
     list.appendChild(c);
   });
   
