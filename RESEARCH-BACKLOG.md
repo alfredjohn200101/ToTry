@@ -66,8 +66,15 @@ Already have: CBT restructuring + ACT defusion + urge-surfing + grounding, whole
 - 🚫 **Parasocial dependence** (Replika "AI friend to do life with") — the OPPOSITE of our soul. Our
   companion moves you THROUGH the moment and OFF the phone toward real people. **Lean into this contrast on camera.**
 
-## 👩 WOMEN'S HEALTH / CYCLE — vs Flo / Clue / Natural Cycles  *(half the audience; currently ❌ none)*
-`userSex()` already knows male/female — the foundation exists; there is NO cycle awareness yet.
+## 👩 WOMEN'S HEALTH / CYCLE — vs Flo / Clue / Natural Cycles  *(✅ BUILT — v486 · readiness closed v509)*
+`cyclePhase()` estimates the phase from her own logged starts (learned length, "I've lost the thread"
+when it runs long); `_renderCycleNote()` places one line in Nourish, Train and Fight; storage is
+device-only unless she opts in, and the AI sees it only behind a *second* explicit opt-in
+(`cycleGet().aiOK`). v509 closed the last gap: `computeReadiness()` was blind to it, so the Train card
+said "chase a PR" on day 2 of her period while the note below it said "drop the load without guilt".
+**Note the honesty constraint** — the phase/performance research is genuinely mixed, so the nudge is
+deliberately small (menstrual and late-luteal only), the phase is NAMED as the reason, and the advice
+says her experience outranks the estimate. Do not let it grow into a verdict on her body.
 - ❌ **Cycle tracking + phase awareness** — log period start + length → predict phase (menstrual / follicular /
   ovulatory / luteal). Flo has 460M+ users; this is table-stakes for serving women.
 - ❌❌ **Cross-pillar cycle integration (THE moat — no cycle app does this):**
@@ -586,13 +593,17 @@ round-10 verdict names the #1 missing lever: **real relatedness / supportive acc
 2. **Impulse-spend "pause" → the Feeling Door** — reuses the existing clinically-validated companion engine for money; + money-shame→self-compassion
 3. **Daily pledge** (Fight) — tiny, powerful, pure on-soul
 3b. **"Make it tinier" task-breakdown + a "can't start / frozen" Feeling Door path** — the ADHD curb-cut that helps everyone; on the minimum-viable-work spine
-3c. **Stage-of-change mode + HALT check** (Fight) — meets you where you are; HALT routes the real need across body/soul/connection pillars
+3c. ✅ **Stage-of-change mode + HALT check** (Fight) — both built. HALT is `openHALT()`, reached from the
+   urge doors. Stage-of-change landed v510 as a third vice mode, `watch`: no streak, no line, no pledge,
+   no relapse, no verdict — it logs and reflects, and offers a goal ONCE after six logs across three
+   days. `viceIsAbstinence(v)` is the predicate; the twenty-two `mode !== 'moderate'` call sites that
+   assumed "not moderate = abstinence" all go through it now.
 4. **Sleep signal in `getLifeState()`** — "you slept ~5h, go gentle today" biasing counsel across all pillars; + the phone-down wind-down (a first-line sleep treatment). No sleep score.
 5. **The "Look Up" awe Release off-ramp** — low effort, deeply on-thesis (phone goes *away*); + awe as the exit from a rumination/craving loop
 6. **Loving-kindness (metta) from "your few"** + relational **gratitude visit** — most evidence-backed contemplative practice + literal reframe expression
 7. **Nightly Examen fusion → cross-faith evening review** (Three Good Things + devotional + the Fight, "why/my role," Ignatian/Stoic/muhasaba/secular)
 8. **Shareable verse/quote cards** (Soul) — serves the founder's recording + growth
-9. **Cycle tracking + phase-aware coaching** (Women's health) — serves half the audience; integration moat
+9. ✅ **Cycle tracking + phase-aware coaching** — built; see the Women's Health section above.
 10. **Habit anchoring** (after-I-___-I-will-___) + a state-matched action menu from `getLifeState()`
 11. **Seasonal Fasting Companion** (Ramadan/Lent/Navratri) + **faith-aware Giving/zakat tracker** — body+money×soul, the integration nobody else can do
 12. **Read-aloud + timed (Release-first) sessions** + one **breath-prayer engine** phrase-swapped per tradition · cross-faith **Creation/Awe Shared-Thread**
