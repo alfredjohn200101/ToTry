@@ -4160,6 +4160,104 @@ function fnBodyOf(code, name){
   H.ok(checked >= 20, `and enough pairs were actually measured (${checked})`);
 }
 
+// ── a debt you corrected stays corrected, and one you removed stays removed ───────────────────
+{
+  H.section('the finance merge honours the person, not the bigger number');
+
+  // The union by name was right — a debt added on one device must not be wiped by the other — but
+  // what it did with a debt on BOTH sides was wrong twice over, and both were reproduced:
+  //   · no tombstone check, so a debt removed via editDebt came back on the next pull
+  //   · Math.max on every field, so any DOWNWARD correction was reverted — which is exactly what
+  //     editDebt exists for. A total typed as 12000 and corrected to 1200 came back as 12000.
+  // It could bite on a single device: edit down, a pull lands before the push, old value wins.
+  const src = H.html;
+  const i = src.indexOf("k === 'totry_f' && lv && cv");
+  H.ok(i > 0, 'the finance merge branch is present');
+  const blk = src.slice(i, src.indexOf('_queueWrite(k, nv);', i));
+  H.ok(/isTombed\('totry_f', key\)/.test(blk), 'it checks tombstones before keeping a debt');
+  H.ok(!/ex\.t = Math\.max/.test(blk), 'and no longer takes the larger total, reverting corrections');
+  H.ok(/newer side LAST/.test(blk), 'the newer side is applied last so its values win');
+
+  const body = 'let nv;' + blk.slice(blk.indexOf('{') + 1) + 'return nv;';
+  const run = (lv, cv, cts, lts, pendingLocal, tombs) =>
+    new Function('lv', 'cv', 'cts', 'lts', 'pendingLocal', 'isTombed', body)(
+      lv, cv, cts, lts, pendingLocal, (k, id) => tombs.has(String(id)));
+  const none = new Set();
+
+  const corrected = run({ d: [{ n: 'Card', t: 1200, p: 300 }] }, { d: [{ n: 'Card', t: 12000, p: 3000 }] }, 1, 2, true, none);
+  H.eq(corrected.d[0].t, 1200, 'a total corrected DOWN from 12000 to 1200 stays 1200');
+  H.eq(corrected.d[0].p, 300, 'and so does a corrected paid-so-far');
+
+  const removed = run({ d: [{ n: 'Loan', t: 9000, p: 0 }] },
+                      { d: [{ n: 'Card', t: 5000, p: 1000 }, { n: 'Loan', t: 9000, p: 0 }] },
+                      9, 1, false, new Set(['card']));
+  H.eq(removed.d.length, 1, 'a removed debt is not resurrected, even when the cloud row is newer');
+  H.eq(removed.d[0].n, 'Loan', 'and the one they kept survives');
+
+  const added = run({ d: [{ n: 'Loan', t: 9000, p: 0 }] },
+                    { d: [{ n: 'Loan', t: 9000, p: 0 }, { n: 'New card', t: 2000, p: 0 }] }, 2, 1, false, none);
+  H.eq(added.d.length, 2, 'a debt added on the OTHER device still arrives — the union is intact');
+
+  // And the removal path has to write the tombstone the merge looks for.
+  const ed = H.extractFn('editDebt');
+  H.ok(/_tombAdd\('totry_f', String\(_gone\.n\)\.toLowerCase\(\)\)/.test(ed),
+    'removing a debt records a tombstone keyed the same way the union looks debts up (lowercased name)');
+
+  // AND THE OTHER HALF. Tombstones for vices and debts are keyed on the NAME, because that is the
+  // identity their unions use. Removal sticks — but so does it for a name added back LATER, which the
+  // next pull then deletes again, silently, for TOMB_MAX_AGE_MS (180 days). Someone who removed
+  // "Weed", got clean, relapsed and came back to fight it again would watch it vanish every time.
+  // There was no way to revoke a tombstone at all.
+  H.section('and something you add back is not killed by its own old tombstone');
+  const revoke = H.extractFn('tombstoneRevoke');
+  H.ok(/delete bucket\[k\]/.test(revoke), 'tombstoneRevoke removes the entry');
+  H.ok(/if\(!changed\) return;/.test(revoke), 'and does not rewrite storage when there was nothing to revoke');
+  H.ok(/tombstoneRevoke\('totry_v', String\(n\)\.toLowerCase\(\)\)/.test(H.extractFn('addVice')),
+    'adding a vice revokes any tombstone for that name');
+  H.ok(/tombstoneRevoke\('totry_f', String\(n\)\.toLowerCase\(\)\)/.test(H.extractFn('addDebt')),
+    'and so does adding a debt');
+  {
+    // Run it: revoke must actually clear, and be a safe no-op for something never tombed.
+    const store = { totry_tombstones: JSON.stringify({ totry_v: { weed: Date.now() } }) };
+    const localStorage = { getItem: k => store[k] || null, setItem: (k, v) => { store[k] = v; } };
+    const TOMB_KEY = 'totry_tombstones';
+    const f = new Function('localStorage', 'TOMB_KEY',
+      H.extractFn('_tombs') + H.extractFn('isTombed') + revoke +
+      'const a = isTombed("totry_v","weed"); tombstoneRevoke("totry_v","weed");' +
+      'const b = isTombed("totry_v","weed"); tombstoneRevoke("totry_v","never"); return [a,b];');
+    const [before, after] = f(localStorage, TOMB_KEY);
+    H.ok(before === true, 'a tombed name reads as tombed before revoking');
+    H.ok(after === false, 'and is clear afterwards, so re-adding survives the next pull');
+  }
+}
+
+// ── the one thing a person cannot recreate is trimmed gently ─────────────────────────────────
+{
+  H.section('the storage prune does not take 22 photos in one bite');
+
+  // Sized from the shapes the app actually writes: a heavy year is ~0.92 MB, and 30 photos at 720px
+  // / q0.7 / base64 is ~3.5 MB — so a ~5 MB quota IS reachable and this path is not theoretical.
+  // It used to go straight from the 30 cap to 8. The loop already stops as soon as it has freed
+  // enough, so a gentle first step usually ends it: ten photos at ~90 KB frees ~1.2 MB, well past
+  // the 400 KB threshold. Photos are the only thing in here a person cannot make again.
+  const prune = H.extractFn('_lsEmergencyPrune');
+  const steps = [...prune.matchAll(/totry_progress_photos'[^\]]*slice\(0,\s*(\d+)\)/g)].map(m => Number(m[1]));
+  H.eq(steps.length, 2, 'photos are trimmed in two steps, not one');
+  H.eq(steps[0], 20, 'the first step keeps 20 — ten lost, not twenty-two');
+  H.eq(steps[1], 8, 'and the deep cut to 8 is the last resort');
+  const first = prune.indexOf("totry_progress_photos");
+  const last = prune.lastIndexOf("totry_progress_photos");
+  const workouts = prune.indexOf("totry_workouts");
+  H.ok(first < workouts && workouts < last,
+    'the deep photo cut comes AFTER the re-fetchable and conversational stores');
+  H.ok(/freed > 400000/.test(prune), 'and the loop still stops as soon as it has room');
+
+  // The notice must survive: a save that quietly ate a year of Tuesday mornings is not a success.
+  const lsFn = H.extractFn('ls');
+  H.ok(/_before - _photoCount\(\)/.test(lsFn), 'the number of photos lost is measured');
+  H.ok(/Storage was full/.test(lsFn), 'and the person is told');
+}
+
 // ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────
 // Every test in this file reads H.html, which reads index.html — the ASSEMBLED file. So a change
 // made directly to index.html passes everything here and then vanishes the next time anyone runs

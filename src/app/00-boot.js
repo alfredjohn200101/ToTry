@@ -228,11 +228,12 @@ function _lsEmergencyPrune(){
   // Ordered least-painful first. Photos are by far the biggest and are explicitly device-only, so a lost
   // photo costs a picture; a lost journal entry costs someone's words. Never touch totry_v/totry_journal.
   const plans = [
-    ['totry_progress_photos', a => Array.isArray(a) ? a.slice(0, 8)  : a],
+    ['totry_progress_photos', a => Array.isArray(a) ? a.slice(0, 20) : a],   // gentle step first
     ['totry_coach_history',   a => Array.isArray(a) ? a.slice(-6)    : a],
     ['totry_pt_history',      a => Array.isArray(a) ? a.slice(-6)    : a],
     ['totry_strava_activities', a => Array.isArray(a) ? a.slice(0, 40) : a],
     ['totry_workouts',        a => Array.isArray(a) ? a.slice(0, 120) : a],
+    ['totry_progress_photos', a => Array.isArray(a) ? a.slice(0, 8)   : a],   // last resort
   ];
   for(const [key, trim] of plans){
     try{
@@ -442,7 +443,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v515';
+const APP_VERSION = 'v516';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }

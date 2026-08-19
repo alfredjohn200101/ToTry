@@ -55,6 +55,24 @@ function _tombAdd(key, ...ids){
     ls(TOMB_KEY, t);   // ls() queues it for sync because TOMB_KEY is in SYNC_KEYS
   }catch(_){ }
 }
+// Adding something back revokes its tombstone. Without this, re-adding a vice or a debt under a name
+// that was ever removed is silently deleted again by the next pull, for TOMB_MAX_AGE_MS — 180 days.
+// A deliberate act now outranks a deletion from before.
+function tombstoneRevoke(key, ...ids){
+  try{
+    const t = _tombs();
+    const bucket = t[key];
+    if(!bucket) return;
+    let changed = false;
+    ids.forEach(id => {
+      const k = String(id);
+      if(Object.prototype.hasOwnProperty.call(bucket, k)){ delete bucket[k]; changed = true; }
+    });
+    if(!changed) return;
+    t[key] = bucket;
+    localStorage.setItem(TOMB_KEY, JSON.stringify(t));
+  }catch(_){ }
+}
 function tombstoneRemoved(key, before, after){
   try{
     if(!Array.isArray(before)) return;
@@ -543,17 +561,17 @@ async function pullFromCloud(){
         nv = Array.from(byName.values());
         _queueWrite(k, nv);                        // push the merged truth back up
       } else if(k === 'totry_f' && lv && cv && typeof lv === 'object' && typeof cv === 'object'){
-        // Finance: union debts by name (keep the row with more paid-off progress), and take the
-        // larger savings figures — so a debt added on one device isn't wiped by the other.
+        // Finance: union debts by name so a debt added on one device isn't wiped by the other — but
+        // honour tombstones, and let the newer side WIN on a debt both sides have. See the note above.
         const debts = new Map();
-        [].concat(lv.d||[], cv.d||[]).forEach(d => {
+        const _dKey = d => String(d.n).toLowerCase();
+        const _preferCloud = (cts >= lts) && !pendingLocal;
+        const _sides = _preferCloud ? [lv.d||[], cv.d||[]] : [cv.d||[], lv.d||[]];   // newer side LAST
+        [].concat(_sides[0], _sides[1]).forEach(d => {
           if(!d || !d.n) return;
-          const key = String(d.n).toLowerCase();
-          const ex = debts.get(key);
-          if(!ex){ debts.set(key, {...d}); return; }
-          ex.p = Math.max(ex.p||0, d.p||0);        // more paid off wins
-          ex.t = Math.max(ex.t||0, d.t||0);
-          if(!ex.due && d.due) ex.due = d.due;
+          const key = _dKey(d);
+          if(isTombed('totry_f', key)) return;     // removed deliberately — do not resurrect it
+          debts.set(key, {...d});                   // later side overwrites: the newer value wins
         });
         nv = { d: Array.from(debts.values()), u: Math.max(lv.u||0, cv.u||0), i: Math.max(lv.i||0, cv.i||0) };
         _queueWrite(k, nv);

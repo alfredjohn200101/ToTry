@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v515-contrast'
+const CACHE = 'totry-v516-sync'
 
 const CORE = [
   './',

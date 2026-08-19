@@ -998,6 +998,9 @@ function addDebt(){loadF();const n=document.getElementById('dn').value.trim(),t=
   // was the problem — indistinguishable from the button being broken.
   if(!n){ if(typeof showToast==='function') showToast('Who is it owed to?','Give the debt a name so you can tell them apart.'); return; }
   if(!(t>0)){ if(typeof showToast==='function') showToast('How much is owed?','Enter the total amount \u2014 it needs a number above zero.'); return; }
+  // Same as vices: the tombstone written when a debt is removed is keyed on the lowercased name,
+  // so adding that name back has to revoke it or the next pull deletes it again.
+  try{ if(typeof tombstoneRevoke==='function') tombstoneRevoke('totry_f', String(n).toLowerCase()); }catch(_){ }
   debts.push({n,t,p,due,interest});['dn','dt','dp','dd','di'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});saveF();renderFinance();}
 // A debt could be created and paid down but never CORRECTED. A typo in the name, a total entered as
 // 1200 instead of 12000, an interest rate learned later, a card that was closed — all of it was
@@ -1045,7 +1048,10 @@ function editDebt(idx){
       del.onclick=function(){
         if(!confirm('Remove '+(d.n||'this debt')+'? Payments you already logged against it stay in your history.')) return;
         loadF();
+        const _gone = debts[Number(idx)];
         debts.splice(Number(idx),1);
+        // Tell every other device it was removed on purpose, or the cloud union brings it back.
+        try{ if(_gone && _gone.n && typeof _tombAdd === 'function') _tombAdd('totry_f', String(_gone.n).toLowerCase()); }catch(_){ }
         saveF();
         if(typeof syncToCloud==='function') syncToCloud();
         m.remove();

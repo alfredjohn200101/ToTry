@@ -1000,6 +1000,10 @@ function addVice(){
       startDate=picked.toISOString();
     }
   }
+  // Re-adding a name that was once removed must revoke its tombstone, or the cloud merge drops it
+  // again on the very next pull — silently, and for TOMB_MAX_AGE_MS (180 days). Adding it back is
+  // a deliberate act and outranks a past deletion. See tombstoneRevoke in 01-sync.js.
+  try{ if(typeof tombstoneRevoke==='function') tombstoneRevoke('totry_v', String(n).toLowerCase()); }catch(_){ }
   vices.push({
     n,
     type: classifyVice(n),

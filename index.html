@@ -4677,11 +4677,12 @@ function _lsEmergencyPrune(){
   // Ordered least-painful first. Photos are by far the biggest and are explicitly device-only, so a lost
   // photo costs a picture; a lost journal entry costs someone's words. Never touch totry_v/totry_journal.
   const plans = [
-    ['totry_progress_photos', a => Array.isArray(a) ? a.slice(0, 8)  : a],
+    ['totry_progress_photos', a => Array.isArray(a) ? a.slice(0, 20) : a],   // gentle step first
     ['totry_coach_history',   a => Array.isArray(a) ? a.slice(-6)    : a],
     ['totry_pt_history',      a => Array.isArray(a) ? a.slice(-6)    : a],
     ['totry_strava_activities', a => Array.isArray(a) ? a.slice(0, 40) : a],
     ['totry_workouts',        a => Array.isArray(a) ? a.slice(0, 120) : a],
+    ['totry_progress_photos', a => Array.isArray(a) ? a.slice(0, 8)   : a],   // last resort
   ];
   for(const [key, trim] of plans){
     try{
@@ -4891,7 +4892,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v515';
+const APP_VERSION = 'v516';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5409,6 +5410,24 @@ function _tombAdd(key, ...ids){
     ls(TOMB_KEY, t);   // ls() queues it for sync because TOMB_KEY is in SYNC_KEYS
   }catch(_){ }
 }
+// Adding something back revokes its tombstone. Without this, re-adding a vice or a debt under a name
+// that was ever removed is silently deleted again by the next pull, for TOMB_MAX_AGE_MS — 180 days.
+// A deliberate act now outranks a deletion from before.
+function tombstoneRevoke(key, ...ids){
+  try{
+    const t = _tombs();
+    const bucket = t[key];
+    if(!bucket) return;
+    let changed = false;
+    ids.forEach(id => {
+      const k = String(id);
+      if(Object.prototype.hasOwnProperty.call(bucket, k)){ delete bucket[k]; changed = true; }
+    });
+    if(!changed) return;
+    t[key] = bucket;
+    localStorage.setItem(TOMB_KEY, JSON.stringify(t));
+  }catch(_){ }
+}
 function tombstoneRemoved(key, before, after){
   try{
     if(!Array.isArray(before)) return;
@@ -5897,17 +5916,17 @@ async function pullFromCloud(){
         nv = Array.from(byName.values());
         _queueWrite(k, nv);                        // push the merged truth back up
       } else if(k === 'totry_f' && lv && cv && typeof lv === 'object' && typeof cv === 'object'){
-        // Finance: union debts by name (keep the row with more paid-off progress), and take the
-        // larger savings figures — so a debt added on one device isn't wiped by the other.
+        // Finance: union debts by name so a debt added on one device isn't wiped by the other — but
+        // honour tombstones, and let the newer side WIN on a debt both sides have. See the note above.
         const debts = new Map();
-        [].concat(lv.d||[], cv.d||[]).forEach(d => {
+        const _dKey = d => String(d.n).toLowerCase();
+        const _preferCloud = (cts >= lts) && !pendingLocal;
+        const _sides = _preferCloud ? [lv.d||[], cv.d||[]] : [cv.d||[], lv.d||[]];   // newer side LAST
+        [].concat(_sides[0], _sides[1]).forEach(d => {
           if(!d || !d.n) return;
-          const key = String(d.n).toLowerCase();
-          const ex = debts.get(key);
-          if(!ex){ debts.set(key, {...d}); return; }
-          ex.p = Math.max(ex.p||0, d.p||0);        // more paid off wins
-          ex.t = Math.max(ex.t||0, d.t||0);
-          if(!ex.due && d.due) ex.due = d.due;
+          const key = _dKey(d);
+          if(isTombed('totry_f', key)) return;     // removed deliberately — do not resurrect it
+          debts.set(key, {...d});                   // later side overwrites: the newer value wins
         });
         nv = { d: Array.from(debts.values()), u: Math.max(lv.u||0, cv.u||0), i: Math.max(lv.i||0, cv.i||0) };
         _queueWrite(k, nv);
@@ -18208,6 +18227,10 @@ function addVice(){
       startDate=picked.toISOString();
     }
   }
+  // Re-adding a name that was once removed must revoke its tombstone, or the cloud merge drops it
+  // again on the very next pull — silently, and for TOMB_MAX_AGE_MS (180 days). Adding it back is
+  // a deliberate act and outranks a past deletion. See tombstoneRevoke in 01-sync.js.
+  try{ if(typeof tombstoneRevoke==='function') tombstoneRevoke('totry_v', String(n).toLowerCase()); }catch(_){ }
   vices.push({
     n,
     type: classifyVice(n),
@@ -29601,6 +29624,9 @@ function addDebt(){loadF();const n=document.getElementById('dn').value.trim(),t=
   // was the problem — indistinguishable from the button being broken.
   if(!n){ if(typeof showToast==='function') showToast('Who is it owed to?','Give the debt a name so you can tell them apart.'); return; }
   if(!(t>0)){ if(typeof showToast==='function') showToast('How much is owed?','Enter the total amount \u2014 it needs a number above zero.'); return; }
+  // Same as vices: the tombstone written when a debt is removed is keyed on the lowercased name,
+  // so adding that name back has to revoke it or the next pull deletes it again.
+  try{ if(typeof tombstoneRevoke==='function') tombstoneRevoke('totry_f', String(n).toLowerCase()); }catch(_){ }
   debts.push({n,t,p,due,interest});['dn','dt','dp','dd','di'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});saveF();renderFinance();}
 // A debt could be created and paid down but never CORRECTED. A typo in the name, a total entered as
 // 1200 instead of 12000, an interest rate learned later, a card that was closed — all of it was
@@ -29648,7 +29674,10 @@ function editDebt(idx){
       del.onclick=function(){
         if(!confirm('Remove '+(d.n||'this debt')+'? Payments you already logged against it stay in your history.')) return;
         loadF();
+        const _gone = debts[Number(idx)];
         debts.splice(Number(idx),1);
+        // Tell every other device it was removed on purpose, or the cloud union brings it back.
+        try{ if(_gone && _gone.n && typeof _tombAdd === 'function') _tombAdd('totry_f', String(_gone.n).toLowerCase()); }catch(_){ }
         saveF();
         if(typeof syncToCloud==='function') syncToCloud();
         m.remove();
