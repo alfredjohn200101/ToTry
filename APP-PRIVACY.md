@@ -1,11 +1,23 @@
 # App Privacy — the answers, derived from the code
 
-Written 17 Aug 2026 at v462. This is the App Store Connect "App Privacy" questionnaire, answered from
-what the code **actually does**, with the evidence for each answer. Fill the form from this rather than
-from memory — a wrong declaration is a compliance problem, not a paperwork one, and the honest answers
-here are all defensible.
+Written 17 Aug 2026 at v462. **Re-audited 19 Aug 2026 at v512 — two rows were wrong and are corrected
+below.** This is the App Store Connect "App Privacy" questionnaire, answered from what the code
+**actually does**, with the evidence for each answer. Fill the form from this rather than from memory —
+a wrong declaration is a compliance problem, not a paperwork one, and the honest answers here are all
+defensible.
 
-Every claim below was checked against `index.html` at v462.
+**Corrected 19 Aug 2026 — this table disagreed with the shipped `PrivacyInfo.xcprivacy`, which is the
+manifest Apple cross-checks your form answers against:**
+- **Contact Info → Name** was missing. `totry_name` is in `SYNC_KEYS` (`src/app/00-boot.js:790`), so
+  the person's first name goes to Supabase with everything else. It is **Yes**.
+- **Diagnostics → Crash Data** was listed as No. A global `window.addEventListener('error', …)` at
+  `src/app/28-init.js:359` sends the message, filename and line number through `logEvent()` into the
+  `app_events` table (capped at five per session, no personal data). That is **Yes**, unlinked.
+
+Ten rows now, matching `ios/App/App/PrivacyInfo.xcprivacy` exactly. If the two ever disagree again,
+the manifest is the one to trust — it ships inside the binary.
+
+Every claim below was checked against `index.html`, re-verified at v512.
 
 ---
 
@@ -14,6 +26,7 @@ Every claim below was checked against `index.html` at v462.
 | Apple category | Collected? | Linked to the user? | Used for tracking? |
 |---|---|---|---|
 | Contact Info → Email Address | **Yes** | Yes | No |
+| Contact Info → Name | **Yes** | Yes | No |
 | Health & Fitness → Health | **Yes** | Yes | No |
 | Health & Fitness → Fitness | **Yes** | Yes | No |
 | Financial Info → Other Financial Info | **Yes** | Yes | No |
@@ -22,7 +35,8 @@ Every claim below was checked against `index.html` at v462.
 | Identifiers → User ID | **Yes** | Yes | No |
 | Usage Data → Product Interaction | **Yes** | **No** | No |
 | Location | **Yes** (coarse) | No | No |
-| Contacts, Browsing History, Search History, Purchases, Financial→Payment Info, Diagnostics | No | — | — |
+| Diagnostics → Crash Data | **Yes** | **No** | No |
+| Contacts, Browsing History, Search History, Purchases, Financial→Payment Info | No | — | — |
 
 **"Used for Tracking" is No across the board.** Nothing is shared with a data broker or joined with
 third-party data for advertising. That means **no ATT prompt is required**.

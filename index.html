@@ -2288,7 +2288,7 @@ input:focus,textarea:focus,select:focus{
         <div style="font-size:12px;color:var(--tx3);margin-bottom:8px">Don't know your targets? Calculate them.</div>
         <div class="tdee-form">
           <div class="tdee-row">
-            <div class="tdee-field"><div class="tdee-label">Age</div><input type="number" id="tdee-age" placeholder="25" min="15" max="80"></div>
+            <div class="tdee-field"><div class="tdee-label">Age</div><input type="number" id="tdee-age" placeholder="25" min="13" max="100"></div>
             <div class="tdee-field"><div class="tdee-label">Weight (kg)</div><input type="number" id="tdee-weight" placeholder="75" step="0.1"></div>
             <div class="tdee-field"><div class="tdee-label">Height (cm)</div><input type="number" id="tdee-height" placeholder="175"></div>
           </div>
@@ -4134,6 +4134,16 @@ Amen.</div></div>
     </div>
     
     <div class="card">
+      <div class="card-hd" style="margin-bottom:8px">Scripture &amp; text credits</div>
+      <div style="font-size:11.5px;color:var(--tx3);line-height:1.7">
+        <p style="margin-bottom:8px">Scripture quotations marked <strong style="color:var(--tx2)">ESV</strong> are from the ESV&reg; Bible (The Holy Bible, English Standard Version&reg;), copyright &copy; 2001 by Crossway, a publishing ministry of Good News Publishers. Used by permission. All rights reserved.</p>
+        <p style="margin-bottom:8px">Other Bible translations shown are the Berean Standard Bible, the American Standard Version, the King James Version and the World English Bible &mdash; all public domain. Study notes are the Tyndale Open Study Notes, used under their open licence.</p>
+        <p style="margin-bottom:8px">The Qur&rsquo;an is served by alquran.cloud, the Bhagavad Gita by vedicscriptures.github.io, and the Dhammapada and suttas by SuttaCentral, whose translations are dedicated to the public domain.</p>
+        <p>Prayer times are calculated by the Aladhan API.</p>
+      </div>
+    </div>
+
+    <div class="card">
       <div class="card-hd" style="margin-bottom:8px">Privacy &amp; legal</div>
       <p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.6">Your data lives in two places: on this device, and in your account so it follows you if you change or lose your phone. A few things stay on the device only — your progress photos, and your cycle data unless you switch backup on yourself. When you use AI features (Coach, scripture, screenshot reading), your request and relevant context are sent to an AI provider (Google, Groq, OpenRouter or Anthropic) to generate a reply; their handling is governed by their own policies. To Try does not sell your data and runs no ads. Please read the full privacy policy for details.</p>
       <button class="btn" onclick="showPrivacyPolicy()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px;margin-bottom:8px">Privacy policy</button>
@@ -4881,7 +4891,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v511';
+const APP_VERSION = 'v512';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -19856,7 +19866,7 @@ async function fetchCurrencyRates(base){
     return cache.rates;
   }
   try{
-    const r = await fetch('https://api.frankfurter.dev/v2/latest?base=' + base);
+    const r = await fetch('https://api.frankfurter.dev/v1/latest?base=' + base);
     if(!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
     if(d && d.rates){
@@ -20500,6 +20510,19 @@ function getThematicVerses(feeling){
   return result.slice(0,8);
 }
 
+// helloao addresses books by USFM id. Unnumbered names happen to work as-is ("John", "Psalms"), but
+// every numbered book 404s ("1Corinthians"), which is why the ASV/WEB tier silently fell through to
+// bible-api.com for a fifth of the Bible. Only the ones that differ need mapping.
+const _HELLOAO_USFM = {
+  '1 Samuel':'1SA','2 Samuel':'2SA','1 Kings':'1KI','2 Kings':'2KI',
+  '1 Chronicles':'1CH','2 Chronicles':'2CH','1 Corinthians':'1CO','2 Corinthians':'2CO',
+  '1 Thessalonians':'1TH','2 Thessalonians':'2TH','1 Timothy':'1TI','2 Timothy':'2TI',
+  '1 Peter':'1PE','2 Peter':'2PE','1 John':'1JN','2 John':'2JN','3 John':'3JN',
+  'Song of Solomon':'SNG','Song of Songs':'SNG'
+};
+function _helloaoBook(name){
+  return _HELLOAO_USFM[name] || String(name||'').replace(/\s+/g,'');
+}
 const BIBLE_BOOKS=[
   {id:'genesis',name:'Genesis',chapters:50},{id:'exodus',name:'Exodus',chapters:40},{id:'leviticus',name:'Leviticus',chapters:27},
   {id:'numbers',name:'Numbers',chapters:36},{id:'deuteronomy',name:'Deuteronomy',chapters:34},{id:'joshua',name:'Joshua',chapters:24},
@@ -20592,7 +20615,10 @@ async function loadBibleChapter(){
   // 2. Public Bible API (helloao) — covers ASV/KJV/WEB
   if(!verses){
     try{
-      const r=await fetch('https://bible.helloao.org/api/'+(translation==='kjv'?'KJV':'ASV')+'/'+book.name.replace(/\s+/g,'')+'/'+chapter+'.json');
+      const _hid = (translation==='kjv') ? null : (translation==='web' ? 'ENGWEBP' : 'eng_asv');
+      if(!_hid) throw new Error('helloao has no KJV');
+      const _usfm = _helloaoBook(book.name);
+      const r=await fetch('https://bible.helloao.org/api/'+_hid+'/'+_usfm+'/'+chapter+'.json');
       if(r.ok){const d=await r.json();const vs=d.chapter?.verses||d.verses||[];if(vs.length){verses=vs.map(v=>({num:v.number||v.verseNumber,text:v.text||v.content}));apiUsed=translation==='kjv'?'KJV':'ASV';}}
     }catch(e){ lastError = lastError || 'helloao failed'; }
   }
@@ -29755,8 +29781,11 @@ function applyPaydayAllocation(){
 }
 
 // ── WORKOUT TRACKER ───────────────────────────────────────────
-const EXDB_BASE='https://exercisedb-api.vercel.app/api/v1';
-const WGER_BASE='https://wger.de/api/v2';
+// EXDB_BASE and WGER_BASE lived here. Both hosts are dead - exercisedb-api.vercel.app answers 402
+// DEPLOYMENT_DISABLED and wger dropped its search endpoint - and after the exercise-form tiers that
+// used them were removed (see lookupExerciseForm in 22-train-deep.js) neither constant had a single
+// consumer left. Deleted rather than left lying around: a base URL for a dead API is how someone
+// later builds a new call on top of one.
 let currentSession=[],restTimerInt=null,restTimeLeft=0;
 
 // Live workout duration (Hevy shows a running stopwatch the whole session).
@@ -31865,61 +31894,23 @@ function suggestProgression(ex, lastSets){
 // Free APIs: ExerciseDB (exercisedb.dev, 1300+ exercises w/ GIFs)
 // + Wger.de (open-source exercise database, EN+DE+ES, no key needed)
 const _exFormCache = {};
+// BOTH UPSTREAM SOURCES DIED. Verified live 19 Aug 2026:
+//   · exercisedb-api.vercel.app  → HTTP 402 DEPLOYMENT_DISABLED. The free deployment is gone.
+//   · wger.de/api/v2/exercise/   → answers 200 but IGNORES ?name=, returning the whole catalogue
+//     (count 860). The old code took results[0] and so served a random unrelated exercise as "how to
+//     do it"; and because wger moved name/description into `translations`, both came back undefined,
+//     so the modal rendered an empty panel with "Wger" stamped underneath. Worse than a miss, and it
+//     preempted the honest empty state. wger removed /exercise/search/ too (404), and there is no
+//     server-side filter left — matching would mean crawling all 860 entries on every lookup.
+//
+// So both tiers are removed rather than left to fail: two guaranteed-dead network requests on every
+// tap, for nothing. showExerciseForm now says plainly that there is no reference and hands over a
+// YouTube search, which is what the old copy told people to do by hand anyway.
+//
+// TO RE-ADD A SOURCE: return { source, name, gif, instructions[], target, equipment, secondary[] }
+// from here, or null. Anything with no instructions must return null so the honest state still shows.
 async function lookupExerciseForm(name){
-  if(_exFormCache[name]) return _exFormCache[name];
-  const cleanName = name.toLowerCase().trim().replace(/\(.*?\)/g, '').trim();
-  
-  // 1. Try ExerciseDB (has GIFs)
-  try{
-    const r = await fetch('https://exercisedb-api.vercel.app/api/v1/exercises/search?q=' + encodeURIComponent(cleanName) + '&limit=3');
-    if(r.ok){
-      const d = await r.json();
-      const list = d?.data || d?.exercises || (Array.isArray(d) ? d : []);
-      if(list.length){
-        const ex = list[0];
-        const result = {
-          source: 'ExerciseDB',
-          name: ex.name || cleanName,
-          gif: ex.gifUrl || ex.gif_url || ex.imageUrl || null,
-          instructions: Array.isArray(ex.instructions) ? ex.instructions : (ex.instructions ? [ex.instructions] : []),
-          target: ex.target || ex.targetMuscle || null,
-          equipment: ex.equipment || null,
-          secondary: Array.isArray(ex.secondaryMuscles) ? ex.secondaryMuscles : []
-        };
-        _exFormCache[name] = result;
-        return result;
-      }
-    }
-  }catch(e){ console.warn('[exdb] search failed:', e); }
-  
-  // 2. Try Wger.de (open-source, text instructions, no GIFs but clean data)
-  try{
-    const r = await fetch('https://wger.de/api/v2/exercise/?language=2&name=' + encodeURIComponent(cleanName) + '&limit=3', {
-      headers: {'Accept': 'application/json'}
-    });
-    if(r.ok){
-      const d = await r.json();
-      const list = d?.results || [];
-      if(list.length){
-        const ex = list[0];
-        // Strip HTML from description
-        const desc = (ex.description || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-        const result = {
-          source: 'Wger',
-          name: ex.name || cleanName,
-          gif: null,
-          instructions: desc ? [desc] : [],
-          target: null,
-          equipment: null,
-          secondary: []
-        };
-        _exFormCache[name] = result;
-        return result;
-      }
-    }
-  }catch(e){ console.warn('[wger] search failed:', e); }
-  
-  // 3. Nothing found — cache the miss so we don't keep retrying
+  if(Object.prototype.hasOwnProperty.call(_exFormCache, name)) return _exFormCache[name];
   _exFormCache[name] = null;
   return null;
 }
@@ -31930,7 +31921,7 @@ async function showExerciseForm(name){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:88vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:4px">' + name + '</h3>' +
-    '<p style="font-size:11px;color:var(--tx3);margin-bottom:14px">Loading form & instructions...</p>' +
+    '<p id="ex-form-status" style="font-size:11px;color:var(--tx3);margin-bottom:14px">Looking up form &amp; instructions\u2026</p>' +
     '<div id="ex-form-body" style="text-align:center;padding:20px"><p class="pulsing" style="font-style:italic;color:var(--tx3)">Looking up...</p></div>' +
     '<button class="btn" onclick="closeModal(this)" style="margin-top:14px">Close</button>' +
   '</div>';
@@ -31940,10 +31931,18 @@ async function showExerciseForm(name){
   const body = document.getElementById('ex-form-body');
   if(!body) return;
   
+  const _status = document.getElementById('ex-form-status');
   if(!info){
-    body.innerHTML = '<p style="font-size:13px;color:var(--tx3);text-align:center;padding:18px">No form data found for this exercise. Try a search in Google or YouTube for "<strong style="color:var(--tx2)">' + name + ' proper form</strong>".</p>';
+    // Both upstream sources are gone (ExerciseDB 402, wger's search endpoint 404). Say so plainly and
+    // hand them the search rather than describing it. window.open(url,'_blank') is the house pattern
+    // (app.js:1666) and Capacitor routes it to the system browser in the native shell.
+    if(_status) _status.textContent = 'No reference for this one';
+    const q = encodeURIComponent(name + ' proper form');
+    body.innerHTML = '<p style="font-size:13px;color:var(--tx2);text-align:center;line-height:1.65;padding:6px 4px 14px">I do not have a form reference for this exercise. The clearest thing is usually thirty seconds of video from someone who coaches it.</p>'+
+      '<button class="btn" onclick="window.open(\'https://www.youtube.com/results?search_query='+q+'\',\'_blank\')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx);font-size:13px">Search YouTube for this</button>';
     return;
   }
+  if(_status) _status.textContent = 'Form & instructions';
   
   let html = '';
   if(info.gif){
@@ -38415,6 +38414,14 @@ function savePref(key, value){
 // Apply theme — light mode swaps CSS variables for warm-on-cream palette
 function applyTheme(theme){
   const root = document.documentElement;
+  // Mirror the choice where the native side can see it. ViewController.preferredStatusBarStyle reads
+  // CapacitorStorage.totry_theme — without this the iOS status bar follows the DEVICE's light/dark
+  // setting instead of the app's, and drew black-on-black for anyone whose phone is in Light Mode.
+  // Same route the Face ID lock already uses (07-platform.js:82).
+  try{
+    const P = (window.Capacitor && window.Capacitor.Plugins) || {};
+    if(P.Preferences && P.Preferences.set) P.Preferences.set({ key:'totry_theme', value: (theme==='light' ? 'light' : 'dark') });
+  }catch(_){ }
   if(theme === 'light'){
     root.style.setProperty('--bg', '#F5F1E8');
     root.style.setProperty('--bg2', '#FFFFFF');
@@ -38575,7 +38582,7 @@ function showPrivacyPolicy(){
         '<li><strong style="color:var(--tx)">Apple Health</strong> — on iPhone, only if you grant it. Your steps, sleep and imported workout summaries (type, duration, distance, calories, average heart rate) are saved to your account so they follow you between devices, and your sleep and recent training form part of the context sent to the AI when you ask for coaching. Never sold, never advertising, never shared with anyone else. Turn it off any time in Settings, and revoke it in iOS Settings &#8594; Health.</li>' +
         '<li><strong style="color:var(--tx)">Prayer times</strong> — if you use them, your location is rounded to about a kilometre and sent to api.aladhan.com to work out the times where you are. The rounded figure is not stored on my server and is not linked to your account. You can skip location entirely and type your city instead.</li>' +
         '<li><strong style="color:var(--tx)">Exercise GIFs</strong> — exercise name is sent to ExerciseDB / Wger.</li>' +
-        '<li><strong style="color:var(--tx)">Scripture you read</strong> \u2014 the passage you open is fetched live, so the service sees which one: the Qur\u2019an from api.alquran.cloud, the Bhagavad Gita from vedicscriptures.github.io, and the Dhammapada from suttacentral.net. The Bible goes through my own server instead, so only I see it. Nothing about you is attached to any of them.</li>' +
+        '<li><strong style="color:var(--tx)">Scripture you read</strong> \u2014 the passage you open is fetched live, so the service sees which one: the Qur\u2019an from api.alquran.cloud, the Bhagavad Gita from vedicscriptures.github.io, and the Dhammapada from suttacentral.net. The Bible is fetched the same way: the ESV goes through my own server when it is available, but the public translations (ASV, KJV, WEB) and the study notes come straight from bible.helloao.org, bible-api.com and cdn.jsdelivr.net, so those services see the passage \u2014 and an ESV request falls back to them if my server is down. Nothing about you is attached to any of them.</li>' +
         '<li><strong style="color:var(--tx)">Currency rates</strong> — your selected currency is sent to api.frankfurter.dev.</li>' +
         '<li><strong style="color:var(--tx)">Strava</strong> — if you connect it, Strava sees your access tokens and serves your activities. You explicitly authorise this via OAuth.</li>' +
         '<li><strong style="color:var(--tx)">Hevy</strong> — if you enter an API key, Hevy sees your sync requests. You explicitly authorise this.</li>' +
@@ -39338,7 +39345,13 @@ function logEvent(name, detail){
     if(window.goatcounter && window.goatcounter.count){ window.goatcounter.count({ path:'/e/'+name, event:true }); }
   }catch(_){ }
 }
-if(GOATCOUNTER_CODE && !metricsOff()){
+// DEAD WEIGHT IN THE APP STORE BINARY. count.js refuses to count when the hostname is localhost, a
+// private IP or 127.* — and Capacitor serves the native app from capacitor://localhost. So on iPhone
+// this downloaded and executed third-party JavaScript on every launch and then counted nothing: an
+// extra network request, an extra external origin, and someone else's script running inside the
+// shipped binary, for no signal at all. The web PWA is where it actually works, so it stays there.
+// The feature counts that matter (logEvent -> app_events) go straight to Supabase either way.
+if(GOATCOUNTER_CODE && !metricsOff() && !(typeof isNativeApp==='function' && isNativeApp())){
   const g=document.createElement('script'); g.async=true; g.src='https://gc.zgo.at/count.js';
   g.setAttribute('data-goatcounter','https://'+GOATCOUNTER_CODE+'.goatcounter.com/count');
   document.head.appendChild(g);
@@ -39693,11 +39706,37 @@ function calcTDEE(){
   // sign anything was off. Refuse rather than guess — a nonsense target is worse than no target, and this
   // is the same principle as the ED-safe floor two screens away.
   if(!(age >= 13 && age <= 100)){ showToast('Check your age', 'Enter an age between 13 and 100.'); return; }
+  if(age < 18){
+    const _g = document.getElementById('tdee-goal')?.value || 'maintain';
+    if(_g === 'lose'){
+      if(typeof showUnderageFuelNote === 'function') showUnderageFuelNote();
+      else if(typeof showToast === 'function') showToast('Not one I can set for you', 'A weight-loss target for someone still growing belongs with your GP or a dietitian.');
+      return;
+    }
+  }
   if(!(weight >= 30 && weight <= 300)){ showToast('Check your weight', 'Enter a weight between 30 and 300 kg.'); return; }
   if(!(height >= 120 && height <= 230)){ showToast('Check your height', 'Enter a height between 120 and 230 cm.'); return; }
   const activity=parseFloat(document.getElementById('tdee-activity')?.value||1.55);
   const goal=document.getElementById('tdee-goal')?.value||'maintain';
-  // Mifflin-St Jeor equation
+  // Bigger than a calculator. Same shape as bridgeToRealHelp and showLowCalorieCare: no lecture, no
+// silently-corrected number, just an honest reason and a real person to take it to.
+function showUnderageFuelNote(){
+  try{
+    document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+    const m = document.createElement('div');
+    m.className = 'modal-bg open'; m.style.alignItems = 'center';
+    m.innerHTML = '<div class="modal" style="text-align:center">'+
+      '<div style="font-size:28px;margin-bottom:8px">\uD83E\uDD1D</div>'+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);line-height:1.3;margin-bottom:12px">This one is not mine to set.</div>'+
+      '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:16px">The equation behind this calculator was built on adults, and a body that is still growing needs more than it does \u2014 not less. A weight-loss target at your age belongs with your GP or a dietitian, who can look at the whole picture. That is not me brushing you off; it is the one honest answer I have.</div>'+
+      '<div style="font-size:12.5px;color:var(--tx3);line-height:1.65;margin-bottom:18px">Everything else here still works. Log your food, train, sleep, and let the rest look after itself for now \u2014 that is what actually builds a body at your age anyway.</div>'+
+      '<button class="btn primary" onclick="closeModal(this)">Understood</button>'+
+    '</div>';
+    document.body.appendChild(m);
+    if(typeof haptic === 'function') haptic('tap');
+  }catch(_){ }
+}
+// Mifflin-St Jeor equation
   let bmr;
   if(sex==='male') bmr=10*weight+6.25*height-5*age+5;
   else bmr=10*weight+6.25*height-5*age-161;

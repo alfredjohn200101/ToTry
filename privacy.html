@@ -54,7 +54,11 @@
       you choose that action, never in the background, and is not stored by me.</li>
     <li><strong>Scripture you read</strong> &mdash; the passage you open is fetched live, so the service sees which one:
       the Qur&rsquo;an from api.alquran.cloud, the Bhagavad Gita from vedicscriptures.github.io, and the Dhammapada from
-      suttacentral.net. The Bible goes through my own server instead, so only I see it. Nothing about you is attached.</li>
+      suttacentral.net. The Bible is fetched the same way: the ESV goes through my own server when it is
+      available, but the public translations (ASV, KJV, WEB) and the study notes are fetched directly
+      from bible.helloao.org, bible-api.com and cdn.jsdelivr.net, so those services see the passage.
+      If my server is unavailable, an ESV request falls back to those public sources too. Nothing
+      about you is attached to any of it &mdash; no name, no account, no identifier.</li>
     <li><strong>Barcode scanning</strong> — the barcode is sent to OpenFoodFacts (open database).</li>
     <li><strong>USDA food search</strong> — the search query is sent to api.nal.usda.gov.</li>
     <li><strong>Prayer times (api.aladhan.com)</strong> — only if you use the prayer-time feature. Your location is <strong>rounded to about a kilometre</strong> before it is used — prayer times shift by only seconds over that distance, so the rounding costs nothing and means the request describes your area rather than your address. It is sent to api.aladhan.com to calculate the times, is <strong>not</strong> stored in my database, is not linked to your account, and is never used for advertising or tracking. You can decline location entirely and type your city instead, and the app will remember the city rather than ask again.</li>

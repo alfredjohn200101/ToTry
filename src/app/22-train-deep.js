@@ -208,61 +208,23 @@ function suggestProgression(ex, lastSets){
 // Free APIs: ExerciseDB (exercisedb.dev, 1300+ exercises w/ GIFs)
 // + Wger.de (open-source exercise database, EN+DE+ES, no key needed)
 const _exFormCache = {};
+// BOTH UPSTREAM SOURCES DIED. Verified live 19 Aug 2026:
+//   · exercisedb-api.vercel.app  → HTTP 402 DEPLOYMENT_DISABLED. The free deployment is gone.
+//   · wger.de/api/v2/exercise/   → answers 200 but IGNORES ?name=, returning the whole catalogue
+//     (count 860). The old code took results[0] and so served a random unrelated exercise as "how to
+//     do it"; and because wger moved name/description into `translations`, both came back undefined,
+//     so the modal rendered an empty panel with "Wger" stamped underneath. Worse than a miss, and it
+//     preempted the honest empty state. wger removed /exercise/search/ too (404), and there is no
+//     server-side filter left — matching would mean crawling all 860 entries on every lookup.
+//
+// So both tiers are removed rather than left to fail: two guaranteed-dead network requests on every
+// tap, for nothing. showExerciseForm now says plainly that there is no reference and hands over a
+// YouTube search, which is what the old copy told people to do by hand anyway.
+//
+// TO RE-ADD A SOURCE: return { source, name, gif, instructions[], target, equipment, secondary[] }
+// from here, or null. Anything with no instructions must return null so the honest state still shows.
 async function lookupExerciseForm(name){
-  if(_exFormCache[name]) return _exFormCache[name];
-  const cleanName = name.toLowerCase().trim().replace(/\(.*?\)/g, '').trim();
-  
-  // 1. Try ExerciseDB (has GIFs)
-  try{
-    const r = await fetch('https://exercisedb-api.vercel.app/api/v1/exercises/search?q=' + encodeURIComponent(cleanName) + '&limit=3');
-    if(r.ok){
-      const d = await r.json();
-      const list = d?.data || d?.exercises || (Array.isArray(d) ? d : []);
-      if(list.length){
-        const ex = list[0];
-        const result = {
-          source: 'ExerciseDB',
-          name: ex.name || cleanName,
-          gif: ex.gifUrl || ex.gif_url || ex.imageUrl || null,
-          instructions: Array.isArray(ex.instructions) ? ex.instructions : (ex.instructions ? [ex.instructions] : []),
-          target: ex.target || ex.targetMuscle || null,
-          equipment: ex.equipment || null,
-          secondary: Array.isArray(ex.secondaryMuscles) ? ex.secondaryMuscles : []
-        };
-        _exFormCache[name] = result;
-        return result;
-      }
-    }
-  }catch(e){ console.warn('[exdb] search failed:', e); }
-  
-  // 2. Try Wger.de (open-source, text instructions, no GIFs but clean data)
-  try{
-    const r = await fetch('https://wger.de/api/v2/exercise/?language=2&name=' + encodeURIComponent(cleanName) + '&limit=3', {
-      headers: {'Accept': 'application/json'}
-    });
-    if(r.ok){
-      const d = await r.json();
-      const list = d?.results || [];
-      if(list.length){
-        const ex = list[0];
-        // Strip HTML from description
-        const desc = (ex.description || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-        const result = {
-          source: 'Wger',
-          name: ex.name || cleanName,
-          gif: null,
-          instructions: desc ? [desc] : [],
-          target: null,
-          equipment: null,
-          secondary: []
-        };
-        _exFormCache[name] = result;
-        return result;
-      }
-    }
-  }catch(e){ console.warn('[wger] search failed:', e); }
-  
-  // 3. Nothing found — cache the miss so we don't keep retrying
+  if(Object.prototype.hasOwnProperty.call(_exFormCache, name)) return _exFormCache[name];
   _exFormCache[name] = null;
   return null;
 }
@@ -273,7 +235,7 @@ async function showExerciseForm(name){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:88vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:4px">' + name + '</h3>' +
-    '<p style="font-size:11px;color:var(--tx3);margin-bottom:14px">Loading form & instructions...</p>' +
+    '<p id="ex-form-status" style="font-size:11px;color:var(--tx3);margin-bottom:14px">Looking up form &amp; instructions\u2026</p>' +
     '<div id="ex-form-body" style="text-align:center;padding:20px"><p class="pulsing" style="font-style:italic;color:var(--tx3)">Looking up...</p></div>' +
     '<button class="btn" onclick="closeModal(this)" style="margin-top:14px">Close</button>' +
   '</div>';
@@ -283,10 +245,18 @@ async function showExerciseForm(name){
   const body = document.getElementById('ex-form-body');
   if(!body) return;
   
+  const _status = document.getElementById('ex-form-status');
   if(!info){
-    body.innerHTML = '<p style="font-size:13px;color:var(--tx3);text-align:center;padding:18px">No form data found for this exercise. Try a search in Google or YouTube for "<strong style="color:var(--tx2)">' + name + ' proper form</strong>".</p>';
+    // Both upstream sources are gone (ExerciseDB 402, wger's search endpoint 404). Say so plainly and
+    // hand them the search rather than describing it. window.open(url,'_blank') is the house pattern
+    // (app.js:1666) and Capacitor routes it to the system browser in the native shell.
+    if(_status) _status.textContent = 'No reference for this one';
+    const q = encodeURIComponent(name + ' proper form');
+    body.innerHTML = '<p style="font-size:13px;color:var(--tx2);text-align:center;line-height:1.65;padding:6px 4px 14px">I do not have a form reference for this exercise. The clearest thing is usually thirty seconds of video from someone who coaches it.</p>'+
+      '<button class="btn" onclick="window.open(\'https://www.youtube.com/results?search_query='+q+'\',\'_blank\')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx);font-size:13px">Search YouTube for this</button>';
     return;
   }
+  if(_status) _status.textContent = 'Form & instructions';
   
   let html = '';
   if(info.gif){

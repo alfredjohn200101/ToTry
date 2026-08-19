@@ -204,7 +204,7 @@ async function fetchCurrencyRates(base){
     return cache.rates;
   }
   try{
-    const r = await fetch('https://api.frankfurter.dev/v2/latest?base=' + base);
+    const r = await fetch('https://api.frankfurter.dev/v1/latest?base=' + base);
     if(!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
     if(d && d.rates){
@@ -848,6 +848,19 @@ function getThematicVerses(feeling){
   return result.slice(0,8);
 }
 
+// helloao addresses books by USFM id. Unnumbered names happen to work as-is ("John", "Psalms"), but
+// every numbered book 404s ("1Corinthians"), which is why the ASV/WEB tier silently fell through to
+// bible-api.com for a fifth of the Bible. Only the ones that differ need mapping.
+const _HELLOAO_USFM = {
+  '1 Samuel':'1SA','2 Samuel':'2SA','1 Kings':'1KI','2 Kings':'2KI',
+  '1 Chronicles':'1CH','2 Chronicles':'2CH','1 Corinthians':'1CO','2 Corinthians':'2CO',
+  '1 Thessalonians':'1TH','2 Thessalonians':'2TH','1 Timothy':'1TI','2 Timothy':'2TI',
+  '1 Peter':'1PE','2 Peter':'2PE','1 John':'1JN','2 John':'2JN','3 John':'3JN',
+  'Song of Solomon':'SNG','Song of Songs':'SNG'
+};
+function _helloaoBook(name){
+  return _HELLOAO_USFM[name] || String(name||'').replace(/\s+/g,'');
+}
 const BIBLE_BOOKS=[
   {id:'genesis',name:'Genesis',chapters:50},{id:'exodus',name:'Exodus',chapters:40},{id:'leviticus',name:'Leviticus',chapters:27},
   {id:'numbers',name:'Numbers',chapters:36},{id:'deuteronomy',name:'Deuteronomy',chapters:34},{id:'joshua',name:'Joshua',chapters:24},
@@ -940,7 +953,10 @@ async function loadBibleChapter(){
   // 2. Public Bible API (helloao) — covers ASV/KJV/WEB
   if(!verses){
     try{
-      const r=await fetch('https://bible.helloao.org/api/'+(translation==='kjv'?'KJV':'ASV')+'/'+book.name.replace(/\s+/g,'')+'/'+chapter+'.json');
+      const _hid = (translation==='kjv') ? null : (translation==='web' ? 'ENGWEBP' : 'eng_asv');
+      if(!_hid) throw new Error('helloao has no KJV');
+      const _usfm = _helloaoBook(book.name);
+      const r=await fetch('https://bible.helloao.org/api/'+_hid+'/'+_usfm+'/'+chapter+'.json');
       if(r.ok){const d=await r.json();const vs=d.chapter?.verses||d.verses||[];if(vs.length){verses=vs.map(v=>({num:v.number||v.verseNumber,text:v.text||v.content}));apiUsed=translation==='kjv'?'KJV':'ASV';}}
     }catch(e){ lastError = lastError || 'helloao failed'; }
   }

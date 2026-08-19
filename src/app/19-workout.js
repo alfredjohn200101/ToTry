@@ -1,7 +1,10 @@
 
 // ── WORKOUT TRACKER ───────────────────────────────────────────
-const EXDB_BASE='https://exercisedb-api.vercel.app/api/v1';
-const WGER_BASE='https://wger.de/api/v2';
+// EXDB_BASE and WGER_BASE lived here. Both hosts are dead - exercisedb-api.vercel.app answers 402
+// DEPLOYMENT_DISABLED and wger dropped its search endpoint - and after the exercise-form tiers that
+// used them were removed (see lookupExerciseForm in 22-train-deep.js) neither constant had a single
+// consumer left. Deleted rather than left lying around: a base URL for a dead API is how someone
+// later builds a new call on top of one.
 let currentSession=[],restTimerInt=null,restTimeLeft=0;
 
 // Live workout duration (Hevy shows a running stopwatch the whole session).

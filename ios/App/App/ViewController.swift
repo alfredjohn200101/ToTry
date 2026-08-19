@@ -30,4 +30,37 @@ class ViewController: CAPBridgeViewController {
         // The Face ID / passcode lock for the journal. Same reason.
         bridge?.registerPluginInstance(BiometricPlugin())
     }
+
+    // ── THE STATUS BAR ────────────────────────────────────────────────────────────────────────
+    // Info.plist sets UIViewControllerBasedStatusBarAppearance = true and declares no UIStatusBarStyle,
+    // so the style came from CAPBridgeViewController's default — which under iOS 13+ follows the
+    // DEVICE's light/dark setting, not the app's own theme. To Try is dark by default. On any iPhone
+    // set to Light Mode the status bar therefore drew BLACK text on the app's near-black background:
+    // the clock, battery and signal were invisible. A reviewer whose phone is in light mode sees that
+    // on the very first screen.
+    //
+    // The app's own theme is the only thing that should decide this, so read it. applyTheme() mirrors
+    // it into Preferences (the same route the Face ID lock already uses), which lands in UserDefaults
+    // as "CapacitorStorage.totry_theme". Dark — the default and the value when nothing is set yet —
+    // gets light content; the opt-in light theme gets dark content.
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        let theme = UserDefaults.standard.string(forKey: "CapacitorStorage.totry_theme")
+        return theme == "light" ? .darkContent : .lightContent
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        // Repaint when the theme changes mid-session rather than waiting for the next launch.
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(themeMayHaveChanged),
+            name: UserDefaults.didChangeNotification,
+            object: nil)
+    }
+
+    @objc private func themeMayHaveChanged() {
+        DispatchQueue.main.async { [weak self] in self?.setNeedsStatusBarAppearanceUpdate() }
+    }
+
+    deinit { NotificationCenter.default.removeObserver(self) }
 }
