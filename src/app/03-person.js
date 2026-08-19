@@ -1219,6 +1219,32 @@ async function api(sys, hist, msg, tok, opts){
       );
       if(!error && data){
         if(data.text){
+          const _frag = data.note === 'best available (truncated)';
+          if(_frag){
+            // Give it one honest retry with room to finish before giving up on the AI path.
+            if(!body.__retriedTruncated){
+              try{
+                const _r = await withTimeout(
+                  sb.functions.invoke('ai-proxy', { body: Object.assign({}, body, {
+                    max_tokens: Math.min(2048, Math.round((body.max_tokens || 600) * 2)),
+                    __retriedTruncated: true
+                  })}),
+                  _left(),
+                  'supabase-invoke-retry'
+                );
+                const _d = _r && _r.data;
+                if(!(_r && _r.error) && _d && _d.text && _d.note !== 'best available (truncated)'){
+                  window.__lastAIProvider = _d.provider;
+                  window.__lastAIModel = _d.model || null;
+                  window.__lastAIError = null;
+                  return _d.text;
+                }
+              }catch(_){ }
+            }
+            // Still a fragment. Fall back to the written copy rather than speaking half a sentence.
+            window.__lastAIError = { error: 'truncated', note: data.note };
+            return '';
+          }
           window.__lastAIProvider = data.provider;
           window.__lastAIModel = data.model || null;
           window.__lastAIError = null;

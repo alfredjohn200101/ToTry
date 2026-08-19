@@ -3750,7 +3750,7 @@ Amen.</div></div>
                  changes the SYMBOL only — stored amounts are never multiplied by an exchange rate,
                  because a person's debt is not a number we get to reinterpret. -->
             <div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">Changes the symbol shown throughout. Your saved amounts are never converted.</div>
-          <select id="settings-currency" onchange="savePref('totry_currency',this.value);if(typeof fetchCurrencyRates==='function')fetchCurrencyRates(this.value);if(typeof applyCurrencySymbols==='function')applyCurrencySymbols();if(typeof renderFinance==='function')try{renderFinance()}catch(_){};showToast('Saved', this.value + ' set for conversion rates. Amounts still display with a $ sign.')">
+          <select id="settings-currency" onchange="savePref('totry_currency',this.value);if(typeof fetchCurrencyRates==='function')fetchCurrencyRates(this.value);if(typeof applyCurrencySymbols==='function')applyCurrencySymbols();if(typeof renderFinance==='function')try{renderFinance()}catch(_){};showToast('Saved', this.value + ' \u2014 amounts now show that symbol. Your saved figures are never converted.')">
             <option value="AUD">AUD — Australian Dollar</option>
             <option value="USD">USD — US Dollar</option>
             <option value="GBP">GBP — British Pound</option>

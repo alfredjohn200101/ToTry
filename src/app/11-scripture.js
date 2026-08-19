@@ -972,7 +972,7 @@ async function loadBibleChapter(){
   // 4. jsdelivr fallback
   if(!verses){
     try{
-      const r=await fetch('https://cdn.jsdelivr.net/gh/wldeh/bible-api/bibles/'+(translation||'en-asv')+'/books/'+bookId+'/chapters/'+chapter+'.json');
+      const r=await fetch('https://cdn.jsdelivr.net/gh/wldeh/bible-api/bibles/'+(translation||'en-asv')+'/books/'+String(bookId).replace(/^(\d)-/, function(_m, d){ return d; })+'/chapters/'+chapter+'.json');
       if(r.ok){const d=await r.json();if(d.verses){verses=d.verses.map(v=>({num:v.verse||v.verseNumber||v.v,text:v.text||v.t}));apiUsed='ASV';}}
     }catch(e){ lastError = lastError || 'jsdelivr failed'; }
   }

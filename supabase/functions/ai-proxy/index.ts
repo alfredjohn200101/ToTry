@@ -98,7 +98,22 @@ async function callGemini({ system, messages, max_tokens, web_search }) {
     parts: [{ text: m.content }],
   }));
   return await tryModels(modelList("GEMINI_MODEL", "gemini"), async (model) => {
-    const body = { contents, generationConfig: { maxOutputTokens: max_tokens || 1024, temperature: 0.7 } };
+    const body = {
+      contents,
+      generationConfig: {
+        maxOutputTokens: max_tokens || 1024,
+        temperature: 0.7,
+        // gemini-2.5-flash spends the output budget on THOUGHTS before writing a word. Measured
+        // 19 Aug 2026 against the live function: 3 of 6 identical Companion calls at max_tokens 500
+        // came back as 59-68 character fragments cut mid-word, finishReason MAX_TOKENS, handed to
+        // the app with HTTP 200 as "best available (truncated)" because every other provider in the
+        // chain was down. That is the Brother's voice stopping mid-sentence on the surface a person
+        // reaches at their worst. The note above diagnosed the EMPTY-text version of this; the
+        // truncated version was never handled. thinkingBudget 0 gives the whole budget to the
+        // answer, and models that do not support the field ignore it.
+        thinkingConfig: { thinkingBudget: 0 },
+      },
+    };
     if (system) body.systemInstruction = { parts: [{ text: system }] };
     // Web search: enable Gemini's google search grounding tool.
     if (web_search) body.tools = [{ google_search: {} }];

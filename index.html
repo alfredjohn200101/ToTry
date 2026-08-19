@@ -3750,7 +3750,7 @@ Amen.</div></div>
                  changes the SYMBOL only — stored amounts are never multiplied by an exchange rate,
                  because a person's debt is not a number we get to reinterpret. -->
             <div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">Changes the symbol shown throughout. Your saved amounts are never converted.</div>
-          <select id="settings-currency" onchange="savePref('totry_currency',this.value);if(typeof fetchCurrencyRates==='function')fetchCurrencyRates(this.value);if(typeof applyCurrencySymbols==='function')applyCurrencySymbols();if(typeof renderFinance==='function')try{renderFinance()}catch(_){};showToast('Saved', this.value + ' set for conversion rates. Amounts still display with a $ sign.')">
+          <select id="settings-currency" onchange="savePref('totry_currency',this.value);if(typeof fetchCurrencyRates==='function')fetchCurrencyRates(this.value);if(typeof applyCurrencySymbols==='function')applyCurrencySymbols();if(typeof renderFinance==='function')try{renderFinance()}catch(_){};showToast('Saved', this.value + ' \u2014 amounts now show that symbol. Your saved figures are never converted.')">
             <option value="AUD">AUD — Australian Dollar</option>
             <option value="USD">USD — US Dollar</option>
             <option value="GBP">GBP — British Pound</option>
@@ -4891,7 +4891,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v512';
+const APP_VERSION = 'v513';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -8512,6 +8512,32 @@ async function api(sys, hist, msg, tok, opts){
       );
       if(!error && data){
         if(data.text){
+          const _frag = data.note === 'best available (truncated)';
+          if(_frag){
+            // Give it one honest retry with room to finish before giving up on the AI path.
+            if(!body.__retriedTruncated){
+              try{
+                const _r = await withTimeout(
+                  sb.functions.invoke('ai-proxy', { body: Object.assign({}, body, {
+                    max_tokens: Math.min(2048, Math.round((body.max_tokens || 600) * 2)),
+                    __retriedTruncated: true
+                  })}),
+                  _left(),
+                  'supabase-invoke-retry'
+                );
+                const _d = _r && _r.data;
+                if(!(_r && _r.error) && _d && _d.text && _d.note !== 'best available (truncated)'){
+                  window.__lastAIProvider = _d.provider;
+                  window.__lastAIModel = _d.model || null;
+                  window.__lastAIError = null;
+                  return _d.text;
+                }
+              }catch(_){ }
+            }
+            // Still a fragment. Fall back to the written copy rather than speaking half a sentence.
+            window.__lastAIError = { error: 'truncated', note: data.note };
+            return '';
+          }
           window.__lastAIProvider = data.provider;
           window.__lastAIModel = data.model || null;
           window.__lastAIError = null;
@@ -16508,7 +16534,8 @@ async function _researchProtocol(name, key){
     // Length is not validity. This cached ANY long string as the clinical spine for a struggle, and
     // the rate-limit notice is 140 characters — so a billing message became the permanent protocol
     // for someone's 2am, injected into every prompt after it. Only cache a real answer.
-    if(txt && txt.length > 40 && !window.__lastAIError){
+    const _complete = !!txt && txt.trim().length > 120 && /[.!?\u2019"')\]]$/.test(txt.trim());
+    if(_complete && !window.__lastAIError){
       const store = _getCompanionProtocols();
       store[key] = { spine: txt.trim(), label: 'Here with you', at: Date.now() };
       try{ localStorage.setItem('totry_companion_protocols', JSON.stringify(store)); }catch(_){}
@@ -20634,7 +20661,7 @@ async function loadBibleChapter(){
   // 4. jsdelivr fallback
   if(!verses){
     try{
-      const r=await fetch('https://cdn.jsdelivr.net/gh/wldeh/bible-api/bibles/'+(translation||'en-asv')+'/books/'+bookId+'/chapters/'+chapter+'.json');
+      const r=await fetch('https://cdn.jsdelivr.net/gh/wldeh/bible-api/bibles/'+(translation||'en-asv')+'/books/'+String(bookId).replace(/^(\d)-/, function(_m, d){ return d; })+'/chapters/'+chapter+'.json');
       if(r.ok){const d=await r.json();if(d.verses){verses=d.verses.map(v=>({num:v.verse||v.verseNumber||v.v,text:v.text||v.t}));apiUsed='ASV';}}
     }catch(e){ lastError = lastError || 'jsdelivr failed'; }
   }

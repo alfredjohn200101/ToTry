@@ -249,7 +249,8 @@ async function _researchProtocol(name, key){
     // Length is not validity. This cached ANY long string as the clinical spine for a struggle, and
     // the rate-limit notice is 140 characters — so a billing message became the permanent protocol
     // for someone's 2am, injected into every prompt after it. Only cache a real answer.
-    if(txt && txt.length > 40 && !window.__lastAIError){
+    const _complete = !!txt && txt.trim().length > 120 && /[.!?\u2019"')\]]$/.test(txt.trim());
+    if(_complete && !window.__lastAIError){
       const store = _getCompanionProtocols();
       store[key] = { spine: txt.trim(), label: 'Here with you', at: Date.now() };
       try{ localStorage.setItem('totry_companion_protocols', JSON.stringify(store)); }catch(_){}

@@ -2365,10 +2365,20 @@ H.section('numbers people are asked to act on have bounds, and settings say what
   H.ok(/height >= 120 && height <= 230/.test(t), 'height is bounded');
   H.ok(t.indexOf('age >= 13') < t.indexOf('const activity'), 'the bounds run before the calculation');
 
-  // The currency setting drives conversion rates only — ~250 hardcoded "$" are not wired to it. It must
-  // not imply otherwise. (A partial symbol sweep is worse than none: mixed symbols on one screen.)
-  H.ok(/Amounts still show a \$ sign/.test(code) || /Amounts still display with a \$ sign/.test(code),
-    'the currency setting says what it actually changes');
+  // WAS: an assertion that the toast said "Amounts still display with a $ sign". That was correct when
+  // written — ~250 hardcoded "$" were not wired to the setting — but the v480 symbol sweep finished the
+  // job, and the very next assertion in this file proves it: only EIGHT non-currency "$" remain in the
+  // whole bundle. There are now 145 curSym() call sites and applyCurrencySymbols() repaints every
+  // [data-cur-text]/[data-cur-ph] element on change. So the amounts behind the toast HAVE just become
+  // £, and the toast was telling the person the opposite of what their screen showed — while the helper
+  // text two lines above it told the truth. What must stay true is the honest half: symbol changes,
+  // stored figures are never reinterpreted.
+  H.ok(/amounts now show that symbol/.test(code),
+    'the currency toast describes what actually happened — the symbols repainted');
+  H.ok(/Your saved figures are never converted|saved amounts are never converted/.test(code),
+    'and still says plainly that no stored amount is reinterpreted');
+  H.ok(!/Amounts still display with a \$ sign/.test(code),
+    'the stale claim that amounts keep showing $ is gone');
 }
 
 H.section('a renderer without a container is a feature that silently does not exist')
@@ -3481,8 +3491,13 @@ H.section('dead code that was one caller away from confusing someone');
   H.ok(!/return data\.message/.test(apiBody), 'but the notice is never returned as the answer');
   H.ok(/err\.error === 'rate_limited' && err\.message/.test(fnBodyOf(H.html, 'getAIErrorMessage')),
        'it surfaces through getAIErrorMessage instead, where the wording belongs');
-  H.ok(/txt\.length > 40 && !window\.__lastAIError/.test(H.html),
+  H.ok(/!window\.__lastAIError/.test(H.html),
        'and the companion caches a protocol only when the call actually succeeded');
+  H.ok(/_complete = !!txt && txt\.trim\(\)\.length > 120/.test(H.html),
+       'with a length bar high enough that a truncated fragment cannot clear it');
+  H.ok(/\/\[\.!\?[^\/]*\]\$\/\.test\(txt\.trim\(\)\)/.test(H.html),
+       'and a completeness check — an answer that does not END is not an answer');
+  H.ok(!/txt\.length > 40 &&/.test(H.html), 'the old 40-character floor is gone');
 
   // Model output straight into innerHTML: a reply containing "<" ("you went from <60kg") is parsed as
   // a tag and the rest of the sentence disappears, so the person reads a thought that stops halfway.
@@ -4014,6 +4029,32 @@ function fnBodyOf(code, name){
   H.section('nothing runs in the App Store binary for nothing');
   H.ok(/GOATCOUNTER_CODE && !metricsOff\(\) && !\(typeof isNativeApp==='function' && isNativeApp\(\)\)/.test(H.html),
     'GoatCounter is not injected natively — count.js refuses localhost, which is capacitor://localhost');
+}
+
+// ── the voice must never stop mid-sentence ───────────────────────────────────────────────────
+{
+  H.section('a fragment is never handed to a person as the answer');
+
+  // MEASURED, NOT REASONED. Six identical Companion calls against the LIVE ai-proxy on 19 Aug 2026 at
+  // max_tokens 500: three came back as 59-68 character fragments cut mid-word, HTTP 200, note
+  // "best available (truncated)". gemini-2.5-flash is a thinking model — it spends the output budget
+  // on thoughts before writing a word — and every other provider in the chain was down, so the proxy
+  // returned the fragment as the best it had. That is the Brother's voice stopping mid-sentence on
+  // the surface a person reaches at their worst.
+  const fs = require('fs'), path = require('path');
+  const proxy = fs.readFileSync(path.join(__dirname, '..', 'supabase', 'functions', 'ai-proxy', 'index.ts'), 'utf8');
+  H.ok(/thinkingConfig: \{ thinkingBudget: 0 \}/.test(proxy),
+    'the proxy turns Gemini thinking off so the whole budget goes to the answer');
+  H.ok(proxy.indexOf('thinkingConfig') > proxy.indexOf('maxOutputTokens'),
+    'inside generationConfig, where the API expects it');
+
+  // The server fix deploys on its own schedule and is NOT live yet, so the client must not rely on it.
+  const api = H.extractFn('api');
+  H.ok(/data\.note === 'best available \(truncated\)'/.test(api),
+    'the client recognises the proxy\u2019s own truncation signal');
+  H.ok(/__retriedTruncated/.test(api), 'gives it one retry with room to finish');
+  H.ok(/return '';/.test(api.slice(api.indexOf('_frag'))),
+    'and then returns empty rather than speaking half a sentence \u2014 callers fall back to the written copy');
 }
 
 // ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────
