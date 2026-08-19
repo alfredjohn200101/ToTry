@@ -1026,6 +1026,25 @@ function guestKeepThis(){
 // unregisters the service worker, so the App Store build had no mitigation whatsoever.
 //
 // Nothing in here touches sb. Everything needed to meet a person is already on the phone.
+// SIX SECONDS OF SPINNER OVER A SCREEN THAT WAS ALREADY THERE. The splash was cleared in exactly two
+// places — inside initApp(), and inside bootWithoutCloud() — plus a 6000ms failsafe in 00-boot.js
+// whose comment calls itself a safety net for a stalled init. But checkAuthAndStart has branches that
+// reach neither: a GENUINELY NEW visitor (no session, nothing local) gets the sign-in screen, and
+// someone logged in but not yet onboarded gets the onboarding screen. Both were fully rendered and
+// interactive, and both sat behind an opaque splash until the failsafe fired.
+//
+// Measured on the real bundle: DOMContentLoaded at 389ms, splash cleared at 6747ms. Four-plus seconds
+// of dead spinner is the first thing this app showed almost everyone who ever opened it, on a product
+// whose entire premise is being there in the moment someone feels something. The failsafe had quietly
+// become the primary path, which is why nobody saw it: it always worked, just six seconds late.
+function _clearBootSplash(){
+  try{
+    const bs = document.getElementById('boot-splash');
+    if(!bs) return;
+    bs.style.opacity = '0';
+    setTimeout(function(){ try{ bs.remove(); }catch(_){} }, 400);
+  }catch(_){ }
+}
 let _bootedLocal = false;
 let _authTries = 0;
 function bootWithoutCloud(reason){
@@ -1059,11 +1078,7 @@ function bootWithoutCloud(reason){
       try{ const n = document.getElementById('auth-offline-note'); if(n) n.style.display = 'block'; }catch(_){}
     }
   }catch(e){ console.error('[boot] offline fallback failed:', e); }
-  // Clear the splash now that there is something behind it (it also self-removes at 6s).
-  try{
-    const bs = document.getElementById('boot-splash');
-    if(bs){ bs.style.opacity = '0'; setTimeout(function(){ try{ bs.remove(); }catch(_){} }, 400); }
-  }catch(_){}
+  _clearBootSplash();   // there is something behind it now
   // If the connection turns up later, pick the cloud back up: a fresh client restores the saved session,
   // which starts the sync loop. initApp() is guarded by _bootedLocal, so nothing runs twice.
   try{
@@ -1166,6 +1181,7 @@ async function checkAuthAndStart(){
         // Logged in but not onboarded yet - show onboarding starting at name
         document.getElementById('onboard').classList.add('active');
         document.getElementById('onboard').style.display = 'block';
+        _clearBootSplash();
         try{ const sc=document.getElementById('ob-chip-strava'); if(sc && typeof isStravaApproved==='function' && isStravaApproved()) sc.style.display=''; }catch(_){}
         try{ const gh=document.getElementById('ob-chip-googlehealth'); if(gh && !(typeof isNativeApp==='function' && isNativeApp())) gh.style.display=''; }catch(_){}
       }
@@ -1203,6 +1219,7 @@ async function checkAuthAndStart(){
       document.getElementById('auth-container').style.display = 'flex';
       document.getElementById('onboard').style.display = 'none';
       authShowStep('email');
+      _clearBootSplash();
     }
   } catch(e){
     console.error('Auth check failed:', e);
@@ -1213,6 +1230,7 @@ async function checkAuthAndStart(){
     }
     document.getElementById('auth-container').style.display = 'flex';
     document.getElementById('onboard').style.display = 'none';
+    _clearBootSplash();
   }
 }
 

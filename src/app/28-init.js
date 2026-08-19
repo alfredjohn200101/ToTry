@@ -600,10 +600,7 @@ async function initApp(){
     }).catch(()=>{});
   }
   // App is interactive — fade out the instant boot splash.
-  try{
-    const bs=document.getElementById('boot-splash');
-    if(bs){ bs.style.opacity='0'; setTimeout(()=>bs.remove(), 400); }
-  }catch(_){ }
+  if(typeof _clearBootSplash==='function') _clearBootSplash();
   // THE FRONT DOOR: after the app settles, the companion checks in. Time-aware
   // (morning defers to the day), throttled, one-tap dismiss — so it becomes the
   // reflex you reach for before the slip. This is the keystone of the whole app.

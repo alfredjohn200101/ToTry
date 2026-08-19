@@ -3933,6 +3933,30 @@ function fnBodyOf(code, name){
     'a use logged seconds ago reads as 0 days, not -1, in the brief the model reasons from');
 }
 
+// ── the splash must be cleared by the app, never by the failsafe ─────────────────────────────
+{
+  H.section('nobody waits six seconds for a screen that is already there');
+
+  // 00-boot.js has a 6000ms timeout whose own comment calls it a safety net for a stalled init. It
+  // had quietly become the PRIMARY path: checkAuthAndStart has branches that reach neither of the two
+  // real clearers, and a genuinely new visitor — the most common first experience there is — was one
+  // of them. Measured on the real bundle: DOMContentLoaded 389ms, splash gone 6747ms. After: 822ms
+  // warm, 2399ms cold. The failsafe never failed, it was just six seconds late, which is why it hid.
+  H.ok(/function _clearBootSplash\(\)/.test(H.html), 'there is one clearer, not three copies');
+  const cas = H.extractFn('checkAuthAndStart');
+  const branches = cas.split('_clearBootSplash()').length - 1;
+  H.ok(branches >= 3, `every screen-showing branch of checkAuthAndStart clears it (found ${branches})`);
+  H.ok(/authShowStep\('email'\);\s*\n\s*_clearBootSplash\(\);/.test(cas),
+    'including the brand-new visitor, who sees the sign-in screen and nothing else');
+  H.ok(/style\.display = 'block';\s*\n\s*_clearBootSplash\(\);/.test(cas),
+    'and someone logged in but not yet onboarded');
+  H.ok(/_clearBootSplash\(\)/.test(H.extractFn('bootWithoutCloud')), 'the offline floor still clears it');
+  H.ok(/_clearBootSplash\(\)/.test(H.extractFn('initApp')), 'and so does a normal init');
+
+  // The failsafe stays — it is the right thing to have — but it must remain the LAST resort.
+  H.ok(/}, 6000\);/.test(H.html), 'the 6s failsafe is still there for a genuinely stalled boot');
+}
+
 // ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────
 // Every test in this file reads H.html, which reads index.html — the ASSEMBLED file. So a change
 // made directly to index.html passes everything here and then vanishes the next time anyone runs
