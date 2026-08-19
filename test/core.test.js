@@ -4057,6 +4057,25 @@ function fnBodyOf(code, name){
     'and then returns empty rather than speaking half a sentence \u2014 callers fall back to the written copy');
 }
 
+// ── nothing linked into the binary that the app does not use ─────────────────────────────────
+{
+  H.section('the push plugin is gone, and stays gone');
+  // It was linked via SPM, contributed the registerForRemoteNotifications symbol, and had no
+  // aps-environment entitlement — which is exactly the ITMS-90078 "Missing Push Notification
+  // Entitlement" warning email at upload, arriving at the moment you are least sure the build is
+  // good. Nothing ever called register(); the only reference was an unreachable fallback behind
+  // LocalNotifications. Verified after removal with a real Release build: BUILD SUCCEEDED,
+  // -validate-for-store passed, and `strings ToTry.app/ToTry` finds the symbol zero times.
+  const fs = require('fs'), path = require('path');
+  const root = path.join(__dirname, '..');
+  const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+  H.ok(!('@capacitor/push-notifications' in (pkg.dependencies || {})),
+    'not a dependency — every nudge this app sends is a LOCAL notification');
+  const spm = fs.readFileSync(path.join(root, 'ios/App/CapApp-SPM/Package.swift'), 'utf8');
+  H.ok(!/push-notifications|PushNotifications/.test(spm), 'and not linked into the iOS build');
+  H.ok(!/Plugins\?\.PushNotifications/.test(H.html), 'no client reference is left behind');
+}
+
 // ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────
 // Every test in this file reads H.html, which reads index.html — the ASSEMBLED file. So a change
 // made directly to index.html passes everything here and then vanishes the next time anyone runs

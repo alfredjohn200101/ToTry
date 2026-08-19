@@ -17,7 +17,7 @@ const Notify = {
   isNative(){ try{ return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); }catch(_){ return false; } },
   // The LocalNotifications plugin, if available (Capacitor community/official plugin).
   _local(){ try{ return window.Capacitor?.Plugins?.LocalNotifications || null; }catch(_){ return null; } },
-  _push(){ try{ return window.Capacitor?.Plugins?.PushNotifications || null; }catch(_){ return null; } },
+  // _push() lived here — see the note on requestPermission below.
   _splash(){ try{ return window.Capacitor?.Plugins?.SplashScreen || null; }catch(_){ return null; } },
 
   // HOLD THE LAUNCH SCREEN UNTIL THERE IS SOMETHING TO SEE.
@@ -45,8 +45,9 @@ const Notify = {
       if(this.isNative()){
         const L = this._local();
         if(L && L.requestPermissions){ const r = await L.requestPermissions(); return r && (r.display === 'granted' || r.display === 'prompt-with-rationale' || r.granted); }
-        const P = this._push();
-        if(P && P.requestPermissions){ const r = await P.requestPermissions(); return r && r.receive === 'granted'; }
+        // A PushNotifications fallback stood here. It could never be reached (LocalNotifications is
+        // always present in this build and returns above), the plugin is gone as of v513, and remote
+        // push is not something this app does — every nudge it sends is scheduled on-device.
       }
       if('Notification' in window){ const p = await Notification.requestPermission(); return p === 'granted'; }
     }catch(_){}
