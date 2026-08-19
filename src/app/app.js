@@ -255,7 +255,18 @@ function checkPostRelapse(){
     let msg = '';
     if(total > 0) msg += 'Your ' + total + ' total clean days are still yours — a slip doesn\'t erase them. ';
     if(resilience > 0) msg += 'You\'ve shown up ' + resilience + ' days running. ';
-    msg += 'Proverbs 24:16 — the righteous fall seven times and rise again. Let\'s just do today.';
+    // The line that meets someone right after a slip has to be in THEIR tradition. Proverbs was
+    // quoted to everyone — including the default-secular person, who chose no scripture at all, and
+    // a Muslim or Buddhist who chose a different one. The thought is universal; the citation is not.
+    const _fall = {
+      christianity: "Proverbs 24:16 \u2014 the righteous fall seven times and rise again. Let's just do today.",
+      islam:        "The best of those who err are those who return. Let's just do today.",
+      hinduism:     "Better to stumble on your own path than to walk another's perfectly. Let's just do today.",
+      buddhism:     "Falling is not failing \u2014 beginning again IS the practice. Let's just do today.",
+      secular:      "Falling down is not the same as staying down. Let's just do today."
+    };
+    const _tr = (typeof faithTradition==='function') ? faithTradition() : 'secular';
+    msg += (_fall[_tr] || _fall.secular);
     subEl.textContent = msg;
   }
 }
@@ -463,7 +474,12 @@ function getNextStep(){
 // him instead of drowning him. This is the opposite of how the field fails.
 function applyHomeProgressiveDisclosure(){
   try{
-    const day = (typeof getDayCount==='function') ? getDayCount() : 99;
+    // HOW LONG THEY HAVE HAD THE APP, NOT WHAT THEIR COUNTER SAYS. getDayCount() honours the
+    // "Begin again — Day 1" reset in Settings, which is about their journey, not their familiarity
+    // with the app. So someone who had used To Try for eight months and chose to start again had the
+    // home stripped back to a new-user's home — the in-the-moment help they had come to rely on
+    // hidden from them at the exact moment they had just declared they were starting over.
+    const day = (typeof daysInstalled==='function') ? daysInstalled() : 99;
     // Advanced surfaces, each with the day they unlock. Before that, they're hidden so the home
     // stays calm and graspable. (If a card is already hidden by its own logic, we leave it hidden.)
     const gates = [
@@ -1301,6 +1317,11 @@ function renderTodayForYou(){
   let focusVice = null, bestStreak = -1;
   (vices||[]).forEach(v => {
     if(v.mode === 'moderate') return; // moderation vices have no abstinence streak to protect
+    // Nor does a grief. A letting-go struggle (a breakup, a loss, an attachment being released) is
+    // not something a person is abstaining FROM, and Home was rendering it as one: "day 6 free of
+    // Letting go of her". That is the app misreading someone's mourning as a vice they are resisting,
+    // on the first screen they see. Every other surface already excludes kind:'letgo' from streaks.
+    if(v.kind === 'letgo') return;
     const s = (typeof viceCleanDays === 'function') ? viceCleanDays(v) : 0;
     if(s > bestStreak){ bestStreak = s; focusVice = v; }
   });

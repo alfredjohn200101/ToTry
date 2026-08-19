@@ -429,11 +429,11 @@ function _fuelFlexToday(){
 // Interactive shopping checklist — tick items off as you shop (persists per item).
 function _fuelToggleShopItem(el, idx){
   const plan = ls('totry_meal_plan'); if(!plan || !plan.shopping || !plan.shopping[idx]) return;
-  plan.shopping[idx].got = !plan.shopping[idx].got; // Re-read after the await: a second edit started while this one was in flight holds its own
-  // stale copy of the whole plan, and whichever returns last silently reverts the other.
-  const _fresh = ls('totry_meal_plan') || plan;
-  if(_fresh && _fresh.meals && plan && plan.meals) _fresh.meals = plan.meals.slice();
-  ls('totry_meal_plan', _fresh || plan);
+  plan.shopping[idx].got = !plan.shopping[idx].got;
+  // Synchronous — nothing can have changed under us, and re-reading here would DISCARD the tick we
+  // just made. It did: the v496 race fix was applied to this function by mistake as well as to the
+  // async meal editors, so a ticked item came back unticked on every return to the tab.
+  ls('totry_meal_plan', plan);
   const got = plan.shopping[idx].got;
   const tick = el.querySelector('.fuel-tick'), item = el.querySelector('.fuel-item'), price = el.querySelector('.fuel-price');
   if(tick){ tick.style.background = got?'var(--go)':'transparent'; tick.style.borderColor = got?'var(--go)':'var(--bd2)'; tick.textContent = got?'✓':''; }
@@ -460,7 +460,13 @@ function _fuelLogPlan(btn){
   const log = ls('totry_nutlog') || {}; if(!log[today]) log[today]=[];
   plan.meals.forEach(function(mm, i){
     log[today].push({ id: Date.now()+i, name: mm.name||'Meal', serving: String(mm.items||'').slice(0,120)||'1 serving', qty:1,
-      cal: Math.round(mm.cal||0), pro: Math.round((mm.pro||0)*10)/10, carb: Math.round((mm.carbs||0)*10)/10, fat: Math.round((mm.fat||0)*10)/10, source: 'Fuel plan' });
+      cal: Math.round(mm.cal||0), pro: Math.round((mm.pro||0)*10)/10, carb: Math.round((mm.carbs||0)*10)/10, fat: Math.round((mm.fat||0)*10)/10,
+      // Every 7-day nutrition figure resolves a day from entries[0].ts. A day whose first entry came
+      // from the fuel plan had no ts at all, so the WHOLE DAY dropped out of the weekly digest and the
+      // adaptive TDEE — and logging a full day of planned meals is exactly when that first entry is
+      // one of these. Two other writers were fixed for this in v483; this one was missed.
+      ts: (typeof nutStampFor==='function' ? nutStampFor() : new Date().toISOString()), date: today,
+      source: 'Fuel plan' });
   });
   if(typeof _pruneNutLog==='function') _pruneNutLog(log);
   ls('totry_nutlog', log); if(typeof syncToCloud==='function') syncToCloud();

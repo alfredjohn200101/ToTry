@@ -3284,6 +3284,45 @@ H.section('dead code that was one caller away from confusing someone');
   H.ok(!/M17 5H9\.5/.test(H.html), 'no dollar-sign glyph is drawn in any icon');
 }
 
+// ── the sixth sweep's remainder, held ───────────────────────────────────────────────────────────
+{
+  H.section('sixth sweep remainder');
+  const code3 = H.html.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+
+  // The SOS "I gave in" button wrote nothing to totry_fight_log, so the most honest thing a person
+  // does was invisible to trigger analysis, the risk-window engine and every weekly count.
+  H.ok(/won: false,[\s\S]{0,200}?__sosIntensity/.test(code3), 'a live relapse is mirrored into the fight log');
+
+  // Three urge doors raised v.w without v.total — the denominator of "8 of 10 battles won" — so
+  // beating urges pushed the ratio past 100%.
+  H.eq((code3.match(/v\.w=\(v\.w\|\|0\)\+1; v\.total=\(v\.total\|\|0\)\+1;/g) || []).length, 3,
+       'all three urge doors count the encounter, not just the win');
+
+  // A grief is not an abstinence streak. Home rendered "day 6 free of Letting go of her".
+  H.ok(/v\.kind === 'letgo'\) return;/.test(code3), 'a letting-go struggle is not shown as a clean streak');
+
+  // Proverbs was quoted to everyone, including the default-secular person.
+  H.ok(/_fall\[_tr\] \|\| _fall\.secular/.test(code3), 'the post-relapse line follows the tradition');
+  H.ok(/Falling down is not the same as staying down/.test(code3), 'and has a secular form');
+
+  // getDayCount honours "Begin again — Day 1", which is about the journey, not familiarity with the
+  // app — so starting over stripped an eight-month user back to a new-user home.
+  H.ok(/daysInstalled==='function'\) \? daysInstalled\(\) : 99/.test(code3),
+       'progressive disclosure keys off how long they have HAD the app');
+
+  // `km` was never declared — logging manual cardio threw after saving, so no confirmation appeared.
+  H.ok(!/if\(km\) bits\.push/.test(code3), 'the cardio confirmation no longer references an undeclared km');
+
+  // A failed barcode lookup left __recipeScan set, so the NEXT scan went into a recipe silently.
+  H.ok(/const _recipeMode = /.test(code3), 'the recipe-scan flag is consumed before any early return');
+
+  // skipWaiting() in install took the update out of the person's hands mid-sentence.
+  const sw = require('fs').readFileSync(require('path').join(__dirname, '..', 'sw.js'), 'utf8');
+  H.ok(!/addAll\(CORE\)[\s\S]{0,40}skipWaiting/.test(sw), 'the service worker does not activate itself during install');
+  H.ok(/SKIP_WAITING/.test(sw), 'the person still chooses the moment, through the update banner');
+  H.ok(/resp\.ok/.test(sw), 'and an HTTP error falls back to the cached shell instead of being served');
+}
+
 // ── the number on the row is the number the button logs ────────────────────────────────────────
 // The recents row printed f.cal — the per-100g figure for a scanned product — while the (+) beside
 // it logs _quickServing(f), the real serving. A 50g bar read "488 cal" and logged 244, with no unit

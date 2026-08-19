@@ -1447,6 +1447,13 @@ function closeBarcodeScanner(){
 }
 
 async function lookupBarcode(barcode){
+  // CONSUME THE MODE FLAG UP FRONT. __recipeScan says "this scan is for the recipe builder", and it
+  // was only cleared on the SUCCESS path far below — so an unreadable code, a product not in the
+  // database, or a dropped connection left it set, and the person's NEXT scan from the food diary
+  // silently added the item to a recipe they were not building. Taken here, before any early return,
+  // so a failed scan cannot change what the following one means.
+  const _recipeMode = !!(typeof window !== 'undefined' && window.__recipeScan);
+  try{ if(typeof window !== 'undefined') window.__recipeScan = false; }catch(_){ }
   barcode = (barcode || '').trim();
   if(!barcode || !/^\d{6,14}$/.test(barcode)){
     showToast('Invalid barcode', 'Barcode should be 6-14 digits.');
@@ -1524,8 +1531,7 @@ async function lookupBarcode(barcode){
     // sodium looked right while calories were 3.2x too high. Do not re-add a serving here.
 
     // Recipe-scan mode: route this scan into the open recipe instead of the day log.
-    if(window.__recipeScan){
-      window.__recipeScan = false;
+    if(_recipeMode){   // captured and cleared at the top, so a failed scan cannot leak into the next
       try{ if(typeof closeBarcodeScanner === 'function') closeBarcodeScanner(); }catch(_){}
       const g = parseFloat(prompt('How many grams of ' + food.name + ' go in this recipe?', '100')) || 100;
       const f = g / 100;

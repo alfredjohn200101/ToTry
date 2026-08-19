@@ -294,6 +294,19 @@ function logLoss(whenISO){
     v.relapseHistory.push({date:whenStr,streakLength:cleanBeforeReset});
     v.startDate=whenStr;   // streak restarts from when it actually happened
     v.lastLoss=whenStr;
+    // MIRROR IT INTO THE FIGHT LOG. This is the SOS "I gave in" button — the most honest thing a
+    // person does in this app — and it wrote nothing here, so the slip was invisible to every
+    // surface built on totry_fight_log: trigger pattern analysis, the risk-window engine that
+    // decides when to reach out first, the weekly synthesis, "N slips this week". The mass-backfill
+    // path twenty lines up already does this; the live one, which matters more, did not.
+    try{
+      const fl = ls('totry_fight_log') || [];
+      fl.unshift({ vice: v.n, won: false,
+        intensity: (typeof window!=='undefined' && window.__sosIntensity) || null,
+        trigger: (typeof window!=='undefined' && window.__sosTrigger) || null,
+        ts: whenStr, date: new Date(whenStr).toLocaleDateString('en-AU') });
+      ls('totry_fight_log', fl.slice(0, 200));
+    }catch(_){ }
     saveV();
     
     // Compassionate response - show total progress preserved
@@ -1632,7 +1645,7 @@ function _gambleStakes(i){
 function _gambleWin(i, cash){
   loadV(); const v=vices[i];
   if(v){
-    v.w=(v.w||0)+1; v.lastWin=new Date().toISOString();
+    v.w=(v.w||0)+1; v.total=(v.total||0)+1; v.lastWin=new Date().toISOString();
     const moments=ls('totry_moments_won')||[];
     moments.unshift({v:v.n, ts:new Date().toISOString(), kept:cash||0, kind:'gambling'});
     ls('totry_moments_won', moments.slice(0,300));
@@ -1738,7 +1751,7 @@ function openMomentStakes(i){
 function _momentWin(i){
   loadV(); const v=vices[i];
   if(v){
-    v.w=(v.w||0)+1; v.lastWin=new Date().toISOString();
+    v.w=(v.w||0)+1; v.total=(v.total||0)+1; v.lastWin=new Date().toISOString();
     const moments=ls('totry_moments_won')||[];
     moments.unshift({v:v.n, ts:new Date().toISOString(), kind:_viceStakeKind(v)});
     ls('totry_moments_won', moments.slice(0,300));
@@ -1803,7 +1816,7 @@ function _riskGreetSteady(i){
     moments.unshift({v:v.n, ts:new Date().toISOString(), kind:'steady'});
     ls('totry_moments_won', moments.slice(0,300));
     window.__momentOpenedAt=Date.now(); _recordFightMoment(v.n, true);
-    v.w=(v.w||0)+1; v.lastWin=new Date().toISOString(); saveV();
+    v.w=(v.w||0)+1; v.total=(v.total||0)+1; v.lastWin=new Date().toISOString(); saveV();
   }
   document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
   try{ renderVices(); if(typeof syncToCloud==='function') syncToCloud(); if(typeof haptic==='function') haptic('success'); }catch(_){}

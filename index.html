@@ -4879,7 +4879,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v505';
+const APP_VERSION = 'v506';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -17231,6 +17231,19 @@ function logLoss(whenISO){
     v.relapseHistory.push({date:whenStr,streakLength:cleanBeforeReset});
     v.startDate=whenStr;   // streak restarts from when it actually happened
     v.lastLoss=whenStr;
+    // MIRROR IT INTO THE FIGHT LOG. This is the SOS "I gave in" button — the most honest thing a
+    // person does in this app — and it wrote nothing here, so the slip was invisible to every
+    // surface built on totry_fight_log: trigger pattern analysis, the risk-window engine that
+    // decides when to reach out first, the weekly synthesis, "N slips this week". The mass-backfill
+    // path twenty lines up already does this; the live one, which matters more, did not.
+    try{
+      const fl = ls('totry_fight_log') || [];
+      fl.unshift({ vice: v.n, won: false,
+        intensity: (typeof window!=='undefined' && window.__sosIntensity) || null,
+        trigger: (typeof window!=='undefined' && window.__sosTrigger) || null,
+        ts: whenStr, date: new Date(whenStr).toLocaleDateString('en-AU') });
+      ls('totry_fight_log', fl.slice(0, 200));
+    }catch(_){ }
     saveV();
     
     // Compassionate response - show total progress preserved
@@ -18569,7 +18582,7 @@ function _gambleStakes(i){
 function _gambleWin(i, cash){
   loadV(); const v=vices[i];
   if(v){
-    v.w=(v.w||0)+1; v.lastWin=new Date().toISOString();
+    v.w=(v.w||0)+1; v.total=(v.total||0)+1; v.lastWin=new Date().toISOString();
     const moments=ls('totry_moments_won')||[];
     moments.unshift({v:v.n, ts:new Date().toISOString(), kept:cash||0, kind:'gambling'});
     ls('totry_moments_won', moments.slice(0,300));
@@ -18675,7 +18688,7 @@ function openMomentStakes(i){
 function _momentWin(i){
   loadV(); const v=vices[i];
   if(v){
-    v.w=(v.w||0)+1; v.lastWin=new Date().toISOString();
+    v.w=(v.w||0)+1; v.total=(v.total||0)+1; v.lastWin=new Date().toISOString();
     const moments=ls('totry_moments_won')||[];
     moments.unshift({v:v.n, ts:new Date().toISOString(), kind:_viceStakeKind(v)});
     ls('totry_moments_won', moments.slice(0,300));
@@ -18740,7 +18753,7 @@ function _riskGreetSteady(i){
     moments.unshift({v:v.n, ts:new Date().toISOString(), kind:'steady'});
     ls('totry_moments_won', moments.slice(0,300));
     window.__momentOpenedAt=Date.now(); _recordFightMoment(v.n, true);
-    v.w=(v.w||0)+1; v.lastWin=new Date().toISOString(); saveV();
+    v.w=(v.w||0)+1; v.total=(v.total||0)+1; v.lastWin=new Date().toISOString(); saveV();
   }
   document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
   try{ renderVices(); if(typeof syncToCloud==='function') syncToCloud(); if(typeof haptic==='function') haptic('success'); }catch(_){}
@@ -23351,6 +23364,13 @@ function closeBarcodeScanner(){
 }
 
 async function lookupBarcode(barcode){
+  // CONSUME THE MODE FLAG UP FRONT. __recipeScan says "this scan is for the recipe builder", and it
+  // was only cleared on the SUCCESS path far below — so an unreadable code, a product not in the
+  // database, or a dropped connection left it set, and the person's NEXT scan from the food diary
+  // silently added the item to a recipe they were not building. Taken here, before any early return,
+  // so a failed scan cannot change what the following one means.
+  const _recipeMode = !!(typeof window !== 'undefined' && window.__recipeScan);
+  try{ if(typeof window !== 'undefined') window.__recipeScan = false; }catch(_){ }
   barcode = (barcode || '').trim();
   if(!barcode || !/^\d{6,14}$/.test(barcode)){
     showToast('Invalid barcode', 'Barcode should be 6-14 digits.');
@@ -23428,8 +23448,7 @@ async function lookupBarcode(barcode){
     // sodium looked right while calories were 3.2x too high. Do not re-add a serving here.
 
     // Recipe-scan mode: route this scan into the open recipe instead of the day log.
-    if(window.__recipeScan){
-      window.__recipeScan = false;
+    if(_recipeMode){   // captured and cleared at the top, so a failed scan cannot leak into the next
       try{ if(typeof closeBarcodeScanner === 'function') closeBarcodeScanner(); }catch(_){}
       const g = parseFloat(prompt('How many grams of ' + food.name + ' go in this recipe?', '100')) || 100;
       const f = g / 100;
@@ -27471,11 +27490,11 @@ function _fuelFlexToday(){
 // Interactive shopping checklist — tick items off as you shop (persists per item).
 function _fuelToggleShopItem(el, idx){
   const plan = ls('totry_meal_plan'); if(!plan || !plan.shopping || !plan.shopping[idx]) return;
-  plan.shopping[idx].got = !plan.shopping[idx].got; // Re-read after the await: a second edit started while this one was in flight holds its own
-  // stale copy of the whole plan, and whichever returns last silently reverts the other.
-  const _fresh = ls('totry_meal_plan') || plan;
-  if(_fresh && _fresh.meals && plan && plan.meals) _fresh.meals = plan.meals.slice();
-  ls('totry_meal_plan', _fresh || plan);
+  plan.shopping[idx].got = !plan.shopping[idx].got;
+  // Synchronous — nothing can have changed under us, and re-reading here would DISCARD the tick we
+  // just made. It did: the v496 race fix was applied to this function by mistake as well as to the
+  // async meal editors, so a ticked item came back unticked on every return to the tab.
+  ls('totry_meal_plan', plan);
   const got = plan.shopping[idx].got;
   const tick = el.querySelector('.fuel-tick'), item = el.querySelector('.fuel-item'), price = el.querySelector('.fuel-price');
   if(tick){ tick.style.background = got?'var(--go)':'transparent'; tick.style.borderColor = got?'var(--go)':'var(--bd2)'; tick.textContent = got?'✓':''; }
@@ -27502,7 +27521,13 @@ function _fuelLogPlan(btn){
   const log = ls('totry_nutlog') || {}; if(!log[today]) log[today]=[];
   plan.meals.forEach(function(mm, i){
     log[today].push({ id: Date.now()+i, name: mm.name||'Meal', serving: String(mm.items||'').slice(0,120)||'1 serving', qty:1,
-      cal: Math.round(mm.cal||0), pro: Math.round((mm.pro||0)*10)/10, carb: Math.round((mm.carbs||0)*10)/10, fat: Math.round((mm.fat||0)*10)/10, source: 'Fuel plan' });
+      cal: Math.round(mm.cal||0), pro: Math.round((mm.pro||0)*10)/10, carb: Math.round((mm.carbs||0)*10)/10, fat: Math.round((mm.fat||0)*10)/10,
+      // Every 7-day nutrition figure resolves a day from entries[0].ts. A day whose first entry came
+      // from the fuel plan had no ts at all, so the WHOLE DAY dropped out of the weekly digest and the
+      // adaptive TDEE — and logging a full day of planned meals is exactly when that first entry is
+      // one of these. Two other writers were fixed for this in v483; this one was missed.
+      ts: (typeof nutStampFor==='function' ? nutStampFor() : new Date().toISOString()), date: today,
+      source: 'Fuel plan' });
   });
   if(typeof _pruneNutLog==='function') _pruneNutLog(log);
   ls('totry_nutlog', log); if(typeof syncToCloud==='function') syncToCloud();
@@ -32466,7 +32491,11 @@ function saveCardioManually(){
   haptic('success');
   const bits = [type];
   if(mins) bits.push(Math.round(mins)+' min');
-  if(km) bits.push(km+' km');
+  // `km` was never declared in this function — logging any manual cardio threw ReferenceError right
+  // after the workout had been saved, so the confirmation never appeared and the person had no idea
+  // whether it had worked. The distance they typed is `distInput`, and `unit` is their own km/mi
+  // choice, which this line also ignored.
+  if(distInput) bits.push(distInput+' '+unit);
   if(cal) bits.push(cal+' cal');
   showToast('Workout logged', bits.join(' \u00b7 ') + ' \u2014 counts as your gym session.');
 }
@@ -39961,7 +39990,18 @@ function checkPostRelapse(){
     let msg = '';
     if(total > 0) msg += 'Your ' + total + ' total clean days are still yours — a slip doesn\'t erase them. ';
     if(resilience > 0) msg += 'You\'ve shown up ' + resilience + ' days running. ';
-    msg += 'Proverbs 24:16 — the righteous fall seven times and rise again. Let\'s just do today.';
+    // The line that meets someone right after a slip has to be in THEIR tradition. Proverbs was
+    // quoted to everyone — including the default-secular person, who chose no scripture at all, and
+    // a Muslim or Buddhist who chose a different one. The thought is universal; the citation is not.
+    const _fall = {
+      christianity: "Proverbs 24:16 \u2014 the righteous fall seven times and rise again. Let's just do today.",
+      islam:        "The best of those who err are those who return. Let's just do today.",
+      hinduism:     "Better to stumble on your own path than to walk another's perfectly. Let's just do today.",
+      buddhism:     "Falling is not failing \u2014 beginning again IS the practice. Let's just do today.",
+      secular:      "Falling down is not the same as staying down. Let's just do today."
+    };
+    const _tr = (typeof faithTradition==='function') ? faithTradition() : 'secular';
+    msg += (_fall[_tr] || _fall.secular);
     subEl.textContent = msg;
   }
 }
@@ -40169,7 +40209,12 @@ function getNextStep(){
 // him instead of drowning him. This is the opposite of how the field fails.
 function applyHomeProgressiveDisclosure(){
   try{
-    const day = (typeof getDayCount==='function') ? getDayCount() : 99;
+    // HOW LONG THEY HAVE HAD THE APP, NOT WHAT THEIR COUNTER SAYS. getDayCount() honours the
+    // "Begin again — Day 1" reset in Settings, which is about their journey, not their familiarity
+    // with the app. So someone who had used To Try for eight months and chose to start again had the
+    // home stripped back to a new-user's home — the in-the-moment help they had come to rely on
+    // hidden from them at the exact moment they had just declared they were starting over.
+    const day = (typeof daysInstalled==='function') ? daysInstalled() : 99;
     // Advanced surfaces, each with the day they unlock. Before that, they're hidden so the home
     // stays calm and graspable. (If a card is already hidden by its own logic, we leave it hidden.)
     const gates = [
@@ -41007,6 +41052,11 @@ function renderTodayForYou(){
   let focusVice = null, bestStreak = -1;
   (vices||[]).forEach(v => {
     if(v.mode === 'moderate') return; // moderation vices have no abstinence streak to protect
+    // Nor does a grief. A letting-go struggle (a breakup, a loss, an attachment being released) is
+    // not something a person is abstaining FROM, and Home was rendering it as one: "day 6 free of
+    // Letting go of her". That is the app misreading someone's mourning as a vice they are resisting,
+    // on the first screen they see. Every other surface already excludes kind:'letgo' from streaks.
+    if(v.kind === 'letgo') return;
     const s = (typeof viceCleanDays === 'function') ? viceCleanDays(v) : 0;
     if(s > bestStreak){ bestStreak = s; focusVice = v; }
   });

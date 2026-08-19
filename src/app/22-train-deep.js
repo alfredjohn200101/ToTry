@@ -1333,7 +1333,11 @@ function saveCardioManually(){
   haptic('success');
   const bits = [type];
   if(mins) bits.push(Math.round(mins)+' min');
-  if(km) bits.push(km+' km');
+  // `km` was never declared in this function — logging any manual cardio threw ReferenceError right
+  // after the workout had been saved, so the confirmation never appeared and the person had no idea
+  // whether it had worked. The distance they typed is `distInput`, and `unit` is their own km/mi
+  // choice, which this line also ignored.
+  if(distInput) bits.push(distInput+' '+unit);
   if(cal) bits.push(cal+' cal');
   showToast('Workout logged', bits.join(' \u00b7 ') + ' \u2014 counts as your gym session.');
 }

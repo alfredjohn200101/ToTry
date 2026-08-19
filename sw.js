@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v505-win'
+const CACHE = 'totry-v506-remainder'
 
 const CORE = [
   './',
@@ -17,10 +17,13 @@ const CORE = [
 
 // ── INSTALL — cache all core files immediately ──
 self.addEventListener('install', e => {
+  // NO skipWaiting() HERE. Calling it during install makes a new worker take over the moment it
+  // finishes downloading, so a person mid-journal-entry — or mid-urge, in the companion — has the
+  // app reload out from under them and loses what they were writing. The whole point of the update
+  // banner (and the SKIP_WAITING message handler below) is that THEY choose the moment. Installing
+  // silently in the background and waiting is the correct behaviour; activation is their call.
   e.waitUntil(
-    caches.open(CACHE)
-      .then(c => c.addAll(CORE))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE).then(c => c.addAll(CORE))
   );
 });
 
@@ -102,10 +105,17 @@ self.addEventListener('fetch', e => {
                  url.pathname.endsWith('index.html');
   if(isHTML){
     e.respondWith(
+      // AN HTTP ERROR IS NOT AN ANSWER. `.catch()` only fires when the network itself fails, so a
+      // 502 from the host, or a captive-portal login page answering 200, was returned straight to
+      // the person — a hosting blip showed them an error page while a perfectly good shell sat in
+      // the cache. Worse, anything with status 200 was CACHED, so a captive portal's page could
+      // replace the app until the next release. Fall back to cache on any non-ok response, and only
+      // cache the app's own.
       fetch(e.request).then(resp => {
-        if(resp && resp.status === 200){
-          try{ const clone = resp.clone(); caches.open(CACHE).then(c => c.put(e.request, clone)).catch(()=>{}); }catch(_){}
+        if(!resp || !resp.ok || (resp.type && resp.type !== 'basic' && resp.type !== 'default')){
+          return caches.match(e.request).then(c => c || caches.match('./index.html') || resp);
         }
+        try{ const clone = resp.clone(); caches.open(CACHE).then(c => c.put(e.request, clone)).catch(()=>{}); }catch(_){}
         return resp;
       }).catch(() => caches.match(e.request).then(c => c || caches.match('./index.html')))
     );
