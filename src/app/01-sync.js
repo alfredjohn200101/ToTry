@@ -337,7 +337,7 @@ async function loadPendingSubmissions(){
       .order('created_at', { ascending:false })
       .limit(100);
     if(error){ body.innerHTML = '<div style="font-size:12px;color:var(--re);padding:8px">Couldn\u2019t load: '+(error.message||'error')+'</div>'; return; }
-    if(!data || !data.length){ body.innerHTML = '<div style="font-size:12px;color:var(--tx3);text-align:center;padding:14px">Nothing pending. \u2713</div>'; return; }
+    if(!data || !data.length){ body.innerHTML = '<div class="empty-note">Nothing pending. \u2713</div>'; return; }
     body.innerHTML = data.map(row => {
       let d = row.data; if(typeof d === 'string'){ try{ d = JSON.parse(d); }catch(_){ d = {}; } }
       // Every component is another user's text — escape each BEFORE joining. This blob arrives from a

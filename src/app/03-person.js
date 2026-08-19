@@ -1936,7 +1936,7 @@ function renderUsageStats(){
   const days = Object.keys(log);
   
   if(!days.length){
-    container.innerHTML = '<p style="font-size:12px;color:var(--tx3);font-style:italic;text-align:center;padding:14px">No usage yet — this fills in as you talk to Coach.</p>';
+    container.innerHTML = '<p class="empty-note">No usage yet — this fills in as you talk to Coach.</p>';
     return;
   }
   

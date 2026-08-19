@@ -58,7 +58,7 @@ function renderEveningHabitTickList(){
   const list = document.getElementById('evening-habit-tick-list');
   if(!list) return;
   if(!habits.length){
-    list.innerHTML = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:10px;font-style:italic">No habits to tick. Add some in Settings.</p>';
+    list.innerHTML = '<p class="empty-note">No habits to tick. Add some in Settings.</p>';
     return;
   }
   list.innerHTML = '';
@@ -301,7 +301,7 @@ function showExamenHistory(){
   if(!log.length){
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
       '<h3 style="margin-bottom:8px">Past examens</h3>' +
-      '<p style="font-size:13px;color:var(--tx3);padding:20px 0;text-align:center;font-style:italic">No examens logged yet. Begin one tonight — it builds the practice.</p>' +
+      '<p class="empty-note">No examens logged yet. Begin one tonight — it builds the practice.</p>' +
       '<button class="btn" onclick="closeModal(this)">Close</button>' +
     '</div>';
     document.body.appendChild(m);
@@ -354,7 +354,7 @@ function showExamenDetail(idx){
       '</div>';
     }
   });
-  if(!body) body = '<p style="font-size:13px;color:var(--tx3);text-align:center;padding:20px;font-style:italic">No written notes — just walked the steps with God.</p>';
+  if(!body) body = '<p class="empty-note">No written notes — just walked the steps with God.</p>';
   
   const m = document.createElement('div');
   m.className = 'modal-bg open';
@@ -549,7 +549,7 @@ function showDayActivityDetail(dateKey){
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
       '<div class="eyebrow">' + dateKey + '</div>' +
       '<h3 style="margin-bottom:8px">A quiet day</h3>' +
-      '<p style="font-size:13px;color:var(--tx3);padding:20px 0;text-align:center;font-style:italic">Nothing logged this day. That\'s okay — rest is part of the rhythm.</p>' +
+      '<p class="empty-note">Nothing logged this day. That\'s okay — rest is part of the rhythm.</p>' +
       '<button class="btn" onclick="closeModal(this)">Close</button>' +
     '</div>';
     document.body.appendChild(m);

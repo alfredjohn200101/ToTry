@@ -147,38 +147,12 @@ function ackChangelog(){
 
 // One-time "what's possible" tour for brand-new users — shows the breadth of the app
 // without the overwhelm. Fires once, only for genuinely new accounts.
-function checkWhatsPossible(){
-  if(ls('totry_possible_seen')) return;
-  // Only for new users (within first 2 days); older users never see it
-  if(getDayCount() > 2){ ls('totry_possible_seen', true); return; }
-  const m = document.createElement('div');
-  m.className = 'modal-bg open';
-  m.style.alignItems = 'center';
-  m.innerHTML = '<div class="modal">' +
-    '<div class="modal-handle"></div>' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:6px">Welcome</div>' +
-    '<div style="font-family:Cormorant Garamond,serif;font-size:26px;color:var(--tx);font-style:italic;margin-bottom:6px">' + WHATS_POSSIBLE.title + '</div>' +
-    /* Was "A complete tool for the modern man" — this app is explicitly for men and women both, and the
-       founder's story being a big-brother one does not make the product's voice male. NOTE: this whole
-       modal is currently unreachable (checkWhatsPossible has no caller), so the copy has never shipped —
-       fixed anyway so it cannot ship wrong if anyone wires it up later. */
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">Your whole life in one place. Explore at your own pace — it all lives behind five simple tabs.</p>' +
-    '<div style="margin-bottom:16px">' +
-      WHATS_POSSIBLE.items.map(it =>
-        '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)">' +
-          '<span style="color:var(--go);flex-shrink:0">›</span>' +
-          '<span style="font-size:13px;color:var(--tx2);line-height:1.5">' + it + '</span>' +
-        '</div>'
-      ).join('') +
-    '</div>' +
-    '<button class="btn primary" onclick="ackWhatsPossible()">Let\'s begin</button>' +
-  '</div>';
-  document.body.appendChild(m);
-}
-function ackWhatsPossible(){
-  ls('totry_possible_seen', true);
-  document.querySelector('.modal-bg.open')?.remove();
-}
+// checkWhatsPossible() and ackWhatsPossible() lived here — a complete one-time welcome tour, gated
+// to the first two days and seen-flagged, that nothing ever called. The design went the other way
+// deliberately: enterAsGuest says "Straight to the thing that helps — no home tour, no setup"
+// (02-native.js), because the Feeling Door exists so someone in a hard moment gets help FIRST.
+// A tour is exactly the friction that door removes. Deleted rather than wired, because leaving it
+// implies the question is still open. WHATS_POSSIBLE went with it (00-boot.js).
 
 function dismissFirstRun(){
   ls('totry_firstrun_dismissed', true);
@@ -1587,7 +1561,7 @@ function renderConnectedApps(){
   const used = ls('totry_apps_used') || [];
   
   if(used.length === 0){
-    list.innerHTML = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:14px;font-style:italic">No apps linked yet.</p>';
+    list.innerHTML = '<p class="empty-note">No apps linked yet.</p>';
     return;
   }
   
@@ -4014,7 +3988,7 @@ function renderPromises(){
     });
   }
   if(!pending.length&&!resolved.length&&!dueNow.length){
-    list.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:20px">No promises logged yet.<br>The first one is always the hardest.</p>';
+    list.innerHTML='<p class="empty-note">No promises logged yet.<br>The first one is always the hardest.</p>';
   }
 }
 

@@ -524,7 +524,7 @@ function renderBody(){
   if(hist){
     hist.innerHTML='';
     if(!entries.length){
-      hist.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:10px 0">No check-ins yet</p>';
+      hist.innerHTML='<p class="empty-note">No check-ins yet</p>';
       // Run the tail before bailing. Measurements, progress photos and the body-comp insight do NOT
       // depend on a weight check-in existing, and skipping them meant someone who tracked their waist
       // or took photos but never weighed themselves saw none of their own data.
@@ -855,7 +855,7 @@ function renderProgressPhotos(){
   const photos = ls('totry_progress_photos') || [];
   if(!photos.length){
     grid.style.display = 'block';
-    grid.innerHTML = '<div style="text-align:center;padding:20px;color:var(--tx3);font-size:12px;font-style:italic">No photos yet. Add one to start your timeline.</div>';
+    grid.innerHTML = '<div class="empty-note">No photos yet. Add one to start your timeline.</div>';
     return;
   }
   // Group photos by upload date so each date is its own labeled section

@@ -861,7 +861,7 @@ function logQuickWin(){
 }
 function renderWinsLog(){
   const wins=ls('totry_wins')||[];const list=document.getElementById('wins-log-list');if(!list)return;
-  if(!wins.length){list.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:12px 0;line-height:1.6">No wins logged yet.<br><span style="font-size:12px">Type one above — even getting out of bed counts on a hard day.</span></p>';return;}
+  if(!wins.length){list.innerHTML='<p class="empty-note">No wins logged yet.<br><span style="font-size:12px">Type one above — even getting out of bed counts on a hard day.</span></p>';return;}
   list.innerHTML='';
   wins.slice(0,20).forEach(w=>{
     const el=document.createElement('div');el.className='win-item';
@@ -976,7 +976,7 @@ function runUniversalSearch(query){
   });
   
   if(!results.length){
-    box.innerHTML = '<p style="font-size:13px;color:var(--tx3);text-align:center;padding:30px 12px;font-style:italic">Nothing found for "' + q.replace(/</g, '&lt;') + '". Try a different word.</p>';
+    box.innerHTML = '<p class="empty-note">Nothing found for "' + q.replace(/</g, '&lt;') + '". Try a different word.</p>';
     return;
   }
   

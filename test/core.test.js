@@ -3915,6 +3915,27 @@ function fnBodyOf(code, name){
   H.ok(!abst({ mode: 'watch' }), 'watching is not');
   H.ok(!abst({ mode: 'moderate' }) && !abst({ kind: 'letgo' }), 'nor is moderation or letting go');
 
+  // THIRTY CALL SITES, ONE DEFINITION. v510 gated the places that BRANCH on a streak but not the ~30
+  // that merely compute the number — Math.max(...vices.map(viceCleanDays)) for a "longest streak", the
+  // recovery timeline, the morning card, the soul summaries. openMomentStakes computed its own, and it
+  // is reached from the Feeling Door's "The pull", the most-used path in the app: a person who had
+  // promised nothing was told "40 days clean. This is the moment that keeps it, or ends it."
+  const vcd = H.extractFn('viceCleanDays');
+  H.ok(/!viceIsAbstinence\(v\)\) return 0/.test(vcd),
+    'viceCleanDays itself returns 0 without an abstinence goal — gated at the source, not per call site');
+  {
+    const anchor = H.extractFn('viceStreakAnchor');
+    const f = new Function('viceMode', 'viceIsAbstinence', anchor + vcd + 'return viceCleanDays;')(vm, abst);
+    const ago = d => new Date(Date.now() - d * 864e5).toISOString();
+    H.eq(f({ n: 'X', mode: 'quit', startDate: ago(40) }), 40, 'quitting keeps its 40 days');
+    H.eq(f({ n: 'X', startDate: ago(40) }), 40, 'and so does a vice from before modes existed');
+    H.eq(f({ n: 'X', mode: 'watch', startDate: ago(40) }), 0, 'watch mode has no streak');
+    H.eq(f({ n: 'X', mode: 'moderate', startDate: ago(40) }), 0, 'nor does moderation');
+    H.eq(f({ n: 'X', kind: 'letgo', startDate: ago(40) }), 0, 'nor letting go');
+  }
+  H.ok(/viceIsAbstinence\(v\) \? viceCleanDays\(v\) : 0/.test(H.extractFn('openMomentStakes')),
+    'and the moment sheet reached from "The pull" gates it too');
+
   // THE ONE THAT MATTERS MOST. saveViceUse gated the relapse write on `mode !== 'moderate'`, so an
   // honest log in watch mode would have set lastLoss, restarted the clean streak from that moment and
   // incremented relapseCount — recording a relapse against a promise never made, on the very screen

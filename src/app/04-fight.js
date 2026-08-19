@@ -44,7 +44,7 @@ function renderFinanceGoals(){
     localStorage.removeItem('totry_savings_india');
   }
   if(!goals.length){
-    container.innerHTML='<p style="font-size:12px;color:var(--tx3);text-align:center;padding:14px;font-style:italic">No savings goals yet. Add some below.</p>';
+    container.innerHTML='<p class="empty-note">No savings goals yet. Add some below.</p>';
     return;
   }
   // Sort by progress (most behind first = highest priority)
@@ -496,8 +496,9 @@ function viceMode(v){
 }
 // True only where a clean STREAK is a meaningful idea: the person is aiming for zero.
 function viceIsAbstinence(v){ return viceMode(v) === 'quit'; }
-// True where the person has actually set themselves a goal (so we may speak about holding to it).
-function viceHasGoal(v){ const m = viceMode(v); return m === 'quit' || m === 'moderate'; }
+// viceHasGoal(v) lived here — added in v510 and never called once. Speculative API is the same
+// defect as an unused helper: it implies a distinction the code does not make. viceIsAbstinence
+// and viceMode carry every real decision; if something ever needs this, it is two lines.
 function viceModeLabel(v){
   const m = viceMode(v);
   return m === 'moderate' ? 'keeping in check' : m === 'watch' ? 'just watching' : m === 'letgo' ? 'letting go' : 'quitting';

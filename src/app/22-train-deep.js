@@ -1671,7 +1671,7 @@ function showRoutineBuilderModal(){
         '</div>' +
       '</div>'
     ).join('') :
-    '<div style="text-align:center;padding:14px;font-size:12px;color:var(--tx3);font-style:italic">No exercises yet. Add the first one below.</div>';
+    '<div class="empty-note">No exercises yet. Add the first one below.</div>';
   
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:4px">Routine builder</div>' +
@@ -1887,7 +1887,7 @@ function renderSplitDayCards(){
   const split=getUserSplit();const ti=tIdx();const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   const container=document.getElementById('pt-split-days');if(!container)return;container.innerHTML='';
   if(!split.some(s=>s)){ // brand-new user, no plan yet — invite instead of showing nothing
-    container.innerHTML='<div style="text-align:center;padding:16px 12px 10px;color:var(--tx3);font-size:13px;line-height:1.55">No training plan yet.<br>Link Hevy / Strava, or let me build you one.</div>'+
+    container.innerHTML='<div class="empty-note">No training plan yet.<br>Link Hevy / Strava, or let me build you one.</div>'+
       '<div style="text-align:center;margin-bottom:6px"><button class="btn primary" onclick="setupTraining()" style="width:auto;padding:9px 16px;font-size:13px">Set up my training</button></div>';
     return;
   }
@@ -2637,7 +2637,7 @@ function showExerciseProgress(exName){
   if(!dataPoints.length){
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
       '<h3 style="margin-bottom:8px">' + exName + '</h3>' +
-      '<p style="font-size:13px;color:var(--tx3);text-align:center;padding:20px">No logged sessions for this exercise yet.</p>' +
+      '<p class="empty-note">No logged sessions for this exercise yet.</p>' +
       '<button class="btn" onclick="closeModal(this)">Close</button>' +
     '</div>';
     document.body.appendChild(m);

@@ -907,6 +907,7 @@ body{position:fixed;inset:0;width:100%}
 
 /* Empty state styles */
 .empty-state{text-align:center;padding:32px 20px;color:var(--tx3)}
+.empty-note{font-size:12.5px;color:var(--tx3);text-align:center;padding:16px 12px;font-style:italic;line-height:1.6}
 .empty-state-icon{font-size:36px;margin-bottom:12px;opacity:0.5}
 .empty-state-title{font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--tx2);margin-bottom:6px;font-style:italic}
 .empty-state-desc{font-size:13px;line-height:1.6;color:var(--tx3);max-width:280px;margin:0 auto 14px}
@@ -4891,24 +4892,16 @@ function applyCurrencySymbols(){
 // ── APP VERSION & CHANGELOG ───────────────────────────────────
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
-// a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v518';
+// a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
+const APP_VERSION = 'v519';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
 };
 // Shown ONCE to brand-new users after they finish onboarding — a tour of what the app can do,
 // not a list of recent fixes.
-const WHATS_POSSIBLE = {
-  title: 'What To Try can do',
-  items: [
-    'Fight any vice with live streaks, urge support, and a coach that remembers.',
-    'Train with full routines + Hevy sync; log food with macros, barcode, and recipes.',
-    'Grow your soul: offline verses for every situation, morning intentions, evening reflection.',
-    'Master your money: debts, budgets, savings, net worth.',
-    'One AI coach that knows all of it and speaks to your whole life.'
-  ]
-};
+// WHATS_POSSIBLE lived here — the content for a welcome tour that was never wired. See the note in
+// app.js where checkWhatsPossible was removed.
 
 // ── SUPABASE INIT ──────────────────────────────────────────────
 const SUPABASE_URL='https://oklvalcgxeoudgpldzkk.supabase.co';
@@ -5692,7 +5685,7 @@ async function loadPendingSubmissions(){
       .order('created_at', { ascending:false })
       .limit(100);
     if(error){ body.innerHTML = '<div style="font-size:12px;color:var(--re);padding:8px">Couldn\u2019t load: '+(error.message||'error')+'</div>'; return; }
-    if(!data || !data.length){ body.innerHTML = '<div style="font-size:12px;color:var(--tx3);text-align:center;padding:14px">Nothing pending. \u2713</div>'; return; }
+    if(!data || !data.length){ body.innerHTML = '<div class="empty-note">Nothing pending. \u2713</div>'; return; }
     body.innerHTML = data.map(row => {
       let d = row.data; if(typeof d === 'string'){ try{ d = JSON.parse(d); }catch(_){ d = {}; } }
       // Every component is another user's text — escape each BEFORE joining. This blob arrives from a
@@ -9255,7 +9248,7 @@ function renderUsageStats(){
   const days = Object.keys(log);
   
   if(!days.length){
-    container.innerHTML = '<p style="font-size:12px;color:var(--tx3);font-style:italic;text-align:center;padding:14px">No usage yet — this fills in as you talk to Coach.</p>';
+    container.innerHTML = '<p class="empty-note">No usage yet — this fills in as you talk to Coach.</p>';
     return;
   }
   
@@ -12230,7 +12223,7 @@ function renderFinanceGoals(){
     localStorage.removeItem('totry_savings_india');
   }
   if(!goals.length){
-    container.innerHTML='<p style="font-size:12px;color:var(--tx3);text-align:center;padding:14px;font-style:italic">No savings goals yet. Add some below.</p>';
+    container.innerHTML='<p class="empty-note">No savings goals yet. Add some below.</p>';
     return;
   }
   // Sort by progress (most behind first = highest priority)
@@ -12682,8 +12675,9 @@ function viceMode(v){
 }
 // True only where a clean STREAK is a meaningful idea: the person is aiming for zero.
 function viceIsAbstinence(v){ return viceMode(v) === 'quit'; }
-// True where the person has actually set themselves a goal (so we may speak about holding to it).
-function viceHasGoal(v){ const m = viceMode(v); return m === 'quit' || m === 'moderate'; }
+// viceHasGoal(v) lived here — added in v510 and never called once. Speculative API is the same
+// defect as an unused helper: it implies a distinction the code does not make. viceIsAbstinence
+// and viceMode carry every real decision; if something ever needs this, it is two lines.
 function viceModeLabel(v){
   const m = viceMode(v);
   return m === 'moderate' ? 'keeping in check' : m === 'watch' ? 'just watching' : m === 'letgo' ? 'letting go' : 'quitting';
@@ -14465,7 +14459,7 @@ function _feelThePull(){
     m.innerHTML='<div class="modal">'+
       '<div class="modal-handle"></div>'+
       '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;color:var(--tx);margin-bottom:4px">Which one’s pulling?</div>'+
-      '<div style="text-align:center;font-size:12px;color:var(--tx3);margin-bottom:16px">No wrong answer. I just want to meet the right one.</div>'+
+      '<div class="empty-note">No wrong answer. I just want to meet the right one.</div>'+
       vs.map(v=>{ const idx=vices.indexOf(v); const _act=(v.kind==='letgo')?'openLettingGo()':('openMomentStakes('+idx+')'); return '<button class="btn" onclick="closeModal(this);'+_act+'" style="margin-bottom:8px;text-align:left;padding:13px;font-size:14px">'+String(v.n).replace(/</g,'&lt;')+'</button>'; }).join('')+
       '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:4px">Something else — just talk</button>'+
       '</div>';
@@ -18454,6 +18448,11 @@ function viceStreakAnchor(v){
   return null;
 }
 function viceCleanDays(v){
+  // A clean streak is elapsed time since a COMMITMENT to zero. Watch mode has made none, moderation
+  // is a limit rather than a zero, and letting go is not a streak at all — so none of them has one.
+  // Gating here rather than at ~30 call sites, several of which only aggregate the number. See the
+  // note above; every caller already handles 0.
+  if(typeof viceIsAbstinence === 'function' && !viceIsAbstinence(v)) return 0;
   const start = viceStreakAnchor(v);
   if(!start) return 0;
   return Math.max(0, Math.floor((Date.now() - start) / 86400000));
@@ -19048,7 +19047,10 @@ function openMomentStakes(i){
   if(kind==='gambling'){ openGambleMoment(i); return; }
   window.__momentOpenedAt = Date.now();  // the true moment the pull hit — for risk-window learning
   document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
-  const clean=viceCleanDays(v);
+  // Only an abstinence goal HAS a clean streak — see viceIsAbstinence. Watch mode has made no
+  // promise, so there is nothing here to keep or end, and saying otherwise is the one thing that
+  // mode exists to prevent.
+  const clean = viceIsAbstinence(v) ? viceCleanDays(v) : 0;
   let body='', extra='';
   if(kind==='substance'){
     // What NOT buying right now is worth, plus where it's already going instead.
@@ -19714,7 +19716,7 @@ function openManageHabits(){
           '<button onclick="closeModal(this);deleteHabit('+i+')" style="background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;padding:6px 8px">Remove</button>'+
         '</div>';
       }).join('')
-    : '<div style="font-size:13px;color:var(--tx3);text-align:center;padding:18px 0;line-height:1.6">Nothing on your list yet.</div>';
+    : '<div class="empty-note">Nothing on your list yet.</div>';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
     '<h3 style="margin-bottom:4px">Your habits</h3>'+
     '<p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.55">Small and few beats long and forgotten. Removing one is a choice, not a failure.</p>'+
@@ -19816,7 +19818,7 @@ function renderSavedVerses(){
   // Clear before re-render — prevents stale entries when items are deleted
   list.innerHTML = '';
   if(!saved.length){
-    list.innerHTML = '<p style="font-size:13px;color:var(--tx3);text-align:center;padding:20px">No saved verses yet.<br>Tap any verse to save it.</p>';
+    list.innerHTML = '<p class="empty-note">No saved verses yet.<br>Tap any verse to save it.</p>';
     return;
   }
   saved.forEach((v, i) => {
@@ -21879,7 +21881,7 @@ function renderBody(){
   if(hist){
     hist.innerHTML='';
     if(!entries.length){
-      hist.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:10px 0">No check-ins yet</p>';
+      hist.innerHTML='<p class="empty-note">No check-ins yet</p>';
       // Run the tail before bailing. Measurements, progress photos and the body-comp insight do NOT
       // depend on a weight check-in existing, and skipping them meant someone who tracked their waist
       // or took photos but never weighed themselves saw none of their own data.
@@ -22210,7 +22212,7 @@ function renderProgressPhotos(){
   const photos = ls('totry_progress_photos') || [];
   if(!photos.length){
     grid.style.display = 'block';
-    grid.innerHTML = '<div style="text-align:center;padding:20px;color:var(--tx3);font-size:12px;font-style:italic">No photos yet. Add one to start your timeline.</div>';
+    grid.innerHTML = '<div class="empty-note">No photos yet. Add one to start your timeline.</div>';
     return;
   }
   // Group photos by upload date so each date is its own labeled section
@@ -23289,7 +23291,7 @@ function _renderPhotoMeal(){
     '</div>';
 }
 function _pmAdj(i,d){ if(!_photoMeal||!_photoMeal.items[i])return; const it=_photoMeal.items[i]; it.mult=Math.max(0.25, Math.round(((it.mult||1)+d)*4)/4); _renderPhotoMeal(); }
-function _pmRemove(i){ if(!_photoMeal)return; if(_photoMeal._editing===i) _photoMeal._editing=null; else if(_photoMeal._editing>i) _photoMeal._editing--; _photoMeal.items.splice(i,1); if(!_photoMeal.items.length){ _photoMeal=null; const res=document.getElementById('nut-search-results'); if(res) res.innerHTML='<p style="text-align:center;color:var(--tx3);font-size:13px;padding:16px">No items left — snap again or search.</p>'; return; } _renderPhotoMeal(); }
+function _pmRemove(i){ if(!_photoMeal)return; if(_photoMeal._editing===i) _photoMeal._editing=null; else if(_photoMeal._editing>i) _photoMeal._editing--; _photoMeal.items.splice(i,1); if(!_photoMeal.items.length){ _photoMeal=null; const res=document.getElementById('nut-search-results'); if(res) res.innerHTML='<p class="empty-note">No items left — snap again or search.</p>'; return; } _renderPhotoMeal(); }
 function _pmMeal(m){ if(!_photoMeal)return; _photoMeal.meal=m; _renderPhotoMeal(); }
 // Correct WHAT the item is + its macros — the fix Cal AI locks you out of (it hands you one guess).
 function _pmEdit(i){ if(!_photoMeal||!_photoMeal.items[i])return; _photoMeal._editing=i; _renderPhotoMeal(); setTimeout(()=>{ const el=document.getElementById('pm-e-name'); if(el){ try{ el.focus(); if(el.value) el.select(); }catch(_){} } }, 40); }
@@ -23935,7 +23937,7 @@ function openRecipeBuilder(){
       '</div>';
     });
   } else {
-    listHtml = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:14px;font-style:italic">No recipes yet. Build one below.</p>';
+    listHtml = '<p class="empty-note">No recipes yet. Build one below.</p>';
   }
   
   m.innerHTML = '<div class="modal" style="max-height:88vh"><div class="modal-handle"></div>' +
@@ -24043,7 +24045,7 @@ function renderRecipeIngredients(){
   if(!box || !r) return;
   
   if(!r.ingredients.length){
-    box.innerHTML = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:6px 0;font-style:italic">No ingredients yet</p>';
+    box.innerHTML = '<p class="empty-note">No ingredients yet</p>';
   } else {
     box.innerHTML = '';
     r.ingredients.forEach((ing, i) => {
@@ -24379,7 +24381,7 @@ function openPortionGuide(){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
     '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:4px">Estimate by hand</div>'+
-    '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:14px">No scale? Your hand is always with you. A rough log beats no log.</div>'+
+    '<div class="empty-note">No scale? Your hand is always with you. A rough log beats no log.</div>'+
     rows.map(r=>'<div style="display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-top:1px solid var(--bd)"><div style="font-size:26px;flex-shrink:0;width:34px;text-align:center">'+r[0]+'</div><div><div style="font-size:14px;color:var(--tx);font-weight:500">'+r[1]+'</div><div style="font-size:12px;color:var(--tx3);line-height:1.5">'+r[2]+'</div></div></div>').join('')+
     '<button class="btn" onclick="closeModal(this)" style="margin-top:14px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Got it</button>'+
   '</div>';
@@ -27147,7 +27149,7 @@ function renderGiving(){
   }
   const list = givingLog();
   let body;
-  if(!list.length) body = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:12px 0;font-style:italic">Nothing logged yet.</p>';
+  if(!list.length) body = '<p class="empty-note">Nothing logged yet.</p>';
   else if(p.quiet) body = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:12px 0">'+list.length+' kept quietly. Amounts hidden.</p>';
   else body = list.slice(0,10).map(x => '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)">'+
       '<div><div style="font-size:14px;color:var(--tx)">'+curSym()+x.amount.toLocaleString()+'</div>'+
@@ -27361,7 +27363,7 @@ function renderFinance(){
   const fu=document.getElementById('f-usa');if(fu)fu.textContent=curSym()+Math.round(usaS).toLocaleString();
   const fi=document.getElementById('f-india');if(fi)fi.textContent=curSym()+Math.round(indiaS).toLocaleString();
   const dl=document.getElementById('debt-list');if(!dl)return;dl.innerHTML='';
-  if(!debts.length){dl.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:10px 0">No debts added yet</p>';return;}
+  if(!debts.length){dl.innerHTML='<p class="empty-note">No debts added yet</p>';return;}
   const strategy=ls('totry_debt_strategy')||'snowball';
   const sorted=_sortDebtsByStrategy(debts.map((d,i)=>({...d,idx:i})), strategy);
   // THE STAR GOES ON THE FIGHT, NOT THE TROPHY. Snowball sorts by smallest remaining first, and a debt
@@ -28131,7 +28133,7 @@ function renderCalendarDay(){
   const dayEvents = events.filter(e => e.day === todayDow).sort((a,b)=>(a.start||'').localeCompare(b.start||''));
   let html = '<div style="font-family:DM Mono,monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--go);margin-bottom:10px">'+dateLabel+'</div>';
   if(!dayEvents.length){
-    html += '<div style="text-align:center;padding:24px 12px;color:var(--tx3);font-size:13px;line-height:1.5">Nothing scheduled today.<br>Tap "+ Add one" to block something in.</div>';
+    html += '<div class="empty-note">Nothing scheduled today.<br>Tap "+ Add one" to block something in.</div>';
   } else {
     const nowMin = today.getHours()*60 + today.getMinutes();
     dayEvents.forEach(e => {
@@ -28869,7 +28871,7 @@ function renderTransactions(){
   if(recent){
     const recentList = thisMonth.slice(0, 8);
     if(!recentList.length){
-      recent.innerHTML = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:14px;font-style:italic">No transactions this month yet</p>';
+      recent.innerHTML = '<p class="empty-note">No transactions this month yet</p>';
     } else {
       recent.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;margin-top:8px">Recent (this month)</div>' +
         recentList.map(t => {
@@ -29065,7 +29067,7 @@ function renderFamilyContribution(){
       '</div>';
   }
   if(!list.length){
-    wrap.innerHTML = targetHtml + '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:8px 0">No contributions logged yet.'+(target?'':' <button onclick="setFamilyTarget()" style="background:none;border:none;color:var(--go);cursor:pointer;font-size:12px;padding:15px 0;margin:-15px 0;position:relative">Set a monthly target</button>')+'</p>';
+    wrap.innerHTML = targetHtml + '<p class="empty-note">No contributions logged yet.'+(target?'':' <button onclick="setFamilyTarget()" style="background:none;border:none;color:var(--go);cursor:pointer;font-size:12px;padding:15px 0;margin:-15px 0;position:relative">Set a monthly target</button>')+'</p>';
     if(totalEl) totalEl.textContent='';
     return;
   }
@@ -29117,7 +29119,7 @@ function renderPoker(){
   const sumEl = document.getElementById('poker-summary');
   if(!wrap) return;
   const list = ls('totry_poker_sessions') || [];
-  if(!list.length){ wrap.innerHTML = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:8px 0">No sessions logged yet.</p>'; if(sumEl) sumEl.innerHTML=''; return; }
+  if(!list.length){ wrap.innerHTML = '<p class="empty-note">No sessions logged yet.</p>'; if(sumEl) sumEl.innerHTML=''; return; }
   const totalNet = list.reduce((a,s)=>a+s.net,0);
   const sessions = list.length;
   const wins = list.filter(s=>s.net>0).length;
@@ -29311,7 +29313,7 @@ function renderSubscriptions(){
   const totalBox = document.getElementById('subscriptions-total');
   if(!box) return;
   if(!list.length){
-    box.innerHTML = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:14px;font-style:italic">No subscriptions tracked yet. Add Netflix, Spotify, gym, anything recurring.</p>';
+    box.innerHTML = '<p class="empty-note">No subscriptions tracked yet. Add Netflix, Spotify, gym, anything recurring.</p>';
     if(totalBox) totalBox.textContent = '';
     return;
   }
@@ -29437,7 +29439,7 @@ function renderBills(){
   
   const unpaid = cleaned.filter(b => !b.paid).sort((a, b) => new Date(a.due) - new Date(b.due));
   if(!unpaid.length){
-    box.innerHTML = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:14px;font-style:italic">No upcoming bills. Add ones with due dates and I\u2019ll keep them in front of you.'+((typeof Notify!=='undefined'&&Notify.isNative&&Notify.isNative())?' I\u2019ll remind you the morning each one is due.':'')+'</p>';
+    box.innerHTML = '<p class="empty-note">No upcoming bills. Add ones with due dates and I\u2019ll keep them in front of you.'+((typeof Notify!=='undefined'&&Notify.isNative&&Notify.isNative())?' I\u2019ll remind you the morning each one is due.':'')+'</p>';
     return;
   }
   box.innerHTML = unpaid.slice(0, 8).map(b => {
@@ -29532,7 +29534,7 @@ function renderBudgets(){
   if(!box) return;
   const cats = Object.keys(budgets);
   if(!cats.length){
-    box.innerHTML = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:14px;font-style:italic">No budgets set yet. Tap "+ Set" to assign monthly limits.</p>';
+    box.innerHTML = '<p class="empty-note">No budgets set yet. Tap "+ Set" to assign monthly limits.</p>';
     return;
   }
   // Get this month's transactions by category
@@ -33442,7 +33444,7 @@ function showRoutineBuilderModal(){
         '</div>' +
       '</div>'
     ).join('') :
-    '<div style="text-align:center;padding:14px;font-size:12px;color:var(--tx3);font-style:italic">No exercises yet. Add the first one below.</div>';
+    '<div class="empty-note">No exercises yet. Add the first one below.</div>';
   
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:4px">Routine builder</div>' +
@@ -33658,7 +33660,7 @@ function renderSplitDayCards(){
   const split=getUserSplit();const ti=tIdx();const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   const container=document.getElementById('pt-split-days');if(!container)return;container.innerHTML='';
   if(!split.some(s=>s)){ // brand-new user, no plan yet — invite instead of showing nothing
-    container.innerHTML='<div style="text-align:center;padding:16px 12px 10px;color:var(--tx3);font-size:13px;line-height:1.55">No training plan yet.<br>Link Hevy / Strava, or let me build you one.</div>'+
+    container.innerHTML='<div class="empty-note">No training plan yet.<br>Link Hevy / Strava, or let me build you one.</div>'+
       '<div style="text-align:center;margin-bottom:6px"><button class="btn primary" onclick="setupTraining()" style="width:auto;padding:9px 16px;font-size:13px">Set up my training</button></div>';
     return;
   }
@@ -34408,7 +34410,7 @@ function showExerciseProgress(exName){
   if(!dataPoints.length){
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
       '<h3 style="margin-bottom:8px">' + exName + '</h3>' +
-      '<p style="font-size:13px;color:var(--tx3);text-align:center;padding:20px">No logged sessions for this exercise yet.</p>' +
+      '<p class="empty-note">No logged sessions for this exercise yet.</p>' +
       '<button class="btn" onclick="closeModal(this)">Close</button>' +
     '</div>';
     document.body.appendChild(m);
@@ -34613,7 +34615,7 @@ function renderEveningHabitTickList(){
   const list = document.getElementById('evening-habit-tick-list');
   if(!list) return;
   if(!habits.length){
-    list.innerHTML = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:10px;font-style:italic">No habits to tick. Add some in Settings.</p>';
+    list.innerHTML = '<p class="empty-note">No habits to tick. Add some in Settings.</p>';
     return;
   }
   list.innerHTML = '';
@@ -34856,7 +34858,7 @@ function showExamenHistory(){
   if(!log.length){
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
       '<h3 style="margin-bottom:8px">Past examens</h3>' +
-      '<p style="font-size:13px;color:var(--tx3);padding:20px 0;text-align:center;font-style:italic">No examens logged yet. Begin one tonight — it builds the practice.</p>' +
+      '<p class="empty-note">No examens logged yet. Begin one tonight — it builds the practice.</p>' +
       '<button class="btn" onclick="closeModal(this)">Close</button>' +
     '</div>';
     document.body.appendChild(m);
@@ -34909,7 +34911,7 @@ function showExamenDetail(idx){
       '</div>';
     }
   });
-  if(!body) body = '<p style="font-size:13px;color:var(--tx3);text-align:center;padding:20px;font-style:italic">No written notes — just walked the steps with God.</p>';
+  if(!body) body = '<p class="empty-note">No written notes — just walked the steps with God.</p>';
   
   const m = document.createElement('div');
   m.className = 'modal-bg open';
@@ -35104,7 +35106,7 @@ function showDayActivityDetail(dateKey){
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
       '<div class="eyebrow">' + dateKey + '</div>' +
       '<h3 style="margin-bottom:8px">A quiet day</h3>' +
-      '<p style="font-size:13px;color:var(--tx3);padding:20px 0;text-align:center;font-style:italic">Nothing logged this day. That\'s okay — rest is part of the rhythm.</p>' +
+      '<p class="empty-note">Nothing logged this day. That\'s okay — rest is part of the rhythm.</p>' +
       '<button class="btn" onclick="closeModal(this)">Close</button>' +
     '</div>';
     document.body.appendChild(m);
@@ -35670,14 +35672,11 @@ function haptic(pattern){
 }
 
 // Empty state helper - generates clean empty state HTML
-function emptyState(icon, title, desc, ctaText, ctaAction){
-  return '<div class="empty-state">'+
-    '<div class="empty-state-icon">'+icon+'</div>'+
-    '<div class="empty-state-title">'+title+'</div>'+
-    (desc?'<div class="empty-state-desc">'+desc+'</div>':'')+
-    (ctaText?'<div class="empty-state-cta" onclick="'+ctaAction+'">'+ctaText+'</div>':'')+
-    '</div>';
-}
+// emptyState(icon, title, desc, ctaText, ctaAction) lived here and was called ZERO times, while 60
+// empty states were hand-rolled inline across 44 different style signatures. A helper describing a
+// system nobody adopted is worse than none: it reads as though empty states are systematised.
+// The .empty-state CSS it built remains for an icon+title+CTA block; .empty-note is the small muted
+// centred variant that 35 of those 60 were approximating, and they now share it.
 
 // Streak freezes - mark days as "rest" so sober streak doesn\'t break
 function getFreezes(){return ls('totry_freezes')||[];}
@@ -36103,7 +36102,7 @@ function showYearInReview(year){
   if(!heroStats.length && !details.length){
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
       '<h3 style="margin-bottom:8px">' + year + ' in review</h3>' +
-      '<p style="font-size:13px;color:var(--tx3);padding:20px 0;text-align:center;font-style:italic">No data logged in ' + year + ' yet. Come back at year-end.</p>' +
+      '<p class="empty-note">No data logged in ' + year + ' yet. Come back at year-end.</p>' +
       '<button class="btn" onclick="closeModal(this)">Close</button>' +
     '</div>';
     document.body.appendChild(m);
@@ -36151,7 +36150,7 @@ function showSynthesisHistory(){
   if(!syntheses.length){
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
       '<h3 style="margin-bottom:8px">Past Sundays</h3>' +
-      '<p style="font-size:13px;color:var(--tx3);padding:20px 0;text-align:center;font-style:italic">No weekly syntheses yet. One generates each Sunday automatically — based on your week\'s data.</p>' +
+      '<p class="empty-note">No weekly syntheses yet. One generates each Sunday automatically — based on your week\'s data.</p>' +
       '<button class="btn" onclick="closeModal(this)">Close</button>' +
     '</div>';
     document.body.appendChild(m);
@@ -36279,7 +36278,7 @@ function renderRelationships(){
   if(!list)return;
   const people=ls('totry_relationships')||[];
   if(!people.length){
-    list.innerHTML='<p style="font-size:12px;color:var(--tx3);text-align:center;padding:14px;font-style:italic">No one added yet.</p>';
+    list.innerHTML='<p class="empty-note">No one added yet.</p>';
     return;
   }
   // Sort: those without recent contact first
@@ -38895,7 +38894,7 @@ function logQuickWin(){
 }
 function renderWinsLog(){
   const wins=ls('totry_wins')||[];const list=document.getElementById('wins-log-list');if(!list)return;
-  if(!wins.length){list.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:12px 0;line-height:1.6">No wins logged yet.<br><span style="font-size:12px">Type one above — even getting out of bed counts on a hard day.</span></p>';return;}
+  if(!wins.length){list.innerHTML='<p class="empty-note">No wins logged yet.<br><span style="font-size:12px">Type one above — even getting out of bed counts on a hard day.</span></p>';return;}
   list.innerHTML='';
   wins.slice(0,20).forEach(w=>{
     const el=document.createElement('div');el.className='win-item';
@@ -39010,7 +39009,7 @@ function runUniversalSearch(query){
   });
   
   if(!results.length){
-    box.innerHTML = '<p style="font-size:13px;color:var(--tx3);text-align:center;padding:30px 12px;font-style:italic">Nothing found for "' + q.replace(/</g, '&lt;') + '". Try a different word.</p>';
+    box.innerHTML = '<p class="empty-note">Nothing found for "' + q.replace(/</g, '&lt;') + '". Try a different word.</p>';
     return;
   }
   
@@ -40643,38 +40642,12 @@ function ackChangelog(){
 
 // One-time "what's possible" tour for brand-new users — shows the breadth of the app
 // without the overwhelm. Fires once, only for genuinely new accounts.
-function checkWhatsPossible(){
-  if(ls('totry_possible_seen')) return;
-  // Only for new users (within first 2 days); older users never see it
-  if(getDayCount() > 2){ ls('totry_possible_seen', true); return; }
-  const m = document.createElement('div');
-  m.className = 'modal-bg open';
-  m.style.alignItems = 'center';
-  m.innerHTML = '<div class="modal">' +
-    '<div class="modal-handle"></div>' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:6px">Welcome</div>' +
-    '<div style="font-family:Cormorant Garamond,serif;font-size:26px;color:var(--tx);font-style:italic;margin-bottom:6px">' + WHATS_POSSIBLE.title + '</div>' +
-    /* Was "A complete tool for the modern man" — this app is explicitly for men and women both, and the
-       founder's story being a big-brother one does not make the product's voice male. NOTE: this whole
-       modal is currently unreachable (checkWhatsPossible has no caller), so the copy has never shipped —
-       fixed anyway so it cannot ship wrong if anyone wires it up later. */
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">Your whole life in one place. Explore at your own pace — it all lives behind five simple tabs.</p>' +
-    '<div style="margin-bottom:16px">' +
-      WHATS_POSSIBLE.items.map(it =>
-        '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)">' +
-          '<span style="color:var(--go);flex-shrink:0">›</span>' +
-          '<span style="font-size:13px;color:var(--tx2);line-height:1.5">' + it + '</span>' +
-        '</div>'
-      ).join('') +
-    '</div>' +
-    '<button class="btn primary" onclick="ackWhatsPossible()">Let\'s begin</button>' +
-  '</div>';
-  document.body.appendChild(m);
-}
-function ackWhatsPossible(){
-  ls('totry_possible_seen', true);
-  document.querySelector('.modal-bg.open')?.remove();
-}
+// checkWhatsPossible() and ackWhatsPossible() lived here — a complete one-time welcome tour, gated
+// to the first two days and seen-flagged, that nothing ever called. The design went the other way
+// deliberately: enterAsGuest says "Straight to the thing that helps — no home tour, no setup"
+// (02-native.js), because the Feeling Door exists so someone in a hard moment gets help FIRST.
+// A tour is exactly the friction that door removes. Deleted rather than wired, because leaving it
+// implies the question is still open. WHATS_POSSIBLE went with it (00-boot.js).
 
 function dismissFirstRun(){
   ls('totry_firstrun_dismissed', true);
@@ -42083,7 +42056,7 @@ function renderConnectedApps(){
   const used = ls('totry_apps_used') || [];
   
   if(used.length === 0){
-    list.innerHTML = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:14px;font-style:italic">No apps linked yet.</p>';
+    list.innerHTML = '<p class="empty-note">No apps linked yet.</p>';
     return;
   }
   
@@ -44510,7 +44483,7 @@ function renderPromises(){
     });
   }
   if(!pending.length&&!resolved.length&&!dueNow.length){
-    list.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:20px">No promises logged yet.<br>The first one is always the hardest.</p>';
+    list.innerHTML='<p class="empty-note">No promises logged yet.<br>The first one is always the hardest.</p>';
   }
 }
 

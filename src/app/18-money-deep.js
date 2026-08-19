@@ -230,7 +230,7 @@ function renderTransactions(){
   if(recent){
     const recentList = thisMonth.slice(0, 8);
     if(!recentList.length){
-      recent.innerHTML = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:14px;font-style:italic">No transactions this month yet</p>';
+      recent.innerHTML = '<p class="empty-note">No transactions this month yet</p>';
     } else {
       recent.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;margin-top:8px">Recent (this month)</div>' +
         recentList.map(t => {
@@ -426,7 +426,7 @@ function renderFamilyContribution(){
       '</div>';
   }
   if(!list.length){
-    wrap.innerHTML = targetHtml + '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:8px 0">No contributions logged yet.'+(target?'':' <button onclick="setFamilyTarget()" style="background:none;border:none;color:var(--go);cursor:pointer;font-size:12px;padding:15px 0;margin:-15px 0;position:relative">Set a monthly target</button>')+'</p>';
+    wrap.innerHTML = targetHtml + '<p class="empty-note">No contributions logged yet.'+(target?'':' <button onclick="setFamilyTarget()" style="background:none;border:none;color:var(--go);cursor:pointer;font-size:12px;padding:15px 0;margin:-15px 0;position:relative">Set a monthly target</button>')+'</p>';
     if(totalEl) totalEl.textContent='';
     return;
   }
@@ -478,7 +478,7 @@ function renderPoker(){
   const sumEl = document.getElementById('poker-summary');
   if(!wrap) return;
   const list = ls('totry_poker_sessions') || [];
-  if(!list.length){ wrap.innerHTML = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:8px 0">No sessions logged yet.</p>'; if(sumEl) sumEl.innerHTML=''; return; }
+  if(!list.length){ wrap.innerHTML = '<p class="empty-note">No sessions logged yet.</p>'; if(sumEl) sumEl.innerHTML=''; return; }
   const totalNet = list.reduce((a,s)=>a+s.net,0);
   const sessions = list.length;
   const wins = list.filter(s=>s.net>0).length;
@@ -672,7 +672,7 @@ function renderSubscriptions(){
   const totalBox = document.getElementById('subscriptions-total');
   if(!box) return;
   if(!list.length){
-    box.innerHTML = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:14px;font-style:italic">No subscriptions tracked yet. Add Netflix, Spotify, gym, anything recurring.</p>';
+    box.innerHTML = '<p class="empty-note">No subscriptions tracked yet. Add Netflix, Spotify, gym, anything recurring.</p>';
     if(totalBox) totalBox.textContent = '';
     return;
   }
@@ -798,7 +798,7 @@ function renderBills(){
   
   const unpaid = cleaned.filter(b => !b.paid).sort((a, b) => new Date(a.due) - new Date(b.due));
   if(!unpaid.length){
-    box.innerHTML = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:14px;font-style:italic">No upcoming bills. Add ones with due dates and I\u2019ll keep them in front of you.'+((typeof Notify!=='undefined'&&Notify.isNative&&Notify.isNative())?' I\u2019ll remind you the morning each one is due.':'')+'</p>';
+    box.innerHTML = '<p class="empty-note">No upcoming bills. Add ones with due dates and I\u2019ll keep them in front of you.'+((typeof Notify!=='undefined'&&Notify.isNative&&Notify.isNative())?' I\u2019ll remind you the morning each one is due.':'')+'</p>';
     return;
   }
   box.innerHTML = unpaid.slice(0, 8).map(b => {
@@ -893,7 +893,7 @@ function renderBudgets(){
   if(!box) return;
   const cats = Object.keys(budgets);
   if(!cats.length){
-    box.innerHTML = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:14px;font-style:italic">No budgets set yet. Tap "+ Set" to assign monthly limits.</p>';
+    box.innerHTML = '<p class="empty-note">No budgets set yet. Tap "+ Set" to assign monthly limits.</p>';
     return;
   }
   // Get this month's transactions by category

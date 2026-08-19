@@ -195,7 +195,7 @@ function renderFinance(){
   const fu=document.getElementById('f-usa');if(fu)fu.textContent=curSym()+Math.round(usaS).toLocaleString();
   const fi=document.getElementById('f-india');if(fi)fi.textContent=curSym()+Math.round(indiaS).toLocaleString();
   const dl=document.getElementById('debt-list');if(!dl)return;dl.innerHTML='';
-  if(!debts.length){dl.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:10px 0">No debts added yet</p>';return;}
+  if(!debts.length){dl.innerHTML='<p class="empty-note">No debts added yet</p>';return;}
   const strategy=ls('totry_debt_strategy')||'snowball';
   const sorted=_sortDebtsByStrategy(debts.map((d,i)=>({...d,idx:i})), strategy);
   // THE STAR GOES ON THE FIGHT, NOT THE TROPHY. Snowball sorts by smallest remaining first, and a debt

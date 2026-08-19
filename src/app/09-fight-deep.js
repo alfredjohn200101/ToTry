@@ -1217,6 +1217,11 @@ function viceStreakAnchor(v){
   return null;
 }
 function viceCleanDays(v){
+  // A clean streak is elapsed time since a COMMITMENT to zero. Watch mode has made none, moderation
+  // is a limit rather than a zero, and letting go is not a streak at all — so none of them has one.
+  // Gating here rather than at ~30 call sites, several of which only aggregate the number. See the
+  // note above; every caller already handles 0.
+  if(typeof viceIsAbstinence === 'function' && !viceIsAbstinence(v)) return 0;
   const start = viceStreakAnchor(v);
   if(!start) return 0;
   return Math.max(0, Math.floor((Date.now() - start) / 86400000));
@@ -1811,7 +1816,10 @@ function openMomentStakes(i){
   if(kind==='gambling'){ openGambleMoment(i); return; }
   window.__momentOpenedAt = Date.now();  // the true moment the pull hit — for risk-window learning
   document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
-  const clean=viceCleanDays(v);
+  // Only an abstinence goal HAS a clean streak — see viceIsAbstinence. Watch mode has made no
+  // promise, so there is nothing here to keep or end, and saying otherwise is the one thing that
+  // mode exists to prevent.
+  const clean = viceIsAbstinence(v) ? viceCleanDays(v) : 0;
   let body='', extra='';
   if(kind==='substance'){
     // What NOT buying right now is worth, plus where it's already going instead.

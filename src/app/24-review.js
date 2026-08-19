@@ -43,14 +43,11 @@ function haptic(pattern){
 }
 
 // Empty state helper - generates clean empty state HTML
-function emptyState(icon, title, desc, ctaText, ctaAction){
-  return '<div class="empty-state">'+
-    '<div class="empty-state-icon">'+icon+'</div>'+
-    '<div class="empty-state-title">'+title+'</div>'+
-    (desc?'<div class="empty-state-desc">'+desc+'</div>':'')+
-    (ctaText?'<div class="empty-state-cta" onclick="'+ctaAction+'">'+ctaText+'</div>':'')+
-    '</div>';
-}
+// emptyState(icon, title, desc, ctaText, ctaAction) lived here and was called ZERO times, while 60
+// empty states were hand-rolled inline across 44 different style signatures. A helper describing a
+// system nobody adopted is worse than none: it reads as though empty states are systematised.
+// The .empty-state CSS it built remains for an icon+title+CTA block; .empty-note is the small muted
+// centred variant that 35 of those 60 were approximating, and they now share it.
 
 // Streak freezes - mark days as "rest" so sober streak doesn\'t break
 function getFreezes(){return ls('totry_freezes')||[];}
@@ -476,7 +473,7 @@ function showYearInReview(year){
   if(!heroStats.length && !details.length){
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
       '<h3 style="margin-bottom:8px">' + year + ' in review</h3>' +
-      '<p style="font-size:13px;color:var(--tx3);padding:20px 0;text-align:center;font-style:italic">No data logged in ' + year + ' yet. Come back at year-end.</p>' +
+      '<p class="empty-note">No data logged in ' + year + ' yet. Come back at year-end.</p>' +
       '<button class="btn" onclick="closeModal(this)">Close</button>' +
     '</div>';
     document.body.appendChild(m);
@@ -524,7 +521,7 @@ function showSynthesisHistory(){
   if(!syntheses.length){
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
       '<h3 style="margin-bottom:8px">Past Sundays</h3>' +
-      '<p style="font-size:13px;color:var(--tx3);padding:20px 0;text-align:center;font-style:italic">No weekly syntheses yet. One generates each Sunday automatically — based on your week\'s data.</p>' +
+      '<p class="empty-note">No weekly syntheses yet. One generates each Sunday automatically — based on your week\'s data.</p>' +
       '<button class="btn" onclick="closeModal(this)">Close</button>' +
     '</div>';
     document.body.appendChild(m);
@@ -652,7 +649,7 @@ function renderRelationships(){
   if(!list)return;
   const people=ls('totry_relationships')||[];
   if(!people.length){
-    list.innerHTML='<p style="font-size:12px;color:var(--tx3);text-align:center;padding:14px;font-style:italic">No one added yet.</p>';
+    list.innerHTML='<p class="empty-note">No one added yet.</p>';
     return;
   }
   // Sort: those without recent contact first

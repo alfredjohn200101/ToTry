@@ -90,7 +90,7 @@ function renderSavedVerses(){
   // Clear before re-render — prevents stale entries when items are deleted
   list.innerHTML = '';
   if(!saved.length){
-    list.innerHTML = '<p style="font-size:13px;color:var(--tx3);text-align:center;padding:20px">No saved verses yet.<br>Tap any verse to save it.</p>';
+    list.innerHTML = '<p class="empty-note">No saved verses yet.<br>Tap any verse to save it.</p>';
     return;
   }
   saved.forEach((v, i) => {

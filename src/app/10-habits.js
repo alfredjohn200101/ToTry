@@ -472,7 +472,7 @@ function openManageHabits(){
           '<button onclick="closeModal(this);deleteHabit('+i+')" style="background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;padding:6px 8px">Remove</button>'+
         '</div>';
       }).join('')
-    : '<div style="font-size:13px;color:var(--tx3);text-align:center;padding:18px 0;line-height:1.6">Nothing on your list yet.</div>';
+    : '<div class="empty-note">Nothing on your list yet.</div>';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
     '<h3 style="margin-bottom:4px">Your habits</h3>'+
     '<p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.55">Small and few beats long and forgotten. Removing one is a choice, not a failure.</p>'+

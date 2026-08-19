@@ -96,7 +96,7 @@ function _feelThePull(){
     m.innerHTML='<div class="modal">'+
       '<div class="modal-handle"></div>'+
       '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;color:var(--tx);margin-bottom:4px">Which one’s pulling?</div>'+
-      '<div style="text-align:center;font-size:12px;color:var(--tx3);margin-bottom:16px">No wrong answer. I just want to meet the right one.</div>'+
+      '<div class="empty-note">No wrong answer. I just want to meet the right one.</div>'+
       vs.map(v=>{ const idx=vices.indexOf(v); const _act=(v.kind==='letgo')?'openLettingGo()':('openMomentStakes('+idx+')'); return '<button class="btn" onclick="closeModal(this);'+_act+'" style="margin-bottom:8px;text-align:left;padding:13px;font-size:14px">'+String(v.n).replace(/</g,'&lt;')+'</button>'; }).join('')+
       '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:4px">Something else — just talk</button>'+
       '</div>';

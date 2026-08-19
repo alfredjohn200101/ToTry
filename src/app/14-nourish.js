@@ -949,7 +949,7 @@ function _renderPhotoMeal(){
     '</div>';
 }
 function _pmAdj(i,d){ if(!_photoMeal||!_photoMeal.items[i])return; const it=_photoMeal.items[i]; it.mult=Math.max(0.25, Math.round(((it.mult||1)+d)*4)/4); _renderPhotoMeal(); }
-function _pmRemove(i){ if(!_photoMeal)return; if(_photoMeal._editing===i) _photoMeal._editing=null; else if(_photoMeal._editing>i) _photoMeal._editing--; _photoMeal.items.splice(i,1); if(!_photoMeal.items.length){ _photoMeal=null; const res=document.getElementById('nut-search-results'); if(res) res.innerHTML='<p style="text-align:center;color:var(--tx3);font-size:13px;padding:16px">No items left — snap again or search.</p>'; return; } _renderPhotoMeal(); }
+function _pmRemove(i){ if(!_photoMeal)return; if(_photoMeal._editing===i) _photoMeal._editing=null; else if(_photoMeal._editing>i) _photoMeal._editing--; _photoMeal.items.splice(i,1); if(!_photoMeal.items.length){ _photoMeal=null; const res=document.getElementById('nut-search-results'); if(res) res.innerHTML='<p class="empty-note">No items left — snap again or search.</p>'; return; } _renderPhotoMeal(); }
 function _pmMeal(m){ if(!_photoMeal)return; _photoMeal.meal=m; _renderPhotoMeal(); }
 // Correct WHAT the item is + its macros — the fix Cal AI locks you out of (it hands you one guess).
 function _pmEdit(i){ if(!_photoMeal||!_photoMeal.items[i])return; _photoMeal._editing=i; _renderPhotoMeal(); setTimeout(()=>{ const el=document.getElementById('pm-e-name'); if(el){ try{ el.focus(); if(el.value) el.select(); }catch(_){} } }, 40); }
@@ -1595,7 +1595,7 @@ function openRecipeBuilder(){
       '</div>';
     });
   } else {
-    listHtml = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:14px;font-style:italic">No recipes yet. Build one below.</p>';
+    listHtml = '<p class="empty-note">No recipes yet. Build one below.</p>';
   }
   
   m.innerHTML = '<div class="modal" style="max-height:88vh"><div class="modal-handle"></div>' +
@@ -1703,7 +1703,7 @@ function renderRecipeIngredients(){
   if(!box || !r) return;
   
   if(!r.ingredients.length){
-    box.innerHTML = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:6px 0;font-style:italic">No ingredients yet</p>';
+    box.innerHTML = '<p class="empty-note">No ingredients yet</p>';
   } else {
     box.innerHTML = '';
     r.ingredients.forEach((ing, i) => {
@@ -2039,7 +2039,7 @@ function openPortionGuide(){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
     '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:4px">Estimate by hand</div>'+
-    '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:14px">No scale? Your hand is always with you. A rough log beats no log.</div>'+
+    '<div class="empty-note">No scale? Your hand is always with you. A rough log beats no log.</div>'+
     rows.map(r=>'<div style="display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-top:1px solid var(--bd)"><div style="font-size:26px;flex-shrink:0;width:34px;text-align:center">'+r[0]+'</div><div><div style="font-size:14px;color:var(--tx);font-weight:500">'+r[1]+'</div><div style="font-size:12px;color:var(--tx3);line-height:1.5">'+r[2]+'</div></div></div>').join('')+
     '<button class="btn" onclick="closeModal(this)" style="margin-top:14px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Got it</button>'+
   '</div>';

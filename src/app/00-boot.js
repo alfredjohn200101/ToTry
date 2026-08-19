@@ -442,24 +442,16 @@ function applyCurrencySymbols(){
 // ── APP VERSION & CHANGELOG ───────────────────────────────────
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
-// a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v518';
+// a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
+const APP_VERSION = 'v519';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
 };
 // Shown ONCE to brand-new users after they finish onboarding — a tour of what the app can do,
 // not a list of recent fixes.
-const WHATS_POSSIBLE = {
-  title: 'What To Try can do',
-  items: [
-    'Fight any vice with live streaks, urge support, and a coach that remembers.',
-    'Train with full routines + Hevy sync; log food with macros, barcode, and recipes.',
-    'Grow your soul: offline verses for every situation, morning intentions, evening reflection.',
-    'Master your money: debts, budgets, savings, net worth.',
-    'One AI coach that knows all of it and speaks to your whole life.'
-  ]
-};
+// WHATS_POSSIBLE lived here — the content for a welcome tour that was never wired. See the note in
+// app.js where checkWhatsPossible was removed.
 
 // ── SUPABASE INIT ──────────────────────────────────────────────
 const SUPABASE_URL='https://oklvalcgxeoudgpldzkk.supabase.co';

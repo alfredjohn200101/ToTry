@@ -615,7 +615,7 @@ function renderCalendarDay(){
   const dayEvents = events.filter(e => e.day === todayDow).sort((a,b)=>(a.start||'').localeCompare(b.start||''));
   let html = '<div style="font-family:DM Mono,monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--go);margin-bottom:10px">'+dateLabel+'</div>';
   if(!dayEvents.length){
-    html += '<div style="text-align:center;padding:24px 12px;color:var(--tx3);font-size:13px;line-height:1.5">Nothing scheduled today.<br>Tap "+ Add one" to block something in.</div>';
+    html += '<div class="empty-note">Nothing scheduled today.<br>Tap "+ Add one" to block something in.</div>';
   } else {
     const nowMin = today.getHours()*60 + today.getMinutes();
     dayEvents.forEach(e => {
