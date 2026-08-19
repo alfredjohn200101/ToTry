@@ -3284,6 +3284,45 @@ H.section('dead code that was one caller away from confusing someone');
   H.ok(!/M17 5H9\.5/.test(H.html), 'no dollar-sign glyph is drawn in any icon');
 }
 
+// ── the number on the row is the number the button logs ────────────────────────────────────────
+// The recents row printed f.cal — the per-100g figure for a scanned product — while the (+) beside
+// it logs _quickServing(f), the real serving. A 50g bar read "488 cal" and logged 244, with no unit
+// on screen to reveal the mismatch. Someone at 1,900 of a 2,100 target talks themselves out of a
+// number the app was never going to record. The search list was already repaired for exactly this.
+{
+  H.section('the row shows what the button logs');
+  const rrf = fnBodyOf(H.html, 'renderRecentFoods');
+  H.ok(/_quickServing\(f\)/.test(rrf), 'the recents row reads the serving the (+) will log');
+  H.ok(!/fr-cal">' \+ f\.cal/.test(rrf), 'and never prints the bare stored figure');
+  H.ok(/_qs\.label/.test(rrf), 'and names the serving, so the number is not unitless');
+
+  // startDate is the streak ANCHOR, rewritten on every relapse — taking the earliest of two devices
+  // silently restored the streak a person had just honestly ended, and pushed that back to the cloud.
+  H.ok(!/if\(vStart < exStart\)/.test(H.html), 'the vices merge no longer takes the earliest startDate');
+  H.ok(/_vCloudNewer/.test(H.html), 'it follows recency, the same rule the nutrition log uses');
+}
+
+// ── a win must never be recorded as a relapse ──────────────────────────────────────────────────
+// The whole relapse reset — streak to zero, relapseCount + 1, lastLoss stamped — sat inside
+// saveQuickLog's `if(_qlOutcome)` branch, and _qlOutcome === true is "I beat it". So a man 60 days
+// clean who logged an urge he had BEATEN watched his card drop to 0 with a relapse against his name,
+// while the toast said "Your win matters. Every one counts." And an honest slip logged the same way
+// changed nothing: honesty had no consequence and a win was punished. The same function reads the
+// outcome correctly nineteen lines below, so its two halves disagreed about which button was pressed.
+{
+  H.section('a win is never recorded as a relapse');
+  const sql = fnBodyOf(H.html, 'saveQuickLog');
+  H.ok(sql.length > 0, 'saveQuickLog exists');
+  const iWin = sql.indexOf('if(_qlOutcome){');
+  const iElse = sql.indexOf('} else {', iWin);
+  const iReset = sql.indexOf('v.relapseCount = (v.relapseCount || 0) + 1');
+  H.ok(iWin > -1 && iElse > -1, 'the outcome has both branches');
+  H.ok(iReset > iElse, 'the relapse reset is on the LOSS side of the branch, not the win side');
+  H.ok(sql.indexOf('v.w = (v.w||0)+1') < iElse, 'and the win counter is on the win side');
+  // The two halves must agree about which button was pressed.
+  H.ok(/_wasRelapse = \(_qlOutcome === false\)/.test(sql), 'the grace path still reads the outcome the same way');
+}
+
 // ── assistance is not load ──────────────────────────────────────────────────────────────────────
 // The set row shows assisted weight as a positive number and stores it NEGATIVE ("less help =
 // stronger"). Two writers disagreed: onchange negated, the ✓ handler assigned the raw field — and a

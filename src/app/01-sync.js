@@ -521,10 +521,22 @@ async function pullFromCloud(){
           const exWin = ex.lastWin ? new Date(ex.lastWin).getTime() : 0;
           const vWin = v.lastWin ? new Date(v.lastWin).getTime() : 0;
           if(vWin > exWin) ex.lastWin = v.lastWin;
-          // earliest startDate (longest-standing record of the attempt)
-          const exStart = ex.startDate ? new Date(ex.startDate).getTime() : Infinity;
-          const vStart = v.startDate ? new Date(v.startDate).getTime() : Infinity;
-          if(vStart < exStart) ex.startDate = v.startDate;
+          // startDate IS THE STREAK ANCHOR, NOT THE DATE THEY FIRST TRIED.
+          //
+          // This took the EARLIEST of the two, under the comment "longest-standing record of the
+          // attempt" — but every relapse path rewrites startDate to now, so the earliest value is
+          // simply the streak as it stood before the most recent slip. A woman 60 days clean who
+          // logged a relapse honestly at 11pm with no signal had it silently reversed the next
+          // morning: the pull merged her local copy against the stale cloud row, min() restored the
+          // 60 days, and _queueWrite pushed that back up, so the reversal was permanent. Her card
+          // then claimed a streak she knew she did not have while relapseCount said she had fallen.
+          //
+          // Recency is the only rule that is right for both cases — an offline relapse (local is
+          // newer, or has pending writes) and a deliberately BACK-dated quit date set on the other
+          // device (cloud is newer). It is the same rule the nutrition log already uses.
+          const _vCloudNewer = (cts >= lts) && !pendingLocal;
+          if(_vCloudNewer && v.startDate) ex.startDate = v.startDate;
+          // else keep ex.startDate — ex is the local copy, since local is concatenated first.
           ex.urgelog = union(ex.urgelog, v.urgelog);
           if(!ex.type && v.type) ex.type = v.type;
         });

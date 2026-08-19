@@ -2489,10 +2489,20 @@ function renderRecentFoods(){
       const star = f.fav ? '★' : '☆';
       const starColor = f.fav ? 'var(--go)' : 'var(--tx3)';
       const safe = f.name.replace(/'/g,"\\'").replace(/</g,'&lt;');
+      // The serving the (+) button will log — the same source of truth quickLogRecent uses.
+      const _qs = (typeof _quickServing === 'function') ? _quickServing(f) : { cal: f.cal, pro: f.pro, label: '' };
       return '<div class="food-result" style="display:flex;align-items:center;justify-content:space-between;gap:6px">' +
         '<div style="flex:1;cursor:pointer;min-width:0" onclick="logRecentFood(&apos;' + safe + '&apos;)">' +
           '<div class="fr-name">' + f.name.replace(/</g,'&lt;') + '</div>' +
-          '<div class="fr-macros"><span class="fr-cal">' + f.cal + ' cal</span><span>P' + f.pro + '</span>' + (f.count>1?'<span style="color:var(--tx3)">×'+f.count+'</span>':'') + '</div>' +
+          // SHOW WHAT THE (+) WILL ACTUALLY LOG. This printed f.cal — which for a scanned product is
+          // the per-100g figure — while the (+) beside it logs _quickServing(f), the real serving. A
+          // 50g bar read "488 cal" and logged 244. Someone at 1,900 of a 2,100 target decides they
+          // cannot afford a number the app was never going to record. The search list one screen up
+          // was already repaired for exactly this (_makeFoodResultRow); this list was missed, and it
+          // showed no unit either, so there was nothing on screen to reveal the mismatch.
+          '<div class="fr-macros"><span class="fr-cal">' + _qs.cal + ' cal</span><span>P' + _qs.pro + '</span>' +
+            '<span style="color:var(--tx3)">' + _escFew(String(_qs.label || '')) + '</span>' +
+            (f.count>1?'<span style="color:var(--tx3)">×'+f.count+'</span>':'') + '</div>' +
         '</div>' +
         '<button onclick="toggleFavFood(&apos;' + safe + '&apos;)" style="background:none;border:none;color:' + starColor + ';font-size:18px;cursor:pointer;padding:4px;flex-shrink:0">' + star + '</button>' +
         '<button onclick="quickLogRecent(&apos;' + safe + '&apos;)" title="Log instantly" style="background:var(--go);border:none;color:#1a1505;font-size:18px;font-weight:700;width:34px;height:34px;border-radius:8px;cursor:pointer;flex-shrink:0;line-height:1">+</button>' +

@@ -1050,6 +1050,15 @@ function saveQuickLog(){
     ls('totry_wins', _wins.slice(0, 500));
     if(typeof renderWinsLog==='function')renderWinsLog();
     if(_isFirstEverWin){ ls('totry_first_win_done', true); setTimeout(()=>{ if(typeof _celebrateFirstWin==='function') _celebrateFirstWin(); }, 400); }
+  } else {
+    // THE RELAPSE RESET BELONGS TO THE LOSS. All of this sat inside the `if(_qlOutcome)` branch —
+    // the WIN branch — so "Log a past fight → I beat it → Save" destroyed the streak, stamped
+    // lastLoss and recorded a relapse, while the app said "Your win matters. Every one counts."
+    // A man 60 days clean logged an urge he had beaten and watched his card go to 0 with a relapse
+    // against his name. And an honest slip logged the same way changed nothing at all: honesty was
+    // the one action with no consequence, and a win was punished. The same function already reads
+    // the outcome correctly nineteen lines below (`const _wasRelapse = (_qlOutcome === false)`), so
+    // its two halves disagreed about which button had been pressed.
     const cleanBeforeReset = viceCleanDays(v);
     v.cleanDaysTotal = (v.cleanDaysTotal || 0) + cleanBeforeReset;
     v.relapseCount = (v.relapseCount || 0) + 1;

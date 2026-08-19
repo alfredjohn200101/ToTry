@@ -4879,7 +4879,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v504';
+const APP_VERSION = 'v505';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5863,10 +5863,22 @@ async function pullFromCloud(){
           const exWin = ex.lastWin ? new Date(ex.lastWin).getTime() : 0;
           const vWin = v.lastWin ? new Date(v.lastWin).getTime() : 0;
           if(vWin > exWin) ex.lastWin = v.lastWin;
-          // earliest startDate (longest-standing record of the attempt)
-          const exStart = ex.startDate ? new Date(ex.startDate).getTime() : Infinity;
-          const vStart = v.startDate ? new Date(v.startDate).getTime() : Infinity;
-          if(vStart < exStart) ex.startDate = v.startDate;
+          // startDate IS THE STREAK ANCHOR, NOT THE DATE THEY FIRST TRIED.
+          //
+          // This took the EARLIEST of the two, under the comment "longest-standing record of the
+          // attempt" — but every relapse path rewrites startDate to now, so the earliest value is
+          // simply the streak as it stood before the most recent slip. A woman 60 days clean who
+          // logged a relapse honestly at 11pm with no signal had it silently reversed the next
+          // morning: the pull merged her local copy against the stale cloud row, min() restored the
+          // 60 days, and _queueWrite pushed that back up, so the reversal was permanent. Her card
+          // then claimed a streak she knew she did not have while relapseCount said she had fallen.
+          //
+          // Recency is the only rule that is right for both cases — an offline relapse (local is
+          // newer, or has pending writes) and a deliberately BACK-dated quit date set on the other
+          // device (cloud is newer). It is the same rule the nutrition log already uses.
+          const _vCloudNewer = (cts >= lts) && !pendingLocal;
+          if(_vCloudNewer && v.startDate) ex.startDate = v.startDate;
+          // else keep ex.startDate — ex is the local copy, since local is concatenated first.
           ex.urgelog = union(ex.urgelog, v.urgelog);
           if(!ex.type && v.type) ex.type = v.type;
         });
@@ -13098,6 +13110,15 @@ function saveQuickLog(){
     ls('totry_wins', _wins.slice(0, 500));
     if(typeof renderWinsLog==='function')renderWinsLog();
     if(_isFirstEverWin){ ls('totry_first_win_done', true); setTimeout(()=>{ if(typeof _celebrateFirstWin==='function') _celebrateFirstWin(); }, 400); }
+  } else {
+    // THE RELAPSE RESET BELONGS TO THE LOSS. All of this sat inside the `if(_qlOutcome)` branch —
+    // the WIN branch — so "Log a past fight → I beat it → Save" destroyed the streak, stamped
+    // lastLoss and recorded a relapse, while the app said "Your win matters. Every one counts."
+    // A man 60 days clean logged an urge he had beaten and watched his card go to 0 with a relapse
+    // against his name. And an honest slip logged the same way changed nothing at all: honesty was
+    // the one action with no consequence, and a win was punished. The same function already reads
+    // the outcome correctly nineteen lines below (`const _wasRelapse = (_qlOutcome === false)`), so
+    // its two halves disagreed about which button had been pressed.
     const cleanBeforeReset = viceCleanDays(v);
     v.cleanDaysTotal = (v.cleanDaysTotal || 0) + cleanBeforeReset;
     v.relapseCount = (v.relapseCount || 0) + 1;
@@ -24372,10 +24393,20 @@ function renderRecentFoods(){
       const star = f.fav ? '★' : '☆';
       const starColor = f.fav ? 'var(--go)' : 'var(--tx3)';
       const safe = f.name.replace(/'/g,"\\'").replace(/</g,'&lt;');
+      // The serving the (+) button will log — the same source of truth quickLogRecent uses.
+      const _qs = (typeof _quickServing === 'function') ? _quickServing(f) : { cal: f.cal, pro: f.pro, label: '' };
       return '<div class="food-result" style="display:flex;align-items:center;justify-content:space-between;gap:6px">' +
         '<div style="flex:1;cursor:pointer;min-width:0" onclick="logRecentFood(&apos;' + safe + '&apos;)">' +
           '<div class="fr-name">' + f.name.replace(/</g,'&lt;') + '</div>' +
-          '<div class="fr-macros"><span class="fr-cal">' + f.cal + ' cal</span><span>P' + f.pro + '</span>' + (f.count>1?'<span style="color:var(--tx3)">×'+f.count+'</span>':'') + '</div>' +
+          // SHOW WHAT THE (+) WILL ACTUALLY LOG. This printed f.cal — which for a scanned product is
+          // the per-100g figure — while the (+) beside it logs _quickServing(f), the real serving. A
+          // 50g bar read "488 cal" and logged 244. Someone at 1,900 of a 2,100 target decides they
+          // cannot afford a number the app was never going to record. The search list one screen up
+          // was already repaired for exactly this (_makeFoodResultRow); this list was missed, and it
+          // showed no unit either, so there was nothing on screen to reveal the mismatch.
+          '<div class="fr-macros"><span class="fr-cal">' + _qs.cal + ' cal</span><span>P' + _qs.pro + '</span>' +
+            '<span style="color:var(--tx3)">' + _escFew(String(_qs.label || '')) + '</span>' +
+            (f.count>1?'<span style="color:var(--tx3)">×'+f.count+'</span>':'') + '</div>' +
         '</div>' +
         '<button onclick="toggleFavFood(&apos;' + safe + '&apos;)" style="background:none;border:none;color:' + starColor + ';font-size:18px;cursor:pointer;padding:4px;flex-shrink:0">' + star + '</button>' +
         '<button onclick="quickLogRecent(&apos;' + safe + '&apos;)" title="Log instantly" style="background:var(--go);border:none;color:#1a1505;font-size:18px;font-weight:700;width:34px;height:34px;border-radius:8px;cursor:pointer;flex-shrink:0;line-height:1">+</button>' +
