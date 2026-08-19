@@ -1415,7 +1415,13 @@ function bridgeToRealHelp(reason){
           '\u2022 <b style="color:var(--tx)">Someone you trust</b> \u2014 a sibling, a friend, a mentor. Even just saying it out loud to one person breaks its power.<br>'+
           '\u2022 <b style="color:var(--tx)">A priest</b> \u2014 confession and a real conversation. Grace you can\u2019t get from a screen.<br>'+
           '\u2022 <b style="color:var(--tx)">A counsellor or your GP</b> \u2014 this is exactly what they\u2019re there for. No shame in it.<br>'+
-          '\u2022 <b style="color:var(--tx)">A helpline</b> \u2014 if you need someone right now, see Settings for lines in your country.'+
+          '\u2022 <b style="color:var(--tx)">A helpline</b> \u2014 someone trained for this, right now, free:<br>'+
+          '<span style="display:inline-block;margin-top:4px;font-size:12.5px;line-height:1.9">'+
+            '\uD83C\uDDE6\uD83C\uDDFA Lifeline <a href="tel:131114" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">13 11 14</a> \u00b7 '+
+            '\uD83C\uDDFA\uD83C\uDDF8 <a href="tel:988" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">988</a> \u00b7 '+
+            '\uD83C\uDDEC\uD83C\uDDE7 <a href="tel:116123" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">116 123</a><br>'+
+            '<a href="https://findahelpline.com" target="_blank" rel="noopener" style="color:var(--tx3);text-decoration:none;border-bottom:1px solid var(--bd)">findahelpline.com</a> \u2014 130+ countries'+
+          '</span>'+
         '</div>'+
       '</div>'+
       '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px;text-align:center">I\u2019ll still be here, walking it with you. Someone who has got you points you to real help \u2014 they don\u2019t pretend to be all of it.</div>'+

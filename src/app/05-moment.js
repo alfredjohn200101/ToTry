@@ -105,6 +105,33 @@ function _feelThePull(){
   }catch(_){ openCompanionForUrge(); }
 }
 // Log the feeling quietly (so patterns can form over time — the mirror learns).
+// AND SOMETHING HAS TO LEARN. This store was written on every single tap of the Feeling Door and read
+// by nothing at all — five hundred entries of the most intimate signal in the app, going nowhere. The
+// comment above promised a mirror; there was no mirror. Two readers now: the door itself (below) and
+// the whole-person brief the Brother speaks from (lifeStateBrief).
+function feelingPattern(days){
+  try{
+    const log = ls('totry_feelings'); if(!Array.isArray(log) || !log.length) return null;
+    const since = Date.now() - (Number(days)||7)*86400000;
+    const recent = log.filter(function(e){ return e && e.ts >= since && e.id; });
+    if(recent.length < 3) return null;
+    const counts = {};
+    recent.forEach(function(e){ counts[e.id] = (counts[e.id]||0) + 1; });
+    let topId = null, topN = 0;
+    Object.keys(counts).forEach(function(k){ if(counts[k] > topN){ topN = counts[k]; topId = k; } });
+    if(topN < 2) return null;
+    return { id: topId, count: topN, total: recent.length, days: Number(days)||7,
+             label: (typeof _FEEL_LABELS==='object' && _FEEL_LABELS[topId]) || topId };
+  }catch(_){ return null; }
+}
+// How many times THIS feeling has brought them here lately — the number the door needs.
+function feelingCount(id, days){
+  try{
+    const log = ls('totry_feelings'); if(!Array.isArray(log)) return 0;
+    const since = Date.now() - (Number(days)||7)*86400000;
+    return log.filter(function(e){ return e && e.id===id && e.ts >= since; }).length;
+  }catch(_){ return 0; }
+}
 function _recordFeeling(id){
   try{ const log = ls('totry_feelings') || []; log.push({ id, ts: Date.now() }); if(log.length>500) log.splice(0, log.length-500); ls('totry_feelings', log); }catch(_){}
 }
@@ -197,6 +224,23 @@ function _feelMove(feeling){
   const _talkBtn = (s.go==='__companion') ? '' :
     '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin:0;font-size:13px">💬 Just talk</button>';
   const _saved = (typeof getIfThen==='function') ? getIfThen(feeling) : null;
+  // THE DOOR REMEMBERS. Coming back to the same feeling over and over is the single most useful thing
+  // this app knows about a person, and it was being written to disk and forgotten. Said as an
+  // observation, never a count-of-failures: "this keeps coming" is information, not a verdict — and
+  // it points at the one thing that actually compounds, the if-then plan.
+  const _recur = (function(){
+    try{
+      // _recordFeeling already logged this tap, so the count includes right now.
+      const n = (typeof feelingCount==='function') ? feelingCount(feeling, 7) : 0;
+      if(n < 3) return '';
+      const lbl = (_FEEL_LABELS && _FEEL_LABELS[feeling]) || feeling;
+      const tail = _saved
+        ? 'Your plan below is the right place to start.'
+        : 'That is worth a plan, not just a moment \u2014 there is one at the bottom of this.';
+      return '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:14px;text-align:left;background:var(--bg3);border-radius:10px;padding:10px 12px">'+
+        'This is the <b style="color:var(--tx2)">'+n+((n%100>=11&&n%100<=13)?'th':({1:'st',2:'nd',3:'rd'}[n%10]||'th'))+'</b> time '+_escFew(lbl)+' has brought you here this week. '+tail+'</div>';
+    }catch(_){ return ''; }
+  })();
   const _savedBanner = _saved ? '<div style="background:var(--go-bg);border:1px solid var(--go-bd);border-radius:10px;padding:10px 12px;margin-bottom:16px;text-align:left"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">The plan you set for this</div><div style="font-size:12.5px;color:var(--tx2);line-height:1.55">'+_escFew(_saved.action)+'</div></div>' : '';
   // Their own #1 value, as a QUESTION, never a verdict. Skipped when they're heavy: a person who is
   // low does not need their own standard held up in front of them. That would be shame, not counsel.
@@ -210,6 +254,7 @@ function _feelMove(feeling){
   m.innerHTML = '<div class="modal" style="text-align:center">'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.25;margin-bottom:10px">'+s.title+'</div>'+
     '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:18px">'+s.body+'</div>'+
+    _recur+
     _savedBanner+
     _valBanner+
     '<button class="btn primary" style="margin-bottom:8px" onclick="'+onclick+'">'+s.cta+'</button>'+
@@ -1681,15 +1726,96 @@ function _planCardHTML(i){
 // it for real, no crash: exercise hits the SAME endocannabinoid receptor the vice did (the runner's
 // high), cold spikes dopamine ~2.5× for hours, morning light + real connection repair the system.
 // Honest, deterministic, on-mission for EVERY vice — see BREATH-STILLNESS-RESEARCH.md.
+// A TOAST IS NOT A MOVE. Three of these five closed every sheet and fired a five-second toast over
+// whatever tab happened to be behind — so someone who tapped "Flat", then "Chase a real high", then
+// "Cold water" was left staring at an empty screen with a sentence already fading. The two that
+// worked (move, breath) went somewhere. These three now do too.
 function _pickHigh(type){
   try{ if(typeof logEvent==='function') logEvent('natural_high'); }catch(_){}
   document.querySelectorAll('.modal-bg.open').forEach(m=>m.remove());
   if(type==='move'){ if(typeof go==='function') go('train'); }
   else if(type==='breath'){ if(typeof openBreath==='function') openBreath('energize'); }
-  else {
-    const msg={ cold:['Go cold','60–90s at the end of your shower. Clean energy for hours, no crash.'], sun:['Get the light','10–20 min outside early, no sunglasses — it resets your dopamine and your sleep.'], connect:['Reach out','One message to one person who’s good for you. Isolation feeds it; contact starves it.'] }[type];
-    if(msg && typeof showToast==='function') showToast(msg[0], msg[1]);
+  else if(type==='sun'){ if(typeof openLookUp==='function') openLookUp(); else if(typeof go==='function') go('home'); }
+  else if(type==='cold'){ _coldPlunge(); }
+  else if(type==='connect'){ _reachOneNow(); }
+}
+// Ninety seconds you can actually stand in. The timer runs on screen, so the move has a shape and an
+// end — and the release at the end is the point, not a log entry.
+function _coldPlunge(){
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  m.innerHTML='<div class="modal" style="text-align:center">'+
+    '<div style="font-size:30px;margin-bottom:8px">\uD83E\uDDCA</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:25px;color:var(--tx);line-height:1.3;margin-bottom:10px">Go cold.</div>'+
+    '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:14px">Turn it all the way cold at the end of your shower. It will feel like too much for about fifteen seconds, and then it will not. Breathe out slowly \u2014 do not hold your breath.</div>'+
+    '<div id="cold-clock" role="timer" aria-live="polite" style="font-family:\'DM Mono\',monospace;font-size:44px;color:var(--go);line-height:1;margin-bottom:6px">1:30</div>'+
+    '<div id="cold-sub" style="font-size:12px;color:var(--tx3);margin-bottom:16px">Ninety seconds. Start it when the water turns.</div>'+
+    '<button class="btn primary" id="cold-go" style="margin-bottom:8px">Start</button>'+
+    '<button class="btn" id="cold-close" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0">Not now</button>'+
+  '</div>';
+  document.body.appendChild(m);
+  if(typeof haptic==='function') haptic('tap');
+  let left=90, tick=null;
+  const clock=m.querySelector('#cold-clock'), sub=m.querySelector('#cold-sub'), go=m.querySelector('#cold-go');
+  const fmt=function(n){ return Math.floor(n/60)+':'+String(n%60).padStart(2,'0'); };
+  const stop=function(){ if(tick){ clearInterval(tick); tick=null; } };
+  m.querySelector('#cold-close').onclick=function(){ stop(); m.remove(); };
+  go.onclick=function(){
+    if(tick){ stop(); go.textContent='Start'; sub.textContent='Paused.'; return; }
+    go.textContent='Pause'; sub.textContent='Long, slow exhale. Do not brace against it.';
+    tick=setInterval(function(){
+      left--; clock.textContent=fmt(Math.max(0,left));
+      if(left<=0){
+        stop(); clock.textContent='Done';
+        sub.textContent='That is real, clean energy \u2014 and no crash coming.';
+        go.textContent='Finish';
+        go.onclick=function(){
+          m.remove();
+          if(typeof haptic==='function') haptic('celebrate');
+          if(typeof theRelease==='function') theRelease({did:'You went cold for ninety seconds \u2014 a real lift, no crash.'});
+        };
+      }
+    },1000);
+  };
+  // A timer that keeps running after the sheet is gone is a leak; make closing it stop the clock.
+  try{ const obs=new MutationObserver(function(){ if(!document.body.contains(m)){ stop(); obs.disconnect(); } });
+       obs.observe(document.body,{childList:true}); }catch(_){ }
+}
+// One real person, named — not "reach out to someone". The app already knows their few and how long
+// it has been; an unnamed instruction is exactly the thing a flat person will not act on.
+function _reachOneNow(){
+  const s = (typeof reachOutSuggestion==='function') ? reachOutSuggestion() : null;
+  const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
+  if(!s || !s.person){
+    m.innerHTML='<div class="modal" style="text-align:center">'+
+      '<div style="font-size:30px;margin-bottom:8px">\uD83E\uDD1D</div>'+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.3;margin-bottom:10px">Reach out to one person.</div>'+
+      '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:16px">Isolation feeds the flatness; contact starves it. One message, to one person who is good for you \u2014 it does not have to be deep.</div>'+
+      '<button class="btn primary" onclick="closeModal(this);if(typeof openYourFew===\'function\')openYourFew()" style="margin-bottom:8px">Add the people I carry</button>'+
+      '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0">Not now</button>'+
+    '</div>';
+  } else {
+    const nm = _escFew(s.person.name);
+    const since = (s.days==null) ? 'You have not logged reaching out to them yet.'
+                                 : ('It has been '+s.days+' day'+(s.days===1?'':'s')+'.');
+    m.innerHTML='<div class="modal" style="text-align:center">'+
+      '<div style="font-size:30px;margin-bottom:8px">\uD83E\uDD1D</div>'+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.3;margin-bottom:6px">Message '+nm+'.</div>'+
+      '<div style="font-size:11.5px;color:var(--tx3);margin-bottom:12px">'+since+'</div>'+
+      '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:14px">'+_escFew(s.prompt||'Say one true thing. It does not have to be deep.')+'</div>'+
+      (s.reframe?'<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px">'+s.reframe+'</div>':'')+
+      '<button class="btn primary" id="reach-one-did" style="margin-bottom:8px">I reached out</button>'+
+      '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0">Not now</button>'+
+    '</div>';
   }
+  document.body.appendChild(m);
+  try{
+    const btn = m.querySelector('#reach-one-did');
+    if(btn && s && s.person) btn.onclick = function(){
+      m.remove();
+      try{ if(typeof logReachOut==='function') logReachOut(s.person.name); }catch(_){ }
+    };
+  }catch(_){ }
+  if(typeof haptic==='function') haptic('tap');
 }
 // Where are they in the recovery arc? (uses the existing clean-streak — works for ANY vice). General
 // dopamine-recalibration science, framed as healing, so the flat window isn't read as failure.

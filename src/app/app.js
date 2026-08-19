@@ -4097,12 +4097,12 @@ if(typeof initApp==='function'){
 window.addEventListener('popstate', (e) => {
   const target = (e.state && e.state.tab) ? e.state.tab : 'home';
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>{b.classList.remove('active');b.removeAttribute('aria-current');});
   const tab=document.getElementById('tab-'+target);
   if(tab)tab.classList.add('active');
   const navName = TABS.includes(target) ? target : (TAB_PARENT[target] || 'home');
   const navIdx = TABS.indexOf(navName);
-  if(navIdx>=0)document.querySelectorAll('.nb')[navIdx]?.classList.add('active');
+  if(navIdx>=0){const _nb=document.querySelectorAll('.nb')[navIdx]; if(_nb){_nb.classList.add('active'); _nb.setAttribute('aria-current','page');}}
   if(typeof updateHubBackBar==='function') updateHubBackBar(target);
 });
 

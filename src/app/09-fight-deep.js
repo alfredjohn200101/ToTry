@@ -301,9 +301,12 @@ function logLoss(whenISO){
     // path twenty lines up already does this; the live one, which matters more, did not.
     try{
       const fl = ls('totry_fight_log') || [];
-      fl.unshift({ vice: v.n, won: false,
-        intensity: (typeof window!=='undefined' && window.__sosIntensity) || null,
-        trigger: (typeof window!=='undefined' && window.__sosTrigger) || null,
+      // NO intensity/trigger HERE. Those globals belong to the quick-log flow (04-fight.js sets them,
+      // logWin clears them), and this live SOS path never captures either — so reading them stamped
+      // a relapse with whatever a previous, unrelated quick-log had left behind, and the trigger
+      // analysis built on that field would have learned a pattern from someone else's answer.
+      // Better an honest null than a borrowed value.
+      fl.unshift({ vice: v.n, won: false, intensity: null, trigger: null,
         ts: whenStr, date: new Date(whenStr).toLocaleDateString('en-AU') });
       ls('totry_fight_log', fl.slice(0, 200));
     }catch(_){ }
@@ -1524,7 +1527,10 @@ function stakesForAmount(amount){
   try{
     const r=spendingRead();
     if(r){
-      const groc=(r.cats.find(c=>c.name==='Groceries')||{}).perMonth||0;
+      // Same guard as the Money card: perMonth is extrapolated, and from a few days of data it is a
+      // guess. Telling someone mid-craving that "£40 is about 6 days of real food on the table" is
+      // only worth saying if the grocery figure behind it is real.
+      const groc=(r.enoughForMonthly===false) ? 0 : ((r.cats.find(c=>c.name==='Groceries')||{}).perMonth||0);
       if(groc>0){ const days=Math.round((amount/(groc/30.44))); if(days>=1) out.push({icon:'\u{1F35E}', text:money(amount)+' is about '+days+' day'+(days===1?'':'s')+' of real food on the table.'}); }
     }
   }catch(_){}

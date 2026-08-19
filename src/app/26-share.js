@@ -135,6 +135,7 @@ function setCheckin(field, value){
     const dotVal = parseInt(dot.dataset.val);
     dot.classList.toggle('selected', dotVal === value);
     dot.classList.toggle('below-selected', dotVal < value);
+    try{ dot.setAttribute('aria-checked', dotVal === value ? 'true' : 'false'); }catch(_){ }
   });
   // Update label
   const val = document.getElementById('cv-' + field);
@@ -191,7 +192,13 @@ function closeModal(el){const m=el.closest('.modal-bg');if(m)m.remove();}
   document.addEventListener('keydown', function(e){
     if(e.key!=='Escape' && e.key!=='Esc') return;
     // close the topmost open sheet first…
-    const sheets = document.querySelectorAll('.modal-bg:not(.modal-locked)');
+    // ONLY SHEETS THAT ARE ACTUALLY OPEN. This matched every .modal-bg in the document, and three of
+    // them — #payday-modal, #journal-modal, #serving-modal — are STATIC markup that is always
+    // present and merely hidden. So sheets.length was never 0, this branch always ran, and the two
+    // lines below it were unreachable: pressing Escape could never close the Feeling Door or the
+    // companion, the two things a person is most likely to want out of quickly. It also meant Escape
+    // "closed" a modal that was already closed, so nothing happened and the key felt broken.
+    const sheets = document.querySelectorAll('.modal-bg.open:not(.modal-locked)');
     if(sheets.length){ const top = sheets[sheets.length-1]; if(typeof closeModal==='function') closeModal(top); else top.remove(); return; }
     // …otherwise the Feeling Door, then the companion sheet.
     const fd = document.getElementById('feel-door');

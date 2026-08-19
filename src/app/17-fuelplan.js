@@ -270,9 +270,10 @@ function _fuelRenderPlan(plan){
   const p = getMealPrefs();
   const R = Math.round;
   const money = function(v){ return curSym()+(R((v||0)*100)/100).toFixed(2); };
+  const _gentle = (typeof nutGentle==='function' && nutGentle());   // numbers off means numbers off
   const mealsHtml = (plan.meals||[]).map(function(mm, i){
     return '<div style="padding:10px 0;border-top:1px solid var(--bd)">'+
-      '<div style="display:flex;justify-content:space-between;gap:8px"><div style="font-size:13px;font-weight:600;color:var(--tx)">'+_esc(mm.name||'Meal')+'</div><div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx3);white-space:nowrap">'+R(mm.cal||0)+' cal · '+R(mm.pro||0)+'p · '+R(mm.carbs||0)+'c · '+R(mm.fat||0)+'f</div></div>'+
+      '<div style="display:flex;justify-content:space-between;gap:8px"><div style="font-size:13px;font-weight:600;color:var(--tx)">'+_esc(mm.name||'Meal')+'</div><div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx3);white-space:nowrap">'+(_gentle?'':(R(mm.cal||0)+' cal \u00b7 '+R(mm.pro||0)+'p \u00b7 '+R(mm.carbs||0)+'c \u00b7 '+R(mm.fat||0)+'f'))+'</div></div>'+
       '<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-top:3px">'+_esc(mm.items||'')+'</div>'+
       (mm.why?'<div style="font-size:11.5px;color:var(--go);line-height:1.5;margin-top:5px;font-style:italic">'+_esc(mm.why)+'</div>':'')+
       '<button onclick="_fuelSwapMeal('+i+')" style="margin-top:6px;background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;font-family:\'DM Mono\',monospace;letter-spacing:0.03em">↻ swap this meal</button>'+
@@ -281,12 +282,12 @@ function _fuelRenderPlan(plan){
   // Number() so an already-stored string cannot turn addition into concatenation.
   const sum = function(k){ return (plan.meals||[]).reduce(function(a,mm){ const n=parseFloat(mm&&mm[k]); return a+(isFinite(n)?n:0); },0); };
   const dayCal=sum('cal'), dayPro=sum('pro'), dayCarbs=sum('carbs'), dayFat=sum('fat');
-  const macroRow = '<div style="display:flex;justify-content:space-between;margin-top:12px;padding:9px 12px;background:var(--bg3);border-radius:8px;font-family:\'DM Mono\',monospace;font-size:10.5px;color:var(--tx2)"><span>'+R(dayCal)+' cal</span><span style="color:var(--gr)">'+R(dayPro)+'g P</span><span style="color:var(--bl)">'+R(dayCarbs)+'g C</span><span style="color:var(--go)">'+R(dayFat)+'g F</span></div>';
+  const macroRow = _gentle ? '' : '<div style="display:flex;justify-content:space-between;margin-top:12px;padding:9px 12px;background:var(--bg3);border-radius:8px;font-family:\'DM Mono\',monospace;font-size:10.5px;color:var(--tx2)"><span>'+R(dayCal)+' cal</span><span style="color:var(--gr)">'+R(dayPro)+'g P</span><span style="color:var(--bl)">'+R(dayCarbs)+'g C</span><span style="color:var(--go)">'+R(dayFat)+'g F</span></div>';
   const tgtCal = (plan.targets&&plan.targets.cal)||0, tgtPro = (plan.targets&&plan.targets.pro)||0;
   const calGap = tgtCal ? (dayCal - tgtCal) : 0; const onTarget = tgtCal && Math.abs(calGap) <= tgtCal*0.08;
-  const targetHtml = tgtCal ? ('<div style="font-size:11.5px;line-height:1.5;margin-top:6px;color:'+(onTarget?'var(--gr)':'var(--go)')+'">'+(onTarget ? ('On target — ~'+R(dayCal)+' of your '+tgtCal+' cal, '+R(dayPro)+' of '+tgtPro+'g protein.') : (calGap<0 ? ('About '+R(-calGap)+' cal under your '+tgtCal+' target — bump portions, or <span onclick="_fuelAddSnack()" style="color:var(--go);border-bottom:1px solid var(--go-bd);cursor:pointer">add a snack to hit it →</span>') : ('About '+R(calGap)+' cal over your '+tgtCal+' target — trim portions slightly.')))+'</div>') : '';
+  const targetHtml = (tgtCal && !_gentle) ? ('<div style="font-size:11.5px;line-height:1.5;margin-top:6px;color:'+(onTarget?'var(--gr)':'var(--go)')+'">'+(onTarget ? ('On target — ~'+R(dayCal)+' of your '+tgtCal+' cal, '+R(dayPro)+' of '+tgtPro+'g protein.') : (calGap<0 ? ('About '+R(-calGap)+' cal under your '+tgtCal+' target — bump portions, or <span onclick="_fuelAddSnack()" style="color:var(--go);border-bottom:1px solid var(--go-bd);cursor:pointer">add a snack to hit it →</span>') : ('About '+R(calGap)+' cal over your '+tgtCal+' target — trim portions slightly.')))+'</div>') : '';
   const _td = _fuelToday();
-  const todayHtml = tgtCal ? ('<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:10px 12px;background:var(--bg3);border-radius:8px;gap:8px"><div style="font-size:11.5px;color:var(--tx2);line-height:1.4">Logged today <span style="font-family:\'DM Mono\',monospace;color:var(--tx)">'+R(_td.cal)+'</span> / '+tgtCal+' cal<br><span style="color:var(--tx3);font-size:10.5px">counts to your target, not the plan</span></div><button onclick="_fuelFlexToday()" style="flex-shrink:0;background:none;border:1px solid var(--go-bd);color:var(--go);border-radius:100px;padding:7px 13px;font-size:11.5px;cursor:pointer;white-space:nowrap">Eating out?</button></div>') : '';
+  const todayHtml = tgtCal ? ('<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:10px 12px;background:var(--bg3);border-radius:8px;gap:8px"><div style="font-size:11.5px;color:var(--tx2);line-height:1.4">'+(_gentle ? 'What you ate today counts toward your day, not the plan.' : 'Logged today <span style="font-family:\'DM Mono\',monospace;color:var(--tx)">'+R(_td.cal)+'</span> / '+tgtCal+' cal<br><span style="color:var(--tx3);font-size:10.5px">counts to your target, not the plan</span>')+'</div><button onclick="_fuelFlexToday()" style="flex-shrink:0;background:none;border:1px solid var(--go-bd);color:var(--go);border-radius:100px;padding:7px 13px;font-size:11.5px;cursor:pointer;white-space:nowrap">Eating out?</button></div>') : '';
   const microHtml = plan.microNote ? '<div style="font-size:11.5px;color:var(--tx2);line-height:1.6;margin-top:10px"><span style="color:var(--gr);font-weight:600">Micronutrients · </span>'+_esc(plan.microNote)+'</div>' : '';
   let timingHtml='';
   if(plan.preworkout && plan.preworkout.length){
@@ -321,7 +322,7 @@ function _fuelRenderPlan(plan){
   const m = document.createElement('div'); m.className='modal-bg open'; m.id='fuel-plan-modal'; m.style.alignItems='flex-end';
   m.innerHTML = '<div class="modal" style="text-align:left;max-height:90vh;overflow-y:auto">'+
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx)">Your fuel plan</div><button onclick="closeModal(this)" style="background:none;border:none;color:var(--tx3);font-size:20px;cursor:pointer">×</button></div>'+
-    '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">A day around '+R(dayCal)+' cal · '+_esc(p.chain||'')+'</div>'+
+    '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">'+(_gentle ? 'A full day of eating' : ('A day around '+R(dayCal)+' cal'))+(p.chain?' \u00b7 '+_esc(p.chain):'')+'</div>'+
     '<div class="eyebrow" style="color:var(--go);margin-bottom:2px">A day of meals</div>'+
     mealsHtml+ macroRow+ targetHtml+ todayHtml+ microHtml+ timingHtml+
     '<div class="eyebrow" style="margin:16px 0 4px">Weekly shopping list</div>'+shopHtml+
@@ -345,7 +346,7 @@ async function _fuelAddSnack(){
   const dayCal = plan.meals.reduce(function(a,m){return a+(m.cal||0);},0), dayPro = plan.meals.reduce(function(a,m){return a+(m.pro||0);},0);
   const tgt = (plan.targets&&plan.targets.cal)||0, tgtP = (plan.targets&&plan.targets.pro)||0;
   const gapC = Math.max(100, Math.round(tgt - dayCal)), gapP = Math.max(0, Math.round(tgtP - dayPro));
-  if(typeof showToast==='function') showToast('Adding a snack…', 'Filling the ~'+gapC+' cal gap.');
+  if(typeof showToast==='function') showToast('Adding a snack…', (typeof nutGentle==='function'&&nutGentle()) ? 'Topping up the day.' : ('Filling the ~'+gapC+' cal gap.'));
   const shopsStr = (p.chains&&p.chains.join(', ')) || p.chain || 'the supermarket';
   const sys = "You are a dietitian. Return ONLY one JSON snack object, no prose.";
   const prompt = "Add ONE realistic snack to close a daily gap of about "+gapC+" kcal and "+gapP+"g protein. STRICTLY respect diet: "+dietStr+(p.restrictions?('; '+p.restrictions):'')+". Available at "+shopsStr+" ("+(p.country||'Australia')+"). Return ONLY JSON: {\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"carbs\":0,\"fat\":0,\"why\":\"\"}.";
@@ -416,10 +417,11 @@ function _fuelFlexToday(){
   const tgt = (plan.targets&&plan.targets.cal)||0;
   const td = _fuelToday();
   const left = tgt ? Math.max(0, Math.round(tgt - td.cal)) : 0;
+  const _gentle = (typeof nutGentle==='function' && nutGentle());
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:left">'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:10px">Going out? Enjoy it.</div>'+
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:16px">A meal out, a buffet, a night with people — that’s a life, not a failure. One meal won’t undo your week; what you do <i>most</i> days is what shapes you. The plan is a guide, not a cage.'+(tgt?(' You’ve still got about <b style="color:var(--tx)">'+left+' cal</b> to your target today if you want a rough anchor — or just be present and pick it up tomorrow.'):'')+'</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:16px">A meal out, a buffet, a night with people — that’s a life, not a failure. One meal won’t undo your week; what you do <i>most</i> days is what shapes you. The plan is a guide, not a cage.'+((tgt&&!_gentle)?(' You’ve still got about <b style="color:var(--tx)">'+left+' cal</b> to your target today if you want a rough anchor — or just be present and pick it up tomorrow.'):'')+'</div>'+
     '<button class="btn primary" onclick="closeModal(this);if(typeof go===\'function\')go(\'nourish\');setTimeout(function(){var i=document.getElementById(\'nut-search-in\');if(i)i.focus();},350)">Log what I ate</button>'+
     '<button class="btn" style="margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx2)" onclick="closeModal(this);if(typeof haptic===\'function\')haptic(\'tap\');if(typeof showToast===\'function\')showToast(\'Enjoy it\',\'You’re living, not failing. Back on track tomorrow.\')">Just enjoy it — back tomorrow</button>'+
     '</div>';
@@ -465,7 +467,12 @@ function _fuelLogPlan(btn){
       // from the fuel plan had no ts at all, so the WHOLE DAY dropped out of the weekly digest and the
       // adaptive TDEE — and logging a full day of planned meals is exactly when that first entry is
       // one of these. Two other writers were fixed for this in v483; this one was missed.
-      ts: (typeof nutStampFor==='function' ? nutStampFor() : new Date().toISOString()), date: today,
+      // The bucket above is TODAY (this function's whole job is "push the plan into today's log"),
+      // so the stamp must be today too. nutStampFor() returns a time inside the day the diary is
+      // VIEWING — my v506 fix used it here, so someone reviewing last Tuesday and logging their plan
+      // filed today's meals under today's key with Tuesday's timestamp, and every ts-based reader
+      // then disagreed with the key it was stored under.
+      ts: new Date().toISOString(), date: today,
       source: 'Fuel plan' });
   });
   if(typeof _pruneNutLog==='function') _pruneNutLog(log);

@@ -158,12 +158,24 @@ function renderMoneyGate(){
   const money = n => curSym()+Math.abs(Math.round(n)).toLocaleString();
   const staleDays = Math.floor((Date.now() - r.to.getTime())/86400000);
   const neg = r.netPerMonth < 0;
+  // THE FLAG EXISTS; THIS CARD WAS NOT READING IT. spendingRead exports enoughForMonthly precisely
+  // so a caller can refuse to say "/mo" before there is a month behind it — and only the fuel plan
+  // was using it. This card is the Money tab's LEAD, headed "Your money, honestly", and from five
+  // transactions inside one week it printed "+$3,622/mo". Worse, "See the full read" directly
+  // beneath it opens a panel that labels the identical data "the last 5 days of your money" — the
+  // same object contradicting itself one tap apart. Say the span they actually have.
+  const _thin = r.enoughForMonthly === false;
+  const _spanLbl = 'over ' + Math.max(1, Math.round(r.spanDays || 0)) + ' days';
+  const _net = _thin ? (r.income - r.spend) : r.netPerMonth;
+  const _negNow = _thin ? (_net < 0) : neg;
   readCard.innerHTML = '<div class="card" style="margin-bottom:14px">'+
     '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">'+
       '<div class="card-hd" style="margin-bottom:0">Your money, honestly</div>'+
-      '<span style="font-family:DM Mono,monospace;font-size:15px;color:'+(neg?'var(--re)':'var(--gr)')+'">'+(neg?'−':'+')+money(r.netPerMonth)+'/mo</span>'+
+      '<span style="font-family:DM Mono,monospace;font-size:15px;color:'+(_negNow?'var(--re)':'var(--gr)')+'">'+(_negNow?'−':'+')+money(_net)+(_thin?'':'/mo')+'</span>'+
     '</div>'+
-    (r.lockIn ? '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:10px">Biggest movable cost: <b style="color:var(--tx)">'+r.lockIn.name+'</b>, '+money(r.lockIn.perMonth)+' a month.</div>' : '')+
+    (_thin ? '<div style="font-size:11.5px;color:var(--tx3);line-height:1.5;margin-bottom:10px">That is '+_spanLbl+' — not a month yet. I will not turn a few days into a monthly figure and call it honest.</div>' : '')+
+    // The "biggest movable cost" is a per-MONTH number too, so it waits for the same evidence.
+    (r.lockIn && !_thin ? '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:10px">Biggest movable cost: <b style="color:var(--tx)">'+r.lockIn.name+'</b>, '+money(r.lockIn.perMonth)+' a month.</div>' : '')+
     (staleDays > 9
       ? '<div style="font-size:11.5px;color:var(--go);line-height:1.5;margin-bottom:10px">Your last statement stops '+staleDays+' days ago. A balance sheet nobody feeds stops being true — import the latest when you get a minute.</div>'
       : '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Up to date as of '+r.to.toLocaleDateString('en-AU')+'.</div>')+
@@ -186,14 +198,22 @@ function renderFinance(){
   if(!debts.length){dl.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:10px 0">No debts added yet</p>';return;}
   const strategy=ls('totry_debt_strategy')||'snowball';
   const sorted=_sortDebtsByStrategy(debts.map((d,i)=>({...d,idx:i})), strategy);
+  // THE STAR GOES ON THE FIGHT, NOT THE TROPHY. Snowball sorts by smallest remaining first, and a debt
+  // you have fully paid off has the smallest remaining of all — zero. So the moment someone cleared
+  // their first debt, "attack this first" moved onto the one they had already beaten, and the debt
+  // actually costing them interest lost the mark. The payday allocator filters cleared debts out
+  // (18-money-deep.js:1065); this list never did.
+  const starIdx = sorted.findIndex(d => (d.t - d.p) > 0.005);
   sorted.forEach((d,si)=>{
     const rem=d.t-d.p,pct=d.t>0?Math.round((d.p/d.t)*100):0;
+    const cleared = rem <= 0.005;
     const item=document.createElement('div');item.className='debt-row';
-    item.innerHTML='<div class="dr-top"><span class="dr-name">'+d.n+(si===0?' \u2b50':'')+' </span><span class="dr-amt">'+curSym()+Math.round(rem).toLocaleString()+'</span></div>'+
-      (d.due?'<span class="dr-date">Due: '+d.due+'</span>':'')+
-      '<div class="bar-wrap"><div class="bar" style="width:'+pct+'%"></div></div>'+
-      '<div class="dr-meta"><span class="dr-paid">'+curSym()+Math.round(d.p).toLocaleString()+' paid ('+pct+'%)</span><span>Tap to log payment</span></div>';
-    item.onclick=()=>{openFormModal('Log a payment','Payment toward '+d.n+'.',[{id:'amt',label:'Amount',type:'number',prefix:curSym(),placeholder:'e.g. 200'}],'Log payment',(vals)=>{const a=parseFloat(vals.amt);if(isNaN(a)||a<=0)return 'Enter an amount greater than 0.';loadF();debts[d.idx].p=Math.min(debts[d.idx].p+a,debts[d.idx].t);saveF();const payments=ls('totry_payments')||[];payments.push({amt:a,ts:new Date().toISOString(),date:new Date().toISOString(),debt:d.n});ls('totry_payments',payments.slice(-200));if(typeof syncToCloud==='function')syncToCloud();renderFinance();calcDebtFreeDate();checkMilestones();return true;});};
+    if(cleared) item.style.opacity='0.62';
+    item.innerHTML='<div class="dr-top"><span class="dr-name">'+_escFew(d.n)+(si===starIdx?' \u2b50':'')+(cleared?' \u2713':'')+' </span><span class="dr-amt">'+(cleared?'Paid off':curSym()+Math.round(rem).toLocaleString())+'</span></div>'+
+      (d.due&&!cleared?'<span class="dr-date">Due: '+_escFew(d.due)+'</span>':'')+
+      '<div class="bar-wrap"><div class="bar" style="width:'+Math.min(100,pct)+'%"></div></div>'+
+      '<div class="dr-meta"><span class="dr-paid">'+curSym()+Math.round(d.p).toLocaleString()+' paid ('+pct+'%)</span><span>'+(cleared?'Cleared \u2014 tap to edit':'Tap to log payment')+'</span><button class="dr-edit" aria-label="Edit '+_jsAttr(d.n)+'" onclick="event.stopPropagation();editDebt('+d.idx+')" style="background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:2px 6px;text-decoration:underline">Edit</button></div>';
+    item.onclick=()=>{ if(cleared){ editDebt(d.idx); return; } openFormModal('Log a payment','Payment toward '+d.n+'.',[{id:'amt',label:'Amount',type:'number',prefix:curSym(),placeholder:'e.g. 200'}],'Log payment',(vals)=>{const a=parseFloat(vals.amt);if(isNaN(a)||a<=0)return 'Enter an amount greater than 0.';loadF();debts[d.idx].p=Math.min(debts[d.idx].p+a,debts[d.idx].t);saveF();const payments=ls('totry_payments')||[];payments.push({amt:a,ts:new Date().toISOString(),date:new Date().toISOString(),debt:d.n});ls('totry_payments',payments.slice(-200));if(typeof syncToCloud==='function')syncToCloud();renderFinance();calcDebtFreeDate();checkMilestones();return true;});};
     dl.appendChild(item);
   });
   calcDebtFreeDate();

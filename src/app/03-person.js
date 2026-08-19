@@ -470,10 +470,33 @@ function brotherGuidance(){
       '<div style="font-size:13px;color:var(--tx3);line-height:1.6;margin-bottom:14px">'+(read || ('Here\u2019s what I\u2019d point you to'+(name?', '+name:'')+'.'))+'</div>'+
       '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.25;margin-bottom:8px">'+String(headline).replace(/</g,'&lt;')+'</div>'+
       '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:20px">'+String(sub).replace(/</g,'&lt;')+'</div>'+
-      (act ? '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);'+act.replace(/"/g,'&quot;')+'">Let\u2019s do it</button>' : '')+
+      (act ? '<button class="btn primary" id="bg-do-it" style="margin-bottom:8px">Let\u2019s do it</button>' : '')+
       '<button class="btn" onclick="closeModal(this)" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Not now</button>'+
       '</div>';
     document.body.appendChild(m);
+    // DEAD SINCE v407, ON A FIRST-FIVE-MINUTES SURFACE.
+    //
+    // getNextStep().action used to be a string of executable code ("go('morning')"). v407 changed
+    // every one of them to a plain KEY ('morning') and routed doNextStep() through NEXT_STEP_ACTIONS
+    // \u2014 but this button was left interpolating the value straight into an onclick. So the rendered
+    // handler was `closeModal(this);morning`: the modal closed, which looks like something happened,
+    // then a bare identifier threw ReferenceError and the person went nowhere.
+    //
+    // Both callers are first-session surfaces \u2014 the "Actually good" door's "What's my next step?"
+    // and the companion's "what should I do?" \u2014 so someone in their first five minutes tapped the
+    // one thing offered and the app did nothing but disappear. Dispatch through the same table
+    // doNextStep uses; there is no code in a DOM attribute here any more.
+    try{
+      const _btn = m.querySelector('#bg-do-it');
+      if(_btn) _btn.onclick = function(){
+        try{ if(typeof closeModal==='function') closeModal(_btn); else m.remove(); }catch(_){ }
+        try{
+          const fn = (typeof NEXT_STEP_ACTIONS === 'object') && NEXT_STEP_ACTIONS[act];
+          if(typeof fn === 'function') fn((step && step.actionArg) || '');
+          else if(typeof go === 'function') go('home');   // never leave them nowhere
+        }catch(_){ }
+      };
+    }catch(_){ }
     if(typeof haptic==='function') haptic('tap');
   }catch(_){ }
 }
@@ -730,6 +753,10 @@ function lifeStateBrief(s){
       lines.push('Cycle (self-logged, ESTIMATE only \u2014 never state it as fact, never give fertility, contraception or medical advice): likely '+cy.phase+' phase'+(meaning?' \u2014 '+meaning:'')+'.');
     }
   }catch(_){}
+  try{
+    const fp = (typeof feelingPattern==='function') ? feelingPattern(14) : null;
+    if(fp) lines.push('What keeps bringing them to the app (14d): '+fp.label+' '+fp.count+' of '+fp.total+' times \u2014 this is the recurring feeling, treat it as the pattern, not the exception');
+  }catch(_){ }
   if(f.fights7) lines.push('The fight (7d): '+f.wins7+' wins, '+f.losses7+' slips'+(f.momentsWon7?', came here and turned away '+f.momentsWon7+'x':''));
   // Per-vice honest state — the truth a streak alone can hide. If he's been logging real use, the
   // Brother must MEET that with grace, never congratulate a clean streak that isn't real.
@@ -2163,6 +2190,7 @@ function resetJourneyStart(){
 let obVices=[],hasPartner=false,partnerAnswered=false;
 function toggleChip(el,name){
   el.classList.toggle('on');
+  try{ el.setAttribute('aria-checked', el.classList.contains('on') ? 'true' : 'false'); }catch(_){ }
   if(el.classList.contains('on'))obVices.push(name);
   else obVices=obVices.filter(v=>v!==name);
 }
@@ -2183,12 +2211,23 @@ function fillIdentity(text){
 }
 
 
+// A role="checkbox" that only responds to a mouse is a lie. One delegated listener gives every
+// chip in the app Enter/Space activation without touching 24 inline handlers.
+document.addEventListener('keydown', function(e){
+  if(e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') return;
+  const el = e.target;
+  if(!el || !el.classList || !el.classList.contains('vchip')) return;
+  e.preventDefault();
+  if(typeof el.click === 'function') el.click();
+});
+
 // ─── ONBOARDING: APPS STEP ────────────────────────────────────
 let _selectedApps = [];
 let _hevyTier = null;
 
 function toggleAppChip(el, appId){
   el.classList.toggle('app-on');
+  try{ el.setAttribute('aria-checked', el.classList.contains('app-on') ? 'true' : 'false'); }catch(_){ }
   if(el.classList.contains('app-on')){
     if(!_selectedApps.includes(appId)) _selectedApps.push(appId);
   } else {
@@ -4140,7 +4179,7 @@ function go(name){
     }
   }catch(e){}
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.nb').forEach(b=>{b.classList.remove('active');b.removeAttribute('aria-current');});
   const tab=document.getElementById('tab-'+name);
   if(tab){
     tab.classList.add('active');
@@ -4153,7 +4192,7 @@ function go(name){
   // otherwise its parent hub (e.g. on 'fight', highlight 'grow')
   const navName = TABS.includes(name) ? name : (TAB_PARENT[name] || 'home');
   const navIdx = TABS.indexOf(navName);
-  if(navIdx>=0)document.querySelectorAll('.nb')[navIdx]?.classList.add('active');
+  if(navIdx>=0){const _nb=document.querySelectorAll('.nb')[navIdx]; if(_nb){_nb.classList.add('active'); _nb.setAttribute('aria-current','page');}}
   // Show a "back to hub" bar on sub-pages so users can climb back up easily
   updateHubBackBar(name);
   try{ if(typeof renderCycleSurfaces==='function') renderCycleSurfaces(); }catch(_){}

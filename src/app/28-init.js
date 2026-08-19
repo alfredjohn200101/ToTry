@@ -61,6 +61,7 @@ function reinitNativeReminders(){
     if(!(typeof Notify!=='undefined' && Notify.isNative && Notify.isNative())) return;
     const prefs = _pushPrefs();
     if(prefs && prefs.enabled){ _scheduleNativeReminders(prefs); if(typeof scheduleReachOut==='function') scheduleReachOut(); }
+    if(prefs && prefs.enabled && typeof scheduleBillReminders==='function') scheduleBillReminders();
   }catch(_){}
 }
 

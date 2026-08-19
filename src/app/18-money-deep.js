@@ -322,13 +322,13 @@ function openFormModal(title, subtitle, fields, submitLabel, onSubmit){
     // which silently turned a "write me a few sentences" prompt into a one-line box — the form looked
     // fine and quietly discouraged the very answer it was asking for.
     if(f.type === 'textarea'){
-      return '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.1em">'+f.label+'</div>'+
+      return '<label for="fm-'+f.id+'" style="display:block;font-size:11px;color:var(--tx3);margin-bottom:6px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.1em">'+f.label+'</label>'+
         '<div style="position:relative;margin-bottom:14px">'+
         '<textarea id="fm-'+f.id+'" rows="3" placeholder="'+(f.placeholder||'').replace(/"/g,'&quot;')+'" '+
         'style="width:100%;min-height:74px;resize:vertical;line-height:1.55">'+
         String(f.value==null?'':f.value).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</textarea></div>';
     }
-    return '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.1em">'+f.label+'</div>'+
+    return '<label for="fm-'+f.id+'" style="display:block;font-size:11px;color:var(--tx3);margin-bottom:6px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.1em">'+f.label+'</label>'+
       '<div style="position:relative;margin-bottom:14px">'+pre+
       '<input type="'+(f.type==='date'?'date':'text')+'"'+inMode+' id="fm-'+f.id+'"'+val+' placeholder="'+(f.placeholder||'').replace(/"/g,'&quot;')+'" style="'+pad+'"></div>';
   }).join('');
@@ -336,7 +336,7 @@ function openFormModal(title, subtitle, fields, submitLabel, onSubmit){
     '<div style="font-size:17px;font-weight:500;color:var(--tx);margin-bottom:4px">'+title+'</div>'+
     (subtitle?'<div style="font-size:12px;color:var(--tx3);margin-bottom:16px">'+subtitle+'</div>':'<div style="margin-bottom:8px"></div>')+
     fieldHtml+
-    '<div id="fm-error" style="display:none;color:var(--re);font-size:12px;margin-bottom:10px"></div>'+
+    '<div id="fm-error" role="alert" aria-live="assertive" style="display:none;color:var(--re);font-size:12px;margin-bottom:10px"></div>'+
     '<button class="btn primary" id="fm-submit" style="margin-bottom:8px">'+submitLabel+'</button>'+
     '<button class="btn" onclick="closeModal(this)">Cancel</button></div>';
   document.body.appendChild(m);
@@ -345,7 +345,12 @@ function openFormModal(title, subtitle, fields, submitLabel, onSubmit){
     const vals = getVals();
     const res = onSubmit(vals);
     if(res === true){ m.remove(); }
-    else if(typeof res === 'string'){ const e=document.getElementById('fm-error'); if(e){ e.textContent=res; e.style.display='block'; } }
+    else if(typeof res === 'string'){
+      const e=document.getElementById('fm-error');
+      if(e){ e.textContent=res; e.style.display='block'; }
+      // put the cursor back where the fix has to happen, not left on a button that did nothing
+      try{ const first=document.getElementById('fm-'+fields[0].id); if(first) first.focus(); }catch(_){ }
+    }
   };
   setTimeout(()=>{ const first=document.getElementById('fm-'+fields[0].id); if(first) first.focus(); }, 100);
 }
@@ -687,6 +692,39 @@ function renderSubscriptions(){
 }
 
 // ── BILLS WITH DUE DATES ─────────────────────────────────────
+// A REMINDER NOTHING EVER SET. The bills empty state read "Add ones with due dates to get reminders"
+// and nothing in this codebase ever scheduled one — Notify.schedule exists and is used for the
+// reach-out nudges, but no bill ever reached it. So the promise was made on the screen where a person
+// decides whether to trust the app with a due date, and then quietly not kept.
+//
+// Web browsers cannot fire a background notification, so on web this schedules nothing and says so
+// rather than queueing a phantom (the same trap _sendReachOuts documents at 02-native.js:681).
+function _billNotifId(b){ return 'bill_' + String(b && b.id); }
+function scheduleBillReminders(){
+  try{
+    if(typeof Notify==='undefined' || !Notify.schedule) return 0;
+    if(!(Notify.isNative && Notify.isNative())) return 0;   // web cannot background-fire
+    const list = ls('totry_bills') || [];
+    let n = 0;
+    list.forEach(function(b){
+      if(!b || !b.due) return;
+      Notify.cancel(_billNotifId(b));          // always re-arm from scratch: dates and paid state move
+      if(b.paid) return;
+      // Local midnight, not UTC — `new Date('2026-08-19')` is UTC and east of Greenwich that fires the
+      // reminder on the wrong day, which for a bill is the one day it had to be right.
+      const parts = String(b.due).split('-').map(Number);
+      if(parts.length !== 3 || parts.some(isNaN)) return;
+      const at = new Date(parts[0], parts[1]-1, parts[2], 9, 0, 0, 0);
+      if(at.getTime() <= Date.now() + 60000) return;        // already due or past — a nudge is noise now
+      const amt = Number(b.amount != null ? b.amount : b.amt) || 0;
+      Notify.schedule(_billNotifId(b), 'To Try',
+        (b.name || 'A bill') + ' is due today' + (amt ? (' \u2014 ' + curSym() + amt.toLocaleString()) : '') + '.',
+        at, { route:'money' });
+      n++;
+    });
+    return n;
+  }catch(_){ return 0; }
+}
 function openBillLogger(){
   const m = document.createElement('div');
   m.className = 'modal-bg open';
@@ -714,6 +752,7 @@ function saveBill(){
   ls('totry_bills', list);
   document.querySelector('.modal-bg.open')?.remove();
   renderBills();
+  try{ scheduleBillReminders(); }catch(_){ }
   showToast('Bill tracked', name);
   haptic('success');
 }
@@ -725,12 +764,15 @@ function markBillPaid(id){
   b.paidAt = new Date().toISOString();
   ls('totry_bills', list);
   renderBills();
+  // Nothing is more annoying than being reminded about a bill you already paid.
+  try{ if(typeof Notify!=='undefined' && Notify.cancel) Notify.cancel(_billNotifId(b)); }catch(_){ }
   showToast('Marked paid', b.name);
 }
 function deleteBill(id){
   if(!confirm('Delete this bill?')) return;
   const list = ls('totry_bills') || [];
   ls('totry_bills', list.filter(b => b.id !== id));
+  try{ if(typeof Notify!=='undefined' && Notify.cancel) Notify.cancel('bill_' + String(id)); }catch(_){ }
   renderBills();
 }
 function renderBills(){
@@ -747,7 +789,7 @@ function renderBills(){
   
   const unpaid = cleaned.filter(b => !b.paid).sort((a, b) => new Date(a.due) - new Date(b.due));
   if(!unpaid.length){
-    box.innerHTML = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:14px;font-style:italic">No upcoming bills. Add ones with due dates to get reminders.</p>';
+    box.innerHTML = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:14px;font-style:italic">No upcoming bills. Add ones with due dates and I\u2019ll keep them in front of you.'+((typeof Notify!=='undefined'&&Notify.isNative&&Notify.isNative())?' I\u2019ll remind you the morning each one is due.':'')+'</p>';
     return;
   }
   box.innerHTML = unpaid.slice(0, 8).map(b => {
@@ -957,6 +999,63 @@ function addDebt(){loadF();const n=document.getElementById('dn').value.trim(),t=
   if(!n){ if(typeof showToast==='function') showToast('Who is it owed to?','Give the debt a name so you can tell them apart.'); return; }
   if(!(t>0)){ if(typeof showToast==='function') showToast('How much is owed?','Enter the total amount \u2014 it needs a number above zero.'); return; }
   debts.push({n,t,p,due,interest});['dn','dt','dp','dd','di'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});saveF();renderFinance();}
+// A debt could be created and paid down but never CORRECTED. A typo in the name, a total entered as
+// 1200 instead of 12000, an interest rate learned later, a card that was closed — all of it was
+// permanent, and the freedom date was computed off the wrong number for as long as the app lived.
+function editDebt(idx){
+  loadF();
+  const d = debts[Number(idx)];
+  if(!d){ if(typeof showToast==='function') showToast('That debt is gone','It may have been removed on another device.'); return; }
+  openFormModal('Edit debt', 'Correct the details, or remove it if it no longer applies.',
+    [ {id:'n', label:'Owed to', type:'text', value:d.n||''},
+      {id:'t', label:'Total owed', type:'number', prefix:curSym(), value:(d.t!=null?d.t:'')},
+      {id:'p', label:'Paid so far', type:'number', prefix:curSym(), value:(d.p!=null?d.p:'')},
+      {id:'due', label:'Due date (optional)', type:'date', value:d.due||''},
+      {id:'interest', label:'Interest % per year (optional)', type:'number', value:(d.interest!=null?d.interest:'')} ],
+    'Save changes',
+    function(v){
+      const name = (v.n||'').trim();
+      if(!name) return 'Give the debt a name so you can tell them apart.';
+      const t = parseFloat(v.t);
+      if(!(t>0)) return 'The total owed needs to be a number above zero.';
+      let p = parseFloat(v.p); if(isNaN(p) || p<0) p = 0;
+      // Paid can never exceed the total: that would render a negative remaining and a bar past 100%.
+      if(p > t) p = t;
+      let interest = parseFloat(v.interest); if(isNaN(interest) || interest<0) interest = '';
+      loadF();
+      const cur = debts[Number(idx)];
+      if(!cur) return 'That debt is gone \u2014 close this and try again.';
+      cur.n = name; cur.t = t; cur.p = p; cur.due = v.due||''; cur.interest = interest;
+      saveF();
+      if(typeof syncToCloud==='function') syncToCloud();
+      renderFinance(); try{ calcDebtFreeDate(); }catch(_){ }
+      if(typeof haptic==='function') haptic('success');
+      if(typeof showToast==='function') showToast('Updated', name+' saved.');
+      return true;
+    });
+  // A remove option, inside the same sheet, guarded — this is part of someone's record.
+  try{
+    const m = document.getElementById('form-modal');
+    const box = m && m.querySelector('.modal');
+    if(box){
+      const del = document.createElement('button');
+      del.className='btn';
+      del.style.cssText='margin-top:8px;background:none;border:1px solid var(--re-bd);color:var(--re)';
+      del.textContent='Remove this debt';
+      del.onclick=function(){
+        if(!confirm('Remove '+(d.n||'this debt')+'? Payments you already logged against it stay in your history.')) return;
+        loadF();
+        debts.splice(Number(idx),1);
+        saveF();
+        if(typeof syncToCloud==='function') syncToCloud();
+        m.remove();
+        renderFinance(); try{ calcDebtFreeDate(); }catch(_){ }
+        if(typeof showToast==='function') showToast('Removed', 'That debt is off your list.');
+      };
+      box.appendChild(del);
+    }
+  }catch(_){ }
+}
 // One correct debt ordering for BOTH the list and the payday allocator. Avalanche ranks by interest
 // (highest first, ties → smaller balance), but ONLY when interest is actually known; otherwise it
 // falls back to smallest-balance-first so the "attack this first" star is never on an arbitrary debt.

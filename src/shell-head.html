@@ -98,6 +98,7 @@ button:focus:not(:focus-visible){outline:none}
 .vchips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
 .vchip{padding:8px 16px;border-radius:var(--rp);border:1px solid var(--bd2);background:var(--bg3);color:var(--tx2);font-size:13px;cursor:pointer;font-family:'Outfit',sans-serif;transition:all 0.15s}
 .vchip.on{border-color:var(--re-bd);background:var(--re-bg);color:var(--re)}
+.vchip:focus-visible{outline:2px solid var(--go);outline-offset:2px}
 .ob-quote{font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:var(--go);text-align:center;line-height:1.6;margin-bottom:6px}
 .ob-attr{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:0.1em;text-align:center;margin-bottom:28px}
 .hdr{padding:calc(var(--st) + 14px) 20px 14px;flex-shrink:0;border-bottom:1px solid var(--bd);position:relative;overflow:hidden}
@@ -1278,11 +1279,11 @@ input:focus,textarea:focus,select:focus{
     <div class="ob-desc">If you use one of these, we&apos;ll link to it instead of asking you to switch. Optional — skip if you&apos;d rather start fresh.</div>
     
     <div style="font-family:&apos;DM Mono&apos;,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;margin-top:6px">Training</div>
-    <div class="vchips" style="margin-bottom:8px">
-      <div class="vchip" onclick="toggleAppChip(this,&apos;hevy&apos;)">Hevy</div>
-      <div class="vchip" onclick="toggleAppChip(this,&apos;strong&apos;)">Strong</div>
-      <div class="vchip" id="ob-chip-strava" style="display:none" onclick="toggleAppChip(this,&apos;strava&apos;)">Strava</div>
-      <div class="vchip" onclick="toggleAppChip(this,&apos;applefit&apos;)">Apple Fitness</div>
+    <div role="checkbox" tabindex="0" aria-checked="false" class="vchips" style="margin-bottom:8px">
+      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;hevy&apos;)">Hevy</div>
+      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;strong&apos;)">Strong</div>
+      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" id="ob-chip-strava" style="display:none" onclick="toggleAppChip(this,&apos;strava&apos;)">Strava</div>
+      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;applefit&apos;)">Apple Fitness</div>
     </div>
     
     <!-- Hevy free/pro follow-up — appears when Hevy is selected -->
@@ -1303,9 +1304,9 @@ input:focus,textarea:focus,select:focus{
     </div>
     
     <div class="eyebrow" style="font-size:10px;margin-bottom:8px">Nutrition</div>
-    <div class="vchips" style="margin-bottom:8px">
-      <div class="vchip" onclick="toggleAppChip(this,&apos;myfitnesspal&apos;)">MyFitnessPal</div>
-      <div class="vchip" onclick="toggleAppChip(this,&apos;cronometer&apos;)">Cronometer</div>
+    <div role="checkbox" tabindex="0" aria-checked="false" class="vchips" style="margin-bottom:8px">
+      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;myfitnesspal&apos;)">MyFitnessPal</div>
+      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;cronometer&apos;)">Cronometer</div>
     </div>
     <!-- Nutrition CSV note — appears when a food app is selected -->
     <div id="ob-food-followup" style="display:none;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:14px">
@@ -1315,9 +1316,9 @@ input:focus,textarea:focus,select:focus{
     </div>
     
     <div class="eyebrow" style="font-size:10px;margin-bottom:8px">Health</div>
-    <div class="vchips" style="margin-bottom:14px">
-      <div class="vchip" onclick="toggleAppChip(this,&apos;applehealth&apos;)">Apple Health</div>
-      <div class="vchip" id="ob-chip-googlehealth" style="display:none" onclick="toggleAppChip(this,&apos;googlehealth&apos;)">Google Health</div>
+    <div role="checkbox" tabindex="0" aria-checked="false" class="vchips" style="margin-bottom:14px">
+      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleAppChip(this,&apos;applehealth&apos;)">Apple Health</div>
+      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" id="ob-chip-googlehealth" style="display:none" onclick="toggleAppChip(this,&apos;googlehealth&apos;)">Google Health</div>
     </div>
     
     <div style="display:flex;flex-direction:column;gap:8px">
@@ -1411,19 +1412,19 @@ input:focus,textarea:focus,select:focus{
   <div class="ob-step" id="ob5">
     <div class="ob-title">What are you fighting?</div>
     <div class="ob-desc">Select everything that applies. No judgement. The app helps you become who you said you're becoming — free from these.</div>
-    <div class="vchips" id="vchip-wrap">
-      <div class="vchip" onclick="toggleChip(this,'Lust / PMO')">Lust / PMO</div>
-      <div class="vchip" onclick="toggleChip(this,'Weed')">Weed</div>
-      <div class="vchip" onclick="toggleChip(this,'Vaping')">Vaping</div>
-      <div class="vchip" onclick="toggleChip(this,'Gambling')">Gambling</div>
-      <div class="vchip" onclick="toggleChip(this,'Alcohol')">Alcohol</div>
-      <div class="vchip" onclick="toggleChip(this,'Food binging')">Food binging</div>
-      <div class="vchip" onclick="toggleChip(this,'Anger')">Anger</div>
-      <div class="vchip" onclick="toggleChip(this,'Overthinking')">Overthinking</div>
-      <div class="vchip" onclick="toggleChip(this,'Social media')">Social media</div>
-      <div class="vchip" onclick="toggleChip(this,'Laziness')">Laziness</div>
-      <div class="vchip" onclick="toggleChip(this,'Overspending')">Overspending</div>
-      <div class="vchip" onclick="toggleChip(this,'Loneliness')">Loneliness</div>
+    <div role="checkbox" tabindex="0" aria-checked="false" class="vchips" id="vchip-wrap">
+      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleChip(this,'Lust / PMO')">Lust / PMO</div>
+      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleChip(this,'Weed')">Weed</div>
+      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleChip(this,'Vaping')">Vaping</div>
+      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleChip(this,'Gambling')">Gambling</div>
+      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleChip(this,'Alcohol')">Alcohol</div>
+      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleChip(this,'Food binging')">Food binging</div>
+      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleChip(this,'Anger')">Anger</div>
+      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleChip(this,'Overthinking')">Overthinking</div>
+      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleChip(this,'Social media')">Social media</div>
+      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleChip(this,'Laziness')">Laziness</div>
+      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleChip(this,'Overspending')">Overspending</div>
+      <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleChip(this,'Loneliness')">Loneliness</div>
     </div>
     <input type="text" id="ob-custom" placeholder="Add your own..." style="margin-bottom:14px">
     <div style="border-top:1px solid var(--bd);padding-top:14px;margin-bottom:16px">
@@ -1475,8 +1476,8 @@ input:focus,textarea:focus,select:focus{
     </div>
   </div>
 </div>
-<nav class="nav nav-5">
-  <button class="nb active" onclick="go('home')"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg><span>Today</span></button>
+<nav class="nav nav-5" aria-label="Main">
+  <button class="nb active" aria-current="page" onclick="go('home')"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg><span>Today</span></button>
   <button class="nb" onclick="go('fight')"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><span>Fight</span></button>
   <button class="nb" onclick="go('grow')"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 22c0-6 0-10 4-13M12 22c0-6 0-10-4-13"/><circle cx="12" cy="5" r="2.5"/></svg><span>Grow</span></button>
   <button class="nb" onclick="go('money')"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="13" rx="2.5"/><path d="M2.5 10h19"/><circle cx="17" cy="14.5" r="1.4"/></svg><span>Money</span></button>
@@ -2088,47 +2089,47 @@ input:focus,textarea:focus,select:focus{
     </div>
     <div class="ci-row-v2">
       <div class="ci-label-row"><span class="ci-icon">&#x1f4aa;</span><span class="ci-label">Body</span><span class="ci-val" id="cv-physical">-</span></div>
-      <div class="ci-dot-row" data-target="physical">
-        <button class="ci-dot" data-val="1" onclick="setCheckin('physical',1)">1</button>
-        <button class="ci-dot" data-val="2" onclick="setCheckin('physical',2)">2</button>
-        <button class="ci-dot" data-val="3" onclick="setCheckin('physical',3)">3</button>
-        <button class="ci-dot" data-val="4" onclick="setCheckin('physical',4)">4</button>
-        <button class="ci-dot" data-val="5" onclick="setCheckin('physical',5)">5</button>
-        <button class="ci-dot" data-val="6" onclick="setCheckin('physical',6)">6</button>
-        <button class="ci-dot" data-val="7" onclick="setCheckin('physical',7)">7</button>
-        <button class="ci-dot" data-val="8" onclick="setCheckin('physical',8)">8</button>
-        <button class="ci-dot" data-val="9" onclick="setCheckin('physical',9)">9</button>
-        <button class="ci-dot" data-val="10" onclick="setCheckin('physical',10)">10</button>
+      <div class="ci-dot-row" role="radiogroup" aria-label="Body — 1 (low) to 10 (high)" data-target="physical">
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Body 1 out of 10" data-val="1" onclick="setCheckin('physical',1)">1</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Body 2 out of 10" data-val="2" onclick="setCheckin('physical',2)">2</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Body 3 out of 10" data-val="3" onclick="setCheckin('physical',3)">3</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Body 4 out of 10" data-val="4" onclick="setCheckin('physical',4)">4</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Body 5 out of 10" data-val="5" onclick="setCheckin('physical',5)">5</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Body 6 out of 10" data-val="6" onclick="setCheckin('physical',6)">6</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Body 7 out of 10" data-val="7" onclick="setCheckin('physical',7)">7</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Body 8 out of 10" data-val="8" onclick="setCheckin('physical',8)">8</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Body 9 out of 10" data-val="9" onclick="setCheckin('physical',9)">9</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Body 10 out of 10" data-val="10" onclick="setCheckin('physical',10)">10</button>
       </div>
     </div>
     <div class="ci-row-v2">
       <div class="ci-label-row"><span class="ci-icon">&#x1f9e0;</span><span class="ci-label">Heart</span><span class="ci-val" id="cv-emotional">-</span></div>
-      <div class="ci-dot-row" data-target="emotional">
-        <button class="ci-dot" data-val="1" onclick="setCheckin('emotional',1)">1</button>
-        <button class="ci-dot" data-val="2" onclick="setCheckin('emotional',2)">2</button>
-        <button class="ci-dot" data-val="3" onclick="setCheckin('emotional',3)">3</button>
-        <button class="ci-dot" data-val="4" onclick="setCheckin('emotional',4)">4</button>
-        <button class="ci-dot" data-val="5" onclick="setCheckin('emotional',5)">5</button>
-        <button class="ci-dot" data-val="6" onclick="setCheckin('emotional',6)">6</button>
-        <button class="ci-dot" data-val="7" onclick="setCheckin('emotional',7)">7</button>
-        <button class="ci-dot" data-val="8" onclick="setCheckin('emotional',8)">8</button>
-        <button class="ci-dot" data-val="9" onclick="setCheckin('emotional',9)">9</button>
-        <button class="ci-dot" data-val="10" onclick="setCheckin('emotional',10)">10</button>
+      <div class="ci-dot-row" role="radiogroup" aria-label="Mind — 1 (low) to 10 (high)" data-target="emotional">
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Mind 1 out of 10" data-val="1" onclick="setCheckin('emotional',1)">1</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Mind 2 out of 10" data-val="2" onclick="setCheckin('emotional',2)">2</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Mind 3 out of 10" data-val="3" onclick="setCheckin('emotional',3)">3</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Mind 4 out of 10" data-val="4" onclick="setCheckin('emotional',4)">4</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Mind 5 out of 10" data-val="5" onclick="setCheckin('emotional',5)">5</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Mind 6 out of 10" data-val="6" onclick="setCheckin('emotional',6)">6</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Mind 7 out of 10" data-val="7" onclick="setCheckin('emotional',7)">7</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Mind 8 out of 10" data-val="8" onclick="setCheckin('emotional',8)">8</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Mind 9 out of 10" data-val="9" onclick="setCheckin('emotional',9)">9</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Mind 10 out of 10" data-val="10" onclick="setCheckin('emotional',10)">10</button>
       </div>
     </div>
     <div class="ci-row-v2">
       <div class="ci-label-row"><span class="ci-icon">&#x1f54a;&#xfe0f;</span><span class="ci-label">Spirit</span><span class="ci-val" id="cv-spiritual">-</span></div>
-      <div class="ci-dot-row" data-target="spiritual">
-        <button class="ci-dot" data-val="1" onclick="setCheckin('spiritual',1)">1</button>
-        <button class="ci-dot" data-val="2" onclick="setCheckin('spiritual',2)">2</button>
-        <button class="ci-dot" data-val="3" onclick="setCheckin('spiritual',3)">3</button>
-        <button class="ci-dot" data-val="4" onclick="setCheckin('spiritual',4)">4</button>
-        <button class="ci-dot" data-val="5" onclick="setCheckin('spiritual',5)">5</button>
-        <button class="ci-dot" data-val="6" onclick="setCheckin('spiritual',6)">6</button>
-        <button class="ci-dot" data-val="7" onclick="setCheckin('spiritual',7)">7</button>
-        <button class="ci-dot" data-val="8" onclick="setCheckin('spiritual',8)">8</button>
-        <button class="ci-dot" data-val="9" onclick="setCheckin('spiritual',9)">9</button>
-        <button class="ci-dot" data-val="10" onclick="setCheckin('spiritual',10)">10</button>
+      <div class="ci-dot-row" role="radiogroup" aria-label="Spirit — 1 (low) to 10 (high)" data-target="spiritual">
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Spirit 1 out of 10" data-val="1" onclick="setCheckin('spiritual',1)">1</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Spirit 2 out of 10" data-val="2" onclick="setCheckin('spiritual',2)">2</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Spirit 3 out of 10" data-val="3" onclick="setCheckin('spiritual',3)">3</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Spirit 4 out of 10" data-val="4" onclick="setCheckin('spiritual',4)">4</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Spirit 5 out of 10" data-val="5" onclick="setCheckin('spiritual',5)">5</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Spirit 6 out of 10" data-val="6" onclick="setCheckin('spiritual',6)">6</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Spirit 7 out of 10" data-val="7" onclick="setCheckin('spiritual',7)">7</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Spirit 8 out of 10" data-val="8" onclick="setCheckin('spiritual',8)">8</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Spirit 9 out of 10" data-val="9" onclick="setCheckin('spiritual',9)">9</button>
+        <button class="ci-dot" role="radio" aria-checked="false" aria-label="Spirit 10 out of 10" data-val="10" onclick="setCheckin('spiritual',10)">10</button>
       </div>
     </div>
     <button class="btn primary ci-save" onclick="saveCheckin()">Save my check-in</button>

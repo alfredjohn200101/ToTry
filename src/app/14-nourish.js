@@ -1456,6 +1456,11 @@ async function lookupBarcode(barcode){
   try{ if(typeof window !== 'undefined') window.__recipeScan = false; }catch(_){ }
   barcode = (barcode || '').trim();
   if(!barcode || !/^\d{6,14}$/.test(barcode)){
+    // The scanner STAYS OPEN here — this is a misread, and the person simply tries again. So put the
+    // mode back: clearing it up front protects against a failed lookup leaking into a LATER scan, but
+    // this path is the same scan continuing, and stripping it would drop their next attempt into the
+    // food diary instead of the recipe they are still building.
+    try{ if(typeof window !== 'undefined') window.__recipeScan = _recipeMode; }catch(_){ }
     showToast('Invalid barcode', 'Barcode should be 6-14 digits.');
     return;
   }
@@ -1850,17 +1855,18 @@ function repeatYesterdayMeals(){ repeatMealsFrom(1, (typeof nutIsToday==='functi
 // same weekday that actually has a log.
 function repeatLastWeekday(){
   const log = ls('totry_nutlog') || {};
-  const todayDow = new Date().getDay();
-  for(let back=7; back<=7; back++){
-    const d = new Date(Date.now() - back*86400000);
-    const key = d.toLocaleDateString('en-AU');
-    if(log[key] && log[key].length){
-      const dow = d.toLocaleDateString('en-AU',{weekday:'long'});
-      repeatMealsFrom(back, 'last ' + dow);
-      return;
-    }
-  }
-  showToast('Nothing last week', 'No food logged on this day last week.');
+  // COUNTS ONE DAY, COPIES ANOTHER. openRepeatDay measures this button against the day being VIEWED
+  // (nutRelKey(7)) and repeatMealsFrom copies from the viewed day too — but this guard was computed
+  // from Date.now(). Fill in last Saturday and the row reads "This Saturday, last week — 4 items to
+  // copy"; tap it and, if today-7 happens to be empty, you get "Nothing last week" instead. When
+  // today-7 was NOT empty it went through, but named the wrong weekday in the confirmation. The loop
+  // ran exactly once (back=7 to 7) and todayDow was never read, so neither did what they looked like.
+  const d = (typeof nutViewDate==='function') ? nutViewDate() : new Date();
+  d.setDate(d.getDate() - 7);
+  const key = (typeof nutRelKey==='function') ? nutRelKey(7) : d.toLocaleDateString('en-AU');
+  const dow = d.toLocaleDateString('en-AU',{weekday:'long'});
+  if(log[key] && log[key].length){ repeatMealsFrom(7, 'last ' + dow); return; }
+  showToast('Nothing that ' + dow, 'No food logged on that day last week.');
 }
 function repeatMealsFrom(daysAgo, label){
   const log = ls('totry_nutlog') || {};
@@ -2412,6 +2418,12 @@ function renderSavedMeals(){
 // different numbers, and the diary line said "1 serving" so nothing on screen revealed which you got.
 // Wrong numbers flow straight into the day total, the rings, the weekly average and adaptive TDEE.
 function _quickServing(food){
+  try{
+    if(food && typeof getFoodOverride==='function' && getFoodOverride(food) && typeof applyFoodOverride==='function'){
+      // shallow copy: the caller's object (a search result, a recents row) must not be rewritten
+      food = applyFoodOverride(Object.assign({}, food, {servings: (food.servings||[]).map(x=>Object.assign({}, x))}));
+    }
+  }catch(_){ }
   const s = (food && Array.isArray(food.servings) && food.servings.length) ? food.servings[0] : null;
   if(s && s.cal != null){
     return { label: s.name || (s.gramsEquiv ? s.gramsEquiv+'g' : '1 serving'),

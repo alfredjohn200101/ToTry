@@ -1243,7 +1243,7 @@ H.section('promises the code must keep');
   //    URI becomes capacitor://localhost/, which a Google web client rejects.
   H.ok(/id !== 'googlehealth' \|\| !\(typeof isNativeApp==='function' && isNativeApp\(\)\)/.test(H.html),
     'the app picker hides Google Health in the native build');
-  const ghChip = (H.html.match(/<div class="vchip" id="ob-chip-googlehealth"[^>]*>/) || [''])[0];
+  const ghChip = (H.html.match(/<div[^>]*id="ob-chip-googlehealth"[^>]*>/) || [''])[0];
   H.ok(/display:none/.test(ghChip), 'the onboarding Google Health chip fails closed (hidden until proven safe)');
   H.ok(/ob-chip-googlehealth'\);\s*if\(gh && !\(typeof isNativeApp/.test(H.html), 'and is revealed only off-native');
 }
@@ -3291,7 +3291,11 @@ H.section('dead code that was one caller away from confusing someone');
 
   // The SOS "I gave in" button wrote nothing to totry_fight_log, so the most honest thing a person
   // does was invisible to trigger analysis, the risk-window engine and every weekly count.
-  H.ok(/won: false,[\s\S]{0,200}?__sosIntensity/.test(code3), 'a live relapse is mirrored into the fight log');
+  const ll = fnBodyOf(H.html, 'logLoss');
+  H.ok(/totry_fight_log/.test(ll), 'a live relapse is mirrored into the fight log');
+  H.ok(/won: false/.test(ll), 'and recorded as a loss');
+  H.ok(!/__sosIntensity/.test(ll),
+       'without borrowing the quick-log globals — this path never captures them, so they would be a previous answer');
 
   // Three urge doors raised v.w without v.total — the denominator of "8 of 10 battles won" — so
   // beating urges pushed the ratio past 100%.
@@ -3715,6 +3719,95 @@ function fnBodyOf(code, name){
   const noScript = H.html.replace(/<script(?![^>]*\bsrc=)[^>]*>[\s\S]*?<\/script>/g, '');
   const opened = (noScript.match(/<div/g) || []).length, closed = (noScript.match(/<\/div>/g) || []).length;
   H.eq(opened - closed, 0, `every <div> is closed (${opened} open, ${closed} closed)`);
+}
+
+// ── the debt list: the star, the editor, and the fuel plan's gentle mode ──────────────────────
+{
+  H.section('a debt you can correct, and a star on the fight not the trophy');
+
+  // 1. THE STAR. Snowball sorts by smallest remaining first, so a CLEARED debt (remaining 0) sorts
+  //    ahead of everything. `si===0` therefore put "attack this first" on the debt already beaten.
+  const sortSrc = H.extractFn('_sortDebtsByStrategy');
+  const _sortDebtsByStrategy = eval('(' + sortSrc.replace(/^function\s+\w+/, 'function') + ')');
+  const debts = [{n:'Card',t:500,p:500},{n:'Loan',t:9000,p:1000},{n:'Family',t:2000,p:0}];
+  const sorted = _sortDebtsByStrategy(debts.map((d,i)=>({...d,idx:i})), 'snowball');
+  H.eq(sorted[0].n, 'Card', 'a cleared debt does sort first under snowball (this is why the bug existed)');
+  const starIdx = sorted.findIndex(d => (d.t - d.p) > 0.005);
+  H.eq(sorted[starIdx].n, 'Family', 'the star lands on the smallest debt still owed, not a paid-off one');
+  H.ok(/const starIdx = sorted\.findIndex\(d => \(d\.t - d\.p\) > 0\.005\)/.test(H.html),
+    'and the shipped list computes it that way, not off index 0');
+  H.ok(!/si===0\?' \\u2b50'/.test(H.html), 'the old index-0 star is gone from the bundle');
+
+  // 2. THE EDITOR. A typo'd total drove the freedom date forever; there was no way to fix or remove.
+  H.ok(/function editDebt\(idx\)/.test(H.html), 'debts can be edited');
+  H.ok(/onclick="event\.stopPropagation\(\);editDebt\(/.test(H.html),
+    'and the row carries a control that reaches it without also logging a payment');
+  const ed = H.extractFn('editDebt');
+  H.ok(/Remove this debt/.test(ed), 'the editor offers removal');
+  H.ok(/confirm\(/.test(ed), 'guarded by a confirm — it is part of their record');
+  H.ok(/if\(p > t\) p = t;/.test(ed), 'paid can never exceed the total (no negative remaining, no bar past 100%)');
+
+  // 3. GENTLE MODE. "Numbers off" is honoured in Nourish; the Fuel Plan is the same tab and printed
+  //    a calorie figure on every meal, a macro strip, a target gap and a running day total.
+  H.section('numbers off means numbers off — in the fuel plan too');
+  const rp = H.extractFn('_fuelRenderPlan');
+  H.ok(/const _gentle = \(typeof nutGentle==='function' && nutGentle\(\)\)/.test(rp),
+    'the plan renderer reads the gentle-mode flag');
+  H.ok(/_gentle\?'':\(R\(mm\.cal\|\|0\)/.test(rp), 'per-meal macros are gated');
+  H.ok(/const macroRow = _gentle \? '' :/.test(rp), 'the day macro strip is gated');
+  H.ok(/const targetHtml = \(tgtCal && !_gentle\) \?/.test(rp), 'the target gap line is gated');
+  H.ok(/_gentle \? 'What you ate today counts/.test(rp), 'the logged-today row loses its numbers but keeps the door');
+  const fx = H.extractFn('_fuelFlexToday');
+  H.ok(/\(tgt&&!_gentle\)/.test(fx), 'and the eating-out sheet does not quote a calorie budget');
+}
+
+// ── promises the app has to keep ─────────────────────────────────────────────────────────────
+{
+  H.section('a store that is written must be read; a promise made must be scheduled');
+
+  // 1. totry_feelings was written on EVERY tap of the Feeling Door and read by nothing at all.
+  const fp = H.extractFn('feelingPattern'), fc = H.extractFn('feelingCount');
+  const ls_ = (() => { const st = {}; return (k, v) => { if (v === undefined) return st[k]; st[k] = v; }; })();
+  const mk = src => eval('(' + src.replace(/^function\s+\w+/, 'function') + ')');
+  global.ls = ls_; global._FEEL_LABELS = { flat: 'flat', restless: 'restless' };
+  const feelingPattern = mk(fp), feelingCount = mk(fc);
+  const now = Date.now();
+  ls_('totry_feelings', [
+    { id: 'flat', ts: now - 1 * 3600e3 }, { id: 'flat', ts: now - 30 * 3600e3 },
+    { id: 'flat', ts: now - 60 * 3600e3 }, { id: 'restless', ts: now - 90 * 3600e3 },
+    { id: 'flat', ts: now - 40 * 24 * 3600e3 }   // outside the window
+  ]);
+  H.eq(feelingCount('flat', 7), 3, 'the door can count how often this feeling brought them here');
+  H.eq(feelingPattern(7).id, 'flat', 'and the recurring feeling is identified');
+  H.eq(feelingPattern(7).total, 4, 'over the right window — older entries are not counted');
+  H.eq(feelingPattern(1), null, 'under three entries it says nothing rather than inventing a pattern');
+  H.ok(/_recur\+/.test(H.html), 'the move sheet renders the recurrence line');
+  H.ok(/What keeps bringing them to the app \(14d\)/.test(H.html), 'and the whole-person brief carries it to the voice');
+
+  // 2. Bills said "add due dates to get reminders" and nothing was ever scheduled.
+  const sb = H.extractFn('scheduleBillReminders');
+  H.ok(/Notify\.schedule\(_billNotifId\(b\)/.test(sb), 'bills reach Notify.schedule');
+  H.ok(/if\(!\(Notify\.isNative && Notify\.isNative\(\)\)\) return 0;/.test(sb),
+    'and web schedules nothing rather than queueing a phantom it cannot fire');
+  H.ok(/if\(b\.paid\) return;/.test(sb), 'a paid bill is not reminded about');
+  H.ok(/if\(at\.getTime\(\) <= Date\.now\(\) \+ 60000\) return;/.test(sb), 'nor an already-due one');
+  H.ok(/new Date\(parts\[0\], parts\[1\]-1, parts\[2\], 9, 0, 0, 0\)/.test(sb),
+    'built at LOCAL midnight — a UTC date fires a bill reminder on the wrong day east of Greenwich');
+  H.ok(/Notify\.cancel\(_billNotifId\(b\)\)/.test(sb), 'and re-arms from scratch each pass');
+  H.ok(/Notify\.cancel\(_billNotifId\(b\)\)/.test(H.extractFn('markBillPaid')), 'paying one cancels its reminder');
+  H.ok(/scheduleBillReminders\(\)/.test(H.extractFn('reinitNativeReminders')), 'and they re-arm on launch');
+
+  // 3. A correction the person made must count on the FAST path too, not only the slow one.
+  H.section('a food you corrected stays corrected');
+  const qs = H.extractFn('_quickServing');
+  H.ok(/applyFoodOverride/.test(qs),
+    'the one-tap quick-log paths apply the saved correction (they read the raw database figures before)');
+  H.ok(/Object\.assign\(\{\}, food/.test(qs), 'on a copy — the caller\u2019s search result is not rewritten');
+
+  // 4. The repeat-a-day menu must measure the day it will actually copy.
+  const rlw = H.extractFn('repeatLastWeekday');
+  H.ok(/nutRelKey\(7\)/.test(rlw), 'repeatLastWeekday reads the day being VIEWED, like the menu that counts it');
+  H.ok(!/Date\.now\(\) - back/.test(rlw), 'not a day measured from today while you fill in a past one');
 }
 
 // ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────
