@@ -3604,14 +3604,11 @@ async function exportFoodCSV(){
 }
 
 
-function saveESVKey(){
-  const key=document.getElementById('esv-key-input')?.value.trim();
-  if(!key)return;
-  ls('totry_esv_key',key);
-  document.querySelector('.modal-bg.open')?.remove();
-  showToast('ESV key saved','ESV Bible will now load in the Scripture tab.');
-}
-
+// saveESVKey() was removed here. It read #esv-key-input — an element that exists nowhere — and its
+// only caller, showESVInstructions(), was deleted with 30 other dead functions at v477. So it was a
+// save button for a form the app no longer has. The stored key it wrote, totry_esv_key, is still READ
+// as a fallback in 00-boot (a legacy path for anyone who set one before the key-proxy existed), which
+// is why the read stays: removing that would silently drop scripture for those people.
 function saveAllTargets(){
   // Calorie and protein goals deliberately live in Nourish (and the TDEE calculator) — this card's
   // own copy says so. The reads for #settings-cal-goal / #settings-pro-goal were left behind when
