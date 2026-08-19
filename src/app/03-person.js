@@ -2078,6 +2078,9 @@ function getDayCount(){
   if(!anchorStr) return 1;
   const anchor = new Date(anchorStr);
   if(isNaN(anchor)) return 1;
+  // A bare number parses as a valid Date — see the note below — so bound it as well as parse it.
+  const _EARLIEST = new Date('2024-01-01T00:00:00Z').getTime();
+  if(anchor.getTime() < _EARLIEST || anchor.getTime() > Date.now() + 86400000) return 1;
   // MIDNIGHT TO MIDNIGHT, not "how many 24-hour blocks have elapsed". `totry_start` is a full
   // timestamp: sign up at 9pm and at 9am the next calendar day only 12 hours have passed, so the
   // floor gave 0 and the counter said "Day 1" for a second time. Everything gated on a day number

@@ -606,7 +606,7 @@ function applyTheme(theme){
     root.style.setProperty('--bg3', '#EBE4D2');
     root.style.setProperty('--tx', '#1A1A1F');
     root.style.setProperty('--tx2', '#3D3D45');
-    root.style.setProperty('--tx3', '#7A7A82');
+    root.style.setProperty('--tx3', '#65656C');   // 4.56:1 on the worst light bg — see the note
     root.style.setProperty('--bd', '#D9D2BE');
     root.style.setProperty('--bd2', '#C4BBA0');
   } else {

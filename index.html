@@ -32,7 +32,7 @@
   --bd:rgba(255,255,255,0.07);--bd2:rgba(255,255,255,0.13);
   --tx:#F2EFE8;--tx2:#9A9490;--tx3:#85827B;  /* --tx3 was #5C5A55 = 2.84:1 on --bg, well under WCAG AA's 4.5:1 for normal text, and it carries a LOT of small copy: 'Today's habits' at 9px in 14 places, 'Tap to refresh' at 8px, whole 12-13px paragraphs. Measured, not guessed. Now 5.10:1 on the page background and 4.52:1 on the LIGHTEST card background (--bg3), which is the one that matters: v430 set this to #817E77 by measuring against --bg alone and left every card at 4.28. Deliberately above the 4.5 threshold rather than exactly on it, since antialiasing and real screens eat the margin. The hierarchy is intact: --tx 17.0 > --tx2 6.5 > --tx3 4.8, so tertiary text still reads as quieter, just legible. Warm hue kept by scaling the original channel ratio rather than picking a neutral grey. */
   --go:#C8A96E;--go-bg:rgba(200,169,110,0.08);--go-bd:rgba(200,169,110,0.28);
-  --re:#C85A4E;--re-bg:rgba(200,90,78,0.10);--re-bd:rgba(200,90,78,0.30);
+  --re:#D25F52;--re-bg:rgba(210,95,82,0.10);--re-bd:rgba(210,95,82,0.30);
   --gr:#5BB97D;--gr-bg:rgba(91,185,125,0.10);--gr-bd:rgba(91,185,125,0.28);
   --bl:#6B97D6;--bl-bg:rgba(107,151,214,0.10);--bl-bd:rgba(107,151,214,0.28);
   --pu:#9B7EC0;--pu-bg:rgba(155,126,192,0.10);--pu-bd:rgba(155,126,192,0.28);
@@ -4891,7 +4891,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v514';
+const APP_VERSION = 'v515';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -9372,6 +9372,9 @@ function getDayCount(){
   if(!anchorStr) return 1;
   const anchor = new Date(anchorStr);
   if(isNaN(anchor)) return 1;
+  // A bare number parses as a valid Date — see the note below — so bound it as well as parse it.
+  const _EARLIEST = new Date('2024-01-01T00:00:00Z').getTime();
+  if(anchor.getTime() < _EARLIEST || anchor.getTime() > Date.now() + 86400000) return 1;
   // MIDNIGHT TO MIDNIGHT, not "how many 24-hour blocks have elapsed". `totry_start` is a full
   // timestamp: sign up at 9pm and at 9am the next calendar day only 12 hours have passed, so the
   // floor gave 0 and the counter said "Day 1" for a second time. Everything gated on a day number
@@ -38456,7 +38459,7 @@ function applyTheme(theme){
     root.style.setProperty('--bg3', '#EBE4D2');
     root.style.setProperty('--tx', '#1A1A1F');
     root.style.setProperty('--tx2', '#3D3D45');
-    root.style.setProperty('--tx3', '#7A7A82');
+    root.style.setProperty('--tx3', '#65656C');   // 4.56:1 on the worst light bg — see the note
     root.style.setProperty('--bd', '#D9D2BE');
     root.style.setProperty('--bd2', '#C4BBA0');
   } else {

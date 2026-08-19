@@ -4084,6 +4084,82 @@ function fnBodyOf(code, name){
   H.ok(!/Plugins\?\.PushNotifications/.test(H.html), 'no client reference is left behind');
 }
 
+// ── the day counter cannot read as broken ────────────────────────────────────────────────────
+{
+  H.section('a corrupt anchor is Day 1, not Day 20685');
+
+  // new Date(12345) is 1 Jan 1970 — a VALID Date, so the isNaN guard passed and the first screen a
+  // person sees read "Day 20685". repairJourneyStart() can produce exactly that: its take() helper
+  // runs new Date(ts).getTime() over every timestamp in storage and several stores keep ts as epoch
+  // milliseconds, so one stray small number from a truncated sync or a legacy row anchors 1970.
+  const src = H.extractFn('getDayCount');
+  const getDayCount = eval('(' + src.replace(/^function\s+\w+/, 'function') + ')');
+  const store = {};
+  global.ls = (k, v) => { if (v === undefined) return store[k]; store[k] = v; };
+  const ago = d => new Date(Date.now() - d * 864e5).toISOString();
+
+  store.totry_start = 12345; store.totry_journey_start = null;
+  H.eq(getDayCount(), 1, 'a bare number anchors nothing — it used to give 20685');
+  store.totry_start = '1970-01-01T00:00:00Z';
+  H.eq(getDayCount(), 1, 'nor does an epoch date');
+  store.totry_start = new Date(Date.now() + 30 * 864e5).toISOString();
+  H.eq(getDayCount(), 1, 'nor a start in the future');
+  store.totry_start = 'not-a-date';
+  H.eq(getDayCount(), 1, 'nor an unparseable string');
+
+  // And a real long journey is untouched — the bound must not cost anyone their actual day count.
+  store.totry_start = ago(365);
+  H.eq(getDayCount(), 366, 'a genuine year still reads 366');
+  store.totry_start = ago(0);
+  H.eq(getDayCount(), 1, 'and today is Day 1');
+  H.ok(/_EARLIEST/.test(src), 'the bound is explicit in the source, not incidental');
+}
+
+// ── contrast, computed rather than eyeballed ─────────────────────────────────────────────────
+{
+  H.section('every text colour clears WCAG AA in BOTH themes');
+
+  // Measured 19 Aug 2026: dark --re was 4.44:1 on --bg2 and 4.15:1 on --bg3, and light --tx3 was
+  // 3.78 / 4.26 / 3.36 on the three backgrounds — all under the 4.5:1 floor for body text. --re
+  // carries warning and relapse copy; --tx3 carries helper lines and timestamps. Someone who chooses
+  // the light theme is often the person who needs the contrast most. Both were nudged one step, hue
+  // preserved. This recomputes the ratios rather than pinning the hex values, so a future palette
+  // change is free as long as it stays readable.
+  const fs = require('fs'), path = require('path');
+  const root = path.join(__dirname, '..');
+  const head = fs.readFileSync(path.join(root, 'src/shell-head.html'), 'utf8');
+  const rootBlock = (head.match(/:root\{([^}]*)\}/) || [])[1] || '';
+  const tok = n => { const m = rootBlock.match(new RegExp('--' + n + ':\\s*([^;]+)')); return m ? m[1].trim() : null; };
+  const settings = fs.readFileSync(path.join(root, 'src/app/27-settings.js'), 'utf8');
+  const lightBlock = settings.slice(settings.indexOf("if(theme === 'light')"),
+                                    settings.indexOf('} else {', settings.indexOf("if(theme === 'light')")));
+  const light = {};
+  for (const m of lightBlock.matchAll(/setProperty\('--(\w+)',\s*'(#[0-9A-Fa-f]{3,8})'\)/g)) light[m[1]] = m[2];
+
+  const rgb = h => { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join('');
+                     return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); };
+  const lum = c => { const [r, g, b] = rgb(c).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+                     return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  const ratio = (a, b) => { const L1 = lum(a), L2 = lum(b); return (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05); };
+
+  const dark = {};
+  for (const n of ['bg', 'bg2', 'bg3', 'tx', 'tx2', 'tx3', 'go', 'gr', 're']) dark[n] = tok(n);
+  H.ok(dark.tx && dark.bg && light.tx3 && light.bg, 'both palettes were found and parsed');
+
+  let checked = 0;
+  for (const [themeName, t] of [['dark', dark], ['light', light]]) {
+    for (const fg of ['tx', 'tx2', 'tx3', 'go', 'gr', 're']) {
+      for (const bg of ['bg', 'bg2', 'bg3']) {
+        if (!t[fg] || !t[bg] || !/^#/.test(t[fg]) || !/^#/.test(t[bg])) continue;
+        const r = ratio(t[fg], t[bg]);
+        checked++;
+        H.ok(r >= 4.5, `${themeName}: --${fg} on --${bg} is ${r.toFixed(2)}:1 (needs 4.5:1) — ${t[fg]} on ${t[bg]}`);
+      }
+    }
+  }
+  H.ok(checked >= 20, `and enough pairs were actually measured (${checked})`);
+}
+
 // ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────
 // Every test in this file reads H.html, which reads index.html — the ASSEMBLED file. So a change
 // made directly to index.html passes everything here and then vanishes the next time anyone runs
