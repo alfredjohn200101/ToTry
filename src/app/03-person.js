@@ -4252,7 +4252,7 @@ function go(name){
   if(name==='soul'){ if(typeof applyFaithLabels==='function') applyFaithLabels(); if(typeof highlightSoulByTime==='function') highlightSoulByTime(); if(typeof renderFaithDoor==='function') renderFaithDoor(); }
   if(name==='reflect'){initEveningTab();initReviewTab();}
   
-  if(name==='nourish'){renderNutritionLog();if(typeof prefillNutGoals==='function')prefillNutGoals();}
+  if(name==='nourish'){renderNutritionLog();if(typeof prefillNutGoals==='function')prefillNutGoals();if(typeof renderFuelPlanCard==='function')renderFuelPlanCard();}
   if(name==='train'){initPTTab();
     // The brother glances at your readiness as you arrive to train. If you're wrecked, he says it
     // straight — once — before you load up. Quiet otherwise.

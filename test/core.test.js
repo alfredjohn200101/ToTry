@@ -4188,8 +4188,33 @@ function fnBodyOf(code, name){
   const ratio = (a, b) => { const L1 = lum(a), L2 = lum(b); return (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05); };
 
   const dark = {};
-  for (const n of ['bg', 'bg2', 'bg3', 'tx', 'tx2', 'tx3', 'go', 'gr', 're']) dark[n] = tok(n);
+  for (const n of ['bg', 'bg2', 'bg3', 'tx', 'tx2', 'tx3', 'go', 'gr', 're', 'bl', 'pu']) dark[n] = tok(n);
+
+  // A token the light branch does not set INHERITS the :root value — which is the dark one. Build the
+  // light palette the way the browser does, or the accents go unmeasured, which is exactly how gold
+  // shipped at 1.77:1 on cream. Fall back to :root for anything light does not override.
+  for (const n of ['bg', 'bg2', 'bg3', 'tx', 'tx2', 'tx3', 'go', 'gr', 're', 'bl', 'pu']) {
+    if (!light[n]) light[n] = dark[n];
+  }
   H.ok(dark.tx && dark.bg && light.tx3 && light.bg, 'both palettes were found and parsed');
+  H.ok(light.go && light.go !== dark.go, 'the light theme re-tunes the gold accent, not just the greys');
+  H.ok(light.gr !== dark.gr && light.bl !== dark.bl && light.pu !== dark.pu,
+    'and green, blue and purple — all five accents, or they inherit dark values onto cream');
+
+  // Every light token must be restored when switching back, or the muted accents stay on the dark bg.
+  {
+    const src = fs.readFileSync(path.join(root, 'src/app/27-settings.js'), 'utf8');
+    const li = src.indexOf("if(theme === 'light')");
+    const lb = src.slice(li, src.indexOf('} else {', li));
+    const db = src.slice(src.indexOf('} else {', li), src.indexOf('\n}', src.indexOf('Restore dark')));
+    const sets = [...lb.matchAll(/setProperty\('--([\w-]+)'/g)].map(m => m[1]);
+    let rem = [...db.matchAll(/removeProperty\('--([\w-]+)'/g)].map(m => m[1]);
+    if (/\['go','gr','re','bl','pu'\]/.test(db)) {
+      rem = rem.concat(['go', 'gr', 're', 'bl', 'pu'].flatMap(n => [n, n + '-bg', n + '-bd']));
+    }
+    const unrestored = sets.filter(t => !rem.includes(t));
+    H.eq(unrestored, [], 'every token the light theme sets is removed again when switching back to dark');
+  }
 
   let checked = 0;
   for (const [themeName, t] of [['dark', dark], ['light', light]]) {

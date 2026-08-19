@@ -103,6 +103,20 @@ function _fuelElicit(){
 }
 
 function _fuelElicitSave(){
+  // Crisis language in the free-text fields must never reach a model — the gate every other door has.
+  try{
+    if(typeof detectCrisis === 'function'){
+      const _txt = ['fuel-dislikes','fuel-notes','fuel-diet'].map(function(id){
+        const el = document.getElementById(id); return el ? String(el.value || '') : '';
+      }).join(' ').trim();
+      const _c = _txt ? detectCrisis(_txt) : null;
+      if(_c){
+        document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+        if(typeof bridgeToRealHelp === 'function') bridgeToRealHelp('heavy');
+        return;
+      }
+    }
+  }catch(_){ }
   const budget = parseFloat((document.getElementById('fuel-budget')||{}).value) || 0;
   const mealsEl = document.querySelector('#fuel-meals-row .fuel-chip.on');
   const mealsPerDay = mealsEl ? parseInt(mealsEl.getAttribute('data-n'),10) : 4;

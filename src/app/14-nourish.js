@@ -1109,6 +1109,15 @@ function _hungerPick(id){
 
 async function estimateMealMacros(description){
   const res=document.getElementById('nut-search-results');
+  // Before the model sees it — see the note above. The gate every other free-text door already has.
+  try{
+    const _c = (typeof detectCrisis === 'function') ? detectCrisis(description) : null;
+    if(_c){
+      if(res) res.innerHTML = '';
+      if(typeof showCrisisResponse === 'function') showCrisisResponse('nut-search-results', _c);
+      return null;
+    }
+  }catch(_){ }
   res.innerHTML='<p class="pulsing" style="font-family:\'Cormorant Garamond\',serif;font-size:15px;font-style:italic;color:var(--tx3);text-align:center;padding:16px">Working out the macros for "'+description+'"...</p>';
   // Adaptive prompt: honor any quantities the user SPECIFIED (g, ml, count, cups, tbsp) exactly;
   // estimate standard portions ONLY for items left vague. Reason per-item for accuracy, then sum
@@ -1179,6 +1188,16 @@ async function estimateMealMacros(description){
 // Uses the proxy's search-capable path (web_search flag) so it finds the REAL product nutrition
 // online rather than guessing from memory. Falls back to a plain estimate if search returns nothing.
 async function searchFoodOnline(query){
+  // Same gate as estimateMealMacros — this reaches a model too.
+  try{
+    const _c = (typeof detectCrisis === 'function') ? detectCrisis(query) : null;
+    if(_c){
+      const _r = document.getElementById('nut-search-results');
+      if(_r) _r.innerHTML = '';
+      if(typeof showCrisisResponse === 'function') showCrisisResponse('nut-search-results', _c);
+      return null;
+    }
+  }catch(_){ }
   const res=document.getElementById('nut-search-results');
   if(res) res.innerHTML='<p class="pulsing" style="font-family:\'Cormorant Garamond\',serif;font-size:15px;font-style:italic;color:var(--tx3);text-align:center;padding:16px">Searching the web for "'+query+'"...</p>';
   const prompt='Find the real nutrition facts for this specific food/product by searching the web: "'+query+'".\n'+

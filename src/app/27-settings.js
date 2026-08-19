@@ -607,6 +607,25 @@ function applyTheme(theme){
     root.style.setProperty('--tx', '#1A1A1F');
     root.style.setProperty('--tx2', '#3D3D45');
     root.style.setProperty('--tx3', '#65656C');   // 4.56:1 on the worst light bg — see the note
+    // ACCENTS TOO. Keeping the dark-mode accents on a cream background put gold at 1.77:1 and green at
+    // 1.91:1 — see the note above. These are the same hues taken down until each clears 4.5:1 against
+    // all three light backgrounds, with the tint/border derivatives moved to match so an accent stays
+    // one colour. Dark mode is untouched.
+    root.style.setProperty('--go', '#766441');
+    root.style.setProperty('--go-bg', 'rgba(118,100,65,0.10)');
+    root.style.setProperty('--go-bd', 'rgba(118,100,65,0.32)');
+    root.style.setProperty('--gr', '#38714C');
+    root.style.setProperty('--gr-bg', 'rgba(56,113,76,0.10)');
+    root.style.setProperty('--gr-bd', 'rgba(56,113,76,0.32)');
+    root.style.setProperty('--re', '#A44A40');
+    root.style.setProperty('--re-bg', 'rgba(164,74,64,0.10)');
+    root.style.setProperty('--re-bd', 'rgba(164,74,64,0.32)');
+    root.style.setProperty('--bl', '#496793');
+    root.style.setProperty('--bl-bg', 'rgba(73,103,147,0.10)');
+    root.style.setProperty('--bl-bd', 'rgba(73,103,147,0.32)');
+    root.style.setProperty('--pu', '#725D8D');
+    root.style.setProperty('--pu-bg', 'rgba(114,93,141,0.10)');
+    root.style.setProperty('--pu-bd', 'rgba(114,93,141,0.32)');
     root.style.setProperty('--bd', '#D9D2BE');
     root.style.setProperty('--bd2', '#C4BBA0');
   } else {
@@ -619,6 +638,13 @@ function applyTheme(theme){
     root.style.removeProperty('--tx3');
     root.style.removeProperty('--bd');
     root.style.removeProperty('--bd2');
+    // The accents too — see the light branch. Anything set there must be removed here or a person who
+    // tries the light theme and switches back is left with muted accents on a dark ground.
+    ['go','gr','re','bl','pu'].forEach(function(n){
+      root.style.removeProperty('--'+n);
+      root.style.removeProperty('--'+n+'-bg');
+      root.style.removeProperty('--'+n+'-bd');
+    });
   }
 }
 

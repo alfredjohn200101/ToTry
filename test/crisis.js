@@ -84,6 +84,16 @@ const DOORS = [
       if(typeof journalCrisisOf === 'function' && typeof journalMeetCrisis === 'function'){
         const k = journalCrisisOf(p); if(k) journalMeetCrisis(k);
       } }, phrase) },
+  { name: 'the meal describer (Nourish)',
+    go: async page => page.evaluate(async () => { go('nourish'); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      if(typeof estimateMealMacros === 'function') await estimateMealMacros(p);
+    }, phrase) },
+  { name: 'food search online (Nourish)',
+    go: async page => page.evaluate(async () => { go('nourish'); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      if(typeof searchFoodOnline === 'function') await searchFoodOnline(p);
+    }, phrase) },
 ];
 
 // A crisis card a person can actually use: on screen, on top, and dialable.
