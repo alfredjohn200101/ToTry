@@ -116,7 +116,30 @@ const PERSONAS = [
     },
     forbid: CHRISTIAN_ONLY,
   },
+  {
+    name: 'female · cycle running · day 2, well slept',
+    seed: {
+      totry_guest: true, totry_onboarded: true,
+      totry_name: 'Ana',
+      totry_sex: 'female',
+      totry_faith_tradition: 'secular',
+      totry_cycle: { on: true, log: [
+        { d: _dayKey(1 + 56) }, { d: _dayKey(1 + 28) }, { d: _dayKey(1) } ] },
+      totry_checkins: [{ scores: { sleep: 8, stress: 3, energy: 8 }, ts: new Date().toISOString() }],
+      totry_workouts: [{ title: 'Push', ts: new Date(Date.now() - 3 * 864e5).toISOString() }],
+    },
+    forbid: CHRISTIAN_ONLY,
+    // She must not be told to max out on day 2 of her period, and the phase must be visible as the
+    // reason rather than the number simply dropping with no explanation.
+    readiness: { maxLevel: 'moderate', reasonIncludes: 'period week' },
+  },
 ];
+
+// A cycle log stores bare local YYYY-MM-DD keys, matching _cycDayKey in the app.
+function _dayKey(daysAgo){
+  const d = new Date(Date.now() - daysAgo * 864e5);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
 
 const serve = () => new Promise(res => {
   const server = http.createServer((req, rq) => {
@@ -228,6 +251,29 @@ const serve = () => new Promise(res => {
     if (p.expectSome) {
       ok(p.expectSome.some(w => seen.text.includes(w)),
          `${label} — its own faith content is still present`);
+    }
+
+    // ── READINESS AND HER CYCLE ─────────────────────────────────────────────────────────────────
+    // Asserted against the LIVE function in the real bundle, not the source. Until v509 this returned
+    // 'go' — "chase a PR or add load" — for a well-slept woman on day 2 of her period, because it could
+    // not see the cycle at all.
+    if (p.readiness) {
+      const rd = await page.evaluate(() => {
+        if (typeof computeReadiness !== 'function') return { missing: true };
+        const r = computeReadiness();
+        if (!r) return { none: true };
+        return { level: r.level, score: r.score, reasons: r.reasons || [], advice: r.advice || '', phase: r.cyclePhase };
+      });
+      ok(!rd.missing && !rd.none, `${label} — computeReadiness returns a real reading`);
+      if (!rd.missing && !rd.none) {
+        const rank = { rest: 0, moderate: 1, go: 2 };
+        ok(rank[rd.level] <= rank[p.readiness.maxLevel],
+          `${label} — not told to max out on day 2 of her period (got "${rd.level}", advice: ${String(rd.advice).slice(0, 70)})`);
+        ok(rd.reasons.some(r => String(r).includes(p.readiness.reasonIncludes)),
+          `${label} — the phase is NAMED as the reason, not a number that silently dropped (reasons: ${rd.reasons.join(', ')})`);
+        ok(/trust that over my estimate|go by that instead/.test(rd.advice),
+          `${label} — and her own experience is stated as outranking the estimate`);
+      }
     }
 
     // ── THE FEELING DOOR ─────────────────────────────────────────────────────────────────────────

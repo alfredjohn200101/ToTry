@@ -689,11 +689,42 @@ function computeReadiness(){
       if(totalSessions >= 6){ score -= 8; reasons.push('high training frequency'); }
     }
   }catch(_){ }
+  // HER CYCLE IS A RECOVERY SIGNAL AND THIS DID NOT KNOW IT EXISTED. The card that fires on entering
+  // the Train tab says "chase a PR or add load" — and for a woman bleeding, or in the back half of her
+  // luteal phase, it said that on the days her own body is asking for less. When she then could not hit
+  // it, the app had framed a hormonal week as a personal failure. That is the exact inversion of grace
+  // over shame, on the pillar most likely to produce it.
+  //
+  // HONEST ABOUT THE STRENGTH OF THIS. The research on cycle phase and performance is genuinely mixed:
+  // effects are small on average and vary enormously between women. So this does NOT pretend to know
+  // her capacity — it applies a deliberately small nudge, names the phase as a reason so she can see
+  // exactly why the number moved, and never claims a mechanism. Her own experience outranks the estimate,
+  // and the text says so. It only runs at all when she has explicitly opted in (cycleOn()).
+  let cycle = null;
+  try{
+    if(typeof cyclePhase==='function'){
+      const cp = cyclePhase();
+      if(cp && cp.key && cp.key !== 'unknown'){
+        cycle = cp;
+        // Asymmetric on purpose: the cost of telling a depleted person to max out is higher than the
+        // cost of holding someone back a little on a day she felt fine.
+        if(cp.key === 'menstrual'){ score -= 8; reasons.push('period week'); }
+        else if(cp.key === 'luteal' && cp.daysToNext != null && cp.daysToNext <= 5){ score -= 6; reasons.push('late luteal'); }
+      }
+    }
+  }catch(_){ }
   score = Math.max(5, Math.min(100, Math.round(score)));
   const level = score >= 70 ? 'go' : (score >= 45 ? 'moderate' : 'rest');
   let advice;
   if(level === 'go') advice = 'You\u2019re well recovered. Good day to push \u2014 chase a PR or add load.';
   else if(level === 'moderate') advice = 'You\u2019re moderately recovered. Train, but keep it controlled \u2014 quality over maxing out.';
   else advice = 'Your body\u2019s asking for recovery. Consider mobility, an easy walk, or rest today \u2014 it\u2019s part of the work.';
-  return { score, level, reasons, advice, sleep, stress, energy, asOf: readinessTs };
+  // Never a verdict on her body — a reason, held loosely, that she can overrule.
+  if(cycle && (cycle.key === 'menstrual' || (cycle.key === 'luteal' && cycle.daysToNext != null && cycle.daysToNext <= 5))){
+    advice += cycle.key === 'menstrual'
+      ? ' You\u2019re in your period week too \u2014 dropping the load today is a choice, not a concession. This varies a lot between women; if you feel strong, trust that over my estimate.'
+      : ' You\u2019re in the back half of your luteal phase \u2014 effort often reads higher there. Keep the movement, skip the max. If today feels good, go by that instead.';
+  }
+  return { score, level, reasons, advice, sleep, stress, energy, asOf: readinessTs,
+           cyclePhase: cycle ? cycle.key : null };
 }

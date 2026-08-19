@@ -63,10 +63,11 @@ function initSettingsTab(){
     }
   }
   
-  // Reminder times - load saved if any
-  const rt = ls('totry_reminder_times') || {};
-  if(rt.morning){ const el = document.getElementById('notif-morning'); if(el) el.value = rt.morning; }
-  if(rt.evening){ const el = document.getElementById('notif-evening'); if(el) el.value = rt.evening; }
+  // Reminder times live in totry_push_prefs and are rendered by the reminders card itself
+  // (renderPushSetting → #push-time-morning / #push-time-evening, saved by savePushTimes). This used to
+  // restore them from `totry_reminder_times` — a key nothing has ever written — into #notif-morning /
+  // #notif-evening, ids that were replaced when that card became dynamic. Both reads were guarded, so it
+  // silently did nothing; the harm was the false trail it left about where a person's times are kept.
   
   // Apply theme on load
   applyTheme(ls('totry_theme') || 'dark');

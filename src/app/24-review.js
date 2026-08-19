@@ -781,6 +781,11 @@ async function renderLiturgy(){
   const box = document.getElementById('liturgy-content');
   const dateEl = document.getElementById('liturgy-date');
   if(!box) return;
+  if(typeof faithTradition==='function' && faithTradition()!=='christianity'){
+    box.innerHTML = '<div class="card" style="text-align:center;padding:24px 16px"><div style="font-size:13px;color:var(--tx2);line-height:1.6">This page follows the Catholic calendar. Your tradition is set differently \u2014 Settings \u2192 Faith if that is not right.</div></div>';
+    if(dateEl) dateEl.textContent = '';
+    return;
+  }
   if(dateEl) dateEl.textContent = new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
   let d;
   try{ d = await fetchLiturgy(); }catch(_){ d = {readings:null,celebration:null}; }

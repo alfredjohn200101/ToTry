@@ -4880,7 +4880,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v508';
+const APP_VERSION = 'v509';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -6935,21 +6935,10 @@ function checkReturnNudge(){
   }
 }
 
-function renderNotifSetting(){
-  const el = document.getElementById('notif-setting-status');
-  if(!el) return;
-  if(!('Notification' in window)){
-    el.textContent = 'Not supported on this device';
-    return;
-  }
-  if(Notification.permission === 'granted'){
-    el.textContent = 'On — gentle morning nudge';
-  } else if(Notification.permission === 'denied'){
-    el.textContent = 'Blocked — enable in browser settings';
-  } else {
-    el.textContent = 'Off';
-  }
-}
+// renderNotifSetting lived here. Its only job was writing a permission string into #notif-setting-status,
+// an element that appears nowhere in the markup and never has — so every call was a guarded no-op. The
+// live surface is renderPushSetting (28-init.js), which reads the real permission AND asks the system to
+// verify it. Deleted rather than left as a second, wrong-looking source of notification state.
 
 
 // ─── INITIAL AUTH CHECK ────────────────────────────────────────
@@ -7686,13 +7675,17 @@ function brotherSpeaks(moment){
     else if(moment.kind === 'calorieOver'){
       title = 'Heads up on the food.';
       let ctx = '';
-      if(life && life.training && life.training.sessions7 >= 4) ctx = ' You\u2019ve trained hard this week, so your body can use more than usual \u2014 ';
+      let _cp = null; try{ _cp = (typeof cyclePhase==='function') ? cyclePhase() : null; }catch(_){ }
+      if(_cp && _cp.key === 'luteal') ctx = ' Your body genuinely wants a bit more in the back half of your cycle \u2014 that is hormones, not willpower \u2014 ';
+      else if(life && life.training && life.training.sessions7 >= 4) ctx = ' You\u2019ve trained hard this week, so your body can use more than usual \u2014 ';
       else ctx = ' ';
       body = 'You\u2019re over today\u2019s target.'+ctx+'I\u2019m not here to police a number. If it\u2019s a real meal you needed, good. If it\u2019s the day getting away from you, maybe the next one\u2019s water and a walk. Your call.';
     }
     else if(moment.kind === 'trainTired'){
       title = 'Before you load that bar.';
-      body = 'Your readiness is low today'+((life&&life.readiness&&life.readiness.score)?(' ('+life.readiness.score+'/100)'):'')+' \u2014 likely sleep and a hard week stacking up. Someone in your corner would tell you straight: pushing a max effort now is how you get hurt or burnt out. Train smart today \u2014 a lighter session still counts. But you know your body. Choose well.';
+      const _rr = (life&&life.readiness&&Array.isArray(life.readiness.reasons)) ? life.readiness.reasons.filter(Boolean) : [];
+      const _why = _rr.length ? (' \u2014 ' + _rr.slice(0,3).join(', ') + '.') : ' \u2014 likely sleep and a hard week stacking up.';
+      body = 'Your readiness is low today'+((life&&life.readiness&&life.readiness.score)?(' ('+life.readiness.score+'/100)'):'')+_why+' Someone in your corner would tell you straight: pushing a max effort now is how you get hurt or burnt out. Train smart today \u2014 a lighter session still counts. But you know your body. Choose well.';
       primary = 'Got it \u2014 I\u2019ll train smart'; secondary = 'I\u2019m good to push'; secondaryAct = 'dismiss';
     }
     else if(moment.kind === 'spendHeavy'){
@@ -30292,13 +30285,44 @@ function computeReadiness(){
       if(totalSessions >= 6){ score -= 8; reasons.push('high training frequency'); }
     }
   }catch(_){ }
+  // HER CYCLE IS A RECOVERY SIGNAL AND THIS DID NOT KNOW IT EXISTED. The card that fires on entering
+  // the Train tab says "chase a PR or add load" — and for a woman bleeding, or in the back half of her
+  // luteal phase, it said that on the days her own body is asking for less. When she then could not hit
+  // it, the app had framed a hormonal week as a personal failure. That is the exact inversion of grace
+  // over shame, on the pillar most likely to produce it.
+  //
+  // HONEST ABOUT THE STRENGTH OF THIS. The research on cycle phase and performance is genuinely mixed:
+  // effects are small on average and vary enormously between women. So this does NOT pretend to know
+  // her capacity — it applies a deliberately small nudge, names the phase as a reason so she can see
+  // exactly why the number moved, and never claims a mechanism. Her own experience outranks the estimate,
+  // and the text says so. It only runs at all when she has explicitly opted in (cycleOn()).
+  let cycle = null;
+  try{
+    if(typeof cyclePhase==='function'){
+      const cp = cyclePhase();
+      if(cp && cp.key && cp.key !== 'unknown'){
+        cycle = cp;
+        // Asymmetric on purpose: the cost of telling a depleted person to max out is higher than the
+        // cost of holding someone back a little on a day she felt fine.
+        if(cp.key === 'menstrual'){ score -= 8; reasons.push('period week'); }
+        else if(cp.key === 'luteal' && cp.daysToNext != null && cp.daysToNext <= 5){ score -= 6; reasons.push('late luteal'); }
+      }
+    }
+  }catch(_){ }
   score = Math.max(5, Math.min(100, Math.round(score)));
   const level = score >= 70 ? 'go' : (score >= 45 ? 'moderate' : 'rest');
   let advice;
   if(level === 'go') advice = 'You\u2019re well recovered. Good day to push \u2014 chase a PR or add load.';
   else if(level === 'moderate') advice = 'You\u2019re moderately recovered. Train, but keep it controlled \u2014 quality over maxing out.';
   else advice = 'Your body\u2019s asking for recovery. Consider mobility, an easy walk, or rest today \u2014 it\u2019s part of the work.';
-  return { score, level, reasons, advice, sleep, stress, energy, asOf: readinessTs };
+  // Never a verdict on her body — a reason, held loosely, that she can overrule.
+  if(cycle && (cycle.key === 'menstrual' || (cycle.key === 'luteal' && cycle.daysToNext != null && cycle.daysToNext <= 5))){
+    advice += cycle.key === 'menstrual'
+      ? ' You\u2019re in your period week too \u2014 dropping the load today is a choice, not a concession. This varies a lot between women; if you feel strong, trust that over my estimate.'
+      : ' You\u2019re in the back half of your luteal phase \u2014 effort often reads higher there. Keep the movement, skip the max. If today feels good, go by that instead.';
+  }
+  return { score, level, reasons, advice, sleep, stress, energy, asOf: readinessTs,
+           cyclePhase: cycle ? cycle.key : null };
 }
 // One-tap morning sleep rating → writes a check-in that computeReadiness reads, so sleep instantly
 // shapes readiness, the coach's voice, and the urge companion ("running on no sleep — that's why
@@ -36141,6 +36165,11 @@ async function renderLiturgy(){
   const box = document.getElementById('liturgy-content');
   const dateEl = document.getElementById('liturgy-date');
   if(!box) return;
+  if(typeof faithTradition==='function' && faithTradition()!=='christianity'){
+    box.innerHTML = '<div class="card" style="text-align:center;padding:24px 16px"><div style="font-size:13px;color:var(--tx2);line-height:1.6">This page follows the Catholic calendar. Your tradition is set differently \u2014 Settings \u2192 Faith if that is not right.</div></div>';
+    if(dateEl) dateEl.textContent = '';
+    return;
+  }
   if(dateEl) dateEl.textContent = new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'});
   let d;
   try{ d = await fetchLiturgy(); }catch(_){ d = {readings:null,celebration:null}; }
@@ -37698,10 +37727,11 @@ function initSettingsTab(){
     }
   }
   
-  // Reminder times - load saved if any
-  const rt = ls('totry_reminder_times') || {};
-  if(rt.morning){ const el = document.getElementById('notif-morning'); if(el) el.value = rt.morning; }
-  if(rt.evening){ const el = document.getElementById('notif-evening'); if(el) el.value = rt.evening; }
+  // Reminder times live in totry_push_prefs and are rendered by the reminders card itself
+  // (renderPushSetting → #push-time-morning / #push-time-evening, saved by savePushTimes). This used to
+  // restore them from `totry_reminder_times` — a key nothing has ever written — into #notif-morning /
+  // #notif-evening, ids that were replaced when that card became dynamic. Both reads were guarded, so it
+  // silently did nothing; the harm was the false trail it left about where a person's times are kept.
   
   // Apply theme on load
   applyTheme(ls('totry_theme') || 'dark');
@@ -42320,7 +42350,7 @@ function removeLinkedApp(appId){
   const used = ls('totry_apps_used') || [];
   const filtered = used.filter(a => a !== appId);
   ls('totry_apps_used', filtered);
-  renderConnectedApps();if(typeof renderNotifSetting==='function')renderNotifSetting();
+  renderConnectedApps();
   showToast('Removed', APP_REGISTRY[appId]?.name+' unlinked.');
 }
 

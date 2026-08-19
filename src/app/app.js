@@ -2261,7 +2261,7 @@ function removeLinkedApp(appId){
   const used = ls('totry_apps_used') || [];
   const filtered = used.filter(a => a !== appId);
   ls('totry_apps_used', filtered);
-  renderConnectedApps();if(typeof renderNotifSetting==='function')renderNotifSetting();
+  renderConnectedApps();
   showToast('Removed', APP_REGISTRY[appId]?.name+' unlinked.');
 }
 

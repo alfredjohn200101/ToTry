@@ -960,21 +960,10 @@ function checkReturnNudge(){
   }
 }
 
-function renderNotifSetting(){
-  const el = document.getElementById('notif-setting-status');
-  if(!el) return;
-  if(!('Notification' in window)){
-    el.textContent = 'Not supported on this device';
-    return;
-  }
-  if(Notification.permission === 'granted'){
-    el.textContent = 'On — gentle morning nudge';
-  } else if(Notification.permission === 'denied'){
-    el.textContent = 'Blocked — enable in browser settings';
-  } else {
-    el.textContent = 'Off';
-  }
-}
+// renderNotifSetting lived here. Its only job was writing a permission string into #notif-setting-status,
+// an element that appears nowhere in the markup and never has — so every call was a guarded no-op. The
+// live surface is renderPushSetting (28-init.js), which reads the real permission AND asks the system to
+// verify it. Deleted rather than left as a second, wrong-looking source of notification state.
 
 
 // ─── INITIAL AUTH CHECK ────────────────────────────────────────

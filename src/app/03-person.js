@@ -411,13 +411,17 @@ function brotherSpeaks(moment){
     else if(moment.kind === 'calorieOver'){
       title = 'Heads up on the food.';
       let ctx = '';
-      if(life && life.training && life.training.sessions7 >= 4) ctx = ' You\u2019ve trained hard this week, so your body can use more than usual \u2014 ';
+      let _cp = null; try{ _cp = (typeof cyclePhase==='function') ? cyclePhase() : null; }catch(_){ }
+      if(_cp && _cp.key === 'luteal') ctx = ' Your body genuinely wants a bit more in the back half of your cycle \u2014 that is hormones, not willpower \u2014 ';
+      else if(life && life.training && life.training.sessions7 >= 4) ctx = ' You\u2019ve trained hard this week, so your body can use more than usual \u2014 ';
       else ctx = ' ';
       body = 'You\u2019re over today\u2019s target.'+ctx+'I\u2019m not here to police a number. If it\u2019s a real meal you needed, good. If it\u2019s the day getting away from you, maybe the next one\u2019s water and a walk. Your call.';
     }
     else if(moment.kind === 'trainTired'){
       title = 'Before you load that bar.';
-      body = 'Your readiness is low today'+((life&&life.readiness&&life.readiness.score)?(' ('+life.readiness.score+'/100)'):'')+' \u2014 likely sleep and a hard week stacking up. Someone in your corner would tell you straight: pushing a max effort now is how you get hurt or burnt out. Train smart today \u2014 a lighter session still counts. But you know your body. Choose well.';
+      const _rr = (life&&life.readiness&&Array.isArray(life.readiness.reasons)) ? life.readiness.reasons.filter(Boolean) : [];
+      const _why = _rr.length ? (' \u2014 ' + _rr.slice(0,3).join(', ') + '.') : ' \u2014 likely sleep and a hard week stacking up.';
+      body = 'Your readiness is low today'+((life&&life.readiness&&life.readiness.score)?(' ('+life.readiness.score+'/100)'):'')+_why+' Someone in your corner would tell you straight: pushing a max effort now is how you get hurt or burnt out. Train smart today \u2014 a lighter session still counts. But you know your body. Choose well.';
       primary = 'Got it \u2014 I\u2019ll train smart'; secondary = 'I\u2019m good to push'; secondaryAct = 'dismiss';
     }
     else if(moment.kind === 'spendHeavy'){

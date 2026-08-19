@@ -3810,6 +3810,65 @@ function fnBodyOf(code, name){
   H.ok(!/Date\.now\(\) - back/.test(rlw), 'not a day measured from today while you fill in a past one');
 }
 
+// ── her cycle is a recovery signal, and the app that knew it must act on it ───────────────────
+{
+  H.section('readiness knows her cycle');
+
+  // The Train card says "chase a PR or add load". computeReadiness could not see the cycle at all, so
+  // it said that on the days her own body asks for less — and when she could not hit it, the app had
+  // framed a hormonal week as personal failure. Grace over shame, inverted, on the pillar most likely
+  // to produce it. Note the honesty constraint: the research here is genuinely mixed, so the nudge is
+  // deliberately SMALL, the phase is named as a visible reason, and her experience overrules it.
+  const src = H.extractFn('computeReadiness');
+  const run = (phase, scores) => {
+    const st = { totry_checkins: [{ scores, ts: new Date().toISOString() }], totry_workouts: [{}] };
+    const f = new Function('ls', 'cyclePhase', 'interferenceNote', 'weeklyLoadByModality', 'Date', 'Math', 'Object',
+      src + '\nreturn computeReadiness();');
+    return f(k => st[k], () => phase, () => null, () => ({}), Date, Math, Object);
+  };
+  const well = { sleep: 8, stress: 3, energy: 8 };
+  const none = run(null, well);
+  H.eq(none.level, 'go', 'a well-slept person with no cycle logged is still told to push');
+  H.eq(none.cyclePhase, null, 'and no phase is claimed');
+
+  const men = run({ key: 'menstrual', day: 2, daysToNext: 26 }, well);
+  H.ok(men.score < none.score, 'her period week lowers readiness');
+  H.eq(men.level, 'moderate', 'enough to stop "chase a PR", not enough to call it rest');
+  H.ok(men.reasons.includes('period week'), 'and the reason is NAMED, so she can see why the number moved');
+  H.ok(/trust that over my estimate/.test(men.advice), 'her own experience is stated as outranking the estimate');
+
+  const late = run({ key: 'luteal', day: 26, daysToNext: 2 }, well);
+  H.ok(late.reasons.includes('late luteal'), 'the back half of the luteal phase counts too');
+  H.eq(late.level, 'moderate', 'same softening, same size');
+
+  const mid = run({ key: 'luteal', day: 20, daysToNext: 8 }, well);
+  H.eq(mid.score, none.score, 'MID luteal is untouched — the nudge is late-luteal only, not the whole phase');
+  const fol = run({ key: 'follicular', day: 10, daysToNext: 19 }, well);
+  H.eq(fol.score, none.score, 'and follicular is untouched: no phase is treated as a deficit by default');
+  const ovu = run({ key: 'ovulatory', day: 14, daysToNext: 14 }, well);
+  H.eq(ovu.level, 'go', 'she is still told to push on her strongest days');
+  const unk = run({ key: 'unknown', day: 44 }, well);
+  H.eq(unk.score, none.score, 'a lost thread changes nothing — the app never guesses at a phase it does not have');
+
+  // The two voices that speak about it must read the real state, not a hard-coded cause.
+  H.section('and the voices that speak about it do not contradict it');
+  const bs = H.extractFn('brotherSpeaks');
+  H.ok(/_cp\.key === 'luteal'/.test(bs),
+    'the over-target voice knows what CYCLE_COUNSEL.luteal.nourish already told her about her own body');
+  H.ok(/that is hormones, not willpower/.test(bs), 'and says so in the same terms');
+  H.ok(/_rr\.slice\(0,3\)\.join\(', '\)/.test(bs),
+    'the low-readiness voice states the ACTUAL reasons rather than asserting "sleep and a hard week"');
+  H.ok(!/\u2014 likely sleep and a hard week stacking up\.'\+' Someone/.test(bs),
+    'the hard-coded cause is no longer the only thing it can say');
+
+  // And the Catholic liturgy page must not render for someone of another tradition, however reached.
+  H.section('the liturgy surface is gated, not just its doors');
+  const rl = H.extractFn('renderLiturgy');
+  H.ok(/faithTradition\(\)!=='christianity'/.test(rl),
+    'renderLiturgy gates itself — both routes in are gated today, but a gate on the doors alone is how ' +
+    'the crisis gate came to fail open');
+}
+
 // ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────
 // Every test in this file reads H.html, which reads index.html — the ASSEMBLED file. So a change
 // made directly to index.html passes everything here and then vanishes the next time anyone runs
