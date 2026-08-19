@@ -1092,7 +1092,7 @@ function viceLedgerHTML(){
       const since = bank.firstTs ? Math.floor((Date.now()-bank.firstTs)/86400000) : 0;
       // Did it happen inside the streak the app is currently crediting?
       const insideStreak = viceSpendFromBank(kind, Date.now() - clean*86400000);
-      const contradicts = v.mode!=='moderate' && insideStreak && insideStreak.total > 0;
+      const contradicts = viceIsAbstinence(v) && insideStreak && insideStreak.total > 0;
       out += '<div style="background:'+(contradicts?'var(--re-bg)':'var(--bg3)')+';border:1px solid '+(contradicts?'var(--re-bd)':'var(--bd)')+';border-radius:12px;padding:14px;margin-bottom:12px">'+
         '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px">'+_escFew(v.n.toUpperCase())+' · WHAT THE BANK SAYS</div>'+
         '<div style="font-family:DM Mono,monospace;font-size:26px;color:'+(contradicts?'var(--re)':'var(--tx)')+';line-height:1">'+curSym()+Math.round(bank.total).toLocaleString()+'</div>'+

@@ -3869,6 +3869,70 @@ function fnBodyOf(code, name){
     'the crisis gate came to fail open');
 }
 
+// ── a place to stand before you have decided ─────────────────────────────────────────────────
+{
+  H.section('watch mode — stage of change');
+
+  // "What's your goal with this?" offered quit or moderate. Both are commitments, so someone still
+  // deciding had to declare a goal they had not made — and the app then measured them against it.
+  // Twenty-two call sites read v.mode and every one assumed "not moderate" means abstinence, so the
+  // third mode would have silently inherited a clean streak and a relapse counter at all of them.
+  const vm = eval('(' + H.extractFn('viceMode').replace(/^function\s+\w+/, 'function') + ')');
+  const abst = eval('(' + H.extractFn('viceIsAbstinence').replace(/^function\s+\w+/, 'function') + ')');
+  global.viceMode = vm;
+  H.eq(vm({}), 'quit', 'no mode set still means quitting — existing vices are untouched');
+  H.eq(vm({ mode: 'moderate' }), 'moderate', 'moderation is unchanged');
+  H.eq(vm({ mode: 'watch' }), 'watch', 'watching is a mode');
+  H.eq(vm({ kind: 'letgo', mode: 'quit' }), 'letgo', 'letting go still outranks the mode field');
+  H.eq(vm({ mode: 'nonsense' }), 'quit', 'an unknown mode falls back to quitting, never to a broken state');
+  H.ok(abst({ mode: 'quit' }), 'only quitting is an abstinence goal');
+  H.ok(!abst({ mode: 'watch' }), 'watching is not');
+  H.ok(!abst({ mode: 'moderate' }) && !abst({ kind: 'letgo' }), 'nor is moderation or letting go');
+
+  // THE ONE THAT MATTERS MOST. saveViceUse gated the relapse write on `mode !== 'moderate'`, so an
+  // honest log in watch mode would have set lastLoss, restarted the clean streak from that moment and
+  // incremented relapseCount — recording a relapse against a promise never made, on the very screen
+  // whose whole purpose is that honesty costs nothing.
+  const sv = H.extractFn('saveViceUse');
+  H.ok(/if\(viceIsAbstinence\(v\)\)\{/.test(sv), 'an honest log only counts as a relapse where a zero was actually promised');
+  H.ok(!/if\(v\.mode!=='moderate'\)\{\s*\n\s*const used=/.test(sv), 'the old binary is gone from that gate');
+
+  // Every other site that meant "has a clean streak" must go through the predicate, not retype it.
+  for (const [fn, what] of [['renderVices', 'the sobriety clock'], ['viceNeedsCheckIn', 'the streak check-in']]) {
+    H.ok(/viceIsAbstinence\(/.test(H.extractFn(fn)), `${what} counts only abstinence vices`);
+  }
+
+  // The card is a mirror: no streak, no line, no verdict, and no repeated offer.
+  const rv = H.extractFn('renderVices');
+  H.ok(/viceMode\(v\) === 'watch'/.test(rv), 'the watch card exists and is chosen by the predicate');
+  H.ok(/nothing here to keep or break/.test(rv), 'and says plainly that there is nothing to keep or break');
+  H.ok(/!v\.goalOffered/.test(rv), 'the goal offer is shown only until it is answered — an offer that repeats is a nag');
+  H.ok(/onclick="openLogUse\(/.test(rv) && !/openViceUse\(/.test(H.html),
+    'its log button calls openLogUse — openViceUse has never existed');
+
+  // The mode picker is a choice, not a toggle: three ways in and out, including stepping back.
+  const cvm = H.extractFn('changeViceMode');
+  for (const m of ['watch', 'moderate', 'quit']) {
+    H.ok(new RegExp("opt\\('" + m + "'").test(cvm), `the picker offers "${m}"`);
+  }
+  const avm = H.extractFn('applyViceMode');
+  H.ok(/if\(mode === true\) mode = 'moderate';/.test(avm), 'the old boolean signature still resolves rather than setting mode to "false"');
+  H.ok(/mode !== 'moderate' && mode !== 'quit' && mode !== 'watch'/.test(avm), 'and an unknown mode cannot be written');
+  H.ok(/mode === 'watch'/.test(avm), 'stepping back to watching is allowed — it is not a failure direction');
+
+  // The two voices that talk about it must not invent a goal.
+  H.ok(/JUST WATCHING this \u2014 they have NOT set a goal/.test(H.extractFn('lifeStateBrief')),
+    'the whole-person brief tells the model the stage plainly');
+  H.ok(/do NOT congratulate a streak/.test(H.extractFn('lifeStateBrief')),
+    'and forbids congratulating a streak that does not exist');
+  H.ok(/do NOT use the words relapse or slip/.test(H.extractFn('_companionSay')),
+    'the companion is told the same thing — it is the surface most likely to push a goal');
+
+  // And a stamp from this same tick is not "-1 days ago".
+  H.ok(/Math\.max\(0, Math\.floor\(\(now-lastUse\)\/86400000\)\)/.test(H.extractFn('getLifeState')),
+    'a use logged seconds ago reads as 0 days, not -1, in the brief the model reasons from');
+}
+
 // ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────
 // Every test in this file reads H.html, which reads index.html — the ASSEMBLED file. So a change
 // made directly to index.html passes everything here and then vanishes the next time anyone runs

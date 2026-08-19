@@ -557,7 +557,7 @@ function renderLifeWoven(){
   // THE FIGHT — clean streak (quit) or holding the line (moderate)
   const vs=(s.fight&&s.fight.vices)||[]; let fightTxt;
   if(!vs.length) fightTxt='no fight named yet';
-  else { const q=vs.filter(v=>v.mode!=='moderate' && v.kind!=='letgo'); if(q.length){ const mc=Math.max.apply(null,q.map(v=>v.cleanDays||0)); fightTxt=mc+' day'+(mc===1?'':'s')+' clean'; } else { const lg=vs.filter(v=>v.kind==='letgo'); fightTxt = lg.length ? 'letting go, day '+Math.max.apply(null,lg.map(v=>v.cleanDays||0)) : 'holding your line'; } }
+  else { const q=vs.filter(v=>viceIsAbstinence(v)); if(q.length){ const mc=Math.max.apply(null,q.map(v=>v.cleanDays||0)); fightTxt=mc+' day'+(mc===1?'':'s')+' clean'; } else { const lg=vs.filter(v=>v.kind==='letgo'); fightTxt = lg.length ? 'letting go, day '+Math.max.apply(null,lg.map(v=>v.cleanDays||0)) : 'holding your line'; } }
   // SPIRIT — the daily rhythm
   const mornDone=(ls('totry_mornings')||[]).some(dOn); const evenDone=(ls('totry_evenings')||[]).some(dOn);
   const spiritTxt = evenDone?'day closed ✓' : mornDone?'reflect tonight' : (h<15?'set your intention':'reflect on today');
@@ -1316,7 +1316,7 @@ function renderTodayForYou(){
   // Priority 1: a vice with a strong streak worth protecting (his core fight)
   let focusVice = null, bestStreak = -1;
   (vices||[]).forEach(v => {
-    if(v.mode === 'moderate') return; // moderation vices have no abstinence streak to protect
+    if(!viceIsAbstinence(v)) return; // only an abstinence streak can be protected
     // Nor does a grief. A letting-go struggle (a breakup, a loss, an attachment being released) is
     // not something a person is abstaining FROM, and Home was rendering it as one: "day 6 free of
     // Letting go of her". That is the app misreading someone's mourning as a vice they are resisting,
@@ -1380,10 +1380,17 @@ function renderHomeQuickWins(){
       '</div>';
     }
     const moderate = v.mode === 'moderate';
+    // A watch-mode vice has no streak and no limit — the honest stat is simply what they logged.
+    const watching = (typeof viceMode==='function') && viceMode(v) === 'watch';
     // Honest stat: clean-day streak since last slip + lifetime wins + slips. Updates whether you
     // log a win OR a loss, for every vice. (Moderation-mode vices show their within-limit count.)
     let stat;
-    if(moderate){
+    if(watching){
+      const _wk = Date.now() - 7*86400000;
+      const _n = (ls('totry_vice_uses')||[]).filter(u=>u && u.v===v.n && u.ts && new Date(u.ts).getTime() >= _wk)
+                   .reduce((a,u)=>a+(parseInt(u.qty,10)||1),0);
+      stat = _n ? (_n + ' logged this week') : 'watching \u00b7 nothing logged this week';
+    } else if(moderate){
       stat = (v.modWithin||0) + ' times within limit';
     } else {
       const start = v.startDate ? new Date(v.startDate) : null;
@@ -3689,7 +3696,7 @@ function renderIdentity(){
         loadV();
         const wins=ls('totry_wins')||[];
         let totalClean=0;
-        (vices||[]).forEach(v=>{ if(v.mode!=='moderate') totalClean += (v.cleanDaysTotal||0) + (typeof viceCleanDays==='function'?viceCleanDays(v):0); });
+        (vices||[]).forEach(v=>{ if(viceIsAbstinence(v)) totalClean += (v.cleanDaysTotal||0) + (typeof viceCleanDays==='function'?viceCleanDays(v):0); });
         const dayCount = (typeof getDayCount==='function') ? getDayCount() : 0;
         const bits=[];
         if(dayCount>1) bits.push(dayCount+' days on the journey');

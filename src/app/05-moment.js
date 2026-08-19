@@ -691,7 +691,7 @@ function _tkSuggest(){
     // here was always undefined, so the abstinence-violation lesson could never be suggested at the
     // one moment it exists for: the two days after a slip.
     const fresh=vs.some(function(v){
-      if(!v || v.mode==='moderate' || _tkSeen('ave')) return false;
+      if(!viceIsAbstinence(v) || _tkSeen('ave')) return false;
       if(!(v.startDate || v.lastLoss)) return false;   // never reset = not fresh, just new
       const cd=(typeof viceCleanDays==='function')?viceCleanDays(v):null;
       return cd!=null && cd<=2;

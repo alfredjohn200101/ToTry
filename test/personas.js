@@ -133,6 +133,19 @@ const PERSONAS = [
     // reason rather than the number simply dropping with no explanation.
     readiness: { maxLevel: 'moderate', reasonIncludes: 'period week' },
   },
+  {
+    name: 'still deciding · watch-mode vice · real use logged',
+    seed: {
+      totry_guest: true, totry_onboarded: true,
+      totry_name: 'Jordan',
+      totry_faith_tradition: 'secular',
+      totry_v: [{ n: 'Weed', mode: 'watch', startDate: new Date(Date.now() - 40 * 864e5).toISOString() }],
+      totry_vice_uses: [1, 4, 6, 11, 15, 22].map(d => ({ v: 'Weed', ts: new Date(Date.now() - d * 864e5).toISOString(), qty: 1 })),
+    },
+    forbid: CHRISTIAN_ONLY,
+    // Nothing on their screen may imply a goal they have not set, or a promise they could break.
+    forbidOnTab: { fight: ['days clean', 'clean streak', 'relapse', 'Today, not this', 'gave in'] },
+  },
 ];
 
 // A cycle log stores bare local YYYY-MM-DD keys, matching _cycDayKey in the app.
@@ -251,6 +264,27 @@ const serve = () => new Promise(res => {
     if (p.expectSome) {
       ok(p.expectSome.some(w => seen.text.includes(w)),
          `${label} — its own faith content is still present`);
+    }
+
+    // ── NOTHING ON SCREEN MAY IMPLY A GOAL THEY DID NOT SET ─────────────────────────────────────
+    if (p.forbidOnTab) {
+      for (const [tab, words] of Object.entries(p.forbidOnTab)) {
+        const txt = await page.evaluate(async (t) => {
+          if (typeof go !== 'function') return null;
+          go(t);
+          await new Promise(r => setTimeout(r, 500));
+          const pane = document.getElementById('tab-' + t);
+          if (!pane || getComputedStyle(pane).display === 'none') return null;
+          return pane.innerText || '';
+        }, tab);
+        ok(txt !== null, `${label} — the ${tab} tab is reachable`);
+        if (txt !== null) {
+          for (const w of words) {
+            ok(!txt.toLowerCase().includes(w.toLowerCase()),
+              `${label} — "${w}" is not on the ${tab} tab for someone who set no goal`);
+          }
+        }
+      }
     }
 
     // ── READINESS AND HER CYCLE ─────────────────────────────────────────────────────────────────

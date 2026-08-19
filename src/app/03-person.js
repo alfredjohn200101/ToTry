@@ -582,11 +582,12 @@ function getLifeState(){
     try{ pattern = (typeof analyzeUrgePatterns==='function') ? analyzeUrgePatterns(v.n) : null; }catch(_){}
     return {
       name: v.n,
-      mode: v.mode || 'quit',
+      mode: (typeof viceMode==='function') ? viceMode(v) : (v.mode || 'quit'),
       kind: v.kind || null,
-      cleanDays: (typeof viceCleanDays==='function') ? viceCleanDays(v) : null,
+      cleanDays: ((typeof viceIsAbstinence==='function') ? viceIsAbstinence(v) : (v.mode!=='moderate'))
+                   ? ((typeof viceCleanDays==='function') ? viceCleanDays(v) : null) : null,
       uses7: uses7.reduce((a,u)=>a+(parseInt(u.qty,10)||1),0),
-      daysSinceUse: lastUse ? Math.floor((now-lastUse)/86400000) : null,
+      daysSinceUse: lastUse ? Math.max(0, Math.floor((now-lastUse)/86400000)) : null,
       turnedAway7: turned7,
       weeklyLimit: v.mode==='moderate' ? (v.modLimit||null) : null,
       nightlyLine:  v.mode==='moderate' ? (v.modThreshold||null) : null,
@@ -767,7 +768,11 @@ function lifeStateBrief(s){
   if(f.vices && f.vices.length){
     f.vices.forEach(v => {
       const bits = [];
-      if(v.mode === 'moderate'){
+      if(v.mode === 'watch'){
+        bits.push('JUST WATCHING this — they have NOT set a goal for it and have not committed to quitting or to a limit');
+        bits.push(v.uses7+' logged this week'+(v.daysSinceUse!=null?(', last '+v.daysSinceUse+'d ago'):''));
+        bits.push('do NOT congratulate a streak, do NOT call anything a relapse, and do NOT push them to quit — reflect what they logged and let them draw the conclusion');
+      } else if(v.mode === 'moderate'){
         // Say which kind of limit it is, or say neither. Never label one as the other.
         const _lim = [];
         if(v.weeklyLimit) _lim.push(v.weeklyLimit+'/wk');

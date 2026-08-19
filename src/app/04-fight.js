@@ -472,6 +472,36 @@ function loadV(){
   if(changed) ls('totry_v', vices);
 }
 function saveV(){ls('totry_v',vices);}
+
+// ── STAGE OF CHANGE: A PLACE TO STAND BEFORE YOU HAVE DECIDED ─────────────────────────────────
+// "What's your goal with this?" offered exactly two answers — quit, or keep it in check. Both are
+// commitments. Someone in what the transtheoretical model calls precontemplation or contemplation —
+// noticing something, not yet ready to promise anything — had to declare a goal they had not made in
+// order to get through the form. The app then measured them against it: a clean-day counter, a daily
+// "today, not this" pledge, a relapse the moment they were honest. Giving action-stage instructions to
+// someone who is still deciding is the single best-evidenced way to produce resistance instead of
+// change (Prochaska/DiClemente; and it is exactly the shame machine this app exists to refuse).
+//
+// 'watch' is the third mode. No streak, no line, no pledge, no relapse, no verdict. It logs, and it
+// reflects back what it sees. Only after a real stretch of honest logging does it OFFER a goal, once.
+//
+// THE PREDICATE IS THE POINT. Twenty-two call sites read v.mode, and every one of them assumed
+// "not moderate" means "abstinence" — so a third mode would silently inherit a clean streak, a
+// pledge line and an abstinence-violation warning at every one of them. That assumption now lives
+// here, once, instead of being retyped as `!== 'moderate'` across five files.
+function viceMode(v){
+  const m = (v && v.mode) || 'quit';
+  if(v && v.kind === 'letgo') return 'letgo';
+  return (m === 'moderate' || m === 'watch' || m === 'letgo') ? m : 'quit';
+}
+// True only where a clean STREAK is a meaningful idea: the person is aiming for zero.
+function viceIsAbstinence(v){ return viceMode(v) === 'quit'; }
+// True where the person has actually set themselves a goal (so we may speak about holding to it).
+function viceHasGoal(v){ const m = viceMode(v); return m === 'quit' || m === 'moderate'; }
+function viceModeLabel(v){
+  const m = viceMode(v);
+  return m === 'moderate' ? 'keeping in check' : m === 'watch' ? 'just watching' : m === 'letgo' ? 'letting go' : 'quitting';
+}
 // ── THE MAP AROUND THE FIGHT ──────────────────────────────────────────────────────────────────
 // The Fight had the in-the-moment toolkit but no map: no daily choice, and no idea WHERE in the
 // arc of change a person actually is. Both live ON the vice object (totry_v — already synced), so
@@ -511,7 +541,7 @@ function _pledgeSaid(v, from){
   m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
     '<div style="font-size:26px;margin-bottom:8px">\uD83E\uDD1D</div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:25px;color:var(--tx);line-height:1.25;margin-bottom:10px">'+
-      (v.mode==='moderate'?'Today, I hold my line.':'Today, not this.')+'</div>'+
+      (viceMode(v)==='moderate'?'Today, I hold my line.':viceMode(v)==='watch'?'Today, I just look at it honestly.':'Today, not this.')+'</div>'+
     '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:14px">'+word+'</div>'+
     (n>1
       ? '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.08em;margin-bottom:16px">'+n+' days now, you\u2019ve chosen this on purpose</div>'
@@ -525,7 +555,7 @@ function _pledgeSaid(v, from){
 function _pledgeRowHTML(i){
   const v=vices[i]; if(!v || v.kind==='letgo') return '';
   const n=v.pledgeDays||0;
-  const line=(v.mode==='moderate')?'Today, I hold my line':'Today, not this';
+  const line=(viceMode(v)==='moderate')?'Today, I hold my line':viceMode(v)==='watch'?'Today, I just look at it honestly':'Today, not this';
   if(vicePledgedToday(v)){
     return '<div style="display:flex;align-items:center;gap:9px;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:10px;padding:9px 11px;margin-bottom:10px">'+
       '<span style="font-size:14px;flex:none">\uD83E\uDD1D</span>'+
@@ -635,7 +665,7 @@ function renderMorningPledge(){
   body.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Today\u2019s pledge</div>'+
     live.map(function(x){
       const v=x.v, n=v.pledgeDays||0;
-      const line=(v.mode==='moderate')?'today, I hold my line':'today, not this';
+      const line=(viceMode(v)==='moderate')?'today, I hold my line':viceMode(v)==='watch'?'today, I just look at it honestly':'today, not this';
       if(vicePledgedToday(v)){
         return '<div style="display:flex;align-items:center;gap:9px;padding:8px 0;border-top:1px solid var(--bd)">'+
           '<span style="flex:none;font-size:14px">\uD83E\uDD1D</span>'+
@@ -836,7 +866,10 @@ function classifyVice(name){
 function getVicePlaybook(v){
   // Moderation vices get the moderation playbook regardless of substance — the tactic is
   // about holding a limit, not quitting. (The substance still informs the AI verse/coach.)
-  if(v && v.mode === 'moderate') return VICE_PLAYBOOK.moderate;
+  if(v && viceMode(v) === 'moderate') return VICE_PLAYBOOK.moderate;
+  // Watching is not a plan to hold to, so the moderation playbook (which is about holding a line)
+  // is the closer fit than the quit playbook (which is about protecting a zero).
+  if(v && viceMode(v) === 'watch') return VICE_PLAYBOOK.moderate;
   const type = (v && v.type) ? v.type : classifyVice(v && v.n);
   return VICE_PLAYBOOK[type] || VICE_PLAYBOOK.general;
 }
@@ -1871,6 +1904,11 @@ function goSosP3(){
         '<button class="btn success" onclick="logModerateWithin()">I stayed within my limit ✓</button>' +
         '<button class="btn blue" onclick="goSosCoach()">I need to talk to my coach</button>' +
         '<button class="btn" onclick="logModerateOver()" style="background:var(--bg3);border:1px solid var(--bd)">I went over — note it honestly</button>';
+    } else if(typeof viceMode==='function' && viceMode(v) === 'watch'){
+      btns.innerHTML =
+        '<button class="btn success" onclick="logWin()">I let it pass \u2014 log that</button>' +
+        '<button class="btn blue" onclick="goSosCoach()">I need to talk to my coach</button>' +
+        '<button class="btn" onclick="logLoss()" style="background:var(--bg3);border:1px solid var(--bd)">I used \u2014 note it honestly</button>';
     } else {
       btns.innerHTML =
         '<button class="btn success" onclick="logWin()">I beat it — log the win 🏆</button>' +

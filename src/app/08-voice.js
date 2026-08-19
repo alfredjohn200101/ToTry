@@ -96,11 +96,14 @@ async function _companionSay(userText, opening){
         const uses7=(ls('totry_vice_uses')||[]).filter(u=>u&&u.v===v.n&&new Date(u.ts).getTime()>=wk).reduce((a,u)=>a+(parseInt(u.qty,10)||1),0);
         const turned7=(ls('totry_moments_won')||[]).filter(x=>x&&x.v===v.n&&new Date(x.ts).getTime()>=wk).length;
         const moderate=v.mode==='moderate';
+        const watching=(typeof viceMode==='function') && viceMode(v)==='watch';
         let out='';
         // THE HONEST STATE FIRST — the app must never congratulate a streak that isn't real. If they've
         // logged real use this week, the Brother meets them exactly where they are, in grace, not on a
         // pedestal they'd feel like a fraud standing on.
-        if(uses7>0 && !moderate){
+        if(watching){
+          out+="IMPORTANT: they have NOT set a goal for this — they are just watching it honestly ("+uses7+" logged this week). Do NOT congratulate a streak, do NOT use the words relapse or slip, and do NOT push them toward quitting or a limit. Reflect back what they have noticed and let them reach their own conclusion; that is what actually moves someone who is still deciding. ";
+        } else if(uses7>0 && !moderate){
           out+="HONEST STATE — be careful here: although the day-count may show "+days+", they have TRUTHFULLY logged using this "+uses7+" time"+(uses7===1?'':'s')+" in the last 7 days. So they are NOT cleanly abstinent right now, and they KNOW it — do NOT congratulate a clean streak or it will feel false and push them away. Honour that they keep telling the truth (that honesty IS the progress), meet them exactly where they actually are, with grace and zero shame, and help them with THIS moment. ";
         } else if(moderate){
           out+="They're keeping this within a limit"+(v.modLimit?(" (about "+v.modLimit+"/week)"):"")+" rather than quitting — "+uses7+" logged this week. Support the limit they set; staying within it is the win, going over is information not failure. ";

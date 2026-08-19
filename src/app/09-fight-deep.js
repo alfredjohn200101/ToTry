@@ -596,6 +596,51 @@ function renderVices(){
       return;
     }
 
+    if(viceMode(v) === 'watch'){
+      // WATCHING CARD: a mirror, and nothing else. No streak, no line, no verdict, no colour that
+      // means good or bad. They have not made a promise, so there is nothing here to keep or break.
+      // The only thing the app does is show them what they logged — which, for someone still
+      // deciding, is the intervention. Anything more is pressure, and pressure is what produces
+      // resistance rather than change.
+      const _uses = (ls('totry_vice_uses')||[]).filter(u=>u && u.v===v.n && u.ts);
+      const _now = Date.now();
+      const _in = (d)=>_uses.filter(u=>{const t=new Date(u.ts).getTime(); return !isNaN(t) && (_now-t) <= d*86400000;});
+      const _n7 = _in(7).reduce((a,u)=>a+(parseInt(u.qty,10)||1),0);
+      const _n30 = _in(30).reduce((a,u)=>a+(parseInt(u.qty,10)||1),0);
+      const _days30 = new Set(_in(30).map(u=>new Date(u.ts).toLocaleDateString('en-AU'))).size;
+      const _lastT = _uses.length ? Math.max.apply(null, _uses.map(u=>new Date(u.ts).getTime()).filter(t=>!isNaN(t))) : 0;
+      const _since = _lastT ? Math.floor((_now-_lastT)/86400000) : null;
+      // The offer, once they have enough of their own data to be looking at something real — and
+      // never again once they have answered it. An offer that repeats is a nag.
+      const _enough = _uses.length >= 6 && _days30 >= 3;
+      const _offer = (_enough && !v.goalOffered)
+        ? '<div style="margin-top:12px;padding:11px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px">'+
+            '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:9px">You have been watching this a while now. Want to name what you actually want with it \u2014 or keep just watching? Either is a real answer.</div>'+
+            '<div style="display:flex;gap:8px">'+
+              '<button onclick="_watchSetGoal('+i+')" style="flex:1;background:var(--bg2);border:1px solid var(--go-bd);color:var(--go);border-radius:9px;padding:9px;font-size:12px;cursor:pointer">Set a goal</button>'+
+              '<button onclick="_watchKeepWatching('+i+')" style="flex:1;background:none;border:1px solid var(--bd);color:var(--tx3);border-radius:9px;padding:9px;font-size:12px;cursor:pointer">Keep watching</button>'+
+            '</div></div>'
+        : '';
+      c.innerHTML =
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">'+
+          '<div style="flex:1">'+
+            '<div class="eyebrow">'+_escFew(v.n)+' &middot; just watching</div>'+
+            '<div style="font-family:DM Mono,monospace;font-size:24px;font-weight:500;color:var(--tx2)">'+_n30+' <span style="font-size:11px;color:var(--tx3)">in the last 30 days'+(_days30?(' \u00b7 '+_days30+' day'+(_days30===1?'':'s')):'')+'</span></div>'+
+          '</div>'+
+          '<div style="font-size:20px">\uD83D\uDC41\uFE0F</div>'+
+        '</div>'+
+        '<div style="font-size:11.5px;color:var(--tx3);margin-bottom:12px;line-height:1.55">'+
+          (_uses.length
+            ? ('This week: '+_n7+'.'+(_since!=null?(' Last: '+(_since===0?'today':_since===1?'yesterday':_since+' days ago')+'.'):'')+' No goal set \u2014 nothing here to keep or break. I am just holding the mirror.')
+            : 'Nothing logged yet. Log it honestly when it happens and I will show you the shape of it \u2014 no target, no streak, no verdict.')+
+        '</div>'+
+        '<button class="vice-btn" onclick="openLogUse('+i+')" style="width:100%;background:var(--bg3);border:1px solid var(--bd);color:var(--tx);border-radius:10px;padding:11px;font-size:13px;cursor:pointer">Log honestly</button>'+
+        _offer+
+        '<button onclick="openViceManage('+i+')" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:4px">Manage</button>';
+      list.appendChild(c);
+      return;
+    }
+
     if(v.mode === 'moderate'){
       // MODERATION CARD: the goal is staying within a limit, not a streak. No "clean days",
       // no "relapse", no shame — just how often they held their line.
@@ -725,7 +770,7 @@ function renderVices(){
   // Only abstinence ("quit") vices count here — moderation vices have no clean-day streak.
   // Hide the whole clock when there's no quit-vice to count: a big "0 Days clean" over an empty or
   // moderation-only fight is confusing, and against grace-over-shame.
-  const quitVices = vices.filter(v => v.mode !== 'moderate' && v.kind !== 'letgo');
+  const quitVices = vices.filter(v => viceIsAbstinence(v));
   const sobClock=document.getElementById('sob-clock-main');
   if(sobClock) sobClock.style.display = quitVices.length ? '' : 'none';
   if(quitVices.length){
@@ -933,7 +978,9 @@ function setViceMode(mode){
   const limitBox = document.getElementById('v-moderate-limit');
   if(limitBox) limitBox.style.display = mode === 'moderate' ? 'block' : 'none';
   const startLbl = document.getElementById('v-start-lbl');
-  if(startLbl) startLbl.textContent = mode === 'moderate' ? 'Tracking since (optional)' : 'Already quit? Set your real start date (optional)';
+  if(startLbl) startLbl.textContent = mode === 'moderate' ? 'Tracking since (optional)'
+                                    : mode === 'watch'    ? 'Watching since (optional)'
+                                    :                       'Already quit? Set your real start date (optional)';
 }
 
 function addVice(){
@@ -1045,7 +1092,9 @@ async function openRecoveryTimeline(i){
   if(typeof haptic==='function') haptic('tap');
   const days = viceCleanDays(v);
   const type = v.type || (typeof classifyVice==='function' ? classifyVice(v.n) : 'general');
-  const _moderate = v.mode === 'moderate';
+  // Watching earns no streak, so the 'what you're earning' framing would be about a goal they
+  // have not set. The limit framing is the closer fit; neither implies a promise.
+  const _moderate = !viceIsAbstinence(v);
   const m = document.createElement('div');
   m.className='modal-bg open'; m.id='recovery-timeline-modal';
   m.innerHTML = '<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
@@ -1179,7 +1228,7 @@ function _viceLastWord(v){
   return Math.max(0, ...stamps, ...uses);
 }
 function viceNeedsCheckIn(v){
-  if(!v || v.mode==='moderate') return false;
+  if(!viceIsAbstinence(v)) return false;
   if(viceCleanDays(v) < 6) return false;               // let a young streak just be
   const last=_viceLastWord(v); if(!last) return false;
   return (Date.now()-last)/86400000 >= 7;              // a week of silence — worth asking
@@ -1245,34 +1294,57 @@ function changeViceMode(i){
   loadV();
   const v = vices[i];
   if(!v) return;
-  const toModerate = v.mode !== 'moderate';
+  // WAS A TOGGLE, IS NOW A CHOICE. `toModerate = v.mode !== 'moderate'` meant a third mode had no
+  // way through here at all: someone watching who tapped "set a goal" would have been pushed straight
+  // into moderation without ever being asked. Three real options, the current one marked, and no
+  // direction treated as the failure direction — stepping back to watching is allowed and is not a
+  // relapse. That is the whole point of having stages.
+  const cur = viceMode(v);
   const m = document.createElement('div');
   m.className = 'modal-bg open'; m.style.alignItems = 'center';
-  if(toModerate){
-    m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
-      '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:6px">'+_escFew(v.n)+'</div>'+
-      '<div style="text-align:center;font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:16px">Switch to keeping this in check \u2014 staying within a limit instead of aiming for zero.</div>'+
-      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Weekly limit</div>'+
-      '<div style="position:relative;margin-bottom:14px"><input type="number" id="change-mode-limit" inputmode="numeric" placeholder="e.g. 3" value="'+(v.modLimit||'')+'" style="font-size:16px;padding:12px"></div>'+
-      '<p style="font-size:11px;color:var(--tx3);line-height:1.6;margin-bottom:14px">How many times per week is within your limit? You\u2019ll track how often you stay within it.</p>'+
-      '<button class="btn primary" onclick="applyViceMode('+i+',true)" style="margin-bottom:8px">Switch to moderation</button>'+
-      '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Cancel</button>'+
-      '</div>';
-  } else {
-    m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
-      '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:6px">'+_escFew(v.n)+'</div>'+
-      '<div style="text-align:center;font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:16px">Switch to quitting \u2014 aiming for zero. Your clean-day streak will start from today.</div>'+
-      '<button class="btn primary" onclick="applyViceMode('+i+',false)" style="margin-bottom:8px">Switch to quitting</button>'+
-      '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Cancel</button>'+
-      '</div>';
-  }
+  const opt = (mode, title, sub) => {
+    const on = cur === mode;
+    return '<button '+(on?'disabled':'onclick="_pickViceMode('+i+',\''+mode+'\')"')+
+      ' style="width:100%;text-align:left;padding:12px 14px;margin-bottom:8px;border-radius:10px;border:1px solid '+(on?'var(--go-bd)':'var(--bd)')+
+      ';background:'+(on?'var(--go-bg)':'var(--bg3)')+';color:'+(on?'var(--go)':'var(--tx)')+';font-size:13.5px;cursor:'+(on?'default':'pointer')+'">'+
+      title+(on?' <span style="font-size:11px;opacity:0.8">\u00b7 current</span>':'')+
+      '<span style="display:block;font-size:11.5px;color:var(--tx3);line-height:1.5;margin-top:3px">'+sub+'</span></button>';
+  };
+  m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:6px">'+_escFew(v.n)+'</div>'+
+    '<div style="text-align:center;font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:16px">What do you actually want with this right now? You can change it whenever the truth changes.</div>'+
+    opt('watch','Just watching','No goal, no streak, no line. I log it and show you the shape of it. Nothing to keep or break.')+
+    opt('moderate','Keeping it in check','A limit you set for yourself, and how often you stay within it.')+
+    opt('quit','Quitting','Aiming for zero, with a clean-day streak from the day you start.')+
+    '<div id="change-mode-extra"></div>'+
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:4px">Cancel</button>'+
+    '</div>';
   document.body.appendChild(m);
 }
-function applyViceMode(i, toModerate){
+// Moderation needs one more answer before it means anything; the other two do not.
+function _pickViceMode(i, mode){
+  if(mode !== 'moderate'){ applyViceMode(i, mode); return; }
+  loadV(); const v = vices[i]; if(!v) return;
+  const box = document.getElementById('change-mode-extra');
+  if(!box){ applyViceMode(i, 'moderate'); return; }
+  box.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin:6px 0 6px">Weekly limit</div>'+
+    '<div style="position:relative;margin-bottom:10px"><input type="number" id="change-mode-limit" inputmode="numeric" placeholder="e.g. 3" value="'+(v.modLimit||'')+'" style="font-size:16px;padding:11px;width:100%"></div>'+
+    '<p style="font-size:11px;color:var(--tx3);line-height:1.6;margin-bottom:12px">How many times a week is within your limit? You\u2019ll track how often you stay within it.</p>'+
+    '<button class="btn primary" onclick="applyViceMode('+i+',\'moderate\')" style="margin-bottom:4px">Switch to moderation</button>';
+  try{ document.getElementById('change-mode-limit').focus(); }catch(_){ }
+}
+
+function applyViceMode(i, mode){
   loadV();
   const v = vices[i];
   if(!v) return;
-  if(toModerate){
+  // Accepts the old boolean as well as a mode string: `true` meant "to moderation", `false` meant
+  // "to quitting". Nothing should still call it that way, but a silently-wrong mode here would set
+  // someone's goal to the string "false".
+  if(mode === true) mode = 'moderate';
+  else if(mode === false) mode = 'quit';
+  if(mode !== 'moderate' && mode !== 'quit' && mode !== 'watch') mode = 'quit';
+  if(mode === 'moderate'){
     const lim = parseInt(document.getElementById('change-mode-limit')?.value);
     if(isNaN(lim) || lim < 1){ showToast('Set a limit','Enter how many times per week is within your limit.'); return; }
     v.mode = 'moderate';
@@ -1282,6 +1354,10 @@ function applyViceMode(i, toModerate){
     // Written here in the same shape the add-a-vice flow writes it, so the two agree.
     v.limit = lim + ' a week';
     if(v.modWithin == null) v.modWithin = 0;
+  } else if(mode === 'watch'){
+    v.mode = 'watch';
+    // Deliberately keeps startDate: if they come back to quitting later, applyViceMode resets it then.
+    // Nothing about watching is a streak, so nothing here is lost by not touching it.
   } else {
     v.mode = 'quit';
     // Fresh clean-day streak from today when committing to zero.
@@ -1292,11 +1368,29 @@ function applyViceMode(i, toModerate){
   renderVices();
   if(typeof renderHomeQuickWins==='function') renderHomeQuickWins();
   haptic('success');
-  showToast('Goal updated', v.n + (toModerate ? ' \u2014 now keeping it in check.' : ' \u2014 now aiming for zero.'));
+  showToast(mode === 'watch' ? 'Just watching' : 'Goal updated',
+    v.n + (mode === 'moderate' ? ' \u2014 now keeping it in check.'
+         : mode === 'watch'    ? ' \u2014 no goal, no streak. I will just hold the mirror.'
+         :                       ' \u2014 now aiming for zero.'));
 }
 
 // One home for the vice's settings — so the card face stays about the fight, not the admin. Backdating
 // isn't here: "I used — log it honestly" already takes any date, so there's one way to do it, not three.
+// The offer answered. Either way it is recorded so it is never asked again — an offer that repeats
+// is a nag, and nagging someone who is still deciding is the thing the evidence says backfires.
+function _watchSetGoal(i){
+  loadV(); const v=vices[i]; if(!v) return;
+  v.goalOffered = new Date().toISOString(); saveV();
+  if(typeof changeViceMode==='function') changeViceMode(i);
+  else if(typeof openViceManage==='function') openViceManage(i);
+}
+function _watchKeepWatching(i){
+  loadV(); const v=vices[i]; if(!v) return;
+  v.goalOffered = new Date().toISOString(); saveV();
+  try{ renderVices(); }catch(_){ }
+  if(typeof haptic==='function') haptic('tap');
+  if(typeof showToast==='function') showToast('Still watching', 'That is a real answer. I will keep holding the mirror and I will not ask again.');
+}
 function openViceManage(i){
   loadV(); const v=vices[i]; if(!v) return;
   const row=(label, act, danger)=>'<button onclick="closeModal(this);'+act+'" style="width:100%;text-align:left;padding:13px 14px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;margin-bottom:8px;color:'+(danger?'var(--re)':'var(--tx)')+';font-size:14px;cursor:pointer">'+label+'</button>';
@@ -1312,7 +1406,7 @@ function openViceManage(i){
     row('It happened earlier — set the real day', 'curVice='+i+';promptLossDate()')+
     row('Log slips from before I started here', 'curVice='+i+';promptMassAddLosses()')+
     row(v.costAmount?('Money it costs &middot; '+curSym()+viceMoneySaved(v).toLocaleString()+' reclaimed'):'Track the money it costs', 'editViceCost('+i+')')+
-    row(v.mode==='moderate'?'Switch to quitting (aim for zero)':'Switch to keeping it in check', 'changeViceMode('+i+')')+
+    row('Change what I want with this \u2014 now: '+viceModeLabel(v), 'changeViceMode('+i+')')+
     row(v.trackPatterns?'Hide my patterns':'Show my patterns', 'toggleVicePatterns('+i+')')+
     row('Remove this from the fight', 'removeVice('+i+')', true)+
     '<button class="btn" onclick="closeModal(this)" style="margin-top:4px;background:transparent;border:none;color:var(--tx3);font-size:13px">Done</button>'+
@@ -1413,7 +1507,7 @@ function saveViceUse(i){
   // to move — setting only lastLoss would let a logged slip leave the count untouched, which is the
   // exact dishonesty this whole feature exists to end. Only ever moves forward, so backfilling an
   // older day can't rewrite a more recent reality.
-  if(v.mode!=='moderate'){
+  if(viceIsAbstinence(v)){
     const used=new Date(ts).getTime();
     if(used > (v.lastLoss?new Date(v.lastLoss).getTime():0)) v.lastLoss=ts;
     if(used > (v.startDate?new Date(v.startDate).getTime():0)) v.startDate=ts;  // streak restarts from when it actually happened
