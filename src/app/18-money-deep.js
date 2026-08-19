@@ -177,7 +177,10 @@ function saveTransaction(){
 function deleteTransaction(id){
   if(!confirm('Delete this transaction?')) return;
   const list = ls('totry_transactions') || [];
-  ls('totry_transactions', list.filter(t => t.id !== id));
+  const next = list.filter(t => t.id !== id);
+  // Record the removal so the cloud union cannot bring it back — see the note above.
+  try{ if(typeof tombstoneRemoved === 'function') tombstoneRemoved('totry_transactions', list, next); }catch(_){ }
+  ls('totry_transactions', next);
   renderTransactions();
 }
 function renderTransactions(){
@@ -291,7 +294,10 @@ function saveSubscription(){
 function deleteSubscription(id){
   if(!confirm('Remove this subscription from tracking?')) return;
   const list = ls('totry_subscriptions') || [];
-  ls('totry_subscriptions', list.filter(s => s.id !== id));
+  const next = list.filter(s => s.id !== id);
+  // Tombstone the removal so the cloud union cannot resurrect it — see deleteTransaction.
+  try{ if(typeof tombstoneRemoved === 'function') tombstoneRemoved('totry_subscriptions', list, next); }catch(_){ }
+  ls('totry_subscriptions', next);
   renderSubscriptions();
 }
 function monthlyEquivalent(sub){
@@ -771,7 +777,10 @@ function markBillPaid(id){
 function deleteBill(id){
   if(!confirm('Delete this bill?')) return;
   const list = ls('totry_bills') || [];
-  ls('totry_bills', list.filter(b => b.id !== id));
+  const next = list.filter(b => b.id !== id);
+  // Tombstone the removal so the cloud union cannot resurrect it — see deleteTransaction.
+  try{ if(typeof tombstoneRemoved === 'function') tombstoneRemoved('totry_bills', list, next); }catch(_){ }
+  ls('totry_bills', next);
   try{ if(typeof Notify!=='undefined' && Notify.cancel) Notify.cancel('bill_' + String(id)); }catch(_){ }
   renderBills();
 }
@@ -961,7 +970,10 @@ function updateAsset(id){
 function deleteAsset(id){
   if(!confirm('Remove this asset?')) return;
   const list = ls('totry_assets') || [];
-  ls('totry_assets', list.filter(a => a.id !== id));
+  const next = list.filter(a => a.id !== id);
+  // Tombstone the removal so the cloud union cannot resurrect it — see deleteTransaction.
+  try{ if(typeof tombstoneRemoved === 'function') tombstoneRemoved('totry_assets', list, next); }catch(_){ }
+  ls('totry_assets', next);
   renderNetWorth();
 }
 function renderNetWorth(){

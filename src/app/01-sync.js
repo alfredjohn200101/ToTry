@@ -440,7 +440,11 @@ async function pullFromCloud(){
       // a letter to your future self, a promise you made, the people you carry. They were in
       // SYNC_KEYS but not here, so the whole list was taken from one side and the other side's was
       // dropped — write a letter on your phone, open the app on your laptop, and it is simply gone.
-      'totry_letters','totry_promises','totry_relationships'];
+      'totry_letters','totry_promises','totry_relationships',
+      // Append-only logs with a stable id/ts — see the note above.
+      'totry_payments','totry_transactions','totry_vice_savings_log','totry_feelings','totry_hunger_log',
+      // Editable lists — safe to union ONLY because their deletes now tombstone. See note.
+      'totry_bills','totry_assets','totry_subscriptions'];
     const idOf = syncIdOf;   // ONE identity function, shared with tombstoneRemoved (see TOMB_KEY)
     // union(local, cloud) kept the FIRST occurrence of each id — always the LOCAL one — so an entry
     // EDITED on the other device never arrived: the correction was silently dropped while both copies
@@ -516,6 +520,7 @@ async function pullFromCloud(){
         nv = {}; const days = new Set([].concat(Object.keys(lv), Object.keys(cv)));
         const _cloudNewer = (cts >= lts) && !pendingLocal;
         days.forEach(d => { nv[d] = union(lv[d], cv[d], _cloudNewer, 'totry_nutlog'); });
+        _queueWrite(k, nv);                        // push the merged truth back up — see the ARR note
       } else if(k === 'totry_v' && Array.isArray(lv) && Array.isArray(cv)){
         // Vices: merge by name so a win/relapse logged on one device is never lost. For a vice on
         // both sides, keep the higher relapseCount + total and the most recent lastWin/startDate,
@@ -577,6 +582,7 @@ async function pullFromCloud(){
         _queueWrite(k, nv);
       } else if(ARR.indexOf(k) > -1 && Array.isArray(lv) && Array.isArray(cv)){
         nv = union(lv, cv, (cts >= lts) && !pendingLocal, k);   // keep every entry except a tombstoned one
+        _queueWrite(k, nv);                        // push the merged truth back up — see the note
       } else if(lv === null || lv === undefined){
         nv = cv;                                   // nothing local → take cloud
       } else if(pendingLocal){

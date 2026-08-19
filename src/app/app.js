@@ -3717,7 +3717,7 @@ function renderIdentity(){
       const today=new Date().toLocaleDateString('en-AU');
       const idx=Math.abs(hashStr(today))%affirms.length;
       const affirm=affirms[idx];
-      if(labelEl)labelEl.textContent='Today&apos;s affirmation';
+      if(labelEl)labelEl.textContent='Today\u2019s affirmation';
       el.innerHTML='<span style="color:var(--tx)">'+affirm+'</span>';
     }else{
       if(labelEl)labelEl.textContent='Who you are becoming';

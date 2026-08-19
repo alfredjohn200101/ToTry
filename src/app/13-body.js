@@ -502,8 +502,10 @@ function renderBody(){
     }
   }
   
-  if(entries.length){
-    const cur=entries[0].weight,start=entries[entries.length-1].weight,diff=Math.round((cur-start)*10)/10;
+  // Only entries that carry a real weight can drive these tiles — see the note above.
+  const weighed = entries.filter(e => e && (parseFloat(e.weight) || 0) > 0);
+  if(weighed.length){
+    const cur=weighed[0].weight,start=weighed[weighed.length-1].weight,diff=Math.round((cur-start)*10)/10;
     document.getElementById('bod-cur').textContent=cur+'kg';
     document.getElementById('bod-st').textContent=start+'kg';
     document.getElementById('bod-lo').textContent=(diff<0?diff:diff>0?'+'+diff:'\u2014')+'kg';
@@ -511,8 +513,8 @@ function renderBody(){
     const bmiEl=document.getElementById('bod-bmi');
     if(bmiEl)bmiEl.textContent=bmi+' ('+(bmi<18.5?'Underweight':bmi<25?'Healthy':bmi<30?'Overweight':'Obese')+')';
   }
-  if(entries.length>=2){
-    const pts=entries.slice(0,12).reverse(),weights=pts.map(e=>e.weight),mn=Math.min(...weights),mx=Math.max(...weights),range=mx-mn||1,W=340,H=90,pad=12;
+  if(weighed.length>=2){
+    const pts=weighed.slice(0,12).reverse(),weights=pts.map(e=>e.weight),mn=Math.min(...weights),mx=Math.max(...weights),range=mx-mn||1,W=340,H=90,pad=12;
     const x=i=>pad+(i/(pts.length-1))*(W-2*pad);const y=w=>H-pad-((w-mn)/range)*(H-2*pad);
     const pathD=pts.map((p,i)=>(i===0?'M':'L')+x(i).toFixed(1)+','+y(p.weight).toFixed(1)).join(' ');
     const svg=document.getElementById('weight-chart');
@@ -648,7 +650,8 @@ function saveQuickWeight(){
   const existingIdx = entries.findIndex(e => (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') === todayFull : e.date === todayStr));
   if(existingIdx >= 0){
     entries[existingIdx].weight = w;
-    entries[existingIdx].ts = new Date().toISOString();
+    // Deliberately NOT touching ts — see the note above; it is this entry's sync identity.
+    entries[existingIdx].editedAt = new Date().toISOString();
   } else {
     entries.unshift({
       date: todayStr,

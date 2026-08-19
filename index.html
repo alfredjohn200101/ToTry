@@ -4892,7 +4892,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v516';
+const APP_VERSION = 'v517';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5795,7 +5795,11 @@ async function pullFromCloud(){
       // a letter to your future self, a promise you made, the people you carry. They were in
       // SYNC_KEYS but not here, so the whole list was taken from one side and the other side's was
       // dropped — write a letter on your phone, open the app on your laptop, and it is simply gone.
-      'totry_letters','totry_promises','totry_relationships'];
+      'totry_letters','totry_promises','totry_relationships',
+      // Append-only logs with a stable id/ts — see the note above.
+      'totry_payments','totry_transactions','totry_vice_savings_log','totry_feelings','totry_hunger_log',
+      // Editable lists — safe to union ONLY because their deletes now tombstone. See note.
+      'totry_bills','totry_assets','totry_subscriptions'];
     const idOf = syncIdOf;   // ONE identity function, shared with tombstoneRemoved (see TOMB_KEY)
     // union(local, cloud) kept the FIRST occurrence of each id — always the LOCAL one — so an entry
     // EDITED on the other device never arrived: the correction was silently dropped while both copies
@@ -5871,6 +5875,7 @@ async function pullFromCloud(){
         nv = {}; const days = new Set([].concat(Object.keys(lv), Object.keys(cv)));
         const _cloudNewer = (cts >= lts) && !pendingLocal;
         days.forEach(d => { nv[d] = union(lv[d], cv[d], _cloudNewer, 'totry_nutlog'); });
+        _queueWrite(k, nv);                        // push the merged truth back up — see the ARR note
       } else if(k === 'totry_v' && Array.isArray(lv) && Array.isArray(cv)){
         // Vices: merge by name so a win/relapse logged on one device is never lost. For a vice on
         // both sides, keep the higher relapseCount + total and the most recent lastWin/startDate,
@@ -5932,6 +5937,7 @@ async function pullFromCloud(){
         _queueWrite(k, nv);
       } else if(ARR.indexOf(k) > -1 && Array.isArray(lv) && Array.isArray(cv)){
         nv = union(lv, cv, (cts >= lts) && !pendingLocal, k);   // keep every entry except a tombstoned one
+        _queueWrite(k, nv);                        // push the merged truth back up — see the note
       } else if(lv === null || lv === undefined){
         nv = cv;                                   // nothing local → take cloud
       } else if(pendingLocal){
@@ -9391,9 +9397,13 @@ function getDayCount(){
   if(!anchorStr) return 1;
   const anchor = new Date(anchorStr);
   if(isNaN(anchor)) return 1;
-  // A bare number parses as a valid Date — see the note below — so bound it as well as parse it.
-  const _EARLIEST = new Date('2024-01-01T00:00:00Z').getTime();
-  if(anchor.getTime() < _EARLIEST || anchor.getTime() > Date.now() + 86400000) return 1;
+  // A bare number parses as a valid Date — new Date(12345) is 1 Jan 1970 — so the isNaN check above
+  // lets corruption through. Reject the TYPE rather than the calendar value: a v515 fix floored this
+  // at 2024 and thereby refused every legitimate old anchor, and editJourneyStart exists so someone
+  // clean since 2019 can say so (its input has a max and deliberately no min).
+  if(typeof anchorStr === 'number') return 1;
+  const _FLOOR = new Date('1980-01-01T00:00:00Z').getTime();   // absurd, not merely old
+  if(anchor.getTime() < _FLOOR || anchor.getTime() > Date.now() + 86400000) return 1;
   // MIDNIGHT TO MIDNIGHT, not "how many 24-hour blocks have elapsed". `totry_start` is a full
   // timestamp: sign up at 9pm and at 9am the next calendar day only 12 hours have passed, so the
   // floor gave 0 and the counter said "Day 1" for a second time. Everything gated on a day number
@@ -21847,8 +21857,10 @@ function renderBody(){
     }
   }
   
-  if(entries.length){
-    const cur=entries[0].weight,start=entries[entries.length-1].weight,diff=Math.round((cur-start)*10)/10;
+  // Only entries that carry a real weight can drive these tiles — see the note above.
+  const weighed = entries.filter(e => e && (parseFloat(e.weight) || 0) > 0);
+  if(weighed.length){
+    const cur=weighed[0].weight,start=weighed[weighed.length-1].weight,diff=Math.round((cur-start)*10)/10;
     document.getElementById('bod-cur').textContent=cur+'kg';
     document.getElementById('bod-st').textContent=start+'kg';
     document.getElementById('bod-lo').textContent=(diff<0?diff:diff>0?'+'+diff:'\u2014')+'kg';
@@ -21856,8 +21868,8 @@ function renderBody(){
     const bmiEl=document.getElementById('bod-bmi');
     if(bmiEl)bmiEl.textContent=bmi+' ('+(bmi<18.5?'Underweight':bmi<25?'Healthy':bmi<30?'Overweight':'Obese')+')';
   }
-  if(entries.length>=2){
-    const pts=entries.slice(0,12).reverse(),weights=pts.map(e=>e.weight),mn=Math.min(...weights),mx=Math.max(...weights),range=mx-mn||1,W=340,H=90,pad=12;
+  if(weighed.length>=2){
+    const pts=weighed.slice(0,12).reverse(),weights=pts.map(e=>e.weight),mn=Math.min(...weights),mx=Math.max(...weights),range=mx-mn||1,W=340,H=90,pad=12;
     const x=i=>pad+(i/(pts.length-1))*(W-2*pad);const y=w=>H-pad-((w-mn)/range)*(H-2*pad);
     const pathD=pts.map((p,i)=>(i===0?'M':'L')+x(i).toFixed(1)+','+y(p.weight).toFixed(1)).join(' ');
     const svg=document.getElementById('weight-chart');
@@ -21993,7 +22005,8 @@ function saveQuickWeight(){
   const existingIdx = entries.findIndex(e => (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') === todayFull : e.date === todayStr));
   if(existingIdx >= 0){
     entries[existingIdx].weight = w;
-    entries[existingIdx].ts = new Date().toISOString();
+    // Deliberately NOT touching ts — see the note above; it is this entry's sync identity.
+    entries[existingIdx].editedAt = new Date().toISOString();
   } else {
     entries.unshift({
       date: todayStr,
@@ -28803,7 +28816,10 @@ function saveTransaction(){
 function deleteTransaction(id){
   if(!confirm('Delete this transaction?')) return;
   const list = ls('totry_transactions') || [];
-  ls('totry_transactions', list.filter(t => t.id !== id));
+  const next = list.filter(t => t.id !== id);
+  // Record the removal so the cloud union cannot bring it back — see the note above.
+  try{ if(typeof tombstoneRemoved === 'function') tombstoneRemoved('totry_transactions', list, next); }catch(_){ }
+  ls('totry_transactions', next);
   renderTransactions();
 }
 function renderTransactions(){
@@ -28917,7 +28933,10 @@ function saveSubscription(){
 function deleteSubscription(id){
   if(!confirm('Remove this subscription from tracking?')) return;
   const list = ls('totry_subscriptions') || [];
-  ls('totry_subscriptions', list.filter(s => s.id !== id));
+  const next = list.filter(s => s.id !== id);
+  // Tombstone the removal so the cloud union cannot resurrect it — see deleteTransaction.
+  try{ if(typeof tombstoneRemoved === 'function') tombstoneRemoved('totry_subscriptions', list, next); }catch(_){ }
+  ls('totry_subscriptions', next);
   renderSubscriptions();
 }
 function monthlyEquivalent(sub){
@@ -29397,7 +29416,10 @@ function markBillPaid(id){
 function deleteBill(id){
   if(!confirm('Delete this bill?')) return;
   const list = ls('totry_bills') || [];
-  ls('totry_bills', list.filter(b => b.id !== id));
+  const next = list.filter(b => b.id !== id);
+  // Tombstone the removal so the cloud union cannot resurrect it — see deleteTransaction.
+  try{ if(typeof tombstoneRemoved === 'function') tombstoneRemoved('totry_bills', list, next); }catch(_){ }
+  ls('totry_bills', next);
   try{ if(typeof Notify!=='undefined' && Notify.cancel) Notify.cancel('bill_' + String(id)); }catch(_){ }
   renderBills();
 }
@@ -29587,7 +29609,10 @@ function updateAsset(id){
 function deleteAsset(id){
   if(!confirm('Remove this asset?')) return;
   const list = ls('totry_assets') || [];
-  ls('totry_assets', list.filter(a => a.id !== id));
+  const next = list.filter(a => a.id !== id);
+  // Tombstone the removal so the cloud union cannot resurrect it — see deleteTransaction.
+  try{ if(typeof tombstoneRemoved === 'function') tombstoneRemoved('totry_assets', list, next); }catch(_){ }
+  ls('totry_assets', next);
   renderNetWorth();
 }
 function renderNetWorth(){
@@ -44061,7 +44086,7 @@ function renderIdentity(){
       const today=new Date().toLocaleDateString('en-AU');
       const idx=Math.abs(hashStr(today))%affirms.length;
       const affirm=affirms[idx];
-      if(labelEl)labelEl.textContent='Today&apos;s affirmation';
+      if(labelEl)labelEl.textContent='Today\u2019s affirmation';
       el.innerHTML='<span style="color:var(--tx)">'+affirm+'</span>';
     }else{
       if(labelEl)labelEl.textContent='Who you are becoming';

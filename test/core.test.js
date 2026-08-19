@@ -440,9 +440,17 @@ H.section('sync merge — append-only unions, editable lists do not');
   // without it one device's whole list replaces the other's. totry_letters and totry_relationships
   // moved into that second group at v483: a letter written on a phone was simply gone on a laptop.
   // They stay out of this list, and are asserted below with the tombstone that makes them safe.
-  ['totry_bills', 'totry_assets', 'totry_subscriptions', 'totry_transactions',
-   'totry_measurements'].forEach(k => {
-    H.ok(!ARR.has(k), k + ' is NOT unioned — it has a delete path, and a removed item must stay removed');
+  ['totry_measurements'].forEach(k => {
+    H.ok(!ARR.has(k), k + ' is NOT unioned — it has a delete path and no tombstone, so a removed item must stay removed');
+  });
+
+  // MOVED AT v517, the same way totry_letters and totry_relationships moved at v483. Outside the
+  // union these were whole-blob last-write-wins: a bill added on the laptop and a spend logged on the
+  // phone the same day, and one of them was simply gone. Their deletes tombstone now, so the union
+  // keeps every entry from both devices AND a deletion still sticks. The tombstone call is asserted
+  // in the delete-path section further down; here we require the union half.
+  ['totry_bills', 'totry_assets', 'totry_subscriptions', 'totry_transactions'].forEach(k => {
+    H.ok(ARR.has(k), k + ' IS unioned — its delete tombstones, so union is safe and prevents whole-list loss');
   });
 }
 
@@ -2946,7 +2954,10 @@ H.section('two devices do not destroy each other\'s work')
   // A list that is unioned AND deletable is only safe if its delete records a tombstone. These three
   // are exactly that case; a missing call here means a deleted item silently returns on the next pull.
   for (const [fn, key] of [['deleteLetter', 'totry_letters'], ['deleteRelationship', 'totry_relationships'],
-                           ['deleteSacrament', 'totry_confessions'], ['removeVice', 'totry_v']]) {
+                           ['deleteSacrament', 'totry_confessions'], ['removeVice', 'totry_v'],
+                           // v517 — these four joined the unioned group, so their deletes must tombstone too
+                           ['deleteTransaction', 'totry_transactions'], ['deleteBill', 'totry_bills'],
+                           ['deleteAsset', 'totry_assets'], ['deleteSubscription', 'totry_subscriptions']]) {
     const body = fnBody(fn);
     H.ok(/tombstoneRemoved\(|_tombAdd\(/.test(body), `${fn} records a tombstone, so the deletion survives a sync`);
   }
@@ -4102,6 +4113,15 @@ function fnBodyOf(code, name){
   H.eq(getDayCount(), 1, 'a bare number anchors nothing — it used to give 20685');
   store.totry_start = '1970-01-01T00:00:00Z';
   H.eq(getDayCount(), 1, 'nor does an epoch date');
+
+  // AND THE OTHER HALF, which a first version of this fix broke: editJourneyStart exists so someone
+  // can anchor to the day they actually quit — its input has a max and deliberately no min, and the
+  // comment on getDayCount says that date often predates finding the app. A fence on the calendar
+  // value floored at 2024 rejected all of them and showed someone clean since 2019 "Day 1".
+  store.totry_start = '2019-03-14T12:00:00Z';
+  H.ok(getDayCount() > 2000, 'someone clean since 2019 keeps their real day count, not Day 1');
+  store.totry_start = '2005-06-01T12:00:00Z';
+  H.ok(getDayCount() > 7000, 'and so does a twenty-year anchor');
   store.totry_start = new Date(Date.now() + 30 * 864e5).toISOString();
   H.eq(getDayCount(), 1, 'nor a start in the future');
   store.totry_start = 'not-a-date';
@@ -4112,7 +4132,11 @@ function fnBodyOf(code, name){
   H.eq(getDayCount(), 366, 'a genuine year still reads 366');
   store.totry_start = ago(0);
   H.eq(getDayCount(), 1, 'and today is Day 1');
-  H.ok(/_EARLIEST/.test(src), 'the bound is explicit in the source, not incidental');
+  H.ok(/typeof anchorStr === 'number'/.test(src),
+    'the guard rejects the TYPE — a bare number — which is what the corruption actually is');
+  H.ok(/_FLOOR/.test(src) && /1980/.test(src),
+    'and keeps only a floor absurd enough that no real anchor reaches it');
+  H.ok(!/2024-01-01/.test(src), 'the over-tight 2024 fence is gone');
 }
 
 // ── contrast, computed rather than eyeballed ─────────────────────────────────────────────────
@@ -4256,6 +4280,98 @@ function fnBodyOf(code, name){
   const lsFn = H.extractFn('ls');
   H.ok(/_before - _photoCount\(\)/.test(lsFn), 'the number of photos lost is measured');
   H.ok(/Storage was full/.test(lsFn), 'and the person is told');
+}
+
+// ── correcting a weigh-in must not create a second one ───────────────────────────────────────
+{
+  H.section('an in-place correction keeps its sync identity');
+
+  // A body entry carries no id, so syncIdOf falls back to x.ts — which means ts IS the identity.
+  // saveQuickWeight rewrote it while editing in place, so the corrected row looked brand new to the
+  // cloud union, both survived, nothing dedupes totry_body on read, and every reader takes array
+  // position rather than the newest ts. Correcting today's weight on one phone left the other showing
+  // two weigh-ins for the same day — and, depending on order, the number just corrected away.
+  const save = H.extractFn('saveQuickWeight');
+  H.ok(!/entries\[existingIdx\]\.ts = new Date/.test(save), 'the edit no longer rewrites ts');
+  H.ok(/editedAt = new Date/.test(save), 'the correction time is recorded separately instead');
+
+  // Run the SHIPPED syncIdOf and union against the two-device case.
+  const sid = H.extractFn('syncIdOf');
+  const src = H.html;
+  const ui = src.indexOf('const union = (a,b,preferB,tombKey) =>');
+  H.ok(ui > 0, 'the union lambda was found');
+  const ub = src.slice(ui, src.indexOf('return Array.from(m.values());', ui) + 31) + '};';
+  const run = (a, b) => new Function('a', 'b',
+    sid + '\nconst idOf = syncIdOf; const isTombed = () => false;\n' +
+    ub.replace('const union', 'var union') + '\nreturn union(a, b, false, null);')(a, b);
+
+  const t0 = '2026-08-19T07:00:00.000Z';
+  const broken = run([{ ts: '2026-08-19T18:30:00.000Z', weight: 79.4 }], [{ ts: t0, weight: 80.2 }]);
+  H.eq(broken.length, 2, 'a rewritten ts DOES duplicate — this is why the fix is needed');
+
+  const fixed = run([{ ts: t0, weight: 79.4, editedAt: '2026-08-19T18:30:00.000Z' }], [{ ts: t0, weight: 80.2 }]);
+  H.eq(fixed.length, 1, 'a preserved ts merges to ONE entry for the day');
+  H.eq(fixed[0].weight, 79.4, 'and it is the corrected weight that survives');
+}
+
+// ── a check-in without a weight is not a weigh-in of zero ────────────────────────────────────
+{
+  H.section('the body tiles read a real weight');
+
+  // logBody() deliberately accepts an entry with no weight — the field is labelled "This week's
+  // weight (optional)" and a single button submits the whole weekly check-in — and it stores
+  // weight: 0, then unshifts it. renderBody took entries[0].weight blindly, so someone who filled in
+  // only the reflection saw "0kg" as their current weight and a BMI of 0.0 labelled "Underweight".
+  // Nothing else repaints those tiles, so it stayed until the next real weigh-in. The chart had the
+  // same problem: a zero point drags the line to the floor and rescales the axis around a non-weight.
+  const rb = H.extractFn('renderBody');
+  H.ok(/const weighed = entries\.filter\(e => e && \(parseFloat\(e\.weight\) \|\| 0\) > 0\)/.test(rb),
+    'renderBody derives a weighed-only subset');
+  H.ok(/if\(weighed\.length\)\{/.test(rb), 'the tiles are driven from it');
+  H.ok(/if\(weighed\.length>=2\)\{/.test(rb), 'and so is the chart');
+  H.ok(!/const cur=entries\[0\]\.weight/.test(rb), 'nothing reads entries[0].weight directly any more');
+
+  H.section('no HTML entity is written through textContent');
+  H.ok(!/textContent\s*=\s*'[^']*&(apos|quot|amp|nbsp|rsquo|mdash|lsquo|ldquo);/.test(H.html),
+    'textContent does not decode entities — a literal &apos; would appear on screen');
+
+  const entries = [{ weight: 0, note: 'reflection only' }, { weight: 80.4 }, { weight: 81.2 }];
+  const weighed = entries.filter(e => e && (parseFloat(e.weight) || 0) > 0);
+  H.eq(weighed[0].weight, 80.4, 'the newest REAL weight is what the tile shows');
+  H.eq(weighed.length, 2, 'and the zero entry is not plotted');
+  H.ok(Math.round((weighed[0].weight / ((175 / 100) ** 2)) * 10) / 10 > 18.5,
+    'so the BMI is a real number, not 0.0 "Underweight"');
+}
+
+// ── every merge must be pushed back, or the stale outbox undoes it ───────────────────────────
+{
+  H.section('a merge the cloud has not seen must be queued');
+
+  // Reproduced by executing the real 01-sync.js against a stubbed localStorage and Supabase: the ARR
+  // branch unioned local+cloud, wrote the result locally past the sync monitor, and never queued it —
+  // so the outbox still held the PRE-merge array, and startSyncLoop runs pullFromCloud() then
+  // flushOutbox() back to back. The flush upserted the old array straight over the merged row and the
+  // other device's entry was gone from the cloud. Both locals still looked right, so nothing seemed
+  // wrong until a reinstall, a new phone, or Safari-vs-home-screen (separate storage worlds).
+  // Every other merge branch already ended in _queueWrite; ARR and totry_nutlog did not.
+  const src = H.html;
+  const region = src.slice(src.indexOf("const ARR = ["), src.indexOf("await flushOutbox", src.indexOf("const ARR = [")));
+  H.ok(region.length > 500, 'the merge region was located');
+
+  const arrIdx = region.indexOf("ARR.indexOf(k) > -1");
+  H.ok(arrIdx > 0, 'the ARR branch is present');
+  const arrBranch = region.slice(arrIdx, region.indexOf('} else', arrIdx));
+  H.ok(/_queueWrite\(k, nv\)/.test(arrBranch), 'the ARR union is queued back to the cloud');
+
+  const nutIdx = region.indexOf("k === 'totry_nutlog'");
+  H.ok(nutIdx > 0, 'the nutlog branch is present');
+  const nutBranch = region.slice(nutIdx, region.indexOf('} else', nutIdx));
+  H.ok(/_queueWrite\(k, nv\)/.test(nutBranch), 'and so is the per-day nutlog union');
+
+  // All five merge branches that build a new value must queue it: tombstones, nutlog, vices,
+  // finance, and the array union.
+  const queues = (region.match(/_queueWrite\(k, nv\)/g) || []).length;
+  H.ok(queues >= 5, `every merge branch pushes its result back (found ${queues}, expected >= 5)`);
 }
 
 // ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────
