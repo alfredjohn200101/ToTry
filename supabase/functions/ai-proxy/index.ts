@@ -61,9 +61,11 @@ const MODELS = {
 
 // Resolve to a list: an explicit env override collapses it to one, otherwise the candidates.
 function modelList(envName, key) {
+  const list = MODELS[key] || [];
   const override = Deno.env.get(envName);
-  if (override) return [override];
-  return MODELS[key] || [];
+  if (!override) return list;
+  // First, not only — see the note above. A stale pin must not delete the provider.
+  return [override, ...list.filter((m) => m !== override)];
 }
 
 async function fetchWithTimeout(url, options, ms) {

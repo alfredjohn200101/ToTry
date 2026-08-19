@@ -107,6 +107,41 @@ r = await call({ messages: [{ role: 'user', content: 'hi' }] });
 ok(r.body.provider === 'groq', 'a retired model id costs ONE candidate, not the whole provider');
 ok(dead.size >= 2, `and it actually tried a second model (tried ${dead.size})`);
 
+// ── a PINNED model id must not delete the provider ───────────────────────────────────────────
+// modelList() was `if (override) return [override]`, so one stale GROQ_MODEL made that env var the
+// ONLY candidate. Observed live 19 Aug 2026: the deployed function tried only "qwen/qwen3-32b" — the
+// LAST entry in the built-in groq list — 404'd, and left Gemini as the single working provider.
+// The override must LEAD the list, not replace it.
+reset();
+ENV.GROQ_MODEL = 'a-model-that-no-longer-exists';
+const tried = [];
+behaviour.groq = (model) => {
+  tried.push(model);
+  if (model === 'a-model-that-no-longer-exists') {
+    return { ok: false, status: 404, json: async () => ({ error: { message: 'model_not_found' } }), text: async () => '' };
+  }
+  return { ok: true, status: 200, json: async () => ({ choices: [{ message: { content: 'from groq' } }] }) };
+};
+behaviour.gemini = 'fail';
+r = await call({ messages: [{ role: 'user', content: 'hi' }] });
+ok(tried[0] === 'a-model-that-no-longer-exists', 'the pinned model is still tried FIRST');
+ok(tried.length >= 2, `and a dead pin falls through to the built-in list (tried ${tried.length})`);
+ok(r.body.provider === 'groq', 'so one stale env var costs a request, not an entire provider');
+delete ENV.GROQ_MODEL;
+
+// ── the thinking budget must be off for Gemini ───────────────────────────────────────────────
+// gemini-2.5-flash spends maxOutputTokens on THOUGHTS before writing a word. Measured against the
+// LIVE function: 3 of 6 identical calls at max_tokens 500 came back as 59-68 character fragments,
+// cut mid-word, HTTP 200. That is the app's voice stopping mid-sentence.
+{
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../supabase/functions/ai-proxy/index.ts', import.meta.url), 'utf8');
+  ok(/thinkingConfig: \{ thinkingBudget: 0 \}/.test(src), 'Gemini thinking is disabled');
+  ok(src.indexOf('thinkingConfig') > src.indexOf('maxOutputTokens'),
+     'inside generationConfig, where the API reads it');
+}
+
+
 // ── nothing configured ──────────────────────────────────────────────────────────────────────────
 reset({ GEMINI_API_KEY: undefined, GROQ_API_KEY: undefined, OPENROUTER_API_KEY: undefined, ANTHROPIC_API_KEY: undefined });
 for (const k of ['GEMINI_API_KEY','GROQ_API_KEY','OPENROUTER_API_KEY','ANTHROPIC_API_KEY']) delete ENV[k];
