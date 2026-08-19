@@ -3957,6 +3957,65 @@ function fnBodyOf(code, name){
   H.ok(/}, 6000\);/.test(H.html), 'the 6s failsafe is still there for a genuinely stalled boot');
 }
 
+// ── the pre-submission audit's survivors, ratcheted ──────────────────────────────────────────
+{
+  H.section('promises the app makes about privacy must be true');
+
+  // The single worst class of finding this project can have. "The Bible goes through my own server
+  // instead, so only I see it" was false: only the ESV path is proxied, and it falls through to the
+  // public APIs whenever that proxy is down. It existed in THREE copies and the first fix caught two.
+  const fs = require('fs'), path = require('path');
+  const root = path.join(__dirname, '..');
+  for (const f of ['privacy.html', 'www/privacy.html']) {
+    const t = fs.readFileSync(path.join(root, f), 'utf8');
+    H.ok(!/goes through my own server instead/.test(t), `${f} does not claim the Bible is proxied`);
+    H.ok(/bible\.helloao\.org/.test(t), `${f} names the services that actually see the passage`);
+  }
+  H.ok(!/goes through my own server instead/.test(H.html), 'and neither does the in-app copy');
+  H.ok(/bible\.helloao\.org/.test(H.extractFn('showPrivacyPolicy')), 'which names them too');
+
+  // Licensed text needs its notice. 352 ESV verses ship inside the bundle.
+  H.section('licensed scripture carries its notice');
+  H.ok(/\(ESV\)/.test(H.html), 'ESV verses do ship in the bundle (this is why the notice is required)');
+  H.ok(/Crossway, a publishing ministry of Good News Publishers/.test(H.html),
+    'and the Crossway copyright notice is present — their permissions require it under 500 verses');
+  H.ok(/Used by permission\. All rights reserved\./.test(H.html), 'in full, as worded');
+
+  // A cutting target is not for a growing body.
+  H.section('the app will not prescribe a deficit to a minor');
+  const tdee = H.extractFn('calcTDEE');
+  H.ok(/age < 18/.test(tdee), 'under-18 is checked');
+  H.ok(/_g === 'lose'/.test(tdee), 'specifically against the weight-loss goal');
+  H.ok(/showUnderageFuelNote/.test(tdee), 'and it opens the bridge rather than computing a number');
+  H.ok(/GP or a dietitian/.test(H.extractFn('showUnderageFuelNote')), 'which points at a real person');
+
+  // Dead upstreams must not be able to preempt an honest empty state.
+  H.section('a dead API must not masquerade as an answer');
+  const lk = H.extractFn('lookupExerciseForm');
+  H.ok(!/exercisedb-api\.vercel\.app/.test(lk) && !/wger\.de/.test(lk),
+    'both dead exercise sources are gone (402 and a 200 that ignored the filter)');
+  H.ok(!/https:\/\/wger\.de\/api|exercisedb-api\.vercel\.app\/api/.test(H.html),
+    'and no live URL for either host is left anywhere in the bundle');
+  const sef = H.extractFn('showExerciseForm');
+  H.ok(/ex-form-status/.test(sef), 'the modal header has an id so it can stop saying "Loading"');
+  H.ok(/No reference for this one/.test(sef), 'and says so honestly');
+  H.ok(/youtube\.com\/results/.test(sef), 'handing over a real search rather than instructing one');
+
+  // Endpoints that were quietly 404ing behind a fallback.
+  H.section('endpoints that rotted');
+  H.ok(/api\.frankfurter\.dev\/v1\/latest/.test(H.html), 'currency uses the path that exists (/v1, not /v2)');
+  H.ok(!/api\.frankfurter\.dev\/v2/.test(H.html), 'and the 404 path is gone');
+  H.ok(/'eng_asv'/.test(H.html) && /'ENGWEBP'/.test(H.html), "helloao's real translation ids are used");
+  const hb = H.extractFn('_helloaoBook');
+  H.ok(/_HELLOAO_USFM/.test(hb), 'numbered books map to USFM ids');
+  H.ok(/'1 Corinthians':'1CO'/.test(H.html), '1 Corinthians among them — the plain name 404s');
+
+  // Third-party JS that could never work in the shipped binary.
+  H.section('nothing runs in the App Store binary for nothing');
+  H.ok(/GOATCOUNTER_CODE && !metricsOff\(\) && !\(typeof isNativeApp==='function' && isNativeApp\(\)\)/.test(H.html),
+    'GoatCounter is not injected natively — count.js refuses localhost, which is capacitor://localhost');
+}
+
 // ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────
 // Every test in this file reads H.html, which reads index.html — the ASSEMBLED file. So a change
 // made directly to index.html passes everything here and then vanishes the next time anyone runs
