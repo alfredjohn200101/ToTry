@@ -276,8 +276,20 @@ the crisis-gate hardening and the honest privacy rewrite.
 
 ## 🔴 TIER 0 — ship-blocking ops (not features)
 
-| # | Item | Why | Effort |
-|---|---|---|---|
+*Rewritten 19 Aug 2026 at v512. The old table said "archive build 3" and cited v374 — 138 versions
+stale — and pointed the App Privacy answer at a table that was wrong. Everything below is current.*
+
+| # | Item | State |
+|---|------|-------|
+| 0.1 | **Archive + upload** | Code side done. `src/`, `www/` and `ios/App/App/public/` are all v512, `npm run preflight` is clean with zero warnings, and `CURRENT_PROJECT_VERSION` is now **4** (a higher build number is always accepted; a repeated one is rejected before review). The stale `build/export/ToTry.ipa` — build 2, containing v312 — has been deleted so Transporter cannot pick it up by mistake. |
+| 0.2 | **App Privacy nutrition label** | Answers are in `APP-PRIVACY.md`, **corrected 19 Aug 2026**: it was missing Contact Info → Name and declared Diagnostics = No while a global error handler ships crash lines to `app_events`. Ten rows now, matching `ios/App/App/PrivacyInfo.xcprivacy` — which is the manifest Apple cross-checks your answers against, and the one to trust if they ever disagree. `APP-STORE-LISTING.md` carries the same table with the code reason for each row. |
+| 0.3 | **Age rating** | Not started — GUI only. The drafted answers are in `APP-STORE-LISTING.md` § Age Rating. Never under-declare. |
+| 0.4 | **Use it for a week yourself** | Still the one that matters most. Every bug this project has shipped survived because nobody set the value and looked at it. |
+| 0.5 | **Two edge functions need redeploying** | `key-proxy` (the FatSecret `invalid_client` was our own substring bug — FATSECRET contains SECRET) and `ai-proxy` (identity came from a client-supplied field, so the public anon key could spend someone else's quota). Both fixed in `supabase/functions/`, neither live. Also the `push_subscriptions` column-type migration in `AI-PROXY-DEPLOY.md`. |
+| 0.6 | **`FATSECRET_ID` holds the old consumer key** | Your dashboard; nothing in the repo can fix it. |
+| 0.7 | **Device-only testing** | Barcode scan, Face ID, haptics and notifications cannot be exercised in a simulator. All four compile, are registered, and fail closed. |
+
+---|---|---|---|
 | 0.1 | **Archive build 3 + upload** | Code side is done: `www/` and `ios/App/App/public/` are both synced to v374 and `PrivacyInfo.xcprivacy` now declares all nine data types (was only Health + Email). What's left is Xcode + App Store Connect, which needs your hands. | your GUI |
 | 0.2 | **App Privacy nutrition label** | Answer it from `ios/App/App/PrivacyInfo.xcprivacy` — it and `privacy.html` are now in step, and the label must match both or review flags it. Declare: email, user id, health & fitness, sensitive info (faith), other user content, financial info, name, product interaction (not linked, analytics), crash data. | GUI only |
 | 0.3 | **Age rating** | Not started. | GUI only |
