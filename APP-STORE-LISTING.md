@@ -72,10 +72,44 @@ The first release of To Try. Your whole life in one home — the fight, your bod
 - **Marketing URL** (optional): `https://alfredjohn200101.github.io/ToTry/`
 
 ## App Privacy ("nutrition label")
-Declare accurately:
-- **Contact Info → Email address**: collected, used for **App Functionality** (account/sync), **linked** to the user. Not used for tracking.
-- **Health & Fitness**: the app *reads* Health data on-device to show your activity; it is **not collected by us / does not leave your device** (matches the Info.plist usage strings). If a category isn't sent to your server, don't declare it as "collected."
-- **No third-party advertising, no tracking.**
+
+> ⚠️ **This section was WRONG until 19 Aug 2026 and would have caused an under-declaration.**
+> It listed two data types and said Health & Fitness "does not leave your device". It does. 179 keys
+> sync to Supabase (`SYNC_KEYS`, `src/app/00-boot.js:790`) including `totry_workouts`, `totry_body`,
+> `totry_nutlog`, `totry_strava_activities`, `totry_transactions`, `totry_bills`, `totry_journal`,
+> `totry_prayers` and `totry_confessions`. Under-declaring is what gets an app pulled *after* it
+> ships, and Apple cross-checks these answers against the bundled `PrivacyInfo.xcprivacy`.
+
+**The ground truth is `ios/App/App/PrivacyInfo.xcprivacy`, which is correct. Mirror it exactly.**
+Ten types, all **linked to the user**, all **App Functionality**, **none used for tracking**:
+
+| App Store Connect category | Type | Why (what in the code) |
+|---|---|---|
+| Contact Info | **Email Address** | passwordless sign-in |
+| Contact Info | **Name** | `totry_name`, used in the app's own voice |
+| Identifiers | **User ID** | Supabase user id + the anonymous `totry_anon` used for feature counts |
+| Health & Fitness | **Health**, **Fitness** | `totry_workouts`, `totry_body`, `totry_nutlog`, `totry_strava_activities`, Hevy data — all synced |
+| Financial Info | **Other Financial Info** | `totry_transactions`, `totry_bills`, `totry_budgets`, `totry_subscriptions`, debts |
+| Sensitive Info | **Sensitive Info** | what a person is fighting, confessions, faith tradition |
+| User Content | **Other User Content** | `totry_journal`, `totry_prayers`, `totry_examens`, evening reflections |
+| Location | **Coarse Location** | prayer times only, rounded to ~1km before use |
+| Usage Data | **Product Interaction** | GoatCounter page counts + the `app_events` feature counts |
+| Diagnostics | **Crash Data** | |
+
+**Tracking: No.** `NSPrivacyTracking = false`, `NSPrivacyTrackingDomains` empty. No ad SDK, no data
+broker, no cross-app or cross-site profiling. That answer is true — but "no tracking" is NOT the same
+as "no data collected", and the form asks both.
+
+**Not collected, and you can say so honestly:**
+- **Cycle data** (`totry_cycle`) — device-only unless she separately switches backup on; it is
+  deliberately kept out of `SYNC_KEYS` at parse time (`src/app/00-boot.js:888`).
+- **Progress photos** — device-only, and `_purgeSyncedPhotos()` deletes any a previous build uploaded.
+- **Crisis-flagged journal entries** — never sent as AI context (filtered on `!e.flagged` at every
+  call site that builds a prompt).
+
+**One thing worth knowing, not a submission blocker:** `totry_hevy_api_key` is in `SYNC_KEYS`, so a
+user's Hevy API key is stored in your Supabase. RLS protects it, but you are holding a third-party
+credential. Consider dropping it from the sync list.
 
 ## Age Rating
 Answer the questionnaire **honestly**. The app addresses recovery from habits (alcohol, gambling, pornography/lust, etc.) in a *quitting/recovery* framing with **no explicit content shown**. Expect the questions on:

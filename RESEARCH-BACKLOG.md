@@ -569,8 +569,16 @@ round-10 verdict names the #1 missing lever: **real relatedness / supportive acc
 - **G1. AI crisis guardrail — ✅ VERIFIED.** `detectCrisis()` runs *before* the AI call and bypasses the LLM to a
   fixed crisis card, on all THREE chat surfaces (coach ~6456, PT coach ~6724, companion `companionReply` ~11144).
   v327 added 13YARN + widened suicide-phrase detection. (Legally live: SB 243, Character.AI/OpenAI settlements.)
-- **G2. SDK/pixel audit — ✅ CLEAN.** No ad/analytics trackers anywhere; only external script is Supabase's own
-  library. `privacy.html` already truthfully states "no analytics or tracking SDK." (Minor future hardening: self-host the Supabase JS instead of jsdelivr CDN.)
+- **G2. SDK/pixel audit — ✅ NO AD SDK, but the wording here was wrong (corrected 19 Aug 2026).** There is
+  no advertising, profiling or data-broker SDK, and no cross-app tracking — that part holds. But this
+  bullet said "no analytics trackers anywhere", and that is not true: **GoatCounter** (`gc.zgo.at/count.js`)
+  is injected on every launch, native included, and `logEvent()` writes feature counts to an `app_events`
+  table against a persistent anonymous id (`totry_anon`). Both are honest, aggregate, opt-out-able and
+  **correctly disclosed in `privacy.html` §4** — privacy.html was always right; this audit note was not.
+  It matters because it is the note someone would trust when filling Apple's App Privacy form, and it
+  would lead them to omit **Usage Data → Product Interaction** and **Identifiers → User ID**.
+  See the corrected table in `APP-STORE-LISTING.md`; `PrivacyInfo.xcprivacy` is the ground truth.
+  (Supabase JS is now vendored at `vendor/supabase-js.js`, not the CDN — that hardening is done.)
 - **G3. Export + true delete — ✅ PRESENT.** `exportAllData()` (full backup) + `deleteAccount()` purges the
   `user_data` row, signs out, wipes local. *Remaining (GUI/your side): fill the App Store Connect Privacy Nutrition Label accurately (privacy.html is an accurate basis).*
 - **G4. Safe-messaging — ✅ LARGELY DONE.** Copy uses "not a substitute," pairs any mention with hope+help, AU-first
