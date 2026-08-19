@@ -4627,11 +4627,11 @@ async function exportAllData(){
     if(typeof showToast==='function') showToast(_r ? 'Backup saved' : 'Not saved', _r ? (payload.keys + ' items exported. Your sign-in and app tokens are deliberately left out, so the file is safe to keep.') : 'Nothing was written. Try again in a moment.');
   }catch(e){ if(typeof showToast==='function') showToast('Export failed', 'Could not build the backup. Try again.'); }
 }
-function importAllData(ev){
+async function importAllData(ev){
   const file = ev.target && ev.target.files && ev.target.files[0];
   if(!file) return;
   const reader = new FileReader();
-  reader.onload = () => {
+  reader.onload = async () => {
     // Clear the picker first. A file input does not fire change when the SAME file is chosen again,
     // so cancelling the confirm below and re-picking the same backup did nothing at all — the person
     // taps, nothing happens, and there is no way to tell the app is ignoring them.
@@ -4643,7 +4643,7 @@ function importAllData(ev){
       // or tokens on this device.
       const keys = Object.keys(data).filter(backupSafeKey);
       if(!keys.length){ showToast('Nothing to restore', 'That file has no To Try data.'); return; }
-      if(!confirm('Restore ' + keys.length + ' items from this backup? This overwrites matching data on this device.')) return;
+      if(!(await askConfirm('Restore ' + keys.length + ' items from this backup? This overwrites matching data on this device.'))) return;
       // One restore path for both entry points. My first version of this fix duplicated the counting
       // loop inline here, which is the same duplicate-implementation problem the two plate calculators
       // had. restoreKeys() also does something better than my version did: it writes SMALLEST FIRST and
@@ -4652,7 +4652,7 @@ function importAllData(ev){
       const _r = restoreKeys(data);
       const _rep = restoreReport(_r);
       if(typeof haptic==='function') haptic(_r.failed.length ? 'warning' : 'success');
-      if(_r.failed.length) alert(_rep.title + '\n\n' + _rep.body);
+      if(_r.failed.length) tellUser(_rep.title, _rep.body, {danger:true});
       showToast(_r.failed.length ? _rep.title : 'Restored', _rep.body);
       // Longer pause when something did not fit, so the alert is actually read before the reload.
       setTimeout(()=>location.reload(), _r.failed.length ? 5600 : 1200);
@@ -4892,7 +4892,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v517';
+const APP_VERSION = 'v518';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5216,7 +5216,7 @@ async function signOut(){
        + 'are only here and will be gone for good:\n\n\u2022 ' + losses.join('\n\u2022 ')
        + '\n\nSettings \u2192 Your data \u2192 Export saves them first. Sign out anyway?')
     : 'Sign out? Everything is synced, so it all comes back when you sign in.';
-  if(!confirm(msg)) return;
+  if(!(await askConfirm(msg))) return;
 
   try {
     await sb.auth.signOut();
@@ -5724,7 +5724,7 @@ async function approveSubmission(id){
 }
 async function rejectSubmission(id){
   if(!sb || !id) return;
-  if(!confirm('Reject and delete this submission?')) return;
+  if(!(await askConfirm('Reject and delete this submission?'))) return;
   try{
     const { error } = await sb.from('shared_library').delete().eq('id', id);
     if(error){ showToast('Couldn\u2019t reject', error.message||''); return; }
@@ -6422,7 +6422,7 @@ async function connectAppleHealth(){
 // silently erasing weeks of a person's training history would be the worse surprise — but it says so
 // plainly, and Settings → Your data → Delete still removes it all.
 async function disconnectAppleHealth(){
-  if(!confirm('Turn off Apple Health?\n\nThe app stops reading your steps, sleep and workouts, and stops syncing them to your account.\n\nWhat you\'ve already imported stays in your history. To revoke the permission itself, use iOS Settings → Health → Data Access & Devices → To Try.')) return;
+  if(!(await askConfirm('Turn off Apple Health?\n\nThe app stops reading your steps, sleep and workouts, and stops syncing them to your account.\n\nWhat you\'ve already imported stays in your history. To revoke the permission itself, use iOS Settings → Health → Data Access & Devices → To Try.'))) return;
   try{ ls('totry_health_connected', false); }catch(_){}
   // The write side rides on the same grant — leaving it "on" would be a switch pointing at nothing.
   try{ ls('totry_health_write', false); }catch(_){}
@@ -7502,9 +7502,9 @@ function saveCycleLog(el){
   const p=cyclePhase();
   showToast('Logged', (p && CYCLE_PHASES[p.key]) ? ('Day '+p.day+' \u2014 estimated '+CYCLE_PHASES[p.key].name.toLowerCase()+'.') : 'Day one saved.');
 }
-function cycleUndoLast(){
+async function cycleUndoLast(){
   const c=cycleGet(); if(!c.log.length) return;
-  if(!confirm('Remove your last logged period start ('+c.log[0].d+')?')) return;
+  if(!(await askConfirm('Remove your last logged period start ('+c.log[0].d+')?'))) return;
   c.log.shift(); cycleSet(c); renderCycleSurfaces(); haptic('tap');
   showToast('Removed','That entry is gone.');
 }
@@ -7536,10 +7536,10 @@ function cycleToggleAI(){
     c.aiOK?'Only the phase word \u2014 never your dates. It helps it read a hard week as physiology.'
           :'Your phase stays on this device. Every card in the app still works.'); }catch(_){}
 }
-function cycleToggleBackup(){
+async function cycleToggleBackup(){
   const c=cycleGet();
   if(!c.backup){
-    if(!confirm('Back your cycle data up to your To Try account?\n\nRight now it lives only on this device. Backing it up means it survives a reinstall \u2014 but it also means it leaves this phone and sits on a server. This is the most sensitive data in the app. Most people should leave this off.\n\nTurn backup on?')) return;
+    if(!(await askConfirm('Back your cycle data up to your To Try account?\n\nRight now it lives only on this device. Backing it up means it survives a reinstall \u2014 but it also means it leaves this phone and sits on a server. This is the most sensitive data in the app. Most people should leave this off.\n\nTurn backup on?'))) return;
     c.backup=true; cycleSet(c);
     // Turning backup off tombstones the key so a stale server copy can never sync back. Turning it
     // ON again is the explicit reversal, so lift it — otherwise she would push a backup she could
@@ -7575,9 +7575,9 @@ async function _cyclePurgeCloud(){
   }catch(e){ console.warn('[cycle] cloud purge failed, tombstone holds:',e); }
   return false;                                  // tombstone stays pending; retried on next pull
 }
-function cycleDeleteAll(){
-  if(!confirm('Delete every period entry?\n\nThis erases your cycle log from this device and from my server. It cannot be undone.')) return;
-  if(prompt('Type DELETE to confirm.')!=='DELETE'){ showToast('Cancelled','Nothing was deleted.'); return; }
+async function cycleDeleteAll(){
+  if(!(await askConfirm('Delete every period entry?\n\nThis erases your cycle log from this device and from my server. It cannot be undone.'))) return;
+  if((await askText('Type DELETE to confirm', 'This erases your cycle log from this device and from my server. It cannot be undone.', {placeholder:'DELETE', confirmLabel:'Delete it all'}))!=='DELETE'){ showToast('Cancelled','Nothing was deleted.'); return; }
   _cyclePurgeCloud();
   try{ const i=SYNC_KEYS.indexOf(CYCLE_KEY); if(i>=0) SYNC_KEYS.splice(i,1); }catch(_){}
   try{ localStorage.removeItem(CYCLE_KEY); }catch(_){}
@@ -9306,8 +9306,8 @@ function renderUsageStats(){
 }
 
 // Allow user to clear coach history
-function clearCoachHistory(){
-  if(!confirm('Clear your conversation history with the Coach? This cannot be undone.')) return;
+async function clearCoachHistory(){
+  if(!(await askConfirm('Clear your conversation history with the Coach? This cannot be undone.'))) return;
   cH = [];
   persistCoachHistory();
   const msgsEl = document.getElementById('coach-msgs');
@@ -9512,7 +9512,7 @@ function editJourneyStart(){
     '<div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--bd)">' +
       '<div class="lbl">Start a new chapter</div>' +
       '<p style="font-size:12px;color:var(--tx3);margin:6px 0 12px;line-height:1.6">Fell hard, or want a clean slate to begin again? Reset your day-count to <b style="color:var(--tx2)">Day 1</b> — and keep every day you’ve already put in. The falling isn’t erased; it’s the proof you kept going.</p>' +
-      '<button class="btn" style="width:100%;background:var(--bg3);border:1px solid var(--go-bd);color:var(--go)" onclick="if(confirm(\'Start a new chapter at Day 1? Your total days trying is kept and shown.\')) restartJourney()">Begin again — Day 1</button>' +
+      '<button class="btn" style="width:100%;background:var(--bg3);border:1px solid var(--go-bd);color:var(--go)" onclick="askConfirm(\'Start a new chapter at Day 1?\', \'Your total days trying is kept and shown.\', {confirmLabel:\'Start a new chapter\', danger:false}).then(function(ok){ if(ok) restartJourney(); })">Begin again — Day 1</button>' +
     '</div>' +
     (ls('totry_journey_start') ? '<button class="btn" style="width:100%;margin-top:10px;background:transparent;border:none;color:var(--tx3);font-size:12px" onclick="resetJourneyStart()">Reset to account creation date</button>' : '') +
   '</div>';
@@ -10711,7 +10711,7 @@ async function _loadSalah(){
     const j=await r.json(); if(j.code!==200||!j.data) throw new Error('n'); box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri);
   }catch(e){ box.innerHTML=_readErr('Couldn’t load prayer times right now.'); }
 }
-function _promptCity(){ try{ const c=window.prompt('Your city (for prayer times):'); if(c&&c.trim()) _loadSalahByCity(c.trim()); }catch(_){} }
+async function _promptCity(){ try{ const c=await askText('Your city', 'Used only to work out prayer times where you are.', {confirmLabel:'Set city'}); if(c&&c.trim()) _loadSalahByCity(c.trim()); }catch(_){} }
 async function _loadSalahByCity(city){
   const box=document.getElementById('salah-box'); if(box) box.innerHTML=_readLoading();
   // NB: the city is saved further down, only after the API confirms it resolved — so a typo is never
@@ -12278,9 +12278,9 @@ function addToGoal(id){
   showToast('Added '+curSym()+amount,goal.name+' is now at '+curSym()+Math.round(goal.current).toLocaleString());
 }
 
-function deleteFinanceGoal(id){
+async function deleteFinanceGoal(id){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
-  if(!confirm('Delete this savings goal? Your progress on it will be lost.')) return;
+  if(!(await askConfirm('Delete this savings goal? Your progress on it will be lost.'))) return;
   const goals=ls('totry_finance_goals')||[];
   const removed=goals.find(g=>g.id===id);
   const newGoals=goals.filter(g=>g.id!==id);
@@ -12633,9 +12633,9 @@ function renderAffirmList(){
     list.appendChild(row);
   });
 }
-function deleteAffirm(i){
+async function deleteAffirm(i){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
-  if(!confirm('Delete this affirmation? You wrote it — it cannot be recovered.')) return;
+  if(!(await askConfirm('Delete this affirmation? You wrote it — it cannot be recovered.'))) return;
   const affirms=getAffirmations();affirms.splice(i,1);
   ls('totry_affirms',affirms);renderAffirmList();
 }
@@ -18186,10 +18186,10 @@ function renderTriggerPatternCard(){
   container.appendChild(card);
 }
 
-function removeVice(i){
+async function removeVice(i){
   loadV();
   if(!vices[i])return;
-  if(!confirm('Remove "'+vices[i].n+'"? Your fight history for it will be lost.'))return;
+  if(!(await askConfirm('Remove "'+vices[i].n+'"? Your fight history for it will be lost.'))) return;
   const _goneName = String(vices[i].n || '').toLowerCase();
   vices.splice(i,1);
   // Record the removal so the cloud merge cannot bring it back. pullFromCloud unions vices by NAME,
@@ -19693,10 +19693,10 @@ function openAddHabit(){
       return true;
     });
 }
-function deleteHabit(i){
+async function deleteHabit(i){
   loadH();
   const h = habits[i]; if(!h) return;
-  if(!confirm('Remove "'+String(h.n)+'"?\n\nYour ticks for it are removed too. This only takes it off your list \u2014 it is not a failure.')) return;
+  if(!(await askConfirm('Remove "'+String(h.n)+'"?\n\nYour ticks for it are removed too. This only takes it off your list \u2014 it is not a failure.'))) return;
   habits.splice(i,1);
   saveH();
   try{ if(typeof syncToCloud==='function') syncToCloud('totry_h', habits); }catch(_){}
@@ -19834,9 +19834,9 @@ function renderSavedVerses(){
   });
 }
 
-function deleteSavedVerse(idx){
+async function deleteSavedVerse(idx){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
-  if(!confirm('Remove this from your saved verses?')) return;
+  if(!(await askConfirm('Remove this from your saved verses?'))) return;
   const saved = ls('totry_sv') || [];
   if(idx < 0 || idx >= saved.length) return;
   const removed = saved[idx];
@@ -21740,8 +21740,8 @@ function renderWeightHistory(){
         '<button onclick="deleteWeightEntry(&quot;'+(e.ts||e.date)+'&quot;)" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer" aria-label="Delete">\u00d7</button></span></div>';
     }).join('');
 }
-function deleteWeightEntry(key){
-  if(!confirm('Delete this weigh-in?')) return;
+async function deleteWeightEntry(key){
+  if(!(await askConfirm('Delete this weigh-in?'))) return;
   const entries = ls('totry_body') || [];
   const filtered = entries.filter(e => (e.ts||e.date) !== key);
   tombstoneRemoved('totry_body', entries, filtered);   // or the next cloud pull unions it back
@@ -22127,8 +22127,8 @@ function renderMeasurements(){
     history.appendChild(row);
   });
 }
-function deleteMeasurement(idx){
-  if(!confirm('Delete this measurement snapshot?')) return;
+async function deleteMeasurement(idx){
+  if(!(await askConfirm('Delete this measurement snapshot?'))) return;
   const list = ls('totry_measurements') || [];
   list.splice(idx, 1);
   ls('totry_measurements', list);
@@ -22250,8 +22250,8 @@ function openProgressPhotoViewer(id){
   '</div>';
   document.body.appendChild(m);
 }
-function deleteProgressPhoto(id){
-  if(!confirm('Delete this progress photo? Cannot be undone.')) return;
+async function deleteProgressPhoto(id){
+  if(!(await askConfirm('Delete this progress photo? Cannot be undone.'))) return;
   const photos = ls('totry_progress_photos') || [];
   ls('totry_progress_photos', photos.filter(p => p.id !== id));
   document.querySelector('.modal-bg.open')?.remove();
@@ -23317,12 +23317,12 @@ function _pmAddItem(){ if(!_photoMeal)return; _photoMeal.items.push({food:'',por
 function _pmAddFat(){ if(!_photoMeal)return; _photoMeal.items.push({food:'Cooking oil / hidden fat',portion:'~1 tbsp',cal:120,pro:0,carb:0,fat:14,mult:1}); if(typeof haptic==='function') haptic('tap'); _renderPhotoMeal(); }
 // Save the corrected photo meal into My Meals (same schema as saveMealGroup) so it re-logs identically
 // forever — Cal AI re-scans to a different number each time; a saved meal is one truth, one tap.
-function _pmSave(){
+async function _pmSave(){
   if(!_photoMeal||!_photoMeal.items.length) return;
   const items=_photoMeal.items.filter(it=>it && (String(it.food).trim() || it.cal));
   if(!items.length){ if(typeof showToast==='function') showToast('Nothing to save','Name or add an item first.'); return; }
   const R=n=>Math.round(n);
-  const name=prompt('Save this meal as (re-log it identically anytime):', _photoMeal.name||'My meal');
+  const name=await askText('Save this meal', 'Give it a name and you can re-log it identically any time.', {value:_photoMeal.name||'My meal', confirmLabel:'Save meal'});
   if(!name || !name.trim()) return;
   const saved=ls('totry_saved_meals')||[];
   saved.unshift({ id:Date.now(), name:name.trim(),
@@ -23878,7 +23878,7 @@ async function lookupBarcode(barcode){
     // Recipe-scan mode: route this scan into the open recipe instead of the day log.
     if(_recipeMode){   // captured and cleared at the top, so a failed scan cannot leak into the next
       try{ if(typeof closeBarcodeScanner === 'function') closeBarcodeScanner(); }catch(_){}
-      const g = parseFloat(prompt('How many grams of ' + food.name + ' go in this recipe?', '100')) || 100;
+      const g = parseFloat(await askText('How much ' + food.name + '?', 'Grams that go into this recipe.', {value:'100', type:'number', confirmLabel:'Add it'})) || 100;
       const f = g / 100;
       if(window.__editingRecipe){
         window.__editingRecipe.ingredients.push({ name: food.name + ' (' + g + 'g)', cal: Math.round((food.cal||0)*f), pro: Math.round((food.pro||0)*f*10)/10, carb: Math.round((food.carb||0)*f*10)/10, fat: Math.round((food.fat||0)*f*10)/10 });
@@ -24105,8 +24105,8 @@ function saveCurrentRecipe(){
   openRecipeBuilder();
 }
 
-function deleteRecipe(i){
-  if(!confirm('Delete this recipe?')) return;
+async function deleteRecipe(i){
+  if(!(await askConfirm('Delete this recipe?'))) return;
   const recipes = ls('totry_recipes') || [];
   recipes.splice(i, 1);
   ls('totry_recipes', recipes);
@@ -24114,14 +24114,14 @@ function deleteRecipe(i){
   openRecipeBuilder();
 }
 
-function logRecipeAsMeal(i){
+async function logRecipeAsMeal(i){
   const recipes = ls('totry_recipes') || [];
   const r = recipes[i];
   if(!r) return;
   
   const servings = r.servings || 1;
   // Ask: how many servings?
-  const qty = parseFloat(prompt('How many servings of "' + r.name + '"?', '1'));
+  const qty = parseFloat(await askText('How many servings?', r.name, {value:'1', type:'number', confirmLabel:'Log it'}));
   if(!qty || qty <= 0) return;
   
   const portion = qty / servings;
@@ -24687,11 +24687,11 @@ function logRecentFood(name){
 // MFP-style one-tap (+): logs the food instantly at default serving into the current meal slot,
 // with a quick confirmation. No modal. This is what makes repeat logging "take seconds".
 // MFP-style saved meals: group foods you eat together ("my usual breakfast") and log them in one tap.
-function saveMealGroup(meal){
+async function saveMealGroup(meal){
   const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
   const entries = ((ls('totry_nutlog')||{})[today]||[]).filter(e => (e.meal||'snack') === meal);
   if(!entries.length){ showToast('Nothing to save', 'Log some foods in this meal first.'); return; }
-  const name = prompt('Name this meal (e.g. "My usual breakfast"):', meal.charAt(0).toUpperCase()+meal.slice(1));
+  const name = await askText('Name this meal', 'For example: my usual breakfast.', {confirmLabel:'Save meal', value: meal.charAt(0).toUpperCase()+meal.slice(1)});
   if(!name) return;
   const saved = ls('totry_saved_meals')||[];
   saved.unshift({
@@ -24721,9 +24721,9 @@ function logSavedMeal(id){
   showToast('Logged ✓', m.name + ' — ' + Math.round(totCal) + ' cal');
   renderNutritionLog();
 }
-function deleteSavedMeal(id){
+async function deleteSavedMeal(id){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
-  if(!confirm('Delete this saved meal? You will have to build it again.')) return;
+  if(!(await askConfirm('Delete this saved meal? You will have to build it again.'))) return;
   const _before = ls('totry_saved_meals')||[];
   const saved = _before.filter(x=>x.id!==id);
   tombstoneRemoved('totry_saved_meals', _before, saved);
@@ -26027,8 +26027,8 @@ function setCalGoalFromTDEE(tdee){
 
 // Warmup ramp calculator: from your top working weight, the standard pyramid —
 // bar/light ×10, 40%×8, 60%×5, 80%×2-3 — so you arrive at the work set primed, not fried.
-function openWarmupCalc(){
-  const w = parseFloat(prompt('Top working weight today (kg)?', ls('totry_last_warmup_target')||''));
+async function openWarmupCalc(){
+  const w = parseFloat(await askText('Top working weight today', 'In kilograms.', {type:'number', confirmLabel:'Build the warm-up', value: ls('totry_last_warmup_target')||''}));
   if(!w || isNaN(w) || w <= 0) return;
   ls('totry_last_warmup_target', w);
   const r5 = x => Math.max(20, Math.round(x/2.5)*2.5); // round to 2.5kg, never below the bar
@@ -27048,9 +27048,9 @@ function openGivingLog(kind, subtitle, viaRelease){
       return true;
     });
 }
-function deleteGiving(id){
+async function deleteGiving(id){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
-  if(!confirm('Delete this giving record? It is part of your giving history.')) return; ls('totry_giving', givingLog().filter(x=>x.id!==id)); if(typeof syncToCloud==='function') syncToCloud(); renderGiving(); }
+  if(!(await askConfirm('Delete this giving record? It is part of your giving history.'))) return; ls('totry_giving', givingLog().filter(x=>x.id!==id)); if(typeof syncToCloud==='function') syncToCloud(); renderGiving(); }
 function openPledge(){
   const p = givingPledge();
   openFormModal('Your own measure', 'Set a share of what comes in, or a flat monthly amount. Yours to change or drop — nothing chases you about it.',
@@ -28323,8 +28323,8 @@ function _saveEventFromModal(){
   if(typeof haptic==='function') haptic('success');
   showToast('Added', title+(days.length>1?(' on '+days.length+' days'):'')+'.');
 }
-function deleteCalEvent(id){
-  if(!confirm('Remove this from your week?')) return;
+async function deleteCalEvent(id){
+  if(!(await askConfirm('Remove this from your week?'))) return;
   _saveCalEvents((ls('totry_cal_events')||[]).filter(e => e.id !== id));
   renderCalendar();
 }
@@ -28813,8 +28813,8 @@ function saveTransaction(){
   showToast('Logged', (window.__transType === 'expense' ? '−' : '+') + curSym() + amount + ' · ' + window.__transCategory);
   haptic('success');
 }
-function deleteTransaction(id){
-  if(!confirm('Delete this transaction?')) return;
+async function deleteTransaction(id){
+  if(!(await askConfirm('Delete this transaction?'))) return;
   const list = ls('totry_transactions') || [];
   const next = list.filter(t => t.id !== id);
   // Record the removal so the cloud union cannot bring it back — see the note above.
@@ -28930,8 +28930,8 @@ function saveSubscription(){
   showToast('Subscription tracked', name);
   haptic('success');
 }
-function deleteSubscription(id){
-  if(!confirm('Remove this subscription from tracking?')) return;
+async function deleteSubscription(id){
+  if(!(await askConfirm('Remove this subscription from tracking?'))) return;
   const list = ls('totry_subscriptions') || [];
   const next = list.filter(s => s.id !== id);
   // Tombstone the removal so the cloud union cannot resurrect it — see deleteTransaction.
@@ -29016,9 +29016,9 @@ function openFamilyContribution(){
       return true;
     });
 }
-function deleteFamilyContribution(id){
+async function deleteFamilyContribution(id){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
-  if(!confirm('Delete this contribution? It is part of your record of what you gave.')) return;
+  if(!(await askConfirm('Delete this contribution? It is part of your record of what you gave.'))) return;
   const _before = ls('totry_family_contrib')||[];
   const list = _before.filter(x=>x.id!==id);
   tombstoneRemoved('totry_family_contrib', _before, list);
@@ -29104,9 +29104,9 @@ function openPokerSession(){
       return true;
     });
 }
-function deletePokerSession(id){
+async function deletePokerSession(id){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
-  if(!confirm('Delete this session? Its result comes out of your totals.')) return;
+  if(!(await askConfirm('Delete this session? Its result comes out of your totals.'))) return;
   const _before = ls('totry_poker_sessions')||[];
   const list = _before.filter(x=>x.id!==id);
   tombstoneRemoved('totry_poker_sessions', _before, list);
@@ -29413,8 +29413,8 @@ function markBillPaid(id){
   try{ if(typeof Notify!=='undefined' && Notify.cancel) Notify.cancel(_billNotifId(b)); }catch(_){ }
   showToast('Marked paid', b.name);
 }
-function deleteBill(id){
-  if(!confirm('Delete this bill?')) return;
+async function deleteBill(id){
+  if(!(await askConfirm('Delete this bill?'))) return;
   const list = ls('totry_bills') || [];
   const next = list.filter(b => b.id !== id);
   // Tombstone the removal so the cloud union cannot resurrect it — see deleteTransaction.
@@ -29606,8 +29606,8 @@ function updateAsset(id){
       return true;
     });
 }
-function deleteAsset(id){
-  if(!confirm('Remove this asset?')) return;
+async function deleteAsset(id){
+  if(!(await askConfirm('Remove this asset?'))) return;
   const list = ls('totry_assets') || [];
   const next = list.filter(a => a.id !== id);
   // Tombstone the removal so the cloud union cannot resurrect it — see deleteTransaction.
@@ -29656,7 +29656,7 @@ function addDebt(){loadF();const n=document.getElementById('dn').value.trim(),t=
 // A debt could be created and paid down but never CORRECTED. A typo in the name, a total entered as
 // 1200 instead of 12000, an interest rate learned later, a card that was closed — all of it was
 // permanent, and the freedom date was computed off the wrong number for as long as the app lived.
-function editDebt(idx){
+async function editDebt(idx){
   loadF();
   const d = debts[Number(idx)];
   if(!d){ if(typeof showToast==='function') showToast('That debt is gone','It may have been removed on another device.'); return; }
@@ -29696,8 +29696,8 @@ function editDebt(idx){
       del.className='btn';
       del.style.cssText='margin-top:8px;background:none;border:1px solid var(--re-bd);color:var(--re)';
       del.textContent='Remove this debt';
-      del.onclick=function(){
-        if(!confirm('Remove '+(d.n||'this debt')+'? Payments you already logged against it stay in your history.')) return;
+      del.onclick=async function(){
+        if(!(await askConfirm('Remove '+(d.n||'this debt')+'? Payments you already logged against it stay in your history.'))) return;
         loadF();
         const _gone = debts[Number(idx)];
         debts.splice(Number(idx),1);
@@ -32333,9 +32333,9 @@ function renderWorkoutSession(){
 }
 
 // Swap an exercise mid-session, keeping every set/weight/rep (Hevy's replace).
-function swapExercise(ei){
+async function swapExercise(ei){
   const cur = currentSession[ei]; if(!cur) return;
-  const n = prompt('Swap "' + cur.name + '" for which exercise? Your sets stay.', '');
+  const n = await askText('Swap this exercise', 'Your logged sets stay with it.', {placeholder:cur.name, confirmLabel:'Swap it'});
   if(!n || !n.trim()) return;
   cur.name = n.trim();
   haptic('tick');
@@ -32545,7 +32545,7 @@ function removeExFromSession(ei){currentSession.splice(ei,1);renderWorkoutSessio
 // heaviest set already logged against that exercise. Both "Plates" buttons now open it.
 // The 0.5kg plate is deliberately not carried: 1.25kg is the smallest plate in a normal commercial gym,
 // and pretending otherwise makes the app confidently wrong at the rack.
-function saveWorkoutSession(){
+async function saveWorkoutSession(){
   if(!currentSession.length){
     showToast('Nothing to save','Add some exercises first.');
     return;
@@ -32553,7 +32553,7 @@ function saveWorkoutSession(){
   // Warn if no completed sets
   const totalDone = currentSession.reduce((a,ex)=>a+ex.sets.filter(s=>s.done).length,0);
   if(totalDone === 0){
-    if(!confirm('You haven\'t marked any sets as done. Save anyway?'))return;
+    if(!(await askConfirm('You haven\'t marked any sets as done. Save anyway?'))) return;
   }
   const cs=currentSession.reduce((a,ex)=>a+ex.sets.filter(s=>s.done).length,0);
   const ts=currentSession.reduce((a,ex)=>a+ex.sets.length,0);
@@ -32626,9 +32626,9 @@ function showWorkoutSummary(s){
   document.body.appendChild(m);
   haptic('celebrate');
 }
-function clearWorkoutSession(){
+async function clearWorkoutSession(){
   if(!currentSession.length)return;
-  if(!confirm('Clear this session? Anything not saved will be lost.'))return;
+  if(!(await askConfirm('Clear this session? Anything not saved will be lost.'))) return;
   currentSession=[];
   renderWorkoutSession();
   showToast('Cleared','Session cleared. Ready for the next one.');
@@ -32890,8 +32890,8 @@ function saveEditTraining(id){
   document.getElementById('edit-training-modal')?.remove();
   haptic('success'); showToast('Saved','Workout updated.');
 }
-function deleteTraining(kind, id){
-  if(!confirm('Delete this workout? This cannot be undone.')) return;
+async function deleteTraining(kind, id){
+  if(!(await askConfirm('Delete this workout? This cannot be undone.'))) return;
   if(kind === 'strava'){
     const _before = ls('totry_strava_activities')||[];
     const acts = _before.filter(x => String(x.id) !== id);
@@ -33353,13 +33353,13 @@ function _showAllHevyRoutines(){
   m.innerHTML='<div class="modal" style="max-height:85vh;overflow-y:auto"><div class="modal-handle"></div><div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:4px">Your Hevy routines</div><div style="font-size:12px;color:var(--tx3);margin-bottom:16px">'+hevy.length+' imported</div>'+rows+'<button class="btn" onclick="document.getElementById(\'hevy-all-modal\')?.remove()" style="background:none;border:none;color:var(--tx3);font-size:13px;margin-top:6px">Close</button></div>';
   document.body.appendChild(m); m.addEventListener('click',e=>{if(e.target===m)m.remove();});
 }
-function startHevyRoutine(id){
+async function startHevyRoutine(id){
   // AN IN-PROGRESS SESSION IS SOMEONE'S WORKOUT. Loading a routine overwrote currentSession with no
   // warning, so tapping a routine mid-session — easy to do, they are on the same screen — erased every
   // set already logged, with nothing to undo it. Ask first.
   try{
     if(typeof currentSession !== 'undefined' && currentSession && currentSession.length &&
-       !confirm('You have a workout in progress. Loading a routine will replace it \u2014 the sets you have logged will be lost. Continue?')) return;
+       !(await askConfirm('You have a workout in progress. Loading a routine will replace it \u2014 the sets you have logged will be lost. Continue?'))) return;
   }catch(_){ }
   // Match on hevyId — what fetchHevyRoutines actually stores. Matching on x.id meant comparing
   // String(undefined) to String(undefined), which "matched" the FIRST routine in the list rather
@@ -33378,25 +33378,25 @@ function startHevyRoutine(id){
   haptic('tap');
   showToast('Routine loaded', (r.title||'Hevy routine'));
 }
-function loadRoutine(id){
+async function loadRoutine(id){
   // AN IN-PROGRESS SESSION IS SOMEONE'S WORKOUT. Loading a routine overwrote currentSession with no
   // warning, so tapping a routine mid-session — easy to do, they are on the same screen — erased every
   // set already logged, with nothing to undo it. Ask first.
   try{
     if(typeof currentSession !== 'undefined' && currentSession && currentSession.length &&
-       !confirm('You have a workout in progress. Loading a routine will replace it \u2014 the sets you have logged will be lost. Continue?')) return;
+       !(await askConfirm('You have a workout in progress. Loading a routine will replace it \u2014 the sets you have logged will be lost. Continue?'))) return;
   }catch(_){ }
   const routine=(ls('totry_routines')||[]).find(r=>r.id===id);if(!routine)return;
   currentSession=routine.exercises.map(ex=>({...ex,sets:ex.sets.map(s=>({...s,done:false}))}));
   setPTTab('log');renderWorkoutSession();showToast('Routine loaded',routine.name);
 }
-function deleteRoutine(id){
+async function deleteRoutine(id){
   // One tap on a small × used to destroy an entire routine — no confirm, no undo, no toast. A routine is
   // a person's own training plan, often built exercise by exercise.
   const all=(ls('totry_routines')||[]);
   const r=all.find(function(x){ return x && x.id===id; });
   const nm=r&&r.name?String(r.name):'this routine';
-  if(!confirm('Delete "'+nm+'"?\n\nThe routine and its exercises are removed. Sessions you already logged with it are kept.')) return;
+  if(!(await askConfirm('Delete "'+nm+'"?\n\nThe routine and its exercises are removed. Sessions you already logged with it are kept.'))) return;
   const _keptRoutines = all.filter(function(x){ return x.id!==id; });
   tombstoneRemoved('totry_routines', all, _keptRoutines);
   ls('totry_routines', _keptRoutines);
@@ -33865,8 +33865,8 @@ function renderWorkoutHistory(){
   updateStravaBtn();
 }
 
-function deleteWorkoutFromHistory(id){
-  if(!confirm('Delete this workout session permanently? Your PRs from it will stay, but the session record will be gone.')) return;
+async function deleteWorkoutFromHistory(id){
+  if(!(await askConfirm('Delete this workout session permanently? Your PRs from it will stay, but the session record will be gone.'))) return;
   const history = ls('totry_workouts') || [];
   const _kept = history.filter(s => s.id != id);
   tombstoneRemoved('totry_workouts', history, _kept);   // the OTHER workout delete — see deleteTraining
@@ -35320,9 +35320,9 @@ function completeEvening(){
   haptic('success');
   // Offer share card now that the day is genuinely complete (reflection + examen).
   setTimeout(()=>{
-    if(confirm('Day reflected on and examen done. Want to share today?')){
-      generateShareCard();
-    }
+    askConfirm('Day closed.', 'Reflection and examen both done. Want a card to share it?',
+      { confirmLabel:'Make a card', cancelLabel:'Not tonight', danger:false })
+      .then(function(ok){ if(ok) generateShareCard(); });
   },2000);
 }
 function initEveningTab(){
@@ -36253,9 +36253,9 @@ function logContact(id){
   haptic('success');
 }
 
-function deleteRelationship(id){
+async function deleteRelationship(id){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
-  if(!confirm('Remove this person? Everything you have logged about them goes too.')) return;
+  if(!(await askConfirm('Remove this person? Everything you have logged about them goes too.'))) return;
   const people=ls('totry_relationships')||[];
   const removed=people.find(p=>p.id===id);
   const newPeople=people.filter(p=>p.id!==id);
@@ -36347,9 +36347,9 @@ function deliverLetter(id){
   renderLetters();
 }
 
-function deleteLetter(id){
+async function deleteLetter(id){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
-  if(!confirm('Delete this letter? You wrote it to yourself — it cannot be recovered.')) return;
+  if(!(await askConfirm('Delete this letter? You wrote it to yourself — it cannot be recovered.'))) return;
   const letters=ls('totry_letters')||[];
   const removed=letters.find(l=>l.id===id);
   const kept=letters.filter(l=>l.id!==id);
@@ -37737,6 +37737,133 @@ function showToast(title,msg,onTap){
   setTimeout(()=>{if(t.parentNode)t.remove();},onTap?7000:5000);
 }
 function closeModal(el){const m=el.closest('.modal-bg');if(m)m.remove();}
+
+// ── ASK, IN THE APP'S OWN VOICE ───────────────────────────────────────────────────────────────
+// Forty-seven decisions went through the browser's native confirm(). In a WKWebView that renders a
+// system dialog titled with the page ORIGIN — so the most consequential moments in the whole app
+// ("Remove this vice? Your fight history for it will be lost", "This device has been wiped") were
+// the only ones that did not look like the app, and the destructive choice got LESS visual weight
+// than an ordinary in-app button. Thirty-seven of the forty-seven are destructive.
+//
+// This is the same sheet everything else uses: the app's typography, a red destructive action, a
+// focus trap, Escape to cancel, focus restored to whatever opened it. Returns a Promise<boolean>, so
+// a call site becomes `if(!(await askConfirm(...))) return;` and its function becomes async — safe
+// everywhere here, because no caller of those functions reads a return value.
+function askConfirm(title, body, opts){
+  opts = opts || {};
+  return new Promise(function(resolve){
+    let done = false;
+    const prev = document.activeElement;
+    const finish = function(v){
+      if(done) return; done = true;
+      try{ document.removeEventListener('keydown', onKey, true); }catch(_){ }
+      try{ m.remove(); }catch(_){ }
+      try{ if(prev && prev.focus) prev.focus({ preventScroll:true }); }catch(_){ }
+      resolve(v);
+    };
+    const m = document.createElement('div');
+    m.className = 'modal-bg open modal-locked';   // locked: a decision needs an explicit answer
+    m.style.alignItems = 'center';
+    m.setAttribute('role', 'alertdialog');
+    m.setAttribute('aria-modal', 'true');
+    const danger = opts.danger !== false;         // destructive unless told otherwise
+    m.innerHTML =
+      '<div class="modal" style="text-align:left;max-width:340px">'+
+        '<div id="_ac-title" style="font-family:Cormorant Garamond,serif;font-size:21px;color:var(--tx);line-height:1.3;margin-bottom:'+(body?'8px':'16px')+'">'+_escFew(title)+'</div>'+
+        (body ? '<div id="_ac-body" style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:16px;white-space:pre-wrap">'+_escFew(body)+'</div>' : '')+
+        '<button class="btn" id="_ac-yes" style="margin-bottom:8px;'+(danger
+          ? 'background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re)'
+          : 'background:var(--go);border:none;color:#1a1505')+'">'+_escFew(opts.confirmLabel || 'Yes, do it')+'</button>'+
+        (opts.cancelLabel === null ? '' :
+          '<button class="btn" id="_ac-no" style="background:transparent;border:1px solid var(--bd);color:var(--tx2)">'+_escFew(opts.cancelLabel || 'Cancel')+'</button>')+
+      '</div>';
+    m.setAttribute('aria-labelledby', '_ac-title');
+    if(body) m.setAttribute('aria-describedby', '_ac-body');
+    document.body.appendChild(m);
+    const yes = m.querySelector('#_ac-yes'), no = m.querySelector('#_ac-no');
+    yes.onclick = function(){ try{ if(typeof haptic==='function') haptic('tap'); }catch(_){ } finish(true); };
+    if(no) no.onclick = function(){ finish(false); };
+    // A notice (no cancel button) must still be dismissible by the backdrop — but it resolves true,
+    // because there was never a choice to decline.
+    m.addEventListener('click', function(e){ if(e.target === m) finish(!no); });
+    // Escape cancels, and Tab cycles inside — otherwise the person is operating the page underneath.
+    function onKey(e){
+      if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); finish(false); return; }
+      if(e.key !== 'Tab') return;
+      e.preventDefault();
+      if(no) (document.activeElement === yes ? no : yes).focus(); else yes.focus();
+    }
+    document.addEventListener('keydown', onKey, true);
+    // Cancel takes focus, not the destructive button — the safe default should be one keystroke away.
+    setTimeout(function(){ try{ (no || yes).focus({ preventScroll:true }); }catch(_){ } }, 40);
+  });
+}
+// The same for a typed answer. Ten prompt() calls asked for a meal name, a weight, a city — and, at
+// the two most consequential moments in the app, for the word DELETE. All of them rendered a system
+// dialog with a bare OS text field, in the middle of a screen that had otherwise been carefully made.
+// Returns Promise<string|null>: null means cancelled, exactly like prompt().
+function askText(title, body, opts){
+  opts = opts || {};
+  return new Promise(function(resolve){
+    let done = false;
+    const prev = document.activeElement;
+    const finish = function(v){
+      if(done) return; done = true;
+      try{ document.removeEventListener('keydown', onKey, true); }catch(_){ }
+      try{ m.remove(); }catch(_){ }
+      try{ if(prev && prev.focus) prev.focus({ preventScroll:true }); }catch(_){ }
+      resolve(v);
+    };
+    const m = document.createElement('div');
+    m.className = 'modal-bg open modal-locked';
+    m.style.alignItems = 'center';
+    m.setAttribute('role', 'dialog');
+    m.setAttribute('aria-modal', 'true');
+    const numeric = opts.type === 'number';
+    m.innerHTML =
+      '<div class="modal" style="text-align:left;max-width:340px">'+
+        '<label for="_at-in" id="_at-title" style="display:block;font-family:Cormorant Garamond,serif;font-size:21px;color:var(--tx);line-height:1.3;margin-bottom:'+(body?'6px':'14px')+'">'+_escFew(title)+'</label>'+
+        (body ? '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:14px;white-space:pre-wrap">'+_escFew(body)+'</div>' : '')+
+        '<input id="_at-in" type="'+(numeric?'text':'text')+'"'+(numeric?' inputmode="decimal"':'')+
+          ' value="'+String(opts.value == null ? '' : opts.value).replace(/"/g,'&quot;')+'"'+
+          ' placeholder="'+String(opts.placeholder || '').replace(/"/g,'&quot;')+'"'+
+          ' style="width:100%;font-size:16px;padding:12px;margin-bottom:14px">'+
+        '<button class="btn primary" id="_at-ok" style="margin-bottom:8px">'+_escFew(opts.confirmLabel || 'Save')+'</button>'+
+        '<button class="btn" id="_at-no" style="background:transparent;border:1px solid var(--bd);color:var(--tx2)">'+_escFew(opts.cancelLabel || 'Cancel')+'</button>'+
+      '</div>';
+    m.setAttribute('aria-labelledby', '_at-title');
+    document.body.appendChild(m);
+    const input = m.querySelector('#_at-in'), ok = m.querySelector('#_at-ok'), no = m.querySelector('#_at-no');
+    ok.onclick = function(){ finish(input.value); };
+    no.onclick = function(){ finish(null); };
+    m.addEventListener('click', function(e){ if(e.target === m) finish(null); });
+    function onKey(e){
+      if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); finish(null); return; }
+      if(e.key === 'Enter' && document.activeElement === input){ e.preventDefault(); finish(input.value); return; }
+      if(e.key !== 'Tab') return;
+      e.preventDefault();
+      const order = [input, ok, no];
+      const i = order.indexOf(document.activeElement);
+      order[(i + (e.shiftKey ? order.length - 1 : 1)) % order.length].focus();
+    }
+    document.addEventListener('keydown', onKey, true);
+    setTimeout(function(){ try{ input.focus({ preventScroll:true }); input.select(); }catch(_){ } }, 60);
+  });
+}
+
+// And for something that must simply be READ. Six alert() calls carried the app's most serious
+// messages — "the snapshot is missing, NOT clearing anything", "this device has been wiped but the
+// server refused to delete" — as bare system dialogs. Those are the moments a person most needs to
+// believe the app knows what it is doing.
+function tellUser(title, body, opts){
+  opts = opts || {};
+  return askConfirm(title, body, {
+    confirmLabel: opts.confirmLabel || 'Got it',
+    cancelLabel: null,
+    danger: opts.danger === true,
+  }).then(function(){ return true; });
+}
+
 // ── UNIVERSAL SHEET DISMISS ──────────────────────────────────────────────────────────────────────
 // Every bottom-sheet is dismissible three ways: tap the backdrop, tap the grab-handle, or press Esc.
 // Without this, sheets built as .modal-bg (e.g. the Feeling Door's "which one's pulling?") had NO
@@ -38041,13 +38168,13 @@ function _demoSnapshot(){
     return Object.keys(snap).length;
   }catch(_){ return -1; }
 }
-function exitDemoMode(){
+async function exitDemoMode(){
   if(!inDemoMode()){ showToast('Not in demo mode','Nothing to restore.'); return; }
-  if(!confirm('Restore your real data and clear the demo dataset?')) return;
+  if(!(await askConfirm('Restore your real data and clear the demo dataset?'))) return;
   try{
     const raw=localStorage.getItem(DEMO_SNAP);
     const snap=raw?JSON.parse(raw):null;
-    if(!snap){ alert('The snapshot is missing \u2014 NOT clearing anything, so nothing else can be lost. Restore from your downloaded backup file instead (Settings \u2192 Your data \u2192 Restore).'); return; }
+    if(!snap){ tellUser('Nothing was changed', 'The snapshot is missing \u2014 NOT clearing anything, so nothing else can be lost. Restore from your downloaded backup file instead (Settings \u2192 Your data \u2192 Restore).'); return; }
     // Remove demo keys, then put the real ones back exactly as they were.
     const kill=[];
     for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
@@ -38061,7 +38188,7 @@ function exitDemoMode(){
     try{ syncEnabled = true; }catch(_){}
     showToast('Your data is back','Demo dataset cleared and syncing again. Reloading.');
     setTimeout(function(){ location.reload(); }, 900);
-  }catch(e){ alert('Restore failed: '+(e&&e.message||e)+'\n\nNothing was cleared. Use your downloaded backup file.'); }
+  }catch(e){ tellUser('Restore failed', (e&&e.message||e)+'\n\nNothing was cleared. Use your downloaded backup file.'); }
 }
 function _demoBanner(){
   try{
@@ -38089,12 +38216,12 @@ function _demoBanner(){
   }catch(_){}
 }
 
-function loadDemoData(){
+async function loadDemoData(){
   if(inDemoMode()){ showToast('Already in demo mode','Restore your real data first (red bar at the bottom).'); return; }
-  if(!confirm('Load the camera-ready demo dataset?\n\nYour real data is snapshotted first and a backup file is downloaded, syncing is switched OFF so nothing fake can reach your account, and one tap puts everything back.\n\nContinue?')) return;
+  if(!(await askConfirm('Load the camera-ready demo dataset?\n\nYour real data is snapshotted first and a backup file is downloaded, syncing is switched OFF so nothing fake can reach your account, and one tap puts everything back.\n\nContinue?'))) return;
   // Belt: the in-browser snapshot. Braces: a file on disk, in case the browser store is ever cleared.
   const n=_demoSnapshot();
-  if(n < 0){ alert('Could not snapshot your current data, so I have not touched anything. Nothing was changed.'); return; }
+  if(n < 0){ tellUser('Nothing was changed', 'Could not snapshot your current data, so I have not touched anything. Nothing was changed.'); return; }
   try{ if(typeof exportFullBackup==='function') exportFullBackup(); }catch(_){}
   try{ syncEnabled = false; }catch(_){}                 // nothing fake may ever reach the cloud
   try{ localStorage.setItem(DEMO_FLAG,'1'); }catch(_){}
@@ -38531,10 +38658,10 @@ function applyTheme(theme){
 
 // ── ACCOUNT DELETION ─────────────────────────────────────────
 async function deleteAccount(){
-  const confirm1 = confirm('Delete your account permanently?\n\nThis will:\n• Sign you out\n• Delete ALL your data from the cloud\n• Clear everything on this device\n\nThis cannot be undone.');
+  const confirm1 = await askConfirm('Delete your account permanently?\n\nThis will:\n• Sign you out\n• Delete ALL your data from the cloud\n• Clear everything on this device\n\nThis cannot be undone.');
   if(!confirm1) return;
   
-  const confirm2 = prompt('Last chance.\n\nType DELETE in capitals to confirm permanent account deletion:');
+  const confirm2 = await askText('Last chance', 'Type DELETE in capitals to confirm permanent account deletion:');
   if(confirm2 !== 'DELETE'){
     showToast('Cancelled', 'Your account is safe.');
     return;
@@ -38546,14 +38673,14 @@ async function deleteAccount(){
   // on the server with their email on it. Say so instead, before they type DELETE.
   if(!(sb && currentUser)){
     const _local = Object.keys(localStorage).filter(function(k){ return k.indexOf('totry_') === 0; }).length;
-    if(!confirm('You are signed out, so I cannot reach your account from here.\n\nI can clear all ' + _local +
+    if(!(await askConfirm('You are signed out, so I cannot reach your account from here.\n\nI can clear all ' + _local +
                 ' items on THIS DEVICE now, but your account and anything synced to it will still exist.\n\n' +
-                'To delete the account itself: sign in first, then use this button again.\n\nClear this device anyway?')) return;
+                'To delete the account itself: sign in first, then use this button again.\n\nClear this device anyway?'))) return;
     try{
       const keep = ['totry_theme'];
       Object.keys(localStorage).forEach(function(k){ if(k.indexOf('totry_') === 0 && keep.indexOf(k) === -1) localStorage.removeItem(k); });
     }catch(_){ }
-    alert('This device is cleared.\n\nYour ACCOUNT was not deleted — I could not reach the server while signed out. Sign in and use Delete account again to remove it, or email totrybyaj@gmail.com and I will do it by hand.');
+    tellUser('This device is cleared', 'Your ACCOUNT was not deleted — I could not reach the server while signed out. Sign in and use Delete account again to remove it, or email totrybyaj@gmail.com and I will do it by hand.');
     setTimeout(function(){ location.reload(); }, 1200);
     return;
   }
@@ -38629,7 +38756,7 @@ async function deleteAccount(){
   if(_f.length){
     // Never claim a deletion that did not happen. Local data is gone either way, so say precisely what
     // is still on the server and give them a person to ask — that is the only honest move left here.
-    alert('This device has been wiped, and you are signed out.\n\nBut the server refused to delete:\n\n\u2022 '
+    tellUser('Wiped, but not everywhere', 'This device has been wiped and you are signed out.\n\nBut the server refused to delete:\n\n\u2022 '
       + _f.join('\n\u2022 ')
       + '\n\nI will not tell you it is gone when it is not. Email totrybyaj@gmail.com and I will delete it by hand '
       + 'and confirm to you. I am sorry \u2014 this is my bug, not something you did wrong.');
@@ -39026,17 +39153,17 @@ function fallbackCopy(text){
   const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
   document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');document.body.removeChild(ta);
 }
-function resetAll(){
+async function resetAll(){
   // SAY WHAT THIS ACTUALLY DOES. It clears localStorage and nothing else — the account, and everything
   // already synced to it, survives — while the old text promised "permanently delete ALL your data".
   // Someone reaching for this button is usually trying to erase something they regret, and telling them
   // it is gone when it is on a server is the worst possible moment to be imprecise.
   const _signedIn = !!(typeof currentUser !== 'undefined' && currentUser);
-  if(!confirm('Start fresh on this device?\n\nThis clears everything stored on THIS PHONE.' +
+  if(!(await askConfirm('Start fresh on this device?\n\nThis clears everything stored on THIS PHONE.' +
     (_signedIn
       ? '\n\nYour account and anything already synced to it are NOT deleted — signing in again will bring the synced data back. To delete the account itself, use Settings \u2192 Delete account permanently.'
-      : '\n\nIf you have an account, anything already synced to it is NOT deleted.')))return;
-  if(!confirm('Last check \u2014 clear this device and start fresh?'))return;
+      : '\n\nIf you have an account, anything already synced to it is NOT deleted.'))))return;
+  if(!(await askConfirm('Last check \u2014 clear this device and start fresh?'))) return;
   Object.keys(localStorage).filter(k=>k.startsWith('totry_')||k.startsWith('strava_')).forEach(k=>localStorage.removeItem(k));
   window.location.reload();
 }
@@ -39765,8 +39892,8 @@ setTimeout(() => {
 }, 4000);
 
 
-function deleteJournalEntry(ts){
-  if(!confirm('Delete this journal entry?'))return;
+async function deleteJournalEntry(ts){
+  if(!(await askConfirm('Delete this journal entry?'))) return;
   const _before=ls('totry_journal')||[];
   const entries=_before.filter(e=>e.ts!==ts);
   tombstoneRemoved('totry_journal', _before, entries);   // or the next cloud pull unions it back
@@ -40151,9 +40278,9 @@ function _promptSacramentDate(kind){
     '</div>';
   document.body.appendChild(m);
 }
-function deleteSacrament(kind, id){
+async function deleteSacrament(kind, id){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
-  if(!confirm('Delete this record?')) return;
+  if(!(await askConfirm('Delete this record?'))) return;
   const key = kind === 'confession' ? 'totry_confessions' : 'totry_masses';
   const before = ls(key) || [];
   const list = before.filter(x => x.id !== id);
@@ -40263,8 +40390,8 @@ function addPrayer(){
   showToast('Added', 'Praying with you.');
   haptic('success');
 }
-function markPrayerAnswered(id){
-  const note = prompt('How did God answer this prayer? (optional — leave blank to skip)');
+async function markPrayerAnswered(id){
+  const note = await askText('How was it answered?', 'Optional \u2014 leave it blank to skip.', {confirmLabel:'Mark answered', cancelLabel:'Skip'});
   if(note === null) return; // cancelled
   const prayers = ls('totry_prayers') || [];
   const p = prayers.find(p => p.id === id);
@@ -40288,8 +40415,8 @@ function unanswerPrayer(id){
   ls('totry_prayers', prayers);
   renderPrayers();
 }
-function deletePrayer(id){
-  if(!confirm('Remove this prayer from your journal?')) return;
+async function deletePrayer(id){
+  if(!(await askConfirm('Remove this prayer from your journal?'))) return;
   const prayers = ls('totry_prayers') || [];
   const _kept = prayers.filter(p => p.id !== id);
   tombstoneRemoved('totry_prayers', prayers, _kept);

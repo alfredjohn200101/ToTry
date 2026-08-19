@@ -92,9 +92,9 @@ function addToGoal(id){
   showToast('Added '+curSym()+amount,goal.name+' is now at '+curSym()+Math.round(goal.current).toLocaleString());
 }
 
-function deleteFinanceGoal(id){
+async function deleteFinanceGoal(id){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
-  if(!confirm('Delete this savings goal? Your progress on it will be lost.')) return;
+  if(!(await askConfirm('Delete this savings goal? Your progress on it will be lost.'))) return;
   const goals=ls('totry_finance_goals')||[];
   const removed=goals.find(g=>g.id===id);
   const newGoals=goals.filter(g=>g.id!==id);
@@ -447,9 +447,9 @@ function renderAffirmList(){
     list.appendChild(row);
   });
 }
-function deleteAffirm(i){
+async function deleteAffirm(i){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
-  if(!confirm('Delete this affirmation? You wrote it — it cannot be recovered.')) return;
+  if(!(await askConfirm('Delete this affirmation? You wrote it — it cannot be recovered.'))) return;
   const affirms=getAffirmations();affirms.splice(i,1);
   ls('totry_affirms',affirms);renderAffirmList();
 }

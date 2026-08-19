@@ -977,12 +977,12 @@ function _pmAddItem(){ if(!_photoMeal)return; _photoMeal.items.push({food:'',por
 function _pmAddFat(){ if(!_photoMeal)return; _photoMeal.items.push({food:'Cooking oil / hidden fat',portion:'~1 tbsp',cal:120,pro:0,carb:0,fat:14,mult:1}); if(typeof haptic==='function') haptic('tap'); _renderPhotoMeal(); }
 // Save the corrected photo meal into My Meals (same schema as saveMealGroup) so it re-logs identically
 // forever — Cal AI re-scans to a different number each time; a saved meal is one truth, one tap.
-function _pmSave(){
+async function _pmSave(){
   if(!_photoMeal||!_photoMeal.items.length) return;
   const items=_photoMeal.items.filter(it=>it && (String(it.food).trim() || it.cal));
   if(!items.length){ if(typeof showToast==='function') showToast('Nothing to save','Name or add an item first.'); return; }
   const R=n=>Math.round(n);
-  const name=prompt('Save this meal as (re-log it identically anytime):', _photoMeal.name||'My meal');
+  const name=await askText('Save this meal', 'Give it a name and you can re-log it identically any time.', {value:_photoMeal.name||'My meal', confirmLabel:'Save meal'});
   if(!name || !name.trim()) return;
   const saved=ls('totry_saved_meals')||[];
   saved.unshift({ id:Date.now(), name:name.trim(),
@@ -1538,7 +1538,7 @@ async function lookupBarcode(barcode){
     // Recipe-scan mode: route this scan into the open recipe instead of the day log.
     if(_recipeMode){   // captured and cleared at the top, so a failed scan cannot leak into the next
       try{ if(typeof closeBarcodeScanner === 'function') closeBarcodeScanner(); }catch(_){}
-      const g = parseFloat(prompt('How many grams of ' + food.name + ' go in this recipe?', '100')) || 100;
+      const g = parseFloat(await askText('How much ' + food.name + '?', 'Grams that go into this recipe.', {value:'100', type:'number', confirmLabel:'Add it'})) || 100;
       const f = g / 100;
       if(window.__editingRecipe){
         window.__editingRecipe.ingredients.push({ name: food.name + ' (' + g + 'g)', cal: Math.round((food.cal||0)*f), pro: Math.round((food.pro||0)*f*10)/10, carb: Math.round((food.carb||0)*f*10)/10, fat: Math.round((food.fat||0)*f*10)/10 });
@@ -1765,8 +1765,8 @@ function saveCurrentRecipe(){
   openRecipeBuilder();
 }
 
-function deleteRecipe(i){
-  if(!confirm('Delete this recipe?')) return;
+async function deleteRecipe(i){
+  if(!(await askConfirm('Delete this recipe?'))) return;
   const recipes = ls('totry_recipes') || [];
   recipes.splice(i, 1);
   ls('totry_recipes', recipes);
@@ -1774,14 +1774,14 @@ function deleteRecipe(i){
   openRecipeBuilder();
 }
 
-function logRecipeAsMeal(i){
+async function logRecipeAsMeal(i){
   const recipes = ls('totry_recipes') || [];
   const r = recipes[i];
   if(!r) return;
   
   const servings = r.servings || 1;
   // Ask: how many servings?
-  const qty = parseFloat(prompt('How many servings of "' + r.name + '"?', '1'));
+  const qty = parseFloat(await askText('How many servings?', r.name, {value:'1', type:'number', confirmLabel:'Log it'}));
   if(!qty || qty <= 0) return;
   
   const portion = qty / servings;
@@ -2347,11 +2347,11 @@ function logRecentFood(name){
 // MFP-style one-tap (+): logs the food instantly at default serving into the current meal slot,
 // with a quick confirmation. No modal. This is what makes repeat logging "take seconds".
 // MFP-style saved meals: group foods you eat together ("my usual breakfast") and log them in one tap.
-function saveMealGroup(meal){
+async function saveMealGroup(meal){
   const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
   const entries = ((ls('totry_nutlog')||{})[today]||[]).filter(e => (e.meal||'snack') === meal);
   if(!entries.length){ showToast('Nothing to save', 'Log some foods in this meal first.'); return; }
-  const name = prompt('Name this meal (e.g. "My usual breakfast"):', meal.charAt(0).toUpperCase()+meal.slice(1));
+  const name = await askText('Name this meal', 'For example: my usual breakfast.', {confirmLabel:'Save meal', value: meal.charAt(0).toUpperCase()+meal.slice(1)});
   if(!name) return;
   const saved = ls('totry_saved_meals')||[];
   saved.unshift({
@@ -2381,9 +2381,9 @@ function logSavedMeal(id){
   showToast('Logged ✓', m.name + ' — ' + Math.round(totCal) + ' cal');
   renderNutritionLog();
 }
-function deleteSavedMeal(id){
+async function deleteSavedMeal(id){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
-  if(!confirm('Delete this saved meal? You will have to build it again.')) return;
+  if(!(await askConfirm('Delete this saved meal? You will have to build it again.'))) return;
   const _before = ls('totry_saved_meals')||[];
   const saved = _before.filter(x=>x.id!==id);
   tombstoneRemoved('totry_saved_meals', _before, saved);
@@ -3687,8 +3687,8 @@ function setCalGoalFromTDEE(tdee){
 
 // Warmup ramp calculator: from your top working weight, the standard pyramid —
 // bar/light ×10, 40%×8, 60%×5, 80%×2-3 — so you arrive at the work set primed, not fried.
-function openWarmupCalc(){
-  const w = parseFloat(prompt('Top working weight today (kg)?', ls('totry_last_warmup_target')||''));
+async function openWarmupCalc(){
+  const w = parseFloat(await askText('Top working weight today', 'In kilograms.', {type:'number', confirmLabel:'Build the warm-up', value: ls('totry_last_warmup_target')||''}));
   if(!w || isNaN(w) || w <= 0) return;
   ls('totry_last_warmup_target', w);
   const r5 = x => Math.max(20, Math.round(x/2.5)*2.5); // round to 2.5kg, never below the bar

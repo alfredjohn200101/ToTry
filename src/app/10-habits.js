@@ -451,10 +451,10 @@ function openAddHabit(){
       return true;
     });
 }
-function deleteHabit(i){
+async function deleteHabit(i){
   loadH();
   const h = habits[i]; if(!h) return;
-  if(!confirm('Remove "'+String(h.n)+'"?\n\nYour ticks for it are removed too. This only takes it off your list \u2014 it is not a failure.')) return;
+  if(!(await askConfirm('Remove "'+String(h.n)+'"?\n\nYour ticks for it are removed too. This only takes it off your list \u2014 it is not a failure.'))) return;
   habits.splice(i,1);
   saveH();
   try{ if(typeof syncToCloud==='function') syncToCloud('totry_h', habits); }catch(_){}

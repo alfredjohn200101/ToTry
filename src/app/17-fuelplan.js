@@ -807,8 +807,8 @@ function _saveEventFromModal(){
   if(typeof haptic==='function') haptic('success');
   showToast('Added', title+(days.length>1?(' on '+days.length+' days'):'')+'.');
 }
-function deleteCalEvent(id){
-  if(!confirm('Remove this from your week?')) return;
+async function deleteCalEvent(id){
+  if(!(await askConfirm('Remove this from your week?'))) return;
   _saveCalEvents((ls('totry_cal_events')||[]).filter(e => e.id !== id));
   renderCalendar();
 }

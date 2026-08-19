@@ -108,9 +108,9 @@ function renderSavedVerses(){
   });
 }
 
-function deleteSavedVerse(idx){
+async function deleteSavedVerse(idx){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
-  if(!confirm('Remove this from your saved verses?')) return;
+  if(!(await askConfirm('Remove this from your saved verses?'))) return;
   const saved = ls('totry_sv') || [];
   if(idx < 0 || idx >= saved.length) return;
   const removed = saved[idx];

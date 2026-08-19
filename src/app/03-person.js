@@ -183,9 +183,9 @@ function saveCycleLog(el){
   const p=cyclePhase();
   showToast('Logged', (p && CYCLE_PHASES[p.key]) ? ('Day '+p.day+' \u2014 estimated '+CYCLE_PHASES[p.key].name.toLowerCase()+'.') : 'Day one saved.');
 }
-function cycleUndoLast(){
+async function cycleUndoLast(){
   const c=cycleGet(); if(!c.log.length) return;
-  if(!confirm('Remove your last logged period start ('+c.log[0].d+')?')) return;
+  if(!(await askConfirm('Remove your last logged period start ('+c.log[0].d+')?'))) return;
   c.log.shift(); cycleSet(c); renderCycleSurfaces(); haptic('tap');
   showToast('Removed','That entry is gone.');
 }
@@ -217,10 +217,10 @@ function cycleToggleAI(){
     c.aiOK?'Only the phase word \u2014 never your dates. It helps it read a hard week as physiology.'
           :'Your phase stays on this device. Every card in the app still works.'); }catch(_){}
 }
-function cycleToggleBackup(){
+async function cycleToggleBackup(){
   const c=cycleGet();
   if(!c.backup){
-    if(!confirm('Back your cycle data up to your To Try account?\n\nRight now it lives only on this device. Backing it up means it survives a reinstall \u2014 but it also means it leaves this phone and sits on a server. This is the most sensitive data in the app. Most people should leave this off.\n\nTurn backup on?')) return;
+    if(!(await askConfirm('Back your cycle data up to your To Try account?\n\nRight now it lives only on this device. Backing it up means it survives a reinstall \u2014 but it also means it leaves this phone and sits on a server. This is the most sensitive data in the app. Most people should leave this off.\n\nTurn backup on?'))) return;
     c.backup=true; cycleSet(c);
     // Turning backup off tombstones the key so a stale server copy can never sync back. Turning it
     // ON again is the explicit reversal, so lift it — otherwise she would push a backup she could
@@ -256,9 +256,9 @@ async function _cyclePurgeCloud(){
   }catch(e){ console.warn('[cycle] cloud purge failed, tombstone holds:',e); }
   return false;                                  // tombstone stays pending; retried on next pull
 }
-function cycleDeleteAll(){
-  if(!confirm('Delete every period entry?\n\nThis erases your cycle log from this device and from my server. It cannot be undone.')) return;
-  if(prompt('Type DELETE to confirm.')!=='DELETE'){ showToast('Cancelled','Nothing was deleted.'); return; }
+async function cycleDeleteAll(){
+  if(!(await askConfirm('Delete every period entry?\n\nThis erases your cycle log from this device and from my server. It cannot be undone.'))) return;
+  if((await askText('Type DELETE to confirm', 'This erases your cycle log from this device and from my server. It cannot be undone.', {placeholder:'DELETE', confirmLabel:'Delete it all'}))!=='DELETE'){ showToast('Cancelled','Nothing was deleted.'); return; }
   _cyclePurgeCloud();
   try{ const i=SYNC_KEYS.indexOf(CYCLE_KEY); if(i>=0) SYNC_KEYS.splice(i,1); }catch(_){}
   try{ localStorage.removeItem(CYCLE_KEY); }catch(_){}
@@ -1987,8 +1987,8 @@ function renderUsageStats(){
 }
 
 // Allow user to clear coach history
-function clearCoachHistory(){
-  if(!confirm('Clear your conversation history with the Coach? This cannot be undone.')) return;
+async function clearCoachHistory(){
+  if(!(await askConfirm('Clear your conversation history with the Coach? This cannot be undone.'))) return;
   cH = [];
   persistCoachHistory();
   const msgsEl = document.getElementById('coach-msgs');
@@ -2193,7 +2193,7 @@ function editJourneyStart(){
     '<div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--bd)">' +
       '<div class="lbl">Start a new chapter</div>' +
       '<p style="font-size:12px;color:var(--tx3);margin:6px 0 12px;line-height:1.6">Fell hard, or want a clean slate to begin again? Reset your day-count to <b style="color:var(--tx2)">Day 1</b> — and keep every day you’ve already put in. The falling isn’t erased; it’s the proof you kept going.</p>' +
-      '<button class="btn" style="width:100%;background:var(--bg3);border:1px solid var(--go-bd);color:var(--go)" onclick="if(confirm(\'Start a new chapter at Day 1? Your total days trying is kept and shown.\')) restartJourney()">Begin again — Day 1</button>' +
+      '<button class="btn" style="width:100%;background:var(--bg3);border:1px solid var(--go-bd);color:var(--go)" onclick="askConfirm(\'Start a new chapter at Day 1?\', \'Your total days trying is kept and shown.\', {confirmLabel:\'Start a new chapter\', danger:false}).then(function(ok){ if(ok) restartJourney(); })">Begin again — Day 1</button>' +
     '</div>' +
     (ls('totry_journey_start') ? '<button class="btn" style="width:100%;margin-top:10px;background:transparent;border:none;color:var(--tx3);font-size:12px" onclick="resetJourneyStart()">Reset to account creation date</button>' : '') +
   '</div>';
@@ -3392,7 +3392,7 @@ async function _loadSalah(){
     const j=await r.json(); if(j.code!==200||!j.data) throw new Error('n'); box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri);
   }catch(e){ box.innerHTML=_readErr('Couldn’t load prayer times right now.'); }
 }
-function _promptCity(){ try{ const c=window.prompt('Your city (for prayer times):'); if(c&&c.trim()) _loadSalahByCity(c.trim()); }catch(_){} }
+async function _promptCity(){ try{ const c=await askText('Your city', 'Used only to work out prayer times where you are.', {confirmLabel:'Set city'}); if(c&&c.trim()) _loadSalahByCity(c.trim()); }catch(_){} }
 async function _loadSalahByCity(city){
   const box=document.getElementById('salah-box'); if(box) box.innerHTML=_readLoading();
   // NB: the city is saved further down, only after the API confirms it resolved — so a typo is never

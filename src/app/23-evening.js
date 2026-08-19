@@ -765,9 +765,9 @@ function completeEvening(){
   haptic('success');
   // Offer share card now that the day is genuinely complete (reflection + examen).
   setTimeout(()=>{
-    if(confirm('Day reflected on and examen done. Want to share today?')){
-      generateShareCard();
-    }
+    askConfirm('Day closed.', 'Reflection and examen both done. Want a card to share it?',
+      { confirmLabel:'Make a card', cancelLabel:'Not tonight', danger:false })
+      .then(function(ok){ if(ok) generateShareCard(); });
   },2000);
 }
 function initEveningTab(){

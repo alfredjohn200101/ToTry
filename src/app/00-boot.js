@@ -178,11 +178,11 @@ async function exportAllData(){
     if(typeof showToast==='function') showToast(_r ? 'Backup saved' : 'Not saved', _r ? (payload.keys + ' items exported. Your sign-in and app tokens are deliberately left out, so the file is safe to keep.') : 'Nothing was written. Try again in a moment.');
   }catch(e){ if(typeof showToast==='function') showToast('Export failed', 'Could not build the backup. Try again.'); }
 }
-function importAllData(ev){
+async function importAllData(ev){
   const file = ev.target && ev.target.files && ev.target.files[0];
   if(!file) return;
   const reader = new FileReader();
-  reader.onload = () => {
+  reader.onload = async () => {
     // Clear the picker first. A file input does not fire change when the SAME file is chosen again,
     // so cancelling the confirm below and re-picking the same backup did nothing at all — the person
     // taps, nothing happens, and there is no way to tell the app is ignoring them.
@@ -194,7 +194,7 @@ function importAllData(ev){
       // or tokens on this device.
       const keys = Object.keys(data).filter(backupSafeKey);
       if(!keys.length){ showToast('Nothing to restore', 'That file has no To Try data.'); return; }
-      if(!confirm('Restore ' + keys.length + ' items from this backup? This overwrites matching data on this device.')) return;
+      if(!(await askConfirm('Restore ' + keys.length + ' items from this backup? This overwrites matching data on this device.'))) return;
       // One restore path for both entry points. My first version of this fix duplicated the counting
       // loop inline here, which is the same duplicate-implementation problem the two plate calculators
       // had. restoreKeys() also does something better than my version did: it writes SMALLEST FIRST and
@@ -203,7 +203,7 @@ function importAllData(ev){
       const _r = restoreKeys(data);
       const _rep = restoreReport(_r);
       if(typeof haptic==='function') haptic(_r.failed.length ? 'warning' : 'success');
-      if(_r.failed.length) alert(_rep.title + '\n\n' + _rep.body);
+      if(_r.failed.length) tellUser(_rep.title, _rep.body, {danger:true});
       showToast(_r.failed.length ? _rep.title : 'Restored', _rep.body);
       // Longer pause when something did not fit, so the alert is actually read before the reload.
       setTimeout(()=>location.reload(), _r.failed.length ? 5600 : 1200);
@@ -443,7 +443,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time "what's possible" intro (see WHATS_POSSIBLE), not a changelog.
-const APP_VERSION = 'v517';
+const APP_VERSION = 'v518';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -767,7 +767,7 @@ async function signOut(){
        + 'are only here and will be gone for good:\n\n\u2022 ' + losses.join('\n\u2022 ')
        + '\n\nSettings \u2192 Your data \u2192 Export saves them first. Sign out anyway?')
     : 'Sign out? Everything is synced, so it all comes back when you sign in.';
-  if(!confirm(msg)) return;
+  if(!(await askConfirm(msg))) return;
 
   try {
     await sb.auth.signOut();

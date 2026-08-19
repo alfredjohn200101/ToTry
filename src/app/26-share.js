@@ -174,6 +174,133 @@ function showToast(title,msg,onTap){
   setTimeout(()=>{if(t.parentNode)t.remove();},onTap?7000:5000);
 }
 function closeModal(el){const m=el.closest('.modal-bg');if(m)m.remove();}
+
+// ── ASK, IN THE APP'S OWN VOICE ───────────────────────────────────────────────────────────────
+// Forty-seven decisions went through the browser's native confirm(). In a WKWebView that renders a
+// system dialog titled with the page ORIGIN — so the most consequential moments in the whole app
+// ("Remove this vice? Your fight history for it will be lost", "This device has been wiped") were
+// the only ones that did not look like the app, and the destructive choice got LESS visual weight
+// than an ordinary in-app button. Thirty-seven of the forty-seven are destructive.
+//
+// This is the same sheet everything else uses: the app's typography, a red destructive action, a
+// focus trap, Escape to cancel, focus restored to whatever opened it. Returns a Promise<boolean>, so
+// a call site becomes `if(!(await askConfirm(...))) return;` and its function becomes async — safe
+// everywhere here, because no caller of those functions reads a return value.
+function askConfirm(title, body, opts){
+  opts = opts || {};
+  return new Promise(function(resolve){
+    let done = false;
+    const prev = document.activeElement;
+    const finish = function(v){
+      if(done) return; done = true;
+      try{ document.removeEventListener('keydown', onKey, true); }catch(_){ }
+      try{ m.remove(); }catch(_){ }
+      try{ if(prev && prev.focus) prev.focus({ preventScroll:true }); }catch(_){ }
+      resolve(v);
+    };
+    const m = document.createElement('div');
+    m.className = 'modal-bg open modal-locked';   // locked: a decision needs an explicit answer
+    m.style.alignItems = 'center';
+    m.setAttribute('role', 'alertdialog');
+    m.setAttribute('aria-modal', 'true');
+    const danger = opts.danger !== false;         // destructive unless told otherwise
+    m.innerHTML =
+      '<div class="modal" style="text-align:left;max-width:340px">'+
+        '<div id="_ac-title" style="font-family:Cormorant Garamond,serif;font-size:21px;color:var(--tx);line-height:1.3;margin-bottom:'+(body?'8px':'16px')+'">'+_escFew(title)+'</div>'+
+        (body ? '<div id="_ac-body" style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:16px;white-space:pre-wrap">'+_escFew(body)+'</div>' : '')+
+        '<button class="btn" id="_ac-yes" style="margin-bottom:8px;'+(danger
+          ? 'background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re)'
+          : 'background:var(--go);border:none;color:#1a1505')+'">'+_escFew(opts.confirmLabel || 'Yes, do it')+'</button>'+
+        (opts.cancelLabel === null ? '' :
+          '<button class="btn" id="_ac-no" style="background:transparent;border:1px solid var(--bd);color:var(--tx2)">'+_escFew(opts.cancelLabel || 'Cancel')+'</button>')+
+      '</div>';
+    m.setAttribute('aria-labelledby', '_ac-title');
+    if(body) m.setAttribute('aria-describedby', '_ac-body');
+    document.body.appendChild(m);
+    const yes = m.querySelector('#_ac-yes'), no = m.querySelector('#_ac-no');
+    yes.onclick = function(){ try{ if(typeof haptic==='function') haptic('tap'); }catch(_){ } finish(true); };
+    if(no) no.onclick = function(){ finish(false); };
+    // A notice (no cancel button) must still be dismissible by the backdrop — but it resolves true,
+    // because there was never a choice to decline.
+    m.addEventListener('click', function(e){ if(e.target === m) finish(!no); });
+    // Escape cancels, and Tab cycles inside — otherwise the person is operating the page underneath.
+    function onKey(e){
+      if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); finish(false); return; }
+      if(e.key !== 'Tab') return;
+      e.preventDefault();
+      if(no) (document.activeElement === yes ? no : yes).focus(); else yes.focus();
+    }
+    document.addEventListener('keydown', onKey, true);
+    // Cancel takes focus, not the destructive button — the safe default should be one keystroke away.
+    setTimeout(function(){ try{ (no || yes).focus({ preventScroll:true }); }catch(_){ } }, 40);
+  });
+}
+// The same for a typed answer. Ten prompt() calls asked for a meal name, a weight, a city — and, at
+// the two most consequential moments in the app, for the word DELETE. All of them rendered a system
+// dialog with a bare OS text field, in the middle of a screen that had otherwise been carefully made.
+// Returns Promise<string|null>: null means cancelled, exactly like prompt().
+function askText(title, body, opts){
+  opts = opts || {};
+  return new Promise(function(resolve){
+    let done = false;
+    const prev = document.activeElement;
+    const finish = function(v){
+      if(done) return; done = true;
+      try{ document.removeEventListener('keydown', onKey, true); }catch(_){ }
+      try{ m.remove(); }catch(_){ }
+      try{ if(prev && prev.focus) prev.focus({ preventScroll:true }); }catch(_){ }
+      resolve(v);
+    };
+    const m = document.createElement('div');
+    m.className = 'modal-bg open modal-locked';
+    m.style.alignItems = 'center';
+    m.setAttribute('role', 'dialog');
+    m.setAttribute('aria-modal', 'true');
+    const numeric = opts.type === 'number';
+    m.innerHTML =
+      '<div class="modal" style="text-align:left;max-width:340px">'+
+        '<label for="_at-in" id="_at-title" style="display:block;font-family:Cormorant Garamond,serif;font-size:21px;color:var(--tx);line-height:1.3;margin-bottom:'+(body?'6px':'14px')+'">'+_escFew(title)+'</label>'+
+        (body ? '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:14px;white-space:pre-wrap">'+_escFew(body)+'</div>' : '')+
+        '<input id="_at-in" type="'+(numeric?'text':'text')+'"'+(numeric?' inputmode="decimal"':'')+
+          ' value="'+String(opts.value == null ? '' : opts.value).replace(/"/g,'&quot;')+'"'+
+          ' placeholder="'+String(opts.placeholder || '').replace(/"/g,'&quot;')+'"'+
+          ' style="width:100%;font-size:16px;padding:12px;margin-bottom:14px">'+
+        '<button class="btn primary" id="_at-ok" style="margin-bottom:8px">'+_escFew(opts.confirmLabel || 'Save')+'</button>'+
+        '<button class="btn" id="_at-no" style="background:transparent;border:1px solid var(--bd);color:var(--tx2)">'+_escFew(opts.cancelLabel || 'Cancel')+'</button>'+
+      '</div>';
+    m.setAttribute('aria-labelledby', '_at-title');
+    document.body.appendChild(m);
+    const input = m.querySelector('#_at-in'), ok = m.querySelector('#_at-ok'), no = m.querySelector('#_at-no');
+    ok.onclick = function(){ finish(input.value); };
+    no.onclick = function(){ finish(null); };
+    m.addEventListener('click', function(e){ if(e.target === m) finish(null); });
+    function onKey(e){
+      if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); finish(null); return; }
+      if(e.key === 'Enter' && document.activeElement === input){ e.preventDefault(); finish(input.value); return; }
+      if(e.key !== 'Tab') return;
+      e.preventDefault();
+      const order = [input, ok, no];
+      const i = order.indexOf(document.activeElement);
+      order[(i + (e.shiftKey ? order.length - 1 : 1)) % order.length].focus();
+    }
+    document.addEventListener('keydown', onKey, true);
+    setTimeout(function(){ try{ input.focus({ preventScroll:true }); input.select(); }catch(_){ } }, 60);
+  });
+}
+
+// And for something that must simply be READ. Six alert() calls carried the app's most serious
+// messages — "the snapshot is missing, NOT clearing anything", "this device has been wiped but the
+// server refused to delete" — as bare system dialogs. Those are the moments a person most needs to
+// believe the app knows what it is doing.
+function tellUser(title, body, opts){
+  opts = opts || {};
+  return askConfirm(title, body, {
+    confirmLabel: opts.confirmLabel || 'Got it',
+    cancelLabel: null,
+    danger: opts.danger === true,
+  }).then(function(){ return true; });
+}
+
 // ── UNIVERSAL SHEET DISMISS ──────────────────────────────────────────────────────────────────────
 // Every bottom-sheet is dismissible three ways: tap the backdrop, tap the grab-handle, or press Esc.
 // Without this, sheets built as .modal-bg (e.g. the Feeling Door's "which one's pulling?") had NO

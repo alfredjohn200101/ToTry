@@ -949,10 +949,10 @@ function renderTriggerPatternCard(){
   container.appendChild(card);
 }
 
-function removeVice(i){
+async function removeVice(i){
   loadV();
   if(!vices[i])return;
-  if(!confirm('Remove "'+vices[i].n+'"? Your fight history for it will be lost.'))return;
+  if(!(await askConfirm('Remove "'+vices[i].n+'"? Your fight history for it will be lost.'))) return;
   const _goneName = String(vices[i].n || '').toLowerCase();
   vices.splice(i,1);
   // Record the removal so the cloud merge cannot bring it back. pullFromCloud unions vices by NAME,

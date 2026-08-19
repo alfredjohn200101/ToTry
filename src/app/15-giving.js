@@ -251,9 +251,9 @@ function openGivingLog(kind, subtitle, viaRelease){
       return true;
     });
 }
-function deleteGiving(id){
+async function deleteGiving(id){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
-  if(!confirm('Delete this giving record? It is part of your giving history.')) return; ls('totry_giving', givingLog().filter(x=>x.id!==id)); if(typeof syncToCloud==='function') syncToCloud(); renderGiving(); }
+  if(!(await askConfirm('Delete this giving record? It is part of your giving history.'))) return; ls('totry_giving', givingLog().filter(x=>x.id!==id)); if(typeof syncToCloud==='function') syncToCloud(); renderGiving(); }
 function openPledge(){
   const p = givingPledge();
   openFormModal('Your own measure', 'Set a share of what comes in, or a flat monthly amount. Yours to change or drop — nothing chases you about it.',

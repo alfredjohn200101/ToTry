@@ -385,8 +385,8 @@ function renderWeightHistory(){
         '<button onclick="deleteWeightEntry(&quot;'+(e.ts||e.date)+'&quot;)" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer" aria-label="Delete">\u00d7</button></span></div>';
     }).join('');
 }
-function deleteWeightEntry(key){
-  if(!confirm('Delete this weigh-in?')) return;
+async function deleteWeightEntry(key){
+  if(!(await askConfirm('Delete this weigh-in?'))) return;
   const entries = ls('totry_body') || [];
   const filtered = entries.filter(e => (e.ts||e.date) !== key);
   tombstoneRemoved('totry_body', entries, filtered);   // or the next cloud pull unions it back
@@ -772,8 +772,8 @@ function renderMeasurements(){
     history.appendChild(row);
   });
 }
-function deleteMeasurement(idx){
-  if(!confirm('Delete this measurement snapshot?')) return;
+async function deleteMeasurement(idx){
+  if(!(await askConfirm('Delete this measurement snapshot?'))) return;
   const list = ls('totry_measurements') || [];
   list.splice(idx, 1);
   ls('totry_measurements', list);
@@ -895,8 +895,8 @@ function openProgressPhotoViewer(id){
   '</div>';
   document.body.appendChild(m);
 }
-function deleteProgressPhoto(id){
-  if(!confirm('Delete this progress photo? Cannot be undone.')) return;
+async function deleteProgressPhoto(id){
+  if(!(await askConfirm('Delete this progress photo? Cannot be undone.'))) return;
   const photos = ls('totry_progress_photos') || [];
   ls('totry_progress_photos', photos.filter(p => p.id !== id));
   document.querySelector('.modal-bg.open')?.remove();

@@ -666,8 +666,8 @@ setTimeout(() => {
 }, 4000);
 
 
-function deleteJournalEntry(ts){
-  if(!confirm('Delete this journal entry?'))return;
+async function deleteJournalEntry(ts){
+  if(!(await askConfirm('Delete this journal entry?'))) return;
   const _before=ls('totry_journal')||[];
   const entries=_before.filter(e=>e.ts!==ts);
   tombstoneRemoved('totry_journal', _before, entries);   // or the next cloud pull unions it back

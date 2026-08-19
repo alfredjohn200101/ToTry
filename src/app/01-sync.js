@@ -369,7 +369,7 @@ async function approveSubmission(id){
 }
 async function rejectSubmission(id){
   if(!sb || !id) return;
-  if(!confirm('Reject and delete this submission?')) return;
+  if(!(await askConfirm('Reject and delete this submission?'))) return;
   try{
     const { error } = await sb.from('shared_library').delete().eq('id', id);
     if(error){ showToast('Couldn\u2019t reject', error.message||''); return; }

@@ -411,7 +411,7 @@ async function connectAppleHealth(){
 // silently erasing weeks of a person's training history would be the worse surprise — but it says so
 // plainly, and Settings → Your data → Delete still removes it all.
 async function disconnectAppleHealth(){
-  if(!confirm('Turn off Apple Health?\n\nThe app stops reading your steps, sleep and workouts, and stops syncing them to your account.\n\nWhat you\'ve already imported stays in your history. To revoke the permission itself, use iOS Settings → Health → Data Access & Devices → To Try.')) return;
+  if(!(await askConfirm('Turn off Apple Health?\n\nThe app stops reading your steps, sleep and workouts, and stops syncing them to your account.\n\nWhat you\'ve already imported stays in your history. To revoke the permission itself, use iOS Settings → Health → Data Access & Devices → To Try.'))) return;
   try{ ls('totry_health_connected', false); }catch(_){}
   // The write side rides on the same grant — leaving it "on" would be a switch pointing at nothing.
   try{ ls('totry_health_write', false); }catch(_){}

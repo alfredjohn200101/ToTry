@@ -2302,7 +2302,7 @@ H.section('CSV dates are day-first, and destructive taps ask first')
   const unconfirmed = [];
   for (const m of code.matchAll(/function (delete[A-Za-z]+)\s*\([^)]*\)\s*\{/g)) {
     const body = code.slice(m.index, m.index + 900);
-    if (!/confirm\(/.test(body)) unconfirmed.push(m[1]);
+    if (!/askConfirm\(|confirm\(/.test(body)) unconfirmed.push(m[1]);
   }
   // deleteFoodEntry is deliberately exempt: highest-frequency delete in the app, trivially re-logged, and
   // a modal per tap is friction with no payoff. Everything that destroys authored or financial records asks.
@@ -3770,7 +3770,7 @@ function fnBodyOf(code, name){
     'and the row carries a control that reaches it without also logging a payment');
   const ed = H.extractFn('editDebt');
   H.ok(/Remove this debt/.test(ed), 'the editor offers removal');
-  H.ok(/confirm\(/.test(ed), 'guarded by a confirm — it is part of their record');
+  H.ok(/askConfirm\(/.test(ed), 'guarded by the in-app confirm sheet — it is part of their record');
   H.ok(/if\(p > t\) p = t;/.test(ed), 'paid can never exceed the total (no negative remaining, no bar past 100%)');
 
   // 3. GENTLE MODE. "Numbers off" is honoured in Nourish; the Fuel Plan is the same tab and printed
@@ -4372,6 +4372,51 @@ function fnBodyOf(code, name){
   // finance, and the array union.
   const queues = (region.match(/_queueWrite\(k, nv\)/g) || []).length;
   H.ok(queues >= 5, `every merge branch pushes its result back (found ${queues}, expected >= 5)`);
+}
+
+// ── the app asks in its own voice ────────────────────────────────────────────────────────────
+{
+  H.section('no native browser dialog is left anywhere');
+
+  // 47 confirm(), 10 prompt() and 6 alert() carried the most consequential moments in the app —
+  // "Remove this vice? Your fight history for it will be lost", "This device has been wiped but the
+  // server refused to delete", the typed DELETE for account deletion. In a WKWebView those render as
+  // system dialogs titled with the page ORIGIN, so the only screens that did not look like the app
+  // were the ones where trust matters most, and the destructive choice carried LESS visual weight
+  // than an ordinary in-app button. Everything else in this app hand-builds its sheets.
+  const code = H.html
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n').map(l => l.replace(/(^|\s)\/\/.*$/, '')).join('\n');
+  const strays = [];
+  for (const m of code.matchAll(/(?<![.\w$])(confirm|prompt|alert)\s*\(/g)) {
+    const at = m.index;
+    const before = code.slice(Math.max(0, at - 12), at);
+    if (/ask|tell|deferredInstall/i.test(before)) continue;   // askConfirm / askText / tellUser
+    strays.push(m[1] + ' near: ' + code.slice(Math.max(0, at - 40), at + 50).replace(/\s+/g, ' '));
+  }
+  H.eq(strays, [], 'every native dialog is replaced by the in-app sheet');
+
+  // The sheets themselves have to behave like dialogs, not like divs.
+  const ac = H.extractFn('askConfirm');
+  H.ok(/role', 'alertdialog'/.test(ac), 'askConfirm is an alertdialog');
+  H.ok(/aria-modal/.test(ac), 'and is announced as modal');
+  H.ok(/aria-labelledby/.test(ac), 'and is labelled by its own title');
+  H.ok(/e\.key === 'Escape'/.test(ac), 'Escape cancels');
+  H.ok(/e\.target === m\) finish\(!no\)/.test(ac), 'the backdrop cancels — and resolves a one-action notice');
+  H.ok(/\(no \|\| yes\)\.focus/.test(ac), 'CANCEL takes focus, so the safe answer is the default');
+  H.ok(/prev && prev\.focus/.test(ac), 'and focus returns to whatever opened it');
+  H.ok(/modal-locked/.test(ac), 'a decision cannot be dismissed by the universal sheet-dismiss handler');
+
+  const at = H.extractFn('askText');
+  H.ok(/e\.key === 'Enter'/.test(at), 'askText submits on Enter');
+  H.ok(/finish\(null\)/.test(at), 'and returns null when cancelled, matching prompt()\u2019s contract');
+  H.ok(/input\.select\(\)/.test(at), 'with the prefilled value selected, so typing replaces it');
+
+  H.ok(/cancelLabel: null/.test(H.extractFn('tellUser')), 'tellUser is a one-action notice');
+
+  // Destructive paths must use it, and the debt removal must still tombstone.
+  H.ok(/await askConfirm\(/.test(H.extractFn('removeVice')), 'removing a vice asks through the sheet');
+  H.ok(/await askText\(/.test(H.extractFn('deleteAccount')), 'and account deletion still requires typing DELETE');
 }
 
 // ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────

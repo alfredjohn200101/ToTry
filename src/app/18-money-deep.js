@@ -174,8 +174,8 @@ function saveTransaction(){
   showToast('Logged', (window.__transType === 'expense' ? '−' : '+') + curSym() + amount + ' · ' + window.__transCategory);
   haptic('success');
 }
-function deleteTransaction(id){
-  if(!confirm('Delete this transaction?')) return;
+async function deleteTransaction(id){
+  if(!(await askConfirm('Delete this transaction?'))) return;
   const list = ls('totry_transactions') || [];
   const next = list.filter(t => t.id !== id);
   // Record the removal so the cloud union cannot bring it back — see the note above.
@@ -291,8 +291,8 @@ function saveSubscription(){
   showToast('Subscription tracked', name);
   haptic('success');
 }
-function deleteSubscription(id){
-  if(!confirm('Remove this subscription from tracking?')) return;
+async function deleteSubscription(id){
+  if(!(await askConfirm('Remove this subscription from tracking?'))) return;
   const list = ls('totry_subscriptions') || [];
   const next = list.filter(s => s.id !== id);
   // Tombstone the removal so the cloud union cannot resurrect it — see deleteTransaction.
@@ -377,9 +377,9 @@ function openFamilyContribution(){
       return true;
     });
 }
-function deleteFamilyContribution(id){
+async function deleteFamilyContribution(id){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
-  if(!confirm('Delete this contribution? It is part of your record of what you gave.')) return;
+  if(!(await askConfirm('Delete this contribution? It is part of your record of what you gave.'))) return;
   const _before = ls('totry_family_contrib')||[];
   const list = _before.filter(x=>x.id!==id);
   tombstoneRemoved('totry_family_contrib', _before, list);
@@ -465,9 +465,9 @@ function openPokerSession(){
       return true;
     });
 }
-function deletePokerSession(id){
+async function deletePokerSession(id){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
-  if(!confirm('Delete this session? Its result comes out of your totals.')) return;
+  if(!(await askConfirm('Delete this session? Its result comes out of your totals.'))) return;
   const _before = ls('totry_poker_sessions')||[];
   const list = _before.filter(x=>x.id!==id);
   tombstoneRemoved('totry_poker_sessions', _before, list);
@@ -774,8 +774,8 @@ function markBillPaid(id){
   try{ if(typeof Notify!=='undefined' && Notify.cancel) Notify.cancel(_billNotifId(b)); }catch(_){ }
   showToast('Marked paid', b.name);
 }
-function deleteBill(id){
-  if(!confirm('Delete this bill?')) return;
+async function deleteBill(id){
+  if(!(await askConfirm('Delete this bill?'))) return;
   const list = ls('totry_bills') || [];
   const next = list.filter(b => b.id !== id);
   // Tombstone the removal so the cloud union cannot resurrect it — see deleteTransaction.
@@ -967,8 +967,8 @@ function updateAsset(id){
       return true;
     });
 }
-function deleteAsset(id){
-  if(!confirm('Remove this asset?')) return;
+async function deleteAsset(id){
+  if(!(await askConfirm('Remove this asset?'))) return;
   const list = ls('totry_assets') || [];
   const next = list.filter(a => a.id !== id);
   // Tombstone the removal so the cloud union cannot resurrect it — see deleteTransaction.
@@ -1017,7 +1017,7 @@ function addDebt(){loadF();const n=document.getElementById('dn').value.trim(),t=
 // A debt could be created and paid down but never CORRECTED. A typo in the name, a total entered as
 // 1200 instead of 12000, an interest rate learned later, a card that was closed — all of it was
 // permanent, and the freedom date was computed off the wrong number for as long as the app lived.
-function editDebt(idx){
+async function editDebt(idx){
   loadF();
   const d = debts[Number(idx)];
   if(!d){ if(typeof showToast==='function') showToast('That debt is gone','It may have been removed on another device.'); return; }
@@ -1057,8 +1057,8 @@ function editDebt(idx){
       del.className='btn';
       del.style.cssText='margin-top:8px;background:none;border:1px solid var(--re-bd);color:var(--re)';
       del.textContent='Remove this debt';
-      del.onclick=function(){
-        if(!confirm('Remove '+(d.n||'this debt')+'? Payments you already logged against it stay in your history.')) return;
+      del.onclick=async function(){
+        if(!(await askConfirm('Remove '+(d.n||'this debt')+'? Payments you already logged against it stay in your history.'))) return;
         loadF();
         const _gone = debts[Number(idx)];
         debts.splice(Number(idx),1);

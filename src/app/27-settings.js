@@ -134,13 +134,13 @@ function _demoSnapshot(){
     return Object.keys(snap).length;
   }catch(_){ return -1; }
 }
-function exitDemoMode(){
+async function exitDemoMode(){
   if(!inDemoMode()){ showToast('Not in demo mode','Nothing to restore.'); return; }
-  if(!confirm('Restore your real data and clear the demo dataset?')) return;
+  if(!(await askConfirm('Restore your real data and clear the demo dataset?'))) return;
   try{
     const raw=localStorage.getItem(DEMO_SNAP);
     const snap=raw?JSON.parse(raw):null;
-    if(!snap){ alert('The snapshot is missing \u2014 NOT clearing anything, so nothing else can be lost. Restore from your downloaded backup file instead (Settings \u2192 Your data \u2192 Restore).'); return; }
+    if(!snap){ tellUser('Nothing was changed', 'The snapshot is missing \u2014 NOT clearing anything, so nothing else can be lost. Restore from your downloaded backup file instead (Settings \u2192 Your data \u2192 Restore).'); return; }
     // Remove demo keys, then put the real ones back exactly as they were.
     const kill=[];
     for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i);
@@ -154,7 +154,7 @@ function exitDemoMode(){
     try{ syncEnabled = true; }catch(_){}
     showToast('Your data is back','Demo dataset cleared and syncing again. Reloading.');
     setTimeout(function(){ location.reload(); }, 900);
-  }catch(e){ alert('Restore failed: '+(e&&e.message||e)+'\n\nNothing was cleared. Use your downloaded backup file.'); }
+  }catch(e){ tellUser('Restore failed', (e&&e.message||e)+'\n\nNothing was cleared. Use your downloaded backup file.'); }
 }
 function _demoBanner(){
   try{
@@ -182,12 +182,12 @@ function _demoBanner(){
   }catch(_){}
 }
 
-function loadDemoData(){
+async function loadDemoData(){
   if(inDemoMode()){ showToast('Already in demo mode','Restore your real data first (red bar at the bottom).'); return; }
-  if(!confirm('Load the camera-ready demo dataset?\n\nYour real data is snapshotted first and a backup file is downloaded, syncing is switched OFF so nothing fake can reach your account, and one tap puts everything back.\n\nContinue?')) return;
+  if(!(await askConfirm('Load the camera-ready demo dataset?\n\nYour real data is snapshotted first and a backup file is downloaded, syncing is switched OFF so nothing fake can reach your account, and one tap puts everything back.\n\nContinue?'))) return;
   // Belt: the in-browser snapshot. Braces: a file on disk, in case the browser store is ever cleared.
   const n=_demoSnapshot();
-  if(n < 0){ alert('Could not snapshot your current data, so I have not touched anything. Nothing was changed.'); return; }
+  if(n < 0){ tellUser('Nothing was changed', 'Could not snapshot your current data, so I have not touched anything. Nothing was changed.'); return; }
   try{ if(typeof exportFullBackup==='function') exportFullBackup(); }catch(_){}
   try{ syncEnabled = false; }catch(_){}                 // nothing fake may ever reach the cloud
   try{ localStorage.setItem(DEMO_FLAG,'1'); }catch(_){}
@@ -624,10 +624,10 @@ function applyTheme(theme){
 
 // ── ACCOUNT DELETION ─────────────────────────────────────────
 async function deleteAccount(){
-  const confirm1 = confirm('Delete your account permanently?\n\nThis will:\n• Sign you out\n• Delete ALL your data from the cloud\n• Clear everything on this device\n\nThis cannot be undone.');
+  const confirm1 = await askConfirm('Delete your account permanently?\n\nThis will:\n• Sign you out\n• Delete ALL your data from the cloud\n• Clear everything on this device\n\nThis cannot be undone.');
   if(!confirm1) return;
   
-  const confirm2 = prompt('Last chance.\n\nType DELETE in capitals to confirm permanent account deletion:');
+  const confirm2 = await askText('Last chance', 'Type DELETE in capitals to confirm permanent account deletion:');
   if(confirm2 !== 'DELETE'){
     showToast('Cancelled', 'Your account is safe.');
     return;
@@ -639,14 +639,14 @@ async function deleteAccount(){
   // on the server with their email on it. Say so instead, before they type DELETE.
   if(!(sb && currentUser)){
     const _local = Object.keys(localStorage).filter(function(k){ return k.indexOf('totry_') === 0; }).length;
-    if(!confirm('You are signed out, so I cannot reach your account from here.\n\nI can clear all ' + _local +
+    if(!(await askConfirm('You are signed out, so I cannot reach your account from here.\n\nI can clear all ' + _local +
                 ' items on THIS DEVICE now, but your account and anything synced to it will still exist.\n\n' +
-                'To delete the account itself: sign in first, then use this button again.\n\nClear this device anyway?')) return;
+                'To delete the account itself: sign in first, then use this button again.\n\nClear this device anyway?'))) return;
     try{
       const keep = ['totry_theme'];
       Object.keys(localStorage).forEach(function(k){ if(k.indexOf('totry_') === 0 && keep.indexOf(k) === -1) localStorage.removeItem(k); });
     }catch(_){ }
-    alert('This device is cleared.\n\nYour ACCOUNT was not deleted — I could not reach the server while signed out. Sign in and use Delete account again to remove it, or email totrybyaj@gmail.com and I will do it by hand.');
+    tellUser('This device is cleared', 'Your ACCOUNT was not deleted — I could not reach the server while signed out. Sign in and use Delete account again to remove it, or email totrybyaj@gmail.com and I will do it by hand.');
     setTimeout(function(){ location.reload(); }, 1200);
     return;
   }
@@ -722,7 +722,7 @@ async function deleteAccount(){
   if(_f.length){
     // Never claim a deletion that did not happen. Local data is gone either way, so say precisely what
     // is still on the server and give them a person to ask — that is the only honest move left here.
-    alert('This device has been wiped, and you are signed out.\n\nBut the server refused to delete:\n\n\u2022 '
+    tellUser('Wiped, but not everywhere', 'This device has been wiped and you are signed out.\n\nBut the server refused to delete:\n\n\u2022 '
       + _f.join('\n\u2022 ')
       + '\n\nI will not tell you it is gone when it is not. Email totrybyaj@gmail.com and I will delete it by hand '
       + 'and confirm to you. I am sorry \u2014 this is my bug, not something you did wrong.');
@@ -1119,17 +1119,17 @@ function fallbackCopy(text){
   const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
   document.body.appendChild(ta);ta.focus();ta.select();document.execCommand('copy');document.body.removeChild(ta);
 }
-function resetAll(){
+async function resetAll(){
   // SAY WHAT THIS ACTUALLY DOES. It clears localStorage and nothing else — the account, and everything
   // already synced to it, survives — while the old text promised "permanently delete ALL your data".
   // Someone reaching for this button is usually trying to erase something they regret, and telling them
   // it is gone when it is on a server is the worst possible moment to be imprecise.
   const _signedIn = !!(typeof currentUser !== 'undefined' && currentUser);
-  if(!confirm('Start fresh on this device?\n\nThis clears everything stored on THIS PHONE.' +
+  if(!(await askConfirm('Start fresh on this device?\n\nThis clears everything stored on THIS PHONE.' +
     (_signedIn
       ? '\n\nYour account and anything already synced to it are NOT deleted — signing in again will bring the synced data back. To delete the account itself, use Settings \u2192 Delete account permanently.'
-      : '\n\nIf you have an account, anything already synced to it is NOT deleted.')))return;
-  if(!confirm('Last check \u2014 clear this device and start fresh?'))return;
+      : '\n\nIf you have an account, anything already synced to it is NOT deleted.'))))return;
+  if(!(await askConfirm('Last check \u2014 clear this device and start fresh?'))) return;
   Object.keys(localStorage).filter(k=>k.startsWith('totry_')||k.startsWith('strava_')).forEach(k=>localStorage.removeItem(k));
   window.location.reload();
 }

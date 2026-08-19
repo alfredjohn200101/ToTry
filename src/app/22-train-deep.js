@@ -562,9 +562,9 @@ function renderWorkoutSession(){
 }
 
 // Swap an exercise mid-session, keeping every set/weight/rep (Hevy's replace).
-function swapExercise(ei){
+async function swapExercise(ei){
   const cur = currentSession[ei]; if(!cur) return;
-  const n = prompt('Swap "' + cur.name + '" for which exercise? Your sets stay.', '');
+  const n = await askText('Swap this exercise', 'Your logged sets stay with it.', {placeholder:cur.name, confirmLabel:'Swap it'});
   if(!n || !n.trim()) return;
   cur.name = n.trim();
   haptic('tick');
@@ -774,7 +774,7 @@ function removeExFromSession(ei){currentSession.splice(ei,1);renderWorkoutSessio
 // heaviest set already logged against that exercise. Both "Plates" buttons now open it.
 // The 0.5kg plate is deliberately not carried: 1.25kg is the smallest plate in a normal commercial gym,
 // and pretending otherwise makes the app confidently wrong at the rack.
-function saveWorkoutSession(){
+async function saveWorkoutSession(){
   if(!currentSession.length){
     showToast('Nothing to save','Add some exercises first.');
     return;
@@ -782,7 +782,7 @@ function saveWorkoutSession(){
   // Warn if no completed sets
   const totalDone = currentSession.reduce((a,ex)=>a+ex.sets.filter(s=>s.done).length,0);
   if(totalDone === 0){
-    if(!confirm('You haven\'t marked any sets as done. Save anyway?'))return;
+    if(!(await askConfirm('You haven\'t marked any sets as done. Save anyway?'))) return;
   }
   const cs=currentSession.reduce((a,ex)=>a+ex.sets.filter(s=>s.done).length,0);
   const ts=currentSession.reduce((a,ex)=>a+ex.sets.length,0);
@@ -855,9 +855,9 @@ function showWorkoutSummary(s){
   document.body.appendChild(m);
   haptic('celebrate');
 }
-function clearWorkoutSession(){
+async function clearWorkoutSession(){
   if(!currentSession.length)return;
-  if(!confirm('Clear this session? Anything not saved will be lost.'))return;
+  if(!(await askConfirm('Clear this session? Anything not saved will be lost.'))) return;
   currentSession=[];
   renderWorkoutSession();
   showToast('Cleared','Session cleared. Ready for the next one.');
@@ -1119,8 +1119,8 @@ function saveEditTraining(id){
   document.getElementById('edit-training-modal')?.remove();
   haptic('success'); showToast('Saved','Workout updated.');
 }
-function deleteTraining(kind, id){
-  if(!confirm('Delete this workout? This cannot be undone.')) return;
+async function deleteTraining(kind, id){
+  if(!(await askConfirm('Delete this workout? This cannot be undone.'))) return;
   if(kind === 'strava'){
     const _before = ls('totry_strava_activities')||[];
     const acts = _before.filter(x => String(x.id) !== id);
@@ -1582,13 +1582,13 @@ function _showAllHevyRoutines(){
   m.innerHTML='<div class="modal" style="max-height:85vh;overflow-y:auto"><div class="modal-handle"></div><div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:4px">Your Hevy routines</div><div style="font-size:12px;color:var(--tx3);margin-bottom:16px">'+hevy.length+' imported</div>'+rows+'<button class="btn" onclick="document.getElementById(\'hevy-all-modal\')?.remove()" style="background:none;border:none;color:var(--tx3);font-size:13px;margin-top:6px">Close</button></div>';
   document.body.appendChild(m); m.addEventListener('click',e=>{if(e.target===m)m.remove();});
 }
-function startHevyRoutine(id){
+async function startHevyRoutine(id){
   // AN IN-PROGRESS SESSION IS SOMEONE'S WORKOUT. Loading a routine overwrote currentSession with no
   // warning, so tapping a routine mid-session — easy to do, they are on the same screen — erased every
   // set already logged, with nothing to undo it. Ask first.
   try{
     if(typeof currentSession !== 'undefined' && currentSession && currentSession.length &&
-       !confirm('You have a workout in progress. Loading a routine will replace it \u2014 the sets you have logged will be lost. Continue?')) return;
+       !(await askConfirm('You have a workout in progress. Loading a routine will replace it \u2014 the sets you have logged will be lost. Continue?'))) return;
   }catch(_){ }
   // Match on hevyId — what fetchHevyRoutines actually stores. Matching on x.id meant comparing
   // String(undefined) to String(undefined), which "matched" the FIRST routine in the list rather
@@ -1607,25 +1607,25 @@ function startHevyRoutine(id){
   haptic('tap');
   showToast('Routine loaded', (r.title||'Hevy routine'));
 }
-function loadRoutine(id){
+async function loadRoutine(id){
   // AN IN-PROGRESS SESSION IS SOMEONE'S WORKOUT. Loading a routine overwrote currentSession with no
   // warning, so tapping a routine mid-session — easy to do, they are on the same screen — erased every
   // set already logged, with nothing to undo it. Ask first.
   try{
     if(typeof currentSession !== 'undefined' && currentSession && currentSession.length &&
-       !confirm('You have a workout in progress. Loading a routine will replace it \u2014 the sets you have logged will be lost. Continue?')) return;
+       !(await askConfirm('You have a workout in progress. Loading a routine will replace it \u2014 the sets you have logged will be lost. Continue?'))) return;
   }catch(_){ }
   const routine=(ls('totry_routines')||[]).find(r=>r.id===id);if(!routine)return;
   currentSession=routine.exercises.map(ex=>({...ex,sets:ex.sets.map(s=>({...s,done:false}))}));
   setPTTab('log');renderWorkoutSession();showToast('Routine loaded',routine.name);
 }
-function deleteRoutine(id){
+async function deleteRoutine(id){
   // One tap on a small × used to destroy an entire routine — no confirm, no undo, no toast. A routine is
   // a person's own training plan, often built exercise by exercise.
   const all=(ls('totry_routines')||[]);
   const r=all.find(function(x){ return x && x.id===id; });
   const nm=r&&r.name?String(r.name):'this routine';
-  if(!confirm('Delete "'+nm+'"?\n\nThe routine and its exercises are removed. Sessions you already logged with it are kept.')) return;
+  if(!(await askConfirm('Delete "'+nm+'"?\n\nThe routine and its exercises are removed. Sessions you already logged with it are kept.'))) return;
   const _keptRoutines = all.filter(function(x){ return x.id!==id; });
   tombstoneRemoved('totry_routines', all, _keptRoutines);
   ls('totry_routines', _keptRoutines);
@@ -2094,8 +2094,8 @@ function renderWorkoutHistory(){
   updateStravaBtn();
 }
 
-function deleteWorkoutFromHistory(id){
-  if(!confirm('Delete this workout session permanently? Your PRs from it will stay, but the session record will be gone.')) return;
+async function deleteWorkoutFromHistory(id){
+  if(!(await askConfirm('Delete this workout session permanently? Your PRs from it will stay, but the session record will be gone.'))) return;
   const history = ls('totry_workouts') || [];
   const _kept = history.filter(s => s.id != id);
   tombstoneRemoved('totry_workouts', history, _kept);   // the OTHER workout delete — see deleteTraining

@@ -626,9 +626,9 @@ function logContact(id){
   haptic('success');
 }
 
-function deleteRelationship(id){
+async function deleteRelationship(id){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
-  if(!confirm('Remove this person? Everything you have logged about them goes too.')) return;
+  if(!(await askConfirm('Remove this person? Everything you have logged about them goes too.'))) return;
   const people=ls('totry_relationships')||[];
   const removed=people.find(p=>p.id===id);
   const newPeople=people.filter(p=>p.id!==id);
@@ -720,9 +720,9 @@ function deliverLetter(id){
   renderLetters();
 }
 
-function deleteLetter(id){
+async function deleteLetter(id){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
-  if(!confirm('Delete this letter? You wrote it to yourself — it cannot be recovered.')) return;
+  if(!(await askConfirm('Delete this letter? You wrote it to yourself — it cannot be recovered.'))) return;
   const letters=ls('totry_letters')||[];
   const removed=letters.find(l=>l.id===id);
   const kept=letters.filter(l=>l.id!==id);

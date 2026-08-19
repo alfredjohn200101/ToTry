@@ -221,9 +221,9 @@ function _promptSacramentDate(kind){
     '</div>';
   document.body.appendChild(m);
 }
-function deleteSacrament(kind, id){
+async function deleteSacrament(kind, id){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
-  if(!confirm('Delete this record?')) return;
+  if(!(await askConfirm('Delete this record?'))) return;
   const key = kind === 'confession' ? 'totry_confessions' : 'totry_masses';
   const before = ls(key) || [];
   const list = before.filter(x => x.id !== id);
@@ -333,8 +333,8 @@ function addPrayer(){
   showToast('Added', 'Praying with you.');
   haptic('success');
 }
-function markPrayerAnswered(id){
-  const note = prompt('How did God answer this prayer? (optional — leave blank to skip)');
+async function markPrayerAnswered(id){
+  const note = await askText('How was it answered?', 'Optional \u2014 leave it blank to skip.', {confirmLabel:'Mark answered', cancelLabel:'Skip'});
   if(note === null) return; // cancelled
   const prayers = ls('totry_prayers') || [];
   const p = prayers.find(p => p.id === id);
@@ -358,8 +358,8 @@ function unanswerPrayer(id){
   ls('totry_prayers', prayers);
   renderPrayers();
 }
-function deletePrayer(id){
-  if(!confirm('Remove this prayer from your journal?')) return;
+async function deletePrayer(id){
+  if(!(await askConfirm('Remove this prayer from your journal?'))) return;
   const prayers = ls('totry_prayers') || [];
   const _kept = prayers.filter(p => p.id !== id);
   tombstoneRemoved('totry_prayers', prayers, _kept);
