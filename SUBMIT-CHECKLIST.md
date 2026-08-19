@@ -59,14 +59,19 @@ signing" on. Nothing else in the project needs touching.
 
 ## 2 · App Privacy — the nutrition label
 
-Answer **"Yes, we collect data"**, then declare exactly these nine. The source of truth is
+Answer **"Yes, we collect data"**, then declare these. The source of truth is
 `ios/App/App/PrivacyInfo.xcprivacy` — the label must agree with it or review flags the mismatch.
+
+*Re-checked 19 Aug 2026 against the manifest: this table had nine of the manifest's ten types.*
+***Coarse Location*** *was missing and is added below. App Store Connect also splits Health & Fitness
+into two separate rows (Health, Fitness), so you will tick **eleven** boxes for ten declared types.*
 
 | Data type | Linked to identity | Used for tracking | Purpose |
 |---|---|---|---|
 | Email Address | **Yes** | No | App Functionality |
 | User ID | **Yes** | No | App Functionality |
-| Health & Fitness | **Yes** | No | App Functionality |
+| Health & Fitness *(ASC splits this into **Health** and **Fitness** — tick both)* | **Yes** | No | App Functionality |
+| Coarse Location *(prayer times only, rounded to ~1km before use)* | No | No | App Functionality |
 | Sensitive Info *(religious belief)* | **Yes** | No | App Functionality |
 | Other User Content *(journal, prayers, letters, coach messages)* | **Yes** | No | App Functionality |
 | Other Financial Info *(debts, savings, transactions)* | **Yes** | No | App Functionality |
@@ -95,7 +100,11 @@ Answer the questionnaire honestly. The ones that actually apply:
 - **Unrestricted Web Access → No.** No general-purpose browser.
 - **User-Generated Content → No.** Nothing a user writes is visible to any other user.
 
-Expected outcome: **12+**. Setting it lower and being corrected costs you a review cycle.
+> **Do not pre-commit to a tier.** These docs previously predicted "12+", and Apple has since revised
+> its age bands and added capability questions. Whatever the questionnaire shows you when you open it
+> is authoritative — answer it honestly, question by question, and take the tier it computes. Never
+> set a tier lower than the answers produce: being corrected costs a review cycle, and an
+> under-declared rating can get an app pulled later.
 
 ---
 

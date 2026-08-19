@@ -674,6 +674,24 @@ function deleteJournalEntry(ts){
   ls('totry_journal',entries);renderJournal();
 }
 
+// Bigger than a calculator. Same shape as bridgeToRealHelp and showLowCalorieCare: no lecture, no
+// silently-corrected number, just an honest reason and a real person to take it to.
+function showUnderageFuelNote(){
+  try{
+    document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+    const m = document.createElement('div');
+    m.className = 'modal-bg open'; m.style.alignItems = 'center';
+    m.innerHTML = '<div class="modal" style="text-align:center">'+
+      '<div style="font-size:28px;margin-bottom:8px">\uD83E\uDD1D</div>'+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);line-height:1.3;margin-bottom:12px">This one is not mine to set.</div>'+
+      '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:16px">The equation behind this calculator was built on adults, and a body that is still growing needs more than it does \u2014 not less. A weight-loss target at your age belongs with your GP or a dietitian, who can look at the whole picture. That is not me brushing you off; it is the one honest answer I have.</div>'+
+      '<div style="font-size:12.5px;color:var(--tx3);line-height:1.65;margin-bottom:18px">Everything else here still works. Log your food, train, sleep, and let the rest look after itself for now \u2014 that is what actually builds a body at your age anyway.</div>'+
+      '<button class="btn primary" onclick="closeModal(this)">Understood</button>'+
+    '</div>';
+    document.body.appendChild(m);
+    if(typeof haptic === 'function') haptic('tap');
+  }catch(_){ }
+}
 function calcTDEE(){
   const age=parseInt(document.getElementById('tdee-age')?.value||25);
   const weight=parseFloat(document.getElementById('tdee-weight')?.value||70);
@@ -704,24 +722,6 @@ function calcTDEE(){
   if(!(height >= 120 && height <= 230)){ showToast('Check your height', 'Enter a height between 120 and 230 cm.'); return; }
   const activity=parseFloat(document.getElementById('tdee-activity')?.value||1.55);
   const goal=document.getElementById('tdee-goal')?.value||'maintain';
-  // Bigger than a calculator. Same shape as bridgeToRealHelp and showLowCalorieCare: no lecture, no
-// silently-corrected number, just an honest reason and a real person to take it to.
-function showUnderageFuelNote(){
-  try{
-    document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
-    const m = document.createElement('div');
-    m.className = 'modal-bg open'; m.style.alignItems = 'center';
-    m.innerHTML = '<div class="modal" style="text-align:center">'+
-      '<div style="font-size:28px;margin-bottom:8px">\uD83E\uDD1D</div>'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);line-height:1.3;margin-bottom:12px">This one is not mine to set.</div>'+
-      '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:16px">The equation behind this calculator was built on adults, and a body that is still growing needs more than it does \u2014 not less. A weight-loss target at your age belongs with your GP or a dietitian, who can look at the whole picture. That is not me brushing you off; it is the one honest answer I have.</div>'+
-      '<div style="font-size:12.5px;color:var(--tx3);line-height:1.65;margin-bottom:18px">Everything else here still works. Log your food, train, sleep, and let the rest look after itself for now \u2014 that is what actually builds a body at your age anyway.</div>'+
-      '<button class="btn primary" onclick="closeModal(this)">Understood</button>'+
-    '</div>';
-    document.body.appendChild(m);
-    if(typeof haptic === 'function') haptic('tap');
-  }catch(_){ }
-}
 // Mifflin-St Jeor equation
   let bmr;
   if(sex==='male') bmr=10*weight+6.25*height-5*age+5;

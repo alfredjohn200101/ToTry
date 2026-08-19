@@ -118,7 +118,11 @@ Answer the questionnaire **honestly**. The app addresses recovery from habits (a
 - Sexual content/nudity → references to quitting porn; **none shown** → answer accordingly.
 - Simulated gambling → **No** (it's a vice to quit, not a gambling game).
 
-Likely result: **12+**, possibly **17+**. Either is fine — never under-declare (that risks removal later).
+> **Do not pre-commit to a tier.** These docs previously predicted "12+", and Apple has since revised
+> its age bands and added capability questions. Whatever the questionnaire shows you when you open it
+> is authoritative — answer it honestly, question by question, and take the tier it computes. Never
+> set a tier lower than the answers produce: being corrected costs a review cycle, and an
+> under-declared rating can get an app pulled later.
 
 ## Notes for the App Review team (paste in "App Review Information → Notes")
 ```
@@ -128,8 +132,19 @@ Sign-in is passwordless: enter an email, receive a one-time code, enter it. Plea
 
 Crisis and "get real help" resources are in Settings and throughout; the app explicitly states it is not a substitute for professional care.
 
+NO ACCOUNT IS NEEDED TO REVIEW THE APP. The first screen offers "Something's pulling at me right now" beneath the sign-in — that is a real guest door, not a teaser. It opens the Feeling Door and every in-the-moment tool with nothing stored on our servers. Please try that path; it is the app's primary entry point and the fastest way to see what it does.
+
+ABOUT THE AI. Replies come from a server-side proxy (a Supabase edge function), never from a model called directly by the client, and no API key ships in the app. Before any message reaches a model, the text is checked for crisis language on-device; if it matches, the model is BYPASSED entirely and a fixed card of real helplines is shown instead, with tappable tel: links. That gate runs on all chat surfaces. Typing something like "I want to end it" anywhere in the app will demonstrate it. Journal entries flagged that way are never sent as AI context afterwards.
+
+MEDICAL AND SAFETY LIMITS. Calorie targets are floored at a clinically safe minimum and a low target opens a support door rather than being silently accepted. Anyone under 18 is refused a weight-loss target and pointed to a GP or dietitian. Nothing in the app diagnoses or treats.
+
 To Try is multi-faith: at onboarding the user picks a path (Christianity, Islam, Hinduism, Buddhism, or Secular/None) and the app shows that tradition's own text and daily reading — so scripture from the Bible, the Qur'an, the Bhagavad Gita, or the Dhammapada is presented respectfully by the user's own choice. All of it is changeable in Settings > Faith & meaning.
 ```
 
 ## Build to attach
-⚠️ **The uploaded build 1.0 (2) predates the multi-faith work (v312).** Before submitting, re-archive the current `v318+` build as **1.0 (3)** (bump CURRENT_PROJECT_VERSION), upload it, and attach **that** — otherwise reviewers see the Christianity-only version. The iPhone-only, device-free signing flow from APP-STORE-SUBMISSION.md still applies (Distribution cert + ToTryAppStore profile + the altool API-key upload).
+**1.0 (4)** — current as of 19 Aug 2026, web assets **v513**. `CURRENT_PROJECT_VERSION = 4` is already
+set in `project.pbxproj`. App Store Connect holds build 2; build 3 was never uploaded; 4 is safe either
+way (a higher number is always accepted, a repeated one is rejected before review). Re-archive from the
+current tree — do not reuse anything in `build/`; the stale build-2 `.ipa` there has been deleted, and
+any `.xcarchive` still on disk is build 2 as well. Verified: `xcodebuild -configuration Release` →
+**BUILD SUCCEEDED**, with `-validate-for-store` passing.

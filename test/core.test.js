@@ -4003,6 +4003,14 @@ function fnBodyOf(code, name){
   H.ok(/_g === 'lose'/.test(tdee), 'specifically against the weight-loss goal');
   H.ok(/showUnderageFuelNote/.test(tdee), 'and it opens the bridge rather than computing a number');
   H.ok(/GP or a dietitian/.test(H.extractFn('showUnderageFuelNote')), 'which points at a real person');
+  {
+    H.ok(/^function showUnderageFuelNote/m.test(H.html),
+      'showUnderageFuelNote is declared unindented, at the start of a line');
+    const tdeeBody = H.extractFn('calcTDEE');
+    H.ok(!/function showUnderageFuelNote/.test(tdeeBody),
+      'and NOT inside calcTDEE, where it accidentally landed — it still worked from the call site, ' +
+      'because declarations hoist within their enclosing function, which is exactly why nothing caught it');
+  }
 
   // Dead upstreams must not be able to preempt an honest empty state.
   H.section('a dead API must not masquerade as an answer');
