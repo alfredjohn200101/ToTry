@@ -196,6 +196,11 @@ async function deleteTransaction(id){
   renderTransactions();
 }
 function renderTransactions(){
+  // Every money writer calls this, so it owns the rest of the surface too — see the note above.
+  // Deferred to the end of the turn so it cannot recurse if a renderer below ever calls back in.
+  setTimeout(function(){
+    try{ if(typeof renderMoneyGate==='function') renderMoneyGate(); }catch(_){ }
+  }, 0);
   const summary = document.getElementById('money-month-summary');
   const breakdown = document.getElementById('money-category-breakdown');
   const recent = document.getElementById('money-recent-transactions');
@@ -1022,6 +1027,7 @@ function addDebt(){loadF();const n=document.getElementById('dn').value.trim(),t=
   // was the problem — indistinguishable from the button being broken.
   if(!n){ if(typeof showToast==='function') showToast('Who is it owed to?','Give the debt a name so you can tell them apart.'); return; }
   if(!(t>0)){ if(typeof showToast==='function') showToast('How much is owed?','Enter the total amount \u2014 it needs a number above zero.'); return; }
+  if(p > t){ if(typeof showToast==='function') showToast('Paid is more than the total','Check the two numbers \u2014 you cannot have paid off more than the debt.'); return; }
   // Same as vices: the tombstone written when a debt is removed is keyed on the lowercased name,
   // so adding that name back has to revoke it or the next pull deletes it again.
   try{ if(typeof tombstoneRevoke==='function') tombstoneRevoke('totry_f', String(n).toLowerCase()); }catch(_){ }
@@ -1171,9 +1177,11 @@ function calcViceSavings(){
   const since=document.getElementById('sober-since').value;let weeks=1;
   if(since){const days=Math.floor((Date.now()-new Date(since))/86400000);weeks=Math.max(1,Math.floor(days/7));}
   const saved=Math.round(weekly*weeks);
-  const sn=document.getElementById('saved-num');if(sn)sn.textContent=curSym()+saved.toLocaleString();
+  // Persist below, but let the one owner decide what is displayed — see reclaimedFigure.
+  if(typeof renderReclaimed !== 'function'){ const sn=document.getElementById('saved-num'); if(sn) sn.textContent=curSym()+saved.toLocaleString(); }
   const sd=document.getElementById('saved-desc');if(sd)sd.textContent=curSym()+weekly+'/week \u00d7 '+weeks+' weeks. '+curSym()+saved.toLocaleString()+' redirected.';
   ls('totry_vs',{weekly,since,saved,fields:{w,va,g,o}});
+  if(typeof renderReclaimed === 'function') renderReclaimed();
   if(typeof syncToCloud==='function') syncToCloud();
   haptic('success'); if(typeof showToast==='function') showToast('Saved',curSym()+saved.toLocaleString()+' redirected from vices.');
 }

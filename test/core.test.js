@@ -4734,6 +4734,68 @@ function fnBodyOf(code, name){
     'hidden while empty, so it never adds a "nothing here" block to a reading screen');
 }
 
+// ── the Money mediums ─────────────────────────────────────────────────────────────────────────
+{
+  H.section('one number, one owner');
+
+  // #saved-num had FOUR writers running three different models: the per-vice cost model, the savings
+  // LOG total, a flat weekly x weeks estimate the person types in, and the legacy totry_vs fallback.
+  // Whichever ran last won, so the figure the app presents as what staying clean has earned them
+  // changed depending on which tab you had just visited.
+  H.ok(/function reclaimedFigure\(\)/.test(H.html), 'there is a single source of truth');
+  H.ok(/function renderReclaimed\(\)/.test(H.html), 'and a single writer');
+  {
+    const src = H.html;
+    const writers = (src.match(/getElementById\('saved-num'\)/g) || []).length;
+    H.ok(writers <= 2, `at most the owner and one guarded fallback touch the element (found ${writers})`);
+  }
+  {
+    const store = {};
+    const f = new Function('ls', 'curSym', 'loadV', 'vices', 'totalReclaimed',
+      H.extractFn('reclaimedFigure') + 'return reclaimedFigure;');
+    H.eq(f(k => store[k], () => '$', () => {}, [{ n: 'W', costAmount: 60 }], () => 771)().model, 'per-vice',
+      'a per-vice cost model wins — it is the only one that knows real clean days');
+    store.totry_vs = { weekly: 50, saved: 900 };
+    H.eq(f(k => store[k], () => '$', () => {}, [], () => 0)().amount, 900,
+      'someone who only used the legacy calculator still sees their number');
+    delete store.totry_vs;
+    H.eq(f(k => store[k], () => '$', () => {}, [], () => 0)().amount, 0, 'and nothing set shows nothing');
+  }
+
+  H.section('the Money tab belongs to people with no debts too');
+  const rf = H.extractFn('renderFinance');
+  H.ok(/const _noDebts = !debts\.length/.test(rf), 'the no-debts case is a branch, not a return');
+  H.ok(!/No debts added yet<\/p>';return;/.test(rf),
+    'it no longer returns, which used to take calcDebtFreeDate, renderDebtTruth and the reclaimed hero with it');
+  const rmg = H.extractFn('renderMoneyGate');
+  H.ok(/hasReclaimed/.test(rmg),
+    'and reclaimed money counts as knowing something — it arrives through the Fight, not the ledger');
+
+  H.section('the honest note reaches the person it was written for');
+  // totalReclaimed() is max(0, avoided - owed), so it is 0 for exactly the person who owes more than
+  // they have avoided — the one the "you still owe for past use" note exists for.
+  H.ok(/_hasCostModel/.test(rf), 'the block runs on any cost or owed amount, not only a positive net');
+
+  H.section('money maths that adds up');
+  const ad = H.extractFn('addDebt');
+  H.ok(/if\(p > t\)/.test(ad), 'paid-so-far above the total is refused, as editDebt already clamps it');
+  const sm = H.extractFn('_fuelSaneMeal');
+  H.ok(/carbs: Math\.round/.test(sm), 'the meal sanitiser writes carbs, the key every consumer reads');
+  H.ok(!/\bcarb: Math\.round\(num\(meal/.test(sm), 'not carb, which silently zeroed every swapped meal');
+  const rt2 = H.extractFn('renderTransactions');
+  H.ok(/renderMoneyGate\(\)/.test(rt2),
+    'logging money by hand refreshes the gate and the lead card — quickSpend re-rendered nothing at all');
+
+  H.section('a refund is not income');
+  // The comment named refunds; the regex did not catch them. They landed as INCOME, inflating exactly
+  // the figure the tithe and zakat screens take a percentage of.
+  H.ok(/refund\|refunded\|reversal/.test(H.html), 'refunds, reversals and chargebacks are neutral');
+  H.ok(!/'transfer in','refund','centrelink'/.test(H.html), "and _autoCategory no longer labels a refund as Income");
+  H.ok(/moved between your own accounts/.test(H.html),
+    'the CSV review names transfers, so its own arithmetic adds up');
+  H.ok(/const transfers = parsed\.filter/.test(H.html), 'counting them explicitly');
+}
+
 // ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────
 // Every test in this file reads H.html, which reads index.html — the ASSEMBLED file. So a change
 // made directly to index.html passes everything here and then vanishes the next time anyone runs

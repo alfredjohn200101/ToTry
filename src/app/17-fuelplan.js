@@ -389,7 +389,7 @@ function _fuelSaneMeal(meal){
     items: str(meal.items||meal.ingredients||'',300),
     cal:  Math.round(num(meal.cal,  3000)),   // one meal, not one day
     pro:  Math.round(num(meal.pro,   300)),
-    carb: Math.round(num(meal.carbs != null ? meal.carbs : meal.carb, 500)),   // the model returns "carbs"
+    carbs: Math.round(num(meal.carbs != null ? meal.carbs : meal.carb, 500)),   // the model returns "carbs"
     fat:  Math.round(num(meal.fat,   300)),
   };
   if(meal.slot!=null) out.slot=str(meal.slot,24);
@@ -845,7 +845,7 @@ function _autoCategory(desc){
     ['Gambling', VICE_MERCHANTS.gambling],
     ['Tobacco', VICE_MERCHANTS.tobacco],
     ['Alcohol', VICE_MERCHANTS.alcohol],
-    ['Income', ['salary','payroll','wage','deposit','transfer in','refund','centrelink']],
+    ['Income', ['salary','payroll','wage','deposit','centrelink']],
   ];
   for(const [cat, kws] of rules){ if(kws.some(k => d.includes(k))) return cat; }
   return 'Other';
@@ -956,8 +956,8 @@ function handleCSVFile(ev){
       // positive amounts, and every one of them was booked as income — which inflates the figure the
       // tithe and giving screens take a percentage OF. Someone is then told to give ten percent of
       // money they already had. Self-transfers become a neutral type the income totals ignore.
-      type: amt < 0 ? 'expense' : (/\btransfer|from savings|internal|own account|repayment received\b/i.test(String(desc||'')) ? 'transfer' : 'income'),
-          category: amt < 0 ? _autoCategory(desc) : 'Income',
+      type: amt < 0 ? 'expense' : (/\b(transfer|from savings|internal|own account|repayment received|refund|refunded|reversal|reversed|chargeback|charge back|credit adjustment|returned)\b/i.test(String(desc||'')) ? 'transfer' : 'income'),
+          category: amt < 0 ? _autoCategory(desc) : (/\b(transfer|from savings|internal|own account|repayment received|refund|refunded|reversal|reversed|chargeback|charge back|credit adjustment|returned)\b/i.test(String(desc||'')) ? 'Transfer' : 'Income'),
           ts: validWhen.toISOString(),
           date: validWhen.toLocaleDateString('en-AU'),
         });
@@ -991,6 +991,7 @@ function _showCSVPreview(rawParsed){
   const income = parsed.filter(p=>p.type==='income');
   const totalExp = expenses.reduce((s,p)=>s+p.amount,0);
   const totalInc = income.reduce((s,p)=>s+p.amount,0);
+  const transfers = parsed.filter(p=>p.type==='transfer');
   const preview = parsed.slice(0,8).map(p =>
     '<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px">'+
     '<span style="color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">'+p.desc+' <span style="color:var(--tx3)">\u00b7 '+p.category+'</span></span>'+
@@ -1000,7 +1001,7 @@ function _showCSVPreview(rawParsed){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:6px">Review import</div>'+
-    '<div style="font-size:13px;color:var(--tx2);margin-bottom:12px"><b>'+parsed.length+'</b> new: '+expenses.length+' expenses (\u2212'+curSym()+totalExp.toFixed(2)+'), '+income.length+' income (+'+curSym()+totalInc.toFixed(2)+').'+
+    '<div style="font-size:13px;color:var(--tx2);margin-bottom:12px"><b>'+parsed.length+'</b> new: '+expenses.length+' expenses (\u2212'+curSym()+totalExp.toFixed(2)+'), '+income.length+' income (+'+curSym()+totalInc.toFixed(2)+')'+(transfers.length ? ', '+transfers.length+' moved between your own accounts \u2014 not counted as income' : '')+'.'+
       (dupes.length ? ' <span style="color:var(--tx3)">'+dupes.length+' already imported \u2014 skipped, not double-counted.</span>' : '')+'</div>'+
     '<div style="margin-bottom:14px">'+preview+(parsed.length>8?'<div style="font-size:11px;color:var(--tx3);text-align:center;padding-top:8px">+ '+(parsed.length-8)+' more</div>':'')+'</div>'+
     '<button class="btn primary" onclick="confirmCSVImport()" style="margin-bottom:8px">Import all '+parsed.length+'</button>'+

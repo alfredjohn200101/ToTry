@@ -513,8 +513,9 @@ function getViceSavingsTotal(){
 
 function renderViceSavingsTotal(){
   const total=getViceSavingsTotal();
-  const el=document.getElementById('saved-num');
-  if(el)el.textContent=curSym()+Math.round(total).toLocaleString();
+  // #saved-num has one owner — see reclaimedFigure in 16-money.js. This used to overwrite the
+  // per-vice figure with the savings-log total, so the same number differed by navigation order.
+  if(typeof renderReclaimed === 'function') renderReclaimed();
   const desc=document.getElementById('saved-desc');
   const log=ls('totry_vice_savings_log')||[];
   if(desc){

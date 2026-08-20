@@ -127,6 +127,36 @@ function calcDebtFreeDate(){
 // A money tab full of zeros teaches a person nothing and quietly tells them they're fine. Until it
 // knows something real, this tab has one job. Once it does, it leads with the read — and says how
 // stale that read has gone, because a balance sheet nobody feeds stops being true.
+function reclaimedFigure(){
+  // The single source of truth for #saved-num — see the note above. Returns {amount, desc, model}.
+  try{
+    if(typeof totalReclaimed === 'function'){
+      let hasCost = false;
+      try{ loadV(); hasCost = (vices||[]).some(v => v && (parseFloat(v.costAmount)||0) > 0); }catch(_){ }
+      if(hasCost){
+        return { amount: totalReclaimed(), model: 'per-vice',
+                 desc: 'Reclaimed by staying clean \u2014 that\u2019s money toward your debt and your freedom.' };
+      }
+    }
+  }catch(_){ }
+  // No per-vice cost set: fall back to the legacy flat estimate the person typed in, if any.
+  try{
+    const vs = ls('totry_vs');
+    if(vs && vs.saved != null){
+      return { amount: vs.saved, model: 'legacy',
+               desc: curSym()+vs.weekly+'/week \u00d7 '+(vs.weeks || Math.max(1, Math.round(vs.saved/(vs.weekly||1))))+' weeks.' };
+    }
+  }catch(_){ }
+  return { amount: 0, model: 'none', desc: '' };
+}
+function renderReclaimed(){
+  const r = reclaimedFigure();
+  const sn = document.getElementById('saved-num');
+  const sd = document.getElementById('saved-desc');
+  if(sn) sn.textContent = curSym() + Math.round(r.amount).toLocaleString();
+  if(sd && r.desc) sd.textContent = r.desc;
+  return r;
+}
 function renderMoneyGate(){
   const gate = document.getElementById('money-gate');
   const readCard = document.getElementById('money-read-card');
@@ -134,7 +164,9 @@ function renderMoneyGate(){
   const tx = ls('totry_transactions')||[];
   let hasDebts = false;
   try{ loadF(); hasDebts = (debts && debts.length > 0); }catch(_){}
-  const empty = tx.length < 5 && !hasDebts;
+  let hasReclaimed = false;
+  try{ hasReclaimed = (typeof totalReclaimed==='function') && totalReclaimed() > 0; }catch(_){ }
+  const empty = tx.length < 5 && !hasDebts && !hasReclaimed;
 
   // The empty-state heroes are the ones that lie loudest — a debt-free date of "—" and $0
   // reclaimed read as "all good" to someone who has never told the app anything.
@@ -195,7 +227,10 @@ function renderFinance(){
   const fu=document.getElementById('f-usa');if(fu)fu.textContent=curSym()+Math.round(usaS).toLocaleString();
   const fi=document.getElementById('f-india');if(fi)fi.textContent=curSym()+Math.round(indiaS).toLocaleString();
   const dl=document.getElementById('debt-list');if(!dl)return;dl.innerHTML='';
-  if(!debts.length){dl.innerHTML='<p class="empty-note">No debts added yet</p>';return;}
+  const _noDebts = !debts.length;
+  if(_noDebts){
+    dl.innerHTML='<p class="empty-note">No debts added yet</p>';
+  } else {
   const strategy=ls('totry_debt_strategy')||'snowball';
   const sorted=_sortDebtsByStrategy(debts.map((d,i)=>({...d,idx:i})), strategy);
   // THE STAR GOES ON THE FIGHT, NOT THE TROPHY. Snowball sorts by smallest remaining first, and a debt
@@ -216,14 +251,22 @@ function renderFinance(){
     item.onclick=()=>{ if(cleared){ editDebt(d.idx); return; } openFormModal('Log a payment','Payment toward '+d.n+'.',[{id:'amt',label:'Amount',type:'number',prefix:curSym(),placeholder:'e.g. 200'}],'Log payment',(vals)=>{const a=parseFloat(vals.amt);if(isNaN(a)||a<=0)return 'Enter an amount greater than 0.';loadF();debts[d.idx].p=Math.min(debts[d.idx].p+a,debts[d.idx].t);saveF();const payments=ls('totry_payments')||[];payments.push({amt:a,ts:new Date().toISOString(),date:new Date().toISOString(),debt:d.n});ls('totry_payments',payments.slice(-200));if(typeof syncToCloud==='function')syncToCloud();renderFinance();calcDebtFreeDate();checkMilestones();return true;});};
     dl.appendChild(item);
   });
-  calcDebtFreeDate();
+  }
+  if(!_noDebts) calcDebtFreeDate();
   try{ renderDebtTruth(); }catch(_){}
   // Stewardship pipe: if any vice has a cost set, show the real reclaimed total (per-vice × clean
   // days) — more accurate than the legacy flat weekly estimate. Falls back to totry_vs otherwise.
   const reclaimed = (typeof totalReclaimed==='function') ? totalReclaimed() : 0;
-  if(reclaimed > 0){
-    const sn=document.getElementById('saved-num'); const sd=document.getElementById('saved-desc');
-    if(sn) sn.textContent=curSym()+reclaimed.toLocaleString();
+  // Anyone with a cost or an owed amount set has something true to be told here — not only the people
+  // already in the black. totalReclaimed() is max(0, avoided - owed), so it is 0 for exactly the
+  // person the honest note was written for. See the note above.
+  let _hasCostModel = false;
+  try{ loadV(); _hasCostModel = (vices||[]).some(v => v && ((parseFloat(v.costAmount)||0) > 0 || (parseFloat(v.owed)||0) > 0)); }catch(_){ }
+  if(reclaimed > 0 || _hasCostModel){
+    const sd=document.getElementById('saved-desc');
+    if(typeof renderReclaimed === 'function') renderReclaimed();
+    // The desc below is rewritten for the behind case by the owed-note block; the figure stays 0,
+    // which is the truth — nothing is reclaimed yet while the debt for past use stands.
     // Lead with the freedom story, not the debt table (the soul of this screen): when there is real
     // reclaimed money, float that hero up right beneath the metrics. Idempotent (only moves once).
     try{ const mg=document.querySelector('#tab-money .mg'); const sh=document.getElementById('saved-hero'); if(mg&&sh&&mg.nextElementSibling!==sh) mg.after(sh); }catch(_){}
@@ -250,7 +293,7 @@ function renderFinance(){
     // interest saved. Only possible because the fight and the money live in the same app.
     try{ renderReclaimedBuysFreedom(); }catch(_){}
   } else {
-  const vs=ls('totry_vs');if(vs){const sn=document.getElementById('saved-num');const sd=document.getElementById('saved-desc');if(sn)sn.textContent=curSym()+vs.saved.toLocaleString();if(sd)sd.textContent=curSym()+vs.weekly+'/week saved. '+curSym()+vs.saved.toLocaleString()+' redirected.';
+  const vs=ls('totry_vs');if(vs){ if(typeof renderReclaimed==='function') renderReclaimed();
     // Restore the input fields too, so it doesn't look like nothing saved when you return.
     if(vs.fields){ const set=(id,v)=>{const el=document.getElementById(id); if(el && v) el.value=v;}; set('weed-s',vs.fields.w); set('vape-s',vs.fields.va); set('gamb-s',vs.fields.g); set('other-s',vs.fields.o); }
     const ss=document.getElementById('sober-since'); if(ss && vs.since) ss.value=vs.since;
