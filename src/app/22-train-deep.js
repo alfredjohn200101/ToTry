@@ -566,7 +566,36 @@ async function swapExercise(ei){
   const cur = currentSession[ei]; if(!cur) return;
   const n = await askText('Swap this exercise', 'Your logged sets stay with it.', {placeholder:cur.name, confirmLabel:'Swap it'});
   if(!n || !n.trim()) return;
-  cur.name = n.trim();
+  const _new = n.trim();
+  cur.name = _new;
+  // Metadata must follow the name — see the note above.
+  try{
+    const norm = (typeof _normLibName === 'function') ? _normLibName(_new) : _new.toLowerCase().trim();
+    let hit = null, hitPart = null;
+    if(typeof EXERCISE_DB === 'object'){
+      for(const part of Object.keys(EXERCISE_DB)){
+        const m = (EXERCISE_DB[part]||[]).find(e => e && e.name &&
+          ((typeof _normLibName === 'function') ? _normLibName(e.name) : String(e.name).toLowerCase().trim()) === norm);
+        if(m){ hit = m; hitPart = part; break; }
+      }
+    }
+    if(!hit){
+      const customs = (typeof ls === 'function') ? (ls('totry_custom_exercises') || []) : [];
+      const m = customs.find(e => e && e.name &&
+        ((typeof _normLibName === 'function') ? _normLibName(e.name) : String(e.name).toLowerCase().trim()) === norm);
+      if(m){ hit = m; hitPart = m.bodyPart || null; }
+    }
+    if(hit){
+      if(hitPart) cur.bodyPart = hitPart;
+      if(hit.primary) cur.primary = hit.primary;
+      if(hit.secondary) cur.secondary = hit.secondary;
+      if(hit.equipment) cur.equipment = hit.equipment;
+    } else {
+      // Unknown name: no metadata is better than the previous exercise's. weeklyLoadByModality and the
+      // heatmap already handle a missing bodyPart; a WRONG one they cannot detect.
+      delete cur.bodyPart; delete cur.primary; delete cur.secondary; delete cur.equipment;
+    }
+  }catch(_){ }
   haptic('tick');
   renderWorkoutSession();
 }

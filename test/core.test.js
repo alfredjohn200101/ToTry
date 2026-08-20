@@ -4534,6 +4534,78 @@ function fnBodyOf(code, name){
   H.ok(/--tx:#F0EDE6/.test(blk), 'and the pinned ink is LIGHT, matching the dark gradient they paint');
 }
 
+// ── the last four highs ──────────────────────────────────────────────────────────────────────
+{
+  H.section('income is periodic; spending is continuous');
+
+  // Normalising both by the raw transaction span doubled the income on the most ordinary input there
+  // is. A one-month bank export has a salary near each end — that is what a month of statement LOOKS
+  // like — so two deposits sit inside a 30-day span and total/1-month reports twice the person's pay.
+  // Measured before the fix: £10,553/mo against a real £5,200, "left over" £8,726 against £3,400.
+  const sr = H.extractFn('spendingRead');
+  H.ok(/incomeMonths/.test(sr), 'income has its own denominator');
+  H.ok(/incSpan \* \(n\/\(n-1\)\)/.test(sr), 'using the fencepost correction monthlyPaymentRate already documents');
+  H.ok(/incomePerMonth: income\/incomeMonths/.test(sr), 'and the per-month figure uses it');
+  H.ok(/netPerMonth: \(income\/incomeMonths\) - \(spend\/months\)/.test(sr),
+    'so "left over" is not computed from the doubled income');
+  {
+    const f = new Function('ls', '_DISCRETIONARY', sr + 'return spendingRead;')
+      (k => store[k], ['Eating out', 'Shopping', 'Subscriptions', 'Entertainment']);
+    const day = d => new Date(2026, 6, d).toISOString();
+    const rows = [{ type: 'income', amount: 5200, ts: day(1) }];
+    for (let d = 1; d <= 30; d++) rows.push({ type: 'expense', amount: 60, category: 'Food', ts: day(d) });
+    rows.push({ type: 'income', amount: 5200, ts: day(31) });
+    var store = { totry_transactions: rows };
+    const r = f();
+    H.ok(Math.abs(r.incomePerMonth - 5200) < 200,
+      `two salaries in a one-month export read as one month's pay (got ${Math.round(r.incomePerMonth)}, truth 5200)`);
+    H.ok(Math.abs(r.netPerMonth - 3400) < 250,
+      `and "left over" follows (got ${Math.round(r.netPerMonth)}, truth 3400)`);
+  }
+
+  H.section('the app can re-import its own export');
+  // exportFoodCSV writes en-AU day-first dates (19/07/2026). importFoodCSV parsed them with a bare
+  // new Date(), which reads the first field as the MONTH — so every date whose day is above 12,
+  // roughly two thirds, is invalid and silently collapsed onto TODAY, piling months of history into
+  // one day; the rest parsed with day and month swapped. Those days then feed computeAdaptiveTDEE.
+  const imp = H.extractFn('importFoodCSV');
+  H.ok(/_csvDate\(dRaw, _dayFirst\)/.test(imp), 'the real date parser is used');
+  H.ok(/_csvDayFirst\(/.test(imp), 'with the day-first convention sampled from the column');
+  H.ok(/_unparsed\+\+;\s*\n\s*continue;/.test(imp), 'an unreadable date SKIPS rather than landing on today');
+  H.ok(/could not read and were left out/.test(imp), 'and the toast says how many were left out');
+  {
+    const f = new Function(H.extractFn('_csvDate') + H.extractFn('_csvDayFirst') +
+      'return {d:_csvDate, df:_csvDayFirst};')();
+    const exported = ['19/07/2026', '3/07/2026', '25/12/2026'];
+    const df = f.df(exported);
+    H.ok(df === true, 'an en-AU export is detected as day-first');
+    H.eq(f.d('19/07/2026', df).getMonth(), 6, '19/07 is July, not an invalid date');
+    H.eq(f.d('3/07/2026', df).getMonth(), 6, 'and 3/07 is July, not March');
+    H.eq(f.d('25/12/2026', df).getDate(), 25, 'and Christmas survives the round trip');
+  }
+
+  H.section('a swapped exercise takes its muscle with it');
+  // Only `name` changed, so bodyPart/primary/equipment stayed behind. Swap a Bench Press for a
+  // Barbell Row mid-session and every set of rowing volume is credited to CHEST in
+  // weeklyLoadByModality, the heatmap and the balance read — which then tells the person to train back.
+  const sw = H.extractFn('swapExercise');
+  H.ok(/EXERCISE_DB/.test(sw), 'the typed name is resolved against the library');
+  H.ok(/totry_custom_exercises/.test(sw), 'and against their own custom exercises');
+  H.ok(/cur\.bodyPart = hitPart/.test(sw), 'a match adopts the new muscle');
+  H.ok(/delete cur\.bodyPart/.test(sw),
+    'and an unknown name CLEARS it — no metadata beats the previous exercise\u2019s, which nothing downstream can detect');
+
+  H.section('the full read cannot say /mo when the card will not');
+  // The lead card reads enoughForMonthly and says "over 12 days". This panel said "the last 12 days of
+  // your money" in its header and then printed /mo on every row beneath it, from the same object.
+  const srh = H.extractFn('spendingReadHTML');
+  H.ok(/const _thin = r\.enoughForMonthly === false/.test(srh), 'the panel reads the same flag');
+  H.ok(/const _suffix = _thin \? '' : '\/mo'/.test(srh), 'and drops the suffix below the threshold');
+  H.ok(!/money\(r\.(income|spend|net)PerMonth\)\+'\/mo/.test(srh), 'no row prints an ungated /mo');
+  H.ok(/if\(r\.lockIn && !_thin\)/.test(srh),
+    'and the lock-in card is withheld entirely — a monthly commitment cannot be read from a fortnight');
+}
+
 // ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────
 // Every test in this file reads H.html, which reads index.html — the ASSEMBLED file. So a change
 // made directly to index.html passes everything here and then vanishes the next time anyone runs

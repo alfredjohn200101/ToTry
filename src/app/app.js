@@ -3514,6 +3514,12 @@ function importFoodCSV(event){
     let imported = 0;
     const mealMap = m => { m=(m||'').toLowerCase(); if(/break/.test(m))return'breakfast'; if(/lunch/.test(m))return'lunch'; if(/din/.test(m))return'dinner'; return'snack'; };
     const val = (row,f) => cols[f]!=null ? row[cols[f]] : undefined;
+    // Sample the date column ONCE to decide day-first vs month-first, the way the bank importer does.
+    // Without this the app cannot re-import its own export — see the note above.
+    const _dayFirst = (typeof _csvDayFirst === 'function')
+      ? _csvDayFirst(rows.slice(1, 40).map(rw => (cols['date'] != null && rw) ? rw[cols['date']] : ''))
+      : true;
+    let _unparsed = 0;
     for(let r=1; r<rows.length; r++){
       const row = rows[r];
       if(!row || row.length < 2) continue;
@@ -3524,7 +3530,18 @@ function importFoodCSV(event){
       let dateKey = new Date().toLocaleDateString('en-AU');
       let entryTs = new Date().toISOString();
       const dRaw = val(row,'date');
-      if(dRaw){ const d = new Date(String(dRaw).trim()); if(!isNaN(d)){ dateKey = d.toLocaleDateString('en-AU'); entryTs = new Date(d.getFullYear(),d.getMonth(),d.getDate(),12,0,0).toISOString(); } }
+      if(dRaw){
+        const d = (typeof _csvDate === 'function') ? _csvDate(dRaw, _dayFirst) : null;
+        if(d && !isNaN(d.getTime())){
+          dateKey = d.toLocaleDateString('en-AU');
+          entryTs = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0).toISOString();
+        } else {
+          // Refuse rather than silently retarget today — a row landing on the wrong day is worse than
+          // a row that did not import, because nothing on screen would ever say so.
+          _unparsed++;
+          continue;
+        }
+      }
       if(!log[dateKey]) log[dateKey] = [];
       log[dateKey].push({
         id: Date.now() + Math.floor(Math.random()*100000),
@@ -3543,11 +3560,14 @@ function importFoodCSV(event){
       if(typeof logEvent==='function') logEvent('csv_import');
       if(typeof syncToCloud==='function') syncToCloud();
       document.querySelector('.modal-bg.open')?.remove();
-      showToast('Welcome — your history is here ✓', imported + ' entries imported. No re-logging needed.');
+      showToast('Welcome \u2014 your history is here \u2713',
+        imported + ' entries imported.' + (_unparsed ? ' ' + _unparsed + ' row' + (_unparsed>1?'s':'') + ' had a date I could not read and were left out.' : ' No re-logging needed.'));
       haptic('celebrate');
       if(typeof renderNutritionLog === 'function') renderNutritionLog();
     } else {
-      showToast('Nothing imported', 'No valid food rows found in that file.');
+      showToast('Nothing imported', _unparsed
+        ? ('Every row had a date I could not read (' + _unparsed + ' of them). Check the date column format.')
+        : 'No valid food rows found in that file.');
     }
   });
 }

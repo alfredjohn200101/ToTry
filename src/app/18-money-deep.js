@@ -73,6 +73,17 @@ function spendingRead(){
   const inc = list.filter(t=>t.type==='income');
   const spend = exp.reduce((s,t)=>s+(t.amount||0),0);
   const income = inc.reduce((s,t)=>s+(t.amount||0),0);
+  // Income is PERIODIC — see the note above. Normalise it by its own covered span, not the raw
+  // transaction span, or a salary at each end of a one-month export reads as two months' pay.
+  const incTimes = inc.map(t=>new Date(t.ts).getTime()).filter(t=>!isNaN(t)).sort((a,b)=>a-b);
+  let incomeMonths = months;
+  if(incTimes.length >= 2){
+    const incSpan = (incTimes[incTimes.length-1] - incTimes[0])/86400000;
+    const n = incTimes.length;
+    incomeMonths = Math.max(0.5, (incSpan * (n/(n-1)))/30.44);
+  } else if(incTimes.length === 1){
+    incomeMonths = 1;                          // one deposit is one month's pay, not a fraction of one
+  }
   const byCat = {};
   exp.forEach(t => { const c=t.category||'Other'; byCat[c]=(byCat[c]||0)+(t.amount||0); });
   const cats = Object.keys(byCat).map(c=>({
@@ -81,7 +92,8 @@ function spendingRead(){
   const lockIn = cats.filter(c=>_DISCRETIONARY.indexOf(c.name)>=0 && c.perMonth>=40)[0] || null;
   return {
     months, spend, income, net: income-spend,
-    spendPerMonth: spend/months, incomePerMonth: income/months, netPerMonth: (income-spend)/months,
+    spendPerMonth: spend/months, incomePerMonth: income/incomeMonths,
+    netPerMonth: (income/incomeMonths) - (spend/months),
     cats, lockIn, count: list.length,
     from: new Date(Math.min(...times)), to: new Date(Math.max(...times)),
     spanDays, enoughForMonthly

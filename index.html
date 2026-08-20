@@ -4901,7 +4901,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v521';
+const APP_VERSION = 'v522';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -28619,13 +28619,20 @@ function spendingReadHTML(){
   let h = '';
 
   // 1. The shape of it. Honest first — including the uncomfortable direction.
-  const neg = r.netPerMonth < 0;
+  // /mo ONLY when there is a month behind it — the same rule the lead card applies (16-money.js:167).
+  // Below the threshold these are raw totals for the span, and the suffix says so.
+  const _thin = r.enoughForMonthly === false;
+  const _suffix = _thin ? '' : '/mo';
+  const _in  = _thin ? r.income : r.incomePerMonth;
+  const _out = _thin ? r.spend  : r.spendPerMonth;
+  const _net = _thin ? (r.income - r.spend) : r.netPerMonth;
+  const neg = _net < 0;
   h += '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px">'+
     '<div style="font-size:11px;color:var(--tx3);margin-bottom:8px">'+period+' of your money · '+r.count+' transactions</div>'+
-    '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--tx2);padding:3px 0"><span>Coming in</span><span style="font-family:DM Mono,monospace;color:var(--gr)">'+money(r.incomePerMonth)+'/mo</span></div>'+
-    '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--tx2);padding:3px 0"><span>Going out</span><span style="font-family:DM Mono,monospace;color:var(--re)">'+money(r.spendPerMonth)+'/mo</span></div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--tx2);padding:3px 0"><span>Coming in</span><span style="font-family:DM Mono,monospace;color:var(--gr)">'+money(_in)+_suffix+'</span></div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--tx2);padding:3px 0"><span>Going out</span><span style="font-family:DM Mono,monospace;color:var(--re)">'+money(_out)+_suffix+'</span></div>'+
     '<div style="display:flex;justify-content:space-between;font-size:14px;color:var(--tx);padding:8px 0 0;margin-top:6px;border-top:1px solid var(--bd)"><span>'+(neg?'Short by':'Left over')+'</span>'+
-      '<span style="font-family:DM Mono,monospace;color:'+(neg?'var(--re)':'var(--gr)')+'">'+money(r.netPerMonth)+'/mo</span></div>'+
+      '<span style="font-family:DM Mono,monospace;color:'+(neg?'var(--re)':'var(--gr)')+'">'+money(_net)+_suffix+'</span></div>'+
     (r.incomePerMonth <= 0 ? '<div style="font-size:11px;color:var(--tx3);margin-top:8px;line-height:1.5">No income rows in this export — if your pay lands in another account, the leftover figure isn’t the full story.</div>' : '')+
   '</div>';
 
@@ -28636,7 +28643,7 @@ function spendingReadHTML(){
     top.forEach(c => {
       const pct = Math.round(c.share*100);
       h += '<div style="margin-bottom:8px">'+
-        '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);margin-bottom:4px"><span>'+c.name+'</span><span style="font-family:DM Mono,monospace">'+money(c.perMonth)+'/mo · '+pct+'%</span></div>'+
+        '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);margin-bottom:4px"><span>'+c.name+'</span><span style="font-family:DM Mono,monospace">'+money(_thin ? c.total : c.perMonth)+_suffix+' \u00b7 '+pct+'%</span></div>'+
         '<div style="height:5px;background:var(--bg3);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+Math.max(2,pct)+'%;background:var(--go);border-radius:3px"></div></div>'+
       '</div>';
     });
@@ -28645,7 +28652,7 @@ function spendingReadHTML(){
 
   // 3. The one place to lock in — and what it's actually worth. This is where the money tab stops
   // reporting and starts counselling, so it has to name a real consequence, not a vibe.
-  if(r.lockIn){
+  if(r.lockIn && !_thin){
     const half = r.lockIn.perMonth/2;
     let consequence = 'That’s '+money(half*12)+' a year back in your hands.';
     try{
@@ -28790,6 +28797,17 @@ function spendingRead(){
   const inc = list.filter(t=>t.type==='income');
   const spend = exp.reduce((s,t)=>s+(t.amount||0),0);
   const income = inc.reduce((s,t)=>s+(t.amount||0),0);
+  // Income is PERIODIC — see the note above. Normalise it by its own covered span, not the raw
+  // transaction span, or a salary at each end of a one-month export reads as two months' pay.
+  const incTimes = inc.map(t=>new Date(t.ts).getTime()).filter(t=>!isNaN(t)).sort((a,b)=>a-b);
+  let incomeMonths = months;
+  if(incTimes.length >= 2){
+    const incSpan = (incTimes[incTimes.length-1] - incTimes[0])/86400000;
+    const n = incTimes.length;
+    incomeMonths = Math.max(0.5, (incSpan * (n/(n-1)))/30.44);
+  } else if(incTimes.length === 1){
+    incomeMonths = 1;                          // one deposit is one month's pay, not a fraction of one
+  }
   const byCat = {};
   exp.forEach(t => { const c=t.category||'Other'; byCat[c]=(byCat[c]||0)+(t.amount||0); });
   const cats = Object.keys(byCat).map(c=>({
@@ -28798,7 +28816,8 @@ function spendingRead(){
   const lockIn = cats.filter(c=>_DISCRETIONARY.indexOf(c.name)>=0 && c.perMonth>=40)[0] || null;
   return {
     months, spend, income, net: income-spend,
-    spendPerMonth: spend/months, incomePerMonth: income/months, netPerMonth: (income-spend)/months,
+    spendPerMonth: spend/months, incomePerMonth: income/incomeMonths,
+    netPerMonth: (income/incomeMonths) - (spend/months),
     cats, lockIn, count: list.length,
     from: new Date(Math.min(...times)), to: new Date(Math.max(...times)),
     spanDays, enoughForMonthly
@@ -32415,7 +32434,36 @@ async function swapExercise(ei){
   const cur = currentSession[ei]; if(!cur) return;
   const n = await askText('Swap this exercise', 'Your logged sets stay with it.', {placeholder:cur.name, confirmLabel:'Swap it'});
   if(!n || !n.trim()) return;
-  cur.name = n.trim();
+  const _new = n.trim();
+  cur.name = _new;
+  // Metadata must follow the name — see the note above.
+  try{
+    const norm = (typeof _normLibName === 'function') ? _normLibName(_new) : _new.toLowerCase().trim();
+    let hit = null, hitPart = null;
+    if(typeof EXERCISE_DB === 'object'){
+      for(const part of Object.keys(EXERCISE_DB)){
+        const m = (EXERCISE_DB[part]||[]).find(e => e && e.name &&
+          ((typeof _normLibName === 'function') ? _normLibName(e.name) : String(e.name).toLowerCase().trim()) === norm);
+        if(m){ hit = m; hitPart = part; break; }
+      }
+    }
+    if(!hit){
+      const customs = (typeof ls === 'function') ? (ls('totry_custom_exercises') || []) : [];
+      const m = customs.find(e => e && e.name &&
+        ((typeof _normLibName === 'function') ? _normLibName(e.name) : String(e.name).toLowerCase().trim()) === norm);
+      if(m){ hit = m; hitPart = m.bodyPart || null; }
+    }
+    if(hit){
+      if(hitPart) cur.bodyPart = hitPart;
+      if(hit.primary) cur.primary = hit.primary;
+      if(hit.secondary) cur.secondary = hit.secondary;
+      if(hit.equipment) cur.equipment = hit.equipment;
+    } else {
+      // Unknown name: no metadata is better than the previous exercise's. weeklyLoadByModality and the
+      // heatmap already handle a missing bodyPart; a WRONG one they cannot detect.
+      delete cur.bodyPart; delete cur.primary; delete cur.secondary; delete cur.equipment;
+    }
+  }catch(_){ }
   haptic('tick');
   renderWorkoutSession();
 }
@@ -44115,6 +44163,12 @@ function importFoodCSV(event){
     let imported = 0;
     const mealMap = m => { m=(m||'').toLowerCase(); if(/break/.test(m))return'breakfast'; if(/lunch/.test(m))return'lunch'; if(/din/.test(m))return'dinner'; return'snack'; };
     const val = (row,f) => cols[f]!=null ? row[cols[f]] : undefined;
+    // Sample the date column ONCE to decide day-first vs month-first, the way the bank importer does.
+    // Without this the app cannot re-import its own export — see the note above.
+    const _dayFirst = (typeof _csvDayFirst === 'function')
+      ? _csvDayFirst(rows.slice(1, 40).map(rw => (cols['date'] != null && rw) ? rw[cols['date']] : ''))
+      : true;
+    let _unparsed = 0;
     for(let r=1; r<rows.length; r++){
       const row = rows[r];
       if(!row || row.length < 2) continue;
@@ -44125,7 +44179,18 @@ function importFoodCSV(event){
       let dateKey = new Date().toLocaleDateString('en-AU');
       let entryTs = new Date().toISOString();
       const dRaw = val(row,'date');
-      if(dRaw){ const d = new Date(String(dRaw).trim()); if(!isNaN(d)){ dateKey = d.toLocaleDateString('en-AU'); entryTs = new Date(d.getFullYear(),d.getMonth(),d.getDate(),12,0,0).toISOString(); } }
+      if(dRaw){
+        const d = (typeof _csvDate === 'function') ? _csvDate(dRaw, _dayFirst) : null;
+        if(d && !isNaN(d.getTime())){
+          dateKey = d.toLocaleDateString('en-AU');
+          entryTs = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0).toISOString();
+        } else {
+          // Refuse rather than silently retarget today — a row landing on the wrong day is worse than
+          // a row that did not import, because nothing on screen would ever say so.
+          _unparsed++;
+          continue;
+        }
+      }
       if(!log[dateKey]) log[dateKey] = [];
       log[dateKey].push({
         id: Date.now() + Math.floor(Math.random()*100000),
@@ -44144,11 +44209,14 @@ function importFoodCSV(event){
       if(typeof logEvent==='function') logEvent('csv_import');
       if(typeof syncToCloud==='function') syncToCloud();
       document.querySelector('.modal-bg.open')?.remove();
-      showToast('Welcome — your history is here ✓', imported + ' entries imported. No re-logging needed.');
+      showToast('Welcome \u2014 your history is here \u2713',
+        imported + ' entries imported.' + (_unparsed ? ' ' + _unparsed + ' row' + (_unparsed>1?'s':'') + ' had a date I could not read and were left out.' : ' No re-logging needed.'));
       haptic('celebrate');
       if(typeof renderNutritionLog === 'function') renderNutritionLog();
     } else {
-      showToast('Nothing imported', 'No valid food rows found in that file.');
+      showToast('Nothing imported', _unparsed
+        ? ('Every row had a date I could not read (' + _unparsed + ' of them). Check the date column format.')
+        : 'No valid food rows found in that file.');
     }
   });
 }

@@ -1039,13 +1039,20 @@ function spendingReadHTML(){
   let h = '';
 
   // 1. The shape of it. Honest first — including the uncomfortable direction.
-  const neg = r.netPerMonth < 0;
+  // /mo ONLY when there is a month behind it — the same rule the lead card applies (16-money.js:167).
+  // Below the threshold these are raw totals for the span, and the suffix says so.
+  const _thin = r.enoughForMonthly === false;
+  const _suffix = _thin ? '' : '/mo';
+  const _in  = _thin ? r.income : r.incomePerMonth;
+  const _out = _thin ? r.spend  : r.spendPerMonth;
+  const _net = _thin ? (r.income - r.spend) : r.netPerMonth;
+  const neg = _net < 0;
   h += '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px">'+
     '<div style="font-size:11px;color:var(--tx3);margin-bottom:8px">'+period+' of your money · '+r.count+' transactions</div>'+
-    '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--tx2);padding:3px 0"><span>Coming in</span><span style="font-family:DM Mono,monospace;color:var(--gr)">'+money(r.incomePerMonth)+'/mo</span></div>'+
-    '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--tx2);padding:3px 0"><span>Going out</span><span style="font-family:DM Mono,monospace;color:var(--re)">'+money(r.spendPerMonth)+'/mo</span></div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--tx2);padding:3px 0"><span>Coming in</span><span style="font-family:DM Mono,monospace;color:var(--gr)">'+money(_in)+_suffix+'</span></div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--tx2);padding:3px 0"><span>Going out</span><span style="font-family:DM Mono,monospace;color:var(--re)">'+money(_out)+_suffix+'</span></div>'+
     '<div style="display:flex;justify-content:space-between;font-size:14px;color:var(--tx);padding:8px 0 0;margin-top:6px;border-top:1px solid var(--bd)"><span>'+(neg?'Short by':'Left over')+'</span>'+
-      '<span style="font-family:DM Mono,monospace;color:'+(neg?'var(--re)':'var(--gr)')+'">'+money(r.netPerMonth)+'/mo</span></div>'+
+      '<span style="font-family:DM Mono,monospace;color:'+(neg?'var(--re)':'var(--gr)')+'">'+money(_net)+_suffix+'</span></div>'+
     (r.incomePerMonth <= 0 ? '<div style="font-size:11px;color:var(--tx3);margin-top:8px;line-height:1.5">No income rows in this export — if your pay lands in another account, the leftover figure isn’t the full story.</div>' : '')+
   '</div>';
 
@@ -1056,7 +1063,7 @@ function spendingReadHTML(){
     top.forEach(c => {
       const pct = Math.round(c.share*100);
       h += '<div style="margin-bottom:8px">'+
-        '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);margin-bottom:4px"><span>'+c.name+'</span><span style="font-family:DM Mono,monospace">'+money(c.perMonth)+'/mo · '+pct+'%</span></div>'+
+        '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);margin-bottom:4px"><span>'+c.name+'</span><span style="font-family:DM Mono,monospace">'+money(_thin ? c.total : c.perMonth)+_suffix+' \u00b7 '+pct+'%</span></div>'+
         '<div style="height:5px;background:var(--bg3);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+Math.max(2,pct)+'%;background:var(--go);border-radius:3px"></div></div>'+
       '</div>';
     });
@@ -1065,7 +1072,7 @@ function spendingReadHTML(){
 
   // 3. The one place to lock in — and what it's actually worth. This is where the money tab stops
   // reporting and starts counselling, so it has to name a real consequence, not a vibe.
-  if(r.lockIn){
+  if(r.lockIn && !_thin){
     const half = r.lockIn.perMonth/2;
     let consequence = 'That’s '+money(half*12)+' a year back in your hands.';
     try{
