@@ -4796,6 +4796,81 @@ function fnBodyOf(code, name){
   H.ok(/const transfers = parsed\.filter/.test(H.html), 'counting them explicitly');
 }
 
+// ── the Nourish and Train mediums ─────────────────────────────────────────────────────────────
+{
+  H.section('a correction is saved against the food you are looking at');
+  // openFoodFix reveals #sm-fix-panel prefilled with the SELECTED food's numbers, and nothing hid it
+  // again — so opening a different food with the panel still showing meant one tap of "Save
+  // correction" wrote the previous product's label values onto this one, keyed by barcode, forever.
+  H.ok(/sm-fix-panel'\); if\(_fp\) _fp\.style\.display='none'/.test(H.extractFn('openServingModal')),
+    'the fix panel is closed when a new food opens');
+
+  H.section('third-party product text is escaped');
+  // Name and brand come from OpenFoodFacts, a public wiki anyone can edit, and went into innerHTML raw.
+  const lb = H.extractFn('lookupBarcode');
+  H.ok(/_escFew\(food\.name\)/.test(lb) && /_escFew\(food\.brand\)/.test(lb),
+    'the scan result escapes both, matching _makeFoodResultRow');
+
+  H.section('numbers off means numbers off, on the fastest paths too');
+  H.ok(!/showToast\('Logged \\u2713', food\.name \+ ' \\u2014 ' \+ _qs\.cal/.test(H.html),
+    'the quick-log toasts no longer announce the calorie count');
+  H.ok((H.html.match(/nutGentle\(\)\) \? (m|food|f)\.name/g) || []).length >= 3,
+    'all three quick-log toasts are gated');
+  H.ok(/nutGentle\(\) \) \? '<div class="fr-macros"><\/div>'|nutGentle\(\) \)\s*\n?\s*\? \('<div class="fr-macros">/.test(H.html),
+    'and the recents list under the search box drops its calorie figure');
+
+  H.section('the crash draft holds the work, not the shell');
+  // _saveSessionDraft ran only from renderWorkoutSession, which fires when the exercise LIST changes.
+  // Logging a set, ticking it done or changing a weight all call renderSets(ei) — which never touched
+  // the draft. So the only thing ever restored after a crash was an empty session.
+  H.ok(/_saveSessionDraft\(\)/.test(H.extractFn('renderSets')), 'every set change writes the draft');
+  H.ok(/_saveSessionDraft\(\)/.test(H.extractFn('saveExerciseNote')), 'and so does a note');
+
+  H.section('a workout that cannot be saved is not celebrated');
+  const fw = H.extractFn('saveWorkoutSession');
+  H.ok(/const _saved = ls\('totry_workouts'/.test(fw), "ls()'s return is captured");
+  H.ok(/_saved === false/.test(fw), 'and a failed write is detected');
+  H.ok(/your session is still here/.test(fw),
+    'the session is kept rather than cleared under a "Session complete" modal');
+  H.ok(fw.indexOf('_saved === false') < fw.indexOf('currentSession=[]'),
+    'the guard runs BEFORE the session is discarded');
+
+  H.section('the rest timer honours the rest target');
+  // A routine stores targetRest ('3m'), the card DISPLAYS it, a Hevy import brings rest_seconds
+  // through as rest — and the timer read ex.restTime, which nothing writes. Always 90 seconds.
+  const rs = H.extractFn('_restSeconds');
+  const f = new Function(rs + 'return _restSeconds;')();
+  H.eq(f({ targetRest: '3m' }), 180, "'3m' is three minutes");
+  H.eq(f({ targetRest: '90s' }), 90, "'90s' is ninety seconds");
+  H.eq(f({ rest: '120s' }), 120, "a Hevy import's rest is read");
+  H.eq(f({ targetRest: '2:30' }), 150, "'2:30' is two and a half minutes");
+  H.eq(f({ restTime: 180 }), 180, 'a bare number is seconds');
+  H.eq(f({}), 0, 'and nothing set falls back to the 90-second default');
+  H.ok(/_restSeconds\(ex\) \|\| 90/.test(H.html), 'the timer reads it');
+
+  H.section('watch-measured sleep reaches readiness');
+  // syncSleep writes hours into totry_trackers[date].sleep with a _sleepSrc marker. computeReadiness
+  // read only totry_checkins and totry_body, so someone whose watch recorded four hours — and who
+  // had not ALSO typed it into the morning check-in — was told to chase a PR.
+  const cr = H.extractFn('computeReadiness');
+  H.ok(/totry_trackers/.test(cr), 'readiness consults the tracker store');
+  H.ok(/_sleepSrc !== 'health'/.test(cr), 'only for figures the watch actually wrote');
+  H.ok(/hrs >= 8 \? 9 :/.test(cr), 'mapped onto the 1-10 scale the self-reports use, not dropped in raw');
+  {
+    const store = {};
+    const g = new Function('ls', 'interferenceNote', 'weeklyLoadByModality', 'cyclePhase',
+      cr + 'return computeReadiness;')(k => store[k], () => null, () => ({}), () => null);
+    const key = new Date().toLocaleDateString('en-AU');
+    store.totry_workouts = [{}]; store.totry_checkins = [];
+    store.totry_trackers = { [key]: { sleep: 4, _sleepSrc: 'health' } };
+    const four = g();
+    H.eq(four.level, 'rest', 'four hours reads as rest, not "well recovered"');
+    H.ok(four.reasons.includes('low sleep'), 'and says why');
+    store.totry_trackers = { [key]: { sleep: 8, _sleepSrc: 'health' } };
+    H.ok(g().score > four.score, 'eight hours scores higher than four');
+  }
+}
+
 // ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────
 // Every test in this file reads H.html, which reads index.html — the ASSEMBLED file. So a change
 // made directly to index.html passes everything here and then vanishes the next time anyone runs

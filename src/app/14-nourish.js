@@ -1572,8 +1572,8 @@ async function lookupBarcode(barcode){
     el.style.cssText = 'border:1px solid var(--go-bd)';
     el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
         '<div style="flex:1;cursor:pointer" id="barcode-result-tap">' +
-          '<div class="fr-name">' + food.name + '</div>' +
-          (food.brand ? '<div class="fr-brand">' + food.brand + '</div>' : '') +
+          '<div class="fr-name">' + _escFew(food.name) + '</div>' +
+          (food.brand ? '<div class="fr-brand">' + _escFew(food.brand) + '</div>' : '') +
           '<div class="fr-macros"><span class="fr-cal">' + food.cal + ' cal/100g</span><span>P: ' + food.pro + 'g</span><span>C: ' + food.carb + 'g</span><span>F: ' + food.fat + 'g</span><span style="color:var(--go)">Barcode</span></div>' +
           '<div style="font-size:11px;color:var(--go);margin-top:4px">Tap to choose serving &amp; add →</div>' +
         '</div>' +
@@ -2066,6 +2066,9 @@ function openPortionGuide(){
 }
 function openServingModal(food){
   currentFood=food;
+  // Close any correction panel left open from the last food — see the note above. It is prefilled
+  // with THAT food's numbers, and one tap would save them against this one.
+  try{ const _fp=document.getElementById('sm-fix-panel'); if(_fp) _fp.style.display='none'; }catch(_){ }
   try{ applyFoodOverride(food); }catch(_){ }
   window.__editingEntry = null;
   document.getElementById('sm-food-name').textContent=food.name;
@@ -2397,7 +2400,7 @@ function logSavedMeal(id){
   ls('totry_nutlog', log);
   haptic('success');
   const totCal = m.items.reduce((a,i)=>a+(i.cal||0),0);
-  showToast('Logged ✓', m.name + ' — ' + Math.round(totCal) + ' cal');
+  showToast('Logged \u2713', (typeof nutGentle==='function'&&nutGentle()) ? m.name : (m.name + ' \u2014 ' + Math.round(totCal) + ' cal'));
   renderNutritionLog();
 }
 async function deleteSavedMeal(id){
@@ -2469,7 +2472,7 @@ function quickLogSearchFood(food){
   ls('totry_nutlog', log);
   if(typeof rememberRecentFood === 'function') rememberRecentFood(food);
   haptic('success');
-  showToast('Logged ✓', food.name + ' — ' + _qs.cal + ' cal · ' + _qs.label);
+  showToast('Logged \u2713', (typeof nutGentle==='function'&&nutGentle()) ? food.name : (food.name + ' \u2014 ' + _qs.cal + ' cal \u00b7 ' + _qs.label));
   renderNutritionLog();
 }
 function quickLogRecent(name){
@@ -2493,7 +2496,7 @@ function quickLogRecent(name){
   ls('totry_nutlog', log);
   rememberRecentFood(f); // bump its recency/count
   haptic('success');
-  showToast('Logged ✓', f.name + ' — ' + _qs.cal + ' cal · ' + _qs.label);
+  showToast('Logged \u2713', (typeof nutGentle==='function'&&nutGentle()) ? f.name : (f.name + ' \u2014 ' + _qs.cal + ' cal \u00b7 ' + _qs.label));
   renderNutritionLog();
 }
 function renderRecentFoods(){
@@ -2537,9 +2540,12 @@ function renderRecentFoods(){
           // cannot afford a number the app was never going to record. The search list one screen up
           // was already repaired for exactly this (_makeFoodResultRow); this list was missed, and it
           // showed no unit either, so there was nothing on screen to reveal the mismatch.
-          '<div class="fr-macros"><span class="fr-cal">' + _qs.cal + ' cal</span><span>P' + _qs.pro + '</span>' +
-            '<span style="color:var(--tx3)">' + _escFew(String(_qs.label || '')) + '</span>' +
-            (f.count>1?'<span style="color:var(--tx3)">×'+f.count+'</span>':'') + '</div>' +
+          (( typeof nutGentle==='function' && nutGentle() )
+            ? ('<div class="fr-macros"><span style="color:var(--tx3)">' + _escFew(String(_qs.label || '')) + '</span>' +
+               (f.count>1?'<span style="color:var(--tx3)">×'+f.count+'</span>':'') + '</div>')
+            : ('<div class="fr-macros"><span class="fr-cal">' + _qs.cal + ' cal</span><span>P' + _qs.pro + '</span>' +
+               '<span style="color:var(--tx3)">' + _escFew(String(_qs.label || '')) + '</span>' +
+               (f.count>1?'<span style="color:var(--tx3)">×'+f.count+'</span>':'') + '</div>')) +
         '</div>' +
         '<button onclick="toggleFavFood(&apos;' + safe + '&apos;)" style="background:none;border:none;color:' + starColor + ';font-size:18px;cursor:pointer;padding:4px;flex-shrink:0">' + star + '</button>' +
         '<button onclick="quickLogRecent(&apos;' + safe + '&apos;)" title="Log instantly" style="background:var(--go);border:none;color:#1a1505;font-size:18px;font-weight:700;width:34px;height:34px;border-radius:8px;cursor:pointer;flex-shrink:0;line-height:1">+</button>' +

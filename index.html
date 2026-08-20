@@ -4912,7 +4912,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v525';
+const APP_VERSION = 'v526';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -24010,8 +24010,8 @@ async function lookupBarcode(barcode){
     el.style.cssText = 'border:1px solid var(--go-bd)';
     el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
         '<div style="flex:1;cursor:pointer" id="barcode-result-tap">' +
-          '<div class="fr-name">' + food.name + '</div>' +
-          (food.brand ? '<div class="fr-brand">' + food.brand + '</div>' : '') +
+          '<div class="fr-name">' + _escFew(food.name) + '</div>' +
+          (food.brand ? '<div class="fr-brand">' + _escFew(food.brand) + '</div>' : '') +
           '<div class="fr-macros"><span class="fr-cal">' + food.cal + ' cal/100g</span><span>P: ' + food.pro + 'g</span><span>C: ' + food.carb + 'g</span><span>F: ' + food.fat + 'g</span><span style="color:var(--go)">Barcode</span></div>' +
           '<div style="font-size:11px;color:var(--go);margin-top:4px">Tap to choose serving &amp; add →</div>' +
         '</div>' +
@@ -24504,6 +24504,9 @@ function openPortionGuide(){
 }
 function openServingModal(food){
   currentFood=food;
+  // Close any correction panel left open from the last food — see the note above. It is prefilled
+  // with THAT food's numbers, and one tap would save them against this one.
+  try{ const _fp=document.getElementById('sm-fix-panel'); if(_fp) _fp.style.display='none'; }catch(_){ }
   try{ applyFoodOverride(food); }catch(_){ }
   window.__editingEntry = null;
   document.getElementById('sm-food-name').textContent=food.name;
@@ -24835,7 +24838,7 @@ function logSavedMeal(id){
   ls('totry_nutlog', log);
   haptic('success');
   const totCal = m.items.reduce((a,i)=>a+(i.cal||0),0);
-  showToast('Logged ✓', m.name + ' — ' + Math.round(totCal) + ' cal');
+  showToast('Logged \u2713', (typeof nutGentle==='function'&&nutGentle()) ? m.name : (m.name + ' \u2014 ' + Math.round(totCal) + ' cal'));
   renderNutritionLog();
 }
 async function deleteSavedMeal(id){
@@ -24907,7 +24910,7 @@ function quickLogSearchFood(food){
   ls('totry_nutlog', log);
   if(typeof rememberRecentFood === 'function') rememberRecentFood(food);
   haptic('success');
-  showToast('Logged ✓', food.name + ' — ' + _qs.cal + ' cal · ' + _qs.label);
+  showToast('Logged \u2713', (typeof nutGentle==='function'&&nutGentle()) ? food.name : (food.name + ' \u2014 ' + _qs.cal + ' cal \u00b7 ' + _qs.label));
   renderNutritionLog();
 }
 function quickLogRecent(name){
@@ -24931,7 +24934,7 @@ function quickLogRecent(name){
   ls('totry_nutlog', log);
   rememberRecentFood(f); // bump its recency/count
   haptic('success');
-  showToast('Logged ✓', f.name + ' — ' + _qs.cal + ' cal · ' + _qs.label);
+  showToast('Logged \u2713', (typeof nutGentle==='function'&&nutGentle()) ? f.name : (f.name + ' \u2014 ' + _qs.cal + ' cal \u00b7 ' + _qs.label));
   renderNutritionLog();
 }
 function renderRecentFoods(){
@@ -24975,9 +24978,12 @@ function renderRecentFoods(){
           // cannot afford a number the app was never going to record. The search list one screen up
           // was already repaired for exactly this (_makeFoodResultRow); this list was missed, and it
           // showed no unit either, so there was nothing on screen to reveal the mismatch.
-          '<div class="fr-macros"><span class="fr-cal">' + _qs.cal + ' cal</span><span>P' + _qs.pro + '</span>' +
-            '<span style="color:var(--tx3)">' + _escFew(String(_qs.label || '')) + '</span>' +
-            (f.count>1?'<span style="color:var(--tx3)">×'+f.count+'</span>':'') + '</div>' +
+          (( typeof nutGentle==='function' && nutGentle() )
+            ? ('<div class="fr-macros"><span style="color:var(--tx3)">' + _escFew(String(_qs.label || '')) + '</span>' +
+               (f.count>1?'<span style="color:var(--tx3)">×'+f.count+'</span>':'') + '</div>')
+            : ('<div class="fr-macros"><span class="fr-cal">' + _qs.cal + ' cal</span><span>P' + _qs.pro + '</span>' +
+               '<span style="color:var(--tx3)">' + _escFew(String(_qs.label || '')) + '</span>' +
+               (f.count>1?'<span style="color:var(--tx3)">×'+f.count+'</span>':'') + '</div>')) +
         '</div>' +
         '<button onclick="toggleFavFood(&apos;' + safe + '&apos;)" style="background:none;border:none;color:' + starColor + ';font-size:18px;cursor:pointer;padding:4px;flex-shrink:0">' + star + '</button>' +
         '<button onclick="quickLogRecent(&apos;' + safe + '&apos;)" title="Log instantly" style="background:var(--go);border:none;color:#1a1505;font-size:18px;font-weight:700;width:34px;height:34px;border-radius:8px;cursor:pointer;flex-shrink:0;line-height:1">+</button>' +
@@ -30740,6 +30746,23 @@ function computeReadiness(){
   };
   checkins.forEach(c => considerScores(c.scores || c, c.ts || c.date));
   body.forEach(b => considerScores(b.scores, b.ts));
+  // Watch-measured sleep, mapped onto the same 1-10 scale the self-reports use — see the note above.
+  try{
+    const tr = ls('totry_trackers') || {};
+    [0, 1].forEach(back => {
+      const d = new Date(); d.setDate(d.getDate() - back);
+      const key = d.toLocaleDateString('en-AU');
+      const row = tr[key];
+      if(!row || row._sleepSrc !== 'health') return;
+      const hrs = parseFloat(row.sleep) || 0;
+      if(hrs <= 0) return;
+      // 4h -> 3, 6h -> 6, 7h -> 7, 8h+ -> 9. Deliberately coarse: this is a proxy for how a person
+      // would rate the night, not a measurement of it.
+      const rated = hrs >= 8 ? 9 : hrs >= 7 ? 7 : hrs >= 6 ? 6 : hrs >= 5 ? 4 : 3;
+      d.setHours(9, 0, 0, 0);
+      considerScores({ sleep: rated }, d.toISOString());
+    });
+  }catch(_){ }
   // If we have nothing self-reported and no training history, no signal.
   const history = ls('totry_workouts') || [];
   if(sleep==null && stress==null && energy==null && !history.length) return null;
@@ -32598,6 +32621,8 @@ function toggleExerciseNotes(ei){
 }
 
 function saveExerciseNote(ei, text){
+  // Notes are part of the session too — same reason as renderSets above.
+  try{ setTimeout(function(){ try{ _saveSessionDraft(); }catch(_){ } }, 0); }catch(_){ }
   if(!currentSession[ei]) return;
   currentSession[ei].notes = text;
   // Update the toggle label live
@@ -32623,6 +32648,9 @@ function toggleSuperset(ei){
 }
 function renderSets(ei){
   const container=document.getElementById('sets-'+ei);if(!container)return;
+  // Every set change lands here and nowhere else — see the note above. Cheap and idempotent: the
+  // draft is one small JSON blob, and without this it never contained a single logged set.
+  try{ _saveSessionDraft(); }catch(_){ }
   const ex=currentSession[ei];const lastSets=getLastPerformance(ex.name);
   container.innerHTML='';
   // Hevy-style column header so the set rows read like a clean table, not loose inputs.
@@ -32729,7 +32757,8 @@ function renderSets(ei){
         if(justDone && justDone.type === 'warmup'){ /* no rest after warmups */ }
         else {
         const restMap = ls('totry_rest_times') || {};
-        const restSecs = restMap[ex.name] || ex.restTime || 90;
+        // Read what is actually stored — see the note above. restTime was never written by anything.
+        const restSecs = restMap[ex.name] || _restSeconds(ex) || 90;
         // Hevy superset flow: partners alternate with no rest between; rest after the pair.
         const isSecond = currentSession[ei] && currentSession[ei].superset === true;
         const partner = isSecond ? ei - 1 : ((currentSession[ei+1] && currentSession[ei+1].superset) ? ei + 1 : -1);
@@ -32795,7 +32824,16 @@ async function saveWorkoutSession(){
   // the detail modal told you to go edit it in Hevy. For someone who has never heard of Hevy that is a
   // claim the app cannot keep, and it left in-app sessions with no edit path at all.
   const session={id:Date.now(),source:'manual',date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}),ts:new Date().toISOString(),day:getDayCount(),exercises:JSON.parse(JSON.stringify(currentSession)),completedSets:cs,totalSets:ts,volume:vol,durationMin:durationMin,splitFocus:getUserSplit()[tIdx()]?.focus||'Workout'};
-  const history=ls('totry_workouts')||[];history.unshift(session);ls('totry_workouts',_capWorkouts(history));
+  const history=ls('totry_workouts')||[];history.unshift(session);
+  const _saved = ls('totry_workouts',_capWorkouts(history));
+  if(_saved === false){
+    // Keep everything. The session is still in currentSession and still in the draft, so they can
+    // free some space and finish again — see the note above.
+    if(typeof showToast==='function') showToast('Not saved \u2014 your session is still here',
+      'There was no room to write it. Free some space in Settings \u2192 Your data, then tap Finish again. Nothing has been lost.');
+    if(typeof haptic==='function') haptic('error');
+    return;
+  }
   if(typeof logEvent==='function') logEvent('workout_logged');
   // Mirror it into Apple Health, if they turned that on. Fire and forget.
   try{ if(typeof HealthWrite!=='undefined') HealthWrite.workout(session); }catch(_){}
@@ -33448,6 +33486,25 @@ function updatePersonalRecords(session){
   session.exercises.forEach(ex=>{ex.sets.forEach(s=>{if(!s.done||!s.weight||!s.reps)return;const w=parseFloat(s.weight),r=parseInt(s.reps);if(isNaN(w)||isNaN(r)||w<=0)return;const orm=Math.round(w*(1+r/30));if(!prs[ex.name]||orm>prs[ex.name].orm){prs[ex.name]={orm,weight:w,reps:r,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})};if(!hit.find(h=>h.name===ex.name))hit.push({name:ex.name,orm});}});});
   ls('totry_prs',prs);
   return hit;
+}
+// '3m' | '90s' | '2:30' | 180 | '180' -> seconds. Routines write targetRest, Hevy imports write
+// rest, and the manual editor writes restTime; all three end up here so the timer honours whichever
+// the exercise actually carries.
+function _restSeconds(ex){
+  if(!ex) return 0;
+  const raw = ex.targetRest != null ? ex.targetRest : (ex.rest != null ? ex.rest : ex.restTime);
+  if(raw == null || raw === '') return 0;
+  if(typeof raw === 'number' && isFinite(raw)) return Math.max(0, Math.round(raw));
+  const t = String(raw).trim().toLowerCase();
+  let m = t.match(/^(\d+):(\d{1,2})$/);                       // 2:30
+  if(m) return (+m[1]) * 60 + (+m[2]);
+  m = t.match(/^(\d+(?:\.\d+)?)\s*m(in)?$/);                  // 3m / 1.5min
+  if(m) return Math.round(parseFloat(m[1]) * 60);
+  m = t.match(/^(\d+)\s*s(ec)?$/);                            // 90s
+  if(m) return +m[1];
+  m = t.match(/^(\d+)$/);                                     // bare number = seconds
+  if(m) return +m[1];
+  return 0;
 }
 function startRestTimer(secs){
   stopRestTimer();restTimeLeft=secs;

@@ -672,6 +672,23 @@ function computeReadiness(){
   };
   checkins.forEach(c => considerScores(c.scores || c, c.ts || c.date));
   body.forEach(b => considerScores(b.scores, b.ts));
+  // Watch-measured sleep, mapped onto the same 1-10 scale the self-reports use — see the note above.
+  try{
+    const tr = ls('totry_trackers') || {};
+    [0, 1].forEach(back => {
+      const d = new Date(); d.setDate(d.getDate() - back);
+      const key = d.toLocaleDateString('en-AU');
+      const row = tr[key];
+      if(!row || row._sleepSrc !== 'health') return;
+      const hrs = parseFloat(row.sleep) || 0;
+      if(hrs <= 0) return;
+      // 4h -> 3, 6h -> 6, 7h -> 7, 8h+ -> 9. Deliberately coarse: this is a proxy for how a person
+      // would rate the night, not a measurement of it.
+      const rated = hrs >= 8 ? 9 : hrs >= 7 ? 7 : hrs >= 6 ? 6 : hrs >= 5 ? 4 : 3;
+      d.setHours(9, 0, 0, 0);
+      considerScores({ sleep: rated }, d.toISOString());
+    });
+  }catch(_){ }
   // If we have nothing self-reported and no training history, no signal.
   const history = ls('totry_workouts') || [];
   if(sleep==null && stress==null && energy==null && !history.length) return null;

@@ -625,6 +625,8 @@ function toggleExerciseNotes(ei){
 }
 
 function saveExerciseNote(ei, text){
+  // Notes are part of the session too — same reason as renderSets above.
+  try{ setTimeout(function(){ try{ _saveSessionDraft(); }catch(_){ } }, 0); }catch(_){ }
   if(!currentSession[ei]) return;
   currentSession[ei].notes = text;
   // Update the toggle label live
@@ -650,6 +652,9 @@ function toggleSuperset(ei){
 }
 function renderSets(ei){
   const container=document.getElementById('sets-'+ei);if(!container)return;
+  // Every set change lands here and nowhere else — see the note above. Cheap and idempotent: the
+  // draft is one small JSON blob, and without this it never contained a single logged set.
+  try{ _saveSessionDraft(); }catch(_){ }
   const ex=currentSession[ei];const lastSets=getLastPerformance(ex.name);
   container.innerHTML='';
   // Hevy-style column header so the set rows read like a clean table, not loose inputs.
@@ -756,7 +761,8 @@ function renderSets(ei){
         if(justDone && justDone.type === 'warmup'){ /* no rest after warmups */ }
         else {
         const restMap = ls('totry_rest_times') || {};
-        const restSecs = restMap[ex.name] || ex.restTime || 90;
+        // Read what is actually stored — see the note above. restTime was never written by anything.
+        const restSecs = restMap[ex.name] || _restSeconds(ex) || 90;
         // Hevy superset flow: partners alternate with no rest between; rest after the pair.
         const isSecond = currentSession[ei] && currentSession[ei].superset === true;
         const partner = isSecond ? ei - 1 : ((currentSession[ei+1] && currentSession[ei+1].superset) ? ei + 1 : -1);
@@ -822,7 +828,16 @@ async function saveWorkoutSession(){
   // the detail modal told you to go edit it in Hevy. For someone who has never heard of Hevy that is a
   // claim the app cannot keep, and it left in-app sessions with no edit path at all.
   const session={id:Date.now(),source:'manual',date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}),ts:new Date().toISOString(),day:getDayCount(),exercises:JSON.parse(JSON.stringify(currentSession)),completedSets:cs,totalSets:ts,volume:vol,durationMin:durationMin,splitFocus:getUserSplit()[tIdx()]?.focus||'Workout'};
-  const history=ls('totry_workouts')||[];history.unshift(session);ls('totry_workouts',_capWorkouts(history));
+  const history=ls('totry_workouts')||[];history.unshift(session);
+  const _saved = ls('totry_workouts',_capWorkouts(history));
+  if(_saved === false){
+    // Keep everything. The session is still in currentSession and still in the draft, so they can
+    // free some space and finish again — see the note above.
+    if(typeof showToast==='function') showToast('Not saved \u2014 your session is still here',
+      'There was no room to write it. Free some space in Settings \u2192 Your data, then tap Finish again. Nothing has been lost.');
+    if(typeof haptic==='function') haptic('error');
+    return;
+  }
   if(typeof logEvent==='function') logEvent('workout_logged');
   // Mirror it into Apple Health, if they turned that on. Fire and forget.
   try{ if(typeof HealthWrite!=='undefined') HealthWrite.workout(session); }catch(_){}
@@ -1475,6 +1490,25 @@ function updatePersonalRecords(session){
   session.exercises.forEach(ex=>{ex.sets.forEach(s=>{if(!s.done||!s.weight||!s.reps)return;const w=parseFloat(s.weight),r=parseInt(s.reps);if(isNaN(w)||isNaN(r)||w<=0)return;const orm=Math.round(w*(1+r/30));if(!prs[ex.name]||orm>prs[ex.name].orm){prs[ex.name]={orm,weight:w,reps:r,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})};if(!hit.find(h=>h.name===ex.name))hit.push({name:ex.name,orm});}});});
   ls('totry_prs',prs);
   return hit;
+}
+// '3m' | '90s' | '2:30' | 180 | '180' -> seconds. Routines write targetRest, Hevy imports write
+// rest, and the manual editor writes restTime; all three end up here so the timer honours whichever
+// the exercise actually carries.
+function _restSeconds(ex){
+  if(!ex) return 0;
+  const raw = ex.targetRest != null ? ex.targetRest : (ex.rest != null ? ex.rest : ex.restTime);
+  if(raw == null || raw === '') return 0;
+  if(typeof raw === 'number' && isFinite(raw)) return Math.max(0, Math.round(raw));
+  const t = String(raw).trim().toLowerCase();
+  let m = t.match(/^(\d+):(\d{1,2})$/);                       // 2:30
+  if(m) return (+m[1]) * 60 + (+m[2]);
+  m = t.match(/^(\d+(?:\.\d+)?)\s*m(in)?$/);                  // 3m / 1.5min
+  if(m) return Math.round(parseFloat(m[1]) * 60);
+  m = t.match(/^(\d+)\s*s(ec)?$/);                            // 90s
+  if(m) return +m[1];
+  m = t.match(/^(\d+)$/);                                     // bare number = seconds
+  if(m) return +m[1];
+  return 0;
 }
 function startRestTimer(secs){
   stopRestTimer();restTimeLeft=secs;
