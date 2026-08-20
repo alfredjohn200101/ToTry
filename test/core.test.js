@@ -4465,6 +4465,75 @@ function fnBodyOf(code, name){
   H.ok(/await askText\(/.test(H.extractFn('deleteAccount')), 'and account deletion still requires typing DELETE');
 }
 
+// ── four high-severity findings from the seven-pillar audit ──────────────────────────────────
+{
+  H.section('the examen can be finished by every tradition');
+
+  // showExamenStep terminates on a FALSY step — that is how it knows it ran off the end of
+  // EXAMEN_STEPS and should call saveExamen(). Christianity returned `step` untouched so undefined
+  // stayed undefined. Every other tradition fell through to Object.assign({}, step), and
+  // Object.assign({}, undefined) is {} — TRUTHY. So the last "Next" rendered an empty modal instead
+  // of saving, and the examen could not be COMPLETED by secular, Islam, Hinduism or Buddhism — four
+  // of five traditions, the default included.
+  const esf = H.extractFn('examenStepFor');
+  H.ok(/if\(!step\) return step;/.test(esf), 'a falsy step passes straight through, restoring the terminator');
+  H.ok(esf.indexOf('if(!step)') < esf.indexOf("=== 'christianity'"), 'and it is the FIRST thing checked');
+  {
+    const f = new Function('faithTradition', 'curFaith',
+      esf + 'return examenStepFor;')(() => 'secular', () => ({ divine: 'God' }));
+    let term, threw = null;
+    try { term = f(undefined); } catch (e) { threw = String(e.message || e); }
+    H.ok(!threw, `the terminator does not throw (without the guard it is "${threw}", which kills the tap entirely)`);
+    H.eq(term, undefined, 'secular gets undefined back, so showExamenStep saves and closes');
+    H.ok(!!f({ title: 'x', body: 'y' }), 'and a real step still comes back as an object');
+  }
+  H.ok(/if\(!step\)\{ saveExamen\(\); return; \}/.test(H.extractFn('showExamenStep')),
+    'the terminator it feeds is still there');
+
+  H.section('an honest log banks the streak it ends');
+  // logLoss banks the streak into cleanDaysTotal and relapseHistory BEFORE moving startDate
+  // (04-fight.js). saveViceUse moved the anchor and did neither, so the card's own "I used — log it
+  // honestly" button reported 0 lifetime clean days after 40, and _undoRelapse had nothing to restore.
+  // The screen that exists to make honesty free was charging the most for it.
+  const svu = H.extractFn('saveViceUse');
+  H.ok(/v\.cleanDaysTotal = \(v\.cleanDaysTotal \|\| 0\) \+ before;/.test(svu), 'the streak is banked');
+  H.ok(/streakLength: before, honest: true/.test(svu), 'and recorded in relapseHistory so undo can restore it');
+  H.ok(svu.indexOf('cleanDaysTotal') < svu.indexOf('v.startDate=ts'), 'BEFORE the anchor moves, or it banks zero');
+  H.ok(/_movesAnchor/.test(svu), 'and a backdated log behind an existing loss does not double-bank');
+
+  H.section('no tradition is handed another tradition\u2019s scripture');
+  // Two modals in 09-fight-deep hardcoded a Bible verse for everyone — the relapse sheet and the
+  // over-the-limit sheet — so a Muslim, Hindu, Buddhist or secular person logging honestly at their
+  // lowest got a Christian text they never asked for. _sosAnchor already solved this for the SOS.
+  const fl = H.extractFn('_faithLine');
+  H.ok(/faithLevel\(\) === 'light'\) return ''/.test(fl), 'light faith gets no religious line at all');
+  H.ok(/t === 'secular'\) return ''/.test(fl), 'nor does a secular person');
+  H.ok(/activeVerses\(\)/.test(fl), 'every other tradition draws from its OWN set');
+  {
+    const V = { christianity: [{ t: 'C' }], islam: [{ t: 'I' }], hinduism: [{ t: 'H' }], buddhism: [{ t: 'B' }] };
+    const mk = (trad, lvl) => new Function('faithTradition', 'faithLevel', 'activeVerses',
+      fl + 'return _faithLine;')(() => trad, () => lvl, () => V[trad] || null);
+    H.eq(mk('islam', 'full')('FALLBACK'), 'I', 'a Muslim gets a Qur\u2019anic line, not the Bible verse');
+    H.eq(mk('buddhism', 'full')('FALLBACK'), 'B', 'and a Buddhist gets the Dhammapada');
+    H.eq(mk('secular', 'full')('FALLBACK'), '', 'a secular person gets nothing');
+    H.eq(mk('christianity', 'light')('FALLBACK'), '', 'and neither does anyone on light faith');
+  }
+  H.ok(!/>"The righteous falls seven times/.test(H.html), 'the hardcoded relapse verse is gone from the markup');
+  H.ok(!/>"So, whether you eat or drink/.test(H.html), 'and so is the over-the-limit one');
+
+  H.section('an overlay that paints its own ground carries its own ink');
+  // The Rosary and the guided breath both hardcode a near-black radial gradient, then used
+  // var(--tx)/--tx2/--tx3 inside — which in the LIGHT theme is near-black. Near-black prayers on a
+  // near-black ground: unreadable, not merely low contrast.
+  const head = require('fs').readFileSync(require('path').join(__dirname, '..', 'src/shell-head.html'), 'utf8');
+  const blk = (head.match(/#rosary-overlay,\.breath-overlay\{([^}]*)\}/) || [])[1] || '';
+  H.ok(blk, 'both overlays share one scoped ink block');
+  for (const t of ['--tx:', '--tx2:', '--tx3:', '--go:']) {
+    H.ok(blk.includes(t), `it pins ${t.replace(':', '')} so var() resolves against the ground behind it`);
+  }
+  H.ok(/--tx:#F0EDE6/.test(blk), 'and the pinned ink is LIGHT, matching the dark gradient they paint');
+}
+
 // ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────
 // Every test in this file reads H.html, which reads index.html — the ASSEMBLED file. So a change
 // made directly to index.html passes everything here and then vanishes the next time anyone runs

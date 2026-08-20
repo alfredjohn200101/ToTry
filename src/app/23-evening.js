@@ -135,6 +135,10 @@ function applyFaithExamen(){
 // Swap the divine language in a step for the person's tradition. For non-theistic paths the
 // "petition" becomes a request of oneself rather than of a deity — honest, not bolted on.
 function examenStepFor(step){
+  // The terminator: showExamenStep ends on a falsy step. Object.assign({}, undefined) is {}, which is
+  // truthy — so without this the examen could never be COMPLETED by any non-Christian tradition, the
+  // default included. Pass the falsy value straight through, exactly as the christianity branch does.
+  if(!step) return step;
   const t = (typeof faithTradition==='function') ? faithTradition() : 'secular';
   if(t === 'christianity') return step;
   const divine = (typeof curFaith==='function' && curFaith().divine) ? curFaith().divine : 'God';

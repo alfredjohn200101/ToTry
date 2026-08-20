@@ -146,7 +146,8 @@ function logModerateOver(){
       '<div class="modal-handle"></div>'+
       '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);font-style:italic;margin-bottom:10px">Noticed honestly.</div>'+
       '<div style="text-align:center;font-size:14px;color:var(--tx2);line-height:1.7;margin-bottom:16px">You went past your limit this time — and you\'re honest enough to mark it. That awareness is exactly how moderation is learned. No streak lost, no shame. Just notice the pattern and adjust next time.</div>'+
-      '<div style="text-align:center;font-style:italic;font-family:Cormorant Garamond,serif;font-size:15px;color:var(--tx3);margin-bottom:16px">"So, whether you eat or drink... do all to the glory of God." — 1 Corinthians 10:31</div>'+
+      (function(){ const _l=_faithLine('So, whether you eat or drink... do all to the glory of God.');
+        return _l ? '<div style="text-align:center;font-style:italic;font-family:Cormorant Garamond,serif;font-size:15px;color:var(--tx3);margin-bottom:16px">\u201c'+_escFew(_l)+'\u201d</div>' : ''; })()+
       '<button class="btn primary" onclick="closeModal(this)" style="margin-bottom:8px">Got it</button>'+
       '<button class="btn" onclick="closeModal(this);go(\'coach\');setTimeout(()=>{if(typeof sendCoachPrompt===\'function\')sendCoachPrompt(\'I went over my limit on something I\\\'m trying to moderate. Help me think about why and how to stay within it next time.\');},400)" style="background:var(--bg3);border:1px solid var(--bd)">Talk it through</button>'+
       '</div>';
@@ -332,7 +333,8 @@ function logLoss(whenISO){
         '<div style="font-size:16px;color:var(--gr)">'+total+' total clean days still yours</div>'+
         '<div style="font-size:12px;color:var(--tx3);margin-top:4px">That '+cleanBeforeReset+'-day streak was real. It still counts.</div>'+
       '</div>':'')+
-      '<div style="text-align:center;font-style:italic;font-family:Cormorant Garamond,serif;font-size:15px;color:var(--tx3);margin-bottom:16px">"The righteous falls seven times and rises again." \u2014 Proverbs 24:16</div>'+
+      (function(){ const _l=_faithLine('The righteous falls seven times and rises again.');
+        return _l ? '<div style="text-align:center;font-style:italic;font-family:Cormorant Garamond,serif;font-size:15px;color:var(--tx3);margin-bottom:16px">\u201c'+_escFew(_l)+'\u201d</div>' : ''; })()+
       '<button class="btn primary" onclick="closeModal(this)" style="margin-bottom:8px">Begin again from today</button>'+
       '<button class="btn" onclick="closeModal(this);go(\'coach\');setTimeout(()=>{if(typeof sendCoachPrompt===\'function\')sendCoachPrompt(\'I just had a relapse and I want to understand what led to it.\');},400)" style="background:var(--bg3);border:1px solid var(--bd)">Talk to my coach about it</button>'+
       '</div>';
@@ -1518,8 +1520,17 @@ function saveViceUse(i){
   // older day can't rewrite a more recent reality.
   if(viceIsAbstinence(v)){
     const used=new Date(ts).getTime();
+    // Bank the streak BEFORE moving the anchor — the same order logLoss uses (04-fight.js:1096). Skip
+    // it when the log is backdated behind an existing loss, because that streak was already banked.
+    const _movesAnchor = used > (v.startDate?new Date(v.startDate).getTime():0);
+    if(_movesAnchor){
+      const before = viceCleanDays(v);
+      v.cleanDaysTotal = (v.cleanDaysTotal || 0) + before;
+      if(!v.relapseHistory) v.relapseHistory = [];
+      v.relapseHistory.push({ date: ts, streakLength: before, honest: true });
+    }
     if(used > (v.lastLoss?new Date(v.lastLoss).getTime():0)) v.lastLoss=ts;
-    if(used > (v.startDate?new Date(v.startDate).getTime():0)) v.startDate=ts;  // streak restarts from when it actually happened
+    if(_movesAnchor) v.startDate=ts;                // streak restarts from when it actually happened
     v.relapseCount=(v.relapseCount||0)+1;
   }
   saveV();
@@ -1556,6 +1567,30 @@ function momentsWonInWeek(name){
 
 // What KIND of stakes this vice answers to. A porn or masturbation win is never measured in dollars
 // (he asked for exactly this); gambling and substances are.
+// A LINE OF SCRIPTURE IS NOT A NEUTRAL COMFORT. Two modals in this file hardcoded a Bible verse and
+// showed it to everyone — the relapse sheet and the over-the-limit sheet — so a Muslim, Hindu,
+// Buddhist or secular person logging honestly at their lowest was handed a Christian text they never
+// asked for. _sosAnchor (04-fight.js:1817) already solved this for the SOS: Christianity keeps its
+// verse, every other tradition gets its OWN set through activeVerses(), and a person on light faith
+// gets no religious line at all. Same resolver, same rules.
+//
+// Returns '' when there should be no line — the caller drops the block entirely rather than printing
+// an empty italic div.
+function _faithLine(fallbackText){
+  try{
+    if(typeof faithLevel === 'function' && faithLevel() === 'light') return '';
+    const t = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
+    if(t === 'secular') return '';
+    const set = (typeof activeVerses === 'function') ? activeVerses() : null;
+    if(set && set.length){
+      // Deterministic per day so it does not reshuffle under a re-render mid-moment.
+      const i = new Date().getDate() % set.length;
+      return set[i].t || '';
+    }
+    if(t === 'christianity') return fallbackText || '';
+  }catch(_){ }
+  return '';
+}
 function _viceStakeKind(v){
   const n=String((v&&v.n)||v||'').toLowerCase();
   if(/gambl|bet|punt|pokie|casino|lotto|lottery/.test(n)) return 'gambling';
