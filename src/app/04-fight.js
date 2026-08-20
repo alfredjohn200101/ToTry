@@ -1891,11 +1891,11 @@ function goSosP3(){
   const bar=document.getElementById('sos-q-bar');
   const lbl=document.getElementById('sos-q-lbl');
   const btns=document.getElementById('sos-p3-btns');
-  if(btns)btns.style.display='none';if(bar){setTimeout(()=>{bar.style.width='0%';},100);}
+  if(bar){setTimeout(()=>{bar.style.width='0%';},100);}
   let secs=30;
   const qi=setInterval(()=>{
     secs--;if(lbl)lbl.textContent='Sit with this... '+secs+'s';
-    if(secs<=0){clearInterval(qi);if(lbl)lbl.textContent='Take your time.';if(btns)btns.style.display='flex';}
+    if(secs<=0){clearInterval(qi);if(lbl)lbl.textContent='Take your time.';}
   },1000);
   // Swap the outcome buttons to match the vice's goal: moderation isn't win/lose, it's
   // within-limit vs over-limit.

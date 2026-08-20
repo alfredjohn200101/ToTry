@@ -209,6 +209,9 @@ function companionWon(){
 function closeSos(){
   document.getElementById('sos-overlay').classList.remove('open');
   if(sosTimerInt)clearInterval(sosTimerInt);
+  // Whatever this session collected dies with it — see the note above. Only the win path consumes
+  // these, and a value that survives an abandoned SOS gets stamped onto an unrelated later fight.
+  try{ window.__sosIntensity = null; window.__sosTrigger = null; }catch(_){ }
 }
 
 

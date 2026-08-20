@@ -4277,6 +4277,7 @@ Amen.</div></div>
     </div>
     <div class="sos-timer-lbl">seconds</div>
     <button class="btn" style="margin-top:16px;font-size:12px;opacity:0.7" onclick="goSosP2()">Done early &#8594;</button>
+    <button class="btn" style="margin-top:10px;font-size:12px;opacity:0.6;background:transparent;border:none;color:var(--tx3)" onclick="closeSos()">I’m okay — close this</button>
   </div>
   <div class="sos-phase" id="sos-p2">
     <div class="sos-phase-lbl" id="sos-p2-lbl">Step 2 of 3 &#8212; Receive the word</div>
@@ -4297,19 +4298,23 @@ Amen.</div></div>
       <div id="sos-science-note" style="font-size:13px;color:var(--tx2);line-height:1.6"></div>
     </div>
     <button class="btn primary" style="margin-top:20px" onclick="goSosP3()">I've read it &#8594;</button>
+    <button class="btn" style="margin-top:10px;font-size:12px;opacity:0.6;background:transparent;border:none;color:var(--tx3)" onclick="closeSos()">I’m okay — close this</button>
   </div>
   <div class="sos-phase" id="sos-p3">
     <div class="sos-phase-lbl">Step 3 of 3 &#8212; Face the truth</div>
     <div class="sos-q-box"><div class="sos-q-text" id="sos-q-text"></div></div>
     <div class="sos-q-bar-wrap"><div class="sos-q-bar" id="sos-q-bar"></div></div>
     <div class="sos-q-lbl" id="sos-q-lbl">Sit with this for 30 seconds...</div>
-    <div id="sos-p3-btns" style="display:none;flex-direction:column;gap:8px">
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px">
       <button class="btn" onclick="playTheTape()" style="background:var(--bg3);border:1px solid var(--go-bd);color:var(--go)">Play the tape forward &#9654;</button>
+    </div>
+    <div id="sos-p3-btns" style="display:flex;flex-direction:column;gap:8px">
       <button class="btn success" onclick="logWin()">I beat it &#8212; log the win &#127942;</button>
       <button class="btn blue" onclick="goSosCoach()">I need to talk to my coach</button>
       <button class="btn danger" onclick="logLoss()">I gave in &#8212; log it honestly</button>
     </div>
     <div id="sos-tape" style="display:none;margin-top:14px;padding:16px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);font-size:13px;color:var(--tx2);line-height:1.7"></div>
+    <button class="btn" style="margin-top:10px;font-size:12px;opacity:0.6;background:transparent;border:none;color:var(--tx3)" onclick="closeSos()">I’m okay — close this</button>
   </div>
   <div class="sos-phase" id="sos-p4">
     <div class="sos-phase-lbl">Your coach is here</div>

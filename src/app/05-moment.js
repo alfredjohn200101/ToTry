@@ -819,7 +819,7 @@ const _HALT = [
     cta:'Cool it down — 1 min', act:"openBreath('cool',{reason:'halt'})" },
   { k:'l', icon:'🫂', label:'Lonely', sub:'disconnected, on your own with it',
     line:'This one matters most. Isolation feeds the urge and contact starves it — reaching one real person does more here than any technique.',
-    cta:'Reach someone', act:"go('reflect');setTimeout(function(){var e=document.getElementById('partner-section');if(e)e.scrollIntoView({block:'center'});},350)" },
+    cta:'Reach someone', act:"_reachOneNow()" },
   { k:'t', icon:'😴', label:'Tired', sub:'wrung out, no fuel left',
     line:'Then this isn’t a character problem, it’s a battery problem. Willpower is thinnest when you’re depleted — go gentle and get horizontal earlier than you think.',
     cta:'Wind down', act:"openBreath('sleep',{reason:'halt'})" }

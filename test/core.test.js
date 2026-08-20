@@ -4606,6 +4606,63 @@ function fnBodyOf(code, name){
     'and the lock-in card is withheld entirely — a monthly commitment cannot be read from a fortnight');
 }
 
+// ── the Fight mediums ─────────────────────────────────────────────────────────────────────────
+{
+  H.section('nobody is trapped inside the SOS');
+
+  // sos-p3-btns was display:none for THIRTY SECONDS, so a person mid-craving had nothing on screen to
+  // tap — the one moment this app exists for, behind a locked door. Only sos-p0 carried a Close, so
+  // once past it there was no exit control at all. And goSosP3 rewrites that container's innerHTML in
+  // all three branches, which destroyed "Play the tape forward" — the whole CBT both-paths exercise —
+  // before anyone ever saw it.
+  const head = require('fs').readFileSync(require('path').join(__dirname, '..', 'src/shell-head.html'), 'utf8');
+  for (const id of ['sos-p0', 'sos-p1', 'sos-p2', 'sos-p3']) {
+    const i0 = head.indexOf('id="' + id + '"');
+    H.ok(i0 > 0, `${id} exists`);
+    const blk = head.slice(i0, head.indexOf('</div>\n  </div>', i0) + 16);
+    H.ok(/closeSos\(\)/.test(blk), `${id} has a way out — anti-engagement is the feature here`);
+  }
+  H.ok(/id="sos-p3-btns" style="display:flex/.test(head), 'the outcome buttons are visible immediately');
+  H.ok(!/id="sos-p3-btns" style="display:none/.test(head), 'not gated behind the countdown');
+  {
+    // The tape button must sit OUTSIDE the container goSosP3 overwrites.
+    const bi = head.indexOf('id="sos-p3-btns"');
+    const ti = head.indexOf('playTheTape()');
+    H.ok(ti > 0 && ti < bi, 'playTheTape lives above sos-p3-btns, so the innerHTML rewrite cannot destroy it');
+  }
+  const p3 = H.extractFn('goSosP3');
+  H.ok(!/btns\.style\.display='none'/.test(p3), 'goSosP3 no longer hides them');
+  H.ok(!/btns\.style\.display='flex'/.test(p3), 'and no longer needs to reveal them on a timer');
+
+  H.section('the Fight counters count what they claim to');
+  const rv = H.extractFn('renderVices');
+  H.ok(/Math\.max\(0, Date\.now\(\) - start\)/.test(rv),
+    'the live clock cannot run negative — a use stamped later today produced "-8h -23m -43s", ticking');
+  const svs = H.extractFn('saveViceStart');
+  H.ok(/_today\.setHours\(23,59,59,999\)/.test(svs),
+    'today counts as today all day — the noon anchor made every morning reject the person\u2019s own date');
+  H.ok(/picked\.setTime\(Date\.now\(\)\)/.test(svs), 'and a start is never stamped ahead of now');
+  const rt = H.extractFn('openRecoveryTimeline');
+  H.ok(/_sessions = _within \+ _over/.test(rt),
+    'the hold rate divides by moderation logs, not by relapses — v.total gave rates like 400%');
+
+  H.section('what the SOS collects dies with the SOS');
+  H.ok(/window\.__sosIntensity = null; window\.__sosTrigger = null;/.test(H.extractFn('closeSos')),
+    'abandoning the SOS clears its stamp, or it lands on an unrelated later fight');
+
+  H.section('consent asked is consent honoured');
+  const tpc = H.extractFn('renderTriggerPatternCard');
+  H.ok(/v\.trackPatterns/.test(tpc), 'the pattern card filters to vices whose owner ticked the box');
+  H.ok(/consented\.has\(String\(e\.vice\)\)/.test(tpc), 'by vice name, matching what the log stores');
+
+  H.section('HALT\u2019s hardest branch goes somewhere real');
+  // Its own copy calls Lonely "the one that matters most" — and it navigated to the Reflect tab and
+  // scrolled to an empty prompt for anyone who had not added people, with the moment behind them.
+  H.ok(/cta:'Reach someone', act:"_reachOneNow\(\)"/.test(H.html),
+    'Lonely opens the reach-out that names one real person and handles the nobody-saved case');
+  H.ok(!/act:"go\('reflect'\);setTimeout/.test(H.html), 'the scroll-to-an-empty-section dead end is gone');
+}
+
 // ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────
 // Every test in this file reads H.html, which reads index.html — the ASSEMBLED file. So a change
 // made directly to index.html passes everything here and then vanishes the next time anyone runs

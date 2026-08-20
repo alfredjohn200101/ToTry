@@ -565,7 +565,8 @@ function renderVices(){
     let liveClock = '';
     if(cleanDays < 7 && v.startDate){
       const start = new Date(v.startDate).getTime();
-      const elapsed = Date.now() - start;
+      // Never negative — see the note above. A use stamped later today means the clock starts then.
+      const elapsed = Math.max(0, Date.now() - start);
       const h = Math.floor((elapsed % 86400000) / 3600000);
       const m = Math.floor((elapsed % 3600000) / 60000);
       const s = Math.floor((elapsed % 60000) / 1000);
@@ -814,7 +815,14 @@ function renderTriggerPatternCard(){
   const existing = document.getElementById('trigger-pattern-card');
   if(existing) existing.remove();
   
-  const log = ls('totry_fight_log') || [];
+  const _all = ls('totry_fight_log') || [];
+  // Only vices whose owner ticked "track my patterns for this" — see the note above.
+  let log = _all;
+  try{
+    loadV();
+    const consented = new Set((vices||[]).filter(v => v && v.trackPatterns && v.n).map(v => String(v.n)));
+    log = _all.filter(e => e && e.vice && consented.has(String(e.vice)));
+  }catch(_){ log = []; }
   if(log.length < 5) return; // Need at least 5 fights for meaningful patterns
   
   // ── Aggregate stats ──
@@ -1126,7 +1134,8 @@ async function openRecoveryTimeline(i){
   // The abstinence milestones are earned by NOT doing the thing at all. Someone holding a limit has
   // not earned them and should not be told they have — say what their mode actually achieves instead.
   if(_moderate){
-    const _within = (v.modWithin || 0), _sessions = (v.total || 0);
+    const _within = (v.modWithin || 0), _over = (v.modOver || 0);
+    const _sessions = _within + _over;
     const _rate = _sessions > 0 ? Math.round((_within / _sessions) * 100) : null;
     body.innerHTML =
       '<div style="font-size:13px;color:var(--tx2);line-height:1.75">' +
@@ -1454,10 +1463,14 @@ function saveViceStart(i){
   const input = document.getElementById('edit-vice-start');
   if(!input || !input.value) return;
   const picked = new Date(input.value + 'T12:00:00');   // local noon — see addVice
-  if(isNaN(picked) || picked > new Date()){
+  const _today = new Date(); _today.setHours(23,59,59,999);
+  if(isNaN(picked) || picked > _today){
     showToast('Invalid date', 'Pick a date today or earlier.');
     return;
   }
+  // Anchored to noon, but never ahead of the actual moment: a start stamped later today would give
+  // the card a negative ticking clock (see renderVices).
+  if(picked.getTime() > Date.now()) picked.setTime(Date.now());
   vices[i].startDate = picked.toISOString();
   saveV();
   document.querySelector('.modal-bg.open')?.remove();

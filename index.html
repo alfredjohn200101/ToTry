@@ -4277,6 +4277,7 @@ Amen.</div></div>
     </div>
     <div class="sos-timer-lbl">seconds</div>
     <button class="btn" style="margin-top:16px;font-size:12px;opacity:0.7" onclick="goSosP2()">Done early &#8594;</button>
+    <button class="btn" style="margin-top:10px;font-size:12px;opacity:0.6;background:transparent;border:none;color:var(--tx3)" onclick="closeSos()">I’m okay — close this</button>
   </div>
   <div class="sos-phase" id="sos-p2">
     <div class="sos-phase-lbl" id="sos-p2-lbl">Step 2 of 3 &#8212; Receive the word</div>
@@ -4297,19 +4298,23 @@ Amen.</div></div>
       <div id="sos-science-note" style="font-size:13px;color:var(--tx2);line-height:1.6"></div>
     </div>
     <button class="btn primary" style="margin-top:20px" onclick="goSosP3()">I've read it &#8594;</button>
+    <button class="btn" style="margin-top:10px;font-size:12px;opacity:0.6;background:transparent;border:none;color:var(--tx3)" onclick="closeSos()">I’m okay — close this</button>
   </div>
   <div class="sos-phase" id="sos-p3">
     <div class="sos-phase-lbl">Step 3 of 3 &#8212; Face the truth</div>
     <div class="sos-q-box"><div class="sos-q-text" id="sos-q-text"></div></div>
     <div class="sos-q-bar-wrap"><div class="sos-q-bar" id="sos-q-bar"></div></div>
     <div class="sos-q-lbl" id="sos-q-lbl">Sit with this for 30 seconds...</div>
-    <div id="sos-p3-btns" style="display:none;flex-direction:column;gap:8px">
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px">
       <button class="btn" onclick="playTheTape()" style="background:var(--bg3);border:1px solid var(--go-bd);color:var(--go)">Play the tape forward &#9654;</button>
+    </div>
+    <div id="sos-p3-btns" style="display:flex;flex-direction:column;gap:8px">
       <button class="btn success" onclick="logWin()">I beat it &#8212; log the win &#127942;</button>
       <button class="btn blue" onclick="goSosCoach()">I need to talk to my coach</button>
       <button class="btn danger" onclick="logLoss()">I gave in &#8212; log it honestly</button>
     </div>
     <div id="sos-tape" style="display:none;margin-top:14px;padding:16px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);font-size:13px;color:var(--tx2);line-height:1.7"></div>
+    <button class="btn" style="margin-top:10px;font-size:12px;opacity:0.6;background:transparent;border:none;color:var(--tx3)" onclick="closeSos()">I’m okay — close this</button>
   </div>
   <div class="sos-phase" id="sos-p4">
     <div class="sos-phase-lbl">Your coach is here</div>
@@ -4901,7 +4906,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v522';
+const APP_VERSION = 'v523';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -14078,11 +14083,11 @@ function goSosP3(){
   const bar=document.getElementById('sos-q-bar');
   const lbl=document.getElementById('sos-q-lbl');
   const btns=document.getElementById('sos-p3-btns');
-  if(btns)btns.style.display='none';if(bar){setTimeout(()=>{bar.style.width='0%';},100);}
+  if(bar){setTimeout(()=>{bar.style.width='0%';},100);}
   let secs=30;
   const qi=setInterval(()=>{
     secs--;if(lbl)lbl.textContent='Sit with this... '+secs+'s';
-    if(secs<=0){clearInterval(qi);if(lbl)lbl.textContent='Take your time.';if(btns)btns.style.display='flex';}
+    if(secs<=0){clearInterval(qi);if(lbl)lbl.textContent='Take your time.';}
   },1000);
   // Swap the outcome buttons to match the vice's goal: moderation isn't win/lose, it's
   // within-limit vs over-limit.
@@ -15190,7 +15195,7 @@ const _HALT = [
     cta:'Cool it down — 1 min', act:"openBreath('cool',{reason:'halt'})" },
   { k:'l', icon:'🫂', label:'Lonely', sub:'disconnected, on your own with it',
     line:'This one matters most. Isolation feeds the urge and contact starves it — reaching one real person does more here than any technique.',
-    cta:'Reach someone', act:"go('reflect');setTimeout(function(){var e=document.getElementById('partner-section');if(e)e.scrollIntoView({block:'center'});},350)" },
+    cta:'Reach someone', act:"_reachOneNow()" },
   { k:'t', icon:'😴', label:'Tired', sub:'wrung out, no fuel left',
     line:'Then this isn’t a character problem, it’s a battery problem. Willpower is thinnest when you’re depleted — go gentle and get horizontal earlier than you think.',
     cta:'Wind down', act:"openBreath('sleep',{reason:'halt'})" }
@@ -17226,6 +17231,9 @@ function companionWon(){
 function closeSos(){
   document.getElementById('sos-overlay').classList.remove('open');
   if(sosTimerInt)clearInterval(sosTimerInt);
+  // Whatever this session collected dies with it — see the note above. Only the win path consumes
+  // these, and a value that survives an abandoned SOS gets stamped onto an unrelated later fight.
+  try{ window.__sosIntensity = null; window.__sosTrigger = null; }catch(_){ }
 }
 
 
@@ -17804,7 +17812,8 @@ function renderVices(){
     let liveClock = '';
     if(cleanDays < 7 && v.startDate){
       const start = new Date(v.startDate).getTime();
-      const elapsed = Date.now() - start;
+      // Never negative — see the note above. A use stamped later today means the clock starts then.
+      const elapsed = Math.max(0, Date.now() - start);
       const h = Math.floor((elapsed % 86400000) / 3600000);
       const m = Math.floor((elapsed % 3600000) / 60000);
       const s = Math.floor((elapsed % 60000) / 1000);
@@ -18053,7 +18062,14 @@ function renderTriggerPatternCard(){
   const existing = document.getElementById('trigger-pattern-card');
   if(existing) existing.remove();
   
-  const log = ls('totry_fight_log') || [];
+  const _all = ls('totry_fight_log') || [];
+  // Only vices whose owner ticked "track my patterns for this" — see the note above.
+  let log = _all;
+  try{
+    loadV();
+    const consented = new Set((vices||[]).filter(v => v && v.trackPatterns && v.n).map(v => String(v.n)));
+    log = _all.filter(e => e && e.vice && consented.has(String(e.vice)));
+  }catch(_){ log = []; }
   if(log.length < 5) return; // Need at least 5 fights for meaningful patterns
   
   // ── Aggregate stats ──
@@ -18365,7 +18381,8 @@ async function openRecoveryTimeline(i){
   // The abstinence milestones are earned by NOT doing the thing at all. Someone holding a limit has
   // not earned them and should not be told they have — say what their mode actually achieves instead.
   if(_moderate){
-    const _within = (v.modWithin || 0), _sessions = (v.total || 0);
+    const _within = (v.modWithin || 0), _over = (v.modOver || 0);
+    const _sessions = _within + _over;
     const _rate = _sessions > 0 ? Math.round((_within / _sessions) * 100) : null;
     body.innerHTML =
       '<div style="font-size:13px;color:var(--tx2);line-height:1.75">' +
@@ -18693,10 +18710,14 @@ function saveViceStart(i){
   const input = document.getElementById('edit-vice-start');
   if(!input || !input.value) return;
   const picked = new Date(input.value + 'T12:00:00');   // local noon — see addVice
-  if(isNaN(picked) || picked > new Date()){
+  const _today = new Date(); _today.setHours(23,59,59,999);
+  if(isNaN(picked) || picked > _today){
     showToast('Invalid date', 'Pick a date today or earlier.');
     return;
   }
+  // Anchored to noon, but never ahead of the actual moment: a start stamped later today would give
+  // the card a negative ticking clock (see renderVices).
+  if(picked.getTime() > Date.now()) picked.setTime(Date.now());
   vices[i].startDate = picked.toISOString();
   saveV();
   document.querySelector('.modal-bg.open')?.remove();
