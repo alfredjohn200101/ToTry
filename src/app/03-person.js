@@ -3083,6 +3083,8 @@ function applyFaithMorning(){
       set('morning-pray-sub','Close your morning in prayer. The scripture prayer is written for exactly where you are today.');
       show('morning-pray-quick',true); show('morning-pray-full',true);
       set('morning-pray-adaptive','✨ Scripture prayer for today');
+      set('morning-prayed-btn','I prayed — begin my day');
+      set('morning-complete-direct','Set my morning without praying now');
     } else {
       show('morning-pray-quick',false); show('morning-pray-full',false);
       const lbl={islam:'Finish with du’a',hinduism:'Finish with prayer',buddhism:'Finish by sitting a moment',secular:'Finish with reflection'}[t]||'Finish';
@@ -3090,6 +3092,13 @@ function applyFaithMorning(){
       set('morning-pray-sub','Written for exactly where you are today.');
       const btn={islam:'✨ A du’a for today',hinduism:'✨ A prayer for today',buddhism:'✨ A reflection for today',secular:'✨ A reflection for today'}[t]||'✨ For today';
       set('morning-pray-adaptive',btn);
+      // The two finish states — see the note above. A ritual should not end in someone else's verb.
+      const done={islam:'I made du’a — begin my day',hinduism:'I prayed — begin my day',
+                  buddhism:'I sat with it — begin my day',secular:'I reflected — begin my day'}[t]||'Begin my day';
+      const skip={islam:'Set my morning without du’a now',hinduism:'Set my morning without praying now',
+                  buddhism:'Set my morning without sitting yet',secular:'Set my morning without reflecting yet'}[t]||'Set my morning';
+      set('morning-prayed-btn',done);
+      set('morning-complete-direct',skip);
     }
   }catch(_){}
 }
@@ -3117,6 +3126,12 @@ function openReader(t){
   else if(t==='hinduism') _readGitaInit(sel,content);
   else if(t==='buddhism') _readDhammapadaInit(sel,content);
   else _readStoicInit(sel,content);
+  try{
+    const panel = document.getElementById('read-saved-panel');
+    const saved = (typeof ls==='function') ? (ls('totry_sv')||[]) : [];
+    if(panel) panel.style.display = saved.length ? '' : 'none';
+    if(saved.length && typeof renderSavedVerses==='function') renderSavedVerses('read-saved-list');
+  }catch(_){ }
 }
 function _readBundled(sel,content,bank){
   if(sel) sel.innerHTML='';

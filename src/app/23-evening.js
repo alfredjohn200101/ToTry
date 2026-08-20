@@ -105,17 +105,25 @@ function toggleEveningHabit(hi){
 // flattened: each is called what it actually is, and the theistic step becomes an honest self-
 // accounting where there is no deity to petition.
 const _EXAMEN_FACE = {
-  christianity:{ eyebrow:'Ignatian Examen · 5 steps', label:'The last step — your examen',
+  christianity:{ noun:'Examen', eyebrow:'Ignatian Examen · 5 steps', label:'The last step — your examen',
     title:'Walk through your day with God.', blurb:'A 600-year-old practice. Five questions. This closes your day — do it last.', cta:'Begin the Examen' },
-  islam:{ eyebrow:'Muhāsaba · 5 steps', label:'The last step — your muhāsaba',
+  islam:{ noun:'Muhāsaba', eyebrow:'Muhāsaba · 5 steps', label:'The last step — your muhāsaba',
     title:'Take account of your day before Allah.', blurb:'Muhāsaba — the nightly self-accounting the scholars urged. Five questions. This closes your day.', cta:'Begin the muhāsaba' },
-  hinduism:{ eyebrow:'Evening reflection · 5 steps', label:'The last step — your reflection',
+  hinduism:{ noun:'Reflection', eyebrow:'Evening reflection · 5 steps', label:'The last step — your reflection',
     title:'Look back over your day with honesty.', blurb:'Svādhyāya — the practice of self-study. Five questions. This closes your day.', cta:'Begin the reflection' },
-  buddhism:{ eyebrow:'Evening reflection · 5 steps', label:'The last step — your reflection',
+  buddhism:{ noun:'Reflection', eyebrow:'Evening reflection · 5 steps', label:'The last step — your reflection',
     title:'Look back over your day with clear eyes.', blurb:'The nightly reflection the Buddha taught Rāhula — look at what you did, kindly and without flinching. Five questions.', cta:'Begin the reflection' },
-  secular:{ eyebrow:'Evening review · 5 steps', label:'The last step — your evening review',
+  secular:{ noun:'Review', eyebrow:'Evening review · 5 steps', label:'The last step — your evening review',
     title:'Go back over the day, honestly.', blurb:'Seneca did this nightly: what did I do, where did I fall short, what will I do better. Five questions. This closes your day.', cta:'Begin the review' }
 };
+// The noun the door used, for everything inside — see the note on _EXAMEN_FACE.
+function _examenNoun(){
+  try{
+    const t = (typeof faithTradition==='function') ? faithTradition() : 'secular';
+    const f = _EXAMEN_FACE[t] || _EXAMEN_FACE.christianity;
+    return f.noun || 'Review';
+  }catch(_){ return 'Review'; }
+}
 function applyFaithExamen(){
   const t = (typeof faithTradition==='function') ? faithTradition() : 'secular';
   const f = _EXAMEN_FACE[t] || _EXAMEN_FACE.christianity;
@@ -282,7 +290,7 @@ function saveExamen(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
     '<div style="text-align:center;padding:14px 0">' +
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:8px">Examen Complete</div>' +
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:8px">'+_examenNoun()+' Complete</div>' +
       '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;line-height:1.4;margin-bottom:14px">"'+_examenClose().q+'"</div>' +
       '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+_escFew(_examenClose().r)+'</div>' +
     '</div>' +

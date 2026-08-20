@@ -1624,6 +1624,12 @@ input:focus,textarea:focus,select:focus{
   <p id="read-sub" style="font-size:12.5px;color:var(--tx3);line-height:1.5;margin-bottom:12px"></p>
   <div id="read-selector" style="margin-bottom:12px"></div>
   <div id="read-content"></div>
+  <!-- The same shelf tab-bible has. Without it, "Carry this passage" here saved into nothing a
+       non-Christian reader could ever open again. -->
+  <div id="read-saved-panel" style="margin-top:22px;display:none">
+    <div class="eyebrow" style="margin-bottom:8px">What you have carried</div>
+    <div id="read-saved-list"></div>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════ -->
@@ -2154,7 +2160,7 @@ input:focus,textarea:focus,select:focus{
   </div>
   <div id="morning-prayer-display" style="display:none">
     <div class="prayer-box"><div class="prayer-title" id="morning-prayer-title"></div><div class="prayer-text" id="morning-prayer-text"></div></div>
-    <button class="btn primary" onclick="completeMorning()">I prayed &#8212; begin my day</button>
+    <button class="btn primary" id="morning-prayed-btn" onclick="completeMorning()">I prayed &#8212; begin my day</button>
   </div>
   <button class="btn" id="morning-complete-direct" onclick="completeMorning()" style="margin-top:4px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Set my morning without praying now</button>
   <div id="morning-done" style="display:none;text-align:center;padding:24px 16px">
@@ -4906,7 +4912,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v523';
+const APP_VERSION = 'v524';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -10408,6 +10414,8 @@ function applyFaithMorning(){
       set('morning-pray-sub','Close your morning in prayer. The scripture prayer is written for exactly where you are today.');
       show('morning-pray-quick',true); show('morning-pray-full',true);
       set('morning-pray-adaptive','✨ Scripture prayer for today');
+      set('morning-prayed-btn','I prayed — begin my day');
+      set('morning-complete-direct','Set my morning without praying now');
     } else {
       show('morning-pray-quick',false); show('morning-pray-full',false);
       const lbl={islam:'Finish with du’a',hinduism:'Finish with prayer',buddhism:'Finish by sitting a moment',secular:'Finish with reflection'}[t]||'Finish';
@@ -10415,6 +10423,13 @@ function applyFaithMorning(){
       set('morning-pray-sub','Written for exactly where you are today.');
       const btn={islam:'✨ A du’a for today',hinduism:'✨ A prayer for today',buddhism:'✨ A reflection for today',secular:'✨ A reflection for today'}[t]||'✨ For today';
       set('morning-pray-adaptive',btn);
+      // The two finish states — see the note above. A ritual should not end in someone else's verb.
+      const done={islam:'I made du’a — begin my day',hinduism:'I prayed — begin my day',
+                  buddhism:'I sat with it — begin my day',secular:'I reflected — begin my day'}[t]||'Begin my day';
+      const skip={islam:'Set my morning without du’a now',hinduism:'Set my morning without praying now',
+                  buddhism:'Set my morning without sitting yet',secular:'Set my morning without reflecting yet'}[t]||'Set my morning';
+      set('morning-prayed-btn',done);
+      set('morning-complete-direct',skip);
     }
   }catch(_){}
 }
@@ -10442,6 +10457,12 @@ function openReader(t){
   else if(t==='hinduism') _readGitaInit(sel,content);
   else if(t==='buddhism') _readDhammapadaInit(sel,content);
   else _readStoicInit(sel,content);
+  try{
+    const panel = document.getElementById('read-saved-panel');
+    const saved = (typeof ls==='function') ? (ls('totry_sv')||[]) : [];
+    if(panel) panel.style.display = saved.length ? '' : 'none';
+    if(saved.length && typeof renderSavedVerses==='function') renderSavedVerses('read-saved-list');
+  }catch(_){ }
 }
 function _readBundled(sel,content,bank){
   if(sel) sel.innerHTML='';
@@ -19875,9 +19896,9 @@ function saveCurrentVerse(){
   const btn=document.getElementById('save-verse-btn');
   if(btn){btn.textContent='Saved \u2713';setTimeout(()=>{btn.textContent='Save this verse \u2661';},2000);}
 }
-function renderSavedVerses(){
+function renderSavedVerses(containerId){
   const saved = ls('totry_sv') || [];
-  const list = document.getElementById('saved-verses-list');
+  const list = document.getElementById(containerId || 'saved-verses-list');
   if(!list) return;
   // Clear before re-render — prevents stale entries when items are deleted
   list.innerHTML = '';
@@ -20225,7 +20246,7 @@ function saveContextualVerse(ref, text){
   if(saved.find(v => v.verse === text)) return;
   saved.unshift({
     verse: text,
-    reference: ref + ' (ESV)',
+    reference: ref + ((typeof faithTradition==='function' && faithTradition()==='christianity') ? ' (ESV)' : ''),
     date: new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'})
   });
   ls('totry_sv', saved.slice(0, 200));
@@ -20990,7 +21011,17 @@ function savePrayerToList(text, category){
   ls('totry_prayers', prayers);
   if(typeof syncToCloud==='function') syncToCloud();
   if(typeof renderPrayers==='function') renderPrayers();
-  haptic('success'); showToast('Saved to prayers', 'You can come back and pray it again.');
+  haptic('success'); showToast('Saved', 'You can come back to this '+_prayerNoun()+' any time.');
+}
+// The registry already knows what each tradition calls this — du'a, prayer, reflection. Use it rather
+// than hardcoding "prayer", which is the one word a secular person's faith dial exists to avoid.
+function _prayerNoun(){
+  try{
+    const t = (typeof faithTradition==='function') ? faithTradition() : 'secular';
+    if(t === 'secular') return 'reflection';
+    const p = (typeof faithPrayer==='function') ? faithPrayer() : null;
+    return (p && p.noun) ? p.noun : 'prayer';
+  }catch(_){ return 'prayer'; }
 }
 // Generate a prayer from whatever the user brings — adapts to a worry, person, temptation, or thanks.
 async function generateIntentionPrayer(pfx){
@@ -21038,7 +21069,7 @@ async function generateIntentionPrayer(pfx){
     if(out && prayer && prayer.trim()){
       window.__lastAIPrayer = prayer.trim();
       out.style.display='block';
-      out.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">A prayer for this</div>'+
+      out.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">A '+_prayerNoun()+' for this</div>'+
         '<div style="font-family:Cormorant Garamond,serif;font-size:16px;font-style:italic;line-height:1.75;color:var(--tx);margin-bottom:12px">'+prayer.trim().replace(/</g,'&lt;')+'</div>'+
         '<div style="display:flex;gap:8px"><button class="btn primary" style="flex:1;font-size:12px" onclick="savePrayerToList(window.__lastAIPrayer, &apos;'+(intention.trim().slice(0,30).replace(/'/g,"")).replace(/"/g,'')+'&apos;)">Save to my prayers</button><button class="btn" style="flex:1;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="generateIntentionPrayer(\''+pfx+'\')">Write another</button></div>'+aiTag();
     } else if(out){ out.style.display='block'; out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t write that just now. Try again in a moment.</div>'; }
@@ -21077,7 +21108,7 @@ async function generatePrayerFor(situation, verse){
   try{
     const prayer=await api((typeof faithVoiceNote==='function'?faithVoiceNote():'')+(typeof sexNote==='function'?sexNote():'')+'You write intimate, honest prayers in THEIR tradition that sound deeply human — never rushed or generic. A real prayer someone can sit with.',[],prompt,900);
     if(prayer&&prayer.trim()){
-      prayerBox.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">A prayer for this moment</div>'+
+      prayerBox.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">A '+_prayerNoun()+' for this moment</div>'+
         '<div style="font-family:\'Cormorant Garamond\',serif;font-size:16px;font-style:italic;line-height:1.7;color:var(--tx)">'+prayer.trim()+'</div>';
     } else {
       prayerBox.remove();
@@ -34807,17 +34838,25 @@ function toggleEveningHabit(hi){
 // flattened: each is called what it actually is, and the theistic step becomes an honest self-
 // accounting where there is no deity to petition.
 const _EXAMEN_FACE = {
-  christianity:{ eyebrow:'Ignatian Examen · 5 steps', label:'The last step — your examen',
+  christianity:{ noun:'Examen', eyebrow:'Ignatian Examen · 5 steps', label:'The last step — your examen',
     title:'Walk through your day with God.', blurb:'A 600-year-old practice. Five questions. This closes your day — do it last.', cta:'Begin the Examen' },
-  islam:{ eyebrow:'Muhāsaba · 5 steps', label:'The last step — your muhāsaba',
+  islam:{ noun:'Muhāsaba', eyebrow:'Muhāsaba · 5 steps', label:'The last step — your muhāsaba',
     title:'Take account of your day before Allah.', blurb:'Muhāsaba — the nightly self-accounting the scholars urged. Five questions. This closes your day.', cta:'Begin the muhāsaba' },
-  hinduism:{ eyebrow:'Evening reflection · 5 steps', label:'The last step — your reflection',
+  hinduism:{ noun:'Reflection', eyebrow:'Evening reflection · 5 steps', label:'The last step — your reflection',
     title:'Look back over your day with honesty.', blurb:'Svādhyāya — the practice of self-study. Five questions. This closes your day.', cta:'Begin the reflection' },
-  buddhism:{ eyebrow:'Evening reflection · 5 steps', label:'The last step — your reflection',
+  buddhism:{ noun:'Reflection', eyebrow:'Evening reflection · 5 steps', label:'The last step — your reflection',
     title:'Look back over your day with clear eyes.', blurb:'The nightly reflection the Buddha taught Rāhula — look at what you did, kindly and without flinching. Five questions.', cta:'Begin the reflection' },
-  secular:{ eyebrow:'Evening review · 5 steps', label:'The last step — your evening review',
+  secular:{ noun:'Review', eyebrow:'Evening review · 5 steps', label:'The last step — your evening review',
     title:'Go back over the day, honestly.', blurb:'Seneca did this nightly: what did I do, where did I fall short, what will I do better. Five questions. This closes your day.', cta:'Begin the review' }
 };
+// The noun the door used, for everything inside — see the note on _EXAMEN_FACE.
+function _examenNoun(){
+  try{
+    const t = (typeof faithTradition==='function') ? faithTradition() : 'secular';
+    const f = _EXAMEN_FACE[t] || _EXAMEN_FACE.christianity;
+    return f.noun || 'Review';
+  }catch(_){ return 'Review'; }
+}
 function applyFaithExamen(){
   const t = (typeof faithTradition==='function') ? faithTradition() : 'secular';
   const f = _EXAMEN_FACE[t] || _EXAMEN_FACE.christianity;
@@ -34984,7 +35023,7 @@ function saveExamen(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
     '<div style="text-align:center;padding:14px 0">' +
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:8px">Examen Complete</div>' +
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:8px">'+_examenNoun()+' Complete</div>' +
       '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;line-height:1.4;margin-bottom:14px">"'+_examenClose().q+'"</div>' +
       '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+_escFew(_examenClose().r)+'</div>' +
     '</div>' +

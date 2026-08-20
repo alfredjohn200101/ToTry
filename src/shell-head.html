@@ -1624,6 +1624,12 @@ input:focus,textarea:focus,select:focus{
   <p id="read-sub" style="font-size:12.5px;color:var(--tx3);line-height:1.5;margin-bottom:12px"></p>
   <div id="read-selector" style="margin-bottom:12px"></div>
   <div id="read-content"></div>
+  <!-- The same shelf tab-bible has. Without it, "Carry this passage" here saved into nothing a
+       non-Christian reader could ever open again. -->
+  <div id="read-saved-panel" style="margin-top:22px;display:none">
+    <div class="eyebrow" style="margin-bottom:8px">What you have carried</div>
+    <div id="read-saved-list"></div>
+  </div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════ -->
@@ -2154,7 +2160,7 @@ input:focus,textarea:focus,select:focus{
   </div>
   <div id="morning-prayer-display" style="display:none">
     <div class="prayer-box"><div class="prayer-title" id="morning-prayer-title"></div><div class="prayer-text" id="morning-prayer-text"></div></div>
-    <button class="btn primary" onclick="completeMorning()">I prayed &#8212; begin my day</button>
+    <button class="btn primary" id="morning-prayed-btn" onclick="completeMorning()">I prayed &#8212; begin my day</button>
   </div>
   <button class="btn" id="morning-complete-direct" onclick="completeMorning()" style="margin-top:4px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Set my morning without praying now</button>
   <div id="morning-done" style="display:none;text-align:center;padding:24px 16px">

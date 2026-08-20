@@ -4663,6 +4663,77 @@ function fnBodyOf(code, name){
   H.ok(!/act:"go\('reflect'\);setTimeout/.test(H.html), 'the scroll-to-an-empty-section dead end is gone');
 }
 
+// ── the Soul mediums: every tradition served to the same depth ───────────────────────────────
+{
+  H.section('no tradition is labelled as another');
+
+  // The win-toast save appended " (ESV)" unconditionally, so a Muslim who carried a line from the
+  // Qur\u2019an found it on their shelf labelled as an English Bible translation.
+  const scv = H.extractFn('saveContextualVerse');
+  H.ok(/faithTradition\(\)==='christianity'\) \? ' \(ESV\)' : ''/.test(scv),
+    'the ESV stamp is applied only to Christian text');
+
+  H.section('the app calls it what the person calls it');
+  // faithPrayer() already carried the right noun — du\u2019a for Islam, and the registry was built for
+  // exactly this. The composer generated a proper du\u2019a, then headed it "A prayer for this". For a
+  // secular person that is the one word their faith dial exists to avoid.
+  const pn = H.extractFn('_prayerNoun');
+  H.ok(/t === 'secular'\) return 'reflection'/.test(pn), 'secular gets "reflection", never "prayer"');
+  H.ok(/faithPrayer\(\)/.test(pn), 'and every other tradition takes its noun from the registry');
+  H.ok(!/>A prayer for this</.test(H.html), 'the hardcoded header is gone');
+  {
+    const NOUNS = { christianity: 'prayer', islam: 'du\u2019a', buddhism: 'reflection' };
+    const mk = t => new Function('faithTradition', 'faithPrayer', pn + 'return _prayerNoun;')
+      (() => t, () => ({ noun: NOUNS[t] }));
+    H.eq(mk('islam')(), 'du\u2019a', 'a Muslim sees "A du\u2019a for this"');
+    H.eq(mk('secular')(), 'reflection', 'and a secular person sees "A reflection for this"');
+  }
+
+  H.section('the examen keeps its name inside the door');
+  // _EXAMEN_FACE renames the card for all five traditions — muh\u0101saba, evening reflection, evening
+  // review — and then the completion screen said "Examen Complete" to every one of them.
+  const en = H.extractFn('_examenNoun');
+  H.ok(/_EXAMEN_FACE\[t\]/.test(en), 'the completion screen reads the same registry as the door');
+  H.ok(!/>Examen Complete</.test(H.html), 'the hardcoded completion heading is gone');
+  {
+    const src = H.html;
+    const i0 = src.indexOf('const _EXAMEN_FACE = {');
+    let d = 0, end = i0;
+    for (let k = src.indexOf('{', i0); k < src.length; k++) {
+      if (src[k] === '{') d++; else if (src[k] === '}') { d--; if (!d) { end = k + 1; break; } }
+    }
+    const F = eval('(' + src.slice(src.indexOf('{', i0), end) + ')');
+    for (const t of ['christianity', 'islam', 'hinduism', 'buddhism', 'secular']) {
+      H.ok(F[t] && F[t].noun, `${t} has a noun for the inside of the ritual`);
+    }
+    H.eq(F.islam.noun, 'Muh\u0101saba', 'and a Muslim finishes a muh\u0101saba, not an Examen');
+    H.eq(F.secular.noun, 'Review', 'a secular person finishes a review');
+  }
+
+  H.section('a ritual does not end in someone else\u2019s verb');
+  // applyFaithMorning already translated the label, the sub and the adaptive button for all five —
+  // then the two buttons that FINISH the ritual still said "I prayed" and "without praying now", to a
+  // Buddhist who had just sat and a secular person who had reflected.
+  const afm = H.extractFn('applyFaithMorning');
+  H.ok(/morning-prayed-btn/.test(afm), 'the finish button is translated');
+  H.ok(/morning-complete-direct/.test(afm), 'and so is the skip');
+  H.ok(/I sat with it \u2014 begin my day/.test(afm), 'a Buddhist sat with it');
+  H.ok(/I reflected \u2014 begin my day/.test(afm), 'a secular person reflected');
+  H.ok(/id="morning-prayed-btn"/.test(H.html), 'and the markup carries the id the applier needs');
+
+  H.section('what they carry, they can find again');
+  // #saved-verses-list lives in tab-bible. The four other traditions read in tab-read and their
+  // passages carry the same "Carry this passage" button — saving into a list they had no door to.
+  H.ok(/id="read-saved-panel"/.test(H.html), 'tab-read has the shelf tab-bible has');
+  H.ok(/id="read-saved-list"/.test(H.html), 'with its own container');
+  H.ok(/function renderSavedVerses\(containerId\)/.test(H.html),
+    'and the renderer takes a container so one function paints both readers');
+  H.ok(/renderSavedVerses\('read-saved-list'\)/.test(H.extractFn('openReader')),
+    'openReader paints it');
+  H.ok(/panel\.style\.display = saved\.length \? '' : 'none'/.test(H.extractFn('openReader')),
+    'hidden while empty, so it never adds a "nothing here" block to a reading screen');
+}
+
 // ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────
 // Every test in this file reads H.html, which reads index.html — the ASSEMBLED file. So a change
 // made directly to index.html passes everything here and then vanishes the next time anyone runs

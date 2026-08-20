@@ -83,9 +83,9 @@ function saveCurrentVerse(){
   const btn=document.getElementById('save-verse-btn');
   if(btn){btn.textContent='Saved \u2713';setTimeout(()=>{btn.textContent='Save this verse \u2661';},2000);}
 }
-function renderSavedVerses(){
+function renderSavedVerses(containerId){
   const saved = ls('totry_sv') || [];
-  const list = document.getElementById('saved-verses-list');
+  const list = document.getElementById(containerId || 'saved-verses-list');
   if(!list) return;
   // Clear before re-render — prevents stale entries when items are deleted
   list.innerHTML = '';
@@ -433,7 +433,7 @@ function saveContextualVerse(ref, text){
   if(saved.find(v => v.verse === text)) return;
   saved.unshift({
     verse: text,
-    reference: ref + ' (ESV)',
+    reference: ref + ((typeof faithTradition==='function' && faithTradition()==='christianity') ? ' (ESV)' : ''),
     date: new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'})
   });
   ls('totry_sv', saved.slice(0, 200));
@@ -1198,7 +1198,17 @@ function savePrayerToList(text, category){
   ls('totry_prayers', prayers);
   if(typeof syncToCloud==='function') syncToCloud();
   if(typeof renderPrayers==='function') renderPrayers();
-  haptic('success'); showToast('Saved to prayers', 'You can come back and pray it again.');
+  haptic('success'); showToast('Saved', 'You can come back to this '+_prayerNoun()+' any time.');
+}
+// The registry already knows what each tradition calls this — du'a, prayer, reflection. Use it rather
+// than hardcoding "prayer", which is the one word a secular person's faith dial exists to avoid.
+function _prayerNoun(){
+  try{
+    const t = (typeof faithTradition==='function') ? faithTradition() : 'secular';
+    if(t === 'secular') return 'reflection';
+    const p = (typeof faithPrayer==='function') ? faithPrayer() : null;
+    return (p && p.noun) ? p.noun : 'prayer';
+  }catch(_){ return 'prayer'; }
 }
 // Generate a prayer from whatever the user brings — adapts to a worry, person, temptation, or thanks.
 async function generateIntentionPrayer(pfx){
@@ -1246,7 +1256,7 @@ async function generateIntentionPrayer(pfx){
     if(out && prayer && prayer.trim()){
       window.__lastAIPrayer = prayer.trim();
       out.style.display='block';
-      out.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">A prayer for this</div>'+
+      out.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">A '+_prayerNoun()+' for this</div>'+
         '<div style="font-family:Cormorant Garamond,serif;font-size:16px;font-style:italic;line-height:1.75;color:var(--tx);margin-bottom:12px">'+prayer.trim().replace(/</g,'&lt;')+'</div>'+
         '<div style="display:flex;gap:8px"><button class="btn primary" style="flex:1;font-size:12px" onclick="savePrayerToList(window.__lastAIPrayer, &apos;'+(intention.trim().slice(0,30).replace(/'/g,"")).replace(/"/g,'')+'&apos;)">Save to my prayers</button><button class="btn" style="flex:1;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="generateIntentionPrayer(\''+pfx+'\')">Write another</button></div>'+aiTag();
     } else if(out){ out.style.display='block'; out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t write that just now. Try again in a moment.</div>'; }
@@ -1285,7 +1295,7 @@ async function generatePrayerFor(situation, verse){
   try{
     const prayer=await api((typeof faithVoiceNote==='function'?faithVoiceNote():'')+(typeof sexNote==='function'?sexNote():'')+'You write intimate, honest prayers in THEIR tradition that sound deeply human — never rushed or generic. A real prayer someone can sit with.',[],prompt,900);
     if(prayer&&prayer.trim()){
-      prayerBox.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">A prayer for this moment</div>'+
+      prayerBox.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">A '+_prayerNoun()+' for this moment</div>'+
         '<div style="font-family:\'Cormorant Garamond\',serif;font-size:16px;font-style:italic;line-height:1.7;color:var(--tx)">'+prayer.trim()+'</div>';
     } else {
       prayerBox.remove();
