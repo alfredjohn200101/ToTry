@@ -110,10 +110,14 @@ const PROBE = `(() => {
     if(q.top < 0 || q.bottom > vh || q.left < 0 || q.right > vw || q.width < 1) continue;
     const hit = document.elementFromPoint(q.left + q.width/2, q.top + q.height/2);
     const clear = !!(hit && (hit === t || t.contains(hit)));
-    if(clear){ best = { number: t.textContent.trim(), href: t.getAttribute('href') }; break; }
+    // A number that is on screen and unobstructed but only 18px tall is still not usable by a
+    // shaking thumb. Every helpline in this app was exactly that until v528.
+    const minSide = Math.min(q.width, q.height);
+    if(clear){ best = { number: t.textContent.trim(), href: t.getAttribute('href'), minSide: Math.round(minSide),
+                        tooSmall: minSide < 24 }; break; }
     if(!best) best = { number: t.textContent.trim(), href: t.getAttribute('href'), covered: (hit ? (hit.id||hit.tagName) : 'nothing') };
   }
-  return { card:true, tels: tels.length, usable: !!(best && !best.covered), detail: best,
+  return { card:true, tels: tels.length, usable: !!(best && !best.covered && !best.tooSmall), detail: best,
            lifted: !!card.closest('.crisis-rescue-ov') };
 })()`;
 
@@ -171,6 +175,54 @@ const PROBE = `(() => {
     checks++;
     if (!r.card || !r.usable) findings.push(`the safety net: with no container, the helpline is unreachable — ${JSON.stringify(r)}`);
     else console.log(`  ✓ ${'safety net (container deleted)'.padEnd(34)} ${r.detail.number} lifted=${r.lifted}`);
+  }
+
+  // ── the guest door: no account, no onboarding, first contact ────────────────────────────────
+  // Every door above runs as an ONBOARDED person, because the harness seeds totry_onboarded for the
+  // whole loop. So the one door most likely to receive the worst sentence was never tested: a person
+  // with no account taps "Something's pulling at me right now" on the sign-in screen — the app's own
+  // no-setup promise — names a feeling, and types into free text. That is first contact, in distress,
+  // with nothing stored. It needs its own context precisely because it must have NOTHING stored.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => localStorage.clear());
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(3000);
+    const reached = await page.evaluate(async (phrase) => {
+      const vis = el => { if(!el) return false; const r = el.getBoundingClientRect();
+        return r.width>0 && r.height>0 && getComputedStyle(el).display !== 'none'; };
+      const guest = [...document.querySelectorAll('#auth-container button')]
+        .find(x => /pulling at me/i.test(x.innerText || ''));
+      if(!guest) return 'the sign-in screen has no no-account door';
+      guest.click();
+      await new Promise(x=>setTimeout(x,900));
+      const fd = document.getElementById('feel-door');
+      const feel = fd && [...fd.querySelectorAll('button')].find(x => /pull/i.test(x.innerText || ''));
+      if(!feel) return 'the guest door did not open the Feeling Door';
+      feel.click();
+      await new Promise(x=>setTimeout(x,800));
+      const layer = [...document.querySelectorAll('.modal-bg.open, .companion-overlay.open')].filter(vis).pop();
+      const field = layer && [...layer.querySelectorAll('textarea, input[type=text]')].filter(vis)[0];
+      if(!field) return 'no free text behind the guest door';
+      field.value = phrase;
+      field.dispatchEvent(new Event('input', { bubbles:true }));
+      const send = [...layer.querySelectorAll('button')].filter(vis)
+        .find(x => /send|go|continue|next|→|talk|tell|ready/i.test(x.innerText || ''));
+      if(!send) return 'nothing to send it with';
+      send.click();
+      return null;
+    }, PHRASE);
+    await page.waitForTimeout(2600);
+    checks++;
+    if (reached) findings.push(`the guest door: ${reached}`);
+    else {
+      const r = await page.evaluate(PROBE);
+      if (!r.card) findings.push(`the guest door: NO crisis card after "${PHRASE}" — with no account, this is first contact`);
+      else if (!r.usable) findings.push(`the guest door: the helpline is NOT usable — ${JSON.stringify(r.detail)}`);
+      else console.log(`  ✓ ${'the guest door (no account)'.padEnd(34)} ${r.detail.number} ${r.detail.minSide}px`);
+    }
+    await ctx.close();
   }
 
   // ── the breath's own escalation branch ────────────────────────────────────────────────────────

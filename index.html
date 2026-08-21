@@ -780,6 +780,13 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .undo-msg{font-size:13px;color:var(--tx2);flex:1}
 .undo-btn{background:none;border:none;color:var(--go);font-size:13px;font-weight:600;cursor:pointer;padding:4px 8px;font-family:'Outfit',sans-serif;text-transform:uppercase;letter-spacing:0.05em}
 .undo-btn:active{opacity:0.6}
+/* A helpline number is THE action on a crisis card, and every one of them was an 18px-tall inline
+   link — under this repo's own 24pt tap floor, on the one screen where a shaking thumb has to land
+   first time. inline-block with padding grows the target to 30px without breaking the sentence it
+   sits inside; a full 44pt would push the lines of that carefully-written card apart. One rule rather
+   than 15 inline styles, so any helpline added later is covered too. */
+a[href^="tel:"]{display:inline-block;padding:5px 6px;margin:1px -2px;min-height:30px;
+  line-height:20px;box-sizing:border-box}
 .undo-close{background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:0;line-height:1;min-width:28px;min-height:28px;display:inline-flex;align-items:center;justify-content:center}
 
 
@@ -4919,7 +4926,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v527';
+const APP_VERSION = 'v528';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
