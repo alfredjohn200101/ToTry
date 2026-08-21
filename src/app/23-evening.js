@@ -520,7 +520,7 @@ function showDayActivityDetail(dateKey){
   (typeof getUnifiedTraining === 'function' ? getUnifiedTraining() : (ls('totry_workouts')||[])).forEach(t => {
     if(!matchDate(t.ts)) return;
     if(t.kind === 'cardio'){
-      const d = t.distance ? (t.distance/1000).toFixed(1)+'km ' : '';
+      const d = t.distance ? (dFmt(t.distance) + ' ') : '';
       items.push({kind:'Cardio', text: (t.title||'Activity') + ' · ' + d + (t.durationMin? t.durationMin+'min':'')});
     } else {
       items.push({kind:'Workout', text: (t.title||'Workout') + ' · ' + (t.exercises||0) + ' exercises'});

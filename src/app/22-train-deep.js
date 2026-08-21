@@ -1002,14 +1002,14 @@ function openEditTraining(unifiedId){
     const acts = ls('totry_strava_activities') || [];
     const a = acts.find(x => String(x.id) === rawId);
     if(!a){ showToast('Not found','Could not find that activity.'); return; }
-    const km = a.distance ? (a.distance/1000) : null;
+    const km = a.distance ? mToDisp(a.distance) : null;   // named km for history; it is the person's unit
     const mins = a.moving_time ? Math.round(a.moving_time/60) : null;
     const pace = (km && mins) ? (mins/km) : null;
     const paceStr = pace ? (Math.floor(pace)+':'+String(Math.round((pace%1)*60)).padStart(2,'0')+' /km') : null;
     const when = a.date ? new Date(a.date).toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'}) : '';
     const stat = (label,val) => val ? '<div style="flex:1;min-width:70px;background:var(--bg3);border-radius:8px;padding:10px;text-align:center"><div style="font-family:DM Mono,monospace;font-size:18px;color:var(--tx)">'+val+'</div><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px">'+label+'</div></div>' : '';
     const stats = [
-      stat('distance', km ? km.toFixed(2)+'km' : null),
+      stat('distance', km ? km.toFixed(2)+dUnit() : null),   // km holds mToDisp(...) — the person's unit
       stat('time', mins ? mins+' min' : null),
       stat('pace', paceStr),
       stat('calories', a.calories ? Math.round(a.calories) : null),
@@ -1099,7 +1099,7 @@ function openEditTraining(unifiedId){
   renderEditCardioFields();
   const setv = (id,val)=>{ const e=document.getElementById(id); if(e && val!=null) e.value = val; };
   if(w.durationMinutes) setv('edit-cardio-time', w.durationMinutes+':00');
-  if(w.distance) setv('edit-cardio-distance', (w.distance/1000).toFixed(2));
+  if(w.distance) setv('edit-cardio-distance', mToDisp(w.distance).toFixed(2));
   if(w.totalCalories || w.calories) setv('edit-cardio-totalCal', w.totalCalories || w.calories);
   if(w.activeCalories) setv('edit-cardio-activeCal', w.activeCalories);
   if(w.averageHeartRate) setv('edit-cardio-hr', w.averageHeartRate);
@@ -1112,7 +1112,7 @@ function renderEditCardioFields(){
   if(!wrap) return;
   const labels = {
     time:      ['Workout time',    'e.g. 20:00 or 20 min',  'edit-cardio-time'],
-    distance:  ['Distance (km)',   'e.g. 3.43',             'edit-cardio-distance'],
+    distance:  ['Distance ('+dUnit()+')', dUnit()==='km'?'e.g. 3.43':'e.g. 2.13', 'edit-cardio-distance'],
     activeCal: ['Active calories', 'e.g. 260',              'edit-cardio-activeCal'],
     totalCal:  ['Total calories',  'e.g. 394',              'edit-cardio-totalCal'],
     hr:        ['Avg heart rate',  'e.g. 128 bpm',          'edit-cardio-hr'],
@@ -1130,10 +1130,10 @@ function updateEditCardioPace(){
   const paceEl = document.getElementById('edit-cardio-pace');
   if(!paceEl) return;
   const mins = _parseCardioTime(document.getElementById('edit-cardio-time')?.value||'');
-  const km = parseFloat(document.getElementById('edit-cardio-distance')?.value||'')||0;
+  const km = parseFloat(document.getElementById('edit-cardio-distance')?.value||'')||0;   // in dUnit(), converted at the store below
   if(mins>0 && km>0){
     const secPerKm = (mins*60)/km; const mm=Math.floor(secPerKm/60); const ss=Math.round(secPerKm%60);
-    paceEl.textContent = 'Pace: '+mm+"'"+String(ss).padStart(2,'0')+'"/km';
+    paceEl.textContent = 'Pace: '+mm+"'"+String(ss).padStart(2,'0')+'"/'+dUnit();
   } else { paceEl.textContent=''; }
 }
 function saveEditTraining(id){
@@ -1142,7 +1142,7 @@ function saveEditTraining(id){
   if(idx < 0){ showToast('Not found','Could not save.'); return; }
   const type = document.getElementById('edit-cardio-type')?.value || 'Other';
   const mins = _parseCardioTime(document.getElementById('edit-cardio-time')?.value||'');
-  const km = parseFloat(document.getElementById('edit-cardio-distance')?.value||'')||0;
+  const km = parseFloat(document.getElementById('edit-cardio-distance')?.value||'')||0;   // in dUnit(), converted at the store below
   const activeCal = parseInt(document.getElementById('edit-cardio-activeCal')?.value||'')||0;
   const totalCal = parseInt(document.getElementById('edit-cardio-totalCal')?.value||'')||0;
   const cal = totalCal || activeCal || 0;
@@ -1151,7 +1151,9 @@ function saveEditTraining(id){
   let when = workouts[idx].ts ? new Date(workouts[idx].ts) : new Date();
   if(dateVal){ const [y,mo,d]=dateVal.split('-').map(Number); when = new Date(y, mo-1, d, 12, 0, 0); }
   workouts[idx] = { ...workouts[idx], type, splitFocus: type, durationMinutes: mins?Math.round(mins):null,
-    distance: km?Math.round(km*1000):null, calories: cal||null, averageHeartRate: hr||null,
+    // dispToM, not *1000: the box holds the person's own unit, so editing a 2-mile run while set
+    // to miles used to store 2000m — 1.24 miles — quietly shortening a run they had already logged.
+    distance: km?dispToM(km):null, calories: cal||null, averageHeartRate: hr||null,
     date: when.toLocaleDateString('en-AU'), ts: when.toISOString() };
   ls('totry_workouts', workouts);
   // Rebuild the burn ledger from the (now edited) workouts — single source of truth, no drift.
@@ -1298,6 +1300,35 @@ function updateCardioPace(){
     const mm = Math.floor(secPer/60); const ss = Math.round(secPer%60);
     paceEl.textContent = 'Pace: '+mm+"'"+String(ss).padStart(2,'0')+'"/'+unit;
   } else { paceEl.textContent = ''; }
+}
+// ── DISTANCE UNITS ───────────────────────────────────────────────────────────────────────────
+// Storage is ALWAYS metres. saveCardioManually already interprets correctly on the way in — it
+// multiplies by 1609.34 for miles — so a logged distance has never been WRONG. What it has been is
+// ignored: every display divided by 1000 and wrote "km", so a person who set miles, typed 2, and was
+// even shown a per-mile pace on the same form then saw "3.2km" in their history, their evening
+// summary, and the context handed to the coach. The edit dialog went further and hardcoded its own
+// label to "Distance (km)" while the log dialog beside it honoured the setting.
+// Same shape as the weight units, one step less dangerous: no maths was wrong, only the reading.
+const _M_PER_MI = 1609.34;
+function dUnit(){ return (ls('totry_distance_unit') === 'mi') ? 'mi' : 'km'; }
+function mToDisp(metres){
+  const n = parseFloat(metres);
+  if(!isFinite(n)) return n;
+  return n / (dUnit() === 'mi' ? _M_PER_MI : 1000);
+}
+function dispToM(v){
+  const n = parseFloat(v);
+  if(!isFinite(n)) return n;
+  return Math.round(n * (dUnit() === 'mi' ? _M_PER_MI : 1000));
+}
+// metres in, the string a person should read out
+function dFmt(metres, opts){
+  opts = opts || {};
+  const n = parseFloat(metres);
+  if(!isFinite(n)) return opts.blank != null ? opts.blank : '';
+  const d = mToDisp(n);
+  const dp = (opts.dp != null) ? opts.dp : 1;
+  return d.toFixed(dp) + (opts.bare ? '' : dUnit());
 }
 function saveCardioManually(){
   const type = document.getElementById('cardio-type')?.value || 'Other';

@@ -185,7 +185,9 @@ function getUnifiedWeekStats(){
   return {
     sessions: week.length, strengthCount: strength.length, cardioCount: cardio.length,
     totalMinutes: totalMin, totalVolumeKg: Math.round(totalVol),
-    totalDistanceKm: +(totalDist/1000).toFixed(1), totalCalories: Math.round(totalCals)
+    // metres alongside the km figure: a display cannot convert a number that has already been
+    // divided, and every consumer of totalDistanceKm was writing a hardcoded 'km' after it.
+    totalDistanceKm: +(totalDist/1000).toFixed(1), totalDistanceM: totalDist, totalCalories: Math.round(totalCals)
   };
 }
 
@@ -213,7 +215,9 @@ function getTrainingTrend(){
   const paceOf = arr => {
     const valid = arr.filter(t=>t.distance && t.durationMin);
     if(!valid.length) return null;
-    const tot = valid.reduce((a,t)=>a + (t.durationMin*60)/(t.distance/1000), 0);
+    // per the person's own unit — a runner set to miles was told their mile pace in km, which for
+    // a 5'00"/km runner reads as 8'03" and looks like a collapse.
+    const tot = valid.reduce((a,t)=>a + (t.durationMin*60)/mToDisp(t.distance), 0);
     return tot/valid.length;
   };
   const oP=paceOf(older), rP=paceOf(recent);
@@ -222,10 +226,10 @@ function getTrainingTrend(){
     if(Math.abs(diff) >= 5){
       const mmss = sec => Math.floor(sec/60)+"'"+String(Math.round(sec%60)).padStart(2,'0')+'"';
       return diff>0
-        ? 'Your '+label+' pace is improving — now ~'+mmss(rP)+'/km (was ~'+mmss(oP)+'/km).'
-        : 'Your '+label+' pace has eased to ~'+mmss(rP)+'/km. Some weeks are like that.';
+        ? 'Your '+label+' pace is improving — now ~'+mmss(rP)+'/'+dUnit()+' (was ~'+mmss(oP)+'/'+dUnit()+').'
+        : 'Your '+label+' pace has eased to ~'+mmss(rP)+'/'+dUnit()+'. Some weeks are like that.';
     }
-    return 'Your '+label+' pace is holding steady around '+Math.floor(rP/60)+"'"+String(Math.round(rP%60)).padStart(2,'0')+'"/km.';
+    return 'Your '+label+' pace is holding steady around '+Math.floor(rP/60)+"'"+String(Math.round(rP%60)).padStart(2,'0')+'"/'+dUnit()+'.';
   }
   // Otherwise → compare avg HR (lower for similar work can mean improving fitness).
   const hrOf = arr => { const v=arr.filter(t=>t.hr); return v.length ? v.reduce((a,t)=>a+t.hr,0)/v.length : null; };
@@ -293,7 +297,7 @@ function renderUnifiedTraining(){
   };
   const fmtMeta = (t) => {
     const parts = [];
-    if(t.distance) parts.push((t.distance/1000).toFixed(1)+'km');
+    if(t.distance) parts.push(dFmt(t.distance));
     if(t.durationMin) parts.push(t.durationMin+'min');
     if(t.volume) parts.push(Math.round(t.volume).toLocaleString()+'kg');
     if(t.sets) parts.push(t.sets + (t.sets === 1 ? ' set' : ' sets'));
@@ -316,7 +320,7 @@ function renderUnifiedTraining(){
   const detailBits = [];
   if(w.totalMinutes) detailBits.push(w.totalMinutes + ' min');
   if(w.totalVolumeKg) detailBits.push(w.totalVolumeKg.toLocaleString() + 'kg lifted');
-  if(w.totalDistanceKm) detailBits.push(w.totalDistanceKm + 'km');
+  if(w.totalDistanceKm) detailBits.push(w.totalDistanceM != null ? dFmt(w.totalDistanceM) : (w.totalDistanceKm + 'km'));
   const refreshBtn = hasStrava ? '<button class="btn" onclick="syncStravaActivities();showToast(\'Syncing\',\'Pulling latest\u2026\')" style="width:auto;padding:5px 10px;font-size:11px;background:var(--bg3);border:1px solid var(--bd)">Refresh</button>' : '';
   card.innerHTML = '<div class="card">'+
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'+

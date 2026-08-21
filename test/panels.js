@@ -310,6 +310,52 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── a run logged in miles must READ in miles, everywhere ───────────────────────────────────
+  // saveCardioManually always interpreted the input correctly (it multiplies by 1609.34), so a logged
+  // distance was never wrong — it was ignored. Every display divided by 1000 and wrote "km", so a
+  // person who set miles, typed 2, and was shown an 8'00"/mi pace on that very form then saw "3.2km"
+  // in their history, their weekly summary and the context handed to the coach. The edit dialog was
+  // worse than cosmetic: it hardcoded *1000 on save, so editing that 2-mile run stored 2000m — 1.24
+  // miles — quietly shortening a run they had already done.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      localStorage.clear(); s('totry_onboarded',true); s('totry_name','Sam');
+      const iso=new Date().toISOString();
+      s('totry_workouts',[{ date:iso.slice(0,10), ts:iso, title:'Morning run', type:'Run',
+                            distance:3219, durationMin:16, calories:220 }]);   // 3219m = 2.00 miles
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const read = await page.evaluate(async () => {
+      const out = {};
+      for (const u of ['km','mi']) {
+        ls('totry_distance_unit', u);
+        go('grow'); await new Promise(x=>setTimeout(x,450));
+        renderUnifiedTraining(); await new Promise(x=>setTimeout(x,550));
+        const t = (document.getElementById('pt-strava-card')||{}).innerText || '';
+        out[u] = [...new Set(t.match(/[\d.]+\s?(km|mi)\b/g) || [])];
+      }
+      // and the round trip through the entry path
+      ls('totry_distance_unit','mi');
+      out.twoMiles = dispToM(2);                 // 3219
+      out.backAgain = Math.round(mToDisp(3219) * 100) / 100;   // 2
+      return out;
+    });
+    if (read.km.some(x => /mi\b/.test(x)))
+      findings.push(`distance: a km user is shown ${read.km.filter(x=>/mi\b/.test(x)).join(', ')}`);
+    if (read.mi.some(x => /km\b/.test(x)))
+      findings.push(`distance: a miles user is still shown ${read.mi.filter(x=>/km\b/.test(x)).join(', ')} — the setting is being ignored`);
+    if (!read.km.length || !read.mi.length)
+      findings.push(`distance: no distance rendered at all — ${JSON.stringify(read)}`);
+    if (Math.abs(read.twoMiles - 3219) > 2 || Math.abs(read.backAgain - 2) > 0.02)
+      findings.push(`distance: the round trip drifts — 2mi → ${read.twoMiles}m → ${read.backAgain}mi`);
+    if (!findings.some(f => f.startsWith('distance:')))
+      console.log(`distance: ${read.km.join(',')} in km and ${read.mi.join(',')} in miles, round trip exact`);
+    await ctx.close();
+  }
+
   // ── the same body must get the same numbers in either unit ─────────────────────────────────
   // Storage is canonical kilograms and Mifflin-St Jeor takes kilograms, so the ONLY thing standing
   // between a person on pounds and a confidently wrong calorie target is interpretation at the input.

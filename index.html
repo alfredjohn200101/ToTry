@@ -4927,7 +4927,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v529';
+const APP_VERSION = 'v530';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -8199,7 +8199,7 @@ function buildPTCtx(){
     const acts = ls('totry_strava_activities') || [];
     const _fresh = acts.filter(x => x && x.start_date && (Date.now() - new Date(x.start_date).getTime()) < 14*86400000);
     if(_fresh.length){ const a = _fresh[0];
-      cardioCtx = '\nMost recent cardio (Strava, ' + new Date(a.start_date).toLocaleDateString('en-AU') + '): ' + (a.type||'activity') + ', ' + (a.distance? (a.distance/1000).toFixed(1)+'km':'') + (a.moving_time? ', '+Math.round(a.moving_time/60)+'min':'')
+      cardioCtx = '\nMost recent cardio (Strava, ' + new Date(a.start_date).toLocaleDateString('en-AU') + '): ' + (a.type||'activity') + ', ' + (a.distance? dFmt(a.distance):'') + (a.moving_time? ', '+Math.round(a.moving_time/60)+'min':'')
         + (a.avg_hr? ', avg HR '+a.avg_hr+'bpm':'') + (a.max_hr? ' (max '+a.max_hr+')':'')
         + ((a.calories && !(typeof nutGentle==='function'&&nutGentle()))? ', '+a.calories+' cal':'') + (a.suffer_score? ', effort '+a.suffer_score:'')
         + '. (Use this real performance data — HR and effort tell you how hard it actually was.)';
@@ -8471,7 +8471,7 @@ function buildCtx(){
   let stravaCtx='';
   if(strava.length){
     const recent=strava.slice(0,3);
-    stravaCtx='\nRECENT WORKOUTS (Strava): '+recent.map(a=>a.type+' '+(a.distance?Math.round(a.distance/1000)+'km':'')).join(', ');
+    stravaCtx='\nRECENT WORKOUTS (Strava): '+recent.map(a=>a.type+' '+(a.distance?dFmt(a.distance,{dp:0}):'')).join(', ');
   }
   
   // Steps from Google
@@ -31679,7 +31679,9 @@ function getUnifiedWeekStats(){
   return {
     sessions: week.length, strengthCount: strength.length, cardioCount: cardio.length,
     totalMinutes: totalMin, totalVolumeKg: Math.round(totalVol),
-    totalDistanceKm: +(totalDist/1000).toFixed(1), totalCalories: Math.round(totalCals)
+    // metres alongside the km figure: a display cannot convert a number that has already been
+    // divided, and every consumer of totalDistanceKm was writing a hardcoded 'km' after it.
+    totalDistanceKm: +(totalDist/1000).toFixed(1), totalDistanceM: totalDist, totalCalories: Math.round(totalCals)
   };
 }
 
@@ -31707,7 +31709,9 @@ function getTrainingTrend(){
   const paceOf = arr => {
     const valid = arr.filter(t=>t.distance && t.durationMin);
     if(!valid.length) return null;
-    const tot = valid.reduce((a,t)=>a + (t.durationMin*60)/(t.distance/1000), 0);
+    // per the person's own unit — a runner set to miles was told their mile pace in km, which for
+    // a 5'00"/km runner reads as 8'03" and looks like a collapse.
+    const tot = valid.reduce((a,t)=>a + (t.durationMin*60)/mToDisp(t.distance), 0);
     return tot/valid.length;
   };
   const oP=paceOf(older), rP=paceOf(recent);
@@ -31716,10 +31720,10 @@ function getTrainingTrend(){
     if(Math.abs(diff) >= 5){
       const mmss = sec => Math.floor(sec/60)+"'"+String(Math.round(sec%60)).padStart(2,'0')+'"';
       return diff>0
-        ? 'Your '+label+' pace is improving — now ~'+mmss(rP)+'/km (was ~'+mmss(oP)+'/km).'
-        : 'Your '+label+' pace has eased to ~'+mmss(rP)+'/km. Some weeks are like that.';
+        ? 'Your '+label+' pace is improving — now ~'+mmss(rP)+'/'+dUnit()+' (was ~'+mmss(oP)+'/'+dUnit()+').'
+        : 'Your '+label+' pace has eased to ~'+mmss(rP)+'/'+dUnit()+'. Some weeks are like that.';
     }
-    return 'Your '+label+' pace is holding steady around '+Math.floor(rP/60)+"'"+String(Math.round(rP%60)).padStart(2,'0')+'"/km.';
+    return 'Your '+label+' pace is holding steady around '+Math.floor(rP/60)+"'"+String(Math.round(rP%60)).padStart(2,'0')+'"/'+dUnit()+'.';
   }
   // Otherwise → compare avg HR (lower for similar work can mean improving fitness).
   const hrOf = arr => { const v=arr.filter(t=>t.hr); return v.length ? v.reduce((a,t)=>a+t.hr,0)/v.length : null; };
@@ -31787,7 +31791,7 @@ function renderUnifiedTraining(){
   };
   const fmtMeta = (t) => {
     const parts = [];
-    if(t.distance) parts.push((t.distance/1000).toFixed(1)+'km');
+    if(t.distance) parts.push(dFmt(t.distance));
     if(t.durationMin) parts.push(t.durationMin+'min');
     if(t.volume) parts.push(Math.round(t.volume).toLocaleString()+'kg');
     if(t.sets) parts.push(t.sets + (t.sets === 1 ? ' set' : ' sets'));
@@ -31810,7 +31814,7 @@ function renderUnifiedTraining(){
   const detailBits = [];
   if(w.totalMinutes) detailBits.push(w.totalMinutes + ' min');
   if(w.totalVolumeKg) detailBits.push(w.totalVolumeKg.toLocaleString() + 'kg lifted');
-  if(w.totalDistanceKm) detailBits.push(w.totalDistanceKm + 'km');
+  if(w.totalDistanceKm) detailBits.push(w.totalDistanceM != null ? dFmt(w.totalDistanceM) : (w.totalDistanceKm + 'km'));
   const refreshBtn = hasStrava ? '<button class="btn" onclick="syncStravaActivities();showToast(\'Syncing\',\'Pulling latest\u2026\')" style="width:auto;padding:5px 10px;font-size:11px;background:var(--bg3);border:1px solid var(--bd)">Refresh</button>' : '';
   card.innerHTML = '<div class="card">'+
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'+
@@ -33287,14 +33291,14 @@ function openEditTraining(unifiedId){
     const acts = ls('totry_strava_activities') || [];
     const a = acts.find(x => String(x.id) === rawId);
     if(!a){ showToast('Not found','Could not find that activity.'); return; }
-    const km = a.distance ? (a.distance/1000) : null;
+    const km = a.distance ? mToDisp(a.distance) : null;   // named km for history; it is the person's unit
     const mins = a.moving_time ? Math.round(a.moving_time/60) : null;
     const pace = (km && mins) ? (mins/km) : null;
     const paceStr = pace ? (Math.floor(pace)+':'+String(Math.round((pace%1)*60)).padStart(2,'0')+' /km') : null;
     const when = a.date ? new Date(a.date).toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'}) : '';
     const stat = (label,val) => val ? '<div style="flex:1;min-width:70px;background:var(--bg3);border-radius:8px;padding:10px;text-align:center"><div style="font-family:DM Mono,monospace;font-size:18px;color:var(--tx)">'+val+'</div><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px">'+label+'</div></div>' : '';
     const stats = [
-      stat('distance', km ? km.toFixed(2)+'km' : null),
+      stat('distance', km ? km.toFixed(2)+dUnit() : null),   // km holds mToDisp(...) — the person's unit
       stat('time', mins ? mins+' min' : null),
       stat('pace', paceStr),
       stat('calories', a.calories ? Math.round(a.calories) : null),
@@ -33384,7 +33388,7 @@ function openEditTraining(unifiedId){
   renderEditCardioFields();
   const setv = (id,val)=>{ const e=document.getElementById(id); if(e && val!=null) e.value = val; };
   if(w.durationMinutes) setv('edit-cardio-time', w.durationMinutes+':00');
-  if(w.distance) setv('edit-cardio-distance', (w.distance/1000).toFixed(2));
+  if(w.distance) setv('edit-cardio-distance', mToDisp(w.distance).toFixed(2));
   if(w.totalCalories || w.calories) setv('edit-cardio-totalCal', w.totalCalories || w.calories);
   if(w.activeCalories) setv('edit-cardio-activeCal', w.activeCalories);
   if(w.averageHeartRate) setv('edit-cardio-hr', w.averageHeartRate);
@@ -33397,7 +33401,7 @@ function renderEditCardioFields(){
   if(!wrap) return;
   const labels = {
     time:      ['Workout time',    'e.g. 20:00 or 20 min',  'edit-cardio-time'],
-    distance:  ['Distance (km)',   'e.g. 3.43',             'edit-cardio-distance'],
+    distance:  ['Distance ('+dUnit()+')', dUnit()==='km'?'e.g. 3.43':'e.g. 2.13', 'edit-cardio-distance'],
     activeCal: ['Active calories', 'e.g. 260',              'edit-cardio-activeCal'],
     totalCal:  ['Total calories',  'e.g. 394',              'edit-cardio-totalCal'],
     hr:        ['Avg heart rate',  'e.g. 128 bpm',          'edit-cardio-hr'],
@@ -33415,10 +33419,10 @@ function updateEditCardioPace(){
   const paceEl = document.getElementById('edit-cardio-pace');
   if(!paceEl) return;
   const mins = _parseCardioTime(document.getElementById('edit-cardio-time')?.value||'');
-  const km = parseFloat(document.getElementById('edit-cardio-distance')?.value||'')||0;
+  const km = parseFloat(document.getElementById('edit-cardio-distance')?.value||'')||0;   // in dUnit(), converted at the store below
   if(mins>0 && km>0){
     const secPerKm = (mins*60)/km; const mm=Math.floor(secPerKm/60); const ss=Math.round(secPerKm%60);
-    paceEl.textContent = 'Pace: '+mm+"'"+String(ss).padStart(2,'0')+'"/km';
+    paceEl.textContent = 'Pace: '+mm+"'"+String(ss).padStart(2,'0')+'"/'+dUnit();
   } else { paceEl.textContent=''; }
 }
 function saveEditTraining(id){
@@ -33427,7 +33431,7 @@ function saveEditTraining(id){
   if(idx < 0){ showToast('Not found','Could not save.'); return; }
   const type = document.getElementById('edit-cardio-type')?.value || 'Other';
   const mins = _parseCardioTime(document.getElementById('edit-cardio-time')?.value||'');
-  const km = parseFloat(document.getElementById('edit-cardio-distance')?.value||'')||0;
+  const km = parseFloat(document.getElementById('edit-cardio-distance')?.value||'')||0;   // in dUnit(), converted at the store below
   const activeCal = parseInt(document.getElementById('edit-cardio-activeCal')?.value||'')||0;
   const totalCal = parseInt(document.getElementById('edit-cardio-totalCal')?.value||'')||0;
   const cal = totalCal || activeCal || 0;
@@ -33436,7 +33440,9 @@ function saveEditTraining(id){
   let when = workouts[idx].ts ? new Date(workouts[idx].ts) : new Date();
   if(dateVal){ const [y,mo,d]=dateVal.split('-').map(Number); when = new Date(y, mo-1, d, 12, 0, 0); }
   workouts[idx] = { ...workouts[idx], type, splitFocus: type, durationMinutes: mins?Math.round(mins):null,
-    distance: km?Math.round(km*1000):null, calories: cal||null, averageHeartRate: hr||null,
+    // dispToM, not *1000: the box holds the person's own unit, so editing a 2-mile run while set
+    // to miles used to store 2000m — 1.24 miles — quietly shortening a run they had already logged.
+    distance: km?dispToM(km):null, calories: cal||null, averageHeartRate: hr||null,
     date: when.toLocaleDateString('en-AU'), ts: when.toISOString() };
   ls('totry_workouts', workouts);
   // Rebuild the burn ledger from the (now edited) workouts — single source of truth, no drift.
@@ -33583,6 +33589,35 @@ function updateCardioPace(){
     const mm = Math.floor(secPer/60); const ss = Math.round(secPer%60);
     paceEl.textContent = 'Pace: '+mm+"'"+String(ss).padStart(2,'0')+'"/'+unit;
   } else { paceEl.textContent = ''; }
+}
+// ── DISTANCE UNITS ───────────────────────────────────────────────────────────────────────────
+// Storage is ALWAYS metres. saveCardioManually already interprets correctly on the way in — it
+// multiplies by 1609.34 for miles — so a logged distance has never been WRONG. What it has been is
+// ignored: every display divided by 1000 and wrote "km", so a person who set miles, typed 2, and was
+// even shown a per-mile pace on the same form then saw "3.2km" in their history, their evening
+// summary, and the context handed to the coach. The edit dialog went further and hardcoded its own
+// label to "Distance (km)" while the log dialog beside it honoured the setting.
+// Same shape as the weight units, one step less dangerous: no maths was wrong, only the reading.
+const _M_PER_MI = 1609.34;
+function dUnit(){ return (ls('totry_distance_unit') === 'mi') ? 'mi' : 'km'; }
+function mToDisp(metres){
+  const n = parseFloat(metres);
+  if(!isFinite(n)) return n;
+  return n / (dUnit() === 'mi' ? _M_PER_MI : 1000);
+}
+function dispToM(v){
+  const n = parseFloat(v);
+  if(!isFinite(n)) return n;
+  return Math.round(n * (dUnit() === 'mi' ? _M_PER_MI : 1000));
+}
+// metres in, the string a person should read out
+function dFmt(metres, opts){
+  opts = opts || {};
+  const n = parseFloat(metres);
+  if(!isFinite(n)) return opts.blank != null ? opts.blank : '';
+  const d = mToDisp(n);
+  const dp = (opts.dp != null) ? opts.dp : 1;
+  return d.toFixed(dp) + (opts.bare ? '' : dUnit());
 }
 function saveCardioManually(){
   const type = document.getElementById('cardio-type')?.value || 'Other';
@@ -35680,7 +35715,7 @@ function showDayActivityDetail(dateKey){
   (typeof getUnifiedTraining === 'function' ? getUnifiedTraining() : (ls('totry_workouts')||[])).forEach(t => {
     if(!matchDate(t.ts)) return;
     if(t.kind === 'cardio'){
-      const d = t.distance ? (t.distance/1000).toFixed(1)+'km ' : '';
+      const d = t.distance ? (dFmt(t.distance) + ' ') : '';
       items.push({kind:'Cardio', text: (t.title||'Activity') + ' · ' + d + (t.durationMin? t.durationMin+'min':'')});
     } else {
       items.push({kind:'Workout', text: (t.title||'Workout') + ' · ' + (t.exercises||0) + ' exercises'});
@@ -36410,7 +36445,7 @@ async function generateWeeklySynthesis(){
     const tb=[];
     if(wstats.totalMinutes) tb.push(wstats.totalMinutes+' min');
     if(wstats.totalVolumeKg) tb.push(wstats.totalVolumeKg.toLocaleString()+'kg lifted');
-    if(wstats.totalDistanceKm) tb.push(wstats.totalDistanceKm+'km');
+    if(wstats.totalDistanceKm) tb.push(wstats.totalDistanceM != null ? dFmt(wstats.totalDistanceM) : (wstats.totalDistanceKm+'km'));
     // Gentle mode is numbers off. lifeStateBrief already gates its calorie lines this way; this
     // builder was written separately and never got the guard, so the Sunday reflection handed the
     // model a calorie total for someone who asked never to see one — and it read it back.

@@ -166,7 +166,7 @@ async function generateWeeklySynthesis(){
     const tb=[];
     if(wstats.totalMinutes) tb.push(wstats.totalMinutes+' min');
     if(wstats.totalVolumeKg) tb.push(wstats.totalVolumeKg.toLocaleString()+'kg lifted');
-    if(wstats.totalDistanceKm) tb.push(wstats.totalDistanceKm+'km');
+    if(wstats.totalDistanceKm) tb.push(wstats.totalDistanceM != null ? dFmt(wstats.totalDistanceM) : (wstats.totalDistanceKm+'km'));
     // Gentle mode is numbers off. lifeStateBrief already gates its calorie lines this way; this
     // builder was written separately and never got the guard, so the Sunday reflection handed the
     // model a calorie total for someone who asked never to see one — and it read it back.
