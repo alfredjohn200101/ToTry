@@ -310,6 +310,54 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── the Feeling Door: every path has to MOVE someone ────────────────────────────────────────
+  // This is the app's primary entry point — a person taps the orb because they feel something, not
+  // because they want to log something. Seven feelings, and the thing that would rot silently is a
+  // path whose primary button opens a modal that only closes again: it looks built, it reads well,
+  // and it hands the person back to their phone. So this clicks each one and asserts where it LANDS.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name','Sam'); s('totry_faith_tradition','christianity'); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const feels = await page.evaluate(async () => {
+      const out = {};
+      for (const f of ['restless','flat','anxious','down','procrast','angry','good']) {
+        document.querySelectorAll('.modal-bg.open:not([id]),.breath-overlay,#form-modal').forEach(e=>e.remove());
+        document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+        if (typeof go === 'function') go('home');            // or the previous feeling's tab leaks in
+        await new Promise(x=>setTimeout(x,160));
+        _feelMove(f);
+        await new Promise(x=>setTimeout(x,240));
+        const m = document.querySelector('.modal-bg.open:not([id])');
+        if (!m) { out[f] = 'the door never opened'; continue; }
+        const primary = [...m.querySelectorAll('button')].find(x => {
+          const a = (x.getAttribute('onclick')||'').trim();
+          return a && !/^closeModal\(this\)$/.test(a);       // a button that only closes is not a move
+        });
+        if (!primary) { out[f] = 'no action but close'; continue; }
+        primary.click();
+        await new Promise(x=>setTimeout(x,650));
+        const vis = el => { if(!el) return false; const r = el.getBoundingClientRect();
+          return r.width>0 && r.height>0 && getComputedStyle(el).display !== 'none'; };
+        const breath = document.querySelector('.breath-overlay');
+        const comp   = document.querySelector('.companion-overlay.open');
+        const form   = document.getElementById('form-modal');   // openFormModal DOES carry an id
+        const sheet  = document.querySelector('.modal-bg.open:not([id])');
+        if (vis(breath) || vis(comp) || vis(form) || vis(sheet)) { out[f] = 'ok'; continue; }
+        const pane = [...document.querySelectorAll('[id^="tab-"]')].find(t => getComputedStyle(t).display !== 'none');
+        out[f] = (pane && pane.id && pane.id !== 'tab-home') ? 'ok' : 'landed nowhere — the door closed on them';
+      }
+      return out;
+    });
+    const bad = Object.keys(feels).filter(k => feels[k] !== 'ok');
+    bad.forEach(k => findings.push(`feeling door "${k}": ${feels[k]}`));
+    console.log(`feeling door: ${bad.length ? bad.length + ' dead path(s)' : 'all 7 paths move a person'}`);
+    await ctx.close();
+  }
+
   await browser.close(); server.close();
 
   // The sacraments panel staying hidden for a secular person is the v427 gate working, not a finding.

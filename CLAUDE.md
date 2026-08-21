@@ -29,9 +29,9 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - **`index.html` is GENERATED. Do not edit it.** Edit the module under `src/app/` and run
   `npm run build:index`. The app is still one file when it ships (~44k lines, ~3.0MB, all inline —
   that's deliberate for the PWA), but the source of truth is now `src/`:
-  `src/shell-head.html` + **31 modules** (`00-boot.js` → `01-sync.js` → `02-native.js` →
-  `03-person.js` → … → `29-goals-prayer.js` → `app.js`) + `src/shell-tail.html`, concatenated in
-  exactly that order. `app.js` is the remaining tail — ~4.1k lines, down from ~31k.
+  `src/shell-head.html` + **42 modules** (`00-boot.js` → `01-sync.js` → `02-native.js` →
+  `03-person.js` → … → `40-identity-seasons.js` → `app.js`) + `src/shell-tail.html`, concatenated
+  in exactly that order. `app.js` is now just the undo system — 33 lines, down from ~31k.
   **Order is semantics** — one script, one shared top-level scope, no module system: a `function`
   hoists, a `const` does not. Never reorder modules; only ever slice a new one off the FRONT of
   `app.js` (`scripts/extract-prefix.js` does this and refuses if it doesn't round-trip).
@@ -42,7 +42,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
-- `APP_VERSION` in `src/app/00-boot.js` — currently **v510**. Bump it AND `CACHE` in sw.js together, always.
+- `APP_VERSION` in `src/app/00-boot.js` — currently **v527**. Bump it AND `CACHE` in sw.js together, always.
 
 ## The nervous system (key functions — grep these)
 - `getLifeState()` — returns the whole person {training, nutrition, body, soul, fight, readiness,
@@ -65,14 +65,18 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    reported 1032 PASSED, because the harness extracts functions by name and never parsed the whole
    script. A suite that stays green while the app cannot boot is worse than no suite.
 2. **Run the whole gate before you ship**, not just `npm test`:
-   - `npm test` — 1235 assertions over the real bundle (core math, dead code, privacy promises,
+   - `npm test` — 1577 assertions over the real bundle (core math, dead code, privacy promises,
      the voice gates, the parse check)
-   - `npm run crisis` — types the worst sentence into all NINE free-text doors and asserts a
+   - `npm run crisis` — types the worst sentence into all TEN free-text doors and asserts a
      helpline is on screen and TAPPABLE (geometry, not DOM presence — the bug it was written for
-     had the text in the document and off the screen)
+     had the text in the document and off the screen). Twelve checks in all: the ten doors, the
+     safety net with its container deleted, and the breath ending where a person has just said that
+     a minute of breathing did NOT move their distress
    - `npm run personas` — 551 assertions, 10 people incl. one built entirely from data that has
      really broken this app (apostrophes, GBP, a completed goal ahead of the live one)
-   - `npm run panels` — 19 sub-panels × 3 people, plus a tap-target floor
+   - `npm run panels` — 19 sub-panels × 3 people, a tap-target floor, the sheet-dialog a11y floor,
+     the live SOS (the setting shapes the move; their own why is on screen), and all seven Feeling
+     Door paths clicked through to where they LAND
    - `npm run test:edge` — runs the Supabase functions locally with Deno stubbed (Node strips the TS)
    - `npm run preflight` — version/cache/bundle parity across source, www and the iOS build
    Add a test when you add core math, and FAULT-INJECT it: an assertion you have never seen fail is
@@ -97,11 +101,15 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    SECRET); `ai-proxy` — identity came from a client-supplied field, so the public anon key could
    spend someone else's quota. Also the `push_subscriptions` column types in AI-PROXY-DEPLOY.md
    (they were `boolean`; the app writes a time string and an array), with the migration written out.
-3. **The monolith split is DONE** — 31 modules, largest 4.6k lines, ~4k left in `src/app/app.js`.
-   If you slice more, take it off the FRONT of `app.js` with `scripts/extract-prefix.js` and run
-   `node scripts/build-index.js --verify` after each; it must print `identical`.
-4. **Live-test the Feeling Door with real use** — it's the newest, most important entry point. Make
-   sure each feeling path genuinely moves a person, not just shows a modal.
+3. **The monolith split is FINISHED** — 42 modules, largest 4.9k lines (`03-person.js`), and
+   `src/app/app.js` is down to 33 lines. Nothing is left to slice off the front. If you ever split
+   a large module further, use `scripts/extract-prefix.js` and run `node scripts/build-index.js
+   --verify` after each; it must print `identical`.
+4. **The Feeling Door is live-tested and guarded.** All seven paths were clicked through to where
+   they land — Train, a real-high sheet, guided breathing, the bridge to real help, the "name the
+   thing you're avoiding" form, and brotherGuidance. `npm run panels` now fails if any path's primary
+   button leads nowhere, which is how a path would rot: it still reads well and hands the person
+   back to their phone.
 5. **Then:** the deeper secondary panels, the "reach out first" scheduled nudges (post-wrapper).
 
 ## Files in this handoff

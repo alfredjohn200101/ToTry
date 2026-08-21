@@ -55,6 +55,17 @@ const MODULES = [
   'src/app/27-settings.js',
   'src/app/28-init.js',
   'src/app/29-goals-prayer.js',
+  'src/app/30-firstrun.js',
+  'src/app/31-nextstep.js',
+  'src/app/32-presence.js',
+  'src/app/33-coach-replies.js',
+  'src/app/34-settings-apps.js',
+  'src/app/35-strava.js',
+  'src/app/36-google-health.js',
+  'src/app/37-hevy.js',
+  'src/app/38-burn-ledger.js',
+  'src/app/39-import-export.js',
+  'src/app/40-identity-seasons.js',
   'src/app/app.js',       // everything not yet extracted
 ];
 
