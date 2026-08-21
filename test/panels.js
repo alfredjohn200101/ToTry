@@ -310,6 +310,114 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── integration IS the product: every front must reach the one brief ────────────────────────
+  // The app's whole claim is that it sees the WHOLE person, so its counsel is true in a way a
+  // single-feature app's cannot be. That claim lives or dies on one string: getLifeState().brief, the
+  // text handed to the model. If a front stops reaching it, nothing throws and nothing looks broken —
+  // the coach just quietly stops knowing what the person ate, or how they slept, and still answers
+  // confidently. That is this repo's signature failure, aimed at its central promise.
+  //
+  // The storage shapes below are exact and were each got wrong once while writing this:
+  //   totry_nutlog   — an OBJECT keyed by toLocaleDateString('en-AU'), entries use cal / pro
+  //   totry_trackers — also keyed en-AU, sleep in hours under .sleep
+  //   totry_workouts — an array; the session name is .title (.name is ignored)
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name','Sam'); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const brief = await page.evaluate(() => {
+      const iso = new Date().toISOString();
+      const au  = new Date().toLocaleDateString('en-AU');
+      ls('totry_v',[{ n:'Porn', mode:'quit', startDate:new Date(Date.now()-12*864e5).toISOString() }]);
+      ls('totry_nutlog',{ [au]:[{ name:'Chicken and rice', cal:650, pro:55, carb:70, fat:12, ts:iso }] });
+      ls('totry_workouts',[{ date:iso.slice(0,10), ts:iso, title:'Push day', volume:8200, sets:18,
+        exercises:[{ name:'Bench Press', sets:[{ weight:80, reps:5, done:true }] }] }]);
+      ls('totry_body',[{ date:iso.slice(0,10), weight:82.4, ts:iso }]);
+      ls('totry_trackers',{ [au]:{ sleep:7.5, sleepQuality:7, mood:6 } });
+      const f = ls('totry_f') || {}; f.d = [{ n:'Car loan', t:5000, p:1200 }]; ls('totry_f', f);
+      const st = getLifeState();
+      return { text: st && st.brief ? st.brief : '', todayCal: st && st.nutrition && st.nutrition.todayCal,
+               todayPro: st && st.nutrition && st.nutrition.todayPro };
+    });
+    const want = [
+      ['training',  /Push day/],
+      ['nutrition', /650 cal/],
+      ['protein',   /55g/],
+      ['body',      /82\.4 ?kg/],
+      ['sleep',     /Sleep: 7\.5h/],
+      ['the fight', /12 days clean/],
+      ['money',     /3800|3,800/],
+    ];
+    const missing = want.filter(([, re]) => !re.test(brief.text)).map(([n]) => n);
+    if (!brief.text) findings.push('integration: getLifeState() produced no brief at all');
+    else if (missing.length)
+      findings.push(`integration: ${missing.join(', ')} never reach the brief the model is given — "${brief.text.replace(/\s+/g,' ').slice(0,110)}"`);
+    else console.log(`integration: all 7 threads reach the one brief (${brief.text.length} chars)`);
+    await ctx.close();
+  }
+
+  // ── it has to work with the network cut ────────────────────────────────────────────────────
+  // "Two taps from anywhere, no typing, works offline" is the claim the whole in-the-moment path
+  // rests on, and nothing in this gate has ever tested the offline half of it. A person reaching for
+  // this app at 2am on bad reception is exactly the person it was built for. The service worker is
+  // cache-first, so the failure mode would not be an error — it would be a white screen.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name','Sam'); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(3200);
+    const sw = await page.evaluate(async () => {
+      if (!navigator.serviceWorker) return { registered:false };
+      const reg = await navigator.serviceWorker.getRegistration();
+      return { registered: !!reg, active: !!(reg && reg.active) };
+    });
+    if (!sw.active) findings.push('offline: the service worker never became active, so nothing is cached');
+    await page.waitForTimeout(1500);            // let the shell finish precaching
+
+    await ctx.setOffline(true);                 // network gone entirely
+    let booted = true, why = '';
+    try { await page.reload({ waitUntil:'domcontentloaded', timeout:20000 }); }
+    catch (e) { booted = false; why = String(e.message).slice(0,70); }
+    await page.waitForTimeout(3000);
+
+    if (!booted) findings.push(`offline: the app will not even load without the network — ${why}`);
+    else {
+      const r = await page.evaluate(async () => {
+        const vis = el => { if(!el) return false; const q = el.getBoundingClientRect();
+          return q.width>0 && q.height>0 && getComputedStyle(el).display !== 'none'; };
+        const out = { booted: typeof go === 'function',
+                      chars: (document.body.innerText||'').trim().length,
+                      orb: vis(document.getElementById('need-talk-btn')) };   // the orb IS #need-talk-btn
+        if (typeof openFeelingDoor === 'function') {
+          openFeelingDoor();
+          await new Promise(x=>setTimeout(x,600));
+          const fd = document.getElementById('feel-door');
+          out.doorOpens = vis(fd);
+          const btn = fd && [...fd.querySelectorAll('button')].filter(vis).find(x => /Restless|Anxious/i.test(x.innerText||''));
+          if (btn) {
+            btn.click();
+            await new Promise(x=>setTimeout(x,900));
+            out.moved = !![...document.querySelectorAll('.modal-bg.open, .breath-overlay, .companion-overlay.open')].filter(vis).pop();
+          }
+        }
+        return out;
+      });
+      if (!r.booted)      findings.push('offline: the page loaded but the app never booted');
+      if (r.chars < 400)  findings.push(`offline: the app booted to almost nothing (${r.chars} chars)`);
+      if (!r.orb)         findings.push('offline: the orb — the primary action — is not on screen');
+      if (!r.doorOpens)   findings.push('offline: the Feeling Door will not open');
+      if (!r.moved)       findings.push('offline: naming a feeling leads nowhere');
+      if (r.booted && r.orb && r.doorOpens && r.moved)
+        console.log('offline: boots, orb present, Feeling Door opens and moves a person');
+    }
+    await ctx.close();
+  }
+
   // ── the Feeling Door: every path has to MOVE someone ────────────────────────────────────────
   // This is the app's primary entry point — a person taps the orb because they feel something, not
   // because they want to log something. Seven feelings, and the thing that would rot silently is a
