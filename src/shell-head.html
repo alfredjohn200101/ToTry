@@ -2311,7 +2311,7 @@ input:focus,textarea:focus,select:focus{
         <div class="tdee-form">
           <div class="tdee-row">
             <div class="tdee-field"><div class="tdee-label">Age</div><input type="number" id="tdee-age" placeholder="25" min="13" max="100"></div>
-            <div class="tdee-field"><div class="tdee-label">Weight (kg)</div><input type="number" id="tdee-weight" placeholder="75" step="0.1"></div>
+            <div class="tdee-field"><div class="tdee-label" id="tdee-weight-label">Weight (kg)</div><input type="number" id="tdee-weight" placeholder="75" step="0.1"></div>
             <div class="tdee-field"><div class="tdee-label">Height (cm)</div><input type="number" id="tdee-height" placeholder="175"></div>
           </div>
           <div class="tdee-row">
@@ -3787,20 +3787,21 @@ Amen.</div></div>
         <div>
           <div class="eyebrow">Weight unit</div>
           <!-- totry_weight_unit has exactly ONE consumer in the whole file — the "Logged today: 82 kg"
-               line under the weight log. Everywhere else is hardcoded kg: the input placeholder, the
-               weight-trend chart axis, the history rows, the log toast, the body-progress tiles, and the
-               TDEE calculator, whose Mifflin-St Jeor maths takes kilograms. There is no conversion helper
-               anywhere (no kgToLb, no 2.20462). Picking "lb" therefore relabelled one line while every
-               figure stayed kg — and a person entering 180 as pounds had it stored and computed as 180kg,
-               which produces a confidently wrong calorie target.
-               Same call as the currency setting above: say what it actually does rather than sweep half
-               the sites, because mixed units on one screen are worse than being consistently metric and
-               much harder to notice. The real fix is one weight formatter plus interpretation at every
-               input, all-or-nothing. -->
-          <div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">Labels the weight-log line. Everything else is entered and calculated in kg for now.</div>
-          <select id="settings-weight-unit" onchange="savePref('totry_weight_unit',this.value);showToast('Saved', this.value==='lb' ? 'Weight-log label set to lb \u2014 entries are still stored and calculated in kg.' : 'Weight in kg.')">
+               line under the weight log, converting nothing: a person on lb saw their 82.4kg as
+               "82.4 lb" — a real number in the wrong unit, off by 2.2x, with "82.4kg" three lines
+               below it on the same screen. Someone typing 180 meaning pounds had 180 stored and fed
+               to Mifflin-St Jeor as kilograms, which produces a confidently wrong calorie target.
+               The setting said so in its own label ("lb (label only)") rather than sweeping half the
+               sites, which was the right call until the work was done. It is done now: wFmt/wDelta
+               at every body-weight display, dispToKg at every entry including the TDEE box, and
+               syncWeightUnitLabels() for the static labels — a label still reading "(kg)" over a box
+               someone is typing pounds into is exactly how 180lb became 180kg. Storage stays
+               canonical kilograms; only the two edges convert. Lifted load is a different quantity
+               and is deliberately still kg. -->
+          <div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">Your body weight, everywhere you see it and everywhere you type it. Lifted loads stay in kg.</div>
+          <select id="settings-weight-unit" onchange="savePref('totry_weight_unit',this.value);if(typeof syncWeightUnitLabels==='function')syncWeightUnitLabels();if(typeof renderBody==='function')renderBody();if(typeof go==='function')go('settings');showToast('Saved','Weight now shows in '+this.value+'.')">
             <option value="kg">kg</option>
-            <option value="lb">lb (label only)</option>
+            <option value="lb">lb</option>
           </select>
         </div>
         <div>

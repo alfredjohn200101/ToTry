@@ -2635,9 +2635,22 @@ H.section('the first five minutes: a new person is not mistaken for a returning 
   H.ok(/settings-steps-goal/.test(pf) && /settings-sleep-goal/.test(pf) && /settings-water-goal/.test(pf),
     'the daily targets are restored before they can be re-saved');
 
-  // Settings that change less than they imply must say so — same call as the currency setting.
-  H.ok(/label only/.test(H.html) && /still stored and calculated in kg/.test(H.html),
-    'the weight unit says what it actually does');
+  // This used to assert the setting ADMITTED it was label-only, which was the honest thing while it
+  // was. The conversion is real now, so the assertion guards the conversion instead — and guards
+  // hardest at the edge that was actively dangerous: a person typing pounds into a box whose maths
+  // takes kilograms.
+  // On the OPTION, not the whole bundle — the note above the control still tells the story of what
+  // it used to do, and matching prose rather than markup is how a green assertion means nothing.
+  H.ok(!/<option value="lb">[^<]*label only[^<]*<\/option>/.test(H.html),
+    'the lb option no longer has to apologise for itself');
+  H.ok(/<option value="lb">lb<\/option>/.test(H.html), 'it just says lb');
+  H.ok(/function wFmt\(/.test(code) && /function dispToKg\(/.test(code) && /function kgToDisp\(/.test(code),
+    'there is one weight formatter and one interpreter');
+  H.ok(/dispToKg\(/.test(fnBody('calcTDEE')),
+    'the TDEE box interprets before Mifflin-St Jeor, which takes kilograms');
+  H.ok(/dispToKg\(/.test(fnBody('saveQuickWeight')), 'the quick weight log stores kilograms whatever was typed');
+  H.ok(/dispToKg\(/.test(fnBody('logBody')), 'and so does the full body log');
+  H.ok(/wFmt\(/.test(fnBody('saveQuickWeight')), 'and its out-of-range message names the unit they typed in');
 }
 
 H.section('a store that is read must be a store that is written')

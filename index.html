@@ -2311,7 +2311,7 @@ input:focus,textarea:focus,select:focus{
         <div class="tdee-form">
           <div class="tdee-row">
             <div class="tdee-field"><div class="tdee-label">Age</div><input type="number" id="tdee-age" placeholder="25" min="13" max="100"></div>
-            <div class="tdee-field"><div class="tdee-label">Weight (kg)</div><input type="number" id="tdee-weight" placeholder="75" step="0.1"></div>
+            <div class="tdee-field"><div class="tdee-label" id="tdee-weight-label">Weight (kg)</div><input type="number" id="tdee-weight" placeholder="75" step="0.1"></div>
             <div class="tdee-field"><div class="tdee-label">Height (cm)</div><input type="number" id="tdee-height" placeholder="175"></div>
           </div>
           <div class="tdee-row">
@@ -3787,20 +3787,21 @@ Amen.</div></div>
         <div>
           <div class="eyebrow">Weight unit</div>
           <!-- totry_weight_unit has exactly ONE consumer in the whole file — the "Logged today: 82 kg"
-               line under the weight log. Everywhere else is hardcoded kg: the input placeholder, the
-               weight-trend chart axis, the history rows, the log toast, the body-progress tiles, and the
-               TDEE calculator, whose Mifflin-St Jeor maths takes kilograms. There is no conversion helper
-               anywhere (no kgToLb, no 2.20462). Picking "lb" therefore relabelled one line while every
-               figure stayed kg — and a person entering 180 as pounds had it stored and computed as 180kg,
-               which produces a confidently wrong calorie target.
-               Same call as the currency setting above: say what it actually does rather than sweep half
-               the sites, because mixed units on one screen are worse than being consistently metric and
-               much harder to notice. The real fix is one weight formatter plus interpretation at every
-               input, all-or-nothing. -->
-          <div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">Labels the weight-log line. Everything else is entered and calculated in kg for now.</div>
-          <select id="settings-weight-unit" onchange="savePref('totry_weight_unit',this.value);showToast('Saved', this.value==='lb' ? 'Weight-log label set to lb \u2014 entries are still stored and calculated in kg.' : 'Weight in kg.')">
+               line under the weight log, converting nothing: a person on lb saw their 82.4kg as
+               "82.4 lb" — a real number in the wrong unit, off by 2.2x, with "82.4kg" three lines
+               below it on the same screen. Someone typing 180 meaning pounds had 180 stored and fed
+               to Mifflin-St Jeor as kilograms, which produces a confidently wrong calorie target.
+               The setting said so in its own label ("lb (label only)") rather than sweeping half the
+               sites, which was the right call until the work was done. It is done now: wFmt/wDelta
+               at every body-weight display, dispToKg at every entry including the TDEE box, and
+               syncWeightUnitLabels() for the static labels — a label still reading "(kg)" over a box
+               someone is typing pounds into is exactly how 180lb became 180kg. Storage stays
+               canonical kilograms; only the two edges convert. Lifted load is a different quantity
+               and is deliberately still kg. -->
+          <div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">Your body weight, everywhere you see it and everywhere you type it. Lifted loads stay in kg.</div>
+          <select id="settings-weight-unit" onchange="savePref('totry_weight_unit',this.value);if(typeof syncWeightUnitLabels==='function')syncWeightUnitLabels();if(typeof renderBody==='function')renderBody();if(typeof go==='function')go('settings');showToast('Saved','Weight now shows in '+this.value+'.')">
             <option value="kg">kg</option>
-            <option value="lb">lb (label only)</option>
+            <option value="lb">lb</option>
           </select>
         </div>
         <div>
@@ -4926,7 +4927,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v528';
+const APP_VERSION = 'v529';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -8056,7 +8057,7 @@ function lifeStateBrief(s){
       lines.push('Nutrition: avg '+(n.avgCal7||'?')+' cal / '+(n.avgPro7||'?')+'g protein over '+n.daysLogged7+' logged days; today '+n.todayCal+' cal / '+n.todayPro+'g');
     }
   }
-  if(b.currentWeight) lines.push('Weight: '+b.currentWeight+'kg'+(b.recomp&&b.recomp.dFat!=null?' (last stretch: '+(b.recomp.dWeight>0?'+':'')+b.recomp.dWeight+'kg scale, '+(b.recomp.dFat>0?'+':'')+b.recomp.dFat+'kg fat'+(b.recomp.dMuscle!=null?', '+(b.recomp.dMuscle>0?'+':'')+b.recomp.dMuscle+'kg muscle':'')+')':''));
+  if(b.currentWeight) lines.push('Weight: '+wFmt(b.currentWeight)+(b.recomp&&b.recomp.dFat!=null?' (last stretch: '+(b.recomp.dWeight>0?'+':'')+b.recomp.dWeight+'kg scale, '+(b.recomp.dFat>0?'+':'')+b.recomp.dFat+'kg fat'+(b.recomp.dMuscle!=null?', '+(b.recomp.dMuscle>0?'+':'')+b.recomp.dMuscle+'kg muscle':'')+')':''));
   const soulBits = [];
   if(soul.spiritual!=null) soulBits.push('spiritual '+soul.spiritual.toFixed(1)+'/10');
   if(soul.emotional!=null) soulBits.push('emotional '+soul.emotional.toFixed(1)+'/10');
@@ -8209,7 +8210,7 @@ function buildPTCtx(){
 
 WHO THEY ARE:
 ${userName} | Day ${dayCount} of their journey${goalIntent?'\nGoal: '+goalIntent:''}
-Current weight: ${currentWeight?currentWeight+'kg':'not logged'}${goalWeight?' → goal '+goalWeight+'kg':''}
+Current weight: ${currentWeight?wFmt(currentWeight):'not logged'}${goalWeight?' → goal '+wFmt(goalWeight):''}
 ${(typeof nutGentle==='function'&&nutGentle())?'Daily nutrition target: held privately \u2014 this person has numbers turned off.':('Daily nutrition target: '+nutGoals.cal+' cal / '+nutGoals.pro+'g protein')}
 Today's planned focus: ${todayFocus}
 
@@ -8498,7 +8499,7 @@ ${nutPromptBlock(todayCals, todayPro, nutGoals.cal, nutGoals.pro, todayMeals)}
 
 BODY & TRAINING:
 Today's planned training: ${todayFocus}
-Weight: ${currentWeight?currentWeight+'kg':'Not logged'}
+Weight: ${currentWeight?wFmt(currentWeight):'Not logged'}
 ${(typeof nutGentle==='function'&&nutGentle())?'Nutrition target: held privately \u2014 numbers are turned off for this person.':('Nutrition target: '+nutGoals.cal+' cal / '+nutGoals.pro+'g protein')}${stravaCtx}${stepsCtx}${checkinCtx}
 ${(function(){ let s=''; try{ if(typeof computeReadiness==='function'){ const rd=computeReadiness(); if(rd) s+='\\nReadiness today: '+rd.score+'/100 ('+rd.level+'). '+rd.advice; } if(typeof detectVicePatterns==='function'){ const vp=detectVicePatterns(); if(vp&&vp.patterns&&vp.patterns.length) s+='\\nVice patterns (use gently, only if they raise it): '+vp.patterns.join(' '); } const fw = (typeof ls==='function') ? (ls('totry_feeling_wins')||[]) : []; if(fw.length){ const _since = Date.now()-7*86400000; const _recent = fw.filter(w=>w.ts && new Date(w.ts).getTime()>=_since); if(_recent.length){ s+='\\nIN THE LAST WEEK they reached for help the instant an urge rose and got through it '+_recent.length+' time(s) \u2014 this is them fighting in real time; honour it. Recent feelings they named: '+_recent.slice(0,3).map(w=>String.fromCharCode(34)+(w.feeling||'an urge').slice(0,60)+String.fromCharCode(34)).join(', ')+'.'; } } }catch(e){} return s; })()}
 
@@ -11566,6 +11567,9 @@ function _a11yScreenChrome(name){
 }
 function go(name){
   _a11yScreenChrome(name);
+  // Static weight labels are markup, so a unit change has to reach them somewhere. Here, because
+  // every screen that has one is arrived at through go().
+  try{ if(typeof syncWeightUnitLabels==='function') syncWeightUnitLabels(); }catch(_){}
   haptic("tap");
   // Nothing should still be talking after you leave the screen you started it on.
   try{ if(typeof Speak!=='undefined' && Speak.stop) Speak.stop(); }catch(_){}
@@ -12607,7 +12611,7 @@ function exportBodyCollage(){
       ctx.fillText(e.date, x + PHOTO_SIZE/2, y + PHOTO_SIZE - 16);
       ctx.fillStyle = 'white';
       ctx.font = 'bold 13px sans-serif';
-      ctx.fillText(e.weight + 'kg', x + PHOTO_SIZE/2, y + PHOTO_SIZE - 4);
+      ctx.fillText(wFmt(e.weight), x + PHOTO_SIZE/2, y + PHOTO_SIZE - 4);
       
       loaded++;
       if(loaded === entries.length){
@@ -21506,9 +21510,69 @@ function renderJournal(){
   });
 }
 
+// ── WEIGHT UNITS ─────────────────────────────────────────────────────────────────────────────
+// Storage is ALWAYS kilograms. The whole app's maths depends on it — Mifflin-St Jeor takes kg, the
+// recomp read compares kg, the CSV importers convert lb to kg on the way in. Nothing below changes a
+// stored number; this layer converts only at the two edges, display and entry.
+//
+// Before this existed, the weight-unit setting relabelled exactly ONE line and converted nothing, so
+// picking "lb" showed a person their 82.4kg as "82.4 lb" — a real number, a real unit, and the wrong
+// reading by a factor of 2.2 — while "82.4kg" sat three lines below it on the same screen. Worse, a
+// person typing 180 meaning pounds had 180 stored and fed to the calorie maths as kilograms, which
+// produces a confidently wrong target. The setting was honest about this in its own label ("lb (label
+// only)") rather than sweeping half the sites, which was the right call until someone did the work.
+//
+// Body weight only. A lifted load is a different quantity and stays in kg — see the note on the
+// setting itself.
+// The static labels are markup, so they have to be told. Called on boot, on tab changes and by the
+// setting itself — a label still saying "(kg)" over a box a person is typing pounds into is exactly
+// how 180lb got stored as 180kg.
+function syncWeightUnitLabels(){
+  const u = wUnit();
+  const lbl = document.getElementById('tdee-weight-label');
+  if(lbl) lbl.textContent = 'Weight (' + u + ')';
+  const bw = document.getElementById('bod-weight');
+  if(bw) bw.placeholder = 'Weight (' + u + ')';
+  document.querySelectorAll('[data-weight-unit]').forEach(function(el){ el.textContent = u; });
+}
+const _LB_PER_KG = 2.20462262;
+function wUnit(){ return (ls('totry_weight_unit') === 'lb') ? 'lb' : 'kg'; }
+// kg → whatever the person reads in
+function kgToDisp(kg){
+  const n = parseFloat(kg);
+  if(!isFinite(n)) return n;
+  return wUnit() === 'lb' ? Math.round(n * _LB_PER_KG * 10) / 10 : n;
+}
+// what the person typed → kg. Rounded to 2dp so a lb entry round-trips to the same tenth it was
+// typed as, instead of drifting by a gram every time it is redisplayed.
+function dispToKg(v){
+  const n = parseFloat(v);
+  if(!isFinite(n)) return n;
+  return wUnit() === 'lb' ? Math.round((n / _LB_PER_KG) * 100) / 100 : n;
+}
+// The one formatter. Pass kg, get the string a person should see.
+function wFmt(kg, opts){
+  opts = opts || {};
+  const n = parseFloat(kg);
+  if(!isFinite(n)) return opts.blank != null ? opts.blank : '\u2014';
+  const d = kgToDisp(n);
+  const r = (opts.round === 0) ? Math.round(d) : Math.round(d * 10) / 10;
+  const sign = (opts.signed && r > 0) ? '+' : '';
+  return sign + r + (opts.bare ? '' : wUnit());
+}
+// A CHANGE in weight converts as a magnitude — never call kgToDisp on a difference and then add a
+// unit by hand, because a delta of 0 must stay 0 and a negative must stay negative.
+function wDelta(kgDiff, opts){
+  opts = opts || {};
+  const n = parseFloat(kgDiff);
+  if(!isFinite(n)) return opts.blank != null ? opts.blank : '\u2014';
+  if(n === 0) return opts.zero != null ? opts.zero : ('0' + wUnit());
+  return wFmt(n, { signed:true });
+}
+
 // ── BODY ──────────────────────────────────────────────────────
 async function logBody(){
-  const w=parseFloat(document.getElementById('bod-weight').value||'0');
+  const w=dispToKg(parseFloat(document.getElementById('bod-weight').value||'0'));   // typed in their unit, stored in kg
   const trainScore=parseInt(document.getElementById('wk-train')?.value||0);
   const nutScore=parseInt(document.getElementById('wk-nut')?.value||0);
   const sleepScore=parseInt(document.getElementById('wk-sleep')?.value||0);
@@ -21692,10 +21756,10 @@ function adjustCaloriesFromWeightTrend(){
     // Losing/gaining too fast (or losing too much for maintenance)
     if(userGoal === 'lose'){
       calAdjustment = 150;  // add calories - losing too fast
-      reason = 'You\'re dropping ' + Math.abs(weeklyChange).toFixed(1) + 'kg/week (target: 0.3-0.9kg). Bumping your calories up.';
+      reason = 'You\'re dropping ' + wFmt(Math.abs(weeklyChange)) + '/week (target: ' + wFmt(0.3,{bare:true}) + '-' + wFmt(0.9) + '). Bumping your calories up.';
     } else if(userGoal === 'maintain'){
       calAdjustment = 200;
-      reason = 'You\'ve lost ' + Math.abs(weeklyChange).toFixed(1) + 'kg/week. Bumping calories up to maintain.';
+      reason = 'You\'ve lost ' + wFmt(Math.abs(weeklyChange)) + '/week. Bumping calories up to maintain.';
     } else {
       calAdjustment = -100;  // gaining but losing weight, contradiction
       reason = 'Trend shows weight loss when bulking. Reviewing your calories.';
@@ -21703,7 +21767,7 @@ function adjustCaloriesFromWeightTrend(){
   } else if(weeklyChange > targetMax){
     if(userGoal === 'lose'){
       calAdjustment = -150;  // cutting harder
-      reason = 'Weight is up ' + weeklyChange.toFixed(1) + 'kg this week. Tightening your calories.';
+      reason = 'Weight is up ' + wFmt(weeklyChange) + ' this week. Tightening your calories.';
     } else if(userGoal === 'gain'){
       calAdjustment = -100;
       reason = 'Gaining too fast at ' + weeklyChange.toFixed(1) + 'kg/week. Pulling calories back.';
@@ -21888,7 +21952,7 @@ function renderWeightHistory(){
   wrap.innerHTML = '<div class="lbl" style="margin-bottom:6px">Recent weigh-ins</div>' +
     entries.slice(0,8).map(e => {
       const when = e.ts ? new Date(e.ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : (e.date||'');
-      return '<div class="body-entry"><span style="font-size:14px;color:var(--tx)">'+e.weight+'kg</span>'+
+      return '<div class="body-entry"><span style="font-size:14px;color:var(--tx)">'+wFmt(e.weight)+'</span>'+
         '<span style="display:flex;align-items:center;gap:10px"><span style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+when+'</span>'+
         '<button onclick="deleteWeightEntry(&quot;'+(e.ts||e.date)+'&quot;)" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer" aria-label="Delete">\u00d7</button></span></div>';
     }).join('');
@@ -21952,8 +22016,8 @@ function recompRead(){
   let tone='good', head, body;
   if(stable && sUp){ head='Recomposition — the scale is lying in your favour.'; body='Your weight held over '+w.days+' days while your training volume climbed. That’s muscle replacing fat at about the same weight — the hardest, best result there is. Don’t chase the scale down.'; }
   else if(down && (sUp||sFlat)){ head='Cutting clean.'; body='Down '+kg+'kg while your strength '+(sUp?'even rose':'held')+'. You’re losing fat, not muscle — exactly how a cut should look. Keep the protein high.'; }
-  else if(up && sUp){ head='Lean gain.'; body='Up '+kg+'kg and your training’s rising with it — the weight’s going where you want it. If the scale ever climbs faster than your lifts, ease the surplus.'; }
-  else if(down && sDown){ tone='warn'; head='Strength is dropping with the weight.'; body='Down '+kg+'kg, but your lifts are falling too — usually the deficit’s too steep or protein’s low. Ease the cut a little and hold your protein; strength is the thing worth protecting.'; }
+  else if(up && sUp){ head='Lean gain.'; body='Up '+wFmt(kg)+' and your training’s rising with it — the weight’s going where you want it. If the scale ever climbs faster than your lifts, ease the surplus.'; }
+  else if(down && sDown){ tone='warn'; head='Strength is dropping with the weight.'; body='Down '+wFmt(kg)+', but your lifts are falling too — usually the deficit’s too steep or protein’s low. Ease the cut a little and hold your protein; strength is the thing worth protecting.'; }
   else if(up && sDown){ tone='warn'; head='Gaining faster than you’re building.'; body='Up '+kg+'kg but strength isn’t following — more of this is fat than muscle. Tighten the surplus and make sure the training keeps progressing.'; }
   else return null;                                    // no honest signal strong enough to speak
   // If a smart scale is feeding fat/muscle data, corroborate the read with it — or, when the scale
@@ -21999,10 +22063,10 @@ function renderBody(){
   const todayFull = new Date().toLocaleDateString('en-AU');                                   // identity
     const todayEntry = entries.find(e => (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') === todayFull : e.date === todayStr));
     if(todayEntry && todayEntry.weight > 0){
-      todaySummary.textContent = todayEntry.weight + 'kg logged today';
+      todaySummary.textContent = wFmt(todayEntry.weight) + ' logged today';
       todaySummary.style.color = 'var(--gr)';
     } else if(entries.length && entries[0].weight > 0){
-      todaySummary.textContent = 'Last: ' + entries[0].weight + 'kg (' + (entries[0].date || (entries[0].ts ? new Date(entries[0].ts).toLocaleDateString('en-AU') : 'earlier')) + ')';
+      todaySummary.textContent = 'Last: ' + wFmt(entries[0].weight) + ' (' + (entries[0].date || (entries[0].ts ? new Date(entries[0].ts).toLocaleDateString('en-AU') : 'earlier')) + ')';
       todaySummary.style.color = 'var(--tx3)';
     } else {
       todaySummary.textContent = 'No log yet';
@@ -22014,9 +22078,9 @@ function renderBody(){
   const weighed = entries.filter(e => e && (parseFloat(e.weight) || 0) > 0);
   if(weighed.length){
     const cur=weighed[0].weight,start=weighed[weighed.length-1].weight,diff=Math.round((cur-start)*10)/10;
-    document.getElementById('bod-cur').textContent=cur+'kg';
-    document.getElementById('bod-st').textContent=start+'kg';
-    document.getElementById('bod-lo').textContent=(diff<0?diff:diff>0?'+'+diff:'\u2014')+'kg';
+    document.getElementById('bod-cur').textContent=wFmt(cur);
+    document.getElementById('bod-st').textContent=wFmt(start);
+    document.getElementById('bod-lo').textContent=wDelta(diff, {zero:'\u2014'});
     const h=ls('totry_height')||175;const bmi=Math.round((cur/((h/100)**2))*10)/10;
     const bmiEl=document.getElementById('bod-bmi');
     if(bmiEl)bmiEl.textContent=bmi+' ('+(bmi<18.5?'Underweight':bmi<25?'Healthy':bmi<30?'Overweight':'Obese')+')';
@@ -22047,7 +22111,7 @@ function renderBody(){
       const prev=entries[i+1];
       const change=(prev&&e.weight&&prev.weight)?Math.round((e.weight-prev.weight)*10)/10:0;
       const cls=change<0?'down':change>0?'up':'same';
-      const cs=change===0?'\u2014':(change>0?'+':'')+change+'kg';
+      const cs=wDelta(change, {zero:'\u2014'});
       const sc=e.scores||{};
       const scoreLine=[['Train',sc.train],['Food',sc.nutrition],['Sleep',sc.sleep],['Faith',sc.faith]]
         .filter(x=>x[1]>0).map(x=>x[0]+' '+x[1]+'/5').join(' \u00b7 ');
@@ -22055,7 +22119,7 @@ function renderBody(){
       card.style.cssText='background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:8px';
       let html='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:'+((scoreLine||e.win||e.struggle||e.focus||e.note)?'8px':'0')+'">'+
         '<span style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3)">'+(e.date || (e.ts ? new Date(e.ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : ''))+'</span>'+
-        (e.weight>0?'<span style="font-size:15px;color:var(--tx)">'+e.weight+'kg <span style="font-size:11px;color:'+(cls==='down'?'var(--gr)':cls==='up'?'var(--re)':'var(--tx3)')+'">'+cs+'</span></span>':'')+
+        (e.weight>0?'<span style="font-size:15px;color:var(--tx)">'+wFmt(e.weight)+' <span style="font-size:11px;color:'+(cls==='down'?'var(--gr)':cls==='up'?'var(--re)':'var(--tx3)')+'">'+cs+'</span></span>':'')+
         '</div>';
       if(e.bf>0) html+='<div style="font-size:11px;color:var(--tx3);margin-bottom:6px">Body fat: '+e.bf+'%</div>';
       if(scoreLine) html+='<div style="font-size:11px;color:var(--tx2);margin-bottom:6px">'+scoreLine+'</div>';
@@ -22133,7 +22197,7 @@ function openQuickWeightLog(){
     '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Just the number. The deeper check-in is for Sundays.</p>' +
     '<div style="margin-bottom:14px">' +
       '<label style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;display:block">Weight (kg)</label>' +
-      '<input type="number" id="quick-weight-in" step="0.1" inputmode="decimal" placeholder="' + (last?.weight || '75.0') + '" style="width:100%;font-size:24px;text-align:center;padding:14px;font-family:DM Mono,monospace" autofocus>' +
+      '<input type="number" id="quick-weight-in" step="0.1" inputmode="decimal" placeholder="' + (last?.weight != null ? wFmt(last.weight, {bare:true}) : wFmt(75, {bare:true})) + '" style="width:100%;font-size:24px;text-align:center;padding:14px;font-family:DM Mono,monospace" autofocus>' +
     '</div>' +
     (todayEntry && todayEntry.weight > 0 ? '<p style="font-size:11px;color:var(--go);margin-bottom:10px;text-align:center">Already logged today: ' + todayEntry.weight + 'kg — this will replace it.</p>' : '') +
     '<div style="display:flex;gap:8px">' +
@@ -22146,9 +22210,9 @@ function openQuickWeightLog(){
 }
 
 function saveQuickWeight(){
-  const w = parseFloat(document.getElementById('quick-weight-in')?.value || 0);
+  const w = dispToKg(parseFloat(document.getElementById('quick-weight-in')?.value || 0));   // stored in kg, always
   if(!w || w < 20 || w > 400){
-    showToast('Enter a real weight', 'Between 20 and 400 kg.');
+    showToast('Enter a real weight', 'Between ' + wFmt(20, {round:0}) + ' and ' + wFmt(400, {round:0}) + '.');
     return;
   }
   const entries = ls('totry_body') || [];
@@ -22481,8 +22545,10 @@ function updateTrackerDisplay(){
   const sum=document.getElementById('bod-current-summary');
   if(sum){
     if(todayWeight){
-      const unit=ls('totry_weight_unit')||'kg';
-      sum.textContent='Logged today: '+todayWeight.weight+' '+unit;
+      // This used to append the unit LABEL to the stored kilograms, so a person on lb was told
+      // their 82.4kg was "82.4 lb" — the wrong reading by 2.2x, contradicted by the kg figure three
+      // lines below it. wFmt converts.
+      sum.textContent='Logged today: '+wFmt(todayWeight.weight);
       sum.style.color='var(--gr)';
     } else {
       sum.textContent='No log today';
@@ -26336,7 +26402,7 @@ function renderBodySystemReport(){
     '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">'+
     stat(wCount+arrow(wCount,pCount),'workout'+(wCount===1?'':'s'),wCount>0?'var(--go)':'var(--tx3)')+
     stat((avgCal!=null?avgCal.toLocaleString():'\u2014')+arrow(avgCal,pAvgCal),'avg cal/day')+
-    stat(trend!=null?trend+'kg':'\u2014',weekChange!=null?((weekChange>0?'+':'')+weekChange+'kg wk'):'trend',weekChange!=null?(weekChange<0?'var(--gr)':'var(--go)'):'var(--tx)')+
+    stat(trend!=null?wFmt(trend):'\u2014',weekChange!=null?(wDelta(weekChange)+' wk'):'trend',weekChange!=null?(weekChange<0?'var(--gr)':'var(--go)'):'var(--tx)')+
     '</div>'+
     '<div style="font-size:12px;color:var(--tx2);line-height:1.65">'+
     (wVol?wVol.toLocaleString()+'kg lifted'+arrow(wVol,pVol):'No volume logged')+
@@ -40607,7 +40673,9 @@ function showUnderageFuelNote(){
 }
 function calcTDEE(){
   const age=parseInt(document.getElementById('tdee-age')?.value||25);
-  const weight=parseFloat(document.getElementById('tdee-weight')?.value||70);
+  // Mifflin-St Jeor takes kilograms. A person on lb types pounds into this box, so it is
+  // interpreted here — before any of the maths below sees it.
+  const weight=dispToKg(parseFloat(document.getElementById('tdee-weight')?.value||70));
   const height=parseFloat(document.getElementById('tdee-height')?.value||175);
   // A SEX ALREADY STATED WINS over this dropdown, always. prefillNutGoals() makes the control show the
   // truth, but this is the belt as well as the braces: if prefill has not run for any reason, the maths

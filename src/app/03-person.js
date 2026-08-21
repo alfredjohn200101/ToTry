@@ -711,7 +711,7 @@ function lifeStateBrief(s){
       lines.push('Nutrition: avg '+(n.avgCal7||'?')+' cal / '+(n.avgPro7||'?')+'g protein over '+n.daysLogged7+' logged days; today '+n.todayCal+' cal / '+n.todayPro+'g');
     }
   }
-  if(b.currentWeight) lines.push('Weight: '+b.currentWeight+'kg'+(b.recomp&&b.recomp.dFat!=null?' (last stretch: '+(b.recomp.dWeight>0?'+':'')+b.recomp.dWeight+'kg scale, '+(b.recomp.dFat>0?'+':'')+b.recomp.dFat+'kg fat'+(b.recomp.dMuscle!=null?', '+(b.recomp.dMuscle>0?'+':'')+b.recomp.dMuscle+'kg muscle':'')+')':''));
+  if(b.currentWeight) lines.push('Weight: '+wFmt(b.currentWeight)+(b.recomp&&b.recomp.dFat!=null?' (last stretch: '+(b.recomp.dWeight>0?'+':'')+b.recomp.dWeight+'kg scale, '+(b.recomp.dFat>0?'+':'')+b.recomp.dFat+'kg fat'+(b.recomp.dMuscle!=null?', '+(b.recomp.dMuscle>0?'+':'')+b.recomp.dMuscle+'kg muscle':'')+')':''));
   const soulBits = [];
   if(soul.spiritual!=null) soulBits.push('spiritual '+soul.spiritual.toFixed(1)+'/10');
   if(soul.emotional!=null) soulBits.push('emotional '+soul.emotional.toFixed(1)+'/10');
@@ -864,7 +864,7 @@ function buildPTCtx(){
 
 WHO THEY ARE:
 ${userName} | Day ${dayCount} of their journey${goalIntent?'\nGoal: '+goalIntent:''}
-Current weight: ${currentWeight?currentWeight+'kg':'not logged'}${goalWeight?' → goal '+goalWeight+'kg':''}
+Current weight: ${currentWeight?wFmt(currentWeight):'not logged'}${goalWeight?' → goal '+wFmt(goalWeight):''}
 ${(typeof nutGentle==='function'&&nutGentle())?'Daily nutrition target: held privately \u2014 this person has numbers turned off.':('Daily nutrition target: '+nutGoals.cal+' cal / '+nutGoals.pro+'g protein')}
 Today's planned focus: ${todayFocus}
 
@@ -1153,7 +1153,7 @@ ${nutPromptBlock(todayCals, todayPro, nutGoals.cal, nutGoals.pro, todayMeals)}
 
 BODY & TRAINING:
 Today's planned training: ${todayFocus}
-Weight: ${currentWeight?currentWeight+'kg':'Not logged'}
+Weight: ${currentWeight?wFmt(currentWeight):'Not logged'}
 ${(typeof nutGentle==='function'&&nutGentle())?'Nutrition target: held privately \u2014 numbers are turned off for this person.':('Nutrition target: '+nutGoals.cal+' cal / '+nutGoals.pro+'g protein')}${stravaCtx}${stepsCtx}${checkinCtx}
 ${(function(){ let s=''; try{ if(typeof computeReadiness==='function'){ const rd=computeReadiness(); if(rd) s+='\\nReadiness today: '+rd.score+'/100 ('+rd.level+'). '+rd.advice; } if(typeof detectVicePatterns==='function'){ const vp=detectVicePatterns(); if(vp&&vp.patterns&&vp.patterns.length) s+='\\nVice patterns (use gently, only if they raise it): '+vp.patterns.join(' '); } const fw = (typeof ls==='function') ? (ls('totry_feeling_wins')||[]) : []; if(fw.length){ const _since = Date.now()-7*86400000; const _recent = fw.filter(w=>w.ts && new Date(w.ts).getTime()>=_since); if(_recent.length){ s+='\\nIN THE LAST WEEK they reached for help the instant an urge rose and got through it '+_recent.length+' time(s) \u2014 this is them fighting in real time; honour it. Recent feelings they named: '+_recent.slice(0,3).map(w=>String.fromCharCode(34)+(w.feeling||'an urge').slice(0,60)+String.fromCharCode(34)).join(', ')+'.'; } } }catch(e){} return s; })()}
 
@@ -4221,6 +4221,9 @@ function _a11yScreenChrome(name){
 }
 function go(name){
   _a11yScreenChrome(name);
+  // Static weight labels are markup, so a unit change has to reach them somewhere. Here, because
+  // every screen that has one is arrived at through go().
+  try{ if(typeof syncWeightUnitLabels==='function') syncWeightUnitLabels(); }catch(_){}
   haptic("tap");
   // Nothing should still be talking after you leave the screen you started it on.
   try{ if(typeof Speak!=='undefined' && Speak.stop) Speak.stop(); }catch(_){}

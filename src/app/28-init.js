@@ -694,7 +694,9 @@ function showUnderageFuelNote(){
 }
 function calcTDEE(){
   const age=parseInt(document.getElementById('tdee-age')?.value||25);
-  const weight=parseFloat(document.getElementById('tdee-weight')?.value||70);
+  // Mifflin-St Jeor takes kilograms. A person on lb types pounds into this box, so it is
+  // interpreted here — before any of the maths below sees it.
+  const weight=dispToKg(parseFloat(document.getElementById('tdee-weight')?.value||70));
   const height=parseFloat(document.getElementById('tdee-height')?.value||175);
   // A SEX ALREADY STATED WINS over this dropdown, always. prefillNutGoals() makes the control show the
   // truth, but this is the belt as well as the braces: if prefill has not run for any reason, the maths

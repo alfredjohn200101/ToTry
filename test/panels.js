@@ -310,6 +310,50 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── the same body must get the same numbers in either unit ─────────────────────────────────
+  // Storage is canonical kilograms and Mifflin-St Jeor takes kilograms, so the ONLY thing standing
+  // between a person on pounds and a confidently wrong calorie target is interpretation at the input.
+  // With that interpretation removed, someone typing 181.7 meaning pounds is handed 4335 cal instead
+  // of 2797 — a 55% over-target, with nothing on screen to suggest anything is wrong. That is the
+  // failure this asserts against, so it compares the SAME BODY entered both ways.
+  {
+    const targets = {};
+    for (const [unit, typed] of [['kg', 82.4], ['lb', 181.7]]) {
+      const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+      const page = await ctx.newPage();
+      await page.addInitScript(u => { localStorage.clear();
+        const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+        s('totry_onboarded',true); s('totry_name','Sam'); s('totry_sex','male'); s('totry_weight_unit',u);
+      }, unit);
+      await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+      await page.waitForTimeout(2600);
+      targets[unit] = await page.evaluate(async (typed) => {
+        go('nourish'); await new Promise(x=>setTimeout(x,700));
+        const set=(id,v)=>{ const el=document.getElementById(id); if(!el) return false;
+          el.value=v; el.dispatchEvent(new Event('input',{bubbles:true})); return true; };
+        if(!(set('tdee-age',30) && set('tdee-weight',typed) && set('tdee-height',180))) return null;
+        const label=(document.getElementById('tdee-weight-label')||{}).textContent||'';
+        calcTDEE();
+        await new Promise(x=>setTimeout(x,500));
+        const txt=document.getElementById('tab-nourish').innerText||'';
+        const m=txt.match(/(\d{3,4})\s*\n?\s*CAL/i);
+        return { label, cal: m ? parseInt(m[1]) : null };
+      }, typed);
+      await ctx.close();
+    }
+    if (!targets.kg || !targets.lb || targets.kg.cal == null || targets.lb.cal == null)
+      findings.push(`weight units: could not read a calorie target — ${JSON.stringify(targets)}`);
+    else {
+      // within rounding: 181.7lb really is 82.42kg, so a calorie or two apart is correct
+      const gap = Math.abs(targets.kg.cal - targets.lb.cal);
+      if (gap > 5) findings.push(`weight units: the same body gets ${targets.kg.cal} cal in kg and ${targets.lb.cal} cal in lb — the pounds entry is not being interpreted`);
+      if (!/kg/.test(targets.kg.label)) findings.push(`weight units: the kg user's input is labelled "${targets.kg.label}"`);
+      if (!/lb/.test(targets.lb.label)) findings.push(`weight units: the lb user's input is still labelled "${targets.lb.label}" — this is how 180lb became 180kg`);
+      if (gap <= 5 && /lb/.test(targets.lb.label))
+        console.log(`weight units: same body, ${targets.kg.cal} cal in kg and ${targets.lb.cal} in lb, each box labelled right`);
+    }
+  }
+
   // ── integration IS the product: every front must reach the one brief ────────────────────────
   // The app's whole claim is that it sees the WHOLE person, so its counsel is true in a way a
   // single-feature app's cannot be. That claim lives or dies on one string: getLifeState().brief, the

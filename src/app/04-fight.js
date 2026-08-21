@@ -380,7 +380,7 @@ function exportBodyCollage(){
       ctx.fillText(e.date, x + PHOTO_SIZE/2, y + PHOTO_SIZE - 16);
       ctx.fillStyle = 'white';
       ctx.font = 'bold 13px sans-serif';
-      ctx.fillText(e.weight + 'kg', x + PHOTO_SIZE/2, y + PHOTO_SIZE - 4);
+      ctx.fillText(wFmt(e.weight), x + PHOTO_SIZE/2, y + PHOTO_SIZE - 4);
       
       loaded++;
       if(loaded === entries.length){
