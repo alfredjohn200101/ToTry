@@ -583,7 +583,7 @@ function renderVices(){
     if(v.kind === 'letgo'){
       // LETTING-GO CARD: a healing goal, not a streak. The counter only ever climbs (days of choosing
       // yourself) — going back never resets it, because grief isn't linear. No red, no shame, no relapse.
-      const lgDays = v.startDate ? Math.floor((Date.now()-new Date(v.startDate).getTime())/86400000) : 0;
+      const lgDays = v.startDate ? _calDaysSince(v.startDate) : 0;
       c.innerHTML =
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">'+
           '<div style="flex:1">'+
@@ -1228,6 +1228,18 @@ function viceStreakAnchor(v){
   if(v.lastLoss){ const d = new Date(v.lastLoss); if(!isNaN(d)) return d; }
   return null;
 }
+// A streak is counted in calendar days, not in elapsed 24-hour blocks. A quit date entered as a date
+// ("2026-06-01") parses as UTC midnight, which is 10am local in Australia — so elapsed arithmetic read
+// a day short every morning until 10am for anyone who backdated their start, which the app actively
+// invites them to do. It is the headline number of this pillar and the one people screenshot.
+// Elapsed time is still what the sub-7-day live clock means, so that keeps using it.
+function _calDaysSince(ts){
+  if(ts === null || ts === undefined) return 0;
+  const s = new Date(ts); if(isNaN(s.getTime())) return 0;
+  const a = new Date(s.getFullYear(), s.getMonth(), s.getDate());
+  const n = new Date(); const t = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+  return Math.max(0, Math.round((t - a) / 86400000));   // round, so a DST shift cannot lose a day
+}
 function viceCleanDays(v){
   // A clean streak is elapsed time since a COMMITMENT to zero. Watch mode has made none, moderation
   // is a limit rather than a zero, and letting go is not a streak at all — so none of them has one.
@@ -1236,7 +1248,7 @@ function viceCleanDays(v){
   if(typeof viceIsAbstinence === 'function' && !viceIsAbstinence(v)) return 0;
   const start = viceStreakAnchor(v);
   if(!start) return 0;
-  return Math.max(0, Math.floor((Date.now() - start) / 86400000));
+  return _calDaysSince(start);
 }
 
 // SILENCE IS NOT A STREAK. A clean count is only elapsed time — it grows just as fast for someone

@@ -305,6 +305,9 @@ function ls(k,v){
       // device saw "Storage full" once, then wrote a journal entry, a weigh-in and a meal that all
       // silently went nowhere while the app said "Saved" each time. Once every 30 seconds is enough to
       // avoid a wall of toasts and still tell the truth about each new thing that did not save.
+      // EVERY failed write is recorded, throttled or not — see the note below on showToast. The
+      // throttle governs how often we EXPLAIN, never whether the app is allowed to claim success.
+      try{ window.__lsLastWriteFailed = Date.now(); }catch(_){ }
       if(Date.now() - _lsQuotaWarned > 30000){
         _lsQuotaWarned = Date.now();
         // SAID TWICE, DELIBERATELY. showToast() opens with `const ex=document.querySelector(
@@ -443,7 +446,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v526';
+const APP_VERSION = 'v527';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }

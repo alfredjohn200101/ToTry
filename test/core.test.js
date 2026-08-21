@@ -10,7 +10,8 @@ const H = require('./harness');
 // ── STREAK / CLEAN-DAYS (viceCleanDays) ──────────────────────────────────────────────────────────
 H.section('viceCleanDays — the streak counter');
 {
-  const { viceCleanDays, viceStreakAnchor } = H.load(['viceStreakAnchor', 'viceCleanDays']);
+  const { viceCleanDays, viceStreakAnchor, _calDaysSince } =
+    H.load(['viceStreakAnchor', '_calDaysSince', 'viceCleanDays']);
   const daysAgo = n => new Date(Date.now() - n * 86400000).toISOString();
   H.eq(viceCleanDays({ startDate: daysAgo(5) }), 5, '5 days since startDate → 5');
   // The anchor itself, since two screens now depend on it agreeing.
@@ -18,6 +19,25 @@ H.section('viceCleanDays — the streak counter');
        'startDate wins over lastLoss — it is what every relapse path writes, including backdating');
   H.ok(viceStreakAnchor({ lastLoss: daysAgo(3) }).getTime() === new Date(daysAgo(3)).getTime(),
        'lastLoss is the fallback for rows that predate startDate');
+
+  // The bug this was written for: a quit date typed as a DATE parses at UTC midnight, which is a
+  // different local day depending on the timezone. Counting elapsed 24-hour blocks then read a day
+  // short every morning — on the headline number of this pillar, for exactly the people the app
+  // invites to backdate ("If you quit before installing this…").
+  // Deliberately NOT a date-only string 30 days back: whether that exposes the bug depends on the
+  // hour the suite happens to run (UTC midnight is 10am in Australia, so elapsed and calendar agree
+  // from 10am onward and the assertion passes all afternoon while the bug is still there — this one
+  // was written that way first, and fault injection is what caught it).
+  // An anchor late yesterday evening is one calendar day ago at every hour of the day, while elapsed
+  // 24-hour blocks call it 0 until this time tomorrow.
+  const _y = new Date(); _y.setDate(_y.getDate() - 1); _y.setHours(23, 59, 0, 0);
+  H.eq(viceCleanDays({ startDate: _y.toISOString() }), 1,
+       'a quit late yesterday evening reads 1 day, not 0 — calendar days, not 24-hour blocks');
+  const _d = new Date(); _d.setDate(_d.getDate() - 30); _d.setHours(22, 0, 0, 0);
+  H.eq(viceCleanDays({ startDate: _d.toISOString() }), 30, 'and 30 days back stays 30 whatever the hour');
+  H.eq(_calDaysSince(Date.now()), 0, 'today is day 0');
+  H.eq(_calDaysSince(Date.now() + 86400000), 0, 'a future anchor never goes negative');
+  H.eq(_calDaysSince('not a date'), 0, 'an unparseable anchor is 0, not NaN');
   H.eq(viceStreakAnchor({}), null, 'and a vice with neither has no streak to count');
   H.eq(viceCleanDays({ startDate: daysAgo(0) }), 0, 'started today → 0');
   H.eq(viceCleanDays({ startDate: null }), 0, 'no startDate → 0 (not NaN)');
@@ -74,7 +94,7 @@ H.section('_pmTotals — per-item photo meal totals with per-item multipliers');
 // ── MONEY: reclaimed / spend picture (viceSpendPicture) — the honest money math ──────────────────
 H.section('viceSpendPicture — reclaimed money (debt cancels savings first)');
 {
-  const { viceSpendPicture, viceMoneySaved } = H.load(['viceStreakAnchor', 'viceSpendPicture', 'viceMoneySaved', 'viceCleanDays']);
+  const { viceSpendPicture, viceMoneySaved } = H.load(['viceStreakAnchor', '_calDaysSince', 'viceSpendPicture', 'viceMoneySaved', 'viceCleanDays']);
   const daysAgo = n => new Date(Date.now() - n * 86400000).toISOString();
   let p = viceSpendPicture({ costAmount: 20, costPer: 'week', startDate: daysAgo(14) });
   H.eq(p.avoided, 40, '$20/week × 2 weeks = $40 avoided');
@@ -3925,7 +3945,8 @@ function fnBodyOf(code, name){
     'viceCleanDays itself returns 0 without an abstinence goal — gated at the source, not per call site');
   {
     const anchor = H.extractFn('viceStreakAnchor');
-    const f = new Function('viceMode', 'viceIsAbstinence', anchor + vcd + 'return viceCleanDays;')(vm, abst);
+    const cds = H.extractFn('_calDaysSince');
+    const f = new Function('viceMode', 'viceIsAbstinence', anchor + cds + vcd + 'return viceCleanDays;')(vm, abst);
     const ago = d => new Date(Date.now() - d * 864e5).toISOString();
     H.eq(f({ n: 'X', mode: 'quit', startDate: ago(40) }), 40, 'quitting keeps its 40 days');
     H.eq(f({ n: 'X', startDate: ago(40) }), 40, 'and so does a vice from before modes existed');
@@ -4869,6 +4890,171 @@ function fnBodyOf(code, name){
     store.totry_trackers = { [key]: { sleep: 8, _sleepSrc: 'health' } };
     H.ok(g().score > four.score, 'eight hours scores higher than four');
   }
+}
+
+// ── a destructive control may not announce itself as "Close" ─────────────────────────────────
+{
+  H.section('delete buttons say what they delete');
+
+  // Six × buttons that permanently delete a person's own writing — a letter to God, someone they
+  // pray for, a savings goal — were all labelled aria-label="Close". A VoiceOver user swiping the
+  // list hears "Close, button" and activates it expecting to dismiss something.
+  const bad = H.html.split('\n')
+    .map((l, n) => ({ l, n: n + 1 }))
+    .filter(x => /aria-label="Close"/.test(x.l) && /on\w+="\s*(delete|remove|clear|wipe)/i.test(x.l))
+    .map(x => x.n + ': ' + (x.l.match(/on\w+="[^"]{0,40}/) || [''])[0]);
+  H.eq(bad, [], 'no control labelled "Close" actually deletes something');
+}
+
+// ── a name the person typed must survive being displayed ─────────────────────────────────────
+{
+  H.section('money names are escaped');
+
+  // Name an asset 'ETF <VAS>' or a bill 'Rent <shared>' and the browser parses the angle brackets as
+  // an unknown tag: the name silently loses half of itself on screen, with no error anywhere. Bank
+  // descriptions land in the same renderers from an imported CSV.
+  const money = H.html;
+  const raw = [];
+  // NOT a bare /s\.title/ — the moment module renders a static content table through the same
+  // variable name, and matching it made this assertion fail on code that was never user data.
+  [/>'\s*\+\s*s\.name\s*\+/g, />'\s*\+\s*a\.name\s*\+/g, />'\s*\+\s*b\.name\s*\+/g,
+   /\+\s*s\.note\s*[:+]/g, /pay-title">'\+s\.title\+/g].forEach(re => {
+    const m = money.match(re);
+    if (m) raw.push(...m.map(x => x.trim()));
+  });
+  H.eq(raw, [], 'no money renderer interpolates a typed name straight into innerHTML — use _escFew');
+  H.ok((H.html.match(/_escFew\(s\.name\)|_escFew\(a\.name\)|_escFew\(b\.name/g) || []).length >= 3,
+       'and the subscription, asset and bill renderers do escape');
+}
+
+// ── one 1RM formula, not three ───────────────────────────────────────────────────────────────
+{
+  H.section('one estimated-1RM formula');
+
+  // Epley written out by hand in two places, next to the tested estE1RM that every other caller uses.
+  // The hand-written copy has no r===1 special case, so a 100kg SINGLE — an actual one-rep max, the
+  // least ambiguous number in the sport — was stored as a 103kg estimate, while the identical lift
+  // arriving from Hevy was stored as 100. Both write prs[name].orm, which the PR list, the strength
+  // curve and overloadSuggestion all read. Neither filtered warmups either.
+  // Every hand-written Epley, rounded or not — this caught three more the audit had not reported,
+  // in the strength curve, the session summary and the PR list, which charted a 100kg single at 103
+  // while the store held 100. The one legitimate copy is estE1RM's own body, so it is subtracted
+  // rather than pattern-excluded: if the definition ever moves, this fails loudly instead of quietly.
+  // comments stripped first — one of them spells the formula out to explain it, and matching prose
+  // rather than code is how a green assertion ends up meaning nothing.
+  const _noComments = H.html.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  const inline = (_noComments.match(/w\s*\*\s*\(\s*1\s*\+\s*r\s*\/\s*30\s*\)/g) || []);
+  H.eq(inline.length, 1, 'Epley is written out exactly once — in estE1RM — and everyone else calls it');
+  H.ok(/function estE1RM\([\s\S]{0,220}w \* \(1 \+ r \/ 30\)/.test(H.html),
+       'and that one copy is the one inside estE1RM');
+
+  const { estE1RM } = H.load(['estE1RM']);
+  H.eq(estE1RM(100, 1), 100, 'a 100kg single is a 100kg max, not 103');
+  H.eq(estE1RM(100, 5), 117, 'and 5 reps still estimates by Epley');
+  H.eq(estE1RM(0, 5), 0, 'no weight, no record');
+  H.eq(estE1RM(60, 0), 0, 'no reps, no record');
+
+  // and the two paths that used to disagree now filter warmups, like detectAndRecordPRs always did
+  const upr = H.extractFn('updatePersonalRecords');
+  H.ok(/warmup/.test(upr), 'updatePersonalRecords skips warmup sets');
+}
+
+// ── the rest clock is wall-clock, not a count of ticks ───────────────────────────────────────
+{
+  H.section('rest timer survives a pocket');
+
+  // `restTimeLeft--` once per interval assumes the interval keeps firing. Pocket the phone during a
+  // 3-minute rest — the normal thing to do between sets — and the browser throttles or stops it, so
+  // the countdown froze and resumed when you looked. The number on screen was not how long you had
+  // rested, and the buzz meant to bring you back came late or not at all.
+  const st = H.extractFn('startRestTimer');
+  H.ok(/restEndAt\s*=\s*Date\.now\(\)/.test(st), 'the timer stores an end time when it starts');
+  H.ok(/visibilitychange/.test(st), 'and re-syncs when the person comes back to the app');
+  H.ok(!/restTimeLeft--/.test(st), 'nothing decrements a counter once per tick');
+
+  const rem = H.extractFn('_restRemaining');
+  H.ok(/Date\.now\(\)/.test(rem), 'remaining time is computed from the clock');
+
+  // adding time must move the deadline, not just the displayed number — otherwise "+30s" is undone
+  // by the next sync.
+  const add = H.extractFn('addRestTime');
+  H.ok(/restEndAt\s*=/.test(add), '+30s moves the deadline itself');
+
+  // and stopping must not leave a listener behind on every set of every workout
+  const stop = H.extractFn('stopRestTimer');
+  H.ok(/removeEventListener\('visibilitychange'/.test(stop), 'stopping removes the listener it added');
+}
+
+// ── a due date is a day, and a debt has one too ──────────────────────────────────────────────
+{
+  H.section('due dates');
+
+  const { _daysUntilDue, _dueLabel, _dueColor } = H.load(['_dueLocalMidnight', '_daysUntilDue', '_dueLabel', '_dueColor']);
+  const iso = n => { const d = new Date(); d.setDate(d.getDate() + n);
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
+
+  // `new Date('2026-08-19')` is UTC midnight; east of Greenwich that is the NEXT local day, so
+  // "Due today" used to arrive the day after it was due — the one day a bill reminder had to be right.
+  H.eq(_daysUntilDue(iso(0)), 0, 'today is 0 days away, at any hour and in any timezone');
+  H.eq(_daysUntilDue(iso(1)), 1, 'tomorrow is 1');
+  H.eq(_daysUntilDue(iso(-4)), -4, 'four days overdue is -4');
+  H.eq(_daysUntilDue('not a date'), null, 'an unparseable date is null, not NaN days');
+  H.eq(_dueLabel(iso(0)), 'Due today', 'and it says so in words');
+  H.eq(_dueLabel(iso(-1)), '1 day overdue', 'singular overdue');
+  H.eq(_dueColor(iso(0)), 'var(--re)', 'due today is urgent');
+  H.eq(_dueColor(iso(30)), 'var(--tx3)', 'a month out is not');
+
+  // A debt's due date was display-only — printed as the raw ISO string, no urgency, no reminder —
+  // sitting in a list where every bill beside it said "Due today" in red.
+  H.ok(/_dueLabel\(d\.due\)/.test(H.html), "a debt's due date is rendered through the same label as a bill's");
+  const sched = H.extractFn('scheduleBillReminders');
+  H.ok(/f\.d \|\| \[\]/.test(sched), 'and debts with a due date get a reminder too');
+  H.ok(/outstanding <= 0\.005/.test(sched), 'but not once the debt is cleared');
+}
+
+// ── the lunar year starts when the wealth passed nisab ───────────────────────────────────────
+{
+  H.section('zakat hawl');
+
+  const { _hawlFromInput, _hawlStartMs } = H.load(['_hawlFromInput', '_hawlStartMs']);
+  const back = n => { const d = new Date(); d.setDate(d.getDate() - n);
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
+
+  // It was stamped "now" the first time the calculator was opened, so someone whose wealth crossed
+  // nisab months ago was shown a completion date up to a full lunar year late — with the same
+  // confidence as the arithmetic above it, on a screen built to be trusted with an obligation.
+  H.eq(_hawlFromInput(back(240)), back(240), 'the day they name is the day that is stored');
+  H.eq(_hawlFromInput('2099-01-01'), null, 'a lunar year cannot start in the future');
+  H.eq(_hawlFromInput(''), null, 'and an empty answer falls back to the caller');
+
+  // Stored as a DAY: toISOString() on a local midnight lands on the previous UTC date east of
+  // Greenwich, so what they typed and what the form showed them next time disagreed by one.
+  H.ok(!/T\d\d:/.test(String(_hawlFromInput(back(10)))), 'stored as a day, not an instant');
+
+  // and a legacy row holding a full timestamp still reads correctly
+  const legacyMs = _hawlStartMs('2025-12-21T13:00:00.000Z');
+  H.ok(legacyMs > 0, 'a legacy full-ISO hawlStart still parses');
+  const dayMs = _hawlStartMs('2025-12-21');
+  H.ok(new Date(dayMs).getDate() === 21, 'and a day-only one parses at LOCAL midnight, not UTC');
+}
+
+// ── a keyword orphaned from its function ─────────────────────────────────────────────────────
+{
+  H.section('no dangling async/await keyword');
+
+  // An edit once left `async` alone on a line above a comment block. node --check ACCEPTED it —
+  // `async` on its own is a valid identifier expression — so the parse gate passed, and the bundle
+  // then threw ReferenceError: async is not defined on every single load. The personas walk catches
+  // it (it asserts zero page errors) but only after a full browser run; this is the cheap version.
+  const code = H.html
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n');
+  const orphans = [];
+  code.forEach((l, n) => {
+    const t = l.trim();
+    if (/^(async|await|function|const|let|var|return)$/.test(t)) orphans.push((n + 1) + ': ' + t);
+  });
+  H.eq(orphans, [], 'no line is a bare keyword with nothing after it');
 }
 
 // ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────

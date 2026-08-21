@@ -780,7 +780,7 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .undo-msg{font-size:13px;color:var(--tx2);flex:1}
 .undo-btn{background:none;border:none;color:var(--go);font-size:13px;font-weight:600;cursor:pointer;padding:4px 8px;font-family:'Outfit',sans-serif;text-transform:uppercase;letter-spacing:0.05em}
 .undo-btn:active{opacity:0.6}
-.undo-close{background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:0 4px;line-height:1}
+.undo-close{background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:0;line-height:1;min-width:28px;min-height:28px;display:inline-flex;align-items:center;justify-content:center}
 
 
 /* ── PASS 3: INDUSTRY POLISH ── */
@@ -4309,6 +4309,10 @@ Amen.</div></div>
   <div class="sos-phase" id="sos-p3">
     <div class="sos-phase-lbl">Step 3 of 3 &#8212; Face the truth</div>
     <div class="sos-q-box"><div class="sos-q-text" id="sos-q-text"></div></div>
+    <!-- Their own words, on the phase built to deliver them. goSosP3() used to write this into
+         #sos-why-reminder, which lives in #sos-p0 — a container that is display:none whenever phase 3
+         is the active one, so the single most personal line in the SOS was never once on screen here. -->
+    <div id="sos-p3-why" style="display:none;text-align:center;padding:14px;margin:0 0 12px"></div>
     <div class="sos-q-bar-wrap"><div class="sos-q-bar" id="sos-q-bar"></div></div>
     <div class="sos-q-lbl" id="sos-q-lbl">Sit with this for 30 seconds...</div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px">

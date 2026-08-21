@@ -199,6 +199,114 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     });
     tiny.forEach(x => findings.push(`tap target under 24pt: ${x}`));
     console.log(`tap targets under 24pt: ${tiny.length}`);
+
+    // ── a sheet must announce itself and hold the keyboard ────────────────────────────────────
+    // 171 of this app's 174 bottom-sheets had no dialog role, no name and no focus trap: to a screen
+    // reader they appeared as an unnamed pile of divs, and Tab walked straight out of the sheet into
+    // the page behind it — which is still there and still clickable underneath. One observer now
+    // dresses every sheet on insertion. This drives it rather than grepping for it, because an
+    // observer that is never wired up greps exactly the same as one that is.
+    const a11y = await page.evaluate(async () => {
+      const out = [];
+      const before = document.createElement('button');
+      before.id = '__a11y_prev'; before.textContent = 'before';
+      document.body.appendChild(before); before.focus();
+
+      const m = document.createElement('div');
+      m.className = 'modal-bg open';
+      m.innerHTML = '<div class="modal"><h3>Which one is pulling?</h3>' +
+                    '<button id="__a1">A</button><button id="__a2">B</button></div>';
+      document.body.appendChild(m);
+      await new Promise(r => setTimeout(r, 80));
+
+      if (m.getAttribute('role') !== 'dialog') out.push('a new sheet got no dialog role');
+      if (m.getAttribute('aria-modal') !== 'true') out.push('a new sheet got no aria-modal');
+      if (!/pulling/.test(m.getAttribute('aria-label') || '')) out.push('a new sheet was not named from its own heading');
+      if (!m.contains(document.activeElement)) out.push('focus never entered the sheet');
+      if (/INPUT|TEXTAREA/.test(document.activeElement.tagName)) out.push('focus landed in a field — that pops the iOS keyboard');
+
+      m.remove();
+      await new Promise(r => setTimeout(r, 80));
+      if (document.activeElement.id !== '__a11y_prev') out.push('focus was not returned to where the person was');
+      before.remove();
+
+      for (const id of ['payday-modal', 'journal-modal', 'serving-modal']) {
+        const el = document.getElementById(id);
+        if (el && el.getAttribute('role') !== 'dialog') out.push(`static sheet #${id} got no dialog role`);
+      }
+      return out;
+    });
+    // Tab is a real key press, so it has to happen outside the page context.
+    await page.evaluate(() => {
+      const m = document.createElement('div');
+      m.className = 'modal-bg open';
+      m.innerHTML = '<div class="modal"><h3>Trap</h3><button id="__t1">A</button><button id="__t2">B</button></div>';
+      document.body.appendChild(m);
+      return new Promise(r => setTimeout(r, 80));
+    });
+    await page.evaluate(() => document.getElementById('__t2').focus());
+    await page.keyboard.press('Tab');
+    const landed = await page.evaluate(() => document.activeElement.id);
+    if (landed !== '__t1') a11y.push(`Tab escaped the sheet onto "${landed}" — the page behind is reachable`);
+    await page.evaluate(() => document.querySelector('.modal-bg.open:not([id])')?.remove());
+
+    a11y.forEach(x => findings.push(`sheet a11y: ${x}`));
+    console.log(`sheet a11y: ${a11y.length ? a11y.length + ' problems' : 'dialog role, name, focus in/out, Tab trapped'}`);
+    await ctx.close();
+  }
+
+  // ── the live SOS: the setting shapes the move, and their own words actually appear ──────────
+  // Two bugs of the same family. The app asked where the person was and then discarded the answer, so
+  // someone in bed at 2am was told to drop and do pushups and 'If safe, pull over' was unreachable for
+  // anyone with a plan for their vice. And step 3 wrote 'why you started this' into an element that
+  // lives in step 0's container, which is display:none while step 3 is showing — so the most personal
+  // line in the SOS was in the document and never once on the screen. Geometry, not presence.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name','Sam');
+      s('totry_why','I want to be the man my daughter thinks I am.');
+      s('totry_v',[{ n:'Porn', kind:'porn', mode:'quit', startDate:'2026-06-01T00:00:00.000Z',
+                     plan:{ why:'my marriage', firstMove:'Put the phone in another room.',
+                            actions:['Cold water on your face and wrists.'] } }]);
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2600);
+    const sos = await page.evaluate(async () => {
+      // the guest flow auto-opens the companion over everything; the crisis suite strips it for the
+      // same reason — otherwise this measures the overlay, not the SOS.
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+      const out = { moves:{}, why:null };
+      for (const loc of ['bed','car']) {
+        startLiveIntervention(0);
+        await new Promise(x=>setTimeout(x,180));
+        setLocation(loc);
+        await new Promise(x=>setTimeout(x,180));
+        out.moves[loc] = (document.getElementById('sos-action-text')||{}).textContent || '';
+      }
+      goSosP3();
+      await new Promise(x=>setTimeout(x,300));
+      const el = document.getElementById('sos-p3-why');
+      if (el) {
+        const r = el.getBoundingClientRect();
+        const top = document.elementFromPoint(r.left + r.width/2, r.top + r.height/2);
+        out.why = { onScreen: r.width>0 && r.height>0 && r.top>=0 && r.top<innerHeight,
+                    hit: !!(top && el.contains(top)),
+                    mine: /daughter/.test(el.innerText||'') };
+      }
+      return out;
+    });
+    // the two settings whose own first move is the only one that can physically be done
+    if (!/lights ON/i.test(sos.moves.bed || ''))
+      findings.push(`SOS in bed leads with "${(sos.moves.bed||'(nothing)').slice(0,60)}" instead of the setting's own move`);
+    if (!/pull over/i.test(sos.moves.car || ''))
+      findings.push(`SOS in the car never says "pull over" — it says "${(sos.moves.car||'(nothing)').slice(0,60)}"`);
+    if (!sos.why) findings.push('SOS step 3 has no container for the person\'s own why');
+    else if (!sos.why.onScreen || !sos.why.hit)
+      findings.push(`SOS step 3: their own why is in the document but not on the screen — ${JSON.stringify(sos.why)}`);
+    else if (!sos.why.mine) findings.push('SOS step 3 shows a why, but not the one they wrote');
+    else console.log('SOS: setting shapes the move, and their own why is on screen at step 3');
     await ctx.close();
   }
 

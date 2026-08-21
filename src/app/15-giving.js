@@ -293,7 +293,13 @@ function openZakat(){
       {id:'invest', label:'Gold, silver, shares, business stock', type:'number', prefix:curSym(), value: Math.round(invest)||''},
       {id:'owed', label:'Money owed TO you that you expect back', type:'number', prefix:curSym(), placeholder:'0'},
       {id:'debts', label:'Debts you owe now', type:'number', prefix:curSym(), value: Math.round(owedOut)||''},
-      {id:'price', label:'Silver price per gram today (your local source)', type:'number', prefix:curSym(), value: z.pricePerGram||''} ],
+      {id:'price', label:'Silver price per gram today (your local source)', type:'number', prefix:curSym(), value: z.pricePerGram||''},
+      // The lunar year runs from the day the wealth PASSED nisab, which is almost never the day someone
+      // first opens a calculator. Stamping "now" told a person whose wealth crossed months or years ago
+      // that their year completes up to a full lunar year late — stated with the same confidence as the
+      // arithmetic above it, on a screen built to be trusted with an obligation.
+      {id:'since', label:'When did your wealth first pass nisab? (leave as today if unsure)', type:'date',
+       value: (z.hawlStart ? String(z.hawlStart).slice(0,10) : _todayISO())} ],
     'Work it out', (v) => {
       const num = k => { const n = parseFloat(v[k]); return isNaN(n) ? 0 : n; };
       const price = num('price');
@@ -304,7 +310,12 @@ function openZakat(){
       const st = zakatState();
       st.pricePerGram = price;
       st.last = {net: Math.round(net), nisab: Math.round(nisab), due: due, at: new Date().toISOString()};
-      if(!st.hawlStart && net >= nisab) st.hawlStart = new Date().toISOString();
+      if(net >= nisab){
+        // Their answer wins; a date in the future or an unparseable one falls back to today.
+        const said = _hawlFromInput(v.since);
+        if(said) st.hawlStart = said;
+        else if(!st.hawlStart) st.hawlStart = _todayISO();
+      }
       ls('totry_zakat', st);
       if(typeof syncToCloud==='function') syncToCloud();
       renderGiving(); haptic('tap');
@@ -315,7 +326,7 @@ function openZakat(){
 }
 function _hawlLine(z){
   if(!z.hawlStart) return '';
-  const start = new Date(z.hawlStart).getTime(), doneAt = start + 354*86400000;
+  const start = _hawlStartMs(z.hawlStart), doneAt = start + 354*86400000;
   const left = Math.ceil((doneAt - Date.now()) / 86400000);
   const h = hijriParts(new Date(doneAt));
   const when = h ? (h.d+'/'+h.m+'/'+h.y+' AH') : new Date(doneAt).toLocaleDateString('en-AU');
@@ -323,7 +334,40 @@ function _hawlLine(z){
     ? '<div style="font-size:11px;color:var(--tx3);margin-top:5px">Your lunar year completes around '+when+' — about '+left+' days. <button onclick="resetHawl()" style="background:none;border:none;color:var(--go);cursor:pointer;font-size:11px">Reset</button></div>'
     : '<div style="font-size:11px;color:var(--go);margin-top:5px">Your lunar year has completed. Whenever you’ve paid it, reset the year. <button onclick="resetHawl()" style="background:none;border:none;color:var(--go);cursor:pointer;font-size:11px">Reset</button></div>';
 }
-function resetHawl(){ const z = zakatState(); z.hawlStart = new Date().toISOString(); ls('totry_zakat', z); if(typeof syncToCloud==='function') syncToCloud(); renderGiving(); showToast('Year reset','Counting a fresh lunar year from today.'); }
+// A helper the form and the reset both use, so the two can never drift.
+function _todayISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function _hawlFromInput(str){
+  const parts = String(str||'').split('-').map(Number);
+  if(parts.length !== 3 || parts.some(isNaN)) return null;
+  const d = new Date(parts[0], parts[1]-1, parts[2]);
+  if(isNaN(d.getTime())) return null;
+  if(d.getTime() > Date.now()) return null;              // a year cannot start in the future
+  // Stored as the DAY, not an instant. toISOString() on a local midnight lands on the previous UTC
+  // date east of Greenwich, so a person who typed 21 Dec reopened the form and saw 20 Dec — the same
+  // off-by-a-day that made "Due today" arrive the day after a bill was due.
+  return String(str).slice(0,10);
+}
+// Legacy rows hold a full ISO timestamp; new ones hold 'YYYY-MM-DD'. Both parse at local midnight.
+function _hawlStartMs(v){
+  const day = String(v || '').slice(0,10).split('-').map(Number);
+  if(day.length === 3 && !day.some(isNaN)) return new Date(day[0], day[1]-1, day[2]).getTime();
+  const d = new Date(v); return isNaN(d.getTime()) ? 0 : d.getTime();
+}
+// Resetting used to stamp today silently, which has the same problem as starting it did: someone who
+// paid their zakat weeks ago and is only now telling the app gets a year that starts late.
+function resetHawl(){
+  const z = zakatState();
+  openFormModal('Start the year again', 'From which day does the new lunar year run?',
+    [{id:'since', label:'First day of the new year', type:'date', value:_todayISO()}],
+    'Set it', (v) => {
+      const said = _hawlFromInput(v.since);
+      z.hawlStart = said || _todayISO();
+      ls('totry_zakat', z);
+      if(typeof syncToCloud==='function') syncToCloud();
+      if(typeof renderGiving==='function') renderGiving();
+      return true;
+    });
+}
 function renderGiving(){
   const el = document.getElementById('giving-body'); if(!el) return;
   const cg = curGiving(), p = givingPledge(), t = givingTotals(), inc = monthIncome();

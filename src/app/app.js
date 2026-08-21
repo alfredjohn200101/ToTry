@@ -91,8 +91,8 @@ function renderFirstRun(){
         ? '<div style="width:22px;height:22px;border-radius:50%;background:var(--gr);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#000;font-size:13px;font-weight:700">✓</div>'
         : '<div style="width:22px;height:22px;border-radius:50%;border:2px solid var(--bd2);flex-shrink:0"></div>';
       const textStyle = s.done ? 'color:var(--tx3);text-decoration:line-through' : 'color:var(--tx)';
-      const tap = s.done ? '' : ' onclick="' + s.action.replace(/"/g,'&quot;') + '" style="cursor:pointer"';
-      return '<div' + tap + ' style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)">' +
+      const tap = s.done ? '' : ' onclick="' + s.action.replace(/"/g,'&quot;') + '"';
+      return '<div' + tap + ' style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)' + (s.done ? '' : ';cursor:pointer') + '">' +
         check +
         '<div style="flex:1">' +
           '<div style="font-size:13px;font-weight:500;' + textStyle + '">' + s.label + '</div>' +
@@ -1589,7 +1589,7 @@ function renderConnectedApps(){
     row.innerHTML = '<div class="ca-icon" style="background:'+app.color+'">'+app.icon+'</div>'+
       '<div style="flex:1"><div class="ca-name">'+app.name+'</div><div class="ca-status">'+statusLabel+'</div></div>'+
       '<button class="btn sr-action" style="width:auto;padding:6px 10px;font-size:11px" onclick="openLinkedApp(&apos;'+appId+'&apos;)">Open</button>'+
-      '<button class="btn sr-action" style="width:auto;padding:6px 8px;font-size:11px;background:var(--re-bg);color:var(--re);border-color:var(--re-bd)" onclick="removeLinkedApp(&apos;'+appId+'&apos;)" aria-label="Close">&#215;</button>';
+      '<button class="btn sr-action" style="width:auto;padding:6px 8px;font-size:11px;background:var(--re-bg);color:var(--re);border-color:var(--re-bd)" onclick="removeLinkedApp(&apos;'+appId+'&apos;)" aria-label="Unlink this app">&#215;</button>';
     list.appendChild(row);
   });
 }

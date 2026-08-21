@@ -173,6 +173,43 @@ const PROBE = `(() => {
     else console.log(`  ✓ ${'safety net (container deleted)'.padEnd(34)} ${r.detail.number} lifted=${r.lifted}`);
   }
 
+  // ── the breath's own escalation branch ────────────────────────────────────────────────────────
+  // Not a free-text door, so the sweep above never reaches it — but it is the same moment. The person
+  // has just told the app on a 0–10 scale that a minute of guided breathing did NOT move their
+  // distress. The ending names the right next step ("let a real person in") and used to give them a
+  // single button: close. Rating the same number twice is how you fault-inject it.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name','Sam'); s('totry_faith_tradition','christianity'); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2900);
+    const r = await page.evaluate(async () => {
+      // the protocol is shortened so the run finishes inside the test rather than in real minutes
+      BREATH_PROTOCOLS.settle = { name:'Settle', cycles:1, phases:[{l:'In',s:0.05,scale:1.4},{l:'Out',s:0.05,scale:1}] };
+      openBreath('settle', { reason:'test' });
+      await new Promise(x=>setTimeout(x,150));
+      const ov = document.querySelector('.breath-overlay');
+      const pick = (sel,n) => [...ov.querySelectorAll(sel)].find(x=>x.textContent.trim()===String(n));
+      pick('.b-pre button', 8)?.click();
+      await new Promise(x=>setTimeout(x,2600));
+      pick('.b-post button', 8)?.click();          // unchanged — it did not work for them
+      await new Promise(x=>setTimeout(x,250));
+      const more = ov.querySelector('.b-done-more');
+      const shown = !!(more && more.style.display !== 'none' && more.querySelector('button'));
+      if (!shown) return { shown:false };
+      ov.querySelector('.b-done-bridge')?.click();
+      await new Promise(x=>setTimeout(x,450));
+      const txt = document.body.innerText;
+      return { shown:true, help: /Lifeline|13 11 14|Beyond Blue|Samaritans|988/i.test(txt) };
+    });
+    checks++;
+    if (!r.shown) findings.push('the breath ending: distress unchanged and the only control is close');
+    else if (!r.help) findings.push('the breath ending: "Let someone in" does not reach a helpline');
+    else console.log(`  ✓ ${'breath ending (still heavy)'.padEnd(34)} reaches a real helpline`);
+  }
+
   await browser.close(); server.close();
   console.log('');
   if (findings.length) { findings.forEach(f => console.log('  ✗ ' + f)); console.log(`\n✗ ${findings.length} finding(s)\n`); process.exit(1); }

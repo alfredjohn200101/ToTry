@@ -296,7 +296,7 @@ function renderUnifiedTraining(){
     if(t.distance) parts.push((t.distance/1000).toFixed(1)+'km');
     if(t.durationMin) parts.push(t.durationMin+'min');
     if(t.volume) parts.push(Math.round(t.volume).toLocaleString()+'kg');
-    if(t.sets) parts.push(t.sets+' sets');
+    if(t.sets) parts.push(t.sets + (t.sets === 1 ? ' set' : ' sets'));
     if(t.calories) parts.push(Math.round(t.calories)+' cal');
     if(t.hr) parts.push(Math.round(t.hr)+' bpm');
     return parts.join(' \u00b7 ');

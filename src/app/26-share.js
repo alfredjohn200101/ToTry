@@ -156,6 +156,17 @@ function setCheckin(field, value){
 // whatever the person is doing. A tappable toast also gets an explicit role=button and Enter/Space, since
 // it was previously a div with an onclick — invisible to the keyboard.
 function showToast(title,msg,onTap){
+  try{
+    const _failedAt = window.__lsLastWriteFailed || 0;
+    if(_failedAt && (Date.now() - _failedAt) < 2000){
+      const _success = /saved|logged|added|updated|done|complete|tracked|recorded|\u2713/i.test(String(title||''));
+      if(_success){
+        title = 'Not saved';
+        msg = 'This device is out of room, so that did not save. Settings \u2192 Your data to free some space.';
+        onTap = null;
+      }
+    }
+  }catch(_){ }
   const ex=document.querySelector('.milestone-toast');if(ex)ex.remove();
   const t=document.createElement('div');t.className='milestone-toast';
   const _urgent = /full|fail|could ?n.t|error|removed|deleted|lost|expired|not saved|did not save|wrong|reconnect|offline|out of room/i.test(String(title)+' '+String(msg));
@@ -335,6 +346,108 @@ function tellUser(title, body, opts){
   }, false);
 })();
 
+
+// ── SHEETS ARE DIALOGS ───────────────────────────────────
+// 174 bottom-sheets in this app, and until now 3 of them carried a dialog role. To a screen reader
+// the other 171 were an anonymous pile of divs that appeared out of nowhere: no announcement, no
+// name, and Tab walked straight out of the sheet into the page behind it — which is still sitting
+// there, fully interactive, underneath. A person navigating by keyboard could put focus on a button
+// they cannot see and press it.
+//
+// This is one observer rather than 174 edits, so every sheet added from here on is covered for free.
+// It deliberately does NOT focus the first input: on iOS that yanks the keyboard up, and most of
+// these sheets are a set of choices, not a form. It focuses the sheet itself, which announces the
+// dialog and its name, and leaves the keyboard down. Sheets that DO want the caret — askText, the
+// companion — already focus their own field, and the check below yields to them.
+(function(){
+  function label(el){
+    const h = el.querySelector('.modal-title, h1, h2, h3, h4, .sheet-title');
+    const t = (h && h.textContent || '').trim().replace(/\s+/g,' ').slice(0,120);
+    return t || 'Dialog';
+  }
+  function dress(el){
+    if(!el || el.getAttribute('role')) return;
+    // alertdialog is for the ones that interrupt to ask something — a screen reader treats it more
+    // urgently. askConfirm's sheets are exactly that; everything else is a plain dialog.
+    el.setAttribute('role', el.classList.contains('modal-ask') ? 'alertdialog' : 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    if(!el.getAttribute('aria-label')) el.setAttribute('aria-label', label(el));
+    const inner = el.querySelector('.modal');
+    if(inner && !inner.hasAttribute('tabindex')) inner.setAttribute('tabindex','-1');
+  }
+  function enter(el){
+    if(el.__a11yIn) return; el.__a11yIn = 1;
+    el.__a11yPrev = document.activeElement;
+    // one tick, so a sheet that focuses its own field wins over us
+    setTimeout(function(){
+      if(!el.isConnected) return;
+      if(el.contains(document.activeElement)) return;
+      const inner = el.querySelector('.modal') || el;
+      try{ inner.focus({ preventScroll:true }); }catch(_){ }
+    }, 0);
+  }
+  function leave(el){
+    const p = el.__a11yPrev; el.__a11yIn = 0; el.__a11yPrev = null;
+    if(p && p.isConnected && typeof p.focus === 'function'){ try{ p.focus({ preventScroll:true }); }catch(_){ } }
+  }
+  function scan(root){
+    if(!root || root.nodeType !== 1) return;
+    if(root.classList && root.classList.contains('modal-bg')){ dress(root); if(root.classList.contains('open')) enter(root); }
+    // :not([id]) is load-bearing, for the same reason it is at every other sweep in this file: a bare
+    // .modal-bg selector also matches the three STATIC sheets the shell owns. Nothing here removes a
+    // node, but the ban is on the pattern rather than the site — four fixes and a miss is how that
+    // rule was earned — so the static three are dressed by name at start() instead.
+    const q = root.querySelectorAll ? root.querySelectorAll('.modal-bg:not([id])') : [];
+    for(let i=0;i<q.length;i++){ dress(q[i]); if(q[i].classList.contains('open')) enter(q[i]); }
+  }
+  const obs = new MutationObserver(function(muts){
+    for(let i=0;i<muts.length;i++){
+      const m = muts[i];
+      if(m.type === 'attributes'){
+        const t = m.target;
+        if(t.classList && t.classList.contains('modal-bg')){
+          dress(t);
+          if(t.classList.contains('open')) enter(t); else if(t.__a11yIn) leave(t);
+        }
+        continue;
+      }
+      for(let j=0;j<m.addedNodes.length;j++) scan(m.addedNodes[j]);
+      for(let j=0;j<m.removedNodes.length;j++){
+        const n = m.removedNodes[j];
+        if(n.nodeType === 1 && n.__a11yIn) leave(n);
+      }
+    }
+  });
+  const STATIC_SHEETS = ['payday-modal','journal-modal','serving-modal'];
+  function start(){
+    scan(document.body);
+    STATIC_SHEETS.forEach(function(id){ const el = document.getElementById(id); if(el) dress(el); });
+    obs.observe(document.body, { childList:true, subtree:true, attributes:true, attributeFilter:['class'] });
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+
+  // Tab must not walk out of the sheet into the page behind it.
+  const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+  document.addEventListener('keydown', function(e){
+    if(e.key !== 'Tab') return;
+    // askConfirm and askText cycle their own three controls, from a CAPTURE-phase listener that
+    // preventDefaults. This one bubbles, so it runs after they have already moved the caret — and
+    // would move it a second time, landing the person somewhere neither handler intended. If someone
+    // else has handled the key, it is not ours.
+    if(e.defaultPrevented) return;
+    const open = document.querySelectorAll('.modal-bg.open');
+    if(!open.length) return;
+    const sheet = open[open.length-1];
+    if(!sheet.contains(document.activeElement)){ return; }
+    const items = Array.prototype.filter.call(sheet.querySelectorAll(FOCUSABLE), function(el){
+      return el.offsetWidth || el.offsetHeight || el.getClientRects().length;
+    });
+    if(!items.length) return;
+    const first = items[0], last = items[items.length-1];
+    if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+  }, false);
+})();
 
 // ── IN-APP FEEDBACK ───────────────────────────────────────────
 // The QA channel. Users report bugs/ideas; saved to Supabase (feedback table) so Alfred

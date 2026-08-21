@@ -74,7 +74,7 @@ function renderFinanceGoals(){
       '<div style="display:flex;gap:6px;margin-top:8px">'+
         '<input type="number" placeholder="Add '+curSym()+'" id="goal-add-'+g.id+'" style="flex:1;padding:6px;font-size:16px">'+
         '<button class="btn" style="width:auto;padding:6px 10px;font-size:11px" onclick="addToGoal('+g.id+')">+ Add</button>'+
-        '<button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:var(--re-bg);border-color:var(--re-bd);color:var(--re)" onclick="deleteFinanceGoal('+g.id+')" aria-label="Close">&#215;</button>'+
+        '<button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:var(--re-bg);border-color:var(--re-bd);color:var(--re)" onclick="deleteFinanceGoal('+g.id+')" aria-label="Delete this savings goal">&#215;</button>'+
       '</div>';
     container.appendChild(card);
   });
@@ -443,7 +443,7 @@ function renderAffirmList(){
     const row=document.createElement('div');
     row.style.cssText='display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bd)';
     row.innerHTML='<div style="flex:1;font-size:13px;color:var(--tx2);line-height:1.4;font-style:italic">'+a+'</div>'+
-      '<button style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:16px;padding:0 4px" onclick="deleteAffirm('+i+')" aria-label="Close">&#215;</button>';
+      '<button style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:16px;padding:0 4px" onclick="deleteAffirm('+i+')" aria-label="Delete this affirmation">&#215;</button>';
     list.appendChild(row);
   });
 }
@@ -695,7 +695,7 @@ function updateSobrietyClock(){
   const since=(typeof viceStreakAnchor==='function' ? viceStreakAnchor(v) : null)
               || new Date(ls('totry_start')||Date.now());
   const diff=Math.max(0,Date.now()-since.getTime());
-  const days=Math.floor(diff/86400000);
+  const days=_calDaysSince(since);
   const hours=Math.floor((diff%86400000)/3600000);
   const mins=Math.floor((diff%3600000)/60000);
   const secs=Math.floor((diff%60000)/1000);
@@ -1773,8 +1773,20 @@ function setLocation(loc){
     // In any public setting (people/work/class), lead with the discreet breathing tactic,
     // then the vice-specific move once they can step away.
     const publicSetting = (loc === 'people' || loc === 'work' || loc === 'class');
+    // …and two settings that are not about privacy but about what the body can physically do. Someone
+    // lying in the dark at 2am was being told to drop and do pushups; someone at the wheel could be
+    // handed 'cold water on your face and wrists'. The app asked where they were, then answered as if
+    // it had not — and 'If safe, pull over' was unreachable for anyone who had a plan for their vice,
+    // which is most people who get this far.
+    const constrained = (loc === 'bed' || loc === 'car');
     if(publicSetting){
       action = { icon:'&#127788;', text: 'Breathe in 4, hold 4, out 6 — five times. Nobody will notice. Then, when you can, step away: ' + pb.firstMove };
+    } else if(constrained && data && data.actions && data.actions.length){
+      // The location's own first move leads here, because in these two settings it is the only one
+      // that can actually be done — and in the car it is the safety instruction. The vice-specific
+      // move still follows, so the tailoring is not lost, it is just second.
+      action = { icon: data.actions[0].icon,
+                 text: data.actions[0].text + (pb.firstMove ? ' Then, when you can: ' + pb.firstMove : '') };
     } else {
       const t = pb.actions[Math.floor(Math.random()*pb.actions.length)];
       action = { icon:'&#9889;', text: t };
@@ -1879,7 +1891,7 @@ function goSosP3(){
   const qt=document.getElementById('sos-q-text');if(qt)qt.textContent=q;
   // His own "why" — in his words — resurfaces here, the moment he's most wavering.
   const why=ls('totry_why')||'';
-  const whyEl=document.getElementById('sos-why-reminder');
+  const whyEl=document.getElementById('sos-p3-why') || document.getElementById('sos-why-reminder');
   if(whyEl){
     if(why){
       whyEl.style.display='block';

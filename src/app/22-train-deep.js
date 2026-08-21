@@ -750,7 +750,7 @@ function renderSets(ei){
         // for the thing they came here to stop needing — and it was firing because this read the
         // positive displayed value. Assisted sets do not set records.
         const w=(trk==='assisted') ? 0 : parseFloat(_readWeight()),r=parseInt(rIn.value);
-        if(w&&r){const orm=Math.round(w*(1+r/30));const prs=ls('totry_prs')||{};if(!prs[ex.name]||orm>prs[ex.name].orm){showToast('New PR! \u{1F3C6}',ex.name+' \u2014 est. 1RM: '+orm+'kg');prs[ex.name]={orm,weight:w,reps:r,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})};ls('totry_prs',prs);setTimeout(()=>showVerseToast('pr','Word for your PR'),800);}}
+        if(w&&r&&(s.type||'normal')!=='warmup'){const orm=estE1RM(w,r);const prs=ls('totry_prs')||{};if(!prs[ex.name]||orm>prs[ex.name].orm){showToast('New PR! \u{1F3C6}',ex.name+' \u2014 est. 1RM: '+orm+'kg');prs[ex.name]={orm,weight:w,reps:r,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})};ls('totry_prs',prs);setTimeout(()=>showVerseToast('pr','Word for your PR'),800);}}
         // Rest timer: use this exercise's remembered rest, default 90s. Hevy-style per-exercise.
         // Hevy rip: warmup sets don't trigger rest \u2014 you ramp, you don't sit.
         const justDone = currentSession[ei] && currentSession[ei].sets && currentSession[ei].sets[si];
@@ -1059,7 +1059,7 @@ function openEditTraining(unifiedId){
     }).join('');
     const meta = [];
     if(w.volume) meta.push(Math.round(w.volume).toLocaleString()+'kg volume');
-    if(w.completedSets||w.totalSets) meta.push((w.completedSets||w.totalSets)+' sets');
+    if(w.completedSets||w.totalSets){ const _n = (w.completedSets||w.totalSets); meta.push(_n + (_n === 1 ? ' set' : ' sets')); }
     if(w.durationMin || w.durationMinutes) meta.push((w.durationMin || w.durationMinutes)+' min');
     m.innerHTML = '<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
       '<div class="src-tag" style="color:var(--go);margin-bottom:4px">'+(fromHevy?'HEVY':'LOGGED')+'</div>'+
@@ -1487,7 +1487,7 @@ function confirmScreenshotWorkout(detected){
 function updatePersonalRecords(session){
   const prs=ls('totry_prs')||{};
   const hit=[];
-  session.exercises.forEach(ex=>{ex.sets.forEach(s=>{if(!s.done||!s.weight||!s.reps)return;const w=parseFloat(s.weight),r=parseInt(s.reps);if(isNaN(w)||isNaN(r)||w<=0)return;const orm=Math.round(w*(1+r/30));if(!prs[ex.name]||orm>prs[ex.name].orm){prs[ex.name]={orm,weight:w,reps:r,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})};if(!hit.find(h=>h.name===ex.name))hit.push({name:ex.name,orm});}});});
+  session.exercises.forEach(ex=>{ex.sets.forEach(s=>{if(!s.done||!s.weight||!s.reps)return;const w=parseFloat(s.weight),r=parseInt(s.reps);if(isNaN(w)||isNaN(r)||w<=0)return;if((s.type||'normal')==='warmup')return;const orm=estE1RM(w,r);if(!prs[ex.name]||orm>prs[ex.name].orm){prs[ex.name]={orm,weight:w,reps:r,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})};if(!hit.find(h=>h.name===ex.name))hit.push({name:ex.name,orm});}});});
   ls('totry_prs',prs);
   return hit;
 }
@@ -1510,18 +1510,45 @@ function _restSeconds(ex){
   if(m) return +m[1];
   return 0;
 }
+// The rest clock is an END TIME, not a count of ticks. Counting `restTimeLeft--` once per interval
+// assumed the interval keeps firing — and it does not: pocket the phone during a 3-minute rest, which
+// is the normal thing to do between sets, and the browser throttles the timer to a crawl or stops it
+// entirely. The countdown froze and resumed when you looked, so the number on screen was not how long
+// you had actually rested, and the buzz that was meant to bring you back came late or never.
+let restEndAt = 0;
+function _restRemaining(){ return Math.max(0, Math.ceil((restEndAt - Date.now()) / 1000)); }
+function _restSync(){
+  if(!restTimerInt) return;
+  const display = document.getElementById('rest-timer-display');
+  restTimeLeft = _restRemaining();
+  if(display){ display.textContent = restTimeLeft; display.style.color = (restTimeLeft<=10) ? 'var(--re)' : 'var(--tx)'; }
+  if(restTimeLeft<=0) _restFinish();
+}
+function _restFinish(){
+  stopRestTimer();
+  /* Through haptic(), not navigator.vibrate. This was the ONLY direct call left outside haptic()
+     itself, and WebKit has never implemented the Vibration API — so the end-of-set buzz, the one
+     moment in a workout you are not looking at the screen, did nothing at all on iPhone. v422 routed
+     haptic() through the Taptic Engine; this line never got the memo. */
+  if(typeof haptic==='function') haptic('success');
+  showToast('Rest done \u23f1\uFE0F','Next set.');
+}
 function startRestTimer(secs){
-  stopRestTimer();restTimeLeft=secs;
+  stopRestTimer();restTimeLeft=secs;restEndAt=Date.now()+secs*1000;
   const overlay=document.getElementById('rest-timer-overlay');const display=document.getElementById('rest-timer-display');
   if(!overlay||!display)return;overlay.style.display='block';display.textContent=restTimeLeft;display.style.color='var(--tx)';
+  // On the wrapper this also fires with the screen off, which is the whole point of the buzz.
+  try{ if(typeof Notify!=='undefined' && Notify && typeof Notify.schedule==='function' && Notify.isNative && Notify.isNative())
+    Notify.schedule('rest_timer','Rest done','Next set.', new Date(restEndAt)); }catch(_){ }
+  document.addEventListener('visibilitychange', _restSync);
   restTimerInt=setInterval(()=>{
-    restTimeLeft--;if(display)display.textContent=restTimeLeft;
+    restTimeLeft=_restRemaining();if(display)display.textContent=restTimeLeft;
     if(restTimeLeft<=10&&display)display.style.color='var(--re)';
-    if(restTimeLeft<=0){stopRestTimer();/* Through haptic(), not navigator.vibrate. This was the ONLY direct call left outside haptic() itself, and WebKit has never implemented the Vibration API — so the end-of-set buzz, the one moment in a workout you are not looking at the screen, did nothing at all on iPhone. v422 routed haptic() through the Taptic Engine; this line never got the memo. */if(typeof haptic==='function') haptic('success');showToast('Rest done \u23f1\uFE0F','Next set.');}
-  },1000);
+    if(restTimeLeft<=0) _restFinish();
+  },250);   // four times a second, so coming back to the app corrects the display immediately
 }
-function stopRestTimer(){if(restTimerInt){clearInterval(restTimerInt);restTimerInt=null;}const o=document.getElementById('rest-timer-overlay');if(o)o.style.display='none';}
-function addRestTime(secs){restTimeLeft=Math.max(0,restTimeLeft+secs);const d=document.getElementById('rest-timer-display');if(d)d.textContent=restTimeLeft;}
+function stopRestTimer(){if(restTimerInt){clearInterval(restTimerInt);restTimerInt=null;}document.removeEventListener('visibilitychange', _restSync);restEndAt=0;const o=document.getElementById('rest-timer-overlay');if(o)o.style.display='none';}
+function addRestTime(secs){restEndAt=Math.max(Date.now(),restEndAt+secs*1000);restTimeLeft=_restRemaining();const d=document.getElementById('rest-timer-display');if(d)d.textContent=restTimeLeft;}
 function saveRoutine(){
   if(!currentSession.length){showToast('No exercises','Add exercises first.');return;}
   const name=document.getElementById('pt-routine-name')?.value.trim();if(!name){showToast('Name needed','Give your routine a name.');return;}
@@ -1944,7 +1971,7 @@ function renderRoutines(){
   const routines=ls('totry_routines')||[];const container=document.getElementById('pt-routines-list');if(!container)return;
   if(!routines.length){container.innerHTML='<div style="text-align:center;padding:24px 16px"><div style="font-family:\'Cormorant Garamond\',serif;font-size:18px;font-style:italic;color:var(--tx3);margin-bottom:6px">No routines saved yet.</div><div style="font-size:13px;color:var(--tx3)">Log a session and save it as a routine.</div></div>';return;}
   container.innerHTML='';
-  routines.forEach(r=>{const card=document.createElement('div');card.className='card';card.style.marginBottom='8px';const _ex=(r&&Array.isArray(r.exercises))?r.exercises:[];card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div style="font-size:14px;font-weight:500;color:var(--tx)">'+(r.name||'Routine')+'</div><button style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:14px;padding:0 4px" onclick="deleteRoutine('+r.id+')" aria-label="Close">&#215;</button></div><div style="font-size:12px;color:var(--tx3);margin-bottom:10px">'+_ex.length+' exercises \u00b7 '+_ex.map(e=>e&&e.name||'?').slice(0,3).join(', ')+(_ex.length>3?'...':'')+'</div><button class="btn primary" style="padding:9px" onclick="loadRoutine('+r.id+')">Load this routine \u2192</button>';container.appendChild(card);});
+  routines.forEach(r=>{const card=document.createElement('div');card.className='card';card.style.marginBottom='8px';const _ex=(r&&Array.isArray(r.exercises))?r.exercises:[];card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div style="font-size:14px;font-weight:500;color:var(--tx)">'+(r.name||'Routine')+'</div><button style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:14px;padding:0 4px" onclick="deleteRoutine('+r.id+')" aria-label="Delete this routine">&#215;</button></div><div style="font-size:12px;color:var(--tx3);margin-bottom:10px">'+_ex.length+' exercises \u00b7 '+_ex.map(e=>e&&e.name||'?').slice(0,3).join(', ')+(_ex.length>3?'...':'')+'</div><button class="btn primary" style="padding:9px" onclick="loadRoutine('+r.id+')">Load this routine \u2192</button>';container.appendChild(card);});
 }
 function renderSplitDayCards(){
   const split=getUserSplit();const ti=tIdx();const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
@@ -2004,7 +2031,7 @@ function renderExerciseProgressChart(exName){
     (ex.sets || []).forEach(st => {
       const w = parseFloat(st.weight), r = parseInt(st.reps);
       if(w > 0 && r > 0){
-        const e1rm = w * (1 + r / 30);
+        const e1rm = estE1RM(w, r);
         if(e1rm > bestE1RM){ bestE1RM = e1rm; bestSet = {w, r}; }
       }
     });
@@ -2077,8 +2104,8 @@ function renderExerciseProgressChart(exName){
       const w = parseFloat(st.weight), r = parseInt(st.reps);
       if(w > 0 && r > 0 && st.done !== false){
         totalVol += w * r; totalReps += r; did = true;
-        const e1 = w*(1+r/30);
-        if(e1 > bestSet.e1rm) bestSet = {w, r, e1rm:Math.round(e1)};
+        const e1 = estE1RM(w, r);
+        if(e1 > bestSet.e1rm) bestSet = {w, r, e1rm:e1};
       }
     });
     if(did) sessions++;
@@ -2677,8 +2704,9 @@ function showExerciseProgress(exName){
       if(w > 0 && r > 0){
         vol += w * r;
         if(w > maxW){ maxW = w; bestReps = r; }
-        // Epley 1RM formula: w * (1 + r/30)
-        const e1 = w * (1 + r / 30);
+        // estE1RM, not Epley written out again — it special-cases a single, so the curve and the PR
+        // list agree with the number that was actually recorded.
+        const e1 = estE1RM(w, r);
         if(e1 > est1RM) est1RM = e1;
       }
     });

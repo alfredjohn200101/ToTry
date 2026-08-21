@@ -683,7 +683,7 @@ function renderRelationships(){
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:'+nudge+';margin-top:2px">'+p.role.toUpperCase()+' · '+timeAgo+'</div>'+
     '</div>'+
     '<button class="btn" style="width:auto;padding:5px 8px;font-size:11px" onclick="logContact('+p.id+')">Connected</button>'+
-    '<button class="btn" style="width:auto;padding:5px 8px;font-size:11px;background:none;border:none;color:var(--tx3)" onclick="deleteRelationship('+p.id+')" aria-label="Close">&#215;</button>';
+    '<button class="btn" style="width:auto;padding:5px 8px;font-size:11px;background:none;border:none;color:var(--tx3)" onclick="deleteRelationship('+p.id+')" aria-label="Remove this person">&#215;</button>';
     list.appendChild(row);
   });
 }

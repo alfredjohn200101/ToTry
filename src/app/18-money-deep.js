@@ -186,6 +186,71 @@ function saveTransaction(){
   showToast('Logged', (window.__transType === 'expense' ? '−' : '+') + curSym() + amount + ' · ' + window.__transCategory);
   haptic('success');
 }
+// Every other record here can be corrected — debts, bills, assets, subscriptions. A transaction
+// could only be deleted, and a miscategorised spend skews the category breakdown and the lock-in
+// card for as long as it exists. Same shape as editDebt: prefilled, validated, writes back by id.
+// The month view shows eight rows of the current calendar month, so on the 1st a person's whole
+// ledger disappears while the maths above it is still computed from all of it. This is the way back.
+function openAllTransactions(){
+  const list = ls('totry_transactions') || [];
+  if(!list.length){ if(typeof showToast==='function') showToast('Nothing yet','Log a spend or import a statement first.'); return; }
+  const byMonth = {};
+  list.forEach(function(t){
+    const d = new Date(t.ts || t.date);
+    const k = isNaN(d) ? 'Undated' : d.toLocaleDateString('en-AU', { month:'long', year:'numeric' });
+    (byMonth[k] = byMonth[k] || []).push(t);
+  });
+  const m = document.createElement('div');
+  m.className = 'modal-bg open';
+  m.innerHTML = '<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:4px">Everything you have logged</div>'+
+    '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">' + list.length + ' entries. Tap one to correct it.</div>'+
+    Object.keys(byMonth).map(function(k){
+      const rows = byMonth[k];
+      const tot = rows.filter(function(t){ return t.type==='expense'; }).reduce(function(a,t){ return a+(t.amount||0); },0);
+      return '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin:14px 0 6px">'+
+          _escFew(k) + ' \u00b7 ' + curSym() + Math.round(tot).toLocaleString() + ' out</div>' +
+        rows.map(function(t){
+          const sign = t.type === 'expense' ? '\u2212' : '+';
+          const color = t.type === 'expense' ? 'var(--re)' : (t.type === 'transfer' ? 'var(--tx3)' : 'var(--gr)');
+          return '<div onclick="closeModal(this);editTransaction(' + t.id + ')" style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--bd);font-size:12px;cursor:pointer">'+
+            '<span style="flex:1;min-width:0;color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(t.note || t.category || 'Transaction') + '</span>'+
+            '<span style="font-family:DM Mono,monospace;color:' + color + ';flex-shrink:0">' + sign + curSym() + (t.amount||0) + '</span></div>';
+        }).join('');
+    }).join('') +
+    '<button class="btn" onclick="closeModal(this)" style="margin-top:16px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Close</button>'+
+  '</div>';
+  document.body.appendChild(m);
+}
+function editTransaction(id){
+  const list = ls('totry_transactions') || [];
+  const t = list.find(x => x && x.id === id);
+  if(!t){ if(typeof showToast==='function') showToast('That entry is gone','It may have been removed on another device.'); return; }
+  const cats = (typeof EXPENSE_CATEGORIES !== 'undefined' && EXPENSE_CATEGORIES.length)
+    ? EXPENSE_CATEGORIES : ['Food','Transport','Bills','Shopping','Eating out','Entertainment','Health','Other'];
+  openFormModal('Edit transaction', 'Correct what it was, or what it cost.',
+    [ {id:'note', label:'What was it', type:'text', value: t.note || ''},
+      {id:'amount', label:'Amount', type:'number', prefix:curSym(), value: (t.amount != null ? t.amount : '')},
+      {id:'category', label:'Category (' + cats.join(', ') + ')', type:'text', value: t.category || t.cat || ''} ],
+    'Save changes',
+    function(v){
+      const amt = parseFloat(v.amount);
+      if(!(amt > 0)) return 'An amount needs to be a number above zero.';
+      const fresh = ls('totry_transactions') || [];
+      const row = fresh.find(x => x && x.id === id);
+      if(!row) return 'That entry is gone \u2014 close this and try again.';
+      row.note = (v.note || '').trim();
+      row.amount = amt;
+      const c = (v.category || '').trim();
+      if(c){ row.category = c; row.cat = c; }
+      ls('totry_transactions', fresh);
+      if(typeof syncToCloud==='function') syncToCloud();
+      renderTransactions();
+      if(typeof haptic==='function') haptic('success');
+      if(typeof showToast==='function') showToast('Updated', row.note || 'Transaction saved.');
+      return true;
+    });
+}
 async function deleteTransaction(id){
   if(!(await askConfirm('Delete this transaction?'))) return;
   const list = ls('totry_transactions') || [];
@@ -254,11 +319,14 @@ function renderTransactions(){
           const sign = t.type === 'expense' ? '−' : '+';
           const color = t.type === 'expense' ? 'var(--re)' : 'var(--gr)';
           return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--bd);font-size:12px">' +
-            '<div style="flex:1;min-width:0"><div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(t.note || t.category || 'Transaction') + '</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + (t.date || (t.ts ? new Date(t.ts).toLocaleDateString('en-AU') : '')) +
+            '<div style="flex:1;min-width:0;cursor:pointer" onclick="editTransaction(' + t.id + ')"><div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(t.note || t.category || 'Transaction') + '</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + (t.date || (t.ts ? new Date(t.ts).toLocaleDateString('en-AU') : '')) +
               ((t.category || t.cat) ? ' \u00b7 ' + (t.category || t.cat) : '') + '</div></div>' +
             '<div style="display:flex;align-items:center;gap:6px"><span style="font-family:DM Mono,monospace;color:' + color + '">' + sign + curSym() + t.amount + '</span><button onclick="deleteTransaction(' + t.id + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
           '</div>';
-        }).join('');
+        }).join('') +
+        ((list.length > recentList.length)
+          ? '<button class="btn" onclick="openAllTransactions()" style="margin-top:10px;background:transparent;border:1px solid var(--bd);color:var(--tx2);font-size:12px">See all ' + list.length + ' \u2192</button>'
+          : '');
     }
   }
   
@@ -703,8 +771,8 @@ function renderSubscriptions(){
     annualTotal += monthly * 12;
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd);font-size:12px">' +
       '<div style="flex:1;min-width:0">' +
-        '<div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + s.name + '</div>' +
-        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">'+curSym() + s.amount + ' / ' + s.period + (s.note ? ' · ' + s.note : '') + '</div>' +
+        '<div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(s.name) + '</div>' +
+        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">'+curSym() + s.amount + ' / ' + _escFew(s.period) + (s.note ? ' · ' + _escFew(s.note) : '') + '</div>' +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:8px"><span style="font-family:DM Mono,monospace;color:var(--re)">~'+curSym() + monthly.toFixed(2) + '/mo</span><button onclick="deleteSubscription(' + s.id + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
     '</div>';
@@ -723,6 +791,44 @@ function renderSubscriptions(){
 // Web browsers cannot fire a background notification, so on web this schedules nothing and says so
 // rather than queueing a phantom (the same trap _sendReachOuts documents at 02-native.js:681).
 function _billNotifId(b){ return 'bill_' + String(b && b.id); }
+// A due date is a DAY, not an instant. `new Date('2026-08-19')` parses as UTC midnight, and east of
+// Greenwich that reads as the next local day — so "Due today" arrived the day after it was due, which
+// for a bill is the one day the reminder had to be right. This was written out inline in renderBills
+// and again in scheduleBillReminders; a debt's due date, meanwhile, was shown as a raw ISO string with
+// no urgency and no reminder at all, despite the Add form inviting the person to enter it.
+function _dueLocalMidnight(str){
+  const parts = String(str || '').split('-').map(Number);
+  const d = (parts.length === 3 && !parts.some(isNaN))
+    ? new Date(parts[0], parts[1]-1, parts[2])
+    : new Date(str);
+  if(isNaN(d.getTime())) return null;
+  d.setHours(0,0,0,0);
+  return d;
+}
+function _daysUntilDue(str){
+  const d = _dueLocalMidnight(str);
+  if(!d) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  return Math.round((d.getTime() - today.getTime()) / 86400000);
+}
+// "Due 3 Sep" / "Due today" / "9 days overdue" — the same words the bills list uses.
+function _dueLabel(str){
+  const n = _daysUntilDue(str);
+  if(n === null) return '';
+  if(n < 0) return Math.abs(n) + ' day' + (Math.abs(n)===1?'':'s') + ' overdue';
+  if(n === 0) return 'Due today';
+  if(n === 1) return 'Due tomorrow';
+  if(n <= 14) return 'Due in ' + n + ' days';
+  const d = _dueLocalMidnight(str);
+  return 'Due ' + d.toLocaleDateString('en-AU', { day:'numeric', month:'short' });
+}
+function _dueColor(str){
+  const n = _daysUntilDue(str);
+  if(n === null) return 'var(--tx3)';
+  if(n <= 3) return 'var(--re)';
+  if(n <= 7) return 'var(--go)';
+  return 'var(--tx3)';
+}
 function scheduleBillReminders(){
   try{
     if(typeof Notify==='undefined' || !Notify.schedule) return 0;
@@ -742,6 +848,26 @@ function scheduleBillReminders(){
       const amt = Number(b.amount != null ? b.amount : b.amt) || 0;
       Notify.schedule(_billNotifId(b), 'To Try',
         (b.name || 'A bill') + ' is due today' + (amt ? (' \u2014 ' + curSym() + amt.toLocaleString()) : '') + '.',
+        at, { route:'money' });
+      n++;
+    });
+
+    // Debts with a due date get the same treatment. A person is invited to enter one in the Add form,
+    // and until now nothing was ever done with it — no reminder, no urgency, not even a readable date,
+    // while every bill beside it was reminding properly.
+    const f = ls('totry_f') || {};
+    (f.d || []).forEach(function(d, i){
+      if(!d || !d.due) return;
+      const id = 'debt_due_' + String(d.n || i).toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,24) + '_' + i;
+      Notify.cancel(id);
+      const outstanding = (Number(d.t)||0) - (Number(d.p)||0);
+      if(outstanding <= 0.005) return;                     // cleared — a nudge would be noise
+      const parts = String(d.due).split('-').map(Number);
+      if(parts.length !== 3 || parts.some(isNaN)) return;
+      const at = new Date(parts[0], parts[1]-1, parts[2], 9, 0, 0, 0);
+      if(at.getTime() <= Date.now() + 60000) return;
+      Notify.schedule(id, 'To Try',
+        (d.n || 'A debt') + ' is due today \u2014 ' + curSym() + Math.round(outstanding).toLocaleString() + ' left.',
         at, { route:'money' });
       n++;
     });
@@ -822,13 +948,7 @@ function renderBills(){
     // `new Date('2026-08-19')` is parsed as UTC MIDNIGHT, and `now` is local. East of Greenwich that
   // makes a bill due today look like it is due tomorrow all day — "Due today" arrives the day after
   // it was due, which for a bill is the one day the reminder had to be right. Compare local midnights.
-  const _dueParts = String(b.due||'').split('-').map(Number);
-  const _due = (_dueParts.length === 3 && !_dueParts.some(isNaN))
-    ? new Date(_dueParts[0], _dueParts[1]-1, _dueParts[2])
-    : new Date(b.due);
-  _due.setHours(0,0,0,0);
-  const _today = new Date(); _today.setHours(0,0,0,0);
-  const daysUntil = Math.round((_due.getTime() - _today.getTime()) / 86400000);
+  const daysUntil = _daysUntilDue(b.due);
     let urgency;
     if(daysUntil < 0) urgency = {color: 'var(--re)', label: Math.abs(daysUntil) + 'd overdue', bg: 'rgba(216,93,75,0.1)', border: 'var(--re)'};
     else if(daysUntil <= 3) urgency = {color: 'var(--re)', label: daysUntil === 0 ? 'Due today' : daysUntil + ' day' + (daysUntil===1?'':'s'), bg: 'rgba(216,93,75,0.08)', border: 'var(--re-bd)'};
@@ -836,7 +956,7 @@ function renderBills(){
     else urgency = {color: 'var(--tx3)', label: daysUntil + ' days', bg: 'var(--bg3)', border: 'var(--bd)'};
     return '<div style="background:' + urgency.bg + ';border:1px solid ' + urgency.border + ';border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">' +
       '<div style="flex:1;min-width:0">' +
-        '<div style="font-size:13px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (b.name||b.n||'Bill') + '</div>' +
+        '<div style="font-size:13px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(b.name||b.n||'Bill') + '</div>' +
         '<div style="font-family:DM Mono,monospace;font-size:10px;color:' + urgency.color + ';margin-top:2px">'+curSym() + (Number(b.amount!=null?b.amount:b.amt)||0).toLocaleString() + ' · ' + urgency.label + '</div>' +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:6px">' +
@@ -1016,7 +1136,7 @@ function renderNetWorth(){
   }
   box.innerHTML = assets.map(a => 
     '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd);font-size:12px">' +
-      '<div style="flex:1;min-width:0;cursor:pointer" onclick="updateAsset(' + a.id + ')"><div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + a.name + '</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">Tap to update</div></div>' +
+      '<div style="flex:1;min-width:0;cursor:pointer" onclick="updateAsset(' + a.id + ')"><div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(a.name) + '</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">Tap to update</div></div>' +
       '<div style="display:flex;align-items:center;gap:8px"><span style="font-family:DM Mono,monospace;color:var(--gr)">'+curSym() + Math.round(a.value).toLocaleString() + '</span><button onclick="deleteAsset(' + a.id + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
     '</div>'
   ).join('');
@@ -1203,7 +1323,7 @@ function calcPayday(){
   // A plan you have to re-type by hand isn't a plan, it's homework. "Apply" actually books the debt
   // payments and the savings contribution \u2014 the feature finishing what it started.
   const canApply = steps.some(s => (s.kind==='debt' || s.kind==='savings') && s.amt > 0);
-  result.innerHTML='<h4>Allocation for '+curSym()+amt.toLocaleString()+'</h4>'+steps.map(s=>'<div class="pay-step"><div class="pay-n">'+s.n+'</div><div style="flex:1"><div class="pay-title">'+s.title+'</div><div class="pay-desc">'+s.desc+'</div></div><div class="pay-amt">'+curSym()+s.amt.toLocaleString()+'</div></div>').join('')+
+  result.innerHTML='<h4>Allocation for '+curSym()+amt.toLocaleString()+'</h4>'+steps.map(s=>'<div class="pay-step"><div class="pay-n">'+s.n+'</div><div style="flex:1"><div class="pay-title">'+_escFew(s.title)+'</div><div class="pay-desc">'+_escFew(s.desc)+'</div></div><div class="pay-amt">'+curSym()+s.amt.toLocaleString()+'</div></div>').join('')+
     (canApply ? '<button class="btn primary" style="margin-top:14px" onclick="applyPaydayAllocation()">Apply this \u2014 book it all</button>' : '')+
     '<button class="btn" style="margin-top:8px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="document.getElementById(\'payday-result\').style.display=\'none\'">Just showing me</button>';
 }

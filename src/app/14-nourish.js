@@ -1538,7 +1538,11 @@ async function lookupBarcode(barcode){
       iron: Math.round(per100Of('iron') * 1000 * 10) / 10,
       potassium: Math.round(per100Of('potassium') * 1000),
       vit_c: Math.round(per100Of('vitamin-c') * 1000 * 10) / 10,
-      source: 'OpenFoodFacts',
+      // 'Open Food Facts', spaced — _foodVerified(:476) and the ranking bonus (:655) both test the
+      // spaced string, so the unspaced one meant a scanned barcode was the ONE food path that never
+      // earned the verified badge and never got its ranking bonus. Scanning is the most trustworthy
+      // source there is; it was being presented as the least.
+      source: 'Open Food Facts',
       barcode: barcode,
       // If OFF gave a real serving size, offer it as the FIRST option with correct per-serving macros.
       servings: (servingG > 0 ? [{
@@ -4407,7 +4411,7 @@ function renderFastingRhythm(){
   el.innerHTML =
     '<div style="display:flex;align-items:flex-start;gap:8px">'+
       '<div style="flex:1"><span style="color:var(--go)">✝ '+f.kind+'.</span> '+f.note+'</div>'+
-      '<button onclick="ls(&apos;totry_fast_rhythm_dismissed&apos;,new Date().toLocaleDateString(&apos;en-AU&apos;));document.getElementById(&apos;fasting-rhythm&apos;).style.display=&apos;none&apos;" style="background:none;border:none;color:var(--tx3);font-size:15px;cursor:pointer;padding:0 2px;flex-shrink:0;line-height:1">×</button>'+
+      '<button onclick="ls(&apos;totry_fast_rhythm_dismissed&apos;,new Date().toLocaleDateString(&apos;en-AU&apos;));document.getElementById(&apos;fasting-rhythm&apos;).style.display=&apos;none&apos;" style="background:none;border:none;color:var(--tx3);font-size:15px;cursor:pointer;padding:0;flex-shrink:0;line-height:1;min-width:28px;min-height:28px;display:inline-flex;align-items:center;justify-content:center">×</button>'+
     '</div>';
   el.style.display = 'block';
 }

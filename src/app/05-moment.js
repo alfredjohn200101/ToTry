@@ -1481,6 +1481,7 @@ function openBreath(id, opts){
     '</div>'+
     '<div class="b-done" style="display:none;max-width:360px">'+
       '<div class="b-done-msg" style="font-family:Cormorant Garamond,serif;font-size:25px;line-height:1.3;margin-bottom:20px"></div>'+
+      '<div class="b-done-more" style="display:none;margin:0 auto 10px;max-width:240px"></div>'+
       '<button class="btn primary b-done-btn" style="max-width:240px;margin:0 auto">I’m ready</button>'+
     '</div>';
   document.body.appendChild(ov);
@@ -1499,7 +1500,23 @@ function openBreath(id, opts){
     q('.b-name').textContent=p.name;
     state.cycle=0; state.pi=0;
     function doneMsg(){ show('.b-done'); q('.b-done-msg').textContent = p.done || (_breathFaithOn()?'Rest here a moment. That was a work — small, real, yours.':'Notice how your body feels now. That was one real thing done.'); q('.b-done-btn').onclick=close; try{ if(typeof logEvent==='function') logEvent('breath'); }catch(_){} if(typeof haptic==='function') haptic('tap'); }
-    function afterDone(){ show('.b-done'); const d=state.before-state.after; let msg; if(d>=3) msg='From '+state.before+' to '+state.after+'. You just moved it — with nothing but your breath.'; else if(d>0) msg='From '+state.before+' to '+state.after+'. Even a little down is the wave passing. You stayed.'; else msg='Still heavy — and you showed up and did the work anyway. That counts. If it stays high, let a real person in.'; q('.b-done-msg').textContent=msg; q('.b-done-btn').onclick=close; try{ if(typeof logEvent==='function') logEvent('breath'); }catch(_){} }
+    function afterDone(){ show('.b-done'); const d=state.before-state.after; let msg; if(d>=3) msg='From '+state.before+' to '+state.after+'. You just moved it — with nothing but your breath.'; else if(d>0) msg='From '+state.before+' to '+state.after+'. Even a little down is the wave passing. You stayed.'; else msg='Still heavy — and you showed up and did the work anyway. That counts. If it stays high, let a real person in.'; q('.b-done-msg').textContent=msg;
+      // This is the escalation branch: the person has just told us, on a 0–10 scale, that a minute of
+      // guided breathing did NOT move their distress. Naming the right next step and then offering
+      // only a close button leaves them to find it themselves at the worst moment to be asked to.
+      const more=q('.b-done-more');
+      if(more){
+        if(d<=0){
+          more.style.display='block';
+          more.innerHTML='<button class="btn b-done-bridge" style="width:100%;margin-bottom:8px">Let someone in</button>'+
+                         '<button class="btn b-done-stay" style="width:100%;background:none;border-color:var(--bd);color:var(--tx2)">Stay with me a minute</button>';
+          const bb=more.querySelector('.b-done-bridge');
+          if(bb) bb.onclick=function(){ close(); if(typeof bridgeToRealHelp==='function') bridgeToRealHelp('heavy'); };
+          const bs=more.querySelector('.b-done-stay');
+          if(bs) bs.onclick=function(){ close(); if(typeof openCompanionForUrge==='function') openCompanionForUrge(); else if(typeof openFeelingDoor==='function') openFeelingDoor(); };
+        } else { more.style.display='none'; more.innerHTML=''; }
+      }
+      q('.b-done-btn').onclick=close; try{ if(typeof logEvent==='function') logEvent('breath'); }catch(_){} }
     function askAfter(){ show('.b-post'); buildScale(q('.b-scale2'), (n)=>{ state.after=n; _breathLog({protocol:id, reason:reason, before:state.before, after:n}); afterDone(); }); }
     function finish(){ cleanup(); _breathScale(orb,1.18,1.6); if(reason && state.before!=null){ askAfter(); return; } doneMsg(); }
     function runPhase(){
