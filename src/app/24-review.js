@@ -679,8 +679,8 @@ function renderRelationships(){
     const row=document.createElement('div');
     row.style.cssText='display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;margin-bottom:6px';
     row.innerHTML='<div style="flex:1">'+
-      '<div style="font-size:13px;font-weight:500;color:var(--tx)">'+p.name+'</div>'+
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:'+nudge+';margin-top:2px">'+p.role.toUpperCase()+' · '+timeAgo+'</div>'+
+      '<div style="font-size:13px;font-weight:500;color:var(--tx)">'+_escFew(p.name)+'</div>'+
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:'+nudge+';margin-top:2px">'+_escFew(String(p.role||'someone').toUpperCase())+' · '+timeAgo+'</div>'+
     '</div>'+
     '<button class="btn" style="width:auto;padding:5px 8px;font-size:11px" onclick="logContact('+p.id+')">Connected</button>'+
     '<button class="btn" style="width:auto;padding:5px 8px;font-size:11px;background:none;border:none;color:var(--tx3)" onclick="deleteRelationship('+p.id+')" aria-label="Remove this person">&#215;</button>';

@@ -1608,7 +1608,7 @@ function openRecipeBuilder(){
       const totalPro = r.ingredients.reduce((a, ing) => a + (ing.pro || 0), 0);
       const perServing = r.servings && r.servings > 1 ? ' · ' + Math.round(totalCal/r.servings) + ' cal/serving' : '';
       listHtml += '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer" onclick="logRecipeAsMeal(' + i + ')">' +
-        '<div style="font-size:14px;color:var(--tx);margin-bottom:3px">' + r.name + '</div>' +
+        '<div style="font-size:14px;color:var(--tx);margin-bottom:3px">' + _escFew(r.name) + '</div>' +
         '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">' + Math.round(totalCal) + ' cal total · ' + Math.round(totalPro) + 'g protein · ' + r.ingredients.length + ' ingredients' + perServing + '</div>' +
         '<div style="display:flex;gap:6px;margin-top:8px">' +
           '<button class="btn" style="flex:1;padding:6px 8px;font-size:11px" onclick="event.stopPropagation();logRecipeAsMeal(' + i + ')">Log this</button>' +
@@ -1915,7 +1915,7 @@ function repeatMealsFrom(daysAgo, label){
   srcMeals.forEach((e, i) => {
     itemsHtml += '<label style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid var(--bd);cursor:pointer">' +
       '<input type="checkbox" data-idx="' + i + '" checked style="width:auto">' +
-      '<div style="flex:1"><div style="font-size:13px;color:var(--tx)">' + e.name + '</div>' +
+      '<div style="flex:1"><div style="font-size:13px;color:var(--tx)">' + _escFew(e.name) + '</div>' +
       '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">' + e.serving + ' · ' + e.cal + ' cal</div></div>' +
     '</label>';
   });

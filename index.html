@@ -4927,7 +4927,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v530';
+const APP_VERSION = 'v531';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -12550,7 +12550,7 @@ function viewBodyPhoto(idx){
     '<div style="text-align:center"><img loading="lazy" decoding="async" src="'+entry.photo+'" style="max-width:100%;max-height:60vh;border-radius:8px;margin-bottom:14px"></div>'+
     '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-align:center;margin-bottom:4px">'+entry.date+'</div>'+
     '<div style="font-size:14px;font-weight:500;color:var(--tx);text-align:center;margin-bottom:8px">'+(entry.weight!=null&&entry.weight!==''?entry.weight+'kg':'')+'</div>'+
-    (entry.note?'<div style="font-size:12px;color:var(--tx2);text-align:center;font-style:italic;margin-bottom:10px">'+entry.note+'</div>':'')+
+    (entry.note?'<div style="font-size:12px;color:var(--tx2);text-align:center;font-style:italic;margin-bottom:10px">'+_escFew(entry.note)+'</div>':'')+
     '<button class="btn" onclick="closeModal(this)" style="margin-top:8px">Close</button></div>';
   document.body.appendChild(m);
 }
@@ -24167,7 +24167,7 @@ function openRecipeBuilder(){
       const totalPro = r.ingredients.reduce((a, ing) => a + (ing.pro || 0), 0);
       const perServing = r.servings && r.servings > 1 ? ' · ' + Math.round(totalCal/r.servings) + ' cal/serving' : '';
       listHtml += '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer" onclick="logRecipeAsMeal(' + i + ')">' +
-        '<div style="font-size:14px;color:var(--tx);margin-bottom:3px">' + r.name + '</div>' +
+        '<div style="font-size:14px;color:var(--tx);margin-bottom:3px">' + _escFew(r.name) + '</div>' +
         '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">' + Math.round(totalCal) + ' cal total · ' + Math.round(totalPro) + 'g protein · ' + r.ingredients.length + ' ingredients' + perServing + '</div>' +
         '<div style="display:flex;gap:6px;margin-top:8px">' +
           '<button class="btn" style="flex:1;padding:6px 8px;font-size:11px" onclick="event.stopPropagation();logRecipeAsMeal(' + i + ')">Log this</button>' +
@@ -24474,7 +24474,7 @@ function repeatMealsFrom(daysAgo, label){
   srcMeals.forEach((e, i) => {
     itemsHtml += '<label style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid var(--bd);cursor:pointer">' +
       '<input type="checkbox" data-idx="' + i + '" checked style="width:auto">' +
-      '<div style="flex:1"><div style="font-size:13px;color:var(--tx)">' + e.name + '</div>' +
+      '<div style="flex:1"><div style="font-size:13px;color:var(--tx)">' + _escFew(e.name) + '</div>' +
       '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">' + e.serving + ' · ' + e.cal + ' cal</div></div>' +
     '</label>';
   });
@@ -36958,8 +36958,8 @@ function renderRelationships(){
     const row=document.createElement('div');
     row.style.cssText='display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;margin-bottom:6px';
     row.innerHTML='<div style="flex:1">'+
-      '<div style="font-size:13px;font-weight:500;color:var(--tx)">'+p.name+'</div>'+
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:'+nudge+';margin-top:2px">'+p.role.toUpperCase()+' · '+timeAgo+'</div>'+
+      '<div style="font-size:13px;font-weight:500;color:var(--tx)">'+_escFew(p.name)+'</div>'+
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:'+nudge+';margin-top:2px">'+_escFew(String(p.role||'someone').toUpperCase())+' · '+timeAgo+'</div>'+
     '</div>'+
     '<button class="btn" style="width:auto;padding:5px 8px;font-size:11px" onclick="logContact('+p.id+')">Connected</button>'+
     '<button class="btn" style="width:auto;padding:5px 8px;font-size:11px;background:none;border:none;color:var(--tx3)" onclick="deleteRelationship('+p.id+')" aria-label="Remove this person">&#215;</button>';

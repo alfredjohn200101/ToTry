@@ -310,6 +310,87 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── a delete must remove exactly the thing that was tapped ─────────────────────────────────
+  // There is no undo for most of these, and what they remove is a person's own writing — a journal
+  // entry, a letter, someone they pray for. The failure mode is an index or id that no longer lines
+  // up with the rendered order, so a neighbour disappears instead and there is nothing to say so.
+  // Three items each time, delete the MIDDLE, assert the other two survive and the middle does not.
+  {
+    const CASES = [
+      { fn:'deleteJournalEntry',       key:'totry_journal',       mk:i=>({ts:'2026-08-0'+(i+1)+'T02:00:00.000Z', text:'entry'+i}), arg:a=>a[1].ts, id:e=>e.text },
+      { fn:'deleteLetter',             key:'totry_letters',       mk:i=>({id:100+i, text:'letter'+i, ts:'2026-08-0'+(i+1)}),       arg:a=>a[1].id, id:e=>e.text },
+      { fn:'deletePrayer',             key:'totry_prayers',       mk:i=>({id:200+i, text:'prayer'+i, ts:'2026-08-0'+(i+1)}),       arg:a=>a[1].id, id:e=>e.text },
+      { fn:'deleteRelationship',       key:'totry_relationships', mk:i=>({id:300+i, name:'person'+i, role:'friend'}),              arg:a=>a[1].id, id:e=>e.name },
+      { fn:'deleteWeightEntry',        key:'totry_body',          mk:i=>({date:'2026-08-0'+(i+1), weight:80+i, ts:'2026-08-0'+(i+1)+'T02:00:00.000Z'}), arg:a=>a[1].ts, id:e=>String(e.weight) },
+      { fn:'deleteWorkoutFromHistory', key:'totry_workouts',      mk:i=>({id:400+i, title:'w'+i, date:'2026-08-0'+(i+1), ts:'2026-08-0'+(i+1)+'T02:00:00.000Z'}), arg:a=>a[1].id, id:e=>e.title },
+      { fn:'deleteMeasurement',        key:'totry_measurements',  mk:i=>({date:'2026-08-0'+(i+1), chest:90+i}),                    arg:()=>1,      id:e=>String(e.chest) },
+      { fn:'deleteSavedVerse',         key:'totry_sv',            mk:i=>({verse:'v'+i, reference:'Ref '+i}),                       arg:()=>1,      id:e=>e.verse },
+      { fn:'deleteRoutine',            key:'totry_routines',      mk:i=>({id:500+i, name:'r'+i, exercises:[]}),                    arg:a=>a[1].id, id:e=>e.name },
+      { fn:'deleteTransaction',        key:'totry_transactions',  mk:i=>({id:600+i, name:'t'+i, amount:10+i, date:'2026-08-0'+(i+1)}), arg:a=>a[1].id, id:e=>e.name },
+    ];
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name','Sam'); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    let exact = 0;
+    for (const c of CASES) {
+      const r = await page.evaluate(async (c) => {
+        window.askConfirm = async () => true;                     // the person confirms
+        window.tellUser = () => {};
+        const mk = new Function('i','return ('+c.mk+')(i)');
+        const idOf = new Function('e','return ('+c.id+')(e)');
+        const argOf = new Function('a','return ('+c.arg+')(a)');
+        const arr = [0,1,2].map(mk);
+        ls(c.key, JSON.parse(JSON.stringify(arr)));
+        if (typeof window[c.fn] !== 'function') return { missing:true };
+        try { await window[c.fn](argOf(arr)); } catch(e){ return { threw:String(e.message).slice(0,60) }; }
+        await new Promise(x=>setTimeout(x,350));
+        return { left:(ls(c.key)||[]).map(idOf), want:[idOf(arr[0]), idOf(arr[2])], target:idOf(arr[1]) };
+      }, { fn:c.fn, key:c.key, mk:String(c.mk), id:String(c.id), arg:String(c.arg) });
+      if (r.missing)    findings.push(`delete: ${c.fn} does not exist`);
+      else if (r.threw) findings.push(`delete: ${c.fn} threw — ${r.threw}`);
+      else if (JSON.stringify(r.left) !== JSON.stringify(r.want))
+        findings.push(`delete: ${c.fn} left ${JSON.stringify(r.left)} — it should have removed only "${r.target}"`);
+      else exact++;
+    }
+    if (exact === CASES.length) console.log(`deletes: all ${exact} remove exactly the item that was tapped`);
+    await ctx.close();
+  }
+
+  // ── one missing field must not empty a whole panel ──────────────────────────────────────────
+  // renderRelationships did p.role.toUpperCase() unguarded and interpolated p.name raw. A row without
+  // a role — which is what an older backup or a merge from another device can hand it, now that this
+  // store is in the cloud union — threw mid-render, and a throw mid-render takes out everything after
+  // it. That is how Money's entire lower half once vanished for every debt-free user.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name','Sam');
+      s('totry_relationships',[{ id:1, name:'Jo <the boss>', role:'friend' },
+                               { id:2, name:'Pat' },                        // no role at all
+                               { id:3, name:'Sam & Kim', role:'family' }]);
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const r = await page.evaluate(async () => {
+      go('reflect'); await new Promise(x=>setTimeout(x,700));
+      let threw = null;
+      try { renderRelationships(); } catch(e){ threw = String(e.message).slice(0,60); }
+      await new Promise(x=>setTimeout(x,300));
+      const box = document.getElementById('relationships-list');
+      const txt = box ? (box.innerText||'') : '';
+      return { threw, shown:['Jo <the boss>','Pat','Sam & Kim'].filter(n => txt.includes(n)) };
+    });
+    if (r.threw) findings.push(`render: one relationship with no role threw and emptied the panel — ${r.threw}`);
+    else if (r.shown.length !== 3)
+      findings.push(`render: only ${r.shown.length} of 3 people rendered — ${JSON.stringify(r.shown)} (an angle bracket in a name is eaten as a tag)`);
+    else console.log('render: a role-less row and names with < and & all survive');
+    await ctx.close();
+  }
+
   // ── the backup has to come back ──────────────────────────────────────────────────────────────
   // This is the promise a person leans on when they change phones, and it fails in two directions.
   // Silently dropping a key loses years of someone's own record with no error to see. Including the
