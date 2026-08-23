@@ -310,6 +310,70 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── the app must never say "saved" when it did not save ────────────────────────────────────
+  // localStorage throws when it is full, and this app writes photos. The failure that matters is not
+  // the throw — it is the toast that follows it saying "Saved", because the person then closes the
+  // app believing their words are safe. Filling the quota with ballast the emergency prune is not
+  // allowed to touch is the only way to reach the state where nothing can rescue the write.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name','Sam'); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2600);
+    const r = await page.evaluate(async () => {
+      const out = {};
+      const readToast = async () => {
+        document.querySelectorAll('.milestone-toast').forEach(e => e.remove());
+        showToast('Saved', 'Your entry is safe.');       // the REAL one — stubbing it skips the thing under test
+        await new Promise(x=>setTimeout(x,200));
+        const t = document.querySelector('.milestone-toast');
+        return t ? (t.innerText||'').replace(/\s+/g,' ').trim() : '(no toast)';
+      };
+      window.__lsLastWriteFailed = 0;
+      out.normal = await readToast();
+
+      // ballast under a key no prune plan touches, so the write cannot be rescued
+      const blob = 'z'.repeat(200*1024);
+      for (let i = 0; i < 60; i++) { try { localStorage.setItem('__ballast_'+i, blob); } catch(e){ break; } }
+      window.__lsLastWriteFailed = 0;
+      out.wrote = ls('totry_journal', [{ ts:new Date().toISOString(), text:'y'.repeat(300*1024) }]);
+      out.recorded = !!window.__lsLastWriteFailed;
+      out.afterFailure = await readToast();
+
+      // The line above proves the PERSON sees something honest — but it does not prove which layer
+      // produced it. ls() shows its own "Storage full" toast on failure, so disabling showToast's
+      // rewrite entirely left that assertion green. This isolates the rewrite: no real failed write,
+      // no competing toast, just the flag set and a success-shaped title handed straight to showToast.
+      window.__lsLastWriteFailed = Date.now();
+      out.rewrite = await readToast();
+      window.__lsLastWriteFailed = 0;
+
+      // and the prune must actually be able to free room when photos ARE the problem
+      for (let i = 0; i < 60; i++) { try { localStorage.removeItem('__ballast_'+i); } catch(e){} }
+      const photos = Array.from({length:30}, (_,i) => ({ id:i, img:'data:image/jpeg;base64,'+'x'.repeat(60*1024) }));
+      try { localStorage.setItem('totry_progress_photos', JSON.stringify(photos)); } catch(e){}
+      const before = (ls('totry_progress_photos')||[]).length;
+      try { _lsEmergencyPrune(); } catch(e){ out.pruneThrew = String(e.message).slice(0,50); }
+      out.prune = before + ' → ' + (ls('totry_progress_photos')||[]).length;
+      return out;
+    });
+    if (!/Saved/.test(r.normal))
+      findings.push(`storage: a normal save does not confirm — "${r.normal}"`);
+    if (r.wrote !== false)
+      findings.push('storage: a write that could not fit reported success');
+    else if (!r.recorded)
+      findings.push('storage: a failed write was not recorded, so nothing downstream can know');
+    else if (/^Saved/.test(r.afterFailure))
+      findings.push(`storage: right after a write that FAILED, the app still said "${r.afterFailure.slice(0,50)}"`);
+    else if (/^Saved/.test(r.rewrite))
+      findings.push(`storage: showToast still says "${r.rewrite.slice(0,40)}" when the last write failed — the ls() toast happens to cover this, but any other success message would lie`);
+    else if (r.pruneThrew) findings.push(`storage: the emergency prune threw — ${r.pruneThrew}`);
+    else console.log(`storage: a full device says "${r.afterFailure.slice(0,38)}…" instead of Saved; prune ${r.prune}`);
+    await ctx.close();
+  }
+
   // ── a merge that is not queued deletes the other device's entry FROM THE CLOUD ──────────────
   // The most invisible failure in this app. startSyncLoop runs pullFromCloud() then flushOutbox()
   // back to back, so a merge branch that unions without calling _queueWrite leaves the PRE-merge
