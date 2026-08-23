@@ -310,6 +310,50 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── every control a person can reach must say what it is ───────────────────────────────────
+  // A screen reader announces a button by its accessible name. An unnamed one is read as "button",
+  // which in an app full of icon-only controls means a blind person is guessing. 342 controls across
+  // nine tabs currently all have one; this stops the next one shipping without.
+  //
+  // The name is computed from CONTENTS — textContent, not innerText. innerText is empty for anything
+  // inside a closed <details>, which is exactly how the settings groups are built, so an innerText
+  // check reported six perfectly-labelled controls ("Male", "Female", "Christianity") as unnamed.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name','Sam');
+      const iso=new Date().toISOString(), au=new Date().toLocaleDateString('en-AU');
+      s('totry_v',[{ n:'Porn', mode:'quit', startDate:new Date(Date.now()-12*864e5).toISOString() }]);
+      s('totry_nutlog',{ [au]:[{ name:'Meal', cal:650, pro:55, ts:iso }] });
+      s('totry_f',{ d:[{ n:'Car loan', t:5000, p:1200 }], income:5200 });
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    await page.evaluate(() => document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open')));
+    let total = 0; const unnamed = [];
+    for (const t of ['home','fight','grow','money','soul','nourish','reflect','track','settings']) {
+      const r = await page.evaluate(async (t) => {
+        go(t); await new Promise(x=>setTimeout(x,700));
+        const pane = document.getElementById('tab-'+t); if(!pane) return { n:0, un:[] };
+        const vis = el => { const c=getComputedStyle(el); if(c.display==='none'||c.visibility==='hidden') return false;
+          const q=el.getBoundingClientRect(); return q.width>0 && q.height>0; };
+        const all = [...pane.querySelectorAll('button,a[href],[onclick],input,select,textarea')].filter(vis);
+        const un = all.filter(e => {
+          const txt = (e.textContent||'').trim();
+          return !txt && !e.getAttribute('aria-label') && !e.getAttribute('aria-labelledby') && !e.getAttribute('title')
+                 && !(e.tagName==='INPUT' && (e.placeholder || (e.labels && e.labels.length)));
+        });
+        return { n:all.length, un:un.slice(0,4).map(e => e.tagName.toLowerCase()+' → '+(e.getAttribute('onclick')||'(no handler)').slice(0,40)) };
+      }, t);
+      total += r.n;
+      r.un.forEach(x => unnamed.push(`${t}: ${x}`));
+    }
+    if (unnamed.length) findings.push(`a11y: ${unnamed.length} control(s) a screen reader can only call "button" — ${unnamed.slice(0,3).join(' | ')}`);
+    else console.log(`a11y: all ${total} controls across nine tabs have an accessible name`);
+    await ctx.close();
+  }
+
   // ── the companion's help does not depend on a model ────────────────────────────────────────
   // Not hypothetical: the ai-proxy chain is down to a single working provider in production. The
   // companion is what a person opens mid-craving, so the thing that must never happen is a spinner,
