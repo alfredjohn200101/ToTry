@@ -3744,6 +3744,81 @@ async function openWarmupCalc(){
   haptic('tap');
 }
 
+// ── THE HANDOFF ──
+// SOUL-ARCHITECTURE, GROW: "make them FEEL like one loop — each hands off to the next with a line of
+// meaning." Three cards in a grid are three tabs. A line under each saying what it just earned the
+// NEXT one is a loop: you trained, so you are owed this fuel, and here is what your body did with it.
+//
+// Deterministic only — every number below is counted from what the person actually logged, never
+// estimated and never asked of a model. A line is written ONLY when it is true; an empty card says
+// nothing rather than something encouraging, because a handoff that is invented is worse than none.
+// Same 7-day window as renderBodySystemReport, so the hub and the card can never disagree.
+function renderGrowHandoffs(){
+  const set = (id, text) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    if(text){ el.textContent = text; el.classList.add('on'); }
+    else { el.textContent = ''; el.classList.remove('on'); }
+  };
+  try{
+    const now = Date.now(), W = 7*86400000;
+    const inWeek = t => { const x = new Date(t).getTime(); return x > now - W && x <= now; };
+
+    // TRAIN → what it earned
+    const ws = (ls('totry_workouts')||[]).filter(w => w && w.ts && inWeek(w.ts));
+    const burned = Math.round(ws.reduce((a,w) => a + (Number(w.calories)||0), 0));
+    let trainLine = '';
+    if(ws.length){
+      const n = ws.length + (ws.length === 1 ? ' session' : ' sessions');
+      trainLine = burned > 0
+        ? n + ' this week \u2014 about ' + burned.toLocaleString() + ' cal earned \u2192 fuel it'
+        : n + ' this week \u2192 fuel what you earned';
+    }
+    set('hand-train', trainLine);
+
+    // NOURISH → what came back in, and whether the protein matched the training
+    const log = ls('totry_nutlog') || {};
+    const days = {};
+    Object.keys(log).forEach(k => (log[k]||[]).forEach(e => {
+      if(!e || !e.ts || !inWeek(e.ts)) return;
+      const d = days[k] = days[k] || { cal:0, pro:0 };
+      d.cal += Number(e.cal)||0; d.pro += Number(e.pro)||0;
+    }));
+    const logged = Object.keys(days).filter(k => days[k].cal > 0);
+    let nourishLine = '';
+    if(logged.length){
+      const avgPro = Math.round(logged.reduce((a,k) => a + days[k].pro, 0) / logged.length);
+      nourishLine = logged.length + ' of 7 days fuelled'
+        + (avgPro > 0 ? ', ' + avgPro + 'g protein a day' : '')
+        + ' \u2192 see what it did';
+    } else if(ws.length){
+      // trained but never logged a meal: the loop is broken at this exact link, and saying so is the
+      // most useful thing this line can do
+      nourishLine = 'You trained, but nothing logged to fuel it \u2192 start here';
+    }
+    set('hand-nourish', nourishLine);
+
+    // TRACK → what the body actually did, which is the only honest verdict on the two above
+    const body = (ls('totry_body')||[]).filter(e => e && Number(e.weight) > 0)
+      .sort((a,b) => new Date(a.ts||a.date) - new Date(b.ts||b.date));
+    let trackLine = '';
+    if(body.length >= 2){
+      const older = body.filter(e => new Date(e.ts||e.date).getTime() <= now - W);
+      const from = older.length ? Number(older[older.length-1].weight) : Number(body[0].weight);
+      const to = Number(body[body.length-1].weight);
+      const diff = Math.round((to - from) * 10) / 10;
+      const unit = (typeof wDelta === 'function') ? wDelta(diff, { zero:'steady' }) : (diff + 'kg');
+      trackLine = diff === 0 ? 'Holding steady this week \u2014 that is what the fuel did'
+                             : unit + ' over the week \u2014 that is what the training and the fuel did';
+    } else if(body.length === 1){
+      trackLine = 'One weigh-in so far \u2014 one more and the trend starts';
+    } else if(ws.length || logged.length){
+      trackLine = 'Nothing weighed yet \u2014 this is where the work shows up';
+    }
+    set('hand-track', trackLine);
+  }catch(_){ }
+}
+
 // ── YOUR BODY, ONE SYSTEM ──
 // The unifier: Train + Nourish + Track are one loop — you train, you fuel it, your body
 // changes, which reveals your real burn, which tunes your targets. This card shows the

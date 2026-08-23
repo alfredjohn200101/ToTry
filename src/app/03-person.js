@@ -4258,7 +4258,8 @@ function go(name){
   try{ if(typeof renderCycleSurfaces==='function') renderCycleSurfaces(); }catch(_){}
   if(name==='fight'){renderVices();renderScoreboard();}
   if(name==='track'){renderBody();renderBodyCollage();updateTrackerDisplay();if(typeof renderHealthCard==='function')renderHealthCard();if(typeof Health!=='undefined'&&Health.connected()&&Health.isNative())Health.syncToday();}
-  if(name==='grow' && typeof renderBodySystemReport==='function'){renderBodySystemReport();}
+  if(name==='grow'){ if(typeof renderBodySystemReport==='function') renderBodySystemReport();
+                     if(typeof renderGrowHandoffs==='function') renderGrowHandoffs(); }
   if(name==='settings' && typeof renderPushSettings==='function'){renderPushSettings();}
   if(name==='bible'){renderSavedVerses();initBibleReader();}
   if(name==='why'){initWhyTab();}

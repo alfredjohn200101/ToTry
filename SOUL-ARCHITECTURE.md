@@ -95,8 +95,11 @@ Today · Soul · Grow · Money · Settings — bottom bar, thumb-reachable. Ever
   what your body did with it."
 - **Connects:** train burns → nourish's net → track's trend. Sleep → readiness → train's "today's a
   walk not a PR." Strava/Hevy feed it. The honest equation ties it together.
-- **TODO:** Grow hub reordered to Train→Nourish→Track (DONE). Now make them FEEL like one loop —
-  each hands off to the next with a line of meaning.
+- **DONE (v533):** reordered to Train→Nourish→Track, and each card now hands off to the next with a
+  live line — "3 sessions this week, about 1,260 cal earned → fuel it" / "5 of 7 days fuelled, 52g
+  protein a day → see what it did" / "-0.8kg over the week — that is what the training and the fuel
+  did." Counted from what was actually logged, never estimated; silent when there is nothing true to
+  say, and when someone has trained but logged no food it names that broken link instead of a stat.
 
 ### SOUL (hub) → BIBLE · LITURGY · WHY · (prayer) — *the root*
 - **Purpose:** the faith that the whole app is built on (Magnifica Humanitas — AI as signpost, not

@@ -136,6 +136,14 @@ button[onclick^="deleteTransaction("],button[onclick^="deleteSubscription("],but
 .nav{display:flex;background:var(--bg);background:color-mix(in srgb, var(--bg) 82%, transparent);-webkit-backdrop-filter:saturate(160%) blur(18px);backdrop-filter:saturate(160%) blur(18px);border-top:1px solid var(--bd);flex-shrink:0;overflow-x:auto;scrollbar-width:none;padding-bottom:var(--sb);order:3}
 .nav-5{overflow-x:visible}
 .nav-5 .nb{flex:1;min-width:0}
+/* THE HANDOFF. SOUL-ARCHITECTURE, GROW: "make them FEEL like one loop — each hands off to the next
+   with a line of meaning." Three tabs sitting in a grid are three tabs; a line under each that says
+   what it just earned the NEXT one is a loop. Muted and small on purpose — it is a passed baton, not
+   another statistic, and it is absent entirely when there is nothing true to say. */
+.hc-hand{margin-top:7px;padding-top:7px;border-top:1px solid var(--bd);
+  font-family:'DM Mono',monospace;font-size:9.5px;letter-spacing:.02em;line-height:1.5;
+  color:var(--go);display:none}
+.hc-hand.on{display:block}
 .hub-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px}
 .hub-card{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:18px 16px;cursor:pointer;transition:transform .12s,border-color .12s;display:flex;flex-direction:column;gap:8px;text-align:left}
 .hub-card:active{transform:scale(0.97)}
@@ -1519,16 +1527,19 @@ input:focus,textarea:focus,select:focus{
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6.5 6.5h11M6.5 17.5h11M3 10h2.5M18.5 10H21M3 14h2.5M18.5 14H21"/></svg>
       <div class="hc-title">Train</div>
       <div class="hc-desc">Workouts, routines, strength over time. Synced with Hevy.</div>
+      <div class="hc-hand" id="hand-train"></div>
     </div>
     <div class="hub-card" onclick="go('nourish')">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 2v5a3 3 0 0 0 6 0V2"/><line x1="7" y1="2" x2="7" y2="22"/><path d="M17 2c-1.7 0-3 2.5-3 6.5V13h3z"/><line x1="17" y1="13" x2="17" y2="22"/></svg>
       <div class="hc-title">Nourish</div>
       <div class="hc-desc">Food, macros, water. Barcode + web lookup, your custom foods.</div>
+      <div class="hc-hand" id="hand-nourish"></div>
     </div>
     <div class="hub-card wide" onclick="go('track')">
       <svg aria-hidden="true" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
       <div class="hc-title">Track</div>
       <div class="hc-desc">Body, weight, photos, measurements, sleep — the result of training and fuelling.</div>
+      <div class="hc-hand" id="hand-track"></div>
     </div>
   </div>
   <!-- The proof of "together": Train + Nourish + Track as one loop, on the page they share -->

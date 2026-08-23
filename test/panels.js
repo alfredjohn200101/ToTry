@@ -310,6 +310,55 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── Grow has to read as one loop, not three tabs ───────────────────────────────────────────
+  // SOUL-ARCHITECTURE, GROW: "make them FEEL like one loop — each hands off to the next with a line
+  // of meaning." The failure this guards is the one that makes such a line worthless: inventing it.
+  // A person with nothing logged must see NOTHING here, because a handoff that is made up is worse
+  // than no handoff — it is the app pretending to know a body it has never been told about. And when
+  // someone HAS trained and logged nothing to fuel it, the loop is broken at that exact link and
+  // saying so is the most useful thing the line can do.
+  {
+    const cases = [
+      { label:'nothing logged',      seed:{},                              expect:{ train:false, nourish:false, track:false } },
+      { label:'trained, never ate',  seed:{ train:2 },                     expect:{ train:true,  nourish:true,  track:true  } },
+      { label:'the whole loop',      seed:{ train:3, meals:5, weighins:2 },expect:{ train:true,  nourish:true,  track:true  } },
+    ];
+    for (const c of cases) {
+      const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+      const page = await ctx.newPage();
+      await page.addInitScript(c => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+        s('totry_onboarded',true); s('totry_name','Sam');
+        const iso=i=>new Date(Date.now()-i*864e5).toISOString();
+        const au =i=>new Date(Date.now()-i*864e5).toLocaleDateString('en-AU');
+        if(c.train) s('totry_workouts',Array.from({length:c.train},(_,i)=>({ id:i, ts:iso(i), date:iso(i).slice(0,10), title:'S'+i, volume:8000, sets:16, calories:420 })));
+        if(c.meals){ const g={}; for(let i=0;i<c.meals;i++) g[au(i)]=[{ name:'Meal', cal:700, pro:52, ts:iso(i) }]; s('totry_nutlog',g); }
+        if(c.weighins) s('totry_body',Array.from({length:c.weighins},(_,i)=>({ date:iso(i*7).slice(0,10), weight:83.2-(i*0.8), ts:iso(i*7) })));
+      }, c.seed);
+      await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+      await page.waitForTimeout(2600);
+      const r = await page.evaluate(async () => {
+        go('grow'); await new Promise(x=>setTimeout(x,900));
+        const read = id => { const e = document.getElementById(id);
+          if(!e) return null;
+          return (e.classList.contains('on') && e.getBoundingClientRect().height > 0) ? (e.textContent||'').trim() : '';
+        };
+        return { train:read('hand-train'), nourish:read('hand-nourish'), track:read('hand-track') };
+      });
+      for (const k of ['train','nourish','track']) {
+        if (r[k] === null) { findings.push(`grow handoff: #hand-${k} is not in the markup`); continue; }
+        const shown = !!r[k];
+        if (shown !== c.expect[k])
+          findings.push(`grow handoff (${c.label}): ${k} ${shown ? 'says "'+r[k].slice(0,54)+'"' : 'says nothing'} — expected the opposite`);
+        // a handoff must point somewhere or state a result; a bare stat is not a handoff
+        if (shown && !/→|that is what|trend starts|shows up|start here/.test(r[k]))
+          findings.push(`grow handoff (${c.label}): ${k} reads as a statistic, not a hand-off — "${r[k].slice(0,54)}"`);
+      }
+      await ctx.close();
+    }
+    if (!findings.some(f => f.startsWith('grow handoff')))
+      console.log('grow: the three cards hand off to each other, and say nothing when there is nothing true to say');
+  }
+
   // ── every control a person can reach must say what it is ───────────────────────────────────
   // A screen reader announces a button by its accessible name. An unnamed one is read as "button",
   // which in an app full of icon-only controls means a blind person is guessing. 342 controls across
