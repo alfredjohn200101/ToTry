@@ -310,6 +310,60 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── the companion's help does not depend on a model ────────────────────────────────────────
+  // Not hypothetical: the ai-proxy chain is down to a single working provider in production. The
+  // companion is what a person opens mid-craving, so the thing that must never happen is a spinner,
+  // an error, or a dead end.
+  //
+  // What this actually proves — checked by injection, because the first version of this comment
+  // claimed more than the code tested — is that the scripted intervention and the bridge to a real
+  // person are on screen with EVERY provider throwing. Disabling the companion's catch block changes
+  // nothing here, because that content never came from the model in the first place; hiding the
+  // bridge button fails it immediately. That is the app's own rule stated as a test: the
+  // deterministic path carries the weight and the model is only ever a nicety.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name','Sam');
+      s('totry_v',[{ n:'Porn', mode:'quit', startDate:new Date(Date.now()-12*864e5).toISOString() }]); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2600);
+    const r = await page.evaluate(async () => {
+      window.__aiCalls = 0;
+      if (typeof sb !== 'undefined' && sb) sb.functions = { invoke: async () => { window.__aiCalls++; throw new Error('Edge Function returned a non-2xx status code'); } };
+      window.fetch = async () => { window.__aiCalls++; throw new Error('network down'); };
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e => e.classList.remove('open'));
+      if (typeof openCompanion === 'function') openCompanion();
+      await new Promise(x=>setTimeout(x,600));
+      const f = document.getElementById('comp-freetext');
+      if (f) f.value = 'i keep slipping and i dont know why';
+      if (typeof companionFreeText === 'function') await companionFreeText();
+      await new Promise(x=>setTimeout(x,2600));
+      const vis = el => { if(!el) return false; const q = el.getBoundingClientRect();
+        return q.width>0 && q.height>0 && getComputedStyle(el).display!=='none'; };
+      const ov = document.querySelector('.companion-overlay');
+      const txt = (ov && ov.innerText) || document.body.innerText || '';
+      return { calls: window.__aiCalls || 0,
+               // scoped to the companion — the subject of this assertion. A document-wide sweep also
+               // catches the morning sentence's spinner, which at that moment is still waiting on a
+               // REAL network call fired at boot before these stubs existed; measured on its own it
+               // hides its card in ~100ms once the call actually fails, so that was the harness.
+               spinners: [...document.querySelectorAll('.companion-overlay .pulsing, .companion-overlay .spinner, .companion-overlay .loading')].filter(vis).length,
+               stuckThinking: /thinking|one moment|working on it/i.test(txt),
+               bridge: /reach a real person|someone you trust|let someone in|talk to someone/i.test(txt),
+               wayThrough: /I.m through it|step away|pick your own way|try this|breathe/i.test(txt),
+               chars: txt.length };
+    });
+    if (!r.calls) findings.push('AI-down: the companion never even tried the model, so this proves nothing — check the stub');
+    else if (r.spinners) findings.push(`AI-down: ${r.spinners} spinner(s) still turning after every provider failed`);
+    else if (r.stuckThinking) findings.push('AI-down: the companion still says it is thinking, mid-craving, forever');
+    else if (!r.wayThrough) findings.push('AI-down: the companion offers no way through when the model fails');
+    else if (!r.bridge) findings.push('AI-down: the companion offers no bridge to a real person when the model fails');
+    else console.log(`AI-down: ${r.calls} failed attempts, no spinner, a way through AND a bridge to a real person`);
+    await ctx.close();
+  }
+
   // ── the app must never say "saved" when it did not save ────────────────────────────────────
   // localStorage throws when it is full, and this app writes photos. The failure that matters is not
   // the throw — it is the toast that follows it saying "Saved", because the person then closes the
