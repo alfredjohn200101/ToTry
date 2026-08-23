@@ -275,7 +275,17 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 /* ── THE COMPANION (front door) — calm, warm, unhurried; NOT the red crisis palette ── */
 /* THE COMPANION SHEET — rises from the bottom like a brother leaning in, not a separate world.
    Leaves a sliver of the app above so it feels present, not all-consuming. Spring-up entrance. */
-.companion-overlay{position:fixed;left:0;right:0;bottom:0;top:max(64px, calc(var(--st) + 24px));width:100%;
+/* SOUL-ARCHITECTURE, THE COMPANION: "make it a bottom-sheet that rises like iMessage, not a
+   full-screen takeover." It was pinned to a fixed top, so it stood 832px tall on a 414x896 phone —
+   93% of the screen — whatever it had to say. The first thing it says is one short question, and
+   answering a short question inside a full-screen panel feels like being taken somewhere, which is
+   the opposite of what this surface is for: meeting someone where they already are, in the second
+   they feel it, without moving them.
+   top:auto lets it size to its content and rise from the bottom. The cap is exactly the height it
+   used to be fixed at, so a long conversation still gets every pixel it had before — it can only ever
+   be SHORTER now, never taller. The app stays visible behind it, which is the point. */
+.companion-overlay{position:fixed;left:0;right:0;bottom:0;top:auto;width:100%;
+  max-height:calc(100vh - max(64px, calc(var(--st) + 24px)));
   background:linear-gradient(180deg,var(--bg2) 0%,var(--bg) 100%);z-index:410;display:none;
   overflow-y:auto;-webkit-overflow-scrolling:touch;padding:30px 22px calc(var(--sb) + 28px);
   border-radius:26px 26px 0 0;box-shadow:var(--e3);border-top:1px solid rgba(255,255,255,0.08)}

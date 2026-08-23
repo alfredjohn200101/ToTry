@@ -63,7 +63,10 @@ Today · Soul · Grow · Money · Settings — bottom bar, thumb-reachable. Ever
   ANY screen with one thumb-motion (the breathing orb → should become a swipe-up sheet).
 - **Connects:** knows everything (sleep, training, vices, faith) so it can say "the pull is strong
   because you're exhausted, not weak." Wins flow into the record (streak, milestones).
-- **TODO:** make it a bottom-sheet that rises like iMessage, not a full-screen takeover.
+- **DONE (v534):** it sizes to its content and rises from the bottom. Asking one short question it
+  stands 549px on a 414x896 phone with 347px of the app still visible behind it; a long conversation
+  still gets every pixel it had before (832px), so no helpline can be pushed off-screen. Capped at
+  exactly the height it used to be fixed at — it can only ever be shorter now, never taller.
 
 ### MORNING — *set the day*
 - **Purpose:** before the day starts, choose who you'll be in it. Intention as armor.

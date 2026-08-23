@@ -310,6 +310,51 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── the companion is a sheet, not a takeover ───────────────────────────────────────────────
+  // SOUL-ARCHITECTURE, THE COMPANION: "make it a bottom-sheet that rises like iMessage, not a
+  // full-screen takeover." It was pinned to a fixed top and stood 832px on a 414x896 phone — 93% of
+  // the screen — to ask one short question. This surface exists to meet someone where they already
+  // are, in the second they feel it; taking over the screen to do that is the opposite.
+  //
+  // Two assertions, because one alone is easy to satisfy wrongly. Short content must leave the app
+  // visible behind it. Long content must still get every pixel it had before — a sheet that caps
+  // itself smaller would push a helpline off-screen, which is exactly the crisis bug this repo
+  // already paid for once.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name','Sam'); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2600);
+    const r = await page.evaluate(async () => {
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e => e.classList.remove('open'));
+      openCompanion();
+      await new Promise(x=>setTimeout(x,700));
+      const ov = document.querySelector('.companion-overlay');
+      const short = Math.round(ov.getBoundingClientRect().height);
+      // grow it the way a real conversation does
+      const filler = document.createElement('div');
+      filler.style.height = '1400px';
+      ov.appendChild(filler);
+      await new Promise(x=>setTimeout(x,400));
+      const tall = Math.round(ov.getBoundingClientRect().height);
+      filler.remove();
+      const back = document.querySelector('.companion-backdrop');
+      return { short, tall, viewport: window.innerHeight,
+               backdrop: !!(back && getComputedStyle(back).display !== 'none'),
+               handle: getComputedStyle(ov, '::before').content !== 'none' };
+    });
+    const behind = r.viewport - r.short;
+    if (behind < 150)
+      findings.push(`companion: asking one short question it stands ${r.short}px on a ${r.viewport}px screen — only ${behind}px of the app left behind it, which is a takeover, not a sheet`);
+    else if (r.tall < r.viewport - 100)
+      findings.push(`companion: a long conversation only gets ${r.tall}px — it used to get ${r.viewport - 64}px, and shrinking it is how a helpline ends up off-screen`);
+    else if (!r.backdrop) findings.push('companion: no backdrop, so the app behind it is not dimmed');
+    else console.log(`companion: ${r.short}px for a short question (${behind}px of app still behind it), ${r.tall}px for a long one`);
+    await ctx.close();
+  }
+
   // ── Grow has to read as one loop, not three tabs ───────────────────────────────────────────
   // SOUL-ARCHITECTURE, GROW: "make them FEEL like one loop — each hands off to the next with a line
   // of meaning." The failure this guards is the one that makes such a line worthless: inventing it.
