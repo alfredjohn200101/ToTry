@@ -74,10 +74,15 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
      a minute of breathing did NOT move their distress
    - `npm run personas` — 551 assertions, 10 people incl. one built entirely from data that has
      really broken this app (apostrophes, GBP, a completed goal ahead of the live one)
-   - `npm run panels` — 19 sub-panels × 3 people, a tap-target floor, the sheet-dialog a11y floor,
-     the live SOS (the setting shapes the move; their own why is on screen), all seven Feeling Door
-     paths clicked through to where they LAND, the app booting with the network CUT, every front
-     reaching `getLifeState().brief`, and the same body/run entered in both kg/lb and km/mi
+   - `npm run panels` — the widest net in the gate, and the one that finds what code-reading cannot.
+     19 sub-panels × 3 people, a tap-target floor, the sheet-dialog a11y floor, an accessible NAME on
+     all 341 controls, the live SOS (the setting shapes the move; their own why is on screen), all
+     seven Feeling Door paths clicked through to where they LAND, the app booting with the network
+     CUT, every front reaching `getLifeState().brief`, the same body/run entered in both kg/lb and
+     km/mi, ten deletes each removing exactly the item that was tapped, a backup exported → device
+     wiped → restored with no session token in the file, a two-device merge asserted in the CLOUD row
+     rather than locally, a full device saying "Storage full" instead of "Saved", and the companion
+     still helping with every AI provider throwing
    - `npm run test:edge` — runs the Supabase functions locally with Deno stubbed (Node strips the TS)
    - `npm run preflight` — version/cache/bundle parity across source, www and the iOS build
    Add a test when you add core math, and FAULT-INJECT it: an assertion you have never seen fail is
