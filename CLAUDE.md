@@ -42,7 +42,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
-- `APP_VERSION` in `src/app/00-boot.js` — currently **v527**. Bump it AND `CACHE` in sw.js together, always.
+- `APP_VERSION` in `src/app/00-boot.js` — currently **v530**. Bump it AND `CACHE` in sw.js together, always.
 
 ## The nervous system (key functions — grep these)
 - `getLifeState()` — returns the whole person {training, nutrition, body, soul, fight, readiness,
@@ -65,7 +65,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    reported 1032 PASSED, because the harness extracts functions by name and never parsed the whole
    script. A suite that stays green while the app cannot boot is worse than no suite.
 2. **Run the whole gate before you ship**, not just `npm test`:
-   - `npm test` — 1577 assertions over the real bundle (core math, dead code, privacy promises,
+   - `npm test` — 1583 assertions over the real bundle (core math, dead code, privacy promises,
      the voice gates, the parse check)
    - `npm run crisis` — types the worst sentence into all TEN free-text doors and asserts a
      helpline is on screen and TAPPABLE (geometry, not DOM presence — the bug it was written for
@@ -75,8 +75,9 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    - `npm run personas` — 551 assertions, 10 people incl. one built entirely from data that has
      really broken this app (apostrophes, GBP, a completed goal ahead of the live one)
    - `npm run panels` — 19 sub-panels × 3 people, a tap-target floor, the sheet-dialog a11y floor,
-     the live SOS (the setting shapes the move; their own why is on screen), and all seven Feeling
-     Door paths clicked through to where they LAND
+     the live SOS (the setting shapes the move; their own why is on screen), all seven Feeling Door
+     paths clicked through to where they LAND, the app booting with the network CUT, every front
+     reaching `getLifeState().brief`, and the same body/run entered in both kg/lb and km/mi
    - `npm run test:edge` — runs the Supabase functions locally with Deno stubbed (Node strips the TS)
    - `npm run preflight` — version/cache/bundle parity across source, www and the iOS build
    Add a test when you add core math, and FAULT-INJECT it: an assertion you have never seen fail is
@@ -110,7 +111,13 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    thing you're avoiding" form, and brotherGuidance. `npm run panels` now fails if any path's primary
    button leads nowhere, which is how a path would rot: it still reads well and hands the person
    back to their phone.
-5. **Then:** the deeper secondary panels, the "reach out first" scheduled nudges (post-wrapper).
+5. **Units are real now (v529–v530).** Storage stays canonical — kilograms and metres — and only
+   the two edges convert: `wFmt`/`wDelta`/`dispToKg` for body weight, `dFmt`/`mToDisp`/`dispToM` for
+   distance, plus `syncWeightUnitLabels()` for the static labels. If you add a screen that shows a
+   weight or a distance, go through those; a hardcoded `+'kg'` is how a lb user ends up reading
+   someone else's body. Lifted load is deliberately still kg, and the timezone select is a deliberate
+   no-op that says so in its own copy — do not "fix" either silently.
+6. **Then:** the deeper secondary panels, the "reach out first" scheduled nudges (post-wrapper).
 
 ## Files in this handoff
 - `index.html`, `sw.js` — the app.
