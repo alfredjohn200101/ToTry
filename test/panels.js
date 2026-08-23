@@ -310,6 +310,68 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── the backup has to come back ──────────────────────────────────────────────────────────────
+  // This is the promise a person leans on when they change phones, and it fails in two directions.
+  // Silently dropping a key loses years of someone's own record with no error to see. Including the
+  // sign-in token does the opposite — a backup is a file people mail themselves and drop in cloud
+  // storage, so a session in it is a session handed to whoever reads that folder. backupSafeKey()
+  // guards both ends, and this drives it: export, wipe the device, import, compare.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    // seeded ONCE — the import reloads the page, and a seed that re-runs would overwrite exactly what
+    // the restore just wrote and read as data loss. That mistake cost a real diagnosis here.
+    await page.addInitScript(() => {
+      if (localStorage.getItem('__seeded')) return;
+      localStorage.setItem('__seeded','1');
+      const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name',"Sam O'Brien");   // an apostrophe has broken this app before
+      s('totry_v',[{ n:'Porn', mode:'quit', startDate:'2026-07-14T02:00:00.000Z', total:3 }]);
+      s('totry_nutlog',{ '01/08/2026':[{ name:'Chicken & rice', cal:650, pro:55, ts:'2026-08-01T02:00:00.000Z' }] });
+      s('totry_f',{ d:[{ n:"Mum's loan", t:5000, p:1200 }], income:5200 });
+      s('totry_weight_unit','lb'); s('totry_currency','GBP');
+      localStorage.setItem('sb-access-token','SECRET-MUST-NOT-EXPORT');
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+
+    const exp = await page.evaluate(async () => {
+      let captured = null;
+      const real = SaveFile.save;
+      SaveFile.save = async (blob) => { captured = await blob.text(); return true; };
+      await exportAllData();
+      SaveFile.save = real;
+      if (!captured) return { failed:'export produced no file' };
+      return { blob: captured, leaked: captured.includes('SECRET-MUST-NOT-EXPORT'),
+               keys: Object.keys(JSON.parse(captured).data || JSON.parse(captured)).length };
+    });
+    if (exp.failed) findings.push(`backup: ${exp.failed}`);
+    else {
+      if (exp.leaked) findings.push('backup: the sign-in token is INSIDE the exported file');
+      if (exp.keys < 5) findings.push(`backup: only ${exp.keys} keys exported`);
+      const before = await page.evaluate(() => ['totry_name','totry_v','totry_nutlog','totry_f','totry_weight_unit','totry_currency']
+        .reduce((o,k)=>(o[k]=JSON.stringify(ls(k)),o),{}));
+      try {
+        await page.evaluate(async (blobText) => {
+          localStorage.clear(); localStorage.setItem('__seeded','1');   // a brand-new phone
+          window.askConfirm = async () => true;
+          importAllData({ target:{ files:[new File([blobText],'b.json',{type:'application/json'})], value:'x' } });
+          await new Promise(x=>setTimeout(x,1200));
+        }, exp.blob);
+      } catch (e) { /* it reloads; that is the point */ }
+      await page.waitForLoadState('networkidle').catch(()=>{});
+      await page.waitForTimeout(3000);
+      const after = await page.evaluate(() => ['totry_name','totry_v','totry_nutlog','totry_f','totry_weight_unit','totry_currency']
+        .reduce((o,k)=>(o[k]=JSON.stringify(ls(k)),o),{}));
+      const lost = Object.keys(before).filter(k => before[k] !== after[k]);
+      if (lost.length) findings.push(`backup: ${lost.join(', ')} did not survive the round trip`);
+      if (!/O'Brien/.test(String(after.totry_name||''))) findings.push('backup: an apostrophe in a name did not survive');
+      if (!lost.length && !exp.leaked)
+        console.log(`backup: ${exp.keys} keys out, wiped, restored identically, no token in the file`);
+    }
+    await ctx.close();
+  }
+
   // ── a run logged in miles must READ in miles, everywhere ───────────────────────────────────
   // saveCardioManually always interpreted the input correctly (it multiplies by 1609.34), so a logged
   // distance was never wrong — it was ignored. Every display divided by 1000 and wrote "km", so a
