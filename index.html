@@ -4927,7 +4927,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v531';
+const APP_VERSION = 'v532';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5490,10 +5490,26 @@ function _setOutbox(o){
   try{ localStorage.setItem(SYNC_OUTBOX_KEY, JSON.stringify(o)); return true; }
   catch(_){ try{ _setSyncState({ status:'error', error:'This device is out of room, so that change is not queued to sync yet.' }); }catch(__){} return false; }
 }
+// A TIMESTAMP IS NOT AN IDENTITY. flushOutbox deletes the entry it just uploaded, guarded by
+// `cur[key].ts === entry.ts` so that a newer write queued mid-flush is not thrown away. But two
+// _queueWrite calls in the SAME MILLISECOND get the same ts — and pullFromCloud's merge branches
+// queue immediately after the write that triggered the flush. When that happens the guard cannot
+// tell the merged value from the pre-merge one, deletes it, and the merged truth is never uploaded:
+// local ends up right, the cloud keeps the stale array, and the divergence is permanent because the
+// outbox is now empty. A monotonic counter distinguishes them; the ts stays, because ordering still
+// uses it. Found by driving pull→flush against a zero-latency stub, which makes the collision common;
+// a real network round trip makes it rare rather than impossible.
+let _seq = 0;
+function _nextSeq(o){
+  // seed once from whatever is already on disk, so a reload cannot restart the counter underneath a
+  // durable entry written by the previous session
+  if(!_seq){ try{ Object.keys(o).forEach(k => { const v = o[k] && o[k].seq; if(typeof v === 'number' && v > _seq) _seq = v; }); }catch(_){ } }
+  return ++_seq;
+}
 function _queueWrite(key, value){
   if(!SYNC_KEYS.includes(key)) return;
   const o = _getOutbox();
-  o[key] = { value: value, ts: Date.now() };   // last-write-wins per key, durable on disk
+  o[key] = { value: value, ts: Date.now(), seq: _nextSeq(o) };   // last-write-wins per key, durable on disk
   _setOutbox(o);
   _setSyncState({});
 }
@@ -5545,8 +5561,13 @@ async function flushOutbox(){
           } else {
             // Confirmed in cloud — only NOW remove from the durable outbox, and record the key's ts.
             const cur = _getOutbox();
-            // Don't drop a newer write that landed while we were flushing this one.
-            if(cur[key] && cur[key].ts === entry.ts){ delete cur[key]; _setOutbox(cur); }
+            // Don't drop a newer write that landed while we were flushing this one. seq is what
+            // actually distinguishes them — ts alone collides within a millisecond. An entry written
+            // before this release has no seq; for those the comparison falls back to ts, which is
+            // exactly the old behaviour, so an upgrade cannot make anything worse.
+            const _same = cur[key] && cur[key].ts === entry.ts &&
+              (typeof cur[key].seq !== 'number' || typeof entry.seq !== 'number' || cur[key].seq === entry.seq);
+            if(_same){ delete cur[key]; _setOutbox(cur); }
             _recordKeyTs(key, entry.ts);
           }
         }catch(e){

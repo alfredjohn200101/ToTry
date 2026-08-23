@@ -310,6 +310,91 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── a merge that is not queued deletes the other device's entry FROM THE CLOUD ──────────────
+  // The most invisible failure in this app. startSyncLoop runs pullFromCloud() then flushOutbox()
+  // back to back, so a merge branch that unions without calling _queueWrite leaves the PRE-merge
+  // array sitting in the outbox — and the flush immediately overwrites the cloud with it. Locally
+  // both phones look perfect. The other device's entry is gone from the account, and nobody finds
+  // out until a reinstall, a new phone, or Safari-vs-home-screen.
+  //
+  // core.test.js checks the ARR membership list by parsing the source. That cannot see this: the key
+  // IS in the list, the union DOES run, the local array is right, and the data is still lost. So this
+  // runs it — a fake user_data map, a pull, a flush — and asserts THE CLOUD ROW, not the local one.
+  //
+  // Two things this got wrong first, both worth keeping written down. data_value is a jsonb column,
+  // so it comes back PARSED; a JSON string in the stub makes Array.isArray(cv) false and the union
+  // silently never runs. And each key needs its OWN context — sharing a page shares the outbox and
+  // the key-ts map, and the leftovers made the next key look broken.
+  {
+    const results = {};
+    for (const KEY of ['totry_prayers','totry_workouts','totry_journal']) {
+      const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+      const page = await ctx.newPage();
+      await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+        s('totry_onboarded',true); s('totry_name','Sam'); });
+      await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+      await page.waitForTimeout(2600);
+      results[KEY] = await page.evaluate(async (KEY) => {
+        const CLOUD = new Map();
+        sb = { from: () => ({
+          upsert: async (row) => { CLOUD.set(row.data_key, { data_value:row.data_value, updated_at:row.updated_at }); return { error:null }; },
+          select: () => ({ eq: () => Promise.resolve({
+            data: [...CLOUD.entries()].map(([k,v]) => ({ data_key:k, data_value:v.data_value, updated_at:v.updated_at })),
+            error: null }) })
+        })};
+        currentUser = { id:'test-user' };
+        syncEnabled = true;
+        // Stop the app's OWN loop first. startSyncLoop keeps a 20s retry interval and re-pulls on
+        // visibilitychange; with it live, a background flush lands between the pull and the flush
+        // being driven here and the test measures a race instead of the merge. It passed alone and
+        // failed under load — the definition of a test that should not be trusted.
+        try { if (typeof syncInterval !== 'undefined' && syncInterval) { clearInterval(syncInterval); syncInterval = null; } } catch(e){}
+        window.__consistencyHooked = true;         // and stop it re-arming
+        const ck = (typeof _cloudKey === 'function') ? _cloudKey(KEY) : KEY;
+        // device B put 1 and 3 in the cloud; this device has 1 and 2, with 2 still in the outbox
+        CLOUD.set(ck, { data_value:[{ id:1, ts:'2026-08-01T00:00:00.000Z' },
+                                    { id:3, ts:'2026-08-03T00:00:00.000Z' }],
+                        updated_at:'2026-08-03T00:00:00.000Z' });
+        ls(KEY, [{ id:1, ts:'2026-08-01T00:00:00.000Z' }, { id:2, ts:'2026-08-02T00:00:00.000Z' }]);
+        if (typeof _queueWrite === 'function') _queueWrite(KEY, ls(KEY));
+        await pullFromCloud();                     // exactly what startSyncLoop does,
+        await new Promise(x=>setTimeout(x,220));
+        // DRAIN, do not sleep. flushOutbox returns immediately when a flush is already in flight
+        // (`if(_flushing) return`), which happens whenever the app's own sync loop is mid-cycle — so a
+        // single call plus a fixed wait passed alone and failed under load. That is a flaky test, which
+        // is worse than no test: it teaches people to ignore a red line that sometimes means data loss.
+        // Poll the CLOUD until it converges, rather than flushing once and sleeping. flushOutbox
+        // returns immediately when a flush is already in flight (`if(_flushing) return`), and the
+        // app's own startSyncLoop is live in this page — so a single call plus a fixed wait passed
+        // when run alone and failed under load. A flaky test here is worse than none: it teaches
+        // people to ignore a red line that sometimes means real data loss. Convergence is also the
+        // honest property — the merged truth has to reach the account, not merely be queued once.
+        const readCloud = () => { try { const raw = CLOUD.get(ck).data_value;
+          return (typeof raw === 'string' ? JSON.parse(raw) : raw).map(x => x.id).sort(); } catch(e){ return []; } };
+        let cloud = [];
+        for (let i = 0; i < 50; i++) {
+          await flushOutbox();
+          await new Promise(x=>setTimeout(x,120));
+          cloud = readCloud();
+          if (JSON.stringify(cloud) === JSON.stringify([1,2,3])) break;
+        }
+        return { local:(ls(KEY)||[]).map(x=>x.id).sort(), cloud };
+      }, KEY);
+      await ctx.close();
+    }
+    let merged = 0;
+    for (const key of Object.keys(results)) {
+      const want = JSON.stringify([1,2,3]);
+      if (JSON.stringify(results[key].local) !== want)
+        findings.push(`sync: ${key} did not union locally — got ${JSON.stringify(results[key].local)}`);
+      else if (JSON.stringify(results[key].cloud) !== want)
+        findings.push(`sync: ${key} merged locally but the CLOUD row is ${JSON.stringify(results[key].cloud)} — the other device's entry was deleted from the account, and both phones still look fine`);
+      else merged++;
+    }
+    if (merged === Object.keys(results).length)
+      console.log(`sync: ${merged} unioned stores survive pull\u2192flush in the CLOUD, not just locally`);
+  }
+
   // ── a delete must remove exactly the thing that was tapped ─────────────────────────────────
   // There is no undo for most of these, and what they remove is a person's own writing — a journal
   // entry, a letter, someone they pray for. The failure mode is an index or id that no longer lines

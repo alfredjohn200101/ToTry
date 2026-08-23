@@ -5051,6 +5051,30 @@ function fnBodyOf(code, name){
   H.ok(new Date(dayMs).getDate() === 21, 'and a day-only one parses at LOCAL midnight, not UTC');
 }
 
+// ── an outbox entry needs an identity, not just a clock reading ──────────────────────────────
+{
+  H.section('outbox writes are distinguishable');
+
+  // flushOutbox deletes the entry it just uploaded, guarded so a newer write queued mid-flush is not
+  // thrown away. That guard compared TIMESTAMPS — and pullFromCloud's merge branches queue the merged
+  // array immediately after the write that triggered the flush, so the two collide inside one
+  // millisecond. The guard then cannot tell them apart, deletes the merged value, and it is never
+  // uploaded: local is right, the cloud keeps the stale array, and the outbox is empty so nothing
+  // ever retries. Found by driving pull→flush 8 times and watching 1 in 4 lose the merge.
+  const qw = H.extractFn('_queueWrite');
+  H.ok(/seq/.test(qw), 'a queued write carries a sequence number, not only a ts');
+
+  const seq = H.extractFn('_nextSeq');
+  H.ok(/\+\+_seq/.test(seq), 'the counter increments');
+  H.ok(/o\[k\]/.test(seq) || /Object\.keys\(o\)/.test(seq),
+       'and seeds from the durable outbox, so a reload cannot restart it under an entry already on disk');
+
+  const flush = H.extractFn('flushOutbox');
+  H.ok(/cur\[key\]\.seq/.test(flush), 'the delete-after-upload guard compares seq');
+  H.ok(/typeof cur\[key\]\.seq !== 'number'/.test(flush),
+       "and falls back to ts for entries written before this release, so upgrading cannot make it worse");
+}
+
 // ── a keyword orphaned from its function ─────────────────────────────────────────────────────
 {
   H.section('no dangling async/await keyword');
