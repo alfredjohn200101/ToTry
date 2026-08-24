@@ -832,7 +832,8 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       { label:'brand new',                    seed:{},                              want:{ shown:false } },
       { label:'first attempt, no slips yet',  seed:{ clean:13 },                    want:{ shown:false } },
       { label:'3 urges beaten, money back',   seed:{ clean:13, won:3, cost:true },  want:{ shown:true, has:/URGES MET AND TURNED AWAY/i, hasnt:/LONGEST RUN/i } },
-      { label:'40 days, previous best 21',    seed:{ clean:40, won:1, uses:[61,40] },want:{ shown:true, has:/LONGEST RUN YET .* 21 DAYS/i } },
+      { label:'40 days, previous best 21',    seed:{ clean:40, won:1, uses:[80,59,40] }, want:{ shown:true, has:/PORN: YOUR LONGEST RUN YET .* 21 DAYS/i } },
+      { label:'only one completed run',       seed:{ clean:200, won:1, uses:[203,200] },   want:{ shown:true, hasnt:/LONGEST RUN/i } },
       { label:'13 days, previous best 30',    seed:{ clean:13, won:1, uses:[60,30,13] }, want:{ shown:true, hasnt:/LONGEST RUN/i } },
     ];
     for (const c of cases) {
