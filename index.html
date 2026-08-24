@@ -235,6 +235,55 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .hero-ns-arrow{color:var(--go);font-size:18px;flex-shrink:0}
 .hero-verse{margin-top:16px;background:rgba(255,255,255,0.04)!important;border-color:rgba(255,255,255,0.08)!important}
 /* ════ RITUAL HEROES — morning (dawn) and evening (dusk) each FEEL like their hour. ════ */
+/* DAWN. SOUL-ARCHITECTURE, MORNING: "rebuild so it FEELS like morning — dawn skin, one thing at a
+   time, not a form." It was 1913px of scroll and 42 controls on a 896px screen: a form, whatever the
+   copy said. The skin is the first half — a sunrise sitting behind the whole tab, deep blue overhead
+   fading to amber at the horizon, so the screen reads as the hour it is for before a word is read.
+   Fixed and behind everything, and it never touches the crisis card's own colours. */
+#tab-morning.dawn{position:relative}
+#tab-morning.dawn::before{content:'';position:fixed;left:0;right:0;top:0;bottom:0;z-index:-1;
+  pointer-events:none;
+  background:linear-gradient(180deg,
+    rgba(24,32,58,0.55) 0%,
+    rgba(58,52,78,0.34) 38%,
+    rgba(140,96,66,0.20) 68%,
+    rgba(214,152,84,0.16) 88%,
+    rgba(0,0,0,0) 100%)}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]) #tab-morning.dawn::before{
+    background:linear-gradient(180deg,
+      rgba(150,170,214,0.26) 0%,
+      rgba(206,182,178,0.20) 42%,
+      rgba(236,196,140,0.22) 74%,
+      rgba(255,232,196,0.18) 92%,
+      rgba(0,0,0,0) 100%)}
+}
+:root[data-theme="light"] #tab-morning.dawn::before{
+  background:linear-gradient(180deg,
+    rgba(150,170,214,0.26) 0%,
+    rgba(206,182,178,0.20) 42%,
+    rgba(236,196,140,0.22) 74%,
+    rgba(255,232,196,0.18) 92%,
+    rgba(0,0,0,0) 100%)}
+
+/* ONE THING AT A TIME. Every block stays in the DOM — hidden, never removed — because the morning
+   check-in is a crisis door: the gate writes into #morning-grateful and #morning-intention and calls
+   completeMorning(), and a field that has been deleted cannot be written to. */
+/* Hide what is NOT in this step, and say nothing about what is. The app sets inline display on
+   several of these blocks itself (morning-day-ahead, morning-vice-card, morning-liturgy are hidden
+   until they have something to say), and an inline style beats any selector — so a plain rule did
+   nothing at all here. !important on the hide, and no rule on the show, means stepping works AND a
+   block the app has deliberately hidden stays hidden when its step comes up. */
+#tab-morning.stepped > [data-mstep]:not(.mstep-on){display:none !important}
+.mstep-nav{display:flex;align-items:center;gap:8px;margin:0 0 16px}
+.mstep-dots{display:flex;gap:5px;flex:1}
+.mstep-dot{width:6px;height:6px;border-radius:50%;background:var(--bd);transition:background .25s,width .25s}
+.mstep-dot.on{background:var(--go);width:18px;border-radius:3px}
+.mstep-label{font-family:'DM Mono',monospace;font-size:9.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--tx3)}
+.mstep-foot{display:flex;gap:10px;align-items:center;margin:18px 0 6px}
+.mstep-all{background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;
+  padding:8px 4px;text-decoration:underline;text-underline-offset:3px}
 .ritual-hero{position:relative;border-radius:22px;overflow:hidden;margin-bottom:18px;min-height:148px;display:flex;box-shadow:var(--e2)}
 .ritual-hero-inner{position:relative;z-index:1;padding:22px 20px;display:flex;flex-direction:column;justify-content:center}
 .ritual-hero-glow{position:absolute;inset:0;z-index:0}
@@ -4953,7 +5002,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v535';
+const APP_VERSION = 'v536';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -11660,7 +11709,7 @@ function go(name){
   if(name==='plans' && typeof renderPlans==='function'){renderPlans();}
   if(name==='calendar' && typeof renderCalendar==='function'){renderCalendar();}
   
-  if(name==='morning'){initMorningTab();showMorningAffirm();showMorningFocus();if(typeof _restoreMorningSleep==='function')_restoreMorningSleep();}
+  if(name==='morning'){initMorningTab();showMorningAffirm();showMorningFocus();if(typeof renderMorningFlow==='function')setTimeout(renderMorningFlow,60);if(typeof _restoreMorningSleep==='function')_restoreMorningSleep();}
   if(name==='soul'){ if(typeof applyFaithLabels==='function') applyFaithLabels(); if(typeof highlightSoulByTime==='function') highlightSoulByTime(); if(typeof renderFaithDoor==='function') renderFaithDoor(); }
   if(name==='reflect'){initEveningTab();initReviewTab();}
   
@@ -31308,6 +31357,110 @@ function computeReadiness(){
   return { score, level, reasons, advice, sleep, stress, energy, asOf: readinessTs,
            cyclePhase: cycle ? cycle.key : null };
 }
+// ── ONE THING AT A TIME ──
+// SOUL-ARCHITECTURE, MORNING: "rebuild so it FEELS like morning — dawn skin, one thing at a time,
+// not a form." It was 1913px of scroll and 42 visible controls on an 896px screen. Nobody sets an
+// intention at the bottom of a form; they abandon it somewhere around the third field.
+//
+// The blocks are NOT rewritten — every card, handler and id stays exactly where it was. They are
+// assigned to five steps and shown one at a time. Two rules make that safe:
+//
+//   1. Hidden, never removed. The morning check-in is a crisis door: detectCrisis runs on what is
+//      typed into #morning-grateful / #morning-intention and completeMorning() reads both. A field
+//      that has been deleted cannot be written to, and a crisis path that depends on a field is not
+//      something to be clever near.
+//   2. Assignment is by ANCHOR, not by tagging all 24 blocks. Every child inherits the step of the
+//      last anchor above it, so a card added later joins the step it sits in rather than vanishing.
+//      Nothing is ever orphaned, which is the failure that would matter.
+const _MORNING_STEPS = [
+  { key:'arrive',  label:'Arrive' },
+  { key:'receive', label:'Receive' },
+  { key:'body',    label:'Your body' },
+  { key:'set',     label:'Set the day' },
+  { key:'close',   label:'Close' },
+];
+// the block that BEGINS each step, after the first
+const _MORNING_ANCHORS = {
+  'morning-adaptive-card': 1,
+  'morning-sleep-card':    2,
+  'morning-gratitude':     3,
+  'morning-pray-lbl':      4,
+};
+// One exception to the anchor walk. The arriving check-in ("how are you arriving? body / head /
+// spirit") sits AFTER the intention field in the markup but belongs with the body step — and it
+// carries thirty buttons, which on its own turned "set the day" back into the form this is meant to
+// undo. An anchor cannot express this, because an anchor claims everything below it too.
+const _MORNING_OVERRIDE = { 'daily-checkin': 2 };
+let _mStep = 0;
+function _morningAssignSteps(pane){
+  let step = 0;
+  [...pane.children].forEach(el => {
+    // the back bar and the screen-reader heading are chrome, not part of the ritual
+    if(el.classList.contains('hub-back-bar') || el.classList.contains('a11y-only') || el.classList.contains('mstep-nav') || el.classList.contains('mstep-foot')) return;
+    if(el.id && _MORNING_ANCHORS[el.id] != null){
+      step = _MORNING_ANCHORS[el.id];
+      // a bare <div class="lbl"> sits immediately above its field and belongs with it
+      const prev = el.previousElementSibling;
+      if(prev && prev.classList.contains('lbl')) prev.setAttribute('data-mstep', step);
+    }
+    el.setAttribute('data-mstep', (el.id && _MORNING_OVERRIDE[el.id] != null) ? _MORNING_OVERRIDE[el.id] : step);
+  });
+}
+function morningStep(n){
+  const pane = document.getElementById('tab-morning');
+  if(!pane) return;
+  _mStep = Math.max(0, Math.min(_MORNING_STEPS.length - 1, n));
+  pane.querySelectorAll(':scope > [data-mstep]').forEach(el => {
+    el.classList.toggle('mstep-on', Number(el.getAttribute('data-mstep')) === _mStep);
+  });
+  const dots = pane.querySelector('.mstep-dots');
+  if(dots) [...dots.children].forEach((d,i) => d.classList.toggle('on', i === _mStep));
+  const lbl = pane.querySelector('.mstep-label');
+  if(lbl) lbl.textContent = _MORNING_STEPS[_mStep].label;
+  const nextBtn = pane.querySelector('.mstep-next');
+  if(nextBtn) nextBtn.textContent = (_mStep === _MORNING_STEPS.length - 1) ? '' : 'Next \u2192';
+  if(nextBtn) nextBtn.style.display = (_mStep === _MORNING_STEPS.length - 1) ? 'none' : '';
+  try{ pane.scrollTop = 0; window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){ }
+  if(typeof haptic === 'function') haptic('tap');
+}
+// The escape hatch, and the honest one: some mornings a person wants the whole thing at once, and
+// anything that traps someone in a flow they did not ask for is the opposite of this app.
+function morningShowAll(){
+  const pane = document.getElementById('tab-morning');
+  if(!pane) return;
+  pane.classList.remove('stepped');
+  const nav = pane.querySelector('.mstep-nav'); if(nav) nav.style.display = 'none';
+  const foot = pane.querySelector('.mstep-foot'); if(foot) foot.style.display = 'none';
+  ls('totry_morning_flow', 'all');
+  if(typeof haptic === 'function') haptic('tap');
+}
+function renderMorningFlow(){
+  const pane = document.getElementById('tab-morning');
+  if(!pane) return;
+  if(ls('totry_morning_flow') === 'all'){ pane.classList.remove('stepped'); return; }
+  _morningAssignSteps(pane);
+  pane.classList.add('dawn');
+  if(!pane.querySelector('.mstep-nav')){
+    const nav = document.createElement('div');
+    nav.className = 'mstep-nav';
+    nav.innerHTML = '<div class="mstep-dots">' +
+      _MORNING_STEPS.map(() => '<div class="mstep-dot"></div>').join('') +
+      '</div><div class="mstep-label"></div>';
+    const after = pane.querySelector('.a11y-only') || pane.querySelector('.hub-back-bar');
+    if(after && after.nextSibling) pane.insertBefore(nav, after.nextSibling); else pane.insertBefore(nav, pane.firstChild);
+
+    const foot = document.createElement('div');
+    foot.className = 'mstep-foot';
+    foot.innerHTML = '<button class="btn primary mstep-next" style="flex:1">Next \u2192</button>' +
+                     '<button class="mstep-all" type="button">Show the whole morning</button>';
+    pane.appendChild(foot);
+    foot.querySelector('.mstep-next').onclick = () => morningStep(_mStep + 1);
+    foot.querySelector('.mstep-all').onclick = morningShowAll;
+  }
+  pane.classList.add('stepped');
+  morningStep(0);
+}
+
 // One-tap morning sleep rating → writes a check-in that computeReadiness reads, so sleep instantly
 // shapes readiness, the coach's voice, and the urge companion ("running on no sleep — that's why
 // the pull feels strong; it's not weakness"). Idempotent per day (updates today's entry).

@@ -235,6 +235,55 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .hero-ns-arrow{color:var(--go);font-size:18px;flex-shrink:0}
 .hero-verse{margin-top:16px;background:rgba(255,255,255,0.04)!important;border-color:rgba(255,255,255,0.08)!important}
 /* ════ RITUAL HEROES — morning (dawn) and evening (dusk) each FEEL like their hour. ════ */
+/* DAWN. SOUL-ARCHITECTURE, MORNING: "rebuild so it FEELS like morning — dawn skin, one thing at a
+   time, not a form." It was 1913px of scroll and 42 controls on a 896px screen: a form, whatever the
+   copy said. The skin is the first half — a sunrise sitting behind the whole tab, deep blue overhead
+   fading to amber at the horizon, so the screen reads as the hour it is for before a word is read.
+   Fixed and behind everything, and it never touches the crisis card's own colours. */
+#tab-morning.dawn{position:relative}
+#tab-morning.dawn::before{content:'';position:fixed;left:0;right:0;top:0;bottom:0;z-index:-1;
+  pointer-events:none;
+  background:linear-gradient(180deg,
+    rgba(24,32,58,0.55) 0%,
+    rgba(58,52,78,0.34) 38%,
+    rgba(140,96,66,0.20) 68%,
+    rgba(214,152,84,0.16) 88%,
+    rgba(0,0,0,0) 100%)}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]) #tab-morning.dawn::before{
+    background:linear-gradient(180deg,
+      rgba(150,170,214,0.26) 0%,
+      rgba(206,182,178,0.20) 42%,
+      rgba(236,196,140,0.22) 74%,
+      rgba(255,232,196,0.18) 92%,
+      rgba(0,0,0,0) 100%)}
+}
+:root[data-theme="light"] #tab-morning.dawn::before{
+  background:linear-gradient(180deg,
+    rgba(150,170,214,0.26) 0%,
+    rgba(206,182,178,0.20) 42%,
+    rgba(236,196,140,0.22) 74%,
+    rgba(255,232,196,0.18) 92%,
+    rgba(0,0,0,0) 100%)}
+
+/* ONE THING AT A TIME. Every block stays in the DOM — hidden, never removed — because the morning
+   check-in is a crisis door: the gate writes into #morning-grateful and #morning-intention and calls
+   completeMorning(), and a field that has been deleted cannot be written to. */
+/* Hide what is NOT in this step, and say nothing about what is. The app sets inline display on
+   several of these blocks itself (morning-day-ahead, morning-vice-card, morning-liturgy are hidden
+   until they have something to say), and an inline style beats any selector — so a plain rule did
+   nothing at all here. !important on the hide, and no rule on the show, means stepping works AND a
+   block the app has deliberately hidden stays hidden when its step comes up. */
+#tab-morning.stepped > [data-mstep]:not(.mstep-on){display:none !important}
+.mstep-nav{display:flex;align-items:center;gap:8px;margin:0 0 16px}
+.mstep-dots{display:flex;gap:5px;flex:1}
+.mstep-dot{width:6px;height:6px;border-radius:50%;background:var(--bd);transition:background .25s,width .25s}
+.mstep-dot.on{background:var(--go);width:18px;border-radius:3px}
+.mstep-label{font-family:'DM Mono',monospace;font-size:9.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--tx3)}
+.mstep-foot{display:flex;gap:10px;align-items:center;margin:18px 0 6px}
+.mstep-all{background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;
+  padding:8px 4px;text-decoration:underline;text-underline-offset:3px}
 .ritual-hero{position:relative;border-radius:22px;overflow:hidden;margin-bottom:18px;min-height:148px;display:flex;box-shadow:var(--e2)}
 .ritual-hero-inner{position:relative;z-index:1;padding:22px 20px;display:flex;flex-direction:column;justify-content:center}
 .ritual-hero-glow{position:absolute;inset:0;z-index:0}

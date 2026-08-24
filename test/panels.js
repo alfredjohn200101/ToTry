@@ -310,6 +310,64 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── the morning is a ritual, not a form ────────────────────────────────────────────────────
+  // SOUL-ARCHITECTURE, MORNING: "rebuild so it FEELS like morning — dawn skin, one thing at a time,
+  // not a form." It was 1913px of scroll and 42 visible controls on an 896px screen. Nobody sets an
+  // intention at the bottom of a form.
+  //
+  // Three things have to hold, and the last two are the ones that could hurt someone:
+  //   - each step fits about a screen, or it is still a form with extra taps
+  //   - EVERY block belongs to a step. Assignment is by anchor so anything added later inherits the
+  //     step it sits in; a block with no step is a card that has silently left the app
+  //   - the fields are hidden, never removed. The morning check-in is a crisis door — the gate runs
+  //     on what is typed into #morning-gratitude / #morning-intention and completeMorning() reads
+  //     both. A field that has been deleted cannot be written to.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name','Sam'); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const r = await page.evaluate(async () => {
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+      go('morning');
+      await new Promise(x=>setTimeout(x,1100));
+      const pane = document.getElementById('tab-morning');
+      const out = { stepped: pane.classList.contains('stepped'), dawn: pane.classList.contains('dawn'), steps: [] };
+      // nothing may be left without a step
+      out.orphans = [...pane.children].filter(e =>
+        !e.classList.contains('hub-back-bar') && !e.classList.contains('a11y-only') &&
+        !e.classList.contains('mstep-nav') && !e.classList.contains('mstep-foot') &&
+        !e.hasAttribute('data-mstep')).map(e => e.id || '.'+String(e.className||'').split(' ')[0]);
+      for (let i = 0; i < 5; i++) {
+        morningStep(i);
+        await new Promise(x=>setTimeout(x,180));
+        out.steps.push({ label:(pane.querySelector('.mstep-label')||{}).textContent || '?',
+                         h: Math.round(pane.scrollHeight) });
+        // the crisis fields must exist at EVERY step, not only their own
+        if (!document.getElementById('morning-gratitude') || !document.getElementById('morning-intention'))
+          out.crisisGone = i;
+      }
+      morningShowAll();
+      await new Promise(x=>setTimeout(x,260));
+      out.showAll = { h: Math.round(pane.scrollHeight), stepped: pane.classList.contains('stepped') };
+      return out;
+    });
+    if (!r.stepped) findings.push('morning: not stepped — it is still one long form');
+    else if (!r.dawn) findings.push('morning: no dawn skin');
+    else if (r.orphans.length) findings.push(`morning: ${r.orphans.length} block(s) belong to no step and can never be reached — ${r.orphans.slice(0,3).join(', ')}`);
+    else if (r.crisisGone != null) findings.push(`morning: the crisis fields are GONE at step ${r.crisisGone} — hidden is fine, removed is not`);
+    else {
+      const tall = r.steps.filter(s => s.h > 1100);
+      if (tall.length) findings.push(`morning: ${tall.map(s=>s.label+' '+s.h+'px').join(', ')} — a step that does not fit a screen is still a form`);
+      else if (r.showAll.stepped || r.showAll.h < 1500)
+        findings.push('morning: "show the whole morning" does not actually restore the full page');
+      else console.log(`morning: five steps (${r.steps.map(s=>s.h).join('/')}px), dawn skin on, nothing orphaned, and the whole page is still one tap away`);
+    }
+    await ctx.close();
+  }
+
   // ── the Fight leads with evidence, and the evidence has to be earned ───────────────────────
   // SOUL-ARCHITECTURE, FIGHT: "reframe from a list of vices into 'your fight, and how you're winning
   // it.'" The clean clock says how long; directly beneath it the person met a per-vice list opening

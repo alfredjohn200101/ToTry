@@ -65,7 +65,10 @@ const DOORS = [
   { name: 'the morning check-in',
     go: async page => page.evaluate(async () => { go('home'); }),
     fire: async (page, phrase) => page.evaluate(async p => {
-      const g = document.getElementById('morning-grateful'), i = document.getElementById('morning-intention');
+      // morning-gratitudE, not morning-grateful. The old id does not exist, so this line silently
+      // wrote nothing for as long as it has been here and the door was only ever tested through the
+      // intention field. Both are gated, and both should be proven.
+      const g = document.getElementById('morning-gratitude'), i = document.getElementById('morning-intention');
       if(g) g.value = p; if(i) i.value = p;
       if(typeof completeMorning === 'function') await completeMorning();
     }, phrase) },

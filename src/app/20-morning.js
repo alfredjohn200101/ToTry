@@ -1,3 +1,107 @@
+// ── ONE THING AT A TIME ──
+// SOUL-ARCHITECTURE, MORNING: "rebuild so it FEELS like morning — dawn skin, one thing at a time,
+// not a form." It was 1913px of scroll and 42 visible controls on an 896px screen. Nobody sets an
+// intention at the bottom of a form; they abandon it somewhere around the third field.
+//
+// The blocks are NOT rewritten — every card, handler and id stays exactly where it was. They are
+// assigned to five steps and shown one at a time. Two rules make that safe:
+//
+//   1. Hidden, never removed. The morning check-in is a crisis door: detectCrisis runs on what is
+//      typed into #morning-grateful / #morning-intention and completeMorning() reads both. A field
+//      that has been deleted cannot be written to, and a crisis path that depends on a field is not
+//      something to be clever near.
+//   2. Assignment is by ANCHOR, not by tagging all 24 blocks. Every child inherits the step of the
+//      last anchor above it, so a card added later joins the step it sits in rather than vanishing.
+//      Nothing is ever orphaned, which is the failure that would matter.
+const _MORNING_STEPS = [
+  { key:'arrive',  label:'Arrive' },
+  { key:'receive', label:'Receive' },
+  { key:'body',    label:'Your body' },
+  { key:'set',     label:'Set the day' },
+  { key:'close',   label:'Close' },
+];
+// the block that BEGINS each step, after the first
+const _MORNING_ANCHORS = {
+  'morning-adaptive-card': 1,
+  'morning-sleep-card':    2,
+  'morning-gratitude':     3,
+  'morning-pray-lbl':      4,
+};
+// One exception to the anchor walk. The arriving check-in ("how are you arriving? body / head /
+// spirit") sits AFTER the intention field in the markup but belongs with the body step — and it
+// carries thirty buttons, which on its own turned "set the day" back into the form this is meant to
+// undo. An anchor cannot express this, because an anchor claims everything below it too.
+const _MORNING_OVERRIDE = { 'daily-checkin': 2 };
+let _mStep = 0;
+function _morningAssignSteps(pane){
+  let step = 0;
+  [...pane.children].forEach(el => {
+    // the back bar and the screen-reader heading are chrome, not part of the ritual
+    if(el.classList.contains('hub-back-bar') || el.classList.contains('a11y-only') || el.classList.contains('mstep-nav') || el.classList.contains('mstep-foot')) return;
+    if(el.id && _MORNING_ANCHORS[el.id] != null){
+      step = _MORNING_ANCHORS[el.id];
+      // a bare <div class="lbl"> sits immediately above its field and belongs with it
+      const prev = el.previousElementSibling;
+      if(prev && prev.classList.contains('lbl')) prev.setAttribute('data-mstep', step);
+    }
+    el.setAttribute('data-mstep', (el.id && _MORNING_OVERRIDE[el.id] != null) ? _MORNING_OVERRIDE[el.id] : step);
+  });
+}
+function morningStep(n){
+  const pane = document.getElementById('tab-morning');
+  if(!pane) return;
+  _mStep = Math.max(0, Math.min(_MORNING_STEPS.length - 1, n));
+  pane.querySelectorAll(':scope > [data-mstep]').forEach(el => {
+    el.classList.toggle('mstep-on', Number(el.getAttribute('data-mstep')) === _mStep);
+  });
+  const dots = pane.querySelector('.mstep-dots');
+  if(dots) [...dots.children].forEach((d,i) => d.classList.toggle('on', i === _mStep));
+  const lbl = pane.querySelector('.mstep-label');
+  if(lbl) lbl.textContent = _MORNING_STEPS[_mStep].label;
+  const nextBtn = pane.querySelector('.mstep-next');
+  if(nextBtn) nextBtn.textContent = (_mStep === _MORNING_STEPS.length - 1) ? '' : 'Next \u2192';
+  if(nextBtn) nextBtn.style.display = (_mStep === _MORNING_STEPS.length - 1) ? 'none' : '';
+  try{ pane.scrollTop = 0; window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){ }
+  if(typeof haptic === 'function') haptic('tap');
+}
+// The escape hatch, and the honest one: some mornings a person wants the whole thing at once, and
+// anything that traps someone in a flow they did not ask for is the opposite of this app.
+function morningShowAll(){
+  const pane = document.getElementById('tab-morning');
+  if(!pane) return;
+  pane.classList.remove('stepped');
+  const nav = pane.querySelector('.mstep-nav'); if(nav) nav.style.display = 'none';
+  const foot = pane.querySelector('.mstep-foot'); if(foot) foot.style.display = 'none';
+  ls('totry_morning_flow', 'all');
+  if(typeof haptic === 'function') haptic('tap');
+}
+function renderMorningFlow(){
+  const pane = document.getElementById('tab-morning');
+  if(!pane) return;
+  if(ls('totry_morning_flow') === 'all'){ pane.classList.remove('stepped'); return; }
+  _morningAssignSteps(pane);
+  pane.classList.add('dawn');
+  if(!pane.querySelector('.mstep-nav')){
+    const nav = document.createElement('div');
+    nav.className = 'mstep-nav';
+    nav.innerHTML = '<div class="mstep-dots">' +
+      _MORNING_STEPS.map(() => '<div class="mstep-dot"></div>').join('') +
+      '</div><div class="mstep-label"></div>';
+    const after = pane.querySelector('.a11y-only') || pane.querySelector('.hub-back-bar');
+    if(after && after.nextSibling) pane.insertBefore(nav, after.nextSibling); else pane.insertBefore(nav, pane.firstChild);
+
+    const foot = document.createElement('div');
+    foot.className = 'mstep-foot';
+    foot.innerHTML = '<button class="btn primary mstep-next" style="flex:1">Next \u2192</button>' +
+                     '<button class="mstep-all" type="button">Show the whole morning</button>';
+    pane.appendChild(foot);
+    foot.querySelector('.mstep-next').onclick = () => morningStep(_mStep + 1);
+    foot.querySelector('.mstep-all').onclick = morningShowAll;
+  }
+  pane.classList.add('stepped');
+  morningStep(0);
+}
+
 // One-tap morning sleep rating → writes a check-in that computeReadiness reads, so sleep instantly
 // shapes readiness, the coach's voice, and the urge companion ("running on no sleep — that's why
 // the pull feels strong; it's not weakness"). Idempotent per day (updates today's entry).

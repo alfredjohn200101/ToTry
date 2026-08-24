@@ -74,7 +74,11 @@ Today · Soul · Grow · Money · Settings — bottom bar, thumb-reachable. Ever
 - **Feeling:** quiet, unhurried, sacred. A dawn-lit moment, not a checklist.
 - **Connects:** sleep rating → readiness (feeds companion + coach all day). Intention → referenced
   by the companion if the pull comes later ("you said this morning you wanted...").
-- **TODO:** rebuild so it FEELS like morning — dawn skin, one thing at a time, not a form.
+- **DONE (v536):** a sunrise sits behind the tab, and the ritual is five steps — Arrive, Receive,
+  Your body, Set the day, Close — each fitting one screen, instead of 1913px of scroll and 42
+  controls. Every card and handler is unchanged; blocks are assigned to steps by anchor, so anything
+  added later inherits the step it sits in rather than disappearing. "Show the whole morning" is
+  always one tap away for anyone who wants it all at once.
 
 ### EVENING (reflect) — *close the day with grace*
 - **Purpose:** look back honestly, without shame. End the day reconciled.

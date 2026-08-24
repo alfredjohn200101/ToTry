@@ -4267,7 +4267,7 @@ function go(name){
   if(name==='plans' && typeof renderPlans==='function'){renderPlans();}
   if(name==='calendar' && typeof renderCalendar==='function'){renderCalendar();}
   
-  if(name==='morning'){initMorningTab();showMorningAffirm();showMorningFocus();if(typeof _restoreMorningSleep==='function')_restoreMorningSleep();}
+  if(name==='morning'){initMorningTab();showMorningAffirm();showMorningFocus();if(typeof renderMorningFlow==='function')setTimeout(renderMorningFlow,60);if(typeof _restoreMorningSleep==='function')_restoreMorningSleep();}
   if(name==='soul'){ if(typeof applyFaithLabels==='function') applyFaithLabels(); if(typeof highlightSoulByTime==='function') highlightSoulByTime(); if(typeof renderFaithDoor==='function') renderFaithDoor(); }
   if(name==='reflect'){initEveningTab();initReviewTab();}
   
