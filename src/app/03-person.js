@@ -4256,7 +4256,7 @@ function go(name){
   // Show a "back to hub" bar on sub-pages so users can climb back up easily
   updateHubBackBar(name);
   try{ if(typeof renderCycleSurfaces==='function') renderCycleSurfaces(); }catch(_){}
-  if(name==='fight'){renderVices();renderScoreboard();}
+  if(name==='fight'){renderVices();renderScoreboard();if(typeof renderFightEvidence==='function')renderFightEvidence();}
   if(name==='track'){renderBody();renderBodyCollage();updateTrackerDisplay();if(typeof renderHealthCard==='function')renderHealthCard();if(typeof Health!=='undefined'&&Health.connected()&&Health.isNative())Health.syncToday();}
   if(name==='grow'){ if(typeof renderBodySystemReport==='function') renderBodySystemReport();
                      if(typeof renderGrowHandoffs==='function') renderGrowHandoffs(); }
@@ -4284,10 +4284,10 @@ function go(name){
       }
     }catch(_){}
   }
-  if(name==='fight'){renderVices();renderScoreboard();}
+  if(name==='fight'){renderVices();renderScoreboard();if(typeof renderFightEvidence==='function')renderFightEvidence();}
   
   if(name==='reflect'){renderJournal();setReflectTab('evening');}
-  if(name==='fight'){renderVices();renderScoreboard();setFightTab('vices');if(typeof renderFeelingWinsMomentum==='function')renderFeelingWinsMomentum();if(typeof renderUrgeInsights==='function')renderUrgeInsights();if(typeof renderVicePatternCard==='function')renderVicePatternCard();}
+  if(name==='fight'){renderVices();renderScoreboard();if(typeof renderFightEvidence==='function')renderFightEvidence();setFightTab('vices');if(typeof renderFeelingWinsMomentum==='function')renderFeelingWinsMomentum();if(typeof renderUrgeInsights==='function')renderUrgeInsights();if(typeof renderVicePatternCard==='function')renderVicePatternCard();}
   if(name==='bible'){setBibleTab('find');}
   if(name==='money'){renderFinance();if(typeof renderFinanceGoals==='function')renderFinanceGoals();
     // renderFinance() early-returns when there are no debts, and renderTransactions() — the only

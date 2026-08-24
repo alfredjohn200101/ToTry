@@ -1240,6 +1240,80 @@ function _calDaysSince(ts){
   const n = new Date(); const t = new Date(n.getFullYear(), n.getMonth(), n.getDate());
   return Math.max(0, Math.round((t - a) / 86400000));   // round, so a DST shift cannot lose a day
 }
+// ── HOW YOU ARE WINNING IT ──
+// SOUL-ARCHITECTURE, FIGHT: "reframe from a list of vices into 'your fight, and how you're winning
+// it.'" The clean clock says how LONG. Directly beneath it the person met a per-vice list opening
+// with "WIN RATE 0% 0/6" — a scoreboard of every time they lost, which is precisely the framing this
+// pillar is supposed to refuse. Strong AND tender, per the doc: the number is not in question, but
+// the first thing after it should be the evidence that they are winning.
+//
+// Counted, never estimated, and never asked of a model. Silent when there is nothing true to say —
+// an invented encouragement is worse here than in any other part of the app, because the person
+// reading it is deciding whether to believe the app about their own life.
+function fightEvidenceLine(){
+  const bits = [];
+  try{
+    const now = Date.now(), W = 7*86400000;
+    const within = t => { const x = new Date(t).getTime(); return !isNaN(x) && x > now - W; };
+
+    // urges met and turned away — the thing they actually DID, not the thing they avoided
+    const log = (ls('totry_fight_log')||[]).filter(f => f && f.ts && within(f.ts));
+    const won = log.filter(f => f.won).length;
+    const momentsWon = (ls('totry_moments_won')||[]).filter(m => m && within(m.ts || m)).length;
+    const met = won + momentsWon;
+    if(met > 0) bits.push(met + (met === 1 ? ' urge met and turned away' : ' urges met and turned away') + ' this week');
+
+    // money the clean days actually put back — the vice→money pipe, which only exists because both
+    // fronts live in one app
+    let reclaimed = 0;
+    try{ if(typeof totalReclaimed === 'function') reclaimed = totalReclaimed() || 0; }catch(_){ }
+    // curSym(), with no ASCII fallback: a hardcoded $ is the currency bug this repo already has a
+    // test for, and showing a GBP user dollars is worse than showing them nothing.
+    if(reclaimed > 0) bits.push(curSym() + Math.round(reclaimed).toLocaleString() + ' reclaimed');
+
+    // and whether this run is the longest they have managed — the fact a person most wants to know,
+    // and the one a list of vices never tells them.
+    //
+    // Derived from the slips they actually logged, NOT from a stored `best`: nothing in this app ever
+    // writes v.best, so comparing against it made the claim true for everyone past three days, which
+    // is a compliment rather than a fact. The previous best is the longest gap between consecutive
+    // logged uses (and the gap from the quit date to the first one). If there are no slips on record
+    // there is no previous run to beat, so the line is not earned and is not shown.
+    try{
+      loadV();
+      (vices||[]).forEach(v => {
+        if(typeof viceIsAbstinence === 'function' && !viceIsAbstinence(v)) return;
+        const current = (typeof viceCleanDays === 'function') ? viceCleanDays(v) : 0;
+        if(current < 3) return;
+        const uses = (ls('totry_vice_uses')||[])
+          .filter(u => u && u.v === v.n && u.ts)
+          .map(u => new Date(u.ts).getTime())
+          .filter(t => !isNaN(t))
+          .sort((a,b) => a - b);
+        if(uses.length < 2) return;                    // no completed previous run to compare against
+        let prevBest = 0;
+        for(let i = 1; i < uses.length; i++){
+          const gap = Math.floor((uses[i] - uses[i-1]) / 86400000);
+          if(gap > prevBest) prevBest = gap;
+        }
+        if(current > prevBest && prevBest > 0){
+          bits.push('your longest run yet \u2014 past ' + prevBest + ' days');
+        }
+      });
+    }catch(_){ }
+  }catch(_){ }
+  return bits;
+}
+function renderFightEvidence(){
+  const el = document.getElementById('fight-evidence');
+  if(!el) return;
+  const bits = fightEvidenceLine();
+  if(!bits.length){ el.style.display = 'none'; el.innerHTML = ''; return; }
+  el.style.display = 'block';
+  el.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.08em;' +
+    'text-transform:uppercase;color:var(--go);margin-bottom:12px;line-height:1.7;text-align:center">' +
+    bits.map(b => _escFew(b)).join(' &middot; ') + '</div>';
+}
 function viceCleanDays(v){
   // A clean streak is elapsed time since a COMMITMENT to zero. Watch mode has made none, moderation
   // is a limit rather than a zero, and letting go is not a streak at all — so none of them has one.

@@ -89,7 +89,10 @@ Today · Soul · Grow · Money · Settings — bottom bar, thumb-reachable. Ever
   the winning man (his clean days made visible and shareable).
 - **Feeling:** not military, not shaming. Strong AND tender. Grace after relapse lives here.
 - **Connects:** ← companion wins land here. → recovery timeline, → money reclaimed, → share cards.
-- **TODO:** reframe from a list of vices into "your fight, and how you're winning it."
+- **DONE (v535):** the clean clock says how long; directly beneath it now sits what has been WON —
+  "3 urges met and turned away this week · £46 reclaimed · your longest run yet — past 21 days" —
+  before the per-vice list, which used to open with "WIN RATE 0%". Counted from the fight log, the
+  vice→money pipe and the real slip history; silent when none of it is earned.
 
 ### GROW (hub) → TRAIN · NOURISH · TRACK — *the body as one loop*
 - **Purpose:** the body honestly. Train → fuel you've earned → the result you can see.

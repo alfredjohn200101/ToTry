@@ -310,6 +310,59 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── the Fight leads with evidence, and the evidence has to be earned ───────────────────────
+  // SOUL-ARCHITECTURE, FIGHT: "reframe from a list of vices into 'your fight, and how you're winning
+  // it.'" The clean clock says how long; directly beneath it the person met a per-vice list opening
+  // "WIN RATE 0% 0/6" — a scoreboard of every loss, which is the framing this pillar refuses.
+  //
+  // The trap in a line like this is that it becomes a compliment. "Your longest run yet" compared
+  // against a stored v.best that NOTHING in this app writes, so it was true for everyone past three
+  // days and therefore meant nothing. It is now derived from the slips actually logged, and the case
+  // that matters most is the last one: someone 13 days in whose previous best was 30 must NOT be told
+  // this is their longest run. An app that flatters is an app you stop believing.
+  {
+    const cases = [
+      { label:'brand new',                    seed:{},                              want:{ shown:false } },
+      { label:'first attempt, no slips yet',  seed:{ clean:13 },                    want:{ shown:false } },
+      { label:'3 urges beaten, money back',   seed:{ clean:13, won:3, cost:true },  want:{ shown:true, has:/URGES MET AND TURNED AWAY/i, hasnt:/LONGEST RUN/i } },
+      { label:'40 days, previous best 21',    seed:{ clean:40, won:1, uses:[61,40] },want:{ shown:true, has:/LONGEST RUN YET .* 21 DAYS/i } },
+      { label:'13 days, previous best 30',    seed:{ clean:13, won:1, uses:[60,30,13] }, want:{ shown:true, hasnt:/LONGEST RUN/i } },
+    ];
+    for (const c of cases) {
+      const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+      const page = await ctx.newPage();
+      await page.addInitScript(c => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+        const d=i=>new Date(Date.now()-i*864e5).toISOString();
+        s('totry_onboarded',true); s('totry_name','Sam'); s('totry_currency','GBP');
+        if(c.clean){ const v={ n:'Porn', mode:'quit', startDate:d(c.clean), total:6 };
+          if(c.cost){ v.costAmount=25; v.costPeriod='week'; }
+          s('totry_v',[v]); }
+        if(c.uses) s('totry_vice_uses', c.uses.map(n=>({ v:'Porn', ts:d(n) })));
+        if(c.won) s('totry_fight_log', Array.from({length:c.won},(_,i)=>({ ts:d(i+1), won:true })));
+      }, c.seed);
+      await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+      await page.waitForTimeout(2600);
+      const txt = await page.evaluate(async () => {
+        go('fight'); await new Promise(x=>setTimeout(x,900));
+        const el = document.getElementById('fight-evidence');
+        if(!el) return null;
+        const on = getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().height > 0;
+        return on ? (el.innerText||'').replace(/\s+/g,' ').trim() : '';
+      });
+      if (txt === null) { findings.push('fight evidence: #fight-evidence is not in the markup'); await ctx.close(); continue; }
+      const shown = !!txt;
+      if (shown !== c.want.shown)
+        findings.push(`fight evidence (${c.label}): ${shown ? 'says "'+txt.slice(0,56)+'"' : 'says nothing'} — expected the opposite`);
+      else if (c.want.has && !c.want.has.test(txt))
+        findings.push(`fight evidence (${c.label}): missing the counted evidence — "${txt.slice(0,56)}"`);
+      else if (c.want.hasnt && c.want.hasnt.test(txt))
+        findings.push(`fight evidence (${c.label}): claims "${txt.slice(0,56)}" — that is a compliment, not a fact`);
+      await ctx.close();
+    }
+    if (!findings.some(f => f.startsWith('fight evidence')))
+      console.log('fight: leads with earned evidence, and withholds "longest run" from someone who has not beaten theirs');
+  }
+
   // ── the companion is a sheet, not a takeover ───────────────────────────────────────────────
   // SOUL-ARCHITECTURE, THE COMPANION: "make it a bottom-sheet that rises like iMessage, not a
   // full-screen takeover." It was pinned to a fixed top and stood 832px on a 414x896 phone — 93% of
