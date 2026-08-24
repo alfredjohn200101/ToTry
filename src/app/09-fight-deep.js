@@ -1270,8 +1270,19 @@ function fightEvidenceLine(){
 
     // money the clean days actually put back — the vice→money pipe, which only exists because both
     // fronts live in one app
+    // Only from vices they are actually abstaining from. totalReclaimed() sums every vice with a
+    // cost model, including ones in watch or moderate mode — where viceCleanDays deliberately returns
+    // 0 because there is no abstinence to count. So this line could tell someone they had "reclaimed"
+    // money from a habit they used twice this week, under a heading that says how they are WINNING.
     let reclaimed = 0;
-    try{ if(typeof totalReclaimed === 'function') reclaimed = totalReclaimed() || 0; }catch(_){ }
+    try{
+      if(typeof totalReclaimed === 'function'){
+        loadV();
+        const anyAbstaining = (vices||[]).some(v =>
+          typeof viceIsAbstinence !== 'function' || viceIsAbstinence(v));
+        if(anyAbstaining) reclaimed = totalReclaimed() || 0;
+      }
+    }catch(_){ }
     // curSym(), with no ASCII fallback: a hardcoded $ is the currency bug this repo already has a
     // test for, and showing a GBP user dollars is worse than showing them nothing.
     if(reclaimed > 0) bits.push(curSym() + Math.round(reclaimed).toLocaleString() + ' reclaimed');
@@ -1698,6 +1709,25 @@ function momentsWonInWeek(name){
 //
 // Returns '' when there should be no line — the caller drops the block entirely rather than printing
 // an empty italic div.
+// The same line as _faithLine, but with its reference. Every entry in the verse sets is {t, r} and
+// _sosAnchor already shows the r — so the crisis surface cited a passage while the still centre
+// printed the identical words anonymously. A tradition's text without its source reads as the app's
+// own aphorism rather than as scripture, which is the wrong way round for a screen whose whole point
+// is that it is pointing beyond itself.
+function _faithLineCited(fallbackText){
+  try{
+    if(typeof faithLevel === 'function' && faithLevel() === 'light') return null;
+    const t = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
+    if(t === 'secular') return null;
+    const set = (typeof activeVerses === 'function') ? activeVerses() : null;
+    if(set && set.length){
+      const i = new Date().getDate() % set.length;    // same index as _faithLine, so they agree
+      return { text: set[i].t || '', ref: set[i].r || '' };
+    }
+    if(t === 'christianity' && fallbackText) return { text: fallbackText, ref: '' };
+  }catch(_){ }
+  return null;
+}
 function _faithLine(fallbackText){
   try{
     if(typeof faithLevel === 'function' && faithLevel() === 'light') return '';

@@ -42,8 +42,15 @@ let _mStep = 0;
 function _morningAssignSteps(pane){
   let step = 0;
   [...pane.children].forEach(el => {
-    // the back bar and the screen-reader heading are chrome, not part of the ritual
-    if(el.classList.contains('hub-back-bar') || el.classList.contains('a11y-only') || el.classList.contains('mstep-nav') || el.classList.contains('mstep-foot')) return;
+    // The back bar and the screen-reader heading are chrome, not part of the ritual.
+    //
+    // Test the ID as well as the class: updateHubBackBar() builds the bar with bar.id='hub-back-bar'
+    // and NO class at all, so a class-only check never matched it. It was given step 0 and vanished
+    // on steps 1-4 — the "‹ Soul" way out disappearing from four fifths of the ritual, which is a
+    // poor thing to do to someone who is halfway through and wants to leave.
+    if(el.id === 'hub-back-bar' || el.id === 'a11y-only' ||
+       el.classList.contains('hub-back-bar') || el.classList.contains('a11y-only') ||
+       el.classList.contains('mstep-nav') || el.classList.contains('mstep-foot')) return;
     // #morning-done is not a step, it is the END. completeMorning() shows it with an inline
     // display:block, and the step rule is !important — so giving it a step meant the ritual saved
     // everything correctly and then said NOTHING back. Left unassigned, its own display logic rules.

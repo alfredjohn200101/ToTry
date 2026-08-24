@@ -3026,7 +3026,7 @@ function renderNutritionLog(){
         cell('Move', r.move, 'cal') + cell('Exercise', r.exercise, 'min') + cell('Stand', r.stand, 'hr') + '</div>';
       ringsEl.style.display = 'block';
     } else {
-      ringsEl.innerHTML = '<button onclick="go(&apos;reflect&apos;);setTimeout(function(){try{var n=document.getElementById(&apos;evening-move&apos;);if(n&&n.scrollIntoView)n.scrollIntoView({block:&apos;center&apos;})}catch(e){}},300)" style="width:100%;background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;text-align:left;padding:14px 0;margin:-10px 0">\u231a <span style="color:var(--go)">Add today\u2019s Watch rings</span> \u00b7 Move, Exercise, Stand</button>';
+      ringsEl.innerHTML = '<button onclick="go(&apos;reflect&apos;);setTimeout(function(){_stepToEveningField(&apos;evening-move&apos;)},320)" style="width:100%;background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;text-align:left;padding:14px 0;margin:-10px 0">\u231a <span style="color:var(--go)">Add today\u2019s Watch rings</span> \u00b7 Move, Exercise, Stand</button>';
       ringsEl.style.display = 'block';
     }
   }

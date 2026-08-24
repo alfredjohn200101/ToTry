@@ -364,7 +364,14 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
    used to be fixed at, so a long conversation still gets every pixel it had before — it can only ever
    be SHORTER now, never taller. The app stays visible behind it, which is the point. */
 .companion-overlay{position:fixed;left:0;right:0;bottom:0;top:auto;width:100%;
+  /* dvh, with a vh fallback for anything that does not support it. The old rule pinned top AND
+     bottom in the same fixed coordinate space, so the sheet could not be taller than the visible
+     viewport whatever the URL bar did. Deriving the cap from raw 100vh reintroduced exactly the
+     mismatch this repo already documents: on mobile 100vh counts the browser chrome, so with the bar
+     expanded the sheet is taller than what is actually visible and its top edge — the grab handle and
+     the close button — sits above the screen. */
   max-height:calc(100vh - max(64px, calc(var(--st) + 24px)));
+  max-height:calc(100dvh - max(64px, calc(var(--st) + 24px)));
   background:linear-gradient(180deg,var(--bg2) 0%,var(--bg) 100%);z-index:410;display:none;
   overflow-y:auto;-webkit-overflow-scrolling:touch;padding:30px 22px calc(var(--sb) + 28px);
   border-radius:26px 26px 0 0;box-shadow:var(--e3);border-top:1px solid rgba(255,255,255,0.08)}
@@ -389,7 +396,12 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .feel-chip-label{font-size:15px;color:var(--tx);font-weight:500}
 .feel-chip-sub{font-size:11px;color:var(--tx3);line-height:1.3}
 .feel-skip{margin-top:18px;background:none;border:none;color:var(--tx3);font-size:13px;cursor:pointer;padding:8px;align-self:center}
-.comp-phase{display:none;flex-direction:column;flex:1;animation:compFade .5s ease}
+/* min-height:0 is load-bearing, not tidying. A flex child defaults to min-height:auto, which refuses
+   to shrink below its content — so .comp-conversation inside it never became a scroll container
+   (measured: scrollHeight === clientHeight === 870) and `conv.scrollTop = conv.scrollHeight` in
+   08-voice.js was a no-op on every reply. The newest thing the companion said sat below the fold with
+   nothing able to scroll to it, on the surface a person opens mid-craving. */
+.comp-phase{display:none;flex-direction:column;flex:1;min-height:0;animation:compFade .5s ease}
 .comp-phase.active{display:flex}
 @keyframes compFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 .comp-dismiss{position:absolute;top:calc(var(--st) + 18px);right:20px;background:none;border:none;color:var(--tx3);font-size:30px;line-height:1;cursor:pointer;opacity:.55;padding:4px 10px;z-index:2}
@@ -5038,7 +5050,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v542';
+const APP_VERSION = 'v543';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -18720,8 +18732,19 @@ function fightEvidenceLine(){
 
     // money the clean days actually put back — the vice→money pipe, which only exists because both
     // fronts live in one app
+    // Only from vices they are actually abstaining from. totalReclaimed() sums every vice with a
+    // cost model, including ones in watch or moderate mode — where viceCleanDays deliberately returns
+    // 0 because there is no abstinence to count. So this line could tell someone they had "reclaimed"
+    // money from a habit they used twice this week, under a heading that says how they are WINNING.
     let reclaimed = 0;
-    try{ if(typeof totalReclaimed === 'function') reclaimed = totalReclaimed() || 0; }catch(_){ }
+    try{
+      if(typeof totalReclaimed === 'function'){
+        loadV();
+        const anyAbstaining = (vices||[]).some(v =>
+          typeof viceIsAbstinence !== 'function' || viceIsAbstinence(v));
+        if(anyAbstaining) reclaimed = totalReclaimed() || 0;
+      }
+    }catch(_){ }
     // curSym(), with no ASCII fallback: a hardcoded $ is the currency bug this repo already has a
     // test for, and showing a GBP user dollars is worse than showing them nothing.
     if(reclaimed > 0) bits.push(curSym() + Math.round(reclaimed).toLocaleString() + ' reclaimed');
@@ -19148,6 +19171,25 @@ function momentsWonInWeek(name){
 //
 // Returns '' when there should be no line — the caller drops the block entirely rather than printing
 // an empty italic div.
+// The same line as _faithLine, but with its reference. Every entry in the verse sets is {t, r} and
+// _sosAnchor already shows the r — so the crisis surface cited a passage while the still centre
+// printed the identical words anonymously. A tradition's text without its source reads as the app's
+// own aphorism rather than as scripture, which is the wrong way round for a screen whose whole point
+// is that it is pointing beyond itself.
+function _faithLineCited(fallbackText){
+  try{
+    if(typeof faithLevel === 'function' && faithLevel() === 'light') return null;
+    const t = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
+    if(t === 'secular') return null;
+    const set = (typeof activeVerses === 'function') ? activeVerses() : null;
+    if(set && set.length){
+      const i = new Date().getDate() % set.length;    // same index as _faithLine, so they agree
+      return { text: set[i].t || '', ref: set[i].r || '' };
+    }
+    if(t === 'christianity' && fallbackText) return { text: fallbackText, ref: '' };
+  }catch(_){ }
+  return null;
+}
 function _faithLine(fallbackText){
   try{
     if(typeof faithLevel === 'function' && faithLevel() === 'light') return '';
@@ -25816,7 +25858,7 @@ function renderNutritionLog(){
         cell('Move', r.move, 'cal') + cell('Exercise', r.exercise, 'min') + cell('Stand', r.stand, 'hr') + '</div>';
       ringsEl.style.display = 'block';
     } else {
-      ringsEl.innerHTML = '<button onclick="go(&apos;reflect&apos;);setTimeout(function(){try{var n=document.getElementById(&apos;evening-move&apos;);if(n&&n.scrollIntoView)n.scrollIntoView({block:&apos;center&apos;})}catch(e){}},300)" style="width:100%;background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;text-align:left;padding:14px 0;margin:-10px 0">\u231a <span style="color:var(--go)">Add today\u2019s Watch rings</span> \u00b7 Move, Exercise, Stand</button>';
+      ringsEl.innerHTML = '<button onclick="go(&apos;reflect&apos;);setTimeout(function(){_stepToEveningField(&apos;evening-move&apos;)},320)" style="width:100%;background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;text-align:left;padding:14px 0;margin:-10px 0">\u231a <span style="color:var(--go)">Add today\u2019s Watch rings</span> \u00b7 Move, Exercise, Stand</button>';
       ringsEl.style.display = 'block';
     }
   }
@@ -31492,8 +31534,15 @@ let _mStep = 0;
 function _morningAssignSteps(pane){
   let step = 0;
   [...pane.children].forEach(el => {
-    // the back bar and the screen-reader heading are chrome, not part of the ritual
-    if(el.classList.contains('hub-back-bar') || el.classList.contains('a11y-only') || el.classList.contains('mstep-nav') || el.classList.contains('mstep-foot')) return;
+    // The back bar and the screen-reader heading are chrome, not part of the ritual.
+    //
+    // Test the ID as well as the class: updateHubBackBar() builds the bar with bar.id='hub-back-bar'
+    // and NO class at all, so a class-only check never matched it. It was given step 0 and vanished
+    // on steps 1-4 — the "‹ Soul" way out disappearing from four fifths of the ritual, which is a
+    // poor thing to do to someone who is halfway through and wants to leave.
+    if(el.id === 'hub-back-bar' || el.id === 'a11y-only' ||
+       el.classList.contains('hub-back-bar') || el.classList.contains('a11y-only') ||
+       el.classList.contains('mstep-nav') || el.classList.contains('mstep-foot')) return;
     // #morning-done is not a step, it is the END. completeMorning() shows it with an inline
     // display:block, and the step rule is !important — so giving it a step meant the ritual saved
     // everything correctly and then said NOTHING back. Left unassigned, its own display logic rules.
@@ -35728,6 +35777,27 @@ function eveningStep(n){
   try{ window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){ }
   if(typeof haptic === 'function') haptic('tap');
 }
+// Any deep link INTO the evening has to move the flow, not just scroll. scrollIntoView on a field
+// whose step is display:none is a no-op, so "Add today's Watch rings" in Nourish landed on step 0
+// with nothing happening and nothing to say why. Safe when the evening is not stepped: it falls back
+// to a plain scroll.
+function _stepToEveningField(id){
+  try{
+    const el = document.getElementById(id);
+    if(!el) return;
+    const panel = document.getElementById('reflect-panel-evening');
+    const holder = el.closest('[data-mstep]');
+    if(panel && panel.classList.contains('stepped') && holder && typeof eveningStep === 'function'){
+      eveningStep(Number(holder.getAttribute('data-mstep')));
+      setTimeout(function(){ try{ el.scrollIntoView({ block:'center' }); }catch(_){ } }, 220);
+    } else {
+      el.scrollIntoView({ block:'center' });
+    }
+    // a <details> holding it must be open, or the field is inside a collapsed fold
+    const det = el.closest('details');
+    if(det && !det.open) det.open = true;
+  }catch(_){ }
+}
 function eveningFinished(){
   const panel = document.getElementById('reflect-panel-evening');
   if(!panel) return;
@@ -37713,8 +37783,12 @@ async function renderLiturgy(){
 function renderSoulStill(){
   const el = document.getElementById('soul-still');
   if(!el) return;
-  let line = '';
-  try{ if(typeof _faithLine === 'function') line = _faithLine('') || ''; }catch(_){ }
+  let line = '', ref = '';
+  try{
+    const cited = (typeof _faithLineCited === 'function') ? _faithLineCited('') : null;
+    if(cited){ line = cited.text || ''; ref = cited.ref || ''; }
+    else if(typeof _faithLine === 'function') line = _faithLine('') || '';
+  }catch(_){ }
 
   const F = (typeof activeFaith === 'function') ? activeFaith() : null;
   const eyebrow = line ? 'A word for today' : 'Before anything else';
@@ -37728,7 +37802,9 @@ function renderSoulStill(){
       'background:var(--bg2)">' +
       '<div class="eyebrow" style="color:var(--go);margin-bottom:9px">' + _escFew(eyebrow) + '</div>' +
       '<div style="font-family:Cormorant Garamond,serif;font-size:' + (line ? '21px' : '19px') + ';' +
-        'color:var(--tx);line-height:1.45;margin-bottom:16px">' + body + '</div>' +
+        'color:var(--tx);line-height:1.45;margin-bottom:' + (ref ? '8px' : '16px') + '">' + body + '</div>' +
+      (ref ? '<div style="font-family:DM Mono,monospace;font-size:9.5px;letter-spacing:0.08em;' +
+             'color:var(--tx3);margin-bottom:16px">' + _escFew(ref) + '</div>' : '') +
       '<button class="btn" onclick="soulBeStill()" style="width:100%;background:var(--bg3);' +
         'border:1px solid var(--go-bd);color:var(--go)">Be still for a minute</button>' +
     '</div>';

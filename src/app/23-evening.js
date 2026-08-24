@@ -63,6 +63,27 @@ function eveningStep(n){
   try{ window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){ }
   if(typeof haptic === 'function') haptic('tap');
 }
+// Any deep link INTO the evening has to move the flow, not just scroll. scrollIntoView on a field
+// whose step is display:none is a no-op, so "Add today's Watch rings" in Nourish landed on step 0
+// with nothing happening and nothing to say why. Safe when the evening is not stepped: it falls back
+// to a plain scroll.
+function _stepToEveningField(id){
+  try{
+    const el = document.getElementById(id);
+    if(!el) return;
+    const panel = document.getElementById('reflect-panel-evening');
+    const holder = el.closest('[data-mstep]');
+    if(panel && panel.classList.contains('stepped') && holder && typeof eveningStep === 'function'){
+      eveningStep(Number(holder.getAttribute('data-mstep')));
+      setTimeout(function(){ try{ el.scrollIntoView({ block:'center' }); }catch(_){ } }, 220);
+    } else {
+      el.scrollIntoView({ block:'center' });
+    }
+    // a <details> holding it must be open, or the field is inside a collapsed fold
+    const det = el.closest('details');
+    if(det && !det.open) det.open = true;
+  }catch(_){ }
+}
 function eveningFinished(){
   const panel = document.getElementById('reflect-panel-evening');
   if(!panel) return;

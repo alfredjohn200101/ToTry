@@ -42,8 +42,12 @@
 function renderSoulStill(){
   const el = document.getElementById('soul-still');
   if(!el) return;
-  let line = '';
-  try{ if(typeof _faithLine === 'function') line = _faithLine('') || ''; }catch(_){ }
+  let line = '', ref = '';
+  try{
+    const cited = (typeof _faithLineCited === 'function') ? _faithLineCited('') : null;
+    if(cited){ line = cited.text || ''; ref = cited.ref || ''; }
+    else if(typeof _faithLine === 'function') line = _faithLine('') || '';
+  }catch(_){ }
 
   const F = (typeof activeFaith === 'function') ? activeFaith() : null;
   const eyebrow = line ? 'A word for today' : 'Before anything else';
@@ -57,7 +61,9 @@ function renderSoulStill(){
       'background:var(--bg2)">' +
       '<div class="eyebrow" style="color:var(--go);margin-bottom:9px">' + _escFew(eyebrow) + '</div>' +
       '<div style="font-family:Cormorant Garamond,serif;font-size:' + (line ? '21px' : '19px') + ';' +
-        'color:var(--tx);line-height:1.45;margin-bottom:16px">' + body + '</div>' +
+        'color:var(--tx);line-height:1.45;margin-bottom:' + (ref ? '8px' : '16px') + '">' + body + '</div>' +
+      (ref ? '<div style="font-family:DM Mono,monospace;font-size:9.5px;letter-spacing:0.08em;' +
+             'color:var(--tx3);margin-bottom:16px">' + _escFew(ref) + '</div>' : '') +
       '<button class="btn" onclick="soulBeStill()" style="width:100%;background:var(--bg3);' +
         'border:1px solid var(--go-bd);color:var(--go)">Be still for a minute</button>' +
     '</div>';

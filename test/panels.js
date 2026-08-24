@@ -310,6 +310,77 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── the companion's newest words must be on the screen ─────────────────────────────────────
+  // Pre-existing, and the highest-stakes of the lot. .comp-conversation has flex:1 + overflow-y:auto,
+  // but its parent .comp-phase defaulted to min-height:auto, which refuses to shrink below its
+  // content — so the conversation never became a scroll container (scrollHeight === clientHeight)
+  // and `conv.scrollTop = conv.scrollHeight` in 08-voice.js did nothing on every single reply. The
+  // newest thing the companion said sat below the fold, on the surface a person opens mid-craving,
+  // with no code able to reach it. One CSS declaration, and it must never be tidied away.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name','Sam'); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2600);
+    const r = await page.evaluate(async () => {
+      openCompanion();
+      await new Promise(x=>setTimeout(x,600));
+      const conv = document.getElementById('comp-conversation');
+      if(!conv) return null;
+      const phase = conv.closest('.comp-phase');
+      if(phase && typeof _compPhase === 'function') _compPhase(phase.id);
+      await new Promise(x=>setTimeout(x,400));
+      for(let i=0;i<12;i++){
+        const d = document.createElement('div');
+        d.style.cssText = 'padding:14px;margin:6px 0';
+        d.textContent = 'message ' + i;
+        conv.appendChild(d);
+      }
+      await new Promise(x=>setTimeout(x,300));
+      conv.scrollTop = conv.scrollHeight;              // exactly what 08-voice.js does
+      await new Promise(x=>setTimeout(x,250));
+      const last = conv.lastElementChild.getBoundingClientRect();
+      return { isScroller: conv.scrollHeight > conv.clientHeight + 2,
+               scrolled: Math.round(conv.scrollTop),
+               newestOnScreen: last.top < window.innerHeight && last.bottom > 0 };
+    });
+    if (!r) findings.push('companion: #comp-conversation is not in the markup');
+    else if (!r.isScroller)
+      findings.push('companion: the conversation is not a scroll container — scrollHeight equals clientHeight, so scrollTop does nothing and every reply lands below the fold');
+    else if (!r.newestOnScreen)
+      findings.push(`companion: after scrolling to the bottom (scrollTop ${r.scrolled}) the newest message is still off screen`);
+    else console.log(`companion: the conversation scrolls, and the newest message is on screen (scrollTop ${r.scrolled})`);
+    await ctx.close();
+  }
+
+  // ── a tradition's own words, with its own source ───────────────────────────────────────────
+  // The SOS cites the passage it shows; the still centre printed the identical line anonymously,
+  // which reads as the app's own aphorism rather than as scripture — the wrong way round for the one
+  // screen whose point is that it points beyond itself. And a secular person still gets neither.
+  {
+    for (const [tr, wantRef] of [['islam', true], ['secular', false]]) {
+      const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+      const page = await ctx.newPage();
+      await page.addInitScript(t => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+        s('totry_onboarded',true); s('totry_name','Sam'); s('totry_faith_tradition',t); }, tr);
+      await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+      await page.waitForTimeout(2600);
+      const txt = await page.evaluate(async () => {
+        document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+        go('soul'); await new Promise(x=>setTimeout(x,900));
+        return (document.getElementById('soul-still').innerText||'').replace(/\s+/g,' ').trim();
+      });
+      // a citation looks like "Qur'an 33:3" / "Isaiah 26:3" / "Dhammapada 8:103" — a source and a number
+      const hasRef = /[A-Za-z\u2019']{3,}\s+\d+([:.]\d+)?/.test(txt.replace(/A WORD FOR TODAY/i,''));
+      if (wantRef && !hasRef) findings.push(`citation (${tr}): scripture shown with no source — "${txt.slice(0,60)}"`);
+      if (!wantRef && /A WORD FOR TODAY/i.test(txt)) findings.push('citation (secular): handed scripture unasked');
+      await ctx.close();
+    }
+    if (!findings.some(f => f.startsWith('citation'))) console.log("citation: a tradition's word carries its source, and a secular person gets neither");
+  }
+
   // ── the new lines must not state things that are not true ──────────────────────────────────
   // An adversarial review of v533-v541 found four ways the lines I added told a person something
   // false. They are grouped here because they share one failure: a number that is easy to compute
@@ -784,10 +855,13 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       // nothing may be left without a step
       // #morning-done is deliberately unassigned — it is the END of the ritual, not a step, and a
       // step rule would hide it with !important over the inline display:block that reveals it.
+      // #hub-back-bar is chrome, and it is matched BY ID: updateHubBackBar() builds it with
+      // bar.id='hub-back-bar' and no class at all, which is how a class-only skip test let it be
+      // given a step and vanish from steps 1-4.
       out.orphans = [...pane.children].filter(e =>
+        e.id !== 'hub-back-bar' && e.id !== 'morning-done' &&
         !e.classList.contains('hub-back-bar') && !e.classList.contains('a11y-only') &&
         !e.classList.contains('mstep-nav') && !e.classList.contains('mstep-foot') &&
-        e.id !== 'morning-done' &&
         !e.hasAttribute('data-mstep')).map(e => e.id || '.'+String(e.className||'').split(' ')[0]);
       for (let i = 0; i < 5; i++) {
         morningStep(i);
@@ -798,6 +872,14 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
         if (!document.getElementById('morning-gratitude') || !document.getElementById('morning-intention'))
           out.crisisGone = i;
       }
+      // the way out must be present on EVERY step, not just the first
+      const bar = document.getElementById('hub-back-bar');
+      out.backBarGoneAt = null;
+      for (let i = 0; i < 5; i++) {
+        morningStep(i);
+        await new Promise(x=>setTimeout(x,150));
+        if (bar && bar.getBoundingClientRect().height === 0) { out.backBarGoneAt = i; break; }
+      }
       morningShowAll();
       await new Promise(x=>setTimeout(x,260));
       out.showAll = { h: Math.round(pane.scrollHeight), stepped: pane.classList.contains('stepped') };
@@ -807,6 +889,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     else if (!r.dawn) findings.push('morning: no dawn skin');
     else if (r.orphans.length) findings.push(`morning: ${r.orphans.length} block(s) belong to no step and can never be reached — ${r.orphans.slice(0,3).join(', ')}`);
     else if (r.crisisGone != null) findings.push(`morning: the crisis fields are GONE at step ${r.crisisGone} — hidden is fine, removed is not`);
+    else if (r.backBarGoneAt != null) findings.push(`morning: the "‹ Soul" way out disappears at step ${r.backBarGoneAt} — leaving mid-ritual should not need the bottom nav`);
     else {
       const tall = r.steps.filter(s => s.h > 1100);
       if (tall.length) findings.push(`morning: ${tall.map(s=>s.label+' '+s.h+'px').join(', ')} — a step that does not fit a screen is still a form`);
