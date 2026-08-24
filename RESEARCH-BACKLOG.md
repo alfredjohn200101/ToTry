@@ -43,7 +43,9 @@ Already have: multi-faith readers (Bible/Qur'an/Gita/Dhammapada), today-anchors 
 Rosary/Dhikr/Japa/99-Names, morning+evening rhythm, examen, breath, generated prayers, **Shared Threads**.
 - ❌ **Read-aloud (audio)** — TTS-narrate the generated prayer/meditation (Hallow + YouVersion + Insight
   Timer all lead with audio; we can do a lightweight version with the device voice) + **timed sessions (5/10/15)**
-- ❌ **Guided reading plans / journeys** — AI-generated, faith-aware, topical multi-day plans
+- ✅ **Guided reading plans / journeys** — BUILT (`READING_PLANS`, 03-person.js): three plans, each
+  written five times, one per tradition in its own register, passage text bundled so they work with
+  no signal. Guarded by `npm run panels`, including that no tradition may collapse into another's text
   ("7 days on anxiety", "a week in the Gita on duty"). YouVersion's killer feature; mirrors our fuel-plan pattern.
 - ❌ **Shareable verse/quote image cards** — beautiful per-tradition cards to share (YouVersion's viral engine;
   **directly serves the founder's TikTok/Insta recording + distribution**)

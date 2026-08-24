@@ -310,6 +310,56 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── the reading plans, five times over ─────────────────────────────────────────────────────
+  // RESEARCH-BACKLOG lists guided reading plans as a gap. They are not — they are built, and built
+  // carefully: three plans, each written FIVE times, once per tradition in that tradition's own
+  // register, with the passage text bundled so a plan works with no signal. Nothing tested them.
+  //
+  // The assertion that matters is the third. A content feature like this fails by COLLAPSING — one
+  // tradition quietly falling back to another's text. That is not just a bug here; handing a Muslim
+  // or a Buddhist a Christian passage under their own tradition's heading is the exact thing this
+  // app promises never to do, and it would look completely normal on screen.
+  {
+    const texts = {};
+    for (const tr of ['christianity','islam','hinduism','buddhism','secular']) {
+      const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+      const page = await ctx.newPage();
+      await page.addInitScript(t => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+        s('totry_onboarded',true); s('totry_name','Sam'); s('totry_faith_tradition',t); }, tr);
+      await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+      await page.waitForTimeout(2600);
+      const r = await page.evaluate(async () => {
+        document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+        openPlans();                                   // a TAB, not a modal — go('plans') + #plans-content
+        await new Promise(x=>setTimeout(x,700));
+        const el = document.getElementById('plans-content');
+        if(!el) return null;
+        const list = (el.innerText||'').replace(/\s+/g,' ').trim();
+        openPlan('fear');
+        await new Promise(x=>setTimeout(x,700));
+        const d1 = (el.innerText||'').replace(/\s+/g,' ').trim();
+        renderPlanDay('fear', 1);                      // day 2, zero-indexed
+        await new Promise(x=>setTimeout(x,500));
+        const d2 = (el.innerText||'').replace(/\s+/g,' ').trim();
+        return { list, d1, d2 };
+      });
+      await ctx.close();
+      if (!r) { findings.push(`plans (${tr}): #plans-content is not in the markup`); continue; }
+      if (!/Short plans/i.test(r.list)) findings.push(`plans (${tr}): the plan list does not render`);
+      else if (!/DAY 1 OF/i.test(r.d1)) findings.push(`plans (${tr}): opening a plan does not show day 1`);
+      else if (!/DAY 2 OF/i.test(r.d2)) findings.push(`plans (${tr}): the runner does not advance to day 2`);
+      else if (/undefined|NaN/.test(r.d1)) findings.push(`plans (${tr}): day 1 leaked undefined/NaN onto the screen`);
+      else texts[tr] = r.d1.slice(0, 260);
+    }
+    // no tradition may be reading another's book
+    const vals = Object.values(texts);
+    if (vals.length === 5 && new Set(vals).size < 5) {
+      const dupes = Object.keys(texts).filter(k => vals.filter(v => v === texts[k]).length > 1);
+      findings.push(`plans: ${dupes.join(' and ')} are being shown the SAME passage — a tradition has collapsed into another's text`);
+    }
+    if (!findings.some(f => f.startsWith('plans'))) console.log('plans: all five traditions run their own seven days, each from its own book');
+  }
+
   // ── a ritual that saves must SAY so, and point at what is left ─────────────────────────────
   // Both of these were broken by the stepping work itself, which is the point of having them.
   //
