@@ -266,6 +266,36 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
     rgba(255,232,196,0.18) 92%,
     rgba(0,0,0,0) 100%)}
 
+/* DUSK. SOUL-ARCHITECTURE, EVENING: "dusk skin, one honest question at a time, grace-first framing."
+   Dawn runs cool overhead to warm at the horizon; dusk runs the other way — a low warm band near the
+   bottom under a deepening sky, the light going rather than coming. Same restraint: it sits behind
+   everything and never touches the crisis card's own colours. */
+#tab-reflect.dusk{position:relative}
+#tab-reflect.dusk::before{content:'';position:fixed;left:0;right:0;top:0;bottom:0;z-index:-1;
+  pointer-events:none;
+  background:linear-gradient(180deg,
+    rgba(16,20,44,0.58) 0%,
+    rgba(44,36,66,0.40) 40%,
+    rgba(96,58,72,0.24) 72%,
+    rgba(168,96,72,0.16) 92%,
+    rgba(0,0,0,0) 100%)}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]) #tab-reflect.dusk::before{
+    background:linear-gradient(180deg,
+      rgba(140,150,200,0.22) 0%,
+      rgba(190,164,178,0.20) 44%,
+      rgba(226,168,142,0.22) 76%,
+      rgba(248,206,170,0.18) 94%,
+      rgba(0,0,0,0) 100%)}
+}
+:root[data-theme="light"] #tab-reflect.dusk::before{
+  background:linear-gradient(180deg,
+    rgba(140,150,200,0.22) 0%,
+    rgba(190,164,178,0.20) 44%,
+    rgba(226,168,142,0.22) 76%,
+    rgba(248,206,170,0.18) 94%,
+    rgba(0,0,0,0) 100%)}
+
 /* ONE THING AT A TIME. Every block stays in the DOM — hidden, never removed — because the morning
    check-in is a crisis door: the gate writes into #morning-grateful and #morning-intention and calls
    completeMorning(), and a field that has been deleted cannot be written to. */
@@ -274,7 +304,7 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
    until they have something to say), and an inline style beats any selector — so a plain rule did
    nothing at all here. !important on the hide, and no rule on the show, means stepping works AND a
    block the app has deliberately hidden stays hidden when its step comes up. */
-#tab-morning.stepped > [data-mstep]:not(.mstep-on){display:none !important}
+.stepped > [data-mstep]:not(.mstep-on){display:none !important}
 .mstep-nav{display:flex;align-items:center;gap:8px;margin:0 0 16px}
 .mstep-dots{display:flex;gap:5px;flex:1}
 .mstep-dot{width:6px;height:6px;border-radius:50%;background:var(--bd);transition:background .25s,width .25s}
@@ -3574,7 +3604,7 @@ input:focus,textarea:focus,select:focus{
       <div class="see-q">If the people you love watched today on replay &#8212; your partner, your mum, your future kids &#8212; what would they see?</div>
       <textarea id="evening-see" placeholder="Be honest with yourself..." style="height:70px;resize:none;margin-bottom:0"></textarea>
     </div>
-    <details style="margin-bottom:14px">
+    <details id="evening-numbers" style="margin-bottom:14px">
       <summary style="cursor:pointer;list-style:none;padding:11px 13px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;font-family:'DM Mono',monospace;font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.1em">+ Add today's numbers <span style="color:var(--tx3);text-transform:none;letter-spacing:0">(steps, watch rings — optional)</span></summary>
     <div style="padding-top:14px">
     <div class="lbl">Today's steps</div>
@@ -3598,7 +3628,7 @@ input:focus,textarea:focus,select:focus{
     <div style="font-size:11px;color:var(--tx3);margin-bottom:8px;line-height:1.5">What you actually did today. Auto-ticked when activity is logged.</div>
     <div id="evening-habit-tick-list" style="margin-bottom:14px"></div>
     
-    <div class="lbl">Tomorrow's 3 priorities</div>
+    <div class="lbl" id="evening-tomorrow-lbl">Tomorrow's 3 priorities</div>
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
       <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--go);min-width:16px">1.</span><input type="text" id="eve-task1" placeholder="Most important thing tomorrow..."></div>
       <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--go);min-width:16px">2.</span><input type="text" id="eve-task2" placeholder="Second priority..."></div>
@@ -3634,7 +3664,7 @@ Amen.</div></div>
          gratitude with the strongest evidence behind it is RELATIONAL: thanking a real person beats
          listing things to yourself. So the third slot quietly points at a person, and offers to
          carry it to them. A solo list is where gratitude goes to die; a message is where it lands. -->
-    <div class="lbl" style="margin-top:4px">Three good things</div>
+    <div class="lbl" id="evening-good-lbl" style="margin-top:4px">Three good things</div>
     <div class="card" id="tgt-card" style="margin-bottom:14px">
       <div id="tgt-body"></div>
     </div>

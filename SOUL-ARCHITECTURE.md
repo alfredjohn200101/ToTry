@@ -85,7 +85,11 @@ Today · Soul · Grow · Money · Settings — bottom bar, thumb-reachable. Ever
 - **Serves:** both. The winning man sees his evidence; the struggling man receives grace for a hard day.
 - **Feeling:** dusk, examen, peace. "You showed up. Tomorrow is new."
 - **Connects:** the examen feeds the weekly reflection + the record. Watch rings, today's wins.
-- **TODO:** dusk skin, one honest question at a time, grace-first framing.
+- **DONE (v537):** a dusk gradient behind the tab — the light going, where the morning'''s is coming —
+  and seven steps instead of 27 blocks in one scroll: Land, One win, Release, What you did, Tomorrow,
+  Reflection, Close. Grace-first is the ordering, not a tone: the day'''s evidence and a win land
+  before anything is released, and the three good things come before the examen, which sits last with
+  the completion. "Show the whole evening" is one tap away.
 
 ### FIGHT — *the war room, but tender*
 - **Purpose:** the standing record of the battles — vices, streaks, recovery, the live moderation counter.

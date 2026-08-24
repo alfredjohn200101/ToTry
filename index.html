@@ -266,6 +266,36 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
     rgba(255,232,196,0.18) 92%,
     rgba(0,0,0,0) 100%)}
 
+/* DUSK. SOUL-ARCHITECTURE, EVENING: "dusk skin, one honest question at a time, grace-first framing."
+   Dawn runs cool overhead to warm at the horizon; dusk runs the other way — a low warm band near the
+   bottom under a deepening sky, the light going rather than coming. Same restraint: it sits behind
+   everything and never touches the crisis card's own colours. */
+#tab-reflect.dusk{position:relative}
+#tab-reflect.dusk::before{content:'';position:fixed;left:0;right:0;top:0;bottom:0;z-index:-1;
+  pointer-events:none;
+  background:linear-gradient(180deg,
+    rgba(16,20,44,0.58) 0%,
+    rgba(44,36,66,0.40) 40%,
+    rgba(96,58,72,0.24) 72%,
+    rgba(168,96,72,0.16) 92%,
+    rgba(0,0,0,0) 100%)}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]) #tab-reflect.dusk::before{
+    background:linear-gradient(180deg,
+      rgba(140,150,200,0.22) 0%,
+      rgba(190,164,178,0.20) 44%,
+      rgba(226,168,142,0.22) 76%,
+      rgba(248,206,170,0.18) 94%,
+      rgba(0,0,0,0) 100%)}
+}
+:root[data-theme="light"] #tab-reflect.dusk::before{
+  background:linear-gradient(180deg,
+    rgba(140,150,200,0.22) 0%,
+    rgba(190,164,178,0.20) 44%,
+    rgba(226,168,142,0.22) 76%,
+    rgba(248,206,170,0.18) 94%,
+    rgba(0,0,0,0) 100%)}
+
 /* ONE THING AT A TIME. Every block stays in the DOM — hidden, never removed — because the morning
    check-in is a crisis door: the gate writes into #morning-grateful and #morning-intention and calls
    completeMorning(), and a field that has been deleted cannot be written to. */
@@ -274,7 +304,7 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
    until they have something to say), and an inline style beats any selector — so a plain rule did
    nothing at all here. !important on the hide, and no rule on the show, means stepping works AND a
    block the app has deliberately hidden stays hidden when its step comes up. */
-#tab-morning.stepped > [data-mstep]:not(.mstep-on){display:none !important}
+.stepped > [data-mstep]:not(.mstep-on){display:none !important}
 .mstep-nav{display:flex;align-items:center;gap:8px;margin:0 0 16px}
 .mstep-dots{display:flex;gap:5px;flex:1}
 .mstep-dot{width:6px;height:6px;border-radius:50%;background:var(--bd);transition:background .25s,width .25s}
@@ -3574,7 +3604,7 @@ input:focus,textarea:focus,select:focus{
       <div class="see-q">If the people you love watched today on replay &#8212; your partner, your mum, your future kids &#8212; what would they see?</div>
       <textarea id="evening-see" placeholder="Be honest with yourself..." style="height:70px;resize:none;margin-bottom:0"></textarea>
     </div>
-    <details style="margin-bottom:14px">
+    <details id="evening-numbers" style="margin-bottom:14px">
       <summary style="cursor:pointer;list-style:none;padding:11px 13px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;font-family:'DM Mono',monospace;font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.1em">+ Add today's numbers <span style="color:var(--tx3);text-transform:none;letter-spacing:0">(steps, watch rings — optional)</span></summary>
     <div style="padding-top:14px">
     <div class="lbl">Today's steps</div>
@@ -3598,7 +3628,7 @@ input:focus,textarea:focus,select:focus{
     <div style="font-size:11px;color:var(--tx3);margin-bottom:8px;line-height:1.5">What you actually did today. Auto-ticked when activity is logged.</div>
     <div id="evening-habit-tick-list" style="margin-bottom:14px"></div>
     
-    <div class="lbl">Tomorrow's 3 priorities</div>
+    <div class="lbl" id="evening-tomorrow-lbl">Tomorrow's 3 priorities</div>
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
       <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--go);min-width:16px">1.</span><input type="text" id="eve-task1" placeholder="Most important thing tomorrow..."></div>
       <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--go);min-width:16px">2.</span><input type="text" id="eve-task2" placeholder="Second priority..."></div>
@@ -3634,7 +3664,7 @@ Amen.</div></div>
          gratitude with the strongest evidence behind it is RELATIONAL: thanking a real person beats
          listing things to yourself. So the third slot quietly points at a person, and offers to
          carry it to them. A solo list is where gratitude goes to die; a message is where it lands. -->
-    <div class="lbl" style="margin-top:4px">Three good things</div>
+    <div class="lbl" id="evening-good-lbl" style="margin-top:4px">Three good things</div>
     <div class="card" id="tgt-card" style="margin-bottom:14px">
       <div id="tgt-body"></div>
     </div>
@@ -5002,7 +5032,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v536';
+const APP_VERSION = 'v537';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -11711,7 +11741,7 @@ function go(name){
   
   if(name==='morning'){initMorningTab();showMorningAffirm();showMorningFocus();if(typeof renderMorningFlow==='function')setTimeout(renderMorningFlow,60);if(typeof _restoreMorningSleep==='function')_restoreMorningSleep();}
   if(name==='soul'){ if(typeof applyFaithLabels==='function') applyFaithLabels(); if(typeof highlightSoulByTime==='function') highlightSoulByTime(); if(typeof renderFaithDoor==='function') renderFaithDoor(); }
-  if(name==='reflect'){initEveningTab();initReviewTab();}
+  if(name==='reflect'){initEveningTab();initReviewTab();if(typeof renderEveningFlow==='function')setTimeout(renderEveningFlow,60);}
   
   if(name==='nourish'){renderNutritionLog();if(typeof prefillNutGoals==='function')prefillNutGoals();if(typeof renderFuelPlanCard==='function')renderFuelPlanCard();}
   if(name==='train'){initPTTab();
@@ -35541,6 +35571,103 @@ function smartCalAppClick(){
 function changeCalApp(){
   const cp=document.getElementById('cal-picker');
   if(cp){ cp.style.display='block'; cp.scrollIntoView&&cp.scrollIntoView({block:'center',behavior:'smooth'}); }
+}
+
+// ── ONE HONEST QUESTION AT A TIME ──
+// SOUL-ARCHITECTURE, EVENING: "dusk skin, one honest question at a time, grace-first framing." The
+// panel ran to 27 blocks in one scroll. Looking back over a hard day is not something a person does
+// well while scrolling past nine more fields; the ones who most need this are the ones who close the
+// tab at block four.
+//
+// Same machinery as the morning, same two rules. Hidden, never removed — the examen is a crisis door
+// and completeEvening() reads fields from every step. And assignment is by ANCHOR, so a block added
+// later inherits the step it sits in instead of vanishing. GRACE FIRST is the ordering: what you
+// actually did comes before anything you are asked to admit.
+// GRACE FIRST is the ordering, not a tone: what they actually did lands before anything they are
+// asked to admit, and the three good things come before the examen rather than after it.
+// The numbers here must follow DOM ORDER, because an anchor claims everything below it until the
+// next one. Numbering "three good things" before the prayer block — which is true of the ritual but
+// false of the markup — quietly put the examen and the complete button inside the gratitude step.
+const _EVENING_STEPS = [
+  { key:'land',       label:'Land' },
+  { key:'win',        label:'One win' },
+  { key:'release',    label:'Release' },
+  { key:'did',        label:'What you did' },
+  { key:'tomorrow',   label:'Tomorrow' },
+  { key:'reflection', label:'Reflection' },
+  { key:'close',      label:'Close' },
+];
+const _EVENING_ANCHORS = {
+  'evening-win':          1,   // one win from today — the evidence, before the honesty
+  'evening-release':      2,
+  'evening-numbers':      3,
+  'evening-tomorrow-lbl': 4,
+  'eve-prayer-label':     5,
+  'evening-good-lbl':     6,   // three good things, then the examen, then done — grace before review
+};
+const _EVENING_OVERRIDE = {};
+let _eStep = 0;
+function _eveningAssignSteps(panel){
+  let step = 0;
+  [...panel.children].forEach(el => {
+    if(el.classList.contains('mstep-nav') || el.classList.contains('mstep-foot')) return;
+    if(el.id && _EVENING_ANCHORS[el.id] != null){
+      step = _EVENING_ANCHORS[el.id];
+      const prev = el.previousElementSibling;
+      if(prev && prev.classList.contains('lbl')) prev.setAttribute('data-mstep', step);
+    }
+    el.setAttribute('data-mstep', (el.id && _EVENING_OVERRIDE[el.id] != null) ? _EVENING_OVERRIDE[el.id] : step);
+  });
+}
+function eveningStep(n){
+  const panel = document.getElementById('reflect-panel-evening');
+  if(!panel) return;
+  _eStep = Math.max(0, Math.min(_EVENING_STEPS.length - 1, n));
+  panel.querySelectorAll(':scope > [data-mstep]').forEach(el => {
+    el.classList.toggle('mstep-on', Number(el.getAttribute('data-mstep')) === _eStep);
+  });
+  const dots = panel.querySelector('.mstep-dots');
+  if(dots) [...dots.children].forEach((d,i) => d.classList.toggle('on', i === _eStep));
+  const lbl = panel.querySelector('.mstep-label');
+  if(lbl) lbl.textContent = _EVENING_STEPS[_eStep].label;
+  const next = panel.querySelector('.mstep-next');
+  if(next) next.style.display = (_eStep === _EVENING_STEPS.length - 1) ? 'none' : '';
+  try{ window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){ }
+  if(typeof haptic === 'function') haptic('tap');
+}
+function eveningShowAll(){
+  const panel = document.getElementById('reflect-panel-evening');
+  if(!panel) return;
+  panel.classList.remove('stepped');
+  const nav = panel.querySelector('.mstep-nav'); if(nav) nav.style.display = 'none';
+  const foot = panel.querySelector('.mstep-foot'); if(foot) foot.style.display = 'none';
+  ls('totry_evening_flow', 'all');
+  if(typeof haptic === 'function') haptic('tap');
+}
+function renderEveningFlow(){
+  const panel = document.getElementById('reflect-panel-evening');
+  const tab = document.getElementById('tab-reflect');
+  if(!panel) return;
+  if(tab) tab.classList.add('dusk');
+  if(ls('totry_evening_flow') === 'all'){ panel.classList.remove('stepped'); return; }
+  _eveningAssignSteps(panel);
+  if(!panel.querySelector('.mstep-nav')){
+    const nav = document.createElement('div');
+    nav.className = 'mstep-nav';
+    nav.innerHTML = '<div class="mstep-dots">' +
+      _EVENING_STEPS.map(() => '<div class="mstep-dot"></div>').join('') +
+      '</div><div class="mstep-label"></div>';
+    panel.insertBefore(nav, panel.firstChild);
+    const foot = document.createElement('div');
+    foot.className = 'mstep-foot';
+    foot.innerHTML = '<button class="btn primary mstep-next" style="flex:1">Next \u2192</button>' +
+                     '<button class="mstep-all" type="button">Show the whole evening</button>';
+    panel.appendChild(foot);
+    foot.querySelector('.mstep-next').onclick = () => eveningStep(_eStep + 1);
+    foot.querySelector('.mstep-all').onclick = eveningShowAll;
+  }
+  panel.classList.add('stepped');
+  eveningStep(0);
 }
 
 // ── EVENING ───────────────────────────────────────────────────

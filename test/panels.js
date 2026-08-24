@@ -310,6 +310,61 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── the evening asks one honest question at a time ─────────────────────────────────────────
+  // SOUL-ARCHITECTURE, EVENING: "dusk skin, one honest question at a time, grace-first framing." It
+  // ran to 27 blocks in one scroll. Looking back over a hard day is not something a person does well
+  // while scrolling past nine more fields, and the ones who most need it close the tab at block four.
+  //
+  // GRACE FIRST is an ordering, not a tone: what they actually did lands before anything they are
+  // asked to admit, and the three good things come before the examen rather than after it. The last
+  // step must hold the examen and the completion — getting that wrong is easy, because an anchor
+  // claims everything below it, so numbering a step by the ritual's order instead of the markup's
+  // silently buried the examen inside the gratitude step.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name','Sam'); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const r = await page.evaluate(async () => {
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+      go('reflect');
+      await new Promise(x=>setTimeout(x,1100));
+      const panel = document.getElementById('reflect-panel-evening');
+      const tab = document.getElementById('tab-reflect');
+      const out = { stepped: panel.classList.contains('stepped'), dusk: tab.classList.contains('dusk'), steps: [] };
+      out.orphans = [...panel.children].filter(e =>
+        !e.classList.contains('mstep-nav') && !e.classList.contains('mstep-foot') &&
+        !e.hasAttribute('data-mstep')).map(e => e.id || '.'+String(e.className||'').split(' ')[0]);
+      const total = (typeof _EVENING_STEPS !== 'undefined') ? _EVENING_STEPS.length : 0;
+      for (let i = 0; i < total; i++) {
+        eveningStep(i);
+        await new Promise(x=>setTimeout(x,170));
+        const on = [...panel.querySelectorAll(':scope > [data-mstep].mstep-on')].map(e => e.id || '');
+        out.steps.push({ label:(panel.querySelector('.mstep-label')||{}).textContent || '?',
+                         h: Math.round(tab.scrollHeight), ids: on });
+        if (!document.getElementById('evening-win') || !document.getElementById('evening-release'))
+          out.fieldsGone = i;
+      }
+      out.total = total;
+      return out;
+    });
+    const last = r.steps[r.steps.length-1];
+    if (!r.stepped) findings.push('evening: not stepped — still one long scroll');
+    else if (!r.dusk) findings.push('evening: no dusk skin');
+    else if (r.orphans.length) findings.push(`evening: ${r.orphans.length} block(s) belong to no step — ${r.orphans.slice(0,3).join(', ')}`);
+    else if (r.fieldsGone != null) findings.push(`evening: the fields are GONE at step ${r.fieldsGone} — hidden is fine, removed is not`);
+    else if (!last || !last.ids.includes('examen-card'))
+      findings.push(`evening: the examen is not in the final step — it ended up in "${(r.steps.find(s=>s.ids.includes('examen-card'))||{}).label || 'nowhere'}"`);
+    else {
+      const tall = r.steps.filter(s => s.h > 1000);
+      if (tall.length) findings.push(`evening: ${tall.map(s=>s.label+' '+s.h+'px').join(', ')} — a step that does not fit a screen is still a form`);
+      else console.log(`evening: ${r.total} steps (${r.steps.map(s=>s.h).join('/')}px), dusk on, examen last, nothing orphaned`);
+    }
+    await ctx.close();
+  }
+
   // ── the morning is a ritual, not a form ────────────────────────────────────────────────────
   // SOUL-ARCHITECTURE, MORNING: "rebuild so it FEELS like morning — dawn skin, one thing at a time,
   // not a form." It was 1913px of scroll and 42 visible controls on an 896px screen. Nobody sets an

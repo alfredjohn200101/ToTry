@@ -1,3 +1,100 @@
+// ── ONE HONEST QUESTION AT A TIME ──
+// SOUL-ARCHITECTURE, EVENING: "dusk skin, one honest question at a time, grace-first framing." The
+// panel ran to 27 blocks in one scroll. Looking back over a hard day is not something a person does
+// well while scrolling past nine more fields; the ones who most need this are the ones who close the
+// tab at block four.
+//
+// Same machinery as the morning, same two rules. Hidden, never removed — the examen is a crisis door
+// and completeEvening() reads fields from every step. And assignment is by ANCHOR, so a block added
+// later inherits the step it sits in instead of vanishing. GRACE FIRST is the ordering: what you
+// actually did comes before anything you are asked to admit.
+// GRACE FIRST is the ordering, not a tone: what they actually did lands before anything they are
+// asked to admit, and the three good things come before the examen rather than after it.
+// The numbers here must follow DOM ORDER, because an anchor claims everything below it until the
+// next one. Numbering "three good things" before the prayer block — which is true of the ritual but
+// false of the markup — quietly put the examen and the complete button inside the gratitude step.
+const _EVENING_STEPS = [
+  { key:'land',       label:'Land' },
+  { key:'win',        label:'One win' },
+  { key:'release',    label:'Release' },
+  { key:'did',        label:'What you did' },
+  { key:'tomorrow',   label:'Tomorrow' },
+  { key:'reflection', label:'Reflection' },
+  { key:'close',      label:'Close' },
+];
+const _EVENING_ANCHORS = {
+  'evening-win':          1,   // one win from today — the evidence, before the honesty
+  'evening-release':      2,
+  'evening-numbers':      3,
+  'evening-tomorrow-lbl': 4,
+  'eve-prayer-label':     5,
+  'evening-good-lbl':     6,   // three good things, then the examen, then done — grace before review
+};
+const _EVENING_OVERRIDE = {};
+let _eStep = 0;
+function _eveningAssignSteps(panel){
+  let step = 0;
+  [...panel.children].forEach(el => {
+    if(el.classList.contains('mstep-nav') || el.classList.contains('mstep-foot')) return;
+    if(el.id && _EVENING_ANCHORS[el.id] != null){
+      step = _EVENING_ANCHORS[el.id];
+      const prev = el.previousElementSibling;
+      if(prev && prev.classList.contains('lbl')) prev.setAttribute('data-mstep', step);
+    }
+    el.setAttribute('data-mstep', (el.id && _EVENING_OVERRIDE[el.id] != null) ? _EVENING_OVERRIDE[el.id] : step);
+  });
+}
+function eveningStep(n){
+  const panel = document.getElementById('reflect-panel-evening');
+  if(!panel) return;
+  _eStep = Math.max(0, Math.min(_EVENING_STEPS.length - 1, n));
+  panel.querySelectorAll(':scope > [data-mstep]').forEach(el => {
+    el.classList.toggle('mstep-on', Number(el.getAttribute('data-mstep')) === _eStep);
+  });
+  const dots = panel.querySelector('.mstep-dots');
+  if(dots) [...dots.children].forEach((d,i) => d.classList.toggle('on', i === _eStep));
+  const lbl = panel.querySelector('.mstep-label');
+  if(lbl) lbl.textContent = _EVENING_STEPS[_eStep].label;
+  const next = panel.querySelector('.mstep-next');
+  if(next) next.style.display = (_eStep === _EVENING_STEPS.length - 1) ? 'none' : '';
+  try{ window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){ }
+  if(typeof haptic === 'function') haptic('tap');
+}
+function eveningShowAll(){
+  const panel = document.getElementById('reflect-panel-evening');
+  if(!panel) return;
+  panel.classList.remove('stepped');
+  const nav = panel.querySelector('.mstep-nav'); if(nav) nav.style.display = 'none';
+  const foot = panel.querySelector('.mstep-foot'); if(foot) foot.style.display = 'none';
+  ls('totry_evening_flow', 'all');
+  if(typeof haptic === 'function') haptic('tap');
+}
+function renderEveningFlow(){
+  const panel = document.getElementById('reflect-panel-evening');
+  const tab = document.getElementById('tab-reflect');
+  if(!panel) return;
+  if(tab) tab.classList.add('dusk');
+  if(ls('totry_evening_flow') === 'all'){ panel.classList.remove('stepped'); return; }
+  _eveningAssignSteps(panel);
+  if(!panel.querySelector('.mstep-nav')){
+    const nav = document.createElement('div');
+    nav.className = 'mstep-nav';
+    nav.innerHTML = '<div class="mstep-dots">' +
+      _EVENING_STEPS.map(() => '<div class="mstep-dot"></div>').join('') +
+      '</div><div class="mstep-label"></div>';
+    panel.insertBefore(nav, panel.firstChild);
+    const foot = document.createElement('div');
+    foot.className = 'mstep-foot';
+    foot.innerHTML = '<button class="btn primary mstep-next" style="flex:1">Next \u2192</button>' +
+                     '<button class="mstep-all" type="button">Show the whole evening</button>';
+    panel.appendChild(foot);
+    foot.querySelector('.mstep-next').onclick = () => eveningStep(_eStep + 1);
+    foot.querySelector('.mstep-all').onclick = eveningShowAll;
+  }
+  panel.classList.add('stepped');
+  eveningStep(0);
+}
+
 // ── EVENING ───────────────────────────────────────────────────
 let dayRating=3;
 const CALL_PROMPTS=[
