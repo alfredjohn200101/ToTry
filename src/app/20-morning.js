@@ -31,13 +31,23 @@ const _MORNING_ANCHORS = {
 // spirit") sits AFTER the intention field in the markup but belongs with the body step — and it
 // carries thirty buttons, which on its own turned "set the day" back into the form this is meant to
 // undo. An anchor cannot express this, because an anchor claims everything below it too.
-const _MORNING_OVERRIDE = { 'daily-checkin': 2 };
+const _MORNING_OVERRIDE = {
+  'daily-checkin': 2,
+  // The pledge is a commitment, not a body reading. It sits next to the sleep card in the markup so
+  // the anchor walk put it under "your body"; it belongs with setting the day, beside the intention
+  // it is a promise about.
+  'morning-vice-card': 3,
+};
 let _mStep = 0;
 function _morningAssignSteps(pane){
   let step = 0;
   [...pane.children].forEach(el => {
     // the back bar and the screen-reader heading are chrome, not part of the ritual
     if(el.classList.contains('hub-back-bar') || el.classList.contains('a11y-only') || el.classList.contains('mstep-nav') || el.classList.contains('mstep-foot')) return;
+    // #morning-done is not a step, it is the END. completeMorning() shows it with an inline
+    // display:block, and the step rule is !important — so giving it a step meant the ritual saved
+    // everything correctly and then said NOTHING back. Left unassigned, its own display logic rules.
+    if(el.id === 'morning-done') return;
     if(el.id && _MORNING_ANCHORS[el.id] != null){
       step = _MORNING_ANCHORS[el.id];
       // a bare <div class="lbl"> sits immediately above its field and belongs with it
@@ -66,6 +76,15 @@ function morningStep(n){
 }
 // The escape hatch, and the honest one: some mornings a person wants the whole thing at once, and
 // anything that traps someone in a flow they did not ask for is the opposite of this app.
+// When the ritual is over the step furniture should go with it — dots and a Next button under a
+// finished morning are an invitation to keep going through something already done.
+function morningFinished(){
+  const pane = document.getElementById('tab-morning');
+  if(!pane) return;
+  const nav = pane.querySelector('.mstep-nav'); if(nav) nav.style.display = 'none';
+  const foot = pane.querySelector('.mstep-foot'); if(foot) foot.style.display = 'none';
+  pane.classList.remove('stepped');
+}
 function morningShowAll(){
   const pane = document.getElementById('tab-morning');
   if(!pane) return;

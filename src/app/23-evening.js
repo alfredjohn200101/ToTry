@@ -36,6 +36,9 @@ function _eveningAssignSteps(panel){
   let step = 0;
   [...panel.children].forEach(el => {
     if(el.classList.contains('mstep-nav') || el.classList.contains('mstep-foot')) return;
+    // #evening-done is the END, not a step — see the note in the morning flow. Assigning it a step
+    // let the evening save everything and then say nothing back.
+    if(el.id === 'evening-done') return;
     if(el.id && _EVENING_ANCHORS[el.id] != null){
       step = _EVENING_ANCHORS[el.id];
       const prev = el.previousElementSibling;
@@ -59,6 +62,13 @@ function eveningStep(n){
   if(next) next.style.display = (_eStep === _EVENING_STEPS.length - 1) ? 'none' : '';
   try{ window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){ }
   if(typeof haptic === 'function') haptic('tap');
+}
+function eveningFinished(){
+  const panel = document.getElementById('reflect-panel-evening');
+  if(!panel) return;
+  const nav = panel.querySelector('.mstep-nav'); if(nav) nav.style.display = 'none';
+  const foot = panel.querySelector('.mstep-foot'); if(foot) foot.style.display = 'none';
+  panel.classList.remove('stepped');
 }
 function eveningShowAll(){
   const panel = document.getElementById('reflect-panel-evening');
@@ -862,13 +872,26 @@ function completeEvening(){
   if(!examenToday){
     haptic('tap');
     // Save the reflection, but the day isn't fully closed until the examen is done.
-    if(typeof showToast==='function') showToast('Reflection saved','One last thing — your examen closes the day. Scroll up to begin it.');
-    const card=document.getElementById('examen-card');
-    if(card){ card.scrollIntoView({behavior:'smooth',block:'center'}); card.style.boxShadow='0 0 0 2px var(--go-bd)'; setTimeout(()=>{card.style.boxShadow='';},2000); }
+    // The examen lives on the LAST step now, not further down one long page. "Scroll up to begin it"
+    // sent people looking the wrong way, and scrollIntoView on a card whose step has hidden it does
+    // nothing at all — so the nudge pointed at something that was not on the screen. Take them there.
+    const _panel = document.getElementById('reflect-panel-evening');
+    const _stepped = !!(_panel && _panel.classList.contains('stepped'));
+    const card = document.getElementById('examen-card');
+    const _holder = card && card.closest('[data-mstep]');
+    if(_stepped && _holder){
+      if(typeof showToast==='function') showToast('Reflection saved','One last thing \u2014 your examen closes the day.');
+      if(typeof eveningStep === 'function') eveningStep(Number(_holder.getAttribute('data-mstep')));
+    } else {
+      if(typeof showToast==='function') showToast('Reflection saved','One last thing \u2014 your examen closes the day. Scroll up to begin it.');
+      if(card) card.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+    if(card){ card.style.boxShadow='0 0 0 2px var(--go-bd)'; setTimeout(()=>{card.style.boxShadow='';},2000); }
     return;
   }
   if(done){
     done.style.display='block';
+    if(typeof eveningFinished==='function') eveningFinished();
     done.scrollIntoView({behavior:'smooth'});
   }
   haptic('success');

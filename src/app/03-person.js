@@ -4721,6 +4721,7 @@ function completeMorning(){
   if(typeof syncToCloud==='function') syncToCloud();
   document.getElementById('morning-prayer-display').style.display='none';
   document.getElementById('morning-done').style.display='block';
+  if(typeof morningFinished==='function') morningFinished();
   const po=document.querySelector('.prayer-opts');if(po)po.style.display='none';
   const dc=document.getElementById('morning-complete-direct');if(dc)dc.style.display='none';
   checkMilestones();
@@ -4741,6 +4742,7 @@ function initMorningTab(){
   const today=ls('totry_mornings');
   if(today&&today.length>0&&today[0].day===getDayCount()){
     document.getElementById('morning-done').style.display='block';
+  if(typeof morningFinished==='function') morningFinished();
     const po=document.querySelector('.prayer-opts');if(po)po.style.display='none';
     const dc=document.getElementById('morning-complete-direct');if(dc)dc.style.display='none';
     if(today[0].gratitude)document.getElementById('morning-gratitude').value=today[0].gratitude;

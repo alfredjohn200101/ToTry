@@ -310,6 +310,68 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── a ritual that saves must SAY so, and point at what is left ─────────────────────────────
+  // Both of these were broken by the stepping work itself, which is the point of having them.
+  //
+  // The done cards are shown with an inline display:block by completeMorning/completeEvening. The
+  // step rule hides non-active blocks with !important, which outranks that — so the morning saved a
+  // person's gratitude and intention perfectly and then said NOTHING back. They are the END of the
+  // ritual, not a step, so they are excluded from assignment entirely.
+  //
+  // And the evening only closes once the examen is done. Its nudge said "scroll up to begin it" and
+  // called scrollIntoView on a card that stepping had hidden — pointing at something not on screen.
+  // It has to take them to the step instead.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name','Sam');
+      s('totry_v',[{ n:'Porn', mode:'quit', startDate:new Date(Date.now()-13*864e5).toISOString() }]); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2800);
+
+    const m = await page.evaluate(async () => {
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+      go('morning'); await new Promise(x=>setTimeout(x,1100));
+      morningStep(3); await new Promise(x=>setTimeout(x,200));
+      const g=document.getElementById('morning-gratitude'), i=document.getElementById('morning-intention');
+      if(g){ g.value='the quiet before everyone wakes'; g.dispatchEvent(new Event('input',{bubbles:true})); }
+      if(i){ i.value='finish the hard thing first'; i.dispatchEvent(new Event('input',{bubbles:true})); }
+      const before=(ls('totry_mornings')||[]).length;
+      if(typeof completeMorning==='function') await completeMorning();
+      await new Promise(x=>setTimeout(x,900));
+      const done=document.getElementById('morning-done');
+      return { saved:(ls('totry_mornings')||[]).length > before,
+               shown: !!(done && getComputedStyle(done).display!=='none' && done.getBoundingClientRect().height>0) };
+    });
+    if (!m.saved) findings.push('morning: completing it saved nothing');
+    else if (!m.shown) findings.push('morning: it saved their words and then said nothing back — the done card is hidden by its own step rule');
+
+    const e = await page.evaluate(async () => {
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+      go('reflect'); await new Promise(x=>setTimeout(x,1100));
+      eveningStep(1); await new Promise(x=>setTimeout(x,200));
+      const w=document.getElementById('evening-win');
+      if(w){ w.value='went for the walk anyway'; w.dispatchEvent(new Event('input',{bubbles:true})); }
+      const before=(ls('totry_evenings')||[]).length;
+      if(typeof completeEvening==='function') await completeEvening();
+      await new Promise(x=>setTimeout(x,900));
+      const panel=document.getElementById('reflect-panel-evening');
+      const card=document.getElementById('examen-card');
+      const r=card ? card.getBoundingClientRect() : null;
+      return { saved:(ls('totry_evenings')||[]).length > before,
+               step:(panel.querySelector('.mstep-label')||{}).textContent || '?',
+               examenOnScreen: !!(card && r.height>0 && r.top < window.innerHeight && getComputedStyle(card).display!=='none') };
+    });
+    if (!e.saved) findings.push('evening: completing it saved nothing');
+    else if (!e.examenOnScreen)
+      findings.push(`evening: it says the examen closes the day and then leaves them on "${e.step}" with the examen off screen`);
+
+    if (!findings.some(f => f.startsWith('morning:') || f.startsWith('evening:')))
+      console.log('rituals: the morning confirms what it saved, and the evening takes you to the examen it asks for');
+    await ctx.close();
+  }
+
   // ── the Calendar's day reaches Today ───────────────────────────────────────────────────────
   // SOUL-ARCHITECTURE, CALENDAR: "earn its place or fold into Today. Question first." The answer is
   // in the code rather than in taste: the VIEW is already folded in. Today's events appear on Home
@@ -485,8 +547,10 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       const panel = document.getElementById('reflect-panel-evening');
       const tab = document.getElementById('tab-reflect');
       const out = { stepped: panel.classList.contains('stepped'), dusk: tab.classList.contains('dusk'), steps: [] };
+      // #evening-done likewise — the end of the ritual, not a step. See the morning note.
       out.orphans = [...panel.children].filter(e =>
         !e.classList.contains('mstep-nav') && !e.classList.contains('mstep-foot') &&
+        e.id !== 'evening-done' &&
         !e.hasAttribute('data-mstep')).map(e => e.id || '.'+String(e.className||'').split(' ')[0]);
       const total = (typeof _EVENING_STEPS !== 'undefined') ? _EVENING_STEPS.length : 0;
       for (let i = 0; i < total; i++) {
@@ -542,9 +606,12 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       const pane = document.getElementById('tab-morning');
       const out = { stepped: pane.classList.contains('stepped'), dawn: pane.classList.contains('dawn'), steps: [] };
       // nothing may be left without a step
+      // #morning-done is deliberately unassigned — it is the END of the ritual, not a step, and a
+      // step rule would hide it with !important over the inline display:block that reveals it.
       out.orphans = [...pane.children].filter(e =>
         !e.classList.contains('hub-back-bar') && !e.classList.contains('a11y-only') &&
         !e.classList.contains('mstep-nav') && !e.classList.contains('mstep-foot') &&
+        e.id !== 'morning-done' &&
         !e.hasAttribute('data-mstep')).map(e => e.id || '.'+String(e.className||'').split(' ')[0]);
       for (let i = 0; i < 5; i++) {
         morningStep(i);

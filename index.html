@@ -5038,7 +5038,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v540';
+const APP_VERSION = 'v541';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -12199,6 +12199,7 @@ function completeMorning(){
   if(typeof syncToCloud==='function') syncToCloud();
   document.getElementById('morning-prayer-display').style.display='none';
   document.getElementById('morning-done').style.display='block';
+  if(typeof morningFinished==='function') morningFinished();
   const po=document.querySelector('.prayer-opts');if(po)po.style.display='none';
   const dc=document.getElementById('morning-complete-direct');if(dc)dc.style.display='none';
   checkMilestones();
@@ -12219,6 +12220,7 @@ function initMorningTab(){
   const today=ls('totry_mornings');
   if(today&&today.length>0&&today[0].day===getDayCount()){
     document.getElementById('morning-done').style.display='block';
+  if(typeof morningFinished==='function') morningFinished();
     const po=document.querySelector('.prayer-opts');if(po)po.style.display='none';
     const dc=document.getElementById('morning-complete-direct');if(dc)dc.style.display='none';
     if(today[0].gratitude)document.getElementById('morning-gratitude').value=today[0].gratitude;
@@ -31441,13 +31443,23 @@ const _MORNING_ANCHORS = {
 // spirit") sits AFTER the intention field in the markup but belongs with the body step — and it
 // carries thirty buttons, which on its own turned "set the day" back into the form this is meant to
 // undo. An anchor cannot express this, because an anchor claims everything below it too.
-const _MORNING_OVERRIDE = { 'daily-checkin': 2 };
+const _MORNING_OVERRIDE = {
+  'daily-checkin': 2,
+  // The pledge is a commitment, not a body reading. It sits next to the sleep card in the markup so
+  // the anchor walk put it under "your body"; it belongs with setting the day, beside the intention
+  // it is a promise about.
+  'morning-vice-card': 3,
+};
 let _mStep = 0;
 function _morningAssignSteps(pane){
   let step = 0;
   [...pane.children].forEach(el => {
     // the back bar and the screen-reader heading are chrome, not part of the ritual
     if(el.classList.contains('hub-back-bar') || el.classList.contains('a11y-only') || el.classList.contains('mstep-nav') || el.classList.contains('mstep-foot')) return;
+    // #morning-done is not a step, it is the END. completeMorning() shows it with an inline
+    // display:block, and the step rule is !important — so giving it a step meant the ritual saved
+    // everything correctly and then said NOTHING back. Left unassigned, its own display logic rules.
+    if(el.id === 'morning-done') return;
     if(el.id && _MORNING_ANCHORS[el.id] != null){
       step = _MORNING_ANCHORS[el.id];
       // a bare <div class="lbl"> sits immediately above its field and belongs with it
@@ -31476,6 +31488,15 @@ function morningStep(n){
 }
 // The escape hatch, and the honest one: some mornings a person wants the whole thing at once, and
 // anything that traps someone in a flow they did not ask for is the opposite of this app.
+// When the ritual is over the step furniture should go with it — dots and a Next button under a
+// finished morning are an invitation to keep going through something already done.
+function morningFinished(){
+  const pane = document.getElementById('tab-morning');
+  if(!pane) return;
+  const nav = pane.querySelector('.mstep-nav'); if(nav) nav.style.display = 'none';
+  const foot = pane.querySelector('.mstep-foot'); if(foot) foot.style.display = 'none';
+  pane.classList.remove('stepped');
+}
 function morningShowAll(){
   const pane = document.getElementById('tab-morning');
   if(!pane) return;
@@ -35632,6 +35653,9 @@ function _eveningAssignSteps(panel){
   let step = 0;
   [...panel.children].forEach(el => {
     if(el.classList.contains('mstep-nav') || el.classList.contains('mstep-foot')) return;
+    // #evening-done is the END, not a step — see the note in the morning flow. Assigning it a step
+    // let the evening save everything and then say nothing back.
+    if(el.id === 'evening-done') return;
     if(el.id && _EVENING_ANCHORS[el.id] != null){
       step = _EVENING_ANCHORS[el.id];
       const prev = el.previousElementSibling;
@@ -35655,6 +35679,13 @@ function eveningStep(n){
   if(next) next.style.display = (_eStep === _EVENING_STEPS.length - 1) ? 'none' : '';
   try{ window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){ }
   if(typeof haptic === 'function') haptic('tap');
+}
+function eveningFinished(){
+  const panel = document.getElementById('reflect-panel-evening');
+  if(!panel) return;
+  const nav = panel.querySelector('.mstep-nav'); if(nav) nav.style.display = 'none';
+  const foot = panel.querySelector('.mstep-foot'); if(foot) foot.style.display = 'none';
+  panel.classList.remove('stepped');
 }
 function eveningShowAll(){
   const panel = document.getElementById('reflect-panel-evening');
@@ -36458,13 +36489,26 @@ function completeEvening(){
   if(!examenToday){
     haptic('tap');
     // Save the reflection, but the day isn't fully closed until the examen is done.
-    if(typeof showToast==='function') showToast('Reflection saved','One last thing — your examen closes the day. Scroll up to begin it.');
-    const card=document.getElementById('examen-card');
-    if(card){ card.scrollIntoView({behavior:'smooth',block:'center'}); card.style.boxShadow='0 0 0 2px var(--go-bd)'; setTimeout(()=>{card.style.boxShadow='';},2000); }
+    // The examen lives on the LAST step now, not further down one long page. "Scroll up to begin it"
+    // sent people looking the wrong way, and scrollIntoView on a card whose step has hidden it does
+    // nothing at all — so the nudge pointed at something that was not on the screen. Take them there.
+    const _panel = document.getElementById('reflect-panel-evening');
+    const _stepped = !!(_panel && _panel.classList.contains('stepped'));
+    const card = document.getElementById('examen-card');
+    const _holder = card && card.closest('[data-mstep]');
+    if(_stepped && _holder){
+      if(typeof showToast==='function') showToast('Reflection saved','One last thing \u2014 your examen closes the day.');
+      if(typeof eveningStep === 'function') eveningStep(Number(_holder.getAttribute('data-mstep')));
+    } else {
+      if(typeof showToast==='function') showToast('Reflection saved','One last thing \u2014 your examen closes the day. Scroll up to begin it.');
+      if(card) card.scrollIntoView({behavior:'smooth',block:'center'});
+    }
+    if(card){ card.style.boxShadow='0 0 0 2px var(--go-bd)'; setTimeout(()=>{card.style.boxShadow='';},2000); }
     return;
   }
   if(done){
     done.style.display='block';
+    if(typeof eveningFinished==='function') eveningFinished();
     done.scrollIntoView({behavior:'smooth'});
   }
   haptic('success');
