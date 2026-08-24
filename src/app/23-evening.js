@@ -86,6 +86,11 @@ function renderEveningFlow(){
   if(tab) tab.classList.add('dusk');
   if(ls('totry_evening_flow') === 'all'){ panel.classList.remove('stepped'); return; }
   _eveningAssignSteps(panel);
+  // Same restore as the morning, same reason — see the note there. eveningFinished() hides the nav
+  // and foot inline, and this builder only runs when they are absent, so a second visit came back
+  // stepped with no way to move. What the person wrote was saved and unreachable.
+  const _nav0 = panel.querySelector('.mstep-nav'); if(_nav0) _nav0.style.display = '';
+  const _foot0 = panel.querySelector('.mstep-foot'); if(_foot0) _foot0.style.display = '';
   if(!panel.querySelector('.mstep-nav')){
     const nav = document.createElement('div');
     nav.className = 'mstep-nav';

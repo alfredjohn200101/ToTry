@@ -100,6 +100,16 @@ function renderMorningFlow(){
   if(ls('totry_morning_flow') === 'all'){ pane.classList.remove('stepped'); return; }
   _morningAssignSteps(pane);
   pane.classList.add('dawn');
+  // RESTORE the stepper before anything else. morningFinished() hides the nav and foot with an INLINE
+  // display:none, and the builder below only runs when they do not exist yet — so on the second visit
+  // the pane went back into stepped mode with the stepper still hidden. Steps 1..4 are display:none
+  // !important, which left exactly one control on the whole screen ("Back to home →") and made
+  // everything the person had written unreachable, against initMorningTab's own promise that it stays
+  // editable until midnight. Worse, initMorningTab() calls morningFinished() whenever today's morning
+  // is already logged, so it did not even need completing in this session: do your morning at 7am,
+  // come back at noon, and the ritual is a locked page.
+  const _nav0 = pane.querySelector('.mstep-nav'); if(_nav0) _nav0.style.display = '';
+  const _foot0 = pane.querySelector('.mstep-foot'); if(_foot0) _foot0.style.display = '';
   if(!pane.querySelector('.mstep-nav')){
     const nav = document.createElement('div');
     nav.className = 'mstep-nav';

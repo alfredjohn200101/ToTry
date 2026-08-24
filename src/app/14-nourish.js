@@ -3784,7 +3784,11 @@ function renderGrowHandoffs(){
       const d = days[k] = days[k] || { cal:0, pro:0 };
       d.cal += Number(e.cal)||0; d.pro += Number(e.pro)||0;
     }));
-    const logged = Object.keys(days).filter(k => days[k].cal > 0);
+    // Cap at 7. The keys are en-AU date strings and the window is a rolling 168 hours, so a person
+    // who logs late one night and early the next morning can have EIGHT distinct day-keys inside it —
+    // and the app told a consistent logger "8 of 7 days fuelled", which is the kind of sentence that
+    // makes someone stop believing every other number on the screen.
+    const logged = Object.keys(days).filter(k => days[k].cal > 0).slice(0, 7);
     let nourishLine = '';
     if(logged.length){
       const avgPro = Math.round(logged.reduce((a,k) => a + days[k].pro, 0) / logged.length);
@@ -3808,8 +3812,20 @@ function renderGrowHandoffs(){
       const to = Number(body[body.length-1].weight);
       const diff = Math.round((to - from) * 10) / 10;
       const unit = (typeof wDelta === 'function') ? wDelta(diff, { zero:'steady' }) : (diff + 'kg');
-      trackLine = diff === 0 ? 'Holding steady this week \u2014 that is what the fuel did'
-                             : unit + ' over the week \u2014 that is what the training and the fuel did';
+      // "Over the week" has to actually BE over a week. When there is no weigh-in older than seven
+      // days this compared the first and last of a much shorter span — two readings on the same
+      // morning became "+0.4kg over the week", which is a scale fluctuation reported as a trend and
+      // is exactly the false mechanism this app refuses elsewhere. Say the real span, or say nothing.
+      const fromT = new Date((older.length ? older[older.length-1] : body[0]).ts || (older.length ? older[older.length-1] : body[0]).date).getTime();
+      const toT   = new Date(body[body.length-1].ts || body[body.length-1].date).getTime();
+      const spanDays = Math.round((toT - fromT) / 86400000);
+      if(spanDays < 2){
+        trackLine = 'Two weigh-ins, hours apart \u2014 give it a few days before it means anything';
+      } else {
+        const span = spanDays >= 6 ? 'over the week' : 'over ' + spanDays + ' days';
+        trackLine = diff === 0 ? 'Holding steady ' + span + ' \u2014 that is what the fuel did'
+                               : unit + ' ' + span + ' \u2014 that is what the training and the fuel did';
+      }
     } else if(body.length === 1){
       trackLine = 'One weigh-in so far \u2014 one more and the trend starts';
     } else if(ws.length || logged.length){

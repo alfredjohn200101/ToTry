@@ -63,7 +63,12 @@ function renderSoulStill(){
     '</div>';
 }
 function soulBeStill(){
-  if(typeof openBreath === 'function') openBreath('settle', { reason:'stillness' });
+  // NO reason. openBreath(id, {reason}) turns on the before/after distress scale — "How strong is it
+  // right now? 0 is gone, 10 is overwhelming" — which belongs to the urge path, where a number before
+  // and after is what proves the breathing did something. Asking it of a person who tapped "be still"
+  // from the still centre reframes a contemplative minute as a craving to be survived, and answers a
+  // question they did not have. Passing a reason here was a copy-paste of the crisis call site.
+  if(typeof openBreath === 'function') openBreath('settle');
   else if(typeof openBreathMenu === 'function') openBreathMenu();
 }
 

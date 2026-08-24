@@ -1256,11 +1256,16 @@ function fightEvidenceLine(){
     const now = Date.now(), W = 7*86400000;
     const within = t => { const x = new Date(t).getTime(); return !isNaN(x) && x > now - W; };
 
-    // urges met and turned away — the thing they actually DID, not the thing they avoided
+    // Urges met and turned away — the thing they actually DID, not the thing they avoided.
+    //
+    // ONE SOURCE. Every win path (_momentWin, _gambleWin, _riskGreetSteady) writes totry_moments_won
+    // AND calls _recordFightMoment(), which writes totry_fight_log with won:true. Adding the two
+    // together counted every single turned-away urge TWICE — the app told a person they had met two
+    // when they had met one, in the one place on the screen whose whole job is to be believed.
+    // totry_fight_log is the complete record and the source getLifeState().fight.wins7 already
+    // treats as truth, so the two agree by construction rather than by luck.
     const log = (ls('totry_fight_log')||[]).filter(f => f && f.ts && within(f.ts));
-    const won = log.filter(f => f.won).length;
-    const momentsWon = (ls('totry_moments_won')||[]).filter(m => m && within(m.ts || m)).length;
-    const met = won + momentsWon;
+    const met = log.filter(f => f.won).length;
     if(met > 0) bits.push(met + (met === 1 ? ' urge met and turned away' : ' urges met and turned away') + ' this week');
 
     // money the clean days actually put back — the vice→money pipe, which only exists because both
@@ -1281,6 +1286,20 @@ function fightEvidenceLine(){
     // there is no previous run to beat, so the line is not earned and is not shown.
     try{
       loadV();
+      // ONE claim, about ONE vice, and only when the log can actually support it.
+      //
+      // Two things were wrong. The loop pushed a bit per vice, so someone fighting three things read
+      // "your longest run yet" three times in a row with nothing naming which fight it meant. And the
+      // "record" came from the longest gap between LOGGED uses, which understates badly on a sparse
+      // log: two slips three days apart a year ago, then two hundred clean days, and the app
+      // congratulated them on beating a three-day record. Quoting a number we cannot actually know is
+      // worse than saying nothing, and on this screen it reads as the app not having been paying
+      // attention.
+      //
+      // So: the longest CURRENT run only, named, and only when the previous best is itself
+      // substantial (a week) and there are at least two completed runs to compare against. This
+      // under-claims by design — it will stay quiet on a thin history rather than invent a record.
+      let best = null;
       (vices||[]).forEach(v => {
         if(typeof viceIsAbstinence === 'function' && !viceIsAbstinence(v)) return;
         const current = (typeof viceCleanDays === 'function') ? viceCleanDays(v) : 0;
@@ -1290,16 +1309,19 @@ function fightEvidenceLine(){
           .map(u => new Date(u.ts).getTime())
           .filter(t => !isNaN(t))
           .sort((a,b) => a - b);
-        if(uses.length < 2) return;                    // no completed previous run to compare against
+        if(uses.length < 3) return;                    // fewer than two completed runs tells us nothing
         let prevBest = 0;
-        for(let i = 1; i < uses.length; i++){
-          const gap = Math.floor((uses[i] - uses[i-1]) / 86400000);
+        for(let k = 1; k < uses.length; k++){
+          const gap = Math.floor((uses[k] - uses[k-1]) / 86400000);
           if(gap > prevBest) prevBest = gap;
         }
-        if(current > prevBest && prevBest > 0){
-          bits.push('your longest run yet \u2014 past ' + prevBest + ' days');
-        }
+        if(prevBest < 7) return;                       // a "record" of a few days is a logging artefact
+        if(current <= prevBest) return;
+        if(!best || current > best.current) best = { name: v.n, current: current, prev: prevBest };
       });
+      if(best){
+        bits.push(_escFew(best.name) + ': your longest run yet \u2014 past ' + best.prev + ' days');
+      }
     }catch(_){ }
   }catch(_){ }
   return bits;

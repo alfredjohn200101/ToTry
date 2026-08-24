@@ -310,6 +310,132 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── the new lines must not state things that are not true ──────────────────────────────────
+  // An adversarial review of v533-v541 found four ways the lines I added told a person something
+  // false. They are grouped here because they share one failure: a number that is easy to compute
+  // and wrong, on a screen whose only job is to be believed.
+  {
+    const cases = [
+      { label:'one urge, recorded in BOTH stores',
+        // every win path writes totry_moments_won AND totry_fight_log; adding them double-counted
+        seed:{ v:[{n:'Porn',mode:'quit',days:13}], fightLog:[{d:1,won:true}], momentsWon:[1] },
+        tab:'fight', el:'fight-evidence', want:/^1 URGE MET/i, wantNot:/^2 URGES/i },
+      { label:'sparse log cannot know a record',
+        // two slips three days apart, then 200 clean — it used to congratulate them on beating 3 days
+        seed:{ v:[{n:'Porn',mode:'quit',days:200}], uses:[203,200] },
+        tab:'fight', el:'fight-evidence', wantNot:/LONGEST RUN/i },
+      { label:'a real record, named',
+        seed:{ v:[{n:'Porn',mode:'quit',days:40}], uses:[80,59,40] },
+        tab:'fight', el:'fight-evidence', want:/PORN: YOUR LONGEST RUN YET .* 21 DAYS/i },
+      { label:'two weigh-ins hours apart is not a week',
+        seed:{ body:[{h:0,w:82.4},{h:6,w:82.0}], workout:true },
+        tab:'grow', el:'hand-track', wantNot:/over the week/i },
+    ];
+    for (const c of cases) {
+      const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+      const page = await ctx.newPage();
+      await page.addInitScript(c => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+        const d=i=>new Date(Date.now()-i*864e5).toISOString();
+        const hAgo=h=>new Date(Date.now()-h*3600e3).toISOString();
+        s('totry_onboarded',true); s('totry_name','Sam');
+        if(c.v) s('totry_v', c.v.map(x=>({ n:x.n, mode:x.mode, startDate:d(x.days) })));
+        if(c.uses) s('totry_vice_uses', c.uses.map(n=>({ v:'Porn', ts:d(n) })));
+        if(c.fightLog) s('totry_fight_log', c.fightLog.map(x=>({ vice:'Porn', won:x.won, ts:d(x.d) })));
+        if(c.momentsWon) s('totry_moments_won', c.momentsWon.map(n=>({ v:'Porn', ts:d(n), kind:'behaviour' })));
+        if(c.workout) s('totry_workouts',[{ id:1, ts:hAgo(20), date:hAgo(20).slice(0,10), title:'Push', volume:8000, sets:16, calories:400 }]);
+        if(c.body) s('totry_body', c.body.map(x=>({ date:hAgo(x.h).slice(0,10), weight:x.w, ts:hAgo(x.h) })));
+      }, c.seed);
+      await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+      await page.waitForTimeout(2600);
+      const txt = await page.evaluate(async (c) => {
+        document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+        go(c.tab);
+        await new Promise(x=>setTimeout(x,900));
+        const el = document.getElementById(c.el);
+        if(!el) return null;
+        const on = (el.classList.contains('on') || getComputedStyle(el).display !== 'none') && el.getBoundingClientRect().height > 0;
+        return on ? (el.textContent||'').replace(/\s+/g,' ').trim() : '';
+      }, { tab:c.tab, el:c.el });
+      if (txt === null) findings.push(`honesty (${c.label}): #${c.el} is not in the markup`);
+      else if (c.want && !c.want.test(txt)) findings.push(`honesty (${c.label}): expected ${c.want} — got "${txt.slice(0,60)}"`);
+      else if (c.wantNot && c.wantNot.test(txt)) findings.push(`honesty (${c.label}): says "${txt.slice(0,64)}" — that is not true`);
+      await ctx.close();
+    }
+
+    // and the still centre must not ask a calm person how bad their craving is
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name','Sam'); s('totry_faith_tradition','christianity'); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2600);
+    const still = await page.evaluate(async () => {
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+      go('soul'); await new Promise(x=>setTimeout(x,900));
+      soulBeStill(); await new Promise(x=>setTimeout(x,900));
+      const ov = document.querySelector('.breath-overlay');
+      const vis = el => !!(el && getComputedStyle(el).display !== 'none' && el.getBoundingClientRect().height > 0);
+      return { asksDistress: vis(ov && ov.querySelector('.b-pre')), breathing: vis(ov && ov.querySelector('.b-run')) };
+    });
+    if (still.asksDistress)
+      findings.push('honesty (still centre): "be still for a minute" asks how strong the urge is — the contemplative path is running the craving protocol');
+    else if (!still.breathing)
+      findings.push('honesty (still centre): "be still for a minute" does not start the breathing');
+    await ctx.close();
+
+    if (!findings.some(f => f.startsWith('honesty'))) console.log('honesty: the new lines count once, claim a record only when one is knowable, name the real span, and stillness just breathes');
+  }
+
+  // ── coming BACK to a finished ritual must not lock it ──────────────────────────────────────
+  // The worst bug the v533-v541 work introduced, and it was mine. morningFinished()/eveningFinished()
+  // hide the stepper with an INLINE display:none and drop `stepped`. The render function re-adds
+  // `stepped` but only BUILDS the nav/foot when they are absent — they already exist, so the inline
+  // display:none survived. Second visit: stepped again, stepper invisible, steps 1..N hidden with
+  // !important. One control left on the whole screen ("Back to home →"), and everything the person
+  // wrote unreachable — against initMorningTab's own promise that it stays editable until midnight.
+  //
+  // It did not even need completing in-session: initMorningTab() calls morningFinished() whenever
+  // today's morning is already logged. Do your morning at 7am, come back at noon, locked page.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name','Sam');
+      s('totry_start', new Date(Date.now()-40*864e5).toISOString());
+      // today's morning ALREADY done — the path that needs no completion in this session
+      s('totry_mornings',[{ ts:new Date().toISOString(), day:41, gratitude:'my sister called', intention:'be present' }]);
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const r = await page.evaluate(async () => {
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+      const look = () => {
+        const pane = document.getElementById('tab-morning');
+        const h = el => el ? Math.round(el.getBoundingClientRect().height) : 0;
+        return { stepped: pane.classList.contains('stepped'),
+                 nav: h(pane.querySelector('.mstep-nav')), foot: h(pane.querySelector('.mstep-foot')),
+                 controls: [...pane.querySelectorAll('button,input,textarea,[onclick]')].filter(e => {
+                   const c = getComputedStyle(e); if(c.display==='none'||c.visibility==='hidden') return false;
+                   const q = e.getBoundingClientRect(); return q.width>0 && q.height>0; }).length };
+      };
+      go('morning'); await new Promise(x=>setTimeout(x,1100));
+      const first = look();
+      go('home');    await new Promise(x=>setTimeout(x,600));
+      go('morning'); await new Promise(x=>setTimeout(x,1200));
+      const second = look();
+      // and the words must still be reachable by walking to their step
+      morningStep(3); await new Promise(x=>setTimeout(x,250));
+      const g = document.getElementById('morning-gratitude');
+      return { first, second, gratitudeReachable: !!(g && g.getBoundingClientRect().height > 0) };
+    });
+    if (r.second.stepped && r.second.nav === 0)
+      findings.push(`morning: coming back to a finished ritual leaves it stepped with the stepper HIDDEN — ${r.second.controls} control(s) on the whole screen and no way to advance`);
+    else if (!r.gratitudeReachable)
+      findings.push('morning: on a second visit their own gratitude field cannot be reached, though the app promises it stays editable until midnight');
+    else console.log(`morning: a finished ritual re-opens usable — stepper back (${r.second.nav}px), their words still reachable`);
+    await ctx.close();
+  }
+
   // ── the reading plans, five times over ─────────────────────────────────────────────────────
   // RESEARCH-BACKLOG lists guided reading plans as a gap. They are not — they are built, and built
   // carefully: three plans, each written FIVE times, once per tradition in that tradition's own
