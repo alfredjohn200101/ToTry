@@ -310,6 +310,53 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── Money leads with what staying clean bought, not what is owed ───────────────────────────
+  // SOUL-ARCHITECTURE, MONEY: "lead with the reclaimed/stewardship story, not raw debt tables." The
+  // code already carried a comment saying exactly that — and then did mg.after(sh), placing the
+  // reclaimed hero SECOND. Intent and execution disagreed, so the thumb still met Paid off / Debt
+  // left first. Every clean day is real money back, and that is the line the 11pm man needs above
+  // the number that shames him.
+  //
+  // The second case is the one that keeps it honest: with no vice cost set the figure is £0, and a
+  // "$0 RECLAIMED — set weekly vice spend below" hero at the top of the screen would be worse than
+  // the debt figures. Then the debt table leads, because it is the only thing that is true yet.
+  {
+    for (const c of [{ label:'reclaiming', cost:true, days:40, reclaimedLeads:true },
+                     { label:'day zero, cost set', cost:true, days:0, reclaimedLeads:false }]) {
+      const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+      const page = await ctx.newPage();
+      await page.addInitScript(c => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+        s('totry_onboarded',true); s('totry_name','Sam');
+        const v = { n:'Porn', mode:'quit', startDate:new Date(Date.now()-c.days*864e5).toISOString() };
+        if(c.cost){ v.costAmount = 25; v.costPeriod = 'week'; }
+        s('totry_v',[v]);
+        s('totry_f',{ d:[{ n:'Car loan', t:20000, p:6000 }], income:5200 });
+      }, { cost:c.cost, days:c.days });
+      await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+      await page.waitForTimeout(2700);
+      const r = await page.evaluate(async () => {
+        document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+        go('money');
+        await new Promise(x=>setTimeout(x,900));
+        const pane = document.getElementById('tab-money');
+        const vis = el => { const cs = getComputedStyle(el); if(cs.display==='none') return false;
+          const q = el.getBoundingClientRect(); return q.width>0 && q.height>0; };
+        const order = [...pane.children].filter(vis);
+        const hero = document.getElementById('saved-hero');
+        const gauge = pane.querySelector('.mg');
+        return { heroAt: order.indexOf(hero), gaugeAt: order.indexOf(gauge),
+                 heroText:(hero&&hero.innerText||'').replace(/\s+/g,' ').trim().slice(0,40) };
+      });
+      if (r.heroAt < 0 || r.gaugeAt < 0) findings.push(`money (${c.label}): could not find the hero or the debt gauge on screen`);
+      else if (c.reclaimedLeads && r.heroAt > r.gaugeAt)
+        findings.push(`money (${c.label}): the debt table still leads — "${r.heroText}" sits below it`);
+      else if (!c.reclaimedLeads && r.heroAt < r.gaugeAt)
+        findings.push(`money (${c.label}): "${r.heroText}" is leading the screen, and it is zero — an empty hero at the top is worse than the debt figures`);
+      await ctx.close();
+    }
+    if (!findings.some(f => f.startsWith('money ('))) console.log('money: the reclaimed figure leads once there is one, and never when it is zero');
+  }
+
   // ── Soul opens with stillness, not a menu ──────────────────────────────────────────────────
   // SOUL-ARCHITECTURE, SOUL: "make Soul feel like the still center, not a tab of religious features."
   // It opened as four labelled grids, which is a menu, and a menu is the opposite of stillness.

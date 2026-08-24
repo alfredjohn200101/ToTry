@@ -134,7 +134,9 @@ Today · Soul · Grow · Money · Settings — bottom bar, thumb-reachable. Ever
   reason the streak matters).
 - **Feeling:** calm command, not anxiety. Faith-rooted stewardship.
 - **Connects:** ← vice costs from Fight become reclaimed totals here. Debt-free date, savings.
-- **TODO:** lead with the reclaimed/stewardship story, not raw debt tables.
+- **DONE (v539):** the reclaimed figure now sits ABOVE the Paid off / Debt left metrics once there is
+  one — $143 reclaimed by staying clean before the $14,000 still owed. When it is still zero the debt
+  table leads, because a "$0 reclaimed" hero at the top of the screen would be worse than the figures.
 
 ### COACH — *the omniscient guide*
 - **Purpose:** ask anything; get an answer that knows your whole life.

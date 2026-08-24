@@ -267,9 +267,24 @@ function renderFinance(){
     if(typeof renderReclaimed === 'function') renderReclaimed();
     // The desc below is rewritten for the behind case by the owed-note block; the figure stays 0,
     // which is the truth — nothing is reclaimed yet while the debt for past use stands.
-    // Lead with the freedom story, not the debt table (the soul of this screen): when there is real
-    // reclaimed money, float that hero up right beneath the metrics. Idempotent (only moves once).
-    try{ const mg=document.querySelector('#tab-money .mg'); const sh=document.getElementById('saved-hero'); if(mg&&sh&&mg.nextElementSibling!==sh) mg.after(sh); }catch(_){}
+    // SOUL-ARCHITECTURE, MONEY: "lead with the reclaimed/stewardship story, not raw debt tables."
+    // This said "lead with the freedom story" and then did mg.after(sh) — placing it SECOND, beneath
+    // the Paid off / Debt left figures. The thumb still met the debt table first, so the intent and
+    // the code disagreed. mg.before(sh) is what the comment always meant: every clean day is real
+    // money back, and that is the line the 11pm man needs above the number that shames him.
+    //
+    // Gated on reclaimed > 0, not on merely having a cost model. A "$0 RECLAIMED — set weekly vice
+    // spend below" hero leading the screen would be worse than the debt figures: it is the
+    // empty-state-that-lies problem renderMoneyGate already guards, moved to the top of the page.
+    // Idempotent — it only moves when it is not already in place.
+    try{
+      const mg = document.querySelector('#tab-money .mg');
+      const sh = document.getElementById('saved-hero');
+      if(mg && sh){
+        if(reclaimed > 0){ if(mg.previousElementSibling !== sh) mg.before(sh); }
+        else if(mg.nextElementSibling !== sh) mg.after(sh);
+      }
+    }catch(_){}
     if(sd) sd.textContent='Reclaimed by staying clean — that\u2019s money toward your debt and your freedom.';
     // Honest position, not a fictional total: if money is still owed for past use, say so and show
     // what's left before they're genuinely ahead. Being clean while you owe = less behind, not ahead.
