@@ -422,11 +422,27 @@ async function initApp(){
     if(sheet && !sheet._swipeWired){
       sheet._swipeWired = true;
       let startY=0, curY=0, dragging=false;
+      // The handle zone, and any scroller under the finger — BOTH, which is what the comment here
+      // always claimed and the code never did. The only guard was `sheet.scrollTop > 4`, which worked
+      // by accident while the sheet itself was the scroll container: once a person had scrolled at
+      // all, the dismiss-drag disarmed. v543 gave .comp-phase min-height:0 so the CONVERSATION scrolls
+      // instead — correct in itself, but it pinned the sheet's own scrollTop at 0 forever, so every
+      // touch anywhere in the sheet armed a dismiss. Swiping down to scroll back and re-read what the
+      // companion just said closed it instead, mid-craving. Two conditions now, neither relying on
+      // which element happens to own the scrollbar.
+      const HANDLE_ZONE = 64;                       // the grab handle and the space around it
       sheet.addEventListener('touchstart', (e)=>{
-        // Only start a dismiss-drag from near the top of the sheet (the handle zone) AND when the
-        // sheet is scrolled to the top — so it never fights with scrolling the content.
+        const t = e.touches[0];
+        const top = sheet.getBoundingClientRect().top;
+        if((t.clientY - top) > HANDLE_ZONE) return;   // started below the handle — that is a scroll
+        // and if anything under the finger can scroll and is not at its top, this is a scroll too
+        let n = e.target;
+        while(n && n !== sheet){
+          if(n.scrollHeight > n.clientHeight + 2 && n.scrollTop > 4) return;
+          n = n.parentElement;
+        }
         if(sheet.scrollTop > 4) return;
-        startY = e.touches[0].clientY; curY = startY; dragging = true;
+        startY = t.clientY; curY = startY; dragging = true;
         sheet.style.transition = 'none';
       }, {passive:true});
       sheet.addEventListener('touchmove', (e)=>{

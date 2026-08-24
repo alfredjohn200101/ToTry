@@ -71,6 +71,11 @@ function _stepToEveningField(id){
   try{
     const el = document.getElementById(id);
     if(!el) return;
+    // OPEN THE FOLD FIRST. A field inside a closed <details> has no box, so scrolling to it lands
+    // on nothing and the person is left staring at the right step with the field still folded away.
+    // Opening it afterwards, as this did, is too late for the scroll that already happened.
+    const det = el.closest('details');
+    if(det && !det.open) det.open = true;
     const panel = document.getElementById('reflect-panel-evening');
     const holder = el.closest('[data-mstep]');
     if(panel && panel.classList.contains('stepped') && holder && typeof eveningStep === 'function'){
@@ -79,9 +84,6 @@ function _stepToEveningField(id){
     } else {
       el.scrollIntoView({ block:'center' });
     }
-    // a <details> holding it must be open, or the field is inside a collapsed fold
-    const det = el.closest('details');
-    if(det && !det.open) det.open = true;
   }catch(_){ }
 }
 function eveningFinished(){

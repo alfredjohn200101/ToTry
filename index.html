@@ -5050,7 +5050,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v543';
+const APP_VERSION = 'v544';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -15158,7 +15158,12 @@ const _TOOLKIT = [
     pracBtn:'I found it',
     ev:'Urge surfing is a core piece of Mindfulness-Based Relapse Prevention, which in head-to-head trials does about as well as standard relapse prevention, with some advantage on heavy-use days at longer follow-up. Real, and modest. The \u201curges pass in 15\u201330 minutes\u201d line you hear everywhere is a clinical rule of thumb, not a measured law \u2014 yours may be shorter or longer.',
     src:'Paraphrased from Marlatt & Gordon\u2019s relapse-prevention work and Mindfulness-Based Relapse Prevention (Bowen, Chawla, Witkiewitz). The rebound point is Wegner\u2019s thought-suppression research.',
-    live:'Breathe one through now', act:"openBreath('settle',{reason:'lesson'})" },
+    // No reason: this is the TOOLKIT, and its own practice text says "while nothing is happening".
+    // A reason turns on the 0-10 "how strong is it right now?" scale, which belongs to the urge path
+    // where a before and after is what proves the breathing worked. Asking it of someone practising
+    // in the calm answers a question they do not have — the same slip fixed in soulBeStill. The other
+    // reason-carrying calls (letgo, and the HALT angry/tired ones) ARE in the moment and keep theirs.
+    live:'Breathe one through now', act:"openBreath('settle')" },
 
   { id:'defuse', ic:'\u26C5', t:'Thoughts as weather', st:'Getting half a step back from what your mind says',
     idea:[
@@ -18736,15 +18741,11 @@ function fightEvidenceLine(){
     // cost model, including ones in watch or moderate mode — where viceCleanDays deliberately returns
     // 0 because there is no abstinence to count. So this line could tell someone they had "reclaimed"
     // money from a habit they used twice this week, under a heading that says how they are WINNING.
+    // No gate needed here any more: viceSpendPicture() refuses a non-abstinence vice at the source,
+    // so totalReclaimed() cannot include one. The v543 gate asked "is ANY vice abstinence?", which
+    // opened the whole sum the moment one qualified — including money from the ones that did not.
     let reclaimed = 0;
-    try{
-      if(typeof totalReclaimed === 'function'){
-        loadV();
-        const anyAbstaining = (vices||[]).some(v =>
-          typeof viceIsAbstinence !== 'function' || viceIsAbstinence(v));
-        if(anyAbstaining) reclaimed = totalReclaimed() || 0;
-      }
-    }catch(_){ }
+    try{ if(typeof totalReclaimed === 'function') reclaimed = totalReclaimed() || 0; }catch(_){ }
     // curSym(), with no ASCII fallback: a hardcoded $ is the currency bug this repo already has a
     // test for, and showing a GBP user dollars is worse than showing them nothing.
     if(reclaimed > 0) bits.push(curSym() + Math.round(reclaimed).toLocaleString() + ' reclaimed');
@@ -18793,7 +18794,11 @@ function fightEvidenceLine(){
         if(!best || current > best.current) best = { name: v.n, current: current, prev: prevBest };
       });
       if(best){
-        bits.push(_escFew(best.name) + ': your longest run yet \u2014 past ' + best.prev + ' days');
+        // NOT _escFew here: renderFightEvidence escapes every bit before it writes innerHTML, so
+        // escaping the name as well double-encoded it — "Mum's wine" reached the screen as
+        // MUM&#39;S WINE, in capitals, on the headline evidence line. bits are plain text; the one
+        // renderer owns the escaping.
+        bits.push(best.name + ': your longest run yet \u2014 past ' + best.prev + ' days');
       }
     }catch(_){ }
   }catch(_){ }
@@ -18858,6 +18863,13 @@ function viceSpendPicture(v){
   const owed = Math.max(0, parseFloat(v.owed)||0);
   if(amt<=0 && owed<=0) return null;
   const days = viceCleanDays(v);
+  // NOTHING IS RECLAIMED FROM A FIGHT THAT IS NOT ABSTINENCE. viceCleanDays already returns 0 for
+  // watch and moderate modes, which zeroes the day / week / use models because they all multiply by
+  // it — but the 'purchase' model below derives its own `since` from v.lastPurchase and never looks
+  // at days at all. So a vice the person is deliberately moderating still "reclaimed" the full
+  // purchase figure, and it surfaced under a heading about how they are WINNING, and on the Money
+  // tab as money staying clean had put back. Gating at the source fixes both, and any future caller.
+  if(typeof viceIsAbstinence === 'function' && !viceIsAbstinence(v)) return null;
   let avoided = 0;
   const per = v.costPer || 'week';
   if(per === 'purchase'){
@@ -26613,14 +26625,23 @@ function renderGrowHandoffs(){
     const days = {};
     Object.keys(log).forEach(k => (log[k]||[]).forEach(e => {
       if(!e || !e.ts || !inWeek(e.ts)) return;
-      const d = days[k] = days[k] || { cal:0, pro:0 };
+      const d = days[k] = days[k] || { cal:0, pro:0, t:0 };
       d.cal += Number(e.cal)||0; d.pro += Number(e.pro)||0;
+      const t = new Date(e.ts).getTime();
+      if(!isNaN(t) && t > d.t) d.t = t;                // newest entry stamps the day, for the sort above
     }));
     // Cap at 7. The keys are en-AU date strings and the window is a rolling 168 hours, so a person
     // who logs late one night and early the next morning can have EIGHT distinct day-keys inside it —
     // and the app told a consistent logger "8 of 7 days fuelled", which is the kind of sentence that
     // makes someone stop believing every other number on the screen.
-    const logged = Object.keys(days).filter(k => days[k].cal > 0).slice(0, 7);
+    // Cap at 7, but keep the SEVEN MOST RECENT. A rolling 168-hour window can hold eight en-AU day
+    // keys, so the count had to be capped — but slice(0,7) takes them in object insertion order,
+    // which dropped whichever key was inserted last. That was usually TODAY: the protein average
+    // silently excluded the food the person had just logged, which is the one number they came to
+    // check. Sort by the day's own timestamp and keep the newest seven.
+    const logged = Object.keys(days).filter(k => days[k].cal > 0)
+      .sort((a, b) => (days[b].t || 0) - (days[a].t || 0))
+      .slice(0, 7);
     let nourishLine = '';
     if(logged.length){
       const avgPro = Math.round(logged.reduce((a,k) => a + days[k].pro, 0) / logged.length);
@@ -26654,7 +26675,12 @@ function renderGrowHandoffs(){
       if(spanDays < 2){
         trackLine = 'Two weigh-ins, hours apart \u2014 give it a few days before it means anything';
       } else {
-        const span = spanDays >= 6 ? 'over the week' : 'over ' + spanDays + ' days';
+        // I fixed the SHORT side and left the long one: >= 6 days meant "over the week" whether the
+        // gap was seven days or ninety-six. Telling someone their three months of work happened "over
+        // the week" is the same error in the other direction, and it makes the number meaningless.
+        const span = spanDays <= 8 ? 'over the week'
+                   : spanDays <= 45 ? 'over ' + Math.round(spanDays / 7) + ' weeks'
+                   : 'over ' + Math.round(spanDays / 30) + ' months';
         trackLine = diff === 0 ? 'Holding steady ' + span + ' \u2014 that is what the fuel did'
                                : unit + ' ' + span + ' \u2014 that is what the training and the fuel did';
       }
@@ -35785,6 +35811,11 @@ function _stepToEveningField(id){
   try{
     const el = document.getElementById(id);
     if(!el) return;
+    // OPEN THE FOLD FIRST. A field inside a closed <details> has no box, so scrolling to it lands
+    // on nothing and the person is left staring at the right step with the field still folded away.
+    // Opening it afterwards, as this did, is too late for the scroll that already happened.
+    const det = el.closest('details');
+    if(det && !det.open) det.open = true;
     const panel = document.getElementById('reflect-panel-evening');
     const holder = el.closest('[data-mstep]');
     if(panel && panel.classList.contains('stepped') && holder && typeof eveningStep === 'function'){
@@ -35793,9 +35824,6 @@ function _stepToEveningField(id){
     } else {
       el.scrollIntoView({ block:'center' });
     }
-    // a <details> holding it must be open, or the field is inside a collapsed fold
-    const det = el.closest('details');
-    if(det && !det.open) det.open = true;
   }catch(_){ }
 }
 function eveningFinished(){
@@ -41151,11 +41179,27 @@ async function initApp(){
     if(sheet && !sheet._swipeWired){
       sheet._swipeWired = true;
       let startY=0, curY=0, dragging=false;
+      // The handle zone, and any scroller under the finger — BOTH, which is what the comment here
+      // always claimed and the code never did. The only guard was `sheet.scrollTop > 4`, which worked
+      // by accident while the sheet itself was the scroll container: once a person had scrolled at
+      // all, the dismiss-drag disarmed. v543 gave .comp-phase min-height:0 so the CONVERSATION scrolls
+      // instead — correct in itself, but it pinned the sheet's own scrollTop at 0 forever, so every
+      // touch anywhere in the sheet armed a dismiss. Swiping down to scroll back and re-read what the
+      // companion just said closed it instead, mid-craving. Two conditions now, neither relying on
+      // which element happens to own the scrollbar.
+      const HANDLE_ZONE = 64;                       // the grab handle and the space around it
       sheet.addEventListener('touchstart', (e)=>{
-        // Only start a dismiss-drag from near the top of the sheet (the handle zone) AND when the
-        // sheet is scrolled to the top — so it never fights with scrolling the content.
+        const t = e.touches[0];
+        const top = sheet.getBoundingClientRect().top;
+        if((t.clientY - top) > HANDLE_ZONE) return;   // started below the handle — that is a scroll
+        // and if anything under the finger can scroll and is not at its top, this is a scroll too
+        let n = e.target;
+        while(n && n !== sheet){
+          if(n.scrollHeight > n.clientHeight + 2 && n.scrollTop > 4) return;
+          n = n.parentElement;
+        }
         if(sheet.scrollTop > 4) return;
-        startY = e.touches[0].clientY; curY = startY; dragging = true;
+        startY = t.clientY; curY = startY; dragging = true;
         sheet.style.transition = 'none';
       }, {passive:true});
       sheet.addEventListener('touchmove', (e)=>{

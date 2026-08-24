@@ -310,6 +310,139 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── what the FIXES broke, and the halves they missed ───────────────────────────────────────
+  // A second adversarial review, this time of v542/v543 themselves. Every item below is a fix that
+  // caused new harm or only covered the case that was reported. Fixes are where bugs come from.
+  {
+    // 1. The dismiss-drag. v543 gave .comp-phase min-height:0 so the conversation scrolls — correct,
+    //    but the swipe-to-dismiss guard was only `if(sheet.scrollTop > 4) return;`, which had worked
+    //    by accident while the SHEET owned the scrollbar. With the sheet pinned at scrollTop 0
+    //    forever, every touch armed a dismiss: swiping down to re-read what the companion just said
+    //    closed it, mid-craving. The handle must dismiss; the conversation must scroll.
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 }, hasTouch:true, isMobile:true });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name','Sam'); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2600);
+    const prep = async () => page.evaluate(async () => {
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+      openCompanion(); await new Promise(x=>setTimeout(x,600));
+      const conv = document.getElementById('comp-conversation');
+      if(!conv) return null;
+      const ph = conv.closest('.comp-phase');
+      if(ph && typeof _compPhase === 'function') _compPhase(ph.id);
+      await new Promise(x=>setTimeout(x,300));
+      conv.innerHTML = '';
+      for(let i=0;i<12;i++){ const d=document.createElement('div');
+        d.style.cssText='padding:14px;margin:6px 0'; d.textContent='message '+i; conv.appendChild(d); }
+      await new Promise(x=>setTimeout(x,250));
+      const sheet = document.getElementById('companion-overlay');
+      return { sheetTop: Math.round(sheet.getBoundingClientRect().top),
+               convTop: Math.round(conv.getBoundingClientRect().top) };
+    });
+    const swipeFrom = async (y) => {
+      const cdp = await ctx.newCDPSession(page);
+      await cdp.send('Input.dispatchTouchEvent', { type:'touchStart', touchPoints:[{x:207,y}] });
+      for(let dy=20; dy<=150; dy+=30)
+        await cdp.send('Input.dispatchTouchEvent', { type:'touchMove', touchPoints:[{x:207,y:y+dy}] });
+      await cdp.send('Input.dispatchTouchEvent', { type:'touchEnd', touchPoints:[] });
+      await page.waitForTimeout(500);
+      await cdp.detach();
+      return page.evaluate(() => { const s=document.getElementById('companion-overlay');
+        return s.classList.contains('open') && getComputedStyle(s).display !== 'none'; });
+    };
+    const geo = await prep();
+    if (!geo) findings.push('companion: no #comp-conversation to test the dismiss guard against');
+    else {
+      const afterConv = await swipeFrom(geo.convTop + 120);
+      if (!afterConv) findings.push('companion: swiping down inside the conversation DISMISSES it — that is the gesture for scrolling back to re-read, and it closes the sheet mid-craving');
+      await prep();
+      const afterHandle = await swipeFrom(geo.sheetTop + 20);
+      if (afterHandle) findings.push('companion: swiping down from the grab handle no longer dismisses — the gesture is gone entirely');
+      if (afterConv && !afterHandle) console.log('companion: the handle dismisses, the conversation scrolls');
+    }
+    await ctx.close();
+  }
+
+  {
+    // 2. The rest, in one person: an apostrophe in the vice name (double-escaped), a moderated vice
+    //    with a purchase cost model (paid out anyway), and weigh-ins three months apart ("over the
+    //    week"). The persona carries an apostrophe on purpose — this repo has been burned by one
+    //    before, and the earlier test used "Porn", which has nothing to escape.
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      const d=i=>new Date(Date.now()-i*864e5).toISOString();
+      s('totry_onboarded',true); s('totry_name','Sam');
+      s('totry_v',[{ n:"Mum's wine", mode:'quit', startDate:d(40) },
+                   { n:'Weed', mode:'moderate', startDate:d(2), costAmount:200, costPer:'purchase', lastsDays:30, lastPurchase:d(90) }]);
+      s('totry_vice_uses',[{ v:"Mum's wine", ts:d(80) },{ v:"Mum's wine", ts:d(59) },{ v:"Mum's wine", ts:d(40) }]);
+      s('totry_fight_log',[{ vice:"Mum's wine", won:true, ts:d(1) }]);
+      s('totry_body',[{ date:d(96).slice(0,10), weight:89.4, ts:d(96) },{ date:d(0).slice(0,10), weight:82.4, ts:d(0) }]);
+      s('totry_workouts',[{ id:1, ts:d(0), date:d(0).slice(0,10), title:'Push', volume:8000, sets:16, calories:400 }]);
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const r = await page.evaluate(async () => {
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+      go('fight'); await new Promise(x=>setTimeout(x,900));
+      const fight = (document.getElementById('fight-evidence').innerText||'').replace(/\s+/g,' ').trim();
+      go('grow'); await new Promise(x=>setTimeout(x,900));
+      const track = (document.getElementById('hand-track').textContent||'').trim();
+      return { fight, track, reclaimed: (typeof totalReclaimed==='function') ? totalReclaimed() : null };
+    });
+    if (/&#\d+;|&amp;|&quot;|&lt;/.test(r.fight))
+      findings.push(`escaping: the vice name is encoded twice — the person reads "${r.fight.slice(0,58)}"`);
+    if (r.reclaimed > 0)
+      findings.push(`reclaimed: ${r.reclaimed} credited while the only vice with a cost model is one they are MODERATING, not stopping`);
+    if (/over the week/i.test(r.track))
+      findings.push(`span: weigh-ins three months apart reported as "over the week" — "${r.track.slice(0,58)}"`);
+    if (!findings.some(f => f.startsWith('escaping') || f.startsWith('reclaimed') || f.startsWith('span')))
+      console.log("fixes: an apostrophe survives, a moderated vice earns nothing, and a 96-day span is not \u201cthe week\u201d");
+    await ctx.close();
+  }
+
+  {
+    // 3. The EVENING half of the stepper restore. v542 fixed both panels and asserted only the
+    //    morning — the review's own finding. Same trap: finish it, come back, and the panel is
+    //    stepped with the stepper hidden and everything written unreachable.
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name','Sam');
+      s('totry_start', new Date(Date.now()-40*864e5).toISOString());
+      s('totry_examens',[{ ts:new Date().toISOString() }]); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const r = await page.evaluate(async () => {
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+      go('reflect'); await new Promise(x=>setTimeout(x,1100));
+      eveningStep(1); await new Promise(x=>setTimeout(x,200));
+      const w = document.getElementById('evening-win');
+      if(w){ w.value='I held the line and called my brother'; w.dispatchEvent(new Event('input',{bubbles:true})); }
+      if(typeof completeEvening === 'function') await completeEvening();
+      await new Promise(x=>setTimeout(x,900));
+      document.querySelectorAll('.modal-bg.open:not([id])').forEach(e=>e.remove());
+      go('home');    await new Promise(x=>setTimeout(x,600));
+      go('reflect'); await new Promise(x=>setTimeout(x,1200));
+      const panel = document.getElementById('reflect-panel-evening');
+      const h = el => el ? Math.round(el.getBoundingClientRect().height) : 0;
+      eveningStep(1); await new Promise(x=>setTimeout(x,250));
+      const win = document.getElementById('evening-win');
+      return { stepped: panel.classList.contains('stepped'),
+               nav: h(panel.querySelector('.mstep-nav')),
+               winReachable: !!(win && win.getBoundingClientRect().height > 0),
+               winValue: win ? win.value : '' };
+    });
+    if (r.stepped && r.nav === 0)
+      findings.push('evening: coming back after completing it leaves the panel stepped with the stepper HIDDEN — what they wrote is saved and unreachable');
+    else if (!r.winReachable)
+      findings.push('evening: on a second visit their own win field cannot be reached');
+    else console.log(`evening: a finished ritual re-opens usable — stepper back (${r.nav}px), "${r.winValue.slice(0,26)}" still editable`);
+    await ctx.close();
+  }
+
   // ── the companion's newest words must be on the screen ─────────────────────────────────────
   // Pre-existing, and the highest-stakes of the lot. .comp-conversation has flex:1 + overflow-y:auto,
   // but its parent .comp-phase defaulted to min-height:auto, which refuses to shrink below its

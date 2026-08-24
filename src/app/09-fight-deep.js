@@ -1274,15 +1274,11 @@ function fightEvidenceLine(){
     // cost model, including ones in watch or moderate mode — where viceCleanDays deliberately returns
     // 0 because there is no abstinence to count. So this line could tell someone they had "reclaimed"
     // money from a habit they used twice this week, under a heading that says how they are WINNING.
+    // No gate needed here any more: viceSpendPicture() refuses a non-abstinence vice at the source,
+    // so totalReclaimed() cannot include one. The v543 gate asked "is ANY vice abstinence?", which
+    // opened the whole sum the moment one qualified — including money from the ones that did not.
     let reclaimed = 0;
-    try{
-      if(typeof totalReclaimed === 'function'){
-        loadV();
-        const anyAbstaining = (vices||[]).some(v =>
-          typeof viceIsAbstinence !== 'function' || viceIsAbstinence(v));
-        if(anyAbstaining) reclaimed = totalReclaimed() || 0;
-      }
-    }catch(_){ }
+    try{ if(typeof totalReclaimed === 'function') reclaimed = totalReclaimed() || 0; }catch(_){ }
     // curSym(), with no ASCII fallback: a hardcoded $ is the currency bug this repo already has a
     // test for, and showing a GBP user dollars is worse than showing them nothing.
     if(reclaimed > 0) bits.push(curSym() + Math.round(reclaimed).toLocaleString() + ' reclaimed');
@@ -1331,7 +1327,11 @@ function fightEvidenceLine(){
         if(!best || current > best.current) best = { name: v.n, current: current, prev: prevBest };
       });
       if(best){
-        bits.push(_escFew(best.name) + ': your longest run yet \u2014 past ' + best.prev + ' days');
+        // NOT _escFew here: renderFightEvidence escapes every bit before it writes innerHTML, so
+        // escaping the name as well double-encoded it — "Mum's wine" reached the screen as
+        // MUM&#39;S WINE, in capitals, on the headline evidence line. bits are plain text; the one
+        // renderer owns the escaping.
+        bits.push(best.name + ': your longest run yet \u2014 past ' + best.prev + ' days');
       }
     }catch(_){ }
   }catch(_){ }
@@ -1396,6 +1396,13 @@ function viceSpendPicture(v){
   const owed = Math.max(0, parseFloat(v.owed)||0);
   if(amt<=0 && owed<=0) return null;
   const days = viceCleanDays(v);
+  // NOTHING IS RECLAIMED FROM A FIGHT THAT IS NOT ABSTINENCE. viceCleanDays already returns 0 for
+  // watch and moderate modes, which zeroes the day / week / use models because they all multiply by
+  // it — but the 'purchase' model below derives its own `since` from v.lastPurchase and never looks
+  // at days at all. So a vice the person is deliberately moderating still "reclaimed" the full
+  // purchase figure, and it surfaced under a heading about how they are WINNING, and on the Money
+  // tab as money staying clean had put back. Gating at the source fixes both, and any future caller.
+  if(typeof viceIsAbstinence === 'function' && !viceIsAbstinence(v)) return null;
   let avoided = 0;
   const per = v.costPer || 'week';
   if(per === 'purchase'){

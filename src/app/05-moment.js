@@ -584,7 +584,12 @@ const _TOOLKIT = [
     pracBtn:'I found it',
     ev:'Urge surfing is a core piece of Mindfulness-Based Relapse Prevention, which in head-to-head trials does about as well as standard relapse prevention, with some advantage on heavy-use days at longer follow-up. Real, and modest. The \u201curges pass in 15\u201330 minutes\u201d line you hear everywhere is a clinical rule of thumb, not a measured law \u2014 yours may be shorter or longer.',
     src:'Paraphrased from Marlatt & Gordon\u2019s relapse-prevention work and Mindfulness-Based Relapse Prevention (Bowen, Chawla, Witkiewitz). The rebound point is Wegner\u2019s thought-suppression research.',
-    live:'Breathe one through now', act:"openBreath('settle',{reason:'lesson'})" },
+    // No reason: this is the TOOLKIT, and its own practice text says "while nothing is happening".
+    // A reason turns on the 0-10 "how strong is it right now?" scale, which belongs to the urge path
+    // where a before and after is what proves the breathing worked. Asking it of someone practising
+    // in the calm answers a question they do not have — the same slip fixed in soulBeStill. The other
+    // reason-carrying calls (letgo, and the HALT angry/tired ones) ARE in the moment and keep theirs.
+    live:'Breathe one through now', act:"openBreath('settle')" },
 
   { id:'defuse', ic:'\u26C5', t:'Thoughts as weather', st:'Getting half a step back from what your mind says',
     idea:[

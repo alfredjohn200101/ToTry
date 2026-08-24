@@ -3781,14 +3781,23 @@ function renderGrowHandoffs(){
     const days = {};
     Object.keys(log).forEach(k => (log[k]||[]).forEach(e => {
       if(!e || !e.ts || !inWeek(e.ts)) return;
-      const d = days[k] = days[k] || { cal:0, pro:0 };
+      const d = days[k] = days[k] || { cal:0, pro:0, t:0 };
       d.cal += Number(e.cal)||0; d.pro += Number(e.pro)||0;
+      const t = new Date(e.ts).getTime();
+      if(!isNaN(t) && t > d.t) d.t = t;                // newest entry stamps the day, for the sort above
     }));
     // Cap at 7. The keys are en-AU date strings and the window is a rolling 168 hours, so a person
     // who logs late one night and early the next morning can have EIGHT distinct day-keys inside it —
     // and the app told a consistent logger "8 of 7 days fuelled", which is the kind of sentence that
     // makes someone stop believing every other number on the screen.
-    const logged = Object.keys(days).filter(k => days[k].cal > 0).slice(0, 7);
+    // Cap at 7, but keep the SEVEN MOST RECENT. A rolling 168-hour window can hold eight en-AU day
+    // keys, so the count had to be capped — but slice(0,7) takes them in object insertion order,
+    // which dropped whichever key was inserted last. That was usually TODAY: the protein average
+    // silently excluded the food the person had just logged, which is the one number they came to
+    // check. Sort by the day's own timestamp and keep the newest seven.
+    const logged = Object.keys(days).filter(k => days[k].cal > 0)
+      .sort((a, b) => (days[b].t || 0) - (days[a].t || 0))
+      .slice(0, 7);
     let nourishLine = '';
     if(logged.length){
       const avgPro = Math.round(logged.reduce((a,k) => a + days[k].pro, 0) / logged.length);
@@ -3822,7 +3831,12 @@ function renderGrowHandoffs(){
       if(spanDays < 2){
         trackLine = 'Two weigh-ins, hours apart \u2014 give it a few days before it means anything';
       } else {
-        const span = spanDays >= 6 ? 'over the week' : 'over ' + spanDays + ' days';
+        // I fixed the SHORT side and left the long one: >= 6 days meant "over the week" whether the
+        // gap was seven days or ninety-six. Telling someone their three months of work happened "over
+        // the week" is the same error in the other direction, and it makes the number meaningless.
+        const span = spanDays <= 8 ? 'over the week'
+                   : spanDays <= 45 ? 'over ' + Math.round(spanDays / 7) + ' weeks'
+                   : 'over ' + Math.round(spanDays / 30) + ' months';
         trackLine = diff === 0 ? 'Holding steady ' + span + ' \u2014 that is what the fuel did'
                                : unit + ' ' + span + ' \u2014 that is what the training and the fuel did';
       }
