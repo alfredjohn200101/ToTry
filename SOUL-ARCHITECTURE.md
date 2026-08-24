@@ -122,7 +122,10 @@ Today · Soul · Grow · Money · Settings — bottom bar, thumb-reachable. Ever
 - **Feeling:** reverent, rooted, never preachy. The app points beyond itself here.
 - **Connects:** the verse on home comes from here. The "why" is referenced by the companion + coach.
   Liturgy roots the day in something bigger than the self.
-- **TODO:** make Soul feel like the still center, not a tab of religious features.
+- **DONE (v538):** it opens with the still centre — one word for today from the person'''s own
+  tradition and one thing to do with it (be still for a minute) — above the four grids of features.
+  A secular person is offered the stillness and no scripture at all: "One minute of stillness.
+  Nothing to believe, nothing to say — just your breath, and the room."
 
 ### MONEY — *stewardship, not spreadsheets*
 - **Purpose:** money as discipline and stewardship — including the vice→reclaimed pipe (money not

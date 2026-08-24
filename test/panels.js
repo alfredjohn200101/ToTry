@@ -310,6 +310,61 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── Soul opens with stillness, not a menu ──────────────────────────────────────────────────
+  // SOUL-ARCHITECTURE, SOUL: "make Soul feel like the still center, not a tab of religious features."
+  // It opened as four labelled grids, which is a menu, and a menu is the opposite of stillness.
+  //
+  // The assertion that matters is the last one. "Faith is full but never forced" — a secular person
+  // must be offered the stillness and NO scripture, because slipping religious content in unasked is
+  // the one thing this app promises not to do. And each tradition must get a line from its OWN book,
+  // not a Christian line with the nouns swapped.
+  {
+    const want = [
+      { tr:'christianity', scripture:true },
+      { tr:'islam',        scripture:true },
+      { tr:'buddhism',     scripture:true },
+      { tr:'secular',      scripture:false },
+    ];
+    const seen = {};
+    for (const w of want) {
+      const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+      const page = await ctx.newPage();
+      await page.addInitScript(t => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+        s('totry_onboarded',true); s('totry_name','Sam'); s('totry_faith_tradition',t); }, w.tr);
+      await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+      await page.waitForTimeout(2600);
+      const r = await page.evaluate(async () => {
+        document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+        go('soul');
+        await new Promise(x=>setTimeout(x,900));
+        const el = document.getElementById('soul-still');
+        if(!el) return null;
+        const pane = document.getElementById('tab-soul');
+        const visible = [...pane.children].filter(e => getComputedStyle(e).display !== 'none');
+        const grids = visible.filter(e => e.classList.contains('hub-grid') || e.classList.contains('hub-common-grid'));
+        return { pos: visible.indexOf(el),
+                 beforeGrids: grids.length ? visible.indexOf(el) < visible.indexOf(grids[0]) : true,
+                 text:(el.innerText||'').replace(/\s+/g,' ').trim(),
+                 hasAction: !!el.querySelector('button') };
+      });
+      if (!r) { findings.push('soul: #soul-still is not in the markup'); await ctx.close(); continue; }
+      seen[w.tr] = r.text;
+      if (!r.beforeGrids) findings.push(`soul (${w.tr}): the still centre sits after the menu of features`);
+      else if (!r.hasAction) findings.push(`soul (${w.tr}): a line with nothing to do about it`);
+      else if (w.scripture && !/A WORD FOR TODAY/i.test(r.text))
+        findings.push(`soul (${w.tr}): no word from their own tradition — "${r.text.slice(0,50)}"`);
+      else if (!w.scripture && /A WORD FOR TODAY/i.test(r.text))
+        findings.push(`soul (secular): handed scripture unasked — "${r.text.slice(0,60)}" — faith is full but never forced`);
+      await ctx.close();
+    }
+    // and the traditions must not be reading each other's book
+    const lines = ['christianity','islam','buddhism'].map(t => seen[t]).filter(Boolean);
+    if (lines.length === 3 && new Set(lines).size < 3)
+      findings.push('soul: two traditions are being shown the same line');
+    if (!findings.some(f => f.startsWith('soul'))) console.log('soul: opens with stillness before the menu — each tradition its own word, and none for a secular person');
+    await Promise.resolve();
+  }
+
   // ── the evening asks one honest question at a time ─────────────────────────────────────────
   // SOUL-ARCHITECTURE, EVENING: "dusk skin, one honest question at a time, grace-first framing." It
   // ran to 27 blocks in one scroll. Looking back over a hard day is not something a person does well

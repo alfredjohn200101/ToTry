@@ -1,3 +1,4 @@
+
     // saint (e.g. "Bridget of Sweden" titled, but the bio is St. Elizabeth's). A wrong saint bio quietly
     // corrodes trust in the whole faith side \u2014 so when the description's SUBJECT saint isn't the one
     // named, we keep the reliable name and drop the mismatched quote+bio rather than show something false.
@@ -28,6 +29,44 @@
   box.innerHTML = html;
 }
 // Fetch & show today's actual Gospel passage text inline, using the Bible API already wired in.
+// ── THE STILL CENTRE ──
+// SOUL-ARCHITECTURE, SOUL: "make Soul feel like the still center, not a tab of religious features."
+// It opened as four labelled grids — Morning/Evening, Bible/stillness, shared threads, your day —
+// which is a menu, and a menu is the opposite of stillness. This puts one line and one thing to do
+// with it above all of that.
+//
+// Faith is full but never forced, so this reads differently depending on who is holding the phone:
+// _faithLine() returns a line from the person's OWN tradition and returns nothing at all for someone
+// secular or with scripture turned down. Stillness is offered to everyone either way, because
+// breathing needs no belief — and that is stated plainly rather than implied.
+function renderSoulStill(){
+  const el = document.getElementById('soul-still');
+  if(!el) return;
+  let line = '';
+  try{ if(typeof _faithLine === 'function') line = _faithLine('') || ''; }catch(_){ }
+
+  const F = (typeof activeFaith === 'function') ? activeFaith() : null;
+  const eyebrow = line ? 'A word for today' : 'Before anything else';
+  const body = line
+    ? _escFew(line)
+    : 'One minute of stillness. Nothing to believe, nothing to say \u2014 just your breath, and the room.';
+
+  el.style.display = 'block';
+  el.innerHTML =
+    '<div style="border:1px solid var(--bd);border-radius:16px;padding:20px 18px;margin-bottom:18px;' +
+      'background:var(--bg2)">' +
+      '<div class="eyebrow" style="color:var(--go);margin-bottom:9px">' + _escFew(eyebrow) + '</div>' +
+      '<div style="font-family:Cormorant Garamond,serif;font-size:' + (line ? '21px' : '19px') + ';' +
+        'color:var(--tx);line-height:1.45;margin-bottom:16px">' + body + '</div>' +
+      '<button class="btn" onclick="soulBeStill()" style="width:100%;background:var(--bg3);' +
+        'border:1px solid var(--go-bd);color:var(--go)">Be still for a minute</button>' +
+    '</div>';
+}
+function soulBeStill(){
+  if(typeof openBreath === 'function') openBreath('settle', { reason:'stillness' });
+  else if(typeof openBreathMenu === 'function') openBreathMenu();
+}
+
 async function readTodaysGospel(){
   const box = document.getElementById('liturgy-gospel-text');
   const ref = window.__todayGospelRef;

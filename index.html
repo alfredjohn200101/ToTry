@@ -1642,6 +1642,12 @@ input:focus,textarea:focus,select:focus{
     <h2 style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.2;margin-bottom:2px">Soul</h2>
     <p id="soul-intro" style="font-size:12.5px;color:var(--tx3);line-height:1.6">The root beneath everything else. The body, the money, the fight — they all grow from here, or they don't last. This is where the app points past itself: to Christ, to the sacraments, to the people who love you. Stay grounded here, and the rest holds.</p>
   </div>
+  <!-- SOUL-ARCHITECTURE, SOUL: "make Soul feel like the still center, not a tab of religious
+       features." It opened as four labelled grids — a menu. The still centre goes first: one line for
+       today, and one thing to do with it, before anything asks to be navigated. Written by
+       renderSoulStill(); empty and hidden when there is nothing honest to put in it. -->
+  <div id="soul-still" style="display:none"></div>
+
   <!-- The one, quiet offer of a tradition. Shown ONLY to someone who has never chosen one, only after a
        week of real use, and never again once dismissed or acted on. It states plainly that nothing here
        needs belief — because that is true — and leaves the door visible rather than pushing anyone
@@ -5032,7 +5038,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v537';
+const APP_VERSION = 'v538';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -11740,7 +11746,7 @@ function go(name){
   if(name==='calendar' && typeof renderCalendar==='function'){renderCalendar();}
   
   if(name==='morning'){initMorningTab();showMorningAffirm();showMorningFocus();if(typeof renderMorningFlow==='function')setTimeout(renderMorningFlow,60);if(typeof _restoreMorningSleep==='function')_restoreMorningSleep();}
-  if(name==='soul'){ if(typeof applyFaithLabels==='function') applyFaithLabels(); if(typeof highlightSoulByTime==='function') highlightSoulByTime(); if(typeof renderFaithDoor==='function') renderFaithDoor(); }
+  if(name==='soul'){ if(typeof renderSoulStill==='function') renderSoulStill(); if(typeof applyFaithLabels==='function') applyFaithLabels(); if(typeof highlightSoulByTime==='function') highlightSoulByTime(); if(typeof renderFaithDoor==='function') renderFaithDoor(); }
   if(name==='reflect'){initEveningTab();initReviewTab();if(typeof renderEveningFlow==='function')setTimeout(renderEveningFlow,60);}
   
   if(name==='nourish'){renderNutritionLog();if(typeof prefillNutGoals==='function')prefillNutGoals();if(typeof renderFuelPlanCard==='function')renderFuelPlanCard();}
@@ -37551,6 +37557,7 @@ async function renderLiturgy(){
   if(d.celebration){
     const c = d.celebration;
     // The free calendar API sometimes pairs a correct feast NAME with a quote/bio for a DIFFERENT
+
     // saint (e.g. "Bridget of Sweden" titled, but the bio is St. Elizabeth's). A wrong saint bio quietly
     // corrodes trust in the whole faith side \u2014 so when the description's SUBJECT saint isn't the one
     // named, we keep the reliable name and drop the mismatched quote+bio rather than show something false.
@@ -37581,6 +37588,44 @@ async function renderLiturgy(){
   box.innerHTML = html;
 }
 // Fetch & show today's actual Gospel passage text inline, using the Bible API already wired in.
+// ── THE STILL CENTRE ──
+// SOUL-ARCHITECTURE, SOUL: "make Soul feel like the still center, not a tab of religious features."
+// It opened as four labelled grids — Morning/Evening, Bible/stillness, shared threads, your day —
+// which is a menu, and a menu is the opposite of stillness. This puts one line and one thing to do
+// with it above all of that.
+//
+// Faith is full but never forced, so this reads differently depending on who is holding the phone:
+// _faithLine() returns a line from the person's OWN tradition and returns nothing at all for someone
+// secular or with scripture turned down. Stillness is offered to everyone either way, because
+// breathing needs no belief — and that is stated plainly rather than implied.
+function renderSoulStill(){
+  const el = document.getElementById('soul-still');
+  if(!el) return;
+  let line = '';
+  try{ if(typeof _faithLine === 'function') line = _faithLine('') || ''; }catch(_){ }
+
+  const F = (typeof activeFaith === 'function') ? activeFaith() : null;
+  const eyebrow = line ? 'A word for today' : 'Before anything else';
+  const body = line
+    ? _escFew(line)
+    : 'One minute of stillness. Nothing to believe, nothing to say \u2014 just your breath, and the room.';
+
+  el.style.display = 'block';
+  el.innerHTML =
+    '<div style="border:1px solid var(--bd);border-radius:16px;padding:20px 18px;margin-bottom:18px;' +
+      'background:var(--bg2)">' +
+      '<div class="eyebrow" style="color:var(--go);margin-bottom:9px">' + _escFew(eyebrow) + '</div>' +
+      '<div style="font-family:Cormorant Garamond,serif;font-size:' + (line ? '21px' : '19px') + ';' +
+        'color:var(--tx);line-height:1.45;margin-bottom:16px">' + body + '</div>' +
+      '<button class="btn" onclick="soulBeStill()" style="width:100%;background:var(--bg3);' +
+        'border:1px solid var(--go-bd);color:var(--go)">Be still for a minute</button>' +
+    '</div>';
+}
+function soulBeStill(){
+  if(typeof openBreath === 'function') openBreath('settle', { reason:'stillness' });
+  else if(typeof openBreathMenu === 'function') openBreathMenu();
+}
+
 async function readTodaysGospel(){
   const box = document.getElementById('liturgy-gospel-text');
   const ref = window.__todayGospelRef;
