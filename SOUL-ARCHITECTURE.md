@@ -147,7 +147,15 @@ Today · Soul · Grow · Money · Settings — bottom bar, thumb-reachable. Ever
 ### CALENDAR — *the week with meaning*
 - **Purpose:** the rhythm of the days, not just appointments.
 - **Serves:** the winning man, building rhythm. Wake/bed times drive the day's flow.
-- **TODO:** earn its place or fold into Today. Question first.
+- **ANSWERED (v540):** it has earned its place, and the fold that mattered already happened. The
+  VIEW is in Today — `renderHomeCalendarCard()` puts today's events on Home ("Today's schedule ·
+  09:00 Work · 18:30 Gym"), one tap inside the depth fold, and `openSoulToday()` weaves them into the
+  day. The Calendar screen is only the EDITOR — paste a roster, add with AI — and it is not a
+  top-level tab. Folding the editor in too would put an AI roster-paster inside the one screen that
+  has to stay calm. `npm run panels` now guards the thread: if Home ever stops reading calendar
+  events, the Calendar becomes the island this question was worried about, and nothing else would
+  fail. **Still yours if you disagree** — the remaining call is whether the editor should exist at
+  all, and that is a taste question, not a code one.
 
 ### SETTINGS — *quiet utility*
 - **Purpose:** the controls. Doesn't need soul-theater, needs clarity and calm.

@@ -310,6 +310,55 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── the Calendar's day reaches Today ───────────────────────────────────────────────────────
+  // SOUL-ARCHITECTURE, CALENDAR: "earn its place or fold into Today. Question first." The answer is
+  // in the code rather than in taste: the VIEW is already folded in. Today's events appear on Home
+  // once someone is established, and in Soul's "your day, woven"; the Calendar screen is only the
+  // editor — paste a roster, add with AI — and it is not a top-level tab.
+  //
+  // Which means this thread is what the answer rests on. If Home ever stopped reading calendar
+  // events, the Calendar would quietly become the isolated feature the TODO was worried about, and
+  // nothing would fail.
+  //
+  // Two things this has to get right or it lies. The card is gated behind progressive disclosure at
+  // day 5, so a brand-new person legitimately does not see it and testing one proves nothing. And it
+  // lives inside #home-depth-body, which is COLLAPSED by default to keep the first screen calm — so
+  // the honest claim is "one tap away and populated", not "visible on arrival". Checking display
+  // alone passed while the card had zero height inside a closed parent; checking height without
+  // opening the fold failed on a card that was perfectly fine.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name','Sam');
+      s('totry_start', new Date(Date.now() - 30*864e5).toISOString());   // established, past the gate
+      const dow = (new Date().getDay()+6)%7;
+      s('totry_cal_events',[{ day:dow, start:'09:00', end:'17:00', title:'Work', type:'work' },
+                            { day:dow, start:'18:30', title:'Gym — push day', type:'gym' }]);
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2800);
+    const r = await page.evaluate(async () => {
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+      go('home');
+      await new Promise(x=>setTimeout(x,1000));
+      const card = document.getElementById('home-calendar-card');
+      const before = !!(card && card.getBoundingClientRect().height > 0);
+      // open the depth fold, the way a person does
+      if (typeof toggleHomeDepth === 'function' && !before) toggleHomeDepth();
+      await new Promise(x=>setTimeout(x,400));
+      const shown = !!(card && getComputedStyle(card).display !== 'none' && card.getBoundingClientRect().height > 0);
+      return { days:(typeof daysInstalled==='function') ? daysInstalled() : null,
+               shown, oneTap: !before && shown,
+               text: card ? (card.innerText||'').replace(/\s+/g,' ').trim() : '' };
+    });
+    if (!r.shown) findings.push("calendar: today's schedule never reaches Today — the Calendar is an island");
+    else if (!/Work/.test(r.text) || !/Gym/.test(r.text))
+      findings.push(`calendar: the Home card is there but not showing today's events — "${r.text.slice(0,60)}"`);
+    else console.log(`calendar: today's events reach Today${r.oneTap ? ' (one tap, inside the depth fold)' : ''} — the view is folded in, the screen is just the editor`);
+    await ctx.close();
+  }
+
   // ── Money leads with what staying clean bought, not what is owed ───────────────────────────
   // SOUL-ARCHITECTURE, MONEY: "lead with the reclaimed/stewardship story, not raw debt tables." The
   // code already carried a comment saying exactly that — and then did mg.after(sh), placing the
