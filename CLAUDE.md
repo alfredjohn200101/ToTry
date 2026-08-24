@@ -122,7 +122,22 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    weight or a distance, go through those; a hardcoded `+'kg'` is how a lb user ends up reading
    someone else's body. Lifted load is deliberately still kg, and the timezone select is a deliberate
    no-op that says so in its own copy — do not "fix" either silently.
-6. **Then:** the deeper secondary panels, the "reach out first" scheduled nudges (post-wrapper).
+6. **SOUL-ARCHITECTURE.md has no TODOs left (v533–v540).** All eight are built and each is guarded by
+   `npm run panels`, so the soul of a screen can no longer drift quietly:
+   - GROW hands off card to card — "3 sessions, about 1,260 cal earned → fuel it" → "5 of 7 days
+     fuelled → see what it did" → "-0.8kg — that is what the training and the fuel did"
+   - THE COMPANION is a sheet, not a takeover: 549px for a short question with 347px of app behind it
+   - THE FIGHT leads with what has been WON, and withholds "your longest run yet" from someone who
+     has not actually beaten their previous run
+   - MORNING is five steps under a dawn skin instead of 1913px of form; EVENING is seven under a dusk
+     skin, grace-first, examen last
+   - SOUL opens with stillness — a word from the person's own tradition, and none at all for someone
+     secular
+   - MONEY leads with what staying clean bought, once there is something to lead with
+   - CALENDAR was a question, and the code answered it: the view is already in Today, the screen is
+     only the editor
+7. **Then:** the "reach out first" scheduled nudges (post-wrapper), and whatever the App Store
+   feedback turns up.
 
 ## Files in this handoff
 - `index.html`, `sw.js` — the app.
