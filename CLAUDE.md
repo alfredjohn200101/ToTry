@@ -75,14 +75,19 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    - `npm run personas` — 551 assertions, 10 people incl. one built entirely from data that has
      really broken this app (apostrophes, GBP, a completed goal ahead of the live one)
    - `npm run panels` — the widest net in the gate, and the one that finds what code-reading cannot.
-     19 sub-panels × 3 people, a tap-target floor, the sheet-dialog a11y floor, an accessible NAME on
-     all 341 controls, the live SOS (the setting shapes the move; their own why is on screen), all
-     seven Feeling Door paths clicked through to where they LAND, the app booting with the network
-     CUT, every front reaching `getLifeState().brief`, the same body/run entered in both kg/lb and
-     km/mi, ten deletes each removing exactly the item that was tapped, a backup exported → device
-     wiped → restored with no session token in the file, a two-device merge asserted in the CLOUD row
-     rather than locally, a full device saying "Storage full" instead of "Saved", and the companion
-     still helping with every AI provider throwing
+     **It now takes well over ten minutes.** Run it in the background and wait on the output rather
+     than in a foreground call, or it will be killed mid-run and you will read a truncated pass:
+     `(npm run panels > /tmp/panels.out 2>&1; echo DONE >> /tmp/panels.out) &` then poll for DONE.
+     It covers, in one browser each: 19 sub-panels x 3 people; a 24pt tap-target floor; the
+     sheet-dialog a11y floor and an accessible NAME on every control; the live SOS; all seven Feeling
+     Door paths clicked through to where they LAND; the app booting with the network CUT; every front
+     reaching `getLifeState().brief`; the same body and run entered in kg/lb and km/mi; ten deletes
+     each removing exactly the item tapped; a backup exported, the device wiped, restored, with no
+     session token in the file; a two-device merge asserted in the CLOUD row; a full device saying
+     "Storage full" instead of "Saved"; the companion still helping with every AI provider throwing;
+     all five traditions running their own reading plan; the morning and evening rituals stepped,
+     completed, and RE-ENTERED; the companion's dismiss gesture (handle dismisses, conversation
+     scrolls); and one person walked through a whole day in a single session.
    - `npm run test:edge` — runs the Supabase functions locally with Deno stubbed (Node strips the TS)
    - `npm run preflight` — version/cache/bundle parity across source, www and the iOS build
    Add a test when you add core math, and FAULT-INJECT it: an assertion you have never seen fail is
@@ -91,6 +96,13 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    then `npm run build:index && npm run build:www && npx cap sync ios`. `npm run preflight` checks
    all of it — the repo has already sat four versions ahead of the iOS bundle without anyone seeing.
 4. **Quality over speed. Honest assessment** — never claim done when it isn't.
+   - **Read the whole gate BEFORE `git push`, not after.** v542 went out with `npm run panels` red
+     because the output was read after the push.
+   - **Review the FIXES, not only the original code.** Three adversarial rounds ran over v533–v544:
+     round 1 (the rebuild) found 11 defects, round 2 (the fixes for round 1) found 9 — and one of
+     those fixes had caused harm worse than the bug it repaired. A fix fails in four recognisable
+     ways: it covers only the reported case, it moves the bug, it is gated in the wrong place, or its
+     blast radius was never measured. Ask those four questions of every batch.
 5. **Hold the soul.** Before adding anything, ask: does this serve the person (what's next / what's
    wrong / what can they do better)? If it only reports, it isn't done. Removing can be intention.
 6. **Child safety, medical, crisis:** keep the bridge-to-real-help and crisis paths intact and
