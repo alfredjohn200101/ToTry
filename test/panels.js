@@ -1817,6 +1817,95 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── one person, one whole day, one session ─────────────────────────────────────────────────
+  // Everything else in this file tests a surface in isolation. This walks a single person through a
+  // day in ONE page session — morning ritual, lunch, the workout, an urge at 9:40pm, the Fight, the
+  // evening, and back to the morning afterwards — because the bugs that hurt most in this app have
+  // all been about state carrying badly ACROSS those moments, not within them.
+  //
+  // The last step is the one that matters: returning to the morning after finishing the evening must
+  // still show the words written at 7am. That is the lock-out (v542) holding over a real session
+  // rather than over a two-step probe.
+  //
+  // The vice name carries an apostrophe on purpose, and the slip history is real: 21 clean days
+  // against a previous best of 22, so "your longest run yet" must NOT appear. A test person whose
+  // data makes every line fire proves less than one whose data makes a line correctly stay silent.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    const dayErrs = [];
+    page.on('pageerror', e => dayErrs.push(String(e.message).slice(0,110)));
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      const d=i=>new Date(Date.now()-i*864e5).toISOString();
+      s('totry_onboarded',true); s('totry_name','Sam'); s('totry_start', d(40));
+      s('totry_v',[{ n:"Mum's wine", mode:'quit', startDate:d(21) }]);
+      s('totry_vice_uses',[{ v:"Mum's wine", ts:d(60) },{ v:"Mum's wine", ts:d(38) },{ v:"Mum's wine", ts:d(21) }]);
+      s('totry_f',{ d:[{ n:'Car loan', t:20000, p:6000 }], income:5200 });
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2800);
+    const day = await page.evaluate(async () => {
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+      const out = {};
+
+      go('morning'); await new Promise(x=>setTimeout(x,1100));
+      morningStep(3); await new Promise(x=>setTimeout(x,200));
+      const g=document.getElementById('morning-gratitude'), it=document.getElementById('morning-intention');
+      if(g){ g.value='slept through for once'; g.dispatchEvent(new Event('input',{bubbles:true})); }
+      if(it){ it.value='call Mum before it gets late'; it.dispatchEvent(new Event('input',{bubbles:true})); }
+      if(typeof completeMorning==='function') await completeMorning();
+      await new Promise(x=>setTimeout(x,900));
+      const mdone=document.getElementById('morning-done');
+      out.morningConfirmed = !!(mdone && mdone.getBoundingClientRect().height>0);
+
+      const au=new Date().toLocaleDateString('en-AU');
+      const log=ls('totry_nutlog')||{}; log[au]=[{ name:'Chicken and rice', cal:680, pro:52, ts:new Date().toISOString() }];
+      ls('totry_nutlog',log);
+      const iso=new Date().toISOString();
+      ls('totry_workouts',[{ id:1, ts:iso, date:iso.slice(0,10), title:'Push day', volume:8200, sets:16, calories:410 }]);
+
+      go('grow'); await new Promise(x=>setTimeout(x,900));
+      out.handoffs = ['hand-train','hand-nourish','hand-track']
+        .filter(id => { const e=document.getElementById(id); return e && e.classList.contains('on'); }).length;
+
+      openCompanion(); await new Promise(x=>setTimeout(x,700));
+      const ov=document.querySelector('.companion-overlay');
+      out.companionBehind = Math.round(window.innerHeight - ov.getBoundingClientRect().height);
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+
+      ls('totry_fight_log',[{ vice:"Mum's wine", won:true, ts:new Date(Date.now()-3600e3).toISOString() }]);
+      go('fight'); await new Promise(x=>setTimeout(x,900));
+      out.fight = (document.getElementById('fight-evidence').innerText||'').replace(/\s+/g,' ').trim();
+
+      go('reflect'); await new Promise(x=>setTimeout(x,1100));
+      eveningStep(1); await new Promise(x=>setTimeout(x,200));
+      const w=document.getElementById('evening-win');
+      if(w){ w.value='rang Mum, and stayed off the wine'; w.dispatchEvent(new Event('input',{bubbles:true})); }
+      if(typeof completeEvening==='function') await completeEvening();
+      await new Promise(x=>setTimeout(x,900));
+      document.querySelectorAll('.modal-bg.open:not([id])').forEach(e=>e.remove());
+
+      go('morning'); await new Promise(x=>setTimeout(x,1200));
+      const nav=document.getElementById('tab-morning').querySelector('.mstep-nav');
+      out.stepperBack = nav ? Math.round(nav.getBoundingClientRect().height) : 0;
+      morningStep(3); await new Promise(x=>setTimeout(x,220));
+      const g2=document.getElementById('morning-gratitude');
+      out.wordsKept = !!(g2 && g2.getBoundingClientRect().height>0 && /slept through/.test(g2.value||''));
+      return out;
+    });
+    await page.waitForTimeout(200);
+    if (!day.morningConfirmed) findings.push('a day: the morning saved and said nothing back');
+    else if (day.handoffs !== 3) findings.push(`a day: only ${day.handoffs} of 3 Grow handoffs appeared after a workout and a meal`);
+    else if (day.companionBehind < 150) findings.push(`a day: the companion covered all but ${day.companionBehind}px of the app`);
+    else if (!/1 URGE MET AND TURNED AWAY/i.test(day.fight)) findings.push(`a day: the Fight read "${day.fight.slice(0,54)}" after exactly one win`);
+    else if (/LONGEST RUN/i.test(day.fight)) findings.push(`a day: claimed a longest run at 21 days against a previous best of 22 — "${day.fight.slice(0,54)}"`);
+    else if (!day.stepperBack) findings.push('a day: coming back to the morning at the end of the day, the stepper is gone');
+    else if (!day.wordsKept) findings.push("a day: this morning's words are unreachable by the evening");
+    else if (dayErrs.length) findings.push(`a day: ${dayErrs.length} page error(s) across the day — ${dayErrs[0]}`);
+    else console.log("a day: morning → meal → workout → urge → Fight → evening → back, no errors, and this morning's words still there");
+    await ctx.close();
+  }
+
   await browser.close(); server.close();
 
   // The sacraments panel staying hidden for a secular person is the v427 gate working, not a finding.
