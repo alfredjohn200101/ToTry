@@ -289,6 +289,8 @@ function logLoss(whenISO){
     v.total=(v.total||0)+1;
     // GRACEFUL RELAPSE: preserve all progress, reset streak with compassion
     const cleanBeforeReset=viceCleanDays(v);
+    const _prevStart = v.startDate;                 // captured before the reset, for the undo below
+    const _prevLastLoss = v.lastLoss;
     v.cleanDaysTotal=(v.cleanDaysTotal||0)+cleanBeforeReset;
     v.relapseCount=(v.relapseCount||0)+1;
     if(!v.relapseHistory)v.relapseHistory=[];
@@ -312,7 +314,53 @@ function logLoss(whenISO){
       ls('totry_fight_log', fl.slice(0, 200));
     }catch(_){ }
     saveV();
-    
+
+    // A MIS-TAP MUST NOT COST SOMEONE THEIR STREAK. Logging a slip rewrites startDate, so a thumb
+    // that lands on "I gave in" by accident wipes a real streak with no way back — on the one number
+    // people screenshot. Everything needed to reverse it was already being recorded (the popped
+    // relapseHistory entry carries the streak length, and lastLoss carries the old anchor), so this
+    // is only ever a restore, never a guess. Offered for a few seconds the way every other
+    // destructive action in this app is, and it does NOT make the slip un-sayable: it undoes a
+    // mistake, and the person can log it again in one tap.
+    try{
+      const _snap = {
+        startDate: _prevStart, lastLoss: _prevLastLoss,
+        total: (v.total||1) - 1, relapseCount: Math.max(0, (v.relapseCount||1) - 1),
+        cleanDaysTotal: Math.max(0, (v.cleanDaysTotal||0) - cleanBeforeReset),
+        histLen: Math.max(0, (v.relapseHistory||[]).length - 1),
+        ts: whenStr, name: v.n
+      };
+      if(typeof showUndo === 'function'){
+        showUndo('Logged. That took honesty.', function(){
+          loadV();
+          const vv = (vices||[]).find(x => x && x.n === _snap.name);
+          if(!vv) return;
+          vv.startDate = _snap.startDate;
+          if(_snap.lastLoss) vv.lastLoss = _snap.lastLoss; else delete vv.lastLoss;
+          vv.total = _snap.total;
+          vv.relapseCount = _snap.relapseCount;
+          vv.cleanDaysTotal = _snap.cleanDaysTotal;
+          if(Array.isArray(vv.relapseHistory)) vv.relapseHistory.length = _snap.histLen;
+          saveV();
+          // BOTH of these are in the cloud union, so a plain filter would be undone by the next
+          // pull — the row comes back and the streak resets itself again on another device. The
+          // removal has to be recorded, which is what tombstoneRemoved is for.
+          try{
+            const _flBefore = ls('totry_fight_log') || [];
+            const _fl = _flBefore.filter(r => !(r && r.vice === _snap.name && r.ts === _snap.ts));
+            if(typeof tombstoneRemoved === 'function') tombstoneRemoved('totry_fight_log', _flBefore, _fl);
+            ls('totry_fight_log', _fl);
+            const _uBefore = ls('totry_vice_uses') || [];
+            const _u = _uBefore.filter(r => !(r && r.v === _snap.name && r.ts === _snap.ts));
+            if(typeof tombstoneRemoved === 'function') tombstoneRemoved('totry_vice_uses', _uBefore, _u);
+            ls('totry_vice_uses', _u);
+          }catch(_){ }
+          try{ renderVices(); renderScoreboard(); renderDayCounter(); }catch(_){ }
+          if(typeof showToast === 'function') showToast('Put back', 'Your streak is where it was.');
+        });
+      }
+    }catch(_){ }
+
     // Compassionate response - show total progress preserved
     const total=(v.cleanDaysTotal||0);
     closeSos();
@@ -571,7 +619,11 @@ function renderVices(){
       const h = Math.floor((elapsed % 86400000) / 3600000);
       const m = Math.floor((elapsed % 3600000) / 60000);
       const s = Math.floor((elapsed % 60000) / 1000);
-      liveClock = ' &middot; ' + h + 'h ' + m + 'm ' + s + 's';
+      // NO SECONDS. A seconds counter ticking under "0 days clean" is a stopwatch on someone's
+      // worst day — it draws the eye, it never rests, and it makes a hard number feel like a slot
+      // machine. Hours and minutes say the same true thing and sit still. And below an hour there is
+      // nothing worth reporting yet, so it says nothing rather than counting up from zero.
+      liveClock = (h > 0 || m >= 1) ? (' &middot; ' + (h > 0 ? h + 'h ' : '') + m + 'm') : '';
     }
     
     const c=document.createElement('div');
@@ -724,13 +776,34 @@ function renderVices(){
           '<div style="font-family:DM Mono,monospace;font-size:24px;font-weight:500;color:' + (cleanDays >= 7 ? 'var(--gr)' : cleanDays >= 1 ? 'var(--go)' : 'var(--tx2)') + '">' + cleanDays + ' <span style="font-size:11px;color:var(--tx3)">day' + (cleanDays===1?'':'s') + ' clean</span></div>' +
           (liveClock ? '<div class="vice-live-clock" style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:2px">' + liveClock.replace(' &middot; ', '') + '</div>' : '') +
         '</div>' +
-        '<div style="text-align:right">' +
-          '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em">Win rate</div>' +
-          '<div style="font-family:DM Mono,monospace;font-size:14px;color:' + (pct >= 70 ? 'var(--gr)' : pct >= 40 ? 'var(--go)' : 'var(--tx2)') + ';margin-top:2px">' + pct + '%</div>' +
-          '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + (v.w||0) + '/' + (v.total||0) + '</div>' +
-        '</div>' +
+        // NOT a win rate. See viceFrequencyRead: a percentage of wins over battles told a person who
+        // had been honest fifteen days running that they had won 0%. This says the two things that
+        // are actually true — how often it is happening now against last week, and how long they have
+        // kept coming back — and it says nothing at all when there is nothing yet to say.
+        (function(){
+          const fr = (typeof viceFrequencyRead === 'function') ? viceFrequencyRead(v) : null;
+          if(!fr) return '<div style="text-align:right"></div>';
+          const col = fr.direction === 'down' ? 'var(--gr)' : fr.direction === 'up' ? 'var(--go)' : 'var(--tx2)';
+          const head = fr.direction
+            ? fr.thisWeek + ' this week'
+            : (fr.daysLogged + ' day' + (fr.daysLogged === 1 ? '' : 's') + ' logged');
+          const sub = fr.direction === 'down' ? 'down from ' + fr.lastWeek
+                    : fr.direction === 'up'   ? 'was ' + fr.lastWeek + ' last week'
+                    : fr.direction === 'level'? 'same as last week'
+                    : 'honestly';
+          return '<div style="text-align:right">' +
+            '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em">How often</div>' +
+            '<div style="font-family:DM Mono,monospace;font-size:14px;color:' + col + ';margin-top:2px">' + head + '</div>' +
+            '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + sub + '</div>' +
+          '</div>';
+        })() +
       '</div>' +
-      '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Usually hits: ' + _escFew(v.t || 'various times') + insight + '</div>' +
+      // "Usually hits: various times" is filler — it is what the app says when it does not know,
+      // dressed as if it does. Say nothing until there is a real pattern to report.
+      ((v.t || insight)
+        ? '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">' +
+            (v.t ? 'Usually hits: ' + _escFew(v.t) : '') + insight + '</div>'
+        : '') +
       _stageStripHTML(i) + _pledgeRowHTML(i) +
       (viceNeedsCheckIn(v) ?
         '<div style="background:var(--go-bg);border:1px solid var(--go-bd);border-radius:12px;padding:12px;margin-bottom:10px">' +
@@ -1347,6 +1420,50 @@ function renderFightEvidence(){
     'text-transform:uppercase;color:var(--go);margin-bottom:12px;line-height:1.7;text-align:center">' +
     bits.map(b => _escFew(b)).join(' &middot; ') + '</div>';
 }
+// ── SHOWING UP IS THE MEASURE, NOT ONLY STAYING CLEAN ────────────────────────────────────────
+// The vice card led with "WIN RATE 0% — 0/15" under a heading that reads "Every day you try is a day
+// you're winning." For a person who has fallen every day for a fortnight and logged it honestly every
+// single time, the app's answer was: you have won nothing, zero percent. That is a scoreboard of
+// losses, it contradicts this app's own stated soul, and it is the reason someone cannot bear to be
+// honest here — which makes the data worse as well as the person feel worse.
+//
+// A streak is a real measure, but only for someone who HAS one. For everyone else the true measures
+// are: are you still turning up, and is it happening less than it was. Both are honest, neither is a
+// percentage of failure, and the second one moves before a streak ever can — which is the whole point
+// for someone at the beginning.
+//
+// Deterministic, from what they actually logged. Nothing estimated, nothing asked of a model.
+function viceFrequencyRead(v){
+  try{
+    if(!v || !v.n) return null;
+    const now = Date.now(), W = 7*86400000;
+    const uses = (ls('totry_vice_uses')||[])
+      .filter(u => u && u.v === v.n && u.ts)
+      .map(u => new Date(u.ts).getTime())
+      .filter(t => !isNaN(t));
+    // relapseHistory is the older store and some vices only have that
+    (v.relapseHistory||[]).forEach(r => {
+      const t = r && r.date ? new Date(r.date).getTime() : NaN;
+      if(!isNaN(t) && uses.indexOf(t) === -1) uses.push(t);
+    });
+    if(!uses.length) return null;
+    const thisWeek = uses.filter(t => t > now - W).length;
+    const lastWeek = uses.filter(t => t > now - 2*W && t <= now - W).length;
+    // days they came back and told the truth — the thing nobody else counts
+    const dayKeys = {};
+    uses.forEach(t => { dayKeys[new Date(t).toLocaleDateString('en-AU')] = 1; });
+    const daysLogged = Object.keys(dayKeys).length;
+    const first = Math.min.apply(null, uses);
+    const spanDays = Math.max(1, Math.round((now - first) / 86400000) + 1);
+    return {
+      thisWeek, lastWeek, daysLogged, spanDays,
+      // only a claim once there is a previous week to compare against
+      direction: (lastWeek > 0 || thisWeek > 0) && (now - first) > W
+        ? (thisWeek < lastWeek ? 'down' : thisWeek > lastWeek ? 'up' : 'level')
+        : null
+    };
+  }catch(_){ return null; }
+}
 function viceCleanDays(v){
   // A clean streak is elapsed time since a COMMITMENT to zero. Watch mode has made none, moderation
   // is a limit rather than a zero, and letting go is not a streak at all — so none of them has one.
@@ -1566,7 +1683,15 @@ function openViceManage(i){
     // mass-add is for someone arriving with months of real history behind them. Both need curVice.
     row('It happened earlier — set the real day', 'curVice='+i+';promptLossDate()')+
     row('Log slips from before I started here', 'curVice='+i+';promptMassAddLosses()')+
-    row(v.costAmount?('Money it costs &middot; '+curSym()+viceMoneySaved(v).toLocaleString()+' reclaimed'):'Track the money it costs', 'editViceCost('+i+')')+
+    // MONEY IS NOT THE STAKE FOR EVERY FIGHT. _viceStakeKind already knows this — the in-the-moment
+    // card has always refused to price a porn or masturbation win in dollars — but the settings sheet
+    // still offered "Track the money it costs" for every vice, which asks a person what their lust
+    // costs in pounds. It does not cost pounds, and being asked implies the app has not understood
+    // what they are fighting. Offered only where money is genuinely part of it; anything already set
+    // stays visible so nobody's existing figure silently disappears.
+    ((typeof _viceStakeKind === 'function' && _viceStakeKind(v) === 'behaviour' && !v.costAmount)
+      ? ''
+      : row(v.costAmount?('Money it costs &middot; '+curSym()+viceMoneySaved(v).toLocaleString()+' reclaimed'):'Track the money it costs', 'editViceCost('+i+')')) +
     row('Change what I want with this \u2014 now: '+viceModeLabel(v), 'changeViceMode('+i+')')+
     row(v.trackPatterns?'Hide my patterns':'Show my patterns', 'toggleVicePatterns('+i+')')+
     row('Remove this from the fight', 'removeVice('+i+')', true)+

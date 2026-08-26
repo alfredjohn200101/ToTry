@@ -1956,6 +1956,100 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── the fight has to be survivable for someone who falls every day ─────────────────────────
+  // Alfy's own words: "i haven't been clean for a long amount of time or ever... I want to be able
+  // to be clean and honest and say i have fallen everyday but can't really do that."
+  //
+  // He was right. Under a heading reading "Every day you try is a day you're winning", someone who
+  // had fallen fifteen days running and logged it honestly every time was shown: 0 DAYS CLEAN, WIN
+  // RATE 0%, 0/15. A scoreboard of losses. That is not a bug in a number — it is the app punishing
+  // the exact honesty it asks for, and it is why the data is bad as well as the person feeling worse.
+  {
+    const cases = [
+      { label:'falls every day',   days:15, wantOften:/this week/i,      wantNo:/win rate|0%/i },
+      { label:'was 7, now 4',      taper:true, wantOften:/down from 7/i, wantNo:/win rate|0%/i },
+    ];
+    for (const c of cases) {
+      const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+      const page = await ctx.newPage();
+      await page.addInitScript(c => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+        const d=i=>new Date(Date.now()-i*864e5).toISOString();
+        s('totry_onboarded',true); s('totry_name','Sam'); s('totry_start',d(90));
+        const uses=[], hist=[];
+        if(c.days){ for(let i=c.days;i>=0;i--){ uses.push({v:'Lust',ts:d(i)}); hist.push({date:d(i),streakLength:0}); } }
+        else { [13,12,11,10,9,8,7].forEach(i=>uses.push({v:'Lust',ts:d(i)}));
+               [5,4,2,1].forEach(i=>uses.push({v:'Lust',ts:d(i)})); }
+        s('totry_v',[{ n:'Lust', mode:'quit', startDate:d(0), total:uses.length,
+                       relapseCount:hist.length, relapseHistory:hist }]);
+        s('totry_vice_uses', uses);
+      }, c);
+      await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+      await page.waitForTimeout(2700);
+      const txt = await page.evaluate(async () => {
+        document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+        go('fight'); await new Promise(x=>setTimeout(x,1000));
+        const el = document.getElementById('vices-list');
+        return el ? (el.innerText||'').replace(/\s+/g,' ').trim() : '';
+      });
+      if (c.wantNo.test(txt))
+        findings.push(`fight (${c.label}): still shows a win rate — "${txt.slice(0,64)}" — a percentage of failure under a heading about winning`);
+      else if (!c.wantOften.test(txt))
+        findings.push(`fight (${c.label}): no honest frequency read — "${txt.slice(0,64)}"`);
+      else if (/\d+h \d+m \d+s/.test(txt))
+        findings.push(`fight (${c.label}): a seconds counter is ticking under a zero streak — "${txt.slice(0,58)}"`);
+      else if (/various times/i.test(txt))
+        findings.push(`fight (${c.label}): "usually hits: various times" — filler dressed as a finding`);
+      await ctx.close();
+    }
+    if (!findings.some(f => f.startsWith('fight (')))
+      console.log('fight: someone who falls daily sees how often it is happening, not a 0% win rate');
+  }
+
+  {
+    // A MIS-TAP MUST NOT COST A STREAK, and money must not be asked of a fight money has nothing to
+    // do with. "lust isn't going to cause money?" — it does not, and being asked implies the app has
+    // not understood what is being fought.
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      const d=i=>new Date(Date.now()-i*864e5).toISOString();
+      s('totry_onboarded',true); s('totry_name','Sam');
+      s('totry_v',[{ n:'Lust', mode:'quit', startDate:d(26), total:3, relapseCount:2, cleanDaysTotal:40,
+                     relapseHistory:[{date:d(60),streakLength:14},{date:d(26),streakLength:26}] },
+                   { n:'Weed', mode:'quit', startDate:d(10) }]);
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const r = await page.evaluate(async () => {
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+      go('fight'); await new Promise(x=>setTimeout(x,900));
+      const out = {};
+      // does it ask a behaviour vice about money?
+      openViceManage(0); await new Promise(x=>setTimeout(x,450));
+      out.lustAsksMoney = /money it costs/i.test((document.querySelector('.modal-bg.open:not([id])')||{}).innerText || '');
+      document.querySelectorAll('.modal-bg.open:not([id])').forEach(e=>e.remove());
+      openViceManage(1); await new Promise(x=>setTimeout(x,450));
+      out.weedAsksMoney = /money it costs/i.test((document.querySelector('.modal-bg.open:not([id])')||{}).innerText || '');
+      document.querySelectorAll('.modal-bg.open:not([id])').forEach(e=>e.remove());
+      // log a slip by accident, then take it back
+      loadV();
+      out.before = viceCleanDays(vices[0]);
+      curVice = 0; logLoss(); await new Promise(x=>setTimeout(x,700));
+      loadV(); out.after = viceCleanDays(vices[0]);
+      const snack = document.querySelector('.undo-snack,#undo-snack,[class*=undo]');
+      const btn = snack ? [...snack.querySelectorAll('button')].find(x => /undo/i.test(x.innerText||'')) : null;
+      out.undoOffered = !!btn;
+      if(btn){ btn.click(); await new Promise(x=>setTimeout(x,700)); loadV(); out.restored = viceCleanDays(vices[0]); }
+      return out;
+    });
+    if (r.lustAsksMoney) findings.push('fight: the app asks what a lust habit costs in money — it does not cost money');
+    else if (!r.weedAsksMoney) findings.push('fight: a substance vice is no longer offered a cost, where money genuinely is part of it');
+    else if (!r.undoOffered) findings.push(`fight: logging a slip wiped a ${r.before}-day streak with no undo — the one number people screenshot`);
+    else if (r.restored !== r.before) findings.push(`fight: undo left the streak at ${r.restored}, not the ${r.before} it was`);
+    else console.log(`fight: a mis-tapped slip is reversible (${r.before} → ${r.after} → ${r.restored}), and only money-shaped fights are asked about money`);
+    await ctx.close();
+  }
+
   // ── one person, one whole day, one session ─────────────────────────────────────────────────
   // Everything else in this file tests a surface in isolation. This walks a single person through a
   // day in ONE page session — morning ritual, lunch, the workout, an urge at 9:40pm, the Fight, the
