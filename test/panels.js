@@ -1956,6 +1956,59 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── the fight is longer than the streak ────────────────────────────────────────────────────
+  // Alfy: "i have it for 105 days now but i know i've failed most of those days... I'd want to keep
+  // myself at real terms at all times even if that costs me a streak. The point is that i haven't let
+  // go of this and still have the heart to come back and try again even if i fell."
+  //
+  // The app had no number for that. A streak measures the gap since the last fall and says nothing
+  // about how long someone has refused to walk away — so telling the truth meant wiping everything,
+  // and keeping the number meant living with a lie. Day N of the fight never resets, through a slip
+  // OR a deliberate restart, and coming back is counted as coming back.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      const d=i=>new Date(Date.now()-i*864e5).toISOString();
+      s('totry_onboarded',true); s('totry_name','Sam');
+      s('totry_v',[{ n:'Lust', mode:'quit', fightingSince:d(105), startDate:d(26),
+                     relapseHistory:[{ date:d(60), streakLength:20 },{ date:d(26), streakLength:34 }],
+                     relapseCount:2 }]);
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const r = await page.evaluate(async () => {
+      window.askConfirm = async () => true;
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+      go('fight'); await new Promise(x=>setTimeout(x,1000));
+      const read = () => { loadV(); return { fight:viceFightDays(vices[0]), clean:viceCleanDays(vices[0]), back:viceCameBack(vices[0]) }; };
+      const out = { start: read() };
+      out.card = (document.getElementById('vices-list').innerText||'').replace(/\s+/g,' ').trim();
+      // a slip must not shorten the fight
+      curVice = 0; logLoss(); await new Promise(x=>setTimeout(x,700));
+      out.afterSlip = read();
+      document.querySelectorAll('.undo-snack,#undo-snack,[class*=undo]').forEach(e=>e.remove());
+      // nor must a deliberate restart — and it must not fake a relapse
+      await restartVice(0); await new Promise(x=>setTimeout(x,600));
+      out.afterRestart = read();
+      return out;
+    });
+    if (!/Day 105 of the fight/.test(r.card))
+      findings.push(`fight: the card does not lead with the fight — "${r.card.slice(0,60)}"`);
+    else if (!/came back 2 times/.test(r.card))
+      findings.push(`fight: coming back is not counted as coming back — "${r.card.slice(0,60)}"`);
+    else if (r.afterSlip.fight < r.start.fight)
+      findings.push(`fight: logging a slip cut the fight from ${r.start.fight} to ${r.afterSlip.fight} days — the one thing that should never reset`);
+    else if (r.afterRestart.fight < r.start.fight)
+      findings.push(`fight: a deliberate restart cut the fight from ${r.start.fight} to ${r.afterRestart.fight} days`);
+    else if (r.afterRestart.clean !== 0)
+      findings.push(`fight: "start again from today" left the streak at ${r.afterRestart.clean}, so it did not start again`);
+    else if (r.afterRestart.back !== r.afterSlip.back)
+      findings.push(`fight: choosing to start again was recorded as a relapse (came back ${r.afterSlip.back} → ${r.afterRestart.back}) — it is not a fall`);
+    else console.log(`fight: day ${r.start.fight} survives a slip and a restart; the streak resets and the coming back is counted`);
+    await ctx.close();
+  }
+
   // ── the fight has to be survivable for someone who falls every day ─────────────────────────
   // Alfy's own words: "i haven't been clean for a long amount of time or ever... I want to be able
   // to be clean and honest and say i have fallen everyday but can't really do that."

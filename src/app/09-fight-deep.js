@@ -773,7 +773,22 @@ function renderVices(){
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">' +
         '<div style="flex:1">' +
           '<div class="eyebrow">' + _escFew(v.n) + '</div>' +
-          '<div style="font-family:DM Mono,monospace;font-size:24px;font-weight:500;color:' + (cleanDays >= 7 ? 'var(--gr)' : cleanDays >= 1 ? 'var(--go)' : 'var(--tx2)') + '">' + cleanDays + ' <span style="font-size:11px;color:var(--tx3)">day' + (cleanDays===1?'':'s') + ' clean</span></div>' +
+          // THE FIGHT LEADS, THE STREAK FOLLOWS. A streak measures the gap since the last fall and
+          // says nothing about how long someone has refused to walk away — so a person who has been
+          // at this for months but falls often read as a permanent zero, and the only way to tell the
+          // truth was to wipe everything. Day N of the fight never resets. The streak is still here,
+          // said plainly, and "came back N times" counts the returning rather than the falling.
+          '<div style="font-family:DM Mono,monospace;font-size:24px;font-weight:500;color:var(--tx)">Day ' + viceFightDays(v) +
+            ' <span style="font-size:11px;color:var(--tx3)">of the fight</span></div>' +
+          (function(){
+            const back = viceCameBack(v);
+            const streak = '<span style="color:' + (cleanDays >= 7 ? 'var(--gr)' : cleanDays >= 1 ? 'var(--go)' : 'var(--tx3)') + '">' +
+              cleanDays + ' day' + (cleanDays === 1 ? '' : 's') + ' clean</span>';
+            const came = back > 0
+              ? ' &middot; came back ' + back + (back === 1 ? ' time' : ' times')
+              : '';
+            return '<div style="font-family:DM Mono,monospace;font-size:10.5px;color:var(--tx3);margin-top:3px">' + streak + came + '</div>';
+          })() +
           (liveClock ? '<div class="vice-live-clock" style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:2px">' + liveClock.replace(' &middot; ', '') + '</div>' : '') +
         '</div>' +
         // NOT a win rate. See viceFrequencyRead: a percentage of wins over battles told a person who
@@ -1099,6 +1114,8 @@ function addVice(){
     lastWin:null,lastLoss:null,
     urgelog:[],
     startDate:startDate,
+    // The day this fight was named. NEVER moves — a streak restarts, a fight does not.
+    fightingSince: startDate,
     cleanDaysTotal:0,
     relapseCount:0,
     relapseHistory:[],
@@ -1420,6 +1437,75 @@ function renderFightEvidence(){
     'text-transform:uppercase;color:var(--go);margin-bottom:12px;line-height:1.7;text-align:center">' +
     bits.map(b => _escFew(b)).join(' &middot; ') + '</div>';
 }
+// ── THE FIGHT IS LONGER THAN THE STREAK ──────────────────────────────────────────────────────
+// Alfy: "i have it for 105 days now but i know i've failed most of those days... I'd want to keep
+// myself at real terms at all times even if that costs me a streak. The point is that i haven't let
+// go of this and still have the heart to come back and try again even if i fell."
+//
+// That is the whole thing, and the app had no number for it. A streak measures the gap since the last
+// fall; it says nothing about the two years someone has refused to walk away. So a person carrying a
+// figure they know is false either lives with the lie or wipes everything to tell the truth — and
+// both are worse than the app simply counting the right thing.
+//
+// fightingSince never resets. Coming back is counted as coming back, not as failing: the number of
+// restarts IS the evidence of heart, which is exactly the opposite of what relapseCount reads as when
+// it is shown as a tally of losses.
+// A deliberate restart. NOT logged as a relapse: nothing is added to relapseHistory, no slip goes
+// into the fight log, and the honest counters are untouched. It resets the streak because that is
+// what the person asked for, and it leaves the fight itself alone — you do not stop having fought.
+async function restartVice(i){
+  loadV();
+  const v = vices[i];
+  if(!v) return;
+  const had = viceCleanDays(v);
+  if(typeof askConfirm === 'function'){
+    const ok = await askConfirm('Start again from today?',
+      had > 0
+        ? 'Your ' + had + '-day count goes back to zero. Day ' + viceFightDays(v) + ' of the fight stays — you have not stopped fighting this.'
+        : 'Today becomes day one again. Day ' + viceFightDays(v) + ' of the fight stays exactly where it is.',
+      { confirmLabel:'Start again', cancelLabel:'Not now' });
+    if(!ok) return;
+  }
+  const prevStart = v.startDate;
+  v.startDate = new Date().toISOString();
+  if(!v.fightingSince) v.fightingSince = prevStart;   // the fight predates this restart
+  saveV();
+  try{ renderVices(); renderScoreboard(); renderDayCounter(); }catch(_){ }
+  if(typeof haptic === 'function') haptic('tap');
+  if(typeof showUndo === 'function'){
+    showUndo('Day one. Again.', function(){
+      loadV();
+      const vv = (vices||[])[i];
+      if(!vv) return;
+      vv.startDate = prevStart;
+      saveV();
+      try{ renderVices(); renderScoreboard(); renderDayCounter(); }catch(_){ }
+    });
+  }
+}
+function viceFightingSince(v){
+  if(!v) return null;
+  const stamps = [];
+  if(v.fightingSince) stamps.push(new Date(v.fightingSince).getTime());
+  (v.relapseHistory||[]).forEach(r => { if(r && r.date) stamps.push(new Date(r.date).getTime()); });
+  if(v.startDate) stamps.push(new Date(v.startDate).getTime());
+  const good = stamps.filter(t => !isNaN(t) && t > 0);
+  if(!good.length) return null;
+  return new Date(Math.min.apply(null, good));
+}
+function viceFightDays(v){
+  const since = viceFightingSince(v);
+  if(!since) return 0;
+  return (typeof _calDaysSince === 'function') ? _calDaysSince(since) : 0;
+}
+// How many times they picked it back up. A restart is only counted where a streak was actually
+// broken and resumed, so someone who has never fallen reads 0 rather than a misleading 1.
+function viceCameBack(v){
+  if(!v) return 0;
+  const n = (v.relapseHistory||[]).length || Number(v.relapseCount) || 0;
+  return Math.max(0, n);
+}
+
 // ── SHOWING UP IS THE MEASURE, NOT ONLY STAYING CLEAN ────────────────────────────────────────
 // The vice card led with "WIN RATE 0% — 0/15" under a heading that reads "Every day you try is a day
 // you're winning." For a person who has fallen every day for a fortnight and logged it honestly every
@@ -1681,6 +1767,11 @@ function openViceManage(i){
     // always collected one, but nothing connected them — so a slip that happened yesterday restarted
     // the clock from the moment he got around to admitting it, and the record quietly lied. The
     // mass-add is for someone arriving with months of real history behind them. Both need curVice.
+    // A CLEAN START YOU CHOOSE. Every existing way to move the streak is a confession — log a slip,
+    // set the real day, backfill what you missed. There was no way to simply decide today is day one
+    // again, which is a different act entirely: not admitting a fall, but choosing to begin. It costs
+    // the streak and keeps the fight, which is the point — "Day N of the fight" does not move.
+    row('Start again from today', 'curVice='+i+';restartVice('+i+')')+
     row('It happened earlier — set the real day', 'curVice='+i+';promptLossDate()')+
     row('Log slips from before I started here', 'curVice='+i+';promptMassAddLosses()')+
     // MONEY IS NOT THE STAKE FOR EVERY FIGHT. _viceStakeKind already knows this — the in-the-moment
