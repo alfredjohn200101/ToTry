@@ -297,9 +297,18 @@ function renderFinance(){
         const left=Math.max(0, owedTotal-avoidedTotal);
         const n=document.createElement('div'); n.id='reclaim-owed-note';
         n.style.cssText='margin-top:8px;font-size:12px;color:var(--tx3);line-height:1.55';
+        // "That's after clearing it" was a claim the figure above could not support. totalReclaimed()
+        // nets owed PER VICE and floors each at zero, so a debt on one vice never reduces the savings
+        // from another — yet this compared the POOLED totals and, whenever avoided won, announced the
+        // subtraction had happened. Someone $429 up on a vape with $200 still owed on weed read
+        // "$429 — that's after clearing the $200". The honest pooled position is $229.
+        //
+        // The hero figure is left alone (it is the per-vice truth and other screens read it); the
+        // note now states the pooled position rather than asserting a netting that did not occur.
+        const pooledNet = avoidedTotal - owedTotal;
         n.innerHTML = left>0
-          ? 'You’ve avoided <b>'+curSym()+avoidedTotal.toLocaleString()+'</b> of spending, but still owe <b style="color:var(--go)">'+curSym()+owedTotal.toLocaleString()+'</b> for past use — <b>'+curSym()+left.toLocaleString()+'</b> to go before you’re actually ahead. Clearing that is the first real win.'
-          : 'That’s after clearing the <b>'+curSym()+owedTotal.toLocaleString()+'</b> you owed for past use — you’re genuinely ahead now.';
+          ? 'You’ve avoided <b>'+curSym()+avoidedTotal.toLocaleString()+'</b> of spending, but still owe <b style="color:var(--go)">'+curSym()+owedTotal.toLocaleString()+'</b> for past use. Clear that first — then it is all yours.'
+          : 'Across everything you have avoided <b>'+curSym()+avoidedTotal.toLocaleString()+'</b> and owe <b>'+curSym()+owedTotal.toLocaleString()+'</b> for past use, so you are <b style="color:var(--gr)">'+curSym()+pooledNet.toLocaleString()+'</b> genuinely ahead.';
         sd.after(n);
       }
     }catch(_){}

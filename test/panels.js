@@ -1817,6 +1817,145 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── what round three found: fixes that were still not finished ─────────────────────────────
+  {
+    // 1. A DRAG THE OS INTERRUPTS MUST NOT STICK. `dragging` was only cleared in touchend, which was
+    //    self-correcting while touchstart always re-armed. v544 added early returns ABOVE that
+    //    assignment, so a touchcancel — an incoming call, a Control Centre pull, the UA claiming the
+    //    gesture — left dragging stuck true for the rest of the session, and the next ordinary scroll
+    //    closed the companion. The harm v544 removed, made permanent.
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 }, hasTouch:true, isMobile:true });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      s('totry_onboarded',true); s('totry_name','Sam'); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2600);
+    const geo = await page.evaluate(async () => {
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+      openCompanion(); await new Promise(x=>setTimeout(x,600));
+      const conv = document.getElementById('comp-conversation');
+      if(!conv) return null;
+      const ph = conv.closest('.comp-phase');
+      if(ph && typeof _compPhase === 'function') _compPhase(ph.id);
+      await new Promise(x=>setTimeout(x,300));
+      conv.innerHTML = '';
+      for(let i=0;i<12;i++){ const d=document.createElement('div');
+        d.style.cssText='padding:14px;margin:6px 0'; d.textContent='message '+i; conv.appendChild(d); }
+      await new Promise(x=>setTimeout(x,250));
+      const sheet=document.getElementById('companion-overlay');
+      return { sheetTop:Math.round(sheet.getBoundingClientRect().top),
+               convTop:Math.round(conv.getBoundingClientRect().top) };
+    });
+    if (!geo) findings.push('companion: no conversation to test the interrupted drag against');
+    else {
+      const cdp = await ctx.newCDPSession(page);
+      // start on the handle, then let the OS take the gesture away
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchStart', touchPoints:[{x:207,y:geo.sheetTop+20}]});
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',  touchPoints:[{x:207,y:geo.sheetTop+80}]});
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchCancel',touchPoints:[]});
+      await page.waitForTimeout(300);
+      // now the ordinary gesture: scroll the conversation
+      const y = geo.convTop + 120;
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchStart', touchPoints:[{x:207,y}]});
+      for(let dy=20; dy<=150; dy+=30)
+        await cdp.send('Input.dispatchTouchEvent',{type:'touchMove', touchPoints:[{x:207,y:y+dy}]});
+      await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',   touchPoints:[]});
+      await page.waitForTimeout(500);
+      const stillOpen = await page.evaluate(() => { const s=document.getElementById('companion-overlay');
+        return s.classList.contains('open') && getComputedStyle(s).display !== 'none'; });
+      if (!stillOpen) findings.push('companion: after a drag the OS interrupted, an ordinary scroll DISMISSES the sheet — the stale drag state never cleared');
+      else console.log('companion: an interrupted drag does not arm the next scroll');
+      await cdp.detach();
+    }
+    await ctx.close();
+  }
+
+  {
+    // 2. A MODERATED SUBSTANCE VICE KEEPS ITS SUPPLY FACT. nextBuyInDays comes from lastPurchase,
+    //    which saveViceUse advances in EVERY mode — it is a checkable fact about their own cupboard,
+    //    not a claim about a streak. v544's blanket `return null` took it away with the money, and
+    //    that line was the only concrete thing on the craving door for someone moderating.
+    // 3. And the reclaimed note must state the POOLED position: totalReclaimed nets owed per-vice and
+    //    floors at zero, so it used to announce a subtraction across vices that never happened.
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      const d=i=>new Date(Date.now()-i*864e5).toISOString();
+      s('totry_onboarded',true); s('totry_name','Sam');
+      s('totry_v',[{ n:'Vape', mode:'quit', startDate:d(100), costAmount:30, costPer:'week', owed:0 },
+                   { n:'Weed', mode:'moderate', limit:2, startDate:d(100), type:'weed',
+                     costAmount:120, costPer:'purchase', lastsDays:30, lastPurchase:d(12), owed:200 }]);
+      s('totry_f',{ d:[{ n:'Car loan', t:5000, p:1200 }], income:5200 });
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const r = await page.evaluate(async () => {
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+      go('fight'); await new Promise(x=>setTimeout(x,800));
+      openMomentStakes(1);                                  // the moderated one
+      await new Promise(x=>setTimeout(x,600));
+      const m = document.querySelector('.modal-bg.open:not([id])');
+      const supply = /don.t need to buy for another/i.test(m ? (m.innerText||'') : '');
+      document.querySelectorAll('.modal-bg.open:not([id])').forEach(e=>e.remove());
+      go('money'); await new Promise(x=>setTimeout(x,1000));
+      const note = document.getElementById('reclaim-owed-note');
+      return { supply, note: note ? (note.innerText||'').replace(/\s+/g,' ').trim() : '',
+               reclaimed: (typeof totalReclaimed==='function') ? totalReclaimed() : null };
+    });
+    if (!r.supply)
+      findings.push('craving door: a moderated substance vice lost its supply line — the one concrete fact it had');
+    else if (/after clearing/i.test(r.note))
+      findings.push(`money: the note claims the figure is net of a debt it never subtracted — "${r.note.slice(0,70)}"`);
+    else console.log('fixes: a moderated vice keeps its supply fact, and the reclaimed note states the pooled position');
+    await ctx.close();
+  }
+
+  {
+    // 4. THE PROTEIN AVERAGE MUST INCLUDE TODAY. A rolling 168-hour window can hold EIGHT en-AU day
+    //    keys, so the count is capped at seven — but slice(0,7) took them in insertion order, which
+    //    dropped whichever was inserted last, usually today. Nothing tested it: no other seed makes
+    //    more than five days, so the fix could be reverted and the whole suite still passed.
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      const hAgo=h=>new Date(Date.now()-h*3600e3).toISOString();
+      s('totry_onboarded',true); s('totry_name','Sam');
+      s('totry_workouts',[{ id:1, ts:hAgo(20), date:hAgo(20).slice(0,10), title:'Push', volume:8000, sets:16, calories:400 }]);
+      // EIGHT distinct en-AU day keys, by construction rather than by hoping. Deriving both the key
+      // and the timestamp from the same hours-ago figure collapsed to six or seven keys depending on
+      // the hour the suite ran, so no cap ever applied and this passed identically with the fix
+      // reverted — the exact "passes for the wrong reason" it was written to catch.
+      //
+      // The key is the CALENDAR DAY (0..7 ago = eight distinct dates, always) and the timestamp is
+      // what the 168-hour window filters on, so they are set independently. Oldest is inserted first,
+      // so today lands in position 8 and an insertion-order slice(0,7) drops it. Today is the only
+      // day at 200g: dropped, the average is 50; kept, it is 71.
+      const g = {};
+      for (let i = 7; i >= 0; i--) {
+        const key = new Date(Date.now() - i*864e5).toLocaleDateString('en-AU');
+        g[key] = [{ name:'Meal', cal:700, pro:(i===0?200:50), ts:hAgo(i*20 + 1) }];
+      }
+      s('totry_nutlog', g);
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2600);
+    const line = await page.evaluate(async () => {
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+      go('grow'); await new Promise(x=>setTimeout(x,900));
+      const el = document.getElementById('hand-nourish');
+      return el && el.classList.contains('on') ? (el.textContent||'').trim() : '';
+    });
+    const m = line.match(/(\d+)\s*of\s*7 days fuelled/);
+    const pro = line.match(/(\d+)g protein/);
+    // eight keys must actually have been created, or the cap is untested and this proves nothing
+    if (!m) findings.push(`nourish: no day count in the handoff — "${line.slice(0,54)}"`);
+    else if (Number(m[1]) > 7) findings.push(`nourish: "${m[1]} of 7 days fuelled"`);
+    else if (!pro || Number(pro[1]) <= 50)
+      findings.push(`nourish: today's 200g is missing from the protein average — "${line.slice(0,60)}" — the cap dropped the newest day`);
+    else console.log(`nourish: eight day-keys capped to seven and today survives the cap (${pro[1]}g)`);
+    await ctx.close();
+  }
+
   // ── one person, one whole day, one session ─────────────────────────────────────────────────
   // Everything else in this file tests a surface in isolation. This walks a single person through a
   // day in ONE page session — morning ritual, lunch, the workout, an urge at 9:40pm, the Fight, the

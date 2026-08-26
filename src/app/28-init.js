@@ -431,7 +431,20 @@ async function initApp(){
       // companion just said closed it instead, mid-craving. Two conditions now, neither relying on
       // which element happens to own the scrollbar.
       const HANDLE_ZONE = 64;                       // the grab handle and the space around it
+      // EVERY touch starts from a clean slate. `dragging` used to be cleared only in touchend, which
+      // was self-correcting while touchstart always re-armed — the next touch overwrote it. v544 added
+      // early returns ABOVE that assignment, so a drag interrupted by touchcancel (an incoming call,
+      // a Control Centre pull, the UA claiming the gesture) left dragging stuck true for the rest of
+      // the page session. The next ordinary scroll in the conversation then closed the companion —
+      // the exact harm v544 removed, made permanent. Reset first, decide second.
+      const _cancelDrag = ()=>{
+        dragging = false;
+        sheet.style.transition = '';
+        sheet.style.transform = '';
+      };
+      sheet.addEventListener('touchcancel', _cancelDrag, {passive:true});
       sheet.addEventListener('touchstart', (e)=>{
+        _cancelDrag();
         const t = e.touches[0];
         const top = sheet.getBoundingClientRect().top;
         if((t.clientY - top) > HANDLE_ZONE) return;   // started below the handle — that is a scroll

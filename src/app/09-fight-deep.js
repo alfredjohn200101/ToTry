@@ -1402,7 +1402,21 @@ function viceSpendPicture(v){
   // at days at all. So a vice the person is deliberately moderating still "reclaimed" the full
   // purchase figure, and it surfaced under a heading about how they are WINNING, and on the Money
   // tab as money staying clean had put back. Gating at the source fixes both, and any future caller.
-  if(typeof viceIsAbstinence === 'function' && !viceIsAbstinence(v)) return null;
+  // NO MONEY CLAIM without abstinence — but the supply fact is not a money claim, and returning null
+  // wholesale threw it away too. nextBuyInDays comes from v.lastPurchase, which saveViceUse advances
+  // for EVERY mode, so it is true for someone moderating: "you don't need to buy for another 18 days"
+  // is a checkable fact about their own cupboard, and it was the only concrete thing on the craving
+  // door for a moderating substance user. Zero the money, keep the fact.
+  const _abstaining = (typeof viceIsAbstinence !== 'function') || viceIsAbstinence(v);
+  if(!_abstaining){
+    const _lasts = Math.max(1, parseFloat(v.lastsDays) || 30);
+    const _since = v.lastPurchase ? Math.max(0, Math.floor((Date.now() - new Date(v.lastPurchase)) / 86400000)) : null;
+    return {
+      avoided: 0, owed: Math.round(owed), net: 0, ahead: false, toGo: Math.round(owed),
+      nextBuyInDays: ((v.costPer || 'week') === 'purchase' && _since != null)
+        ? Math.max(0, _lasts - (_since % _lasts)) : null
+    };
+  }
   let avoided = 0;
   const per = v.costPer || 'week';
   if(per === 'purchase'){
