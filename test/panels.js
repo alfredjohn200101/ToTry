@@ -523,7 +523,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       { label:'one urge, recorded in BOTH stores',
         // every win path writes totry_moments_won AND totry_fight_log; adding them double-counted
         seed:{ v:[{n:'Porn',mode:'quit',days:13}], fightLog:[{d:1,won:true}], momentsWon:[1] },
-        tab:'fight', el:'fight-evidence', want:/^1 URGE MET/i, wantNot:/^2 URGES/i },
+        tab:'fight', el:'fight-evidence', want:/1 URGE MET/i, wantNot:/^2 URGES/i },
       { label:'sparse log cannot know a record',
         // two slips three days apart, then 200 clean — it used to congratulate them on beating 3 days
         seed:{ v:[{n:'Porn',mode:'quit',days:200}], uses:[203,200] },
@@ -1046,7 +1046,11 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
   {
     const cases = [
       { label:'brand new',                    seed:{},                              want:{ shown:false } },
-      { label:'first attempt, no slips yet',  seed:{ clean:13 },                    want:{ shown:false } },
+      // The element is shared now: 13 days without a slip legitimately earns the stayed-in sentence,
+      // so hidden is the wrong assertion. What must still be absent is any EVIDENCE bit — an urge
+      // count, money, a longest run — which is what this case was always guarding.
+      { label:'first attempt, no slips yet',  seed:{ clean:13 },
+        want:{ shown:true, hasnt:/URGES? MET|RECLAIMED|LONGEST RUN/i } },
       { label:'3 urges beaten, money back',   seed:{ clean:13, won:3, cost:true },  want:{ shown:true, has:/URGES MET AND TURNED AWAY/i, hasnt:/LONGEST RUN/i } },
       { label:'40 days, previous best 21',    seed:{ clean:40, won:1, uses:[80,59,40] }, want:{ shown:true, has:/PORN: YOUR LONGEST RUN YET .* 21 DAYS/i } },
       { label:'only one completed run',       seed:{ clean:200, won:1, uses:[203,200] },   want:{ shown:true, hasnt:/LONGEST RUN/i } },
@@ -1977,8 +1981,11 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
       go('fight'); await new Promise(x=>setTimeout(x,1000));
       const out = {};
-      // 1. the big clean-day hero must read the ABSTINENCE fight, not whichever vice sits at index 0
-      out.hero = (document.getElementById('sob-days')||{}).textContent || '';
+      // 1. the big clean-day hero is GONE (v550) — with several fights it showed one of them and
+      //    contradicted the card open underneath. It must not come back: the screen leads with what
+      //    the person did, not with a bigger streak.
+      out.hero = document.getElementById('sob-days') ? 'STILL THERE' : 'gone';
+      out.stayed = (document.getElementById('fight-evidence')||{}).innerText || '';
       // 2. no filler pattern line on a card whose trigger was never set
       out.card = (document.getElementById('vices-list').innerText||'').replace(/\s+/g,' ').trim();
       // 3. the live clock must still be seconds-free AFTER the ticker has run
@@ -1991,8 +1998,13 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       out.score = (document.getElementById('tab-fight').innerText||'').replace(/\s+/g,' ').trim();
       return out;
     });
-    if (r.hero.trim() !== '0')
-      findings.push(`fight: the clean-day hero reads "${r.hero}" — it is showing a moderate fight's 300 days as days CLEAN`);
+    if (r.hero !== 'gone')
+      findings.push('fight: the 48px clean-day hero is back — with several fights it shows one of them and contradicts the open card');
+    // NOT asserted on this seed: it is a person who fell on 51 of the last 51 days, and for them the
+    // stayed-in line is deliberately SILENT — "0 of 14" is the scoreboard of losses again. The line
+    // is covered by its own case below, with a person it can honestly speak to.
+    else if (/\d+h \d+m \d+s/.test(r.stayed))
+      findings.push(`fight: seconds are ticking in the evidence line — "${String(r.stayed).slice(0,50)}"`);
     else if (/various situations|various times/i.test(r.card))
       findings.push(`fight: filler pattern line on the card — "${r.card.slice(0,60)}" — the app stating a pattern it does not have`);
     else if (/\d+s\b/.test(r.clock))
@@ -2005,6 +2017,48 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       findings.push(`fight: "urges met" is not the real win count — "${r.score.slice(0,80)}" (seeded 3 wins from 54)`);
     else console.log('fight: hero reads the abstinence fight, no filler, no ticking seconds, and Score leads with the fight');
     await ctx.close();
+  }
+
+  // ── staying in it is the win ───────────────────────────────────────────────────────────────
+  // Alfy, on what winning means: "the user has successfully stayed in the fight" — then correcting
+  // my first reading: "stay in the fight is NOT falling for the vices." So it counts days RESISTED,
+  // it counts UP, and it is not consecutive: one bad Tuesday does not erase Monday and Wednesday.
+  //
+  // The two failure modes it must never have. It must not FLATTER — a fixed fortnight window told a
+  // brand-new person they had "stayed in it every day this fortnight" before they had fought
+  // anything, so the window is the length of the fight and there is a five-day floor. And it must not
+  // SHAME — someone who fell every day gets silence, because "0 of 14" is the scoreboard again.
+  {
+    const cases = [
+      { label:'brand new',           seed:{ none:true },            want:null },
+      { label:'day 3',               seed:{ fight:3 },              want:null },
+      { label:'day 60, every other', seed:{ fight:60, every:2 },    want:/stayed in it 7 of the last 14/i },
+      { label:'day 60, clean',       seed:{ fight:60 },             want:/every day this fortnight/i },
+      { label:'day 60, fell daily',  seed:{ fight:60, every:1 },    want:null },
+    ];
+    for (const c of cases) {
+      const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+      const page = await ctx.newPage();
+      await page.addInitScript(c => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+        const d=i=>new Date(Date.now()-i*864e5).toISOString();
+        s('totry_onboarded',true); s('totry_name','Sam');
+        if(c.none){ s('totry_v',[]); return; }
+        const uses=[];
+        if(c.every) for(let i=13;i>=0;i--) if(i % c.every === 0) uses.push({ v:'Lust', ts:d(i) });
+        s('totry_v',[{ n:'Lust', mode:'quit', fightingSince:d(c.fight), startDate:d(0) }]);
+        s('totry_vice_uses', uses);
+      }, c.seed);
+      await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+      await page.waitForTimeout(2600);
+      const line = await page.evaluate(() => (typeof fightStayedInLine === 'function') ? fightStayedInLine() : 'NO FN');
+      await ctx.close();
+      if (c.want === null && line)
+        findings.push(`stayed-in (${c.label}): claims "${line.slice(0,58)}" when it should say nothing`);
+      else if (c.want && !c.want.test(line))
+        findings.push(`stayed-in (${c.label}): said "${line.slice(0,58)}"`);
+    }
+    if (!findings.some(f => f.startsWith('stayed-in')))
+      console.log('stayed-in: counts days resisted, silent before it has earned the right to speak');
   }
 
   // ── the fight is longer than the streak ────────────────────────────────────────────────────

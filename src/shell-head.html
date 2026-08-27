@@ -896,6 +896,16 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
    than 15 inline styles, so any helpline added later is covered too. */
 a[href^="tel:"]{display:inline-block;padding:5px 6px;margin:1px -2px;min-height:30px;
   line-height:20px;box-sizing:border-box}
+/* A closed fight in a multi-fight list. Deliberately quiet: it is an index entry, not a card, and
+   the whole point is that five of them read at a glance instead of scrolling past five dashboards. */
+.vice-row{
+  display:flex; align-items:center; gap:10px; width:100%;
+  background:var(--bg2); border:1px solid var(--bd); border-radius:12px;
+  padding:12px 14px; margin-bottom:8px; min-height:56px; cursor:pointer;
+  font-family:inherit; text-align:left;
+}
+.vice-row:active{background:var(--bg3)}
+.vice-row:focus-visible{outline:2px solid var(--go-bd); outline-offset:2px}
 .undo-close{background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:0;line-height:1;min-width:28px;min-height:28px;display:inline-flex;align-items:center;justify-content:center}
 
 
@@ -2316,11 +2326,12 @@ input:focus,textarea:focus,select:focus{
       <div style="font-size:13px;color:var(--tx3);margin-top:4px;line-height:1.5">Not "don't slip." Become the person who doesn't want to. Every day you try is a day you're winning.</div>
     </div>
     <!-- Sobriety clock -->
-    <div class="sob-clock" id="sob-clock-main">
-      <div class="sob-big clean" id="sob-days">0</div>
-      <div class="sob-sub">Days clean</div>
-      <div class="sob-hms" id="sob-hms">0h 0m 0s</div>
-    </div>
+    <!-- The 48px "DAYS CLEAN" hero is gone, and this is why. With several fights it showed ONE of
+         them — so the number at the top of the screen contradicted the card open underneath it (12
+         above, 9 below, different fights). It duplicated a number the card already carries, at twice
+         the size. And its own seconds ticker ran a stopwatch on the worst day a person has. What
+         belongs at the top of this screen is not a bigger streak; it is what the person has actually
+         done, which #fight-evidence says beneath. -->
     <!-- SOUL-ARCHITECTURE, FIGHT: "reframe from a list of vices into 'your fight, and how you're
          winning it.'" The clean clock above says how long; this says what has actually been WON.
          It sits before the per-vice list on purpose — the first thing after the number should be

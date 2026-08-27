@@ -896,6 +896,16 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
    than 15 inline styles, so any helpline added later is covered too. */
 a[href^="tel:"]{display:inline-block;padding:5px 6px;margin:1px -2px;min-height:30px;
   line-height:20px;box-sizing:border-box}
+/* A closed fight in a multi-fight list. Deliberately quiet: it is an index entry, not a card, and
+   the whole point is that five of them read at a glance instead of scrolling past five dashboards. */
+.vice-row{
+  display:flex; align-items:center; gap:10px; width:100%;
+  background:var(--bg2); border:1px solid var(--bd); border-radius:12px;
+  padding:12px 14px; margin-bottom:8px; min-height:56px; cursor:pointer;
+  font-family:inherit; text-align:left;
+}
+.vice-row:active{background:var(--bg3)}
+.vice-row:focus-visible{outline:2px solid var(--go-bd); outline-offset:2px}
 .undo-close{background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:0;line-height:1;min-width:28px;min-height:28px;display:inline-flex;align-items:center;justify-content:center}
 
 
@@ -2316,11 +2326,12 @@ input:focus,textarea:focus,select:focus{
       <div style="font-size:13px;color:var(--tx3);margin-top:4px;line-height:1.5">Not "don't slip." Become the person who doesn't want to. Every day you try is a day you're winning.</div>
     </div>
     <!-- Sobriety clock -->
-    <div class="sob-clock" id="sob-clock-main">
-      <div class="sob-big clean" id="sob-days">0</div>
-      <div class="sob-sub">Days clean</div>
-      <div class="sob-hms" id="sob-hms">0h 0m 0s</div>
-    </div>
+    <!-- The 48px "DAYS CLEAN" hero is gone, and this is why. With several fights it showed ONE of
+         them — so the number at the top of the screen contradicted the card open underneath it (12
+         above, 9 below, different fights). It duplicated a number the card already carries, at twice
+         the size. And its own seconds ticker ran a stopwatch on the worst day a person has. What
+         belongs at the top of this screen is not a bigger streak; it is what the person has actually
+         done, which #fight-evidence says beneath. -->
     <!-- SOUL-ARCHITECTURE, FIGHT: "reframe from a list of vices into 'your fight, and how you're
          winning it.'" The clean clock above says how long; this says what has actually been WON.
          It sits before the per-vice list on purpose — the first thing after the number should be
@@ -5053,7 +5064,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v549';
+const APP_VERSION = 'v550';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -18067,7 +18078,51 @@ function toggleAddVice(){
 function renderVices(){
   loadV();const list=document.getElementById('vices-list');if(!list)return;
   list.innerHTML='';let tw=0;
+  // ── MANY FIGHTS HAVE TO FIT ────────────────────────────────────────────────────────────────
+  // "one person may have one or many things to fight — i have so many that i want to tackle."
+  // Six fights rendered as six dashboards is 3,746px and 51 controls: four and a bit screens of
+  // scoreboards before you reach the bottom. Nobody manages six things that way.
+  //
+  // So the list behaves like a list: every fight is a row, ONE is open. The open one is the one that
+  // needs you — a check-in due, or the one you fell to most recently, else the first. Tapping a row
+  // opens it and closes the other. With a single fight nothing changes: it is open, and it is the
+  // card it always was.
+  const _openIdx = (function(){
+    if(window.__fightOpen != null && vices[window.__fightOpen]) return window.__fightOpen;
+    let due = -1, recent = -1, recentT = 0;
+    (vices||[]).forEach((v, ix) => {
+      if(!v) return;
+      try{ if(due < 0 && typeof viceNeedsCheckIn === 'function' && viceNeedsCheckIn(v)) due = ix; }catch(_){ }
+      const t = v.lastLoss ? new Date(v.lastLoss).getTime() : 0;
+      if(t && t > recentT){ recentT = t; recent = ix; }
+    });
+    return due >= 0 ? due : recent >= 0 ? recent : 0;
+  })();
+  const _many = (vices||[]).length > 1;
   vices.forEach((v,i)=>{
+    // a closed row in a multi-fight list: the name, how long, and the one number that is moving
+    if(_many && i !== _openIdx){
+      const fr = (typeof viceFrequencyRead === 'function') ? viceFrequencyRead(v) : null;
+      const sub = fr && fr.direction
+        ? fr.thisWeek + ' this week \u00b7 ' + (fr.direction === 'down' ? 'down from ' + fr.lastWeek
+            : fr.direction === 'up' ? 'was ' + fr.lastWeek : 'same as last week')
+        : (viceCleanDays(v) + ' day' + (viceCleanDays(v) === 1 ? '' : 's') + ' clean');
+      const col = fr && fr.direction === 'down' ? 'var(--gr)' : fr && fr.direction === 'up' ? 'var(--go)' : 'var(--tx3)';
+      const row = document.createElement('button');
+      row.className = 'vice-row';
+      row.setAttribute('aria-label', 'Open ' + (v.n || 'this fight'));
+      row.onclick = function(){ window.__fightOpen = i; renderVices();
+        try{ if(typeof haptic === 'function') haptic('tap'); }catch(_){ } };
+      row.innerHTML =
+        '<div style="flex:1;min-width:0;text-align:left">' +
+          '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx2)">' + _escFew(v.n) + '</div>' +
+          '<div style="font-size:12px;color:' + col + ';margin-top:3px">' + _escFew(sub) + '</div>' +
+        '</div>' +
+        '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);white-space:nowrap">Day ' + viceFightDays(v) + '</div>' +
+        '<div style="color:var(--tx3);font-size:14px;margin-left:8px">\u203a</div>';
+      list.appendChild(row);
+      return;
+    }
     tw+=v.w||0;
     const pct=v.total>0?Math.round(((v.w||0)/v.total)*100):0;
     // Clean days from startDate (the real streak)
@@ -18921,12 +18976,97 @@ function renderFightEvidence(){
   const el = document.getElementById('fight-evidence');
   if(!el) return;
   const bits = fightEvidenceLine();
-  if(!bits.length){ el.style.display = 'none'; el.innerHTML = ''; return; }
+  // The 48px streak hero used to sit above this. What replaces it is not a bigger number — it is the
+  // sentence that answers "am I winning this?" the way Alfy defined winning: staying in the fight,
+  // meaning the days you did not fall. It counts UP, it is not consecutive, and one bad Tuesday does
+  // not erase it. Said in the app's own voice rather than as a statistic, because it is the first
+  // thing on the screen.
+  const stayed = (typeof fightStayedInLine === 'function') ? fightStayedInLine() : '';
+  if(!bits.length && !stayed){ el.style.display = 'none'; el.innerHTML = ''; return; }
   el.style.display = 'block';
-  el.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.08em;' +
-    'text-transform:uppercase;color:var(--go);margin-bottom:12px;line-height:1.7;text-align:center">' +
-    bits.map(b => _escFew(b)).join(' &middot; ') + '</div>';
+  el.innerHTML =
+    (stayed
+      ? '<div style="font-family:Cormorant Garamond,serif;font-size:22px;line-height:1.35;color:var(--tx);' +
+        'text-align:center;margin-bottom:' + (bits.length ? '8px' : '14px') + '">' + _escFew(stayed) + '</div>'
+      : '') +
+    (bits.length
+      ? '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.08em;' +
+        'text-transform:uppercase;color:var(--go);margin-bottom:12px;line-height:1.7;text-align:center">' +
+        bits.map(b => _escFew(b)).join(' &middot; ') + '</div>'
+      : '');
 }
+// ── STAYING IN IT IS THE WIN ─────────────────────────────────────────────────────────────────
+// Alfy, asked what winning should mean: "the user has successfully stayed in the fight against what
+// they are facing" — and then, correcting my first reading of it: "stay in the fight is NOT falling
+// for the vices, not staying in the vice itself."
+//
+// So staying in it means RESISTING. A day you did not fall is a day you stayed in the fight. Being
+// honest about a slip is still the thing this app is built to make possible — that is what "came back
+// N times" and "Day N of the fight" carry — but it is not the same as winning, and calling it winning
+// would be the flattery this app promises never to do.
+//
+// The crucial property: this COUNTS UP and is not consecutive. A streak erases Monday and Wednesday
+// because of Tuesday; this does not. Someone falling every other day reads 7 of 14 — true, not zero,
+// and it moves the moment they improve. That is the number a person can actually get better at.
+function fightStayedIn(windowDays){
+  let W = Math.max(1, windowDays || 14);
+  try{
+    // THE WINDOW CANNOT BE LONGER THAN THE FIGHT. Counting days-not-fallen over a fixed fortnight
+    // told a person who had just arrived and fought nothing that they had "stayed in it every day
+    // this fortnight" — flattery, and the same empty-state-that-lies this app already refuses on the
+    // money screen. You cannot have stayed in a fight you had not started.
+    let fightLen = 0;
+    try{
+      loadV();
+      (vices||[]).forEach(v => {
+        const since = (typeof viceFightingSince === 'function') ? viceFightingSince(v) : null;
+        const d = (since && typeof _calDaysSince === 'function') ? _calDaysSince(since) : 0;
+        if(d > fightLen) fightLen = d;
+      });
+    }catch(_){ }
+    // Five days, not two. "You have stayed in it every day so far" on day two is the app claiming
+    // evidence it has not earned — the existing first-attempt assertion was right to object, and the
+    // same rule already governs the fight evidence line beside it.
+    if(fightLen < 5) return { days:0, window:0, fellToday:false, daysFallen:0 };
+    W = Math.min(W, fightLen);
+    const now = Date.now(), since = now - W*86400000;
+    const fell = {};
+    const mark = ts => {
+      const t = new Date(ts).getTime();
+      if(isNaN(t) || t < since || t > now) return;
+      fell[new Date(t).toLocaleDateString('en-AU')] = 1;
+    };
+    (ls('totry_vice_uses')||[]).forEach(r => r && r.ts && mark(r.ts));
+    try{
+      loadV();
+      (vices||[]).forEach(v => {
+        if(!v) return;
+        // only abstinence fights can be "fallen for" — a moderation limit is a different question
+        if(typeof viceIsAbstinence === 'function' && !viceIsAbstinence(v)) return;
+        (v.relapseHistory||[]).forEach(r => r && r.date && mark(r.date));
+        if(v.lastLoss) mark(v.lastLoss);
+      });
+    }catch(_){ }
+    const daysFallen = Object.keys(fell).length;
+    const todayKey = new Date().toLocaleDateString('en-AU');
+    return { days: Math.max(0, W - daysFallen), window: W,
+             fellToday: !!fell[todayKey], daysFallen: daysFallen };
+  }catch(_){ return { days:0, window:W, fellToday:false, daysFallen:0 }; }
+}
+// The line the screen leads with. Never a percentage, never a streak, and it does not vanish because
+// of yesterday.
+function fightStayedInLine(){
+  const r = fightStayedIn(14);
+  if(!r || !r.window) return '';                    // no fight long enough to say anything about
+  if(r.days >= r.window){
+    return r.window >= 14 ? 'You have stayed in it every day this fortnight.'
+                          : 'You have stayed in it every day so far.';
+  }
+  if(r.days === 0) return '';                       // nothing true to say yet; say nothing
+  return 'You stayed in it ' + r.days + ' of the last ' + r.window + ' day' + (r.window === 1 ? '' : 's')
+    + (r.fellToday ? ' \u2014 today was hard, and you said so.' : '.');
+}
+
 // ── THE FIGHT IS LONGER THAN THE STREAK ──────────────────────────────────────────────────────
 // Alfy: "i have it for 105 days now but i know i've failed most of those days... I'd want to keep
 // myself at real terms at all times even if that costs me a streak. The point is that i haven't let
