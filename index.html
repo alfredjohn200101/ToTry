@@ -5069,7 +5069,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v552';
+const APP_VERSION = 'v553';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -12962,7 +12962,12 @@ function _pledgeRowHTML(i){
         (n>1?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.08em;margin-top:2px">'+n+' days you\u2019ve chosen this</div>':'')+
       '</div></div>';
   }
-  return '<button onclick="makePledge('+i+',\'fight\')" style="width:100%;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);border-radius:10px;padding:10px;font-size:12.5px;font-weight:500;cursor:pointer;margin-bottom:10px">\uD83E\uDD1D '+line+' \u2014 make the pledge</button>';
+  // NO PLEDGE CTA ON THE CARD. The pledge is a morning act — you make it while you are clear,
+  // before the day has had a go at you — and it lives in the morning ritual, at the step about
+  // setting the day, beside the intention it is a promise about. A second entry point here made
+  // it a thing you could do at 11pm to feel better, which is not what a pledge is. Made today, the
+  // card says so above; not made, the card says nothing and the morning asks.
+  return '';
 }
 
 // B2 — STAGE OF CHANGE. Prochaska: pushing action-stage tactics (goals, plans, streaks) at someone
@@ -12996,6 +13001,12 @@ function viceStageTone(name){
 function _stageStripHTML(i){
   const v=vices[i]; if(!v || v.kind==='letgo') return '';
   const set=!!(v.stage && VICE_STAGES[v.stage]); const s=VICE_STAGES[viceStage(v)];
+  // UNSET SAYS NOTHING. This occupied the first row of the card on every fight where the stage had
+  // never been named — which was all of them until someone went looking — and what it said was that
+  // the app had a setting it wanted filled in. A config row is not worth the top of the screen; it
+  // is asked once inside the plan sheet that opens when a fight is named, and lives in Manage after
+  // that. Once it IS set it earns its line, because then it changes what the card offers.
+  if(!set) return '';
   return '<button onclick="openViceStage('+i+')" style="width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--bd);padding:0 0 9px;margin-bottom:10px;cursor:pointer">'+
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:3px">Where you are with this \u00b7 tap to change</div>'+
     '<div style="font-size:12.5px;line-height:1.45;color:'+(set?'var(--go)':'var(--tx3)')+'">'+
@@ -18383,8 +18394,10 @@ function renderVices(){
           '</div>' +
         '</div>' : '') +
       (_asking ? '' : _stagePrimaryHTML(i)) +
-      (_asking ? '' :
-      '<button class="vice-btn" onclick="openHALT()" style="width:100%;background:var(--bg3);color:var(--tx2);border:1px solid var(--bd);border-radius:10px;padding:9px;font-size:12.5px;cursor:pointer;margin-top:6px">\u{1F37D} Hungry, angry, lonely or tired?</button>') +
+      // HALT lives INSIDE the urge door now - "Wait, am I hungry, angry, lonely, tired?" is the
+      // second thing the moment sheet offers. It is a mid-urge tool; as a standing button on the
+      // card it competed with the one control that matters and pushed everything else down.
+      '' +
       (function(){
         // The wins for NOT acting, counted back to him. This is the one number most recovery apps
         // never show, because they only track the fall.
@@ -18393,7 +18406,9 @@ function renderVices(){
       })() +
       (_asking ? '' :
       '<button onclick="openLogUse(' + i + ')" style="width:100%;margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:10px;padding:9px;font-size:12px;cursor:pointer">I used — log it honestly</button>') +
-      '<button onclick="openRecoveryTimeline(' + i + ')" style="width:100%;margin-top:8px;background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);border-radius:10px;padding:9px;font-size:12px;cursor:pointer">\u{1F33F} What this streak is earning you</button>' +
+      // The recovery timeline stays — SOUL-ARCHITECTURE names it as what the 11pm man is owed — but
+      // as a quiet line, not a third full-width button arguing with the door that matters.
+      '<button onclick="openRecoveryTimeline(' + i + ')" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:11.5px;cursor:pointer;padding:8px 6px;min-height:44px">What this is earning you</button>' +
       totalInsight +
       // One quiet "manage" door instead of six loose links. Backdating lives in "I used" (it takes any
       // date), so the old "log a past slip / add several" buttons are gone — they did the same thing.

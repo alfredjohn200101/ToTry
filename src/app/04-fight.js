@@ -565,7 +565,12 @@ function _pledgeRowHTML(i){
         (n>1?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.08em;margin-top:2px">'+n+' days you\u2019ve chosen this</div>':'')+
       '</div></div>';
   }
-  return '<button onclick="makePledge('+i+',\'fight\')" style="width:100%;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);border-radius:10px;padding:10px;font-size:12.5px;font-weight:500;cursor:pointer;margin-bottom:10px">\uD83E\uDD1D '+line+' \u2014 make the pledge</button>';
+  // NO PLEDGE CTA ON THE CARD. The pledge is a morning act — you make it while you are clear,
+  // before the day has had a go at you — and it lives in the morning ritual, at the step about
+  // setting the day, beside the intention it is a promise about. A second entry point here made
+  // it a thing you could do at 11pm to feel better, which is not what a pledge is. Made today, the
+  // card says so above; not made, the card says nothing and the morning asks.
+  return '';
 }
 
 // B2 — STAGE OF CHANGE. Prochaska: pushing action-stage tactics (goals, plans, streaks) at someone
@@ -599,6 +604,12 @@ function viceStageTone(name){
 function _stageStripHTML(i){
   const v=vices[i]; if(!v || v.kind==='letgo') return '';
   const set=!!(v.stage && VICE_STAGES[v.stage]); const s=VICE_STAGES[viceStage(v)];
+  // UNSET SAYS NOTHING. This occupied the first row of the card on every fight where the stage had
+  // never been named — which was all of them until someone went looking — and what it said was that
+  // the app had a setting it wanted filled in. A config row is not worth the top of the screen; it
+  // is asked once inside the plan sheet that opens when a fight is named, and lives in Manage after
+  // that. Once it IS set it earns its line, because then it changes what the card offers.
+  if(!set) return '';
   return '<button onclick="openViceStage('+i+')" style="width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--bd);padding:0 0 9px;margin-bottom:10px;cursor:pointer">'+
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:3px">Where you are with this \u00b7 tap to change</div>'+
     '<div style="font-size:12.5px;line-height:1.45;color:'+(set?'var(--go)':'var(--tx3)')+'">'+

@@ -2019,6 +2019,55 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── the card carries what is true, not what could be configured ────────────────────────────
+  // Seven controls competed on one card: an unset config row in the top slot, a pledge CTA that
+  // duplicates the morning ritual, HALT, the urge door, "I used", the timeline and Manage. Nothing
+  // was reachable ONLY here — HALT is the second thing inside the urge door, the pledge is in the
+  // morning at the step about setting the day, the timeline keeps its own quiet line — so the cuts
+  // remove competition, not paths. That check comes first: never delete a door without opening the
+  // other one yourself.
+  {
+    const cases = [
+      { label:'nothing set',   seed:{},                        maxBtns:4, wantNot:/tap to change|make the pledge|hungry, angry/i },
+      { label:'pledged today', seed:{ pledged:true },           maxBtns:4, want:/pledged today/i, wantNot:/make the pledge/i },
+      { label:'stage set',     seed:{ stage:'rebuilding' },     maxBtns:6, want:/rebuilding/i },
+    ];
+    for (const c of cases) {
+      const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+      const page = await ctx.newPage();
+      await page.addInitScript(s0 => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+        const d=i=>new Date(Date.now()-i*864e5).toISOString();
+        const pad=n=>String(n).padStart(2,'0'), t=new Date();
+        s('totry_onboarded',true); s('totry_name','Sam');
+        const v={ n:'Lust', mode:'quit', fightingSince:d(105), startDate:d(9), lastConfirm:new Date().toISOString() };
+        if(s0.stage) v.stage = s0.stage;
+        if(s0.pledged){ v.pledge = pad(t.getDate())+'/'+pad(t.getMonth()+1)+'/'+t.getFullYear(); v.pledgeDays = 4; }
+        s('totry_v',[v]);
+      }, c.seed);
+      await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+      await page.waitForTimeout(2700);
+      const r = await page.evaluate(async () => {
+        document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+        go('fight'); await new Promise(x=>setTimeout(x,1000));
+        const card = document.querySelector('.vice-card');
+        if(!card) return null;
+        const vis = el => { const s=getComputedStyle(el); if(s.display==='none') return false;
+          const q=el.getBoundingClientRect(); return q.width>0 && q.height>0; };
+        const btns = [...card.querySelectorAll('button')].filter(vis);
+        return { n: btns.length, txt: (card.innerText||'').replace(/\s+/g,' ').trim(),
+                 urgeDoor: btns.some(x => /openMomentStakes/.test(x.getAttribute('onclick')||'')) };
+      });
+      await ctx.close();
+      if (!r) { findings.push(`card (${c.label}): no vice card`); continue; }
+      if (!r.urgeDoor) findings.push(`card (${c.label}): the in-the-moment door is not on the card`);
+      else if (r.n > c.maxBtns) findings.push(`card (${c.label}): ${r.n} controls, expected at most ${c.maxBtns}`);
+      else if (c.want && !c.want.test(r.txt)) findings.push(`card (${c.label}): missing what it should say — "${r.txt.slice(0,56)}"`);
+      else if (c.wantNot && c.wantNot.test(r.txt)) findings.push(`card (${c.label}): still offers what belongs elsewhere — "${r.txt.slice(0,56)}"`);
+    }
+    if (!findings.some(f => f.startsWith('card (')))
+      console.log('card: four controls at rest, the urge door always among them, config only once set');
+  }
+
   // ── one action, one place on a screen ─────────────────────────────────────────────────────
   // "there would be more like that where things double up or are redundant." There were: the same
   // action offered twice on one screen, in two visual languages, so the person has to work out

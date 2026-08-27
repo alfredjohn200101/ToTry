@@ -889,8 +889,10 @@ function renderVices(){
           '</div>' +
         '</div>' : '') +
       (_asking ? '' : _stagePrimaryHTML(i)) +
-      (_asking ? '' :
-      '<button class="vice-btn" onclick="openHALT()" style="width:100%;background:var(--bg3);color:var(--tx2);border:1px solid var(--bd);border-radius:10px;padding:9px;font-size:12.5px;cursor:pointer;margin-top:6px">\u{1F37D} Hungry, angry, lonely or tired?</button>') +
+      // HALT lives INSIDE the urge door now - "Wait, am I hungry, angry, lonely, tired?" is the
+      // second thing the moment sheet offers. It is a mid-urge tool; as a standing button on the
+      // card it competed with the one control that matters and pushed everything else down.
+      '' +
       (function(){
         // The wins for NOT acting, counted back to him. This is the one number most recovery apps
         // never show, because they only track the fall.
@@ -899,7 +901,9 @@ function renderVices(){
       })() +
       (_asking ? '' :
       '<button onclick="openLogUse(' + i + ')" style="width:100%;margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:10px;padding:9px;font-size:12px;cursor:pointer">I used — log it honestly</button>') +
-      '<button onclick="openRecoveryTimeline(' + i + ')" style="width:100%;margin-top:8px;background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);border-radius:10px;padding:9px;font-size:12px;cursor:pointer">\u{1F33F} What this streak is earning you</button>' +
+      // The recovery timeline stays — SOUL-ARCHITECTURE names it as what the 11pm man is owed — but
+      // as a quiet line, not a third full-width button arguing with the door that matters.
+      '<button onclick="openRecoveryTimeline(' + i + ')" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:11.5px;cursor:pointer;padding:8px 6px;min-height:44px">What this is earning you</button>' +
       totalInsight +
       // One quiet "manage" door instead of six loose links. Backdating lives in "I used" (it takes any
       // date), so the old "log a past slip / add several" buttons are gone — they did the same thing.
