@@ -638,6 +638,10 @@ function renderVices(){
     const pct=v.total>0?Math.round(((v.w||0)/v.total)*100):0;
     // Clean days from startDate (the real streak)
     const cleanDays=viceCleanDays(v);
+    // Declared HERE, at the top of the loop body, not beside one card variant's innerHTML —
+    // renderVices has several card branches and a const in one of them is not in scope in the
+    // others. The first version threw ReferenceError on exactly the branch it was meant to gate.
+    const _asking = (typeof viceNeedsCheckIn === 'function') && viceNeedsCheckIn(v);
     
     // Pattern insight from urge log
     let insight='';
@@ -680,6 +684,12 @@ function renderVices(){
       // LETTING-GO CARD: a healing goal, not a streak. The counter only ever climbs (days of choosing
       // yourself) — going back never resets it, because grief isn't linear. No red, no shame, no relapse.
       const lgDays = v.startDate ? _calDaysSince(v.startDate) : 0;
+    // WHEN THE APP ASKS A QUESTION, IT ASKS ONE QUESTION. A check-in due rendered the app's
+    // LARGEST card: the question, plus the stage strip, the pledge row, HALT, the urge door and
+    // "I used - log it honestly" - the SAME action as the check-in's own "No - I've used"
+    // eleven pixels above it. Two buttons, one outcome, on a card whose entire purpose at that
+    // moment is to ask whether someone has been honest. While the question stands it is the only
+    // thing on the card, so both fragments below collapse to nothing.
       c.innerHTML =
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">'+
           '<div style="flex:1">'+
@@ -869,7 +879,7 @@ function renderVices(){
         ? '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">' +
             (v.t ? 'Usually hits: ' + _escFew(v.t) : '') + insight + '</div>'
         : '') +
-      _stageStripHTML(i) + _pledgeRowHTML(i) +
+      (_asking ? '' : _stageStripHTML(i) + _pledgeRowHTML(i)) +
       (viceNeedsCheckIn(v) ?
         '<div style="background:var(--go-bg);border:1px solid var(--go-bd);border-radius:12px;padding:12px;margin-bottom:10px">' +
           '<div style="font-size:12px;color:var(--tx2);line-height:1.55;margin-bottom:10px">It\'s been a week since you last said anything here, and the count kept climbing on its own. I\'d rather it be true than tidy — are you still clean?</div>' +
@@ -878,15 +888,17 @@ function renderVices(){
             '<button onclick="openLogUse(' + i + ')" style="flex:1;background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:9px;padding:9px;font-size:12px;cursor:pointer">No — I\'ve used</button>' +
           '</div>' +
         '</div>' : '') +
-      _stagePrimaryHTML(i) +
-      '<button class="vice-btn" onclick="openHALT()" style="width:100%;background:var(--bg3);color:var(--tx2);border:1px solid var(--bd);border-radius:10px;padding:9px;font-size:12.5px;cursor:pointer;margin-top:6px">\u{1F37D} Hungry, angry, lonely or tired?</button>' +
+      (_asking ? '' : _stagePrimaryHTML(i)) +
+      (_asking ? '' :
+      '<button class="vice-btn" onclick="openHALT()" style="width:100%;background:var(--bg3);color:var(--tx2);border:1px solid var(--bd);border-radius:10px;padding:9px;font-size:12.5px;cursor:pointer;margin-top:6px">\u{1F37D} Hungry, angry, lonely or tired?</button>') +
       (function(){
         // The wins for NOT acting, counted back to him. This is the one number most recovery apps
         // never show, because they only track the fall.
         const tw=momentsWonInWeek(v.n); if(!tw) return '';
         return '<div style="text-align:center;font-size:11px;color:var(--gr);margin-top:8px;line-height:1.5">You came here and turned away '+tw+' time'+(tw===1?'':'s')+' this week. That’s the fight, won.</div>';
       })() +
-      '<button onclick="openLogUse(' + i + ')" style="width:100%;margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:10px;padding:9px;font-size:12px;cursor:pointer">I used — log it honestly</button>' +
+      (_asking ? '' :
+      '<button onclick="openLogUse(' + i + ')" style="width:100%;margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:10px;padding:9px;font-size:12px;cursor:pointer">I used — log it honestly</button>') +
       '<button onclick="openRecoveryTimeline(' + i + ')" style="width:100%;margin-top:8px;background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);border-radius:10px;padding:9px;font-size:12px;cursor:pointer">\u{1F33F} What this streak is earning you</button>' +
       totalInsight +
       // One quiet "manage" door instead of six loose links. Backdating lives in "I used" (it takes any

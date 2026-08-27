@@ -2019,6 +2019,48 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── when the app asks a question, it asks one question ─────────────────────────────────────
+  // A check-in due rendered the LARGEST card in the app: the question, plus the stage strip, the
+  // pledge row, HALT, the urge door and "I used — log it honestly" — which is the same action as the
+  // check-in's own "No — I've used" eleven pixels above it. Two buttons, one outcome, on a card whose
+  // entire purpose at that moment is to ask whether someone has been honest. It should be the
+  // smallest card, not the biggest.
+  {
+    for (const [label, due] of [['due', true], ['not due', false]]) {
+      const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+      const page = await ctx.newPage();
+      await page.addInitScript(due => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+        const d=i=>new Date(Date.now()-i*864e5).toISOString();
+        s('totry_onboarded',true); s('totry_name','Sam');
+        s('totry_v',[{ n:'Lust', mode:'quit', fightingSince:d(105), startDate:d(20),
+                       lastConfirm: due ? d(20) : new Date().toISOString() }]);
+      }, due);
+      await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+      await page.waitForTimeout(2700);
+      const r = await page.evaluate(async () => {
+        document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+        go('fight'); await new Promise(x=>setTimeout(x,1000));
+        const card = document.querySelector('.vice-card');
+        if(!card) return null;
+        const vis = el => { const c=getComputedStyle(el); if(c.display==='none') return false;
+          const q=el.getBoundingClientRect(); return q.width>0 && q.height>0; };
+        const btns = [...card.querySelectorAll('button')].filter(vis);
+        return { h: Math.round(card.getBoundingClientRect().height), n: btns.length,
+                 logUse: btns.filter(x => /openLogUse/.test(x.getAttribute('onclick')||'')).length,
+                 asking: /been a week|still clean/i.test(card.innerText||'') };
+      });
+      await ctx.close();
+      if (!r) { findings.push(`check-in (${label}): no vice card rendered`); continue; }
+      if (r.logUse > 1)
+        findings.push(`check-in (${label}): "I used" is offered ${r.logUse} times on one card — the check-in's own answer does the same thing`);
+      if (due && !r.asking) findings.push('check-in (due): the question does not render');
+      if (due && r.n > 5)
+        findings.push(`check-in (due): ${r.n} buttons while asking one question — it should be the smallest card, not the biggest`);
+    }
+    if (!findings.some(f => f.startsWith('check-in')))
+      console.log('check-in: while the question stands it is the only thing on the card');
+  }
+
   // ── staying in it is the win ───────────────────────────────────────────────────────────────
   // Alfy, on what winning means: "the user has successfully stayed in the fight" — then correcting
   // my first reading: "stay in the fight is NOT falling for the vices." So it counts days RESISTED,
