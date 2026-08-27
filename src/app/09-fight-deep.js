@@ -1505,10 +1505,16 @@ function viceFightingSince(v){
   if(!good.length) return null;
   return new Date(Math.min.apply(null, good));
 }
+// ORDINAL, not elapsed. _calDaysSince counts whole days gone by, which is right for a streak — today
+// is 0 days clean until midnight. It is wrong for "Day N of the fight": the day you name the thing
+// and decide to fight it is Day 1, not Day 0, and "Day 0 of the fight" was what a person read on the
+// first screen after committing. One meaning everywhere — the Score panel says "Day N of the fight"
+// too, rather than carrying a cardinal count of the same number.
 function viceFightDays(v){
   const since = viceFightingSince(v);
   if(!since) return 0;
-  return (typeof _calDaysSince === 'function') ? _calDaysSince(since) : 0;
+  const elapsed = (typeof _calDaysSince === 'function') ? _calDaysSince(since) : 0;
+  return elapsed + 1;
 }
 // How many times they picked it back up. A restart is only counted where a streak was actually
 // broken and resumed, so someone who has never fallen reads 0 rather than a misleading 1.

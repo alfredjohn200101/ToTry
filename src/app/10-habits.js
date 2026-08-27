@@ -42,8 +42,15 @@ function renderScoreboard(){
   const e=id=>document.getElementById(id);
   // The hero is how long they have been in this, not how many urges they beat — see the note in the
   // markup. Someone with a long fight and no clean day has still been fighting for that long.
-  const _fightMax = (vices||[]).reduce((a,v) =>
-    Math.max(a, (typeof viceFightDays === 'function' ? viceFightDays(v) : 0)), 0);
+  // ELAPSED here, ordinal on the card. The card says "Day 301 of the fight" and this says "300 days
+  // in the fight" — the same relationship as an age and a birthday: you have lived 30 years and you
+  // are in your 31st. Each number is phrased to match what it counts, rather than one number wearing
+  // two labels.
+  const _fightMax = (vices||[]).reduce((a,v) => {
+    const since = (typeof viceFightingSince === 'function') ? viceFightingSince(v) : null;
+    const elapsed = (since && typeof _calDaysSince === 'function') ? _calDaysSince(since) : 0;
+    return Math.max(a, elapsed);
+  }, 0);
   const _cameBack = (vices||[]).reduce((a,v) =>
     a + (typeof viceCameBack === 'function' ? viceCameBack(v) : 0), 0);
   if(e('sc-total'))e('sc-total').textContent=_fightMax;

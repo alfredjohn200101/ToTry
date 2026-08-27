@@ -1967,7 +1967,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       s('totry_onboarded',true); s('totry_name','Sam');
       const hist=[]; for(let i=50;i>=0;i--) hist.push({ date:d(i), streakLength:0 });
       // a quit fight at zero AND a moderate fight tracked far longer — the mixed-mode case
-      s('totry_v',[{ n:'Lust', mode:'quit', fightingSince:d(105), startDate:d(0),
+      s('totry_v',[{ n:'Lust', mode:'quit', fightingSince:d(104), startDate:d(0),
                      relapseHistory:hist, relapseCount:51, w:3, total:54 },
                    { n:'Drink', mode:'moderate', fightingSince:d(300), startDate:d(300) }]);
     });
@@ -2022,7 +2022,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
       const d=i=>new Date(Date.now()-i*864e5).toISOString();
       s('totry_onboarded',true); s('totry_name','Sam');
-      s('totry_v',[{ n:'Lust', mode:'quit', fightingSince:d(105), startDate:d(26),
+      s('totry_v',[{ n:'Lust', mode:'quit', fightingSince:d(104), startDate:d(26),
                      relapseHistory:[{ date:d(60), streakLength:20 },{ date:d(26), streakLength:34 }],
                      relapseCount:2 }]);
     });
