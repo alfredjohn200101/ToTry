@@ -717,7 +717,13 @@ function renderVices(){
             '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + within + '/' + totalChecks + '</div>' +
           '</div>' : '') +
         '</div>' +
-        '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Usually: ' + (v.t || 'various times').replace(/</g,'&lt;') + insight + '</div>' +
+        // Same rule as the quit card: say nothing rather than 'various times', which is the app
+        // admitting it has no pattern while formatted as though it found one. This is the moderate
+        // card's own render — v546 fixed the quit one and left this untouched.
+        ((v.t || insight)
+          ? '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">' +
+              (v.t ? 'Usually: ' + _escFew(v.t) : '') + insight + '</div>'
+          : '') +
         _stageStripHTML(i) + _pledgeRowHTML(i) + _stageCtaHTML(i) +
         (function(){
           const thr = v.modThreshold || 0;
@@ -882,8 +888,11 @@ function renderVices(){
           const elapsed = Date.now() - new Date(start).getTime();
           const h = Math.floor((elapsed % 86400000) / 3600000);
           const m = Math.floor((elapsed % 3600000) / 60000);
-          const s = Math.floor((elapsed % 60000) / 1000);
-          el.textContent = h + 'h ' + m + 'm ' + s + 's';
+          // NO SECONDS — the same rule the initial render follows. This interval was overwriting
+          // that decision one second after every paint, so the comment above renderVices argued for
+          // a stopwatch-free card while this quietly put the stopwatch back. A fix that something
+          // else silently reverts is worse than no fix: it reads as done and behaves as broken.
+          el.textContent = (h > 0 ? h + 'h ' : '') + m + 'm';
         });
       }, 1000);
     }
@@ -1109,7 +1118,10 @@ function addVice(){
     mode: viceModeChoice,
     limit: (viceModeChoice === 'moderate' && document.getElementById('v-limit')) ? document.getElementById('v-limit').value.trim() : '',
     modThreshold: (viceModeChoice === 'moderate' && document.getElementById('v-mod-threshold')) ? parseInt(document.getElementById('v-mod-threshold').value, 10) : 0,
-    t:t||'Various situations',
+    // NOT 'Various situations'. renderVices now hides this line when it is empty, but addVice was
+    // still writing the filler literal, so the guard never fired and the fourth line of a brand-new
+    // card read "Usually hits: Various situations" — the app stating a pattern it does not have.
+    t: t || '',
     w:0,total:0,
     lastWin:null,lastLoss:null,
     urgelog:[],

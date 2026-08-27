@@ -690,7 +690,15 @@ function startSobrietyClock(){
 }
 function updateSobrietyClock(){
   loadV();if(!vices.length)return;
-  const v=vices.find(x=>x&&x.kind!=='letgo'); if(!v)return; // letting-go struggles never drive the "days clean" clock
+  // THE LONGEST ABSTINENCE FIGHT, not simply the first vice that is not letting-go. find() returned
+  // whatever sat at index 0, so someone moderating drinking (tracked 300 days) and quitting porn
+  // (9 days clean) was told in 48px type that they were 300 days clean. A moderation or watch fight
+  // has no clean streak at all — viceCleanDays already returns 0 for them — so the headline has to
+  // come from an abstinence fight or not be shown.
+  const _abst = (vices||[]).filter(x => x && x.kind !== 'letgo' &&
+    (typeof viceIsAbstinence !== 'function' || viceIsAbstinence(x)));
+  const v = _abst.sort((a,b) => (typeof viceCleanDays === 'function' ? viceCleanDays(b) - viceCleanDays(a) : 0))[0];
+  if(!v) return;
   // Same anchor the vice card uses, or the two disagree on the same screen — see viceStreakAnchor.
   const since=(typeof viceStreakAnchor==='function' ? viceStreakAnchor(v) : null)
               || new Date(ls('totry_start')||Date.now());

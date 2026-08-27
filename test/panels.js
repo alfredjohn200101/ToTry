@@ -1956,6 +1956,57 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── the four ways v546/v547 only half-landed ───────────────────────────────────────────────
+  // Every one of these is a fix of mine that a second piece of code quietly undid, or that only
+  // covered the surface I was looking at. Found by MEASURING the app rather than reading the diff.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      const d=i=>new Date(Date.now()-i*864e5).toISOString();
+      s('totry_onboarded',true); s('totry_name','Sam');
+      const hist=[]; for(let i=50;i>=0;i--) hist.push({ date:d(i), streakLength:0 });
+      // a quit fight at zero AND a moderate fight tracked far longer — the mixed-mode case
+      s('totry_v',[{ n:'Lust', mode:'quit', fightingSince:d(105), startDate:d(0),
+                     relapseHistory:hist, relapseCount:51, w:3, total:54 },
+                   { n:'Drink', mode:'moderate', fightingSince:d(300), startDate:d(300) }]);
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const r = await page.evaluate(async () => {
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+      go('fight'); await new Promise(x=>setTimeout(x,1000));
+      const out = {};
+      // 1. the big clean-day hero must read the ABSTINENCE fight, not whichever vice sits at index 0
+      out.hero = (document.getElementById('sob-days')||{}).textContent || '';
+      // 2. no filler pattern line on a card whose trigger was never set
+      out.card = (document.getElementById('vices-list').innerText||'').replace(/\s+/g,' ').trim();
+      // 3. the live clock must still be seconds-free AFTER the ticker has run
+      await new Promise(x=>setTimeout(x,2200));
+      const clock = document.querySelector('.vice-card .vice-live-clock');
+      out.clock = clock ? (clock.textContent||'').trim() : '';
+      // 4. the Score panel must not be the same scoreboard of losses one tap away
+      const btn = [...document.querySelectorAll('#tab-fight button')].find(x => /^Score$/i.test((x.innerText||'').trim()));
+      if(btn){ btn.click(); await new Promise(x=>setTimeout(x,800)); }
+      out.score = (document.getElementById('tab-fight').innerText||'').replace(/\s+/g,' ').trim();
+      return out;
+    });
+    if (r.hero.trim() !== '0')
+      findings.push(`fight: the clean-day hero reads "${r.hero}" — it is showing a moderate fight's 300 days as days CLEAN`);
+    else if (/various situations|various times/i.test(r.card))
+      findings.push(`fight: filler pattern line on the card — "${r.card.slice(0,60)}" — the app stating a pattern it does not have`);
+    else if (/\d+s\b/.test(r.clock))
+      findings.push(`fight: the live clock is ticking seconds ("${r.clock}") — the interval overwrites the seconds-free render one second later`);
+    else if (/win rate|no wins yet|urges defeated/i.test(r.score))
+      findings.push(`fight: the Score panel still carries the scoreboard of losses — "${r.score.slice(0,80)}"`);
+    else if (!/DAYS IN THE FIGHT/i.test(r.score))
+      findings.push(`fight: the Score panel does not lead with the fight — "${r.score.slice(0,70)}"`);
+    else if (!/URGES MET 3\b/.test(r.score))
+      findings.push(`fight: "urges met" is not the real win count — "${r.score.slice(0,80)}" (seeded 3 wins from 54)`);
+    else console.log('fight: hero reads the abstinence fight, no filler, no ticking seconds, and Score leads with the fight');
+    await ctx.close();
+  }
+
   // ── the fight is longer than the streak ────────────────────────────────────────────────────
   // Alfy: "i have it for 105 days now but i know i've failed most of those days... I'd want to keep
   // myself at real terms at all times even if that costs me a streak. The point is that i haven't let

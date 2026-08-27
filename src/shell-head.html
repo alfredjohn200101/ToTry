@@ -2391,13 +2391,16 @@ input:focus,textarea:focus,select:focus{
   <!-- SCORE PANEL -->
   <div id="fight-panel-score" style="display:none">
     <div class="score-hero">
+      <!-- "Total urges defeated" over a win rate is the scoreboard of losses again, in the largest
+           type in the app. Someone who has never had a clean day has defeated nothing by this
+           measure, however long they have been fighting. The hero is the fight itself. -->
       <div class="score-big" id="sc-total">0</div>
-      <div class="score-lbl">Total urges defeated</div>
+      <div class="score-lbl" id="sc-total-lbl">Days in the fight</div>
       <div class="score-sub" id="sc-sub">Every number here is a moment you chose who you're becoming.</div>
     </div>
     <div class="sc-grid">
-      <div class="sc-met"><div class="sc-ml">Win rate</div><div class="sc-mv g" id="sc-rate">0%</div></div>
-      <div class="sc-met"><div class="sc-ml">Battles</div><div class="sc-mv au" id="sc-fought">0</div></div>
+      <div class="sc-met"><div class="sc-ml">Came back</div><div class="sc-mv g" id="sc-rate">0</div></div>
+      <div class="sc-met"><div class="sc-ml">Urges met</div><div class="sc-mv au" id="sc-fought">0</div></div>
       <div class="sc-met"><div class="sc-ml">Streak</div><div class="sc-mv bl" id="sc-streak">0</div></div>
     </div>
     <div class="lbl">By vice</div>

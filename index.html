@@ -2391,13 +2391,16 @@ input:focus,textarea:focus,select:focus{
   <!-- SCORE PANEL -->
   <div id="fight-panel-score" style="display:none">
     <div class="score-hero">
+      <!-- "Total urges defeated" over a win rate is the scoreboard of losses again, in the largest
+           type in the app. Someone who has never had a clean day has defeated nothing by this
+           measure, however long they have been fighting. The hero is the fight itself. -->
       <div class="score-big" id="sc-total">0</div>
-      <div class="score-lbl">Total urges defeated</div>
+      <div class="score-lbl" id="sc-total-lbl">Days in the fight</div>
       <div class="score-sub" id="sc-sub">Every number here is a moment you chose who you're becoming.</div>
     </div>
     <div class="sc-grid">
-      <div class="sc-met"><div class="sc-ml">Win rate</div><div class="sc-mv g" id="sc-rate">0%</div></div>
-      <div class="sc-met"><div class="sc-ml">Battles</div><div class="sc-mv au" id="sc-fought">0</div></div>
+      <div class="sc-met"><div class="sc-ml">Came back</div><div class="sc-mv g" id="sc-rate">0</div></div>
+      <div class="sc-met"><div class="sc-ml">Urges met</div><div class="sc-mv au" id="sc-fought">0</div></div>
       <div class="sc-met"><div class="sc-ml">Streak</div><div class="sc-mv bl" id="sc-streak">0</div></div>
     </div>
     <div class="lbl">By vice</div>
@@ -5050,7 +5053,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v547';
+const APP_VERSION = 'v548';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -13068,7 +13071,15 @@ function startSobrietyClock(){
 }
 function updateSobrietyClock(){
   loadV();if(!vices.length)return;
-  const v=vices.find(x=>x&&x.kind!=='letgo'); if(!v)return; // letting-go struggles never drive the "days clean" clock
+  // THE LONGEST ABSTINENCE FIGHT, not simply the first vice that is not letting-go. find() returned
+  // whatever sat at index 0, so someone moderating drinking (tracked 300 days) and quitting porn
+  // (9 days clean) was told in 48px type that they were 300 days clean. A moderation or watch fight
+  // has no clean streak at all — viceCleanDays already returns 0 for them — so the headline has to
+  // come from an abstinence fight or not be shown.
+  const _abst = (vices||[]).filter(x => x && x.kind !== 'letgo' &&
+    (typeof viceIsAbstinence !== 'function' || viceIsAbstinence(x)));
+  const v = _abst.sort((a,b) => (typeof viceCleanDays === 'function' ? viceCleanDays(b) - viceCleanDays(a) : 0))[0];
+  if(!v) return;
   // Same anchor the vice card uses, or the two disagree on the same screen — see viceStreakAnchor.
   const since=(typeof viceStreakAnchor==='function' ? viceStreakAnchor(v) : null)
               || new Date(ls('totry_start')||Date.now());
@@ -18184,7 +18195,13 @@ function renderVices(){
             '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + within + '/' + totalChecks + '</div>' +
           '</div>' : '') +
         '</div>' +
-        '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Usually: ' + (v.t || 'various times').replace(/</g,'&lt;') + insight + '</div>' +
+        // Same rule as the quit card: say nothing rather than 'various times', which is the app
+        // admitting it has no pattern while formatted as though it found one. This is the moderate
+        // card's own render — v546 fixed the quit one and left this untouched.
+        ((v.t || insight)
+          ? '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">' +
+              (v.t ? 'Usually: ' + _escFew(v.t) : '') + insight + '</div>'
+          : '') +
         _stageStripHTML(i) + _pledgeRowHTML(i) + _stageCtaHTML(i) +
         (function(){
           const thr = v.modThreshold || 0;
@@ -18349,8 +18366,11 @@ function renderVices(){
           const elapsed = Date.now() - new Date(start).getTime();
           const h = Math.floor((elapsed % 86400000) / 3600000);
           const m = Math.floor((elapsed % 3600000) / 60000);
-          const s = Math.floor((elapsed % 60000) / 1000);
-          el.textContent = h + 'h ' + m + 'm ' + s + 's';
+          // NO SECONDS — the same rule the initial render follows. This interval was overwriting
+          // that decision one second after every paint, so the comment above renderVices argued for
+          // a stopwatch-free card while this quietly put the stopwatch back. A fix that something
+          // else silently reverts is worse than no fix: it reads as done and behaves as broken.
+          el.textContent = (h > 0 ? h + 'h ' : '') + m + 'm';
         });
       }, 1000);
     }
@@ -18576,7 +18596,10 @@ function addVice(){
     mode: viceModeChoice,
     limit: (viceModeChoice === 'moderate' && document.getElementById('v-limit')) ? document.getElementById('v-limit').value.trim() : '',
     modThreshold: (viceModeChoice === 'moderate' && document.getElementById('v-mod-threshold')) ? parseInt(document.getElementById('v-mod-threshold').value, 10) : 0,
-    t:t||'Various situations',
+    // NOT 'Various situations'. renderVices now hides this line when it is empty, but addVice was
+    // still writing the filler literal, so the guard never fired and the fourth line of a brand-new
+    // card read "Usually hits: Various situations" — the app stating a pattern it does not have.
+    t: t || '',
     w:0,total:0,
     lastWin:null,lastLoss:null,
     urgelog:[],
@@ -19944,19 +19967,46 @@ function renderScoreboard(){
   const cleanStreak = _streakVices.length ? Math.max(0, ..._streakVices.map(v => viceCleanDays(v))) : 0;
   const rate=tf>0?Math.round((tw/tf)*100):0,day=getDayCount(),str=cleanStreak;
   const e=id=>document.getElementById(id);
-  if(e('sc-total'))e('sc-total').textContent=tw;
-  if(e('sc-rate'))e('sc-rate').textContent=rate+'%';
-  if(e('sc-fought'))e('sc-fought').textContent=tf;
+  // The hero is how long they have been in this, not how many urges they beat — see the note in the
+  // markup. Someone with a long fight and no clean day has still been fighting for that long.
+  const _fightMax = (vices||[]).reduce((a,v) =>
+    Math.max(a, (typeof viceFightDays === 'function' ? viceFightDays(v) : 0)), 0);
+  const _cameBack = (vices||[]).reduce((a,v) =>
+    a + (typeof viceCameBack === 'function' ? viceCameBack(v) : 0), 0);
+  if(e('sc-total'))e('sc-total').textContent=_fightMax;
+  if(e('sc-total-lbl'))e('sc-total-lbl').textContent = _fightMax === 1 ? 'Day in the fight' : 'Days in the fight';
+  if(e('sc-rate'))e('sc-rate').textContent=_cameBack;      // came back, not a win rate
+  if(e('sc-fought'))e('sc-fought').textContent=tw;         // urges actually met and turned away
   if(e('sc-streak'))e('sc-streak').textContent=str;
   const sub=e('sc-sub');if(sub&&tw>0)sub.textContent=tw+' moments you chose who you\'re becoming over who you used to be.';
   const bv=e('score-by-vice');
   if(bv){bv.innerHTML='';vices.forEach(v=>{
     if(v.kind==='letgo')return; // letting-go has a healing goal, not a win-rate
-    const pct=v.total>0?Math.round(((v.w||0)/v.total)*100):0;
+    // THE SAME SHAME, ONE TAP AWAY. v546 took "WIN RATE 0% · 0/15" off the vice card and left the
+    // Score panel entirely built on it — so a man 105 days into the fight, who had logged 51 slips
+    // honestly, read "0 TOTAL URGES DEFEATED · WIN RATE 0% · 0/51 won · No wins yet" underneath a
+    // line telling him every number here is a moment he chose who he is becoming. Moving a bug is
+    // not fixing it. This row now says the two things that are true — how often it is happening
+    // against last week, and how many times he came back — exactly as the card does.
+    const fr = (typeof viceFrequencyRead === 'function') ? viceFrequencyRead(v) : null;
+    const back = (typeof viceCameBack === 'function') ? viceCameBack(v) : 0;
+    const fightDays = (typeof viceFightDays === 'function') ? viceFightDays(v) : 0;
+    const head = fr && fr.direction ? fr.thisWeek + ' this week'
+               : fr ? fr.daysLogged + ' logged'
+               : (viceCleanDays(v) + 'd clean');
+    const headCol = fr && fr.direction === 'down' ? 'var(--gr)'
+                  : fr && fr.direction === 'up' ? 'var(--go)' : 'var(--tx2)';
+    const meta = [
+      fightDays ? ('Day ' + fightDays + ' of the fight') : '',
+      back ? ('came back ' + back + (back === 1 ? ' time' : ' times')) : '',
+      fr && fr.direction === 'down' ? ('down from ' + fr.lastWeek)
+        : fr && fr.direction === 'up' ? ('was ' + fr.lastWeek)
+        : fr && fr.direction === 'level' ? 'same as last week' : ''
+    ].filter(Boolean).join(' \u00b7 ');
     const row=document.createElement('div');row.className='vsr';
-    row.innerHTML='<div class="vsr-top"><span class="vsr-name">'+_escFew(v.n)+'</span><div style="text-align:right"><div class="vsr-pct">'+pct+'%</div><div class="vsr-wins">'+(v.w||0)+' wins</div></div></div>'+
-      '<div class="vsr-bar-wrap"><div class="vsr-bar" style="width:'+pct+'%"></div></div>'+
-      '<div class="vsr-meta"><span>'+(v.w||0)+'/'+(v.total||0)+' won</span><span>'+(v.lastWin?'Last: '+new Date(v.lastWin).toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'No wins yet')+'</span></div>';
+    row.innerHTML='<div class="vsr-top"><span class="vsr-name">'+_escFew(v.n)+'</span>'+
+      '<div style="text-align:right"><div class="vsr-pct" style="font-size:15px;color:'+headCol+'">'+head+'</div></div></div>'+
+      '<div class="vsr-meta"><span>'+meta+'</span><span>'+(v.lastWin?'Last win: '+new Date(v.lastWin).toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'')+'</span></div>';
     bv.appendChild(row);
   });}
   const ael=e('achievements');

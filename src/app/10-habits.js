@@ -40,19 +40,46 @@ function renderScoreboard(){
   const cleanStreak = _streakVices.length ? Math.max(0, ..._streakVices.map(v => viceCleanDays(v))) : 0;
   const rate=tf>0?Math.round((tw/tf)*100):0,day=getDayCount(),str=cleanStreak;
   const e=id=>document.getElementById(id);
-  if(e('sc-total'))e('sc-total').textContent=tw;
-  if(e('sc-rate'))e('sc-rate').textContent=rate+'%';
-  if(e('sc-fought'))e('sc-fought').textContent=tf;
+  // The hero is how long they have been in this, not how many urges they beat — see the note in the
+  // markup. Someone with a long fight and no clean day has still been fighting for that long.
+  const _fightMax = (vices||[]).reduce((a,v) =>
+    Math.max(a, (typeof viceFightDays === 'function' ? viceFightDays(v) : 0)), 0);
+  const _cameBack = (vices||[]).reduce((a,v) =>
+    a + (typeof viceCameBack === 'function' ? viceCameBack(v) : 0), 0);
+  if(e('sc-total'))e('sc-total').textContent=_fightMax;
+  if(e('sc-total-lbl'))e('sc-total-lbl').textContent = _fightMax === 1 ? 'Day in the fight' : 'Days in the fight';
+  if(e('sc-rate'))e('sc-rate').textContent=_cameBack;      // came back, not a win rate
+  if(e('sc-fought'))e('sc-fought').textContent=tw;         // urges actually met and turned away
   if(e('sc-streak'))e('sc-streak').textContent=str;
   const sub=e('sc-sub');if(sub&&tw>0)sub.textContent=tw+' moments you chose who you\'re becoming over who you used to be.';
   const bv=e('score-by-vice');
   if(bv){bv.innerHTML='';vices.forEach(v=>{
     if(v.kind==='letgo')return; // letting-go has a healing goal, not a win-rate
-    const pct=v.total>0?Math.round(((v.w||0)/v.total)*100):0;
+    // THE SAME SHAME, ONE TAP AWAY. v546 took "WIN RATE 0% · 0/15" off the vice card and left the
+    // Score panel entirely built on it — so a man 105 days into the fight, who had logged 51 slips
+    // honestly, read "0 TOTAL URGES DEFEATED · WIN RATE 0% · 0/51 won · No wins yet" underneath a
+    // line telling him every number here is a moment he chose who he is becoming. Moving a bug is
+    // not fixing it. This row now says the two things that are true — how often it is happening
+    // against last week, and how many times he came back — exactly as the card does.
+    const fr = (typeof viceFrequencyRead === 'function') ? viceFrequencyRead(v) : null;
+    const back = (typeof viceCameBack === 'function') ? viceCameBack(v) : 0;
+    const fightDays = (typeof viceFightDays === 'function') ? viceFightDays(v) : 0;
+    const head = fr && fr.direction ? fr.thisWeek + ' this week'
+               : fr ? fr.daysLogged + ' logged'
+               : (viceCleanDays(v) + 'd clean');
+    const headCol = fr && fr.direction === 'down' ? 'var(--gr)'
+                  : fr && fr.direction === 'up' ? 'var(--go)' : 'var(--tx2)';
+    const meta = [
+      fightDays ? ('Day ' + fightDays + ' of the fight') : '',
+      back ? ('came back ' + back + (back === 1 ? ' time' : ' times')) : '',
+      fr && fr.direction === 'down' ? ('down from ' + fr.lastWeek)
+        : fr && fr.direction === 'up' ? ('was ' + fr.lastWeek)
+        : fr && fr.direction === 'level' ? 'same as last week' : ''
+    ].filter(Boolean).join(' \u00b7 ');
     const row=document.createElement('div');row.className='vsr';
-    row.innerHTML='<div class="vsr-top"><span class="vsr-name">'+_escFew(v.n)+'</span><div style="text-align:right"><div class="vsr-pct">'+pct+'%</div><div class="vsr-wins">'+(v.w||0)+' wins</div></div></div>'+
-      '<div class="vsr-bar-wrap"><div class="vsr-bar" style="width:'+pct+'%"></div></div>'+
-      '<div class="vsr-meta"><span>'+(v.w||0)+'/'+(v.total||0)+' won</span><span>'+(v.lastWin?'Last: '+new Date(v.lastWin).toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'No wins yet')+'</span></div>';
+    row.innerHTML='<div class="vsr-top"><span class="vsr-name">'+_escFew(v.n)+'</span>'+
+      '<div style="text-align:right"><div class="vsr-pct" style="font-size:15px;color:'+headCol+'">'+head+'</div></div></div>'+
+      '<div class="vsr-meta"><span>'+meta+'</span><span>'+(v.lastWin?'Last win: '+new Date(v.lastWin).toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'')+'</span></div>';
     bv.appendChild(row);
   });}
   const ael=e('achievements');
