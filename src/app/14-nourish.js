@@ -3895,11 +3895,11 @@ function renderBodySystemReport(){
   if(domains<2){
     const preview='<div class="eyebrow" style="color:var(--go);margin-bottom:8px">Your body, one system</div>'+
       '<div style="font-size:12px;color:var(--tx2);line-height:1.65">Train, Nourish and Track feed one loop. Log a workout, a couple of days of food, and a weigh-in \u2014 this becomes your weekly verdict: is it working, and the one thing to change.</div>'+
-      '<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">'+
-      '<button class="btn" style="flex:1;min-width:100px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="go(\'train\')">Log a workout</button>'+
-      '<button class="btn" style="flex:1;min-width:100px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="go(\'nourish\')">Log a meal</button>'+
-      '<button class="btn" style="flex:1;min-width:100px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="go(\'track\')">Log a weigh-in</button>'+
-      '</div>';
+      // The three buttons that were here — "Log a workout", "Log a meal", "Log a weigh-in" —
+      // went to exactly the same places as the three hub cards sitting directly above this card.
+      // Six ways into three destinations, stacked. The card's job is to explain that they are one
+      // loop; the hub is the way in, and the handoff lines under each card now say what is next.
+      '';
     containers.forEach(b=>{b.style.display='block';b.innerHTML=preview;});
     return;
   }

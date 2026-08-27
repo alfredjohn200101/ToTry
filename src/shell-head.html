@@ -2041,10 +2041,14 @@ input:focus,textarea:focus,select:focus{
 
   <!-- The two streaks that matter, as a clean pair below the hero. -->
   <div class="dual-streaks" style="margin-bottom:14px">
+    <!-- This said "Sober streak · Days clean" — the same number as the "🛡️ The fight · 9 days clean"
+         card 656px above it, in a second visual language, going to the same screen. Home said one
+         truth twice and never said the one that matters more: the fight does not reset, and a person
+         carrying a broken streak still has it. -->
     <div class="streak-card sober" onclick="go('fight')">
       <div class="streak-num" id="streak-sober">0</div>
-      <div class="streak-lbl">Sober streak</div>
-      <div class="streak-sub">Days clean</div>
+      <div class="streak-lbl">The fight</div>
+      <div class="streak-sub">Days in</div>
     </div>
     <div class="streak-card resilience" onclick="showResilienceInfo()">
       <div class="streak-num" id="streak-resilience">0</div>
@@ -2662,9 +2666,11 @@ input:focus,textarea:focus,select:focus{
     <button class="btn primary" onclick="document.getElementById('food-csv-input').click()" style="margin-bottom:0">Import my history</button>
   </div>
 
+  <!-- "📥 Import food CSV" lived here and fired the same input as "Import my history" in the card
+       above — which also explains where the file comes from. One door, in the place that teaches
+       you how to get through it. Export keeps the row. -->
   <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
-    <button class="btn" style="flex:1;min-width:120px;padding:9px;font-size:11px;background:transparent;border:1px dashed var(--bd2);color:var(--tx3)" onclick="document.getElementById('food-csv-input').click()">📥 Import food CSV</button>
-    <button class="btn" style="flex:1;min-width:120px;padding:9px;font-size:11px;background:transparent;border:1px dashed var(--bd2);color:var(--tx3)" onclick="exportFoodCSV()">📤 Export my food log</button>
+    <button class="btn" style="width:100%;padding:9px;font-size:11px;background:transparent;border:1px dashed var(--bd2);color:var(--tx3)" onclick="exportFoodCSV()">📤 Export my food log</button>
   </div>
   
   <!-- Trends & reports (the diary itself lives up top). Hidden until there's actually something to

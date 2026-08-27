@@ -15,9 +15,13 @@ H.section('viceCleanDays — the streak counter');
   const daysAgo = n => new Date(Date.now() - n * 86400000).toISOString();
   H.eq(viceCleanDays({ startDate: daysAgo(5) }), 5, '5 days since startDate → 5');
   // The anchor itself, since two screens now depend on it agreeing.
-  H.ok(viceStreakAnchor({ startDate: daysAgo(5), lastLoss: daysAgo(1) }).getTime() === new Date(daysAgo(5)).getTime(),
+  // Each stamp computed ONCE. These called daysAgo(n) twice — to build the object and again to
+  // compare — so a millisecond ticking between the two calls failed the assertion on real code. A
+  // gate that flakes is a gate people re-run instead of trust, and this one failed twice in a day.
+  const _five = daysAgo(5), _three = daysAgo(3), _one = daysAgo(1);
+  H.ok(viceStreakAnchor({ startDate: _five, lastLoss: _one }).getTime() === new Date(_five).getTime(),
        'startDate wins over lastLoss — it is what every relapse path writes, including backdating');
-  H.ok(viceStreakAnchor({ lastLoss: daysAgo(3) }).getTime() === new Date(daysAgo(3)).getTime(),
+  H.ok(viceStreakAnchor({ lastLoss: _three }).getTime() === new Date(_three).getTime(),
        'lastLoss is the fallback for rows that predate startDate');
 
   // The bug this was written for: a quit date typed as a DATE parses at UTC midnight, which is a

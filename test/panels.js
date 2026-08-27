@@ -2019,6 +2019,65 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── one action, one place on a screen ─────────────────────────────────────────────────────
+  // "there would be more like that where things double up or are redundant." There were: the same
+  // action offered twice on one screen, in two visual languages, so the person has to work out
+  // whether they are different. Found by grouping every visible control on a tab by the handler it
+  // actually fires — which is what makes this checkable rather than a matter of taste.
+  //
+  // Cross-TAB repetition is fine and deliberate: several screens may legitimately point at Train.
+  // This only looks within a single tab.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+      const d=i=>new Date(Date.now()-i*864e5).toISOString(), au=i=>new Date(Date.now()-i*864e5).toLocaleDateString('en-AU');
+      s('totry_onboarded',true); s('totry_name','Sam'); s('totry_start',d(60));
+      s('totry_v',[{ n:'Lust', mode:'quit', fightingSince:d(105), startDate:d(9) }]);
+      s('totry_workouts',[{ id:1, ts:d(0), date:d(0).slice(0,10), title:'Push', volume:8000, sets:16, calories:400 }]);
+      s('totry_nutlog',{ [au(0)]:[{ name:'Meal', cal:700, pro:50, ts:d(0) }] });
+      s('totry_body',[{ date:d(0).slice(0,10), weight:82, ts:d(0) }]);
+      s('totry_f',{ d:[{ n:'Car loan', t:5000, p:1200 }], income:5200 });
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2800);
+    const dupes = await page.evaluate(async () => {
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+      const out = [];
+      for (const t of ['home','fight','grow','money','soul','nourish','reflect','track']) {
+        go(t); await new Promise(x=>setTimeout(x,700));
+        const pane = document.getElementById('tab-' + t);
+        if(!pane) continue;
+        const vis = el => { const c=getComputedStyle(el); if(c.display==='none'||c.visibility==='hidden') return false;
+          const q=el.getBoundingClientRect(); return q.width>0 && q.height>0; };
+        const byAction = {};
+        [...pane.querySelectorAll('button,[onclick]')].filter(vis).forEach(el => {
+          const act = (el.getAttribute('onclick')||'').replace(/\s+/g,'');
+          if(!act) return;
+          // NAVIGATION IS NOT DOUBLING. Two Home entries that lead to Fight while showing different
+          // facts — "9 days clean" and "106 days in the fight" — are two truths, not one twice. And a
+          // card whose title, body and CTA are all tappable is one thing with a generous target. What
+          // this hunts is an ACTION offered twice: two buttons that open the same sheet, log the same
+          // thing, fire the same input. Those make a person work out whether they differ.
+          if(/^go\(/.test(act)) return;
+          // an inline signpost inside a sentence is wayfinding, not a duplicate control
+          if(el.tagName !== 'BUTTON' && el.closest('p,div[style*="font-size:11px"]') && (el.innerText||'').length < 22) return;
+          const label = (el.innerText||'').replace(/\s+/g,' ').trim().toLowerCase();
+          if(label.length < 4) return;
+          (byAction[act] = byAction[act] || []).push(label.slice(0,34));
+        });
+        Object.keys(byAction).forEach(act => {
+          if(byAction[act].length > 1)
+            out.push(t + ': ' + byAction[act].map(x => '"' + x + '"').join(' and ') + ' → ' + act.slice(0,30));
+        });
+      }
+      return out;
+    });
+    dupes.forEach(d => findings.push(`doubled: ${d}`));
+    if (!dupes.length) console.log('doubling: no action is offered twice on the same screen');
+    await ctx.close();
+  }
+
   // ── when the app asks a question, it asks one question ─────────────────────────────────────
   // A check-in due rendered the LARGEST card in the app: the question, plus the stage strip, the
   // pledge row, HALT, the urge door and "I used — log it honestly" — which is the same action as the

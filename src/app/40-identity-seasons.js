@@ -227,7 +227,16 @@ function getResilienceStreak(){
 }
 
 function renderDualStreaks(){
-  const sober=getSoberStreak();
+  // The longest fight, not the longest clean streak — the streak is already on the nav card above.
+  // Falls back to the streak for anyone whose vices predate fightingSince having a value.
+  const sober=(function(){
+    try{
+      loadV();
+      let d=0;
+      (vices||[]).forEach(v=>{ const n=(typeof viceFightDays==='function')?viceFightDays(v):0; if(n>d) d=n; });
+      return d || getSoberStreak();
+    }catch(_){ return getSoberStreak(); }
+  })();
   const resilience=getResilienceStreak();
   const sEl=document.getElementById('streak-sober');
   const rEl=document.getElementById('streak-resilience');
@@ -245,8 +254,11 @@ function renderDualStreaks(){
       } else { el.style.display='none'; el.innerHTML=''; }
     }
   }catch(_){}
-  // Reframe the bare "0" after a relapse — a fresh start, not a scoreboard of shame.
-  try{ const ss=document.querySelector('.streak-card.sober .streak-sub'); if(ss) ss.textContent=(sober===0?'A fresh start':'Days clean'); }catch(_){}
+  // The tile counts the FIGHT now, not the clean streak, so "Days clean" here was relabelling the
+  // number under it — 106 days in the fight, described as 106 days clean. The number never being 0
+  // is also why the old "A fresh start" reframe is gone: a fight does not reset, so it has no zero
+  // to soften. The clean streak still lives on the nav card above, where it always did.
+  try{ const ss=document.querySelector('.streak-card.sober .streak-sub'); if(ss) ss.textContent='Days in'; }catch(_){}
 }
 
 function showResilienceInfo(){

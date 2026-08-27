@@ -2041,10 +2041,14 @@ input:focus,textarea:focus,select:focus{
 
   <!-- The two streaks that matter, as a clean pair below the hero. -->
   <div class="dual-streaks" style="margin-bottom:14px">
+    <!-- This said "Sober streak · Days clean" — the same number as the "🛡️ The fight · 9 days clean"
+         card 656px above it, in a second visual language, going to the same screen. Home said one
+         truth twice and never said the one that matters more: the fight does not reset, and a person
+         carrying a broken streak still has it. -->
     <div class="streak-card sober" onclick="go('fight')">
       <div class="streak-num" id="streak-sober">0</div>
-      <div class="streak-lbl">Sober streak</div>
-      <div class="streak-sub">Days clean</div>
+      <div class="streak-lbl">The fight</div>
+      <div class="streak-sub">Days in</div>
     </div>
     <div class="streak-card resilience" onclick="showResilienceInfo()">
       <div class="streak-num" id="streak-resilience">0</div>
@@ -2662,9 +2666,11 @@ input:focus,textarea:focus,select:focus{
     <button class="btn primary" onclick="document.getElementById('food-csv-input').click()" style="margin-bottom:0">Import my history</button>
   </div>
 
+  <!-- "📥 Import food CSV" lived here and fired the same input as "Import my history" in the card
+       above — which also explains where the file comes from. One door, in the place that teaches
+       you how to get through it. Export keeps the row. -->
   <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
-    <button class="btn" style="flex:1;min-width:120px;padding:9px;font-size:11px;background:transparent;border:1px dashed var(--bd2);color:var(--tx3)" onclick="document.getElementById('food-csv-input').click()">📥 Import food CSV</button>
-    <button class="btn" style="flex:1;min-width:120px;padding:9px;font-size:11px;background:transparent;border:1px dashed var(--bd2);color:var(--tx3)" onclick="exportFoodCSV()">📤 Export my food log</button>
+    <button class="btn" style="width:100%;padding:9px;font-size:11px;background:transparent;border:1px dashed var(--bd2);color:var(--tx3)" onclick="exportFoodCSV()">📤 Export my food log</button>
   </div>
   
   <!-- Trends & reports (the diary itself lives up top). Hidden until there's actually something to
@@ -5063,7 +5069,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v551';
+const APP_VERSION = 'v552';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -27183,11 +27189,11 @@ function renderBodySystemReport(){
   if(domains<2){
     const preview='<div class="eyebrow" style="color:var(--go);margin-bottom:8px">Your body, one system</div>'+
       '<div style="font-size:12px;color:var(--tx2);line-height:1.65">Train, Nourish and Track feed one loop. Log a workout, a couple of days of food, and a weigh-in \u2014 this becomes your weekly verdict: is it working, and the one thing to change.</div>'+
-      '<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">'+
-      '<button class="btn" style="flex:1;min-width:100px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="go(\'train\')">Log a workout</button>'+
-      '<button class="btn" style="flex:1;min-width:100px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="go(\'nourish\')">Log a meal</button>'+
-      '<button class="btn" style="flex:1;min-width:100px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="go(\'track\')">Log a weigh-in</button>'+
-      '</div>';
+      // The three buttons that were here — "Log a workout", "Log a meal", "Log a weigh-in" —
+      // went to exactly the same places as the three hub cards sitting directly above this card.
+      // Six ways into three destinations, stacked. The card's job is to explain that they are one
+      // loop; the hub is the way in, and the handoff lines under each card now say what is next.
+      '';
     containers.forEach(b=>{b.style.display='block';b.innerHTML=preview;});
     return;
   }
@@ -46403,7 +46409,16 @@ function getResilienceStreak(){
 }
 
 function renderDualStreaks(){
-  const sober=getSoberStreak();
+  // The longest fight, not the longest clean streak — the streak is already on the nav card above.
+  // Falls back to the streak for anyone whose vices predate fightingSince having a value.
+  const sober=(function(){
+    try{
+      loadV();
+      let d=0;
+      (vices||[]).forEach(v=>{ const n=(typeof viceFightDays==='function')?viceFightDays(v):0; if(n>d) d=n; });
+      return d || getSoberStreak();
+    }catch(_){ return getSoberStreak(); }
+  })();
   const resilience=getResilienceStreak();
   const sEl=document.getElementById('streak-sober');
   const rEl=document.getElementById('streak-resilience');
@@ -46421,8 +46436,11 @@ function renderDualStreaks(){
       } else { el.style.display='none'; el.innerHTML=''; }
     }
   }catch(_){}
-  // Reframe the bare "0" after a relapse — a fresh start, not a scoreboard of shame.
-  try{ const ss=document.querySelector('.streak-card.sober .streak-sub'); if(ss) ss.textContent=(sober===0?'A fresh start':'Days clean'); }catch(_){}
+  // The tile counts the FIGHT now, not the clean streak, so "Days clean" here was relabelling the
+  // number under it — 106 days in the fight, described as 106 days clean. The number never being 0
+  // is also why the old "A fresh start" reframe is gone: a fight does not reset, so it has no zero
+  // to soften. The clean streak still lives on the nav card above, where it always did.
+  try{ const ss=document.querySelector('.streak-card.sober .streak-sub'); if(ss) ss.textContent='Days in'; }catch(_){}
 }
 
 function showResilienceInfo(){
