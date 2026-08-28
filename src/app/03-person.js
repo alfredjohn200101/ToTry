@@ -3031,6 +3031,16 @@ function applyFaithLabels(){
     const hasPractice = !!(f && f.practiceTitle);
     show('soul-practice-card', hasPractice);
     // Set unconditionally so the label can never go stale from a previous tradition.
+    // For a Buddhist this read "Meditation — Sit with the breath, guided, at your own pace" and opened
+    // metta, which is loving-kindness and not breath — while metta had its own card directly beneath
+    // it and "Stillness & breath" its own card above. Three consecutive doors, two of them duplicates,
+    // and the one with the breath copy leading somewhere else. Both of its destinations already sit on
+    // this screen under their own names, so here it has nothing left of its own to open. Removing is
+    // intention. Every other tradition keeps it — for them it is the ONLY door to that practice.
+    try{
+      const _pc = document.getElementById('soul-practice-card');
+      if(_pc) _pc.style.display = (t === 'buddhism') ? 'none' : '';
+    }catch(_){ }
     set('soul-practice-title', f.practiceTitle || '');
     set('soul-practice-desc', f.practiceDesc || '');
     const still={
@@ -3051,7 +3061,14 @@ function applyFaithLabels(){
       secular:'Deliberately wish one person well, then widen \u2014 yourself, someone you love, a stranger, someone difficult, everyone. Ends with one to actually go to.'
     };
     const _pl=(typeof planLastLine==='function')?planLastLine():'';
-    set('soul-plans-desc','Don\u2019t know where to read? Take a short plan \u2014 fear, the pull, starting again. Five to seven days '+(t==='secular'?'with the Stoics':'in '+f.bookName)+', finishable.'+(_pl?' \u00B7 '+_pl:''));
+    // Someone three days into a plan was still being sold the idea of plans, with the only fact they
+    // needed — "The pull — day 3 of 7" — appended after a middot as the last six words of three
+    // wrapped lines. The invitation is for the person who has not started. Once they have, the card's
+    // job is to get them back to where they were.
+    set('soul-plans-desc', _pl
+      ? (_pl + '. Pick up where you left off.')
+      : ('Don\u2019t know where to read? Take a short plan \u2014 fear, the pull, starting again. Five to seven days ' +
+         (t==='secular'?'with the Stoics':'in '+f.bookName) + ', finishable.'));
     set('soul-bless-title', blessT[t]||blessT.christianity);
     const _bl=(typeof blessLastLine==='function')?blessLastLine():'';
     set('soul-bless-desc', (blessD[t]||blessD.christianity)+(_bl?' \u00B7 '+_bl:''));

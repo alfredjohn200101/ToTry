@@ -2339,7 +2339,7 @@ function openGambleMoment(i){
       : '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px;font-size:12.5px;color:var(--tx2);line-height:1.65">The house is built to win over time — that’s not bad luck, it’s the maths it’s made of. Import a statement sometime and I’ll show you your real number. For now, let’s deal with right now.</div>')+
     '<div style="font-size:13.5px;color:var(--tx);line-height:1.6;margin-bottom:8px;text-align:center">Be straight with me — how much have you actually got on you right now?</div>'+
     '<input type="number" inputmode="decimal" id="gm-cash" placeholder="'+curSym()+' on hand" style="font-size:18px;padding:14px;text-align:center;margin-bottom:12px">'+
-    '<button class="btn primary" onclick="_gambleStakes('+i+')" style="margin-bottom:8px">Show me the truth about this money</button>'+
+    '<button class="btn" onclick="_gambleStakes('+i+')" style="margin-bottom:8px">Show me the truth about this money</button>'+
     '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin-bottom:8px;font-size:13px">I just need to talk it out</button>'+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
     '</div>';

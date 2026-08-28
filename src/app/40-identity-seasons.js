@@ -262,7 +262,7 @@ function renderDualStreaks(){
   // number under it — 106 days in the fight, described as 106 days clean. The number never being 0
   // is also why the old "A fresh start" reframe is gone: a fight does not reset, so it has no zero
   // to soften. The clean streak still lives on the nav card above, where it always did.
-  try{ const ss=document.querySelector('.streak-card.sober .streak-sub'); if(ss) ss.textContent='Days in'; }catch(_){}
+  try{ const ss=document.querySelector('.streak-card.sober .streak-sub'); if(ss) ss.textContent='Days since day 0'; }catch(_){}
 }
 
 function showResilienceInfo(){

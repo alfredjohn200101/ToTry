@@ -471,8 +471,10 @@ function renderQuickFoods(){
   let mine = names.length >= 3;
   if(!mine) names = ['Chicken breast','Oats','Rice','Eggs','Banana','Greek yogurt'];
   box.innerHTML =
-    '<div style="width:100%;font-size:10.5px;color:var(--tx3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:2px">' +
-      (mine ? 'What you eat most' : 'Common foods') + '</div>' +
+    // I wrote this label with an inline style this morning, so it landed in Outfit at 10.5px with
+    // .07em tracking, 32px below "LOG FOOD" in DM Mono at 9px with .14em — two typefaces doing the
+    // same job in the same column. There is already a component for this.
+    '<div class="lbl" style="width:100%">' + (mine ? 'What you eat most' : 'Common foods') + '</div>' +
     names.map(n => '<button class="qb" onclick="searchFood(' + _jsAttr(JSON.stringify(n)) + ')">' +
       _escFew(n.length > 24 ? n.slice(0,23) + '…' : n) + '</button>').join('');
 }
@@ -3477,7 +3479,7 @@ function renderNutritionLog(){
           '<div style="font-size:26px;margin-bottom:10px">🍽️</div>'+
           '<div style="font-size:15px;color:var(--tx);margin-bottom:6px">Let\'s start simple.</div>'+
           '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">No setup, no targets to figure out yet. Just log one thing you ate today — we\'ll learn your rhythm from there.</div>'+
-          '<button class="btn primary" style="width:auto;padding:10px 20px;font-size:13px" onclick="document.getElementById(&apos;nut-search-in&apos;)?.focus()">Log one thing</button>'+
+          '<button class="btn" style="width:auto;padding:10px 20px;font-size:13px" onclick="document.getElementById(&apos;nut-search-in&apos;)?.focus()">Log one thing</button>'+
           '</div>';
         _nutTailRenders(totals, goalCal);
         return;

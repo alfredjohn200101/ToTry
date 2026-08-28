@@ -2141,8 +2141,13 @@ input:focus,textarea:focus,select:focus{
          carrying a broken streak still has it. -->
     <div class="streak-card sober" onclick="go('fight')">
       <div class="streak-num" id="streak-sober">0</div>
-      <div class="streak-lbl">The fight</div>
-      <div class="streak-sub">Days in</div>
+      <!-- I changed this from "Sober streak · Days clean" earlier today because it repeated the woven
+           row's NUMBER, and in doing so gave it the row's WORDS instead: "🛡️ The fight · 9 days clean"
+           656px above, and "The fight · 10 · Days in" here — two controls labelled the same thing,
+           carrying different numbers, opening the same tab. The fact is right and worth keeping; the
+           label had to stop colliding with the row that owns that name. -->
+      <div class="streak-lbl">Still in it</div>
+      <div class="streak-sub">Days since day 0</div>
     </div>
     <div class="streak-card resilience" onclick="showResilienceInfo()">
       <div class="streak-num" id="streak-resilience">0</div>
@@ -2448,7 +2453,7 @@ input:focus,textarea:focus,select:focus{
       <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:7px">The toolkit</div>
       <div style="font-family:'Cormorant Garamond',serif;font-size:21px;color:var(--tx);line-height:1.25;margin-bottom:5px">Learn the tool before you need it.</div>
       <div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:12px">Eight skills, two minutes each &mdash; the same ones I use with you at 11pm. Free, and nothing to finish.</div>
-      <button class="btn primary" onclick="openToolkit()" style="margin:0">Learn the tools &mdash; 2 min each</button>
+      <button class="btn" onclick="openToolkit()" style="margin:0">Learn the tools &mdash; 2 min each</button>
     </div>
     <!-- TIER 1.2 — the warm hand-off. "It points beyond itself" is a non-negotiable in CLAUDE.md, and
          the Fight had no route to a real recovery community: only the crisis helplines, which are for
@@ -2491,7 +2496,7 @@ input:focus,textarea:focus,select:focus{
       </div>
       <div class="eyebrow" id="v-start-lbl">Already started? Set your real start date (optional)</div>
       <input type="date" id="v-start" style="margin-bottom:8px;font-size:16px;padding:10px;color-scheme:dark">
-      <button class="btn primary" onclick="addVice()">Add this</button>
+      <button class="btn" onclick="addVice()">Add this</button>
       </div>
     </div>
   </div>
@@ -2712,7 +2717,7 @@ input:focus,textarea:focus,select:focus{
         <div style="font-size:14px;font-weight:600;color:var(--tx);margin-bottom:3px">Your fuel plan · this week</div>
         <div style="font-size:12px;color:var(--tx2);line-height:1.55;margin-bottom:10px">Real meals and a priced shopping list to hit your target — built around your training times, your goal, and your budget. A PT in your pocket.</div>
         <div id="fuel-plan-summary"></div>
-        <button class="btn primary" id="fuel-plan-btn" style="font-size:13px;padding:11px" onclick="openFuelPlan()">Build my fuel plan</button>
+        <button class="btn" id="fuel-plan-btn" style="font-size:13px;padding:11px" onclick="openFuelPlan()">Build my fuel plan</button>
       </div>
     </div>
   </div>
@@ -2757,7 +2762,7 @@ input:focus,textarea:focus,select:focus{
       <summary style="font-size:12px;color:var(--go);cursor:pointer">How to export from MyFitnessPal</summary>
       <div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-top:6px">On a computer, sign in at myfitnesspal.com → your username → <em>Settings</em> → <em>Export Data / Reports</em> → request a CSV of your diary. They email you a file. Import it below.</div>
     </details>
-    <button class="btn primary" onclick="document.getElementById('food-csv-input').click()" style="margin-bottom:0">Import my history</button>
+    <button class="btn" onclick="document.getElementById('food-csv-input').click()" style="margin-bottom:0">Import my history</button>
   </div>
 
   <!-- "📥 Import food CSV" lived here and fired the same input as "Import my history" in the card
@@ -3585,13 +3590,13 @@ input:focus,textarea:focus,select:focus{
     <div class="row"><input type="text" id="dn" placeholder="Who you owe"><input type="number" id="dt" data-cur-ph="Total {c}" placeholder="Total $" style="max-width:110px;flex:none"></div>
     <div class="row"><input type="number" id="dp" data-cur-ph="Paid so far {c}" placeholder="Paid so far $"><input type="date" id="dd" style="max-width:145px;flex:none"></div>
     <div class="row"><input type="number" id="di" inputmode="decimal" placeholder="Interest rate % (for Avalanche)" step="0.1"></div>
-    <button class="btn primary" onclick="addDebt()" style="margin-bottom:10px">Add this debt</button>
+    <button class="btn" onclick="addDebt()" style="margin-bottom:10px">Add this debt</button>
     <div class="divider"></div>
     <div class="card-hd" style="margin-bottom:6px;margin-top:8px">Your savings goals</div>
     <p style="font-size:11px;color:var(--tx3);margin-bottom:8px;line-height:1.5">Add as many goals as you want. They appear at the top in priority order.</p>
     <input type="text" id="goal-name" placeholder="Goal name (e.g. USA Trip, Emergency Fund)" style="margin-bottom:6px">
     <div class="row"><input type="number" id="goal-target" data-cur-ph="Target {c}" placeholder="Target $"><input type="number" id="goal-current" data-cur-ph="Saved so far {c}" placeholder="Saved so far $"></div>
-    <button class="btn primary" onclick="addFinanceGoal()" style="margin-bottom:10px">Add goal</button>
+    <button class="btn" onclick="addFinanceGoal()" style="margin-bottom:10px">Add goal</button>
     <div class="divider"></div>
     <div class="card-hd" style="margin-bottom:6px">Vice savings calculator</div>
     <div class="row"><input type="number" id="weed-s" data-cur-ph="Vice 1 weekly {c}" placeholder="Vice 1 weekly $"><input type="number" id="vape-s" data-cur-ph="Vice 2 weekly {c}" placeholder="Vice 2 weekly $"></div>
@@ -3617,7 +3622,7 @@ input:focus,textarea:focus,select:focus{
         <option value="Other">Other</option>
       </select>
     </div>
-    <button class="btn primary" onclick="quickSpend()" style="padding:10px;font-size:13px">Log expense</button>
+    <button class="btn" onclick="quickSpend()" style="padding:10px;font-size:13px">Log expense</button>
   </div>
   
   <!-- INCOME & EXPENSE TRACKING -->
@@ -5193,7 +5198,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v556';
+const APP_VERSION = 'v557';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -10664,6 +10669,16 @@ function applyFaithLabels(){
     const hasPractice = !!(f && f.practiceTitle);
     show('soul-practice-card', hasPractice);
     // Set unconditionally so the label can never go stale from a previous tradition.
+    // For a Buddhist this read "Meditation — Sit with the breath, guided, at your own pace" and opened
+    // metta, which is loving-kindness and not breath — while metta had its own card directly beneath
+    // it and "Stillness & breath" its own card above. Three consecutive doors, two of them duplicates,
+    // and the one with the breath copy leading somewhere else. Both of its destinations already sit on
+    // this screen under their own names, so here it has nothing left of its own to open. Removing is
+    // intention. Every other tradition keeps it — for them it is the ONLY door to that practice.
+    try{
+      const _pc = document.getElementById('soul-practice-card');
+      if(_pc) _pc.style.display = (t === 'buddhism') ? 'none' : '';
+    }catch(_){ }
     set('soul-practice-title', f.practiceTitle || '');
     set('soul-practice-desc', f.practiceDesc || '');
     const still={
@@ -10684,7 +10699,14 @@ function applyFaithLabels(){
       secular:'Deliberately wish one person well, then widen \u2014 yourself, someone you love, a stranger, someone difficult, everyone. Ends with one to actually go to.'
     };
     const _pl=(typeof planLastLine==='function')?planLastLine():'';
-    set('soul-plans-desc','Don\u2019t know where to read? Take a short plan \u2014 fear, the pull, starting again. Five to seven days '+(t==='secular'?'with the Stoics':'in '+f.bookName)+', finishable.'+(_pl?' \u00B7 '+_pl:''));
+    // Someone three days into a plan was still being sold the idea of plans, with the only fact they
+    // needed — "The pull — day 3 of 7" — appended after a middot as the last six words of three
+    // wrapped lines. The invitation is for the person who has not started. Once they have, the card's
+    // job is to get them back to where they were.
+    set('soul-plans-desc', _pl
+      ? (_pl + '. Pick up where you left off.')
+      : ('Don\u2019t know where to read? Take a short plan \u2014 fear, the pull, starting again. Five to seven days ' +
+         (t==='secular'?'with the Stoics':'in '+f.bookName) + ', finishable.'));
     set('soul-bless-title', blessT[t]||blessT.christianity);
     const _bl=(typeof blessLastLine==='function')?blessLastLine():'';
     set('soul-bless-desc', (blessD[t]||blessD.christianity)+(_bl?' \u00B7 '+_bl:''));
@@ -20033,7 +20055,7 @@ function openGambleMoment(i){
       : '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:14px;font-size:12.5px;color:var(--tx2);line-height:1.65">The house is built to win over time — that’s not bad luck, it’s the maths it’s made of. Import a statement sometime and I’ll show you your real number. For now, let’s deal with right now.</div>')+
     '<div style="font-size:13.5px;color:var(--tx);line-height:1.6;margin-bottom:8px;text-align:center">Be straight with me — how much have you actually got on you right now?</div>'+
     '<input type="number" inputmode="decimal" id="gm-cash" placeholder="'+curSym()+' on hand" style="font-size:18px;padding:14px;text-align:center;margin-bottom:12px">'+
-    '<button class="btn primary" onclick="_gambleStakes('+i+')" style="margin-bottom:8px">Show me the truth about this money</button>'+
+    '<button class="btn" onclick="_gambleStakes('+i+')" style="margin-bottom:8px">Show me the truth about this money</button>'+
     '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin-bottom:8px;font-size:13px">I just need to talk it out</button>'+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
     '</div>';
@@ -24055,8 +24077,10 @@ function renderQuickFoods(){
   let mine = names.length >= 3;
   if(!mine) names = ['Chicken breast','Oats','Rice','Eggs','Banana','Greek yogurt'];
   box.innerHTML =
-    '<div style="width:100%;font-size:10.5px;color:var(--tx3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:2px">' +
-      (mine ? 'What you eat most' : 'Common foods') + '</div>' +
+    // I wrote this label with an inline style this morning, so it landed in Outfit at 10.5px with
+    // .07em tracking, 32px below "LOG FOOD" in DM Mono at 9px with .14em — two typefaces doing the
+    // same job in the same column. There is already a component for this.
+    '<div class="lbl" style="width:100%">' + (mine ? 'What you eat most' : 'Common foods') + '</div>' +
     names.map(n => '<button class="qb" onclick="searchFood(' + _jsAttr(JSON.stringify(n)) + ')">' +
       _escFew(n.length > 24 ? n.slice(0,23) + '…' : n) + '</button>').join('');
 }
@@ -27061,7 +27085,7 @@ function renderNutritionLog(){
           '<div style="font-size:26px;margin-bottom:10px">🍽️</div>'+
           '<div style="font-size:15px;color:var(--tx);margin-bottom:6px">Let\'s start simple.</div>'+
           '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">No setup, no targets to figure out yet. Just log one thing you ate today — we\'ll learn your rhythm from there.</div>'+
-          '<button class="btn primary" style="width:auto;padding:10px 20px;font-size:13px" onclick="document.getElementById(&apos;nut-search-in&apos;)?.focus()">Log one thing</button>'+
+          '<button class="btn" style="width:auto;padding:10px 20px;font-size:13px" onclick="document.getElementById(&apos;nut-search-in&apos;)?.focus()">Log one thing</button>'+
           '</div>';
         _nutTailRenders(totals, goalCal);
         return;
@@ -41161,7 +41185,7 @@ function renderTourPrompt(){
     card.style.display='block';
     card.innerHTML='<div style="font-family:Cormorant Garamond,serif;font-size:18px;color:var(--tx);margin-bottom:4px">Welcome in.</div>'+
       '<div style="font-size:13px;color:var(--tx2);line-height:1.55;margin-bottom:12px">Start wherever you feel something. Or, if you’d rather, take a 60-second look at how it all fits together.</div>'+
-      '<div style="display:flex;gap:8px"><button class="btn primary" style="flex:1;font-size:13px" onclick="acceptTourPrompt()">Show me around</button>'+
+      '<div style="display:flex;gap:8px"><button class="btn" style="flex:1;font-size:13px" onclick="acceptTourPrompt()">Show me around</button>'+
       '<button class="btn" style="flex:1;font-size:13px;background:var(--bg3);border:1px solid var(--bd)" onclick="dismissTourPrompt()">I’ll explore</button></div>';
     return;
   }
@@ -41169,7 +41193,7 @@ function renderTourPrompt(){
   card.style.display='block';
   card.innerHTML='<div style="font-family:Cormorant Garamond,serif;font-size:18px;color:var(--tx);margin-bottom:4px">A quick look around?</div>'+
     '<div style="font-size:13px;color:var(--tx2);line-height:1.55;margin-bottom:12px">There\u2019s a lot new in here. Want a 60-second tour of how it all fits together?</div>'+
-    '<div style="display:flex;gap:8px"><button class="btn primary" style="flex:1;font-size:13px" onclick="acceptTourPrompt()">Show me</button>'+
+    '<div style="display:flex;gap:8px"><button class="bclass="btn" style="flex:1;font-size:13px" onclick="acceptTourPrompt()">Show me<'+
     '<button class="btn" style="flex:1;font-size:13px;background:var(--bg3);border:1px solid var(--bd)" onclick="dismissTourPrompt()">No thanks</button></div>';
 }
 function acceptTourPrompt(){ ls('totry_tour_offered', true); const c=document.getElementById('home-tour-prompt'); if(c)c.style.display='none'; if(typeof startFeatureTour==='function') startFeatureTour(); }
@@ -47191,7 +47215,7 @@ function renderDualStreaks(){
   // number under it — 106 days in the fight, described as 106 days clean. The number never being 0
   // is also why the old "A fresh start" reframe is gone: a fight does not reset, so it has no zero
   // to soften. The clean streak still lives on the nav card above, where it always did.
-  try{ const ss=document.querySelector('.streak-card.sober .streak-sub'); if(ss) ss.textContent='Days in'; }catch(_){}
+  try{ const ss=document.querySelector('.streak-card.sober .streak-sub'); if(ss) ss.textContent='Days since day 0'; }catch(_){}
 }
 
 function showResilienceInfo(){

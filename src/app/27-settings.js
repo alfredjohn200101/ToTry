@@ -488,7 +488,7 @@ function renderTourPrompt(){
     card.style.display='block';
     card.innerHTML='<div style="font-family:Cormorant Garamond,serif;font-size:18px;color:var(--tx);margin-bottom:4px">Welcome in.</div>'+
       '<div style="font-size:13px;color:var(--tx2);line-height:1.55;margin-bottom:12px">Start wherever you feel something. Or, if you’d rather, take a 60-second look at how it all fits together.</div>'+
-      '<div style="display:flex;gap:8px"><button class="btn primary" style="flex:1;font-size:13px" onclick="acceptTourPrompt()">Show me around</button>'+
+      '<div style="display:flex;gap:8px"><button class="btn" style="flex:1;font-size:13px" onclick="acceptTourPrompt()">Show me around</button>'+
       '<button class="btn" style="flex:1;font-size:13px;background:var(--bg3);border:1px solid var(--bd)" onclick="dismissTourPrompt()">I’ll explore</button></div>';
     return;
   }
@@ -496,7 +496,7 @@ function renderTourPrompt(){
   card.style.display='block';
   card.innerHTML='<div style="font-family:Cormorant Garamond,serif;font-size:18px;color:var(--tx);margin-bottom:4px">A quick look around?</div>'+
     '<div style="font-size:13px;color:var(--tx2);line-height:1.55;margin-bottom:12px">There\u2019s a lot new in here. Want a 60-second tour of how it all fits together?</div>'+
-    '<div style="display:flex;gap:8px"><button class="btn primary" style="flex:1;font-size:13px" onclick="acceptTourPrompt()">Show me</button>'+
+    '<div style="display:flex;gap:8px"><button class="bclass="btn" style="flex:1;font-size:13px" onclick="acceptTourPrompt()">Show me<'+
     '<button class="btn" style="flex:1;font-size:13px;background:var(--bg3);border:1px solid var(--bd)" onclick="dismissTourPrompt()">No thanks</button></div>';
 }
 function acceptTourPrompt(){ ls('totry_tour_offered', true); const c=document.getElementById('home-tour-prompt'); if(c)c.style.display='none'; if(typeof startFeatureTour==='function') startFeatureTour(); }

@@ -2455,6 +2455,41 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── one gold primary per screen ──────────────────────────────────────────────────────────────
+  // The gold fill is the app saying "this is what this screen is for". Money spent it on four buttons
+  // at once — the real hero beside "Add this debt", "Add goal" and "Log expense", two of them 440px
+  // apart inside one card — and Nourish on three. When every button is the most important one, none
+  // of them is, and the screen reads as a pile of features rather than a place with a purpose.
+  //
+  // Form submits are not heroes. They are what you press once you are already doing the thing.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+      const N = Date.now();
+      s('totry_onboarded', true); s('totry_name', 'Alfy');
+      s('totry_f', { d:[{ n:'Car loan', t:12000, p:3600, r:7.2 }], u:5000, i:0 });
+      s('totry_v', [{ n:'Lust', mode:'abstinence', startDate:new Date(N - 30*864e5).toISOString() }]);
+      s('totry_transactions', Array.from({ length:8 }, (_, i) => ({ id:i, type:'expense', amount:42.5,
+        category:'Food', desc:'Coles', ts:new Date(N - i*864e5).toISOString() }))); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    for (const t of ['home','fight','grow','nourish','track','money','soul']) {
+      const golds = await page.evaluate(async (tab) => {
+        go(tab); await new Promise(r => setTimeout(r, 1200));
+        const pane = document.getElementById('tab-' + tab); if (!pane) return null;
+        const vis = e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+        return [...pane.querySelectorAll('.btn.primary, .hero-action')].filter(vis)
+          .map(e => (e.innerText || '').replace(/\s+/g,' ').trim().slice(0,26)).filter(Boolean);
+      }, t);
+      if (golds && golds.length > 1)
+        findings.push(`gold: ${t} has ${golds.length} competing primaries — ${golds.join(' / ')}`);
+    }
+    await ctx.close();
+    if (!findings.some(f => f.startsWith('gold:')))
+      console.log('gold: at most one gold primary per screen — the hero is not sharing its paint with a form submit');
+  }
+
   // ── every tradition gets its own season ──────────────────────────────────────────────────────
   // applyFaithUIGate hides #hub-common-grid whenever ECHO_OK[tradition] is false — islam, hinduism,
   // buddhism — which is the right call for "Shared threads", cross-tradition echoes nobody asked for.
