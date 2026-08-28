@@ -57,7 +57,13 @@ function renderScoreboard(){
   if(e('sc-total-lbl'))e('sc-total-lbl').textContent = _fightMax === 1 ? 'Day in the fight' : 'Days in the fight';
   if(e('sc-rate'))e('sc-rate').textContent=_cameBack;      // came back, not a win rate
   if(e('sc-fought'))e('sc-fought').textContent=tw;         // urges actually met and turned away
-  if(e('sc-streak'))e('sc-streak').textContent=str;
+  // For someone who has never slipped, the clean streak IS the length of the fight, so this tile
+  // printed the same number the 64px hero prints 15px above it — the screen's two biggest figures
+  // reading 106 and 106. A repeated number does not reinforce; it teaches the eye that nothing on the
+  // panel is worth reading closely. When it has nothing of its own to add, it says so instead.
+  const _streakTile = e('sc-streak') ? e('sc-streak').closest('.sc-met') : null;
+  if(e('sc-streak')) e('sc-streak').textContent = str;
+  if(_streakTile) _streakTile.style.display = (str === _fightMax) ? 'none' : '';
   const sub=e('sc-sub');if(sub&&tw>0)sub.textContent=tw+' moments you chose who you\'re becoming over who you used to be.';
   const bv=e('score-by-vice');
   if(bv){bv.innerHTML='';vices.forEach(v=>{

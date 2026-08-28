@@ -625,6 +625,21 @@ function _stageCtaHTML(i){
 }
 // The quit card's whole primary block. At 'ready' it is EXACTLY the button that was there before.
 // At every other stage the stage-matched move leads and the urge door stays, one tap away.
+// Just the urge door, nothing else. Used while a check-in question owns the card: one question is
+// still asked, and the way through a moment is still on the screen. Same markup as the RED primary in
+// _stagePrimaryHTML below, so the two cannot drift into looking like different things.
+function _urgeDoorOnlyHTML(i){
+  const v = (typeof vices !== 'undefined' && vices) ? vices[i] : null; if(!v) return '';
+  return '<button class="vice-btn" onclick="openMomentStakes(' + i + ')" ' +
+    'style="width:100%;margin-top:10px;background:none;border:1px solid var(--re-bd);color:var(--re);' +
+    'border-radius:10px;padding:11px;font-size:13px;font-weight:500;cursor:pointer;display:flex;' +
+    'align-items:center;justify-content:center;gap:8px">' +
+    '<svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" ' +
+      'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/>' +
+      '<path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>' +
+    'I’m feeling it — come here first</button>';
+}
+
 function _stagePrimaryHTML(i){
   const v=vices[i]; if(!v) return '';
   const RED='<button class="vice-btn" onclick="openMomentStakes('+i+')" style="width:100%;background:var(--re);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">'+

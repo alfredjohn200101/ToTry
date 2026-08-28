@@ -204,7 +204,18 @@ function computeProactiveNudge(){
         const k = new Date(now - i*86400000).toLocaleDateString('en-AU');
         if(evenings.some(e => dayKey(e.ts) === k)) streak++; else break;
       }
+      // Third ask. The hero already says "Close the day" over a gold button, the Today-for-you card was
+      // de-duplicated against it, and 664px below THIS put a second gold [Close today] to the very same
+      // screen. Three requests for one act. What the streak knows that the hero does not is the streak
+      // itself, so when the hero is already asking, this keeps the fact and drops the duplicate button.
       if(streak >= 3){
+        if(_heroAlreadyAsks('evening')){
+          return { id:'streak'+dayKey(now), tone:'nudge',
+            eyebrow:'Before the day closes',
+            text: hi + 'you\u2019ve closed ' + streak + ' evenings in a row. That\u2019s a real thread \u2014 ' +
+                  'worth not dropping tonight.',
+            actions: [{label:'Skip tonight', ghost:true, onclick:'dismissNudge(\'streak'+dayKey(now)+'\')'}] };
+        }
         return { id:'streak'+dayKey(now), tone:'nudge',
           eyebrow:'Before the day closes',
           text: hi + 'you\u2019ve closed ' + streak + ' evenings in a row with a reflection. That\u2019s a real thread \u2014 worth not dropping tonight. Two lines is enough.',

@@ -37,10 +37,10 @@ function getNextStep(){
       let _hardVice = null;
       _vs.forEach(v=>{ try{ const p=(typeof analyzeUrgePatterns==='function')?analyzeUrgePatterns(v.n):null; if(p && p.riskWindow===_block) _hardVice=v; }catch(_){} });
       if(_hardVice){
-        return { text:'This is usually your hard hour', sub:'Right around when '+_hardVice.n+' tends to pull. Nothing has to be happening \u2014 get ahead of it with me.', action:'breath', actionArg:String(_hardVice.n) };
+        return { text:'This is usually your hard hour', sub:'Right around when '+_hardVice.n+' tends to pull. Nothing has to be happening \u2014 get ahead of it with me.', keepSub:true, action:'breath', actionArg:String(_hardVice.n) };
       }
       if(hour >= 22 || hour < 5){
-        return { text:'The hard hour\u2019s near', sub:'Late hours are when it pulls \u2014 get ahead of it. One slow minute, before anything rises.', action:'breath' };
+        return { text:'The hard hour\u2019s near', sub:'Late hours are when it pulls \u2014 get ahead of it. One slow minute, before anything rises.', keepSub:true, action:'breath' };
       }
     }
   }catch(_){ }
@@ -50,7 +50,7 @@ function getNextStep(){
       const _r = computeReadiness();
       const _trained = (typeof getUnifiedTraining==='function') && getUnifiedTraining().some(t=>t.ts && new Date(t.ts).toLocaleDateString('en-AU')===today);
       if(_r && _r.level === 'rest' && !_trained && hour >= 7 && hour < 20){
-        return { text:'Your body needs rest today', sub:'Recovery is low \u2014 go gentle. Mobility or a walk, not a max effort.', action:'mobility' };
+        return { text:'Your body needs rest today', sub:'Recovery is low \u2014 go gentle. Mobility or a walk, not a max effort.', keepSub:true, action:'mobility' };
       }
     }
   }catch(_){ }
@@ -297,7 +297,12 @@ function renderNextStep(){
   try{
     if(!step.done && typeof _countOpenLoops==='function'){
       const open = _countOpenLoops();
-      if(open >= 4) subText = 'A lot\u2019s on your plate today \u2014 don\u2019t carry it all at once. Just this one thing for now.';
+      // The softener was written for the routine steps — morning, train, calendar, reflect — where the
+      // sub is encouragement and losing it costs nothing. On the hard-hour card the sub is the only
+      // thing that explains what the headline means and what the tap does, so overwriting it produced
+      // a headline about a craving window above a sentence about a busy to-do list. Steps that mark
+      // keepSub own their own words.
+      if(open >= 4 && !step.keepSub) subText = 'A lot\u2019s on your plate today \u2014 don\u2019t carry it all at once. Just this one thing for now.';
     }
   }catch(_){}
   if(sub) sub.textContent = subText;

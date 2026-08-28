@@ -342,7 +342,18 @@ function foodWorking(res, line){
 
 // The ending. Says what happened, offers the same try again, and keeps the manual path — because the
 // meal still has to get logged whether or not the model ever cooperates.
-function foodFailed(res, headline, sub, retryJs){
+function foodTypeItInstead(){
+  _foodWaitStop();
+  const el = document.getElementById('nut-search-in');
+  if(!el) { openQuickAdd(); return; }
+  try{ el.scrollIntoView({block:'center', behavior:'smooth'}); }catch(_){ }
+  setTimeout(function(){ try{ el.focus(); }catch(_){ } }, 320);
+}
+
+// primaryJs/primaryLbl override the default "Add it myself". After a photo fails, the next thing he
+// wants is to say what the meal WAS — not to key in calories he does not know. Quick add is the right
+// ending for a failed text estimate (he already typed the words); it is the wrong one for a photo.
+function foodFailed(res, headline, sub, retryJs, primaryJs, primaryLbl){
   _foodWaitStop();
   if(!res) return;
   res.innerHTML =
@@ -351,7 +362,8 @@ function foodFailed(res, headline, sub, retryJs){
       '<div style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px">' + _escFew(sub) + '</div>' +
       (retryJs ? '<button class="btn" onclick="' + _jsAttr(retryJs) + '" style="width:100%;margin-bottom:8px;' +
         'background:var(--bg2);border:1px solid var(--bd);font-size:13px">Try again</button>' : '') +
-      '<button class="btn primary" onclick="openQuickAdd()" style="width:100%;font-size:13px">Add it myself</button>' +
+      '<button class="btn primary" onclick="' + _jsAttr(primaryJs || 'openQuickAdd()') + '" ' +
+        'style="width:100%;font-size:13px">' + _escFew(primaryLbl || 'Add it myself') + '</button>' +
     '</div>';
   _foodReveal(res);
 }
@@ -389,8 +401,16 @@ function syncNutSecondary(){
     if(w > 0){ inUse = true; bits.push((Math.round(w/100)/10) + ' L water'); }
   }catch(_){ }
   try{
-    const f = ls('totry_fast_start');
-    if(f){ inUse = true; bits.push('fasting'); }
+    // totry_fast_start is a key NOTHING in this app has ever written. My own check passed because I
+    // seeded the key my code reads instead of the one the timer writes — a test proving my assumption
+    // to itself. A person 5 hours into a live 16:8 landed on Nourish and read "not tracking these"
+    // over a running clock. The real state is totry_fasting.startTs; read it through the app's getter.
+    const fs = (typeof getFastingState === 'function') ? getFastingState() : (ls('totry_fasting') || {});
+    if(fs && fs.startTs){
+      inUse = true;
+      const mins = Math.max(0, Math.round((Date.now() - new Date(fs.startTs).getTime()) / 60000));
+      bits.push(mins >= 60 ? ('fasting ' + Math.floor(mins/60) + 'h ' + (mins%60) + 'm') : 'fasting');
+    }
   }catch(_){ }
   try{
     const cyc = ls('totry_cal_cycling');
@@ -659,9 +679,18 @@ function _makeFoodResultRow(food){
     '<span style="color:var(--tx3)">'+_escFew(String(_rs.label))+'</span>'+_foodSrcBadge(food.source)+'</div>';
   tap.onclick=()=>openServingModal(food);
   el.appendChild(tap);
+  // The floating help orb is fixed at right:14px, 54px wide, so it owns the column from 14px to 68px
+  // in from the right edge on every screen. This button's right edge sat 35px in — inside that band —
+  // so whichever result row happened to scroll under the orb had its "+" swallowed: tapping to log
+  // lunch opened the Feeling Door instead, silently, with the food not added. Every row can be
+  // scrolled clear, so it was never a permanently dead control, but a person does not know the orb is
+  // there and has no reason to suspect the tap went somewhere else.
+  //
+  // 40px of right margin puts the "+" at 75px in, clear of the orb at any scroll position, and the
+  // gutter reads as deliberate spacing rather than as a gap.
   const plus=document.createElement('button');
   plus.title='Log instantly';
-  plus.style.cssText='background:var(--go);border:none;color:#1a1505;font-size:18px;font-weight:700;width:34px;height:34px;border-radius:8px;cursor:pointer;flex-shrink:0;line-height:1';
+  plus.style.cssText='background:var(--go);border:none;color:#1a1505;font-size:18px;font-weight:700;width:34px;height:34px;border-radius:8px;cursor:pointer;flex-shrink:0;line-height:1;margin-right:40px';
   plus.textContent='+';
   plus.onclick=(ev)=>{ ev.stopPropagation(); quickLogSearchFood(food); };
   el.appendChild(plus);
@@ -708,7 +737,11 @@ async function searchFood(query){
   }
   
   const res=document.getElementById('nut-search-results');
-  res.innerHTML='<p class="pulsing" style="font-family:\'Cormorant Garamond\',serif;font-size:15px;font-style:italic;color:var(--tx3);text-align:center;padding:16px">Searching...</p>';
+  // The search path had the same bare pulsing line as the estimate did — no elapsed time, no way out —
+  // and this is the one he hits FIRST. Four databases are queried at once; on two bars all four can be
+  // slow together, and a person watching a motionless italic line concludes the app is broken. Same
+  // designed wait everywhere: it is on screen, it counts, and logging the meal himself is one tap.
+  foodWorking(res, 'Looking for \u201c' + String(query||'').slice(0,32) + '\u201d\u2026');
   // INSTANT: curated common foods match with zero network, so the staple you want appears immediately
   // — tap it now, or wait a beat for the online long-tail to fill in below.
   const localMatches = searchCommonFoods(query);
@@ -886,20 +919,33 @@ async function searchFood(query){
     return;
   }
 
-  // If it reads like a described meal, ALSO offer AI estimate at the top (alongside real results).
+  // "Gyros open plate" is three words, so this fired, and a GOLD-bordered "Estimate with AI" card was
+  // placed ABOVE the real database rows — the least reliable path in the app, dressed as the best one.
+  // He tapped it, because it looked like the answer, and waited. USDA, FatSecret, Open Food Facts and
+  // Nutritionix had already answered underneath it, instantly and without a model.
+  //
+  // The AI estimate is genuinely the right tool for a described plate no database holds. It is not the
+  // right tool when four databases just returned the food. So it goes where it belongs: first and
+  // prominent when nothing was found (the branch above), last and quiet when something was.
   const looksLikeMeal=/\b(and|with|plus|,)\b/.test(query.toLowerCase()) || query.trim().split(/\s+/).length>=3;
+  let _aiCard = null;
   if(looksLikeMeal){
-    const aiCard=document.createElement('div');
-    aiCard.className='food-result';
-    aiCard.style.cssText='border:1px solid var(--go-bd);background:var(--go-bg)';
-    aiCard.innerHTML='<div class="fr-name" style="color:var(--go)">✨ Estimate "'+query+'" with AI</div><div class="fr-brand">Tap to let the coach calculate macros for this meal as you described it</div>';
-    aiCard.onclick=()=>estimateMealMacros(query);
-    res.appendChild(aiCard);
+    _aiCard = document.createElement('div');
+    _aiCard.className='food-result';
+    _aiCard.style.cssText='margin-top:10px;border:1px dashed var(--bd);background:transparent';
+    _aiCard.innerHTML='<div class="fr-name" style="color:var(--tx2)">\u2728 None of these? Estimate it instead</div>' +
+      '<div class="fr-brand">I will work out "' + _escFew(query.length>34?query.slice(0,33)+'\u2026':query) + '" from the description.</div>';
+    _aiCard.onclick=()=>estimateMealMacros(query);
   }
+
   
   // MFP's signature: tap the row to adjust portion, (+) to log instantly at the default serving.
   all.forEach((food)=>{ res.appendChild(_makeFoodResultRow(food)); });
   
+  // After the real rows, before making one from scratch: a real match should be what the eye lands
+  // on first, and estimating a described plate is the likelier next want than typing a label out.
+  if(_aiCard) res.appendChild(_aiCard);
+
   // Always offer custom food creation at the end — for foods in no database (homemade, regional, supplements)
   const customBtn=document.createElement('button');
   customBtn.className='btn';
@@ -907,6 +953,7 @@ async function searchFood(query){
   customBtn.textContent='+ Create a custom food';
   customBtn.onclick=()=>openCustomFoodCreator(query);
   res.appendChild(customBtn);
+
 }
 
 // ── CUSTOM FOOD CREATION ──────────────────────────────────────
@@ -1007,7 +1054,8 @@ async function handleMealPhoto(event){
   }catch(e){
           foodFailed(res, 'The photo did not get through.',
         'The connection dropped it. Try again, or add the meal yourself \u2014 it still counts.',
-        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()');
+        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()',
+        'foodTypeItInstead()', 'Type what it was');
     return;
   }
   const base64 = dataUrl.split(',')[1];
@@ -1021,7 +1069,8 @@ async function handleMealPhoto(event){
       if(error || !data?.text){
               foodFailed(res, 'The photo did not get through.',
         'The connection dropped it. Try again, or add the meal yourself \u2014 it still counts.',
-        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()');
+        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()',
+        'foodTypeItInstead()', 'Type what it was');
         return;
       }
       const mm = data.text.match(/\{[\s\S]*\}/);
@@ -1029,7 +1078,8 @@ async function handleMealPhoto(event){
       if(!parsed || parsed.error){
       foodFailed(res, 'That did not look like food to me.',
         'Try again with the plate filling more of the frame, or add it yourself.',
-        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()');
+        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()',
+        'foodTypeItInstead()', 'Type what it was');
         return;
       }
       // Per-item beats Cal AI's single blob: each detected food is separately adjustable and removable,
@@ -1040,14 +1090,16 @@ async function handleMealPhoto(event){
       _items = (_items||[]).filter(it=>it && (it.food||it.name)).map(it=>({ food:String(it.food||it.name||'Item'), portion:String(it.portion||''), cal:Number(it.cal)||0, pro:Number(it.pro)||0, carb:Number(it.carb)||0, fat:Number(it.fat)||0, mult:1 }));
             if(!_items.length){ foodFailed(res, 'I could not make out the food in that photo.',
         'A clearer, closer shot usually does it \u2014 or add the meal yourself.',
-        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()'); return; }
+        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()',
+        'foodTypeItInstead()', 'Type what it was'); return; }
       _photoMeal = { name: parsed.meal||parsed.name||'Your meal', items:_items, assumptions:parsed.assumptions||'', confidence:parsed.confidence||'', meal:(typeof currentMealSlot==='function'?currentMealSlot():null) };
       _renderPhotoMeal();
     }catch(err){
       console.error('meal photo failed', err);
             foodFailed(res, 'The photo did not get through.',
         'The connection dropped it. Try again, or add the meal yourself \u2014 it still counts.',
-        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()');
+        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()',
+        'foodTypeItInstead()', 'Type what it was');
     }
 }
 
@@ -2837,14 +2889,36 @@ function nourishmentScore(totals, goals){
   const pFib = Math.min(35, 35 * (totals.fiber||0) / fibreTarget);
   const sugarShare = cal>0 ? ((totals.sugar||0)*4)/cal : 0;                 // lenient — total sugar includes fruit
   let pSug; if(sugarShare<=0.10) pSug=25; else if(sugarShare>=0.30) pSug=0; else pSug=25*(1-(sugarShare-0.10)/0.20);
-  const score = Math.max(0, Math.min(100, Math.round(pPro+pFib+pSug)));
+  // A day of oats, banana, broccoli and chicken scored 65 and was told "fibre is where today is
+  // light". It was not light — it was UNKNOWN. Most entries in this app carry calories and protein and
+  // nothing else, so totals.fiber is 0 for a person who ate plenty of it, and 35 points of the 100
+  // were being deducted for a number nobody ever recorded. Zero is not the same as unknown, and a
+  // score that punishes you for the app's own blind spot is worse than no score.
+  //
+  // A component the day has no data for drops OUT of the total and the remaining weights are rescaled,
+  // so the number means "of what I can actually see". If nothing is knowable, there is no score.
+  const _known = [];
+  if((totals.pro||0) > 0)   _known.push({p:pPro, w:40});
+  if((totals.fiber||0) > 0) _known.push({p:pFib, w:35});
+  if((totals.sugar||0) > 0 || (totals.carb||0) > 0) _known.push({p:pSug, w:25});
+  if(!_known.length) return null;
+  const _wSum = _known.reduce((a,x)=>a+x.w, 0);
+  const _pSum = _known.reduce((a,x)=>a+x.p, 0);
+  const score = Math.max(0, Math.min(100, Math.round(_pSum * (100/_wSum))));
   const dims = [
     {pct:pPro/40, tip:'A protein source at the next meal would lift this most.'},
-    {pct:pFib/35, tip:'More veg, fruit, beans or whole grains — fibre is where today is light.'},
-    {pct:pSug/25, tip:'Sugar’s running high as a share of today — worth easing back.'}
+    {pct:(totals.fiber||0) > 0 ? pFib/35 : 1, tip:'More veg, fruit, beans or whole grains — fibre is where today is light.'},
+    {pct:((totals.sugar||0) > 0 || (totals.carb||0) > 0) ? pSug/25 : 1, tip:'Sugar’s running high as a share of today — worth easing back.'}
   ].sort((a,b)=>a.pct-b.pct);
   // A strong day earns an affirmation, not a "you're light on X" nudge.
-  const tip = dims[0].pct > 0.85 ? 'Protein, fibre and whole foods all here — this is what nourished looks like.' : dims[0].tip;
+  // This line names fibre explicitly, so it cannot be said on a day whose entries carry no fibre at
+  // all — that is the same overclaim as scoring the unknown zero, just pointed the other way. Name
+  // only what was actually read.
+  const _fibKnown = (totals.fiber||0) > 0;
+  const tip = dims[0].pct > 0.85
+    ? (_fibKnown ? 'Protein, fibre and whole foods all here — this is what nourished looks like.'
+                 : 'Protein is well covered today — that is the part that carries the most.')
+    : dims[0].tip;
   const MICROS=['vit_a','vit_c','vit_d','vit_e','vit_k','b1','b2','b3','b6','b9','b12','calcium','iron','magnesium','phosphorus','potassium','zinc','selenium','copper'];
   const microsHit=MICROS.filter(k=>(totals[k]||0)>0).length;
   let tier, col;
@@ -2852,7 +2926,14 @@ function nourishmentScore(totals, goals){
   else if(score>=70){ tier='Nourishing'; col='var(--gr)'; }
   else if(score>=50){ tier='Getting there'; col='var(--go)'; }
   else { tier='Light on nourishment'; col='var(--go)'; }
-  return { score, tier, col, tip, microsHit, microsTotal:MICROS.length };
+  // What the score was actually able to see. Rescaling for unknowns fixed the number and left the
+  // copy claiming "Protein, fibre and whole foods all here" on a day where fibre was never recorded —
+  // the same lie in the other direction. The card says which parts it read, so a 100 based on protein
+  // alone cannot be mistaken for a 100 based on everything.
+  const basis = _known.length === 3 ? null
+    : ('Scored on ' + _known.map(function(x){ return x.w===40?'protein':x.w===35?'fibre':'sugar'; }).join(' and ') +
+       ' \u2014 the rest was not in what you logged.');
+  return { score, tier, col, tip, basis, microsHit, microsTotal:MICROS.length };
 }
 // The diary that COACHES, not just counts — a single actionable, time-of-day-aware, grace-first line.
 // Protein-first (it's what this audience is chasing); over-cal is met with grace; under-cal warns
@@ -2899,6 +2980,8 @@ function renderNourishmentScore(totals, goals){
           '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em">Nourishment · today</div>'+
           '<div style="font-size:15px;color:'+r.col+';font-weight:600">'+r.tier+'</div>'+
           '<div style="font-size:11.5px;color:var(--tx3);line-height:1.4;margin-top:2px">'+r.tip+'</div>'+
+      (r.basis ? '<div style="font-size:10.5px;color:var(--tx3);opacity:.75;line-height:1.4;margin-top:5px">'+
+        _escFew(r.basis)+'</div>' : '')+
         '</div>'+
       '</div>'+
       (r.microsHit>0?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">'+r.microsHit+' of '+r.microsTotal+' vitamins &amp; minerals covered today</div>':'')+
@@ -3026,7 +3109,12 @@ function applyNutGentle(eaten, goalCal){
   // over-budget figure two cards down is worse than no promise at all.
   const HIDE = ['nut-equation','nut-extended','nut-meal-split','nut-macro-glance','nut-nudge',
                 'nut-net-card','nut-weekly-digest','nut-trend-card','adaptive-tdee-card'];
-  const RESTORE = { 'nut-equation':'flex', 'nut-extended':'grid' }; // always-visible statics
+  // 'nut-extended' was in here, so turning gentle mode OFF forced the four extended macros back to
+  // display:grid — including for a day whose entries carry no fibre, sugar, sodium or saturated fat,
+  // which is exactly the case renderNutritionLog had just decided to hide. Two renderers disagreeing,
+  // the later one winning, and four zeros telling a person who ate all day that he ate no fibre.
+  // The equation is genuinely always-on; the extended row is conditional, so its owner keeps it.
+  const RESTORE = { 'nut-equation':'flex' };
   const line = g('nut-gentle-line');
   if(on){
     HIDE.forEach(function(id){ const el=g(id); if(el) el.style.display='none'; });
@@ -3414,7 +3502,7 @@ function renderNutritionLog(){
       header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:8px 4px 4px 4px;margin-top:10px;border-bottom:1px solid var(--bd)';
       header.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.1em">' + mealLabels[meal] + '</div>' +
         '<div style="display:flex;align-items:center;gap:8px">' +
-          (has ? '<button onclick="saveMealGroup(\''+meal+'\')" title="Save these foods as a reusable meal" style="background:none;border:none;color:var(--go);font-family:DM Mono,monospace;font-size:9px;cursor:pointer;letter-spacing:0.05em">save meal</button>' : '') +
+          (has ? '<button onclick="saveMealGroup(\''+meal+'\')" title="Save these foods as a reusable meal" style="background:none;border:none;color:var(--go);font-family:DM Mono,monospace;font-size:9px;cursor:pointer;min-height:34px;padding:0 8px;margin:-11px -8px;letter-spacing:0.05em">save meal</button>' : '') +
           // Numbers off → the meal still lists what you ate, just not what it "cost".
           ((has && !_gentleOn) ? '<span style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">' + mealCals + ' cal · ' + mealPro + 'g P</span>' : '') +
         '</div>';

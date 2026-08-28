@@ -198,8 +198,9 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 .logbar-ic{flex:0 0 auto;width:42px;background:transparent;border:0;border-left:1px solid var(--bd);
   color:var(--tx2);font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .logbar-ic:active{background:var(--bg2)}
-.logbar-go{flex:0 0 auto;padding:0 15px;background:var(--ac);border:0;color:var(--ac-tx,#0d0d0d);
-  font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.logbar-go{flex:0 0 auto;padding:0 15px;border:0;font-size:13px;font-weight:600;cursor:pointer;
+  font-family:inherit;background:linear-gradient(180deg,#D4B87C,#C8A96E);color:#1a1505}
+.logbar-go:active{filter:brightness(.93)}
 .logbar-more{width:100%;background:transparent;border:0;color:var(--tx3);font-size:12px;
   padding:7px 0 12px;cursor:pointer;text-align:left;font-family:inherit;letter-spacing:.01em}
 .logbar-more:active{color:var(--tx2)}
@@ -716,7 +717,15 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .food-log-item:last-child{border-bottom:none}
 .fli-name{font-size:13px;color:var(--tx)}
 .fli-cal{font-family:'DM Mono',monospace;font-size:12px;color:var(--go)}
-.fli-del{background:none;border:none;color:var(--tx3);cursor:pointer;font-size:16px;padding:0 4px}
+/* These are the edit and delete on every logged food — the core daily loop — and they measured 19x17
+   and 17x18 CSS px. A destructive control a third the width of a fingertip, 8px from its neighbour,
+   so a thumb aiming for "fix the numbers" deletes the meal instead. The visual size is deliberate and
+   stays exactly as it was; what changes is the hit box, opened out to 44px and pulled back with
+   negative margin so nothing on the row moves. Same trick "+ Add food" already uses. */
+.fli-del{min-width:44px;min-height:44px;margin:-13px -12px;display:inline-flex;
+  align-items:center;justify-content:center;background:none;border:0;cursor:pointer;
+  font-size:14px;color:var(--tx3);font-family:inherit}
+.fli-del:active{color:var(--tx2)}
 .goal-bar-wrap{height:8px;background:var(--bg4);border-radius:4px;overflow:hidden;margin:6px 0 2px}
 .goal-bar{height:8px;border-radius:4px;transition:width 0.4s}
 .goal-bar.ok{background:var(--gr)}.goal-bar.warn{background:var(--go)}.goal-bar.over{background:var(--re)}
@@ -1060,6 +1069,14 @@ html,body{overscroll-behavior:none}
 #tab-coach .msgs, #tab-train .msgs{ flex:1 1 auto; }
 /* iOS keyboard fix: the outer page must NEVER scroll (the black-void bug). Tabs scroll inside;
    focused inputs are centered within their tab instead of iOS shoving the whole layout. */
+/* Cormorant Garamond ships OLD-STYLE figures by default: the 1 is drawn with full serifs (a capital
+   I) and 0 is a circle of x-height, so the app's own headline number — "100 DAYS IN" — reads I O O,
+   and day one reads "I DAY IN". It is on the persistent header of every screen. Lining figures are in
+   the font; nothing was asking for them. Inherited, so every Cormorant number in the app is fixed at
+   once; the Outfit and DM Mono runs that set tabular-nums are unaffected, both faces being lining
+   already. */
+body{font-variant-numeric:lining-nums}
+
 body{position:fixed;inset:0;width:100%}
 .tab{scroll-padding-bottom:220px}
 .tab{overscroll-behavior:contain}
@@ -1790,6 +1807,15 @@ input:focus,textarea:focus,select:focus{
       <div class="hc-title">Shared threads</div>
       <div class="hc-desc">Patience, stillness, self-mastery — how other traditions hold the same human struggle. Not the same, but kin.</div>
     </div>
+  </div>
+  <!-- This card lived INSIDE #hub-common-grid, and applyFaithUIGate hides that whole grid whenever
+       ECHO_OK[tradition] is false — islam, hinduism and buddhism. The gate is right about "Shared
+       threads": cross-tradition echoes are not something to push at anyone. But a season of fasting
+       is not an echo of someone else’s path, it is the person’s OWN. So the same function that hid
+       this card went on to write "Ramadan" into #hub-fast-desc for a Muslim who could never see it,
+       while a Catholic on the same build was offered Lent. Faith full but never forced cannot mean
+       Lent for one person and nothing for another. Out of the grid, so it survives that gate. -->
+  <div class="hub-grid">
     <div class="hub-card wide" onclick="go('nourish');setTimeout(function(){var e=document.getElementById('fast-season');if(e)e.scrollIntoView({block:'center'});},350)">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       <div class="hc-title">A season of fasting</div>
@@ -2055,7 +2081,7 @@ input:focus,textarea:focus,select:focus{
   <div id="today-for-you" style="display:none;background:var(--bg2);border:1px solid var(--go-bd);border-radius:var(--r);padding:16px;margin-bottom:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div class="eyebrow" id="tfy-eyebrow" style="margin-bottom:0;color:var(--go)">Today</div>
-      <button id="tfy-low-toggle" onclick="toggleLowEnergyDay()" style="background:none;border:1px solid var(--bd);border-radius:100px;color:var(--tx3);font-size:10px;font-family:'DM Mono',monospace;padding:4px 10px;cursor:pointer">Low day?</button>
+      <button id="tfy-low-toggle" onclick="toggleLowEnergyDay()" style="background:none;border:1px solid var(--bd);border-radius:100px;color:var(--tx3);font-size:10px;min-height:26px;padding:0 11px;font-family:'DM Mono',monospace;padding:4px 10px;cursor:pointer">Low day?</button>
     </div>
     <div id="tfy-message" style="font-family:'Cormorant Garamond',serif;font-size:19px;color:var(--tx);font-style:italic;line-height:1.4;margin-bottom:10px"></div>
     <div id="tfy-action"></div>
@@ -2482,6 +2508,9 @@ input:focus,textarea:focus,select:focus{
     <div id="score-by-vice" style="margin-bottom:14px"></div>
     <div class="lbl">Achievements</div>
     <div id="achievements"></div>
+    <!-- 898px of numbers and not one thing to do. The app's own rule is that a screen which only
+         reports is not finished, and this is the panel a person opens after a fall. -->
+    <button class="btn" onclick="go('fight')" style="margin-top:14px;background:var(--bg3);border:1px solid var(--bd);font-size:13px">Back to the fight</button>
   </div>
 
   <!-- CRAVING LOG PANEL -->
@@ -5157,7 +5186,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v554';
+const APP_VERSION = 'v555';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -12115,15 +12144,22 @@ function openSoulToday(){
   }
 
   // --- Soul state: this morning's mood + intention ---
-  const mornings = ls('totry_mornings')||[];
-  const tm = mornings.find(m=>m && m.date===todayKey);
+  // completeMorning writes date as toLocaleDateString('en-AU',{weekday,day,month}) -> "Fri, 28 Aug".
+  // todayKey is the bare toLocaleDateString('en-AU') -> "28/08/2026". Those two strings can never be
+  // equal, so didMorning has been permanently false for every user since this shipped: the Morning
+  // tile could not turn green even on a morning that was finished, sitting beside a green Evening tile
+  // on the same day, and the whole "Your soul today" block gated on `tm` has never rendered for
+  // anyone. The line directly below already matches the evening by timestamp, and every other reader
+  // of this store in the codebase does too — this one line was the outlier.
+  const mornings = (typeof ritualLog === 'function') ? ritualLog('totry_mornings') : (ls('totry_mornings')||[]);
+  const tm = mornings.find(m => m && m.ts && new Date(m.ts).toLocaleDateString('en-AU') === todayKey);
   let moodHtml = '';
   if(tm){
     if(tm.mood) moodHtml += '<div style="font-size:13px;color:var(--tx2);margin-bottom:4px">This morning you felt <span style="color:var(--tx)">'+tm.mood+'</span></div>';
     if(tm.intention) moodHtml += '<div style="font-size:13px;color:var(--tx2);font-style:italic">\u201c'+String(tm.intention).slice(0,140)+'\u201d</div>';
   }
   const didMorning = !!tm;
-  const evenings = ls('totry_evenings')||[];
+  const evenings = (typeof ritualLog === 'function') ? ritualLog('totry_evenings') : (ls('totry_evenings')||[]);
   const didEvening = evenings.some(e=>e && e.ts && new Date(e.ts).toLocaleDateString('en-AU')===todayKey);
 
   const m = document.createElement('div');
@@ -12139,7 +12175,7 @@ function openSoulToday(){
     // The two daily anchors
     '<div class="lbl">The day\u2019s rhythm</div>'+
     '<div style="display:flex;gap:8px;margin-bottom:16px">'+
-      '<div onclick="document.getElementById(\'soul-today-modal\')?.remove();go(\'reflect\')" style="flex:1;padding:12px;background:var(--bg3);border-radius:10px;cursor:pointer;text-align:center"><div style="font-size:18px;margin-bottom:2px">'+(didMorning?'\u2705':'\u2600\ufe0f')+'</div><div style="font-size:12px;color:var(--tx2)">Morning</div></div>'+
+      '<div onclick="document.getElementById(\'soul-today-modal\')?.remove();go(\'morning\')" style="flex:1;padding:12px;background:var(--bg3);border-radius:10px;cursor:pointer;text-align:center"><div style="font-size:18px;margin-bottom:2px">'+(didMorning?'\u2705':'\u2600\ufe0f')+'</div><div style="font-size:12px;color:var(--tx2)">Morning</div></div>'+
       '<div onclick="document.getElementById(\'soul-today-modal\')?.remove();go(\'reflect\')" style="flex:1;padding:12px;background:var(--bg3);border-radius:10px;cursor:pointer;text-align:center"><div style="font-size:18px;margin-bottom:2px">'+(didEvening?'\u2705':'\u{1F319}')+'</div><div style="font-size:12px;color:var(--tx2)">Evening</div></div>'+
     '</div>'+
 
@@ -12319,6 +12355,17 @@ function completeMorning(){
   document.getElementById('morning-prayer-display').style.display='none';
   document.getElementById('morning-done').style.display='block';
   if(typeof morningFinished==='function') morningFinished();
+  // The last tap of the flagship ritual moved nothing on screen. The save works, but morningFinished()
+  // un-hides all five steps at once and the pane is still at scrollTop 0, so the person is left looking
+  // at the top of step one and has no way to tell whether their morning was kept. The confirmation
+  // lands 1871px below the fold. Bring it to them.
+  try{
+    const _d = document.getElementById('morning-done');
+    if(_d) setTimeout(function(){ try{ _d.scrollIntoView({behavior:'smooth', block:'center'}); }catch(_){ } }, 90);
+    if(typeof showToast === 'function') showToast('Morning kept', 'Gratitude and intention saved for today.');
+    if(typeof haptic === 'function') haptic('success');
+  }catch(_){ }
+
   const po=document.querySelector('.prayer-opts');if(po)po.style.display='none';
   const dc=document.getElementById('morning-complete-direct');if(dc)dc.style.display='none';
   checkMilestones();
@@ -12340,6 +12387,17 @@ function initMorningTab(){
   if(today&&today.length>0&&today[0].day===getDayCount()){
     document.getElementById('morning-done').style.display='block';
   if(typeof morningFinished==='function') morningFinished();
+  // The last tap of the flagship ritual moved nothing on screen. The save works, but morningFinished()
+  // un-hides all five steps at once and the pane is still at scrollTop 0, so the person is left looking
+  // at the top of step one and has no way to tell whether their morning was kept. The confirmation
+  // lands 1871px below the fold. Bring it to them.
+  try{
+    const _d = document.getElementById('morning-done');
+    if(_d) setTimeout(function(){ try{ _d.scrollIntoView({behavior:'smooth', block:'center'}); }catch(_){ } }, 90);
+    if(typeof showToast === 'function') showToast('Morning kept', 'Gratitude and intention saved for today.');
+    if(typeof haptic === 'function') haptic('success');
+  }catch(_){ }
+
     const po=document.querySelector('.prayer-opts');if(po)po.style.display='none';
     const dc=document.getElementById('morning-complete-direct');if(dc)dc.style.display='none';
     if(today[0].gratitude)document.getElementById('morning-gratitude').value=today[0].gratitude;
@@ -13110,6 +13168,21 @@ function _stageCtaHTML(i){
 }
 // The quit card's whole primary block. At 'ready' it is EXACTLY the button that was there before.
 // At every other stage the stage-matched move leads and the urge door stays, one tap away.
+// Just the urge door, nothing else. Used while a check-in question owns the card: one question is
+// still asked, and the way through a moment is still on the screen. Same markup as the RED primary in
+// _stagePrimaryHTML below, so the two cannot drift into looking like different things.
+function _urgeDoorOnlyHTML(i){
+  const v = (typeof vices !== 'undefined' && vices) ? vices[i] : null; if(!v) return '';
+  return '<button class="vice-btn" onclick="openMomentStakes(' + i + ')" ' +
+    'style="width:100%;margin-top:10px;background:none;border:1px solid var(--re-bd);color:var(--re);' +
+    'border-radius:10px;padding:11px;font-size:13px;font-weight:500;cursor:pointer;display:flex;' +
+    'align-items:center;justify-content:center;gap:8px">' +
+    '<svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" ' +
+      'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/>' +
+      '<path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>' +
+    'I’m feeling it — come here first</button>';
+}
+
 function _stagePrimaryHTML(i){
   const v=vices[i]; if(!v) return '';
   const RED='<button class="vice-btn" onclick="openMomentStakes('+i+')" style="width:100%;background:var(--re);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">'+
@@ -18481,7 +18554,17 @@ function renderVices(){
             '<button onclick="openLogUse(' + i + ')" style="flex:1;background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:9px;padding:9px;font-size:12px;cursor:pointer">No — I\'ve used</button>' +
           '</div>' +
         '</div>' : '') +
-      (_asking ? '' : _stagePrimaryHTML(i)) +
+      // v552 gave the check-in question the card to itself, so that one question is asked at a time.
+      // That was right about the OTHER controls and wrong about this one: _stagePrimaryHTML holds the
+      // red urge door — "I'm feeling it — come here first" — and suppressing it meant that on the one
+      // day the app asks whether you are still clean, the door you go through instead of falling was
+      // not on the screen at all. The tab still carried the line "When an urge hits — tap it", above
+      // nothing to tap.
+      //
+      // It does not break the one-question rule: "No — I've used" reports a fall that has happened,
+      // and the urge door is how you avoid one that has not. They are different outcomes, and the
+      // second is the whole point of the app.
+      (_asking ? _urgeDoorOnlyHTML(i) : _stagePrimaryHTML(i)) +
       // HALT lives INSIDE the urge door now - "Wait, am I hungry, angry, lonely, tired?" is the
       // second thing the moment sheet offers. It is a mid-urge tool; as a standing button on the
       // card it competed with the one control that matters and pushed everything else down.
@@ -20092,7 +20175,7 @@ function _maybeRiskWindowGreeting(){
       '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-style:italic;color:var(--tx);line-height:1.3;margin-bottom:10px">I’m here.</div>'+
       '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:18px">'+hi+'this is usually the hardest stretch for you with '+String(hit.v.n).replace(/</g,'&lt;')+'.'+trig+' Nothing has to be happening — I just wanted to be here before it does. How are you, honestly?</div>'+
       '<button class="btn primary" onclick="closeModal(this);'+_hitAct+'" style="margin-bottom:8px">The pull’s here — walk me through it</button>'+
-      '<button class="btn" onclick="_riskGreetSteady('+hit.idx+')" style="background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);margin-bottom:8px;font-size:13px">I’m steady tonight</button>'+
+      '<button class="btn" onclick="_riskGreetSteady('+hit.idx+')" style="background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);margin-bottom:8px;font-size:13px">I’m steady '+_steadyWhen()+'</button>'+
       '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Just checking in — I’m fine</button>'+
       '</div>';
     document.body.appendChild(m);
@@ -20101,6 +20184,15 @@ function _maybeRiskWindowGreeting(){
 }
 // "I'm steady" during the hard hour is itself a small win worth marking — he showed up to the moment
 // and stood in it. Recorded gently, and it teaches the pattern engine too.
+// This modal is the first thing on the screen at whatever hour the person's own learned hard window
+// falls, and it said "I'm steady tonight" at 7:15 in the morning. The body already names the vice and
+// the block correctly; only this button was frozen at one time of day, which reads as the app talking
+// past you — the exact opposite of what a threshold greeting is for.
+function _steadyWhen(){
+  const h = new Date().getHours();
+  return h < 12 ? 'this morning' : h < 17 ? 'this afternoon' : 'tonight';
+}
+
 function _riskGreetSteady(i){
   loadV(); const v=vices[i];
   if(v){
@@ -20250,7 +20342,13 @@ function renderScoreboard(){
   if(e('sc-total-lbl'))e('sc-total-lbl').textContent = _fightMax === 1 ? 'Day in the fight' : 'Days in the fight';
   if(e('sc-rate'))e('sc-rate').textContent=_cameBack;      // came back, not a win rate
   if(e('sc-fought'))e('sc-fought').textContent=tw;         // urges actually met and turned away
-  if(e('sc-streak'))e('sc-streak').textContent=str;
+  // For someone who has never slipped, the clean streak IS the length of the fight, so this tile
+  // printed the same number the 64px hero prints 15px above it — the screen's two biggest figures
+  // reading 106 and 106. A repeated number does not reinforce; it teaches the eye that nothing on the
+  // panel is worth reading closely. When it has nothing of its own to add, it says so instead.
+  const _streakTile = e('sc-streak') ? e('sc-streak').closest('.sc-met') : null;
+  if(e('sc-streak')) e('sc-streak').textContent = str;
+  if(_streakTile) _streakTile.style.display = (str === _fightMax) ? 'none' : '';
   const sub=e('sc-sub');if(sub&&tw>0)sub.textContent=tw+' moments you chose who you\'re becoming over who you used to be.';
   const bv=e('score-by-vice');
   if(bv){bv.innerHTML='';vices.forEach(v=>{
@@ -23771,7 +23869,18 @@ function foodWorking(res, line){
 
 // The ending. Says what happened, offers the same try again, and keeps the manual path — because the
 // meal still has to get logged whether or not the model ever cooperates.
-function foodFailed(res, headline, sub, retryJs){
+function foodTypeItInstead(){
+  _foodWaitStop();
+  const el = document.getElementById('nut-search-in');
+  if(!el) { openQuickAdd(); return; }
+  try{ el.scrollIntoView({block:'center', behavior:'smooth'}); }catch(_){ }
+  setTimeout(function(){ try{ el.focus(); }catch(_){ } }, 320);
+}
+
+// primaryJs/primaryLbl override the default "Add it myself". After a photo fails, the next thing he
+// wants is to say what the meal WAS — not to key in calories he does not know. Quick add is the right
+// ending for a failed text estimate (he already typed the words); it is the wrong one for a photo.
+function foodFailed(res, headline, sub, retryJs, primaryJs, primaryLbl){
   _foodWaitStop();
   if(!res) return;
   res.innerHTML =
@@ -23780,7 +23889,8 @@ function foodFailed(res, headline, sub, retryJs){
       '<div style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px">' + _escFew(sub) + '</div>' +
       (retryJs ? '<button class="btn" onclick="' + _jsAttr(retryJs) + '" style="width:100%;margin-bottom:8px;' +
         'background:var(--bg2);border:1px solid var(--bd);font-size:13px">Try again</button>' : '') +
-      '<button class="btn primary" onclick="openQuickAdd()" style="width:100%;font-size:13px">Add it myself</button>' +
+      '<button class="btn primary" onclick="' + _jsAttr(primaryJs || 'openQuickAdd()') + '" ' +
+        'style="width:100%;font-size:13px">' + _escFew(primaryLbl || 'Add it myself') + '</button>' +
     '</div>';
   _foodReveal(res);
 }
@@ -23818,8 +23928,16 @@ function syncNutSecondary(){
     if(w > 0){ inUse = true; bits.push((Math.round(w/100)/10) + ' L water'); }
   }catch(_){ }
   try{
-    const f = ls('totry_fast_start');
-    if(f){ inUse = true; bits.push('fasting'); }
+    // totry_fast_start is a key NOTHING in this app has ever written. My own check passed because I
+    // seeded the key my code reads instead of the one the timer writes — a test proving my assumption
+    // to itself. A person 5 hours into a live 16:8 landed on Nourish and read "not tracking these"
+    // over a running clock. The real state is totry_fasting.startTs; read it through the app's getter.
+    const fs = (typeof getFastingState === 'function') ? getFastingState() : (ls('totry_fasting') || {});
+    if(fs && fs.startTs){
+      inUse = true;
+      const mins = Math.max(0, Math.round((Date.now() - new Date(fs.startTs).getTime()) / 60000));
+      bits.push(mins >= 60 ? ('fasting ' + Math.floor(mins/60) + 'h ' + (mins%60) + 'm') : 'fasting');
+    }
   }catch(_){ }
   try{
     const cyc = ls('totry_cal_cycling');
@@ -24088,9 +24206,18 @@ function _makeFoodResultRow(food){
     '<span style="color:var(--tx3)">'+_escFew(String(_rs.label))+'</span>'+_foodSrcBadge(food.source)+'</div>';
   tap.onclick=()=>openServingModal(food);
   el.appendChild(tap);
+  // The floating help orb is fixed at right:14px, 54px wide, so it owns the column from 14px to 68px
+  // in from the right edge on every screen. This button's right edge sat 35px in — inside that band —
+  // so whichever result row happened to scroll under the orb had its "+" swallowed: tapping to log
+  // lunch opened the Feeling Door instead, silently, with the food not added. Every row can be
+  // scrolled clear, so it was never a permanently dead control, but a person does not know the orb is
+  // there and has no reason to suspect the tap went somewhere else.
+  //
+  // 40px of right margin puts the "+" at 75px in, clear of the orb at any scroll position, and the
+  // gutter reads as deliberate spacing rather than as a gap.
   const plus=document.createElement('button');
   plus.title='Log instantly';
-  plus.style.cssText='background:var(--go);border:none;color:#1a1505;font-size:18px;font-weight:700;width:34px;height:34px;border-radius:8px;cursor:pointer;flex-shrink:0;line-height:1';
+  plus.style.cssText='background:var(--go);border:none;color:#1a1505;font-size:18px;font-weight:700;width:34px;height:34px;border-radius:8px;cursor:pointer;flex-shrink:0;line-height:1;margin-right:40px';
   plus.textContent='+';
   plus.onclick=(ev)=>{ ev.stopPropagation(); quickLogSearchFood(food); };
   el.appendChild(plus);
@@ -24137,7 +24264,11 @@ async function searchFood(query){
   }
   
   const res=document.getElementById('nut-search-results');
-  res.innerHTML='<p class="pulsing" style="font-family:\'Cormorant Garamond\',serif;font-size:15px;font-style:italic;color:var(--tx3);text-align:center;padding:16px">Searching...</p>';
+  // The search path had the same bare pulsing line as the estimate did — no elapsed time, no way out —
+  // and this is the one he hits FIRST. Four databases are queried at once; on two bars all four can be
+  // slow together, and a person watching a motionless italic line concludes the app is broken. Same
+  // designed wait everywhere: it is on screen, it counts, and logging the meal himself is one tap.
+  foodWorking(res, 'Looking for \u201c' + String(query||'').slice(0,32) + '\u201d\u2026');
   // INSTANT: curated common foods match with zero network, so the staple you want appears immediately
   // — tap it now, or wait a beat for the online long-tail to fill in below.
   const localMatches = searchCommonFoods(query);
@@ -24315,20 +24446,33 @@ async function searchFood(query){
     return;
   }
 
-  // If it reads like a described meal, ALSO offer AI estimate at the top (alongside real results).
+  // "Gyros open plate" is three words, so this fired, and a GOLD-bordered "Estimate with AI" card was
+  // placed ABOVE the real database rows — the least reliable path in the app, dressed as the best one.
+  // He tapped it, because it looked like the answer, and waited. USDA, FatSecret, Open Food Facts and
+  // Nutritionix had already answered underneath it, instantly and without a model.
+  //
+  // The AI estimate is genuinely the right tool for a described plate no database holds. It is not the
+  // right tool when four databases just returned the food. So it goes where it belongs: first and
+  // prominent when nothing was found (the branch above), last and quiet when something was.
   const looksLikeMeal=/\b(and|with|plus|,)\b/.test(query.toLowerCase()) || query.trim().split(/\s+/).length>=3;
+  let _aiCard = null;
   if(looksLikeMeal){
-    const aiCard=document.createElement('div');
-    aiCard.className='food-result';
-    aiCard.style.cssText='border:1px solid var(--go-bd);background:var(--go-bg)';
-    aiCard.innerHTML='<div class="fr-name" style="color:var(--go)">✨ Estimate "'+query+'" with AI</div><div class="fr-brand">Tap to let the coach calculate macros for this meal as you described it</div>';
-    aiCard.onclick=()=>estimateMealMacros(query);
-    res.appendChild(aiCard);
+    _aiCard = document.createElement('div');
+    _aiCard.className='food-result';
+    _aiCard.style.cssText='margin-top:10px;border:1px dashed var(--bd);background:transparent';
+    _aiCard.innerHTML='<div class="fr-name" style="color:var(--tx2)">\u2728 None of these? Estimate it instead</div>' +
+      '<div class="fr-brand">I will work out "' + _escFew(query.length>34?query.slice(0,33)+'\u2026':query) + '" from the description.</div>';
+    _aiCard.onclick=()=>estimateMealMacros(query);
   }
+
   
   // MFP's signature: tap the row to adjust portion, (+) to log instantly at the default serving.
   all.forEach((food)=>{ res.appendChild(_makeFoodResultRow(food)); });
   
+  // After the real rows, before making one from scratch: a real match should be what the eye lands
+  // on first, and estimating a described plate is the likelier next want than typing a label out.
+  if(_aiCard) res.appendChild(_aiCard);
+
   // Always offer custom food creation at the end — for foods in no database (homemade, regional, supplements)
   const customBtn=document.createElement('button');
   customBtn.className='btn';
@@ -24336,6 +24480,7 @@ async function searchFood(query){
   customBtn.textContent='+ Create a custom food';
   customBtn.onclick=()=>openCustomFoodCreator(query);
   res.appendChild(customBtn);
+
 }
 
 // ── CUSTOM FOOD CREATION ──────────────────────────────────────
@@ -24436,7 +24581,8 @@ async function handleMealPhoto(event){
   }catch(e){
           foodFailed(res, 'The photo did not get through.',
         'The connection dropped it. Try again, or add the meal yourself \u2014 it still counts.',
-        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()');
+        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()',
+        'foodTypeItInstead()', 'Type what it was');
     return;
   }
   const base64 = dataUrl.split(',')[1];
@@ -24450,7 +24596,8 @@ async function handleMealPhoto(event){
       if(error || !data?.text){
               foodFailed(res, 'The photo did not get through.',
         'The connection dropped it. Try again, or add the meal yourself \u2014 it still counts.',
-        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()');
+        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()',
+        'foodTypeItInstead()', 'Type what it was');
         return;
       }
       const mm = data.text.match(/\{[\s\S]*\}/);
@@ -24458,7 +24605,8 @@ async function handleMealPhoto(event){
       if(!parsed || parsed.error){
       foodFailed(res, 'That did not look like food to me.',
         'Try again with the plate filling more of the frame, or add it yourself.',
-        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()');
+        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()',
+        'foodTypeItInstead()', 'Type what it was');
         return;
       }
       // Per-item beats Cal AI's single blob: each detected food is separately adjustable and removable,
@@ -24469,14 +24617,16 @@ async function handleMealPhoto(event){
       _items = (_items||[]).filter(it=>it && (it.food||it.name)).map(it=>({ food:String(it.food||it.name||'Item'), portion:String(it.portion||''), cal:Number(it.cal)||0, pro:Number(it.pro)||0, carb:Number(it.carb)||0, fat:Number(it.fat)||0, mult:1 }));
             if(!_items.length){ foodFailed(res, 'I could not make out the food in that photo.',
         'A clearer, closer shot usually does it \u2014 or add the meal yourself.',
-        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()'); return; }
+        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()',
+        'foodTypeItInstead()', 'Type what it was'); return; }
       _photoMeal = { name: parsed.meal||parsed.name||'Your meal', items:_items, assumptions:parsed.assumptions||'', confidence:parsed.confidence||'', meal:(typeof currentMealSlot==='function'?currentMealSlot():null) };
       _renderPhotoMeal();
     }catch(err){
       console.error('meal photo failed', err);
             foodFailed(res, 'The photo did not get through.',
         'The connection dropped it. Try again, or add the meal yourself \u2014 it still counts.',
-        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()');
+        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()',
+        'foodTypeItInstead()', 'Type what it was');
     }
 }
 
@@ -26266,14 +26416,36 @@ function nourishmentScore(totals, goals){
   const pFib = Math.min(35, 35 * (totals.fiber||0) / fibreTarget);
   const sugarShare = cal>0 ? ((totals.sugar||0)*4)/cal : 0;                 // lenient — total sugar includes fruit
   let pSug; if(sugarShare<=0.10) pSug=25; else if(sugarShare>=0.30) pSug=0; else pSug=25*(1-(sugarShare-0.10)/0.20);
-  const score = Math.max(0, Math.min(100, Math.round(pPro+pFib+pSug)));
+  // A day of oats, banana, broccoli and chicken scored 65 and was told "fibre is where today is
+  // light". It was not light — it was UNKNOWN. Most entries in this app carry calories and protein and
+  // nothing else, so totals.fiber is 0 for a person who ate plenty of it, and 35 points of the 100
+  // were being deducted for a number nobody ever recorded. Zero is not the same as unknown, and a
+  // score that punishes you for the app's own blind spot is worse than no score.
+  //
+  // A component the day has no data for drops OUT of the total and the remaining weights are rescaled,
+  // so the number means "of what I can actually see". If nothing is knowable, there is no score.
+  const _known = [];
+  if((totals.pro||0) > 0)   _known.push({p:pPro, w:40});
+  if((totals.fiber||0) > 0) _known.push({p:pFib, w:35});
+  if((totals.sugar||0) > 0 || (totals.carb||0) > 0) _known.push({p:pSug, w:25});
+  if(!_known.length) return null;
+  const _wSum = _known.reduce((a,x)=>a+x.w, 0);
+  const _pSum = _known.reduce((a,x)=>a+x.p, 0);
+  const score = Math.max(0, Math.min(100, Math.round(_pSum * (100/_wSum))));
   const dims = [
     {pct:pPro/40, tip:'A protein source at the next meal would lift this most.'},
-    {pct:pFib/35, tip:'More veg, fruit, beans or whole grains — fibre is where today is light.'},
-    {pct:pSug/25, tip:'Sugar’s running high as a share of today — worth easing back.'}
+    {pct:(totals.fiber||0) > 0 ? pFib/35 : 1, tip:'More veg, fruit, beans or whole grains — fibre is where today is light.'},
+    {pct:((totals.sugar||0) > 0 || (totals.carb||0) > 0) ? pSug/25 : 1, tip:'Sugar’s running high as a share of today — worth easing back.'}
   ].sort((a,b)=>a.pct-b.pct);
   // A strong day earns an affirmation, not a "you're light on X" nudge.
-  const tip = dims[0].pct > 0.85 ? 'Protein, fibre and whole foods all here — this is what nourished looks like.' : dims[0].tip;
+  // This line names fibre explicitly, so it cannot be said on a day whose entries carry no fibre at
+  // all — that is the same overclaim as scoring the unknown zero, just pointed the other way. Name
+  // only what was actually read.
+  const _fibKnown = (totals.fiber||0) > 0;
+  const tip = dims[0].pct > 0.85
+    ? (_fibKnown ? 'Protein, fibre and whole foods all here — this is what nourished looks like.'
+                 : 'Protein is well covered today — that is the part that carries the most.')
+    : dims[0].tip;
   const MICROS=['vit_a','vit_c','vit_d','vit_e','vit_k','b1','b2','b3','b6','b9','b12','calcium','iron','magnesium','phosphorus','potassium','zinc','selenium','copper'];
   const microsHit=MICROS.filter(k=>(totals[k]||0)>0).length;
   let tier, col;
@@ -26281,7 +26453,14 @@ function nourishmentScore(totals, goals){
   else if(score>=70){ tier='Nourishing'; col='var(--gr)'; }
   else if(score>=50){ tier='Getting there'; col='var(--go)'; }
   else { tier='Light on nourishment'; col='var(--go)'; }
-  return { score, tier, col, tip, microsHit, microsTotal:MICROS.length };
+  // What the score was actually able to see. Rescaling for unknowns fixed the number and left the
+  // copy claiming "Protein, fibre and whole foods all here" on a day where fibre was never recorded —
+  // the same lie in the other direction. The card says which parts it read, so a 100 based on protein
+  // alone cannot be mistaken for a 100 based on everything.
+  const basis = _known.length === 3 ? null
+    : ('Scored on ' + _known.map(function(x){ return x.w===40?'protein':x.w===35?'fibre':'sugar'; }).join(' and ') +
+       ' \u2014 the rest was not in what you logged.');
+  return { score, tier, col, tip, basis, microsHit, microsTotal:MICROS.length };
 }
 // The diary that COACHES, not just counts — a single actionable, time-of-day-aware, grace-first line.
 // Protein-first (it's what this audience is chasing); over-cal is met with grace; under-cal warns
@@ -26328,6 +26507,8 @@ function renderNourishmentScore(totals, goals){
           '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em">Nourishment · today</div>'+
           '<div style="font-size:15px;color:'+r.col+';font-weight:600">'+r.tier+'</div>'+
           '<div style="font-size:11.5px;color:var(--tx3);line-height:1.4;margin-top:2px">'+r.tip+'</div>'+
+      (r.basis ? '<div style="font-size:10.5px;color:var(--tx3);opacity:.75;line-height:1.4;margin-top:5px">'+
+        _escFew(r.basis)+'</div>' : '')+
         '</div>'+
       '</div>'+
       (r.microsHit>0?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">'+r.microsHit+' of '+r.microsTotal+' vitamins &amp; minerals covered today</div>':'')+
@@ -26455,7 +26636,12 @@ function applyNutGentle(eaten, goalCal){
   // over-budget figure two cards down is worse than no promise at all.
   const HIDE = ['nut-equation','nut-extended','nut-meal-split','nut-macro-glance','nut-nudge',
                 'nut-net-card','nut-weekly-digest','nut-trend-card','adaptive-tdee-card'];
-  const RESTORE = { 'nut-equation':'flex', 'nut-extended':'grid' }; // always-visible statics
+  // 'nut-extended' was in here, so turning gentle mode OFF forced the four extended macros back to
+  // display:grid — including for a day whose entries carry no fibre, sugar, sodium or saturated fat,
+  // which is exactly the case renderNutritionLog had just decided to hide. Two renderers disagreeing,
+  // the later one winning, and four zeros telling a person who ate all day that he ate no fibre.
+  // The equation is genuinely always-on; the extended row is conditional, so its owner keeps it.
+  const RESTORE = { 'nut-equation':'flex' };
   const line = g('nut-gentle-line');
   if(on){
     HIDE.forEach(function(id){ const el=g(id); if(el) el.style.display='none'; });
@@ -26843,7 +27029,7 @@ function renderNutritionLog(){
       header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:8px 4px 4px 4px;margin-top:10px;border-bottom:1px solid var(--bd)';
       header.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.1em">' + mealLabels[meal] + '</div>' +
         '<div style="display:flex;align-items:center;gap:8px">' +
-          (has ? '<button onclick="saveMealGroup(\''+meal+'\')" title="Save these foods as a reusable meal" style="background:none;border:none;color:var(--go);font-family:DM Mono,monospace;font-size:9px;cursor:pointer;letter-spacing:0.05em">save meal</button>' : '') +
+          (has ? '<button onclick="saveMealGroup(\''+meal+'\')" title="Save these foods as a reusable meal" style="background:none;border:none;color:var(--go);font-family:DM Mono,monospace;font-size:9px;cursor:pointer;min-height:34px;padding:0 8px;margin:-11px -8px;letter-spacing:0.05em">save meal</button>' : '') +
           // Numbers off → the meal still lists what you ate, just not what it "cost".
           ((has && !_gentleOn) ? '<span style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">' + mealCals + ' cal · ' + mealPro + 'g P</span>' : '') +
         '</div>';
@@ -28947,7 +29133,7 @@ function renderFinance(){
     item.innerHTML='<div class="dr-top"><span class="dr-name">'+_escFew(d.n)+(si===starIdx?' \u2b50':'')+(cleared?' \u2713':'')+' </span><span class="dr-amt">'+(cleared?'Paid off':curSym()+Math.round(rem).toLocaleString())+'</span></div>'+
       (d.due&&!cleared?'<span class="dr-date" style="color:'+_dueColor(d.due)+'">'+_escFew(_dueLabel(d.due)||('Due: '+d.due))+'</span>':'')+
       '<div class="bar-wrap"><div class="bar" style="width:'+Math.min(100,pct)+'%"></div></div>'+
-      '<div class="dr-meta"><span class="dr-paid">'+curSym()+Math.round(d.p).toLocaleString()+' paid ('+pct+'%)</span><span>'+(cleared?'Cleared \u2014 tap to edit':'Tap to log payment')+'</span><button class="dr-edit" aria-label="Edit '+_jsAttr(d.n)+'" onclick="event.stopPropagation();editDebt('+d.idx+')" style="background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:2px 6px;text-decoration:underline">Edit</button></div>';
+      '<div class="dr-meta"><span class="dr-paid">'+curSym()+Math.round(d.p).toLocaleString()+' paid ('+pct+'%)</span><span>'+(cleared?'Cleared \u2014 tap to edit':'Tap to log payment')+'</span><button class="dr-edit" aria-label="Edit '+_jsAttr(d.n)+'" onclick="event.stopPropagation();editDebt('+d.idx+')" style="background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:14px 12px;margin:-12px -12px;min-height:40px;text-decoration:underline">Edit</button></div>';
     item.onclick=()=>{ if(cleared){ editDebt(d.idx); return; } openFormModal('Log a payment','Payment toward '+d.n+'.',[{id:'amt',label:'Amount',type:'number',prefix:curSym(),placeholder:'e.g. 200'}],'Log payment',(vals)=>{const a=parseFloat(vals.amt);if(isNaN(a)||a<=0)return 'Enter an amount greater than 0.';loadF();debts[d.idx].p=Math.min(debts[d.idx].p+a,debts[d.idx].t);saveF();const payments=ls('totry_payments')||[];payments.push({amt:a,ts:new Date().toISOString(),date:new Date().toISOString(),debt:d.n});ls('totry_payments',payments.slice(-200));if(typeof syncToCloud==='function')syncToCloud();renderFinance();calcDebtFreeDate();checkMilestones();return true;});};
     dl.appendChild(item);
   });
@@ -30546,12 +30732,19 @@ function renderTransactions(){
   
   const income = thisMonth.filter(t => t.type === 'income').reduce((a,t)=>a+t.amount, 0);
   const expenses = thisMonth.filter(t => t.type === 'expense').reduce((a,t)=>a+t.amount, 0);
-  const net = income - expenses;
+  // IN $0 · OUT $43 · NET $-42 on one card, from a single $42.50 expense: Math.round(42.5) is 43 but
+  // Math.round(-42.5) is -42, JavaScript rounding half AWAY from zero upward, so the two tiles the
+  // person can see disagree by a dollar and the third does not reconcile with either. Round the parts
+  // once, then derive the whole from the parts that are actually on screen — a money card whose own
+  // three numbers do not add up is the fastest way to lose someone's trust in every other number.
+  const inR  = Math.round(income);
+  const outR = Math.round(expenses);
+  const net  = inR - outR;
   
   summary.innerHTML = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">In</div><div style="font-size:16px;color:var(--gr);margin-top:3px">'+curSym() + Math.round(income).toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Out</div><div style="font-size:16px;color:var(--re);margin-top:3px">'+curSym() + Math.round(expenses).toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Net</div><div style="font-size:16px;color:' + (net >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:3px">'+curSym() + Math.round(net).toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">In</div><div style="font-size:16px;color:var(--gr);margin-top:3px">'+curSym() + inR.toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Out</div><div style="font-size:16px;color:var(--re);margin-top:3px">'+curSym() + outR.toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Net</div><div style="font-size:16px;color:' + (net >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:3px">'+(net < 0 ? '\u2212' : '') + curSym() + Math.abs(net).toLocaleString() + '</div></div>' +
   '</div>';
   
   // Category breakdown for expenses
@@ -43308,10 +43501,10 @@ function getNextStep(){
       let _hardVice = null;
       _vs.forEach(v=>{ try{ const p=(typeof analyzeUrgePatterns==='function')?analyzeUrgePatterns(v.n):null; if(p && p.riskWindow===_block) _hardVice=v; }catch(_){} });
       if(_hardVice){
-        return { text:'This is usually your hard hour', sub:'Right around when '+_hardVice.n+' tends to pull. Nothing has to be happening \u2014 get ahead of it with me.', action:'breath', actionArg:String(_hardVice.n) };
+        return { text:'This is usually your hard hour', sub:'Right around when '+_hardVice.n+' tends to pull. Nothing has to be happening \u2014 get ahead of it with me.', keepSub:true, action:'breath', actionArg:String(_hardVice.n) };
       }
       if(hour >= 22 || hour < 5){
-        return { text:'The hard hour\u2019s near', sub:'Late hours are when it pulls \u2014 get ahead of it. One slow minute, before anything rises.', action:'breath' };
+        return { text:'The hard hour\u2019s near', sub:'Late hours are when it pulls \u2014 get ahead of it. One slow minute, before anything rises.', keepSub:true, action:'breath' };
       }
     }
   }catch(_){ }
@@ -43321,7 +43514,7 @@ function getNextStep(){
       const _r = computeReadiness();
       const _trained = (typeof getUnifiedTraining==='function') && getUnifiedTraining().some(t=>t.ts && new Date(t.ts).toLocaleDateString('en-AU')===today);
       if(_r && _r.level === 'rest' && !_trained && hour >= 7 && hour < 20){
-        return { text:'Your body needs rest today', sub:'Recovery is low \u2014 go gentle. Mobility or a walk, not a max effort.', action:'mobility' };
+        return { text:'Your body needs rest today', sub:'Recovery is low \u2014 go gentle. Mobility or a walk, not a max effort.', keepSub:true, action:'mobility' };
       }
     }
   }catch(_){ }
@@ -43568,7 +43761,12 @@ function renderNextStep(){
   try{
     if(!step.done && typeof _countOpenLoops==='function'){
       const open = _countOpenLoops();
-      if(open >= 4) subText = 'A lot\u2019s on your plate today \u2014 don\u2019t carry it all at once. Just this one thing for now.';
+      // The softener was written for the routine steps — morning, train, calendar, reflect — where the
+      // sub is encouragement and losing it costs nothing. On the hard-hour card the sub is the only
+      // thing that explains what the headline means and what the tap does, so overwriting it produced
+      // a headline about a craving window above a sentence about a busy to-do list. Steps that mark
+      // keepSub own their own words.
+      if(open >= 4 && !step.keepSub) subText = 'A lot\u2019s on your plate today \u2014 don\u2019t carry it all at once. Just this one thing for now.';
     }
   }catch(_){}
   if(sub) sub.textContent = subText;
@@ -43981,7 +44179,18 @@ function computeProactiveNudge(){
         const k = new Date(now - i*86400000).toLocaleDateString('en-AU');
         if(evenings.some(e => dayKey(e.ts) === k)) streak++; else break;
       }
+      // Third ask. The hero already says "Close the day" over a gold button, the Today-for-you card was
+      // de-duplicated against it, and 664px below THIS put a second gold [Close today] to the very same
+      // screen. Three requests for one act. What the streak knows that the hero does not is the streak
+      // itself, so when the hero is already asking, this keeps the fact and drops the duplicate button.
       if(streak >= 3){
+        if(_heroAlreadyAsks('evening')){
+          return { id:'streak'+dayKey(now), tone:'nudge',
+            eyebrow:'Before the day closes',
+            text: hi + 'you\u2019ve closed ' + streak + ' evenings in a row. That\u2019s a real thread \u2014 ' +
+                  'worth not dropping tonight.',
+            actions: [{label:'Skip tonight', ghost:true, onclick:'dismissNudge(\'streak'+dayKey(now)+'\')'}] };
+        }
         return { id:'streak'+dayKey(now), tone:'nudge',
           eyebrow:'Before the day closes',
           text: hi + 'you\u2019ve closed ' + streak + ' evenings in a row with a reflection. That\u2019s a real thread \u2014 worth not dropping tonight. Two lines is enough.',

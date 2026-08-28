@@ -284,12 +284,19 @@ function renderTransactions(){
   
   const income = thisMonth.filter(t => t.type === 'income').reduce((a,t)=>a+t.amount, 0);
   const expenses = thisMonth.filter(t => t.type === 'expense').reduce((a,t)=>a+t.amount, 0);
-  const net = income - expenses;
+  // IN $0 · OUT $43 · NET $-42 on one card, from a single $42.50 expense: Math.round(42.5) is 43 but
+  // Math.round(-42.5) is -42, JavaScript rounding half AWAY from zero upward, so the two tiles the
+  // person can see disagree by a dollar and the third does not reconcile with either. Round the parts
+  // once, then derive the whole from the parts that are actually on screen — a money card whose own
+  // three numbers do not add up is the fastest way to lose someone's trust in every other number.
+  const inR  = Math.round(income);
+  const outR = Math.round(expenses);
+  const net  = inR - outR;
   
   summary.innerHTML = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">In</div><div style="font-size:16px;color:var(--gr);margin-top:3px">'+curSym() + Math.round(income).toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Out</div><div style="font-size:16px;color:var(--re);margin-top:3px">'+curSym() + Math.round(expenses).toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Net</div><div style="font-size:16px;color:' + (net >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:3px">'+curSym() + Math.round(net).toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">In</div><div style="font-size:16px;color:var(--gr);margin-top:3px">'+curSym() + inR.toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Out</div><div style="font-size:16px;color:var(--re);margin-top:3px">'+curSym() + outR.toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Net</div><div style="font-size:16px;color:' + (net >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:3px">'+(net < 0 ? '\u2212' : '') + curSym() + Math.abs(net).toLocaleString() + '</div></div>' +
   '</div>';
   
   // Category breakdown for expenses

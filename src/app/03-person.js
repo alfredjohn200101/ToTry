@@ -4518,15 +4518,22 @@ function openSoulToday(){
   }
 
   // --- Soul state: this morning's mood + intention ---
-  const mornings = ls('totry_mornings')||[];
-  const tm = mornings.find(m=>m && m.date===todayKey);
+  // completeMorning writes date as toLocaleDateString('en-AU',{weekday,day,month}) -> "Fri, 28 Aug".
+  // todayKey is the bare toLocaleDateString('en-AU') -> "28/08/2026". Those two strings can never be
+  // equal, so didMorning has been permanently false for every user since this shipped: the Morning
+  // tile could not turn green even on a morning that was finished, sitting beside a green Evening tile
+  // on the same day, and the whole "Your soul today" block gated on `tm` has never rendered for
+  // anyone. The line directly below already matches the evening by timestamp, and every other reader
+  // of this store in the codebase does too — this one line was the outlier.
+  const mornings = (typeof ritualLog === 'function') ? ritualLog('totry_mornings') : (ls('totry_mornings')||[]);
+  const tm = mornings.find(m => m && m.ts && new Date(m.ts).toLocaleDateString('en-AU') === todayKey);
   let moodHtml = '';
   if(tm){
     if(tm.mood) moodHtml += '<div style="font-size:13px;color:var(--tx2);margin-bottom:4px">This morning you felt <span style="color:var(--tx)">'+tm.mood+'</span></div>';
     if(tm.intention) moodHtml += '<div style="font-size:13px;color:var(--tx2);font-style:italic">\u201c'+String(tm.intention).slice(0,140)+'\u201d</div>';
   }
   const didMorning = !!tm;
-  const evenings = ls('totry_evenings')||[];
+  const evenings = (typeof ritualLog === 'function') ? ritualLog('totry_evenings') : (ls('totry_evenings')||[]);
   const didEvening = evenings.some(e=>e && e.ts && new Date(e.ts).toLocaleDateString('en-AU')===todayKey);
 
   const m = document.createElement('div');
@@ -4542,7 +4549,7 @@ function openSoulToday(){
     // The two daily anchors
     '<div class="lbl">The day\u2019s rhythm</div>'+
     '<div style="display:flex;gap:8px;margin-bottom:16px">'+
-      '<div onclick="document.getElementById(\'soul-today-modal\')?.remove();go(\'reflect\')" style="flex:1;padding:12px;background:var(--bg3);border-radius:10px;cursor:pointer;text-align:center"><div style="font-size:18px;margin-bottom:2px">'+(didMorning?'\u2705':'\u2600\ufe0f')+'</div><div style="font-size:12px;color:var(--tx2)">Morning</div></div>'+
+      '<div onclick="document.getElementById(\'soul-today-modal\')?.remove();go(\'morning\')" style="flex:1;padding:12px;background:var(--bg3);border-radius:10px;cursor:pointer;text-align:center"><div style="font-size:18px;margin-bottom:2px">'+(didMorning?'\u2705':'\u2600\ufe0f')+'</div><div style="font-size:12px;color:var(--tx2)">Morning</div></div>'+
       '<div onclick="document.getElementById(\'soul-today-modal\')?.remove();go(\'reflect\')" style="flex:1;padding:12px;background:var(--bg3);border-radius:10px;cursor:pointer;text-align:center"><div style="font-size:18px;margin-bottom:2px">'+(didEvening?'\u2705':'\u{1F319}')+'</div><div style="font-size:12px;color:var(--tx2)">Evening</div></div>'+
     '</div>'+
 
@@ -4722,6 +4729,17 @@ function completeMorning(){
   document.getElementById('morning-prayer-display').style.display='none';
   document.getElementById('morning-done').style.display='block';
   if(typeof morningFinished==='function') morningFinished();
+  // The last tap of the flagship ritual moved nothing on screen. The save works, but morningFinished()
+  // un-hides all five steps at once and the pane is still at scrollTop 0, so the person is left looking
+  // at the top of step one and has no way to tell whether their morning was kept. The confirmation
+  // lands 1871px below the fold. Bring it to them.
+  try{
+    const _d = document.getElementById('morning-done');
+    if(_d) setTimeout(function(){ try{ _d.scrollIntoView({behavior:'smooth', block:'center'}); }catch(_){ } }, 90);
+    if(typeof showToast === 'function') showToast('Morning kept', 'Gratitude and intention saved for today.');
+    if(typeof haptic === 'function') haptic('success');
+  }catch(_){ }
+
   const po=document.querySelector('.prayer-opts');if(po)po.style.display='none';
   const dc=document.getElementById('morning-complete-direct');if(dc)dc.style.display='none';
   checkMilestones();
@@ -4743,6 +4761,17 @@ function initMorningTab(){
   if(today&&today.length>0&&today[0].day===getDayCount()){
     document.getElementById('morning-done').style.display='block';
   if(typeof morningFinished==='function') morningFinished();
+  // The last tap of the flagship ritual moved nothing on screen. The save works, but morningFinished()
+  // un-hides all five steps at once and the pane is still at scrollTop 0, so the person is left looking
+  // at the top of step one and has no way to tell whether their morning was kept. The confirmation
+  // lands 1871px below the fold. Bring it to them.
+  try{
+    const _d = document.getElementById('morning-done');
+    if(_d) setTimeout(function(){ try{ _d.scrollIntoView({behavior:'smooth', block:'center'}); }catch(_){ } }, 90);
+    if(typeof showToast === 'function') showToast('Morning kept', 'Gratitude and intention saved for today.');
+    if(typeof haptic === 'function') haptic('success');
+  }catch(_){ }
+
     const po=document.querySelector('.prayer-opts');if(po)po.style.display='none';
     const dc=document.getElementById('morning-complete-direct');if(dc)dc.style.display='none';
     if(today[0].gratitude)document.getElementById('morning-gratitude').value=today[0].gratitude;

@@ -198,8 +198,9 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 .logbar-ic{flex:0 0 auto;width:42px;background:transparent;border:0;border-left:1px solid var(--bd);
   color:var(--tx2);font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .logbar-ic:active{background:var(--bg2)}
-.logbar-go{flex:0 0 auto;padding:0 15px;background:var(--ac);border:0;color:var(--ac-tx,#0d0d0d);
-  font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.logbar-go{flex:0 0 auto;padding:0 15px;border:0;font-size:13px;font-weight:600;cursor:pointer;
+  font-family:inherit;background:linear-gradient(180deg,#D4B87C,#C8A96E);color:#1a1505}
+.logbar-go:active{filter:brightness(.93)}
 .logbar-more{width:100%;background:transparent;border:0;color:var(--tx3);font-size:12px;
   padding:7px 0 12px;cursor:pointer;text-align:left;font-family:inherit;letter-spacing:.01em}
 .logbar-more:active{color:var(--tx2)}
@@ -716,7 +717,15 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .food-log-item:last-child{border-bottom:none}
 .fli-name{font-size:13px;color:var(--tx)}
 .fli-cal{font-family:'DM Mono',monospace;font-size:12px;color:var(--go)}
-.fli-del{background:none;border:none;color:var(--tx3);cursor:pointer;font-size:16px;padding:0 4px}
+/* These are the edit and delete on every logged food — the core daily loop — and they measured 19x17
+   and 17x18 CSS px. A destructive control a third the width of a fingertip, 8px from its neighbour,
+   so a thumb aiming for "fix the numbers" deletes the meal instead. The visual size is deliberate and
+   stays exactly as it was; what changes is the hit box, opened out to 44px and pulled back with
+   negative margin so nothing on the row moves. Same trick "+ Add food" already uses. */
+.fli-del{min-width:44px;min-height:44px;margin:-13px -12px;display:inline-flex;
+  align-items:center;justify-content:center;background:none;border:0;cursor:pointer;
+  font-size:14px;color:var(--tx3);font-family:inherit}
+.fli-del:active{color:var(--tx2)}
 .goal-bar-wrap{height:8px;background:var(--bg4);border-radius:4px;overflow:hidden;margin:6px 0 2px}
 .goal-bar{height:8px;border-radius:4px;transition:width 0.4s}
 .goal-bar.ok{background:var(--gr)}.goal-bar.warn{background:var(--go)}.goal-bar.over{background:var(--re)}
@@ -1060,6 +1069,14 @@ html,body{overscroll-behavior:none}
 #tab-coach .msgs, #tab-train .msgs{ flex:1 1 auto; }
 /* iOS keyboard fix: the outer page must NEVER scroll (the black-void bug). Tabs scroll inside;
    focused inputs are centered within their tab instead of iOS shoving the whole layout. */
+/* Cormorant Garamond ships OLD-STYLE figures by default: the 1 is drawn with full serifs (a capital
+   I) and 0 is a circle of x-height, so the app's own headline number — "100 DAYS IN" — reads I O O,
+   and day one reads "I DAY IN". It is on the persistent header of every screen. Lining figures are in
+   the font; nothing was asking for them. Inherited, so every Cormorant number in the app is fixed at
+   once; the Outfit and DM Mono runs that set tabular-nums are unaffected, both faces being lining
+   already. */
+body{font-variant-numeric:lining-nums}
+
 body{position:fixed;inset:0;width:100%}
 .tab{scroll-padding-bottom:220px}
 .tab{overscroll-behavior:contain}
@@ -1790,6 +1807,15 @@ input:focus,textarea:focus,select:focus{
       <div class="hc-title">Shared threads</div>
       <div class="hc-desc">Patience, stillness, self-mastery — how other traditions hold the same human struggle. Not the same, but kin.</div>
     </div>
+  </div>
+  <!-- This card lived INSIDE #hub-common-grid, and applyFaithUIGate hides that whole grid whenever
+       ECHO_OK[tradition] is false — islam, hinduism and buddhism. The gate is right about "Shared
+       threads": cross-tradition echoes are not something to push at anyone. But a season of fasting
+       is not an echo of someone else’s path, it is the person’s OWN. So the same function that hid
+       this card went on to write "Ramadan" into #hub-fast-desc for a Muslim who could never see it,
+       while a Catholic on the same build was offered Lent. Faith full but never forced cannot mean
+       Lent for one person and nothing for another. Out of the grid, so it survives that gate. -->
+  <div class="hub-grid">
     <div class="hub-card wide" onclick="go('nourish');setTimeout(function(){var e=document.getElementById('fast-season');if(e)e.scrollIntoView({block:'center'});},350)">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       <div class="hc-title">A season of fasting</div>
@@ -2055,7 +2081,7 @@ input:focus,textarea:focus,select:focus{
   <div id="today-for-you" style="display:none;background:var(--bg2);border:1px solid var(--go-bd);border-radius:var(--r);padding:16px;margin-bottom:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
       <div class="eyebrow" id="tfy-eyebrow" style="margin-bottom:0;color:var(--go)">Today</div>
-      <button id="tfy-low-toggle" onclick="toggleLowEnergyDay()" style="background:none;border:1px solid var(--bd);border-radius:100px;color:var(--tx3);font-size:10px;font-family:'DM Mono',monospace;padding:4px 10px;cursor:pointer">Low day?</button>
+      <button id="tfy-low-toggle" onclick="toggleLowEnergyDay()" style="background:none;border:1px solid var(--bd);border-radius:100px;color:var(--tx3);font-size:10px;min-height:26px;padding:0 11px;font-family:'DM Mono',monospace;padding:4px 10px;cursor:pointer">Low day?</button>
     </div>
     <div id="tfy-message" style="font-family:'Cormorant Garamond',serif;font-size:19px;color:var(--tx);font-style:italic;line-height:1.4;margin-bottom:10px"></div>
     <div id="tfy-action"></div>
@@ -2482,6 +2508,9 @@ input:focus,textarea:focus,select:focus{
     <div id="score-by-vice" style="margin-bottom:14px"></div>
     <div class="lbl">Achievements</div>
     <div id="achievements"></div>
+    <!-- 898px of numbers and not one thing to do. The app's own rule is that a screen which only
+         reports is not finished, and this is the panel a person opens after a fall. -->
+    <button class="btn" onclick="go('fight')" style="margin-top:14px;background:var(--bg3);border:1px solid var(--bd);font-size:13px">Back to the fight</button>
   </div>
 
   <!-- CRAVING LOG PANEL -->

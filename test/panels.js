@@ -171,10 +171,32 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     const ctx = await browser.newContext({ viewport: { width: 414, height: 896 } });
     const page = await ctx.newPage();
     await page.addInitScript(() => {
+      // This person owned one bill and one vice, so almost every LIST in the app was empty — and the
+      // controls that live on list rows are exactly the ones that were too small. The gate walked nine
+      // tabs and reported zero, while the edit and delete on every logged food measured 19x17 and
+      // 17x18, and the Edit on a debt row 31x16. A tap-target gate driven by someone with nothing
+      // logged is measuring the empty states. Give it rows.
+      const N = Date.now(), AU = d => new Date(d).toLocaleDateString('en-AU');
+      const meal = (n, c, pr, t, ml) => ({ id: Math.floor(Math.random()*1e9), name: n, brand: '',
+        serving: '1 serving', qty: 1, cal: c, pro: pr, carb: 40, fat: 12, ts: new Date(t).toISOString(), meal: ml });
+      const nutlog = {};
+      for (let i = 0; i < 6; i++) { const d = N - i * 864e5;
+        nutlog[AU(d)] = [meal('Oats, banana, whey', 520, 38, d, 'breakfast'),
+                         meal('Chicken and rice', 690, 55, d, 'lunch'),
+                         meal('Greek yoghurt', 210, 20, d, 'dinner')]; }
       const seed = { totry_guest: true, totry_onboarded: true, totry_name: 'Alfy',
                      totry_faith_tradition: 'christianity', totry_sex: 'male',
                      totry_bills: [{ id: 2, name: 'Rent', amount: 420, due: '2026-09-01' }],
-                     totry_v: [{ n: 'Scrolling', startDate: new Date(Date.now() - 9 * 864e5).toISOString(), mode: 'quit' }] };
+                     totry_v: [{ n: 'Scrolling', startDate: new Date(Date.now() - 9 * 864e5).toISOString(), mode: 'quit' }],
+                     totry_nutlog: nutlog,
+                     totry_body: Array.from({ length: 6 }, (_, i) => ({ w: 78.4 + i * 0.2, ts: new Date(N - i * 864e5).toISOString() })),
+                     totry_workouts: Array.from({ length: 4 }, (_, i) => ({ title: 'Push day', vol: 4200, ts: new Date(N - i * 864e5).toISOString() })),
+                     totry_journal: Array.from({ length: 3 }, (_, i) => ({ text: 'A thought', ts: new Date(N - i * 864e5).toISOString() })),
+                     totry_f: { d: [{ n: 'Car loan', t: 12000, p: 3600, r: 7.2 }], u: 5000, i: 0 },
+                     totry_transactions: Array.from({ length: 8 }, (_, i) => ({ id: i, amount: -42.5, desc: 'Coles', cat: 'food', ts: new Date(N - i * 864e5).toISOString() })),
+                     totry_subscriptions: [{ n: 'Netflix', amt: 18, cycle: 'monthly' }],
+                     totry_mornings: Array.from({ length: 5 }, (_, i) => ({ ts: new Date(N - i * 864e5).toISOString() })),
+                     totry_evenings: Array.from({ length: 5 }, (_, i) => ({ ts: new Date(N - i * 864e5).toISOString() })) };
       for (const k in seed) localStorage.setItem(k, JSON.stringify(seed[k]));
     });
     await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: 'domcontentloaded' });
@@ -2430,6 +2452,104 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── every tradition gets its own season ──────────────────────────────────────────────────────
+  // applyFaithUIGate hides #hub-common-grid whenever ECHO_OK[tradition] is false — islam, hinduism,
+  // buddhism — which is the right call for "Shared threads", cross-tradition echoes nobody asked for.
+  // "A season of fasting" was sitting inside that same grid, so the identical gate took it too. The
+  // function then went on to write "Ramadan" into #hub-fast-desc for a Muslim who could never see it,
+  // while a Catholic on the same build was offered Lent. Faith full but never forced cannot mean Lent
+  // for one person and nothing for another.
+  {
+    for (const [t, want] of [['christianity','Lent'], ['islam','Ramadan'], ['hinduism','Navratri'],
+                             ['buddhism','Uposatha'], ['secular','own window']]) {
+      const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+      const page = await ctx.newPage();
+      await page.addInitScript((tr) => { localStorage.setItem('totry_onboarded','true');
+        localStorage.setItem('totry_name', JSON.stringify('Alfy'));
+        localStorage.setItem('totry_faith_tradition', JSON.stringify(tr));
+        localStorage.setItem('totry_faith_level', JSON.stringify('full')); }, t);
+      await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+      await page.waitForTimeout(2500);
+      const r = await page.evaluate(() => { go('soul');
+        return new Promise(res => setTimeout(() => {
+          const d = document.getElementById('hub-fast-desc');
+          const c = d ? d.closest('.hub-card') : null;
+          const rc = c ? c.getBoundingClientRect() : null;
+          const g = document.getElementById('hub-common-grid');
+          res({ vis: !!(rc && rc.width > 0 && rc.height > 0), desc: d ? (d.textContent||'') : '',
+                echo: g ? getComputedStyle(g).display : 'absent' });
+        }, 1300)); });
+      await ctx.close();
+      if (!r.vis)  findings.push(`faith: ${t} cannot see "A season of fasting" at all`);
+      else if (!r.desc.includes(want))
+        findings.push(`faith: ${t} is offered "${r.desc.slice(0,40)}" — expected ${want}`);
+      // and the echoes must stay gated the way they were
+      const echoWanted = (t === 'christianity' || t === 'secular');
+      if (echoWanted && r.echo === 'none')
+        findings.push(`faith: ${t} lost Shared threads, which it is meant to have`);
+      if (!echoWanted && r.echo !== 'none')
+        findings.push(`faith: ${t} is being shown cross-tradition echoes it opted out of`);
+    }
+    if (!findings.some(f => f.startsWith('faith:')))
+      console.log('faith: all five traditions are offered their own fasting season, and only the echo grid stays gated');
+  }
+
+  // ── the reliable answer is the one the eye lands on ──────────────────────────────────────────
+  // "Gyros open plate" is three words, so searchFood decided it "looks like a meal" and put a
+  // GOLD-bordered "✨ Estimate with AI" card ABOVE the rows that USDA, FatSecret, Open Food Facts and
+  // Nutritionix had already returned. The least reliable path in the app, dressed as the best one. He
+  // tapped it — of course he did, it was the one that looked like the answer — and waited.
+  //
+  // Two orderings are asserted. With real matches the estimate sits UNDER them, quiet. With no
+  // connection at all, the option that works offline comes FIRST: the other two need a network they
+  // do not have, and offering them at the top of a dead screen is the app not knowing where it is.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { localStorage.setItem('totry_onboarded','true');
+      localStorage.setItem('totry_name', JSON.stringify('Alfy')); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2600);
+    const order = await page.evaluate(async () => {
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+      go('nourish'); await new Promise(r=>setTimeout(r,900));
+      const rows = () => [...document.getElementById('nut-search-results').children]
+        .map(e => (e.innerText||'').replace(/\s+/g,' ').trim()).filter(Boolean);
+      const out = {};
+      // four databases answer — the estimate must not be first
+      const hit = n => [{ name:n, brand:'', source:'USDA', serving:'100g', gramsEquiv:100,
+                          cal:180, pro:22, carb:4, fat:8 }];
+      window.searchUSDA        = async q => hit('Gyros meat, cooked');
+      window.searchFatSecret   = async q => hit('Chicken gyros');
+      window.searchOFF         = async q => hit('Gyros kit');
+      window.searchNutritionix = async q => hit('Gyros plate');
+      await searchFood('Gyros open plate'); await new Promise(r=>setTimeout(r,1800));
+      const withHits = rows();
+      out.gotRows   = withHits.length;
+      out.aiIndex   = withHits.findIndex(t => /estimate it instead|estimate .* with ai/i.test(t));
+      out.firstRow  = (withHits[0]||'').slice(0,44);
+      // nothing answers, and there is no connection
+      window.searchUSDA = window.searchFatSecret = window.searchOFF = window.searchNutritionix = async () => [];
+      Object.defineProperty(navigator, 'onLine', { get: () => false, configurable: true });
+      await searchFood('Gyros open plate'); await new Promise(r=>setTimeout(r,1800));
+      const dead = rows();
+      out.offlineFirst = (dead[0]||'').slice(0,44);
+      out.offlineCount = dead.length;
+      return out;
+    });
+    await ctx.close();
+    if (order.gotRows < 2)
+      findings.push(`order: only ${order.gotRows} blocks rendered with four databases answering`);
+    else if (order.aiIndex === 0)
+      findings.push(`order: the AI estimate is FIRST, above ${order.gotRows - 1} real matches — "${order.firstRow}"`);
+    else if (order.aiIndex < 0)
+      findings.push('order: the AI estimate vanished entirely when databases answered — it is the fallback, not nothing');
+    if (!/create it yourself/i.test(order.offlineFirst))
+      findings.push(`order: offline, the first thing offered is "${order.offlineFirst}" — it needs a network`);
+    if (!findings.some(f => f.startsWith('order:')))
+      console.log('order: real matches lead, the estimate follows them, and offline the offline option comes first');
+  }
+
   // ── quiet until wanted, and never quiet about something real ─────────────────────────────────
   // Three screens were mostly made of features the person had never touched: Nourish carried 557px of
   // water, fasting and calorie cycling; Money put THIRTEEN empty forms — 2,839px — directly under the
@@ -2474,7 +2594,11 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     if (nEmpty.open) findings.push('quiet: water/fasting/cycling are open for someone using none of them');
     for (const [label, seed] of [
       ['water',  () => localStorage.setItem('totry_water', JSON.stringify({ [new Date().toLocaleDateString('en-AU')]: 1500 }))],
-      ['fasting',() => localStorage.setItem('totry_fast_start', JSON.stringify(new Date().toISOString()))],
+      // totry_fast_start is a key nothing in this app writes — seeding it proved my own detector to
+      // itself while a person 5 hours into a live 16:8 was reading "not tracking these" over a running
+      // clock. The fast is totry_fasting.startTs, epoch MILLISECONDS: getFastingState() computes
+      // Date.now() - startTs, so an ISO string yields NaN and the state is silently discarded.
+      ['fasting',() => localStorage.setItem('totry_fasting', JSON.stringify({ startTs: Date.now() - 5*3600e3, protocol: 16 }))],
       ['cycling',() => localStorage.setItem('totry_cal_cycling', JSON.stringify({ enabled:true, mode:'training' }))],
       ['season', () => localStorage.setItem('totry_fast_season', JSON.stringify({ name:'Lent' }))]
     ]) {

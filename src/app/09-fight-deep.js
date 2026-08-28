@@ -888,7 +888,17 @@ function renderVices(){
             '<button onclick="openLogUse(' + i + ')" style="flex:1;background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:9px;padding:9px;font-size:12px;cursor:pointer">No — I\'ve used</button>' +
           '</div>' +
         '</div>' : '') +
-      (_asking ? '' : _stagePrimaryHTML(i)) +
+      // v552 gave the check-in question the card to itself, so that one question is asked at a time.
+      // That was right about the OTHER controls and wrong about this one: _stagePrimaryHTML holds the
+      // red urge door — "I'm feeling it — come here first" — and suppressing it meant that on the one
+      // day the app asks whether you are still clean, the door you go through instead of falling was
+      // not on the screen at all. The tab still carried the line "When an urge hits — tap it", above
+      // nothing to tap.
+      //
+      // It does not break the one-question rule: "No — I've used" reports a fall that has happened,
+      // and the urge door is how you avoid one that has not. They are different outcomes, and the
+      // second is the whole point of the app.
+      (_asking ? _urgeDoorOnlyHTML(i) : _stagePrimaryHTML(i)) +
       // HALT lives INSIDE the urge door now - "Wait, am I hungry, angry, lonely, tired?" is the
       // second thing the moment sheet offers. It is a mid-urge tool; as a standing button on the
       // card it competed with the one control that matters and pushed everything else down.
@@ -2499,7 +2509,7 @@ function _maybeRiskWindowGreeting(){
       '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-style:italic;color:var(--tx);line-height:1.3;margin-bottom:10px">I’m here.</div>'+
       '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:18px">'+hi+'this is usually the hardest stretch for you with '+String(hit.v.n).replace(/</g,'&lt;')+'.'+trig+' Nothing has to be happening — I just wanted to be here before it does. How are you, honestly?</div>'+
       '<button class="btn primary" onclick="closeModal(this);'+_hitAct+'" style="margin-bottom:8px">The pull’s here — walk me through it</button>'+
-      '<button class="btn" onclick="_riskGreetSteady('+hit.idx+')" style="background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);margin-bottom:8px;font-size:13px">I’m steady tonight</button>'+
+      '<button class="btn" onclick="_riskGreetSteady('+hit.idx+')" style="background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);margin-bottom:8px;font-size:13px">I’m steady '+_steadyWhen()+'</button>'+
       '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Just checking in — I’m fine</button>'+
       '</div>';
     document.body.appendChild(m);
@@ -2508,6 +2518,15 @@ function _maybeRiskWindowGreeting(){
 }
 // "I'm steady" during the hard hour is itself a small win worth marking — he showed up to the moment
 // and stood in it. Recorded gently, and it teaches the pattern engine too.
+// This modal is the first thing on the screen at whatever hour the person's own learned hard window
+// falls, and it said "I'm steady tonight" at 7:15 in the morning. The body already names the vice and
+// the block correctly; only this button was frozen at one time of day, which reads as the app talking
+// past you — the exact opposite of what a threshold greeting is for.
+function _steadyWhen(){
+  const h = new Date().getHours();
+  return h < 12 ? 'this morning' : h < 17 ? 'this afternoon' : 'tonight';
+}
+
 function _riskGreetSteady(i){
   loadV(); const v=vices[i];
   if(v){
