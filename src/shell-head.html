@@ -1076,6 +1076,13 @@ html,body{overscroll-behavior:none}
    once; the Outfit and DM Mono runs that set tabular-nums are unaffected, both faces being lining
    already. */
 body{font-variant-numeric:lining-nums}
+/* Two of the four resources in the crisis card were bare 16px inline text sitting under two
+   comfortable 30px phone links — the Crisis Text number and "Find support in your country". Every
+   actionable link in a crisis card is the one a person reaches for with a shaking hand, so they all
+   get the same floor. Also an App Store accessibility exposure. */
+a[href^="tel:"], a[href^="sms:"], .crisis-line a, .crisis-card a{
+  display:inline-block;min-height:30px;line-height:30px}
+
 
 body{position:fixed;inset:0;width:100%}
 .tab{scroll-padding-bottom:220px}
@@ -4478,8 +4485,8 @@ Amen.</div></div>
     </div>
     <button class="comp-skip" onclick="dismissCompanion()">Just let me in &rarr;</button>
     <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.07);display:flex;gap:14px;justify-content:center">
-      <button onclick="closeCompanion();brotherGuidance()" style="background:none;border:none;color:var(--tx3);font-size:11.5px;cursor:pointer;font-family:'DM Mono',monospace;letter-spacing:0.03em">🫂 what should I do?</button>
-      <button onclick="closeCompanion();openNeedTalk()" style="background:none;border:none;color:var(--tx3);font-size:11.5px;cursor:pointer;font-family:'DM Mono',monospace;letter-spacing:0.03em">💬 talk to coach</button>
+      <button onclick="closeCompanion();brotherGuidance()" style="background:none;border:none;color:var(--tx3);font-size:11.5px;cursor:pointer;font-family:'DM Mono',monospace;letter-spacing:0.03em;min-height:30px;padding:6px 8px;margin:-6px -8px">🫂 what should I do?</button>
+      <button onclick="closeCompanion();openNeedTalk()" style="background:none;border:none;color:var(--tx3);font-size:11.5px;cursor:pointer;font-family:'DM Mono',monospace;letter-spacing:0.03em;min-height:30px;padding:6px 8px;margin:-6px -8px">💬 talk to coach</button>
     </div>
   </div>
 

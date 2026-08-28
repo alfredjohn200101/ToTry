@@ -2850,11 +2850,14 @@ function renderFoodGroups(){
   const box = document.getElementById('nut-foodgroups'); if(!box) return;
   const log = nutLogSafe();
   const counts = { Protein:0, Veg:0, Fruit:0, Grains:0, Dairy:0, Treats:0 };
-  let total = 0;
+  let total = 0, unknown = 0;
   for(let i = 0; i < 7; i++){
     const d = new Date(); d.setDate(d.getDate() - i);
     (log[d.toLocaleDateString('en-AU')]||[]).forEach(e => {
-      const g = classifyFoodGroup(e.name); if(g){ counts[g]++; total++; }
+      // Only classified foods were counted, and nothing tracked how many were NOT — so a week whose
+    // pizza, curry and burrito the classifier does not know still produced "A genuinely balanced week.
+    // Keep this shape." from whatever it happened to recognise. A verdict on a fifth of the evidence.
+    const g = classifyFoodGroup(e.name); if(g){ counts[g]++; total++; } else { unknown++; }
     });
   }
   if(total < 5){ box.innerHTML = ''; return; } // not enough data to say anything honest
@@ -2864,6 +2867,10 @@ function renderFoodGroups(){
   else if(counts.Protein < 7) nudge = 'Protein sources were thin this week.';
   else if(counts.Treats > counts.Veg) nudge = 'Treats outnumbered vegetables this week \u2014 worth noticing.';
   else nudge = 'A genuinely balanced week. Keep this shape.';
+  // If it could not place a third of what was eaten, it has not seen the week and must not grade it.
+  const _seen = total + unknown;
+  if(_seen > 0 && unknown / _seen > 0.33)
+    nudge = 'I could only place ' + Math.round((total/_seen)*100) + '% of what you logged, so this is a partial picture.';
   const order = ['Protein','Veg','Fruit','Grains','Dairy','Treats'];
   box.innerHTML = '<div class="card" style="margin-bottom:12px"><div class="card-hd" style="margin-bottom:6px">Food groups \u00b7 last 7 days</div>'+
     '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">'+
@@ -4731,7 +4738,10 @@ function renderWaterTracker(){
   for(let i = 0; i < totalGlasses; i++){
     const cup = document.createElement('div');
     const filled = i < filledGlasses;
-    cup.style.cssText = 'width:30px;height:36px;border:2px solid ' + (filled ? 'var(--bl)' : 'var(--bd)') + ';border-radius:4px 4px 8px 8px;background:' + (filled ? 'var(--bl)' : 'transparent') + ';cursor:pointer;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;font-size:9px;color:' + (filled ? '#fff' : 'var(--tx3)') + ';transition:all 0.2s';
+    // Ten glasses at a hard-coded 30px plus nine 6px gaps need 354px; the row is 348. So the tenth
+    // glass of the goal the card states right above it dropped alone onto a second line — the goal
+    // looked broken by six pixels. Let the row divide itself by however many glasses the goal takes.
+    cup.style.cssText = 'flex:1 1 0;min-width:16px;max-width:34px;height:36px;border:2px solid ' + (filled ? 'var(--bl)' : 'var(--bd)') + ';border-radius:4px 4px 8px 8px;background:' + (filled ? 'var(--bl)' : 'transparent') + ';cursor:pointer;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;font-size:9px;color:' + (filled ? '#fff' : 'var(--tx3)') + ';transition:all 0.2s';
     cup.title = filled ? '250 ml' : 'Tap to fill';
     cup.textContent = filled ? '✓' : '';
     cup.onclick = () => {

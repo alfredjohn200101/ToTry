@@ -552,7 +552,10 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
         tab:'fight', el:'fight-evidence', wantNot:/LONGEST RUN/i },
       { label:'a real record, named',
         seed:{ v:[{n:'Porn',mode:'quit',days:40}], uses:[80,59,40] },
-        tab:'fight', el:'fight-evidence', want:/PORN: YOUR LONGEST RUN YET .* 21 DAYS/i },
+        tab:'fight', el:'fight-evidence', // The line used to read "your longest run yet — past 21 days", which sat 120px above a card
+        // saying "40 days clean": two numbers for one fight, apparently disagreeing. It now names both
+        // and says which is which.
+        want:/PORN: 40 DAYS .* YOUR LONGEST YET, PAST YOUR OLD BEST OF 21/i },
       { label:'two weigh-ins hours apart is not a week',
         seed:{ body:[{h:0,w:82.4},{h:6,w:82.0}], workout:true },
         tab:'grow', el:'hand-track', wantNot:/over the week/i },
@@ -1074,7 +1077,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       { label:'first attempt, no slips yet',  seed:{ clean:13 },
         want:{ shown:true, hasnt:/URGES? MET|RECLAIMED|LONGEST RUN/i } },
       { label:'3 urges beaten, money back',   seed:{ clean:13, won:3, cost:true },  want:{ shown:true, has:/URGES MET AND TURNED AWAY/i, hasnt:/LONGEST RUN/i } },
-      { label:'40 days, previous best 21',    seed:{ clean:40, won:1, uses:[80,59,40] }, want:{ shown:true, has:/PORN: YOUR LONGEST RUN YET .* 21 DAYS/i } },
+      { label:'40 days, previous best 21',    seed:{ clean:40, won:1, uses:[80,59,40] }, want:{ shown:true, has:/PORN: 40 DAYS .* YOUR LONGEST YET, PAST YOUR OLD BEST OF 21/i } },
       { label:'only one completed run',       seed:{ clean:200, won:1, uses:[203,200] },   want:{ shown:true, hasnt:/LONGEST RUN/i } },
       { label:'13 days, previous best 30',    seed:{ clean:13, won:1, uses:[60,30,13] }, want:{ shown:true, hasnt:/LONGEST RUN/i } },
     ];

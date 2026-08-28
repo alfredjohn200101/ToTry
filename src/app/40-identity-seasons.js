@@ -27,10 +27,14 @@ function renderIdentity(){
         let totalClean=0;
         (vices||[]).forEach(v=>{ if(viceIsAbstinence(v)) totalClean += (v.cleanDaysTotal||0) + (typeof viceCleanDays==='function'?viceCleanDays(v):0); });
         const dayCount = (typeof getDayCount==='function') ? getDayCount() : 0;
+        // The day count is already the persistent header badge on EVERY screen, it is in the coach's
+        // sentence above this, and it is on the share button below it — four times on one screen. This
+        // strip's job is the evidence nothing else carries: what the days were spent fighting for. The
+        // number stays only when there is nothing else true to say.
         const bits=[];
-        if(dayCount>1) bits.push(dayCount+' days on the journey');
         if(totalClean>0) bits.push(totalClean+' clean day'+(totalClean===1?'':'s')+' fought for');
         if(wins.length>0) bits.push(wins.length+' win'+(wins.length===1?'':'s')+' logged');
+        if(!bits.length && dayCount>1) bits.push(dayCount+' days on the journey');
         if(bits.length){
           evEl.style.display='block';
           evEl.textContent='✓ '+bits.slice(0,2).join(' · ')+' — this is you, proving it.';

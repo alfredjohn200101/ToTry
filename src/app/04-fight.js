@@ -1509,7 +1509,11 @@ function renderUrgeInsights(){
   if(!tracked.length){
     // Discoverable mirror: if an untracked vice already has enough logged battles for a real pattern,
     // gently offer it (never forced on — the man chooses to look).
-    const ready = (vices||[]).filter(v => !v.trackPatterns && analyzeUrgePatterns(v.n));
+    // One card per vice meant someone fighting three things opened this tab to three near-identical
+    // offers stacked on each other, all saying "there's a pattern in your X battles — Show me". An
+    // offer repeated three times is not three offers; it is one offer that has stopped being an
+    // invitation. The one with the most to show speaks, and the rest wait until it is taken up.
+    const ready = (vices||[]).filter(v => !v.trackPatterns && analyzeUrgePatterns(v.n)).slice(0, 1);
     if(ready.length){
       box.innerHTML = ready.map(function(v){ const idx=vices.indexOf(v);
         return '<div style="margin-bottom:8px;padding:12px 14px;background:var(--bg3);border:1px solid var(--go-bd);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:10px"><div style="font-size:12.5px;color:var(--tx2);line-height:1.5">There’s a pattern in your <b style="color:var(--tx)">'+_esc(v.n)+'</b> battles — when it hits hardest, and how to get ahead of it.</div><button onclick="toggleVicePatterns('+idx+')" style="flex-shrink:0;padding:8px 13px;border-radius:100px;border:1px solid var(--go-bd);background:var(--go-bg);color:var(--go);font-size:12px;cursor:pointer">Show me</button></div>';

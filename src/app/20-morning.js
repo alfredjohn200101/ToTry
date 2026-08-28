@@ -473,6 +473,14 @@ async function explainVicePatterns(){
 function renderVicePatternCard(){
   const card = document.getElementById('vice-pattern-card');
   if(!card) return;
+  // #urge-insights renders one "there's a pattern in your X battles — [Show me]" card PER VICE, and
+  // this generic one sat underneath them all offering the identical thing in softer words. Someone
+  // with two vices saw three cards, stacked, all opening the same read. The generic card is the
+  // fallback for when nothing specific has been found — it has no business speaking over the specific.
+  try{
+    const ui = document.getElementById('urge-insights');
+    if(ui && ui.offsetParent !== null && (ui.innerText||'').trim()){ card.style.display='none'; return; }
+  }catch(_){ }
   const p = (typeof detectVicePatterns==='function') ? detectVicePatterns() : null;
   if(!p){ card.style.display='none'; return; }
   card.style.display='block';

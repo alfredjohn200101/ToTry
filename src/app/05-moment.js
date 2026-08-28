@@ -1683,9 +1683,26 @@ function openVicePlan(i){
   m.innerHTML='<div class="modal" style="max-height:92vh;overflow-y:auto">'+
     '<div class="modal-handle"></div>'+
     '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:2px">Your plan for '+String(v.n).replace(/</g,'&lt;')+'</div>'+
-    '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.5;margin-bottom:16px">However you want to handle it — I’ll shape everything around this. No wrong answer.</div>'+
-    '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">The goal</div>'+
-    '<div class="vp-mode" style="display:flex;gap:6px;margin-bottom:16px"></div>'+
+    '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.5;margin-bottom:16px">' +
+      (v.mode ? 'Why it matters to you, and the moves that actually help. Change the goal any time.'
+              : 'However you want to handle it \u2014 I\u2019ll shape everything around this. No wrong answer.') +
+    '</div>'+
+    // The add-a-fight form asks "What do you want with this? — Quit it / Keep it in check / Just
+    // watching", and two seconds later this sheet opened on the same question in different words. A
+    // person who has just answered something and is immediately asked it again learns that the app is
+    // not listening. When it is already answered, this shows the answer and offers to change it; the
+    // sheet then leads with the two things nobody has asked yet.
+    (v.mode
+      ? '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;' +
+          'padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px">' +
+          '<div style="font-size:12px;color:var(--tx2)">Goal: <span style="color:var(--tx)">' +
+            _escFew(v.mode==='quit' ? 'quit it' : v.mode==='moderate' ? 'keep it in check' : 'just watching') +
+          '</span></div>' +
+          '<button onclick="this.closest(\'.modal\').querySelector(\'.vp-mode\').style.display=\'flex\';this.parentNode.style.display=\'none\'" ' +
+            'style="background:none;border:none;color:var(--go);font-size:12px;cursor:pointer;min-height:30px;padding:0 4px">Change</button>' +
+        '</div>'
+      : '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">The goal</div>')+
+    '<div class="vp-mode" style="display:' + (v.mode ? 'none' : 'flex') + ';gap:6px;margin-bottom:16px"></div>'+
     '<div class="vp-line-wrap" style="display:none;margin-bottom:16px">'+
       '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Your line (how much is okay)</div>'+
       '<input class="vp-line" type="number" min="1" value="'+(v.modThreshold||3)+'" style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:16px;box-sizing:border-box" placeholder="e.g. 3 a week">'+

@@ -456,9 +456,12 @@ function renderTodayForYou(){
     // go('morning'). The hero asks; this offers the lighter door for a morning that has no words in it.
     if(_heroAlreadyAsks('morning')){
       if(eyebrowEl) eyebrowEl.textContent = 'This morning';
-      if(msgEl) msgEl.textContent = 'Or start smaller — one thing that would make today count.';
+      // I wrote this today and it begins mid-sentence: the clause it is an "Or" to is the hero's, 800px
+      // above and off screen by the time you reach this. And the button said "Just carry one thing"
+      // while dropping the person into the Grow training tab, which is not where one thing gets named.
+      if(msgEl) msgEl.textContent = 'Not up to the full morning? Name one thing that would make today count.';
       if(actEl) actEl.innerHTML =
-        '<button class="btn" onclick="go(&apos;grow&apos;)" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Just carry one thing</button>';
+        '<button class="btn" onclick="go(&apos;morning&apos;)" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Just the one thing</button>';
       return;
     }
     if(eyebrowEl) eyebrowEl.textContent = 'This morning';

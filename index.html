@@ -1076,6 +1076,13 @@ html,body{overscroll-behavior:none}
    once; the Outfit and DM Mono runs that set tabular-nums are unaffected, both faces being lining
    already. */
 body{font-variant-numeric:lining-nums}
+/* Two of the four resources in the crisis card were bare 16px inline text sitting under two
+   comfortable 30px phone links — the Crisis Text number and "Find support in your country". Every
+   actionable link in a crisis card is the one a person reaches for with a shaking hand, so they all
+   get the same floor. Also an App Store accessibility exposure. */
+a[href^="tel:"], a[href^="sms:"], .crisis-line a, .crisis-card a{
+  display:inline-block;min-height:30px;line-height:30px}
+
 
 body{position:fixed;inset:0;width:100%}
 .tab{scroll-padding-bottom:220px}
@@ -4478,8 +4485,8 @@ Amen.</div></div>
     </div>
     <button class="comp-skip" onclick="dismissCompanion()">Just let me in &rarr;</button>
     <div style="margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.07);display:flex;gap:14px;justify-content:center">
-      <button onclick="closeCompanion();brotherGuidance()" style="background:none;border:none;color:var(--tx3);font-size:11.5px;cursor:pointer;font-family:'DM Mono',monospace;letter-spacing:0.03em">🫂 what should I do?</button>
-      <button onclick="closeCompanion();openNeedTalk()" style="background:none;border:none;color:var(--tx3);font-size:11.5px;cursor:pointer;font-family:'DM Mono',monospace;letter-spacing:0.03em">💬 talk to coach</button>
+      <button onclick="closeCompanion();brotherGuidance()" style="background:none;border:none;color:var(--tx3);font-size:11.5px;cursor:pointer;font-family:'DM Mono',monospace;letter-spacing:0.03em;min-height:30px;padding:6px 8px;margin:-6px -8px">🫂 what should I do?</button>
+      <button onclick="closeCompanion();openNeedTalk()" style="background:none;border:none;color:var(--tx3);font-size:11.5px;cursor:pointer;font-family:'DM Mono',monospace;letter-spacing:0.03em;min-height:30px;padding:6px 8px;margin:-6px -8px">💬 talk to coach</button>
     </div>
   </div>
 
@@ -5186,7 +5193,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v555';
+const APP_VERSION = 'v556';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -14052,7 +14059,11 @@ function renderUrgeInsights(){
   if(!tracked.length){
     // Discoverable mirror: if an untracked vice already has enough logged battles for a real pattern,
     // gently offer it (never forced on — the man chooses to look).
-    const ready = (vices||[]).filter(v => !v.trackPatterns && analyzeUrgePatterns(v.n));
+    // One card per vice meant someone fighting three things opened this tab to three near-identical
+    // offers stacked on each other, all saying "there's a pattern in your X battles — Show me". An
+    // offer repeated three times is not three offers; it is one offer that has stopped being an
+    // invitation. The one with the most to show speaks, and the rest wait until it is taken up.
+    const ready = (vices||[]).filter(v => !v.trackPatterns && analyzeUrgePatterns(v.n)).slice(0, 1);
     if(ready.length){
       box.innerHTML = ready.map(function(v){ const idx=vices.indexOf(v);
         return '<div style="margin-bottom:8px;padding:12px 14px;background:var(--bg3);border:1px solid var(--go-bd);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:10px"><div style="font-size:12.5px;color:var(--tx2);line-height:1.5">There’s a pattern in your <b style="color:var(--tx)">'+_esc(v.n)+'</b> battles — when it hits hardest, and how to get ahead of it.</div><button onclick="toggleVicePatterns('+idx+')" style="flex-shrink:0;padding:8px 13px;border-radius:100px;border:1px solid var(--go-bd);background:var(--go-bg);color:var(--go);font-size:12px;cursor:pointer">Show me</button></div>';
@@ -16456,9 +16467,26 @@ function openVicePlan(i){
   m.innerHTML='<div class="modal" style="max-height:92vh;overflow-y:auto">'+
     '<div class="modal-handle"></div>'+
     '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:2px">Your plan for '+String(v.n).replace(/</g,'&lt;')+'</div>'+
-    '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.5;margin-bottom:16px">However you want to handle it — I’ll shape everything around this. No wrong answer.</div>'+
-    '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">The goal</div>'+
-    '<div class="vp-mode" style="display:flex;gap:6px;margin-bottom:16px"></div>'+
+    '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.5;margin-bottom:16px">' +
+      (v.mode ? 'Why it matters to you, and the moves that actually help. Change the goal any time.'
+              : 'However you want to handle it \u2014 I\u2019ll shape everything around this. No wrong answer.') +
+    '</div>'+
+    // The add-a-fight form asks "What do you want with this? — Quit it / Keep it in check / Just
+    // watching", and two seconds later this sheet opened on the same question in different words. A
+    // person who has just answered something and is immediately asked it again learns that the app is
+    // not listening. When it is already answered, this shows the answer and offers to change it; the
+    // sheet then leads with the two things nobody has asked yet.
+    (v.mode
+      ? '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;' +
+          'padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px">' +
+          '<div style="font-size:12px;color:var(--tx2)">Goal: <span style="color:var(--tx)">' +
+            _escFew(v.mode==='quit' ? 'quit it' : v.mode==='moderate' ? 'keep it in check' : 'just watching') +
+          '</span></div>' +
+          '<button onclick="this.closest(\'.modal\').querySelector(\'.vp-mode\').style.display=\'flex\';this.parentNode.style.display=\'none\'" ' +
+            'style="background:none;border:none;color:var(--go);font-size:12px;cursor:pointer;min-height:30px;padding:0 4px">Change</button>' +
+        '</div>'
+      : '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">The goal</div>')+
+    '<div class="vp-mode" style="display:' + (v.mode ? 'none' : 'flex') + ';gap:6px;margin-bottom:16px"></div>'+
     '<div class="vp-line-wrap" style="display:none;margin-bottom:16px">'+
       '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Your line (how much is okay)</div>'+
       '<input class="vp-line" type="number" min="1" value="'+(v.modThreshold||3)+'" style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:16px;box-sizing:border-box" placeholder="e.g. 3 a week">'+
@@ -18252,6 +18280,27 @@ function toggleAddVice(){
   if(show){ const n=document.getElementById('v-name'); if(n) setTimeout(()=>n.focus(),50); }
   if(typeof haptic==='function') haptic('tap');
 }
+// For someone who has never named a fight, this tab opened with "Learn the tool before you need it"
+// and "There are rooms full of people doing this too" — and the one thing they came to do, name the
+// fight, was the THIRD card with its button below the fold. The toolkit and the bridge are for a
+// person already in a fight; on an empty tab they are the app talking about itself. When there is
+// nothing in the list, the way in leads; the moment there is a fight, the order goes back.
+function _orderFightEmptyState(){
+  try{
+    const add = document.getElementById('add-vice-card');
+    const list = document.getElementById('vices-list');
+    if(!add || !list || !add.parentNode) return;
+    const empty = !(typeof vices !== 'undefined' && vices && vices.length);
+    const parent = add.parentNode;
+    if(empty){
+      if(add.previousElementSibling !== list) parent.insertBefore(add, list.nextSibling);
+    } else {
+      const bridge = document.getElementById('bridge-card');
+      if(bridge && add.previousElementSibling !== bridge) parent.insertBefore(add, bridge.nextSibling);
+    }
+  }catch(_){ }
+}
+
 function renderVices(){
   loadV();const list=document.getElementById('vices-list');if(!list)return;
   list.innerHTML='';let tw=0;
@@ -18543,7 +18592,10 @@ function renderVices(){
       // dressed as if it does. Say nothing until there is a real pattern to report.
       ((v.t || insight)
         ? '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">' +
-            (v.t ? 'Usually hits: ' + _escFew(v.t) : '') + insight + '</div>'
+            // insight carried its own leading ' · ', so with no v.t the line began with a middle dot
+            // joined to nothing: "· Peaks late night". Join the halves here, where both are in hand.
+            [(v.t ? 'Usually hits: ' + _escFew(v.t) : ''), String(insight || '').replace(/^\s*\u00b7\s*/, '')]
+              .filter(function(x){ return x && x.trim(); }).join(' \u00b7 ') + '</div>'
         : '') +
       (_asking ? '' : _stageStripHTML(i) + _pledgeRowHTML(i)) +
       (viceNeedsCheckIn(v) ?
@@ -18636,6 +18688,7 @@ function renderVices(){
   
   // Render trigger pattern card if there's enough data
   renderTriggerPatternCard();
+  _orderFightEmptyState();
 }
 
 // ── TRIGGER PATTERN ANALYSIS ────────────────────────────────────
@@ -19169,7 +19222,11 @@ function fightEvidenceLine(){
         // escaping the name as well double-encoded it — "Mum's wine" reached the screen as
         // MUM&#39;S WINE, in capitals, on the headline evidence line. bits are plain text; the one
         // renderer owns the escaping.
-        bits.push(best.name + ': your longest run yet \u2014 past ' + best.prev + ' days');
+        // "past 13 days" read as the run being 13 days, sitting 120px above a card saying "30 days
+        // clean" — two numbers for one fight, on one screen, apparently disagreeing. It meant "past
+        // your old best of 13". Say both numbers and which is which, or the sentence costs more than
+        // it gives.
+        bits.push(best.name + ': ' + best.current + ' days \u2014 your longest yet, past your old best of ' + best.prev);
       }
     }catch(_){ }
   }catch(_){ }
@@ -26377,11 +26434,14 @@ function renderFoodGroups(){
   const box = document.getElementById('nut-foodgroups'); if(!box) return;
   const log = nutLogSafe();
   const counts = { Protein:0, Veg:0, Fruit:0, Grains:0, Dairy:0, Treats:0 };
-  let total = 0;
+  let total = 0, unknown = 0;
   for(let i = 0; i < 7; i++){
     const d = new Date(); d.setDate(d.getDate() - i);
     (log[d.toLocaleDateString('en-AU')]||[]).forEach(e => {
-      const g = classifyFoodGroup(e.name); if(g){ counts[g]++; total++; }
+      // Only classified foods were counted, and nothing tracked how many were NOT — so a week whose
+    // pizza, curry and burrito the classifier does not know still produced "A genuinely balanced week.
+    // Keep this shape." from whatever it happened to recognise. A verdict on a fifth of the evidence.
+    const g = classifyFoodGroup(e.name); if(g){ counts[g]++; total++; } else { unknown++; }
     });
   }
   if(total < 5){ box.innerHTML = ''; return; } // not enough data to say anything honest
@@ -26391,6 +26451,10 @@ function renderFoodGroups(){
   else if(counts.Protein < 7) nudge = 'Protein sources were thin this week.';
   else if(counts.Treats > counts.Veg) nudge = 'Treats outnumbered vegetables this week \u2014 worth noticing.';
   else nudge = 'A genuinely balanced week. Keep this shape.';
+  // If it could not place a third of what was eaten, it has not seen the week and must not grade it.
+  const _seen = total + unknown;
+  if(_seen > 0 && unknown / _seen > 0.33)
+    nudge = 'I could only place ' + Math.round((total/_seen)*100) + '% of what you logged, so this is a partial picture.';
   const order = ['Protein','Veg','Fruit','Grains','Dairy','Treats'];
   box.innerHTML = '<div class="card" style="margin-bottom:12px"><div class="card-hd" style="margin-bottom:6px">Food groups \u00b7 last 7 days</div>'+
     '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">'+
@@ -28258,7 +28322,10 @@ function renderWaterTracker(){
   for(let i = 0; i < totalGlasses; i++){
     const cup = document.createElement('div');
     const filled = i < filledGlasses;
-    cup.style.cssText = 'width:30px;height:36px;border:2px solid ' + (filled ? 'var(--bl)' : 'var(--bd)') + ';border-radius:4px 4px 8px 8px;background:' + (filled ? 'var(--bl)' : 'transparent') + ';cursor:pointer;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;font-size:9px;color:' + (filled ? '#fff' : 'var(--tx3)') + ';transition:all 0.2s';
+    // Ten glasses at a hard-coded 30px plus nine 6px gaps need 354px; the row is 348. So the tenth
+    // glass of the goal the card states right above it dropped alone onto a second line — the goal
+    // looked broken by six pixels. Let the row divide itself by however many glasses the goal takes.
+    cup.style.cssText = 'flex:1 1 0;min-width:16px;max-width:34px;height:36px;border:2px solid ' + (filled ? 'var(--bl)' : 'var(--bd)') + ';border-radius:4px 4px 8px 8px;background:' + (filled ? 'var(--bl)' : 'transparent') + ';cursor:pointer;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;font-size:9px;color:' + (filled ? '#fff' : 'var(--tx3)') + ';transition:all 0.2s';
     cup.title = filled ? '250 ml' : 'Tap to fill';
     cup.textContent = filled ? '✓' : '';
     cup.onclick = () => {
@@ -33050,6 +33117,14 @@ async function explainVicePatterns(){
 function renderVicePatternCard(){
   const card = document.getElementById('vice-pattern-card');
   if(!card) return;
+  // #urge-insights renders one "there's a pattern in your X battles — [Show me]" card PER VICE, and
+  // this generic one sat underneath them all offering the identical thing in softer words. Someone
+  // with two vices saw three cards, stacked, all opening the same read. The generic card is the
+  // fallback for when nothing specific has been found — it has no business speaking over the specific.
+  try{
+    const ui = document.getElementById('urge-insights');
+    if(ui && ui.offsetParent !== null && (ui.innerText||'').trim()){ card.style.display='none'; return; }
+  }catch(_){ }
   const p = (typeof detectVicePatterns==='function') ? detectVicePatterns() : null;
   if(!p){ card.style.display='none'; return; }
   card.style.display='block';
@@ -44431,9 +44506,12 @@ function renderTodayForYou(){
     // go('morning'). The hero asks; this offers the lighter door for a morning that has no words in it.
     if(_heroAlreadyAsks('morning')){
       if(eyebrowEl) eyebrowEl.textContent = 'This morning';
-      if(msgEl) msgEl.textContent = 'Or start smaller — one thing that would make today count.';
+      // I wrote this today and it begins mid-sentence: the clause it is an "Or" to is the hero's, 800px
+      // above and off screen by the time you reach this. And the button said "Just carry one thing"
+      // while dropping the person into the Grow training tab, which is not where one thing gets named.
+      if(msgEl) msgEl.textContent = 'Not up to the full morning? Name one thing that would make today count.';
       if(actEl) actEl.innerHTML =
-        '<button class="btn" onclick="go(&apos;grow&apos;)" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Just carry one thing</button>';
+        '<button class="btn" onclick="go(&apos;morning&apos;)" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Just the one thing</button>';
       return;
     }
     if(eyebrowEl) eyebrowEl.textContent = 'This morning';
@@ -46878,10 +46956,14 @@ function renderIdentity(){
         let totalClean=0;
         (vices||[]).forEach(v=>{ if(viceIsAbstinence(v)) totalClean += (v.cleanDaysTotal||0) + (typeof viceCleanDays==='function'?viceCleanDays(v):0); });
         const dayCount = (typeof getDayCount==='function') ? getDayCount() : 0;
+        // The day count is already the persistent header badge on EVERY screen, it is in the coach's
+        // sentence above this, and it is on the share button below it — four times on one screen. This
+        // strip's job is the evidence nothing else carries: what the days were spent fighting for. The
+        // number stays only when there is nothing else true to say.
         const bits=[];
-        if(dayCount>1) bits.push(dayCount+' days on the journey');
         if(totalClean>0) bits.push(totalClean+' clean day'+(totalClean===1?'':'s')+' fought for');
         if(wins.length>0) bits.push(wins.length+' win'+(wins.length===1?'':'s')+' logged');
+        if(!bits.length && dayCount>1) bits.push(dayCount+' days on the journey');
         if(bits.length){
           evEl.style.display='block';
           evEl.textContent='✓ '+bits.slice(0,2).join(' · ')+' — this is you, proving it.';

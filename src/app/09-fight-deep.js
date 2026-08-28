@@ -586,6 +586,27 @@ function toggleAddVice(){
   if(show){ const n=document.getElementById('v-name'); if(n) setTimeout(()=>n.focus(),50); }
   if(typeof haptic==='function') haptic('tap');
 }
+// For someone who has never named a fight, this tab opened with "Learn the tool before you need it"
+// and "There are rooms full of people doing this too" — and the one thing they came to do, name the
+// fight, was the THIRD card with its button below the fold. The toolkit and the bridge are for a
+// person already in a fight; on an empty tab they are the app talking about itself. When there is
+// nothing in the list, the way in leads; the moment there is a fight, the order goes back.
+function _orderFightEmptyState(){
+  try{
+    const add = document.getElementById('add-vice-card');
+    const list = document.getElementById('vices-list');
+    if(!add || !list || !add.parentNode) return;
+    const empty = !(typeof vices !== 'undefined' && vices && vices.length);
+    const parent = add.parentNode;
+    if(empty){
+      if(add.previousElementSibling !== list) parent.insertBefore(add, list.nextSibling);
+    } else {
+      const bridge = document.getElementById('bridge-card');
+      if(bridge && add.previousElementSibling !== bridge) parent.insertBefore(add, bridge.nextSibling);
+    }
+  }catch(_){ }
+}
+
 function renderVices(){
   loadV();const list=document.getElementById('vices-list');if(!list)return;
   list.innerHTML='';let tw=0;
@@ -877,7 +898,10 @@ function renderVices(){
       // dressed as if it does. Say nothing until there is a real pattern to report.
       ((v.t || insight)
         ? '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">' +
-            (v.t ? 'Usually hits: ' + _escFew(v.t) : '') + insight + '</div>'
+            // insight carried its own leading ' · ', so with no v.t the line began with a middle dot
+            // joined to nothing: "· Peaks late night". Join the halves here, where both are in hand.
+            [(v.t ? 'Usually hits: ' + _escFew(v.t) : ''), String(insight || '').replace(/^\s*\u00b7\s*/, '')]
+              .filter(function(x){ return x && x.trim(); }).join(' \u00b7 ') + '</div>'
         : '') +
       (_asking ? '' : _stageStripHTML(i) + _pledgeRowHTML(i)) +
       (viceNeedsCheckIn(v) ?
@@ -970,6 +994,7 @@ function renderVices(){
   
   // Render trigger pattern card if there's enough data
   renderTriggerPatternCard();
+  _orderFightEmptyState();
 }
 
 // ── TRIGGER PATTERN ANALYSIS ────────────────────────────────────
@@ -1503,7 +1528,11 @@ function fightEvidenceLine(){
         // escaping the name as well double-encoded it — "Mum's wine" reached the screen as
         // MUM&#39;S WINE, in capitals, on the headline evidence line. bits are plain text; the one
         // renderer owns the escaping.
-        bits.push(best.name + ': your longest run yet \u2014 past ' + best.prev + ' days');
+        // "past 13 days" read as the run being 13 days, sitting 120px above a card saying "30 days
+        // clean" — two numbers for one fight, on one screen, apparently disagreeing. It meant "past
+        // your old best of 13". Say both numbers and which is which, or the sentence costs more than
+        // it gives.
+        bits.push(best.name + ': ' + best.current + ' days \u2014 your longest yet, past your old best of ' + best.prev);
       }
     }catch(_){ }
   }catch(_){ }
