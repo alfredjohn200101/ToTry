@@ -1144,7 +1144,13 @@ function _renderPhotoMeal(){
       // Edit mode — the thing Cal AI won't let you do: correct WHAT it is AND the numbers.
       return ''+
       '<div style="padding:10px 0;border-top:1px solid var(--bd)">'+
-        '<input id="pm-e-name" value="'+esc(it.food)+'" placeholder="What is it?" autocomplete="off" style="width:100%;box-sizing:border-box;margin-bottom:6px;font-size:16px;padding:9px">'+
+        // esc() here only replaces < — fine for the text nodes it also feeds, wrong inside a double-quoted
+        // attribute. A 6" Subway steak sub came back from the vision call, saved once, and on the NEXT
+        // edit the field read just 6: the quote closed the attribute and the browser parsed the rest of
+        // the name as stray attributes. Silent, no undo, and only the name is destroyed. Raising the
+        // vision budget to 4000 makes fuller item names — with inches and quotes in them — more likely.
+        // _escFew is what every other value="…" in the app uses.
+        '<input id="pm-e-name" value="'+_escFew(it.food)+'" placeholder="What is it?" autocomplete="off" style="width:100%;box-sizing:border-box;margin-bottom:6px;font-size:16px;padding:9px">'+
         '<div style="display:flex;gap:6px;margin-bottom:6px">'+
           '<input id="pm-e-cal" type="number" inputmode="numeric" value="'+R(it.cal*m)+'" placeholder="cal" style="flex:1.3;min-width:0;padding:9px;font-size:16px">'+
           '<input id="pm-e-pro" type="number" inputmode="numeric" value="'+R(it.pro*m)+'" placeholder="P" style="flex:1;min-width:0;padding:9px;font-size:16px">'+
@@ -1384,6 +1390,17 @@ async function estimateMealMacros(description){
     'estimated=false when the amount/product is known precisely, true when assumed. Set vague=true ONLY if too unspecific to estimate at all. Numbers only. sodium in mg. For a protein powder, anchor protein realistically (typically 20-27g per scoop).';
   try{
     const raw=await api('You are a precise nutrition coach. You convert real-world meal descriptions into accurate per-item macros, always respecting any amounts the user specified.',[],prompt,4000,{timeout:22000});
+    // api() does NOT throw when every provider fails — it returns '' (03-person.js, "All providers
+    // down - return empty string"). So the try block exits normally, the catch never runs, and the
+    // v559 `return` that was supposed to keep the connection copy reachable guarded only the
+    // JSON.parse path. On a dead connection the person was still told to word their meal differently.
+    // An empty reply means nobody answered; it is never a phrasing problem.
+    if(!String(raw || '').trim()){
+      foodFailed(res, 'I could not work that one out.',
+        'That is on me, not on you \u2014 the connection, or my end. Your lunch still counts.',
+        'estimateMealMacros('+JSON.stringify(String(description||''))+')');
+      return;
+    }
     const m=raw.match(/\{[\s\S]*\}/);
     if(m){
       const meal=JSON.parse(m[0]);

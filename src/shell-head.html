@@ -132,7 +132,15 @@ button:focus:not(:focus-visible){outline:none}
    working. Do not extend this list to deleteSavedMeal / deleteSacrament / deleteAffirm /
    deleteSavedVerse — they carry inline padding, so they would get the negative margin without the
    padding and shrink. */
-button[onclick^="deleteTransaction("],button[onclick^="deleteSubscription("],button[onclick^="deleteBill("],button[onclick^="deleteAsset("],button[onclick^="deleteGiving("],button[onclick^="deleteFamilyContribution("],button[onclick^="deletePokerSession("]{padding:14px 18px;margin:-14px -18px}
+button[onclick^="deleteTransaction("],button[onclick^="deleteSubscription("],button[onclick^="deleteBill("],button[onclick^="deleteAsset("],button[onclick^="deleteGiving("],button[onclick^="deleteFamilyContribution("],button[onclick^="deletePokerSession("]{padding:14px 6px;margin:-14px 0;min-width:40px;box-sizing:content-box}
+/* The -18px horizontal pull reached across the 6px flex gap and 12px INTO the green "Mark paid" ✓ on
+   a bill row — and delete comes later in the DOM, so it won. Tapping the right third of "mark this
+   bill paid" opened "Delete this bill?" instead: a destructive offer on a financial record, from a
+   button that says the opposite. Bills are the only one of these rows with a second button, which is
+   why it hid here and not on transactions or subscriptions.
+   This is the SAME mistake .fli-del took three attempts to get right 590 lines below, in this file,
+   under a comment that spells out the mechanism — and the lesson was never carried up here. Vertical
+   padding only: the row is 39px, so 28px of box fits without reaching sideways at all. */
 /* Bottom tab bar (iOS convention + the SOUL-ARCHITECTURE intent: "bottom bar, thumb-reachable").
    .app is a flex column [header, nav, tabs]; order:3 floats the nav below the scrolling content so
    it becomes a proper thumb-reachable bottom bar — no DOM change. border-top is now the divider

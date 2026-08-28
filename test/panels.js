@@ -2536,7 +2536,14 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
         cal:720, pro:52, carb:66, fat:26, ts:new Date().toISOString(), meal:'lunch' }] });
       s('totry_body', Array.from({ length:5 }, (_, i) =>
         ({ weight: 82.1 + i * 0.4, ts: new Date(N - i * 3 * 864e5).toISOString() })));
-      s('totry_f', { d:[{ n:'Car loan', t:12000, p:3600, r:7.2 }], u:5000, i:0 }); });
+      s('totry_f', { d:[{ n:'Car loan', t:12000, p:3600, r:7.2 }], u:5000, i:0 });
+      // Bills are the ONLY money row with two buttons — a green "mark paid" tick and a delete, six
+      // pixels apart — and the delete rule's -18px horizontal pull reached 12px into the tick, so the
+      // right third of "mark this bill paid" offered to DELETE the bill. Without a bill seeded the row
+      // never renders and the sweep cannot see it.
+      s('totry_bills', [{ id:4001, name:'Rent', amount:1450, due:new Date(N + 2*864e5).toISOString(), paid:false },
+                        { id:4002, name:'Gym membership', amount:60, due:new Date(N + 5*864e5).toISOString(), paid:false }]);
+      s('totry_subscriptions', [{ n:'Netflix', amt:18, cycle:'monthly' }]); });
     await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(2800);
     for (const tab of ['home','fight','grow','nourish','track','money','soul']) {
