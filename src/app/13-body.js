@@ -15,6 +15,38 @@
 // The static labels are markup, so they have to be told. Called on boot, on tab changes and by the
 // setting itself — a label still saying "(kg)" over a box a person is typing pounds into is exactly
 // how 180lb got stored as 180kg.
+// Open on the day it is for, or the moment it is asked for; a Sunday-night reflection has no business
+// standing between a Tuesday and their weight history. If one is already part-written it stays open,
+// because a half-finished answer that disappears behind a tap is the same as a lost one.
+function toggleWeeklyCheckin(){
+  const body = document.getElementById('wk-body');
+  const btn = document.getElementById('wk-open');
+  if(!body || !btn) return;
+  const open = body.style.display === 'none';
+  body.style.display = open ? '' : 'none';
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if(open) try{ body.scrollIntoView({behavior:'smooth', block:'start'}); }catch(_){ }
+}
+
+function syncWeeklyCheckin(){
+  const body = document.getElementById('wk-body');
+  const btn = document.getElementById('wk-open');
+  const sum = document.getElementById('wk-open-sum');
+  if(!body || !btn) return;
+  const dow = new Date().getDay();               // 0 Sun, 1 Mon
+  let started = false;
+  try{
+    started = ['wk-win','wk-struggle','wk-focus'].some(function(id){
+      const el = document.getElementById(id); return !!(el && String(el.value || '').trim());
+    });
+  }catch(_){ }
+  const due = dow === 0 || dow === 1;
+  const open = due || started;
+  body.style.display = open ? '' : 'none';
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if(sum) sum.textContent = started ? 'in progress' : (due ? 'due today' : 'about 4 minutes');
+}
+
 function syncWeightUnitLabels(){
   const u = wUnit();
   const lbl = document.getElementById('tdee-weight-label');

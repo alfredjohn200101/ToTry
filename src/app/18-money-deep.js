@@ -261,6 +261,11 @@ async function deleteTransaction(id){
   renderTransactions();
 }
 function renderTransactions(){
+  // One giving record missing an `amount` threw inside renderGiving, and because these ran as a bare
+  // sequence the exception escaped go('money') — so the whole tab, including the debts and the
+  // spending read that were perfectly fine, rendered nothing at all. A card that cannot draw itself
+  // should cost that card. Same lesson as the nutrition log: real stores hold half-synced and
+  // old-format rows, and the person holding them cannot repair what they cannot see.
   // Every money writer calls this, so it owns the rest of the surface too — see the note above.
   // Deferred to the end of the turn so it cannot recurse if a renderer below ever calls back in.
   setTimeout(function(){
@@ -331,14 +336,14 @@ function renderTransactions(){
   }
   
   // Render the new cards
-  renderSubscriptions();
-  if(typeof renderFamilyContribution==='function') renderFamilyContribution();
-  if(typeof renderGiving==='function') renderGiving();
+  try{ renderSubscriptions()(); }catch(_e){ console.warn('renderSubscriptions failed', _e); }
+  try{ if(typeof renderFamilyContribution==='function') renderFamilyContribution(); }catch(_e){ console.warn('renderFamilyContribution failed', _e); }
+  try{ if(typeof renderGiving==='function') renderGiving(); }catch(_e){ console.warn('renderGiving failed', _e); }
   try{ renderSubDetect(); }catch(_){}
-  if(typeof renderPoker==='function') renderPoker();
-  renderBills();
-  renderBudgets();
-  renderNetWorth();
+  try{ if(typeof renderPoker==='function') renderPoker(); }catch(_e){ console.warn('renderPoker failed', _e); }
+  try{ renderBills()(); }catch(_e){ console.warn('renderBills failed', _e); }
+  try{ renderBudgets()(); }catch(_e){ console.warn('renderBudgets failed', _e); }
+  try{ renderNetWorth()(); }catch(_e){ console.warn('renderNetWorth failed', _e); }
 }
 
 // ── SUBSCRIPTIONS ────────────────────────────────────────────

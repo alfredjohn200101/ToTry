@@ -2101,7 +2101,13 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
           const q=el.getBoundingClientRect(); return q.width>0 && q.height>0; };
         const byAction = {};
         [...pane.querySelectorAll('button,[onclick]')].filter(vis).forEach(el => {
-          const act = (el.getAttribute('onclick')||'').replace(/\s+/g,'');
+          // The hero states its destination in dataset.act, not onclick, so its [Close the day] and
+          // the evening card's [Reflect on today →] — both go('reflect') — read as two different
+          // actions here and the doubling went unseen for exactly that reason. Normalise both forms
+          // to the room they open before comparing.
+          const HERO = { evening:"go('reflect')", morning:"go('morning')", companion:'openCompanionForUrge()' };
+          let act = (el.getAttribute('onclick')||'').replace(/&apos;|&#39;/g, "'").replace(/\s+/g,'');
+          if(!act && el.dataset && el.dataset.act) act = (HERO[el.dataset.act]||'').replace(/\s+/g,'');
           if(!act) return;
           // NAVIGATION IS NOT DOUBLING. Two Home entries that lead to Fight while showing different
           // facts — "9 days clean" and "106 days in the fight" — are two truths, not one twice. And a
@@ -2356,6 +2362,159 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     else if (r.restored !== r.before) findings.push(`fight: undo left the streak at ${r.restored}, not the ${r.before} it was`);
     else console.log(`fight: a mis-tapped slip is reversible (${r.before} → ${r.after} → ${r.restored}), and only money-shaped fights are asked about money`);
     await ctx.close();
+  }
+
+  // ── waiting is a designed state, not a gap ────────────────────────────────────────────────────
+  // He went out, got a gyros open plate, photographed it, typed it in, and got nothing he could use.
+  // Two separate failures, and neither was an exception anywhere: the results area renders ~180px
+  // BELOW the fold on a 414x896 phone, so tapping search moved nothing on screen at all; and the wait
+  // was a pulsing line with no elapsed time, no way to stop, and no way to just log the meal, so a
+  // slow answer and a dead app looked identical. He gave up before it ever replied. Lunch unlogged.
+  //
+  // What is asserted is what he was owed: the state is ON SCREEN (geometry, not DOM presence — the
+  // same lesson the crisis suite was written for), it proves it is alive, the way out is TAPPABLE
+  // from the first second, and the ending says what happened instead of pulsing forever.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { localStorage.setItem('totry_onboarded','true');
+      localStorage.setItem('totry_name', JSON.stringify('Alfy')); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2600);
+    const food = await page.evaluate(async () => {
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e=>e.classList.remove('open'));
+      go('nourish'); await new Promise(r=>setTimeout(r,900));
+      const tap = t => { const b=[...document.querySelectorAll('#nut-search-results button')]
+          .find(x=>new RegExp(t,'i').test(x.innerText||'')); if(!b) return false;
+        const q=b.getBoundingClientRect();
+        return q.top<innerHeight && q.bottom>0 && q.height>=24 && q.width>=24; };
+      const seen = () => { const r=document.getElementById('nut-search-results').getBoundingClientRect();
+        return r.top<innerHeight-60 && r.bottom>0; };
+      const out = {};
+      // his network: the request that never answers
+      window.api = async()=>new Promise(()=>{});
+      estimateMealMacros('Gyros open plate');
+      await new Promise(r=>setTimeout(r,900));
+      out.waitSeen = seen(); out.wayOutNow = tap('myself');
+      out.aliveEarly = (document.getElementById('food-wait-el')||{}).textContent || '';
+      await new Promise(r=>setTimeout(r,4400));
+      out.aliveLater = (document.getElementById('food-wait-el')||{}).textContent || '';
+      // the ending
+      window.api = async()=>'';
+      await estimateMealMacros('Gyros open plate'); await new Promise(r=>setTimeout(r,900));
+      const txt = (document.getElementById('nut-search-results').innerText||'');
+      out.endSeen = seen(); out.stillPulsing = !!document.querySelector('#nut-search-results .pulsing');
+      out.endSays = /could not work/i.test(txt);
+      out.endRetry = tap('Try again'); out.endManual = tap('myself');
+      // and the retry has to actually re-run it, not just look like a door
+      let reran=false; window.api = async()=>{reran=true; return '';};
+      const rb=[...document.querySelectorAll('#nut-search-results button')].find(x=>/Try again/i.test(x.innerText));
+      if(rb) rb.click(); await new Promise(r=>setTimeout(r,500));
+      out.retryWorks = reran;
+      return out;
+    });
+    if (!food.waitSeen)  findings.push('food: the wait renders BELOW the fold — tapping search moves nothing on screen');
+    if (!food.wayOutNow) findings.push('food: no way to log the meal himself while the AI is thinking');
+    if (!/moment|still working|hold on/i.test(food.aliveEarly))
+      findings.push('food: the wait gives no sign it is alive');
+    if (!/^\d+s/.test(food.aliveLater))
+      findings.push('food: the wait stops counting — a slow answer looks identical to a dead app');
+    if (!food.endSeen)      findings.push('food: the failure message renders below the fold');
+    if (food.stillPulsing)  findings.push('food: it is STILL pulsing after the call failed');
+    if (!food.endSays)      findings.push('food: the ending never says it could not work the meal out');
+    if (!food.endRetry || !food.endManual)
+      findings.push('food: the ending does not offer both try again and add it myself');
+    if (!food.retryWorks)   findings.push('food: "Try again" does not re-run the estimate');
+    if (!findings.some(f => f.startsWith('food:')))
+      console.log('food: waiting is a designed state — on screen, alive, escapable, and it ends in words');
+    await ctx.close();
+  }
+
+  // ── quiet until wanted, and never quiet about something real ─────────────────────────────────
+  // Three screens were mostly made of features the person had never touched: Nourish carried 557px of
+  // water, fasting and calorie cycling; Money put THIRTEEN empty forms — 2,839px — directly under the
+  // sentence "I don't know anything about your money yet"; Track opened 1,123px of Sunday-night
+  // reflection on a Tuesday. All of it now waits behind one row.
+  //
+  // Collapsing is the easy half. The half that rots is the un-collapsing, and getting it wrong hides
+  // a person's own data from them — strictly worse than the clutter it replaced. So each surface is
+  // driven twice: empty (must be quiet, and must still offer the way in) and with ONE real record of
+  // each kind (must open itself, with nothing missing).
+  {
+    const quiet = async (seed, tab, probe) => {
+      const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+      const page = await ctx.newPage();
+      await page.addInitScript(() => { localStorage.setItem('totry_onboarded','true');
+        localStorage.setItem('totry_name', JSON.stringify('Alfy')); });
+      if (seed) await page.addInitScript(seed);
+      await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+      await page.waitForTimeout(2500);
+      let r = null;
+      try { r = await page.evaluate(([t, pr]) => {
+        go(t);
+        return new Promise(res => setTimeout(() => res(eval('(' + pr + ')')()), 1300));
+      }, [tab, probe.toString()]); } catch (e) { r = { threw: String(e.message).slice(0,80) }; }
+      await ctx.close();
+      return r;
+    };
+    const nutProbe = () => { const b = document.getElementById('nut-secondary');
+      return { open: !!(b && b.style.display !== 'none'), row: !!document.getElementById('nut-secondary-open'),
+               sum: (document.getElementById('nut-secondary-sum')||{}).textContent || '' }; };
+    const moneyProbe = () => { const m = [...document.querySelectorAll('#tab-money .money-more')];
+      return { shown: m.filter(e => e.offsetParent !== null).length, total: m.length,
+               row: !!(document.getElementById('money-more-row')||{}).offsetParent,
+               gate: /don.t know anything/i.test((document.getElementById('money-gate')||{}).innerText || ''),
+               wayIn: [...document.querySelectorAll('#tab-money button')].some(b => /import|manually/i.test(b.innerText||'')) }; };
+    const trackProbe = () => { const b = document.getElementById('wk-body');
+      return { open: !!(b && b.style.display !== 'none'), h: document.getElementById('tab-track').scrollHeight }; };
+
+    // Nourish — empty, then one real record of each kind
+    const nEmpty = await quiet(null, 'nourish', nutProbe);
+    if (!nEmpty.row) findings.push('quiet: the Nourish secondary row is gone entirely');
+    if (nEmpty.open) findings.push('quiet: water/fasting/cycling are open for someone using none of them');
+    for (const [label, seed] of [
+      ['water',  () => localStorage.setItem('totry_water', JSON.stringify({ [new Date().toLocaleDateString('en-AU')]: 1500 }))],
+      ['fasting',() => localStorage.setItem('totry_fast_start', JSON.stringify(new Date().toISOString()))],
+      ['cycling',() => localStorage.setItem('totry_cal_cycling', JSON.stringify({ enabled:true, mode:'training' }))],
+      ['season', () => localStorage.setItem('totry_fast_season', JSON.stringify({ name:'Lent' }))]
+    ]) {
+      const r = await quiet(seed, 'nourish', nutProbe);
+      if (!r.open) findings.push(`quiet: ${label} is logged and the card stayed HIDDEN from them`);
+    }
+
+    // Money — empty must still lead somewhere, and any one real record brings everything back
+    const mEmpty = await quiet(null, 'money', moneyProbe);
+    if (mEmpty.shown > 0) findings.push(`quiet: ${mEmpty.shown} empty money forms under "I don't know anything about your money yet"`);
+    if (!mEmpty.row)   findings.push('quiet: money collapsed with no row to open it — the features are unreachable');
+    if (!mEmpty.wayIn) findings.push('quiet: money empty state offers no way to get anything in');
+    for (const [label, seed] of [
+      ['a debt',        () => localStorage.setItem('totry_f', JSON.stringify({ d:[{n:'Car loan',t:12000,p:3600}], u:0, i:0 }))],
+      ['a savings goal',() => localStorage.setItem('totry_f', JSON.stringify({ d:[], u:5000, i:0 }))],
+      ['a subscription',() => localStorage.setItem('totry_subscriptions', JSON.stringify([{ n:'Netflix', amt:18 }]))],
+      ['a bill',        () => localStorage.setItem('totry_bills', JSON.stringify([{ n:'Rego', amt:900 }]))],
+      ['a budget',      () => localStorage.setItem('totry_budgets', JSON.stringify({ food:600 }))],
+      ['an asset',      () => localStorage.setItem('totry_assets', JSON.stringify([{ n:'Car', v:14000 }]))]
+    ]) {
+      const r = await quiet(seed, 'money', moneyProbe);
+      if (r.threw) findings.push(`quiet: money threw with ${label} — ${r.threw}`);
+      else if (r.shown < r.total) findings.push(`quiet: ${label} is real data and money still hid ${r.total - r.shown} cards`);
+    }
+    // and one malformed row must cost its own card, not the tab
+    const mBad = await quiet(() => localStorage.setItem('totry_giving', JSON.stringify([{ amt:50 }])), 'money', moneyProbe);
+    if (mBad.threw) findings.push('quiet: one malformed giving row takes the WHOLE money tab down');
+
+    // Track — the Sunday reflection, on a Tuesday and on a Sunday
+    const tue = await quiet(() => { const R = Date, t = new Date('2026-09-01T10:00:00');
+      window.Date = class extends R { constructor(...a){ a.length ? super(...a) : super(t.getTime()); }
+        static now(){ return t.getTime(); } }; }, 'track', trackProbe);
+    if (tue.open) findings.push('quiet: 1,123px of Sunday-night reflection is open on a Tuesday');
+    const sun = await quiet(() => { const R = Date, t = new Date('2026-08-30T10:00:00');
+      window.Date = class extends R { constructor(...a){ a.length ? super(...a) : super(t.getTime()); }
+        static now(){ return t.getTime(); } }; }, 'track', trackProbe);
+    if (!sun.open) findings.push('quiet: the weekly check-in is CLOSED on the Sunday it exists for');
+
+    if (!findings.some(f => f.startsWith('quiet:')))
+      console.log('quiet: unused features wait behind one row on all three screens, and every real record opens its own');
   }
 
   // ── one person, one whole day, one session ─────────────────────────────────────────────────

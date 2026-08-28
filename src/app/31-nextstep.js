@@ -1,6 +1,25 @@
 // ── YOUR NEXT STEP ────────────────────────────────────────────
 // One dynamic daily action. Picks the most important undone thing for right now, so the user
 // never has to decide what to engage with. Reorganizes existing flows — adds no new feature.
+// The ritual logs are read as arrays in fifteen places, each guarded with `|| []` — which catches a
+// log that is MISSING and not one that is the wrong shape. _doneToday, a few lines from some of these
+// callers, carefully handles BOTH an array and a date-keyed object, which is the codebase telling us
+// plainly that both shapes exist in the wild. A date-keyed morning log therefore throws inside
+// go('home') and takes the entire home screen down — the third store in this app that could do that.
+// One reader, one shape out, and an object is converted rather than discarded.
+function ritualLog(key){
+  const v = ls(key);
+  if(Array.isArray(v)) return v;
+  if(v && typeof v === 'object'){
+    return Object.keys(v).map(function(k){
+      const e = v[k];
+      return (e && typeof e === 'object') ? Object.assign({ ts: e.ts || k, date: e.date || k }, e)
+                                          : { ts: k, date: k };
+    });
+  }
+  return [];
+}
+
 function getNextStep(){
   const today = new Date().toLocaleDateString('en-AU');
   const hour = new Date().getHours();
@@ -36,7 +55,7 @@ function getNextStep(){
     }
   }catch(_){ }
   // 1. Morning ritual not done yet today?
-  const morningToday = (ls('totry_mornings')||[]).some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===today);
+  const morningToday = ritualLog('totry_mornings').some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===today);
   if(!morningToday && hour < 12){
     return { text:'Start your morning', sub:'Set today\u2019s intention and gratitude.', action:'morning' };
   }
@@ -64,7 +83,7 @@ function getNextStep(){
   // 3. Evening: examen / reflection not done?
   if(hour >= 17){
     const examenToday = (ls('totry_examens')||[]).some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
-    const eveningToday = (ls('totry_evenings')||[]).some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
+    const eveningToday = ritualLog('totry_evenings').some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
     if(!eveningToday || !examenToday){
       return { text:'Close your day', sub:_nextStepCloseSub(), action:'reflect' };
     }
@@ -80,7 +99,7 @@ function getNextStep(){
       if((ls('totry_prayers')||[]).some(p => p && (sameDay(p.createdAt) || sameDay(p.ts)))) return true;
       if((ls('totry_examens')||[]).some(e => e && sameDay(e.ts))) return true;
       if((ls('totry_rosaries')||[]).some(r => r && (sameDay(r.ts) || sameDay(r.date)))) return true;
-      const m = (ls('totry_mornings')||[])[0];
+      const m = ritualLog('totry_mornings')[0];
       if(m && sameDay(m.ts) && (m.intention || m.gratitude)) return true;
       return false;
     }catch(_){ return false; }
@@ -186,7 +205,7 @@ function renderLifeWoven(){
   if(!vs.length) fightTxt='no fight named yet';
   else { const q=vs.filter(v=>viceIsAbstinence(v)); if(q.length){ const mc=Math.max.apply(null,q.map(v=>v.cleanDays||0)); fightTxt=mc+' day'+(mc===1?'':'s')+' clean'; } else { const lg=vs.filter(v=>v.kind==='letgo'); fightTxt = lg.length ? 'letting go, day '+Math.max.apply(null,lg.map(v=>v.cleanDays||0)) : 'holding your line'; } }
   // SPIRIT — the daily rhythm
-  const mornDone=(ls('totry_mornings')||[]).some(dOn); const evenDone=(ls('totry_evenings')||[]).some(dOn);
+  const mornDone=ritualLog('totry_mornings').some(dOn); const evenDone=ritualLog('totry_evenings').some(dOn);
   const spiritTxt = evenDone?'day closed ✓' : mornDone?'reflect tonight' : (h<15?'set your intention':'reflect on today');
   // MONEY
   const m=s.money||{}; const moneyBits=[];
@@ -220,8 +239,8 @@ function renderHomeGreeting(){
   const name = ls('totry_name') || '';
   const h = new Date().getHours();
   const today = new Date().toLocaleDateString('en-AU');
-  const didMorning = (ls('totry_mornings')||[]).some(m => m.ts && new Date(m.ts).toLocaleDateString('en-AU')===today);
-  const didEvening = (ls('totry_evenings')||[]).some(e => e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
+  const didMorning = ritualLog('totry_mornings').some(m => m.ts && new Date(m.ts).toLocaleDateString('en-AU')===today);
+  const didEvening = ritualLog('totry_evenings').some(e => e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
 
   let hi, sub, actLabel='', actType='', daypart;
   if(h < 5){
@@ -293,8 +312,8 @@ function _countOpenLoops(){
   const today = new Date().toLocaleDateString('en-AU');
   let open = 0;
   try{
-    if(!(ls('totry_mornings')||[]).some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===today)) open++;
-    if(!(ls('totry_evenings')||[]).some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today)) open++;
+    if(!ritualLog('totry_mornings').some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===today)) open++;
+    if(!ritualLog('totry_evenings').some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today)) open++;
     if(typeof loadH==='function'){ loadH(); const ti=(typeof tIdx==='function')?tIdx():0; const undone=(typeof habits!=='undefined'&&Array.isArray(habits))?habits.filter(h=>h.d&&h.d[ti]!==1).length:0; if(undone>0) open++; }
     const trained = (typeof getUnifiedTraining==='function') && getUnifiedTraining().some(t=>t.ts && new Date(t.ts).toLocaleDateString('en-AU')===today);
     if(!trained) open++;

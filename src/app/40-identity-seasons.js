@@ -209,8 +209,8 @@ function getResilienceStreak(){
     checkDate.setDate(today.getDate()-i);
     const dateStr=checkDate.toLocaleDateString('en-AU');
     const hasActivity=
-      (ls('totry_mornings')||[]).some(m=>new Date(m.ts).toLocaleDateString('en-AU')===dateStr)||
-      (ls('totry_evenings')||[]).some(e=>new Date(e.ts).toLocaleDateString('en-AU')===dateStr)||
+      ritualLog('totry_mornings').some(m=>new Date(m.ts).toLocaleDateString('en-AU')===dateStr)||
+      ritualLog('totry_evenings').some(e=>new Date(e.ts).toLocaleDateString('en-AU')===dateStr)||
       (ls('totry_journal')||[]).some(j=>new Date(j.ts).toLocaleDateString('en-AU')===dateStr)||
       (ls('totry_workouts')||[]).some(w=>new Date(w.ts).toLocaleDateString('en-AU')===dateStr)||
       (ls('totry_checkins')||[]).some(c=>c.date===dateStr)||

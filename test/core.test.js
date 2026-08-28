@@ -1979,7 +1979,11 @@ H.section('a disclosure written down must not become AI context')
   // The readers must skip flagged entries — this is the half that outlives the moment.
   H.ok(/totry_journal'\)\|\|\[\]\)\.filter\(e=>!e\.flagged\)/.test(code),
     "buildCtx's RECENT JOURNAL excludes flagged entries");
-  H.ok(/totry_evenings'\)\|\|\[\]\)\.find\(e => e && !e\.flagged/.test(code),
+  // Written against the exact call shape `(ls('totry_evenings')||[]).find(...)`, so it broke the day
+  // the read moved behind ritualLog() while the `!e.flagged` filter it actually cares about was
+  // untouched. What matters is that whatever reads the evenings still skips a flagged entry.
+  H.ok(/totry_evenings'\)[^\n]{0,24}\.(find|filter)\((\w+) => \2 && !\2\.flagged/.test(code) ||
+       /totry_evenings'\)[^\n]{0,24}\.(find|filter)\((\w+) => \4 && \4\.ts && !\4\.flagged/.test(code),
     'the evening reflection fed to the coach excludes flagged ones');
 
   // Grace over shame: the words are always kept.

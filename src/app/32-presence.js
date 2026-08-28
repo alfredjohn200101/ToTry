@@ -281,7 +281,7 @@ function renderHomeInsight(){
   const dayKey = (ts) => new Date(ts).toLocaleDateString('en-AU');
 
   // Gather per-day signals
-  const evenings = (ls('totry_evenings')||[]).filter(e => e.ts && new Date(e.ts).getTime() >= cutoff);
+  const evenings = ritualLog('totry_evenings').filter(e => e.ts && new Date(e.ts).getTime() >= cutoff);
   const workouts = (ls('totry_workouts')||[]).filter(w => (w.ts||w.date) && new Date(w.ts||w.date).getTime() >= cutoff);
   const checkins = (ls('totry_checkins')||[]).filter(c => c.ts && new Date(c.ts).getTime() >= cutoff);
   const fightLog = (ls('totry_fight_log')||[]).filter(f => f.ts && new Date(f.ts).getTime() >= cutoff);
@@ -318,7 +318,7 @@ function renderHomeInsight(){
 
   // 3) A simple, encouraging consistency observation if not enough for correlations.
   if(!insights.length){
-    const last7Evenings = (ls('totry_evenings')||[]).filter(e => e.ts && new Date(e.ts).getTime() >= now-7*86400000);
+    const last7Evenings = ritualLog('totry_evenings').filter(e => e.ts && new Date(e.ts).getTime() >= now-7*86400000);
     const last7Workouts = (ls('totry_workouts')||[]).filter(w => (w.ts||w.date) && new Date(w.ts||w.date).getTime() >= now-7*86400000);
     if(last7Workouts.length >= 3){
       insights.push('You\u2019ve trained ' + last7Workouts.length + ' times in the last week. That\u2019s a real rhythm \u2014 keep showing up.');
@@ -333,6 +333,24 @@ function renderHomeInsight(){
   box.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">What I\u2019m noticing</div>' +
     '<div style="font-size:14px;color:var(--tx2);line-height:1.6">' + pick + '</div>';
   box.style.display = 'block';
+}
+
+// The hero and this card were asking for the same thing, twice, on one screen. In the evening the hero
+// said "The day is winding down. Want to look back on it together before you rest?" over a gold
+// [Close the day], and 600px below, this card said "close the day honestly — how it went, one win,
+// one thing to release" over a gold [Reflect on today →]. Both are go('reflect'). The same at dawn:
+// [Begin the morning] and [Set my intention →], both go('morning').
+//
+// Two buttons to the same room is not emphasis, it is the app failing to notice what it has already
+// said — and a person reads that instantly, even when they could not name it. The hero keeps the ask,
+// because it is the part that is above the fold. This card stops repeating it and offers the thing
+// the hero does NOT: the other way to answer, for the evening when writing it out is beyond you.
+function _heroAlreadyAsks(kind){
+  try{
+    const a = document.getElementById('home-greeting-action');
+    return !!(a && a.style.display !== 'none' && a.dataset.act === kind &&
+              (a.textContent || '').trim());
+  }catch(_){ return false; }
 }
 
 function renderTodayForYou(){
@@ -393,7 +411,7 @@ function renderTodayForYou(){
       .reduce((m,x)=>{ const t=new Date(x.ts||x.date||x.createdAt||0).getTime(); return t>m?t:m; }, 0);
     if(!lastActivity) return;
     const daysAway = Math.floor((Date.now()-lastActivity)/86400000);
-    const everActive = ((ls('totry_evenings')||[]).length + (ls('totry_workouts')||[]).length) >= 5;
+    const everActive = (ritualLog('totry_evenings').length + (ls('totry_workouts')||[]).length) >= 5;
     if(daysAway >= 3 && everActive){
       ls('totry_last_return_ease', tkNow);
       if(eyebrowEl) eyebrowEl.textContent = 'Welcome back';
@@ -423,6 +441,15 @@ function renderTodayForYou(){
   };
   const hr = new Date().getHours();
   if(hr < 12 && !_doneToday('totry_mornings')){
+    // Same doubling at dawn: the hero's [Begin the morning] and this card's [Set my intention →] both
+    // go('morning'). The hero asks; this offers the lighter door for a morning that has no words in it.
+    if(_heroAlreadyAsks('morning')){
+      if(eyebrowEl) eyebrowEl.textContent = 'This morning';
+      if(msgEl) msgEl.textContent = 'Or start smaller — one thing that would make today count.';
+      if(actEl) actEl.innerHTML =
+        '<button class="btn" onclick="go(&apos;grow&apos;)" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Just carry one thing</button>';
+      return;
+    }
     if(eyebrowEl) eyebrowEl.textContent = 'This morning';
     if(msgEl) msgEl.textContent = (first ? first + ', begin' : 'Begin') + ' the day before the day begins you — a word, your gratitude, your intention, a prayer. A few quiet minutes.';
     if(actEl){
@@ -443,6 +470,13 @@ function renderTodayForYou(){
     return;
   }
   if(hr >= 17 && !_doneToday('totry_evenings')){
+    if(_heroAlreadyAsks('evening')){
+      if(eyebrowEl) eyebrowEl.textContent = 'This evening';
+      if(msgEl) msgEl.textContent = 'Not up to writing it out? We can just talk it through instead.';
+      if(actEl) actEl.innerHTML =
+        '<button class="btn" onclick="go(&apos;coach&apos;)" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Talk it out with Coach</button>';
+      return;
+    }
     if(eyebrowEl) eyebrowEl.textContent = 'This evening';
     if(msgEl) msgEl.textContent = (first ? first + ', close' : 'Close') + ' the day honestly — how it went, one win, one thing to release. Then rest.';
     if(actEl){

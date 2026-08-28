@@ -188,6 +188,67 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 .btn.blue{background:var(--bl-bg);border-color:var(--bl-bd);color:var(--bl)}
 .btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
 .qbtns{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+/* The log bar. One field, the two methods that get used daily beside it, one door for the rest. */
+.logbar{display:flex;align-items:stretch;gap:0;margin-bottom:6px;background:var(--bg3);
+  border:1px solid var(--bd);border-radius:12px;overflow:hidden}
+.logbar-in{flex:1;min-width:0;background:transparent;border:0;color:var(--tx);font-size:13.5px;
+  padding:12px 12px;outline:none;font-family:inherit}
+.logbar-in::placeholder{color:var(--tx3)}
+.logbar-in:focus{background:var(--bg2)}
+.logbar-ic{flex:0 0 auto;width:42px;background:transparent;border:0;border-left:1px solid var(--bd);
+  color:var(--tx2);font-size:16px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.logbar-ic:active{background:var(--bg2)}
+.logbar-go{flex:0 0 auto;padding:0 15px;background:var(--ac);border:0;color:var(--ac-tx,#0d0d0d);
+  font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.logbar-more{width:100%;background:transparent;border:0;color:var(--tx3);font-size:12px;
+  padding:7px 0 12px;cursor:pointer;text-align:left;font-family:inherit;letter-spacing:.01em}
+.logbar-more:active{color:var(--tx2)}
+
+/* One row per way in — icon, what it is, what it's for. A list a person can read, not six equal chips. */
+/* The one row that stands for four cards until they are wanted. */
+/* The ring owns the fold. Its own arithmetic sits under it, quiet, in one line. */
+/* One line and a link, not an essay and a billboard. */
+.setup-strip{display:flex;align-items:center;gap:9px;padding:10px 12px;margin-bottom:12px;
+  background:rgba(200,169,110,.09);border:1px solid var(--go-bd);border-radius:11px}
+.setup-strip-t{flex:1;min-width:0;font-size:11.5px;color:var(--tx2);line-height:1.4}
+.setup-strip-go{flex:0 0 auto;background:transparent;border:0;color:var(--go);font-size:11.5px;
+  font-weight:600;cursor:pointer;font-family:inherit;padding:5px 2px;white-space:nowrap;
+  text-decoration:underline;text-underline-offset:2px;min-height:26px}
+.setup-strip-x{flex:0 0 auto;background:none;border:0;color:var(--tx3);font-size:15px;
+  cursor:pointer;line-height:1;min-width:26px;min-height:26px;display:flex;
+  align-items:center;justify-content:center}
+
+.cal-hero{display:flex;flex-direction:column;align-items:center;gap:11px;padding:4px 0 2px}
+.cal-ring{position:relative;width:128px;height:128px;flex-shrink:0}
+.cal-ring svg{width:128px;height:128px;transform:rotate(-90deg)}
+.cal-ring-mid{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.cal-ring-mid .ch-num{font-size:38px;line-height:1;letter-spacing:-.02em}
+.cal-ring-mid .ch-lbl{font-size:9px;margin-top:3px;letter-spacing:.11em}
+.cal-eq{display:flex;align-items:baseline;justify-content:center;gap:6px;flex-wrap:wrap;
+  font-family:'DM Mono',monospace;font-size:10.5px;color:var(--tx3);letter-spacing:.01em}
+.cal-eq b{font-weight:500;color:var(--tx2);font-variant-numeric:tabular-nums}
+.cal-eq-op{color:var(--tx3);opacity:.55}
+
+.sec-open{display:flex;align-items:center;gap:10px;width:100%;padding:13px 14px;margin-bottom:12px;
+  background:var(--bg2);border:1px solid var(--bd);border-radius:12px;color:var(--tx2);
+  cursor:pointer;text-align:left;font-family:inherit}
+.sec-open:active{background:var(--bg3)}
+.sec-open-t{flex:0 0 auto;font-size:13px;color:var(--tx)}
+.sec-open-c{flex:1;min-width:0;font-size:11.5px;color:var(--tx3);text-align:right;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums}
+.sec-open-ch{flex:0 0 auto;color:var(--tx3);font-size:15px;transition:transform .18s}
+.sec-open[aria-expanded="true"] .sec-open-ch{transform:rotate(90deg)}
+
+.mw-row{display:flex;align-items:center;gap:12px;width:100%;padding:12px 4px;background:transparent;
+  border:0;border-bottom:1px solid var(--bd);color:var(--tx);cursor:pointer;text-align:left;font-family:inherit}
+.mw-row:last-child{border-bottom:0}
+.mw-row:active{background:var(--bg3)}
+.mw-ic{flex:0 0 26px;font-size:17px;line-height:1;text-align:center}
+.mw-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.mw-t{font-size:13.5px;color:var(--tx);line-height:1.25}
+.mw-s{font-size:11.5px;color:var(--tx3);line-height:1.3}
+.mw-ch{flex:0 0 auto;color:var(--tx3);font-size:15px}
+
 .qb{font-size:11px;padding:14px 10px;margin-top:-9px;margin-bottom:-9px;border-radius:var(--rp);border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;transition:all 0.15s}
 .meal-chip{font-size:11px;padding:8px 4px;border-radius:8px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);cursor:pointer;font-family:'Outfit',sans-serif;text-align:center;transition:all 0.15s}
 .meal-chip.selected{background:var(--go);color:#000;border-color:var(--go)}
@@ -2512,25 +2573,32 @@ input:focus,textarea:focus,select:focus{
         <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3)" id="nut-date"></span>
       </span>
     </div>
-    <div class="cal-hero" style="display:flex;align-items:center;justify-content:center;gap:18px">
-      <div style="position:relative;width:96px;height:96px;flex-shrink:0">
-        <svg aria-hidden="true" viewBox="0 0 96 96" style="width:96px;height:96px;transform:rotate(-90deg)">
-          <circle cx="48" cy="48" r="40" fill="none" stroke="var(--bg3)" stroke-width="9"/>
-          <circle id="ring-pro" cx="48" cy="48" r="40" fill="none" stroke="var(--gr)" stroke-width="9" stroke-dasharray="0 251" stroke-linecap="round"/>
-          <circle id="ring-carb" cx="48" cy="48" r="40" fill="none" stroke="var(--bl)" stroke-width="9" stroke-dasharray="0 251"/>
-          <circle id="ring-fat" cx="48" cy="48" r="40" fill="none" stroke="var(--go)" stroke-width="9" stroke-dasharray="0 251"/>
+    <!-- The ring was 96px sitting beside a 122px table that ended in the SAME number it displayed:
+         "970 cal left" and "Remaining 970", eight pixels apart, each shrinking the other. The number a
+         person opens this screen for now owns the middle of it, and the arithmetic that produced it
+         sits underneath in one quiet line — visible if you want to check the working, silent if you
+         don't. That is the difference between a screen with a subject and a screen with contents. -->
+    <div class="cal-hero">
+      <div class="cal-ring">
+        <svg aria-hidden="true" viewBox="0 0 128 128">
+          <circle cx="64" cy="64" r="54" fill="none" stroke="var(--bg3)" stroke-width="10"/>
+          <circle id="ring-pro" cx="64" cy="64" r="54" fill="none" stroke="var(--gr)" stroke-width="10" stroke-dasharray="0 340" stroke-linecap="round"/>
+          <circle id="ring-carb" cx="64" cy="64" r="54" fill="none" stroke="var(--bl)" stroke-width="10" stroke-dasharray="0 340"/>
+          <circle id="ring-fat" cx="64" cy="64" r="54" fill="none" stroke="var(--go)" stroke-width="10" stroke-dasharray="0 340"/>
         </svg>
-        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
-          <div class="ch-num" id="nut-cal" style="font-size:26px">0</div>
-          <div class="ch-lbl" id="nut-cal-hero-lbl" style="font-size:7px">cal left</div>
+        <div class="cal-ring-mid">
+          <div class="ch-num" id="nut-cal">0</div>
+          <div class="ch-lbl" id="nut-cal-hero-lbl">cal left</div>
         </div>
       </div>
-      <div id="nut-equation" style="display:flex;flex-direction:column;gap:5px;min-width:122px">
-        <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:11px;color:var(--tx3)">Base goal</span><span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--tx2)" id="eq-goal">2200</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:11px;color:var(--tx3)">&minus; Food</span><span style="font-family:'DM Mono',monospace;font-size:13px;color:var(--tx)" id="eq-food">0</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--bd);padding-top:5px;margin-top:1px"><span style="font-size:11px;color:var(--go)">Remaining</span><span style="font-family:'DM Mono',monospace;font-size:15px;color:var(--go)" id="eq-rem">2200</span></div>
-        <div id="eq-burn" style="display:none;font-family:'DM Mono',monospace;font-size:9.5px;color:var(--tx3);text-align:right;line-height:1.3"></div>
+      <div id="nut-equation" class="cal-eq">
+        <span><b id="eq-goal">0</b> base</span>
+        <span class="cal-eq-op">&minus;</span>
+        <span><b id="eq-food">0</b> eaten</span>
+        <span class="cal-eq-op">=</span>
+        <span><b id="eq-rem">0</b> left</span>
       </div>
+      <div id="eq-burn" style="display:none;font-family:'DM Mono',monospace;font-size:9.5px;color:var(--tx3);text-align:center;line-height:1.3;margin-top:4px"></div>
     </div>
     <div>
       <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;margin-bottom:2px"><span style="color:var(--gr)">Protein</span><span style="color:var(--tx3)" id="nut-pro-goal-lbl">0 / 170g</span></div>
@@ -2574,39 +2642,29 @@ input:focus,textarea:focus,select:focus{
        (MFP pattern). This used to sit below the diary + net-calories; the search box was buried. ══ -->
   <!-- Proactive emotional-eating check — appears in the late-snack window for people with the pattern. -->
   <div id="nut-hunger-nudge"></div>
+  <!-- Eighteen controls on this screen all meant "add food": a field, a Search button, six method
+       buttons, seven chips of foods he may never eat, and four section adds. That is what reads as
+       half-built — not one of them was wrong, but presenting every capability at equal weight leaves
+       the person to do the prioritising the app should have done. One field, the two methods actually
+       used daily beside it, the rest behind one door, and chips drawn from what HE eats. -->
   <div class="lbl">Log food</div>
-  <div style="display:flex;gap:8px;margin-bottom:8px">
-    <div style="display:flex;gap:8px;align-items:center">
-      <input type="text" id="nut-search-in" placeholder="Search food, describe a meal, or paste a barcode..." onkeydown="if(event.key==='Enter')searchFood(this.value)" oninput="nutSearchTypeahead(this.value)" autocomplete="off" style="flex:1">
-    </div>
-    <button class="btn primary" style="width:auto;white-space:nowrap;padding:10px 14px" onclick="searchFood(document.getElementById('nut-search-in').value)">Search</button>
+  <div class="logbar">
+    <input type="text" id="nut-search-in" class="logbar-in"
+           placeholder="Search a food, or describe your meal…"
+           onkeydown="if(event.key==='Enter')searchFood(this.value)">
+    <button class="logbar-ic" aria-label="Snap a photo of your meal"
+            onclick="document.getElementById('meal-photo-input').click()">📷</button>
+    <button class="logbar-ic" aria-label="Quick add calories" onclick="openQuickAdd()">+</button>
+    <button class="logbar-go" onclick="searchFood(document.getElementById('nut-search-in').value)">Search</button>
   </div>
-  <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
-    <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="document.getElementById('meal-photo-input').click()">🍽 Snap a meal</button>
-    <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openBarcodeScanner()">📷 Scan barcode</button>
-    <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openQuickAdd()">⚡ Quick add</button>
-    <!-- startVoiceLog() was fully written (and iOS-aware) but had no way in. Speaking a meal is the
-         lowest-friction way to log — especially one-handed, mid-kitchen, or on a low-capacity day. -->
-    <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="startVoiceLog()">🎤 Say it</button>
-    <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openRecipeBuilder()">🍳 My recipes</button>
-    <button class="btn" style="flex:1;min-width:90px;padding:10px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="openRepeatDay()">↻ Repeat a day</button>
-  </div>
-  <!-- The one thing no calorie app does: meet WHY you're eating, not just what. Opt-in, grace-first. -->
-  <button onclick="openHungerCheck()" style="width:100%;margin-bottom:10px;padding:10px;border-radius:8px;background:transparent;border:1px dashed var(--go-bd);color:var(--go);font-size:12px;cursor:pointer">🤔 Hungry, or something else? — a 5-second check</button>
+  <button class="logbar-more" onclick="openMoreWaysToLog()">More ways to log ›</button>
   <input type="file" id="meal-photo-input" accept="image/*" capture="environment" style="display:none" onchange="handleMealPhoto(event)">
   <input type="file" id="food-csv-input" accept=".csv" style="display:none" onchange="importFoodCSV(event)">
   <div id="nut-search-results" style="margin-bottom:12px"></div>
   <div id="nut-recent-foods" style="margin-bottom:12px"></div>
   <div id="nut-saved-meals" style="margin-bottom:12px"></div>
-  <div style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap">
-    <button class="qb" onclick="searchFood('chicken breast')">Chicken breast</button>
-    <button class="qb" onclick="searchFood('oats')">Oats</button>
-    <button class="qb" onclick="searchFood('rice')">Rice</button>
-    <button class="qb" onclick="searchFood('eggs')">Eggs</button>
-    <button class="qb" onclick="searchFood('banana')">Banana</button>
-    <button class="qb" onclick="searchFood('greek yogurt')">Greek yogurt</button>
-    <button class="qb" onclick="searchFood('protein shake')">Protein shake</button>
-  </div>
+  <!-- His foods, not a stock list. renderQuickFoods() counts what he has actually logged. -->
+  <div id="nut-quick-foods" style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap"></div>
   <!-- Today's diary: what you've logged, right under the log box -->
   <div class="card" style="margin-bottom:12px"><div id="nut-log-list"><p style="font-size:13px;color:var(--tx3);text-align:center;padding:8px 0">No food logged yet today</p></div></div>
 
@@ -2690,6 +2748,17 @@ input:focus,textarea:focus,select:focus{
     <div id="nut-trend-chart"></div>
   </div>
   
+  <!-- Water, fasting, calorie cycling and the fasting season are four cards, 557px — more than half a
+       phone screen — and this person has never touched one of them. They were not wrong to build; they
+       were wrong to be permanently open. Every screen that shows an unused feature at full size is
+       telling the person the app is not paying attention. One row until they are wanted, and any that
+       is actually in use today opens itself. -->
+  <button id="nut-secondary-open" class="sec-open" onclick="toggleNutSecondary()" aria-expanded="false">
+    <span class="sec-open-t">Water, fasting &amp; cycling</span>
+    <span class="sec-open-c" id="nut-secondary-sum">not tracking these</span>
+    <span class="sec-open-ch">›</span>
+  </button>
+  <div id="nut-secondary" style="display:none">
   <!-- ── WATER + FASTING (secondary trackers) ── -->
   <div class="card" style="margin-bottom:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
@@ -2733,6 +2802,8 @@ input:focus,textarea:focus,select:focus{
 
   <!-- Calorie/carb cycling — opt-in Train×Nourish feature, populated by renderCyclingSetup() -->
   <div id="cal-cycling-setup" style="margin-top:12px"></div>
+  </div>
+
 
   <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--tx3);text-align:center;margin-top:8px;letter-spacing:0.06em">USDA · FatSecret · Open Food Facts · AI estimate</div>
 </div>
@@ -3349,6 +3420,15 @@ input:focus,textarea:focus,select:focus{
 
   <!-- ── WEEKLY CHECK-IN (bottom — Sunday-night deep work) ── -->
   <div class="lbl" style="margin-top:18px;margin-bottom:8px;padding-top:14px;border-top:1px solid var(--bd)">Weekly reflection &mdash; best done Sunday night</div>
+  <!-- 1,123px of sliders and writing prompts, open on every visit, for a reflection its own label says
+       is best done on Sunday evening. Six days out of seven it is a wall between the person and their
+       own history. It opens on the day it is for, or the moment it is asked for. -->
+  <button id="wk-open" class="sec-open" onclick="toggleWeeklyCheckin()" aria-expanded="false">
+    <span class="sec-open-t">Weekly check-in</span>
+    <span class="sec-open-c" id="wk-open-sum">about 4 minutes</span>
+    <span class="sec-open-ch">›</span>
+  </button>
+  <div id="wk-body" style="display:none">
   <div class="card" style="background:linear-gradient(135deg,rgba(200,169,110,0.08),rgba(140,107,182,0.06));border-color:var(--go-bd)">
     <div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px">Weekly check-in</div>
     <div style="font-family:Cormorant Garamond,serif;font-size:20px;color:var(--tx);font-style:italic;margin-bottom:6px">Your week, reflected.</div>
@@ -3401,6 +3481,7 @@ input:focus,textarea:focus,select:focus{
     <div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:10px;padding:8px 10px;background:var(--bg3);border-radius:8px">📏 Tracking waist, chest, arms, or an Evolt scan? Use the <span class="tlink" onclick="openMeasurementLogger()">Measurements card</span> above — no need to enter those twice.</div>
     <button class="btn primary" onclick="logBody()">Log this week</button>
   </div>
+  </div>
   
   <!-- Photo collage of past check-ins -->
   <div class="card" id="body-collage-card" style="margin-bottom:12px;display:none">
@@ -3423,23 +3504,30 @@ input:focus,textarea:focus,select:focus{
   <!-- The impulse door. A spending urge is a threshold moment exactly like a craving — same dopamine
        spike, same crash, same shame loop — so it gets the same before-it-takes-over treatment rather
        than a budget lecture. Sits at the top because it's needed BEFORE the money is gone. -->
-  <button class="btn" onclick="openImpulsePause()" style="margin-bottom:12px;text-align:left;padding:13px 15px;background:var(--bg3);border:1px solid var(--go-bd)">
+  <button class="btn" onclick="openImpulsePause()" style="display:block;margin-bottom:12px;text-align:left;padding:13px 15px;background:var(--bg3);border:1px solid var(--go-bd)">
     <div style="font-size:14px;color:var(--go)">🛑&nbsp;&nbsp;About to buy something?</div>
     <div style="font-size:11.5px;color:var(--tx3);margin-left:26px;line-height:1.5">Let’s look at it together first — no lecture.</div>
   </button>
   <!-- Before it knows anything, this tab has exactly one job: get something real in. -->
   <div id="money-gate"></div>
-  <div id="money-read-card"></div>
+
+  <!-- Nothing is removed — it is reachable in one tap, and it names what is in there so the tap is an
+       informed one. The moment there is any real money data the cards come back on their own. -->
+  <button id="money-more-row" class="sec-open" style="display:none" onclick="showMoneyMore()">
+    <span class="sec-open-t">Also here</span>
+    <span class="sec-open-c">debts · bills · subscriptions · budgets · giving</span>
+    <span class="sec-open-ch">›</span>
+  </button>  <div id="money-read-card"></div>
   <div class="mg">
     <div class="met"><div class="ml">Paid off</div><div class="mv g" id="f-paid" data-cur-text="{c}0">$0</div></div>
     <div class="met"><div class="ml">Debt left</div><div class="mv r" id="f-debt" data-cur-text="{c}0">$0</div></div>
   </div>
   <!-- Dynamic goals list, sorted by priority -->
-  <div id="finance-goals-list" style="margin-bottom:14px"></div>
+  <div class="money-more" id="finance-goals-list" style="margin-bottom:14px"></div>
   <div class="df-hero" id="df-hero"><div class="df-date" id="df-date">&#8212;</div><div class="df-lbl">Projected debt-free date</div><div class="df-desc" id="df-desc">Log payments to calculate</div></div>
   <div class="saved-hero" id="saved-hero"><div class="saved-big" id="saved-num" data-cur-text="{c}0">$0</div><div class="saved-lbl">Reclaimed by staying clean</div><div class="saved-desc" id="saved-desc">Set weekly vice spend below</div></div>
   <!-- Strategy -->
-  <div class="card" style="margin-bottom:12px">
+  <div class="card money-more" style="margin-bottom:12px">
     <div class="card-hd" style="margin-bottom:8px">Payoff strategy</div>
     <div class="strategy-card active" id="strategy-snowball" onclick="setDebtStrategy('snowball', true)">
       <div class="sc-title">&#10052;&#65039; Snowball &#8212; smallest debt first</div>
@@ -3450,13 +3538,13 @@ input:focus,textarea:focus,select:focus{
       <div class="sc-desc">Saves the most money mathematically.</div>
     </div>
   </div>
-  <button class="btn primary" style="margin-bottom:12px" onclick="openPayday()">
+  <button class="btn primary money-more" style="margin-bottom:12px" onclick="openPayday()">
     <svg aria-hidden="true" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="13" rx="2.5"/><path d="M2.5 10h19"/><circle cx="17" cy="14.5" r="1.4"/></svg>
     I just got paid &#8212; allocate my money
   </button>
   <div class="payday-result" id="payday-result"></div>
-  <div class="card"><div class="card-hd" style="margin-bottom:10px">Debts &#8212; tap to log a payment</div><div id="debt-list"></div></div>
-  <div class="card">
+  <div class="card money-more"><div class="card-hd" style="margin-bottom:10px">Debts &#8212; tap to log a payment</div><div id="debt-list"></div></div>
+  <div class="card money-more">
     <div class="card-hd" style="margin-bottom:10px">Add / update</div>
     <div class="row"><input type="text" id="dn" placeholder="Who you owe"><input type="number" id="dt" data-cur-ph="Total {c}" placeholder="Total $" style="max-width:110px;flex:none"></div>
     <div class="row"><input type="number" id="dp" data-cur-ph="Paid so far {c}" placeholder="Paid so far $"><input type="date" id="dd" style="max-width:145px;flex:none"></div>
@@ -3477,7 +3565,7 @@ input:focus,textarea:focus,select:focus{
   </div>
   
   <!-- QUICK SPEND ENTRY — fast inline path -->
-  <div class="card" style="margin-top:14px;background:var(--bg3)">
+  <div class="card money-more" style="margin-top:14px;background:var(--bg3)">
     <div class="card-hd" style="margin-bottom:8px">⚡ Quick spend</div>
     <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">One tap to log a recent expense. Just the amount and the category.</p>
     <div style="display:flex;gap:6px;margin-bottom:8px">
@@ -3497,7 +3585,7 @@ input:focus,textarea:focus,select:focus{
   </div>
   
   <!-- INCOME & EXPENSE TRACKING -->
-  <div class="card" style="margin-top:14px">
+  <div class="card money-more" style="margin-top:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-hd" style="margin-bottom:0">💰 This month</div>
       <div style="display:flex;gap:6px">
@@ -3512,7 +3600,7 @@ input:focus,textarea:focus,select:focus{
   <input type="file" id="csv-import-input" accept=".csv,text/csv" style="display:none" onchange="handleCSVFile(event)">
   
   <!-- SUBSCRIPTIONS -->
-  <div class="card" style="margin-top:14px">
+  <div class="card money-more" style="margin-top:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-hd" style="margin-bottom:0">🔁 Subscriptions</div>
       <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd)" onclick="openSubscriptionLogger()" aria-label="Add a subscription">+ Add</button>
@@ -3524,7 +3612,7 @@ input:focus,textarea:focus,select:focus{
   </div>
   
   <!-- UPCOMING BILLS -->
-  <div class="card" style="margin-top:14px">
+  <div class="card money-more" style="margin-top:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-hd" style="margin-bottom:0">📅 Upcoming bills</div>
       <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd)" onclick="openBillLogger()" aria-label="Add a bill">+ Add</button>
@@ -3534,7 +3622,7 @@ input:focus,textarea:focus,select:focus{
   </div>
   
   <!-- CATEGORY BUDGETS -->
-  <div class="card" style="margin-top:14px">
+  <div class="card money-more" style="margin-top:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-hd" style="margin-bottom:0">🎯 Category budgets</div>
       <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd)" onclick="openBudgetLogger()">+ Set</button>
@@ -3544,7 +3632,7 @@ input:focus,textarea:focus,select:focus{
   </div>
   
   <!-- NET WORTH -->
-  <div class="card" style="margin-top:14px">
+  <div class="card money-more" style="margin-top:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-hd" style="margin-bottom:0">💎 Net worth</div>
       <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd)" onclick="openAssetLogger()">+ Add asset</button>
@@ -3555,7 +3643,7 @@ input:focus,textarea:focus,select:focus{
   </div>
 
   <!-- FAMILY CONTRIBUTION -->
-  <div class="card" style="margin-top:14px">
+  <div class="card money-more" style="margin-top:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-hd" style="margin-bottom:0">👪 Family contribution</div>
       <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd)" onclick="openFamilyContribution()" aria-label="Log a family contribution">+ Log</button>
@@ -3566,7 +3654,7 @@ input:focus,textarea:focus,select:focus{
   </div>
 
   <!-- GIVING — tradition-swapped maths on one backbone. Private. Never a score. -->
-  <div class="card" style="margin-top:14px">
+  <div class="card money-more" style="margin-top:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-hd" style="margin-bottom:0">🤲 <span id="giving-title">Giving</span></div>
       <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd)" onclick="openGivingLog()" aria-label="Log giving">+ Log</button>
@@ -3574,7 +3662,7 @@ input:focus,textarea:focus,select:focus{
     <div id="giving-body"></div>
   </div>
   <!-- POKER TRACKER (optional — second from bottom) -->
-  <div class="card" style="margin-top:14px">
+  <div class="card money-more" style="margin-top:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="card-hd" style="margin-bottom:0">🃏 Poker sessions</div>
       <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd)" onclick="openPokerSession()">+ Session</button>

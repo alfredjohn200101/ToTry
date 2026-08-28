@@ -988,7 +988,7 @@ function _renderShareCanvas(style, theme){
   const wins=vices.reduce((s,v)=>s+(v.w||0),0);
   const today=new Date().toLocaleDateString('en-AU');
   const todayJournal=(ls('totry_journal')||[]).find(j=>new Date(j.ts).toLocaleDateString('en-AU')===today);
-  const todayEvening=(ls('totry_evenings')||[]).find(e=>new Date(e.ts).toLocaleDateString('en-AU')===today);
+  const todayEvening=ritualLog('totry_evenings').find(e=>new Date(e.ts).toLocaleDateString('en-AU')===today);
   const todayWorkout=(ls('totry_workouts')||[]).find(w=>w.date===today||new Date(w.ts||'').toLocaleDateString('en-AU')===today);
   // Counted from totry_fight_log, NOT totry_vice_savings_log. The savings log is only appended when
   // savedNow > 0, and savedNow comes from a hardcoded seven-entry regex table (weed, vape,

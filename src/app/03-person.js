@@ -1066,7 +1066,7 @@ function buildCtx(){
   try{
     // Never a flagged one — see completeEvening. Without this the gate would stop the moment and the
     // sentence would still be read back to the model on every later coach message.
-    const lastSee = (ls('totry_evenings')||[]).find(e => e && !e.flagged && (e.see||'').trim());
+    const lastSee = ritualLog('totry_evenings').find(e => e && !e.flagged && (e.see||'').trim());
     if(lastSee && lastSee.see) honestCtx = '\nTheir last honest evening reflection — asked what the people they love would see in their day — was: "' + lastSee.see.trim().slice(0,220) + '". Hold this tenderly; speak to who they want to become, never shame them with it.';
   }catch(_){ }
 
@@ -2057,8 +2057,8 @@ function repairJourneyStart(){
     const take = ts => { if(!ts) return; const t = new Date(ts).getTime(); if(t && (!oldest || t < oldest)) oldest = t; };
     (ls('totry_workouts')||[]).forEach(w=>take(w.ts));
     (ls('totry_body')||[]).forEach(b=>take(b.ts));
-    (ls('totry_mornings')||[]).forEach(m=>take(m.ts));
-    (ls('totry_evenings')||[]).forEach(e=>take(e.ts));
+    ritualLog('totry_mornings').forEach(m=>take(m.ts));
+    ritualLog('totry_evenings').forEach(e=>take(e.ts));
     (ls('totry_journal')||[]).forEach(j=>take(j.ts));
     (ls('totry_v')||[]).forEach(v=>{ take(v.start); take(v.startDate); (v.losses||[]).forEach(l=>take(l.date||l)); });
     if(oldest){
@@ -4257,7 +4257,7 @@ function go(name){
   updateHubBackBar(name);
   try{ if(typeof renderCycleSurfaces==='function') renderCycleSurfaces(); }catch(_){}
   if(name==='fight'){renderVices();renderScoreboard();if(typeof renderFightEvidence==='function')renderFightEvidence();}
-  if(name==='track'){renderBody();renderBodyCollage();updateTrackerDisplay();if(typeof renderHealthCard==='function')renderHealthCard();if(typeof Health!=='undefined'&&Health.connected()&&Health.isNative())Health.syncToday();}
+  if(name==='track'){renderBody();if(typeof syncWeeklyCheckin==='function')syncWeeklyCheckin();renderBodyCollage();updateTrackerDisplay();if(typeof renderHealthCard==='function')renderHealthCard();if(typeof Health!=='undefined'&&Health.connected()&&Health.isNative())Health.syncToday();}
   if(name==='grow'){ if(typeof renderBodySystemReport==='function') renderBodySystemReport();
                      if(typeof renderGrowHandoffs==='function') renderGrowHandoffs(); }
   if(name==='settings' && typeof renderPushSettings==='function'){renderPushSettings();}

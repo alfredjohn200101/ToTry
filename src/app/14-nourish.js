@@ -291,7 +291,172 @@ function startVoiceLog(){
   }catch(_){ if(input) input.focus(); }
 }
 
+// ── WAITING, HONESTLY ──────────────────────────────────────────────────────────────────────────
+// Alfy stood in a shop with a gyros open plate, photographed it, typed it in, and watched a pulsing
+// line for a minute and a half on 17% battery and two bars. Nothing was broken that a console would
+// show: the call had a ceiling and would have ended. But a silent pulse with no elapsed time, no way
+// to stop, and no way to just log the meal is indistinguishable from a dead app — so he gave up
+// before it ever answered, and his lunch went unlogged.
+//
+// Three things a person is owed while they wait, and every food path uses these two helpers to give
+// them: proof it is still alive (a ticking count), a way out that logs the meal anyway (manual entry
+// is one tap, not a fallback after failure), and an ending that says what happened in plain words.
+// Nothing here is any use where he cannot see it. The results area sits ~180px BELOW the fold on a
+// 414x896 phone, so tapping search moved nothing on screen: the spinner, the answer and the failure
+// all rendered off the bottom. That is what "didn't do shit" looked like from his side of the glass.
+function _foodReveal(res){
+  try{
+    if(!res) return;
+    const r = res.getBoundingClientRect();
+    if(r.top > innerHeight - 120 || r.bottom < 80)
+      res.scrollIntoView({block:'center', behavior:'smooth'});
+  }catch(_){ }
+}
+
+let _foodWaitTimer = null;
+function _foodWaitStop(){ if(_foodWaitTimer){ clearInterval(_foodWaitTimer); _foodWaitTimer=null; } }
+
+function foodWorking(res, line){
+  if(!res) return;
+  _foodWaitStop();
+  res.innerHTML =
+    '<div style="padding:16px;background:var(--bg3);border:1px solid var(--bd);border-radius:14px">' +
+      '<div class="pulsing" style="font-family:\'Cormorant Garamond\',serif;font-size:16px;font-style:italic;' +
+        'color:var(--tx);line-height:1.45;margin-bottom:10px">' + _escFew(line) + '</div>' +
+      '<div id="food-wait-el" style="font-size:11.5px;color:var(--tx3);letter-spacing:.04em;margin-bottom:14px;' +
+        'font-variant-numeric:tabular-nums">just a moment</div>' +
+      '<button class="btn" onclick="_foodWaitStop();openQuickAdd()" style="width:100%;background:var(--bg2);' +
+        'border:1px solid var(--bd);font-size:13px">Add it myself instead</button>' +
+    '</div>';
+  const t0 = Date.now();
+  _foodWaitTimer = setInterval(function(){
+    const el = document.getElementById('food-wait-el');
+    if(!el){ _foodWaitStop(); return; }
+    const sec = Math.round((Date.now()-t0)/1000);
+    el.textContent = sec < 4  ? 'just a moment'
+                   : sec < 10 ? sec + 's · still working'
+                   :            sec + 's · slow connection, hold on';
+  }, 1000);
+  _foodReveal(res);
+}
+
+// The ending. Says what happened, offers the same try again, and keeps the manual path — because the
+// meal still has to get logged whether or not the model ever cooperates.
+function foodFailed(res, headline, sub, retryJs){
+  _foodWaitStop();
+  if(!res) return;
+  res.innerHTML =
+    '<div style="padding:16px;background:var(--bg3);border:1px solid var(--bd);border-radius:14px">' +
+      '<div style="font-size:14px;color:var(--tx);line-height:1.5;margin-bottom:5px">' + _escFew(headline) + '</div>' +
+      '<div style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px">' + _escFew(sub) + '</div>' +
+      (retryJs ? '<button class="btn" onclick="' + _jsAttr(retryJs) + '" style="width:100%;margin-bottom:8px;' +
+        'background:var(--bg2);border:1px solid var(--bd);font-size:13px">Try again</button>' : '') +
+      '<button class="btn primary" onclick="openQuickAdd()" style="width:100%;font-size:13px">Add it myself</button>' +
+    '</div>';
+  _foodReveal(res);
+}
+
 // ── QUICK ADD ── log calories (+ optional macros) with no food search — MFP's fastest path.
+// The rest of the ways in. They were six equal buttons in a row on the main screen, which made every
+// one of them look as routine as the two he uses daily. Behind one door they are findable without
+// setting the weight of the screen — and the hunger check, which is the thing no calorie app does,
+// finally sits with the other ways to answer "I'm about to eat" instead of as a dashed afterthought.
+// Open only when they are wanted — and open on their own for anyone who IS using them, so nothing a
+// person relies on ever gets hidden behind a tap they do not know to make. The summary line carries
+// today's real numbers, so the row is worth reading even while it is closed.
+function toggleNutSecondary(){
+  const box = document.getElementById('nut-secondary');
+  const btn = document.getElementById('nut-secondary-open');
+  if(!box || !btn) return;
+  const open = box.style.display === 'none';
+  box.style.display = open ? '' : 'none';
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if(open) try{ ls('totry_nut_sec_open', true); }catch(_){ }
+  else     try{ ls('totry_nut_sec_open', false); }catch(_){ }
+}
+
+function syncNutSecondary(){
+  const box = document.getElementById('nut-secondary');
+  const btn = document.getElementById('nut-secondary-open');
+  const sum = document.getElementById('nut-secondary-sum');
+  if(!box || !btn || !sum) return;
+  const bits = [];
+  let inUse = false;
+  try{
+    // The real getter, not a second reading of the same key: it resolves the day the tab is SHOWING
+    // and converts the old cups-based rows. Re-deriving it here is how the two would drift apart.
+    const w = (typeof getWaterCount === 'function') ? getWaterCount() : 0;
+    if(w > 0){ inUse = true; bits.push((Math.round(w/100)/10) + ' L water'); }
+  }catch(_){ }
+  try{
+    const f = ls('totry_fast_start');
+    if(f){ inUse = true; bits.push('fasting'); }
+  }catch(_){ }
+  try{
+    const cyc = ls('totry_cal_cycling');
+    if(cyc && cyc.enabled){ inUse = true; bits.push('cycling on'); }
+  }catch(_){ }
+  try{
+    if(ls('totry_fast_season')){ inUse = true; bits.push('fasting season'); }
+  }catch(_){ }
+  sum.textContent = bits.length ? bits.join(' · ') : 'not tracking these';
+  const remembered = ls('totry_nut_sec_open');
+  const open = remembered === true || (remembered !== false && inUse);
+  box.style.display = open ? '' : 'none';
+  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+function openMoreWaysToLog(){
+  const ways = [
+    ['\u{1F4F7}','Snap a meal','A photo of the plate','document.getElementById(\'meal-photo-input\').click()'],
+    ['\u{1F4C7}','Scan a barcode','Packaged food, straight off the label','openBarcodeScanner()'],
+    ['\u{1F5E3}','Say it','Speak the meal — fastest one-handed','startVoiceLog()'],
+    ['\u{1F4D2}','My recipes','Something you make often','openRecipeBuilder()'],
+    ['\u{1F504}','Repeat a day','Copy everything from another day','openRepeatDay()'],
+    ['\u{1F914}','Am I actually hungry?','Six seconds, before you eat','openHungerCheck()'],
+    ['\u{1F4C4}','Import a CSV','Bring a log over from another app','document.getElementById(\'food-csv-input\').click()']
+  ];
+  const m = document.createElement('div'); m.className = 'modal-bg open';
+  m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
+    '<h3 style="margin-bottom:4px">More ways to log</h3>' +
+    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">' +
+      'Whatever gets the meal down. None of them is better than the others.</p>' +
+    '<div style="display:flex;flex-direction:column;gap:2px;margin-bottom:10px">' +
+    ways.map(w => '<button class="mw-row" onclick="closeModal(this);setTimeout(function(){' + _jsAttr(w[3]) + '},220)">' +
+      '<span class="mw-ic">' + w[0] + '</span>' +
+      '<span class="mw-txt"><span class="mw-t">' + w[1] + '</span>' +
+        '<span class="mw-s">' + w[2] + '</span></span>' +
+      '<span class="mw-ch">›</span></button>').join('') +
+    '</div>' +
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Close</button>' +
+  '</div>';
+  document.body.appendChild(m);
+}
+
+// His foods, not a stock list. Seven chips read "Chicken breast / Oats / Rice / Eggs / Banana ..." to
+// everyone alike, including someone who has logged a hundred meals and never eaten one of them — the
+// clearest sign on the screen that nothing was paying attention. These are counted from what he has
+// actually logged; the stock list only stands in for someone with no history yet.
+function renderQuickFoods(){
+  const box = document.getElementById('nut-quick-foods'); if(!box) return;
+  const log = (typeof nutLogSafe === 'function') ? nutLogSafe() : (ls('totry_nutlog') || {});
+  const counts = {};
+  Object.keys(log).forEach(k => (log[k]||[]).forEach(it => {
+    const n = String(it && it.name || '').trim();
+    if(!n || /^quick add$/i.test(n)) return;
+    counts[n] = (counts[n] || 0) + 1;
+  }));
+  let names = Object.keys(counts).filter(n => counts[n] >= 2)
+                    .sort((a,b) => counts[b] - counts[a]).slice(0,6);
+  let mine = names.length >= 3;
+  if(!mine) names = ['Chicken breast','Oats','Rice','Eggs','Banana','Greek yogurt'];
+  box.innerHTML =
+    '<div style="width:100%;font-size:10.5px;color:var(--tx3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:2px">' +
+      (mine ? 'What you eat most' : 'Common foods') + '</div>' +
+    names.map(n => '<button class="qb" onclick="searchFood(' + _jsAttr(JSON.stringify(n)) + ')">' +
+      _escFew(n.length > 24 ? n.slice(0,23) + '…' : n) + '</button>').join('');
+}
+
 function openQuickAdd(){
   const meal = (typeof currentMealSlot==='function') ? currentMealSlot() : 'snack';
   const meals=[['breakfast','🌅'],['lunch','☀️'],['dinner','🌙'],['snack','🍎']];
@@ -835,12 +1000,14 @@ async function handleMealPhoto(event){
   if(!file) return;
   if(!file.type.startsWith('image/')){ showToast('Wrong file','Please choose a photo of your meal.'); return; }
   const res = document.getElementById('nut-search-results');
-  if(res) res.innerHTML = '<p class="pulsing" style="font-family:Cormorant Garamond,serif;font-size:15px;font-style:italic;color:var(--tx3);text-align:center;padding:16px">Looking at your plate...</p>';
+      foodWorking(res, 'Looking at your plate\u2026');
   let dataUrl;
   try{
     dataUrl = await downscaleImage(file, 1280, 0.8);
   }catch(e){
-    if(res) res.innerHTML = '<div style="padding:12px;background:var(--re-bg);border:1px solid var(--re-bd);border-radius:10px;font-size:13px;color:var(--re)">Couldn\'t read that photo format. Try again, or describe the meal in the search box.</div>';
+          foodFailed(res, 'The photo did not get through.',
+        'The connection dropped it. Try again, or add the meal yourself \u2014 it still counts.',
+        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()');
     return;
   }
   const base64 = dataUrl.split(',')[1];
@@ -849,16 +1016,20 @@ async function handleMealPhoto(event){
       const prompt = 'This is a photo of a meal. Identify EACH distinct food/component SEPARATELY and estimate each one\'s nutrition for the portion actually shown — reason about portion size from visual cues (plate size, utensils, a hand). IMPORTANT: account for realistic cooking fats — oil, butter, dressings, sauces — even when they are not directly visible; these are the #1 reason photo calorie estimates run ~30% too low, so do NOT underestimate fat or portion size (lean toward realistic-to-generous, not optimistic). Return ONLY this JSON, no markdown: {"meal":"short overall name for the meal","items":[{"food":"one item\'s name","portion":"estimated portion, e.g. ~180g or 1 cup","cal":number,"pro":number,"carb":number,"fat":number}],"assumptions":"1 short sentence on what you assumed, incl. any hidden fat you added","confidence":"high|medium|low"}. List 1 to 8 items. If this is not food, return {"error":"no food"}.';
       const {data, error} = await Promise.race([
         sb.functions.invoke('ai-proxy', { body:{ action:'vision', prompt, image_base64:base64, image_mime:mime, max_tokens:500 } }),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('Timed out')), 35000))
+        new Promise((_, rej) => setTimeout(() => rej(new Error('Timed out')), 18000))
       ]).catch(e => ({ error:e }));
       if(error || !data?.text){
-        if(res) res.innerHTML = '<div style="padding:12px;background:var(--re-bg);border:1px solid var(--re-bd);border-radius:10px;font-size:13px;color:var(--re)">Couldn\'t read that photo. Try better lighting, or describe the meal in the search box instead.</div>';
+              foodFailed(res, 'The photo did not get through.',
+        'The connection dropped it. Try again, or add the meal yourself \u2014 it still counts.',
+        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()');
         return;
       }
       const mm = data.text.match(/\{[\s\S]*\}/);
       const parsed = mm ? JSON.parse(mm[0]) : null;
       if(!parsed || parsed.error){
-        if(res) res.innerHTML = '<div style="padding:12px;background:var(--bg3);border-radius:10px;font-size:13px;color:var(--tx2)">That didn\'t look like food. Try again, or describe the meal in the search box.</div>';
+      foodFailed(res, 'That did not look like food to me.',
+        'Try again with the plate filling more of the frame, or add it yourself.',
+        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()');
         return;
       }
       // Per-item beats Cal AI's single blob: each detected food is separately adjustable and removable,
@@ -867,12 +1038,16 @@ async function handleMealPhoto(event){
       let _items = Array.isArray(parsed.items) ? parsed.items : null;
       if(!_items && parsed.cal!=null){ _items = [{ food: parsed.name||'Meal', portion:'as served', cal:parsed.cal, pro:parsed.pro, carb:parsed.carb, fat:parsed.fat }]; }
       _items = (_items||[]).filter(it=>it && (it.food||it.name)).map(it=>({ food:String(it.food||it.name||'Item'), portion:String(it.portion||''), cal:Number(it.cal)||0, pro:Number(it.pro)||0, carb:Number(it.carb)||0, fat:Number(it.fat)||0, mult:1 }));
-      if(!_items.length){ if(res) res.innerHTML='<div style="padding:12px;background:var(--bg3);border-radius:10px;font-size:13px;color:var(--tx2)">Couldn\'t make out the foods. Try again, or describe the meal in the search box.</div>'; return; }
+            if(!_items.length){ foodFailed(res, 'I could not make out the food in that photo.',
+        'A clearer, closer shot usually does it \u2014 or add the meal yourself.',
+        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()'); return; }
       _photoMeal = { name: parsed.meal||parsed.name||'Your meal', items:_items, assumptions:parsed.assumptions||'', confidence:parsed.confidence||'', meal:(typeof currentMealSlot==='function'?currentMealSlot():null) };
       _renderPhotoMeal();
     }catch(err){
       console.error('meal photo failed', err);
-      if(res) res.innerHTML = '<div style="padding:12px;background:var(--re-bg);border:1px solid var(--re-bd);border-radius:10px;font-size:13px;color:var(--re)">Something went wrong reading that. Try describing the meal instead.</div>';
+            foodFailed(res, 'The photo did not get through.',
+        'The connection dropped it. Try again, or add the meal yourself \u2014 it still counts.',
+        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()');
     }
 }
 
@@ -919,6 +1094,7 @@ function _renderPhotoMeal(){
       '<button onclick="_pmRemove('+i+')" aria-label="remove" style="width:28px;height:30px;border-radius:7px;background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer;flex-shrink:0">×</button>'+
     '</div>'; }).join('');
   const meals=[['breakfast','🌅','Breakfast'],['lunch','☀️','Lunch'],['dinner','🌙','Dinner'],['snack','🍎','Snack']];
+  _foodWaitStop();
   res.innerHTML =
     '<div style="border:1px solid var(--go-bd);border-radius:14px;padding:14px;background:var(--bg2)">'+
       '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:2px">'+
@@ -1118,7 +1294,7 @@ async function estimateMealMacros(description){
       return null;
     }
   }catch(_){ }
-  res.innerHTML='<p class="pulsing" style="font-family:\'Cormorant Garamond\',serif;font-size:15px;font-style:italic;color:var(--tx3);text-align:center;padding:16px">Working out the macros for "'+description+'"...</p>';
+  foodWorking(res, 'Working out the macros for "'+String(description||'').slice(0,40)+'"\u2026');
   // Adaptive prompt: honor any quantities the user SPECIFIED (g, ml, count, cups, tbsp) exactly;
   // estimate standard portions ONLY for items left vague. Reason per-item for accuracy, then sum
   // into ONE clean meal entry. Flag which items were estimated vs taken as given.
@@ -1132,13 +1308,15 @@ async function estimateMealMacros(description){
     '"note":"1 short sentence: exact product label used, or what you estimated from"}\n'+
     'estimated=false when the amount/product is known precisely, true when assumed. Set vague=true ONLY if too unspecific to estimate at all. Numbers only. sodium in mg. For a protein powder, anchor protein realistically (typically 20-27g per scoop).';
   try{
-    const raw=await api('You are a precise nutrition coach. You convert real-world meal descriptions into accurate per-item macros, always respecting any amounts the user specified.',[],prompt,700);
+    const raw=await api('You are a precise nutrition coach. You convert real-world meal descriptions into accurate per-item macros, always respecting any amounts the user specified.',[],prompt,700,{timeout:15000});
     const m=raw.match(/\{[\s\S]*\}/);
     if(m){
       const meal=JSON.parse(m[0]);
       const t=meal.total||{};
       // Stash for the confirm/log step.
       window.__pendingMeal=meal;
+      _foodWaitStop();
+      setTimeout(function(){_foodReveal(res);},30);
       res.innerHTML='';
       const card=document.createElement('div');
       card.className='food-result';
@@ -1181,8 +1359,23 @@ async function estimateMealMacros(description){
       res.appendChild(note);
       return;
     }
-  }catch(e){console.error('Meal estimate failed:',e);}
-  res.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:16px">Couldn\'t work that meal out. Try describing it differently.</p>';
+  }catch(e){
+    // THIS WROTE TO THE CONSOLE AND LEFT "Working out the macros…" ON SCREEN FOREVER. Alfy stood in a
+    // shop with a gyros open plate, typed it in, and watched a pulsing line for a minute and a half
+    // before giving up — on 17% battery, Low Power Mode, two bars. api() has a 30s ceiling, so it had
+    // already failed; nothing told him, and nothing gave him a way to log his lunch anyway.
+    //
+    // A failure a person can see and act on is worth more than a perfect estimate they never get. It
+    // says what happened, offers the retry, and offers the manual path so the meal still gets logged.
+    console.error('Meal estimate failed:', e);
+    foodFailed(document.getElementById('nut-search-results'),
+      'I could not work that one out.',
+      'That is on me, not on you \u2014 the connection, or my end. Your lunch still counts.',
+      'estimateMealMacros('+JSON.stringify(String(description||''))+')');
+  }
+  foodFailed(res, 'I could not work that one out.',
+      'Try naming it more plainly \u2014 "chicken gyros plate, rice, salad" \u2014 or add it yourself.',
+      'estimateMealMacros('+JSON.stringify(String(description||''))+')');
 }
 // Web-search food lookup: for products not in our databases (branded protein powders, local items).
 // Uses the proxy's search-capable path (web_search flag) so it finds the REAL product nutrition
@@ -2588,9 +2781,22 @@ function classifyFoodGroup(name){
   if(hit(['chocolate','cake','biscuit','chip','ice cream','icecream','lolly','candy','cookie','donut','soft drink','soda','coke','pastry','dessert'])) return 'Treats';
   return null;
 }
+// One malformed day used to take the WHOLE tab down. Sixty-eight places read totry_nutlog and ten of
+// them guard with `|| []`, which covers a day that is MISSING and not one that is the wrong shape —
+// so a single old-format or half-merged day threw inside renderFoodGroups, go('nourish') never
+// finished, and Nourish rendered nothing at all. A person cannot repair that; they just see a dead
+// tab. Repairing once at the read keeps every other caller honest without touching sixty-eight sites.
+function nutLogSafe(){
+  const log = ls('totry_nutlog') || {};
+  let bad = 0;
+  for(const k in log) if(!Array.isArray(log[k])){ delete log[k]; bad++; }
+  if(bad) try{ ls('totry_nutlog', log); }catch(_){ }
+  return log;
+}
+
 function renderFoodGroups(){
   const box = document.getElementById('nut-foodgroups'); if(!box) return;
-  const log = ls('totry_nutlog') || {};
+  const log = nutLogSafe();
   const counts = { Protein:0, Veg:0, Fruit:0, Grains:0, Dairy:0, Treats:0 };
   let total = 0;
   for(let i = 0; i < 7; i++){
@@ -2937,6 +3143,8 @@ function renderNutritionLog(){
     }
   }
   if(typeof renderFoodGroups === 'function') renderFoodGroups();
+  if(typeof renderQuickFoods === 'function') renderQuickFoods();
+  if(typeof syncNutSecondary === 'function') syncNutSecondary();
   const log=ls('totry_nutlog')||{};const entries=log[today]||[];
   let goals=(typeof withDerivedMacros==='function')?withDerivedMacros(ls('totry_nut_goals')||defaultNutGoals()):(ls('totry_nut_goals')||defaultNutGoals());
   // Calorie/carb cycling: if it's on, TODAY's displayed target is the cycled one (training vs rest),
@@ -2967,6 +3175,11 @@ function renderNutritionLog(){
   const burns = ls('totry_calorie_burns') || {};
   const burned = Math.round(burns[today] || 0);
   const net = Math.round(totals.cal) - burned;
+  // With nothing burned, net IS what he ate — the same 1130 the ring and the equation already showed,
+  // presented as a third fact. A card that repeats a number teaches the person to stop reading cards.
+  // It earns its place the moment training has moved it.
+  const netCard = document.getElementById('nut-net-card');
+  if(netCard && !nutGentle()) netCard.style.display = burned > 0 ? '' : 'none';
   const netEl = document.getElementById('nut-net-calories');
   const netDetail = document.getElementById('nut-net-detail');
   if(netEl){
@@ -2987,7 +3200,7 @@ function renderNutritionLog(){
       else if(gi){ goalDir = gi; }
       else { const pref = ls('totry_calorie_goal_type'); if(pref==='lose') goalDir='cut'; else if(pref==='gain') goalDir='build'; }
       // Prefer TOTAL calories burned (active + BMR) for a true deficit; fall back to the burn number.
-      const ev = (ls('totry_evenings')||[]).find(x => x.ts && new Date(x.ts).toLocaleDateString('en-AU') === today);
+      const ev = ritualLog('totry_evenings').find(x => x.ts && new Date(x.ts).toLocaleDateString('en-AU') === today);
       const totalBurned = (ev && ev.rings && ev.rings.total) ? ev.rings.total : null;
       if(burned >= 150 || (goalDir==='cut' && totalBurned)){
         if(goalDir === 'cut'){
@@ -3017,7 +3230,7 @@ function renderNutritionLog(){
   // user sees where their day's at without leaving the life-system app.
   const ringsEl = document.getElementById('nut-rings-today');
   if(ringsEl){
-    const ev = (ls('totry_evenings')||[]).find(e => e.ts && new Date(e.ts).toLocaleDateString('en-AU') === today);
+    const ev = ritualLog('totry_evenings').find(e => e.ts && new Date(e.ts).toLocaleDateString('en-AU') === today);
     const r = ev && ev.rings;
     if(r && (r.move||r.exercise||r.stand)){
       const cell = (label,val,unit) => '<div style="flex:1;text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">'+label+'</div><div style="font-size:15px;color:var(--tx);font-weight:500">'+(val!=null?val:'\u2014')+(val!=null?'<span style=\"font-size:10px;color:var(--tx3)\"> '+unit+'</span>':'')+'</div></div>';
@@ -3070,7 +3283,12 @@ function renderNutritionLog(){
   // Macro donut ring: each arc sized by that macro's share of calories (P×4, C×4, F×9)
   const pCal = (totals.pro||0)*4, cCal = (totals.carb||0)*4, fCal = (totals.fat||0)*9;
   const macroTotal = pCal + cCal + fCal;
-  const C = 251.2; // 2πr, r=40
+  // Read the radius off the element instead of hardcoding it. This was 251.2 for r=40, and the ring
+  // is now r=54 (C=339.3) — every macro arc would have drawn at 74% of its true length, with nothing
+  // to show for it but three slightly short bands nobody could check by eye.
+  const _rEl = e('ring-pro');
+  const _r = _rEl ? (parseFloat(_rEl.getAttribute('r')) || 40) : 40;
+  const C = 2 * Math.PI * _r;
   const setArc = (id, fraction, offset) => {
     const el = e(id); if(!el) return;
     const len = Math.max(0, fraction * C);
@@ -3089,6 +3307,12 @@ function renderNutritionLog(){
   const calHeroNum=document.getElementById('nut-cal');
   if(calHeroNum) calHeroNum.style.color = remCal>=0 ? 'var(--go)' : 'var(--re)';
   // Extended macros
+  // Four zeros is not the same as four unknowns. Most food entries carry calories and protein and
+  // nothing else, so fibre/sugar/sodium/sat-fat read 0g for a person who has eaten all day — which
+  // says he ate no fibre, and that is simply false. Shown when there is something real to show.
+  const _micro = (totals.fiber||0) + (totals.sugar||0) + (totals.sodium||0) + (totals.satfat||totals.sat_fat||0);
+  const _ext = e('nut-extended');
+  if(_ext && !nutGentle()) _ext.style.display = _micro > 0 ? 'grid' : 'none';
   if(e('nut-fiber')) e('nut-fiber').textContent = Math.round(totals.fiber || 0) + 'g';
   if(e('nut-sugar')) e('nut-sugar').textContent = Math.round(totals.sugar || 0) + 'g';
   if(e('nut-sodium')) e('nut-sodium').textContent = Math.round(totals.sodium || 0) + 'mg';
@@ -3114,7 +3338,13 @@ function renderNutritionLog(){
     const proLeft = Math.round(goalPro - totals.pro);
     const dismissedDay = ls('totry_glance_dismissed');
     const todayKey = new Date().toLocaleDateString('en-AU');
-    const show = (typeof nutIsToday!=='function' || nutIsToday()) && hr >= 15 && proLeft >= 30 && totals.cal > 0 && dismissedDay !== todayKey;
+    // The hero's nudge already says "90g short on protein with dinner to go". Saying it again 800px
+    // lower does not reinforce it; it just makes the screen longer and the app look like it is not
+    // listening to itself. If the nudge has the protein point, the glance stays quiet.
+    let _nudgeHasIt = false;
+    try{ const _n = document.getElementById('nut-nudge');
+      _nudgeHasIt = !!(_n && _n.offsetParent !== null && /protein/i.test(_n.textContent || '')); }catch(_){ }
+    const show = !_nudgeHasIt && (typeof nutIsToday!=='function' || nutIsToday()) && hr >= 15 && proLeft >= 30 && totals.cal > 0 && dismissedDay !== todayKey;
     if(show){
       glanceEl.innerHTML =
         '<div style="display:flex;align-items:flex-start;gap:8px">'+
@@ -3342,12 +3572,16 @@ function renderMealSplit(){
   if(!entries.length){ wrap.style.display='none'; return; }
   const meals = {breakfast:0, lunch:0, dinner:0, snack:0};
   entries.forEach(e => { const m = e.meal || 'snack'; meals[m] = (meals[m]||0) + (e.cal||0); });
+  const order = ['breakfast','lunch','dinner','snack'];
   const total = Object.values(meals).reduce((a,b)=>a+b,0);
   if(total <= 0){ wrap.style.display='none'; return; }
+  // A split needs something to split. With one meal logged this was a full-width bar labelled
+  // "Snacks 1130" under the heading "WHERE TODAY'S CALORIES CAME FROM" — a chart of one fact, taking
+  // the room of a real one. It arrives when there are actually two meals to compare.
+  if(order.filter(m => meals[m] > 0).length < 2){ wrap.style.display='none'; return; }
   wrap.style.display='block';
   const colors = {breakfast:'#E0A458', lunch:'var(--go)', dinner:'#9B7EC0', snack:'#6B97D6'};
   const labels = {breakfast:'Breakfast', lunch:'Lunch', dinner:'Dinner', snack:'Snacks'};
-  const order = ['breakfast','lunch','dinner','snack'];
   bar.innerHTML = order.filter(m=>meals[m]>0).map(m =>
     '<div style="width:' + ((meals[m]/total)*100).toFixed(1) + '%;background:' + colors[m] + '"></div>'
   ).join('');
@@ -4280,14 +4514,15 @@ function renderNutSetupNudge(){
   const personalised = g && g._ts;                 // any real save (manual, TDEE calc, adaptive) stamps _ts
   if(personalised || ls('totry_nut_setup_dismissed')){ box.innerHTML=''; return; }
   const def = (typeof defaultNutGoals==='function') ? defaultNutGoals() : {cal:2100};
+  // This was right to exist and wrong to shout. Five lines of prose under an italic headline, over a
+  // full-width gold button, sitting ABOVE the ring — so the first thing on the food screen was an ad
+  // for a settings page, and the number he opened the app to see started below the fold. The warning
+  // is worth one line and a link. Both still land; only one of them takes the top of the screen.
   box.innerHTML =
-    '<div style="background:linear-gradient(135deg, rgba(200,169,110,0.12), rgba(140,107,182,0.08));border:1px solid var(--go-bd);border-radius:var(--r);padding:14px 16px;margin-bottom:14px">'+
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">'+
-        '<div style="font-family:Cormorant Garamond,serif;font-size:17px;font-style:italic;color:var(--tx)">These are just starter numbers.</div>'+
-        '<button onclick="dismissNutSetup()" aria-label="Dismiss" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer;line-height:1;flex-shrink:0;padding:14px 17px;margin:-14px -17px">×</button>'+
-      '</div>'+
-      '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin:8px 0 12px">You’re on generic starter numbers right now — they could be hundreds off what your body actually needs. Give me a few details and I’ll set a target that fits <em>you</em> — then it learns from your real results. Takes about 20 seconds.</div>'+
-      '<button class="btn primary" onclick="openNutSetup()" style="font-size:13px;padding:11px">Set my real target</button>'+
+    '<div class="setup-strip">' +
+      '<span class="setup-strip-t">Your ' + (def.cal || 2100) + ' cal target is a generic starting point.</span>' +
+      '<button class="setup-strip-go" onclick="openNutSetup()">Set a real one</button>' +
+      '<button class="setup-strip-x" onclick="dismissNutSetup()" aria-label="Dismiss">\u00d7</button>' +
     '</div>';
 }
 function openNutSetup(){

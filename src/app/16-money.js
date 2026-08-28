@@ -157,6 +157,14 @@ function renderReclaimed(){
   if(sd && r.desc) sd.textContent = r.desc;
   return r;
 }
+function showMoneyMore(){
+  document.querySelectorAll('#tab-money .money-more').forEach(el => { el.style.display = ''; });
+  const row = document.getElementById('money-more-row'); if(row) row.style.display = 'none';
+  const first = document.querySelector('#tab-money .money-more');
+  if(first) try{ first.scrollIntoView({behavior:'smooth', block:'start'}); }catch(_){ }
+  if(typeof haptic === 'function') haptic('tap');
+}
+
 function renderMoneyGate(){
   const gate = document.getElementById('money-gate');
   const readCard = document.getElementById('money-read-card');
@@ -166,12 +174,36 @@ function renderMoneyGate(){
   try{ loadF(); hasDebts = (debts && debts.length > 0); }catch(_){}
   let hasReclaimed = false;
   try{ hasReclaimed = (typeof totalReclaimed==='function') && totalReclaimed() > 0; }catch(_){ }
-  const empty = tx.length < 5 && !hasDebts && !hasReclaimed;
+  // Emptiness has to mean empty of EVERYTHING this tab can hold, not just of transactions, debts and
+  // reclaimed money. Someone with a savings goal, a Netflix subscription, a bill, a budget, an asset,
+  // a giving pledge or a poker ledger is a real user of this screen, and the collapse below would
+  // have taken their own data off it. Any one of these is enough to say the person has started.
+  let hasAnything = false;
+  try{
+    hasAnything = (usaS > 0) || (indiaS > 0) ||
+      ['totry_subscriptions','totry_bills','totry_budgets','totry_assets','totry_giving',
+       'totry_giving_pledge','totry_zakat','totry_poker_sessions','totry_family_contrib',
+       'totry_family_target','totry_payments'].some(function(k){
+         const v = ls(k);
+         return Array.isArray(v) ? v.length > 0 : !!(v && (typeof v !== 'object' || Object.keys(v).length));
+       });
+  }catch(_){ }
+  const empty = tx.length < 5 && !hasDebts && !hasReclaimed && !hasAnything;
 
   // The empty-state heroes are the ones that lie loudest — a debt-free date of "—" and $0
   // reclaimed read as "all good" to someone who has never told the app anything.
   ['df-hero','saved-hero'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display = empty ? 'none' : ''; });
   const mg = document.querySelector('#tab-money .mg'); if(mg) mg.style.display = empty ? 'none' : '';
+
+  // Thirteen fully-built empty forms used to sit directly beneath the sentence "I don't know anything
+  // about your money yet" — 2,839px of debt fields, subscription rows, budget setters and a poker
+  // ledger, all blank, all shouting at someone who has not told the app a single number. The gate is
+  // right; what followed it made the gate look like a lie. When there is nothing to show, the way in
+  // IS the screen, and everything else waits behind one row that says plainly what is in there.
+  const more = document.querySelectorAll('#tab-money .money-more');
+  more.forEach(el => { el.style.display = empty ? 'none' : ''; });
+  const moreRow = document.getElementById('money-more-row');
+  if(moreRow) moreRow.style.display = empty ? '' : 'none';
 
   if(empty){
     readCard.innerHTML = '';

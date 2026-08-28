@@ -274,8 +274,8 @@ function renderJournal(){
   // Unified timeline: journal entries + morning rituals + evening reflections, newest first,
   // so the whole inner life is reviewable in one place. Rituals are read-only here.
   const journal=(ls('totry_journal')||[]).map(e=>({kind:'journal', ts:e.ts||e.date, e}));
-  const mornings=(ls('totry_mornings')||[]).map(m=>({kind:'morning', ts:m.ts, e:m}));
-  const evenings=(ls('totry_evenings')||[]).map(v=>({kind:'evening', ts:v.ts, e:v}));
+  const mornings=ritualLog('totry_mornings').map(m=>({kind:'morning', ts:m.ts, e:m}));
+  const evenings=ritualLog('totry_evenings').map(v=>({kind:'evening', ts:v.ts, e:v}));
   const all=[...journal,...mornings,...evenings].sort((a,b)=>new Date(b.ts||0)-new Date(a.ts||0));
   if(!all.length){list.innerHTML='<div style="text-align:center;padding:40px 16px"><div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--tx3);margin-bottom:8px">Your journal is empty.</div><div style="font-size:13px;color:var(--tx3);line-height:1.6">Tap + New entry, or complete a morning or evening reflection \u2014 they all gather here.<br>Nobody else reads your journal. It is backed up to your account so a lost phone can\u2019t take it, and the coach sees a short excerpt so it can speak to what you\u2019re actually carrying. Settings \u2192 Your data says exactly what goes where.</div></div>';return;}
   list.innerHTML='';

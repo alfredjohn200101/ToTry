@@ -6,8 +6,8 @@ function _daysShowedUp(){
   try{
     const days = new Set();
     const add = function(ts){ if(!ts) return; const d=new Date(ts); if(!isNaN(d)) days.add(d.toLocaleDateString('en-AU')); };
-    (ls('totry_mornings')||[]).forEach(function(x){ add(x&&x.ts); });
-    (ls('totry_evenings')||[]).forEach(function(x){ add(x&&x.ts); });
+    ritualLog('totry_mornings').forEach(function(x){ add(x&&x.ts); });
+    ritualLog('totry_evenings').forEach(function(x){ add(x&&x.ts); });
     (ls('totry_journal')||[]).forEach(function(x){ add(x&&x.ts); });
     (ls('totry_workouts')||[]).forEach(function(x){ add(x&&(x.ts||x.date)); });
     (ls('totry_examens')||[]).forEach(function(x){ add(x&&x.ts); });
@@ -27,7 +27,7 @@ const ACHS=[
   {icon:'\u{1F305}',title:'New Day',desc:'30 days in — and you showed up for them',check:(v,tw,day)=>day>=30&&_daysShowedUp()>=15},
   {icon:'\u{1F4D6}',title:'Faithful',desc:'7 days clean',check:(v,tw,day,str)=>str>=7},   // str is cleanStreak (see renderScoreboard), never getStreak()
   {icon:'\u{1F4B0}',title:'Debt Fighter',desc:'Made first debt payment',check:()=>(ls('totry_payments')||[]).length>=1},
-  {icon:'\u2600\uFE0F',title:'Morning Person',desc:'7 morning rituals',check:()=>(ls('totry_mornings')||[]).length>=7},
+  {icon:'\u2600\uFE0F',title:'Morning Person',desc:'7 morning rituals',check:()=>ritualLog('totry_mornings').length>=7},
   {icon:'\u{1F4D3}',title:'Honest',desc:'10 journal entries',check:()=>(ls('totry_journal')||[]).length>=10},
   {icon:'\u{1F4AA}',title:'Committed',desc:'100 days in — half of them you actually turned up',check:(v,tw,day)=>day>=100&&_daysShowedUp()>=50},
 ];

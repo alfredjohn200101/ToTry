@@ -123,7 +123,7 @@ async function generateWeeklySynthesis(){
   // Gather week's data — much richer now
   const sevenDaysAgo=new Date(today.getTime()-7*86400000);
   const journal=safeJournal().filter(j=>new Date(j.ts)>=sevenDaysAgo);
-  const evenings=(ls('totry_evenings')||[]).filter(e=>new Date(e.ts)>=sevenDaysAgo);
+  const evenings=ritualLog('totry_evenings').filter(e=>new Date(e.ts)>=sevenDaysAgo);
   const workouts=(ls('totry_workouts')||[]).filter(w=>new Date(w.ts||w.date)>=sevenDaysAgo);
   const _allCheckins=(ls('totry_checkins')||[]).filter(c=>new Date(c.ts)>=sevenDaysAgo);
   // Only the mood rows carry physical/emotional/spiritual. The morning sleep tap writes {kind:'sleep',
@@ -203,7 +203,7 @@ async function generateWeeklySynthesis(){
     const hi = today.getTime() - endAgo*86400000;
     const inWin = ts => { const t = new Date(ts).getTime(); return !isNaN(t) && t >= lo && t < hi; };
     const wo = (ls('totry_workouts')||[]).filter(w => inWin(w.ts||w.date));
-    const ev = (ls('totry_evenings')||[]).filter(e => inWin(e.ts));
+    const ev = ritualLog('totry_evenings').filter(e => inWin(e.ts));
     const jo = safeJournal().filter(j => inWin(j.ts));
     const ex = (ls('totry_examens')||[]).filter(e => inWin(e.ts));
     const ci = (ls('totry_checkins')||[]).filter(c => inWin(c.ts));
@@ -344,8 +344,8 @@ function computeYearInReview(year){
   // Days "tried" = days with any activity (journal/evening/workout/morning logged)
   const allActivityDates = new Set();
   (ls('totry_journal')||[]).forEach(j => { if(inYear(j.ts)) allActivityDates.add(new Date(j.ts).toLocaleDateString('en-AU')); });
-  (ls('totry_evenings')||[]).forEach(e => { if(inYear(e.ts)) allActivityDates.add(new Date(e.ts).toLocaleDateString('en-AU')); });
-  (ls('totry_mornings')||[]).forEach(m => { if(inYear(m.ts || m.createdAt)) allActivityDates.add(new Date(m.ts || m.createdAt).toLocaleDateString('en-AU')); });
+  ritualLog('totry_evenings').forEach(e => { if(inYear(e.ts)) allActivityDates.add(new Date(e.ts).toLocaleDateString('en-AU')); });
+  ritualLog('totry_mornings').forEach(m => { if(inYear(m.ts || m.createdAt)) allActivityDates.add(new Date(m.ts || m.createdAt).toLocaleDateString('en-AU')); });
   (ls('totry_workouts')||[]).forEach(w => { if(inYear(w.ts)) allActivityDates.add(new Date(w.ts).toLocaleDateString('en-AU')); });
   (ls('totry_examens')||[]).forEach(e => { if(inYear(e.ts)) allActivityDates.add(new Date(e.ts).toLocaleDateString('en-AU')); });
   

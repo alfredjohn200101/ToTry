@@ -943,7 +943,7 @@ function initEveningTab(){
   // Close the arc: if a morning intention was set today, reflect it back here.
   try{
     const _t=new Date().toLocaleDateString('en-AU');
-    const _m=(ls('totry_mornings')||[]).find(x=>x.ts&&new Date(x.ts).toLocaleDateString('en-AU')===_t);
+    const _m=ritualLog('totry_mornings').find(x=>x.ts&&new Date(x.ts).toLocaleDateString('en-AU')===_t);
     const _recall=document.getElementById('evening-intention-recall');
     const _txt=document.getElementById('evening-intention-text');
     if(_m&&_m.intention&&_m.intention.trim()&&_recall&&_txt){ _txt.textContent='\u201c'+_m.intention.trim()+'\u201d'; _recall.style.display='block'; }
@@ -955,7 +955,7 @@ function initEveningTab(){
     const _au=new Date().toLocaleDateString('en-AU');
     const _isToday=(ts)=> ts && new Date(ts).toLocaleDateString('en-AU')===_au;
     const ev=[];
-    if((ls('totry_mornings')||[]).some(m=>_isToday(m.ts))) ev.push('\ud83c\udf05 Set your intention');
+    if(ritualLog('totry_mornings').some(m=>_isToday(m.ts))) ev.push('\ud83c\udf05 Set your intention');
     if((ls('totry_workouts')||[]).some(w=>_isToday(w.ts))) ev.push('\ud83d\udcaa Trained');
     const _meals=((ls('totry_nutlog')||{})[_au]||[]).length; if(_meals) ev.push('\ud83c\udf7d Logged '+_meals+' meal'+(_meals>1?'s':''));
     const _wins=(ls('totry_feeling_wins')||[]).filter(w=>_isToday(w.ts)).length; if(_wins) ev.push('\ud83d\udee1 Outlasted '+_wins+' urge'+(_wins>1?'s':''));
@@ -973,7 +973,7 @@ function initEveningTab(){
   // or creating a duplicate. completeEvening() updates today's entry in place.
   try{
     const today=new Date().toLocaleDateString('en-AU');
-    const todays=(ls('totry_evenings')||[]).find(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
+    const todays=ritualLog('totry_evenings').find(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
     if(todays){
       const setv=(id,v)=>{const n=document.getElementById(id); if(n&&v!=null&&n.value==='') n.value=v;};
       setv('review-proud', todays.win);
