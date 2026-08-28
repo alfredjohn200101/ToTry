@@ -731,7 +731,14 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
    at "fix the numbers" deleted the meal. That is worse than the 19x17 target it replaced: a small
    button you miss costs a second, a button that silently does the destructive thing costs the entry.
    Vertical negative margin only (rows have height to spare); horizontally the two boxes tile. */
-.fli-del{min-width:40px;min-height:44px;margin:-13px 0;display:inline-flex;
+/* Third attempt, and the first two both created overlaps — which is the lesson. A 44px box pulled
+   back with negative margin is bigger than the row it lives in: on the diary rows the HORIZONTAL pull
+   made Edit and Delete overlap by 18px (Delete won, so a tap meant for "fix the numbers" deleted the
+   meal); on the 37px weigh-in rows the VERTICAL pull made consecutive deletes overlap by 7px, so a
+   tap could delete the wrong day's weight.
+   34px clears the 24pt floor with room, fits inside a 37px row, and needs no negative margin at all —
+   so it cannot reach into a neighbour in either direction, whatever the row height turns out to be. */
+.fli-del{min-width:40px;min-height:34px;margin:0;display:inline-flex;
   align-items:center;justify-content:center;background:none;border:0;cursor:pointer;
   font-size:14px;color:var(--tx3);font-family:inherit}
 .fli-del:active{color:var(--tx2)}

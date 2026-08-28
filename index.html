@@ -731,7 +731,14 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
    at "fix the numbers" deleted the meal. That is worse than the 19x17 target it replaced: a small
    button you miss costs a second, a button that silently does the destructive thing costs the entry.
    Vertical negative margin only (rows have height to spare); horizontally the two boxes tile. */
-.fli-del{min-width:40px;min-height:44px;margin:-13px 0;display:inline-flex;
+/* Third attempt, and the first two both created overlaps — which is the lesson. A 44px box pulled
+   back with negative margin is bigger than the row it lives in: on the diary rows the HORIZONTAL pull
+   made Edit and Delete overlap by 18px (Delete won, so a tap meant for "fix the numbers" deleted the
+   meal); on the 37px weigh-in rows the VERTICAL pull made consecutive deletes overlap by 7px, so a
+   tap could delete the wrong day's weight.
+   34px clears the 24pt floor with room, fits inside a 37px row, and needs no negative margin at all —
+   so it cannot reach into a neighbour in either direction, whatever the row height turns out to be. */
+.fli-del{min-width:40px;min-height:34px;margin:0;display:inline-flex;
   align-items:center;justify-content:center;background:none;border:0;cursor:pointer;
   font-size:14px;color:var(--tx3);font-family:inherit}
 .fli-del:active{color:var(--tx2)}
@@ -5241,7 +5248,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v559';
+const APP_VERSION = 'v560';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -23069,7 +23076,7 @@ function renderWeightHistory(){
       const when = e.ts ? new Date(e.ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : (e.date||'');
       return '<div class="body-entry"><span style="font-size:14px;color:var(--tx)">'+wFmt(e.weight)+'</span>'+
         '<span style="display:flex;align-items:center;gap:10px"><span style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+when+'</span>'+
-        '<button onclick="deleteWeightEntry(&quot;'+(e.ts||e.date)+'&quot;)" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer" aria-label="Delete">\u00d7</button></span></div>';
+        '<button class="fli-del" onclick="deleteWeightEntry(&quot;'+(e.ts||e.date)+'&quot;)" aria-label="Delete this weigh-in">\u00d7</button></span></div>';
     }).join('');
 }
 async function deleteWeightEntry(key){
@@ -28365,7 +28372,12 @@ function renderNutSetupNudge(){
   // is worth one line and a link. Both still land; only one of them takes the top of the screen.
   box.innerHTML =
     '<div class="setup-strip">' +
-      '<span class="setup-strip-t">Your ' + (def.cal || 2100) + ' cal target is a generic starting point.</span>' +
+      // The banner I compressed this morning printed the actual calorie target, and "numbers off" is a
+      // promise to someone whose relationship with those numbers is the reason the mode exists. The
+      // original five-line version never named a figure. In gentle mode neither does this.
+      '<span class="setup-strip-t">' + ((typeof nutGentle === 'function' && nutGentle())
+        ? 'Your target is a generic starting point.'
+        : ('Your ' + (def.cal || 2100) + ' cal target is a generic starting point.')) + '</span>' +
       '<button class="setup-strip-go" onclick="openNutSetup()">Set a real one</button>' +
       '<button class="setup-strip-x" onclick="dismissNutSetup()" aria-label="Dismiss">\u00d7</button>' +
     '</div>';

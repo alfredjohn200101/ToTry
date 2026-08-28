@@ -4672,7 +4672,12 @@ function renderNutSetupNudge(){
   // is worth one line and a link. Both still land; only one of them takes the top of the screen.
   box.innerHTML =
     '<div class="setup-strip">' +
-      '<span class="setup-strip-t">Your ' + (def.cal || 2100) + ' cal target is a generic starting point.</span>' +
+      // The banner I compressed this morning printed the actual calorie target, and "numbers off" is a
+      // promise to someone whose relationship with those numbers is the reason the mode exists. The
+      // original five-line version never named a figure. In gentle mode neither does this.
+      '<span class="setup-strip-t">' + ((typeof nutGentle === 'function' && nutGentle())
+        ? 'Your target is a generic starting point.'
+        : ('Your ' + (def.cal || 2100) + ' cal target is a generic starting point.')) + '</span>' +
       '<button class="setup-strip-go" onclick="openNutSetup()">Set a real one</button>' +
       '<button class="setup-strip-x" onclick="dismissNutSetup()" aria-label="Dismiss">\u00d7</button>' +
     '</div>';

@@ -189,7 +189,10 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
                      totry_bills: [{ id: 2, name: 'Rent', amount: 420, due: '2026-09-01' }],
                      totry_v: [{ n: 'Scrolling', startDate: new Date(Date.now() - 9 * 864e5).toISOString(), mode: 'quit' }],
                      totry_nutlog: nutlog,
-                     totry_body: Array.from({ length: 6 }, (_, i) => ({ w: 78.4 + i * 0.2, ts: new Date(N - i * 864e5).toISOString() })),
+                     // ⛔ this said `w:` — the app writes `weight:` (grep the ls('totry_body', write site). With the
+                     // wrong key no weigh-in row rendered, so the tap gate never saw the 9x18 delete on
+                     // every one of them. Third time today a seed matched my assumption, not the writer.
+                     totry_body: Array.from({ length: 6 }, (_, i) => ({ weight: 78.4 + i * 0.2, ts: new Date(N - i * 864e5).toISOString() })),
                      totry_workouts: Array.from({ length: 4 }, (_, i) => ({ title: 'Push day', vol: 4200, ts: new Date(N - i * 864e5).toISOString() })),
                      totry_journal: Array.from({ length: 3 }, (_, i) => ({ text: 'A thought', ts: new Date(N - i * 864e5).toISOString() })),
                      totry_f: { d: [{ n: 'Car loan', t: 12000, p: 3600, r: 7.2 }], u: 5000, i: 0 },
@@ -2455,6 +2458,52 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── numbers off means no numbers ─────────────────────────────────────────────────────────────
+  // "Numbers off" is a promise to someone whose relationship with calorie figures is the reason the
+  // mode exists, and it is enforced element by element — a HIDE list of ids that applyNutGentle walks.
+  // That works right up until someone adds a new element, which is exactly what I did: compressing the
+  // starter-target banner into one line, I put the actual figure in it ("Your 2100 cal target is a
+  // generic starting point") where the five-line original had never named one. It sat above the ring,
+  // on screen, in the one mode that exists to keep it off.
+  //
+  // An id list cannot catch the id nobody added to it. This reads the RENDERED TAB instead, so a leak
+  // is caught wherever it comes from.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+      const au = new Date().toLocaleDateString('en-AU');
+      s('totry_onboarded', true); s('totry_name', 'Amira'); s('totry_nut_gentle', true);
+      s('totry_nutlog', { [au]: [
+        { id:9,  name:'Oats',    brand:'', serving:'1 serving', qty:1, cal:520, pro:38, carb:60, fat:14, ts:new Date().toISOString(), meal:'breakfast' },
+        { id:10, name:'Chicken', brand:'', serving:'1 serving', qty:1, cal:690, pro:55, carb:80, fat:16, ts:new Date().toISOString(), meal:'lunch' }] }); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const gentle = await page.evaluate(async () => {
+      go('nourish'); await new Promise(r => setTimeout(r, 1700));
+      const pane = document.getElementById('tab-nourish');
+      const txt = (pane.innerText || '');
+      return { cal: (txt.match(/\b\d{3,4}\s*cal\b/gi) || []),
+               grams: (txt.match(/\b\d{2,4}\s*g\s*\/\s*\d{2,4}\s*g\b/gi) || []),
+               // the toggle shows the STATE, not the action: gentle ON reads "numbers off". Assert the
+               // mode from the function that owns it, and fall back to the label only if it is absent.
+               toggleSaysOff: (typeof nutGentle === 'function')
+                 ? !!nutGentle()
+                 : /numbers off/i.test((document.getElementById('nut-gentle-toggle')||{}).textContent || '') };
+    });
+    await ctx.close();
+    if (!gentle.toggleSaysOff)
+      findings.push('gentle: the seed did not actually turn numbers off — this check proved nothing');
+    else {
+      if (gentle.cal.length)
+        findings.push(`gentle: ${gentle.cal.length} calorie figure(s) on screen with numbers OFF — ${gentle.cal.slice(0,3).join(', ')}`);
+      if (gentle.grams.length)
+        findings.push(`gentle: macro figures on screen with numbers OFF — ${gentle.grams.slice(0,2).join(', ')}`);
+    }
+    if (!findings.some(f => f.startsWith('gentle:')))
+      console.log('gentle: numbers off leaves no calorie or macro figure anywhere on the rendered tab');
+  }
+
   // ── two controls must never share a pixel ────────────────────────────────────────────────────
   // The 24pt floor says a control must be big enough to hit. It says nothing about whether the thing
   // you hit is the one you aimed at — and the fix for that floor created exactly that harm: giving
@@ -2470,8 +2519,11 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
   // 17px upward pull reached into the streak card above it.
   //
   // Ancestors are skipped — a card that wraps its own buttons is containment, not collision.
-  {
-    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+  // Two sizes, because row HEIGHT is what decides this and it changes with the viewport: the diary
+  // rows collided horizontally at 414, and the 37px weigh-in rows collided VERTICALLY — the same
+  // class, the same fix attempt, a different axis. 320x568 is where rows are tightest.
+  for (const VP of [{ width:414, height:896 }, { width:320, height:568 }]) {
+    const ctx = await browser.newContext({ viewport: VP });
     const page = await ctx.newPage();
     await page.addInitScript(() => { const s = (k,v) => localStorage.setItem(k, JSON.stringify(v));
       const N = Date.now(), au = new Date().toLocaleDateString('en-AU');
@@ -2482,7 +2534,8 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
         items:[{ name:'Oats', cal:320, pro:11 }] }]);
       s('totry_nutlog', { [au]: [{ id:9, name:'Gyros', brand:'', serving:'1 serving', qty:1,
         cal:720, pro:52, carb:66, fat:26, ts:new Date().toISOString(), meal:'lunch' }] });
-      s('totry_body', [{ weight:82.1, ts:new Date().toISOString() }]);
+      s('totry_body', Array.from({ length:5 }, (_, i) =>
+        ({ weight: 82.1 + i * 0.4, ts: new Date(N - i * 3 * 864e5).toISOString() })));
       s('totry_f', { d:[{ n:'Car loan', t:12000, p:3600, r:7.2 }], u:5000, i:0 }); });
     await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
     await page.waitForTimeout(2800);
@@ -2505,12 +2558,12 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
         }
         return out;
       }, tab);
-      hits.forEach(h => findings.push(`overlap: ${tab} — two controls share a hit area: ${h}`));
+      hits.forEach(h => findings.push(`overlap: ${tab} at ${VP.width}px — two controls share a hit area: ${h}`));
     }
     await ctx.close();
-    if (!findings.some(f => f.startsWith('overlap:')))
-      console.log('overlap: no two controls share a pixel on any tab — a tap lands on what it aimed at');
   }
+  if (!findings.some(f => f.startsWith('overlap:')))
+    console.log('overlap: no two controls share a pixel on any tab, at 414px or 320px — a tap lands on what it aimed at');
 
   // ── one gold primary per screen ──────────────────────────────────────────────────────────────
   // The gold fill is the app saying "this is what this screen is for". Money spent it on four buttons

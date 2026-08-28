@@ -478,7 +478,7 @@ function renderWeightHistory(){
       const when = e.ts ? new Date(e.ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : (e.date||'');
       return '<div class="body-entry"><span style="font-size:14px;color:var(--tx)">'+wFmt(e.weight)+'</span>'+
         '<span style="display:flex;align-items:center;gap:10px"><span style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+when+'</span>'+
-        '<button onclick="deleteWeightEntry(&quot;'+(e.ts||e.date)+'&quot;)" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer" aria-label="Delete">\u00d7</button></span></div>';
+        '<button class="fli-del" onclick="deleteWeightEntry(&quot;'+(e.ts||e.date)+'&quot;)" aria-label="Delete this weigh-in">\u00d7</button></span></div>';
     }).join('');
 }
 async function deleteWeightEntry(key){
