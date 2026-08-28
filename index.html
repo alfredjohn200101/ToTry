@@ -2769,7 +2769,7 @@ input:focus,textarea:focus,select:focus{
        above — which also explains where the file comes from. One door, in the place that teaches
        you how to get through it. Export keeps the row. -->
   <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">
-    <button class="btn" style="width:100%;padding:9px;font-size:11px;background:transparent;border:1px dashed var(--bd2);color:var(--tx3)" onclick="exportFoodCSV()">📤 Export my food log</button>
+    <button class="btn" id="nut-export-btn" style="width:100%;padding:9px;font-size:11px;background:transparent;border:1px dashed var(--bd2);color:var(--tx3)" onclick="exportFoodCSV()">📤 Export my food log</button>
   </div>
   
   <!-- Trends & reports (the diary itself lives up top). Hidden until there's actually something to
@@ -5198,7 +5198,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v557';
+const APP_VERSION = 'v558';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -11015,7 +11015,7 @@ function _renderDailyPassage(el,t){
   const bank=(t==='hinduism')?VS_HINDU:(t==='buddhism')?VS_BUDDHIST:VS_SECULAR;
   const v=bank[_dailyIndex(bank.length)];
   const kind=(t==='hinduism')?'Today’s verse':(t==='buddhism')?'Today’s teaching':'Today’s reflection';
-  el.innerHTML='<div class="card" style="text-align:center;padding:28px 20px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:16px">'+kind+'</div><div style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;line-height:1.65;color:var(--tx);margin-bottom:14px">“'+v.t+'”</div><div style="font-size:12px;color:var(--go)">— '+v.r+'</div></div><button class="btn" onclick="openScripture()" style="width:100%;margin-top:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Open the full '+curFaith().bookShort+' ›</button>';
+  el.innerHTML='<div class="card" style="text-align:center;padding:28px 20px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:16px">'+kind+'</div><div style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;line-height:1.65;color:var(--tx);margin-bottom:14px">“'+v.t+'”</div><div style="font-size:12px;color:var(--go)">— '+v.r+'</div></div><div style="display:flex;gap:8px;margin-top:12px"><button class=\'btn\' onclick=\'openBreathMenu()\' style=\'flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12.5px\'>Sit with it \u2014 a minute</button><button class=\'btn\' onclick=\'openJournal()\' style=\'flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12.5px\'>Write what it stirs</button></div><button class="btn" onclick="openScripture()" style="width:100%;margin-top:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Open the full '+curFaith().bookShort+' ›</button>';
 }
 // Islam — prayer times (Aladhan, free) + Hijri + a daily ayah. Geolocation, with a city fallback.
 function _renderIslamToday(el){
@@ -26847,6 +26847,16 @@ function renderNutritionLog(){
   }
   if(typeof renderFoodGroups === 'function') renderFoodGroups();
   if(typeof renderQuickFoods === 'function') renderQuickFoods();
+  // A person who has logged nothing was still offered "Show vitamins & minerals" (a list of zeros)
+  // and "Export my food log" (an empty file). Neither is wrong once there is a day behind it; both
+  // are the app offering to show you your own data before you have any.
+  try{
+    const _anyFood = Object.keys(nutLogSafe()).some(function(k){ return (nutLogSafe()[k]||[]).length; });
+    const _mt = document.getElementById('micro-panel-toggle');
+    if(_mt) _mt.style.display = _anyFood ? '' : 'none';
+    const _ex = document.getElementById('nut-export-btn');
+    if(_ex) _ex.style.display = _anyFood ? '' : 'none';
+  }catch(_){ }
   if(typeof syncNutSecondary === 'function') syncNutSecondary();
   const log=ls('totry_nutlog')||{};const entries=log[today]||[];
   let goals=(typeof withDerivedMacros==='function')?withDerivedMacros(ls('totry_nut_goals')||defaultNutGoals()):(ls('totry_nut_goals')||defaultNutGoals());

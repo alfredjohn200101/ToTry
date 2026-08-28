@@ -3241,6 +3241,16 @@ function renderNutritionLog(){
   }
   if(typeof renderFoodGroups === 'function') renderFoodGroups();
   if(typeof renderQuickFoods === 'function') renderQuickFoods();
+  // A person who has logged nothing was still offered "Show vitamins & minerals" (a list of zeros)
+  // and "Export my food log" (an empty file). Neither is wrong once there is a day behind it; both
+  // are the app offering to show you your own data before you have any.
+  try{
+    const _anyFood = Object.keys(nutLogSafe()).some(function(k){ return (nutLogSafe()[k]||[]).length; });
+    const _mt = document.getElementById('micro-panel-toggle');
+    if(_mt) _mt.style.display = _anyFood ? '' : 'none';
+    const _ex = document.getElementById('nut-export-btn');
+    if(_ex) _ex.style.display = _anyFood ? '' : 'none';
+  }catch(_){ }
   if(typeof syncNutSecondary === 'function') syncNutSecondary();
   const log=ls('totry_nutlog')||{};const entries=log[today]||[];
   let goals=(typeof withDerivedMacros==='function')?withDerivedMacros(ls('totry_nut_goals')||defaultNutGoals()):(ls('totry_nut_goals')||defaultNutGoals());
