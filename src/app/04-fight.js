@@ -165,7 +165,11 @@ function editSplitDay(dayIdx){
     '<div style="font-size:12px;color:var(--tx3);margin-bottom:6px">Assign a saved routine (optional)</div>'+
     '<select id="split-edit-routine" style="margin-bottom:12px">'+
       '<option value="">— No routine —</option>'+
-      routines.map(r=>'<option value="'+r.name+'"'+(day.routine===r.name?' selected':'')+'>'+r.name+'</option>').join('')+
+      // A routine name is whatever the person typed when they built it (22-train-deep.js:1678 pushes
+      // {name: d.name} straight from their input). Unescaped it went into BOTH a value="…" attribute
+      // and a text node: a routine called 6" Push closed the attribute early, and one with a tag in it
+      // rendered as markup. Same class as the photo-meal item name, one file over.
+      routines.map(r=>'<option value="'+_escFew(r.name)+'"'+(day.routine===r.name?' selected':'')+'>'+_escFew(r.name)+'</option>').join('')+
     '</select>'+
     '<button class="btn primary" onclick="saveSplitDay('+dayIdx+')" style="margin-bottom:8px">Save day</button>'+
     '<button class="btn" onclick="closeModal(this)">Cancel</button></div>';

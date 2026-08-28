@@ -3513,7 +3513,7 @@ function renderNutritionLog(){
       glanceEl.innerHTML =
         '<div style="display:flex;align-items:flex-start;gap:8px">'+
           '<div style="flex:1;font-size:12px;color:var(--tx2);line-height:1.6">You\'ve got about <span style="color:var(--gr)">'+proLeft+'g protein</span> still to get today. If you\'re home: eggs, Greek yoghurt, chicken, or a quick shake. Out and about: a tin of tuna, jerky, a protein bar, or milk all travel well.</div>'+
-          '<button onclick="ls(&apos;totry_glance_dismissed&apos;,new Date().toLocaleDateString(&apos;en-AU&apos;));document.getElementById(&apos;nut-macro-glance&apos;).style.display=&apos;none&apos;" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer;padding:0 2px;flex-shrink:0;line-height:1">×</button>'+
+          '<button onclick="ls(&apos;totry_glance_dismissed&apos;,new Date().toLocaleDateString(&apos;en-AU&apos;));document.getElementById(&apos;nut-macro-glance&apos;).style.display=&apos;none&apos;" class="fli-del" style="flex-shrink:0" aria-label="Dismiss this note">×</button>'+
         '</div>';
       glanceEl.style.display = 'block';
     } else {
