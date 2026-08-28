@@ -47,7 +47,7 @@ function renderWeeklyCheckin(){
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">Weekly check-in</div>'+
     '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:6px">Trained <b style="color:var(--tx)">'+trained+'\u00d7</b>'+(proDays?' \u00b7 protein <b style="color:var(--tx)">'+proAvg+'g/day</b>':'')+(wDelta!=null?' \u00b7 weight <b style="color:var(--tx)">'+(wDelta>0?'+':'')+wDelta.toFixed(1)+'kg</b>':'')+'</div>'+
     '<div style="font-size:13px;color:var(--tx);line-height:1.6;margin-bottom:12px">'+focus+'</div>'+
-    '<button class="btn primary" onclick="ls(\'totry_weekcheck\',\''+wk+'\');go(\'grow\')" style="font-size:13px;padding:10px">Read the full week \u2192</button></div>';
+    '<button class="btn" onclick="ls(\'totry_weekcheck\',\''+wk+'\');go(\'grow\')" style="font-size:13px;padding:10px;background:var(--bg3);border:1px solid var(--bd)">Read the full week \u2192</button></div>';
   box.style.display = 'block';
 }
 
@@ -474,6 +474,17 @@ function renderTodayForYou(){
     return;
   }
   if(hr >= 12 && hr < 17 && !_doneToday('totry_mornings')){
+    // The midday hero carries its own gold ("Check in with me"), so this branch made a second one and
+    // the rest-day nudge a third: three gold buttons on one screen for the whole 12:00-17:00 window.
+    // Same treatment the morning and evening branches already got — when the hero is asking, this card
+    // offers the other door instead of a competing hero.
+    if(_heroAlreadyAsks('companion')){
+      if(eyebrowEl) eyebrowEl.textContent = 'A gentle check';
+      if(msgEl) msgEl.textContent = 'The morning got away from you — that\u2019s alright. It can still be set.';
+      if(actEl) actEl.innerHTML =
+        '<button class="btn" onclick="go(&apos;morning&apos;)" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Set my intention</button>';
+      return;
+    }
     if(eyebrowEl) eyebrowEl.textContent = 'A gentle check';
     if(msgEl) msgEl.textContent = (first ? first + ', the' : 'The') + ' morning got away from you — that\u2019s alright. It\u2019s not too late to set an intention for what\u2019s left of today.';
     if(actEl){

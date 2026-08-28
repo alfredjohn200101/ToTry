@@ -115,7 +115,11 @@ button:focus:not(:focus-visible){outline:none}
 .verse-pill .vr{font-family:'DM Mono',monospace;font-size:9px;color:var(--go);margin-top:4px;letter-spacing:0.06em}
 .vsave{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--tx3);font-size:18px;padding:12px;margin:-12px;line-height:1;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
 .vsave.saved{color:var(--go)}
-.vshare{position:absolute;top:8px;right:34px;background:none;border:none;color:var(--tx3);font-size:15px;cursor:pointer;padding:12px;margin:-12px;line-height:1;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
+/* .vsave sits at right:10px and is 44px wide, so it occupies right 10..54. This was at right:34px —
+   inside that — and the two 44px hit boxes overlapped by 20px with the share icon 3px higher as well.
+   A tap in the overlap hit whichever came later in the DOM, so "make a card from this verse" and
+   "save this verse" were partly the same button. Clear of it, and on the same baseline. */
+.vshare{position:absolute;top:50%;transform:translateY(-50%);right:58px;background:none;border:none;color:var(--tx3);font-size:15px;cursor:pointer;padding:12px;margin:-12px;line-height:1;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
 .vshare:active{color:var(--go)}
 /* 44x44 tap targets for the tiny "×" delete glyphs in Money. Measured at 414x896 they were 8.2x16 in
    the font-size:14px rows and 9.3x18 in the font-size:16px rows — the smallest controls in the app, and
@@ -722,7 +726,12 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
    so a thumb aiming for "fix the numbers" deletes the meal instead. The visual size is deliberate and
    stays exactly as it was; what changes is the hit box, opened out to 44px and pulled back with
    negative margin so nothing on the row moves. Same trick "+ Add food" already uses. */
-.fli-del{min-width:44px;min-height:44px;margin:-13px -12px;display:inline-flex;
+/* The negative HORIZONTAL margin was the mistake. Two 44px boxes pulled 12px inward each, on icons
+   that sat 8px apart, overlapped by 18px — and Delete comes later in the DOM, so it won. A tap aimed
+   at "fix the numbers" deleted the meal. That is worse than the 19x17 target it replaced: a small
+   button you miss costs a second, a button that silently does the destructive thing costs the entry.
+   Vertical negative margin only (rows have height to spare); horizontally the two boxes tile. */
+.fli-del{min-width:40px;min-height:44px;margin:-13px 0;display:inline-flex;
   align-items:center;justify-content:center;background:none;border:0;cursor:pointer;
   font-size:14px;color:var(--tx3);font-family:inherit}
 .fli-del:active{color:var(--tx2)}
@@ -1080,8 +1089,13 @@ body{font-variant-numeric:lining-nums}
    comfortable 30px phone links — the Crisis Text number and "Find support in your country". Every
    actionable link in a crisis card is the one a person reaches for with a shaking hand, so they all
    get the same floor. Also an App Store accessibility exposure. */
-a[href^="tel:"], a[href^="sms:"], .crisis-line a, .crisis-card a{
-  display:inline-block;min-height:30px;line-height:30px}
+/* tel: links already have this treatment 116 lines above — padding 5px 6px over line-height 20px,
+   which is exactly 30px. Re-listing them here and setting line-height:30px stacked the padding on top
+   of a taller line box, so the two phone numbers a person reaches for first grew to 40px and sat off
+   their own baseline. Match that rule instead of overriding it, so every crisis link is one shape. */
+a[href^="sms:"], .crisis-line a, .crisis-card a{
+  display:inline-block;padding:5px 6px;margin:1px -2px;min-height:30px;
+  line-height:20px;box-sizing:border-box}
 
 
 body{position:fixed;inset:0;width:100%}
@@ -1823,7 +1837,7 @@ input:focus,textarea:focus,select:focus{
        while a Catholic on the same build was offered Lent. Faith full but never forced cannot mean
        Lent for one person and nothing for another. Out of the grid, so it survives that gate. -->
   <div class="hub-grid">
-    <div class="hub-card wide" onclick="go('nourish');setTimeout(function(){var e=document.getElementById('fast-season');if(e)e.scrollIntoView({block:'center'});},350)">
+    <div class="hub-card wide" onclick="go('nourish');setTimeout(function(){if(typeof toggleNutSecondary==='function'){var b=document.getElementById('nut-secondary');if(b&&b.style.display==='none')toggleNutSecondary();}var e=document.getElementById('fast-season');if(e)e.scrollIntoView({block:'center',behavior:'smooth'});},420)">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       <div class="hc-title">A season of fasting</div>
       <div class="hc-desc" id="hub-fast-desc">Ramadan, Lent, Navratri, Uposatha, or a window you set yourself — and the whole app moves with it.</div>
@@ -2164,7 +2178,11 @@ input:focus,textarea:focus,select:focus{
 
   <!-- Today's habits — primary daily action. The manage/add affordance has to live here: it is the only
        route to creating a habit, and before this there was none anywhere in the app. -->
-  <div class="lbl" style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+    <!-- "+ Add / edit" uses the 44px-hit-box trick (padding 17px, margin -17px), so its tap area
+         reaches 17px ABOVE the label and clipped the streak card sitting on top of it. Only a 3px
+         band, but in it a tap meant for the resilience tile opened the habit editor. Clearance
+         here, rather than a smaller target there. -->
+  <div class="lbl" style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:22px">
     <span>Today&#39;s habits</span>
     <button onclick="openManageHabits()" aria-label="Add or edit your habits" style="background:none;border:none;padding:17px 12px;margin:-17px -12px -17px -12px;margin-right:0;padding-right:0;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">+ add / edit</button>
   </div>
@@ -2403,7 +2421,10 @@ input:focus,textarea:focus,select:focus{
   <button class="btn" id="morning-complete-direct" onclick="completeMorning()" style="margin-top:4px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Set my morning without praying now</button>
   <div id="morning-done" style="display:none;text-align:center;padding:24px 16px">
     <div style="font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--go);margin-bottom:8px">Morning done. &#10024;</div>
-    <div style="font-size:13px;color:var(--tx2);line-height:1.6">Your intention is set. Your prayer is heard. Now go live the day.</div>
+    <!-- "Your prayer is heard" was the closing line of the flagship ritual for every tradition,
+         including someone who chose none — the app telling a secular person their prayer was heard.
+         The intention half is true for everybody; the second sentence is written per tradition. -->
+    <div id="morning-done-line" style="font-size:13px;color:var(--tx2);line-height:1.6">Your intention is set. Now go live the day.</div>
     <button class="btn primary" onclick="go('home')" style="margin-top:16px;max-width:220px;margin-left:auto;margin-right:auto">Back to home &rarr;</button>
   </div>
 </div>
@@ -2690,8 +2711,12 @@ input:focus,textarea:focus,select:focus{
        used daily beside it, the rest behind one door, and chips drawn from what HE eats. -->
   <div class="lbl">Log food</div>
   <div class="logbar">
-    <input type="text" id="nut-search-in" class="logbar-in"
+    <!-- oninput was lost in this morning's log-bar rewrite, so nutSearchTypeahead() — the instant
+         local match that puts staples on screen with zero network — has been live, reachable by
+         nothing, and every search since has waited for four databases before showing anything. -->
+    <input type="text" id="nut-search-in" class="logbar-in" autocomplete="off"
            placeholder="Search a food, or describe your meal…"
+           oninput="nutSearchTypeahead(this.value)"
            onkeydown="if(event.key==='Enter')searchFood(this.value)">
     <button class="logbar-ic" aria-label="Snap a photo of your meal"
             onclick="document.getElementById('meal-photo-input').click()">📷</button>
@@ -2705,7 +2730,7 @@ input:focus,textarea:focus,select:focus{
   <div id="nut-recent-foods" style="margin-bottom:12px"></div>
   <div id="nut-saved-meals" style="margin-bottom:12px"></div>
   <!-- His foods, not a stock list. renderQuickFoods() counts what he has actually logged. -->
-  <div id="nut-quick-foods" style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap"></div>
+  <div id="nut-quick-foods" style="display:flex;column-gap:5px;row-gap:23px;margin-bottom:10px;flex-wrap:wrap"></div>
   <!-- Today's diary: what you've logged, right under the log box -->
   <div class="card" style="margin-bottom:12px"><div id="nut-log-list"><p style="font-size:13px;color:var(--tx3);text-align:center;padding:8px 0">No food logged yet today</p></div></div>
 
@@ -3414,7 +3439,10 @@ input:focus,textarea:focus,select:focus{
   </div>
   <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3);text-align:center;margin-bottom:10px" id="bod-bmi"></div>
   <div class="body-chart">
-    <div class="lbl" style="margin-bottom:8px">Weight trend (kg)</div>
+    <!-- Hardcoded "(kg)" over a chart a lb user reads: the card above it says 181lb, this said kg, and
+         the point labels were plotted in kilograms. syncWeightUnitLabels() already keeps every
+         [data-weight-unit] in step with the setting. -->
+    <div class="lbl" style="margin-bottom:8px">Weight trend (<span data-weight-unit>kg</span>)</div>
     <svg aria-hidden="true" id="weight-chart" viewBox="0 0 340 100" style="width:100%;height:120px" preserveAspectRatio="none">
       <text x="170" y="58" text-anchor="middle" fill="rgba(255,255,255,0.12)" font-family="Cormorant Garamond,serif" font-size="13" font-style="italic">Log your first check-in below</text>
     </svg>

@@ -158,6 +158,7 @@ function renderReclaimed(){
   return r;
 }
 function showMoneyMore(){
+  window.__moneyMoreOpened = true;
   document.querySelectorAll('#tab-money .money-more').forEach(el => { el.style.display = ''; });
   const row = document.getElementById('money-more-row'); if(row) row.style.display = 'none';
   const first = document.querySelector('#tab-money .money-more');
@@ -200,10 +201,16 @@ function renderMoneyGate(){
   // ledger, all blank, all shouting at someone who has not told the app a single number. The gate is
   // right; what followed it made the gate look like a lie. When there is nothing to show, the way in
   // IS the screen, and everything else waits behind one row that says plainly what is in there.
-  const more = document.querySelectorAll('#tab-money .money-more');
-  more.forEach(el => { el.style.display = empty ? 'none' : ''; });
-  const moreRow = document.getElementById('money-more-row');
-  if(moreRow) moreRow.style.display = empty ? '' : 'none';
+  // renderMoneyGate runs after EVERY write, so logging your first expense re-collapsed the section you
+  // were standing in — the Quick spend form you had just used vanished under you while the toast still
+  // said "Logged −$42.00". Collapsing is a decision about arriving on a quiet screen, not about
+  // writing. Once a person has opened it themselves, it stays open for the session.
+  if(!window.__moneyMoreOpened){
+    const more = document.querySelectorAll('#tab-money .money-more');
+    more.forEach(el => { el.style.display = empty ? 'none' : ''; });
+    const moreRow = document.getElementById('money-more-row');
+    if(moreRow) moreRow.style.display = empty ? '' : 'none';
+  }
 
   if(empty){
     readCard.innerHTML = '';

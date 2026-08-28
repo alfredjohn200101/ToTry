@@ -360,9 +360,9 @@ function foodFailed(res, headline, sub, retryJs, primaryJs, primaryLbl){
     '<div style="padding:16px;background:var(--bg3);border:1px solid var(--bd);border-radius:14px">' +
       '<div style="font-size:14px;color:var(--tx);line-height:1.5;margin-bottom:5px">' + _escFew(headline) + '</div>' +
       '<div style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px">' + _escFew(sub) + '</div>' +
-      (retryJs ? '<button class="btn" onclick="' + _jsAttr(retryJs) + '" style="width:100%;margin-bottom:8px;' +
+      (retryJs ? '<button class="btn" onclick="' + _jsCode(retryJs) + '" style="width:100%;margin-bottom:8px;' +
         'background:var(--bg2);border:1px solid var(--bd);font-size:13px">Try again</button>' : '') +
-      '<button class="btn primary" onclick="' + _jsAttr(primaryJs || 'openQuickAdd()') + '" ' +
+      '<button class="btn primary" onclick="' + _jsCode(primaryJs || 'openQuickAdd()') + '" ' +
         'style="width:100%;font-size:13px">' + _escFew(primaryLbl || 'Add it myself') + '</button>' +
     '</div>';
   _foodReveal(res);
@@ -426,6 +426,14 @@ function syncNutSecondary(){
   btn.setAttribute('aria-expanded', open ? 'true' : 'false');
 }
 
+// The nineteen micronutrient keys. This lived as a `const` inside nourishmentScore(), so any other
+// caller that needed to ask "does this day have micro data at all" could not see it — and a guard
+// written against it silently evaluated to false. A function declaration hoists; a const does not.
+function nutMicroKeys(){
+  return ['vit_a','vit_c','vit_d','vit_e','vit_k','b1','b2','b3','b6','b9','b12','calcium','iron',
+          'magnesium','phosphorus','potassium','zinc','selenium','copper'];
+}
+
 function openMoreWaysToLog(){
   const ways = [
     ['\u{1F4F7}','Snap a meal','A photo of the plate','document.getElementById(\'meal-photo-input\').click()'],
@@ -442,7 +450,7 @@ function openMoreWaysToLog(){
     '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">' +
       'Whatever gets the meal down. None of them is better than the others.</p>' +
     '<div style="display:flex;flex-direction:column;gap:2px;margin-bottom:10px">' +
-    ways.map(w => '<button class="mw-row" onclick="closeModal(this);setTimeout(function(){' + _jsAttr(w[3]) + '},220)">' +
+    ways.map(w => '<button class="mw-row" onclick="closeModal(this);setTimeout(function(){' + _jsCode(w[3]) + '},220)">' +
       '<span class="mw-ic">' + w[0] + '</span>' +
       '<span class="mw-txt"><span class="mw-t">' + w[1] + '</span>' +
         '<span class="mw-s">' + w[2] + '</span></span>' +
@@ -475,7 +483,11 @@ function renderQuickFoods(){
     // .07em tracking, 32px below "LOG FOOD" in DM Mono at 9px with .14em — two typefaces doing the
     // same job in the same column. There is already a component for this.
     '<div class="lbl" style="width:100%">' + (mine ? 'What you eat most' : 'Common foods') + '</div>' +
-    names.map(n => '<button class="qb" onclick="searchFood(' + _jsAttr(JSON.stringify(n)) + ')">' +
+    // JSON.stringify already produces valid JS; _jsAttr then backslash-escapes its backslashes and
+    // turns its quotes into &quot;, so a food called Mum's "famous" pie emitted \\&quot; — an escaped
+    // backslash followed by a live quote — and the string literal closed early. SyntaxError, dead chip.
+    // The call is CODE, so it needs attribute escaping and nothing else.
+    names.map(n => '<button class="qb" onclick="' + _jsCode('searchFood(' + JSON.stringify(n) + ')') + '">' +
       _escFew(n.length > 24 ? n.slice(0,23) + '…' : n) + '</button>').join('');
 }
 
@@ -1065,8 +1077,17 @@ async function handleMealPhoto(event){
   try{
       const prompt = 'This is a photo of a meal. Identify EACH distinct food/component SEPARATELY and estimate each one\'s nutrition for the portion actually shown — reason about portion size from visual cues (plate size, utensils, a hand). IMPORTANT: account for realistic cooking fats — oil, butter, dressings, sauces — even when they are not directly visible; these are the #1 reason photo calorie estimates run ~30% too low, so do NOT underestimate fat or portion size (lean toward realistic-to-generous, not optimistic). Return ONLY this JSON, no markdown: {"meal":"short overall name for the meal","items":[{"food":"one item\'s name","portion":"estimated portion, e.g. ~180g or 1 cup","cal":number,"pro":number,"carb":number,"fat":number}],"assumptions":"1 short sentence on what you assumed, incl. any hidden fat you added","confidence":"high|medium|low"}. List 1 to 8 items. If this is not food, return {"error":"no food"}.';
       const {data, error} = await Promise.race([
-        sb.functions.invoke('ai-proxy', { body:{ action:'vision', prompt, image_base64:base64, image_mime:mime, max_tokens:500 } }),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('Timed out')), 18000))
+        // 500. This call bypasses api(), so it never saw the floor raised there — and its prompt asks for a
+        // NAME plus an ITEMS ARRAY with a portion, calories and macros for each thing on the plate.
+        // Measured today: the text version of that shape needs 4000 against the live chain, because
+        // Gemini 2.5 Flash spends the budget thinking before it writes. At 500 it cannot get past the
+        // first item. This is the call he pointed at the gyros.
+        sb.functions.invoke('ai-proxy', { body:{ action:'vision', prompt, image_base64:base64, image_mime:mime, max_tokens:4000 } }),
+        // Measured against the live chain: a 4000-token generation of this shape takes 9.3-11.5s
+        // before any upload. 18s left almost no headroom on a slow connection, and 15s on the text
+        // path was under the median. A longer ceiling is only cruel when the wait is a blank pulse —
+        // this one counts the seconds and offers "add it myself" from the first one.
+        new Promise((_, rej) => setTimeout(() => rej(new Error('Timed out')), 25000))
       ]).catch(e => ({ error:e }));
       if(error || !data?.text){
               foodFailed(res, 'The photo did not get through.',
@@ -1362,7 +1383,7 @@ async function estimateMealMacros(description){
     '"note":"1 short sentence: exact product label used, or what you estimated from"}\n'+
     'estimated=false when the amount/product is known precisely, true when assumed. Set vague=true ONLY if too unspecific to estimate at all. Numbers only. sodium in mg. For a protein powder, anchor protein realistically (typically 20-27g per scoop).';
   try{
-    const raw=await api('You are a precise nutrition coach. You convert real-world meal descriptions into accurate per-item macros, always respecting any amounts the user specified.',[],prompt,700,{timeout:15000});
+    const raw=await api('You are a precise nutrition coach. You convert real-world meal descriptions into accurate per-item macros, always respecting any amounts the user specified.',[],prompt,4000,{timeout:22000});
     const m=raw.match(/\{[\s\S]*\}/);
     if(m){
       const meal=JSON.parse(m[0]);
@@ -1426,6 +1447,10 @@ async function estimateMealMacros(description){
       'I could not work that one out.',
       'That is on me, not on you \u2014 the connection, or my end. Your lunch still counts.',
       'estimateMealMacros('+JSON.stringify(String(description||''))+')');
+    // Without this return, execution fell through to the phrasing message below and overwrote the
+    // connection one — so a dropped signal told the person to word their meal differently, and the
+    // sentence written for exactly their situation was unreachable dead code the moment I wrote it.
+    return;
   }
   foodFailed(res, 'I could not work that one out.',
       'Try naming it more plainly \u2014 "chicken gyros plate, rice, salad" \u2014 or add it yourself.',
@@ -2674,7 +2699,7 @@ function renderSavedMeals(){
       return '<div class="food-result" style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
         '<div style="flex:1;min-width:0"><div class="fr-name">' + m.name.replace(/</g,'&lt;') + '</div>' +
         '<div class="fr-macros"><span class="fr-cal">' + totCal + ' cal</span><span style="color:var(--tx3)">' + m.items.length + ' item' + (m.items.length>1?'s':'') + '</span></div></div>' +
-        '<button onclick="deleteSavedMeal('+m.id+')" style="background:none;border:none;color:var(--tx3);font-size:15px;cursor:pointer;padding:4px">&times;</button>' +
+        '<button class="fli-del" onclick="deleteSavedMeal('+m.id+')" title="Delete this saved meal">&times;</button>' +
         '<button onclick="logSavedMeal('+m.id+')" title="Log this meal" style="background:var(--go);border:none;color:#1a1505;font-size:18px;font-weight:700;width:34px;height:34px;border-radius:8px;cursor:pointer;flex-shrink:0;line-height:1">+</button>' +
       '</div>';
     }).join('');
@@ -2928,7 +2953,7 @@ function nourishmentScore(totals, goals){
     ? (_fibKnown ? 'Protein, fibre and whole foods all here — this is what nourished looks like.'
                  : 'Protein is well covered today — that is the part that carries the most.')
     : dims[0].tip;
-  const MICROS=['vit_a','vit_c','vit_d','vit_e','vit_k','b1','b2','b3','b6','b9','b12','calcium','iron','magnesium','phosphorus','potassium','zinc','selenium','copper'];
+  const MICROS = nutMicroKeys();
   const microsHit=MICROS.filter(k=>(totals[k]||0)>0).length;
   let tier, col;
   if(score>=85){ tier='Deeply nourishing'; col='var(--gr)'; }
@@ -3246,8 +3271,23 @@ function renderNutritionLog(){
   // are the app offering to show you your own data before you have any.
   try{
     const _anyFood = Object.keys(nutLogSafe()).some(function(k){ return (nutLogSafe()[k]||[]).length; });
+    // _anyFood asks "is there any food row anywhere" — the right question for the EXPORT button, which
+    // writes the whole log, and the wrong one for this panel, which totals the DISPLAYED day. So a
+    // person with 655 cal and 67g protein logged today opened it onto nineteen rows of "0mg · 0%" —
+    // the app telling them they ate no iron, no folate, no vitamin C. They ate all three; the entries
+    // just do not carry micros, which is the same "zero is not unknown" case the four extended macros
+    // eleven lines below already handle correctly. Gate this one on its own data too.
+    const _microKnown = (function(){
+      try{
+        const day = (typeof nutDayKey === 'function') ? nutDayKey() : new Date().toLocaleDateString('en-AU');
+        const rows = nutLogSafe()[day] || [];
+        return nutMicroKeys().some(function(k){
+          return rows.some(function(r){ return (r && Number(r[k])) > 0; });
+        });
+      }catch(_){ return false; }
+    })();
     const _mt = document.getElementById('micro-panel-toggle');
-    if(_mt) _mt.style.display = _anyFood ? '' : 'none';
+    if(_mt) _mt.style.display = _microKnown ? '' : 'none';
     const _ex = document.getElementById('nut-export-btn');
     if(_ex) _ex.style.display = _anyFood ? '' : 'none';
   }catch(_){ }
@@ -3566,18 +3606,23 @@ function _nutTailRenders(totals, goalCal){
   if(typeof renderNutWeeklyDigest==='function') renderNutWeeklyDigest();
   if(typeof renderSavedMeals==='function') renderSavedMeals();
   if(typeof renderMigrateCard==='function') renderMigrateCard();
-  // Only show the "Trends & reports" header once one of its cards is actually visible — no bare header.
-  try{
-    const lbl=document.getElementById('nut-reports-lbl');
-    if(lbl){
-      const any=['adaptive-tdee-card','nut-macro-glance','nut-weekly-digest','nut-trend-card']
-        .some(id=>{ const el=document.getElementById(id); return el && el.style.display!=='none'; });
-      lbl.style.display = any ? '' : 'none';
-    }
-  }catch(_){}
   // FINAL gentle pass — several cards above (trend, digest, adaptive TDEE, meal split) render AFTER
   // the first call, so re-apply last. Order can then never re-leak a number.
   try{ if(typeof applyNutGentle==='function') applyNutGentle(totals&&totals.cal, goalCal); }catch(_){}
+  // Only show the "Trends & reports" header once one of its cards is actually visible — no bare header.
+  // This used to run two lines BEFORE the gentle pass, so it read the cards' display while they were
+  // still shown and then applyNutGentle hid all four — leaving in "numbers off" mode precisely the
+  // bare header this guard exists to prevent. It has to be the last word, after the thing that
+  // decides. And in gentle mode the answer is known without looking: there is nothing under it.
+  try{
+    const lbl=document.getElementById('nut-reports-lbl');
+    if(lbl){
+      const any = (typeof nutGentle==='function' && nutGentle()) ? false :
+        ['adaptive-tdee-card','nut-macro-glance','nut-weekly-digest','nut-trend-card']
+          .some(id=>{ const el=document.getElementById(id); return el && el.style.display!=='none'; });
+      lbl.style.display = any ? '' : 'none';
+    }
+  }catch(_){}
 }
 
 // Shows the "switching from another app" card until the user imports history or dismisses it,
@@ -4833,6 +4878,14 @@ function easterDate(year){
 }
 // Returns {kind, note} if today is a traditional day of fasting/abstinence, else null.
 function catholicFastingDay(d){
+  // "✝ Friday — the Church's ancient day of penance, kept in memory of the Cross" was rendering on the
+  // food screen for Muslim, Hindu, Buddhist and secular users: a cross glyph and Church doctrine to
+  // someone who chose another path, or none. The app's promise is faith full but never FORCED, and a
+  // liturgical calendar nobody asked for is the plainest possible breach of it. The card is right for
+  // the tradition that keeps it, and belongs to no one else.
+  try{
+    if(typeof faithTradition === 'function' && faithTradition() !== 'christianity') return null;
+  }catch(_){ }
   d = d || new Date();
   const y = d.getFullYear();
   const dayMid = new Date(y, d.getMonth(), d.getDate());

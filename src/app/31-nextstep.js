@@ -37,10 +37,10 @@ function getNextStep(){
       let _hardVice = null;
       _vs.forEach(v=>{ try{ const p=(typeof analyzeUrgePatterns==='function')?analyzeUrgePatterns(v.n):null; if(p && p.riskWindow===_block) _hardVice=v; }catch(_){} });
       if(_hardVice){
-        return { text:'This is usually your hard hour', sub:'Right around when '+_hardVice.n+' tends to pull. Nothing has to be happening \u2014 get ahead of it with me.', keepSub:true, action:'breath', actionArg:String(_hardVice.n) };
+        return { text:'This is usually your hard hour', sub:'Right around when '+_hardVice.n+' tends to pull. Nothing has to be happening \u2014 get ahead of it with me.', action:'breath', actionArg:String(_hardVice.n) };
       }
       if(hour >= 22 || hour < 5){
-        return { text:'The hard hour\u2019s near', sub:'Late hours are when it pulls \u2014 get ahead of it. One slow minute, before anything rises.', keepSub:true, action:'breath' };
+        return { text:'The hard hour\u2019s near', sub:'Late hours are when it pulls \u2014 get ahead of it. One slow minute, before anything rises.', action:'breath' };
       }
     }
   }catch(_){ }
@@ -50,14 +50,14 @@ function getNextStep(){
       const _r = computeReadiness();
       const _trained = (typeof getUnifiedTraining==='function') && getUnifiedTraining().some(t=>t.ts && new Date(t.ts).toLocaleDateString('en-AU')===today);
       if(_r && _r.level === 'rest' && !_trained && hour >= 7 && hour < 20){
-        return { text:'Your body needs rest today', sub:'Recovery is low \u2014 go gentle. Mobility or a walk, not a max effort.', keepSub:true, action:'mobility' };
+        return { text:'Your body needs rest today', sub:'Recovery is low \u2014 go gentle. Mobility or a walk, not a max effort.', action:'mobility' };
       }
     }
   }catch(_){ }
   // 1. Morning ritual not done yet today?
   const morningToday = ritualLog('totry_mornings').some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===today);
   if(!morningToday && hour < 12){
-    return { text:'Start your morning', sub:'Set today\u2019s intention and gratitude.', action:'morning' };
+    return { text:'Start your morning', sub:'Set today\u2019s intention and gratitude.', softenOk:true, action:'morning' };
   }
   // 2. After the morning: surface the next thing actually on the calendar today.
   if(typeof _calEvents === 'function'){
@@ -78,14 +78,14 @@ function getNextStep(){
   // 3. No training logged today?
   const trainedToday = (typeof getUnifiedTraining==='function') && getUnifiedTraining().some(t=>t.ts && new Date(t.ts).toLocaleDateString('en-AU')===today);
   if(!trainedToday && hour >= 10 && hour < 21){
-    return { text:'Log today\u2019s training', sub:'A workout, a walk, anything you did.', action:'train' };
+    return { text:'Log today\u2019s training', sub:'A workout, a walk, anything you did.', softenOk:true, action:'train' };
   }
   // 3. Evening: examen / reflection not done?
   if(hour >= 17){
     const examenToday = (ls('totry_examens')||[]).some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
     const eveningToday = ritualLog('totry_evenings').some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
     if(!eveningToday || !examenToday){
-      return { text:'Close your day', sub:_nextStepCloseSub(), action:'reflect' };
+      return { text:'Close your day', sub:_nextStepCloseSub(), softenOk:true, action:'reflect' };
     }
   }
   // 4. Morning's done but it's still early and nothing else pressing — gentle prayer nudge.
@@ -297,12 +297,12 @@ function renderNextStep(){
   try{
     if(!step.done && typeof _countOpenLoops==='function'){
       const open = _countOpenLoops();
-      // The softener was written for the routine steps — morning, train, calendar, reflect — where the
-      // sub is encouragement and losing it costs nothing. On the hard-hour card the sub is the only
-      // thing that explains what the headline means and what the tap does, so overwriting it produced
-      // a headline about a craving window above a sentence about a busy to-do list. Steps that mark
-      // keepSub own their own words.
-      if(open >= 4 && !step.keepSub) subText = 'A lot\u2019s on your plate today \u2014 don\u2019t carry it all at once. Just this one thing for now.';
+      // keepSub was opt-OUT, so I marked three steps and missed the calendar one — whose headline is a
+      // bare user-typed event title ("Physio with Dan") and whose sub carries the only "when" on the
+      // card ("Coming up in 20 min"). Overwriting it left an appointment with no time anywhere on the
+      // screen. Worse, opt-out means the NEXT step added here inherits the trap by default.
+      // Inverted: a step is softened only if it says its sub is generic encouragement.
+      if(open >= 4 && step.softenOk) subText = 'A lot\u2019s on your plate today \u2014 don\u2019t carry it all at once. Just this one thing for now.';
     }
   }catch(_){}
   if(sub) sub.textContent = subText;

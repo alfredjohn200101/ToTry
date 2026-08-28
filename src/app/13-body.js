@@ -23,6 +23,7 @@ function toggleWeeklyCheckin(){
   const btn = document.getElementById('wk-open');
   if(!body || !btn) return;
   const open = body.style.display === 'none';
+  window.__wkUserSet = open;          // their choice outranks the day-of-week default for the session
   body.style.display = open ? '' : 'none';
   btn.setAttribute('aria-expanded', open ? 'true' : 'false');
   if(open) try{ body.scrollIntoView({behavior:'smooth', block:'start'}); }catch(_){ }
@@ -41,7 +42,10 @@ function syncWeeklyCheckin(){
     });
   }catch(_){ }
   const due = dow === 0 || dow === 1;
-  const open = due || started;
+  // This ran on every entry to Track and set the display from scratch, so closing the panel on a
+  // Sunday and stepping away for one screen brought all 1,123px straight back. A person's own tap has
+  // to outrank the default, or the default is not a default — it is an argument.
+  const open = (window.__wkUserSet != null) ? window.__wkUserSet : (due || started);
   body.style.display = open ? '' : 'none';
   btn.setAttribute('aria-expanded', open ? 'true' : 'false');
   if(sum) sum.textContent = started ? 'in progress' : (due ? 'due today' : 'about 4 minutes');
@@ -581,7 +585,12 @@ function renderBody(){
   if(todaySummary){
     const todayStr = new Date().toLocaleDateString('en-AU', {day:'numeric', month:'short'});  // display only
   const todayFull = new Date().toLocaleDateString('en-AU');                                   // identity
-    const todayEntry = entries.find(e => (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') === todayFull : e.date === todayStr));
+    // A weekly reflection saved with the weight field left blank writes an entry for today carrying
+    // no weight. This found THAT one first, saw weight === 0, and told a person who had weighed in an
+    // hour earlier "No log yet" — inviting a duplicate. A reflection is not a weigh-in; only an entry
+    // that actually carries a weight can answer "did I weigh in today".
+    const todayEntry = entries.find(e => (e.weight > 0) &&
+      (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') === todayFull : e.date === todayStr));
     if(todayEntry && todayEntry.weight > 0){
       todaySummary.textContent = wFmt(todayEntry.weight) + ' logged today';
       todaySummary.style.color = 'var(--gr)';
@@ -610,7 +619,7 @@ function renderBody(){
     const x=i=>pad+(i/(pts.length-1))*(W-2*pad);const y=w=>H-pad-((w-mn)/range)*(H-2*pad);
     const pathD=pts.map((p,i)=>(i===0?'M':'L')+x(i).toFixed(1)+','+y(p.weight).toFixed(1)).join(' ');
     const svg=document.getElementById('weight-chart');
-    if(svg)svg.innerHTML='<defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5BB97D" stop-opacity="0.25"/><stop offset="100%" stop-color="#5BB97D" stop-opacity="0"/></linearGradient></defs><path d="'+pathD+' L'+x(pts.length-1).toFixed(1)+','+H+' L'+x(0).toFixed(1)+','+H+' Z" fill="url(#wg)"/><path d="'+pathD+'" stroke="#5BB97D" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+pts.map((p,i)=>'<circle cx="'+x(i).toFixed(1)+'" cy="'+y(p.weight).toFixed(1)+'" r="3.5" fill="#5BB97D"/><text x="'+x(i).toFixed(1)+'" y="'+(y(p.weight)-8).toFixed(1)+'" text-anchor="middle" fill="rgba(242,239,232,0.4)" font-size="8" font-family="DM Mono,monospace">'+p.weight+'</text>').join('');
+    if(svg)svg.innerHTML='<defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5BB97D" stop-opacity="0.25"/><stop offset="100%" stop-color="#5BB97D" stop-opacity="0"/></linearGradient></defs><path d="'+pathD+' L'+x(pts.length-1).toFixed(1)+','+H+' L'+x(0).toFixed(1)+','+H+' Z" fill="url(#wg)"/><path d="'+pathD+'" stroke="#5BB97D" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+pts.map((p,i)=>'<circle cx="'+x(i).toFixed(1)+'" cy="'+y(p.weight).toFixed(1)+'" r="3.5" fill="#5BB97D"/><text x="'+x(i).toFixed(1)+'" y="'+(y(p.weight)-8).toFixed(1)+'" text-anchor="middle" fill="rgba(242,239,232,0.4)" font-size="8" font-family="DM Mono,monospace">'+((typeof wFmt==='function')?wFmt(p.weight,{bare:true}):p.weight)+'</text>').join('');
   }
   const hist=document.getElementById('body-history');
   if(hist){
@@ -629,12 +638,22 @@ function renderBody(){
     // weight + change, body-fat, the scores, and the win/struggle/focus reflections.
     entries.forEach((e,i)=>{
       const prev=entries[i+1];
-      const change=(prev&&e.weight&&prev.weight)?Math.round((e.weight-prev.weight)*10)/10:0;
+      // prev was simply the next row, so a weightless reflection between two weigh-ins swallowed the
+      // delta and the later one rendered "81.2kg —" with nothing to compare against. Step back to the
+      // last row that actually has a weight.
+      const _prevW = (function(){
+        for(let k = i + 1; k < entries.length; k++) if(entries[k] && entries[k].weight > 0) return entries[k];
+        return null;
+      })();
+      const change=(_prevW&&e.weight&&_prevW.weight)?Math.round((e.weight-_prevW.weight)*10)/10:0;
       const cls=change<0?'down':change>0?'up':'same';
       const cs=wDelta(change, {zero:'\u2014'});
       const sc=e.scores||{};
       const scoreLine=[['Train',sc.train],['Food',sc.nutrition],['Sleep',sc.sleep],['Faith',sc.faith]]
-        .filter(x=>x[1]>0).map(x=>x[0]+' '+x[1]+'/5').join(' \u00b7 ');
+        // The sliders ask 1-10 (src/shell-head.html, min="1" max="10") and this printed the answer
+        // over 5, so a person's own record read "Train 9/5 · Faith 10/5" — impossible fractions on the
+        // one screen that is meant to be their honest history. The stored values were always right.
+        .filter(x=>x[1]>0).map(x=>x[0]+' '+x[1]+'/10').join(' \u00b7 ');
       const card=document.createElement('div');
       card.style.cssText='background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:8px';
       let html='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:'+((scoreLine||e.win||e.struggle||e.focus||e.note)?'8px':'0')+'">'+
@@ -1061,7 +1080,11 @@ function updateTrackerDisplay(){
   }catch(_){}
   // Keep the weight "today" summary in sync too
   const body=ls('totry_body')||[];
-  const todayWeight=body.find(b=>b.date===today || (b.ts && new Date(b.ts).toLocaleDateString('en-AU')===today));
+  // Same defect as the other tile, in a second writer: a weekly reflection saved with the weight blank
+  // is an entry for today with weight 0, and find() returns it first — so the tile read "Logged today:
+  // 0kg" to a person who had weighed in that morning. A reflection is not a weigh-in.
+  const todayWeight=body.find(b=>(b.weight > 0) &&
+    (b.date===today || (b.ts && new Date(b.ts).toLocaleDateString('en-AU')===today)));
   const sum=document.getElementById('bod-current-summary');
   if(sum){
     if(todayWeight){

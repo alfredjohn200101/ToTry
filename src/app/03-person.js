@@ -1179,7 +1179,20 @@ window.addEventListener('offline', ()=>{ isOnline=false; });
 // Returns {text, provider, error} so callers can show real failures instead of pretending.
 // Hard timeout on every path so the UI never hangs on "Testing..." / "Thinking...".
 async function api(sys, hist, msg, tok, opts){
-  tok = tok || 1200;
+  // MEASURED against the live proxy today, which is what the app actually talks to. The chain is
+  // Gemini 2.5 Flash first (Groq's model 404s — qwen/qwen3-32b was retired — and OpenRouter is 429
+  // rate-limited on the free tier), and 2.5 Flash is a THINKING model: it spends the token budget on
+  // reasoning before it emits a character. At max_tokens 700 — what estimateMealMacros sent — a meal
+  // estimate came back as 74 characters ending mid-number, `"carb":123`, flagged "best available
+  // (truncated)". JSON.parse threw. Every time. On a perfect connection.
+  //
+  //   simple total-only prompt   700 truncates · 1200 truncates · 1800 PARSES
+  //   full items+total prompt   2400 truncates · 4000 PARSES
+  //
+  // Seven JSON-parsing callers sat under that. max_tokens is a CEILING, not a target — raising it
+  // costs nothing on a short answer and is the difference between an answer and nothing on a long
+  // one. A truncated reply is worth exactly zero to the person waiting for it.
+  tok = Math.max(tok || 1200, 2000);
   opts = opts || {};
   const TIMEOUT_MS = opts.timeout || 30000; // 30s ceiling — for the WHOLE call, not per attempt
   // Deadline for everything below. Two methods are tried in sequence; giving each the full ceiling
@@ -1226,7 +1239,9 @@ async function api(sys, hist, msg, tok, opts){
               try{
                 const _r = await withTimeout(
                   sb.functions.invoke('ai-proxy', { body: Object.assign({}, body, {
-                    max_tokens: Math.min(2048, Math.round((body.max_tokens || 600) * 2)),
+                    // 2048 was below what a thinking model needs to finish a real answer, so the
+                    // one honest retry truncated too and the person got nothing twice.
+                    max_tokens: Math.min(6000, Math.round((body.max_tokens || 600) * 2)),
                     __retriedTruncated: true
                   })}),
                   _left(),
@@ -4753,6 +4768,18 @@ function completeMorning(){
   try{
     const _d = document.getElementById('morning-done');
     if(_d) setTimeout(function(){ try{ _d.scrollIntoView({behavior:'smooth', block:'center'}); }catch(_){ } }, 90);
+    // The closing line is written per tradition — "your prayer is heard" is not something to say to a
+    // person who chose another path, or none, at the end of their own morning.
+    try{
+      const _ln = document.getElementById('morning-done-line');
+      if(_ln){
+        const _t = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
+        const _mid = { christianity:' Your prayer is heard.', islam:' Your du\u2019a is heard.',
+                       hinduism:' Your prayer is offered.', buddhism:' Held in stillness.',
+                       secular:'' }[_t] || '';
+        _ln.textContent = 'Your intention is set.' + _mid + ' Now go live the day.';
+      }
+    }catch(_){ }
     if(typeof showToast === 'function') showToast('Morning kept', 'Gratitude and intention saved for today.');
     if(typeof haptic === 'function') haptic('success');
   }catch(_){ }
@@ -4778,16 +4805,6 @@ function initMorningTab(){
   if(today&&today.length>0&&today[0].day===getDayCount()){
     document.getElementById('morning-done').style.display='block';
   if(typeof morningFinished==='function') morningFinished();
-  // The last tap of the flagship ritual moved nothing on screen. The save works, but morningFinished()
-  // un-hides all five steps at once and the pane is still at scrollTop 0, so the person is left looking
-  // at the top of step one and has no way to tell whether their morning was kept. The confirmation
-  // lands 1871px below the fold. Bring it to them.
-  try{
-    const _d = document.getElementById('morning-done');
-    if(_d) setTimeout(function(){ try{ _d.scrollIntoView({behavior:'smooth', block:'center'}); }catch(_){ } }, 90);
-    if(typeof showToast === 'function') showToast('Morning kept', 'Gratitude and intention saved for today.');
-    if(typeof haptic === 'function') haptic('success');
-  }catch(_){ }
 
     const po=document.querySelector('.prayer-opts');if(po)po.style.display='none';
     const dc=document.getElementById('morning-complete-direct');if(dc)dc.style.display='none';

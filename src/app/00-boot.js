@@ -412,6 +412,21 @@ function _todayLocalISO(d){
   return t.getFullYear() + '-' + p(t.getMonth() + 1) + '-' + p(t.getDate());
 }
 
+// _jsAttr escapes a string VALUE for use inside a JS string literal in an attribute: it turns ' into
+// \' so the literal does not close early. Passing it raw JS CODE is a category error — it escapes the
+// code's own quotes, and inside an HTML attribute \' is a literal backslash followed by a quote, which
+// is a SyntaxError. Two controls I shipped today were dead for exactly this reason: "Snap a meal" in
+// the More-ways sheet, and "Try again" on every meal-photo failure. Both looked correct in the source.
+//
+// Raw code in an attribute needs ATTRIBUTE escaping only — & and " — because single quotes are legal
+// inside a double-quoted attribute and must survive untouched.
+function _jsCode(code){
+  return String(code == null ? '' : code)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/\r?\n/g, ' ');
+}
+
 function _jsAttr(s){
   return String(s == null ? '' : s)
     .replace(/\\/g, '\\\\')
@@ -446,7 +461,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v558';
+const APP_VERSION = 'v559';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }

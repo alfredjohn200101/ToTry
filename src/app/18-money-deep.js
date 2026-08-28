@@ -343,14 +343,14 @@ function renderTransactions(){
   }
   
   // Render the new cards
-  try{ renderSubscriptions()(); }catch(_e){ console.warn('renderSubscriptions failed', _e); }
+  try{ renderSubscriptions(); }catch(_e){ console.warn('renderSubscriptions failed', _e); }
   try{ if(typeof renderFamilyContribution==='function') renderFamilyContribution(); }catch(_e){ console.warn('renderFamilyContribution failed', _e); }
   try{ if(typeof renderGiving==='function') renderGiving(); }catch(_e){ console.warn('renderGiving failed', _e); }
   try{ renderSubDetect(); }catch(_){}
   try{ if(typeof renderPoker==='function') renderPoker(); }catch(_e){ console.warn('renderPoker failed', _e); }
-  try{ renderBills()(); }catch(_e){ console.warn('renderBills failed', _e); }
-  try{ renderBudgets()(); }catch(_e){ console.warn('renderBudgets failed', _e); }
-  try{ renderNetWorth()(); }catch(_e){ console.warn('renderNetWorth failed', _e); }
+  try{ renderBills(); }catch(_e){ console.warn('renderBills failed', _e); }
+  try{ renderBudgets(); }catch(_e){ console.warn('renderBudgets failed', _e); }
+  try{ renderNetWorth(); }catch(_e){ console.warn('renderNetWorth failed', _e); }
 }
 
 // ── SUBSCRIPTIONS ────────────────────────────────────────────

@@ -2455,6 +2455,63 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── two controls must never share a pixel ────────────────────────────────────────────────────
+  // The 24pt floor says a control must be big enough to hit. It says nothing about whether the thing
+  // you hit is the one you aimed at — and the fix for that floor created exactly that harm: giving
+  // .fli-del a 44px box with margin:-13px -12px pulled Edit and Delete 12px toward each other on icons
+  // that sat 8px apart, so they overlapped by 18px and Delete, being later in the DOM, won. A tap
+  // meant for "fix the numbers" deleted the meal. That is strictly worse than the 19x17 target it
+  // replaced: a small button you miss costs a second, a button that silently does the destructive
+  // thing costs the entry.
+  //
+  // Four more pairs were already like this before that fix — the verse's share and save icons (44px
+  // boxes 24px apart, so "make a card" and "save" were partly one button), two rows of quick-food
+  // chips whose -9px vertical pull made wrapped rows overlap, and the habits "+ Add / edit", whose
+  // 17px upward pull reached into the streak card above it.
+  //
+  // Ancestors are skipped — a card that wraps its own buttons is containment, not collision.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+      const N = Date.now(), au = new Date().toLocaleDateString('en-AU');
+      s('totry_onboarded', true); s('totry_name', 'Alfy'); s('totry_tour_offered', true);
+      s('totry_start', new Date(N - 120*864e5).toISOString());
+      s('totry_v', [{ n:'Lust', mode:'abstinence', startDate:new Date(N - 106*864e5).toISOString() }]);
+      s('totry_saved_meals', [{ id:1, name:'My usual breakfast', cal:520, pro:38,
+        items:[{ name:'Oats', cal:320, pro:11 }] }]);
+      s('totry_nutlog', { [au]: [{ id:9, name:'Gyros', brand:'', serving:'1 serving', qty:1,
+        cal:720, pro:52, carb:66, fat:26, ts:new Date().toISOString(), meal:'lunch' }] });
+      s('totry_body', [{ weight:82.1, ts:new Date().toISOString() }]);
+      s('totry_f', { d:[{ n:'Car loan', t:12000, p:3600, r:7.2 }], u:5000, i:0 }); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2800);
+    for (const tab of ['home','fight','grow','nourish','track','money','soul']) {
+      const hits = await page.evaluate(async (t) => {
+        try { go(t); } catch (e) { return []; }
+        await new Promise(r => setTimeout(r, 1200));
+        const pane = document.getElementById('tab-' + t); if (!pane) return [];
+        const els = [...pane.querySelectorAll('button,[onclick]')]
+          .filter(e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
+        const out = [];
+        for (let i = 0; i < els.length; i++) for (let j = i + 1; j < els.length; j++) {
+          const A = els[i], B = els[j];
+          if (A.contains(B) || B.contains(A)) continue;
+          const a = A.getBoundingClientRect(), b = B.getBoundingClientRect();
+          if (a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom) continue;
+          const nm = e => (e.innerText || e.getAttribute('aria-label') || e.getAttribute('title') || '?')
+            .replace(/\s+/g, ' ').trim().slice(0, 18);
+          out.push(`${nm(A)} / ${nm(B)}`);
+        }
+        return out;
+      }, tab);
+      hits.forEach(h => findings.push(`overlap: ${tab} — two controls share a hit area: ${h}`));
+    }
+    await ctx.close();
+    if (!findings.some(f => f.startsWith('overlap:')))
+      console.log('overlap: no two controls share a pixel on any tab — a tap lands on what it aimed at');
+  }
+
   // ── one gold primary per screen ──────────────────────────────────────────────────────────────
   // The gold fill is the app saying "this is what this screen is for". Money spent it on four buttons
   // at once — the real hero beside "Add this debt", "Add goal" and "Log expense", two of them 440px

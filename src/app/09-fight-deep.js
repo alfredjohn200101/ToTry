@@ -83,7 +83,7 @@ function modEndSession(i){
   renderVices();
   if(typeof syncToCloud==='function') syncToCloud();
   haptic(within ? 'success' : 'tap');
-  if(within){ showToast('Held your line \uD83C\uDF3F', 'You stayed within tonight. That\u2019s real self-respect.'); }
+  if(within){ showToast('Held your line \uD83C\uDF3F', 'You stayed within your line. That\u2019s real self-respect.'); }
   else { showToast('Noted, honestly', 'You went over, and you logged it truthfully. That awareness is how the line gets easier to hold. No shame here.'); }
 }
 
@@ -797,7 +797,11 @@ function renderVices(){
         // card's own render — v546 fixed the quit one and left this untouched.
         ((v.t || insight)
           ? '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">' +
-              (v.t ? 'Usually: ' + _escFew(v.t) : '') + insight + '</div>'
+              // Same leading-middot bug as the quit card 95 lines below, which I fixed and this one
+              // did not get: insight carries its own ' · ', so with no known time the line began
+              // "· Peaks late night" — a separator joined to nothing.
+              [(v.t ? 'Usually: ' + _escFew(v.t) : ''), String(insight || '').replace(/^\s*\u00b7\s*/, '')]
+                .filter(function(x){ return x && x.trim(); }).join(' \u00b7 ') + '</div>'
           : '') +
         _stageStripHTML(i) + _pledgeRowHTML(i) + _stageCtaHTML(i) +
         (function(){
@@ -814,11 +818,11 @@ function renderVices(){
             return '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:8px">'+
               '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">'+
                 '<button onclick="modCountDown('+i+')" aria-label="minus" style="width:40px;height:40px;border-radius:50%;background:var(--bg);border:1px solid var(--bd);color:var(--tx2);font-size:20px;cursor:pointer">\u2212</button>'+
-                '<div style="text-align:center;flex:1"><div style="font-family:DM Mono,monospace;font-size:34px;font-weight:600;color:'+col+';line-height:1">'+count+'</div><div style="font-size:10px;color:var(--tx3);margin-top:2px">'+unit+' tonight</div></div>'+
+                '<div style="text-align:center;flex:1"><div style="font-family:DM Mono,monospace;font-size:34px;font-weight:600;color:'+col+';line-height:1">'+count+'</div><div style="font-size:10px;color:var(--tx3);margin-top:2px">'+unit+' so far</div></div>'+
                 '<button onclick="modCountUp('+i+')" aria-label="plus" style="width:40px;height:40px;border-radius:50%;background:var(--go);border:none;color:#1a1505;font-size:22px;font-weight:600;cursor:pointer">+</button>'+
               '</div>'+
               '<div style="font-size:11px;color:var(--tx3);text-align:center;margin-top:10px;line-height:1.5">'+statusLine+'</div>'+
-              (s ? '<button onclick="modEndSession('+i+')" style="width:100%;margin-top:10px;background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:8px;padding:8px;font-size:11px;cursor:pointer">End the night \u00b7 log it</button>' : '')+
+              (s ? '<button onclick="modEndSession('+i+')" style="width:100%;margin-top:10px;background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:8px;padding:8px;font-size:11px;cursor:pointer">Close this session \u00b7 log it</button>' : '')+
             '</div>'+
             (function(){
               // The counter above is tonight. This is the truth of the week — the number that
