@@ -2,6 +2,37 @@
 
 This is everything to get the backend matching the app (cache v128).
 
+## ⚠ WHY THE REDEPLOY MATTERS — measured against the LIVE proxy, 28 Aug 2026
+
+The deployed `ai-proxy` is behind `supabase/functions/ai-proxy/index.ts` in this repo, and the gap is
+what broke the AI food estimate for every real meal:
+
+- **The deployed version does not cap Gemini's thinking budget.** Gemini 2.5 Flash spends the token
+  budget reasoning before it writes a character, so at `max_tokens: 700` a meal estimate came back as
+  74 characters ending mid-number (`"carb":123`), flagged `note: "best available (truncated)"`, and
+  the app's `JSON.parse` threw. On a perfect connection. Every time.
+
+  Measured, deployed version: simple `{name,cal,pro,…}` needs **1800** tokens to parse; the full
+  `{name, items:[…], total:{…}}` shape needs **4000**.
+
+  The local source sets `thinkingConfig: { thinkingBudget: 0 }` on the text path (and now the VISION
+  path too — that one was missed). Redeploying gives the whole budget to the answer, which makes food
+  logging both work at a much smaller budget and finish noticeably faster.
+
+- **Groq is dead in the deployed version**: it returned
+  `404 The model 'qwen/qwen3-32b' does not exist or you do not have access to it`.
+  That id is removed from the local source; four current candidates remain.
+
+- **OpenRouter returned 429** (free-tier quota). Its three model ids are still live — re-verified in
+  the public `/api/v1/models` on 28 Aug 2026 — so that is quota, not rot. **Topping up any second
+  provider removes the single point of failure**: right now Gemini is the only working link, so one
+  Gemini outage takes the food camera, the companion and the coach with it.
+
+The app compensates client-side in the meantime (`api()` floors `max_tokens` at 2000, the meal
+estimate sends 4000, the truncation retry caps at 6000). Those are ceilings, so they stay harmless
+after the redeploy.
+
+
 ## 1. Deploy the function
 
 Put `ai-proxy.ts` at `supabase/functions/ai-proxy/index.ts` in your project, then:

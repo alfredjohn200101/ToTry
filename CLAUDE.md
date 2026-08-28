@@ -42,7 +42,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
-- `APP_VERSION` in `src/app/00-boot.js` — currently **v530**. Bump it AND `CACHE` in sw.js together, always.
+- `APP_VERSION` in `src/app/00-boot.js` — currently **v560**. Bump it AND `CACHE` in sw.js together, always.
 
 ## The nervous system (key functions — grep these)
 - `getLifeState()` — returns the whole person {training, nutrition, body, soul, fight, readiness,
@@ -114,7 +114,17 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    links hand off correctly). What is left is yours and cannot be automated: archive → TestFlight,
    the age rating, the App Privacy form, and testing barcode / Face ID / haptics / notifications on
    real hardware. `npm run preflight` checks the rest before you archive.
-2. **Two edge functions need redeploying** (they are fixed in `supabase/functions/` and NOT live):
+2. **Two edge functions need redeploying — and this is what breaks the food camera.** Measured
+   against the LIVE proxy on 28 Aug 2026: the deployed `ai-proxy` does not set Gemini's
+   `thinkingConfig.thinkingBudget: 0`, and 2.5 Flash spends the token budget reasoning before it
+   writes anything — so at `max_tokens: 700` a meal estimate returned 74 characters ending mid-number
+   and `JSON.parse` threw, every time, on a perfect connection. The app now compensates client-side
+   (`api()` floors at 2000, the meal estimate sends 4000, the retry caps at 6000; the vision call went
+   500 → 4000) and the local edge source has the cap on BOTH the text and vision paths. Groq is 404ing
+   on a retired model id; OpenRouter is 429 on free-tier quota with all three ids still live. **Gemini
+   is currently the only working link in the chain.** See AI-PROXY-DEPLOY.md, which now opens with all
+   of this.
+   The other fixes waiting in `supabase/functions/` and NOT live:
    `key-proxy` — the FatSecret `invalid_client` was our own substring bug (FATSECRET contains
    SECRET); `ai-proxy` — identity came from a client-supplied field, so the public anon key could
    spend someone else's quota. Also the `push_subscriptions` column types in AI-PROXY-DEPLOY.md

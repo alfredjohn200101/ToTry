@@ -45,9 +45,14 @@ const MODELS = {
   // Groq retires model IDs regularly and its model list needs an API key, so this cannot be verified
   // from outside. Several current candidates are listed; whichever answers first wins, and the
   // `attempts` array in the response names it, so the winner is observable without guessing.
+  // qwen/qwen3-32b was dropped on 28 Aug 2026 — the LIVE proxy returned
+  //   404 "The model `qwen/qwen3-32b` does not exist or you do not have access to it"
+  // so it is a wasted attempt on the way to the next provider. The four below are untried against a
+  // key from here; whichever answers first wins and `attempts` in the response names it.
   groq:        ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "openai/gpt-oss-120b",
-                "meta-llama/llama-4-scout-17b-16e-instruct", "qwen/qwen3-32b"],
-  // Verified present in OpenRouter's public /api/v1/models on 17 Aug 2026.
+                "meta-llama/llama-4-scout-17b-16e-instruct"],
+  // Verified present in OpenRouter's public /api/v1/models on 17 Aug and re-verified 28 Aug 2026
+  // (all three still listed; the free tier was returning 429 that day, which is quota, not rot).
   openrouter:  ["google/gemma-4-31b-it:free", "nvidia/nemotron-3-super-120b-a12b:free",
                 "google/gemma-4-26b-a4b-it:free"],
   anthropic:   ["claude-haiku-4-5-20251001"],
@@ -226,7 +231,13 @@ async function callGeminiVision({ system, prompt, image_base64, image_mime, max_
   if (!key) return { skip: true };
   const parts = [{ text: prompt }, { inlineData: { mimeType: image_mime || "image/png", data: image_base64 } }];
   return await tryModels(modelList("GEMINI_VISION_MODEL", "geminiVision"), async (model) => {
-    const body = { contents: [{ role: "user", parts }], generationConfig: { maxOutputTokens: max_tokens || 1024, temperature: 0.3 } };
+    // The TEXT path sets thinkingBudget 0 (line ~116) and this one never did. 2.5 Flash is a thinking
+    // model: without the cap it spends the output budget reasoning before it writes a character, so a
+    // photo of a plate came back truncated mid-JSON and the client's JSON.parse threw. Measured on the
+    // live proxy 28 Aug 2026: the text shape needed 4000 tokens to finish WITHOUT the cap. With it,
+    // the whole budget goes to the answer.
+    const body = { contents: [{ role: "user", parts }], generationConfig: {
+      maxOutputTokens: max_tokens || 1024, temperature: 0.3, thinkingConfig: { thinkingBudget: 0 } } };
     if (system) body.systemInstruction = { parts: [{ text: system }] };
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
     const resp = await fetchWithTimeout(url, {
