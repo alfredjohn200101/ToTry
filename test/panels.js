@@ -2458,6 +2458,44 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── the integration has to work for OUR OWN users ────────────────────────────────────────────
+  // Twice in one pass the same shape: a cross-front feature that worked for people who log somewhere
+  // else and did nothing for people who log here. PRs were detected on a Hevy sync only. And the
+  // train→fuel handoff summed w.calories, which Strava and Apple Health set and our own save never
+  // does — a session logged in this app stores durationMin — so it summed to zero and the line
+  // dropped its figure for exactly the person using our logger.
+  //
+  // The burn was being computed the whole time, by _burnForWorkout, into its own ledger. The handoff
+  // just was not asking it. Integration that only fires for imported data is not integration.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { localStorage.setItem('totry_onboarded','true');
+      localStorage.setItem('totry_name', JSON.stringify('Alfy')); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const r = await page.evaluate(async () => {
+      const N = Date.now();
+      // three sessions the way OUR OWN save writes them: durationMin, no calories field at all
+      ls('totry_workouts', Array.from({ length:3 }, (_, i) => ({
+        id:'w'+i, source:'manual', type:'Push', splitFocus:'Push',
+        ts:new Date(N - i*2*864e5).toISOString(), volume:5200, completedSets:14, totalSets:14,
+        durationMin:58, exercises:[{ name:'Bench Press', sets:[{ weight:60, reps:8, done:true }] }] })));
+      go('grow'); await new Promise(x => setTimeout(x, 1700));
+      const t = document.getElementById('tab-grow').innerText || '';
+      const line = (t.split('\n').map(x => x.trim()).find(x => /sessions? this week/i.test(x)) || '');
+      return { line, perSession: (typeof _burnForWorkout === 'function') ? _burnForWorkout({ durationMin:58 }) : 0 };
+    });
+    await ctx.close();
+    if (!r.perSession) findings.push('handoff: _burnForWorkout returns nothing for a duration-only session');
+    if (!/sessions this week/i.test(r.line))
+      findings.push(`handoff: no train→fuel line at all — "${r.line.slice(0,50)}"`);
+    else if (!/cal earned/i.test(r.line))
+      findings.push(`handoff: the line lost its figure for a session logged in this app — "${r.line.slice(0,60)}"`);
+    if (!findings.some(f => f.startsWith('handoff:')))
+      console.log('handoff: a session logged HERE earns its calories too — the cross-front line is not Strava-only');
+  }
+
   // ── a slip resets the streak, never the fight ────────────────────────────────────────────────
   // viceFightingSince takes the EARLIEST of fightingSince, the relapse dates, and startDate — and
   // logLoss overwrote startDate without ever setting fightingSince. restartVice had that line; the

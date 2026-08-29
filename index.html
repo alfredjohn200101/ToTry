@@ -5271,7 +5271,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v565';
+const APP_VERSION = 'v566';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -28107,7 +28107,13 @@ function renderGrowHandoffs(){
 
     // TRAIN → what it earned
     const ws = (ls('totry_workouts')||[]).filter(w => w && w.ts && inWeek(w.ts));
-    const burned = Math.round(ws.reduce((a,w) => a + (Number(w.calories)||0), 0));
+    // w.calories is set by Strava and Apple Health imports and by nothing else — a strength session
+    // logged in THIS app stores durationMin and no calories, so this summed to 0 and the handoff fell
+    // back to "fuel what you earned" with no figure, for exactly the people using our own logger.
+    // _burnForWorkout is the burn ledger's own function and handles both: logged calories where they
+    // exist, an honest ~6 kcal/min from duration where they do not. Same shape as the PR bug.
+    const burned = Math.round(ws.reduce((a,w) => a +
+      ((typeof _burnForWorkout === 'function') ? _burnForWorkout(w) : (Number(w.calories)||0)), 0));
     let trainLine = '';
     if(ws.length){
       const n = ws.length + (ws.length === 1 ? ' session' : ' sessions');
