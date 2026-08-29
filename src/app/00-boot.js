@@ -461,7 +461,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v566';
+const APP_VERSION = 'v567';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -496,10 +496,10 @@ async function esvPassage(q){
     if(d && d.passages && d.passages[0]) return d.passages[0];
     const own = ls('totry_esv_key');
     if(!own) return null;
-    const r = await fetch('https://api.esv.org/v3/passage/text/?q=' + encodeURIComponent(q) +
+    const r = await _fetchT('https://api.esv.org/v3/passage/text/?q=' + encodeURIComponent(q) +
       '&include-verse-numbers=true&include-headings=false&include-footnotes=false' +
       '&include-short-copyright=false&include-passage-references=false',
-      { headers: { 'Authorization': 'Token ' + own } });
+      9000, { headers: { 'Authorization': 'Token ' + own } });
     if(!r.ok) return null;
     const j = await r.json();
     return (j.passages && j.passages[0]) ? j.passages[0] : null;
@@ -847,7 +847,7 @@ const SYNC_KEYS = [
   // Goals & weekly review
   'totry_goals','totry_reviews','totry_tomorrow_tasks',
   // Apps & personalisation
-  'totry_apps_used','totry_affirms','totry_notif_schedule','totry_honest_q',
+  'totry_apps_used','totry_affirms','totry_honest_q',
   // Preferences (v29)
   'totry_currency','totry_weight_unit','totry_distance_unit','totry_theme','totry_timezone',
   'totry_tombstones',   // deletions, so a union cannot resurrect what someone removed

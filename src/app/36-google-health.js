@@ -117,9 +117,28 @@ async function syncGoogleHealth(){
           if(p.value && p.value[0]) steps += p.value[0].intVal || 0;
         });
       }
-      stepDays.push({date:new Date(parseInt(b.startTimeMillis)).toDateString(), steps});
+      stepDays.push({date:new Date(parseInt(b.startTimeMillis)).toDateString(), ms:parseInt(b.startTimeMillis), steps});
     });
     ls('totry_google_steps', stepDays);
+    // SEVEN DAYS ARE FETCHED AND ONLY TODAY WAS EVER USED. The other six went into
+    // totry_google_steps, which nothing read back — so a person who connected Google Health on a
+    // Friday watched Friday's steps appear and the week they had actually walked stay blank. The
+    // integration reported success and delivered a seventh of what it had in hand.
+    // Backfilled into the same trackers store the Track tab reads, and never over a number the
+    // person entered themselves: that one is theirs, and a sync has no business replacing it.
+    // Today is the deliberate exception below — a live device count beats a manual estimate for the
+    // day still in progress.
+    try{
+      const tr = ls('totry_trackers') || {};
+      let filled = 0;
+      stepDays.forEach(function(d){
+        if(!d.ms || !(d.steps > 0)) return;
+        const k = new Date(d.ms).toLocaleDateString('en-AU');
+        if(!tr[k]) tr[k] = { water:0, sleep:0, steps:0 };
+        if(!(tr[k].steps > 0)){ tr[k].steps = d.steps; filled++; }
+      });
+      if(filled) ls('totry_trackers', tr);
+    }catch(_){}
     // Today's steps
     const today = stepDays.find(d=>d.date===new Date().toDateString());
     if(today && today.steps > 0){

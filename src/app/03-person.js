@@ -3142,6 +3142,25 @@ function openPractice(){ const t=faithTradition(); if(t==='christianity'){ if(ty
 if(t==='buddhism'){ openMetta(); return; } if(t==='secular'){ openStillness(); return; } if(typeof openBreathMenu==='function') openBreathMenu(); }
 function openMetta(){ if(typeof go==='function') go('practice'); _renderPractice('metta'); }
 function openStillness(){ if(typeof go==='function') go('practice'); _renderPractice('stillness'); }
+// Every scripture and prayer-time fetch below shipped with NO timeout, and `fetch` does not time out
+// on its own. Offline is the easy case — it rejects fast and the catch shows the bundled passages. The
+// bad case is a stalled connection or a captive portal: the promise never settles, so the catch never
+// runs, the bundled fallback that exists precisely so the tab is never empty never fires, and the
+// reader sits on "Loading…" — eight characters — for as long as the person is willing to wait. That is
+// worse than being offline.
+// Nine seconds comes from the measured live calls: Wikisource returns a 12-23KB book, alquran.cloud a
+// surah, and both land in well under two seconds on a normal line. Past nine a person is watching a
+// spinner, and their own tradition's bundled text is a better answer than a longer wait.
+function _fetchT(u, ms, init){
+  const o = init || {};
+  if(typeof AbortController !== 'function') return fetch(u, o);
+  const ctrl = new AbortController();
+  const t = setTimeout(function(){ try{ ctrl.abort(); }catch(_){ } }, ms || 9000);
+  const opts = {}; for(const k in o) opts[k] = o[k];
+  opts.signal = ctrl.signal;
+  return fetch(u, opts).then(function(r){ clearTimeout(t); return r; },
+                             function(e){ clearTimeout(t); throw e; });
+}
 function _readLoading(){ return '<div style="text-align:center;padding:26px;color:var(--tx3);font-size:13px">Loading…</div>'; }
 function _readErr(msg){ return '<div class="card" style="text-align:center;color:var(--tx3);font-size:13px;padding:18px">'+(msg||'Couldn’t load right now. Check your connection and try again.')+'</div>'; }
 function _selStyle(){ return 'background:var(--bg3);border:1px solid var(--bd);color:var(--tx);border-radius:9px;padding:9px 11px;font-size:13px;max-width:100%'; }
@@ -3173,7 +3192,7 @@ function _readBundled(sel,content,bank){
 // Qur'an — Al-Quran Cloud (free, no key): surah picker + Arabic + English.
 async function _readQuranInit(sel,content){
   let surahs=window.__quranSurahs;
-  if(!surahs){ try{ const r=await fetch('https://api.alquran.cloud/v1/surah'); const j=await r.json(); surahs=(j&&j.data)||null; window.__quranSurahs=surahs; }catch(e){ surahs=null; } }
+  if(!surahs){ try{ const r=await _fetchT('https://api.alquran.cloud/v1/surah'); const j=await r.json(); surahs=(j&&j.data)||null; window.__quranSurahs=surahs; }catch(e){ surahs=null; } }
   let start=1; try{ if(typeof getDayCount==='function'){ start=(getDayCount()%20)+1; } }catch(_){ }
   try{ if(window.__quranJump){ start=window.__quranJump; window.__quranJump=0; } }catch(_){ }
   if(sel){ sel.innerHTML = surahs ? '<select id="quran-surah" onchange="_readQuranLoad(this.value)" style="'+_selStyle()+'">'+surahs.map(s=>'<option value="'+s.number+'"'+(s.number===start?' selected':'')+'>'+s.number+'. '+s.englishName+'</option>').join('')+'</select>' : ''; }
@@ -3183,8 +3202,8 @@ async function _readQuranLoad(n){
   const content=document.getElementById('read-content'); if(!content) return; content.innerHTML=_readLoading();
   try{
     let ar=null,en=null;
-    try{ const r=await fetch('https://api.alquran.cloud/v1/surah/'+n+'/editions/quran-uthmani,en.sahih'); const j=await r.json(); if(j&&j.data&&j.data.length>=2){ ar=j.data[0].ayahs; en=j.data[1].ayahs; } }catch(e){}
-    if(!en){ const r2=await fetch('https://api.alquran.cloud/v1/surah/'+n+'/en.sahih'); const j2=await r2.json(); en=j2.data.ayahs; }
+    try{ const r=await _fetchT('https://api.alquran.cloud/v1/surah/'+n+'/editions/quran-uthmani,en.sahih'); const j=await r.json(); if(j&&j.data&&j.data.length>=2){ ar=j.data[0].ayahs; en=j.data[1].ayahs; } }catch(e){}
+    if(!en){ const r2=await _fetchT('https://api.alquran.cloud/v1/surah/'+n+'/en.sahih'); const j2=await r2.json(); en=j2.data.ayahs; }
     content.innerHTML='<div class="card">'+en.map((a,i)=>'<div style="margin-bottom:15px">'+(ar&&ar[i]?'<div dir="rtl" style="font-size:21px;line-height:2.1;color:var(--tx);text-align:right;margin-bottom:5px">'+ar[i].text+'</div>':'')+'<div style="font-size:13.5px;color:var(--tx2);line-height:1.65">'+a.text+' <span style="color:var(--tx3);font-size:11px">('+n+':'+a.numberInSurah+')</span></div></div>').join('')+'</div>';
   }catch(e){
     // Offline: the bundled pool, not an error box. The Dhammapada and Meditations readers added later
@@ -3223,7 +3242,7 @@ async function _readStoicLoad(book){
   try{
     const u='https://en.wikisource.org/w/api.php?action=query&format=json&origin=*&prop=extracts'+
             '&explaintext=1&redirects=1&titles='+encodeURIComponent(STOIC_PAGE+book);
-    const r=await fetch(u);
+    const r=await _fetchT(u);
     if(!r.ok) throw new Error('net');
     const j=await r.json();
     const pages=(j&&j.query&&j.query.pages)||{};
@@ -3302,7 +3321,7 @@ async function _readDhammapadaLoad(uid){
   const content=document.getElementById('read-content'); if(!content) return;
   content.innerHTML=_readLoading();
   try{
-    const r=await fetch('https://suttacentral.net/api/bilarasuttas/'+encodeURIComponent(uid)+'/sujato');
+    const r=await _fetchT('https://suttacentral.net/api/bilarasuttas/'+encodeURIComponent(uid)+'/sujato');
     if(!r.ok) throw new Error('net');
     const j=await r.json();
     const tr=j.translation_text||{}, root=j.root_text||{};
@@ -3358,7 +3377,7 @@ async function _readGitaInit(sel,content){
 async function _readGitaLoad(){
   const content=document.getElementById('read-content'); if(!content) return; content.innerHTML=_readLoading();
   try{
-    const g=window.__gita; const r=await fetch('https://vedicscriptures.github.io/slok/'+g.ch+'/'+g.v+'/index.json');
+    const g=window.__gita; const r=await _fetchT('https://vedicscriptures.github.io/slok/'+g.ch+'/'+g.v+'/index.json');
     if(!r.ok) throw new Error('net'); const j=await r.json();
     const en=(j.siva&&j.siva.et)||(j.purohit&&j.purohit.et)||(j.raman&&j.raman.et)||(j.gambir&&j.gambir.et)||'';
     content.innerHTML='<div class="card"><div style="font-size:12px;color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+g.ch+'.'+g.v+' <span style="color:var(--tx3);letter-spacing:0">· verse '+g.v+' of '+_gitaCount(g.ch)+'</span></div>'+(j.slok?'<div style="font-size:16px;line-height:1.95;color:var(--tx);margin-bottom:8px">'+j.slok+'</div>':'')+(j.transliteration?'<div style="font-size:12.5px;font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+String(j.transliteration).trim()+'</div>':'')+'<div style="font-size:14px;color:var(--tx2);line-height:1.75">'+en+'</div></div>';
@@ -3435,7 +3454,7 @@ async function _loadSalah(){
   }
   if(!coords){ box.innerHTML='<div class="card" style="text-align:center;font-size:13px;color:var(--tx3);padding:18px;line-height:1.6">Allow location to see today’s prayer times.<br><button class="btn" onclick="_promptCity()" style="margin-top:10px;display:inline-block;padding:7px 14px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Or enter your city</button></div>'; return; }
   try{
-    const r=await fetch('https://api.aladhan.com/v1/timings/'+_salahDateStr()+'?latitude='+coords.lat+'&longitude='+coords.lng+'&method=2');
+    const r=await _fetchT('https://api.aladhan.com/v1/timings/'+_salahDateStr()+'?latitude='+coords.lat+'&longitude='+coords.lng+'&method=2');
     const j=await r.json(); if(j.code!==200||!j.data) throw new Error('n'); box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri);
   }catch(e){ box.innerHTML=_readErr('Couldn’t load prayer times right now.'); }
 }
@@ -3445,7 +3464,7 @@ async function _loadSalahByCity(city){
   // NB: the city is saved further down, only after the API confirms it resolved — so a typo is never
   // persisted and then silently reused. The bug was never the write; it was that _loadSalah() did not
   // READ it, so the saved city sat there unused and people retyped it every visit.
-  try{ const r=await fetch('https://api.aladhan.com/v1/timingsByCity/'+_salahDateStr()+'?city='+encodeURIComponent(city)+'&country=&method=2'); const j=await r.json(); if(j.code!==200||!j.data) throw new Error('c'); try{ ls('totry_city',city); }catch(_){} if(box) box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri)+'<div style="text-align:center;margin-top:8px"><button class="btn" onclick="_promptCity()" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">Change city</button></div>'; }
+  try{ const r=await _fetchT('https://api.aladhan.com/v1/timingsByCity/'+_salahDateStr()+'?city='+encodeURIComponent(city)+'&country=&method=2'); const j=await r.json(); if(j.code!==200||!j.data) throw new Error('c'); try{ ls('totry_city',city); }catch(_){} if(box) box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri)+'<div style="text-align:center;margin-top:8px"><button class="btn" onclick="_promptCity()" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">Change city</button></div>'; }
   catch(e){ if(box) box.innerHTML=_readErr('Couldn’t find that city — try a larger nearby one.'); }
 }
 function _salahCard(t,h){
@@ -3602,7 +3621,7 @@ function _practiceReset(){ const st=window.__practice; if(!st) return; st.phase=
 async function _openAsma(){
   const el=document.getElementById('practice-content'); if(!el) return; el.innerHTML=_readLoading();
   let names=window.__asma;
-  if(!names){ try{ const r=await fetch('https://api.aladhan.com/v1/asmaAlHusna'); const j=await r.json(); names=(j&&j.code===200)?j.data:null; window.__asma=names; }catch(e){ names=null; } }
+  if(!names){ try{ const r=await _fetchT('https://api.aladhan.com/v1/asmaAlHusna'); const j=await r.json(); names=(j&&j.code===200)?j.data:null; window.__asma=names; }catch(e){ names=null; } }
   const back='<div style="margin-bottom:10px"><button class="btn" onclick="_renderPractice(\'dhikr\')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px;padding:7px 12px">‹ Tasbih counter</button></div>';
   if(!names){ el.innerHTML=back+_readErr('Couldn’t load the names right now.'); return; }
   const rows=names.map((n,i)=>'<div style="display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--bd)"><div style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);min-width:22px">'+(i+1)+'</div><div style="flex:1"><div style="font-size:14px;color:var(--tx)">'+n.transliteration+'</div><div style="font-size:12px;color:var(--tx3)">'+n.en.meaning+'</div></div><div dir="rtl" style="font-size:22px;color:var(--go)">'+n.name+'</div></div>').join('');

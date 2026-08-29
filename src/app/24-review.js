@@ -751,11 +751,11 @@ async function fetchLiturgy(){
   const base = 'https://cpbjr.github.io/catholic-readings-api';
   const out = { readings:null, celebration:null, season:null };
   try{
-    const r = await fetch(base + '/readings/' + y + '/' + mmdd + '.json');
+    const r = await _fetchT(base + '/readings/' + y + '/' + mmdd + '.json', 8000);
     if(r.ok){ const d = await r.json(); out.readings = d.readings || null; out.season = d.season || null; out.usccb = d.usccbLink || null; }
   }catch(_){ }
   try{
-    const c = await fetch(base + '/liturgical-calendar/' + y + '/' + mmdd + '.json');
+    const c = await _fetchT(base + '/liturgical-calendar/' + y + '/' + mmdd + '.json', 8000);
     if(c.ok){ const d = await c.json(); out.celebration = d.celebration || null; if(!out.season) out.season = d.season || null; }
   }catch(_){ }
   if(out.readings || out.celebration){ ls(cacheKey, out); }

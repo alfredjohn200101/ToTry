@@ -5104,6 +5104,59 @@ function fnBodyOf(code, name){
   H.eq(orphans, [], 'no line is a bare keyword with nothing after it');
 }
 
+// ── no remote call can hang forever ──────────────────────────────────────────────────────────────
+{
+  H.section('every remote fetch can time out');
+
+  // `fetch` has no timeout of its own, and OFFLINE is the easy case — it rejects fast, the catch runs,
+  // the fallback shows. The bad case is a STALLED connection: the promise never settles, so the catch
+  // never runs and the fallback that exists precisely so the screen is never empty never fires.
+  // Both were measured against a route held open and then dropped, not reasoned about:
+  //   · the barcode scanner sat on "Looking up 9310072019283..." past 24 seconds with no way out —
+  //     and it is used standing in a supermarket aisle, the worst connection the app ever sees
+  //   · the secular reader sat on "Loading…" — eight characters — indefinitely, while the bundled
+  //     Marcus Aurelius pool written for exactly that moment waited in the catch that never ran
+  // With _fetchT the same stall gives up at 7s per mirror and 9s per reader, and lands on the real
+  // answer: "isn't in the food database — search by name", and the bundled passages.
+  H.ok(/function _fetchT\(/.test(H.html), '_fetchT exists');
+  const ft = H.extractFn('_fetchT');
+  H.ok(/new AbortController\(\)/.test(ft) && /ctrl\.abort\(\)/.test(ft), 'it aborts on a timer');
+  // Counted, not merely present: the first version of this line tested /clearTimeout\(t\)/ and passed
+  // happily with the clear DELETED from the rejection path — one match on the resolve path was enough
+  // to satisfy it. An assertion whose wording claims more than its regex checks is worse than none.
+  H.ok((ft.match(/clearTimeout\(t\)/g) || []).length >= 2,
+       'and clears that timer on BOTH settle paths, so a fast reply costs nothing');
+
+  // The durable half: a NEW untimed remote call fails this and has to be a decision, not an oversight.
+  const bad = [];
+  H.html.split('\n').forEach((l, n) => {
+    const t = l.trim();
+    if (!/await\s+fetch\(/.test(t)) return;
+    if (/signal:/.test(t)) return;                  // carries its own AbortController
+    if (/\.blob\(\)/.test(t)) return;               // a data: URL off the canvas — cannot stall
+    if (/await fetch\(API, \{$/.test(t)) return;    // the AI call: its signal is on a later line
+    bad.push((n + 1) + ': ' + t.slice(0, 78));
+  });
+  H.eq(bad, [], 'no remote fetch is left without a timeout, its own AbortController, or a local source');
+}
+
+// ── a synced week is not thrown away ─────────────────────────────────────────────────────────────
+{
+  H.section('Google Health delivers the week it fetched');
+
+  // The sync asked for seven days and used one. The other six were written to totry_google_steps,
+  // which nothing read back — so connecting on a Friday showed Friday and left the week actually
+  // walked blank, while the integration reported success.
+  const fn = H.extractFn('syncGoogleHealth');
+  H.ok(/stepDays\.forEach/.test(fn), 'every fetched day is walked, not only today');
+  H.ok(/ms:parseInt\(b\.startTimeMillis\)/.test(fn),
+       'each day carries its own timestamp, so it lands on the date it belongs to');
+  H.ok(/toLocaleDateString\('en-AU'\)/.test(fn),
+       'and is keyed the way the rest of the app keys a day, or Track would never see it');
+  H.ok(/if\(!\(tr\[k\]\.steps > 0\)\)/.test(fn),
+       'a number the person entered themselves is never overwritten by the sync');
+}
+
 // ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────
 // Every test in this file reads H.html, which reads index.html — the ASSEMBLED file. So a change
 // made directly to index.html passes everything here and then vanishes the next time anyone runs

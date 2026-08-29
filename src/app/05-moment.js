@@ -1976,7 +1976,6 @@ function openProgressCheckin(){
     // How many life areas someone checked in on, and whether they wrote something, is a shape of their
     // week. The event that a check-in happened is the feature signal; the rest is theirs.
     try{ if(typeof logEvent==='function') logEvent('progress_checkin'); }catch(_){}
-    try{ ls('totry_last_checkin', Date.now()); }catch(_){}
     m.remove();
     const t=document.createElement('div'); t.className='modal-bg open'; t.style.alignItems='center';
     t.innerHTML='<div class="modal" style="text-align:center"><div style="font-size:30px;margin-bottom:8px">🙏</div><div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:10px">Thank you — really.</div><div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:16px">'+_raffleCopy('thanks')+'</div><button class="btn primary" onclick="closeModal(this)">Back to it</button></div>';

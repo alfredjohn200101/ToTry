@@ -2568,60 +2568,11 @@ input:focus,textarea:focus,select:focus{
 <!-- TAB 4: NOURISH -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-nourish" class="tab">
-  <div id="nut-setup-nudge"></div>
   <div id="nut-cycle-badge"></div>
   <div id="cycle-nourish-note"></div>          <!-- C: Nourish, after nut-cycle-badge -->
 
   <!-- ══ SECTION 1 · YOUR TARGET — the number + the TDEE calculator that sets it, right where the
        "set my real target" nudge points. Collapsed once you've set it; the top of the loop. ══ -->
-  <details id="nut-goals-details" style="margin-bottom:14px">
-    <summary style="cursor:pointer;padding:12px;background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);font-family:DM Mono,monospace;font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.12em;list-style:none">
-      ⚙ Your target · goals & TDEE calculator
-    </summary>
-    <div class="card" style="margin-top:8px">
-      <div style="font-size:12px;color:var(--tx3);margin-bottom:8px;line-height:1.5">Already know your macros? Enter them directly. Leave carbs/fat blank if you only track calories + protein.</div>
-      <div class="row"><input type="number" id="nut-goal-cal" placeholder="Calories"><input type="number" id="nut-goal-pro" placeholder="Protein (g)"></div>
-      <div class="row"><input type="number" id="nut-goal-carb" placeholder="Carbs (g) — optional"><input type="number" id="nut-goal-fat" placeholder="Fat (g) — optional"></div>
-      <button class="btn primary" onclick="saveNutGoals()" style="margin-bottom:10px">Save my goals</button>
-      <!-- TDEE Calculator -->
-      <div style="border-top:1px solid var(--bd);padding-top:10px">
-        <div style="font-size:12px;color:var(--tx3);margin-bottom:8px">Don't know your targets? Calculate them.</div>
-        <div class="tdee-form">
-          <div class="tdee-row">
-            <div class="tdee-field"><div class="tdee-label">Age</div><input type="number" id="tdee-age" placeholder="25" min="13" max="100"></div>
-            <div class="tdee-field"><div class="tdee-label" id="tdee-weight-label">Weight (kg)</div><input type="number" id="tdee-weight" placeholder="75" step="0.1"></div>
-            <div class="tdee-field"><div class="tdee-label">Height (cm)</div><input type="number" id="tdee-height" placeholder="175"></div>
-          </div>
-          <div class="tdee-row">
-            <div class="tdee-field">
-              <div class="tdee-label">Sex</div>
-              <select id="tdee-sex"><option value="male">Male</option><option value="female">Female</option></select>
-            </div>
-            <div class="tdee-field">
-              <div class="tdee-label">Activity</div>
-              <select id="tdee-activity">
-                <option value="1.2">Sedentary</option>
-                <option value="1.375">Light 1–3×</option>
-                <option value="1.55" selected>Moderate 3–5×</option>
-                <option value="1.725">Active 6–7×</option>
-                <option value="1.9">Very active</option>
-              </select>
-            </div>
-            <div class="tdee-field">
-              <div class="tdee-label">Goal</div>
-              <select id="tdee-goal">
-                <option value="lose">Lose fat</option>
-                <option value="maintain" selected>Maintain</option>
-                <option value="gain">Build muscle</option>
-              </select>
-            </div>
-          </div>
-          <button class="btn blue" onclick="calcTDEE()">Calculate my targets</button>
-        </div>
-        <div id="tdee-result" style="display:none;margin-top:10px"></div>
-      </div>
-    </div>
-  </details>
 
   <!-- Adaptive: the weekly "adjust your target" suggestion from your weight trend vs goal — surfaced
        WITH the target (Learn → Target). Hidden until there's enough data; you approve, never auto. -->
@@ -2684,36 +2635,14 @@ input:focus,textarea:focus,select:focus{
       <div class="goal-bar-wrap"><div class="goal-bar" id="nut-carb-bar" style="width:0%;background:var(--bl)"></div></div>
       <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;margin-bottom:2px;margin-top:7px"><span style="color:var(--go)">Fat</span><span style="color:var(--tx3)" id="nut-fat-goal-lbl">0 / 60g</span></div>
       <div class="goal-bar-wrap"><div class="goal-bar" id="nut-fat-bar" style="width:0%;background:var(--go)"></div></div>
-      <!-- Coaching nudge: the diary should COACH toward the target, not just count ('counsel, not
-           tracking') — actionable, time-of-day aware, grace-first. Populated by renderNutritionLog. -->
-      <div id="nut-nudge" style="display:none;margin-top:10px"></div>
-      <!-- Gentle-mode counsel (replaces the numeric nudge when numbers are off) + the quiet care card. -->
-      <div id="nut-gentle-line" style="display:none;margin-top:10px"></div>
-      <div id="nut-care" style="display:none;margin-top:12px"></div>
     </div>
 
-    <!-- Calorie-by-meal split (MFP's glanceable insight): where today's calories came from -->
-    <div id="nut-meal-split" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
-      <div class="eyebrow" style="margin-bottom:6px">Where today's calories came from</div>
-      <div id="nut-meal-split-bar" style="display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--bg3);margin-bottom:6px"></div>
-      <div id="nut-meal-split-legend" style="display:flex;flex-wrap:wrap;gap:10px;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3)"></div>
-    </div>
-    
-    <!-- Fiber / Sugar / Sodium / Sat fat extended macros -->
-    <div id="nut-extended" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
-      <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Fiber</div><div id="nut-fiber" style="font-family:DM Mono,monospace;font-size:14px;color:var(--gr)">0g</div></div>
-      <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Sugar</div><div id="nut-sugar" style="font-family:DM Mono,monospace;font-size:14px;color:var(--go)">0g</div></div>
-      <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Sodium</div><div id="nut-sodium" style="font-family:DM Mono,monospace;font-size:14px;color:var(--bl)">0mg</div></div>
-      <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Sat fat</div><div id="nut-satfat" style="font-family:DM Mono,monospace;font-size:14px;color:var(--tx2)">0g</div></div>
-    </div>
-    
-    <!-- Micronutrients expandable -->
-    <button onclick="toggleMicroPanel()" id="micro-panel-toggle" style="width:100%;background:transparent;border:none;border-top:1px solid var(--bd);padding:14px 0 14px 0;/*was*/10px 0 0 0;margin-top:12px;color:var(--go);font-family:DM Mono,monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.12em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
-      <span>Show vitamins &amp; minerals</span>
-      <span id="micro-panel-arrow" style="font-size:12px;transition:transform 0.2s">▾</span>
-    </button>
-    <div id="micro-panel" style="display:none;margin-top:12px"></div>
   </div>
+
+  <!-- The starter-target warning and the goals/TDEE link used to sit ABOVE the ring, so 170px of
+       settings and a one-time banner came before the numbers a person opens this screen to see,
+       and pushed the log bar to the very bottom edge of the first screen. The warning belongs with
+       the target it is about; the calculator is a settings door and belongs with the rest of them. -->
 
   <!-- ══ SECTION 2 · TODAY (continued): LOG FOOD right under the ring — log first, THEN see your day
        (MFP pattern). This used to sit below the diary + net-calories; the search box was buried. ══ -->
@@ -2748,6 +2677,93 @@ input:focus,textarea:focus,select:focus{
   <div id="nut-quick-foods" style="display:flex;column-gap:5px;row-gap:23px;margin-bottom:10px;flex-wrap:wrap"></div>
   <!-- Today's diary: what you've logged, right under the log box -->
   <div class="card" style="margin-bottom:12px"><div id="nut-log-list"><p style="font-size:13px;color:var(--tx3);text-align:center;padding:8px 0">No food logged yet today</p></div></div>
+
+  <!-- Below the day, with the rest of the reflection. A one-time "your target is generic" warning
+       and the TDEE calculator are both ABOUT the numbers — neither is a reason to make a person
+       scroll past 170px of them before they can type what they just ate. -->
+  <div id="nut-setup-nudge"></div>
+  <details id="nut-goals-details" style="margin-bottom:14px">
+    <summary style="cursor:pointer;padding:12px;background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);font-family:DM Mono,monospace;font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.12em;list-style:none">
+      ⚙ Your target · goals & TDEE calculator
+    </summary>
+    <div class="card" style="margin-top:8px">
+      <div style="font-size:12px;color:var(--tx3);margin-bottom:8px;line-height:1.5">Already know your macros? Enter them directly. Leave carbs/fat blank if you only track calories + protein.</div>
+      <div class="row"><input type="number" id="nut-goal-cal" placeholder="Calories"><input type="number" id="nut-goal-pro" placeholder="Protein (g)"></div>
+      <div class="row"><input type="number" id="nut-goal-carb" placeholder="Carbs (g) — optional"><input type="number" id="nut-goal-fat" placeholder="Fat (g) — optional"></div>
+      <button class="btn primary" onclick="saveNutGoals()" style="margin-bottom:10px">Save my goals</button>
+      <!-- TDEE Calculator -->
+      <div style="border-top:1px solid var(--bd);padding-top:10px">
+        <div style="font-size:12px;color:var(--tx3);margin-bottom:8px">Don't know your targets? Calculate them.</div>
+        <div class="tdee-form">
+          <div class="tdee-row">
+            <div class="tdee-field"><div class="tdee-label">Age</div><input type="number" id="tdee-age" placeholder="25" min="13" max="100"></div>
+            <div class="tdee-field"><div class="tdee-label" id="tdee-weight-label">Weight (kg)</div><input type="number" id="tdee-weight" placeholder="75" step="0.1"></div>
+            <div class="tdee-field"><div class="tdee-label">Height (cm)</div><input type="number" id="tdee-height" placeholder="175"></div>
+          </div>
+          <div class="tdee-row">
+            <div class="tdee-field">
+              <div class="tdee-label">Sex</div>
+              <select id="tdee-sex"><option value="male">Male</option><option value="female">Female</option></select>
+            </div>
+            <div class="tdee-field">
+              <div class="tdee-label">Activity</div>
+              <select id="tdee-activity">
+                <option value="1.2">Sedentary</option>
+                <option value="1.375">Light 1–3×</option>
+                <option value="1.55" selected>Moderate 3–5×</option>
+                <option value="1.725">Active 6–7×</option>
+                <option value="1.9">Very active</option>
+              </select>
+            </div>
+            <div class="tdee-field">
+              <div class="tdee-label">Goal</div>
+              <select id="tdee-goal">
+                <option value="lose">Lose fat</option>
+                <option value="maintain" selected>Maintain</option>
+                <option value="gain">Build muscle</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn blue" onclick="calcTDEE()">Calculate my targets</button>
+        </div>
+        <div id="tdee-result" style="display:none;margin-top:10px"></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- THE DAY YOU HAD, THEN WHAT IT MEANS. These four blocks — the coaching nudge, the quiet care
+       card, the meal split and the extended macros — sat INSIDE the hero, between your numbers and
+       the log bar, and made the hero 530px tall. So the one thing a person opens a food tracker to
+       do was 656px down: two thirds of a screen of reflection before you could type what you ate.
+       MyFitnessPal opens on the diary with add always in reach, and it is right about that.
+       Numbers, then log, then the day, then what the day means. -->
+      <!-- Coaching nudge: the diary should COACH toward the target, not just count ('counsel, not
+           tracking') — actionable, time-of-day aware, grace-first. Populated by renderNutritionLog. -->
+      <div id="nut-nudge" style="display:none;margin-top:10px"></div>
+      <!-- Gentle-mode counsel (replaces the numeric nudge when numbers are off) + the quiet care card. -->
+      <div id="nut-gentle-line" style="display:none;margin-top:10px"></div>
+      <div id="nut-care" style="display:none;margin-top:12px"></div>
+    <!-- Calorie-by-meal split (MFP's glanceable insight): where today's calories came from -->
+    <div id="nut-meal-split" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
+      <div class="eyebrow" style="margin-bottom:6px">Where today's calories came from</div>
+      <div id="nut-meal-split-bar" style="display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--bg3);margin-bottom:6px"></div>
+      <div id="nut-meal-split-legend" style="display:flex;flex-wrap:wrap;gap:10px;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3)"></div>
+    </div>
+    
+    <!-- Fiber / Sugar / Sodium / Sat fat extended macros -->
+    <div id="nut-extended" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
+      <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Fiber</div><div id="nut-fiber" style="font-family:DM Mono,monospace;font-size:14px;color:var(--gr)">0g</div></div>
+      <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Sugar</div><div id="nut-sugar" style="font-family:DM Mono,monospace;font-size:14px;color:var(--go)">0g</div></div>
+      <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Sodium</div><div id="nut-sodium" style="font-family:DM Mono,monospace;font-size:14px;color:var(--bl)">0mg</div></div>
+      <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Sat fat</div><div id="nut-satfat" style="font-family:DM Mono,monospace;font-size:14px;color:var(--tx2)">0g</div></div>
+    </div>
+    
+    <!-- Micronutrients expandable -->
+    <button onclick="toggleMicroPanel()" id="micro-panel-toggle" style="width:100%;background:transparent;border:none;border-top:1px solid var(--bd);padding:14px 0 14px 0;/*was*/10px 0 0 0;margin-top:12px;color:var(--go);font-family:DM Mono,monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.12em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+      <span>Show vitamins &amp; minerals</span>
+      <span id="micro-panel-arrow" style="font-size:12px;transition:transform 0.2s">▾</span>
+    </button>
+    <div id="micro-panel" style="display:none;margin-top:12px"></div>
 
   <!-- ══ SECTION 3 · THIS WEEK — how to actually HIT your target: real meals + a priced shopping list ══ -->
   <div class="card" id="fuel-plan-card" style="margin-bottom:12px;background:linear-gradient(135deg,var(--go-bg),transparent);border:1px solid var(--go-bd)">

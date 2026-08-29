@@ -93,7 +93,7 @@ async function readTodaysGospel(){
   const usfm = (typeof bibleBookToUSFM==='function') ? bibleBookToUSFM(bookName) : bookName.toUpperCase().slice(0,3);
   let verses = null;
   try{
-    const r = await fetch('https://bible.helloao.org/api/BSB/'+usfm+'/'+chapter+'.json');
+    const r = await _fetchT('https://bible.helloao.org/api/BSB/'+usfm+'/'+chapter+'.json', 8000);
     if(r.ok){ const d = await r.json(); const all = (d.chapter && d.chapter.content) || []; 
       verses = all.filter(it => it.type==='verse' && it.number>=vStart && it.number<=vEnd)
                   .map(v => ({ num:v.number, text: (Array.isArray(v.content)?v.content.map(c=>typeof c==='string'?c:(c.text||'')).join(' '):v.content||'') })); }

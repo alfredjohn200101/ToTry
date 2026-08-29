@@ -141,7 +141,11 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     const r = await page.evaluate(async (t) => {
       if (typeof openReader !== 'function') return { missing: true };
       openReader(t);
-      await new Promise(res => setTimeout(res, 7000));   // live fetch, then fallback
+      // Must outlast the reader's own 9s fetch timeout (_fetchT), or this races it: a slow source
+      // leaves the pane on "Loading…" — exactly 8 characters — and the finding is the clock, not
+      // the app. Waiting past the timeout means one of two real outcomes is always measured:
+      // the live text arrived, or the bundled pool replaced it.
+      await new Promise(res => setTimeout(res, 12500));  // live fetch, then the 9s fallback
       const el = document.getElementById('read-content');
       const txt = el ? (el.innerText || '').trim() : '';
       return { chars: txt.length, text: txt.slice(0, 4000) };
@@ -214,6 +218,9 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
         pane.querySelectorAll('button,a[href],[onclick]').forEach(el => {
           const cs = getComputedStyle(el);
           if (cs.display === 'none' || cs.visibility === 'hidden') return;
+          // Same phantom as the overlap sweep: a control inside a collapsed <details> keeps its rect.
+          if (typeof el.checkVisibility === 'function' &&
+              !el.checkVisibility({ contentVisibilityAuto:true, opacityProperty:true, visibilityProperty:true })) return;
           const r = el.getBoundingClientRect();
           if (!r.width && !r.height) return;
           const m = Math.min(r.width, r.height);
@@ -2458,6 +2465,290 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── THE FIVE THINGS A PERSON DOES IN A FOOD APP EVERY DAY ──────────────────────────────────────
+  // Sixty-eight Nourish functions are reachable from a tap and sixty-one of them were driven by no
+  // test at all. That is where "looks like a food app, isn't one" hides: the button renders, the
+  // handler exists, and nobody ever checked that pressing it changes anything. These five are the
+  // ones a person actually uses daily — the same five MyFitnessPal is opened for — so each is driven
+  // here against the real bundle and asserted on the STORE, not on a toast.
+  // Signatures matter and cost an hour to learn twice: logRecentFood/quickLogRecent take a NAME, and
+  // editFoodEntry takes (dateKey, id) — not indexes. Passing an index makes each of them return
+  // quietly, which reads exactly like a broken feature and is not one.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    const errs = []; page.on('pageerror', e => errs.push(String(e.message).slice(0, 110)));
+    await page.addInitScript(() => {
+      const s = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+      const N = new Date(), au = d => d.toLocaleDateString('en-AU');
+      s('totry_onboarded', true); s('totry_name', 'Alfy'); s('totry_sex', 'male');
+      const F = (id,n,c,pr,cb,ft,ts,meal) => ({ id, name:n, brand:'', serving:'1 serving', qty:1,
+        cal:c, pro:pr, carb:cb, fat:ft, fiber:3, sugar:5, sodium:400, sat_fat:2, ts, meal });
+      const y = new Date(N - 864e5), log = {};
+      log[au(y)] = [F(1,'Oats and milk',420,18,62,9,y.toISOString(),'breakfast'),
+                    F(2,'Chicken and rice',610,48,70,12,y.toISOString(),'lunch')];
+      log[au(N)] = [F(5150,'Toast',180,6,30,3,N.toISOString(),'breakfast')];
+      s('totry_nutlog', log);
+      s('totry_recent_foods', [{ name:'Greek yoghurt', cal:120, pro:17, carb:7, fat:0, serving:'170g' }]);
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2800);
+    await page.evaluate(() => go('nourish')); await page.waitForTimeout(1200);
+
+    const day = await page.evaluate(async () => {
+      const key = () => new Date().toLocaleDateString('en-AU');
+      const rows = () => (JSON.parse(localStorage.getItem('totry_nutlog') || '{}')[key()] || []);
+      const out = {};
+      out.start = rows().length;
+
+      // 1. copy yesterday's food forward — two entries, behind its confirm step
+      repeatYesterdayMeals(); await new Promise(r => setTimeout(r, 800));
+      const cf = [...document.querySelectorAll('button')]
+        .find(e => /confirmRepeatYesterday/.test(e.getAttribute('onclick') || '') &&
+                   e.getBoundingClientRect().height > 0);
+      if (cf) cf.click();
+      await new Promise(r => setTimeout(r, 900));
+      out.afterRepeat = rows().length;
+
+      // 2. quick-add raw calories
+      openQuickAdd(); await new Promise(r => setTimeout(r, 700));
+      const m = document.querySelector('.modal-bg.open');
+      const ins = m ? [...m.querySelectorAll('input')] : [];
+      if (ins[0]) { ins[0].value = '350'; ins[0].dispatchEvent(new Event('input', { bubbles:true })); }
+      if (ins[1]) { ins[1].value = '25';  ins[1].dispatchEvent(new Event('input', { bubbles:true })); }
+      if (typeof quickAddLog === 'function') quickAddLog();
+      await new Promise(r => setTimeout(r, 800));
+      out.afterQuickAdd = rows().length;
+
+      // 3. one tap re-logs something eaten before — BY NAME
+      quickLogRecent('Greek yoghurt'); await new Promise(r => setTimeout(r, 800));
+      out.afterRecent = rows().length;
+
+      // 4. fixing an entry opens it loaded with what was logged, not a blank form
+      editFoodEntry(key(), 5150); await new Promise(r => setTimeout(r, 900));
+      const em = document.querySelector('.modal-bg.open');
+      out.editOpened = !!em;
+      out.editCarriesTheFood = !!(em && /Toast/.test(em.innerText || ''));
+      out.editCanSave = !!(em && [...em.querySelectorAll('button')]
+        .some(e => /log|save|update/i.test(e.innerText || '')));
+      if (em) { const x = em.querySelector('.modal-x, [onclick*="close"]'); if (x) x.click(); }
+      await new Promise(r => setTimeout(r, 500));
+
+      // 5. the day you are looking at can move, and can come back
+      const stamp = () => { const e = document.getElementById('tab-nourish');
+        return (e.innerText || '').replace(/\s+/g, ' ').slice(0, 90); };
+      const a = stamp(); nutShiftDay(-1); await new Promise(r => setTimeout(r, 900));
+      const back = stamp(); nutGoToday(); await new Promise(r => setTimeout(r, 900));
+      out.dayMoved = a !== back; out.dayReturned = stamp() === a;
+      return out;
+    });
+
+    if (day.afterRepeat !== day.start + 2)
+      findings.push(`nourish-daily: repeating yesterday added ${day.afterRepeat - day.start} entries, not the 2 that were there`);
+    if (day.afterQuickAdd !== day.afterRepeat + 1)
+      findings.push('nourish-daily: quick-add did not put a row in the day');
+    if (day.afterRecent !== day.afterQuickAdd + 1)
+      findings.push('nourish-daily: one tap on a recent food logged nothing');
+    if (!day.editOpened)          findings.push('nourish-daily: fixing an entry opens nothing');
+    if (!day.editCarriesTheFood)  findings.push('nourish-daily: the edit form opens blank instead of loaded with the food');
+    if (!day.editCanSave)         findings.push('nourish-daily: the edit form has no way to save the fix');
+    if (!day.dayMoved)            findings.push('nourish-daily: the back arrow does not change the day');
+    if (!day.dayReturned)         findings.push('nourish-daily: "today" does not come back to today');
+    if (errs.length)              findings.push(`nourish-daily: page error — ${errs[0]}`);
+    if (!findings.some(f => f.startsWith('nourish-daily:')))
+      console.log('nourish-daily: copy yesterday, quick-add, re-log a recent, fix an entry, move the day — all five land in the store');
+    await ctx.close();
+  }
+
+  // ── TELLING THE TRUTH ABOUT A HISTORY YOU NEVER LOGGED ─────────────────────────────────────────
+  // "I need to be honest and say I haven't been clean for a long amount of time or ever." A fight
+  // tracker that can only start from today asks a person to begin with a lie. promptMassAddLosses is
+  // the answer to that, and its ARITHMETIC is the part that can rot silently: each past slip has to be
+  // applied in chronological order so every streak is measured against the reset before it. Get the
+  // order wrong and the totals still look plausible — which is exactly why it is asserted by number.
+  // From a 1 Jul start, slips on 5 Jul / 22 Jul / 14 Aug are streaks of 4, 17 and 23 days: 44 clean
+  // days in total, held, not erased.
+  // curVice is set inline by the row that opens this ('curVice='+i+';promptMassAddLosses()'), so a
+  // probe that calls the function alone gets "Pick a habit first" and reads as a broken feature.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    const errs = []; page.on('pageerror', e => errs.push(String(e.message).slice(0, 110)));
+    await page.addInitScript(() => {
+      const s = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+      s('totry_onboarded', true); s('totry_name', 'Alfy');
+      s('totry_v', [{ n:'Lust', mode:'abstinence', type:'lust',
+        startDate: new Date('2026-07-01T00:00:00').toISOString(),
+        fightingSince: new Date('2025-11-01T00:00:00').toISOString() }]);
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2800);
+    await page.evaluate(() => go('fight')); await page.waitForTimeout(1300);
+
+    const bf = await page.evaluate(async () => {
+      const was = JSON.parse(JSON.stringify(ls('totry_v')[0]));
+      curVice = 0; promptMassAddLosses(); await new Promise(r => setTimeout(r, 700));
+      if (!document.querySelector('.modal-bg.open')) return { opened:false };
+      addMassLossRow(); await new Promise(r => setTimeout(r, 300));
+      const rows = [...document.querySelectorAll('#mal-rows .mal-row')];
+      // DELIBERATELY OUT OF ORDER. A person remembering past slips does not recall them in sequence,
+      // and commitMassAddLosses sorts before applying for exactly that reason. Entered ascending, this
+      // assertion would pass with the sort deleted — it would be checking nothing.
+      const days = ['2026-08-14', '2026-07-05', '2026-07-22'];
+      rows.forEach((row, i) => { const inp = row.querySelector('.mal-date');
+        if (inp && days[i]) { inp.value = days[i]; inp.dispatchEvent(new Event('change', { bubbles:true })); } });
+      commitMassAddLosses(); await new Promise(r => setTimeout(r, 900));
+      const v = ls('totry_v')[0];
+      return { opened:true, rows:rows.length, relapses:v.relapseCount, clean:v.cleanDaysTotal,
+               streaks:(v.relapseHistory || []).map(h => h.streakLength),
+               startMoved: was.startDate !== v.startDate,
+               fightingSinceKept: was.fightingSince === v.fightingSince,
+               closed: !document.querySelector('.modal-bg.open') };
+    });
+
+    if (!bf.opened) findings.push('fight-truth: "log slips from before I started here" opens nothing');
+    else {
+      if (bf.rows !== 3)      findings.push(`fight-truth: asked for 3 days, the form offered ${bf.rows}`);
+      if (bf.relapses !== 3)  findings.push(`fight-truth: 3 honest slips recorded as ${bf.relapses}`);
+      if (String(bf.streaks) !== '4,17,23')
+        findings.push(`fight-truth: the streaks between those slips came out [${bf.streaks}], not [4,17,23] — they are not being applied in order`);
+      if (bf.clean !== 44)    findings.push(`fight-truth: ${bf.clean} clean days kept, not the 44 actually served`);
+      if (!bf.startMoved)     findings.push('fight-truth: the streak did not reset to the last slip');
+      if (!bf.fightingSinceKept)
+        findings.push('fight-truth: telling the truth about past slips ERASED how long they had been fighting');
+      if (!bf.closed)         findings.push('fight-truth: the form stays open after logging, with no way to know it worked');
+    }
+    if (errs.length) findings.push(`fight-truth: page error — ${errs[0]}`);
+    if (!findings.some(f => f.startsWith('fight-truth:')))
+      console.log('fight-truth: three past slips entered at once rebuild the real timeline — 4, 17 and 23 day streaks, 44 clean days kept, and the years of fighting not erased');
+    await ctx.close();
+  }
+
+  // ── THE REASON A LIFTER OPENS THE APP TWICE ────────────────────────────────────────────────────
+  // One session, logged HERE, start to finish. Three things are asserted that have each been wrong in
+  // this app before and would each be invisible from reading the code:
+  //   · the PR. It was detected on a HEVY SYNC and nowhere else, so a person who logged their sets on
+  //     this screen was never once told they had just done something they had never done before —
+  //     which is the entire reason Strong gets opened twice. 90kg x 5 must beat last week's 80 x 5.
+  //   · the volume. 90 x 5 x 2 sets is 900, and only DONE sets count. A volume that quietly counts
+  //     unfinished sets flatters every session and nobody would ever notice.
+  //   · the source. Without source:'manual' every session logged here was branded HEVY — the card read
+  //     "From your Hevy" and the detail modal sent you to Hevy to edit it, to a person who has never
+  //     heard of Hevy, and left in-app sessions with no edit path at all.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    const errs = []; page.on('pageerror', e => errs.push(String(e.message).slice(0, 110)));
+    await page.addInitScript(() => {
+      const s = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+      const N = Date.now();
+      s('totry_onboarded', true); s('totry_name', 'Alfy'); s('totry_sex', 'male');
+      // last week, so this week has something real to beat
+      s('totry_workouts', [{ id:N - 7*864e5, source:'manual', ts:new Date(N - 7*864e5).toISOString(),
+        date:'Sun, 23 Aug 2026', completedSets:1, totalSets:1, volume:400,
+        exercises:[{ name:'Bench Press', tracking:'weight_reps',
+          sets:[{ weight:'80', reps:'5', type:'normal', done:true }] }] }]);
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2900);
+
+    const gym = await page.evaluate(async () => {
+      go('train'); await new Promise(r => setTimeout(r, 1200));
+      if (typeof setPTTab === 'function') { setPTTab('log'); await new Promise(r => setTimeout(r, 700)); }
+      const out = { before: (ls('totry_workouts') || []).length };
+      addExerciseToSession({ name:'Bench Press', bodyPart:'chest', equipment:'barbell', tracking:'weight_reps' });
+      await new Promise(r => setTimeout(r, 600));
+      out.added = (typeof currentSession !== 'undefined') ? currentSession.length : 0;
+      if (!out.added) return out;
+      currentSession[0].sets = [{ weight:'90', reps:'5', type:'normal', done:true },
+                                { weight:'90', reps:'5', type:'normal', done:true },
+                                { weight:'90', reps:'5', type:'normal', done:false }];  // one NOT done
+      if (typeof renderWorkoutSession === 'function') renderWorkoutSession();
+      await new Promise(r => setTimeout(r, 500));
+      out.draft = !!localStorage.getItem('totry_session_draft');
+      await saveWorkoutSession(); await new Promise(r => setTimeout(r, 1400));
+      const h = ls('totry_workouts') || [], prs = ls('totry_prs') || {};
+      out.after = h.length; out.vol = h[0] && h[0].volume; out.done = h[0] && h[0].completedSets;
+      out.src = h[0] && h[0].source;
+      out.pr = prs['Bench Press'] || null;
+      out.cleared = (typeof currentSession !== 'undefined') ? currentSession.length : -1;
+      return out;
+    });
+
+    if (!gym.added) findings.push('train-session: an exercise cannot be added to a session at all');
+    else {
+      if (gym.after !== gym.before + 1) findings.push('train-session: finishing the workout saved nothing');
+      if (!gym.draft)     findings.push('train-session: the in-progress session is not persisted — one backgrounded tab and every set is gone');
+      if (gym.vol !== 900) findings.push(`train-session: volume came out ${gym.vol}, not 900 — only the two DONE sets of 90x5 count`);
+      if (gym.done !== 2)  findings.push(`train-session: ${gym.done} sets counted as done, not 2`);
+      if (gym.src !== 'manual')
+        findings.push(`train-session: a session logged HERE is branded "${gym.src}" — it sends the person to another app to edit it`);
+      if (!gym.pr)        findings.push('train-session: 90kg x 5 beat last week and the app never said so — PRs only fire for people who log somewhere else');
+      else {
+        if (gym.pr.heaviest !== 90) findings.push(`train-session: the PR recorded ${gym.pr.heaviest}kg, not the 90 actually lifted`);
+        if (gym.pr.orm !== 105)     findings.push(`train-session: estimated 1RM came out ${gym.pr.orm}, not 105 (Epley on 90x5)`);
+      }
+      if (gym.cleared !== 0) findings.push('train-session: the finished session is still loaded — the next workout starts inside the last one');
+    }
+    if (errs.length) findings.push(`train-session: page error — ${errs[0]}`);
+    if (!findings.some(f => f.startsWith('train-session:')))
+      console.log('train-session: added, logged, saved — 900kg of done volume, a 105kg estimated max off a real PR, marked as ours, and the bench cleared for next time');
+    await ctx.close();
+  }
+
+  // ── the thing you came to do is on the first screen ──────────────────────────────────────────
+  // Nourish is a food tracker and the log bar was 656px down — under the ring, the macro bars, a
+  // coaching nudge, an eating-disorder check-in, a meal-split chart and four extended macros. Two
+  // thirds of a screen of reflection before you could type what you just ate, on a phone, mid-meal.
+  //
+  // MyFitnessPal opens on the diary with add always in reach and it is right about that. The order
+  // is now: your numbers, then log, then the day, then what the day means. Everything that moved is
+  // still there — it is below the diary, where you read it after, not before.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+      const N = new Date(), au = d => d.toLocaleDateString('en-AU');
+      s('totry_onboarded', true); s('totry_name', 'Alfy'); s('totry_sex', 'male');
+      const F = (n,c,pr,t,m) => ({ id:Math.floor(Math.random()*1e9), name:n, brand:'', serving:'1 serving',
+        qty:1, cal:c, pro:pr, carb:40, fat:12, fiber:5, sugar:6, sodium:300, ts:t, meal:m });
+      const nl = {};
+      for (let i = 0; i < 3; i++) { const d = new Date(N - i*864e5);
+        nl[au(d)] = [F('Oats',520,38,d.toISOString(),'breakfast'), F('Chicken',690,55,d.toISOString(),'lunch')]; }
+      s('totry_nutlog', nl); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const r = await page.evaluate(async () => {
+      document.querySelectorAll('.companion-overlay,.companion-backdrop').forEach(e => e.classList.remove('open'));
+      go('nourish'); await new Promise(x => setTimeout(x, 1700));
+      const top = id => { const e = (typeof id === 'string') ? document.getElementById(id) : id;
+        if (!e) return null; const b = e.getBoundingClientRect(); return b.height > 0 ? Math.round(b.top) : null; };
+      const bar = document.querySelector('.logbar');
+      return { logBar: bar ? Math.round(bar.getBoundingClientRect().top) : null,
+               diary: top('nut-log-list'),
+               // everything that moved has to still be somewhere, and below the diary
+               moved: ['nut-nudge','nut-care','nut-meal-split','nut-extended','nut-setup-nudge','nut-goals-details']
+                 .map(id => ({ id, present: !!document.getElementById(id), y: top(id) })) };
+    });
+    await ctx.close();
+    if (r.logBar == null) findings.push('first-screen: no log bar on Nourish at all');
+    else {
+      // 620px keeps it inside the thumb zone of a 896px phone once the tab bar is allowed for.
+      if (r.logBar > 620)
+        findings.push(`first-screen: the Nourish log bar is ${r.logBar}px down — a food tracker's log has to be reachable without scrolling`);
+      if (r.diary == null || r.diary > 896)
+        findings.push(`first-screen: the diary is at ${r.diary}px — the day should be visible under the log`);
+      const gone = r.moved.filter(m => !m.present);
+      if (gone.length)
+        findings.push(`first-screen: moving the reflection lost ${gone.map(g => g.id).join(', ')}`);
+      const above = r.moved.filter(m => m.y != null && m.y < r.logBar);
+      if (above.length)
+        findings.push(`first-screen: ${above.map(a => a.id).join(', ')} crept back above the log bar`);
+    }
+    if (!findings.some(f => f.startsWith('first-screen:')))
+      console.log('first-screen: your numbers, then the log, then the day — and the reflection is all still there, below it');
+  }
+
   // ── the integration has to work for OUR OWN users ────────────────────────────────────────────
   // Twice in one pass the same shape: a cross-front feature that worked for people who log somewhere
   // else and did nothing for people who log here. PRs were detected on a Hevy sync only. And the
@@ -2850,8 +3141,18 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
         try { go(t); } catch (e) { return []; }
         await new Promise(r => setTimeout(r, 1200));
         const pane = document.getElementById('tab-' + t); if (!pane) return [];
+        // A box is not a hit area. Chrome renders the contents of a CLOSED <details> with
+        // content-visibility:hidden rather than display:none, so a collapsed control still reports a
+        // full-size rect — laid out where it WOULD be if you opened it. Measured on the Nourish
+        // "Save my goals" button: 348x40 at y=1294, elementFromPoint at its centre returns NOTHING,
+        // scrollIntoView cannot move it, and a click never reaches it. Geometry alone therefore
+        // invents collisions between a real button and a phantom one nobody can touch.
+        const shown = e => (typeof e.checkVisibility === 'function')
+          ? e.checkVisibility({ contentVisibilityAuto:true, opacityProperty:true, visibilityProperty:true })
+          : true;
         const els = [...pane.querySelectorAll('button,[onclick]')]
-          .filter(e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
+          .filter(e => { const r = e.getBoundingClientRect();
+                         return r.width > 0 && r.height > 0 && shown(e); });
         const out = [];
         for (let i = 0; i < els.length; i++) for (let j = i + 1; j < els.length; j++) {
           const A = els[i], B = els[j];
@@ -2894,12 +3195,24 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       const golds = await page.evaluate(async (tab) => {
         go(tab); await new Promise(r => setTimeout(r, 1200));
         const pane = document.getElementById('tab-' + tab); if (!pane) return null;
-        const vis = e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+        const vis = e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 &&
+          (typeof e.checkVisibility !== 'function' || e.checkVisibility(
+            { contentVisibilityAuto:true, opacityProperty:true, visibilityProperty:true })); };
         return [...pane.querySelectorAll('.btn.primary, .hero-action')].filter(vis)
-          .map(e => (e.innerText || '').replace(/\s+/g,' ').trim().slice(0,26)).filter(Boolean);
+          .map(e => ({ txt: (e.innerText || '').replace(/\s+/g,' ').trim().slice(0,26),
+                       y: Math.round(e.getBoundingClientRect().top + window.scrollY) }))
+          .filter(g => g.txt);
       }, t);
-      if (golds && golds.length > 1)
-        findings.push(`gold: ${t} has ${golds.length} competing primaries — ${golds.join(' / ')}`);
+      // Two golds only compete if a person can SEE them at once. Track's "Done for today" (the daily
+      // card, which already un-golds itself once the day is logged) and "Log this week" (the weekly
+      // check-in) sit 2,090px apart on an 896px screen — two different jobs, never on one screen, and
+      // greying either would only make it look inert. The bug this rule was written for was two golds
+      // 440px apart INSIDE ONE CARD, and that is still caught: the unit is a viewport, not a tab.
+      if (golds) for (let i = 0; i < golds.length; i++) for (let j = i + 1; j < golds.length; j++) {
+        const gap = Math.abs(golds[i].y - golds[j].y);
+        if (gap < 896)
+          findings.push(`gold: ${t} has 2 competing primaries ${gap}px apart — ${golds[i].txt} / ${golds[j].txt}`);
+      }
     }
     await ctx.close();
     if (!findings.some(f => f.startsWith('gold:')))

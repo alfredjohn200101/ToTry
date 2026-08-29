@@ -2568,60 +2568,11 @@ input:focus,textarea:focus,select:focus{
 <!-- TAB 4: NOURISH -->
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-nourish" class="tab">
-  <div id="nut-setup-nudge"></div>
   <div id="nut-cycle-badge"></div>
   <div id="cycle-nourish-note"></div>          <!-- C: Nourish, after nut-cycle-badge -->
 
   <!-- ══ SECTION 1 · YOUR TARGET — the number + the TDEE calculator that sets it, right where the
        "set my real target" nudge points. Collapsed once you've set it; the top of the loop. ══ -->
-  <details id="nut-goals-details" style="margin-bottom:14px">
-    <summary style="cursor:pointer;padding:12px;background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);font-family:DM Mono,monospace;font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.12em;list-style:none">
-      ⚙ Your target · goals & TDEE calculator
-    </summary>
-    <div class="card" style="margin-top:8px">
-      <div style="font-size:12px;color:var(--tx3);margin-bottom:8px;line-height:1.5">Already know your macros? Enter them directly. Leave carbs/fat blank if you only track calories + protein.</div>
-      <div class="row"><input type="number" id="nut-goal-cal" placeholder="Calories"><input type="number" id="nut-goal-pro" placeholder="Protein (g)"></div>
-      <div class="row"><input type="number" id="nut-goal-carb" placeholder="Carbs (g) — optional"><input type="number" id="nut-goal-fat" placeholder="Fat (g) — optional"></div>
-      <button class="btn primary" onclick="saveNutGoals()" style="margin-bottom:10px">Save my goals</button>
-      <!-- TDEE Calculator -->
-      <div style="border-top:1px solid var(--bd);padding-top:10px">
-        <div style="font-size:12px;color:var(--tx3);margin-bottom:8px">Don't know your targets? Calculate them.</div>
-        <div class="tdee-form">
-          <div class="tdee-row">
-            <div class="tdee-field"><div class="tdee-label">Age</div><input type="number" id="tdee-age" placeholder="25" min="13" max="100"></div>
-            <div class="tdee-field"><div class="tdee-label" id="tdee-weight-label">Weight (kg)</div><input type="number" id="tdee-weight" placeholder="75" step="0.1"></div>
-            <div class="tdee-field"><div class="tdee-label">Height (cm)</div><input type="number" id="tdee-height" placeholder="175"></div>
-          </div>
-          <div class="tdee-row">
-            <div class="tdee-field">
-              <div class="tdee-label">Sex</div>
-              <select id="tdee-sex"><option value="male">Male</option><option value="female">Female</option></select>
-            </div>
-            <div class="tdee-field">
-              <div class="tdee-label">Activity</div>
-              <select id="tdee-activity">
-                <option value="1.2">Sedentary</option>
-                <option value="1.375">Light 1–3×</option>
-                <option value="1.55" selected>Moderate 3–5×</option>
-                <option value="1.725">Active 6–7×</option>
-                <option value="1.9">Very active</option>
-              </select>
-            </div>
-            <div class="tdee-field">
-              <div class="tdee-label">Goal</div>
-              <select id="tdee-goal">
-                <option value="lose">Lose fat</option>
-                <option value="maintain" selected>Maintain</option>
-                <option value="gain">Build muscle</option>
-              </select>
-            </div>
-          </div>
-          <button class="btn blue" onclick="calcTDEE()">Calculate my targets</button>
-        </div>
-        <div id="tdee-result" style="display:none;margin-top:10px"></div>
-      </div>
-    </div>
-  </details>
 
   <!-- Adaptive: the weekly "adjust your target" suggestion from your weight trend vs goal — surfaced
        WITH the target (Learn → Target). Hidden until there's enough data; you approve, never auto. -->
@@ -2684,36 +2635,14 @@ input:focus,textarea:focus,select:focus{
       <div class="goal-bar-wrap"><div class="goal-bar" id="nut-carb-bar" style="width:0%;background:var(--bl)"></div></div>
       <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;margin-bottom:2px;margin-top:7px"><span style="color:var(--go)">Fat</span><span style="color:var(--tx3)" id="nut-fat-goal-lbl">0 / 60g</span></div>
       <div class="goal-bar-wrap"><div class="goal-bar" id="nut-fat-bar" style="width:0%;background:var(--go)"></div></div>
-      <!-- Coaching nudge: the diary should COACH toward the target, not just count ('counsel, not
-           tracking') — actionable, time-of-day aware, grace-first. Populated by renderNutritionLog. -->
-      <div id="nut-nudge" style="display:none;margin-top:10px"></div>
-      <!-- Gentle-mode counsel (replaces the numeric nudge when numbers are off) + the quiet care card. -->
-      <div id="nut-gentle-line" style="display:none;margin-top:10px"></div>
-      <div id="nut-care" style="display:none;margin-top:12px"></div>
     </div>
 
-    <!-- Calorie-by-meal split (MFP's glanceable insight): where today's calories came from -->
-    <div id="nut-meal-split" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
-      <div class="eyebrow" style="margin-bottom:6px">Where today's calories came from</div>
-      <div id="nut-meal-split-bar" style="display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--bg3);margin-bottom:6px"></div>
-      <div id="nut-meal-split-legend" style="display:flex;flex-wrap:wrap;gap:10px;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3)"></div>
-    </div>
-    
-    <!-- Fiber / Sugar / Sodium / Sat fat extended macros -->
-    <div id="nut-extended" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
-      <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Fiber</div><div id="nut-fiber" style="font-family:DM Mono,monospace;font-size:14px;color:var(--gr)">0g</div></div>
-      <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Sugar</div><div id="nut-sugar" style="font-family:DM Mono,monospace;font-size:14px;color:var(--go)">0g</div></div>
-      <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Sodium</div><div id="nut-sodium" style="font-family:DM Mono,monospace;font-size:14px;color:var(--bl)">0mg</div></div>
-      <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Sat fat</div><div id="nut-satfat" style="font-family:DM Mono,monospace;font-size:14px;color:var(--tx2)">0g</div></div>
-    </div>
-    
-    <!-- Micronutrients expandable -->
-    <button onclick="toggleMicroPanel()" id="micro-panel-toggle" style="width:100%;background:transparent;border:none;border-top:1px solid var(--bd);padding:14px 0 14px 0;/*was*/10px 0 0 0;margin-top:12px;color:var(--go);font-family:DM Mono,monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.12em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
-      <span>Show vitamins &amp; minerals</span>
-      <span id="micro-panel-arrow" style="font-size:12px;transition:transform 0.2s">▾</span>
-    </button>
-    <div id="micro-panel" style="display:none;margin-top:12px"></div>
   </div>
+
+  <!-- The starter-target warning and the goals/TDEE link used to sit ABOVE the ring, so 170px of
+       settings and a one-time banner came before the numbers a person opens this screen to see,
+       and pushed the log bar to the very bottom edge of the first screen. The warning belongs with
+       the target it is about; the calculator is a settings door and belongs with the rest of them. -->
 
   <!-- ══ SECTION 2 · TODAY (continued): LOG FOOD right under the ring — log first, THEN see your day
        (MFP pattern). This used to sit below the diary + net-calories; the search box was buried. ══ -->
@@ -2748,6 +2677,93 @@ input:focus,textarea:focus,select:focus{
   <div id="nut-quick-foods" style="display:flex;column-gap:5px;row-gap:23px;margin-bottom:10px;flex-wrap:wrap"></div>
   <!-- Today's diary: what you've logged, right under the log box -->
   <div class="card" style="margin-bottom:12px"><div id="nut-log-list"><p style="font-size:13px;color:var(--tx3);text-align:center;padding:8px 0">No food logged yet today</p></div></div>
+
+  <!-- Below the day, with the rest of the reflection. A one-time "your target is generic" warning
+       and the TDEE calculator are both ABOUT the numbers — neither is a reason to make a person
+       scroll past 170px of them before they can type what they just ate. -->
+  <div id="nut-setup-nudge"></div>
+  <details id="nut-goals-details" style="margin-bottom:14px">
+    <summary style="cursor:pointer;padding:12px;background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);font-family:DM Mono,monospace;font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.12em;list-style:none">
+      ⚙ Your target · goals & TDEE calculator
+    </summary>
+    <div class="card" style="margin-top:8px">
+      <div style="font-size:12px;color:var(--tx3);margin-bottom:8px;line-height:1.5">Already know your macros? Enter them directly. Leave carbs/fat blank if you only track calories + protein.</div>
+      <div class="row"><input type="number" id="nut-goal-cal" placeholder="Calories"><input type="number" id="nut-goal-pro" placeholder="Protein (g)"></div>
+      <div class="row"><input type="number" id="nut-goal-carb" placeholder="Carbs (g) — optional"><input type="number" id="nut-goal-fat" placeholder="Fat (g) — optional"></div>
+      <button class="btn primary" onclick="saveNutGoals()" style="margin-bottom:10px">Save my goals</button>
+      <!-- TDEE Calculator -->
+      <div style="border-top:1px solid var(--bd);padding-top:10px">
+        <div style="font-size:12px;color:var(--tx3);margin-bottom:8px">Don't know your targets? Calculate them.</div>
+        <div class="tdee-form">
+          <div class="tdee-row">
+            <div class="tdee-field"><div class="tdee-label">Age</div><input type="number" id="tdee-age" placeholder="25" min="13" max="100"></div>
+            <div class="tdee-field"><div class="tdee-label" id="tdee-weight-label">Weight (kg)</div><input type="number" id="tdee-weight" placeholder="75" step="0.1"></div>
+            <div class="tdee-field"><div class="tdee-label">Height (cm)</div><input type="number" id="tdee-height" placeholder="175"></div>
+          </div>
+          <div class="tdee-row">
+            <div class="tdee-field">
+              <div class="tdee-label">Sex</div>
+              <select id="tdee-sex"><option value="male">Male</option><option value="female">Female</option></select>
+            </div>
+            <div class="tdee-field">
+              <div class="tdee-label">Activity</div>
+              <select id="tdee-activity">
+                <option value="1.2">Sedentary</option>
+                <option value="1.375">Light 1–3×</option>
+                <option value="1.55" selected>Moderate 3–5×</option>
+                <option value="1.725">Active 6–7×</option>
+                <option value="1.9">Very active</option>
+              </select>
+            </div>
+            <div class="tdee-field">
+              <div class="tdee-label">Goal</div>
+              <select id="tdee-goal">
+                <option value="lose">Lose fat</option>
+                <option value="maintain" selected>Maintain</option>
+                <option value="gain">Build muscle</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn blue" onclick="calcTDEE()">Calculate my targets</button>
+        </div>
+        <div id="tdee-result" style="display:none;margin-top:10px"></div>
+      </div>
+    </div>
+  </details>
+
+  <!-- THE DAY YOU HAD, THEN WHAT IT MEANS. These four blocks — the coaching nudge, the quiet care
+       card, the meal split and the extended macros — sat INSIDE the hero, between your numbers and
+       the log bar, and made the hero 530px tall. So the one thing a person opens a food tracker to
+       do was 656px down: two thirds of a screen of reflection before you could type what you ate.
+       MyFitnessPal opens on the diary with add always in reach, and it is right about that.
+       Numbers, then log, then the day, then what the day means. -->
+      <!-- Coaching nudge: the diary should COACH toward the target, not just count ('counsel, not
+           tracking') — actionable, time-of-day aware, grace-first. Populated by renderNutritionLog. -->
+      <div id="nut-nudge" style="display:none;margin-top:10px"></div>
+      <!-- Gentle-mode counsel (replaces the numeric nudge when numbers are off) + the quiet care card. -->
+      <div id="nut-gentle-line" style="display:none;margin-top:10px"></div>
+      <div id="nut-care" style="display:none;margin-top:12px"></div>
+    <!-- Calorie-by-meal split (MFP's glanceable insight): where today's calories came from -->
+    <div id="nut-meal-split" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
+      <div class="eyebrow" style="margin-bottom:6px">Where today's calories came from</div>
+      <div id="nut-meal-split-bar" style="display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--bg3);margin-bottom:6px"></div>
+      <div id="nut-meal-split-legend" style="display:flex;flex-wrap:wrap;gap:10px;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3)"></div>
+    </div>
+    
+    <!-- Fiber / Sugar / Sodium / Sat fat extended macros -->
+    <div id="nut-extended" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
+      <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Fiber</div><div id="nut-fiber" style="font-family:DM Mono,monospace;font-size:14px;color:var(--gr)">0g</div></div>
+      <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Sugar</div><div id="nut-sugar" style="font-family:DM Mono,monospace;font-size:14px;color:var(--go)">0g</div></div>
+      <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Sodium</div><div id="nut-sodium" style="font-family:DM Mono,monospace;font-size:14px;color:var(--bl)">0mg</div></div>
+      <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Sat fat</div><div id="nut-satfat" style="font-family:DM Mono,monospace;font-size:14px;color:var(--tx2)">0g</div></div>
+    </div>
+    
+    <!-- Micronutrients expandable -->
+    <button onclick="toggleMicroPanel()" id="micro-panel-toggle" style="width:100%;background:transparent;border:none;border-top:1px solid var(--bd);padding:14px 0 14px 0;/*was*/10px 0 0 0;margin-top:12px;color:var(--go);font-family:DM Mono,monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.12em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+      <span>Show vitamins &amp; minerals</span>
+      <span id="micro-panel-arrow" style="font-size:12px;transition:transform 0.2s">▾</span>
+    </button>
+    <div id="micro-panel" style="display:none;margin-top:12px"></div>
 
   <!-- ══ SECTION 3 · THIS WEEK — how to actually HIT your target: real meals + a priced shopping list ══ -->
   <div class="card" id="fuel-plan-card" style="margin-bottom:12px;background:linear-gradient(135deg,var(--go-bg),transparent);border:1px solid var(--go-bd)">
@@ -5271,7 +5287,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v566';
+const APP_VERSION = 'v567';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5306,10 +5322,10 @@ async function esvPassage(q){
     if(d && d.passages && d.passages[0]) return d.passages[0];
     const own = ls('totry_esv_key');
     if(!own) return null;
-    const r = await fetch('https://api.esv.org/v3/passage/text/?q=' + encodeURIComponent(q) +
+    const r = await _fetchT('https://api.esv.org/v3/passage/text/?q=' + encodeURIComponent(q) +
       '&include-verse-numbers=true&include-headings=false&include-footnotes=false' +
       '&include-short-copyright=false&include-passage-references=false',
-      { headers: { 'Authorization': 'Token ' + own } });
+      9000, { headers: { 'Authorization': 'Token ' + own } });
     if(!r.ok) return null;
     const j = await r.json();
     return (j.passages && j.passages[0]) ? j.passages[0] : null;
@@ -5657,7 +5673,7 @@ const SYNC_KEYS = [
   // Goals & weekly review
   'totry_goals','totry_reviews','totry_tomorrow_tasks',
   // Apps & personalisation
-  'totry_apps_used','totry_affirms','totry_notif_schedule','totry_honest_q',
+  'totry_apps_used','totry_affirms','totry_honest_q',
   // Preferences (v29)
   'totry_currency','totry_weight_unit','totry_distance_unit','totry_theme','totry_timezone',
   'totry_tombstones',   // deletions, so a union cannot resurrect what someone removed
@@ -7295,8 +7311,9 @@ function initNotifications(){
 function scheduleNotifications(){
   // Store the schedule preference. Actual delivery handled by checking on app open
   // (true background push requires a push server; this is the lightweight version)
+  // totry_notif_hour IS the schedule. A second key mirroring it, totry_notif_schedule, was written
+  // here and read by nothing — it only rode along in every backup and every cloud sync.
   const hour = ls('totry_notif_hour') || 7;
-  ls('totry_notif_schedule', {hour, enabled: true});
   // Reach-out-first: (re)schedule the risk-window nudges from the latest pattern data. Runs on every
   // app open so the schedule tracks how the person's hardest hours actually shift over time.
   if(typeof scheduleReachOut==='function') scheduleReachOut();
@@ -10853,6 +10870,25 @@ function openPractice(){ const t=faithTradition(); if(t==='christianity'){ if(ty
 if(t==='buddhism'){ openMetta(); return; } if(t==='secular'){ openStillness(); return; } if(typeof openBreathMenu==='function') openBreathMenu(); }
 function openMetta(){ if(typeof go==='function') go('practice'); _renderPractice('metta'); }
 function openStillness(){ if(typeof go==='function') go('practice'); _renderPractice('stillness'); }
+// Every scripture and prayer-time fetch below shipped with NO timeout, and `fetch` does not time out
+// on its own. Offline is the easy case — it rejects fast and the catch shows the bundled passages. The
+// bad case is a stalled connection or a captive portal: the promise never settles, so the catch never
+// runs, the bundled fallback that exists precisely so the tab is never empty never fires, and the
+// reader sits on "Loading…" — eight characters — for as long as the person is willing to wait. That is
+// worse than being offline.
+// Nine seconds comes from the measured live calls: Wikisource returns a 12-23KB book, alquran.cloud a
+// surah, and both land in well under two seconds on a normal line. Past nine a person is watching a
+// spinner, and their own tradition's bundled text is a better answer than a longer wait.
+function _fetchT(u, ms, init){
+  const o = init || {};
+  if(typeof AbortController !== 'function') return fetch(u, o);
+  const ctrl = new AbortController();
+  const t = setTimeout(function(){ try{ ctrl.abort(); }catch(_){ } }, ms || 9000);
+  const opts = {}; for(const k in o) opts[k] = o[k];
+  opts.signal = ctrl.signal;
+  return fetch(u, opts).then(function(r){ clearTimeout(t); return r; },
+                             function(e){ clearTimeout(t); throw e; });
+}
 function _readLoading(){ return '<div style="text-align:center;padding:26px;color:var(--tx3);font-size:13px">Loading…</div>'; }
 function _readErr(msg){ return '<div class="card" style="text-align:center;color:var(--tx3);font-size:13px;padding:18px">'+(msg||'Couldn’t load right now. Check your connection and try again.')+'</div>'; }
 function _selStyle(){ return 'background:var(--bg3);border:1px solid var(--bd);color:var(--tx);border-radius:9px;padding:9px 11px;font-size:13px;max-width:100%'; }
@@ -10884,7 +10920,7 @@ function _readBundled(sel,content,bank){
 // Qur'an — Al-Quran Cloud (free, no key): surah picker + Arabic + English.
 async function _readQuranInit(sel,content){
   let surahs=window.__quranSurahs;
-  if(!surahs){ try{ const r=await fetch('https://api.alquran.cloud/v1/surah'); const j=await r.json(); surahs=(j&&j.data)||null; window.__quranSurahs=surahs; }catch(e){ surahs=null; } }
+  if(!surahs){ try{ const r=await _fetchT('https://api.alquran.cloud/v1/surah'); const j=await r.json(); surahs=(j&&j.data)||null; window.__quranSurahs=surahs; }catch(e){ surahs=null; } }
   let start=1; try{ if(typeof getDayCount==='function'){ start=(getDayCount()%20)+1; } }catch(_){ }
   try{ if(window.__quranJump){ start=window.__quranJump; window.__quranJump=0; } }catch(_){ }
   if(sel){ sel.innerHTML = surahs ? '<select id="quran-surah" onchange="_readQuranLoad(this.value)" style="'+_selStyle()+'">'+surahs.map(s=>'<option value="'+s.number+'"'+(s.number===start?' selected':'')+'>'+s.number+'. '+s.englishName+'</option>').join('')+'</select>' : ''; }
@@ -10894,8 +10930,8 @@ async function _readQuranLoad(n){
   const content=document.getElementById('read-content'); if(!content) return; content.innerHTML=_readLoading();
   try{
     let ar=null,en=null;
-    try{ const r=await fetch('https://api.alquran.cloud/v1/surah/'+n+'/editions/quran-uthmani,en.sahih'); const j=await r.json(); if(j&&j.data&&j.data.length>=2){ ar=j.data[0].ayahs; en=j.data[1].ayahs; } }catch(e){}
-    if(!en){ const r2=await fetch('https://api.alquran.cloud/v1/surah/'+n+'/en.sahih'); const j2=await r2.json(); en=j2.data.ayahs; }
+    try{ const r=await _fetchT('https://api.alquran.cloud/v1/surah/'+n+'/editions/quran-uthmani,en.sahih'); const j=await r.json(); if(j&&j.data&&j.data.length>=2){ ar=j.data[0].ayahs; en=j.data[1].ayahs; } }catch(e){}
+    if(!en){ const r2=await _fetchT('https://api.alquran.cloud/v1/surah/'+n+'/en.sahih'); const j2=await r2.json(); en=j2.data.ayahs; }
     content.innerHTML='<div class="card">'+en.map((a,i)=>'<div style="margin-bottom:15px">'+(ar&&ar[i]?'<div dir="rtl" style="font-size:21px;line-height:2.1;color:var(--tx);text-align:right;margin-bottom:5px">'+ar[i].text+'</div>':'')+'<div style="font-size:13.5px;color:var(--tx2);line-height:1.65">'+a.text+' <span style="color:var(--tx3);font-size:11px">('+n+':'+a.numberInSurah+')</span></div></div>').join('')+'</div>';
   }catch(e){
     // Offline: the bundled pool, not an error box. The Dhammapada and Meditations readers added later
@@ -10934,7 +10970,7 @@ async function _readStoicLoad(book){
   try{
     const u='https://en.wikisource.org/w/api.php?action=query&format=json&origin=*&prop=extracts'+
             '&explaintext=1&redirects=1&titles='+encodeURIComponent(STOIC_PAGE+book);
-    const r=await fetch(u);
+    const r=await _fetchT(u);
     if(!r.ok) throw new Error('net');
     const j=await r.json();
     const pages=(j&&j.query&&j.query.pages)||{};
@@ -11013,7 +11049,7 @@ async function _readDhammapadaLoad(uid){
   const content=document.getElementById('read-content'); if(!content) return;
   content.innerHTML=_readLoading();
   try{
-    const r=await fetch('https://suttacentral.net/api/bilarasuttas/'+encodeURIComponent(uid)+'/sujato');
+    const r=await _fetchT('https://suttacentral.net/api/bilarasuttas/'+encodeURIComponent(uid)+'/sujato');
     if(!r.ok) throw new Error('net');
     const j=await r.json();
     const tr=j.translation_text||{}, root=j.root_text||{};
@@ -11069,7 +11105,7 @@ async function _readGitaInit(sel,content){
 async function _readGitaLoad(){
   const content=document.getElementById('read-content'); if(!content) return; content.innerHTML=_readLoading();
   try{
-    const g=window.__gita; const r=await fetch('https://vedicscriptures.github.io/slok/'+g.ch+'/'+g.v+'/index.json');
+    const g=window.__gita; const r=await _fetchT('https://vedicscriptures.github.io/slok/'+g.ch+'/'+g.v+'/index.json');
     if(!r.ok) throw new Error('net'); const j=await r.json();
     const en=(j.siva&&j.siva.et)||(j.purohit&&j.purohit.et)||(j.raman&&j.raman.et)||(j.gambir&&j.gambir.et)||'';
     content.innerHTML='<div class="card"><div style="font-size:12px;color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+g.ch+'.'+g.v+' <span style="color:var(--tx3);letter-spacing:0">· verse '+g.v+' of '+_gitaCount(g.ch)+'</span></div>'+(j.slok?'<div style="font-size:16px;line-height:1.95;color:var(--tx);margin-bottom:8px">'+j.slok+'</div>':'')+(j.transliteration?'<div style="font-size:12.5px;font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+String(j.transliteration).trim()+'</div>':'')+'<div style="font-size:14px;color:var(--tx2);line-height:1.75">'+en+'</div></div>';
@@ -11146,7 +11182,7 @@ async function _loadSalah(){
   }
   if(!coords){ box.innerHTML='<div class="card" style="text-align:center;font-size:13px;color:var(--tx3);padding:18px;line-height:1.6">Allow location to see today’s prayer times.<br><button class="btn" onclick="_promptCity()" style="margin-top:10px;display:inline-block;padding:7px 14px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Or enter your city</button></div>'; return; }
   try{
-    const r=await fetch('https://api.aladhan.com/v1/timings/'+_salahDateStr()+'?latitude='+coords.lat+'&longitude='+coords.lng+'&method=2');
+    const r=await _fetchT('https://api.aladhan.com/v1/timings/'+_salahDateStr()+'?latitude='+coords.lat+'&longitude='+coords.lng+'&method=2');
     const j=await r.json(); if(j.code!==200||!j.data) throw new Error('n'); box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri);
   }catch(e){ box.innerHTML=_readErr('Couldn’t load prayer times right now.'); }
 }
@@ -11156,7 +11192,7 @@ async function _loadSalahByCity(city){
   // NB: the city is saved further down, only after the API confirms it resolved — so a typo is never
   // persisted and then silently reused. The bug was never the write; it was that _loadSalah() did not
   // READ it, so the saved city sat there unused and people retyped it every visit.
-  try{ const r=await fetch('https://api.aladhan.com/v1/timingsByCity/'+_salahDateStr()+'?city='+encodeURIComponent(city)+'&country=&method=2'); const j=await r.json(); if(j.code!==200||!j.data) throw new Error('c'); try{ ls('totry_city',city); }catch(_){} if(box) box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri)+'<div style="text-align:center;margin-top:8px"><button class="btn" onclick="_promptCity()" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">Change city</button></div>'; }
+  try{ const r=await _fetchT('https://api.aladhan.com/v1/timingsByCity/'+_salahDateStr()+'?city='+encodeURIComponent(city)+'&country=&method=2'); const j=await r.json(); if(j.code!==200||!j.data) throw new Error('c'); try{ ls('totry_city',city); }catch(_){} if(box) box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri)+'<div style="text-align:center;margin-top:8px"><button class="btn" onclick="_promptCity()" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">Change city</button></div>'; }
   catch(e){ if(box) box.innerHTML=_readErr('Couldn’t find that city — try a larger nearby one.'); }
 }
 function _salahCard(t,h){
@@ -11313,7 +11349,7 @@ function _practiceReset(){ const st=window.__practice; if(!st) return; st.phase=
 async function _openAsma(){
   const el=document.getElementById('practice-content'); if(!el) return; el.innerHTML=_readLoading();
   let names=window.__asma;
-  if(!names){ try{ const r=await fetch('https://api.aladhan.com/v1/asmaAlHusna'); const j=await r.json(); names=(j&&j.code===200)?j.data:null; window.__asma=names; }catch(e){ names=null; } }
+  if(!names){ try{ const r=await _fetchT('https://api.aladhan.com/v1/asmaAlHusna'); const j=await r.json(); names=(j&&j.code===200)?j.data:null; window.__asma=names; }catch(e){ names=null; } }
   const back='<div style="margin-bottom:10px"><button class="btn" onclick="_renderPractice(\'dhikr\')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px;padding:7px 12px">‹ Tasbih counter</button></div>';
   if(!names){ el.innerHTML=back+_readErr('Couldn’t load the names right now.'); return; }
   const rows=names.map((n,i)=>'<div style="display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--bd)"><div style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);min-width:22px">'+(i+1)+'</div><div style="flex:1"><div style="font-size:14px;color:var(--tx)">'+n.transliteration+'</div><div style="font-size:12px;color:var(--tx3)">'+n.en.meaning+'</div></div><div dir="rtl" style="font-size:22px;color:var(--go)">'+n.name+'</div></div>').join('');
@@ -16880,7 +16916,6 @@ function openProgressCheckin(){
     // How many life areas someone checked in on, and whether they wrote something, is a shape of their
     // week. The event that a check-in happened is the feature signal; the rest is theirs.
     try{ if(typeof logEvent==='function') logEvent('progress_checkin'); }catch(_){}
-    try{ ls('totry_last_checkin', Date.now()); }catch(_){}
     m.remove();
     const t=document.createElement('div'); t.className='modal-bg open'; t.style.alignItems='center';
     t.innerHTML='<div class="modal" style="text-align:center"><div style="font-size:30px;margin-bottom:8px">🙏</div><div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:10px">Thank you — really.</div><div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:16px">'+_raffleCopy('thanks')+'</div><button class="btn primary" onclick="closeModal(this)">Back to it</button></div>';
@@ -21208,7 +21243,7 @@ async function fetchCurrencyRates(base){
     return cache.rates;
   }
   try{
-    const r = await fetch('https://api.frankfurter.dev/v1/latest?base=' + base);
+    const r = await _fetchT('https://api.frankfurter.dev/v1/latest?base=' + base, 8000);
     if(!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
     if(d && d.rates){
@@ -21960,7 +21995,7 @@ async function loadBibleChapter(){
       const _hid = (translation==='kjv') ? null : (translation==='web' ? 'ENGWEBP' : 'eng_asv');
       if(!_hid) throw new Error('helloao has no KJV');
       const _usfm = _helloaoBook(book.name);
-      const r=await fetch('https://bible.helloao.org/api/'+_hid+'/'+_usfm+'/'+chapter+'.json');
+      const r=await _fetchT('https://bible.helloao.org/api/'+_hid+'/'+_usfm+'/'+chapter+'.json', 8000);
       if(r.ok){const d=await r.json();const vs=d.chapter?.verses||d.verses||[];if(vs.length){verses=vs.map(v=>({num:v.number||v.verseNumber,text:v.text||v.content}));apiUsed=translation==='kjv'?'KJV':'ASV';}}
     }catch(e){ lastError = lastError || 'helloao failed'; }
   }
@@ -21968,7 +22003,7 @@ async function loadBibleChapter(){
   // 3. bible-api.com (KJV/WEB)
   if(!verses){
     try{
-      const r=await fetch('https://bible-api.com/'+encodeURIComponent(book.name+' '+chapter)+'?translation='+(translation==='kjv'?'kjv':'web'));
+      const r=await _fetchT('https://bible-api.com/'+encodeURIComponent(book.name+' '+chapter)+'?translation='+(translation==='kjv'?'kjv':'web'), 8000);
       if(r.ok){const d=await r.json();if(d.verses){verses=d.verses.map(v=>({num:v.verse,text:v.text}));apiUsed=translation==='kjv'?'KJV':'WEB';}}
     }catch(e){ lastError = lastError || 'bible-api failed'; }
   }
@@ -21976,7 +22011,7 @@ async function loadBibleChapter(){
   // 4. jsdelivr fallback
   if(!verses){
     try{
-      const r=await fetch('https://cdn.jsdelivr.net/gh/wldeh/bible-api/bibles/'+(translation||'en-asv')+'/books/'+String(bookId).replace(/^(\d)-/, function(_m, d){ return d; })+'/chapters/'+chapter+'.json');
+      const r=await _fetchT('https://cdn.jsdelivr.net/gh/wldeh/bible-api/bibles/'+(translation||'en-asv')+'/books/'+String(bookId).replace(/^(\d)-/, function(_m, d){ return d; })+'/chapters/'+chapter+'.json', 8000);
       if(r.ok){const d=await r.json();if(d.verses){verses=d.verses.map(v=>({num:v.verse||v.verseNumber||v.v,text:v.text||v.t}));apiUsed='ASV';}}
     }catch(e){ lastError = lastError || 'jsdelivr failed'; }
   }
@@ -22020,7 +22055,7 @@ async function loadStudyNotes(){
   const bookCode = bibleBookToUSFM(ref.bookName);
   let notes = null;
   try{
-    const r = await fetch('https://bible.helloao.org/api/c/tyndale/'+bookCode+'/'+ref.chapter+'.json');
+    const r = await _fetchT('https://bible.helloao.org/api/c/tyndale/'+bookCode+'/'+ref.chapter+'.json', 8000);
     if(r.ok){ const d = await r.json(); notes = (d.chapter && d.chapter.content) || d.content || null; }
   }catch(_){ }
   if(!notes || !notes.length){
@@ -22109,7 +22144,7 @@ async function searchBible(query){
       }
     } catch(e){console.error('ESV err:',e);}
     try{
-      const r=await fetch('https://bible-api.com/'+encodeURIComponent(query)+'?translation=kjv');
+      const r=await _fetchT('https://bible-api.com/'+encodeURIComponent(query)+'?translation=kjv', 8000);
       if(r.ok){
         const d=await r.json();
         if(d.text){
@@ -23928,10 +23963,16 @@ async function getFSToken(){
   }
   return null;
 }
+// WHY THE FOOD PROVIDERS GET 6s AND A SCRIPTURE READER GETS 9s.
+// These four are not one request with three spares — they are fallbacks for each other, tried in
+// turn until one answers. So cutting a slow provider off early does not cost the person their
+// result; it hands them to the next provider, which is often faster than finishing the wait. A
+// reader has no such alternative (its fallback is a smaller bundled text), which is why it waits
+// longer. And common foods are answered from the local table before any of this runs at all.
 async function searchFatSecret(query){
   const token=await getFSToken();if(!token)return[];
   try{
-    const r=await fetch('https://platform.fatsecret.com/rest/server.api?method=foods.search&search_expression='+encodeURIComponent(query)+'&format=json&max_results=8',{headers:{'Authorization':'Bearer '+token}});
+    const r=await _fetchT('https://platform.fatsecret.com/rest/server.api?method=foods.search&search_expression='+encodeURIComponent(query)+'&format=json&max_results=8',6000,{headers:{'Authorization':'Bearer '+token}});
     if(r.ok){const d=await r.json();const foods=d.foods?.food||[];
       return(Array.isArray(foods)?foods:[foods]).map(f=>({
         id:f.food_id,name:f.food_name,brand:f.brand_name||'',
@@ -23949,7 +23990,7 @@ async function searchOFF(query){
     // Use the Australian Open Food Facts endpoint so AU products (Woolworths/Coles/local brands)
     // rank first — closer to how Aussie nutrition apps behave. Also pull countries_tags so we can
     // flag AU items for ranking in the merge step.
-    const r=await fetch('https://au.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(query)+'&action=process&json=1&page_size=8&fields=code,product_name,brands,nutriments,serving_size,countries_tags',{headers:{'User-Agent':'ToTry-App/1.0 (AU)'}});
+    const r=await _fetchT('https://au.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(query)+'&action=process&json=1&page_size=8&fields=code,product_name,brands,nutriments,serving_size,countries_tags',6000,{headers:{'User-Agent':'ToTry-App/1.0 (AU)'}});
     if(r.ok){const d=await r.json();
       return(d.products||[]).filter(p=>p.product_name&&p.nutriments).map(p=>{
         const n = p.nutriments;
@@ -24038,10 +24079,10 @@ async function searchUSDA(query){
       const _p = await keyProxy({ provider:'usda', query, dataType, pageSize });
       if(_p) return Array.isArray(_p.foods) ? _p.foods : [];
       if(!key) return [];
-      const r = await fetch('https://api.nal.usda.gov/fdc/v1/foods/search?api_key=' + key +
+      const r = await _fetchT('https://api.nal.usda.gov/fdc/v1/foods/search?api_key=' + key +
         '&query=' + encodeURIComponent(query) +
         '&dataType=' + encodeURIComponent(dataType) +
-        '&pageSize=' + pageSize);
+        '&pageSize=' + pageSize, 6000);
       if(!r.ok){
         if(r.status === 429){ console.warn('[usda] rate-limited (DEMO_KEY)'); }
         return [];
@@ -24155,7 +24196,7 @@ async function searchNutritionix(query){
   try{
     const appId = ls('totry_nutritionix_id'); const appKey = ls('totry_nutritionix_key');
     if(!appId || !appKey) return []; // optional source; silent if not configured
-    const r = await fetch('https://trackapi.nutritionix.com/v2/search/instant?query=' + encodeURIComponent(query), {
+    const r = await _fetchT('https://trackapi.nutritionix.com/v2/search/instant?query=' + encodeURIComponent(query), 6000, {
       headers: { 'x-app-id': appId, 'x-app-key': appKey }
     });
     if(!r.ok) return [];
@@ -25692,7 +25733,9 @@ async function lookupBarcode(barcode){
     let d = null;
     for(const base of ['https://world.openfoodfacts.org', 'https://us.openfoodfacts.org']){
       try{
-        const r = await fetch(base + '/api/v2/product/' + encodeURIComponent(barcode) + '.json');
+        // 7s per mirror: two of them, so a dead connection gives up at 14s with a useful answer
+        // rather than hanging on "Looking up..." — see _fetchT.
+        const r = await _fetchT(base + '/api/v2/product/' + encodeURIComponent(barcode) + '.json', 7000);
         if(r.ok){ const j = await r.json(); if(j.status === 1 && j.product){ d = j; break; } }
       }catch(_){ /* try next */ }
     }
@@ -29049,7 +29092,7 @@ async function _seasonTimes(){
   if(!url){ const city = ls('totry_city'); if(city) url = 'https://api.aladhan.com/v1/timingsByCity/'+key+'?city='+encodeURIComponent(city)+'&country=&method=2'; }
   if(!url) return null;
   try{
-    const r = await fetch(url); const j = await r.json();
+    const r = await _fetchT(url, 8000); const j = await r.json();
     if(j.code !== 200 || !j.data) return null;
     const out = {key:key, fajr:j.data.timings.Fajr, maghrib:j.data.timings.Maghrib};
     ls('totry_fast_times', out); return out;
@@ -39442,11 +39485,11 @@ async function fetchLiturgy(){
   const base = 'https://cpbjr.github.io/catholic-readings-api';
   const out = { readings:null, celebration:null, season:null };
   try{
-    const r = await fetch(base + '/readings/' + y + '/' + mmdd + '.json');
+    const r = await _fetchT(base + '/readings/' + y + '/' + mmdd + '.json', 8000);
     if(r.ok){ const d = await r.json(); out.readings = d.readings || null; out.season = d.season || null; out.usccb = d.usccbLink || null; }
   }catch(_){ }
   try{
-    const c = await fetch(base + '/liturgical-calendar/' + y + '/' + mmdd + '.json');
+    const c = await _fetchT(base + '/liturgical-calendar/' + y + '/' + mmdd + '.json', 8000);
     if(c.ok){ const d = await c.json(); out.celebration = d.celebration || null; if(!out.season) out.season = d.season || null; }
   }catch(_){ }
   if(out.readings || out.celebration){ ls(cacheKey, out); }
@@ -39581,7 +39624,7 @@ async function readTodaysGospel(){
   const usfm = (typeof bibleBookToUSFM==='function') ? bibleBookToUSFM(bookName) : bookName.toUpperCase().slice(0,3);
   let verses = null;
   try{
-    const r = await fetch('https://bible.helloao.org/api/BSB/'+usfm+'/'+chapter+'.json');
+    const r = await _fetchT('https://bible.helloao.org/api/BSB/'+usfm+'/'+chapter+'.json', 8000);
     if(r.ok){ const d = await r.json(); const all = (d.chapter && d.chapter.content) || []; 
       verses = all.filter(it => it.type==='verse' && it.number>=vStart && it.number<=vEnd)
                   .map(v => ({ num:v.number, text: (Array.isArray(v.content)?v.content.map(c=>typeof c==='string'?c:(c.text||'')).join(' '):v.content||'') })); }
@@ -41669,11 +41712,14 @@ async function loadDemoData(){
                            {feeling:'lonely',moved:'reach out',ts:iso(dayAgo(3))}]);
   ls('totry_relationships',[{id:1,name:'Mum',lastContact:iso(dayAgo(3))},{id:2,name:'Dan',lastContact:iso(dayAgo(5))}]);
 
-  // FIRST-RUN GATES A 92-DAY PERSON WOULD HAVE PASSED LONG AGO. Without these the persona looks
-  // established everywhere except the surfaces that gate on them — and the worst offender is the
-  // Feeling Door, the app's primary action and the single most important thing to film: unset,
-  // totry_first_moment makes it render the two-option beginner stub instead of the real door with all
-  // eleven feelings. Every reel of the front door would have shown the wrong product.
+  // FIRST-RUN GATES A 92-DAY PERSON WOULD HAVE PASSED LONG AGO — a tour offer, a first-win banner, a
+  // one-time Nourish note — so the persona does not look established everywhere except the surfaces
+  // that gate on them.
+  // totry_first_moment is the record of the first feeling they ever named, seeded so the persona has
+  // a history rather than a blank. It does NOT gate the Feeling Door. This comment used to claim that
+  // leaving it unset rendered a "two-option beginner stub" instead of the real door; that was measured
+  // and is false — the door renders all ten feelings either way, to a brand-new person and a 92-day
+  // one alike, which is right: meeting someone in their exact feeling matters most on day one.
   ls('totry_first_moment',{feeling:'restless', ts:iso(dayAgo(90))});
   ls('totry_tour_offered', true);
   ls('totry_first_win_done', true);
@@ -46057,9 +46103,28 @@ async function syncGoogleHealth(){
           if(p.value && p.value[0]) steps += p.value[0].intVal || 0;
         });
       }
-      stepDays.push({date:new Date(parseInt(b.startTimeMillis)).toDateString(), steps});
+      stepDays.push({date:new Date(parseInt(b.startTimeMillis)).toDateString(), ms:parseInt(b.startTimeMillis), steps});
     });
     ls('totry_google_steps', stepDays);
+    // SEVEN DAYS ARE FETCHED AND ONLY TODAY WAS EVER USED. The other six went into
+    // totry_google_steps, which nothing read back — so a person who connected Google Health on a
+    // Friday watched Friday's steps appear and the week they had actually walked stay blank. The
+    // integration reported success and delivered a seventh of what it had in hand.
+    // Backfilled into the same trackers store the Track tab reads, and never over a number the
+    // person entered themselves: that one is theirs, and a sync has no business replacing it.
+    // Today is the deliberate exception below — a live device count beats a manual estimate for the
+    // day still in progress.
+    try{
+      const tr = ls('totry_trackers') || {};
+      let filled = 0;
+      stepDays.forEach(function(d){
+        if(!d.ms || !(d.steps > 0)) return;
+        const k = new Date(d.ms).toLocaleDateString('en-AU');
+        if(!tr[k]) tr[k] = { water:0, sleep:0, steps:0 };
+        if(!(tr[k].steps > 0)){ tr[k].steps = d.steps; filled++; }
+      });
+      if(filled) ls('totry_trackers', tr);
+    }catch(_){}
     // Today's steps
     const today = stepDays.find(d=>d.date===new Date().toDateString());
     if(today && today.steps > 0){

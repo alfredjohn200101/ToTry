@@ -94,7 +94,7 @@ async function _seasonTimes(){
   if(!url){ const city = ls('totry_city'); if(city) url = 'https://api.aladhan.com/v1/timingsByCity/'+key+'?city='+encodeURIComponent(city)+'&country=&method=2'; }
   if(!url) return null;
   try{
-    const r = await fetch(url); const j = await r.json();
+    const r = await _fetchT(url, 8000); const j = await r.json();
     if(j.code !== 200 || !j.data) return null;
     const out = {key:key, fajr:j.data.timings.Fajr, maghrib:j.data.timings.Maghrib};
     ls('totry_fast_times', out); return out;

@@ -34,10 +34,16 @@ async function getFSToken(){
   }
   return null;
 }
+// WHY THE FOOD PROVIDERS GET 6s AND A SCRIPTURE READER GETS 9s.
+// These four are not one request with three spares — they are fallbacks for each other, tried in
+// turn until one answers. So cutting a slow provider off early does not cost the person their
+// result; it hands them to the next provider, which is often faster than finishing the wait. A
+// reader has no such alternative (its fallback is a smaller bundled text), which is why it waits
+// longer. And common foods are answered from the local table before any of this runs at all.
 async function searchFatSecret(query){
   const token=await getFSToken();if(!token)return[];
   try{
-    const r=await fetch('https://platform.fatsecret.com/rest/server.api?method=foods.search&search_expression='+encodeURIComponent(query)+'&format=json&max_results=8',{headers:{'Authorization':'Bearer '+token}});
+    const r=await _fetchT('https://platform.fatsecret.com/rest/server.api?method=foods.search&search_expression='+encodeURIComponent(query)+'&format=json&max_results=8',6000,{headers:{'Authorization':'Bearer '+token}});
     if(r.ok){const d=await r.json();const foods=d.foods?.food||[];
       return(Array.isArray(foods)?foods:[foods]).map(f=>({
         id:f.food_id,name:f.food_name,brand:f.brand_name||'',
@@ -55,7 +61,7 @@ async function searchOFF(query){
     // Use the Australian Open Food Facts endpoint so AU products (Woolworths/Coles/local brands)
     // rank first — closer to how Aussie nutrition apps behave. Also pull countries_tags so we can
     // flag AU items for ranking in the merge step.
-    const r=await fetch('https://au.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(query)+'&action=process&json=1&page_size=8&fields=code,product_name,brands,nutriments,serving_size,countries_tags',{headers:{'User-Agent':'ToTry-App/1.0 (AU)'}});
+    const r=await _fetchT('https://au.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(query)+'&action=process&json=1&page_size=8&fields=code,product_name,brands,nutriments,serving_size,countries_tags',6000,{headers:{'User-Agent':'ToTry-App/1.0 (AU)'}});
     if(r.ok){const d=await r.json();
       return(d.products||[]).filter(p=>p.product_name&&p.nutriments).map(p=>{
         const n = p.nutriments;
@@ -144,10 +150,10 @@ async function searchUSDA(query){
       const _p = await keyProxy({ provider:'usda', query, dataType, pageSize });
       if(_p) return Array.isArray(_p.foods) ? _p.foods : [];
       if(!key) return [];
-      const r = await fetch('https://api.nal.usda.gov/fdc/v1/foods/search?api_key=' + key +
+      const r = await _fetchT('https://api.nal.usda.gov/fdc/v1/foods/search?api_key=' + key +
         '&query=' + encodeURIComponent(query) +
         '&dataType=' + encodeURIComponent(dataType) +
-        '&pageSize=' + pageSize);
+        '&pageSize=' + pageSize, 6000);
       if(!r.ok){
         if(r.status === 429){ console.warn('[usda] rate-limited (DEMO_KEY)'); }
         return [];
@@ -261,7 +267,7 @@ async function searchNutritionix(query){
   try{
     const appId = ls('totry_nutritionix_id'); const appKey = ls('totry_nutritionix_key');
     if(!appId || !appKey) return []; // optional source; silent if not configured
-    const r = await fetch('https://trackapi.nutritionix.com/v2/search/instant?query=' + encodeURIComponent(query), {
+    const r = await _fetchT('https://trackapi.nutritionix.com/v2/search/instant?query=' + encodeURIComponent(query), 6000, {
       headers: { 'x-app-id': appId, 'x-app-key': appKey }
     });
     if(!r.ok) return [];
@@ -1798,7 +1804,9 @@ async function lookupBarcode(barcode){
     let d = null;
     for(const base of ['https://world.openfoodfacts.org', 'https://us.openfoodfacts.org']){
       try{
-        const r = await fetch(base + '/api/v2/product/' + encodeURIComponent(barcode) + '.json');
+        // 7s per mirror: two of them, so a dead connection gives up at 14s with a useful answer
+        // rather than hanging on "Looking up..." — see _fetchT.
+        const r = await _fetchT(base + '/api/v2/product/' + encodeURIComponent(barcode) + '.json', 7000);
         if(r.ok){ const j = await r.json(); if(j.status === 1 && j.product){ d = j; break; } }
       }catch(_){ /* try next */ }
     }

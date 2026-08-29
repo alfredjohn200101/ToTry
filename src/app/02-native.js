@@ -892,8 +892,9 @@ function initNotifications(){
 function scheduleNotifications(){
   // Store the schedule preference. Actual delivery handled by checking on app open
   // (true background push requires a push server; this is the lightweight version)
+  // totry_notif_hour IS the schedule. A second key mirroring it, totry_notif_schedule, was written
+  // here and read by nothing — it only rode along in every backup and every cloud sync.
   const hour = ls('totry_notif_hour') || 7;
-  ls('totry_notif_schedule', {hour, enabled: true});
   // Reach-out-first: (re)schedule the risk-window nudges from the latest pattern data. Runs on every
   // app open so the schedule tracks how the person's hardest hours actually shift over time.
   if(typeof scheduleReachOut==='function') scheduleReachOut();

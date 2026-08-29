@@ -411,11 +411,14 @@ async function loadDemoData(){
                            {feeling:'lonely',moved:'reach out',ts:iso(dayAgo(3))}]);
   ls('totry_relationships',[{id:1,name:'Mum',lastContact:iso(dayAgo(3))},{id:2,name:'Dan',lastContact:iso(dayAgo(5))}]);
 
-  // FIRST-RUN GATES A 92-DAY PERSON WOULD HAVE PASSED LONG AGO. Without these the persona looks
-  // established everywhere except the surfaces that gate on them — and the worst offender is the
-  // Feeling Door, the app's primary action and the single most important thing to film: unset,
-  // totry_first_moment makes it render the two-option beginner stub instead of the real door with all
-  // eleven feelings. Every reel of the front door would have shown the wrong product.
+  // FIRST-RUN GATES A 92-DAY PERSON WOULD HAVE PASSED LONG AGO — a tour offer, a first-win banner, a
+  // one-time Nourish note — so the persona does not look established everywhere except the surfaces
+  // that gate on them.
+  // totry_first_moment is the record of the first feeling they ever named, seeded so the persona has
+  // a history rather than a blank. It does NOT gate the Feeling Door. This comment used to claim that
+  // leaving it unset rendered a "two-option beginner stub" instead of the real door; that was measured
+  // and is false — the door renders all ten feelings either way, to a brand-new person and a 92-day
+  // one alike, which is right: meeting someone in their exact feeling matters most on day one.
   ls('totry_first_moment',{feeling:'restless', ts:iso(dayAgo(90))});
   ls('totry_tour_offered', true);
   ls('totry_first_win_done', true);

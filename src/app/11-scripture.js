@@ -204,7 +204,7 @@ async function fetchCurrencyRates(base){
     return cache.rates;
   }
   try{
-    const r = await fetch('https://api.frankfurter.dev/v1/latest?base=' + base);
+    const r = await _fetchT('https://api.frankfurter.dev/v1/latest?base=' + base, 8000);
     if(!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
     if(d && d.rates){
@@ -956,7 +956,7 @@ async function loadBibleChapter(){
       const _hid = (translation==='kjv') ? null : (translation==='web' ? 'ENGWEBP' : 'eng_asv');
       if(!_hid) throw new Error('helloao has no KJV');
       const _usfm = _helloaoBook(book.name);
-      const r=await fetch('https://bible.helloao.org/api/'+_hid+'/'+_usfm+'/'+chapter+'.json');
+      const r=await _fetchT('https://bible.helloao.org/api/'+_hid+'/'+_usfm+'/'+chapter+'.json', 8000);
       if(r.ok){const d=await r.json();const vs=d.chapter?.verses||d.verses||[];if(vs.length){verses=vs.map(v=>({num:v.number||v.verseNumber,text:v.text||v.content}));apiUsed=translation==='kjv'?'KJV':'ASV';}}
     }catch(e){ lastError = lastError || 'helloao failed'; }
   }
@@ -964,7 +964,7 @@ async function loadBibleChapter(){
   // 3. bible-api.com (KJV/WEB)
   if(!verses){
     try{
-      const r=await fetch('https://bible-api.com/'+encodeURIComponent(book.name+' '+chapter)+'?translation='+(translation==='kjv'?'kjv':'web'));
+      const r=await _fetchT('https://bible-api.com/'+encodeURIComponent(book.name+' '+chapter)+'?translation='+(translation==='kjv'?'kjv':'web'), 8000);
       if(r.ok){const d=await r.json();if(d.verses){verses=d.verses.map(v=>({num:v.verse,text:v.text}));apiUsed=translation==='kjv'?'KJV':'WEB';}}
     }catch(e){ lastError = lastError || 'bible-api failed'; }
   }
@@ -972,7 +972,7 @@ async function loadBibleChapter(){
   // 4. jsdelivr fallback
   if(!verses){
     try{
-      const r=await fetch('https://cdn.jsdelivr.net/gh/wldeh/bible-api/bibles/'+(translation||'en-asv')+'/books/'+String(bookId).replace(/^(\d)-/, function(_m, d){ return d; })+'/chapters/'+chapter+'.json');
+      const r=await _fetchT('https://cdn.jsdelivr.net/gh/wldeh/bible-api/bibles/'+(translation||'en-asv')+'/books/'+String(bookId).replace(/^(\d)-/, function(_m, d){ return d; })+'/chapters/'+chapter+'.json', 8000);
       if(r.ok){const d=await r.json();if(d.verses){verses=d.verses.map(v=>({num:v.verse||v.verseNumber||v.v,text:v.text||v.t}));apiUsed='ASV';}}
     }catch(e){ lastError = lastError || 'jsdelivr failed'; }
   }
@@ -1016,7 +1016,7 @@ async function loadStudyNotes(){
   const bookCode = bibleBookToUSFM(ref.bookName);
   let notes = null;
   try{
-    const r = await fetch('https://bible.helloao.org/api/c/tyndale/'+bookCode+'/'+ref.chapter+'.json');
+    const r = await _fetchT('https://bible.helloao.org/api/c/tyndale/'+bookCode+'/'+ref.chapter+'.json', 8000);
     if(r.ok){ const d = await r.json(); notes = (d.chapter && d.chapter.content) || d.content || null; }
   }catch(_){ }
   if(!notes || !notes.length){
@@ -1105,7 +1105,7 @@ async function searchBible(query){
       }
     } catch(e){console.error('ESV err:',e);}
     try{
-      const r=await fetch('https://bible-api.com/'+encodeURIComponent(query)+'?translation=kjv');
+      const r=await _fetchT('https://bible-api.com/'+encodeURIComponent(query)+'?translation=kjv', 8000);
       if(r.ok){
         const d=await r.json();
         if(d.text){
