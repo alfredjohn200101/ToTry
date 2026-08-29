@@ -432,7 +432,15 @@ function renderHomeHabits(){
     // Past 6 days hit count for at-a-glance pattern
     let pastHits = 0;
     for(let off = 1; off <= knowable; off++) if(cellFor(h, off)) pastHits++;
-    const pastColor = pastHits >= 5 ? 'var(--gr)' : pastHits >= 3 ? 'var(--go)' : 'var(--tx3)';
+    // Against a TARGET when the person set one, against elapsed days when they did not. Someone who
+    // lifts three times a week and has done all three was reading "3/5 this week" — measured against
+    // days that merely passed, so two planned rest days looked like two failures. With a target it
+    // reads "3 of 3 this week" and goes green, which is the truth.
+    const _pw = (h && h.pw >= 1 && h.pw <= 7) ? h.pw : null;
+    const _weekHits = (function(){ let n = 0; for(let off = 0; off <= knowable; off++) if(cellFor(h, off)) n++; return n; })();
+    const pastColor = _pw
+      ? (_weekHits >= _pw ? 'var(--gr)' : _weekHits >= Math.ceil(_pw * 0.6) ? 'var(--go)' : 'var(--tx3)')
+      : (pastHits >= 5 ? 'var(--gr)' : pastHits >= 3 ? 'var(--go)' : 'var(--tx3)');
     
     const nameCell = document.createElement('div');
     nameCell.style.cssText = 'min-width:0;overflow:hidden';
@@ -445,7 +453,7 @@ function renderHomeHabits(){
       (_anc
         ? '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">after ' + _escFew(_anc) + '</div>'
         : (!window.__anchorHintShown ? (window.__anchorHintShown = true, '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">\uFF0B anchor it to a cue</div>') : '')) +
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:' + pastColor + ';margin-top:2px">' + (knowable ? (pastHits + '/' + knowable + ' this week') : 'day one') + '</div>';
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:' + pastColor + ';margin-top:2px">' + (knowable ? ((_pw ? (_weekHits + ' of ' + _pw + (_weekHits >= _pw ? ' \u2713' : '')) : (pastHits + '/' + knowable)) + ' this week') : 'day one') + '</div>';
     nameCell.onclick = function(){ if(typeof openHabitAnchor==='function') openHabitAnchor(hi); };
     row.appendChild(nameCell);
     

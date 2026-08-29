@@ -295,6 +295,13 @@ function logLoss(whenISO){
     v.relapseCount=(v.relapseCount||0)+1;
     if(!v.relapseHistory)v.relapseHistory=[];
     v.relapseHistory.push({date:whenStr,streakLength:cleanBeforeReset});
+    // restartVice does this and logLoss never did: once startDate is overwritten the original start is
+    // gone, and viceFightingSince falls back to the relapse dates, which are all LATER. So a vice
+    // created before fightingSince existed — every vice a long-time user already has — lost its whole
+    // history on the first slip and reported "1 day in the fight" to someone thirty days in.
+    // The clean streak is meant to reset. The fight is not: "I have fallen most days but I have not
+    // let go of this" is the person this app is for.
+    if(!v.fightingSince) v.fightingSince = v.startDate || whenStr;
     v.startDate=whenStr;   // streak restarts from when it actually happened
     v.lastLoss=whenStr;
     // MIRROR IT INTO THE FIGHT LOG. This is the SOS "I gave in" button — the most honest thing a

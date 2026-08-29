@@ -2458,6 +2458,98 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── a slip resets the streak, never the fight ────────────────────────────────────────────────
+  // viceFightingSince takes the EARLIEST of fightingSince, the relapse dates, and startDate — and
+  // logLoss overwrote startDate without ever setting fightingSince. restartVice had that line; the
+  // slip path never did. So a vice created before fightingSince existed — which is every vice a
+  // long-time user already has — lost its whole history on the first slip and told someone thirty
+  // days in that they were on day one. The relapse dates cannot recover it: they are all later.
+  //
+  // "I have fallen most days but I have not let go of this" is the person this app is for, and this
+  // is the number that says so. Seeded WITHOUT fightingSince on purpose — that is the case that broke.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { localStorage.setItem('totry_onboarded','true');
+      localStorage.setItem('totry_name', JSON.stringify('Alfy')); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const r = await page.evaluate(async () => {
+      ls('totry_v', [{ n:'Vaping', mode:'abstinence', type:'nicotine',
+        startDate: new Date(Date.now() - 30*864e5).toISOString() }]);   // no fightingSince: a legacy row
+      loadV(); go('fight'); await new Promise(x => setTimeout(x, 1000));
+      const read = () => ({ clean: viceCleanDays(vices[0]), fight: viceFightDays(vices[0]) });
+      const before = read();
+      curVice = 0; logLoss(new Date().toISOString());
+      await new Promise(x => setTimeout(x, 800)); loadV();
+      const after = read();
+      curVice = 0; logLoss(new Date().toISOString());
+      await new Promise(x => setTimeout(x, 800)); loadV();
+      return { before, after, second: read() };
+    });
+    await ctx.close();
+    if (r.before.fight < 30)
+      findings.push(`fight-length: the seed did not produce a 30-day fight (${r.before.fight})`);
+    else {
+      if (r.after.clean !== 0)
+        findings.push(`fight-length: the clean streak survived a slip (${r.after.clean}) — it must reset`);
+      if (r.after.fight < r.before.fight)
+        findings.push(`fight-length: one slip cut the fight from ${r.before.fight} days to ${r.after.fight}`);
+      if (r.second.fight < r.before.fight)
+        findings.push(`fight-length: a second slip cut the fight to ${r.second.fight} days`);
+    }
+    if (!findings.some(f => f.startsWith('fight-length:')))
+      console.log('fight-length: a slip resets the streak and leaves the fight standing, even for a vice with no fightingSince');
+  }
+
+  // ── a rest day is not a miss ─────────────────────────────────────────────────────────────────
+  // Every habit was measured against the days that had merely ELAPSED — "3/5 this week" to someone
+  // who lifts three times a week and had done all three. Two planned rest days read as two failures,
+  // in an app whose first principle is grace over shame. Adding a habit offered one field, its name;
+  // there was no way to say what the habit was actually for.
+  //
+  // Seeded through the app's own _habitWeekStamp() and tIdx(), because h.d is seven unstamped weekday
+  // slots that loadH() clears when the week rolls — a hand-rolled stamp gets wiped and the check then
+  // passes for the wrong reason (it did, four times, while I was building this).
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { localStorage.setItem('totry_onboarded','true');
+      localStorage.setItem('totry_name', JSON.stringify('Alfy')); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const r = await page.evaluate(async () => {
+      if (typeof _habitWeekStamp !== 'function' || typeof tIdx !== 'function')
+        return { err: 'no _habitWeekStamp/tIdx — the seed cannot be trusted' };
+      const wk = _habitWeekStamp(), ti = tIdx();
+      const d = [0,0,0,0,0,0,0];
+      for (let k = 0; k < 3 && k <= ti; k++) d[ti - k] = 1;   // three done, this week
+      const hit = d.filter(Boolean).length;
+      ls('totry_h', [{ n:'Gym session', pw:3, d:d.slice(), w:wk },
+                     { n:'Read 10 pages',      d:d.slice(), w:wk }]);
+      go('home'); await new Promise(x => setTimeout(x, 1600));
+      const row = n => { const e = [...document.querySelectorAll('#tab-home *')]
+        .filter(x => (x.innerText||'').indexOf(n) === 0 && x.children.length <= 3)[0];
+        return e ? (e.innerText||'').replace(/\s+/g,' ').trim() : ''; };
+      return { seededHits: hit, withTarget: row('Gym session'), noTarget: row('Read 10 pages') };
+    });
+    await ctx.close();
+    if (r.err) findings.push(`habits: ${r.err}`);
+    else if (r.seededHits < 1) findings.push('habits: the seed produced no ticks — check tIdx/_habitWeekStamp');
+    else {
+      // With a target of 3 and 3 done it must read as MET, not as a fraction of elapsed days.
+      if (!/\b3 of 3\b/.test(r.withTarget))
+        findings.push(`habits: a 3-a-week habit with 3 done reads "${r.withTarget.slice(0,50)}"`);
+      if (!/✓/.test(r.withTarget))
+        findings.push('habits: the target was met and nothing said so');
+      // And a habit with no target keeps the old behaviour, so nothing existing changed.
+      if (!/\d\/\d/.test(r.noTarget))
+        findings.push(`habits: a habit with no target lost its elapsed-days line — "${r.noTarget.slice(0,50)}"`);
+    }
+    if (!findings.some(f => f.startsWith('habits:')))
+      console.log('habits: a weekly target is measured against itself — three of three is done, not three out of five');
+  }
+
   // ── the charges you forgot ───────────────────────────────────────────────────────────────────
   // The thing every budgeting app leads with, and RESEARCH-BACKLOG has carried it as a gap from the
   // start. The app already held every transaction AND a subscriptions store and nothing looked

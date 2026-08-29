@@ -460,12 +460,17 @@ function clearHabitAnchor(hi){
 // thrown a TypeError. No rename, no delete, no other path. A new user landed on "Today's habits", saw
 // "No habits yet. Add them in Settings", went to Settings, and found nothing. The daily action the whole
 // home page is built around could not be started.
-function addHabit(name){
+// pw = how many days a week this one is FOR. Without it every habit was measured against the days
+// that had simply elapsed — "3/5 this week" to someone who lifts three times a week and had done all
+// three. A planned rest day read as a miss, which is the shame-by-default this app exists not to do.
+// Absent means "most days", which is what the copy has always promised, so nothing existing changes.
+function addHabit(name, perWeek){
   const n = String(name==null ? '' : name).trim().slice(0,60);
   if(!n) return false;
   loadH();
   if(habits.some(function(h){ return h && String(h.n).toLowerCase()===n.toLowerCase(); })) return 'dupe';
-  habits.push({n:n, d:[0,0,0,0,0,0,0]});
+  const pw = Math.round(Number(perWeek));
+  habits.push(Object.assign({n:n, d:[0,0,0,0,0,0,0]}, (pw >= 1 && pw <= 7) ? {pw:pw} : {}));
   saveH();
   try{ if(typeof syncToCloud==='function') syncToCloud('totry_h', habits); }catch(_){}
   renderHabits();
@@ -475,10 +480,12 @@ function openAddHabit(){
   if(typeof openFormModal!=='function') return;
   openFormModal('Add a habit',
     'One small thing you want to be true of you most days. Keep it small enough that a bad day can still hold it.',
-    [{id:'habit', label:'The habit', placeholder:'e.g. Read 10 pages · Walk after dinner · Pray before bed'}],
+    [{id:'habit', label:'The habit', placeholder:'e.g. Read 10 pages · Walk after dinner · Pray before bed'},
+     {id:'perweek', label:'Days a week you are aiming for', type:'number',
+      placeholder:'leave blank for most days'}],
     'Add it',
     function(vals){
-      const r = addHabit(vals.habit);
+      const r = addHabit(vals.habit, vals.perweek);
       if(r === 'dupe') return 'That one is already on your list.';
       if(!r) return 'Give it a name first.';
       // The first-run checklist asked "have you added your first habits?" by testing whether the
