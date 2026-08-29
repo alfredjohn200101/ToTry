@@ -3462,6 +3462,10 @@ input:focus,textarea:focus,select:focus{
       <text x="170" y="58" text-anchor="middle" fill="rgba(255,255,255,0.12)" font-family="Cormorant Garamond,serif" font-size="13" font-style="italic">Log your first check-in below</text>
     </svg>
   </div>
+  <!-- Where this is going. Money has projected a debt-free date since v445; this projected nothing,
+       coach and writable by nobody. A tracker that only records is the half of Happy Scale we copied —
+       only the half that records. The half that matters is the date. -->
+  <div id="body-goal-card" style="display:none;margin-top:10px"></div>
   <!-- Recomposition + protein/muscle insight — appears only when scale body-comp data supports it -->
   <div id="body-comp-insight" class="card" style="display:none;margin-top:10px;background:linear-gradient(135deg,rgba(91,185,125,0.08),rgba(91,185,125,0.02));border:1px solid var(--go-bd)"></div>
   <!-- Weight × strength recomp read — works for everyone (no smart scale needed), the Train×Nourish cross -->
@@ -5256,7 +5260,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v562';
+const APP_VERSION = 'v563';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -11088,7 +11092,7 @@ function _renderDailyPassage(el,t){
   const bank=(t==='hinduism')?VS_HINDU:(t==='buddhism')?VS_BUDDHIST:VS_SECULAR;
   const v=bank[_dailyIndex(bank.length)];
   const kind=(t==='hinduism')?'Today’s verse':(t==='buddhism')?'Today’s teaching':'Today’s reflection';
-  el.innerHTML='<div class="card" style="text-align:center;padding:28px 20px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:16px">'+kind+'</div><div style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;line-height:1.65;color:var(--tx);margin-bottom:14px">“'+v.t+'”</div><div style="font-size:12px;color:var(--go)">— '+v.r+'</div></div><div style="display:flex;gap:8px;margin-top:12px"><button class=\'btn\' onclick=\'openBreathMenu()\' style=\'flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12.5px\'>Sit with it \u2014 a minute</button><button class=\'btn\' onclick=\'openJournal()\' style=\'flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12.5px\'>Write what it stirs</button></div><button class="btn" onclick="openScripture()" style="width:100%;margin-top:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Open the full '+curFaith().bookShort+' ›</button>';
+  el.innerHTML='<div class="card" style="text-align:center;padding:28px 20px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:16px">'+kind+'</div><div id="daily-passage-text" style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;line-height:1.65;color:var(--tx);margin-bottom:14px">“'+v.t+'”</div><div id="daily-passage-ref" style="font-size:12px;color:var(--go)">— '+v.r+'</div>'+((typeof _verseToolsHTML==='function')?_verseToolsHTML('daily-passage-text','daily-passage-ref'):'')+'</div><div style="display:flex;gap:8px;margin-top:12px"><button class=\'btn\' onclick=\'openBreathMenu()\' style=\'flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12.5px\'>Sit with it \u2014 a minute</button><button class=\'btn\' onclick=\'openJournal()\' style=\'flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12.5px\'>Write what it stirs</button></div>';
 }
 // Islam — prayer times (Aladhan, free) + Hijri + a daily ayah. Geolocation, with a city fallback.
 function _renderIslamToday(el){
@@ -11538,8 +11542,12 @@ function renderPlanDay(id,i){
     '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3)">Day '+(i+1)+' of '+days.length+'</div></div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.25;margin-bottom:12px">'+p.title+'</div>'+
     '<div class="card" style="border-color:var(--go-bd);background:linear-gradient(135deg,rgba(200,169,110,0.08),rgba(140,107,182,0.04));padding:22px 18px;margin-bottom:12px">'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:19px;font-style:italic;line-height:1.7;color:var(--tx)">\u201C'+day.t+'\u201D</div>'+
-      '<div style="font-size:12px;color:var(--go);margin-top:11px">\u2014 '+day.r+'</div></div>'+
+      '<div id="plan-day-text" style="font-family:Cormorant Garamond,serif;font-size:19px;font-style:italic;line-height:1.7;color:var(--tx)">\u201C'+day.t+'\u201D</div>'+
+      '<div id="plan-day-ref" style="font-size:12px;color:var(--go);margin-top:11px">\u2014 '+day.r+'</div>'+
+      // Hallow's whole reason to exist is that you can LISTEN to it, and this was the one surface
+      // in Soul with a passage on it and no way to hear it — or to send it to anyone. The component
+      // that puts both on the morning verse works here unchanged.
+      ((typeof _verseToolsHTML==='function')?_verseToolsHTML('plan-day-text','plan-day-ref'):'')+'</div>'+
     '<div class="card" style="margin-bottom:12px"><div style="font-size:14px;line-height:1.8;color:var(--tx2)">'+day.w+'</div></div>'+
     '<div class="card" style="margin-bottom:12px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:9px">One question</div>'+
       '<div style="font-size:15px;line-height:1.7;color:var(--tx);margin-bottom:13px">'+day.q+'</div>'+
@@ -11985,7 +11993,7 @@ function go(name){
   updateHubBackBar(name);
   try{ if(typeof renderCycleSurfaces==='function') renderCycleSurfaces(); }catch(_){}
   if(name==='fight'){renderVices();renderScoreboard();if(typeof renderFightEvidence==='function')renderFightEvidence();}
-  if(name==='track'){renderBody();if(typeof syncWeeklyCheckin==='function')syncWeeklyCheckin();renderBodyCollage();updateTrackerDisplay();if(typeof renderHealthCard==='function')renderHealthCard();if(typeof Health!=='undefined'&&Health.connected()&&Health.isNative())Health.syncToday();}
+  if(name==='track'){renderBody();if(typeof renderBodyGoalCard==='function')renderBodyGoalCard();if(typeof syncWeeklyCheckin==='function')syncWeeklyCheckin();renderBodyCollage();updateTrackerDisplay();if(typeof renderHealthCard==='function')renderHealthCard();if(typeof Health!=='undefined'&&Health.connected()&&Health.isNative())Health.syncToday();}
   if(name==='grow'){ if(typeof renderBodySystemReport==='function') renderBodySystemReport();
                      if(typeof renderGrowHandoffs==='function') renderGrowHandoffs(); }
   if(name==='settings' && typeof renderPushSettings==='function'){renderPushSettings();}
@@ -23106,6 +23114,155 @@ async function deleteWeightEntry(key){
 // The scale alone lies — "up 1kg" could be muscle or fat; "flat" could be perfect recomposition.
 // Cross the two and the truth appears. Deterministic reads on your own numbers — it reflects, never
 // prescribes — and stays null until there's genuinely enough of both to be honest.
+// ── WHERE THIS IS GOING ──────────────────────────────────────────────────────────────────────
+// Money has projected a debt-free date since v445; Track projected nothing. And totry_goal_weight was
+// READ — buildCtx feeds it to the coach as "Current weight → goal" — while NOTHING in the app ever
+// wrote it, so the goal was a field the person could not fill and the sentence never had a second
+// half. That is a tracker wearing the face of Happy Scale: it records, and it does not tell you where
+// you are going, which is the only reason anyone opens a weight app twice.
+//
+// Deterministic, from the person's own numbers. It refuses to speak rather than guess: weightTrendDir
+// already withholds below three weeks and three weigh-ins, and a rate near zero has no honest date.
+// Nothing here shames — moving away from a goal is information, not a verdict, and the copy says the
+// one thing that would change it rather than what they did wrong.
+// The card. Every branch says something true and actionable, and none of them says "you are behind".
+function renderBodyGoalCard(){
+  const box = document.getElementById('body-goal-card'); if(!box) return;
+  const p = bodyGoalProjection();
+  const goal = goalWeightKg();
+  const wf = (kg, o) => (typeof wFmt === 'function') ? wFmt(kg, o) : (Math.round(kg*10)/10 + 'kg');
+
+  // No goal set. Offer it once, quietly, and only to someone who has actually been weighing in —
+  // asking a person with two weigh-ins to name a target is the app talking before it has listened.
+  if(!goal){
+    const n = (ls('totry_body') || []).filter(e => e && e.weight > 0).length;
+    if(n < 3){ box.style.display = 'none'; return; }
+    box.style.display = '';
+    box.innerHTML = '<div class="card" style="padding:14px">' +
+      '<div style="font-size:13px;color:var(--tx2);line-height:1.55;margin-bottom:10px">' +
+        'Want me to tell you where this is heading? Give me a weight to aim at and I will work out ' +
+        'when you get there — from your own trend, not a formula.</div>' +
+      '<button class="btn" onclick="openGoalWeight()" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Set a goal weight</button>' +
+    '</div>';
+    return;
+  }
+  if(!p){
+    // A goal, but not enough behind it yet. Say so, rather than showing an empty card or a fake date.
+    box.style.display = '';
+    box.innerHTML = '<div class="card" style="padding:14px">' +
+      '<div class="lbl" style="margin-bottom:6px">Goal ' + _escFew(wf(goal)) + '</div>' +
+      '<div style="font-size:12.5px;color:var(--tx3);line-height:1.55">Three weeks of weigh-ins and I can tell you when. ' +
+        'Until then a date would be a guess dressed up as a fact.</div>' +
+      '<button class="btn" onclick="openGoalWeight()" style="margin-top:10px;background:transparent;border:none;color:var(--tx3);font-size:11.5px;padding:6px 0">Change it</button>' +
+    '</div>';
+    return;
+  }
+  // wDelta signs a CHANGE, so passing it a magnitude produced "+0.3kg a week" for someone losing
+  // weight toward their goal — the plus sign saying the opposite of what was happening. A rate needs
+  // its size in the person's own unit and nothing else; the direction is already in the sentence.
+  const rate = Math.abs(p.perWeek || 0);
+  const rateTxt = (typeof wFmt === 'function') ? wFmt(rate) : (Math.round(rate*10)/10 + 'kg');
+  let head, body, col = 'var(--tx)';
+  if(p.kind === 'there'){
+    head = 'You are there.'; col = 'var(--gr)';
+    body = 'Holding at ' + wf(p.now) + '. The work now is staying, which is its own kind of work.';
+  } else if(p.kind === 'onTrack'){
+    const d = p.eta.toLocaleDateString('en-AU', { day:'numeric', month:'long' });
+    head = 'About ' + d; col = 'var(--gr)';
+    body = 'At your own pace of ' + rateTxt + ' a week — ' + p.weeks + ' week' + (p.weeks===1?'':'s') +
+           ' from here. That is the trend, not one weigh-in, so a heavy day does not move it.';
+  } else if(p.kind === 'steady'){
+    head = 'Holding steady.'; col = 'var(--go)';
+    body = 'You are not moving toward ' + wf(p.goal) + ' or away from it. If steady is what you wanted, ' +
+           'you are doing it. If it is not, the lever is fuel — the Nourish read will show you where.';
+  } else if(p.kind === 'away'){
+    head = 'Going the other way.'; col = 'var(--go)';
+    body = rateTxt + ' a week away from ' + wf(p.goal) + '. That is information, not a verdict — ' +
+           'bodies do this. One honest week of food logged is what would tell us why.';
+  } else {
+    head = 'Too slow to call.'; col = 'var(--tx2)';
+    body = 'The trend is moving your way but slowly enough that any date I gave you would be fiction.';
+  }
+  box.style.display = '';
+  box.innerHTML = '<div class="card" style="padding:14px">' +
+    '<div class="lbl" style="margin-bottom:6px">Goal ' + _escFew(wf(p.goal)) + '</div>' +
+    '<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:' + col + ';line-height:1.3;margin-bottom:6px">' +
+      _escFew(head) + '</div>' +
+    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6">' + _escFew(body) + '</div>' +
+    '<button class="btn" onclick="openGoalWeight()" style="margin-top:10px;background:transparent;border:none;color:var(--tx3);font-size:11.5px;padding:6px 0">Change the goal</button>' +
+  '</div>';
+}
+
+// Setting it. Stored in kilograms like every other weight in the app; the field speaks the person's
+// own unit through dispToKg, so a lb user types 165 and means 165lb.
+function openGoalWeight(){
+  const cur = goalWeightKg();
+  const u = (typeof wUnit === 'function') ? wUnit() : 'kg';
+  const shown = cur ? ((typeof kgToDisp === 'function') ? Math.round(kgToDisp(cur)*10)/10 : cur) : '';
+  const m = document.createElement('div'); m.className = 'modal-bg open';
+  m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
+    '<h3 style="margin-bottom:4px">A weight to aim at</h3>' +
+    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.55">' +
+      'Only so I can tell you when you get there. Nothing here counts down at you, and you can clear ' +
+      'it any time.</p>' +
+    '<input type="number" id="gw-input" inputmode="decimal" step="0.1" value="' + shown + '" ' +
+      'placeholder="Goal weight (' + u + ')" style="width:100%;box-sizing:border-box;margin-bottom:12px">' +
+    '<button class="btn primary" onclick="saveGoalWeight()" style="margin-bottom:8px">Save</button>' +
+    (cur ? '<button class="btn" onclick="clearGoalWeight()" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Remove the goal</button>'
+         : '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>') +
+  '</div>';
+  document.body.appendChild(m);
+  setTimeout(function(){ try{ document.getElementById('gw-input').focus(); }catch(_){ } }, 80);
+}
+
+function saveGoalWeight(){
+  const el = document.getElementById('gw-input');
+  const v = parseFloat(el && el.value);
+  if(!isFinite(v) || v <= 0){ if(typeof showToast==='function') showToast('Give me a number', 'Any weight you are aiming at.'); return; }
+  const kg = (typeof dispToKg === 'function') ? dispToKg(v) : v;
+  ls('totry_goal_weight', Math.round(kg * 10) / 10);
+  try{ closeModal(el); }catch(_){ document.querySelectorAll('.modal-bg.open').forEach(function(x){ x.remove(); }); }
+  renderBodyGoalCard();
+  if(typeof haptic === 'function') haptic('success');
+  if(typeof syncToCloud === 'function') try{ syncToCloud(); }catch(_){ }
+}
+
+function clearGoalWeight(){
+  ls('totry_goal_weight', null);
+  document.querySelectorAll('.modal-bg.open').forEach(function(x){ x.remove(); });
+  renderBodyGoalCard();
+}
+
+function goalWeightKg(){ const g = Number(ls('totry_goal_weight')); return isFinite(g) && g > 0 ? g : null; }
+
+function bodyGoalProjection(){
+  try{
+    const goal = goalWeightKg();
+    if(!goal) return null;                                   // no goal is a fine way to live
+    const t = weightTrendDir();
+    if(!t) return null;                                      // not enough behind them to be honest
+    const now = (typeof getTrendWeight === 'function')
+      ? getTrendWeight(ls('totry_body') || [])
+      : ((ls('totry_body') || []).filter(e => e && e.weight > 0).slice(-1)[0] || {}).weight;
+    if(!(now > 0)) return null;
+    const gap = goal - now;                                  // + means they need to gain
+    if(Math.abs(gap) < 0.3) return { kind:'there', now:now, goal:goal };
+    const perWeek = t.perWeek;                               // smoothed, kg/week, signed
+    const moving = (gap > 0 && perWeek > 0.05) || (gap < 0 && perWeek < -0.05);
+    if(!moving){
+      // Either holding steady or moving the other way. Both are worth saying plainly; neither is a
+      // failure, and the honest thing is what would change it, not how far off they are.
+      return { kind: Math.abs(perWeek) < 0.06 ? 'steady' : 'away',
+               now:now, goal:goal, perWeek:perWeek, gap:gap };
+    }
+    const weeks = Math.abs(gap / perWeek);
+    if(!isFinite(weeks) || weeks > 130) return { kind:'far', now:now, goal:goal, perWeek:perWeek, gap:gap };
+    const eta = new Date(Date.now() + weeks * 7 * 86400000);
+    return { kind:'onTrack', now:now, goal:goal, perWeek:perWeek, gap:gap,
+             weeks: Math.round(weeks), eta: eta };
+  }catch(_){ return null; }
+}
+
 function weightTrendDir(){
   const body=(ls('totry_body')||[]).filter(e=>e&&e.weight>0).map(e=>({w:+e.weight,t:new Date(e.ts||e.date).getTime()})).filter(x=>x.w>0&&!isNaN(x.t)).sort((a,b)=>a.t-b.t);
   if(body.length<3) return null;
@@ -23788,10 +23945,23 @@ async function searchOFF(query){
         const pro100 = Math.round(per100('proteins')*10)/10;
         const carb100 = Math.round(per100('carbohydrates')*10)/10;
         const fat100 = Math.round(per100('fat')*10)/10;
+        // Open Food Facts reports these on most packaged products and the app was reading none of
+        // them, so a barcode scan produced a food with four macros while the label in your hand
+        // listed fibre, sugars and salt. Sodium comes in GRAMS per 100g in OFF's schema and the rest
+        // of this app counts milligrams — the ×1000 is the whole difference between 0.6mg and 600mg.
+        const _off100 = {
+          fiber:   Math.round(per100('fiber') * 10) / 10,
+          sugar:   Math.round(per100('sugars') * 10) / 10,
+          sat_fat: Math.round(per100('saturated-fat') * 10) / 10,
+          sodium:  Math.round((per100('sodium') || (per100('salt') / 2.5)) * 1000)
+        };
         const isAU = Array.isArray(p.countries_tags) && p.countries_tags.some(t=>/australia/i.test(t));
         // Build servings: the product's real serving FIRST (correctly scaled), then 100g. Every
         // serving carries its own correctly-scaled macros so the modal never mis-scales.
-        const scaleTo = (g) => ({ cal: Math.round(cal100*g/100), pro: Math.round(pro100*g/100*10)/10, carb: Math.round(carb100*g/100*10)/10, fat: Math.round(fat100*g/100*10)/10 });
+        const scaleTo = (g) => Object.assign(
+          { cal: Math.round(cal100*g/100), pro: Math.round(pro100*g/100*10)/10,
+            carb: Math.round(carb100*g/100*10)/10, fat: Math.round(fat100*g/100*10)/10 },
+          nutPick(_off100, g/100));
         const servings = [];
         if(servingG > 0){ const m = scaleTo(servingG); servings.push({ name: p.serving_size || (servingG+'g'), gramsEquiv:servingG, cal:m.cal, pro:m.pro, carb:m.carb, fat:m.fat }); }
         servings.push({ name:'100g', gramsEquiv:100, cal:cal100, pro:pro100, carb:carb100, fat:fat100 });
@@ -23944,7 +24114,10 @@ async function searchUSDA(query){
         source: 'USDA',
         __generic: !!f.__generic,   // a real whole food, not a branded packet — ranking uses this
         per100: true,   // these figures are per 100g — openServingModal's micro maths depends on knowing
-        servings: [{name: servingLabel, cal: n.cal, pro: n.pro, carb: n.carb, fat: n.fat}]
+        // n holds all twenty-seven nutrients — the adapter's own comment says "Full micros carried
+        // through" — and this rebuilt the serving from four of them, so everything downstream that
+        // reads servings[0] (which is every log path) got macros and nothing else.
+        servings: [Object.assign({name: servingLabel}, nutPick(n))]
                     .concat(_brandServing ? [_brandServing] : [])
       };
     });
@@ -24969,7 +25142,7 @@ function _pmLog(){
   const log=ls('totry_nutlog')||{}; if(!log[today]) log[today]=[];
   const meal=_photoMeal.meal||(typeof currentMealSlot==='function'?currentMealSlot():'dinner');
   const R=n=>Math.round(n);
-  items.forEach(it=>{ const m=it.mult||1; log[today].push({ id:Date.now()+Math.floor(Math.random()*100000), name:it.food||'Item', brand:'', serving:(it.portion||'1 serving')+(m!==1?' ×'+m:''), qty:1, cal:R(it.cal*m), pro:R(it.pro*m), carb:R(it.carb*m), fat:R(it.fat*m), meal:meal, source:'AI photo', ts:(typeof nutStampFor==='function'?nutStampFor():new Date().toISOString()) }); });
+  items.forEach(it=>{ const m=it.mult||1; log[today].push({ id:Date.now()+Math.floor(Math.random()*100000), name:it.food||'Item', brand:'', serving:(it.portion||'1 serving')+(m!==1?' ×'+m:''), qty:1, ...nutPick(it, m), meal:meal, source:'AI photo', ts:(typeof nutStampFor==='function'?nutStampFor():new Date().toISOString()) }); });
   ls('totry_nutlog', log);
   const n=items.length; _photoMeal=null;
   if(typeof haptic==='function') haptic('success');
@@ -25824,10 +25997,7 @@ async function logRecipeAsMeal(i){
     name: r.name,
     serving: qty + (qty === 1 ? ' serving' : ' servings'),
     qty: 1,
-    cal: Math.round(totalCal),
-    pro: Math.round(totalPro * 10) / 10,
-    carb: Math.round(totalCarb * 10) / 10,
-    fat: Math.round(totalFat * 10) / 10,
+    ...nutPick(_rTot),
     source: 'recipe'
   });
   ls('totry_nutlog', log);
@@ -26400,7 +26570,7 @@ function logSavedMeal(id){
   const hr = new Date().getHours();
   const meal = hr < 11 ? 'breakfast' : hr < 15 ? 'lunch' : hr < 21 ? 'dinner' : 'snack';
   m.items.forEach(it => {
-    log[today].push({ id: Date.now()+Math.floor(Math.random()*100000), name:it.name, brand:it.brand||'', serving:it.serving||'1 serving', qty:it.qty||1, cal:it.cal, pro:it.pro, carb:it.carb, fat:it.fat, meal:meal, source:it.source||'', ts:(typeof nutStampFor==='function'?nutStampFor():new Date().toISOString()) });
+    log[today].push({ id: Date.now()+Math.floor(Math.random()*100000), name:it.name, brand:it.brand||'', serving:it.serving||'1 serving', qty:it.qty||1, ...nutPick(it), meal:meal, source:it.source||'', ts:(typeof nutStampFor==='function'?nutStampFor():new Date().toISOString()) });
   });
   ls('totry_nutlog', log);
   haptic('success');
@@ -26444,6 +26614,36 @@ function renderSavedMeals(){
 // opens the serving modal and honours servings[0] — logged ~134. Two buttons on the same row, wildly
 // different numbers, and the diary line said "1 serving" so nothing on screen revealed which you got.
 // Wrong numbers flow straight into the day total, the rings, the weekly average and adaptive TDEE.
+// ── WHAT A FOOD ACTUALLY IS ──────────────────────────────────────────────────────────────────
+// USDA, Open Food Facts and Nutritionix all return fibre, sugar, sodium and saturated fat, the local
+// table computes them per gram, and the AI estimate asks for them by name. Then _quickServing kept
+// four macros and seven of the eight diary writes kept four macros — so the app fetched the data and
+// threw it away at the moment of writing it down.
+//
+// Everything downstream starved on that: the nineteen-row vitamin panel, the extended macro strip,
+// the food-groups read, and the fibre component of the nourishment score. They were not badly built;
+// they were never fed. (And gating them on "is there data" — which is what I did first — hides the
+// symptom and keeps the cause.)
+//
+// One list, used by the resolver and by every write, so a nutrient added here reaches the diary
+// without eight separate edits.
+const NUTRIENTS = ['cal','pro','carb','fat','fiber','sugar','sodium','sat_fat','cholesterol']
+  .concat(nutMicroKeys());   // the nineteen the vitamin panel asks for, which USDA already returns
+
+// Copy the full nutrient set off any source object, keeping only what is actually a number — an
+// absent nutrient must stay ABSENT, never become 0, or "unknown" silently turns into "none".
+function nutPick(src, mult){
+  const m = (mult == null) ? 1 : mult;
+  const out = {};
+  if(!src) return out;
+  NUTRIENTS.forEach(function(k){
+    const v = Number(src[k]);
+    if(isFinite(v)) out[k] = Math.round(v * m * 10) / 10;
+  });
+  if(out.cal != null) out.cal = Math.round(out.cal);
+  return out;
+}
+
 function _quickServing(food){
   try{
     if(food && typeof getFoodOverride==='function' && getFoodOverride(food) && typeof applyFoodOverride==='function'){
@@ -26453,8 +26653,9 @@ function _quickServing(food){
   }catch(_){ }
   const s = (food && Array.isArray(food.servings) && food.servings.length) ? food.servings[0] : null;
   if(s && s.cal != null){
-    return { label: s.name || (s.gramsEquiv ? s.gramsEquiv+'g' : '1 serving'),
-             cal: s.cal, pro: s.pro, carb: s.carb, fat: s.fat };
+    // was: cal/pro/carb/fat only, discarding the fibre, sugar, sodium and saturated fat the serving
+    // already carried from whichever database answered.
+    return Object.assign({ label: s.name || (s.gramsEquiv ? s.gramsEquiv+'g' : '1 serving') }, nutPick(s));
   }
   // No serving info: say plainly that this is the per-100 figure rather than calling it "1 serving".
   return { label: food && food.per100 ? (food._ml ? '100ml' : '100g') : '1 serving',
@@ -26471,7 +26672,7 @@ function quickLogSearchFood(food){
     id: Date.now() + Math.floor(Math.random()*100000),
     name: food.name, brand: food.brand || '',
     serving: _qs.label, qty: 1,
-    cal: _qs.cal, pro: _qs.pro, carb: _qs.carb, fat: _qs.fat,
+    ...nutPick(_qs),          // the whole nutrient set the database gave us, not just four macros
     meal: meal, source: food.source || '', ts: (typeof nutStampFor==='function'?nutStampFor():new Date().toISOString())
   });
   ls('totry_nutlog', log);
@@ -26495,7 +26696,7 @@ function quickLogRecent(name){
     id: Date.now() + Math.floor(Math.random()*100000),
     name: f.name, brand: f.brand || '',
     serving: _qs.label, qty: 1,
-    cal: _qs.cal, pro: _qs.pro, carb: _qs.carb, fat: _qs.fat,
+    ...nutPick(_qs),          // the whole nutrient set the database gave us, not just four macros
     meal: meal, source: f.source || '', ts: (typeof nutStampFor==='function'?nutStampFor():new Date().toISOString())
   });
   ls('totry_nutlog', log);

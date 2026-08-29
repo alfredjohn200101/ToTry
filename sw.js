@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v562-escaping'
+const CACHE = 'totry-v563-nutrition'
 
 const CORE = [
   './',

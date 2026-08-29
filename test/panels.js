@@ -2458,6 +2458,58 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── what the databases give us has to reach the diary ────────────────────────────────────────
+  // Nourish was the face of a food tracker with none of its substance. USDA, Open Food Facts and
+  // Nutritionix all return fibre, sugar, sodium, saturated fat — and USDA returns nineteen vitamins
+  // and minerals on top, which the adapter already mapped under a comment saying "Full micros carried
+  // through". Then the serving was rebuilt from four of those twenty-seven, _quickServing kept four,
+  // and seven of the eight diary writes kept four. The app fetched the data and threw it away at the
+  // moment of writing it down.
+  //
+  // Everything downstream starved on that and looked like bad design instead of missing plumbing: a
+  // nineteen-row vitamin panel of "0mg · 0%", an extended macro strip of four zeros, a food-groups
+  // read that could not see vegetables, and a nourishment score docking 35 points for fibre nobody
+  // had recorded. Gating those on "is there data" hides the symptom and keeps the cause.
+  //
+  // This asserts the plumbing, not the pixels: log a real USDA food and the micronutrients have to
+  // survive the trip into the diary.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { localStorage.setItem('totry_onboarded','true');
+      localStorage.setItem('totry_name', JSON.stringify('Alfy')); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const kept = await page.evaluate(async () => {
+      go('nourish'); await new Promise(r => setTimeout(r, 1000));
+      // A food from the bundled table — no network, so this runs in CI exactly as it runs offline.
+      const local = (typeof searchCommonFoods === 'function') ? searchCommonFoods('chicken breast') : [];
+      if (!local.length) return { err: 'no local match for chicken breast' };
+      const serving = (local[0].servings || [])[0] || {};
+      quickLogSearchFood(local[0]);
+      await new Promise(r => setTimeout(r, 600));
+      const day = (typeof nutDayKey === 'function') ? nutDayKey() : new Date().toLocaleDateString('en-AU');
+      const entry = (nutLogSafe()[day] || []).slice(-1)[0] || {};
+      const has = o => ['fiber','sugar','sodium'].filter(k => o[k] != null);
+      return { servingHas: has(serving), diaryHas: has(entry),
+               sodium: entry.sodium, listLen: (typeof NUTRIENTS !== 'undefined') ? NUTRIENTS.length : 0 };
+    });
+    await ctx.close();
+    if (kept.err) findings.push(`nutrition: ${kept.err}`);
+    else {
+      if (kept.listLen < 20)
+        findings.push(`nutrition: NUTRIENTS is only ${kept.listLen} long — the micro set is not in it`);
+      if (kept.servingHas.length < 3)
+        findings.push(`nutrition: the serving reached the logger with only ${kept.servingHas.join(',') || 'macros'}`);
+      if (kept.diaryHas.length < 3)
+        findings.push(`nutrition: the diary entry dropped ${3 - kept.diaryHas.length} of fibre/sugar/sodium on the way in`);
+      if (!(kept.sodium > 0))
+        findings.push('nutrition: sodium did not survive the write, so the extended strip can only show zeros');
+    }
+    if (!findings.some(f => f.startsWith('nutrition:')))
+      console.log('nutrition: what the food databases give us survives the trip into the diary — fibre, sugar and sodium included');
+  }
+
   // ── numbers off means no numbers ─────────────────────────────────────────────────────────────
   // "Numbers off" is a promise to someone whose relationship with calorie figures is the reason the
   // mode exists, and it is enforced element by element — a HIDE list of ids that applyNutGentle walks.

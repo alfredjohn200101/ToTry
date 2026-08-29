@@ -496,6 +496,155 @@ async function deleteWeightEntry(key){
 // The scale alone lies — "up 1kg" could be muscle or fat; "flat" could be perfect recomposition.
 // Cross the two and the truth appears. Deterministic reads on your own numbers — it reflects, never
 // prescribes — and stays null until there's genuinely enough of both to be honest.
+// ── WHERE THIS IS GOING ──────────────────────────────────────────────────────────────────────
+// Money has projected a debt-free date since v445; Track projected nothing. And totry_goal_weight was
+// READ — buildCtx feeds it to the coach as "Current weight → goal" — while NOTHING in the app ever
+// wrote it, so the goal was a field the person could not fill and the sentence never had a second
+// half. That is a tracker wearing the face of Happy Scale: it records, and it does not tell you where
+// you are going, which is the only reason anyone opens a weight app twice.
+//
+// Deterministic, from the person's own numbers. It refuses to speak rather than guess: weightTrendDir
+// already withholds below three weeks and three weigh-ins, and a rate near zero has no honest date.
+// Nothing here shames — moving away from a goal is information, not a verdict, and the copy says the
+// one thing that would change it rather than what they did wrong.
+// The card. Every branch says something true and actionable, and none of them says "you are behind".
+function renderBodyGoalCard(){
+  const box = document.getElementById('body-goal-card'); if(!box) return;
+  const p = bodyGoalProjection();
+  const goal = goalWeightKg();
+  const wf = (kg, o) => (typeof wFmt === 'function') ? wFmt(kg, o) : (Math.round(kg*10)/10 + 'kg');
+
+  // No goal set. Offer it once, quietly, and only to someone who has actually been weighing in —
+  // asking a person with two weigh-ins to name a target is the app talking before it has listened.
+  if(!goal){
+    const n = (ls('totry_body') || []).filter(e => e && e.weight > 0).length;
+    if(n < 3){ box.style.display = 'none'; return; }
+    box.style.display = '';
+    box.innerHTML = '<div class="card" style="padding:14px">' +
+      '<div style="font-size:13px;color:var(--tx2);line-height:1.55;margin-bottom:10px">' +
+        'Want me to tell you where this is heading? Give me a weight to aim at and I will work out ' +
+        'when you get there — from your own trend, not a formula.</div>' +
+      '<button class="btn" onclick="openGoalWeight()" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Set a goal weight</button>' +
+    '</div>';
+    return;
+  }
+  if(!p){
+    // A goal, but not enough behind it yet. Say so, rather than showing an empty card or a fake date.
+    box.style.display = '';
+    box.innerHTML = '<div class="card" style="padding:14px">' +
+      '<div class="lbl" style="margin-bottom:6px">Goal ' + _escFew(wf(goal)) + '</div>' +
+      '<div style="font-size:12.5px;color:var(--tx3);line-height:1.55">Three weeks of weigh-ins and I can tell you when. ' +
+        'Until then a date would be a guess dressed up as a fact.</div>' +
+      '<button class="btn" onclick="openGoalWeight()" style="margin-top:10px;background:transparent;border:none;color:var(--tx3);font-size:11.5px;padding:6px 0">Change it</button>' +
+    '</div>';
+    return;
+  }
+  // wDelta signs a CHANGE, so passing it a magnitude produced "+0.3kg a week" for someone losing
+  // weight toward their goal — the plus sign saying the opposite of what was happening. A rate needs
+  // its size in the person's own unit and nothing else; the direction is already in the sentence.
+  const rate = Math.abs(p.perWeek || 0);
+  const rateTxt = (typeof wFmt === 'function') ? wFmt(rate) : (Math.round(rate*10)/10 + 'kg');
+  let head, body, col = 'var(--tx)';
+  if(p.kind === 'there'){
+    head = 'You are there.'; col = 'var(--gr)';
+    body = 'Holding at ' + wf(p.now) + '. The work now is staying, which is its own kind of work.';
+  } else if(p.kind === 'onTrack'){
+    const d = p.eta.toLocaleDateString('en-AU', { day:'numeric', month:'long' });
+    head = 'About ' + d; col = 'var(--gr)';
+    body = 'At your own pace of ' + rateTxt + ' a week — ' + p.weeks + ' week' + (p.weeks===1?'':'s') +
+           ' from here. That is the trend, not one weigh-in, so a heavy day does not move it.';
+  } else if(p.kind === 'steady'){
+    head = 'Holding steady.'; col = 'var(--go)';
+    body = 'You are not moving toward ' + wf(p.goal) + ' or away from it. If steady is what you wanted, ' +
+           'you are doing it. If it is not, the lever is fuel — the Nourish read will show you where.';
+  } else if(p.kind === 'away'){
+    head = 'Going the other way.'; col = 'var(--go)';
+    body = rateTxt + ' a week away from ' + wf(p.goal) + '. That is information, not a verdict — ' +
+           'bodies do this. One honest week of food logged is what would tell us why.';
+  } else {
+    head = 'Too slow to call.'; col = 'var(--tx2)';
+    body = 'The trend is moving your way but slowly enough that any date I gave you would be fiction.';
+  }
+  box.style.display = '';
+  box.innerHTML = '<div class="card" style="padding:14px">' +
+    '<div class="lbl" style="margin-bottom:6px">Goal ' + _escFew(wf(p.goal)) + '</div>' +
+    '<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:' + col + ';line-height:1.3;margin-bottom:6px">' +
+      _escFew(head) + '</div>' +
+    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6">' + _escFew(body) + '</div>' +
+    '<button class="btn" onclick="openGoalWeight()" style="margin-top:10px;background:transparent;border:none;color:var(--tx3);font-size:11.5px;padding:6px 0">Change the goal</button>' +
+  '</div>';
+}
+
+// Setting it. Stored in kilograms like every other weight in the app; the field speaks the person's
+// own unit through dispToKg, so a lb user types 165 and means 165lb.
+function openGoalWeight(){
+  const cur = goalWeightKg();
+  const u = (typeof wUnit === 'function') ? wUnit() : 'kg';
+  const shown = cur ? ((typeof kgToDisp === 'function') ? Math.round(kgToDisp(cur)*10)/10 : cur) : '';
+  const m = document.createElement('div'); m.className = 'modal-bg open';
+  m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
+    '<h3 style="margin-bottom:4px">A weight to aim at</h3>' +
+    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.55">' +
+      'Only so I can tell you when you get there. Nothing here counts down at you, and you can clear ' +
+      'it any time.</p>' +
+    '<input type="number" id="gw-input" inputmode="decimal" step="0.1" value="' + shown + '" ' +
+      'placeholder="Goal weight (' + u + ')" style="width:100%;box-sizing:border-box;margin-bottom:12px">' +
+    '<button class="btn primary" onclick="saveGoalWeight()" style="margin-bottom:8px">Save</button>' +
+    (cur ? '<button class="btn" onclick="clearGoalWeight()" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Remove the goal</button>'
+         : '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>') +
+  '</div>';
+  document.body.appendChild(m);
+  setTimeout(function(){ try{ document.getElementById('gw-input').focus(); }catch(_){ } }, 80);
+}
+
+function saveGoalWeight(){
+  const el = document.getElementById('gw-input');
+  const v = parseFloat(el && el.value);
+  if(!isFinite(v) || v <= 0){ if(typeof showToast==='function') showToast('Give me a number', 'Any weight you are aiming at.'); return; }
+  const kg = (typeof dispToKg === 'function') ? dispToKg(v) : v;
+  ls('totry_goal_weight', Math.round(kg * 10) / 10);
+  try{ closeModal(el); }catch(_){ document.querySelectorAll('.modal-bg.open').forEach(function(x){ x.remove(); }); }
+  renderBodyGoalCard();
+  if(typeof haptic === 'function') haptic('success');
+  if(typeof syncToCloud === 'function') try{ syncToCloud(); }catch(_){ }
+}
+
+function clearGoalWeight(){
+  ls('totry_goal_weight', null);
+  document.querySelectorAll('.modal-bg.open').forEach(function(x){ x.remove(); });
+  renderBodyGoalCard();
+}
+
+function goalWeightKg(){ const g = Number(ls('totry_goal_weight')); return isFinite(g) && g > 0 ? g : null; }
+
+function bodyGoalProjection(){
+  try{
+    const goal = goalWeightKg();
+    if(!goal) return null;                                   // no goal is a fine way to live
+    const t = weightTrendDir();
+    if(!t) return null;                                      // not enough behind them to be honest
+    const now = (typeof getTrendWeight === 'function')
+      ? getTrendWeight(ls('totry_body') || [])
+      : ((ls('totry_body') || []).filter(e => e && e.weight > 0).slice(-1)[0] || {}).weight;
+    if(!(now > 0)) return null;
+    const gap = goal - now;                                  // + means they need to gain
+    if(Math.abs(gap) < 0.3) return { kind:'there', now:now, goal:goal };
+    const perWeek = t.perWeek;                               // smoothed, kg/week, signed
+    const moving = (gap > 0 && perWeek > 0.05) || (gap < 0 && perWeek < -0.05);
+    if(!moving){
+      // Either holding steady or moving the other way. Both are worth saying plainly; neither is a
+      // failure, and the honest thing is what would change it, not how far off they are.
+      return { kind: Math.abs(perWeek) < 0.06 ? 'steady' : 'away',
+               now:now, goal:goal, perWeek:perWeek, gap:gap };
+    }
+    const weeks = Math.abs(gap / perWeek);
+    if(!isFinite(weeks) || weeks > 130) return { kind:'far', now:now, goal:goal, perWeek:perWeek, gap:gap };
+    const eta = new Date(Date.now() + weeks * 7 * 86400000);
+    return { kind:'onTrack', now:now, goal:goal, perWeek:perWeek, gap:gap,
+             weeks: Math.round(weeks), eta: eta };
+  }catch(_){ return null; }
+}
+
 function weightTrendDir(){
   const body=(ls('totry_body')||[]).filter(e=>e&&e.weight>0).map(e=>({w:+e.weight,t:new Date(e.ts||e.date).getTime()})).filter(x=>x.w>0&&!isNaN(x.t)).sort((a,b)=>a.t-b.t);
   if(body.length<3) return null;

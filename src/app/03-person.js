@@ -3392,7 +3392,7 @@ function _renderDailyPassage(el,t){
   const bank=(t==='hinduism')?VS_HINDU:(t==='buddhism')?VS_BUDDHIST:VS_SECULAR;
   const v=bank[_dailyIndex(bank.length)];
   const kind=(t==='hinduism')?'Today’s verse':(t==='buddhism')?'Today’s teaching':'Today’s reflection';
-  el.innerHTML='<div class="card" style="text-align:center;padding:28px 20px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:16px">'+kind+'</div><div style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;line-height:1.65;color:var(--tx);margin-bottom:14px">“'+v.t+'”</div><div style="font-size:12px;color:var(--go)">— '+v.r+'</div></div><div style="display:flex;gap:8px;margin-top:12px"><button class=\'btn\' onclick=\'openBreathMenu()\' style=\'flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12.5px\'>Sit with it \u2014 a minute</button><button class=\'btn\' onclick=\'openJournal()\' style=\'flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12.5px\'>Write what it stirs</button></div><button class="btn" onclick="openScripture()" style="width:100%;margin-top:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Open the full '+curFaith().bookShort+' ›</button>';
+  el.innerHTML='<div class="card" style="text-align:center;padding:28px 20px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:16px">'+kind+'</div><div id="daily-passage-text" style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;line-height:1.65;color:var(--tx);margin-bottom:14px">“'+v.t+'”</div><div id="daily-passage-ref" style="font-size:12px;color:var(--go)">— '+v.r+'</div>'+((typeof _verseToolsHTML==='function')?_verseToolsHTML('daily-passage-text','daily-passage-ref'):'')+'</div><div style="display:flex;gap:8px;margin-top:12px"><button class=\'btn\' onclick=\'openBreathMenu()\' style=\'flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12.5px\'>Sit with it \u2014 a minute</button><button class=\'btn\' onclick=\'openJournal()\' style=\'flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12.5px\'>Write what it stirs</button></div>';
 }
 // Islam — prayer times (Aladhan, free) + Hijri + a daily ayah. Geolocation, with a city fallback.
 function _renderIslamToday(el){
@@ -3842,8 +3842,12 @@ function renderPlanDay(id,i){
     '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3)">Day '+(i+1)+' of '+days.length+'</div></div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.25;margin-bottom:12px">'+p.title+'</div>'+
     '<div class="card" style="border-color:var(--go-bd);background:linear-gradient(135deg,rgba(200,169,110,0.08),rgba(140,107,182,0.04));padding:22px 18px;margin-bottom:12px">'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:19px;font-style:italic;line-height:1.7;color:var(--tx)">\u201C'+day.t+'\u201D</div>'+
-      '<div style="font-size:12px;color:var(--go);margin-top:11px">\u2014 '+day.r+'</div></div>'+
+      '<div id="plan-day-text" style="font-family:Cormorant Garamond,serif;font-size:19px;font-style:italic;line-height:1.7;color:var(--tx)">\u201C'+day.t+'\u201D</div>'+
+      '<div id="plan-day-ref" style="font-size:12px;color:var(--go);margin-top:11px">\u2014 '+day.r+'</div>'+
+      // Hallow's whole reason to exist is that you can LISTEN to it, and this was the one surface
+      // in Soul with a passage on it and no way to hear it — or to send it to anyone. The component
+      // that puts both on the morning verse works here unchanged.
+      ((typeof _verseToolsHTML==='function')?_verseToolsHTML('plan-day-text','plan-day-ref'):'')+'</div>'+
     '<div class="card" style="margin-bottom:12px"><div style="font-size:14px;line-height:1.8;color:var(--tx2)">'+day.w+'</div></div>'+
     '<div class="card" style="margin-bottom:12px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:9px">One question</div>'+
       '<div style="font-size:15px;line-height:1.7;color:var(--tx);margin-bottom:13px">'+day.q+'</div>'+
@@ -4289,7 +4293,7 @@ function go(name){
   updateHubBackBar(name);
   try{ if(typeof renderCycleSurfaces==='function') renderCycleSurfaces(); }catch(_){}
   if(name==='fight'){renderVices();renderScoreboard();if(typeof renderFightEvidence==='function')renderFightEvidence();}
-  if(name==='track'){renderBody();if(typeof syncWeeklyCheckin==='function')syncWeeklyCheckin();renderBodyCollage();updateTrackerDisplay();if(typeof renderHealthCard==='function')renderHealthCard();if(typeof Health!=='undefined'&&Health.connected()&&Health.isNative())Health.syncToday();}
+  if(name==='track'){renderBody();if(typeof renderBodyGoalCard==='function')renderBodyGoalCard();if(typeof syncWeeklyCheckin==='function')syncWeeklyCheckin();renderBodyCollage();updateTrackerDisplay();if(typeof renderHealthCard==='function')renderHealthCard();if(typeof Health!=='undefined'&&Health.connected()&&Health.isNative())Health.syncToday();}
   if(name==='grow'){ if(typeof renderBodySystemReport==='function') renderBodySystemReport();
                      if(typeof renderGrowHandoffs==='function') renderGrowHandoffs(); }
   if(name==='settings' && typeof renderPushSettings==='function'){renderPushSettings();}

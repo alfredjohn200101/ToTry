@@ -76,10 +76,23 @@ async function searchOFF(query){
         const pro100 = Math.round(per100('proteins')*10)/10;
         const carb100 = Math.round(per100('carbohydrates')*10)/10;
         const fat100 = Math.round(per100('fat')*10)/10;
+        // Open Food Facts reports these on most packaged products and the app was reading none of
+        // them, so a barcode scan produced a food with four macros while the label in your hand
+        // listed fibre, sugars and salt. Sodium comes in GRAMS per 100g in OFF's schema and the rest
+        // of this app counts milligrams — the ×1000 is the whole difference between 0.6mg and 600mg.
+        const _off100 = {
+          fiber:   Math.round(per100('fiber') * 10) / 10,
+          sugar:   Math.round(per100('sugars') * 10) / 10,
+          sat_fat: Math.round(per100('saturated-fat') * 10) / 10,
+          sodium:  Math.round((per100('sodium') || (per100('salt') / 2.5)) * 1000)
+        };
         const isAU = Array.isArray(p.countries_tags) && p.countries_tags.some(t=>/australia/i.test(t));
         // Build servings: the product's real serving FIRST (correctly scaled), then 100g. Every
         // serving carries its own correctly-scaled macros so the modal never mis-scales.
-        const scaleTo = (g) => ({ cal: Math.round(cal100*g/100), pro: Math.round(pro100*g/100*10)/10, carb: Math.round(carb100*g/100*10)/10, fat: Math.round(fat100*g/100*10)/10 });
+        const scaleTo = (g) => Object.assign(
+          { cal: Math.round(cal100*g/100), pro: Math.round(pro100*g/100*10)/10,
+            carb: Math.round(carb100*g/100*10)/10, fat: Math.round(fat100*g/100*10)/10 },
+          nutPick(_off100, g/100));
         const servings = [];
         if(servingG > 0){ const m = scaleTo(servingG); servings.push({ name: p.serving_size || (servingG+'g'), gramsEquiv:servingG, cal:m.cal, pro:m.pro, carb:m.carb, fat:m.fat }); }
         servings.push({ name:'100g', gramsEquiv:100, cal:cal100, pro:pro100, carb:carb100, fat:fat100 });
@@ -232,7 +245,10 @@ async function searchUSDA(query){
         source: 'USDA',
         __generic: !!f.__generic,   // a real whole food, not a branded packet — ranking uses this
         per100: true,   // these figures are per 100g — openServingModal's micro maths depends on knowing
-        servings: [{name: servingLabel, cal: n.cal, pro: n.pro, carb: n.carb, fat: n.fat}]
+        // n holds all twenty-seven nutrients — the adapter's own comment says "Full micros carried
+        // through" — and this rebuilt the serving from four of them, so everything downstream that
+        // reads servings[0] (which is every log path) got macros and nothing else.
+        servings: [Object.assign({name: servingLabel}, nutPick(n))]
                     .concat(_brandServing ? [_brandServing] : [])
       };
     });
@@ -1257,7 +1273,7 @@ function _pmLog(){
   const log=ls('totry_nutlog')||{}; if(!log[today]) log[today]=[];
   const meal=_photoMeal.meal||(typeof currentMealSlot==='function'?currentMealSlot():'dinner');
   const R=n=>Math.round(n);
-  items.forEach(it=>{ const m=it.mult||1; log[today].push({ id:Date.now()+Math.floor(Math.random()*100000), name:it.food||'Item', brand:'', serving:(it.portion||'1 serving')+(m!==1?' ×'+m:''), qty:1, cal:R(it.cal*m), pro:R(it.pro*m), carb:R(it.carb*m), fat:R(it.fat*m), meal:meal, source:'AI photo', ts:(typeof nutStampFor==='function'?nutStampFor():new Date().toISOString()) }); });
+  items.forEach(it=>{ const m=it.mult||1; log[today].push({ id:Date.now()+Math.floor(Math.random()*100000), name:it.food||'Item', brand:'', serving:(it.portion||'1 serving')+(m!==1?' ×'+m:''), qty:1, ...nutPick(it, m), meal:meal, source:'AI photo', ts:(typeof nutStampFor==='function'?nutStampFor():new Date().toISOString()) }); });
   ls('totry_nutlog', log);
   const n=items.length; _photoMeal=null;
   if(typeof haptic==='function') haptic('success');
@@ -2112,10 +2128,7 @@ async function logRecipeAsMeal(i){
     name: r.name,
     serving: qty + (qty === 1 ? ' serving' : ' servings'),
     qty: 1,
-    cal: Math.round(totalCal),
-    pro: Math.round(totalPro * 10) / 10,
-    carb: Math.round(totalCarb * 10) / 10,
-    fat: Math.round(totalFat * 10) / 10,
+    ...nutPick(_rTot),
     source: 'recipe'
   });
   ls('totry_nutlog', log);
@@ -2688,7 +2701,7 @@ function logSavedMeal(id){
   const hr = new Date().getHours();
   const meal = hr < 11 ? 'breakfast' : hr < 15 ? 'lunch' : hr < 21 ? 'dinner' : 'snack';
   m.items.forEach(it => {
-    log[today].push({ id: Date.now()+Math.floor(Math.random()*100000), name:it.name, brand:it.brand||'', serving:it.serving||'1 serving', qty:it.qty||1, cal:it.cal, pro:it.pro, carb:it.carb, fat:it.fat, meal:meal, source:it.source||'', ts:(typeof nutStampFor==='function'?nutStampFor():new Date().toISOString()) });
+    log[today].push({ id: Date.now()+Math.floor(Math.random()*100000), name:it.name, brand:it.brand||'', serving:it.serving||'1 serving', qty:it.qty||1, ...nutPick(it), meal:meal, source:it.source||'', ts:(typeof nutStampFor==='function'?nutStampFor():new Date().toISOString()) });
   });
   ls('totry_nutlog', log);
   haptic('success');
@@ -2732,6 +2745,36 @@ function renderSavedMeals(){
 // opens the serving modal and honours servings[0] — logged ~134. Two buttons on the same row, wildly
 // different numbers, and the diary line said "1 serving" so nothing on screen revealed which you got.
 // Wrong numbers flow straight into the day total, the rings, the weekly average and adaptive TDEE.
+// ── WHAT A FOOD ACTUALLY IS ──────────────────────────────────────────────────────────────────
+// USDA, Open Food Facts and Nutritionix all return fibre, sugar, sodium and saturated fat, the local
+// table computes them per gram, and the AI estimate asks for them by name. Then _quickServing kept
+// four macros and seven of the eight diary writes kept four macros — so the app fetched the data and
+// threw it away at the moment of writing it down.
+//
+// Everything downstream starved on that: the nineteen-row vitamin panel, the extended macro strip,
+// the food-groups read, and the fibre component of the nourishment score. They were not badly built;
+// they were never fed. (And gating them on "is there data" — which is what I did first — hides the
+// symptom and keeps the cause.)
+//
+// One list, used by the resolver and by every write, so a nutrient added here reaches the diary
+// without eight separate edits.
+const NUTRIENTS = ['cal','pro','carb','fat','fiber','sugar','sodium','sat_fat','cholesterol']
+  .concat(nutMicroKeys());   // the nineteen the vitamin panel asks for, which USDA already returns
+
+// Copy the full nutrient set off any source object, keeping only what is actually a number — an
+// absent nutrient must stay ABSENT, never become 0, or "unknown" silently turns into "none".
+function nutPick(src, mult){
+  const m = (mult == null) ? 1 : mult;
+  const out = {};
+  if(!src) return out;
+  NUTRIENTS.forEach(function(k){
+    const v = Number(src[k]);
+    if(isFinite(v)) out[k] = Math.round(v * m * 10) / 10;
+  });
+  if(out.cal != null) out.cal = Math.round(out.cal);
+  return out;
+}
+
 function _quickServing(food){
   try{
     if(food && typeof getFoodOverride==='function' && getFoodOverride(food) && typeof applyFoodOverride==='function'){
@@ -2741,8 +2784,9 @@ function _quickServing(food){
   }catch(_){ }
   const s = (food && Array.isArray(food.servings) && food.servings.length) ? food.servings[0] : null;
   if(s && s.cal != null){
-    return { label: s.name || (s.gramsEquiv ? s.gramsEquiv+'g' : '1 serving'),
-             cal: s.cal, pro: s.pro, carb: s.carb, fat: s.fat };
+    // was: cal/pro/carb/fat only, discarding the fibre, sugar, sodium and saturated fat the serving
+    // already carried from whichever database answered.
+    return Object.assign({ label: s.name || (s.gramsEquiv ? s.gramsEquiv+'g' : '1 serving') }, nutPick(s));
   }
   // No serving info: say plainly that this is the per-100 figure rather than calling it "1 serving".
   return { label: food && food.per100 ? (food._ml ? '100ml' : '100g') : '1 serving',
@@ -2759,7 +2803,7 @@ function quickLogSearchFood(food){
     id: Date.now() + Math.floor(Math.random()*100000),
     name: food.name, brand: food.brand || '',
     serving: _qs.label, qty: 1,
-    cal: _qs.cal, pro: _qs.pro, carb: _qs.carb, fat: _qs.fat,
+    ...nutPick(_qs),          // the whole nutrient set the database gave us, not just four macros
     meal: meal, source: food.source || '', ts: (typeof nutStampFor==='function'?nutStampFor():new Date().toISOString())
   });
   ls('totry_nutlog', log);
@@ -2783,7 +2827,7 @@ function quickLogRecent(name){
     id: Date.now() + Math.floor(Math.random()*100000),
     name: f.name, brand: f.brand || '',
     serving: _qs.label, qty: 1,
-    cal: _qs.cal, pro: _qs.pro, carb: _qs.carb, fat: _qs.fat,
+    ...nutPick(_qs),          // the whole nutrient set the database gave us, not just four macros
     meal: meal, source: f.source || '', ts: (typeof nutStampFor==='function'?nutStampFor():new Date().toISOString())
   });
   ls('totry_nutlog', log);

@@ -1111,7 +1111,9 @@ H.section('one-tap food logging — the (+) must log the real serving');
   // Open Food Facts results carry per-100g macros at the top level and the product's REAL serving in
   // servings[0]. The quick-log path read the top level and called it "1 serving", so (+) on a 25g bar
   // logged ~535 cal while tapping the row logged ~134 — two buttons, same row, different numbers.
-  const { _quickServing } = H.load(['_quickServing'], {});
+  // _quickServing now carries the full nutrient set through nutPick, so the harness has to load its
+  // dependency too — the extract-by-name loader gives each function only what it is handed.
+  const { _quickServing } = H.load(['nutPick', '_quickServing'], { NUTRIENTS:['cal','pro','carb','fat','fiber','sugar','sodium','sat_fat'] });
 
   const bar = { name:'Milk chocolate', per100:true, cal:535, pro:7.6, carb:59, fat:30,
                 servings:[{ name:'25 g', gramsEquiv:25, cal:134, pro:1.9, carb:14.8, fat:7.5 },
