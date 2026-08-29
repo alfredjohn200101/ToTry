@@ -2952,7 +2952,11 @@ input:focus,textarea:focus,select:focus{
     </details>
     <div class="lbl">Add exercise</div>
     <div style="display:flex;gap:8px;margin-bottom:8px">
-      <input type="text" id="pt-ex-search" placeholder="Search exercises..." onkeydown="if(event.key==='Enter')searchExercises(this.value)">
+      <!-- Enter-only, so typing "bench" showed nothing until you found the Go key — the same defect the
+           food search had. The library is 324 exercises deep and the only way in was to type blind. -->
+      <input type="text" id="pt-ex-search" placeholder="Search exercises..." autocomplete="off"
+             oninput="clearTimeout(window.__exSearchT);window.__exSearchT=setTimeout(()=>{if(this.value.trim().length>1)searchExercises(this.value)},260)"
+             onkeydown="if(event.key==='Enter')searchExercises(this.value)">
       <button class="btn primary" style="width:auto;white-space:nowrap;padding:10px 12px" onclick="searchExercises(document.getElementById('pt-ex-search').value)">Find</button>
     </div>
     <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">
@@ -2963,6 +2967,10 @@ input:focus,textarea:focus,select:focus{
       <button class="qb" onclick="searchExercises('triceps')">Triceps</button>
       <button class="qb" onclick="searchExercises('legs')">Legs</button>
       <button class="qb" onclick="searchExercises('core')">Core</button>
+      <!-- EXERCISE_DB has ten body parts and these chips listed seven, so glutes and forearms
+           were reachable only by guessing the right word into the search box. -->
+      <button class="qb" onclick="searchExercises('glutes')">Glutes</button>
+      <button class="qb" onclick="searchExercises('forearms')">Forearms</button>
     </div>
     <div id="pt-ex-results" style="margin-bottom:12px"></div>
     
@@ -3690,7 +3698,10 @@ input:focus,textarea:focus,select:focus{
   <!-- SUBSCRIPTIONS -->
   <div class="card money-more" style="margin-top:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div class="card-hd" style="margin-bottom:0">🔁 Subscriptions</div>
+        <!-- Found in the statement the app already holds: same merchant, same-ish amount, roughly a
+       month apart, three times or more. It offers; it never adds anything on its own. -->
+  <div id="recurring-found" style="display:none"></div>
+<div class="card-hd" style="margin-bottom:0">🔁 Subscriptions</div>
       <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd)" onclick="openSubscriptionLogger()" aria-label="Add a subscription">+ Add</button>
     </div>
     <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Track recurring expenses. Cancel what doesn't serve you.</p>
@@ -5260,7 +5271,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v563';
+const APP_VERSION = 'v564';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -30695,7 +30706,14 @@ function _detectCSVColumns(header){
   return {
     date: find(['date','posted','transaction date']),
     desc: find(['description','details','narrative','memo','payee','transaction']),
-    amount: find(['amount','value','debit']),
+    // 'debit' was listed as a synonym for 'amount', so a bank exporting the common
+    //     Date,Description,Debit,Credit,Balance
+    // shape resolved amount to the DEBIT column — and the row loop takes the amount branch first, as
+    // a signed figure, without negating it. Every purchase imported as INCOME: a statement with four
+    // debits and one salary came in as "5 income, +$3,338.58", so the person's spending became their
+    // earnings and every read built on it was wrong. A debit column is not an amount column; it is
+    // half of a pair, and the branch below already knows how to negate it.
+    amount: find(['amount','value']),
     credit: find(['credit']),
     debit: find(['debit']),
   };
@@ -31282,6 +31300,7 @@ function renderTransactions(){
   
   // Render the new cards
   try{ renderSubscriptions(); }catch(_e){ console.warn('renderSubscriptions failed', _e); }
+  try{ renderRecurringFound(); }catch(_e){ console.warn('renderRecurringFound failed', _e); }
   try{ if(typeof renderFamilyContribution==='function') renderFamilyContribution(); }catch(_e){ console.warn('renderFamilyContribution failed', _e); }
   try{ if(typeof renderGiving==='function') renderGiving(); }catch(_e){ console.warn('renderGiving failed', _e); }
   try{ renderSubDetect(); }catch(_){}
@@ -31699,6 +31718,109 @@ function _otdSeen(){
   const hit=onThisDay(); if(hit){ try{ ls('totry_otd_seen', String(hit.e.ts)); }catch(_){} }
   const el=document.getElementById('on-this-day'); if(el){ el.style.display='none'; el.innerHTML=''; }
   if(typeof haptic==='function') haptic('tap');
+}
+
+// ── THE CHARGES YOU FORGOT ───────────────────────────────────────────────────────────────────
+// The one thing every budgeting app is actually FOR — Rocket Money, Emma, YNAB all lead with it —
+// and RESEARCH-BACKLOG has carried it as a gap since the beginning. The app already holds every
+// transaction and a subscriptions store; nothing looked between them. A person with four months of
+// NETFLIX.COM at $17.99 and Spotify at $12.99 in their imported statement was shown "No
+// subscriptions tracked yet. Add Netflix, Spotify, gym, anything recurring." — the app naming the
+// exact two charges it was sitting on and asking the person to type them in.
+//
+// Deterministic, no model: same merchant, same-ish amount, roughly a month apart, three times or
+// more. It offers; it never adds anything on its own, and it goes quiet once the person has said no.
+function _subMerchantKey(desc){
+  return String(desc || '')
+    .toLowerCase()
+    .replace(/[^a-z ]+/g, ' ')        // card refs, store numbers, dates
+    .replace(/\b(pty|ltd|inc|com|au|usa?|payment|purchase|card|xx+)\b/g, ' ')
+    .replace(/\s+/g, ' ').trim().split(' ').slice(0, 2).join(' ');
+}
+
+function detectRecurringCharges(){
+  try{
+    const tx = (ls('totry_transactions') || []).filter(t => t && t.type === 'expense' && t.amount > 0 && t.ts);
+    if(tx.length < 3) return [];
+    const already = (ls('totry_subscriptions') || []).map(s => _subMerchantKey(s.name));
+    const dismissed = ls('totry_sub_dismissed') || [];
+    const groups = {};
+    tx.forEach(function(t){
+      const k = _subMerchantKey(t.desc || t.description);
+      if(k.length < 3) return;
+      (groups[k] = groups[k] || []).push(t);
+    });
+    const out = [];
+    Object.keys(groups).forEach(function(k){
+      if(already.indexOf(k) > -1 || dismissed.indexOf(k) > -1) return;
+      const g = groups[k].slice().sort(function(a,b){ return new Date(a.ts) - new Date(b.ts); });
+      if(g.length < 3) return;
+      // Same-ish amount: a subscription can change price, a grocery shop is different every time.
+      const amts = g.map(function(t){ return Math.abs(Number(t.amount)); });
+      const med = amts.slice().sort(function(a,b){ return a-b; })[Math.floor(amts.length/2)];
+      if(!(med > 0)) return;
+      if(!amts.every(function(a){ return Math.abs(a - med) / med <= 0.12; })) return;
+      // Roughly monthly. Weekly groceries and daily coffees are not subscriptions.
+      const gaps = [];
+      for(let i = 1; i < g.length; i++) gaps.push((new Date(g[i].ts) - new Date(g[i-1].ts)) / 864e5);
+      if(!gaps.every(function(d){ return d >= 24 && d <= 38; })) return;
+      out.push({ key:k, name:(g[g.length-1].desc || g[g.length-1].description || k),
+                 amount: Math.round(med * 100) / 100, times: g.length,
+                 lastTs: g[g.length-1].ts });
+    });
+    return out.sort(function(a,b){ return b.amount - a.amount; });
+  }catch(_){ return []; }
+}
+
+function renderRecurringFound(){
+  const box = document.getElementById('recurring-found'); if(!box) return;
+  const found = detectRecurringCharges();
+  if(!found.length){ box.style.display = 'none'; box.innerHTML = ''; return; }
+  // curSym() is the only place a currency symbol comes from — a literal '$' here would show a dollar
+  // sign to someone whose money is in pounds, which is the exact thing the core suite guards against.
+  const sym = curSym();
+  const yearly = found.reduce(function(a, f){ return a + f.amount * 12; }, 0);
+  box.style.display = '';
+  box.innerHTML = '<div class="card" style="margin-bottom:12px;border:1px solid var(--go-bd)">' +
+    '<div class="lbl" style="margin-bottom:6px">Charges you have not told me about</div>' +
+    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.55;margin-bottom:12px">' +
+      'Same amount, same place, month after month — ' + sym + Math.round(yearly).toLocaleString() +
+      ' a year between them, if they all keep going.</div>' +
+    found.slice(0, 5).map(function(f){
+      return '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--bd)">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:13px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+            _escFew(f.name) + '</div>' +
+          '<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx3);margin-top:2px">' +
+            sym + f.amount.toFixed(2) + ' · ' + f.times + ' times</div>' +
+        '</div>' +
+        '<button class="btn" onclick="' + _jsCode('trackFoundSub(' + JSON.stringify(f.key) + ')') + '" ' +
+          'style="width:auto;padding:8px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)">Track it</button>' +
+        '<button class="fli-del" onclick="' + _jsCode('dismissFoundSub(' + JSON.stringify(f.key) + ')') + '" ' +
+          'aria-label="Not a subscription">×</button>' +
+      '</div>';
+    }).join('') +
+  '</div>';
+}
+
+function trackFoundSub(key){
+  const f = detectRecurringCharges().find(function(x){ return x.key === key; });
+  if(!f) return;
+  const list = ls('totry_subscriptions') || [];
+  list.unshift({ id: Date.now(), name: f.name, amount: f.amount, period: 'monthly',
+                 note: 'found in your statement', addedAt: new Date().toISOString() });
+  ls('totry_subscriptions', list);
+  if(typeof haptic === 'function') haptic('success');
+  if(typeof showToast === 'function') showToast('Tracking it', f.name + ' — now in your subscriptions.');
+  try{ renderSubscriptions(); }catch(_){ }
+  renderRecurringFound();
+}
+
+function dismissFoundSub(key){
+  const d = ls('totry_sub_dismissed') || [];
+  if(d.indexOf(key) < 0) d.push(key);
+  ls('totry_sub_dismissed', d);
+  renderRecurringFound();
 }
 
 function renderSubscriptions(){
@@ -35221,6 +35343,26 @@ async function saveWorkoutSession(){
   const session={id:Date.now(),source:'manual',date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}),ts:new Date().toISOString(),day:getDayCount(),exercises:JSON.parse(JSON.stringify(currentSession)),completedSets:cs,totalSets:ts,volume:vol,durationMin:durationMin,splitFocus:getUserSplit()[tIdx()]?.focus||'Workout'};
   const history=ls('totry_workouts')||[];history.unshift(session);
   const _saved = ls('totry_workouts',_capWorkouts(history));
+  // PRs were detected on a HEVY SYNC and nowhere else — so a person who logged their session in this
+  // app, on this screen, with these sets, never got one. The whole reason a lifter opens Strong twice
+  // is that it tells them when they have just done something they have never done before, and ours
+  // told only the people who lift somewhere else. Detect on OUR save too, from the same function.
+  if(_saved !== false){
+    try{
+      const hit = (typeof detectAndRecordPRs === 'function')
+        ? detectAndRecordPRs(session.exercises || []) : [];
+      if(hit && hit.length){
+        const top = hit.slice().sort((a,b) => (b.e1rm||0) - (a.e1rm||0))[0];
+        const more = hit.length > 1 ? (' and ' + (hit.length-1) + ' more') : '';
+        setTimeout(function(){
+          if(typeof showToast === 'function')
+            showToast('New PR \u{1F3C6}', top.name + ' \u2014 est. 1RM ' +
+              ((typeof wFmt === 'function') ? wFmt(top.e1rm) : (Math.round(top.e1rm) + 'kg')) + more + '.');
+          if(typeof haptic === 'function') haptic('success');
+        }, 900);
+      }
+    }catch(_){ }
+  }
   if(_saved === false){
     // Keep everything. The session is still in currentSession and still in the draft, so they can
     // free some space and finish again — see the note above.

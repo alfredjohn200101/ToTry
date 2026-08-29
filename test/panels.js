@@ -2458,6 +2458,123 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── the charges you forgot ───────────────────────────────────────────────────────────────────
+  // The thing every budgeting app leads with, and RESEARCH-BACKLOG has carried it as a gap from the
+  // start. The app already held every transaction AND a subscriptions store and nothing looked
+  // between them — so a person with four months of Netflix and Spotify in their imported statement
+  // was shown "No subscriptions tracked yet. Add Netflix, Spotify, gym, anything recurring": the app
+  // naming the exact two charges it was sitting on and asking them to type them in.
+  //
+  // The hard half is not finding them, it is NOT finding the groceries. Same shop, every few days,
+  // a different amount each time is not a subscription, and an app that says it is becomes noise.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+      const N = Date.now();
+      s('totry_onboarded', true); s('totry_name', 'Alfy');
+      const tx = [];
+      for (let m = 0; m < 4; m++) {
+        tx.push({ id:'n'+m, type:'expense', amount:17.99, category:'Entertainment',
+                  desc:'NETFLIX.COM SYDNEY', ts:new Date(N - m*30*864e5).toISOString() });
+        tx.push({ id:'s'+m, type:'expense', amount:12.99, category:'Music',
+                  desc:'Spotify P'+(1000+m), ts:new Date(N - m*30*864e5).toISOString() });
+        // the decoy: same merchant, every few days, a different amount every time
+        tx.push({ id:'c'+m, type:'expense', amount:42.5 + m*9, category:'Food',
+                  desc:'WOOLWORTHS 1234', ts:new Date(N - m*3*864e5).toISOString() });
+      }
+      s('totry_transactions', tx); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const r = await page.evaluate(async () => {
+      go('money'); await new Promise(r => setTimeout(r, 1500));
+      if (typeof showMoneyMore === 'function') { showMoneyMore(); await new Promise(r => setTimeout(r, 800)); }
+      const found = (typeof detectRecurringCharges === 'function') ? detectRecurringCharges() : null;
+      if (!found) return { err: 'detectRecurringCharges is not defined' };
+      const box = document.getElementById('recurring-found');
+      const before = found.map(f => f.key);
+      // tracking one must move it into subscriptions and stop offering it
+      const btn = box ? [...box.querySelectorAll('button')].find(b => /track it/i.test(b.innerText||'')) : null;
+      if (btn) { btn.click(); await new Promise(r => setTimeout(r, 800)); }
+      return { names: found.map(f => f.name), keys: before,
+               onScreen: !!(box && box.getBoundingClientRect().height > 0),
+               subs: (ls('totry_subscriptions') || []).length,
+               stillOffered: (detectRecurringCharges() || []).length };
+    });
+    await ctx.close();
+    if (r.err) findings.push(`recurring: ${r.err}`);
+    else {
+      const hasNetflix = r.names.some(n => /netflix/i.test(n));
+      const hasSpotify = r.names.some(n => /spotify/i.test(n));
+      const hasGroceries = r.names.some(n => /woolworths/i.test(n));
+      if (!hasNetflix || !hasSpotify)
+        findings.push(`recurring: missed a monthly charge — found ${JSON.stringify(r.names)}`);
+      if (hasGroceries)
+        findings.push('recurring: called the groceries a subscription — same shop, varying amount, every few days');
+      if (!r.onScreen) findings.push('recurring: found charges but rendered nothing');
+      if (r.subs !== 1) findings.push(`recurring: "Track it" put ${r.subs} into subscriptions, expected 1`);
+      if (r.stillOffered !== 1) findings.push(`recurring: after tracking one, ${r.stillOffered} still offered, expected 1`);
+    }
+    if (!findings.some(f => f.startsWith('recurring:')))
+      console.log('recurring: the forgotten charges surface, the groceries do not, and tracking one takes it off the list');
+  }
+
+  // ── a bank statement has to import as what it says ───────────────────────────────────────────
+  // "Import a bank statement" is the first thing the Money tab offers, and 'debit' was listed as a
+  // synonym for 'amount' in the column detector. So the very common Australian export shape
+  //     Date,Description,Debit,Credit,Balance
+  // resolved amount to the DEBIT column, and the row loop takes the amount branch first as a SIGNED
+  // figure without negating it. A statement with four purchases and one salary imported as
+  // "5 income, +$3,338.58" — the person's spending became their earnings, and the spending read, the
+  // category breakdown and every "you have X left" built on top of it were all wrong.
+  //
+  // Three real shapes, because a parser that only handles one is a parser that works for one bank.
+  {
+    const SHAPES = [
+      ['debit/credit columns',
+       ['Date,Description,Debit,Credit,Balance',
+        '28/08/2026,"WOOLWORTHS 1234",84.20,,3120.55',
+        '27/08/2026,"NETFLIX.COM",17.99,,3204.75',
+        '26/08/2026,"SALARY - ACME",,3200.00,3222.74'].join('\n'), 2, 1],
+      ['single signed amount',
+       ['Date,Description,Amount',
+        '28/08/2026,WOOLWORTHS 1234,-84.20',
+        '27/08/2026,NETFLIX.COM,-17.99',
+        '26/08/2026,SALARY - ACME,3200.00'].join('\n'), 2, 1],
+      ['no header at all',
+       ['28/08/2026,WOOLWORTHS 1234,-84.20',
+        '26/08/2026,SALARY - ACME,3200.00'].join('\n'), 1, 1]
+    ];
+    for (const [label, csv, wantExp, wantInc] of SHAPES) {
+      const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+      const page = await ctx.newPage();
+      await page.addInitScript(() => { localStorage.setItem('totry_onboarded','true');
+        localStorage.setItem('totry_name', JSON.stringify('Alfy')); });
+      await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+      await page.waitForTimeout(2600);
+      const got = await page.evaluate(async (c) => {
+        go('money'); await new Promise(r => setTimeout(r, 1100));
+        const inp = document.getElementById('csv-import-input');
+        if (!inp) return { err: 'no csv input' };
+        const f = new File([c], 's.csv', { type:'text/csv' });
+        const dt = new DataTransfer(); dt.items.add(f);
+        Object.defineProperty(inp, 'files', { value: dt.files, configurable: true });
+        inp.dispatchEvent(new Event('change', { bubbles: true }));
+        await new Promise(r => setTimeout(r, 2000));
+        const sheet = [...document.querySelectorAll('.modal-bg.open')]
+          .map(e => (e.innerText || '').replace(/\s+/g,' ').trim())[0] || '';
+        const m = sheet.match(/(\d+)\s+expenses?[^,]*,\s*(\d+)\s+income/i);
+        return m ? { exp:+m[1], inc:+m[2] } : { err: sheet.slice(0,70) || 'no review sheet' };
+      }, csv);
+      await ctx.close();
+      if (got.err) findings.push(`csv (${label}): ${got.err}`);
+      else if (got.exp !== wantExp || got.inc !== wantInc)
+        findings.push(`csv (${label}): imported ${got.exp} expenses / ${got.inc} income — expected ${wantExp} / ${wantInc}`);
+    }
+    if (!findings.some(f => f.startsWith('csv')))
+      console.log('csv: a statement imports as what it says — debit/credit columns, a signed amount, or no header at all');
+  }
+
   // ── what the databases give us has to reach the diary ────────────────────────────────────────
   // Nourish was the face of a food tracker with none of its substance. USDA, Open Food Facts and
   // Nutritionix all return fibre, sugar, sodium, saturated fat — and USDA returns nineteen vitamins

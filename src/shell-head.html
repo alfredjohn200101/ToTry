@@ -2952,7 +2952,11 @@ input:focus,textarea:focus,select:focus{
     </details>
     <div class="lbl">Add exercise</div>
     <div style="display:flex;gap:8px;margin-bottom:8px">
-      <input type="text" id="pt-ex-search" placeholder="Search exercises..." onkeydown="if(event.key==='Enter')searchExercises(this.value)">
+      <!-- Enter-only, so typing "bench" showed nothing until you found the Go key — the same defect the
+           food search had. The library is 324 exercises deep and the only way in was to type blind. -->
+      <input type="text" id="pt-ex-search" placeholder="Search exercises..." autocomplete="off"
+             oninput="clearTimeout(window.__exSearchT);window.__exSearchT=setTimeout(()=>{if(this.value.trim().length>1)searchExercises(this.value)},260)"
+             onkeydown="if(event.key==='Enter')searchExercises(this.value)">
       <button class="btn primary" style="width:auto;white-space:nowrap;padding:10px 12px" onclick="searchExercises(document.getElementById('pt-ex-search').value)">Find</button>
     </div>
     <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px">
@@ -2963,6 +2967,10 @@ input:focus,textarea:focus,select:focus{
       <button class="qb" onclick="searchExercises('triceps')">Triceps</button>
       <button class="qb" onclick="searchExercises('legs')">Legs</button>
       <button class="qb" onclick="searchExercises('core')">Core</button>
+      <!-- EXERCISE_DB has ten body parts and these chips listed seven, so glutes and forearms
+           were reachable only by guessing the right word into the search box. -->
+      <button class="qb" onclick="searchExercises('glutes')">Glutes</button>
+      <button class="qb" onclick="searchExercises('forearms')">Forearms</button>
     </div>
     <div id="pt-ex-results" style="margin-bottom:12px"></div>
     
@@ -3690,7 +3698,10 @@ input:focus,textarea:focus,select:focus{
   <!-- SUBSCRIPTIONS -->
   <div class="card money-more" style="margin-top:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div class="card-hd" style="margin-bottom:0">🔁 Subscriptions</div>
+        <!-- Found in the statement the app already holds: same merchant, same-ish amount, roughly a
+       month apart, three times or more. It offers; it never adds anything on its own. -->
+  <div id="recurring-found" style="display:none"></div>
+<div class="card-hd" style="margin-bottom:0">🔁 Subscriptions</div>
       <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd)" onclick="openSubscriptionLogger()" aria-label="Add a subscription">+ Add</button>
     </div>
     <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Track recurring expenses. Cancel what doesn't serve you.</p>

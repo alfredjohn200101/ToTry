@@ -830,6 +830,26 @@ async function saveWorkoutSession(){
   const session={id:Date.now(),source:'manual',date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}),ts:new Date().toISOString(),day:getDayCount(),exercises:JSON.parse(JSON.stringify(currentSession)),completedSets:cs,totalSets:ts,volume:vol,durationMin:durationMin,splitFocus:getUserSplit()[tIdx()]?.focus||'Workout'};
   const history=ls('totry_workouts')||[];history.unshift(session);
   const _saved = ls('totry_workouts',_capWorkouts(history));
+  // PRs were detected on a HEVY SYNC and nowhere else — so a person who logged their session in this
+  // app, on this screen, with these sets, never got one. The whole reason a lifter opens Strong twice
+  // is that it tells them when they have just done something they have never done before, and ours
+  // told only the people who lift somewhere else. Detect on OUR save too, from the same function.
+  if(_saved !== false){
+    try{
+      const hit = (typeof detectAndRecordPRs === 'function')
+        ? detectAndRecordPRs(session.exercises || []) : [];
+      if(hit && hit.length){
+        const top = hit.slice().sort((a,b) => (b.e1rm||0) - (a.e1rm||0))[0];
+        const more = hit.length > 1 ? (' and ' + (hit.length-1) + ' more') : '';
+        setTimeout(function(){
+          if(typeof showToast === 'function')
+            showToast('New PR \u{1F3C6}', top.name + ' \u2014 est. 1RM ' +
+              ((typeof wFmt === 'function') ? wFmt(top.e1rm) : (Math.round(top.e1rm) + 'kg')) + more + '.');
+          if(typeof haptic === 'function') haptic('success');
+        }, 900);
+      }
+    }catch(_){ }
+  }
   if(_saved === false){
     // Keep everything. The session is still in currentSession and still in the draft, so they can
     // free some space and finish again — see the note above.

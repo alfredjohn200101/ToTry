@@ -902,7 +902,14 @@ function _detectCSVColumns(header){
   return {
     date: find(['date','posted','transaction date']),
     desc: find(['description','details','narrative','memo','payee','transaction']),
-    amount: find(['amount','value','debit']),
+    // 'debit' was listed as a synonym for 'amount', so a bank exporting the common
+    //     Date,Description,Debit,Credit,Balance
+    // shape resolved amount to the DEBIT column — and the row loop takes the amount branch first, as
+    // a signed figure, without negating it. Every purchase imported as INCOME: a statement with four
+    // debits and one salary came in as "5 income, +$3,338.58", so the person's spending became their
+    // earnings and every read built on it was wrong. A debit column is not an amount column; it is
+    // half of a pair, and the branch below already knows how to negate it.
+    amount: find(['amount','value']),
     credit: find(['credit']),
     debit: find(['debit']),
   };

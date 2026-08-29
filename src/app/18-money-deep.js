@@ -344,6 +344,7 @@ function renderTransactions(){
   
   // Render the new cards
   try{ renderSubscriptions(); }catch(_e){ console.warn('renderSubscriptions failed', _e); }
+  try{ renderRecurringFound(); }catch(_e){ console.warn('renderRecurringFound failed', _e); }
   try{ if(typeof renderFamilyContribution==='function') renderFamilyContribution(); }catch(_e){ console.warn('renderFamilyContribution failed', _e); }
   try{ if(typeof renderGiving==='function') renderGiving(); }catch(_e){ console.warn('renderGiving failed', _e); }
   try{ renderSubDetect(); }catch(_){}
@@ -761,6 +762,109 @@ function _otdSeen(){
   const hit=onThisDay(); if(hit){ try{ ls('totry_otd_seen', String(hit.e.ts)); }catch(_){} }
   const el=document.getElementById('on-this-day'); if(el){ el.style.display='none'; el.innerHTML=''; }
   if(typeof haptic==='function') haptic('tap');
+}
+
+// ── THE CHARGES YOU FORGOT ───────────────────────────────────────────────────────────────────
+// The one thing every budgeting app is actually FOR — Rocket Money, Emma, YNAB all lead with it —
+// and RESEARCH-BACKLOG has carried it as a gap since the beginning. The app already holds every
+// transaction and a subscriptions store; nothing looked between them. A person with four months of
+// NETFLIX.COM at $17.99 and Spotify at $12.99 in their imported statement was shown "No
+// subscriptions tracked yet. Add Netflix, Spotify, gym, anything recurring." — the app naming the
+// exact two charges it was sitting on and asking the person to type them in.
+//
+// Deterministic, no model: same merchant, same-ish amount, roughly a month apart, three times or
+// more. It offers; it never adds anything on its own, and it goes quiet once the person has said no.
+function _subMerchantKey(desc){
+  return String(desc || '')
+    .toLowerCase()
+    .replace(/[^a-z ]+/g, ' ')        // card refs, store numbers, dates
+    .replace(/\b(pty|ltd|inc|com|au|usa?|payment|purchase|card|xx+)\b/g, ' ')
+    .replace(/\s+/g, ' ').trim().split(' ').slice(0, 2).join(' ');
+}
+
+function detectRecurringCharges(){
+  try{
+    const tx = (ls('totry_transactions') || []).filter(t => t && t.type === 'expense' && t.amount > 0 && t.ts);
+    if(tx.length < 3) return [];
+    const already = (ls('totry_subscriptions') || []).map(s => _subMerchantKey(s.name));
+    const dismissed = ls('totry_sub_dismissed') || [];
+    const groups = {};
+    tx.forEach(function(t){
+      const k = _subMerchantKey(t.desc || t.description);
+      if(k.length < 3) return;
+      (groups[k] = groups[k] || []).push(t);
+    });
+    const out = [];
+    Object.keys(groups).forEach(function(k){
+      if(already.indexOf(k) > -1 || dismissed.indexOf(k) > -1) return;
+      const g = groups[k].slice().sort(function(a,b){ return new Date(a.ts) - new Date(b.ts); });
+      if(g.length < 3) return;
+      // Same-ish amount: a subscription can change price, a grocery shop is different every time.
+      const amts = g.map(function(t){ return Math.abs(Number(t.amount)); });
+      const med = amts.slice().sort(function(a,b){ return a-b; })[Math.floor(amts.length/2)];
+      if(!(med > 0)) return;
+      if(!amts.every(function(a){ return Math.abs(a - med) / med <= 0.12; })) return;
+      // Roughly monthly. Weekly groceries and daily coffees are not subscriptions.
+      const gaps = [];
+      for(let i = 1; i < g.length; i++) gaps.push((new Date(g[i].ts) - new Date(g[i-1].ts)) / 864e5);
+      if(!gaps.every(function(d){ return d >= 24 && d <= 38; })) return;
+      out.push({ key:k, name:(g[g.length-1].desc || g[g.length-1].description || k),
+                 amount: Math.round(med * 100) / 100, times: g.length,
+                 lastTs: g[g.length-1].ts });
+    });
+    return out.sort(function(a,b){ return b.amount - a.amount; });
+  }catch(_){ return []; }
+}
+
+function renderRecurringFound(){
+  const box = document.getElementById('recurring-found'); if(!box) return;
+  const found = detectRecurringCharges();
+  if(!found.length){ box.style.display = 'none'; box.innerHTML = ''; return; }
+  // curSym() is the only place a currency symbol comes from — a literal '$' here would show a dollar
+  // sign to someone whose money is in pounds, which is the exact thing the core suite guards against.
+  const sym = curSym();
+  const yearly = found.reduce(function(a, f){ return a + f.amount * 12; }, 0);
+  box.style.display = '';
+  box.innerHTML = '<div class="card" style="margin-bottom:12px;border:1px solid var(--go-bd)">' +
+    '<div class="lbl" style="margin-bottom:6px">Charges you have not told me about</div>' +
+    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.55;margin-bottom:12px">' +
+      'Same amount, same place, month after month — ' + sym + Math.round(yearly).toLocaleString() +
+      ' a year between them, if they all keep going.</div>' +
+    found.slice(0, 5).map(function(f){
+      return '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--bd)">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:13px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+            _escFew(f.name) + '</div>' +
+          '<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx3);margin-top:2px">' +
+            sym + f.amount.toFixed(2) + ' · ' + f.times + ' times</div>' +
+        '</div>' +
+        '<button class="btn" onclick="' + _jsCode('trackFoundSub(' + JSON.stringify(f.key) + ')') + '" ' +
+          'style="width:auto;padding:8px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)">Track it</button>' +
+        '<button class="fli-del" onclick="' + _jsCode('dismissFoundSub(' + JSON.stringify(f.key) + ')') + '" ' +
+          'aria-label="Not a subscription">×</button>' +
+      '</div>';
+    }).join('') +
+  '</div>';
+}
+
+function trackFoundSub(key){
+  const f = detectRecurringCharges().find(function(x){ return x.key === key; });
+  if(!f) return;
+  const list = ls('totry_subscriptions') || [];
+  list.unshift({ id: Date.now(), name: f.name, amount: f.amount, period: 'monthly',
+                 note: 'found in your statement', addedAt: new Date().toISOString() });
+  ls('totry_subscriptions', list);
+  if(typeof haptic === 'function') haptic('success');
+  if(typeof showToast === 'function') showToast('Tracking it', f.name + ' — now in your subscriptions.');
+  try{ renderSubscriptions(); }catch(_){ }
+  renderRecurringFound();
+}
+
+function dismissFoundSub(key){
+  const d = ls('totry_sub_dismissed') || [];
+  if(d.indexOf(key) < 0) d.push(key);
+  ls('totry_sub_dismissed', d);
+  renderRecurringFound();
 }
 
 function renderSubscriptions(){
