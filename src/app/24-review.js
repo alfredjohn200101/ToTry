@@ -458,7 +458,10 @@ function showYearInReview(year){
   if(stats.savedVerses > 0) details.push(['Verses saved', stats.savedVerses]);
   if(stats.prCount > 0) details.push(['Exercises with PRs', stats.prCount]);
   if(stats.totalVolume > 0) details.push(['Total volume moved', stats.totalVolume.toLocaleString() + ' kg']);
-  if(stats.weightChange !== null) details.push(['Weight change', (stats.weightChange > 0 ? '+' : '') + stats.weightChange + ' kg']);
+  if(stats.weightChange !== null) // Body weight follows the person's unit; the line above it is LIFTED volume, which stays kg on
+  // purpose (see CLAUDE.md) — the two sit next to each other and are deliberately different.
+  details.push(['Weight change', (typeof wDelta === 'function') ? wDelta(stats.weightChange)
+    : ((stats.weightChange > 0 ? '+' : '') + stats.weightChange + ' kg')]);
   if(stats.viceSavings > 0) details.push(['Money saved from vices', curSym() + stats.viceSavings.toLocaleString()]);
   if(stats.yearIncome > 0 || stats.yearExpenses > 0) details.push(['Money flow', curSym() + stats.yearIncome.toLocaleString() + ' in / '+curSym() + stats.yearExpenses.toLocaleString() + ' out']);
   if(stats.winRate > 0) details.push(['Battle win rate', stats.winRate + '%']);

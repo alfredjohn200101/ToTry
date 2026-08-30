@@ -704,7 +704,7 @@ function recompRead(){
   const kg=Math.abs(w.changeKg);
   let tone='good', head, body;
   if(stable && sUp){ head='Recomposition — the scale is lying in your favour.'; body='Your weight held over '+w.days+' days while your training volume climbed. That’s muscle replacing fat at about the same weight — the hardest, best result there is. Don’t chase the scale down.'; }
-  else if(down && (sUp||sFlat)){ head='Cutting clean.'; body='Down '+kg+'kg while your strength '+(sUp?'even rose':'held')+'. You’re losing fat, not muscle — exactly how a cut should look. Keep the protein high.'; }
+  else if(down && (sUp||sFlat)){ head='Cutting clean.'; body='Down '+wFmt(kg)+' while your strength '+(sUp?'even rose':'held')+'. You’re losing fat, not muscle — exactly how a cut should look. Keep the protein high.'; }
   else if(up && sUp){ head='Lean gain.'; body='Up '+wFmt(kg)+' and your training’s rising with it — the weight’s going where you want it. If the scale ever climbs faster than your lifts, ease the surplus.'; }
   else if(down && sDown){ tone='warn'; head='Strength is dropping with the weight.'; body='Down '+wFmt(kg)+', but your lifts are falling too — usually the deficit’s too steep or protein’s low. Ease the cut a little and hold your protein; strength is the thing worth protecting.'; }
   else if(up && sDown){ tone='warn'; head='Gaining faster than you’re building.'; body='Up '+kg+'kg but strength isn’t following — more of this is fat than muscle. Tighten the surplus and make sure the training keeps progressing.'; }
@@ -718,8 +718,9 @@ function recompRead(){
     const musUp=bc.dMus!=null&&bc.dMus>0.2, musDown=bc.dMus!=null&&bc.dMus<-0.2;
     const agrees = (tone==='good' && (fatDown||musUp)) || (tone==='warn' && (fatUp||musDown));
     if(agrees){
-      const bits=[]; if(fatDown) bits.push('down '+Math.abs(bc.dFat)+'kg fat'); if(musUp) bits.push('up '+bc.dMus+'kg muscle');
-      if(fatUp) bits.push('up '+bc.dFat+'kg fat'); if(musDown) bits.push('down '+Math.abs(bc.dMus)+'kg muscle');
+      // Fat and muscle are body mass — they follow the person's unit like every other weight here.
+      const bits=[]; if(fatDown) bits.push('down '+wFmt(Math.abs(bc.dFat))+' fat'); if(musUp) bits.push('up '+wFmt(bc.dMus)+' muscle');
+      if(fatUp) bits.push('up '+wFmt(bc.dFat)+' fat'); if(musDown) bits.push('down '+wFmt(Math.abs(bc.dMus))+' muscle');
       if(bits.length) body += ' Your scale backs it up: '+bits.join(', ')+' over '+bc.days+' days.';
     } else if(sUp && bc.dMus!=null && bc.dMus<=0){
       body += ' (Your scale doesn’t show the muscle yet — bioimpedance readings wobble day to day; your rising strength is the more reliable sign.)';
@@ -913,7 +914,7 @@ function renderBodyCompInsight(){
     if(dFat!=null && dFat < -0.3 && Math.abs(dWeight) <= 1.5){
       html += '<div style="font-size:13px;color:var(--tx2);line-height:1.6"><span style="color:var(--gr)">Recomposition.</span> Your weight barely moved ('+(dWeight>0?'+':'')+dWeight+'kg), but you\'ve lost '+Math.abs(dFat)+'kg of fat'+(dMuscle!=null && dMuscle>0?' and gained '+dMuscle+'kg of muscle':'')+'. The scale hides this. Your body is changing — keep going.</div>';
     } else if(dFat!=null && dMuscle!=null && dFat < 0 && dMuscle > 0){
-      html += '<div style="font-size:13px;color:var(--tx2);line-height:1.6"><span style="color:var(--gr)">Fat down, muscle up.</span> Down '+Math.abs(dFat)+'kg fat, up '+dMuscle+'kg muscle. That\'s exactly the direction that matters.</div>';
+      html += '<div style="font-size:13px;color:var(--tx2);line-height:1.6"><span style="color:var(--gr)">Fat down, muscle up.</span> Down '+wFmt(Math.abs(dFat))+' fat, up '+wFmt(dMuscle)+' muscle. That\'s exactly the direction that matters.</div>';
     } else if(dMuscle!=null && dMuscle > 0.3){
       html += '<div style="font-size:13px;color:var(--tx2);line-height:1.6"><span style="color:var(--gr)">Building.</span> You\'ve added '+dMuscle+'kg of muscle. The work is showing.</div>';
     }

@@ -899,7 +899,7 @@ function _parseCSVLine(line){
 function _detectCSVColumns(header){
   const h = header.map(x => x.toLowerCase());
   const find = (cands) => { for(const c of cands){ const i = h.findIndex(x => x.includes(c)); if(i>=0) return i; } return -1; };
-  return {
+  const out = {
     date: find(['date','posted','transaction date']),
     desc: find(['description','details','narrative','memo','payee','transaction']),
     // 'debit' was listed as a synonym for 'amount', so a bank exporting the common
@@ -910,9 +910,20 @@ function _detectCSVColumns(header){
     // earnings and every read built on it was wrong. A debit column is not an amount column; it is
     // half of a pair, and the branch below already knows how to negate it.
     amount: find(['amount','value']),
-    credit: find(['credit']),
-    debit: find(['debit']),
+    credit: find(['credit','deposit','money in','paid in','received']),
+    debit: find(['debit','withdrawal','withdrawn','money out','paid out']),
   };
+  // AND THE HALF-FIX FROM LAST TIME. Dropping 'debit' from the amount synonyms was not enough: `find`
+  // matches a SUBSTRING, so the extremely common
+  //     Transaction Date,Narrative,Debit Amount,Credit Amount,Balance
+  // still resolved amount to the DEBIT column — it contains the word "amount" — and the row loop takes
+  // the amount branch first, unsigned. Measured on a real-shaped statement: "7 new: 0 expenses
+  // (-$0.00), 7 income (+$3581.54)" — Uber Eats, BP, Coles, Woolworths, Netflix and a sportsbook all
+  // booked as INCOME, spendPerMonth 0. Every read built on that is wrong, and the giving screens take
+  // a percentage OF the income figure.
+  // A column that is one half of a debit/credit pair is not an amount column, whatever it is called.
+  if(out.amount >= 0 && (out.amount === out.debit || out.amount === out.credit)) out.amount = -1;
+  return out;
 }
 function openCSVImport(){
   const m = document.createElement('div');

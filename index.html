@@ -5287,7 +5287,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v568';
+const APP_VERSION = 'v569';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -8243,7 +8243,23 @@ function getLifeState(){
   const avg = (arr, f) => { const v = arr.map(f).filter(x=>x!=null && !isNaN(x)); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; };
 
   // ── TRAINING ──
-  const workouts = (L('totry_workouts')||[]).filter(w => w && (w.ts||w.date));
+  // A RUN IS TRAINING. Strava activities live in their own store, and this counted only
+  // totry_workouts — so someone whose whole week is running had three runs listed on the Train tab
+  // while GROW said "0 WORKOUTS" and the brief the AI reads opened "Training: 0 sessions in 7 days".
+  // The app was looking straight at the sessions and telling the coach they had not trained.
+  // Only the Hevy-DESCRIBED Strava activities are ever converted into totry_workouts (35-strava.js,
+  // id 'stravahevy_<id>'), so skipping exactly those ids is the whole dedupe — everything else in
+  // totry_strava_activities exists nowhere else. weeklyLoadByModality already merges the two stores
+  // this way; this brings the whole-life brief in line with it.
+  const _wRaw = (L('totry_workouts')||[]).filter(w => w && (w.ts||w.date));
+  const _haveConverted = new Set(_wRaw.map(w => String(w.id)));
+  const _stravaTrain = (L('totry_strava_activities')||[])
+    .filter(a => a && (a.ts||a.date) && !_haveConverted.has('stravahevy_' + a.id))
+    .map(a => ({ id:'strava_'+a.id, source:'strava', ts:a.ts||a.date,
+                 type:a.type||'Cardio', splitFocus:a.name||a.type||'Cardio', title:a.name||a.type||'Cardio',
+                 durationMin:a.durationMinutes||(a.moving_time?Math.round(a.moving_time/60):null),
+                 calories:a.calories||null, exercises:[] }));
+  const workouts = _wRaw.concat(_stravaTrain);
   const train7 = workouts.filter(w => within(w.ts||w.date, 7));
   const train14 = workouts.filter(w => within(w.ts||w.date, 14));
   const trainDays7 = new Set(train7.map(w => auKey(w.ts||w.date))).size;
@@ -9330,12 +9346,16 @@ async function sendCoach(){
     addMsg('coach-msgs','Setting up... please try again in a few seconds.','coach');
     return;
   }
-  if(!currentUser){
-    rmMsg(lid);
-    addMsg('coach-msgs','You\'re not signed in. Please refresh and log in.','coach');
-    return;
-  }
-  
+  // THE GUEST DOOR IS THE APP'S OWN FRONT DOOR, AND THIS WAS A WALL BEHIND IT.
+  // A guard here refused every guest with "You're not signed in. Please refresh and log in." — advice
+  // that cannot be followed, because refreshing keeps them a guest. It was the only !currentUser guard
+  // in the app that blocked an AI reply: sendPT has none, the companion has none, and in the same
+  // session as this refusal both of them answered the same guest with a real reply. So the app could
+  // always reach the model for this person; only the coach pretended it could not.
+  // Nothing past this point needs an account — api() has no user dependency and persistCoachHistory
+  // writes to localStorage. Someone who came in through "Something's pulling at me right now" and was
+  // told "He's read your whole story — ask him anything" now gets an answer.
+
   const r=await api(buildCtx(),cH.slice(0,-1),t,2600);
   rmMsg(lid);
   if(r){
@@ -13043,7 +13063,7 @@ function renderBodyCollage(){
     const div = document.createElement('div');
     div.style.cssText = 'position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--bd);cursor:pointer';
     div.innerHTML = '<img loading="lazy" decoding="async" src="'+e.photo+'" style="width:100%;height:120px;object-fit:cover;display:block">'+
-      '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.85),transparent);padding:4px 6px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-align:center">'+e.date+'</div><div style="font-size:11px;color:var(--tx);text-align:center;font-weight:500">'+(e.weight!=null&&e.weight!==''?e.weight+'kg':'')+'</div></div>';
+      '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.85),transparent);padding:4px 6px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-align:center">'+e.date+'</div><div style="font-size:11px;color:var(--tx);text-align:center;font-weight:500">'+(e.weight!=null&&e.weight!==''?((typeof wFmt==='function')?wFmt(e.weight):(e.weight+'kg')):'')+'</div></div>';
     div.onclick = () => viewBodyPhoto(i);
     container.appendChild(div);
   });
@@ -13060,7 +13080,7 @@ function viewBodyPhoto(idx){
   m.innerHTML = '<div class="modal" style="max-width:90vw;padding:20px">'+
     '<div style="text-align:center"><img loading="lazy" decoding="async" src="'+entry.photo+'" style="max-width:100%;max-height:60vh;border-radius:8px;margin-bottom:14px"></div>'+
     '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-align:center;margin-bottom:4px">'+entry.date+'</div>'+
-    '<div style="font-size:14px;font-weight:500;color:var(--tx);text-align:center;margin-bottom:8px">'+(entry.weight!=null&&entry.weight!==''?entry.weight+'kg':'')+'</div>'+
+    '<div style="font-size:14px;font-weight:500;color:var(--tx);text-align:center;margin-bottom:8px">'+(entry.weight!=null&&entry.weight!==''?((typeof wFmt==='function')?wFmt(entry.weight):(entry.weight+'kg')):'')+'</div>'+
     (entry.note?'<div style="font-size:12px;color:var(--tx2);text-align:center;font-style:italic;margin-bottom:10px">'+_escFew(entry.note)+'</div>':'')+
     '<button class="btn" onclick="closeModal(this)" style="margin-top:8px">Close</button></div>';
   document.body.appendChild(m);
@@ -13207,6 +13227,16 @@ function loadV(){
   // array is written straight back and the eleven places that read totry_v directly never meet it.
   let changed=(_vRaw!=null && !Array.isArray(_vRaw));
   vices.forEach(v=>{ if(v && !v.type){ v.type=classifyVice(v.n); changed=true; } });
+  // AND CORRECT A TYPE THE OLD SUBSTRING CLASSIFIER GOT WRONG. Backfilling only when `type` was
+  // MISSING left every existing person stuck with whatever the bare-includes() version decided — so
+  // the man whose fight is "Cheating on my wife" would go on reading a binge-eating timeline, and the
+  // one quitting "Energy drinks" would go on being warned about alcohol-withdrawal seizures, no matter
+  // how the classifier improved. Only ever downgrades a confident-but-wrong guess to the honest
+  // 'general': a type the classifier still stands behind is left exactly as it is, so nobody loses a
+  // playbook that fits them.
+  vices.forEach(v=>{
+    if(v && v.type && v.type !== 'general' && classifyVice(v.n) === 'general'){ v.type='general'; changed=true; }
+  });
   // Heal vices created by onboarding before it stamped startDate (see obNext step 6). Without this they
   // read "0 days clean" forever. Only ever stamped when there is no start AND no recorded slip, so this
   // can never overwrite a real clean-date or resurrect one a relapse legitimately reset.
@@ -13627,17 +13657,41 @@ const VICE_PLAYBOOK = {
   }
 };
 // Maps a free-text vice name to the closest playbook type via keyword matching.
+//
+// THIS RAN ON BARE `includes()` AND THE FALSE FRIENDS WERE UGLY. The playbook it picks decides the
+// recovery timeline, the science copy and the withdrawal warnings a person reads, so a wrong guess is
+// not a wrong label — it is the app talking confidently to someone else. Measured:
+//   · "Cheating on my wife" -> food, because chEATing contains "eat". A man naming the worst thing in
+//     his marriage was shown "You fed the body, not the feeling", "A week of eating with intention".
+//   · "Energy drinks" / "Soft drink" / "Fizzy drinks" -> alcohol, because they contain "drink" — and
+//     the alcohol timeline warns that stopping suddenly can bring "shaking, sweating, confusion or a
+//     seizure" and to see a doctor. A medical warning, delivered to the wrong person.
+//   · "Chewing my nails" -> nicotine, off "chew".
+// This file already knew the lesson and had only applied it elsewhere: "\b is load-bearing: without it
+// 'plan' matched inside 'go on this PLANET'", "[Pp]late matched TemPLATE".
+//
+// Two changes. Keywords now anchor to a WORD START rather than anywhere inside a word — they are
+// deliberately stems ('smok', 'gambl', 'vap', 'masturbat'), so \bKEY keeps "smoking" and "gambling"
+// while losing "chEATing". And each type carries the false friends it is known to swallow, because
+// "energy drinks" and "chewing my nails" DO begin those words and no boundary rule can tell them apart.
+// Anything that cannot be placed confidently falls through to 'general', whose copy is about riding an
+// urge and is true for any fight.
 function classifyVice(name){
   const n = (name || '').toLowerCase();
   const map = [
-    ['porn', ['porn','lust','masturbat','nsfw','sexual','fap','onlyfans']],
-    ['gambling', ['gambl','bet','betting','casino','poker','slots','wager','lottery','sportsbook']],
-    ['nicotine', ['smok','cigarette','vap','nicotine','tobacco','juul','dip','chew']],
-    ['alcohol', ['alcohol','drink','beer','wine','liquor','booze','spirits','drunk']],
-    ['scrolling', ['scroll','social media','instagram','tiktok','phone','youtube','reddit','twitter','doomscroll','screen']],
-    ['food', ['eat','food','binge','sugar','junk','snack','overeat','sweets']]
+    ['porn', ['porn','lust','masturbat','nsfw','sexual','fap','onlyfans'], []],
+    ['gambling', ['gambl','bet','betting','casino','poker','slots','wager','lottery','sportsbook'], []],
+    ['nicotine', ['smok','cigarette','vap','nicotine','tobacco','juul','dip','chew'], ['nail','gum']],
+    ['alcohol', ['alcohol','drink','beer','wine','liquor','booze','spirits','drunk'],
+                ['energy drink','soft drink','fizzy','sports drink','diet drink','soda','cordial']],
+    ['scrolling', ['scroll','social media','instagram','tiktok','phone','youtube','reddit','twitter','doomscroll','screen'], []],
+    ['food', ['eat','food','binge','sugar','junk','snack','overeat','sweets'], []]
   ];
-  for(const [type, kws] of map){ if(kws.some(k => n.includes(k))) return type; }
+  const startsWord = k => new RegExp('\\b' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(n);
+  for(const [type, kws, nots] of map){
+    if(nots.some(x => n.indexOf(x) > -1)) continue;
+    if(kws.some(startsWord)) return type;
+  }
   return 'general';
 }
 function getVicePlaybook(v){
@@ -23435,7 +23489,7 @@ function recompRead(){
   const kg=Math.abs(w.changeKg);
   let tone='good', head, body;
   if(stable && sUp){ head='Recomposition — the scale is lying in your favour.'; body='Your weight held over '+w.days+' days while your training volume climbed. That’s muscle replacing fat at about the same weight — the hardest, best result there is. Don’t chase the scale down.'; }
-  else if(down && (sUp||sFlat)){ head='Cutting clean.'; body='Down '+kg+'kg while your strength '+(sUp?'even rose':'held')+'. You’re losing fat, not muscle — exactly how a cut should look. Keep the protein high.'; }
+  else if(down && (sUp||sFlat)){ head='Cutting clean.'; body='Down '+wFmt(kg)+' while your strength '+(sUp?'even rose':'held')+'. You’re losing fat, not muscle — exactly how a cut should look. Keep the protein high.'; }
   else if(up && sUp){ head='Lean gain.'; body='Up '+wFmt(kg)+' and your training’s rising with it — the weight’s going where you want it. If the scale ever climbs faster than your lifts, ease the surplus.'; }
   else if(down && sDown){ tone='warn'; head='Strength is dropping with the weight.'; body='Down '+wFmt(kg)+', but your lifts are falling too — usually the deficit’s too steep or protein’s low. Ease the cut a little and hold your protein; strength is the thing worth protecting.'; }
   else if(up && sDown){ tone='warn'; head='Gaining faster than you’re building.'; body='Up '+kg+'kg but strength isn’t following — more of this is fat than muscle. Tighten the surplus and make sure the training keeps progressing.'; }
@@ -23449,8 +23503,9 @@ function recompRead(){
     const musUp=bc.dMus!=null&&bc.dMus>0.2, musDown=bc.dMus!=null&&bc.dMus<-0.2;
     const agrees = (tone==='good' && (fatDown||musUp)) || (tone==='warn' && (fatUp||musDown));
     if(agrees){
-      const bits=[]; if(fatDown) bits.push('down '+Math.abs(bc.dFat)+'kg fat'); if(musUp) bits.push('up '+bc.dMus+'kg muscle');
-      if(fatUp) bits.push('up '+bc.dFat+'kg fat'); if(musDown) bits.push('down '+Math.abs(bc.dMus)+'kg muscle');
+      // Fat and muscle are body mass — they follow the person's unit like every other weight here.
+      const bits=[]; if(fatDown) bits.push('down '+wFmt(Math.abs(bc.dFat))+' fat'); if(musUp) bits.push('up '+wFmt(bc.dMus)+' muscle');
+      if(fatUp) bits.push('up '+wFmt(bc.dFat)+' fat'); if(musDown) bits.push('down '+wFmt(Math.abs(bc.dMus))+' muscle');
       if(bits.length) body += ' Your scale backs it up: '+bits.join(', ')+' over '+bc.days+' days.';
     } else if(sUp && bc.dMus!=null && bc.dMus<=0){
       body += ' (Your scale doesn’t show the muscle yet — bioimpedance readings wobble day to day; your rising strength is the more reliable sign.)';
@@ -23644,7 +23699,7 @@ function renderBodyCompInsight(){
     if(dFat!=null && dFat < -0.3 && Math.abs(dWeight) <= 1.5){
       html += '<div style="font-size:13px;color:var(--tx2);line-height:1.6"><span style="color:var(--gr)">Recomposition.</span> Your weight barely moved ('+(dWeight>0?'+':'')+dWeight+'kg), but you\'ve lost '+Math.abs(dFat)+'kg of fat'+(dMuscle!=null && dMuscle>0?' and gained '+dMuscle+'kg of muscle':'')+'. The scale hides this. Your body is changing — keep going.</div>';
     } else if(dFat!=null && dMuscle!=null && dFat < 0 && dMuscle > 0){
-      html += '<div style="font-size:13px;color:var(--tx2);line-height:1.6"><span style="color:var(--gr)">Fat down, muscle up.</span> Down '+Math.abs(dFat)+'kg fat, up '+dMuscle+'kg muscle. That\'s exactly the direction that matters.</div>';
+      html += '<div style="font-size:13px;color:var(--tx2);line-height:1.6"><span style="color:var(--gr)">Fat down, muscle up.</span> Down '+wFmt(Math.abs(dFat))+' fat, up '+wFmt(dMuscle)+' muscle. That\'s exactly the direction that matters.</div>';
     } else if(dMuscle!=null && dMuscle > 0.3){
       html += '<div style="font-size:13px;color:var(--tx2);line-height:1.6"><span style="color:var(--gr)">Building.</span> You\'ve added '+dMuscle+'kg of muscle. The work is showing.</div>';
     }
@@ -28384,9 +28439,18 @@ function renderBodySystemReport(){
   // NOURISH: per-day sums, this week + previous
   const log=ls('totry_nutlog')||{};
   const day={}, pday={};
-  Object.values(log).forEach(es=>{ (es||[]).forEach(e=>{ if(!e||!e.ts) return;
-    if(inWin(e.ts,W,0)){ const k=e.date||String(e.ts).slice(0,10); (day[k]=day[k]||{c:0,p:0}); day[k].c+=e.cal||0; day[k].p+=e.pro||0; }
-    else if(inWin(e.ts,2*W,W)){ const k=e.date||String(e.ts).slice(0,10); (pday[k]=pday[k]||{c:0}); pday[k].c+=e.cal||0; } }); });
+  // THE KEY IS THE DAY. totry_nutlog is an OBJECT keyed by the person's own local date — the same
+  // en-AU key the diary, the ring and computeAdaptiveTDEE all use — and this threw that key away with
+  // Object.values(), then rebuilt a day from `e.date || ts.slice(0,10)`. No writer sets `.date` on a
+  // nutlog entry, so it was always the first ten characters of the UTC stamp: east of UTC every meal
+  // logged after 10am local lands on the NEXT calendar day, and one day of eating is split across two.
+  // Measured on one store, same seven days: UTC read "2,200 avg cal/day, protein 1.7g/kg" and
+  // Australia/Sydney read "2,043 ↓, 1.58g/kg" off the same rows — and the two disagreed with
+  // getLifeState() (2200) and with the card's own TDEE input, so the card contradicted itself and then
+  // issued a different "one adjustment" depending on the reader's timezone.
+  Object.entries(log).forEach(([dayKey, es])=>{ (es||[]).forEach(e=>{ if(!e||!e.ts) return;
+    if(inWin(e.ts,W,0)){ (day[dayKey]=day[dayKey]||{c:0,p:0}); day[dayKey].c+=e.cal||0; day[dayKey].p+=e.pro||0; }
+    else if(inWin(e.ts,2*W,W)){ (pday[dayKey]=pday[dayKey]||{c:0}); pday[dayKey].c+=e.cal||0; } }); });
   const dks=Object.keys(day).filter(k=>day[k].c>0);
   const daysLogged=dks.length;
   const avgCal=daysLogged?Math.round(dks.reduce((a,k)=>a+day[k].c,0)/daysLogged):null;
@@ -28438,7 +28502,7 @@ function renderBodySystemReport(){
     const bal=Math.round((avgCal!=null?avgCal:tdeeR.avgIntake)-tdeeR.tdee);
     const exp=Math.round(bal*7/7700*100)/100;
     const agree=Math.abs(exp-weekChange)<=0.35;
-    verdict='Eating ~'+(bal>=0?'+':'')+bal+' cal/day vs your real burn \u2192 expect '+(exp>=0?'+':'')+exp+'kg/wk; the scale says '+(weekChange>=0?'+':'')+weekChange+'kg \u2014 your data '+(agree?'<span style="color:var(--gr)">agrees \u2713</span>':'<span style="color:var(--go)">disagrees \u2014 keep logging tight</span>')+'.';
+    verdict='Eating ~'+(bal>=0?'+':'')+bal+' cal/day vs your real burn \u2192 expect '+(exp>=0?'+':'')+wFmt(exp)+'/wk; the scale says '+(weekChange>=0?'+':'')+wFmt(weekChange)+' \u2014 your data '+(agree?'<span style="color:var(--gr)">agrees \u2713</span>':'<span style="color:var(--go)">disagrees \u2014 keep logging tight</span>')+'.';
     if(goal){
       const tgt=goal.rate||0;
       const onPace=Math.abs(weekChange-tgt)<=0.25;
@@ -30903,7 +30967,7 @@ function _parseCSVLine(line){
 function _detectCSVColumns(header){
   const h = header.map(x => x.toLowerCase());
   const find = (cands) => { for(const c of cands){ const i = h.findIndex(x => x.includes(c)); if(i>=0) return i; } return -1; };
-  return {
+  const out = {
     date: find(['date','posted','transaction date']),
     desc: find(['description','details','narrative','memo','payee','transaction']),
     // 'debit' was listed as a synonym for 'amount', so a bank exporting the common
@@ -30914,9 +30978,20 @@ function _detectCSVColumns(header){
     // earnings and every read built on it was wrong. A debit column is not an amount column; it is
     // half of a pair, and the branch below already knows how to negate it.
     amount: find(['amount','value']),
-    credit: find(['credit']),
-    debit: find(['debit']),
+    credit: find(['credit','deposit','money in','paid in','received']),
+    debit: find(['debit','withdrawal','withdrawn','money out','paid out']),
   };
+  // AND THE HALF-FIX FROM LAST TIME. Dropping 'debit' from the amount synonyms was not enough: `find`
+  // matches a SUBSTRING, so the extremely common
+  //     Transaction Date,Narrative,Debit Amount,Credit Amount,Balance
+  // still resolved amount to the DEBIT column — it contains the word "amount" — and the row loop takes
+  // the amount branch first, unsigned. Measured on a real-shaped statement: "7 new: 0 expenses
+  // (-$0.00), 7 income (+$3581.54)" — Uber Eats, BP, Coles, Woolworths, Netflix and a sportsbook all
+  // booked as INCOME, spendPerMonth 0. Every read built on that is wrong, and the giving screens take
+  // a percentage OF the income figure.
+  // A column that is one half of a debit/credit pair is not an amount column, whatever it is called.
+  if(out.amount >= 0 && (out.amount === out.debit || out.amount === out.credit)) out.amount = -1;
+  return out;
 }
 function openCSVImport(){
   const m = document.createElement('div');
@@ -35863,6 +35938,7 @@ function openEditTraining(unifiedId){
   if(w.totalCalories || w.calories) setv('edit-cardio-totalCal', w.totalCalories || w.calories);
   if(w.activeCalories) setv('edit-cardio-activeCal', w.activeCalories);
   if(w.averageHeartRate) setv('edit-cardio-hr', w.averageHeartRate);
+  if(w.effort) setv('edit-cardio-effort', w.effort);
   if(typeof updateEditCardioPace==='function') updateEditCardioPace();
 }
 function renderEditCardioFields(){
@@ -35876,9 +35952,18 @@ function renderEditCardioFields(){
     activeCal: ['Active calories', 'e.g. 260',              'edit-cardio-activeCal'],
     totalCal:  ['Total calories',  'e.g. 394',              'edit-cardio-totalCal'],
     hr:        ['Avg heart rate',  'e.g. 128 bpm',          'edit-cardio-hr'],
+    // 'effort' was missing here while HIIT, Conditioning, Sport, HYROX and 'Other' — the fallback for
+    // every unknown type — all list it. labels['effort'] was undefined, destructuring it threw
+    // "undefined is not iterable" MID-LOOP, so wrap.innerHTML was never assigned and the sheet opened
+    // with no fields at all. Saving then read inputs that did not exist and wrote null over the
+    // session's duration, calories and heart rate — and said "Saved · Workout updated."
+    // The logging form has had this label all along (cardio-effort); only the edit form lacked it.
+    effort:    ['Effort (RPE 1\u201310)', 'e.g. 7',           'edit-cardio-effort'],
   };
   let html = '';
   ((cfg&&Array.isArray(cfg.fields))?cfg.fields:[]).forEach(f=>{
+    // A field nobody has labelled yet must cost that one field, never the whole form.
+    if(!labels[f]) return;
     const [lab,ph,id] = labels[f];
     html += '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.1em">'+lab+'</div>'+
       '<input type="text" id="'+id+'" inputmode="'+(f==='time'?'text':'decimal')+'" placeholder="'+ph+'" oninput="updateEditCardioPace()" style="margin-bottom:12px">';
@@ -35907,14 +35992,24 @@ function saveEditTraining(id){
   const totalCal = parseInt(document.getElementById('edit-cardio-totalCal')?.value||'')||0;
   const cal = totalCal || activeCal || 0;
   const hr = parseInt(document.getElementById('edit-cardio-hr')?.value||'')||0;
+  const effort = parseInt(document.getElementById('edit-cardio-effort')?.value||'')||0;
   const dateVal = document.getElementById('edit-cardio-date')?.value;
   let when = workouts[idx].ts ? new Date(workouts[idx].ts) : new Date();
   if(dateVal){ const [y,mo,d]=dateVal.split('-').map(Number); when = new Date(y, mo-1, d, 12, 0, 0); }
-  workouts[idx] = { ...workouts[idx], type, splitFocus: type, durationMinutes: mins?Math.round(mins):null,
-    // dispToM, not *1000: the box holds the person's own unit, so editing a 2-mile run while set
-    // to miles used to store 2000m — 1.24 miles — quietly shortening a run they had already logged.
-    distance: km?dispToM(km):null, calories: cal||null, averageHeartRate: hr||null,
-    date: when.toLocaleDateString('en-AU'), ts: when.toISOString() };
+  // ONLY WRITE WHAT THE FORM ACTUALLY SHOWED. This used to null every field unconditionally, so any
+  // input the sheet failed to render — one missing label was enough to render none of them — silently
+  // erased a real figure and then reported success. A blank box the person SAW means "clear it"; a box
+  // that was never on screen means nothing at all, and must leave the stored value alone.
+  const shown = id => !!document.getElementById(id);
+  const patch = { type, splitFocus: type, date: when.toLocaleDateString('en-AU'), ts: when.toISOString() };
+  if(shown('edit-cardio-time'))     patch.durationMinutes = mins ? Math.round(mins) : null;
+  // dispToM, not *1000: the box holds the person's own unit, so editing a 2-mile run while set
+  // to miles used to store 2000m — 1.24 miles — quietly shortening a run they had already logged.
+  if(shown('edit-cardio-distance')) patch.distance = km ? dispToM(km) : null;
+  if(shown('edit-cardio-activeCal') || shown('edit-cardio-totalCal')) patch.calories = cal || null;
+  if(shown('edit-cardio-hr'))       patch.averageHeartRate = hr || null;
+  if(shown('edit-cardio-effort'))   patch.effort = effort || null;
+  workouts[idx] = { ...workouts[idx], ...patch };
   ls('totry_workouts', workouts);
   // Rebuild the burn ledger from the (now edited) workouts — single source of truth, no drift.
   recomputeWorkoutBurns();
@@ -38338,7 +38433,7 @@ function showDayActivityDetail(dateKey){
       ? (_n + ' logged') : (_n + ' \u00b7 ' + Math.round(cals) + ' cal')});
   }
   // Body / weight check-ins
-  (ls('totry_body') || []).forEach(b => { if(matchDate(b.ts)) items.push({kind: 'Body check-in', text: (b.weight ? b.weight + 'kg' : '') + (b.win ? ' · ' + b.win.slice(0,50) : '')}); });
+  (ls('totry_body') || []).forEach(b => { if(matchDate(b.ts)) items.push({kind: 'Body check-in', text: (b.weight ? ((typeof wFmt==='function') ? wFmt(b.weight) : (b.weight + 'kg')) : '') + (b.win ? ' · ' + b.win.slice(0,50) : '')}); });
   // Measurements
   (ls('totry_measurements') || []).forEach(ms => { if(matchDate(ms.ts)) items.push({kind: 'Measurements', text: 'Snapshot logged'}); });
   // Daily trackers (sleep/steps/water)
@@ -39353,7 +39448,10 @@ function showYearInReview(year){
   if(stats.savedVerses > 0) details.push(['Verses saved', stats.savedVerses]);
   if(stats.prCount > 0) details.push(['Exercises with PRs', stats.prCount]);
   if(stats.totalVolume > 0) details.push(['Total volume moved', stats.totalVolume.toLocaleString() + ' kg']);
-  if(stats.weightChange !== null) details.push(['Weight change', (stats.weightChange > 0 ? '+' : '') + stats.weightChange + ' kg']);
+  if(stats.weightChange !== null) // Body weight follows the person's unit; the line above it is LIFTED volume, which stays kg on
+  // purpose (see CLAUDE.md) — the two sit next to each other and are deliberately different.
+  details.push(['Weight change', (typeof wDelta === 'function') ? wDelta(stats.weightChange)
+    : ((stats.weightChange > 0 ? '+' : '') + stats.weightChange + ' kg')]);
   if(stats.viceSavings > 0) details.push(['Money saved from vices', curSym() + stats.viceSavings.toLocaleString()]);
   if(stats.yearIncome > 0 || stats.yearExpenses > 0) details.push(['Money flow', curSym() + stats.yearIncome.toLocaleString() + ' in / '+curSym() + stats.yearExpenses.toLocaleString() + ' out']);
   if(stats.winRate > 0) details.push(['Battle win rate', stats.winRate + '%']);
@@ -47141,24 +47239,51 @@ async function syncHevyWorkouts(){
 // is known for inconsistent 1-vs-2-digit dates. So we detect columns by fuzzy header match
 // (never fixed position) and parse dates leniently. Weigh-ins dedupe by day+weight so a
 // re-import is always safe. This brings a man's whole real weight history in at once.
-function _eufyParseDate(s){
+// WHICH NUMBER IS THE DAY? Read the WHOLE column before deciding, then read every row the same way.
+// A file where some rows say 17/08 and others say 03/08 has one answer, and it is written down in the
+// rows themselves: a part above 12 can only be a day. Returns 'dmy', 'mdy', or null when every row is
+// ambiguous — in which case day-first wins, because this app is en-AU and its own scale-import comment
+// always said so.
+function _eufyDateOrder(values){
+  let dmy = 0, mdy = 0;
+  (values || []).forEach(function(v){
+    const m = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/.exec(String(v || '').trim().replace(/^"|"$/g,''));
+    if(!m) return;
+    const a = +m[1], b = +m[2];
+    if(a > 12 && b <= 12) dmy++;
+    else if(b > 12 && a <= 12) mdy++;
+  });
+  if(dmy && !mdy) return 'dmy';
+  if(mdy && !dmy) return 'mdy';
+  return null;                     // all ambiguous, or self-contradictory
+}
+function _eufyParseDate(s, order){
   if(!s) return null;
   s = String(s).trim().replace(/^"|"$/g,'');
-  // Try native first (ISO and many locale forms)
-  let d = new Date(s);
-  if(!isNaN(d)) return d;
-  // Eufy quirk: "yyyy-m-d h:m" or "yyyy/m/d", 1-or-2 digit parts. Normalise separators.
+  // Eufy quirk: "yyyy-m-d h:m" or "yyyy/m/d", 1-or-2 digit parts. Year first is never ambiguous.
   let m = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/.exec(s);
   if(m){
-    d = new Date(+m[1], +m[2]-1, +m[3], +(m[4]||12), +(m[5]||0), +(m[6]||0));
-    if(!isNaN(d)) return d;
+    const d0 = new Date(+m[1], +m[2]-1, +m[3], +(m[4]||12), +(m[5]||0), +(m[6]||0));
+    if(!isNaN(d0)) return d0;
   }
-  // d/m/yyyy or m/d/yyyy — assume day-first (en-AU). Fall back gracefully.
+  // THE AMBIGUOUS FORM, AND IT MUST BE TESTED BEFORE new Date(). It used to be tested after, and
+  // V8 reads 'dd/mm/yyyy' as US month-first whenever the day is 12 or under — so the day-first branch
+  // below was dead code for exactly the rows it was written for, and a single file got read two ways.
+  // Measured on four weekly weigh-ins: 03/08 became 8 March, 10/08 became 8 October (five weeks in
+  // the FUTURE, outranking every real weigh-in), while 17/08 and 24/08 stayed in August. The trend
+  // read "stable, -0.03kg/week over 214 days" for someone who had lost 2.1kg in three weeks.
   m = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:[ T](\d{1,2}):(\d{1,2}))?/.exec(s);
   if(m){
-    d = new Date(+m[3], +m[2]-1, +m[1], +(m[4]||12), +(m[5]||0));
-    if(!isNaN(d)) return d;
+    const a = +m[1], b = +m[2];
+    // A part above 12 settles it for this row whatever the column said.
+    const monthFirst = (a > 12) ? false : (b > 12) ? true : (order === 'mdy');
+    const day = monthFirst ? b : a, mon = monthFirst ? a : b;
+    const d1 = new Date(+m[3], mon-1, day, +(m[4]||12), +(m[5]||0));
+    if(!isNaN(d1)) return d1;
   }
+  // Anything else — "3 Aug 2026", ISO with a timezone, epoch-ish strings.
+  const d = new Date(s);
+  if(!isNaN(d)) return d;
   return null;
 }
 // Works for ANY smart scale's CSV (Eufy, Withings, Renpho, Fitbit Aria, Garmin, etc.) —
@@ -47179,11 +47304,13 @@ function importEufyCSV(event){
     const existing = ls('totry_body') || [];
     const dayKey = (d, w) => new Date(d).toLocaleDateString('en-AU') + '|' + (Math.round(w*10)/10);
     const existingKeys = new Set(existing.filter(en => en.weight>0 && en.ts).map(en => dayKey(en.ts, en.weight)));
+    // Decide day-first vs month-first ONCE, from every date in the file, before reading any of them.
+    const _dateOrder = _eufyDateOrder(rows.slice(1).map(r => r && r[cols.date]));
     let imported = 0, skipped = 0;
     for(let r=1; r<rows.length; r++){
       const row = rows[r];
       if(!row || row.length < 2) continue;
-      const d = _eufyParseDate(row[cols.date]);
+      const d = _eufyParseDate(row[cols.date], _dateOrder);
       let w = parseFloat(String(row[cols.weight]||'').replace(/[^0-9.]/g,''));
       if(!d || !w || isNaN(w)){ skipped++; continue; }
       if(unitIsLb) w = w * 0.453592;

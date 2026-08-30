@@ -675,7 +675,7 @@ function showDayActivityDetail(dateKey){
       ? (_n + ' logged') : (_n + ' \u00b7 ' + Math.round(cals) + ' cal')});
   }
   // Body / weight check-ins
-  (ls('totry_body') || []).forEach(b => { if(matchDate(b.ts)) items.push({kind: 'Body check-in', text: (b.weight ? b.weight + 'kg' : '') + (b.win ? ' · ' + b.win.slice(0,50) : '')}); });
+  (ls('totry_body') || []).forEach(b => { if(matchDate(b.ts)) items.push({kind: 'Body check-in', text: (b.weight ? ((typeof wFmt==='function') ? wFmt(b.weight) : (b.weight + 'kg')) : '') + (b.win ? ' · ' + b.win.slice(0,50) : '')}); });
   // Measurements
   (ls('totry_measurements') || []).forEach(ms => { if(matchDate(ms.ts)) items.push({kind: 'Measurements', text: 'Snapshot logged'}); });
   // Daily trackers (sleep/steps/water)

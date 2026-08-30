@@ -513,7 +513,23 @@ function getLifeState(){
   const avg = (arr, f) => { const v = arr.map(f).filter(x=>x!=null && !isNaN(x)); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; };
 
   // ── TRAINING ──
-  const workouts = (L('totry_workouts')||[]).filter(w => w && (w.ts||w.date));
+  // A RUN IS TRAINING. Strava activities live in their own store, and this counted only
+  // totry_workouts — so someone whose whole week is running had three runs listed on the Train tab
+  // while GROW said "0 WORKOUTS" and the brief the AI reads opened "Training: 0 sessions in 7 days".
+  // The app was looking straight at the sessions and telling the coach they had not trained.
+  // Only the Hevy-DESCRIBED Strava activities are ever converted into totry_workouts (35-strava.js,
+  // id 'stravahevy_<id>'), so skipping exactly those ids is the whole dedupe — everything else in
+  // totry_strava_activities exists nowhere else. weeklyLoadByModality already merges the two stores
+  // this way; this brings the whole-life brief in line with it.
+  const _wRaw = (L('totry_workouts')||[]).filter(w => w && (w.ts||w.date));
+  const _haveConverted = new Set(_wRaw.map(w => String(w.id)));
+  const _stravaTrain = (L('totry_strava_activities')||[])
+    .filter(a => a && (a.ts||a.date) && !_haveConverted.has('stravahevy_' + a.id))
+    .map(a => ({ id:'strava_'+a.id, source:'strava', ts:a.ts||a.date,
+                 type:a.type||'Cardio', splitFocus:a.name||a.type||'Cardio', title:a.name||a.type||'Cardio',
+                 durationMin:a.durationMinutes||(a.moving_time?Math.round(a.moving_time/60):null),
+                 calories:a.calories||null, exercises:[] }));
+  const workouts = _wRaw.concat(_stravaTrain);
   const train7 = workouts.filter(w => within(w.ts||w.date, 7));
   const train14 = workouts.filter(w => within(w.ts||w.date, 14));
   const trainDays7 = new Set(train7.map(w => auKey(w.ts||w.date))).size;
@@ -1600,12 +1616,16 @@ async function sendCoach(){
     addMsg('coach-msgs','Setting up... please try again in a few seconds.','coach');
     return;
   }
-  if(!currentUser){
-    rmMsg(lid);
-    addMsg('coach-msgs','You\'re not signed in. Please refresh and log in.','coach');
-    return;
-  }
-  
+  // THE GUEST DOOR IS THE APP'S OWN FRONT DOOR, AND THIS WAS A WALL BEHIND IT.
+  // A guard here refused every guest with "You're not signed in. Please refresh and log in." — advice
+  // that cannot be followed, because refreshing keeps them a guest. It was the only !currentUser guard
+  // in the app that blocked an AI reply: sendPT has none, the companion has none, and in the same
+  // session as this refusal both of them answered the same guest with a real reply. So the app could
+  // always reach the model for this person; only the coach pretended it could not.
+  // Nothing past this point needs an account — api() has no user dependency and persistCoachHistory
+  // writes to localStorage. Someone who came in through "Something's pulling at me right now" and was
+  // told "He's read your whole story — ask him anything" now gets an answer.
+
   const r=await api(buildCtx(),cH.slice(0,-1),t,2600);
   rmMsg(lid);
   if(r){

@@ -3311,12 +3311,16 @@ H.section('dead code that was one caller away from confusing someone');
   for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.js'))) {
     for (const h of scan(fs.readFileSync(path.join(dir, f), 'utf8'))) leftovers.push(f + ':' + h.line + ' ' + h.ctx.slice(-40));
   }
-  // The eight survivors, each verified by hand: four '$1' JSON repairs (every AI meal and fuel-plan
+  // The nine survivors, each verified by hand. The ninth is new in v569: classifyVice now builds a
+    // \bKEYWORD regex per keyword and escapes the keyword first, the same way the two search boxes
+    // already do — added after bare includes() sent "Cheating on my wife" to the binge-eating
+    // playbook and "Energy drinks" to an alcohol-withdrawal seizure warning.
+    // Four '$1' JSON repairs (every AI meal and fuel-plan
   // parse depends on them), two '\\$&' search-term escapes, one '$1' highlight template, and one
   // genuinely-USD figure (the AI cost ceiling, which says "USD" on the same line). Rewriting any of
   // them to curSym() would parse, ship, and silently break the feature — this repo's signature bug.
-  H.eq(leftovers.length, 8, 'exactly 8 non-currency $ remain in string literals, and no others' +
-       (leftovers.length === 8 ? '' : '\n      ' + leftovers.join('\n      ')));
+  H.eq(leftovers.length, 9, 'exactly 9 non-currency $ remain in string literals, and no others' +
+       (leftovers.length === 9 ? '' : '\n      ' + leftovers.join('\n      ')));
 
   // The accessor itself, and every currency the picker offers.
   const table = (H.html.match(/const CURRENCY_SYMBOLS = \{[\s\S]*?\}/) || [''])[0];
@@ -5173,6 +5177,61 @@ function fnBodyOf(code, name){
        'and is keyed the way the rest of the app keys a day, or Track would never see it');
   H.ok(/if\(!\(tr\[k\]\.steps > 0\)\)/.test(fn),
        'a number the person entered themselves is never overwritten by the sync');
+}
+
+// ── the classifier decides what a person is told about their own fight ───────────────────────────
+{
+  H.section('a vice is classified by whole words, not fragments');
+
+  // classifyVice picks the playbook: the recovery timeline, the science copy, the withdrawal
+  // warnings. A wrong guess is not a wrong label, it is the app talking confidently to someone else.
+  // On bare includes():
+  //   · "Cheating on my wife" -> food, because chEATing contains "eat". A man naming the worst thing
+  //     in his marriage was shown "You fed the body, not the feeling".
+  //   · "Energy drinks" -> alcohol, because it contains "drink" — and that timeline warns of
+  //     "shaking, sweating, confusion or a seizure" and to see a doctor.
+  //   · "Chewing my nails" -> nicotine, off "chew".
+  // Keywords are deliberately STEMS (smok, gambl, vap, masturbat), so the fix anchors them to a word
+  // START rather than requiring a whole word — \bsmok still catches "smoking" — plus a named list of
+  // the false friends no boundary rule can separate.
+  const { classifyVice } = H.load(['classifyVice']);
+  [['Cheating on my wife','general'], ['Energy drinks','general'], ['Soft drink','general'],
+   ['Fizzy drinks','general'], ['Chewing my nails','general']].forEach(([name, want]) =>
+    H.eq(classifyVice(name), want, `"${name}" is not confidently placed — it falls through to ${want}`));
+
+  // and every real match still lands, stems included
+  [['Drinking','alcohol'], ['Wine with dinner','alcohol'], ['Smoking','nicotine'],
+   ['Vaping','nicotine'], ['Chewing tobacco','nicotine'], ['Gambling','gambling'],
+   ['Sports betting','gambling'], ['Porn','porn'], ['Overeating','food'],
+   ['Binge eating','food'], ['Doomscrolling','scrolling']].forEach(([name, want]) =>
+    H.eq(classifyVice(name), want, `"${name}" still reaches ${want}`));
+}
+
+// ── one file, one date order ─────────────────────────────────────────────────────────────────────
+{
+  H.section('a scale export is read the way it was written');
+
+  // _eufyParseDate tried `new Date(s)` FIRST, and V8 reads 'dd/mm/yyyy' as US month-first whenever the
+  // day is 12 or under — so the day-first branch below it was dead code for exactly the ambiguous rows
+  // it existed for, and one file got read two ways. Measured on four weekly weigh-ins: 03/08 became
+  // 8 March and 10/08 became 8 October (five weeks in the FUTURE, outranking every real weigh-in),
+  // while 17/08 and 24/08 stayed in August. The trend then read "stable, -0.03kg/week over 214 days"
+  // for someone who had lost 2.1kg in three weeks.
+  const { _eufyParseDate, _eufyDateOrder } = H.load(['_eufyParseDate', '_eufyDateOrder']);
+  const AU = ['03/08/2026','10/08/2026','17/08/2026','24/08/2026'];
+  const US = ['08/03/2026','08/10/2026','08/17/2026','08/24/2026'];
+  H.eq(_eufyDateOrder(AU), 'dmy', 'a column containing 17 and 24 can only be day-first');
+  H.eq(_eufyDateOrder(US), 'mdy', 'and one containing /17 and /24 in the second slot is month-first');
+  H.eq(_eufyDateOrder(['01/02/2026','03/04/2026']), null, 'an all-ambiguous column says so rather than guessing');
+
+  const day = (s, o) => { const d = _eufyParseDate(s, o); return d ? d.getMonth()+1 : null; };
+  AU.forEach(v => H.eq(day(v, 'dmy'), 8, `${v} read day-first lands in August`));
+  US.forEach(v => H.eq(day(v, 'mdy'), 8, `${v} read month-first lands in August`));
+  // a part above 12 settles its own row whatever the column said
+  H.eq(day('17/08/2026', 'mdy'), 8, '17 cannot be a month, so that row is read day-first regardless');
+  // and the unambiguous forms are untouched
+  H.eq(day('2026-08-03 07:15'), 8, 'ISO is still ISO');
+  H.eq(day('3 Aug 2026'), 8, 'and a worded date still parses');
 }
 
 // ── index.html is generated, and a hand edit must not survive a build ─────────────────────────────

@@ -305,7 +305,7 @@ function renderBodyCollage(){
     const div = document.createElement('div');
     div.style.cssText = 'position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--bd);cursor:pointer';
     div.innerHTML = '<img loading="lazy" decoding="async" src="'+e.photo+'" style="width:100%;height:120px;object-fit:cover;display:block">'+
-      '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.85),transparent);padding:4px 6px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-align:center">'+e.date+'</div><div style="font-size:11px;color:var(--tx);text-align:center;font-weight:500">'+(e.weight!=null&&e.weight!==''?e.weight+'kg':'')+'</div></div>';
+      '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.85),transparent);padding:4px 6px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-align:center">'+e.date+'</div><div style="font-size:11px;color:var(--tx);text-align:center;font-weight:500">'+(e.weight!=null&&e.weight!==''?((typeof wFmt==='function')?wFmt(e.weight):(e.weight+'kg')):'')+'</div></div>';
     div.onclick = () => viewBodyPhoto(i);
     container.appendChild(div);
   });
@@ -322,7 +322,7 @@ function viewBodyPhoto(idx){
   m.innerHTML = '<div class="modal" style="max-width:90vw;padding:20px">'+
     '<div style="text-align:center"><img loading="lazy" decoding="async" src="'+entry.photo+'" style="max-width:100%;max-height:60vh;border-radius:8px;margin-bottom:14px"></div>'+
     '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-align:center;margin-bottom:4px">'+entry.date+'</div>'+
-    '<div style="font-size:14px;font-weight:500;color:var(--tx);text-align:center;margin-bottom:8px">'+(entry.weight!=null&&entry.weight!==''?entry.weight+'kg':'')+'</div>'+
+    '<div style="font-size:14px;font-weight:500;color:var(--tx);text-align:center;margin-bottom:8px">'+(entry.weight!=null&&entry.weight!==''?((typeof wFmt==='function')?wFmt(entry.weight):(entry.weight+'kg')):'')+'</div>'+
     (entry.note?'<div style="font-size:12px;color:var(--tx2);text-align:center;font-style:italic;margin-bottom:10px">'+_escFew(entry.note)+'</div>':'')+
     '<button class="btn" onclick="closeModal(this)" style="margin-top:8px">Close</button></div>';
   document.body.appendChild(m);
@@ -469,6 +469,16 @@ function loadV(){
   // array is written straight back and the eleven places that read totry_v directly never meet it.
   let changed=(_vRaw!=null && !Array.isArray(_vRaw));
   vices.forEach(v=>{ if(v && !v.type){ v.type=classifyVice(v.n); changed=true; } });
+  // AND CORRECT A TYPE THE OLD SUBSTRING CLASSIFIER GOT WRONG. Backfilling only when `type` was
+  // MISSING left every existing person stuck with whatever the bare-includes() version decided — so
+  // the man whose fight is "Cheating on my wife" would go on reading a binge-eating timeline, and the
+  // one quitting "Energy drinks" would go on being warned about alcohol-withdrawal seizures, no matter
+  // how the classifier improved. Only ever downgrades a confident-but-wrong guess to the honest
+  // 'general': a type the classifier still stands behind is left exactly as it is, so nobody loses a
+  // playbook that fits them.
+  vices.forEach(v=>{
+    if(v && v.type && v.type !== 'general' && classifyVice(v.n) === 'general'){ v.type='general'; changed=true; }
+  });
   // Heal vices created by onboarding before it stamped startDate (see obNext step 6). Without this they
   // read "0 days clean" forever. Only ever stamped when there is no start AND no recorded slip, so this
   // can never overwrite a real clean-date or resurrect one a relapse legitimately reset.
@@ -889,17 +899,41 @@ const VICE_PLAYBOOK = {
   }
 };
 // Maps a free-text vice name to the closest playbook type via keyword matching.
+//
+// THIS RAN ON BARE `includes()` AND THE FALSE FRIENDS WERE UGLY. The playbook it picks decides the
+// recovery timeline, the science copy and the withdrawal warnings a person reads, so a wrong guess is
+// not a wrong label — it is the app talking confidently to someone else. Measured:
+//   · "Cheating on my wife" -> food, because chEATing contains "eat". A man naming the worst thing in
+//     his marriage was shown "You fed the body, not the feeling", "A week of eating with intention".
+//   · "Energy drinks" / "Soft drink" / "Fizzy drinks" -> alcohol, because they contain "drink" — and
+//     the alcohol timeline warns that stopping suddenly can bring "shaking, sweating, confusion or a
+//     seizure" and to see a doctor. A medical warning, delivered to the wrong person.
+//   · "Chewing my nails" -> nicotine, off "chew".
+// This file already knew the lesson and had only applied it elsewhere: "\b is load-bearing: without it
+// 'plan' matched inside 'go on this PLANET'", "[Pp]late matched TemPLATE".
+//
+// Two changes. Keywords now anchor to a WORD START rather than anywhere inside a word — they are
+// deliberately stems ('smok', 'gambl', 'vap', 'masturbat'), so \bKEY keeps "smoking" and "gambling"
+// while losing "chEATing". And each type carries the false friends it is known to swallow, because
+// "energy drinks" and "chewing my nails" DO begin those words and no boundary rule can tell them apart.
+// Anything that cannot be placed confidently falls through to 'general', whose copy is about riding an
+// urge and is true for any fight.
 function classifyVice(name){
   const n = (name || '').toLowerCase();
   const map = [
-    ['porn', ['porn','lust','masturbat','nsfw','sexual','fap','onlyfans']],
-    ['gambling', ['gambl','bet','betting','casino','poker','slots','wager','lottery','sportsbook']],
-    ['nicotine', ['smok','cigarette','vap','nicotine','tobacco','juul','dip','chew']],
-    ['alcohol', ['alcohol','drink','beer','wine','liquor','booze','spirits','drunk']],
-    ['scrolling', ['scroll','social media','instagram','tiktok','phone','youtube','reddit','twitter','doomscroll','screen']],
-    ['food', ['eat','food','binge','sugar','junk','snack','overeat','sweets']]
+    ['porn', ['porn','lust','masturbat','nsfw','sexual','fap','onlyfans'], []],
+    ['gambling', ['gambl','bet','betting','casino','poker','slots','wager','lottery','sportsbook'], []],
+    ['nicotine', ['smok','cigarette','vap','nicotine','tobacco','juul','dip','chew'], ['nail','gum']],
+    ['alcohol', ['alcohol','drink','beer','wine','liquor','booze','spirits','drunk'],
+                ['energy drink','soft drink','fizzy','sports drink','diet drink','soda','cordial']],
+    ['scrolling', ['scroll','social media','instagram','tiktok','phone','youtube','reddit','twitter','doomscroll','screen'], []],
+    ['food', ['eat','food','binge','sugar','junk','snack','overeat','sweets'], []]
   ];
-  for(const [type, kws] of map){ if(kws.some(k => n.includes(k))) return type; }
+  const startsWord = k => new RegExp('\\b' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(n);
+  for(const [type, kws, nots] of map){
+    if(nots.some(x => n.indexOf(x) > -1)) continue;
+    if(kws.some(startsWord)) return type;
+  }
   return 'general';
 }
 function getVicePlaybook(v){

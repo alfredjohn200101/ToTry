@@ -1129,6 +1129,7 @@ function openEditTraining(unifiedId){
   if(w.totalCalories || w.calories) setv('edit-cardio-totalCal', w.totalCalories || w.calories);
   if(w.activeCalories) setv('edit-cardio-activeCal', w.activeCalories);
   if(w.averageHeartRate) setv('edit-cardio-hr', w.averageHeartRate);
+  if(w.effort) setv('edit-cardio-effort', w.effort);
   if(typeof updateEditCardioPace==='function') updateEditCardioPace();
 }
 function renderEditCardioFields(){
@@ -1142,9 +1143,18 @@ function renderEditCardioFields(){
     activeCal: ['Active calories', 'e.g. 260',              'edit-cardio-activeCal'],
     totalCal:  ['Total calories',  'e.g. 394',              'edit-cardio-totalCal'],
     hr:        ['Avg heart rate',  'e.g. 128 bpm',          'edit-cardio-hr'],
+    // 'effort' was missing here while HIIT, Conditioning, Sport, HYROX and 'Other' — the fallback for
+    // every unknown type — all list it. labels['effort'] was undefined, destructuring it threw
+    // "undefined is not iterable" MID-LOOP, so wrap.innerHTML was never assigned and the sheet opened
+    // with no fields at all. Saving then read inputs that did not exist and wrote null over the
+    // session's duration, calories and heart rate — and said "Saved · Workout updated."
+    // The logging form has had this label all along (cardio-effort); only the edit form lacked it.
+    effort:    ['Effort (RPE 1\u201310)', 'e.g. 7',           'edit-cardio-effort'],
   };
   let html = '';
   ((cfg&&Array.isArray(cfg.fields))?cfg.fields:[]).forEach(f=>{
+    // A field nobody has labelled yet must cost that one field, never the whole form.
+    if(!labels[f]) return;
     const [lab,ph,id] = labels[f];
     html += '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.1em">'+lab+'</div>'+
       '<input type="text" id="'+id+'" inputmode="'+(f==='time'?'text':'decimal')+'" placeholder="'+ph+'" oninput="updateEditCardioPace()" style="margin-bottom:12px">';
@@ -1173,14 +1183,24 @@ function saveEditTraining(id){
   const totalCal = parseInt(document.getElementById('edit-cardio-totalCal')?.value||'')||0;
   const cal = totalCal || activeCal || 0;
   const hr = parseInt(document.getElementById('edit-cardio-hr')?.value||'')||0;
+  const effort = parseInt(document.getElementById('edit-cardio-effort')?.value||'')||0;
   const dateVal = document.getElementById('edit-cardio-date')?.value;
   let when = workouts[idx].ts ? new Date(workouts[idx].ts) : new Date();
   if(dateVal){ const [y,mo,d]=dateVal.split('-').map(Number); when = new Date(y, mo-1, d, 12, 0, 0); }
-  workouts[idx] = { ...workouts[idx], type, splitFocus: type, durationMinutes: mins?Math.round(mins):null,
-    // dispToM, not *1000: the box holds the person's own unit, so editing a 2-mile run while set
-    // to miles used to store 2000m — 1.24 miles — quietly shortening a run they had already logged.
-    distance: km?dispToM(km):null, calories: cal||null, averageHeartRate: hr||null,
-    date: when.toLocaleDateString('en-AU'), ts: when.toISOString() };
+  // ONLY WRITE WHAT THE FORM ACTUALLY SHOWED. This used to null every field unconditionally, so any
+  // input the sheet failed to render — one missing label was enough to render none of them — silently
+  // erased a real figure and then reported success. A blank box the person SAW means "clear it"; a box
+  // that was never on screen means nothing at all, and must leave the stored value alone.
+  const shown = id => !!document.getElementById(id);
+  const patch = { type, splitFocus: type, date: when.toLocaleDateString('en-AU'), ts: when.toISOString() };
+  if(shown('edit-cardio-time'))     patch.durationMinutes = mins ? Math.round(mins) : null;
+  // dispToM, not *1000: the box holds the person's own unit, so editing a 2-mile run while set
+  // to miles used to store 2000m — 1.24 miles — quietly shortening a run they had already logged.
+  if(shown('edit-cardio-distance')) patch.distance = km ? dispToM(km) : null;
+  if(shown('edit-cardio-activeCal') || shown('edit-cardio-totalCal')) patch.calories = cal || null;
+  if(shown('edit-cardio-hr'))       patch.averageHeartRate = hr || null;
+  if(shown('edit-cardio-effort'))   patch.effort = effort || null;
+  workouts[idx] = { ...workouts[idx], ...patch };
   ls('totry_workouts', workouts);
   // Rebuild the burn ledger from the (now edited) workouts — single source of truth, no drift.
   recomputeWorkoutBurns();

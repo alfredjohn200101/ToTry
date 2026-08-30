@@ -4334,9 +4334,18 @@ function renderBodySystemReport(){
   // NOURISH: per-day sums, this week + previous
   const log=ls('totry_nutlog')||{};
   const day={}, pday={};
-  Object.values(log).forEach(es=>{ (es||[]).forEach(e=>{ if(!e||!e.ts) return;
-    if(inWin(e.ts,W,0)){ const k=e.date||String(e.ts).slice(0,10); (day[k]=day[k]||{c:0,p:0}); day[k].c+=e.cal||0; day[k].p+=e.pro||0; }
-    else if(inWin(e.ts,2*W,W)){ const k=e.date||String(e.ts).slice(0,10); (pday[k]=pday[k]||{c:0}); pday[k].c+=e.cal||0; } }); });
+  // THE KEY IS THE DAY. totry_nutlog is an OBJECT keyed by the person's own local date — the same
+  // en-AU key the diary, the ring and computeAdaptiveTDEE all use — and this threw that key away with
+  // Object.values(), then rebuilt a day from `e.date || ts.slice(0,10)`. No writer sets `.date` on a
+  // nutlog entry, so it was always the first ten characters of the UTC stamp: east of UTC every meal
+  // logged after 10am local lands on the NEXT calendar day, and one day of eating is split across two.
+  // Measured on one store, same seven days: UTC read "2,200 avg cal/day, protein 1.7g/kg" and
+  // Australia/Sydney read "2,043 ↓, 1.58g/kg" off the same rows — and the two disagreed with
+  // getLifeState() (2200) and with the card's own TDEE input, so the card contradicted itself and then
+  // issued a different "one adjustment" depending on the reader's timezone.
+  Object.entries(log).forEach(([dayKey, es])=>{ (es||[]).forEach(e=>{ if(!e||!e.ts) return;
+    if(inWin(e.ts,W,0)){ (day[dayKey]=day[dayKey]||{c:0,p:0}); day[dayKey].c+=e.cal||0; day[dayKey].p+=e.pro||0; }
+    else if(inWin(e.ts,2*W,W)){ (pday[dayKey]=pday[dayKey]||{c:0}); pday[dayKey].c+=e.cal||0; } }); });
   const dks=Object.keys(day).filter(k=>day[k].c>0);
   const daysLogged=dks.length;
   const avgCal=daysLogged?Math.round(dks.reduce((a,k)=>a+day[k].c,0)/daysLogged):null;
@@ -4388,7 +4397,7 @@ function renderBodySystemReport(){
     const bal=Math.round((avgCal!=null?avgCal:tdeeR.avgIntake)-tdeeR.tdee);
     const exp=Math.round(bal*7/7700*100)/100;
     const agree=Math.abs(exp-weekChange)<=0.35;
-    verdict='Eating ~'+(bal>=0?'+':'')+bal+' cal/day vs your real burn \u2192 expect '+(exp>=0?'+':'')+exp+'kg/wk; the scale says '+(weekChange>=0?'+':'')+weekChange+'kg \u2014 your data '+(agree?'<span style="color:var(--gr)">agrees \u2713</span>':'<span style="color:var(--go)">disagrees \u2014 keep logging tight</span>')+'.';
+    verdict='Eating ~'+(bal>=0?'+':'')+bal+' cal/day vs your real burn \u2192 expect '+(exp>=0?'+':'')+wFmt(exp)+'/wk; the scale says '+(weekChange>=0?'+':'')+wFmt(weekChange)+' \u2014 your data '+(agree?'<span style="color:var(--gr)">agrees \u2713</span>':'<span style="color:var(--go)">disagrees \u2014 keep logging tight</span>')+'.';
     if(goal){
       const tgt=goal.rate||0;
       const onPace=Math.abs(weekChange-tgt)<=0.25;

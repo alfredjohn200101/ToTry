@@ -7,24 +7,51 @@
 // is known for inconsistent 1-vs-2-digit dates. So we detect columns by fuzzy header match
 // (never fixed position) and parse dates leniently. Weigh-ins dedupe by day+weight so a
 // re-import is always safe. This brings a man's whole real weight history in at once.
-function _eufyParseDate(s){
+// WHICH NUMBER IS THE DAY? Read the WHOLE column before deciding, then read every row the same way.
+// A file where some rows say 17/08 and others say 03/08 has one answer, and it is written down in the
+// rows themselves: a part above 12 can only be a day. Returns 'dmy', 'mdy', or null when every row is
+// ambiguous — in which case day-first wins, because this app is en-AU and its own scale-import comment
+// always said so.
+function _eufyDateOrder(values){
+  let dmy = 0, mdy = 0;
+  (values || []).forEach(function(v){
+    const m = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/.exec(String(v || '').trim().replace(/^"|"$/g,''));
+    if(!m) return;
+    const a = +m[1], b = +m[2];
+    if(a > 12 && b <= 12) dmy++;
+    else if(b > 12 && a <= 12) mdy++;
+  });
+  if(dmy && !mdy) return 'dmy';
+  if(mdy && !dmy) return 'mdy';
+  return null;                     // all ambiguous, or self-contradictory
+}
+function _eufyParseDate(s, order){
   if(!s) return null;
   s = String(s).trim().replace(/^"|"$/g,'');
-  // Try native first (ISO and many locale forms)
-  let d = new Date(s);
-  if(!isNaN(d)) return d;
-  // Eufy quirk: "yyyy-m-d h:m" or "yyyy/m/d", 1-or-2 digit parts. Normalise separators.
+  // Eufy quirk: "yyyy-m-d h:m" or "yyyy/m/d", 1-or-2 digit parts. Year first is never ambiguous.
   let m = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:[ T](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/.exec(s);
   if(m){
-    d = new Date(+m[1], +m[2]-1, +m[3], +(m[4]||12), +(m[5]||0), +(m[6]||0));
-    if(!isNaN(d)) return d;
+    const d0 = new Date(+m[1], +m[2]-1, +m[3], +(m[4]||12), +(m[5]||0), +(m[6]||0));
+    if(!isNaN(d0)) return d0;
   }
-  // d/m/yyyy or m/d/yyyy — assume day-first (en-AU). Fall back gracefully.
+  // THE AMBIGUOUS FORM, AND IT MUST BE TESTED BEFORE new Date(). It used to be tested after, and
+  // V8 reads 'dd/mm/yyyy' as US month-first whenever the day is 12 or under — so the day-first branch
+  // below was dead code for exactly the rows it was written for, and a single file got read two ways.
+  // Measured on four weekly weigh-ins: 03/08 became 8 March, 10/08 became 8 October (five weeks in
+  // the FUTURE, outranking every real weigh-in), while 17/08 and 24/08 stayed in August. The trend
+  // read "stable, -0.03kg/week over 214 days" for someone who had lost 2.1kg in three weeks.
   m = /^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:[ T](\d{1,2}):(\d{1,2}))?/.exec(s);
   if(m){
-    d = new Date(+m[3], +m[2]-1, +m[1], +(m[4]||12), +(m[5]||0));
-    if(!isNaN(d)) return d;
+    const a = +m[1], b = +m[2];
+    // A part above 12 settles it for this row whatever the column said.
+    const monthFirst = (a > 12) ? false : (b > 12) ? true : (order === 'mdy');
+    const day = monthFirst ? b : a, mon = monthFirst ? a : b;
+    const d1 = new Date(+m[3], mon-1, day, +(m[4]||12), +(m[5]||0));
+    if(!isNaN(d1)) return d1;
   }
+  // Anything else — "3 Aug 2026", ISO with a timezone, epoch-ish strings.
+  const d = new Date(s);
+  if(!isNaN(d)) return d;
   return null;
 }
 // Works for ANY smart scale's CSV (Eufy, Withings, Renpho, Fitbit Aria, Garmin, etc.) —
@@ -45,11 +72,13 @@ function importEufyCSV(event){
     const existing = ls('totry_body') || [];
     const dayKey = (d, w) => new Date(d).toLocaleDateString('en-AU') + '|' + (Math.round(w*10)/10);
     const existingKeys = new Set(existing.filter(en => en.weight>0 && en.ts).map(en => dayKey(en.ts, en.weight)));
+    // Decide day-first vs month-first ONCE, from every date in the file, before reading any of them.
+    const _dateOrder = _eufyDateOrder(rows.slice(1).map(r => r && r[cols.date]));
     let imported = 0, skipped = 0;
     for(let r=1; r<rows.length; r++){
       const row = rows[r];
       if(!row || row.length < 2) continue;
-      const d = _eufyParseDate(row[cols.date]);
+      const d = _eufyParseDate(row[cols.date], _dateOrder);
       let w = parseFloat(String(row[cols.weight]||'').replace(/[^0-9.]/g,''));
       if(!d || !w || isNaN(w)){ skipped++; continue; }
       if(unitIsLb) w = w * 0.453592;

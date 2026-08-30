@@ -2715,6 +2715,77 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── A RUN IS TRAINING, AND EDITING ONE MUST NOT ERASE IT ───────────────────────────────────────
+  // Two separate ways the app looked straight at a session and did not have it:
+  //   · Strava activities live in their own store, and getLifeState counted only totry_workouts — so
+  //     a runner had three runs listed on the Train tab while GROW said "0 WORKOUTS" and the brief the
+  //     AI reads opened "Training: 0 sessions in 7 days". Only the Hevy-DESCRIBED activities are ever
+  //     copied into totry_workouts (id 'stravahevy_<id>'), so this seeds one of those TOO: the count
+  //     must be 4, never 5, or the merge is double-counting.
+  //   · The edit sheet for HIIT / Conditioning / Sport / HYROX / Other listed an 'effort' field that
+  //     had no label, so destructuring undefined threw MID-LOOP, innerHTML was never assigned, and the
+  //     sheet opened with no inputs at all. Saving then read boxes that did not exist and wrote null
+  //     over the session's duration, calories and heart rate — and said "Saved · Workout updated."
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    const errs = []; page.on('pageerror', e => errs.push(String(e.message).slice(0, 110)));
+    await page.addInitScript(() => {
+      const s = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+      const N = Date.now();
+      s('totry_onboarded', true); s('totry_name', 'Alfy');
+      s('totry_strava_activities', [0,2,4].map(i => ({ id:900+i, name:'Morning Run', type:'Run',
+        date:new Date(N - i*864e5).toISOString(), moving_time:1800, calories:320, avg_hr:148 }))
+        .concat([{ id:950, name:'Hevy session', type:'WeightTraining', manufacturer:'hevy',
+          date:new Date(N - 864e5).toISOString(), moving_time:2700, description:'x' }]));
+      s('totry_workouts', [
+        { id:'stravahevy_950', source:'hevy', via:'strava', ts:new Date(N - 864e5).toISOString(),
+          splitFocus:'Push', type:'Weight Training', exercises:[], completedSets:5, totalSets:5, volume:3000 },
+        { id:7001, source:'manual', type:'HIIT', splitFocus:'HIIT', ts:new Date(N - 2*864e5).toISOString(),
+          date:'30/08/2026', durationMinutes:25, calories:280, averageHeartRate:150, effort:8, exercises:[] }
+      ]);
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2900);
+
+    const t = await page.evaluate(async () => {
+      const out = {};
+      const st = getLifeState();
+      out.sessions7 = st.training.sessions7;
+      out.brief = (st.brief || '').split('\n').find(l => /Training/i.test(l)) || '';
+
+      go('train'); await new Promise(r => setTimeout(r, 1200));
+      const before = JSON.parse(JSON.stringify((ls('totry_workouts') || []).find(w => String(w.id) === '7001')));
+      let threw = null;
+      try { openEditTraining('manual_7001'); } catch (e) { threw = String(e.message).slice(0, 60); }
+      await new Promise(r => setTimeout(r, 900));
+      out.threw = threw;
+      out.fieldsRendered = ((document.getElementById('edit-cardio-fields') || {}).innerHTML || '').length > 0;
+      try { saveEditTraining('7001'); } catch (e) { out.threw = out.threw || String(e.message).slice(0, 60); }
+      await new Promise(r => setTimeout(r, 900));
+      const after = (ls('totry_workouts') || []).find(w => String(w.id) === '7001') || {};
+      out.kept = before.durationMinutes === after.durationMinutes &&
+                 before.calories === after.calories &&
+                 before.averageHeartRate === after.averageHeartRate;
+      out.after = { d:after.durationMinutes, c:after.calories, hr:after.averageHeartRate };
+      return out;
+    });
+
+    // Five: three runs + the converted Hevy session + the HIIT session seeded for the edit test.
+    // Six would mean the Hevy-described Strava activity is counted alongside the totry_workouts copy
+    // of itself; two would mean the runs never arrive at the brief at all.
+    if (t.sessions7 !== 5)
+      findings.push(`train-truth: ${t.sessions7} sessions counted, not 5 — ${t.sessions7 < 5 ? 'the runs never reach the brief' : 'the converted Hevy activity is being counted twice'} ("${t.brief}")`);
+    if (t.threw)          findings.push(`train-truth: opening the edit sheet threw — ${t.threw}`);
+    if (!t.fieldsRendered) findings.push('train-truth: the cardio edit sheet renders no fields, so saving reads boxes that are not there');
+    if (!t.kept)
+      findings.push(`train-truth: editing a HIIT session erased it — duration/calories/HR came back ${JSON.stringify(t.after)} instead of 25/280/150, and the app said "Saved"`);
+    if (errs.length)      findings.push(`train-truth: page error — ${errs[0]}`);
+    if (!findings.some(f => f.startsWith('train-truth:')))
+      console.log('train-truth: three runs, a synced session and a HIIT workout count as five and not six — the Strava copy of the synced one is not counted twice — and editing that HIIT workout leaves every figure it did not show you');
+    await ctx.close();
+  }
+
   // ── THE TWO THINGS A BUDGETING APP IS OPENED FOR ───────────────────────────────────────────────
   // Spending money and paying a bill. Both are asserted on the STORE — a toast saying "Marked paid"
   // is not the same thing as the bill being paid, and that gap is exactly where a screen looks
@@ -3070,15 +3141,25 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       const row = n => { const e = [...document.querySelectorAll('#tab-home *')]
         .filter(x => (x.innerText||'').indexOf(n) === 0 && x.children.length <= 3)[0];
         return e ? (e.innerText||'').replace(/\s+/g,' ').trim() : ''; };
-      return { seededHits: hit, withTarget: row('Gym session'), noTarget: row('Read 10 pages') };
+      return { seededHits: hit, dayIdx: ti, withTarget: row('Gym session'), noTarget: row('Read 10 pages') };
     });
     await ctx.close();
     if (r.err) findings.push(`habits: ${r.err}`);
     else if (r.seededHits < 1) findings.push('habits: the seed produced no ticks — check tIdx/_habitWeekStamp');
+    else if (r.dayIdx === 0) {
+      // MONDAY IS ITS OWN ASSERTION. knowable = Math.min(6, tIdx()) is 0 on the first day of the week,
+      // so there is no honest fraction to print yet and 31-nextstep.js renders "day one" ON PURPOSE.
+      // Asserting "N of N" here reported three regressions that did not exist. Check the deliberate
+      // first-day copy instead, so this group means something on every day of the week.
+      if (!/day one/i.test(r.withTarget))
+        findings.push(`habits: on the first day of the week a targeted habit reads "${r.withTarget.slice(0,50)}", not the day-one copy`);
+      if (!/day one/i.test(r.noTarget))
+        findings.push(`habits: on the first day of the week an untargeted habit reads "${r.noTarget.slice(0,50)}", not the day-one copy`);
+    }
     else {
       // With a target of 3 and 3 done it must read as MET, not as a fraction of elapsed days.
-      if (!/\b3 of 3\b/.test(r.withTarget))
-        findings.push(`habits: a 3-a-week habit with 3 done reads "${r.withTarget.slice(0,50)}"`);
+      if (!new RegExp('\\b' + r.seededHits + ' of ' + r.seededHits + '\\b').test(r.withTarget))
+        findings.push(`habits: a ${r.seededHits}-a-week habit with ${r.seededHits} done reads "${r.withTarget.slice(0,50)}"`);
       if (!/✓/.test(r.withTarget))
         findings.push('habits: the target was met and nothing said so');
       // And a habit with no target keeps the old behaviour, so nothing existing changed.
@@ -3177,7 +3258,23 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
         '26/08/2026,SALARY - ACME,3200.00'].join('\n'), 2, 1],
       ['no header at all',
        ['28/08/2026,WOOLWORTHS 1234,-84.20',
-        '26/08/2026,SALARY - ACME,3200.00'].join('\n'), 1, 1]
+        '26/08/2026,SALARY - ACME,3200.00'].join('\n'), 1, 1],
+      // THE TWO HEADERS THAT BOOKED EVERY PURCHASE AS INCOME. `find` matches a SUBSTRING, so a column
+      // called "Debit Amount" satisfied the search for "amount" and won — and the row loop takes the
+      // amount branch first, unsigned. Measured on a statement of this exact shape: "0 expenses
+      // (-$0.00), 7 income (+$3581.54)", with Uber Eats, Coles, Netflix and a sportsbook all counted as
+      // earnings and spendPerMonth 0. The giving screens take a percentage OF the income figure.
+      // "plain debit/credit" above was the half of this that got fixed last time; these are the rest.
+      ['debit amount / credit amount',
+       ['Transaction Date,Narrative,Debit Amount,Credit Amount,Balance',
+        '28/08/2026,"WOOLWORTHS 1234",84.20,,3120.55',
+        '27/08/2026,"NETFLIX.COM",17.99,,3204.75',
+        '26/08/2026,"SALARY - ACME",,3200.00,3222.74'].join('\n'), 2, 1],
+      ['withdrawal / deposit',
+       ['Date,Description,Withdrawal Amount,Deposit Amount,Balance',
+        '28/08/2026,"WOOLWORTHS 1234",84.20,,3120.55',
+        '27/08/2026,"NETFLIX.COM",17.99,,3204.75',
+        '26/08/2026,"SALARY - ACME",,3200.00,3222.74'].join('\n'), 2, 1]
     ];
     for (const [label, csv, wantExp, wantInc] of SHAPES) {
       const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
