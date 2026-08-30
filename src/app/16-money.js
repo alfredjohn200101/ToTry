@@ -102,12 +102,24 @@ function renderReclaimedBuysFreedom(){
 
 function calcDebtFreeDate(){
   loadF();
-  const owed=debts.reduce((a,d)=>a+_debtBalance(d),0); if(owed<=0) return;
-  const rate=monthlyPaymentRate(); if(!rate) return;      // needs dated history to be honest
+  // THIS FUNCTION OWNS WHETHER THE HERO IS SEEN. It used to only ever turn it ON, and left every early
+  // return to whatever the last render had set — while renderMoneyGate reset it to '' for any
+  // non-empty person, which for .df-hero is `display:none` in the stylesheet, not "the default".
+  // So whether the date was visible came down to which of the two ran LAST, and both are called from
+  // more than one place. Measured on a debt with six months of dated payments: "May 2028 — ~21 months
+  // at $406/month" written correctly into the DOM and painted at height 0 — while the same build with
+  // a vice and transactions seeded showed it at 98px. A number that appears or not depending on what
+  // else the person happens to have logged is not a feature, it is a coin toss. Now it is neither
+  // function's opinion: this one decides, on every path.
+  const _df = document.getElementById('df-hero');
+  const _hideDF = function(){ if(_df) _df.style.display = 'none'; };
+  const owed=debts.reduce((a,d)=>a+_debtBalance(d),0); if(owed<=0){ _hideDF(); return; }
+  const rate=monthlyPaymentRate(); if(!rate){ _hideDF(); return; }   // needs dated history to be honest
   const strategy=ls('totry_debt_strategy')||'snowball';
   const proj=projectPayoff(debts, rate, strategy);
-  if(!proj) return;
-  const dh=document.getElementById('df-hero'); if(dh) dh.style.display='block';
+  if(!proj){ _hideDF(); return; }
+  if(_df) _df.style.display='block';
+  const dh=_df;
   const dd=document.getElementById('df-date');
   const ddesc=document.getElementById('df-desc');
   // The honest case first: if the payment can't cover the interest, there IS no freedom date yet.
@@ -193,7 +205,11 @@ function renderMoneyGate(){
 
   // The empty-state heroes are the ones that lie loudest — a debt-free date of "—" and $0
   // reclaimed read as "all good" to someone who has never told the app anything.
-  ['df-hero','saved-hero'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display = empty ? 'none' : ''; });
+  // saved-hero has no display rule of its own, so '' genuinely restores it. df-hero does
+  // (display:none), so '' HIDES it — undoing calcDebtFreeDate, which is the only thing that knows
+  // whether there is an honest date to show. Force the hide here; leave the show to it.
+  const _sh = document.getElementById('saved-hero'); if(_sh) _sh.style.display = empty ? 'none' : '';
+  const _dfh = document.getElementById('df-hero');   if(_dfh && empty) _dfh.style.display = 'none';
   const mg = document.querySelector('#tab-money .mg'); if(mg) mg.style.display = empty ? 'none' : '';
 
   // Thirteen fully-built empty forms used to sit directly beneath the sentence "I don't know anything

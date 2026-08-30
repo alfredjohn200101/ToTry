@@ -461,7 +461,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v567';
+const APP_VERSION = 'v568';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -861,7 +861,9 @@ const SYNC_KEYS = [
   'totry_cal_cycling',
   // Money × Soul — the season you keep and what you give away
   'totry_fast_season','totry_giving','totry_giving_pledge','totry_zakat',
-  'totry_rosaries',
+  // A walked rosary was recorded and a completed tasbih, japa, mettā or stillness sit was not —
+  // so the same practice counted as the day's prayer for a Catholic and vanished for everyone else.
+  'totry_rosaries','totry_practices',
   // Values card sort (their own standard) + the loving-kindness/blessing log.
   'totry_values','totry_blessings',
   // Three good things — the evening's gratitude, incl. who it was about and whether it got said.

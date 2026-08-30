@@ -2996,6 +2996,19 @@ const _WK_PRAYERS={
   buddhism:{lbl:'Closing reflection',text:'A week has passed —\nwhat went well, and what I struggled with.\nI hold it all with an even mind, without clinging or aversion.\nAs a new week begins, may I return, again and again, to the present.'},
   secular:{lbl:'Closing reflection',text:'A week has passed —\nwhat I did well, and where I fell short.\nI’m grateful for the resolve that held when I nearly let go.\nAs a new week begins, I choose to be a little better than the last.'}
 };
+// The weekly review's CLOSING PRAYER was swapped per tradition and the six questions above it were
+// not — so on one card a Buddhist read a closing reflection written for them and, four lines higher,
+// was asked "Did I honour God in how I spent my time?" under the heading "Examination of conscience",
+// which is itself a Catholic term. Five of the six questions are about a life anyone is living — vice,
+// honesty, patience, keeping your word, what you avoided — and they stay exactly as they are. Only the
+// one that names God, and the heading, belong to a tradition.
+const _WK_CONSCIENCE={
+  christianity:{lbl:'Examination of conscience', q:'Did I honour God in how I spent my time?'},
+  islam:{lbl:'Muhasabah \u2014 taking account of yourself', q:'Did I honour Allah in how I spent my time?'},
+  hinduism:{lbl:'Self-examination', q:'Did I live in line with my dharma in how I spent my time?'},
+  buddhism:{lbl:'Looking back honestly', q:'Did I spend my time with intention, or let it slip past me?'},
+  secular:{lbl:'An honest look back', q:'Did I spend my time on what actually matters to me?'}
+};
 function applyFaithReflect(){
   try{
     const t=faithTradition();
@@ -3003,6 +3016,8 @@ function applyFaithReflect(){
     const set=(id,txt)=>{ const el=document.getElementById(id); if(el) el.textContent=txt; };
     set('eve-prayer-label',e.lbl); set('eve-prayer-text',e.text);
     set('wk-prayer-label',w.lbl); set('wk-prayer-text',w.text);
+    const c=_WK_CONSCIENCE[t]||_WK_CONSCIENCE.christianity;
+    set('wk-conscience-label',c.lbl); set('wk-conscience-faith',c.q);
   }catch(_){}
 }
 
@@ -3609,8 +3624,27 @@ function _practiceTap(){
     if(st.phase<phases.length-1){ st.phase++; st.count=0; if(typeof haptic==='function') haptic('success'); _paintPractice(); }
     else {
       if(typeof haptic==='function') haptic('success');
+      // RECORD IT, THE WAY A ROSARY IS RECORDED. A Catholic who walks the rosary has it written to
+      // totry_rosaries, is told "that's N rosaries walked with Our Lady", and Home stops asking him to
+      // pray. A Muslim who taps a hundred times through the full tasbih — or a Hindu through 108 japa,
+      // or anyone through mettā or a stillness sit — got a card and nothing else: not one byte written,
+      // and Home still said "Take a moment to pray" to someone who had just spent ten minutes praying.
+      // Measured by diffing the whole of localStorage across a completed tasbih: changed=[], added=[].
+      // Best-effort inside its own try, on the rosary's principle: a failed write must never rob a
+      // person of the moment. prayedToday in 31-nextstep.js reads this key, so it is not another
+      // write nobody looks at.
+      let _n = 0;
+      try{
+        const _list = ls('totry_practices') || [];
+        _list.unshift({ ts:new Date().toISOString(), kind:st.kind });
+        ls('totry_practices', _list.slice(0,500));
+        _n = _list.length;
+        if(typeof logEvent==='function') logEvent('practice_complete');
+        if(typeof syncToCloud==='function') syncToCloud();
+      }catch(_){ }
+      const _kept = _n ? '<div style="font-size:12px;color:var(--go);margin-bottom:16px">That’s '+_n+' kept.</div>' : '';
       const el=document.getElementById('practice-content');
-      if(el) el.innerHTML='<div class="card" style="text-align:center;padding:32px 20px"><div style="font-size:34px;margin-bottom:10px">✓</div><div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:8px">'+cfg.done+'</div><div style="font-size:13px;color:var(--tx3);margin-bottom:18px">'+cfg.doneSub+'</div><button class="btn primary" onclick="_renderPractice(\''+st.kind+'\')" style="max-width:200px;margin:0 auto">Again</button></div>';
+      if(el) el.innerHTML='<div class="card" style="text-align:center;padding:32px 20px"><div style="font-size:34px;margin-bottom:10px">✓</div><div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:8px">'+cfg.done+'</div><div style="font-size:13px;color:var(--tx3);margin-bottom:18px">'+cfg.doneSub+'</div>'+_kept+'<button class="btn primary" onclick="_renderPractice(\''+st.kind+'\')" style="max-width:200px;margin:0 auto">Again</button></div>';
     }
   } else {
     const c=document.getElementById('practice-count'); if(c) c.textContent=st.count; else _paintPractice();

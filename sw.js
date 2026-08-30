@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v567-nohang'
+const CACHE = 'totry-v568-seen'
 
 const CORE = [
   './',

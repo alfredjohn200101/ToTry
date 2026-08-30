@@ -99,6 +99,9 @@ function getNextStep(){
       if((ls('totry_prayers')||[]).some(p => p && (sameDay(p.createdAt) || sameDay(p.ts)))) return true;
       if((ls('totry_examens')||[]).some(e => e && sameDay(e.ts))) return true;
       if((ls('totry_rosaries')||[]).some(r => r && (sameDay(r.ts) || sameDay(r.date)))) return true;
+      // Every tradition's counted practice, not only the Catholic one: dhikr, japa, mettā, stillness.
+      // Without this the app kept asking a Muslim to pray on a day he had finished the whole tasbih.
+      if((ls('totry_practices')||[]).some(p => p && sameDay(p.ts))) return true;
       const m = ritualLog('totry_mornings')[0];
       if(m && sameDay(m.ts) && (m.intention || m.gratitude)) return true;
       return false;

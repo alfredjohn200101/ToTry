@@ -834,21 +834,24 @@ async function saveWorkoutSession(){
   // app, on this screen, with these sets, never got one. The whole reason a lifter opens Strong twice
   // is that it tells them when they have just done something they have never done before, and ours
   // told only the people who lift somewhere else. Detect on OUR save too, from the same function.
+  let prHit = [];
   if(_saved !== false){
     try{
-      const hit = (typeof detectAndRecordPRs === 'function')
-        ? detectAndRecordPRs(session.exercises || []) : [];
-      if(hit && hit.length){
-        const top = hit.slice().sort((a,b) => (b.e1rm||0) - (a.e1rm||0))[0];
-        const more = hit.length > 1 ? (' and ' + (hit.length-1) + ' more') : '';
-        setTimeout(function(){
-          if(typeof showToast === 'function')
-            showToast('New PR \u{1F3C6}', top.name + ' \u2014 est. 1RM ' +
-              ((typeof wFmt === 'function') ? wFmt(top.e1rm) : (Math.round(top.e1rm) + 'kg')) + more + '.');
-          if(typeof haptic === 'function') haptic('success');
-        }, 900);
-      }
-    }catch(_){ }
+      // THE SUMMARY SHEET IS THE CELEBRATION — a gold "NEW PERSONAL RECORD" line under the session's
+      // own numbers, which is where a lifter looks when they finish. v566 put a toast here instead,
+      // and did something worse on the way: by recording the PR first it left updatePersonalRecords
+      // with no improvement to find, so that call returned nothing and the banner went EMPTY.
+      // Measured — 90kg x 5 against last week's 80 x 5: the summary read "1 EXERCISES / NOW FUEL IT"
+      // where it used to read "1 EXERCISES / 🏆 NEW PERSONAL RECORD Bench Press — est. 1RM 105".
+      // The fix that finally told in-app lifters about their PRs had quietly removed the place those
+      // PRs had always been shown. Detect once, here, and hand the result down.
+      // detectAndRecordPRs returns e1rm; the banner reads .orm — mapped, not renamed, because the
+      // stored record and the two Hevy callers both speak e1rm. Lifted load stays kg on purpose.
+      prHit = ((typeof detectAndRecordPRs === 'function')
+        ? (detectAndRecordPRs(session.exercises || []) || []) : [])
+        .map(function(p){ return { name: p.name, orm: Math.round(p.e1rm || 0) }; });
+      if(prHit.length && typeof haptic === 'function') haptic('success');
+    }catch(_){ prHit = []; }
   }
   if(_saved === false){
     // Keep everything. The session is still in currentSession and still in the draft, so they can
@@ -861,12 +864,15 @@ async function saveWorkoutSession(){
   if(typeof logEvent==='function') logEvent('workout_logged');
   // Mirror it into Apple Health, if they turned that on. Fire and forget.
   try{ if(typeof HealthWrite!=='undefined') HealthWrite.workout(session); }catch(_){}
-  const prsHit = updatePersonalRecords(session);
+  // updatePersonalRecords used to run here as a SECOND pass over the same session, writing the same
+  // store in a different shape (no `heaviest`) and racing the detection above for which shape won.
+  // With the done-gate added to detectAndRecordPRs the two now apply identical criteria, so the
+  // second pass could only ever re-write what the first had just written. One recorder.
   stopRestTimer();
   const savedExCount = session.exercises.length;
   stopSessionTimer();
   currentSession=[];renderWorkoutSession();
-  showWorkoutSummary({exercises:savedExCount, sets:cs, vol:vol, durationMin:durationMin, prs:prsHit||[]});
+  showWorkoutSummary({exercises:savedExCount, sets:cs, vol:vol, durationMin:durationMin, prs:prHit});
   loadH();const gi=habits.findIndex(h=>h.n.toLowerCase().includes('gym'));if(gi>=0){habits[gi].d[tIdx()]=1;saveH();renderHabits();}
   checkMilestones();
 }
@@ -1535,13 +1541,10 @@ function confirmScreenshotWorkout(detected){
   haptic('celebrate');
   if(typeof renderNutritionLog === 'function') renderNutritionLog();
 }
-function updatePersonalRecords(session){
-  const prs=ls('totry_prs')||{};
-  const hit=[];
-  session.exercises.forEach(ex=>{ex.sets.forEach(s=>{if(!s.done||!s.weight||!s.reps)return;const w=parseFloat(s.weight),r=parseInt(s.reps);if(isNaN(w)||isNaN(r)||w<=0)return;if((s.type||'normal')==='warmup')return;const orm=estE1RM(w,r);if(!prs[ex.name]||orm>prs[ex.name].orm){prs[ex.name]={orm,weight:w,reps:r,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})};if(!hit.find(h=>h.name===ex.name))hit.push({name:ex.name,orm});}});});
-  ls('totry_prs',prs);
-  return hit;
-}
+// updatePersonalRecords() lived here and is deliberately gone. It was the SECOND of two PR
+// recorders running on the same save, writing the same store in a different shape. Its one
+// distinct behaviour — refusing a set that was not ticked — now lives in detectAndRecordPRs,
+// which is the single recorder for our own saves and both Hevy paths.
 // '3m' | '90s' | '2:30' | 180 | '180' -> seconds. Routines write targetRest, Hevy imports write
 // rest, and the manual editor writes restTime; all three end up here so the timer honours whichever
 // the exercise actually carries.

@@ -108,6 +108,23 @@ function renderSavedVerses(containerId){
   });
 }
 
+// THE SHELF IS PAINTED IN TWO PLACES AND ONLY ONE OF THEM WAS EVER REPAINTED.
+// renderSavedVerses() with no argument falls back to 'saved-verses-list' — the container in the
+// Christian Word tab. A Muslim, Hindu, Buddhist or secular person reads from openReader(), which
+// paints 'read-saved-list' instead. So deleting a passage there wrote the change to storage, repainted
+// a container on a tab they were not looking at, and left theirs untouched: the deleted passage still
+// listed, and every × still carrying its OLD index. Tapping the same × again — the natural thing to do
+// when nothing happened — deleted a DIFFERENT passage. Measured on three saved surahs: the first tap
+// removed 12:53 from storage while the screen stayed byte-identical, and the second tap on the row
+// still labelled 12:53 removed 2:286. Someone can shred the whole shelf while the screen tells them
+// nothing has changed.
+// The old comment here said "Force re-render immediately so indices realign", which is exactly what
+// it failed to do — intent, not behaviour.
+function renderSavedVersesEverywhere(){
+  ['saved-verses-list', 'read-saved-list'].forEach(function(id){
+    if(document.getElementById(id)) renderSavedVerses(id);
+  });
+}
 async function deleteSavedVerse(idx){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
   if(!(await askConfirm('Remove this from your saved verses?'))) return;
@@ -116,13 +133,13 @@ async function deleteSavedVerse(idx){
   const removed = saved[idx];
   saved.splice(idx, 1);
   ls('totry_sv', saved);
-  // Force re-render immediately so indices realign
-  renderSavedVerses();
+  // Repaint every shelf that exists, so the one the person is looking at is always among them.
+  renderSavedVersesEverywhere();
   showUndo('Verse removed', () => {
     const cur = ls('totry_sv') || [];
     cur.splice(idx, 0, removed);
     ls('totry_sv', cur);
-    renderSavedVerses();
+    renderSavedVersesEverywhere();
   });
 }
 

@@ -790,7 +790,12 @@ function detectRecurringCharges(){
     const dismissed = ls('totry_sub_dismissed') || [];
     const groups = {};
     tx.forEach(function(t){
-      const k = _subMerchantKey(t.desc || t.description);
+      // THE IN-APP LOGGER WRITES `note`, NOT `desc`. Only the CSV importer writes desc, so this saw
+      // imported rows and was blind to every expense the person typed in themselves — which is most of
+      // them. The feature reported "no forgotten charges" to someone paying for four.
+      // My own test seeded `desc:` here, matching this reader instead of saveTransaction's writer, and
+      // went green over a detector that could not fire. Grep the ls(...,write) site, never memory.
+      const k = _subMerchantKey(t.desc || t.description || t.note);
       if(k.length < 3) return;
       (groups[k] = groups[k] || []).push(t);
     });

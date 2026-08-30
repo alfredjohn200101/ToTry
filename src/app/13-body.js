@@ -114,6 +114,16 @@ async function logBody(){
   try{ if(typeof detectCrisis === 'function') _wkCrisis = detectCrisis([winText, struggleText, focusText].filter(Boolean).join(' ')); }catch(_){ }
 
   
+  // THE SAME 20-400 BAND THE OTHER THREE WEIGH-IN DOORS ENFORCE. saveQuickWeight and both import
+  // paths all refuse a number outside it; this door — the Sunday check-in — took anything. A missed
+  // decimal point (854 for 85.4) was accepted in silence and did not stop at a wrong tile: the weight
+  // feeds the calorie and macro maths, so one fat-finger permanently rewrote the daily targets, and
+  // the person is then coached against them. Weight is OPTIONAL here, so a blank field still passes —
+  // it is only a number that cannot be a body that is refused.
+  if(w && (w < 20 || w > 400)){
+    showToast('Check that weight', 'Between ' + wFmt(20, {round:0}) + ' and ' + wFmt(400, {round:0}) + '. Nothing else you typed is lost.');
+    return;
+  }
   // Require AT LEAST weight OR scores OR text - some data to be useful
   const hasAnyData = w > 0 || trainScore || winText || struggleText || focusText;
   if(!hasAnyData){
@@ -549,7 +559,13 @@ function renderBodyGoalCard(){
     head = 'You are there.'; col = 'var(--gr)';
     body = 'Holding at ' + wf(p.now) + '. The work now is staying, which is its own kind of work.';
   } else if(p.kind === 'onTrack'){
-    const d = p.eta.toLocaleDateString('en-AU', { day:'numeric', month:'long' });
+    // Carry the year whenever the target is not in THIS one. A projection is the only future date the
+    // app prints, and at a slow honest pace it can land years out: "About 9 July" for 9 July 2028 reads
+    // as next summer, which flatters the plan by nearly two years. Every other date here is today or
+    // the past, where the year would only be noise — this is the one that needs it.
+    const d = p.eta.toLocaleDateString('en-AU', (p.eta.getFullYear() === new Date().getFullYear())
+      ? { day:'numeric', month:'long' }
+      : { day:'numeric', month:'long', year:'numeric' });
     head = 'About ' + d; col = 'var(--gr)';
     body = 'At your own pace of ' + rateTxt + ' a week — ' + p.weeks + ' week' + (p.weeks===1?'':'s') +
            ' from here. That is the trend, not one weigh-in, so a heavy day does not move it.';
@@ -759,9 +775,52 @@ function renderBody(){
     document.getElementById('bod-cur').textContent=wFmt(cur);
     document.getElementById('bod-st').textContent=wFmt(start);
     document.getElementById('bod-lo').textContent=wDelta(diff, {zero:'\u2014'});
-    const h=ls('totry_height')||175;const bmi=Math.round((cur/((h/100)**2))*10)/10;
-    const bmiEl=document.getElementById('bod-bmi');
-    if(bmiEl)bmiEl.textContent=bmi+' ('+(bmi<18.5?'Underweight':bmi<25?'Healthy':bmi<30?'Overweight':'Obese')+')';
+    // NO HEIGHT, NO VERDICT. `||175` meant a person who never opened Settings got a BMI and a
+    // categorical judgement about their body computed from a height the app invented. At 86kg it read
+    // "28.1 (Overweight)"; the same 86kg at a real 168cm is 30.5 and at 190cm is 23.8 — so the label
+    // was as likely to be wrong as right, and it is exactly the kind of number a person believes.
+    // The app already has a place to put a real height (Settings → Height (for BMI)); this asks for it
+    // instead of guessing, and the ask is tappable, because a line that only reports is not finished.
+    const h = parseFloat(ls('totry_height')) || 0;
+    const bmiEl = document.getElementById('bod-bmi');
+    if(bmiEl){
+      if(h > 0){
+        const bmi = Math.round((cur/((h/100)**2))*10)/10;
+        bmiEl.textContent = bmi+' ('+(bmi<18.5?'Underweight':bmi<25?'Healthy':bmi<30?'Overweight':'Obese')+')';
+        bmiEl.onclick = null; bmiEl.style.cursor = ''; bmiEl.removeAttribute('role');
+      } else {
+        bmiEl.textContent = 'Add your height for BMI';
+        bmiEl.style.cursor = 'pointer';
+        bmiEl.setAttribute('role','button');
+        bmiEl.onclick = function(){
+          try{
+            if(typeof go === 'function') go('settings');
+            // The field lives inside the collapsed "Preferences" fold, so landing on Settings is not
+            // the same as arriving somewhere useful: checkVisibility() on it reads false while it
+            // still reports a 34px box, which is the closed-<details> phantom. Open the fold, then
+            // scroll. Focus is deliberately not attempted — the tab switch takes it back every time,
+            // measured at 200/420/700/1200ms, and a focus that silently loses is worse than none.
+            setTimeout(function(){
+              const f = document.getElementById('settings-height');
+              if(!f) return;
+              const fold = f.closest('details');
+              if(fold) fold.open = true;
+              f.scrollIntoView({ block:'center' });
+            }, 420);
+          }catch(_){ }
+        };
+      }
+    }
+  } else {
+    // DELETING THE LAST WEIGH-IN HAS TO CLEAR WHAT IT PRODUCED. These blocks only ever wrote, never
+    // cleared, so the tiles kept whatever the previous render put there. Measured: both weigh-ins
+    // deleted, totry_body empty, and the screen still read a current weight, a change, and
+    // "28.2 (Overweight)" — a categorical judgement about a body, computed from numbers the person
+    // had just deliberately removed. The history list below already had its empty state; these did not.
+    ['bod-cur','bod-st','bod-lo'].forEach(function(id){
+      const el = document.getElementById(id); if(el) el.textContent = '\u2014';
+    });
+    const bmiEmpty = document.getElementById('bod-bmi'); if(bmiEmpty) bmiEmpty.textContent = '';
   }
   if(weighed.length>=2){
     const pts=weighed.slice(0,12).reverse(),weights=pts.map(e=>e.weight),mn=Math.min(...weights),mx=Math.max(...weights),range=mx-mn||1,W=340,H=90,pad=12;
@@ -769,6 +828,10 @@ function renderBody(){
     const pathD=pts.map((p,i)=>(i===0?'M':'L')+x(i).toFixed(1)+','+y(p.weight).toFixed(1)).join(' ');
     const svg=document.getElementById('weight-chart');
     if(svg)svg.innerHTML='<defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5BB97D" stop-opacity="0.25"/><stop offset="100%" stop-color="#5BB97D" stop-opacity="0"/></linearGradient></defs><path d="'+pathD+' L'+x(pts.length-1).toFixed(1)+','+H+' L'+x(0).toFixed(1)+','+H+' Z" fill="url(#wg)"/><path d="'+pathD+'" stroke="#5BB97D" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+pts.map((p,i)=>'<circle cx="'+x(i).toFixed(1)+'" cy="'+y(p.weight).toFixed(1)+'" r="3.5" fill="#5BB97D"/><text x="'+x(i).toFixed(1)+'" y="'+(y(p.weight)-8).toFixed(1)+'" text-anchor="middle" fill="rgba(242,239,232,0.4)" font-size="8" font-family="DM Mono,monospace">'+((typeof wFmt==='function')?wFmt(p.weight,{bare:true}):p.weight)+'</text>').join('');
+  } else {
+    // Same for the trend line, and note the threshold is >= 2: one weigh-in is not a trend, so a chart
+    // left over from when there were two is a line the person's data no longer supports.
+    const svgEmpty = document.getElementById('weight-chart'); if(svgEmpty) svgEmpty.innerHTML = '';
   }
   const hist=document.getElementById('body-history');
   if(hist){
@@ -884,10 +947,15 @@ function openQuickWeightLog(){
     '<h3 style="margin-bottom:6px">Log today\'s weight</h3>' +
     '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Just the number. The deeper check-in is for Sundays.</p>' +
     '<div style="margin-bottom:14px">' +
-      '<label style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;display:block">Weight (kg)</label>' +
+      // The placeholder beneath this label is already converted (wFmt), and saveQuickWeight already
+      // reads the field as the person's own unit (dispToKg). Only the two DISPLAY strings were left
+      // hardcoded — so a lb user opened this modal to a label reading "Weight (kg)" above a pounds
+      // placeholder of 189.6, and an "already logged" line quoting the raw kilograms. Three units in
+      // one small box, on the screen where a person is asked to trust a number about their own body.
+      '<label style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;display:block">Weight (' + wUnit() + ')</label>' +
       '<input type="number" id="quick-weight-in" step="0.1" inputmode="decimal" placeholder="' + (last?.weight != null ? wFmt(last.weight, {bare:true}) : wFmt(75, {bare:true})) + '" style="width:100%;font-size:24px;text-align:center;padding:14px;font-family:DM Mono,monospace" autofocus>' +
     '</div>' +
-    (todayEntry && todayEntry.weight > 0 ? '<p style="font-size:11px;color:var(--go);margin-bottom:10px;text-align:center">Already logged today: ' + todayEntry.weight + 'kg — this will replace it.</p>' : '') +
+    (todayEntry && todayEntry.weight > 0 ? '<p style="font-size:11px;color:var(--go);margin-bottom:10px;text-align:center">Already logged today: ' + wFmt(todayEntry.weight) + ' — this will replace it.</p>' : '') +
     '<div style="display:flex;gap:8px">' +
       '<button class="btn primary" style="flex:1" onclick="saveQuickWeight()">Save</button>' +
       '<button class="btn" style="flex:1" onclick="closeModal(this)">Cancel</button>' +

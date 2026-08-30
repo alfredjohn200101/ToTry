@@ -149,6 +149,22 @@ function detectAndRecordPRs(exercises, opts){
     let bestE = 0, bestW = 0, bestR = 0, heaviest = 0, heaviestReps = 0;
     (ex.sets || []).forEach(s => {
       if(s.type && /warm/i.test(s.type)) return; // warmups don't set PRs
+      // AND NEITHER IS A SET YOU HAVE NOT DONE. This only ever ran on Hevy imports, where every set
+      // is completed by definition, so the missing check never showed. v566 routed our own save
+      // through here too — and an in-app session carries the sets you PLANNED, unticked, sitting on
+      // screen exactly as you left them. Measured: one real set of 85x5, plus a 140x5 typed in and
+      // never ticked, recorded a personal record of 140kg and an estimated max of 163. A lift he
+      // never did, permanent (records only move when beaten), feeding overloadSuggestion, and making
+      // every honest session afterwards look like a failure. The session's own volume already got
+      // this right — 425kg, the done set only — which is what made it invisible.
+      // Every writer sets the flag: in-app starts false until ticked, Hevy and the screenshot parser
+      // stamp true. Verified by driving all three — Hevy 120x3 and a parsed Deadlift 180x3 both still
+      // record; only a set carrying NO flag at all is skipped, which today nothing produces.
+      // `!s.done` and not `s.done === false` on purpose: an unflagged set is of unknown provenance, and
+      // a missed record is recoverable where a claimed one is a lie that stands until it is beaten.
+      // This is also the stricter of the two gates the app used to have — the one in-app saves always
+      // had, before v566 routed them through this function instead.
+      if(!s.done) return;
       const w = parseFloat(s.weight)||0, r = parseInt(s.reps)||0;
       const e = estE1RM(w, r);
       if(e > bestE){ bestE = e; bestW = w; bestR = r; }

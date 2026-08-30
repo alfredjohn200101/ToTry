@@ -2660,13 +2660,22 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       await new Promise(r => setTimeout(r, 600));
       out.added = (typeof currentSession !== 'undefined') ? currentSession.length : 0;
       if (!out.added) return out;
+      // Two real sets, then a heavier one he typed in and never ticked — the normal way a planned set
+      // sits on screen. It must count for nothing: not volume, not sets done, and above all not a PR.
       currentSession[0].sets = [{ weight:'90', reps:'5', type:'normal', done:true },
                                 { weight:'90', reps:'5', type:'normal', done:true },
-                                { weight:'90', reps:'5', type:'normal', done:false }];  // one NOT done
+                                { weight:'140', reps:'5', type:'normal', done:false }];
       if (typeof renderWorkoutSession === 'function') renderWorkoutSession();
       await new Promise(r => setTimeout(r, 500));
       out.draft = !!localStorage.getItem('totry_session_draft');
-      await saveWorkoutSession(); await new Promise(r => setTimeout(r, 1400));
+      // catch what the summary sheet is HANDED, which is where the celebration actually shows
+      const origSummary = window.showWorkoutSummary;
+      window.showWorkoutSummary = function(x){ out.handed = JSON.parse(JSON.stringify(x.prs || []));
+                                               return origSummary.apply(this, arguments); };
+      await saveWorkoutSession(); await new Promise(r => setTimeout(r, 1600));
+      const sheet = document.querySelector('.modal-bg.open');
+      out.banner = sheet ? /NEW PERSONAL RECORD/i.test(sheet.innerText || '') : false;
+      out.bannerUndefined = sheet ? /1RM\s*undefined/i.test(sheet.innerText || '') : false;
       const h = ls('totry_workouts') || [], prs = ls('totry_prs') || {};
       out.after = h.length; out.vol = h[0] && h[0].volume; out.done = h[0] && h[0].completedSets;
       out.src = h[0] && h[0].source;
@@ -2685,14 +2694,215 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
         findings.push(`train-session: a session logged HERE is branded "${gym.src}" — it sends the person to another app to edit it`);
       if (!gym.pr)        findings.push('train-session: 90kg x 5 beat last week and the app never said so — PRs only fire for people who log somewhere else');
       else {
-        if (gym.pr.heaviest !== 90) findings.push(`train-session: the PR recorded ${gym.pr.heaviest}kg, not the 90 actually lifted`);
+        // THE UNTICKED 140 MUST NOT BE IN HERE. It was: one real 85x5 next to a typed-in 140x5 that was
+        // never ticked recorded a 140kg PR at an estimated 163 — a lift he never did, permanent until
+        // beaten, feeding the overload suggestion and making every honest session after it a failure.
+        if (gym.pr.weight === 140 || gym.pr.orm > 120)
+          findings.push(`train-session: a set he never ticked became a personal record — ${gym.pr.weight}kg, est. 1RM ${gym.pr.orm}. He lifted 90.`);
         if (gym.pr.orm !== 105)     findings.push(`train-session: estimated 1RM came out ${gym.pr.orm}, not 105 (Epley on 90x5)`);
       }
+      // The banner under the session's numbers is where a lifter looks. It went EMPTY once, because
+      // one PR pass recorded the record and a second pass then found no improvement to report.
+      if (!gym.handed || !gym.handed.length)
+        findings.push('train-session: the summary was handed no PRs, so the celebration is a toast that vanishes and a banner that never comes');
+      if (!gym.banner)          findings.push('train-session: the post-workout summary shows no NEW PERSONAL RECORD line after a real PR');
+      if (gym.bannerUndefined)  findings.push('train-session: the banner reads "est. 1RM undefined" — the recorder returns e1rm and the banner reads orm');
       if (gym.cleared !== 0) findings.push('train-session: the finished session is still loaded — the next workout starts inside the last one');
     }
     if (errs.length) findings.push(`train-session: page error — ${errs[0]}`);
     if (!findings.some(f => f.startsWith('train-session:')))
       console.log('train-session: added, logged, saved — 900kg of done volume, a 105kg estimated max off a real PR, marked as ours, and the bench cleared for next time');
+    await ctx.close();
+  }
+
+  // ── THE TWO THINGS A BUDGETING APP IS OPENED FOR ───────────────────────────────────────────────
+  // Spending money and paying a bill. Both are asserted on the STORE — a toast saying "Marked paid"
+  // is not the same thing as the bill being paid, and that gap is exactly where a screen looks
+  // finished and isn't. The bill row is also the only money row carrying TWO buttons six pixels
+  // apart (a green tick and a delete), which is why marking one paid is worth driving rather than
+  // trusting: the delete rule's negative margin once reached into the tick.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    const errs = []; page.on('pageerror', e => errs.push(String(e.message).slice(0, 110)));
+    await page.addInitScript(() => {
+      const s = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+      const N = Date.now();
+      s('totry_onboarded', true); s('totry_name', 'Alfy');
+      s('totry_f', { d:[{ n:'Car loan', t:12000, p:3600, r:7.2 }], u:5000, i:6200 });
+      // Six dated payments — monthlyPaymentRate() needs at least two with a real span, and reads
+      // totry_payments/amt (not totry_debt_payments/amount, which is nothing).
+      s('totry_payments', [0,1,2,3,4,5].map(m => ({ n:'Car loan', amt:400,
+        ts:new Date(N - m*30*864e5).toISOString() })));
+      s('totry_bills', [{ id:4001, name:'Rent', amount:1450, due:new Date(N + 2*864e5).toISOString(), paid:false }]);
+      s('totry_transactions', Array.from({ length:5 }, (_, i) => ({ id:i+1, type:'expense', amount:42.5,
+        category:'Food', note:'Coles', ts:new Date(N - i*864e5).toISOString(),
+        date:new Date(N - i*864e5).toLocaleDateString('en-AU') })));
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2900);
+
+    const cash = await page.evaluate(async () => {
+      go('money'); await new Promise(r => setTimeout(r, 1500));
+      const tx = () => (ls('totry_transactions') || []);
+      const out = { before: tx().length };
+      // THE DEBT-FREE DATE HAS TO BE SEEN, NOT JUST COMPUTED. .df-hero is display:none in the
+      // stylesheet; calcDebtFreeDate turns it on and the money gate used to reset it to '' — so which
+      // one ran last decided whether the person saw it, and both are called from several places. On
+      // THIS seed the shipped build wrote "May 2028" and painted it at height 0; on a seed with a vice
+      // and transactions the same build showed it. Asserted on GEOMETRY, because the text being
+      // right is exactly what kept it invisible.
+      // Read on ARRIVAL: opening the logger below re-renders the tab and the measurement stops
+      // meaning what a person actually lands on.
+      const df = document.getElementById('df-hero');
+      out.dfHeight = df ? Math.round(df.getBoundingClientRect().height) : 0;
+      out.dfDate = (document.getElementById('df-date') || {}).textContent || '';
+      openTransactionLogger(); await new Promise(r => setTimeout(r, 700));
+      const m = document.querySelector('.modal-bg.open');
+      out.opened = !!m;
+      if (m) {
+        const amt = m.querySelector('#trans-amount');
+        if (amt) { amt.value = '18.40'; amt.dispatchEvent(new Event('input', { bubbles:true })); }
+        // the category is a chip, and saveTransaction refuses without one — on purpose
+        const chip = [...m.querySelectorAll("[onclick*='Category'],[onclick*='category']")]
+          .find(e => e.getBoundingClientRect().height > 0);
+        out.chip = chip ? (chip.innerText || '').trim().slice(0, 14) : null;
+        if (chip) chip.click();
+        await new Promise(r => setTimeout(r, 300));
+        saveTransaction(); await new Promise(r => setTimeout(r, 800));
+      }
+      out.after = tx().length;
+      const n = tx()[0] || {};
+      out.amount = n.amount; out.category = n.category; out.type = n.type;
+      out.billBefore = (ls('totry_bills') || [])[0].paid;
+      markBillPaid(4001); await new Promise(r => setTimeout(r, 900));
+      const c = document.querySelector('.modal-bg.open');
+      if (c) { const y = [...c.querySelectorAll('button')].find(e => /yes|paid|confirm/i.test(e.innerText || '')); if (y) y.click(); }
+      await new Promise(r => setTimeout(r, 700));
+      const bill = (ls('totry_bills') || [])[0];
+      out.billAfter = bill.paid; out.billStamped = !!bill.paidAt;
+      return out;
+    });
+
+    if (!cash.opened)          findings.push('money-daily: the expense logger opens nothing');
+    else if (!cash.chip)       findings.push('money-daily: the logger has no category chip, and it refuses to save without one');
+    else {
+      if (cash.after !== cash.before + 1) findings.push('money-daily: logging an expense put nothing in the ledger');
+      if (cash.amount !== 18.4)  findings.push(`money-daily: 18.40 was logged as ${cash.amount}`);
+      if (cash.type !== 'expense') findings.push(`money-daily: an expense was stored as "${cash.type}" — a debit read as income once already`);
+      if (!cash.category)        findings.push('money-daily: the expense saved with no category, so it counts toward nothing');
+    }
+    if (!cash.dfDate || cash.dfDate === '\u2014')
+      findings.push('money-daily: no debt-free date was computed from six months of dated payments');
+    else if (cash.dfHeight < 20)
+      findings.push(`money-daily: the debt-free date says "${cash.dfDate}" and is ${cash.dfHeight}px tall — computed for the person, then hidden from them`);
+    if (cash.billBefore !== false) findings.push('money-daily: the bill was already paid before the test touched it');
+    if (cash.billAfter !== true)   findings.push('money-daily: marking a bill paid did not stick — the reminder will fire again for a bill already settled');
+    if (!cash.billStamped)         findings.push('money-daily: a paid bill carries no paidAt, so nothing can say when it was settled');
+    if (errs.length)               findings.push(`money-daily: page error — ${errs[0]}`);
+    if (!findings.some(f => f.startsWith('money-daily:')))
+      console.log('money-daily: $18.40 lands in the ledger as an expense under its category, and a bill marked paid stays paid and stamped');
+    await ctx.close();
+  }
+
+  // ── THE BODY SCREEN MUST NOT TELL A PERSON SOMETHING IT DOES NOT KNOW ──────────────────────────
+  // This is the screen where someone reads a number about their own body and believes it, so every
+  // claim on it has to be earned. Four ways it was not:
+  //   · a BMI and a word — "Overweight" — computed from `ls('totry_height')||175` for a person the app
+  //     had never asked. The same 86kg is 30.5 "Obese" at 168cm and 23.8 "Healthy" at 190cm, so the
+  //     label was as likely wrong as right. It now ASKS, and the ask opens the collapsed Preferences
+  //     fold the field hides in — landing on Settings with it still folded away is a dead end.
+  //   · deleting every weigh-in left the tiles and the trend chart exactly as they were: a current
+  //     weight, a change, and a body judgement built from numbers the person had just removed.
+  //   · the Sunday check-in took any number at all, while the other three weigh-in doors all enforce
+  //     20-400. One missed decimal (854 for 85.4) went in silently and feeds the calorie maths.
+  //   · the projection printed "About 9 July" for a date in 2028.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    const errs = []; page.on('pageerror', e => errs.push(String(e.message).slice(0, 110)));
+    await page.addInitScript(() => {
+      const s = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+      s('totry_onboarded', true); s('totry_name', 'Alfy'); s('totry_sex', 'male');
+      s('totry_body', [{ weight:86, ts:new Date().toISOString() },
+                       { weight:86.5, ts:new Date(Date.now() - 7*864e5).toISOString() }]);
+      s('totry_nut_macros', { cal:2400, pro:180, carb:250, fat:70 });
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2800);
+
+    const body = await page.evaluate(async () => {
+      go('track'); await new Promise(r => setTimeout(r, 1200));
+      const out = {};
+      const tile = id => { const e = document.getElementById(id); return e ? (e.textContent||'').trim() : '?'; };
+      const chart = () => { const e = document.getElementById('weight-chart');
+                            return e ? (e.textContent||'').replace(/\s+/g,' ').trim() : ''; };
+
+      // 1. no height on file — an ask, not a verdict
+      out.bmiNoHeight = tile('bod-bmi');
+      const bmiEl = document.getElementById('bod-bmi');
+      out.bmiTappable = !!(bmiEl && bmiEl.onclick);
+
+      // 2. the weekly check-in refuses a weight that cannot be a body, and keeps what they wrote
+      const wf = document.getElementById('bod-weight');
+      const win = document.getElementById('wk-win');
+      if (wf && win) {
+        win.value = 'Walked every day'; win.dispatchEvent(new Event('input', { bubbles:true }));
+        wf.value = '854'; wf.dispatchEvent(new Event('input', { bubbles:true }));
+        const n0 = (ls('totry_body')||[]).length;
+        await logBody(); await new Promise(r => setTimeout(r, 800));
+        out.fatFingerAdded = (ls('totry_body')||[]).length - n0;
+        out.reflectionKept = (document.getElementById('wk-win')||{}).value === 'Walked every day';
+        wf.value = '85.4'; wf.dispatchEvent(new Event('input', { bubbles:true }));
+        await logBody(); await new Promise(r => setTimeout(r, 800));
+        out.honestAdded = (ls('totry_body')||[]).length - n0;
+      }
+
+      // 3. delete every weigh-in — the tiles and the chart must go with them.
+      // Clear the way first: logging leaves its own sheet up, and a stray .modal-bg.open makes the
+      // confirm click below land on the wrong dialog — which reads exactly like a delete that does
+      // not work, and is not one.
+      document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
+      await new Promise(r => setTimeout(r, 300));
+      out.tilesBefore = tile('bod-cur'); out.chartBefore = chart();
+      for (const e of [...(ls('totry_body')||[])]) {
+        deleteWeightEntry(e.ts || e.date);
+        await new Promise(r => setTimeout(r, 450));
+        // match the dialog by its own words, not by being the only one on screen
+        const dlg = [...document.querySelectorAll('.modal-bg.open')]
+          .find(m => /weigh-in|delete/i.test(m.innerText || ''));
+        if (dlg) { const yes = [...dlg.querySelectorAll('button')]
+          .find(x => /delete|yes|confirm/i.test(x.innerText || '')); if (yes) yes.click(); }
+        await new Promise(r => setTimeout(r, 650));
+      }
+      out.stored = (ls('totry_body')||[]).length;
+      out.tilesAfter = tile('bod-cur'); out.bmiAfter = tile('bod-bmi'); out.chartAfter = chart();
+      return out;
+    });
+
+    if (!/add your height/i.test(body.bmiNoHeight))
+      findings.push(`body-truth: with no height on file the screen still judges the body — "${body.bmiNoHeight}"`);
+    if (!body.bmiTappable)
+      findings.push('body-truth: the height prompt is not tappable — it reports a gap instead of closing it');
+    if (body.fatFingerAdded !== 0)
+      findings.push('body-truth: the weekly check-in accepted 854kg, and that weight feeds the calorie maths');
+    if (!body.reflectionKept)
+      findings.push('body-truth: refusing the weight also threw away the reflection they had written');
+    if (body.honestAdded !== 1)
+      findings.push(`body-truth: an honest 85.4kg was not accepted (${body.honestAdded} entries added)`);
+    if (body.stored !== 0)
+      findings.push('body-truth: the weigh-ins were not actually deleted');
+    else {
+      if (!/^[—–-]?$/.test(body.tilesAfter))
+        findings.push(`body-truth: every weigh-in deleted and the tile still reads "${body.tilesAfter}"`);
+      if (body.bmiAfter && !/add your height/i.test(body.bmiAfter))
+        findings.push(`body-truth: every weigh-in deleted and the BMI still reads "${body.bmiAfter}"`);
+      if (body.chartAfter)
+        findings.push(`body-truth: the trend chart still plots deleted weigh-ins — "${body.chartAfter}"`);
+    }
+    if (errs.length) findings.push(`body-truth: page error — ${errs[0]}`);
+    if (!findings.some(f => f.startsWith('body-truth:')))
+      console.log('body-truth: no height means it asks instead of judging, 854kg is refused with the reflection kept, and deleting the last weigh-in takes the tiles and the chart with it');
     await ctx.close();
   }
 
@@ -2897,7 +3107,10 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       const tx = [];
       for (let m = 0; m < 4; m++) {
         tx.push({ id:'n'+m, type:'expense', amount:17.99, category:'Entertainment',
-                  desc:'NETFLIX.COM SYDNEY', ts:new Date(N - m*30*864e5).toISOString() });
+                  // `note` is what saveTransaction writes; `desc` only ever comes from the CSV importer.
+                  // Seeding desc alone is how this group passed over a detector that could not see a
+                  // single hand-logged expense.
+                  note:'NETFLIX.COM SYDNEY', ts:new Date(N - m*30*864e5).toISOString() });
         tx.push({ id:'s'+m, type:'expense', amount:12.99, category:'Music',
                   desc:'Spotify P'+(1000+m), ts:new Date(N - m*30*864e5).toISOString() });
         // the decoy: same merchant, every few days, a different amount every time
@@ -3237,6 +3450,28 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
         localStorage.setItem('totry_faith_level', JSON.stringify('full')); }, t);
       await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
       await page.waitForTimeout(2500);
+      const conscience = await page.evaluate(() => {
+        // The weekly review swapped its CLOSING PRAYER per tradition and left the six questions above
+        // it alone — so a Buddhist read a reflection written for them and, four lines higher, was
+        // asked "Did I honour God in how I spent my time?" under the Catholic heading "Examination of
+        // conscience". Five of the six are about a life anyone is living and stay as they are; this
+        // checks the one that names a God, and the heading, belong to the person reading them.
+        try { if (typeof applyFaithReflect === 'function') applyFaithReflect(); } catch (e) {}
+        const qs = [...document.querySelectorAll('.conscience-q')].map(e => (e.textContent||'').trim());
+        return { qs, count: qs.length,
+                 label: (document.getElementById('wk-conscience-label')||{}).textContent || '' };
+      });
+      const otherGod = { christianity:/\bAllah\b|\bdharma\b/, islam:/\bGod\b|\bdharma\b/,
+                         hinduism:/\bGod\b|\bAllah\b/, buddhism:/\bGod\b|\bAllah\b|\bdharma\b/,
+                         secular:/\bGod\b|\bAllah\b|\bdharma\b/ }[t];
+      if (conscience.count !== 6)
+        findings.push(`faith: the weekly review shows ${conscience.count} conscience questions, not 6`);
+      const stray = conscience.qs.find(q => otherGod && otherGod.test(q));
+      if (stray)
+        findings.push(`faith: a ${t} person is asked "${stray.slice(0,52)}" in the weekly review`);
+      if (t !== 'christianity' && /Examination of conscience/i.test(conscience.label))
+        findings.push(`faith: a ${t} person reads the Catholic heading "Examination of conscience"`);
+
       const r = await page.evaluate(() => { go('soul');
         return new Promise(res => setTimeout(() => {
           const d = document.getElementById('hub-fast-desc');

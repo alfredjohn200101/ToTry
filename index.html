@@ -4006,13 +4006,13 @@ Amen.</div></div>
     <textarea id="review-proud" placeholder="What are you genuinely proud of this week?" style="height:70px;resize:none;margin-bottom:10px"></textarea>
     <div class="lbl">Next week I will focus on</div>
     <textarea id="review-focus" placeholder="One thing that needs your most attention..." style="height:70px;resize:none;margin-bottom:12px"></textarea>
-    <div class="lbl">Examination of conscience</div>
+    <div class="lbl" id="wk-conscience-label">Examination of conscience</div>
     
   <div class="card" style="margin-bottom:12px">
       <div class="conscience-q">Did I give in to any vice I wish I hadn't?</div>
       <div class="conscience-q">Was I honest with myself and others?</div>
       <div class="conscience-q">Did I treat the people around me with patience and respect?</div>
-      <div class="conscience-q">Did I honour God in how I spent my time?</div>
+      <div class="conscience-q" id="wk-conscience-faith">Did I honour God in how I spent my time?</div>
       <div class="conscience-q">Did I do what I said I would do?</div>
       <div class="conscience-q">What did I avoid that I knew I needed to face?</div>
     </div>
@@ -5287,7 +5287,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v567';
+const APP_VERSION = 'v568';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5687,7 +5687,9 @@ const SYNC_KEYS = [
   'totry_cal_cycling',
   // Money × Soul — the season you keep and what you give away
   'totry_fast_season','totry_giving','totry_giving_pledge','totry_zakat',
-  'totry_rosaries',
+  // A walked rosary was recorded and a completed tasbih, japa, mettā or stillness sit was not —
+  // so the same practice counted as the day's prayer for a Catholic and vanished for everyone else.
+  'totry_rosaries','totry_practices',
   // Values card sort (their own standard) + the loving-kindness/blessing log.
   'totry_values','totry_blessings',
   // Three good things — the evening's gratitude, incl. who it was about and whether it got said.
@@ -10724,6 +10726,19 @@ const _WK_PRAYERS={
   buddhism:{lbl:'Closing reflection',text:'A week has passed —\nwhat went well, and what I struggled with.\nI hold it all with an even mind, without clinging or aversion.\nAs a new week begins, may I return, again and again, to the present.'},
   secular:{lbl:'Closing reflection',text:'A week has passed —\nwhat I did well, and where I fell short.\nI’m grateful for the resolve that held when I nearly let go.\nAs a new week begins, I choose to be a little better than the last.'}
 };
+// The weekly review's CLOSING PRAYER was swapped per tradition and the six questions above it were
+// not — so on one card a Buddhist read a closing reflection written for them and, four lines higher,
+// was asked "Did I honour God in how I spent my time?" under the heading "Examination of conscience",
+// which is itself a Catholic term. Five of the six questions are about a life anyone is living — vice,
+// honesty, patience, keeping your word, what you avoided — and they stay exactly as they are. Only the
+// one that names God, and the heading, belong to a tradition.
+const _WK_CONSCIENCE={
+  christianity:{lbl:'Examination of conscience', q:'Did I honour God in how I spent my time?'},
+  islam:{lbl:'Muhasabah \u2014 taking account of yourself', q:'Did I honour Allah in how I spent my time?'},
+  hinduism:{lbl:'Self-examination', q:'Did I live in line with my dharma in how I spent my time?'},
+  buddhism:{lbl:'Looking back honestly', q:'Did I spend my time with intention, or let it slip past me?'},
+  secular:{lbl:'An honest look back', q:'Did I spend my time on what actually matters to me?'}
+};
 function applyFaithReflect(){
   try{
     const t=faithTradition();
@@ -10731,6 +10746,8 @@ function applyFaithReflect(){
     const set=(id,txt)=>{ const el=document.getElementById(id); if(el) el.textContent=txt; };
     set('eve-prayer-label',e.lbl); set('eve-prayer-text',e.text);
     set('wk-prayer-label',w.lbl); set('wk-prayer-text',w.text);
+    const c=_WK_CONSCIENCE[t]||_WK_CONSCIENCE.christianity;
+    set('wk-conscience-label',c.lbl); set('wk-conscience-faith',c.q);
   }catch(_){}
 }
 
@@ -11337,8 +11354,27 @@ function _practiceTap(){
     if(st.phase<phases.length-1){ st.phase++; st.count=0; if(typeof haptic==='function') haptic('success'); _paintPractice(); }
     else {
       if(typeof haptic==='function') haptic('success');
+      // RECORD IT, THE WAY A ROSARY IS RECORDED. A Catholic who walks the rosary has it written to
+      // totry_rosaries, is told "that's N rosaries walked with Our Lady", and Home stops asking him to
+      // pray. A Muslim who taps a hundred times through the full tasbih — or a Hindu through 108 japa,
+      // or anyone through mettā or a stillness sit — got a card and nothing else: not one byte written,
+      // and Home still said "Take a moment to pray" to someone who had just spent ten minutes praying.
+      // Measured by diffing the whole of localStorage across a completed tasbih: changed=[], added=[].
+      // Best-effort inside its own try, on the rosary's principle: a failed write must never rob a
+      // person of the moment. prayedToday in 31-nextstep.js reads this key, so it is not another
+      // write nobody looks at.
+      let _n = 0;
+      try{
+        const _list = ls('totry_practices') || [];
+        _list.unshift({ ts:new Date().toISOString(), kind:st.kind });
+        ls('totry_practices', _list.slice(0,500));
+        _n = _list.length;
+        if(typeof logEvent==='function') logEvent('practice_complete');
+        if(typeof syncToCloud==='function') syncToCloud();
+      }catch(_){ }
+      const _kept = _n ? '<div style="font-size:12px;color:var(--go);margin-bottom:16px">That’s '+_n+' kept.</div>' : '';
       const el=document.getElementById('practice-content');
-      if(el) el.innerHTML='<div class="card" style="text-align:center;padding:32px 20px"><div style="font-size:34px;margin-bottom:10px">✓</div><div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:8px">'+cfg.done+'</div><div style="font-size:13px;color:var(--tx3);margin-bottom:18px">'+cfg.doneSub+'</div><button class="btn primary" onclick="_renderPractice(\''+st.kind+'\')" style="max-width:200px;margin:0 auto">Again</button></div>';
+      if(el) el.innerHTML='<div class="card" style="text-align:center;padding:32px 20px"><div style="font-size:34px;margin-bottom:10px">✓</div><div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:8px">'+cfg.done+'</div><div style="font-size:13px;color:var(--tx3);margin-bottom:18px">'+cfg.doneSub+'</div>'+_kept+'<button class="btn primary" onclick="_renderPractice(\''+st.kind+'\')" style="max-width:200px;margin:0 auto">Again</button></div>';
     }
   } else {
     const c=document.getElementById('practice-count'); if(c) c.textContent=st.count; else _paintPractice();
@@ -21147,6 +21183,23 @@ function renderSavedVerses(containerId){
   });
 }
 
+// THE SHELF IS PAINTED IN TWO PLACES AND ONLY ONE OF THEM WAS EVER REPAINTED.
+// renderSavedVerses() with no argument falls back to 'saved-verses-list' — the container in the
+// Christian Word tab. A Muslim, Hindu, Buddhist or secular person reads from openReader(), which
+// paints 'read-saved-list' instead. So deleting a passage there wrote the change to storage, repainted
+// a container on a tab they were not looking at, and left theirs untouched: the deleted passage still
+// listed, and every × still carrying its OLD index. Tapping the same × again — the natural thing to do
+// when nothing happened — deleted a DIFFERENT passage. Measured on three saved surahs: the first tap
+// removed 12:53 from storage while the screen stayed byte-identical, and the second tap on the row
+// still labelled 12:53 removed 2:286. Someone can shred the whole shelf while the screen tells them
+// nothing has changed.
+// The old comment here said "Force re-render immediately so indices realign", which is exactly what
+// it failed to do — intent, not behaviour.
+function renderSavedVersesEverywhere(){
+  ['saved-verses-list', 'read-saved-list'].forEach(function(id){
+    if(document.getElementById(id)) renderSavedVerses(id);
+  });
+}
 async function deleteSavedVerse(idx){
   // A one-tap destructive action on a glyph a few pixels wide, with no undo anywhere in the app.
   if(!(await askConfirm('Remove this from your saved verses?'))) return;
@@ -21155,13 +21208,13 @@ async function deleteSavedVerse(idx){
   const removed = saved[idx];
   saved.splice(idx, 1);
   ls('totry_sv', saved);
-  // Force re-render immediately so indices realign
-  renderSavedVerses();
+  // Repaint every shelf that exists, so the one the person is looking at is always among them.
+  renderSavedVersesEverywhere();
   showUndo('Verse removed', () => {
     const cur = ls('totry_sv') || [];
     cur.splice(idx, 0, removed);
     ls('totry_sv', cur);
-    renderSavedVerses();
+    renderSavedVersesEverywhere();
   });
 }
 
@@ -22792,6 +22845,16 @@ async function logBody(){
   try{ if(typeof detectCrisis === 'function') _wkCrisis = detectCrisis([winText, struggleText, focusText].filter(Boolean).join(' ')); }catch(_){ }
 
   
+  // THE SAME 20-400 BAND THE OTHER THREE WEIGH-IN DOORS ENFORCE. saveQuickWeight and both import
+  // paths all refuse a number outside it; this door — the Sunday check-in — took anything. A missed
+  // decimal point (854 for 85.4) was accepted in silence and did not stop at a wrong tile: the weight
+  // feeds the calorie and macro maths, so one fat-finger permanently rewrote the daily targets, and
+  // the person is then coached against them. Weight is OPTIONAL here, so a blank field still passes —
+  // it is only a number that cannot be a body that is refused.
+  if(w && (w < 20 || w > 400)){
+    showToast('Check that weight', 'Between ' + wFmt(20, {round:0}) + ' and ' + wFmt(400, {round:0}) + '. Nothing else you typed is lost.');
+    return;
+  }
   // Require AT LEAST weight OR scores OR text - some data to be useful
   const hasAnyData = w > 0 || trainScore || winText || struggleText || focusText;
   if(!hasAnyData){
@@ -23227,7 +23290,13 @@ function renderBodyGoalCard(){
     head = 'You are there.'; col = 'var(--gr)';
     body = 'Holding at ' + wf(p.now) + '. The work now is staying, which is its own kind of work.';
   } else if(p.kind === 'onTrack'){
-    const d = p.eta.toLocaleDateString('en-AU', { day:'numeric', month:'long' });
+    // Carry the year whenever the target is not in THIS one. A projection is the only future date the
+    // app prints, and at a slow honest pace it can land years out: "About 9 July" for 9 July 2028 reads
+    // as next summer, which flatters the plan by nearly two years. Every other date here is today or
+    // the past, where the year would only be noise — this is the one that needs it.
+    const d = p.eta.toLocaleDateString('en-AU', (p.eta.getFullYear() === new Date().getFullYear())
+      ? { day:'numeric', month:'long' }
+      : { day:'numeric', month:'long', year:'numeric' });
     head = 'About ' + d; col = 'var(--gr)';
     body = 'At your own pace of ' + rateTxt + ' a week — ' + p.weeks + ' week' + (p.weeks===1?'':'s') +
            ' from here. That is the trend, not one weigh-in, so a heavy day does not move it.';
@@ -23437,9 +23506,52 @@ function renderBody(){
     document.getElementById('bod-cur').textContent=wFmt(cur);
     document.getElementById('bod-st').textContent=wFmt(start);
     document.getElementById('bod-lo').textContent=wDelta(diff, {zero:'\u2014'});
-    const h=ls('totry_height')||175;const bmi=Math.round((cur/((h/100)**2))*10)/10;
-    const bmiEl=document.getElementById('bod-bmi');
-    if(bmiEl)bmiEl.textContent=bmi+' ('+(bmi<18.5?'Underweight':bmi<25?'Healthy':bmi<30?'Overweight':'Obese')+')';
+    // NO HEIGHT, NO VERDICT. `||175` meant a person who never opened Settings got a BMI and a
+    // categorical judgement about their body computed from a height the app invented. At 86kg it read
+    // "28.1 (Overweight)"; the same 86kg at a real 168cm is 30.5 and at 190cm is 23.8 — so the label
+    // was as likely to be wrong as right, and it is exactly the kind of number a person believes.
+    // The app already has a place to put a real height (Settings → Height (for BMI)); this asks for it
+    // instead of guessing, and the ask is tappable, because a line that only reports is not finished.
+    const h = parseFloat(ls('totry_height')) || 0;
+    const bmiEl = document.getElementById('bod-bmi');
+    if(bmiEl){
+      if(h > 0){
+        const bmi = Math.round((cur/((h/100)**2))*10)/10;
+        bmiEl.textContent = bmi+' ('+(bmi<18.5?'Underweight':bmi<25?'Healthy':bmi<30?'Overweight':'Obese')+')';
+        bmiEl.onclick = null; bmiEl.style.cursor = ''; bmiEl.removeAttribute('role');
+      } else {
+        bmiEl.textContent = 'Add your height for BMI';
+        bmiEl.style.cursor = 'pointer';
+        bmiEl.setAttribute('role','button');
+        bmiEl.onclick = function(){
+          try{
+            if(typeof go === 'function') go('settings');
+            // The field lives inside the collapsed "Preferences" fold, so landing on Settings is not
+            // the same as arriving somewhere useful: checkVisibility() on it reads false while it
+            // still reports a 34px box, which is the closed-<details> phantom. Open the fold, then
+            // scroll. Focus is deliberately not attempted — the tab switch takes it back every time,
+            // measured at 200/420/700/1200ms, and a focus that silently loses is worse than none.
+            setTimeout(function(){
+              const f = document.getElementById('settings-height');
+              if(!f) return;
+              const fold = f.closest('details');
+              if(fold) fold.open = true;
+              f.scrollIntoView({ block:'center' });
+            }, 420);
+          }catch(_){ }
+        };
+      }
+    }
+  } else {
+    // DELETING THE LAST WEIGH-IN HAS TO CLEAR WHAT IT PRODUCED. These blocks only ever wrote, never
+    // cleared, so the tiles kept whatever the previous render put there. Measured: both weigh-ins
+    // deleted, totry_body empty, and the screen still read a current weight, a change, and
+    // "28.2 (Overweight)" — a categorical judgement about a body, computed from numbers the person
+    // had just deliberately removed. The history list below already had its empty state; these did not.
+    ['bod-cur','bod-st','bod-lo'].forEach(function(id){
+      const el = document.getElementById(id); if(el) el.textContent = '\u2014';
+    });
+    const bmiEmpty = document.getElementById('bod-bmi'); if(bmiEmpty) bmiEmpty.textContent = '';
   }
   if(weighed.length>=2){
     const pts=weighed.slice(0,12).reverse(),weights=pts.map(e=>e.weight),mn=Math.min(...weights),mx=Math.max(...weights),range=mx-mn||1,W=340,H=90,pad=12;
@@ -23447,6 +23559,10 @@ function renderBody(){
     const pathD=pts.map((p,i)=>(i===0?'M':'L')+x(i).toFixed(1)+','+y(p.weight).toFixed(1)).join(' ');
     const svg=document.getElementById('weight-chart');
     if(svg)svg.innerHTML='<defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5BB97D" stop-opacity="0.25"/><stop offset="100%" stop-color="#5BB97D" stop-opacity="0"/></linearGradient></defs><path d="'+pathD+' L'+x(pts.length-1).toFixed(1)+','+H+' L'+x(0).toFixed(1)+','+H+' Z" fill="url(#wg)"/><path d="'+pathD+'" stroke="#5BB97D" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+pts.map((p,i)=>'<circle cx="'+x(i).toFixed(1)+'" cy="'+y(p.weight).toFixed(1)+'" r="3.5" fill="#5BB97D"/><text x="'+x(i).toFixed(1)+'" y="'+(y(p.weight)-8).toFixed(1)+'" text-anchor="middle" fill="rgba(242,239,232,0.4)" font-size="8" font-family="DM Mono,monospace">'+((typeof wFmt==='function')?wFmt(p.weight,{bare:true}):p.weight)+'</text>').join('');
+  } else {
+    // Same for the trend line, and note the threshold is >= 2: one weigh-in is not a trend, so a chart
+    // left over from when there were two is a line the person's data no longer supports.
+    const svgEmpty = document.getElementById('weight-chart'); if(svgEmpty) svgEmpty.innerHTML = '';
   }
   const hist=document.getElementById('body-history');
   if(hist){
@@ -23562,10 +23678,15 @@ function openQuickWeightLog(){
     '<h3 style="margin-bottom:6px">Log today\'s weight</h3>' +
     '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Just the number. The deeper check-in is for Sundays.</p>' +
     '<div style="margin-bottom:14px">' +
-      '<label style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;display:block">Weight (kg)</label>' +
+      // The placeholder beneath this label is already converted (wFmt), and saveQuickWeight already
+      // reads the field as the person's own unit (dispToKg). Only the two DISPLAY strings were left
+      // hardcoded — so a lb user opened this modal to a label reading "Weight (kg)" above a pounds
+      // placeholder of 189.6, and an "already logged" line quoting the raw kilograms. Three units in
+      // one small box, on the screen where a person is asked to trust a number about their own body.
+      '<label style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;display:block">Weight (' + wUnit() + ')</label>' +
       '<input type="number" id="quick-weight-in" step="0.1" inputmode="decimal" placeholder="' + (last?.weight != null ? wFmt(last.weight, {bare:true}) : wFmt(75, {bare:true})) + '" style="width:100%;font-size:24px;text-align:center;padding:14px;font-family:DM Mono,monospace" autofocus>' +
     '</div>' +
-    (todayEntry && todayEntry.weight > 0 ? '<p style="font-size:11px;color:var(--go);margin-bottom:10px;text-align:center">Already logged today: ' + todayEntry.weight + 'kg — this will replace it.</p>' : '') +
+    (todayEntry && todayEntry.weight > 0 ? '<p style="font-size:11px;color:var(--go);margin-bottom:10px;text-align:center">Already logged today: ' + wFmt(todayEntry.weight) + ' — this will replace it.</p>' : '') +
     '<div style="display:flex;gap:8px">' +
       '<button class="btn primary" style="flex:1" onclick="saveQuickWeight()">Save</button>' +
       '<button class="btn" style="flex:1" onclick="closeModal(this)">Cancel</button>' +
@@ -29513,12 +29634,24 @@ function renderReclaimedBuysFreedom(){
 
 function calcDebtFreeDate(){
   loadF();
-  const owed=debts.reduce((a,d)=>a+_debtBalance(d),0); if(owed<=0) return;
-  const rate=monthlyPaymentRate(); if(!rate) return;      // needs dated history to be honest
+  // THIS FUNCTION OWNS WHETHER THE HERO IS SEEN. It used to only ever turn it ON, and left every early
+  // return to whatever the last render had set — while renderMoneyGate reset it to '' for any
+  // non-empty person, which for .df-hero is `display:none` in the stylesheet, not "the default".
+  // So whether the date was visible came down to which of the two ran LAST, and both are called from
+  // more than one place. Measured on a debt with six months of dated payments: "May 2028 — ~21 months
+  // at $406/month" written correctly into the DOM and painted at height 0 — while the same build with
+  // a vice and transactions seeded showed it at 98px. A number that appears or not depending on what
+  // else the person happens to have logged is not a feature, it is a coin toss. Now it is neither
+  // function's opinion: this one decides, on every path.
+  const _df = document.getElementById('df-hero');
+  const _hideDF = function(){ if(_df) _df.style.display = 'none'; };
+  const owed=debts.reduce((a,d)=>a+_debtBalance(d),0); if(owed<=0){ _hideDF(); return; }
+  const rate=monthlyPaymentRate(); if(!rate){ _hideDF(); return; }   // needs dated history to be honest
   const strategy=ls('totry_debt_strategy')||'snowball';
   const proj=projectPayoff(debts, rate, strategy);
-  if(!proj) return;
-  const dh=document.getElementById('df-hero'); if(dh) dh.style.display='block';
+  if(!proj){ _hideDF(); return; }
+  if(_df) _df.style.display='block';
+  const dh=_df;
   const dd=document.getElementById('df-date');
   const ddesc=document.getElementById('df-desc');
   // The honest case first: if the payment can't cover the interest, there IS no freedom date yet.
@@ -29604,7 +29737,11 @@ function renderMoneyGate(){
 
   // The empty-state heroes are the ones that lie loudest — a debt-free date of "—" and $0
   // reclaimed read as "all good" to someone who has never told the app anything.
-  ['df-hero','saved-hero'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display = empty ? 'none' : ''; });
+  // saved-hero has no display rule of its own, so '' genuinely restores it. df-hero does
+  // (display:none), so '' HIDES it — undoing calcDebtFreeDate, which is the only thing that knows
+  // whether there is an honest date to show. Force the hide here; leave the show to it.
+  const _sh = document.getElementById('saved-hero'); if(_sh) _sh.style.display = empty ? 'none' : '';
+  const _dfh = document.getElementById('df-hero');   if(_dfh && empty) _dfh.style.display = 'none';
   const mg = document.querySelector('#tab-money .mg'); if(mg) mg.style.display = empty ? 'none' : '';
 
   // Thirteen fully-built empty forms used to sit directly beneath the sentence "I don't know anything
@@ -31809,7 +31946,12 @@ function detectRecurringCharges(){
     const dismissed = ls('totry_sub_dismissed') || [];
     const groups = {};
     tx.forEach(function(t){
-      const k = _subMerchantKey(t.desc || t.description);
+      // THE IN-APP LOGGER WRITES `note`, NOT `desc`. Only the CSV importer writes desc, so this saw
+      // imported rows and was blind to every expense the person typed in themselves — which is most of
+      // them. The feature reported "no forgotten charges" to someone paying for four.
+      // My own test seeded `desc:` here, matching this reader instead of saveTransaction's writer, and
+      // went green over a detector that could not fire. Grep the ls(...,write) site, never memory.
+      const k = _subMerchantKey(t.desc || t.description || t.note);
       if(k.length < 3) return;
       (groups[k] = groups[k] || []).push(t);
     });
@@ -32651,6 +32793,22 @@ function detectAndRecordPRs(exercises, opts){
     let bestE = 0, bestW = 0, bestR = 0, heaviest = 0, heaviestReps = 0;
     (ex.sets || []).forEach(s => {
       if(s.type && /warm/i.test(s.type)) return; // warmups don't set PRs
+      // AND NEITHER IS A SET YOU HAVE NOT DONE. This only ever ran on Hevy imports, where every set
+      // is completed by definition, so the missing check never showed. v566 routed our own save
+      // through here too — and an in-app session carries the sets you PLANNED, unticked, sitting on
+      // screen exactly as you left them. Measured: one real set of 85x5, plus a 140x5 typed in and
+      // never ticked, recorded a personal record of 140kg and an estimated max of 163. A lift he
+      // never did, permanent (records only move when beaten), feeding overloadSuggestion, and making
+      // every honest session afterwards look like a failure. The session's own volume already got
+      // this right — 425kg, the done set only — which is what made it invisible.
+      // Every writer sets the flag: in-app starts false until ticked, Hevy and the screenshot parser
+      // stamp true. Verified by driving all three — Hevy 120x3 and a parsed Deadlift 180x3 both still
+      // record; only a set carrying NO flag at all is skipped, which today nothing produces.
+      // `!s.done` and not `s.done === false` on purpose: an unflagged set is of unknown provenance, and
+      // a missed record is recoverable where a claimed one is a lie that stands until it is beaten.
+      // This is also the stricter of the two gates the app used to have — the one in-app saves always
+      // had, before v566 routed them through this function instead.
+      if(!s.done) return;
       const w = parseFloat(s.weight)||0, r = parseInt(s.reps)||0;
       const e = estE1RM(w, r);
       if(e > bestE){ bestE = e; bestW = w; bestR = r; }
@@ -35410,21 +35568,24 @@ async function saveWorkoutSession(){
   // app, on this screen, with these sets, never got one. The whole reason a lifter opens Strong twice
   // is that it tells them when they have just done something they have never done before, and ours
   // told only the people who lift somewhere else. Detect on OUR save too, from the same function.
+  let prHit = [];
   if(_saved !== false){
     try{
-      const hit = (typeof detectAndRecordPRs === 'function')
-        ? detectAndRecordPRs(session.exercises || []) : [];
-      if(hit && hit.length){
-        const top = hit.slice().sort((a,b) => (b.e1rm||0) - (a.e1rm||0))[0];
-        const more = hit.length > 1 ? (' and ' + (hit.length-1) + ' more') : '';
-        setTimeout(function(){
-          if(typeof showToast === 'function')
-            showToast('New PR \u{1F3C6}', top.name + ' \u2014 est. 1RM ' +
-              ((typeof wFmt === 'function') ? wFmt(top.e1rm) : (Math.round(top.e1rm) + 'kg')) + more + '.');
-          if(typeof haptic === 'function') haptic('success');
-        }, 900);
-      }
-    }catch(_){ }
+      // THE SUMMARY SHEET IS THE CELEBRATION — a gold "NEW PERSONAL RECORD" line under the session's
+      // own numbers, which is where a lifter looks when they finish. v566 put a toast here instead,
+      // and did something worse on the way: by recording the PR first it left updatePersonalRecords
+      // with no improvement to find, so that call returned nothing and the banner went EMPTY.
+      // Measured — 90kg x 5 against last week's 80 x 5: the summary read "1 EXERCISES / NOW FUEL IT"
+      // where it used to read "1 EXERCISES / 🏆 NEW PERSONAL RECORD Bench Press — est. 1RM 105".
+      // The fix that finally told in-app lifters about their PRs had quietly removed the place those
+      // PRs had always been shown. Detect once, here, and hand the result down.
+      // detectAndRecordPRs returns e1rm; the banner reads .orm — mapped, not renamed, because the
+      // stored record and the two Hevy callers both speak e1rm. Lifted load stays kg on purpose.
+      prHit = ((typeof detectAndRecordPRs === 'function')
+        ? (detectAndRecordPRs(session.exercises || []) || []) : [])
+        .map(function(p){ return { name: p.name, orm: Math.round(p.e1rm || 0) }; });
+      if(prHit.length && typeof haptic === 'function') haptic('success');
+    }catch(_){ prHit = []; }
   }
   if(_saved === false){
     // Keep everything. The session is still in currentSession and still in the draft, so they can
@@ -35437,12 +35598,15 @@ async function saveWorkoutSession(){
   if(typeof logEvent==='function') logEvent('workout_logged');
   // Mirror it into Apple Health, if they turned that on. Fire and forget.
   try{ if(typeof HealthWrite!=='undefined') HealthWrite.workout(session); }catch(_){}
-  const prsHit = updatePersonalRecords(session);
+  // updatePersonalRecords used to run here as a SECOND pass over the same session, writing the same
+  // store in a different shape (no `heaviest`) and racing the detection above for which shape won.
+  // With the done-gate added to detectAndRecordPRs the two now apply identical criteria, so the
+  // second pass could only ever re-write what the first had just written. One recorder.
   stopRestTimer();
   const savedExCount = session.exercises.length;
   stopSessionTimer();
   currentSession=[];renderWorkoutSession();
-  showWorkoutSummary({exercises:savedExCount, sets:cs, vol:vol, durationMin:durationMin, prs:prsHit||[]});
+  showWorkoutSummary({exercises:savedExCount, sets:cs, vol:vol, durationMin:durationMin, prs:prHit});
   loadH();const gi=habits.findIndex(h=>h.n.toLowerCase().includes('gym'));if(gi>=0){habits[gi].d[tIdx()]=1;saveH();renderHabits();}
   checkMilestones();
 }
@@ -36111,13 +36275,10 @@ function confirmScreenshotWorkout(detected){
   haptic('celebrate');
   if(typeof renderNutritionLog === 'function') renderNutritionLog();
 }
-function updatePersonalRecords(session){
-  const prs=ls('totry_prs')||{};
-  const hit=[];
-  session.exercises.forEach(ex=>{ex.sets.forEach(s=>{if(!s.done||!s.weight||!s.reps)return;const w=parseFloat(s.weight),r=parseInt(s.reps);if(isNaN(w)||isNaN(r)||w<=0)return;if((s.type||'normal')==='warmup')return;const orm=estE1RM(w,r);if(!prs[ex.name]||orm>prs[ex.name].orm){prs[ex.name]={orm,weight:w,reps:r,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})};if(!hit.find(h=>h.name===ex.name))hit.push({name:ex.name,orm});}});});
-  ls('totry_prs',prs);
-  return hit;
-}
+// updatePersonalRecords() lived here and is deliberately gone. It was the SECOND of two PR
+// recorders running on the same save, writing the same store in a different shape. Its one
+// distinct behaviour — refusing a set that was not ticked — now lives in detectAndRecordPRs,
+// which is the single recorder for our own saves and both Hevy paths.
 // '3m' | '90s' | '2:30' | 180 | '180' -> seconds. Routines write targetRest, Hevy imports write
 // rest, and the manual editor writes restTime; all three end up here so the timer honours whichever
 // the exercise actually carries.
@@ -44269,6 +44430,9 @@ function getNextStep(){
       if((ls('totry_prayers')||[]).some(p => p && (sameDay(p.createdAt) || sameDay(p.ts)))) return true;
       if((ls('totry_examens')||[]).some(e => e && sameDay(e.ts))) return true;
       if((ls('totry_rosaries')||[]).some(r => r && (sameDay(r.ts) || sameDay(r.date)))) return true;
+      // Every tradition's counted practice, not only the Catholic one: dhikr, japa, mettā, stillness.
+      // Without this the app kept asking a Muslim to pray on a day he had finished the whole tasbih.
+      if((ls('totry_practices')||[]).some(p => p && sameDay(p.ts))) return true;
       const m = ritualLog('totry_mornings')[0];
       if(m && sameDay(m.ts) && (m.intention || m.gratitude)) return true;
       return false;

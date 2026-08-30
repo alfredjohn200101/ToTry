@@ -4977,9 +4977,27 @@ function fnBodyOf(code, name){
   H.eq(estE1RM(0, 5), 0, 'no weight, no record');
   H.eq(estE1RM(60, 0), 0, 'no reps, no record');
 
-  // and the two paths that used to disagree now filter warmups, like detectAndRecordPRs always did
-  const upr = H.extractFn('updatePersonalRecords');
-  H.ok(/warmup/.test(upr), 'updatePersonalRecords skips warmup sets');
+  // ONE RECORDER, AND IT ONLY COUNTS WHAT WAS ACTUALLY LIFTED.
+  // There used to be two — updatePersonalRecords and detectAndRecordPRs — writing the same store on
+  // the same save in different shapes. They were aligned on warmups and never on `done`, and when
+  // v566 routed our own saves through detectAndRecordPRs that gap became a lie on screen: one real
+  // set of 85x5 plus a 140x5 typed in and left unticked recorded a 140kg PR, est. 1RM 163. A record
+  // is permanent until it is beaten, it feeds overloadSuggestion, and it makes every honest session
+  // afterwards look like a failure. updatePersonalRecords is gone; this is the survivor.
+  H.ok(!/function updatePersonalRecords\(/.test(H.html),
+       'the second PR recorder is gone, not left behind to race the first');
+  const dpr = H.extractFn('detectAndRecordPRs');
+  H.ok(/warm/i.test(dpr),      'the recorder skips warmup sets');
+  H.ok(/if\(!s\.done\) return;/.test(dpr),
+       'and skips a set that was never ticked — a lift you did not do is not a record');
+
+  // The banner reads .orm and the recorder returns .e1rm. Handing one straight to the other renders
+  // "est. 1RM undefinedkg", so the save maps between them.
+  const sws = H.extractFn('saveWorkoutSession');
+  H.ok(/orm: Math\.round\(p\.e1rm/.test(sws),
+       'and the save maps e1rm to the orm the summary banner actually reads');
+  H.ok(/prs:\s*prHit/.test(sws),
+       'the summary is handed the PRs that were just detected, not a second opinion that finds none');
 }
 
 // ── the rest clock is wall-clock, not a count of ticks ───────────────────────────────────────
