@@ -405,6 +405,14 @@ function pickContextualVerse(context){
 
 // Show a verse toast — small unobtrusive scripture appearance
 function showVerseToast(context, customTitle){
+  // "LIGHTER — SURFACES LESS" HAS TO MEAN THIS ONE TOO. The dial already hides the hero verse, and the
+  // companion and breath surfaces both check it (_breathFaithOn, faithOn) — but this, the app's main
+  // UNPROMPTED scripture moment, contained no faithLevel reference at all. It fires on a win, a slip, a
+  // PR, a fasting milestone and an answered prayer, so a person who had explicitly asked for less still
+  // got a full-screen verse at every one of those. Verified: at level 'light' the hero verse was
+  // display:none while showVerseToast rendered the identical modal it renders at 'full'.
+  // Asking for less and being given the same thing is worse than never offering the dial.
+  if(typeof faithLevel === 'function' && faithLevel() === 'light') return;
   // CONTEXTUAL_VERSES is Bible-only, and this fires on wins — an urge beaten, a PR, a fasting milestone.
   // Ungated, it handed a Muslim, Hindu, Buddhist or secular person someone else's scripture at the moment
   // they felt proudest. activeVerses() already resolves the right set per tradition (VS_ISLAM, VS_HINDU,
@@ -1000,11 +1008,31 @@ async function loadBibleChapter(){
     document.getElementById('br-chapter-title').textContent=book.name+' '+chapter;
     document.getElementById('br-api-credit').textContent=apiUsed;
     const container=document.getElementById('br-verses');container.innerHTML='';
+    // THE HIGHLIGHT MEANS "SAVED", SO IT HAS TO COME BACK. It lived only in a class toggled on click:
+    // re-open the chapter and every verse you had kept was unmarked — 0 of 36 rows highlighted on a
+    // fresh load of John 3 with John 3:3 already in totry_sv — so the reader could not show you what
+    // you had saved. And tapping a highlighted row cleared the mark while LEAVING the verse saved, so
+    // the second tap silently disagreed with storage. Read the shelf when the chapter is built, and
+    // make the off-tap actually unsave.
+    const _savedRefs = (function(){
+      try{ return new Set((ls('totry_sv')||[]).map(function(x){ return x && x.reference; }).filter(Boolean)); }
+      catch(_){ return new Set(); }
+    })();
     verses.forEach(v=>{
       if(!v.text||v.text.trim()==='')return;
       const row=document.createElement('div');row.className='bible-verse-row';
+      const _ref = book.name+' '+chapter+':'+v.num;
+      if(_savedRefs.has(_ref)) row.classList.add('highlighted');
       row.innerHTML='<span class="bvn">'+v.num+'</span><span class="bvt">'+v.text.trim()+'</span>';
-      row.onclick=()=>{row.classList.toggle('highlighted');if(row.classList.contains('highlighted'))saveVerseFromReader(v.text.trim(),book.name+' '+chapter+':'+v.num);};
+      row.onclick=()=>{
+        if(row.classList.contains('highlighted')){
+          row.classList.remove('highlighted');
+          unsaveVerseFromReader(_ref);
+        } else {
+          row.classList.add('highlighted');
+          saveVerseFromReader(v.text.trim(), _ref);
+        }
+      };
       container.appendChild(row);
     });
     // Study notes (Tyndale Open Study Notes, free via helloao) — collapsed by default.
@@ -1275,10 +1303,14 @@ async function generateIntentionPrayer(pfx){
       out.style.display='block';
       out.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">A '+_prayerNoun()+' for this</div>'+
         '<div style="font-family:Cormorant Garamond,serif;font-size:16px;font-style:italic;line-height:1.75;color:var(--tx);margin-bottom:12px">'+prayer.trim().replace(/</g,'&lt;')+'</div>'+
-        '<div style="display:flex;gap:8px"><button class="btn primary" style="flex:1;font-size:12px" onclick="savePrayerToList(window.__lastAIPrayer, &apos;'+(intention.trim().slice(0,30).replace(/'/g,"")).replace(/"/g,'')+'&apos;)">Save to my prayers</button><button class="btn" style="flex:1;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="generateIntentionPrayer(\''+pfx+'\')">Write another</button></div>'+aiTag();
+        '<div style="display:flex;gap:8px"><button class="btn primary" style="flex:1;font-size:12px" onclick="savePrayerToList(window.__lastAIPrayer, &apos;'+(intention.trim().slice(0,30).replace(/'/g,"")).replace(/"/g,'')+'&apos;)">Save to my '+_prayerNoun()+'s</button><button class="btn" style="flex:1;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="generateIntentionPrayer(\''+pfx+'\')">Write another</button></div>'+aiTag();
     } else if(out){ out.style.display='block'; out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t write that just now. Try again in a moment.</div>'; }
   }catch(e){ if(out){ out.style.display='block'; out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t reach the coach right now.</div>'; } }
-  finally{ if(btn){ btn.textContent='Write my prayer'; btn.disabled=false; } }
+  // THE BUTTON RENAMED ITSELF AFTER ONE USE. The surface builds its label from _prayerNoun() — "Write
+  // my reflection" for a secular person, "Write my du'a" for a Muslim — and this finally block put
+  // 'Write my prayer' back regardless, on success AND on failure. So the composer was correct until you
+  // used it once, and Christian from then on. Reset to the same noun the label was built from.
+  finally{ if(btn){ btn.textContent='Write my '+_prayerNoun(); btn.disabled=false; } }
 }
 // Saint prayers library — fetches the actual prayer text via AI (authentic, well-known prayers) + save.
 async function showSaintPrayer(saint, title){
@@ -1294,7 +1326,7 @@ async function showSaintPrayer(saint, title){
       window.__lastSaintPrayer = text.trim();
       out.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">'+saint+' \u00b7 '+title+'</div>'+
         '<div style="font-family:Cormorant Garamond,serif;font-size:16px;font-style:italic;line-height:1.8;color:var(--tx);white-space:pre-wrap;margin-bottom:12px">'+text.trim().replace(/</g,'&lt;')+'</div>'+
-        '<button class="btn" style="background:var(--bg3);border:1px solid var(--bd);font-size:12px" onclick="savePrayerToList(window.__lastSaintPrayer, &apos;'+saint.replace(/'/g,'')+'&apos;)">Save to my prayers</button>'+aiTag();
+        '<button class="btn" style="background:var(--bg3);border:1px solid var(--bd);font-size:12px" onclick="savePrayerToList(window.__lastSaintPrayer, &apos;'+saint.replace(/'/g,'')+'&apos;)">Save to my '+_prayerNoun()+'s</button>'+aiTag();
     } else { out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t load that prayer right now.</div>'; }
   }catch(e){ out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t reach the library right now.</div>'; }
 }
@@ -1336,11 +1368,23 @@ function saveVerseFromReader(text,ref){
     date: new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'})
   });
   ls('totry_sv', saved.slice(0,200));
-  renderSavedVerses();
+  renderSavedVersesEverywhere();
   showToast('Verse saved \u2665', ref);
 }
+// The off-tap. Without this the highlight and the shelf disagreed the moment you tapped twice.
+function unsaveVerseFromReader(ref){
+  if(!ref) return;
+  const saved = ls('totry_sv') || [];
+  const kept = saved.filter(function(v){ return !(v && v.reference === ref); });
+  if(kept.length === saved.length) return;
+  ls('totry_sv', kept);
+  renderSavedVersesEverywhere();
+  showToast('Removed', ref);
+}
 function renderBibleSavedPanel(){
-  // Delegated to renderSavedVerses() which now handles both panels in sync
-  renderSavedVerses();
+  // Delegated to renderSavedVersesEverywhere(), which genuinely paints both shelves. The old comment
+  // here said renderSavedVerses "handles both panels in sync" and it never did — it paints exactly one
+  // container, defaulting to the Christian tab's.
+  renderSavedVersesEverywhere();
 }
 

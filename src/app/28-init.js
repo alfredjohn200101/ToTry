@@ -749,7 +749,12 @@ function calcTDEE(){
       return;
     }
   }
-  if(!(weight >= 30 && weight <= 300)){ showToast('Check your weight', 'Enter a weight between 30 and 300 kg.'); return; }
+  // The maths is right — weight is dispToKg(input) — but the refusal was not: a pounds user who typed
+  // 60 under a box labelled (lb) was told "Enter a weight between 30 and 300 kg", a range in a unit the
+  // app had just stopped showing them. Same numbers, said in the unit they are standing in.
+  if(!(weight >= 30 && weight <= 300)){
+    showToast('Check your weight', 'Enter a weight between ' + wFmt(30, {round:0}) + ' and ' + wFmt(300, {round:0}) + '.');
+    return; }
   if(!(height >= 120 && height <= 230)){ showToast('Check your height', 'Enter a height between 120 and 230 cm.'); return; }
   const activity=parseFloat(document.getElementById('tdee-activity')?.value||1.55);
   const goal=document.getElementById('tdee-goal')?.value||'maintain';

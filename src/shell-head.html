@@ -1795,7 +1795,7 @@ input:focus,textarea:focus,select:focus{
     <div class="hub-card" onclick="go('morning')">
       <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
       <div class="hc-title">Morning</div>
-      <div class="hc-desc">Start the day: gratitude, intention, a word, and prayer.</div>
+      <div class="hc-desc" id="soul-morning-desc">Start the day: gratitude, intention, a word, and prayer.</div>
     </div>
     <div class="hub-card" onclick="go('reflect')">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -2284,7 +2284,7 @@ input:focus,textarea:focus,select:focus{
       <div class="ritual-line">Before the world starts pulling, choose who you'll be in it.</div>
     </div>
   </div>
-  <p style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px">A few quiet minutes to set the day: receive a word, name your gratitude and intention, then pray. Take it at your own pace — there's no wrong way.</p>
+  <p style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px" id="morning-intro-desc">A few quiet minutes to set the day: receive a word, name your gratitude and intention, then pray. Take it at your own pace — there's no wrong way.</p>
   <!-- Begin with a breath — the daily opening work; grounds the morning before words. Faith-aware. -->
   <div class="card" style="margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="openBreath((typeof _breathFaithOn==='function'&&_breathFaithOn())?'prayer':'settle')">
     <div style="width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(200,169,110,0.9),rgba(200,169,110,0.22));flex-shrink:0"></div>
@@ -3387,7 +3387,7 @@ input:focus,textarea:focus,select:focus{
     <div style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;color:var(--tx)">Your coach</div>
     <button onclick="clearCoachHistory()" style="background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:4px 8px;font-family:DM Mono,monospace;letter-spacing:0.05em">Clear history</button>
   </div>
-  <p style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:12px">He's read your whole story — your training, your fight, your money, your faith, what weighs on you. Not a search bar. Someone who knows you, and points you toward who you're becoming. Ask him anything.</p>
+  <p style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:12px" id="coach-intro-desc">He's read your whole story — your training, your fight, your money, your faith, what weighs on you. Not a search bar. Someone who knows you, and points you toward who you're becoming. Ask him anything.</p>
   <div class="qbtns" id="coach-quick-replies">
     <!-- Adaptive quick-replies render here based on user state -->
   </div>

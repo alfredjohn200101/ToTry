@@ -867,9 +867,15 @@ function buildPTCtx(){
   let cardioCtx = '';
   try{
     const acts = ls('totry_strava_activities') || [];
-    const _fresh = acts.filter(x => x && x.start_date && (Date.now() - new Date(x.start_date).getTime()) < 14*86400000);
+    // THE FIELD THIS FILTERED ON IS NEVER WRITTEN. The Strava sync stores `date: act.start_date_local`
+    // (35-strava.js:303); nothing anywhere writes `start_date` onto a saved activity. So the whole
+    // block was dead — this carefully-composed line, the one place the coach is handed real HR and
+    // effort data, has never once reached the model. Verified both ways: with the shape the sync
+    // actually writes the line is absent, and adding a start_date field to the same rows produces it.
+    const _actDate = x => (x && (x.start_date || x.date)) || null;
+    const _fresh = acts.filter(x => _actDate(x) && (Date.now() - new Date(_actDate(x)).getTime()) < 14*86400000);
     if(_fresh.length){ const a = _fresh[0];
-      cardioCtx = '\nMost recent cardio (Strava, ' + new Date(a.start_date).toLocaleDateString('en-AU') + '): ' + (a.type||'activity') + ', ' + (a.distance? dFmt(a.distance):'') + (a.moving_time? ', '+Math.round(a.moving_time/60)+'min':'')
+      cardioCtx = '\nMost recent cardio (Strava, ' + new Date(_actDate(a)).toLocaleDateString('en-AU') + '): ' + (a.type||'activity') + ', ' + (a.distance? dFmt(a.distance):'') + (a.moving_time? ', '+Math.round(a.moving_time/60)+'min':'')
         + (a.avg_hr? ', avg HR '+a.avg_hr+'bpm':'') + (a.max_hr? ' (max '+a.max_hr+')':'')
         + ((a.calories && !(typeof nutGentle==='function'&&nutGentle()))? ', '+a.calories+' cal':'') + (a.suffer_score? ', effort '+a.suffer_score:'')
         + '. (Use this real performance data — HR and effort tell you how hard it actually was.)';
@@ -3058,6 +3064,24 @@ function faithPrayer(){
 // ── SOUL TAB — make the cards speak the person's tradition ─────────────────────
 // Relabels the book/today/practice/stillness cards and shows only what fits the path.
 // Christianity keeps liturgy + Rosary; other paths get their reader + the universal stillness.
+// THE SCREEN AND THE VOICE DISAGREED ABOUT WHO THE COACH IS. The Coach tab opened "He's read your
+// whole story … Ask him anything" for everyone, while sexNote() in the same build was telling the model
+// "THEIR SEX: female. You are her big SISTER. Never call her brother, man, mate, bro or lad." So a woman
+// read one thing on the page and was answered as another. It was the only tab of fifteen still gendered
+// in its static copy, and it had no id, so nothing could reach it.
+// No sex on file gets the neutral form rather than a guess — the app asks in Settings, it does not assume.
+function applyCoachVoiceCopy(){
+  try{
+    const el = document.getElementById('coach-intro-desc');
+    if(!el) return;
+    const sx = (typeof userSex === 'function') ? userSex() : null;
+    const who  = sx === 'female' ? 'She\u2019s' : sx === 'male' ? 'He\u2019s' : 'Your coach has';
+    const them = sx === 'female' ? 'her' : sx === 'male' ? 'him' : '';
+    el.textContent = who + ' read your whole story \u2014 your training, your fight, your money, your faith, '
+      + 'what weighs on you. Not a search bar. Someone who knows you, and points you toward who you\u2019re '
+      + 'becoming. Ask ' + (them ? them + ' ' : '') + 'anything.';
+  }catch(_){}
+}
 function applyFaithLabels(){
   try{
     const f=curFaith(), t=f.id;
@@ -3135,6 +3159,21 @@ function applyFaithLabels(){
     };
     set('soul-intro', 'The root beneath everything else. The body, the money, the fight — they all grow from here, or they don’t last. This is where the app points past itself: '+(introTail[t]||introTail.christianity)+'. Stay grounded here, and the rest holds.');
     set('soul-reflect-desc', t==='christianity' ? 'Close the day: how it went, journal, examen, wins.' : 'Close the day: how it went, journal, review, wins.');
+    // THE CARD NEXT TO IT SAID "AND PRAYER" TO EVERYONE. This function rewrote the Reflect blurb for
+    // every tradition and could not reach the Morning one beside it, or the Morning tab's own intro,
+    // because neither had an id — so a secular person read "Close the day: … review, wins" directly
+    // under "Start the day: gratitude, intention, a word, and prayer", and the ritual itself never
+    // mentions prayer at any of its five steps. Only these two blurbs carried it.
+    const _mDesc = { christianity:'Start the day: gratitude, intention, a word, and prayer.',
+      islam:'Start the day: gratitude, intention, a word, and du\u2019a.',
+      hinduism:'Start the day: gratitude, intention, a word, and prayer.',
+      buddhism:'Start the day: gratitude, intention, a word, and a moment of stillness.',
+      secular:'Start the day: gratitude, intention, a word, and a moment of stillness.' };
+    const _mIntro = { christianity:'then pray', islam:'then make du\u2019a', hinduism:'then pray',
+      buddhism:'then sit with it for a moment', secular:'then sit with it for a moment' };
+    set('soul-morning-desc', _mDesc[t] || _mDesc.christianity);
+    set('morning-intro-desc', 'A few quiet minutes to set the day: receive a word, name your gratitude and intention, '
+      + (_mIntro[t] || _mIntro.christianity) + '. Take it at your own pace \u2014 there\u2019s no wrong way.');
   }catch(_){}
 }
 
@@ -3454,6 +3493,17 @@ function _renderIslamToday(el){
   el.innerHTML='<div class="card" style="text-align:center;padding:22px 18px;margin-bottom:12px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Ayah for today</div><div style="font-family:Cormorant Garamond,serif;font-size:20px;font-style:italic;line-height:1.6;color:var(--tx);margin-bottom:10px">“'+a.t+'”</div><div style="font-size:12px;color:var(--go)">— '+a.r+'</div></div><div id="salah-box">'+_readLoading()+'</div>';
   _loadSalah();
 }
+// THE CARD NAMED A METHOD THE APP DOES NOT ASK FOR. Every prayer-time request sends Aladhan's
+// method=2, which is the Islamic Society of North America — and the card underneath read "Muslim World
+// League method". They are not the same calculation: MWL and ISNA use different twilight angles, so the
+// Fajr and Isha printed were ISNA's while the line beneath claimed MWL's. Verified against the live API
+// on the same date and coordinates: method=2 returns meta.method.name "Islamic Society of North America
+// (ISNA)", Fajr 05:08 / Isha 18:44 — exactly what the app displayed.
+// Changing the METHOD would move a person's prayer times without being asked; changing the LABEL tells
+// them the truth about the times they already have. Both now come from one constant, so a future change
+// to either cannot leave the other behind. A method picker is the honest next step, not a silent shift.
+const SALAH_METHOD = 2;
+const SALAH_METHOD_NAME = 'Islamic Society of North America (ISNA)';
 function _salahDateStr(){ const d=new Date(); return String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear(); }
 // EVERY read of a stored location is coarsened, not just the fresh fetch.
 // v437 rounded coordinates to ~1km, but the rounding sat INSIDE the `if(!coords)` branch — it only
@@ -3489,7 +3539,7 @@ async function _loadSalah(){
   }
   if(!coords){ box.innerHTML='<div class="card" style="text-align:center;font-size:13px;color:var(--tx3);padding:18px;line-height:1.6">Allow location to see today’s prayer times.<br><button class="btn" onclick="_promptCity()" style="margin-top:10px;display:inline-block;padding:7px 14px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Or enter your city</button></div>'; return; }
   try{
-    const r=await _fetchT('https://api.aladhan.com/v1/timings/'+_salahDateStr()+'?latitude='+coords.lat+'&longitude='+coords.lng+'&method=2');
+    const r=await _fetchT('https://api.aladhan.com/v1/timings/'+_salahDateStr()+'?latitude='+coords.lat+'&longitude='+coords.lng+'&method='+SALAH_METHOD+'');
     const j=await r.json(); if(j.code!==200||!j.data) throw new Error('n'); box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri);
   }catch(e){ box.innerHTML=_readErr('Couldn’t load prayer times right now.'); }
 }
@@ -3499,7 +3549,7 @@ async function _loadSalahByCity(city){
   // NB: the city is saved further down, only after the API confirms it resolved — so a typo is never
   // persisted and then silently reused. The bug was never the write; it was that _loadSalah() did not
   // READ it, so the saved city sat there unused and people retyped it every visit.
-  try{ const r=await _fetchT('https://api.aladhan.com/v1/timingsByCity/'+_salahDateStr()+'?city='+encodeURIComponent(city)+'&country=&method=2'); const j=await r.json(); if(j.code!==200||!j.data) throw new Error('c'); try{ ls('totry_city',city); }catch(_){} if(box) box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri)+'<div style="text-align:center;margin-top:8px"><button class="btn" onclick="_promptCity()" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">Change city</button></div>'; }
+  try{ const r=await _fetchT('https://api.aladhan.com/v1/timingsByCity/'+_salahDateStr()+'?city='+encodeURIComponent(city)+'&country=&method='+SALAH_METHOD+''); const j=await r.json(); if(j.code!==200||!j.data) throw new Error('c'); try{ ls('totry_city',city); }catch(_){} if(box) box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri)+'<div style="text-align:center;margin-top:8px"><button class="btn" onclick="_promptCity()" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">Change city</button></div>'; }
   catch(e){ if(box) box.innerHTML=_readErr('Couldn’t find that city — try a larger nearby one.'); }
 }
 function _salahCard(t,h){
@@ -3513,7 +3563,7 @@ function _salahCard(t,h){
   const hh=Math.floor(mins/60), mm=mins%60; const cd=(hh>0?hh+'h ':'')+mm+'m';
   const rows=order.map(o=>{ const isNext=(o[0]===nextName); const dim=(o[0]==='Sunrise'); return '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 4px;border-bottom:1px solid var(--bd)"><span style="font-size:14px;color:'+(isNext?'var(--go)':dim?'var(--tx3)':'var(--tx2)')+';'+(isNext?'font-weight:600':'')+'">'+o[0]+(isNext?' · next':'')+'</span><span style="font-family:DM Mono,monospace;font-size:14px;color:'+(isNext?'var(--go)':'var(--tx2)')+'">'+o[1]+'</span></div>'; }).join('');
   const header='<div style="text-align:center;padding:2px 0 14px;margin-bottom:8px;border-bottom:1px solid var(--bd)"><div style="font-size:11px;letter-spacing:0.05em;color:var(--tx3);margin-bottom:2px">NEXT PRAYER</div><div style="font-family:Cormorant Garamond,serif;font-size:25px;color:var(--go);line-height:1.1">'+nextName+'</div><div style="font-family:DM Mono,monospace;font-size:12px;color:var(--tx2);margin-top:2px">in '+cd+'</div></div>';
-  return '<div class="card"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Today · '+h.day+' '+h.month.en+' '+h.year+' AH</div>'+header+rows+'<div style="font-size:11px;color:var(--tx3);margin-top:10px;text-align:center">Times for your location · Muslim World League method</div></div>';
+  return '<div class="card"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Today · '+h.day+' '+h.month.en+' '+h.year+' AH</div>'+header+rows+'<div style="font-size:11px;color:var(--tx3);margin-top:10px;text-align:center">Times for your location · '+SALAH_METHOD_NAME+'</div></div>';
 }
 
 // ── PRACTICE (Dhikr / Japa bead counters + the 99 Names) ───────────────────────
@@ -4378,6 +4428,7 @@ function go(name){
   
   if(name==='morning'){initMorningTab();showMorningAffirm();showMorningFocus();if(typeof renderMorningFlow==='function')setTimeout(renderMorningFlow,60);if(typeof _restoreMorningSleep==='function')_restoreMorningSleep();}
   if(name==='soul'){ if(typeof renderSoulStill==='function') renderSoulStill(); if(typeof applyFaithLabels==='function') applyFaithLabels(); if(typeof highlightSoulByTime==='function') highlightSoulByTime(); if(typeof renderFaithDoor==='function') renderFaithDoor(); }
+  if(name==='coach'){ if(typeof applyCoachVoiceCopy==='function') applyCoachVoiceCopy(); }
   if(name==='reflect'){initEveningTab();initReviewTab();if(typeof renderEveningFlow==='function')setTimeout(renderEveningFlow,60);}
   
   if(name==='nourish'){renderNutritionLog();if(typeof prefillNutGoals==='function')prefillNutGoals();if(typeof renderFuelPlanCard==='function')renderFuelPlanCard();}

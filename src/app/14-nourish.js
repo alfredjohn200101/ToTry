@@ -4276,11 +4276,30 @@ function renderGrowHandoffs(){
     const body = (ls('totry_body')||[]).filter(e => e && Number(e.weight) > 0)
       .sort((a,b) => new Date(a.ts||a.date) - new Date(b.ts||b.date));
     let trackLine = '';
-    if(body.length >= 2){
+    // NOTHING ON THE SCALE THIS WEEK IS AN ANSWER. `older` takes every entry more than seven days
+    // back — so for a person who has not weighed in since, that set INCLUDES the newest entry and
+    // `from` and `to` become the same reading. diff 0, span 0, and the branch below announced "Two
+    // weigh-ins, hours apart" for two readings fifty days apart, while the card underneath printed
+    // "0KG WK" and "the scale says +0kg — your data disagrees". A fabricated zero, twice, and the same
+    // zero went to the AI through __weekReadCtx. Say the truth: there is nothing to read yet.
+    const recent = body.filter(e => new Date(e.ts||e.date).getTime() > now - W);
+    if(body.length >= 2 && !recent.length){
+      trackLine = 'No weigh-in this week \u2014 step on the scale and this line can tell you something';
+    } else if(body.length >= 2){
       const older = body.filter(e => new Date(e.ts||e.date).getTime() <= now - W);
       const from = older.length ? Number(older[older.length-1].weight) : Number(body[0].weight);
       const to = Number(body[body.length-1].weight);
-      const diff = Math.round((to - from) * 10) / 10;
+      // ONE NUMBER, TWICE. This line and the card 68px below it are both on screen at once and both
+      // answer "what did the week do" — and they disagreed, because this differenced two RAW readings
+      // while the card differenced two SMOOTHED ones: "-2.9kg over the week" directly above "-0.7KG
+      // WK", and -1.5lb above -1.3LB for a pounds user. A single reading can move a kilo on water
+      // alone, which is exactly why the card smooths; the hub now asks the same question the same way,
+      // and falls back to the raw pair only when there is not enough history to smooth.
+      const _tNow  = (typeof getTrendWeight === 'function') ? getTrendWeight(body) : null;
+      const _tPrev = (typeof getTrendWeight === 'function' && older.length) ? getTrendWeight(older) : null;
+      const diff = (_tNow != null && _tPrev != null)
+        ? Math.round((_tNow - _tPrev) * 10) / 10
+        : Math.round((to - from) * 10) / 10;
       const unit = (typeof wDelta === 'function') ? wDelta(diff, { zero:'steady' }) : (diff + 'kg');
       // "Over the week" has to actually BE over a week. When there is no weigh-in older than seven
       // days this compared the first and last of a much shorter span — two readings on the same
@@ -4298,8 +4317,17 @@ function renderGrowHandoffs(){
         const span = spanDays <= 8 ? 'over the week'
                    : spanDays <= 45 ? 'over ' + Math.round(spanDays / 7) + ' weeks'
                    : 'over ' + Math.round(spanDays / 30) + ' months';
-        trackLine = diff === 0 ? 'Holding steady ' + span + ' \u2014 that is what the fuel did'
-                               : unit + ' ' + span + ' \u2014 that is what the training and the fuel did';
+        // ATTRIBUTE IT TO WHAT ACTUALLY HAPPENED. This credited "the training and the fuel" whatever the
+        // week held — including to someone with zero workouts and zero meals logged, whose Train and
+        // Nourish handoffs directly above were both EMPTY, and to the runner whose training the app
+        // could not see at all. Naming a cause the app has no evidence for is the false mechanism this
+        // card exists to avoid. Name the fronts with data; with neither, state the change and stop.
+        const _did = [];
+        if(ws.length) _did.push('the training');
+        if(logged.length) _did.push('the fuel');
+        const _cause = _did.length ? ' \u2014 that is what ' + _did.join(' and ') + ' did' : '';
+        trackLine = diff === 0 ? 'Holding steady ' + span + (logged.length ? ' \u2014 that is what the fuel did' : '')
+                               : unit + ' ' + span + _cause;
       }
     } else if(body.length === 1){
       trackLine = 'One weigh-in so far \u2014 one more and the trend starts';
@@ -4358,7 +4386,12 @@ function renderBodySystemReport(){
   const trend=(typeof getTrendWeight==='function'&&body.length)?getTrendWeight(body):null;
   const wAgo=body.filter(e=>new Date(e.ts).getTime()<=now-W);
   const trendPrev=(typeof getTrendWeight==='function'&&wAgo.length)?getTrendWeight(wAgo):null;
-  const weekChange=(trend!=null&&trendPrev!=null)?Math.round((trend-trendPrev)*10)/10:null;
+  // wAgo is "everything older than a week". With no weigh-in SINCE, that is the whole set — so trend
+  // and trendPrev were computed from identical data and weekChange came out a confident 0.0. The card
+  // then printed "0KG WK" and "the scale says +0kg — your data disagrees", and sent that same zero to
+  // the AI through __weekReadCtx. A week with nothing on the scale has no change to report.
+  const _weighedThisWeek = wAgo.length < body.length;
+  const weekChange=(trend!=null&&trendPrev!=null&&_weighedThisWeek)?Math.round((trend-trendPrev)*10)/10:null;
   const weighIns=body.filter(e=>inWin(e.ts,W,0)).length;
 
   const domains=(wCount>0?1:0)+(daysLogged>=2?1:0)+(body.length>=2?1:0);
@@ -4380,9 +4413,9 @@ function renderBodySystemReport(){
   if(!goal){
     goalRow='<div style="font-size:12px;color:var(--tx2);margin-bottom:8px">What are you aiming for? One tap \u2014 the loop will judge itself against it.</div>'+
       '<div style="display:flex;gap:6px;margin-bottom:10px">'+
-      '<button class="btn" style="flex:1;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="setBodyGoal(\'cut\')">Cut \u22120.5/wk</button>'+
+      '<button class="btn" style="flex:1;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="setBodyGoal(\'cut\')">Cut \u2212'+wFmt(0.5,{bare:true})+wUnit()+'/wk</button>'+
       '<button class="btn" style="flex:1;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="setBodyGoal(\'maintain\')">Maintain</button>'+
-      '<button class="btn" style="flex:1;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="setBodyGoal(\'build\')">Build +0.25/wk</button>'+
+      '<button class="btn" style="flex:1;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="setBodyGoal(\'build\')">Build +'+wFmt(0.25,{bare:true})+wUnit()+'/wk</button>'+
       '</div>';
   }
 
@@ -4401,13 +4434,23 @@ function renderBodySystemReport(){
     if(goal){
       const tgt=goal.rate||0;
       const onPace=Math.abs(weekChange-tgt)<=0.25;
-      verdict+=' Goal <b>'+goal.mode+'</b> ('+(tgt>=0?'+':'')+tgt+'kg/wk): '+(onPace?'<span style="color:var(--gr)">on pace \u2713</span>':'<span style="color:var(--go)">off pace</span>')+'.';
+      // The stat row at the top of this same card is already in the person's unit; this clause and the
+      // three buttons below were the last kilograms left on it, so a pounds user read "182.5lb /
+      // -1.3LB WK" and then "Goal cut (-0.5kg/wk)" in the same box.
+      verdict+=' Goal <b>'+goal.mode+'</b> ('+(tgt>=0?'+':'')+wFmt(tgt)+'/wk): '+(onPace?'<span style="color:var(--gr)">on pace \u2713</span>':'<span style="color:var(--go)">off pace</span>')+'.';
     }
   } else { verdict='<span style="color:var(--tx3)">~3 weeks of weight + food unlocks the energy-balance verdict \u2014 keep logging.</span>'; }
 
   // ONE COMPUTED ADJUSTMENT \u2014 weakest link wins (rule-based, costs nothing)
   let adjust='Hold the line \u2014 keep doing exactly this for another week.';
-  if(goal&&goal.mode!=='maintain'&&gkg!=null&&gkg<1.6) adjust='Protein is '+gkg+'g/kg \u2014 push toward 1.6\u20132.2 (\u2248'+Math.round((trend||80)*1.8)+'g/day). Highest-leverage fix this week.';
+  // A CARD MUST NOT CONTRADICT ITSELF FOUR LINES APART. lowConf guarded exactly one branch of this
+  // cascade, so a week with 0 days of food logged fell through to the default and read "Low confidence
+  // — only 0 days of food logged" above "THIS WEEK'S ONE ADJUSTMENT: Hold the line — keep doing exactly
+  // this for another week." There is nothing to hold and nothing to keep doing; the gap IS the
+  // adjustment, and it outranks the others because every one of them is computed from the days that
+  // were not logged.
+  if(lowConf) adjust='Only '+daysLogged+' day'+(daysLogged===1?'':'s')+' of food logged this week \u2014 log most days and the rest of this card becomes a real verdict.';
+  else if(goal&&goal.mode!=='maintain'&&gkg!=null&&gkg<1.6) adjust='Protein is '+gkg+'g/kg \u2014 push toward 1.6\u20132.2 (\u2248'+Math.round((trend||80)*1.8)+'g/day). Highest-leverage fix this week.';
   else if(goal&&goal.mode==='cut'&&tdeeR&&!lowConf&&avgCal!=null&&(avgCal-tdeeR.tdee)>0) adjust='You\'re cutting but eating ~'+Math.round(avgCal-tdeeR.tdee)+' above your real burn \u2014 trim ~250/day and re-check next week.';
   else if(weighIns<2) adjust='Only '+weighIns+' weigh-in'+(weighIns===1?'':'s')+' this week \u2014 2\u20133 quick morning weigh-ins make the trend trustworthy.';
   else if(pVol>0&&wVol<pVol*0.7) adjust='Volume cliff: '+wVol.toLocaleString()+'kg vs '+pVol.toLocaleString()+'kg last week \u2014 protect the floor: even two short sessions count.';

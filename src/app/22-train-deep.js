@@ -1031,7 +1031,8 @@ function openEditTraining(unifiedId){
     const km = a.distance ? mToDisp(a.distance) : null;   // named km for history; it is the person's unit
     const mins = a.moving_time ? Math.round(a.moving_time/60) : null;
     const pace = (km && mins) ? (mins/km) : null;
-    const paceStr = pace ? (Math.floor(pace)+':'+String(Math.round((pace%1)*60)).padStart(2,'0')+' /km') : null;
+    const _pp = _paceParts(pace);
+    const paceStr = _pp ? (_pp.m + ':' + _pp.s + ' /' + _pp.unit) : null;
     const when = a.date ? new Date(a.date).toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'}) : '';
     const stat = (label,val) => val ? '<div style="flex:1;min-width:70px;background:var(--bg3);border-radius:8px;padding:10px;text-align:center"><div style="font-family:DM Mono,monospace;font-size:18px;color:var(--tx)">'+val+'</div><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px">'+label+'</div></div>' : '';
     const stats = [
@@ -1162,14 +1163,25 @@ function renderEditCardioFields(){
   if(cfg.pace){ html += '<div id="edit-cardio-pace" style="font-family:DM Mono,monospace;font-size:11px;color:var(--go);margin:-4px 0 12px 0;min-height:14px"></div>'; }
   wrap.innerHTML = html;
 }
+// Minutes-per-unit -> the parts of "M:SS", carrying when the seconds round up to sixty, and the
+// person's own distance unit. Math.round on the remainder returns 60 for any fraction above 0.9917:
+// 45 minutes over 5.00 miles is 8.9996 min/mi, which printed "8:60". Both pace lines had that bug and
+// only one of them had the unit right — the Strava detail hardcoded "/km" and showed it to a miles
+// user beside a distance already rendered in miles. One helper, so they cannot drift again.
+function _paceParts(perUnit){
+  if(!(perUnit > 0) || !isFinite(perUnit)) return null;
+  let m = Math.floor(perUnit), sec = Math.round((perUnit - m) * 60);
+  if(sec === 60){ m += 1; sec = 0; }
+  return { m: m, s: String(sec).padStart(2,'0'), unit: (typeof dUnit === 'function') ? dUnit() : 'km' };
+}
 function updateEditCardioPace(){
   const paceEl = document.getElementById('edit-cardio-pace');
   if(!paceEl) return;
   const mins = _parseCardioTime(document.getElementById('edit-cardio-time')?.value||'');
   const km = parseFloat(document.getElementById('edit-cardio-distance')?.value||'')||0;   // in dUnit(), converted at the store below
   if(mins>0 && km>0){
-    const secPerKm = (mins*60)/km; const mm=Math.floor(secPerKm/60); const ss=Math.round(secPerKm%60);
-    paceEl.textContent = 'Pace: '+mm+"'"+String(ss).padStart(2,'0')+'"/'+dUnit();
+    const pp = _paceParts(mins/km);
+    paceEl.textContent = pp ? ('Pace: '+pp.m+"'"+pp.s+'"/'+pp.unit) : '';
   } else { paceEl.textContent=''; }
 }
 function saveEditTraining(id){

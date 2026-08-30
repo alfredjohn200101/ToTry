@@ -225,6 +225,10 @@ function toggleEveningHabit(hi){
   const ti = tIdx();
   habits[hi].d[ti] = habits[hi].d[ti] === 1 ? 0 : 1;
   saveH();
+  // Ticking one here IS the person making the list theirs — the same signal adding one gives. The
+  // first-run checklist used to infer that from "any d[] slot is 1", which autoTickHabits satisfies on
+  // its own, so the step arrived pre-ticked on a brand-new install. Set the flag from a real act.
+  try{ ls('totry_habits_touched', true); }catch(_){}
   renderEveningHabitTickList();
   haptic('light');
 }
@@ -252,6 +256,13 @@ const _EXAMEN_FACE = {
     title:'Go back over the day, honestly.', blurb:'Seneca did this nightly: what did I do, where did I fall short, what will I do better. Five questions. This closes your day.', cta:'Begin the review' }
 };
 // The noun the door used, for everything inside — see the note on _EXAMEN_FACE.
+// The stored field is called 'repent' forever; only its LABEL belongs to a tradition.
+function _examenLabelRepent(){
+  try{
+    const t = (typeof faithTradition==='function') ? faithTradition() : 'secular';
+    return (t === 'christianity' || t === 'islam' || t === 'hinduism') ? 'Repent' : 'Where you fell short';
+  }catch(_){ return 'Repent'; }
+}
 function _examenNoun(){
   try{
     const t = (typeof faithTradition==='function') ? faithTradition() : 'secular';
@@ -287,13 +298,20 @@ function examenStepFor(step){
   const divine = (typeof curFaith==='function' && curFaith().divine) ? curFaith().divine : 'God';
   const theistic = (t === 'islam' || t === 'hinduism');
   const s = Object.assign({}, step);
+  // The swap reached sub/body/placeholder and never the TITLE, and its word list stopped at "God" — so
+  // a secular person walked a step headed "Repent" that told them to "Confess the first. Receive the
+  // second." and offered "I will not check my phone before prayer." as the example resolution. The card
+  // above it had already renamed itself to "Evening review"; the steps inside it had not.
   const swap = function(txt){
     if(!txt) return txt;
     return theistic
       ? txt.replace(/\bGod\b/g, divine).replace(/\bYou saw it\b/g, divine + ' saw it').replace(/\bYour\b/g, 'Your')
-      : txt.replace(/\bGod, give me\b/g, 'Let me find').replace(/\bGod\b/g, 'life').replace(/\bYou saw it\b/g, 'it truly was');
+      : txt.replace(/\bGod, give me\b/g, 'Let me find').replace(/\bGod\b/g, 'life').replace(/\bYou saw it\b/g, 'it truly was')
+           .replace(/\bConfess\b/g, 'Name').replace(/\bconfess\b/g, 'name')
+           .replace(/\bbefore prayer\b/g, 'before I sit down')
+           .replace(/\bRepent\b/g, 'Look honestly');
   };
-  s.sub = swap(s.sub); s.body = swap(s.body); s.placeholder = swap(s.placeholder);
+  s.title = swap(s.title); s.sub = swap(s.sub); s.body = swap(s.body); s.placeholder = swap(s.placeholder);
   if(!theistic && step.field === 'petition'){
     s.title = 'Honesty';
     s.sub = 'Ask yourself for the clarity to see today truly.';
@@ -378,7 +396,7 @@ function showExamenStep(idx){
     '<textarea id="examen-input" placeholder="' + step.placeholder + '" style="min-height:' + step.minHeight + 'px;margin-bottom:14px">' + (_examenAnswers[step.field] || '') + '</textarea>' +
     '<div style="display:flex;gap:8px">' +
       (idx > 0 ? '<button class="btn" onclick="examenBack(' + idx + ')" style="flex:1;background:transparent;border:1px solid var(--bd)">Back</button>' : '') +
-      '<button class="btn primary" onclick="examenNext(' + idx + ')" style="flex:2">' + (isLast ? 'Complete Examen' : 'Next →') + '</button>' +
+      '<button class="btn primary" onclick="examenNext(' + idx + ')" style="flex:2">' + (isLast ? ('Complete ' + _examenNoun()) : 'Next →') + '</button>' +
     '</div>' +
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:11px;margin-top:8px">Exit (progress lost)</button>' +
   '</div>';
@@ -447,7 +465,7 @@ function showExamenHistory(){
   
   if(!log.length){
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
-      '<h3 style="margin-bottom:8px">Past examens</h3>' +
+      '<h3 style="margin-bottom:8px">Past ' + _examenNoun().toLowerCase() + 's</h3>' +
       '<p class="empty-note">No examens logged yet. Begin one tonight — it builds the practice.</p>' +
       '<button class="btn" onclick="closeModal(this)">Close</button>' +
     '</div>';
@@ -470,7 +488,7 @@ function showExamenHistory(){
   
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:4px">' + log.length + ' examen' + (log.length === 1 ? '' : 's') + ' walked</div>' +
-    '<h3 style="margin-bottom:12px">Past examens</h3>' +
+    '<h3 style="margin-bottom:12px">Past ' + _examenNoun().toLowerCase() + 's</h3>' +
     '<div style="max-height:60vh;overflow-y:auto;padding-right:4px;margin-bottom:14px">' + itemsHtml + '</div>' +
     '<button class="btn" onclick="closeModal(this)">Close</button>' +
   '</div>';
@@ -487,7 +505,7 @@ function showExamenDetail(idx){
     gratitude: 'Gratitude',
     petition: 'Petition',
     review: 'Review',
-    repent: 'Repent',
+    repent: _examenLabelRepent(),
     renewal: 'Renewal'
   };
   
@@ -501,7 +519,9 @@ function showExamenDetail(idx){
       '</div>';
     }
   });
-  if(!body) body = '<p class="empty-note">No written notes — just walked the steps with God.</p>';
+  // "with God" to someone who told the app they do not believe in one.
+  if(!body) body = '<p class="empty-note">No written notes — just walked the steps'
+    + ((typeof faithTradition==='function' && faithTradition()==='christianity') ? ' with God' : '') + '.</p>';
   
   const m = document.createElement('div');
   m.className = 'modal-bg open';

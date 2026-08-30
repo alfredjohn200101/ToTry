@@ -255,7 +255,10 @@ function autoTickHabits(){
   const dayList = [];
   for(let off=0; off<=ti; off++){
     const d = new Date(Date.now() - off*86400000);
-    dayList.push({ dateStr: d.toLocaleDateString('en-AU'), idx: ((ti - off) % 7 + 7) % 7 });
+    // dayStart is carried so a branch can ask WHEN a day was, not only what it is called — the clean
+    // -day tick below has to refuse days that precede the fight itself.
+    const _ds = new Date(d); _ds.setHours(0,0,0,0);
+    dayList.push({ dateStr: d.toLocaleDateString('en-AU'), idx: ((ti - off) % 7 + 7) % 7, dayStart: _ds.getTime() });
   }
   // Determine the nutrition-goal direction once (lose = stay under, gain = hit/over, else hit).
   // Was reading totry_goal_intent, which nothing writes — so neither branch below could ever match and
@@ -273,7 +276,7 @@ function autoTickHabits(){
 
   habits.forEach((h,hi)=>{
     const name=h.n.toLowerCase();
-    dayList.forEach(({dateStr, idx})=>{
+    dayList.forEach(({dateStr, idx, dayStart})=>{
       let shouldTick=false;
       if(/gratitude/.test(name)){
         // Gratitude habit: ticks when the morning's gratitude field was actually filled that day.
@@ -306,7 +309,27 @@ function autoTickHabits(){
         // Every day without a logged loss is a clean win. But if a loss WAS logged this day,
         // actively UN-tick it (this is the one habit that can flip true→false on the same day).
         if(lossThatDay){ if(h.d[idx]===1){ h.d[idx]=0; anyTicked=true; } return; }
-        shouldTick = vices.length>0;
+        // A CLEAN DAY YOU WERE NOT HERE FOR IS NOT A CLEAN DAY. `vices.length>0` ticked every day the
+        // backfill walked, with no lower bound — so a person who signed up on a Sunday and named one
+        // thing to fight opened the app to a full week of ✓✓✓✓✓✓✓ and "6/6 this week" for days that
+        // happened before they had an account, while the Fight tab beside it correctly read "0 days
+        // clean". It also satisfied the first-run checklist's "any d[] slot is 1" test, so "Add your
+        // first habits" arrived pre-ticked. The app's first act was to hand someone a week they had
+        // not lived. Every other branch here requires evidence ON that day; this one now requires at
+        // least that the day was theirs — on or after the journey start, and on or after the fight
+        // they are being credited for.
+        const _startTs = (function(){
+          try{ const st = ls('totry_start'); const t = st ? new Date(st).getTime() : NaN;
+               return isNaN(t) ? null : t; }catch(_){ return null; }
+        })();
+        const _liveVice = vices.some(function(v){
+          if(!v) return false;
+          const vs = v.fightingSince || v.startDate;
+          const t = vs ? new Date(vs).getTime() : NaN;
+          return isNaN(t) ? true : (dayStart >= new Date(new Date(t).setHours(0,0,0,0)).getTime());
+        });
+        const _afterStart = (_startTs == null) || (dayStart >= new Date(new Date(_startTs).setHours(0,0,0,0)).getTime());
+        shouldTick = vices.length>0 && _liveVice && _afterStart;
       } else if(/bible|scripture|verse|word|read/.test(name)){
         shouldTick = allSaved.some(v=>v.date===dateStr || (v.ts && new Date(v.ts).toLocaleDateString('en-AU')===dateStr));
       } else if(/water|hydrate/.test(name)){

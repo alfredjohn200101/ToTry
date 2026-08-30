@@ -90,8 +90,8 @@ async function _seasonTimes(){
   const key = _salahDateStr(); const c = ls('totry_fast_times');
   if(c && c.key === key && c.fajr) return c;
   let url = null;
-  try{ const g = geoCoarse(); if(g) url = 'https://api.aladhan.com/v1/timings/'+key+'?latitude='+g.lat+'&longitude='+g.lng+'&method=2'; }catch(_){}   // coarsened — see geoCoarse()
-  if(!url){ const city = ls('totry_city'); if(city) url = 'https://api.aladhan.com/v1/timingsByCity/'+key+'?city='+encodeURIComponent(city)+'&country=&method=2'; }
+  try{ const g = geoCoarse(); if(g) url = 'https://api.aladhan.com/v1/timings/'+key+'?latitude='+g.lat+'&longitude='+g.lng+'&method='+SALAH_METHOD+''; }catch(_){}   // coarsened — see geoCoarse()
+  if(!url){ const city = ls('totry_city'); if(city) url = 'https://api.aladhan.com/v1/timingsByCity/'+key+'?city='+encodeURIComponent(city)+'&country=&method='+SALAH_METHOD+''; }
   if(!url) return null;
   try{
     const r = await _fetchT(url, 8000); const j = await r.json();

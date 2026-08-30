@@ -34,9 +34,13 @@ function getFirstRunSteps(){
   const identity = ls('totry_identity');
   const habitsArr = ls('totry_h');
   // NOT "the array is non-empty" — the app seeds six habits itself, so that was true before the person
-  // had done anything. This means "they made this list theirs": added one, or edited the defaults.
-  const hasHabits = !!ls('totry_habits_touched') ||
-    (Array.isArray(habitsArr) && habitsArr.some(h => h && Array.isArray(h.d) && h.d.some(x => x)));
+  // had done anything. This means "they made this list theirs": added one, or ticked one.
+  // The old fallback — "any d[] slot is 1" — had the same flaw one step further in: autoTickHabits
+  // ticks "No vice today" for a person who has merely NAMED something to fight, so on a brand-new
+  // install the step was already ✓ before they had touched a habit at all. A checklist that
+  // congratulates you for work you have not done teaches you to ignore it. Both real acts — adding
+  // one (10-habits.js) and ticking one in the evening (23-evening.js) — now set the flag themselves.
+  const hasHabits = !!ls('totry_habits_touched');
   const coachHistory = ls('totry_coach_history') || [];
   return [
     {

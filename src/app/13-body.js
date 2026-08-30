@@ -55,6 +55,11 @@ function syncWeightUnitLabels(){
   const u = wUnit();
   const lbl = document.getElementById('tdee-weight-label');
   if(lbl) lbl.textContent = 'Weight (' + u + ')';
+  // The box under that label kept a hardcoded "75" — a kilogram hint sitting beneath the word (lb),
+  // so the one example the app offers a pounds user was a number no adult weighs in pounds. The label
+  // was already swapping here; the placeholder simply never came with it.
+  const tw = document.getElementById('tdee-weight');
+  if(tw) tw.placeholder = String(Math.round(kgToDisp(75)));
   const bw = document.getElementById('bod-weight');
   if(bw) bw.placeholder = 'Weight (' + u + ')';
   document.querySelectorAll('[data-weight-unit]').forEach(function(el){ el.textContent = u; });
@@ -666,9 +671,28 @@ function weightTrendDir(){
   if(body.length<3) return null;
   const spanDays=(body[body.length-1].t-body[0].t)/86400000;
   if(spanDays<21) return null;                         // ~3 weeks before a trend is trustworthy
-  const trendNow=(typeof getTrendWeight==='function')?getTrendWeight(ls('totry_body')||[]):body[body.length-1].w;
-  const changeKg=trendNow-body[0].w;
-  const perWeek=changeKg/(spanDays/7);
+  // A RATE THAT DEPENDED ON HOW OFTEN YOU STOOD ON THE SCALE. This differenced a SMOOTHED current
+  // value against a RAW first reading — getTrendWeight is a per-SAMPLE EMA (alpha 0.25) seeded at the
+  // oldest point, so its lag is three WEIGH-INS: three days for a daily weigher, three weeks for a
+  // weekly one. Two people losing exactly 4kg over the same 21 days were told "0.5kg a week — 18 weeks
+  // from here" and "1.1kg a week — 6 weeks", ETAs 88 days apart, on identical bodies. The true rate in
+  // both cases is 1.33kg/week. And someone losing a textbook 0.25kg/week was told 0.1kg/week and
+  // 97 weeks, while the Change tile forty pixels above said something else entirely.
+  // Least-squares slope over EVERY reading in the window instead — the same technique, and the same
+  // reasoning, as computeAdaptiveTDEE (14-nourish.js): "differencing two endpoints — even two smoothed
+  // ones — throws away every reading between". Frequency of weighing now changes the confidence, not
+  // the answer.
+  const _t0 = body[0].t;
+  let _n = body.length, _sx = 0, _sy = 0, _sxx = 0, _sxy = 0;
+  body.forEach(function(pt){
+    const x = (pt.t - _t0) / 86400000, y = pt.w;
+    _sx += x; _sy += y; _sxx += x * x; _sxy += x * y;
+  });
+  const _denom = _n * _sxx - _sx * _sx;
+  if(!_denom) return null;
+  const perDay = (_n * _sxy - _sx * _sy) / _denom;
+  const perWeek = perDay * 7;
+  const changeKg = perDay * spanDays;
   return { dir: perWeek>0.12?'up':perWeek<-0.12?'down':'stable', perWeek:Math.round(perWeek*100)/100, changeKg:Math.round(changeKg*10)/10, days:Math.round(spanDays) };
 }
 function strengthTrend(){
@@ -888,6 +912,15 @@ function renderBody(){
   renderMeasurements();
   renderProgressPhotos();
   renderBodyCompInsight();
+  // THE PROJECTION IS THE PAYOFF FOR LOGGING, SO IT HAS TO REACT TO THE LOG. renderBodyGoalCard was
+  // only ever called by the tab switch and by saving the goal itself — so logging a weigh-in updated
+  // the Now tile beside it and left the card byte-identical, still answering from the old data.
+  // Measured: saving 78.0 moved the tile to "78kg" while the card kept "About 2 September … 2.1kg a
+  // week"; leaving the tab and coming back changed it to "About 1 September … 2.2kg a week". Deleting
+  // every weigh-in left it projecting a date off numbers that no longer existed. saveQuickWeight,
+  // logBody and deleteWeightEntry all come through here, so one call covers every door. No cycle:
+  // renderBodyGoalCard does not call back into renderBody.
+  try{ if(typeof renderBodyGoalCard === 'function') renderBodyGoalCard(); }catch(_){ }
 }
 
 // Items 9 + 10: surface what the scale ALONE hides. Uses the body-composition data imported

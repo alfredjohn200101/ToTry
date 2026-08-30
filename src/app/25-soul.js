@@ -83,19 +83,31 @@ async function readTodaysGospel(){
   const ref = window.__todayGospelRef;
   if(!box || !ref) return;
   box.innerHTML = '<div style="font-size:13px;color:var(--tx3);font-style:italic;padding:6px">Loading the Gospel…</div>';
-  // Parse "John 3:16-21" → book, chapter (we show the whole chapter range start).
-  const m = ref.match(/^([\d]?\s?[A-Za-z ]+?)\s+(\d+):(\d+)(?:-(\d+))?/);
+  // A LECTIONARY READING IS OFTEN MORE THAN ONE RANGE. The old pattern captured the FIRST range and
+  // stopped, so "Matthew 1:1-16, 18-23" rendered verses 1-16 and silently dropped 18-23 — the half
+  // that carries the annunciation — with no note that anything was missing. Two such readings fell in
+  // a single 60-day window of the live API (2026-09-08 and 2026-10-02), so this is the ordinary shape,
+  // not an edge case. Parse every range; a reference that spans chapters still falls through to the
+  // USCCB link rather than being half-rendered.
+  const m = ref.match(/^([\d]?\s?[A-Za-z ]+?)\s+(\d+):([\d,\s\u2013\u2014-]+)$/);
   if(!m){ box.innerHTML = '<div style="font-size:12px;color:var(--tx2);padding:6px">See the full Gospel at the USCCB link below.</div>'; return; }
   const bookName = m[1].trim();
   const chapter = m[2];
-  const vStart = parseInt(m[3]);
-  const vEnd = m[4] ? parseInt(m[4]) : vStart;
+  const ranges = m[3].split(',').map(function(part){
+    const t = part.trim();
+    const span = t.match(/^(\d+)\s*[-\u2013\u2014]\s*(\d+)$/);
+    if(span) return { a:+span[1], b:+span[2] };
+    const one = t.match(/^(\d+)$/);
+    return one ? { a:+one[1], b:+one[1] } : null;
+  }).filter(Boolean);
+  if(!ranges.length){ box.innerHTML = '<div style="font-size:12px;color:var(--tx2);padding:6px">See the full Gospel at the USCCB link below.</div>'; return; }
+  const inRanges = n => ranges.some(function(r){ return n >= r.a && n <= r.b; });
   const usfm = (typeof bibleBookToUSFM==='function') ? bibleBookToUSFM(bookName) : bookName.toUpperCase().slice(0,3);
   let verses = null;
   try{
     const r = await _fetchT('https://bible.helloao.org/api/BSB/'+usfm+'/'+chapter+'.json', 8000);
     if(r.ok){ const d = await r.json(); const all = (d.chapter && d.chapter.content) || []; 
-      verses = all.filter(it => it.type==='verse' && it.number>=vStart && it.number<=vEnd)
+      verses = all.filter(it => it.type==='verse' && inRanges(it.number))
                   .map(v => ({ num:v.number, text: (Array.isArray(v.content)?v.content.map(c=>typeof c==='string'?c:(c.text||'')).join(' '):v.content||'') })); }
   }catch(_){ }
   if(!verses || !verses.length){
@@ -104,7 +116,14 @@ async function readTodaysGospel(){
   }
   let html = '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-top:4px">'+
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px">'+ref.replace(/</g,'&lt;')+'</div>';
-  verses.forEach(v => { if(v.text) html += '<p style="font-size:15px;line-height:1.7;color:var(--tx);margin-bottom:8px"><span style="font-size:10px;color:var(--go);vertical-align:super;margin-right:3px">'+v.num+'</span>'+v.text.replace(/</g,'&lt;')+'</p>'; });
+  // The lectionary SKIPS the verses between two ranges; running them together would present the
+  // reading as continuous when it is not. Mark the join so the omission is visible.
+  let _prevNum = null;
+  verses.forEach(v => {
+    if(_prevNum != null && v.num > _prevNum + 1)
+      html += '<p style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);text-align:center;margin:2px 0 8px">\u22ef</p>';
+    _prevNum = v.num;
+    if(v.text) html += '<p style="font-size:15px;line-height:1.7;color:var(--tx);margin-bottom:8px"><span style="font-size:10px;color:var(--go);vertical-align:super;margin-right:3px">'+v.num+'</span>'+v.text.replace(/</g,'&lt;')+'</p>'; });
   html += '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:6px">Berean Standard Bible (public domain)</div></div>';
   box.innerHTML = html;
   haptic('tap');

@@ -1795,7 +1795,7 @@ input:focus,textarea:focus,select:focus{
     <div class="hub-card" onclick="go('morning')">
       <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/></svg>
       <div class="hc-title">Morning</div>
-      <div class="hc-desc">Start the day: gratitude, intention, a word, and prayer.</div>
+      <div class="hc-desc" id="soul-morning-desc">Start the day: gratitude, intention, a word, and prayer.</div>
     </div>
     <div class="hub-card" onclick="go('reflect')">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -2284,7 +2284,7 @@ input:focus,textarea:focus,select:focus{
       <div class="ritual-line">Before the world starts pulling, choose who you'll be in it.</div>
     </div>
   </div>
-  <p style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px">A few quiet minutes to set the day: receive a word, name your gratitude and intention, then pray. Take it at your own pace — there's no wrong way.</p>
+  <p style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px" id="morning-intro-desc">A few quiet minutes to set the day: receive a word, name your gratitude and intention, then pray. Take it at your own pace — there's no wrong way.</p>
   <!-- Begin with a breath — the daily opening work; grounds the morning before words. Faith-aware. -->
   <div class="card" style="margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="openBreath((typeof _breathFaithOn==='function'&&_breathFaithOn())?'prayer':'settle')">
     <div style="width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(200,169,110,0.9),rgba(200,169,110,0.22));flex-shrink:0"></div>
@@ -3387,7 +3387,7 @@ input:focus,textarea:focus,select:focus{
     <div style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;color:var(--tx)">Your coach</div>
     <button onclick="clearCoachHistory()" style="background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:4px 8px;font-family:DM Mono,monospace;letter-spacing:0.05em">Clear history</button>
   </div>
-  <p style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:12px">He's read your whole story — your training, your fight, your money, your faith, what weighs on you. Not a search bar. Someone who knows you, and points you toward who you're becoming. Ask him anything.</p>
+  <p style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:12px" id="coach-intro-desc">He's read your whole story — your training, your fight, your money, your faith, what weighs on you. Not a search bar. Someone who knows you, and points you toward who you're becoming. Ask him anything.</p>
   <div class="qbtns" id="coach-quick-replies">
     <!-- Adaptive quick-replies render here based on user state -->
   </div>
@@ -5287,7 +5287,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v569';
+const APP_VERSION = 'v570';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -8597,9 +8597,15 @@ function buildPTCtx(){
   let cardioCtx = '';
   try{
     const acts = ls('totry_strava_activities') || [];
-    const _fresh = acts.filter(x => x && x.start_date && (Date.now() - new Date(x.start_date).getTime()) < 14*86400000);
+    // THE FIELD THIS FILTERED ON IS NEVER WRITTEN. The Strava sync stores `date: act.start_date_local`
+    // (35-strava.js:303); nothing anywhere writes `start_date` onto a saved activity. So the whole
+    // block was dead — this carefully-composed line, the one place the coach is handed real HR and
+    // effort data, has never once reached the model. Verified both ways: with the shape the sync
+    // actually writes the line is absent, and adding a start_date field to the same rows produces it.
+    const _actDate = x => (x && (x.start_date || x.date)) || null;
+    const _fresh = acts.filter(x => _actDate(x) && (Date.now() - new Date(_actDate(x)).getTime()) < 14*86400000);
     if(_fresh.length){ const a = _fresh[0];
-      cardioCtx = '\nMost recent cardio (Strava, ' + new Date(a.start_date).toLocaleDateString('en-AU') + '): ' + (a.type||'activity') + ', ' + (a.distance? dFmt(a.distance):'') + (a.moving_time? ', '+Math.round(a.moving_time/60)+'min':'')
+      cardioCtx = '\nMost recent cardio (Strava, ' + new Date(_actDate(a)).toLocaleDateString('en-AU') + '): ' + (a.type||'activity') + ', ' + (a.distance? dFmt(a.distance):'') + (a.moving_time? ', '+Math.round(a.moving_time/60)+'min':'')
         + (a.avg_hr? ', avg HR '+a.avg_hr+'bpm':'') + (a.max_hr? ' (max '+a.max_hr+')':'')
         + ((a.calories && !(typeof nutGentle==='function'&&nutGentle()))? ', '+a.calories+' cal':'') + (a.suffer_score? ', effort '+a.suffer_score:'')
         + '. (Use this real performance data — HR and effort tell you how hard it actually was.)';
@@ -10788,6 +10794,24 @@ function faithPrayer(){
 // ── SOUL TAB — make the cards speak the person's tradition ─────────────────────
 // Relabels the book/today/practice/stillness cards and shows only what fits the path.
 // Christianity keeps liturgy + Rosary; other paths get their reader + the universal stillness.
+// THE SCREEN AND THE VOICE DISAGREED ABOUT WHO THE COACH IS. The Coach tab opened "He's read your
+// whole story … Ask him anything" for everyone, while sexNote() in the same build was telling the model
+// "THEIR SEX: female. You are her big SISTER. Never call her brother, man, mate, bro or lad." So a woman
+// read one thing on the page and was answered as another. It was the only tab of fifteen still gendered
+// in its static copy, and it had no id, so nothing could reach it.
+// No sex on file gets the neutral form rather than a guess — the app asks in Settings, it does not assume.
+function applyCoachVoiceCopy(){
+  try{
+    const el = document.getElementById('coach-intro-desc');
+    if(!el) return;
+    const sx = (typeof userSex === 'function') ? userSex() : null;
+    const who  = sx === 'female' ? 'She\u2019s' : sx === 'male' ? 'He\u2019s' : 'Your coach has';
+    const them = sx === 'female' ? 'her' : sx === 'male' ? 'him' : '';
+    el.textContent = who + ' read your whole story \u2014 your training, your fight, your money, your faith, '
+      + 'what weighs on you. Not a search bar. Someone who knows you, and points you toward who you\u2019re '
+      + 'becoming. Ask ' + (them ? them + ' ' : '') + 'anything.';
+  }catch(_){}
+}
 function applyFaithLabels(){
   try{
     const f=curFaith(), t=f.id;
@@ -10865,6 +10889,21 @@ function applyFaithLabels(){
     };
     set('soul-intro', 'The root beneath everything else. The body, the money, the fight — they all grow from here, or they don’t last. This is where the app points past itself: '+(introTail[t]||introTail.christianity)+'. Stay grounded here, and the rest holds.');
     set('soul-reflect-desc', t==='christianity' ? 'Close the day: how it went, journal, examen, wins.' : 'Close the day: how it went, journal, review, wins.');
+    // THE CARD NEXT TO IT SAID "AND PRAYER" TO EVERYONE. This function rewrote the Reflect blurb for
+    // every tradition and could not reach the Morning one beside it, or the Morning tab's own intro,
+    // because neither had an id — so a secular person read "Close the day: … review, wins" directly
+    // under "Start the day: gratitude, intention, a word, and prayer", and the ritual itself never
+    // mentions prayer at any of its five steps. Only these two blurbs carried it.
+    const _mDesc = { christianity:'Start the day: gratitude, intention, a word, and prayer.',
+      islam:'Start the day: gratitude, intention, a word, and du\u2019a.',
+      hinduism:'Start the day: gratitude, intention, a word, and prayer.',
+      buddhism:'Start the day: gratitude, intention, a word, and a moment of stillness.',
+      secular:'Start the day: gratitude, intention, a word, and a moment of stillness.' };
+    const _mIntro = { christianity:'then pray', islam:'then make du\u2019a', hinduism:'then pray',
+      buddhism:'then sit with it for a moment', secular:'then sit with it for a moment' };
+    set('soul-morning-desc', _mDesc[t] || _mDesc.christianity);
+    set('morning-intro-desc', 'A few quiet minutes to set the day: receive a word, name your gratitude and intention, '
+      + (_mIntro[t] || _mIntro.christianity) + '. Take it at your own pace \u2014 there\u2019s no wrong way.');
   }catch(_){}
 }
 
@@ -11184,6 +11223,17 @@ function _renderIslamToday(el){
   el.innerHTML='<div class="card" style="text-align:center;padding:22px 18px;margin-bottom:12px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Ayah for today</div><div style="font-family:Cormorant Garamond,serif;font-size:20px;font-style:italic;line-height:1.6;color:var(--tx);margin-bottom:10px">“'+a.t+'”</div><div style="font-size:12px;color:var(--go)">— '+a.r+'</div></div><div id="salah-box">'+_readLoading()+'</div>';
   _loadSalah();
 }
+// THE CARD NAMED A METHOD THE APP DOES NOT ASK FOR. Every prayer-time request sends Aladhan's
+// method=2, which is the Islamic Society of North America — and the card underneath read "Muslim World
+// League method". They are not the same calculation: MWL and ISNA use different twilight angles, so the
+// Fajr and Isha printed were ISNA's while the line beneath claimed MWL's. Verified against the live API
+// on the same date and coordinates: method=2 returns meta.method.name "Islamic Society of North America
+// (ISNA)", Fajr 05:08 / Isha 18:44 — exactly what the app displayed.
+// Changing the METHOD would move a person's prayer times without being asked; changing the LABEL tells
+// them the truth about the times they already have. Both now come from one constant, so a future change
+// to either cannot leave the other behind. A method picker is the honest next step, not a silent shift.
+const SALAH_METHOD = 2;
+const SALAH_METHOD_NAME = 'Islamic Society of North America (ISNA)';
 function _salahDateStr(){ const d=new Date(); return String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear(); }
 // EVERY read of a stored location is coarsened, not just the fresh fetch.
 // v437 rounded coordinates to ~1km, but the rounding sat INSIDE the `if(!coords)` branch — it only
@@ -11219,7 +11269,7 @@ async function _loadSalah(){
   }
   if(!coords){ box.innerHTML='<div class="card" style="text-align:center;font-size:13px;color:var(--tx3);padding:18px;line-height:1.6">Allow location to see today’s prayer times.<br><button class="btn" onclick="_promptCity()" style="margin-top:10px;display:inline-block;padding:7px 14px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Or enter your city</button></div>'; return; }
   try{
-    const r=await _fetchT('https://api.aladhan.com/v1/timings/'+_salahDateStr()+'?latitude='+coords.lat+'&longitude='+coords.lng+'&method=2');
+    const r=await _fetchT('https://api.aladhan.com/v1/timings/'+_salahDateStr()+'?latitude='+coords.lat+'&longitude='+coords.lng+'&method='+SALAH_METHOD+'');
     const j=await r.json(); if(j.code!==200||!j.data) throw new Error('n'); box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri);
   }catch(e){ box.innerHTML=_readErr('Couldn’t load prayer times right now.'); }
 }
@@ -11229,7 +11279,7 @@ async function _loadSalahByCity(city){
   // NB: the city is saved further down, only after the API confirms it resolved — so a typo is never
   // persisted and then silently reused. The bug was never the write; it was that _loadSalah() did not
   // READ it, so the saved city sat there unused and people retyped it every visit.
-  try{ const r=await _fetchT('https://api.aladhan.com/v1/timingsByCity/'+_salahDateStr()+'?city='+encodeURIComponent(city)+'&country=&method=2'); const j=await r.json(); if(j.code!==200||!j.data) throw new Error('c'); try{ ls('totry_city',city); }catch(_){} if(box) box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri)+'<div style="text-align:center;margin-top:8px"><button class="btn" onclick="_promptCity()" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">Change city</button></div>'; }
+  try{ const r=await _fetchT('https://api.aladhan.com/v1/timingsByCity/'+_salahDateStr()+'?city='+encodeURIComponent(city)+'&country=&method='+SALAH_METHOD+''); const j=await r.json(); if(j.code!==200||!j.data) throw new Error('c'); try{ ls('totry_city',city); }catch(_){} if(box) box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri)+'<div style="text-align:center;margin-top:8px"><button class="btn" onclick="_promptCity()" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">Change city</button></div>'; }
   catch(e){ if(box) box.innerHTML=_readErr('Couldn’t find that city — try a larger nearby one.'); }
 }
 function _salahCard(t,h){
@@ -11243,7 +11293,7 @@ function _salahCard(t,h){
   const hh=Math.floor(mins/60), mm=mins%60; const cd=(hh>0?hh+'h ':'')+mm+'m';
   const rows=order.map(o=>{ const isNext=(o[0]===nextName); const dim=(o[0]==='Sunrise'); return '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 4px;border-bottom:1px solid var(--bd)"><span style="font-size:14px;color:'+(isNext?'var(--go)':dim?'var(--tx3)':'var(--tx2)')+';'+(isNext?'font-weight:600':'')+'">'+o[0]+(isNext?' · next':'')+'</span><span style="font-family:DM Mono,monospace;font-size:14px;color:'+(isNext?'var(--go)':'var(--tx2)')+'">'+o[1]+'</span></div>'; }).join('');
   const header='<div style="text-align:center;padding:2px 0 14px;margin-bottom:8px;border-bottom:1px solid var(--bd)"><div style="font-size:11px;letter-spacing:0.05em;color:var(--tx3);margin-bottom:2px">NEXT PRAYER</div><div style="font-family:Cormorant Garamond,serif;font-size:25px;color:var(--go);line-height:1.1">'+nextName+'</div><div style="font-family:DM Mono,monospace;font-size:12px;color:var(--tx2);margin-top:2px">in '+cd+'</div></div>';
-  return '<div class="card"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Today · '+h.day+' '+h.month.en+' '+h.year+' AH</div>'+header+rows+'<div style="font-size:11px;color:var(--tx3);margin-top:10px;text-align:center">Times for your location · Muslim World League method</div></div>';
+  return '<div class="card"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Today · '+h.day+' '+h.month.en+' '+h.year+' AH</div>'+header+rows+'<div style="font-size:11px;color:var(--tx3);margin-top:10px;text-align:center">Times for your location · '+SALAH_METHOD_NAME+'</div></div>';
 }
 
 // ── PRACTICE (Dhikr / Japa bead counters + the 99 Names) ───────────────────────
@@ -12108,6 +12158,7 @@ function go(name){
   
   if(name==='morning'){initMorningTab();showMorningAffirm();showMorningFocus();if(typeof renderMorningFlow==='function')setTimeout(renderMorningFlow,60);if(typeof _restoreMorningSleep==='function')_restoreMorningSleep();}
   if(name==='soul'){ if(typeof renderSoulStill==='function') renderSoulStill(); if(typeof applyFaithLabels==='function') applyFaithLabels(); if(typeof highlightSoulByTime==='function') highlightSoulByTime(); if(typeof renderFaithDoor==='function') renderFaithDoor(); }
+  if(name==='coach'){ if(typeof applyCoachVoiceCopy==='function') applyCoachVoiceCopy(); }
   if(name==='reflect'){initEveningTab();initReviewTab();if(typeof renderEveningFlow==='function')setTimeout(renderEveningFlow,60);}
   
   if(name==='nourish'){renderNutritionLog();if(typeof prefillNutGoals==='function')prefillNutGoals();if(typeof renderFuelPlanCard==='function')renderFuelPlanCard();}
@@ -14155,6 +14206,7 @@ function setUserSex(sex){
   try{ document.querySelectorAll('.sex-opt').forEach(b=>{ const on=b.dataset.sex===sex; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'rgba(200,169,110,0.10)':'var(--bg3)'; }); }catch(_){}
   // Draw what this just unlocked. Without it the toast promises a change nothing performs — the cycle
   // card and its surfaces are gated on sex and only appear when renderCycleSurfaces() runs.
+  try{ if(typeof applyCoachVoiceCopy==='function') applyCoachVoiceCopy(); }catch(_){}   // the Coach tab's own copy is gendered too
   try{ if(typeof renderCycleSurfaces==='function') renderCycleSurfaces(); }catch(_){}
   try{ if(typeof renderCycleCard==='function') renderCycleCard(); }catch(_){}
   if(typeof showToast==='function') showToast('Saved', 'Your targets and guidance will reflect this.');
@@ -20853,7 +20905,10 @@ function autoTickHabits(){
   const dayList = [];
   for(let off=0; off<=ti; off++){
     const d = new Date(Date.now() - off*86400000);
-    dayList.push({ dateStr: d.toLocaleDateString('en-AU'), idx: ((ti - off) % 7 + 7) % 7 });
+    // dayStart is carried so a branch can ask WHEN a day was, not only what it is called — the clean
+    // -day tick below has to refuse days that precede the fight itself.
+    const _ds = new Date(d); _ds.setHours(0,0,0,0);
+    dayList.push({ dateStr: d.toLocaleDateString('en-AU'), idx: ((ti - off) % 7 + 7) % 7, dayStart: _ds.getTime() });
   }
   // Determine the nutrition-goal direction once (lose = stay under, gain = hit/over, else hit).
   // Was reading totry_goal_intent, which nothing writes — so neither branch below could ever match and
@@ -20871,7 +20926,7 @@ function autoTickHabits(){
 
   habits.forEach((h,hi)=>{
     const name=h.n.toLowerCase();
-    dayList.forEach(({dateStr, idx})=>{
+    dayList.forEach(({dateStr, idx, dayStart})=>{
       let shouldTick=false;
       if(/gratitude/.test(name)){
         // Gratitude habit: ticks when the morning's gratitude field was actually filled that day.
@@ -20904,7 +20959,27 @@ function autoTickHabits(){
         // Every day without a logged loss is a clean win. But if a loss WAS logged this day,
         // actively UN-tick it (this is the one habit that can flip true→false on the same day).
         if(lossThatDay){ if(h.d[idx]===1){ h.d[idx]=0; anyTicked=true; } return; }
-        shouldTick = vices.length>0;
+        // A CLEAN DAY YOU WERE NOT HERE FOR IS NOT A CLEAN DAY. `vices.length>0` ticked every day the
+        // backfill walked, with no lower bound — so a person who signed up on a Sunday and named one
+        // thing to fight opened the app to a full week of ✓✓✓✓✓✓✓ and "6/6 this week" for days that
+        // happened before they had an account, while the Fight tab beside it correctly read "0 days
+        // clean". It also satisfied the first-run checklist's "any d[] slot is 1" test, so "Add your
+        // first habits" arrived pre-ticked. The app's first act was to hand someone a week they had
+        // not lived. Every other branch here requires evidence ON that day; this one now requires at
+        // least that the day was theirs — on or after the journey start, and on or after the fight
+        // they are being credited for.
+        const _startTs = (function(){
+          try{ const st = ls('totry_start'); const t = st ? new Date(st).getTime() : NaN;
+               return isNaN(t) ? null : t; }catch(_){ return null; }
+        })();
+        const _liveVice = vices.some(function(v){
+          if(!v) return false;
+          const vs = v.fightingSince || v.startDate;
+          const t = vs ? new Date(vs).getTime() : NaN;
+          return isNaN(t) ? true : (dayStart >= new Date(new Date(t).setHours(0,0,0,0)).getTime());
+        });
+        const _afterStart = (_startTs == null) || (dayStart >= new Date(new Date(_startTs).setHours(0,0,0,0)).getTime());
+        shouldTick = vices.length>0 && _liveVice && _afterStart;
       } else if(/bible|scripture|verse|word|read/.test(name)){
         shouldTick = allSaved.some(v=>v.date===dateStr || (v.ts && new Date(v.ts).toLocaleDateString('en-AU')===dateStr));
       } else if(/water|hydrate/.test(name)){
@@ -21534,6 +21609,14 @@ function pickContextualVerse(context){
 
 // Show a verse toast — small unobtrusive scripture appearance
 function showVerseToast(context, customTitle){
+  // "LIGHTER — SURFACES LESS" HAS TO MEAN THIS ONE TOO. The dial already hides the hero verse, and the
+  // companion and breath surfaces both check it (_breathFaithOn, faithOn) — but this, the app's main
+  // UNPROMPTED scripture moment, contained no faithLevel reference at all. It fires on a win, a slip, a
+  // PR, a fasting milestone and an answered prayer, so a person who had explicitly asked for less still
+  // got a full-screen verse at every one of those. Verified: at level 'light' the hero verse was
+  // display:none while showVerseToast rendered the identical modal it renders at 'full'.
+  // Asking for less and being given the same thing is worse than never offering the dial.
+  if(typeof faithLevel === 'function' && faithLevel() === 'light') return;
   // CONTEXTUAL_VERSES is Bible-only, and this fires on wins — an urge beaten, a PR, a fasting milestone.
   // Ungated, it handed a Muslim, Hindu, Buddhist or secular person someone else's scripture at the moment
   // they felt proudest. activeVerses() already resolves the right set per tradition (VS_ISLAM, VS_HINDU,
@@ -22129,11 +22212,31 @@ async function loadBibleChapter(){
     document.getElementById('br-chapter-title').textContent=book.name+' '+chapter;
     document.getElementById('br-api-credit').textContent=apiUsed;
     const container=document.getElementById('br-verses');container.innerHTML='';
+    // THE HIGHLIGHT MEANS "SAVED", SO IT HAS TO COME BACK. It lived only in a class toggled on click:
+    // re-open the chapter and every verse you had kept was unmarked — 0 of 36 rows highlighted on a
+    // fresh load of John 3 with John 3:3 already in totry_sv — so the reader could not show you what
+    // you had saved. And tapping a highlighted row cleared the mark while LEAVING the verse saved, so
+    // the second tap silently disagreed with storage. Read the shelf when the chapter is built, and
+    // make the off-tap actually unsave.
+    const _savedRefs = (function(){
+      try{ return new Set((ls('totry_sv')||[]).map(function(x){ return x && x.reference; }).filter(Boolean)); }
+      catch(_){ return new Set(); }
+    })();
     verses.forEach(v=>{
       if(!v.text||v.text.trim()==='')return;
       const row=document.createElement('div');row.className='bible-verse-row';
+      const _ref = book.name+' '+chapter+':'+v.num;
+      if(_savedRefs.has(_ref)) row.classList.add('highlighted');
       row.innerHTML='<span class="bvn">'+v.num+'</span><span class="bvt">'+v.text.trim()+'</span>';
-      row.onclick=()=>{row.classList.toggle('highlighted');if(row.classList.contains('highlighted'))saveVerseFromReader(v.text.trim(),book.name+' '+chapter+':'+v.num);};
+      row.onclick=()=>{
+        if(row.classList.contains('highlighted')){
+          row.classList.remove('highlighted');
+          unsaveVerseFromReader(_ref);
+        } else {
+          row.classList.add('highlighted');
+          saveVerseFromReader(v.text.trim(), _ref);
+        }
+      };
       container.appendChild(row);
     });
     // Study notes (Tyndale Open Study Notes, free via helloao) — collapsed by default.
@@ -22404,10 +22507,14 @@ async function generateIntentionPrayer(pfx){
       out.style.display='block';
       out.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">A '+_prayerNoun()+' for this</div>'+
         '<div style="font-family:Cormorant Garamond,serif;font-size:16px;font-style:italic;line-height:1.75;color:var(--tx);margin-bottom:12px">'+prayer.trim().replace(/</g,'&lt;')+'</div>'+
-        '<div style="display:flex;gap:8px"><button class="btn primary" style="flex:1;font-size:12px" onclick="savePrayerToList(window.__lastAIPrayer, &apos;'+(intention.trim().slice(0,30).replace(/'/g,"")).replace(/"/g,'')+'&apos;)">Save to my prayers</button><button class="btn" style="flex:1;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="generateIntentionPrayer(\''+pfx+'\')">Write another</button></div>'+aiTag();
+        '<div style="display:flex;gap:8px"><button class="btn primary" style="flex:1;font-size:12px" onclick="savePrayerToList(window.__lastAIPrayer, &apos;'+(intention.trim().slice(0,30).replace(/'/g,"")).replace(/"/g,'')+'&apos;)">Save to my '+_prayerNoun()+'s</button><button class="btn" style="flex:1;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="generateIntentionPrayer(\''+pfx+'\')">Write another</button></div>'+aiTag();
     } else if(out){ out.style.display='block'; out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t write that just now. Try again in a moment.</div>'; }
   }catch(e){ if(out){ out.style.display='block'; out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t reach the coach right now.</div>'; } }
-  finally{ if(btn){ btn.textContent='Write my prayer'; btn.disabled=false; } }
+  // THE BUTTON RENAMED ITSELF AFTER ONE USE. The surface builds its label from _prayerNoun() — "Write
+  // my reflection" for a secular person, "Write my du'a" for a Muslim — and this finally block put
+  // 'Write my prayer' back regardless, on success AND on failure. So the composer was correct until you
+  // used it once, and Christian from then on. Reset to the same noun the label was built from.
+  finally{ if(btn){ btn.textContent='Write my '+_prayerNoun(); btn.disabled=false; } }
 }
 // Saint prayers library — fetches the actual prayer text via AI (authentic, well-known prayers) + save.
 async function showSaintPrayer(saint, title){
@@ -22423,7 +22530,7 @@ async function showSaintPrayer(saint, title){
       window.__lastSaintPrayer = text.trim();
       out.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">'+saint+' \u00b7 '+title+'</div>'+
         '<div style="font-family:Cormorant Garamond,serif;font-size:16px;font-style:italic;line-height:1.8;color:var(--tx);white-space:pre-wrap;margin-bottom:12px">'+text.trim().replace(/</g,'&lt;')+'</div>'+
-        '<button class="btn" style="background:var(--bg3);border:1px solid var(--bd);font-size:12px" onclick="savePrayerToList(window.__lastSaintPrayer, &apos;'+saint.replace(/'/g,'')+'&apos;)">Save to my prayers</button>'+aiTag();
+        '<button class="btn" style="background:var(--bg3);border:1px solid var(--bd);font-size:12px" onclick="savePrayerToList(window.__lastSaintPrayer, &apos;'+saint.replace(/'/g,'')+'&apos;)">Save to my '+_prayerNoun()+'s</button>'+aiTag();
     } else { out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t load that prayer right now.</div>'; }
   }catch(e){ out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t reach the library right now.</div>'; }
 }
@@ -22465,12 +22572,24 @@ function saveVerseFromReader(text,ref){
     date: new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'})
   });
   ls('totry_sv', saved.slice(0,200));
-  renderSavedVerses();
+  renderSavedVersesEverywhere();
   showToast('Verse saved \u2665', ref);
 }
+// The off-tap. Without this the highlight and the shelf disagreed the moment you tapped twice.
+function unsaveVerseFromReader(ref){
+  if(!ref) return;
+  const saved = ls('totry_sv') || [];
+  const kept = saved.filter(function(v){ return !(v && v.reference === ref); });
+  if(kept.length === saved.length) return;
+  ls('totry_sv', kept);
+  renderSavedVersesEverywhere();
+  showToast('Removed', ref);
+}
 function renderBibleSavedPanel(){
-  // Delegated to renderSavedVerses() which now handles both panels in sync
-  renderSavedVerses();
+  // Delegated to renderSavedVersesEverywhere(), which genuinely paints both shelves. The old comment
+  // here said renderSavedVerses "handles both panels in sync" and it never did — it paints exactly one
+  // container, defaulting to the Christian tab's.
+  renderSavedVersesEverywhere();
 }
 
 // ── JOURNAL ───────────────────────────────────────────────────
@@ -22840,6 +22959,11 @@ function syncWeightUnitLabels(){
   const u = wUnit();
   const lbl = document.getElementById('tdee-weight-label');
   if(lbl) lbl.textContent = 'Weight (' + u + ')';
+  // The box under that label kept a hardcoded "75" — a kilogram hint sitting beneath the word (lb),
+  // so the one example the app offers a pounds user was a number no adult weighs in pounds. The label
+  // was already swapping here; the placeholder simply never came with it.
+  const tw = document.getElementById('tdee-weight');
+  if(tw) tw.placeholder = String(Math.round(kgToDisp(75)));
   const bw = document.getElementById('bod-weight');
   if(bw) bw.placeholder = 'Weight (' + u + ')';
   document.querySelectorAll('[data-weight-unit]').forEach(function(el){ el.textContent = u; });
@@ -23451,9 +23575,28 @@ function weightTrendDir(){
   if(body.length<3) return null;
   const spanDays=(body[body.length-1].t-body[0].t)/86400000;
   if(spanDays<21) return null;                         // ~3 weeks before a trend is trustworthy
-  const trendNow=(typeof getTrendWeight==='function')?getTrendWeight(ls('totry_body')||[]):body[body.length-1].w;
-  const changeKg=trendNow-body[0].w;
-  const perWeek=changeKg/(spanDays/7);
+  // A RATE THAT DEPENDED ON HOW OFTEN YOU STOOD ON THE SCALE. This differenced a SMOOTHED current
+  // value against a RAW first reading — getTrendWeight is a per-SAMPLE EMA (alpha 0.25) seeded at the
+  // oldest point, so its lag is three WEIGH-INS: three days for a daily weigher, three weeks for a
+  // weekly one. Two people losing exactly 4kg over the same 21 days were told "0.5kg a week — 18 weeks
+  // from here" and "1.1kg a week — 6 weeks", ETAs 88 days apart, on identical bodies. The true rate in
+  // both cases is 1.33kg/week. And someone losing a textbook 0.25kg/week was told 0.1kg/week and
+  // 97 weeks, while the Change tile forty pixels above said something else entirely.
+  // Least-squares slope over EVERY reading in the window instead — the same technique, and the same
+  // reasoning, as computeAdaptiveTDEE (14-nourish.js): "differencing two endpoints — even two smoothed
+  // ones — throws away every reading between". Frequency of weighing now changes the confidence, not
+  // the answer.
+  const _t0 = body[0].t;
+  let _n = body.length, _sx = 0, _sy = 0, _sxx = 0, _sxy = 0;
+  body.forEach(function(pt){
+    const x = (pt.t - _t0) / 86400000, y = pt.w;
+    _sx += x; _sy += y; _sxx += x * x; _sxy += x * y;
+  });
+  const _denom = _n * _sxx - _sx * _sx;
+  if(!_denom) return null;
+  const perDay = (_n * _sxy - _sx * _sy) / _denom;
+  const perWeek = perDay * 7;
+  const changeKg = perDay * spanDays;
   return { dir: perWeek>0.12?'up':perWeek<-0.12?'down':'stable', perWeek:Math.round(perWeek*100)/100, changeKg:Math.round(changeKg*10)/10, days:Math.round(spanDays) };
 }
 function strengthTrend(){
@@ -23673,6 +23816,15 @@ function renderBody(){
   renderMeasurements();
   renderProgressPhotos();
   renderBodyCompInsight();
+  // THE PROJECTION IS THE PAYOFF FOR LOGGING, SO IT HAS TO REACT TO THE LOG. renderBodyGoalCard was
+  // only ever called by the tab switch and by saving the goal itself — so logging a weigh-in updated
+  // the Now tile beside it and left the card byte-identical, still answering from the old data.
+  // Measured: saving 78.0 moved the tile to "78kg" while the card kept "About 2 September … 2.1kg a
+  // week"; leaving the tab and coming back changed it to "About 1 September … 2.2kg a week". Deleting
+  // every weigh-in left it projecting a date off numbers that no longer existed. saveQuickWeight,
+  // logBody and deleteWeightEntry all come through here, so one call covers every door. No cycle:
+  // renderBodyGoalCard does not call back into renderBody.
+  try{ if(typeof renderBodyGoalCard === 'function') renderBodyGoalCard(); }catch(_){ }
 }
 
 // Items 9 + 10: surface what the scale ALONE hides. Uses the body-composition data imported
@@ -28381,11 +28533,30 @@ function renderGrowHandoffs(){
     const body = (ls('totry_body')||[]).filter(e => e && Number(e.weight) > 0)
       .sort((a,b) => new Date(a.ts||a.date) - new Date(b.ts||b.date));
     let trackLine = '';
-    if(body.length >= 2){
+    // NOTHING ON THE SCALE THIS WEEK IS AN ANSWER. `older` takes every entry more than seven days
+    // back — so for a person who has not weighed in since, that set INCLUDES the newest entry and
+    // `from` and `to` become the same reading. diff 0, span 0, and the branch below announced "Two
+    // weigh-ins, hours apart" for two readings fifty days apart, while the card underneath printed
+    // "0KG WK" and "the scale says +0kg — your data disagrees". A fabricated zero, twice, and the same
+    // zero went to the AI through __weekReadCtx. Say the truth: there is nothing to read yet.
+    const recent = body.filter(e => new Date(e.ts||e.date).getTime() > now - W);
+    if(body.length >= 2 && !recent.length){
+      trackLine = 'No weigh-in this week \u2014 step on the scale and this line can tell you something';
+    } else if(body.length >= 2){
       const older = body.filter(e => new Date(e.ts||e.date).getTime() <= now - W);
       const from = older.length ? Number(older[older.length-1].weight) : Number(body[0].weight);
       const to = Number(body[body.length-1].weight);
-      const diff = Math.round((to - from) * 10) / 10;
+      // ONE NUMBER, TWICE. This line and the card 68px below it are both on screen at once and both
+      // answer "what did the week do" — and they disagreed, because this differenced two RAW readings
+      // while the card differenced two SMOOTHED ones: "-2.9kg over the week" directly above "-0.7KG
+      // WK", and -1.5lb above -1.3LB for a pounds user. A single reading can move a kilo on water
+      // alone, which is exactly why the card smooths; the hub now asks the same question the same way,
+      // and falls back to the raw pair only when there is not enough history to smooth.
+      const _tNow  = (typeof getTrendWeight === 'function') ? getTrendWeight(body) : null;
+      const _tPrev = (typeof getTrendWeight === 'function' && older.length) ? getTrendWeight(older) : null;
+      const diff = (_tNow != null && _tPrev != null)
+        ? Math.round((_tNow - _tPrev) * 10) / 10
+        : Math.round((to - from) * 10) / 10;
       const unit = (typeof wDelta === 'function') ? wDelta(diff, { zero:'steady' }) : (diff + 'kg');
       // "Over the week" has to actually BE over a week. When there is no weigh-in older than seven
       // days this compared the first and last of a much shorter span — two readings on the same
@@ -28403,8 +28574,17 @@ function renderGrowHandoffs(){
         const span = spanDays <= 8 ? 'over the week'
                    : spanDays <= 45 ? 'over ' + Math.round(spanDays / 7) + ' weeks'
                    : 'over ' + Math.round(spanDays / 30) + ' months';
-        trackLine = diff === 0 ? 'Holding steady ' + span + ' \u2014 that is what the fuel did'
-                               : unit + ' ' + span + ' \u2014 that is what the training and the fuel did';
+        // ATTRIBUTE IT TO WHAT ACTUALLY HAPPENED. This credited "the training and the fuel" whatever the
+        // week held — including to someone with zero workouts and zero meals logged, whose Train and
+        // Nourish handoffs directly above were both EMPTY, and to the runner whose training the app
+        // could not see at all. Naming a cause the app has no evidence for is the false mechanism this
+        // card exists to avoid. Name the fronts with data; with neither, state the change and stop.
+        const _did = [];
+        if(ws.length) _did.push('the training');
+        if(logged.length) _did.push('the fuel');
+        const _cause = _did.length ? ' \u2014 that is what ' + _did.join(' and ') + ' did' : '';
+        trackLine = diff === 0 ? 'Holding steady ' + span + (logged.length ? ' \u2014 that is what the fuel did' : '')
+                               : unit + ' ' + span + _cause;
       }
     } else if(body.length === 1){
       trackLine = 'One weigh-in so far \u2014 one more and the trend starts';
@@ -28463,7 +28643,12 @@ function renderBodySystemReport(){
   const trend=(typeof getTrendWeight==='function'&&body.length)?getTrendWeight(body):null;
   const wAgo=body.filter(e=>new Date(e.ts).getTime()<=now-W);
   const trendPrev=(typeof getTrendWeight==='function'&&wAgo.length)?getTrendWeight(wAgo):null;
-  const weekChange=(trend!=null&&trendPrev!=null)?Math.round((trend-trendPrev)*10)/10:null;
+  // wAgo is "everything older than a week". With no weigh-in SINCE, that is the whole set — so trend
+  // and trendPrev were computed from identical data and weekChange came out a confident 0.0. The card
+  // then printed "0KG WK" and "the scale says +0kg — your data disagrees", and sent that same zero to
+  // the AI through __weekReadCtx. A week with nothing on the scale has no change to report.
+  const _weighedThisWeek = wAgo.length < body.length;
+  const weekChange=(trend!=null&&trendPrev!=null&&_weighedThisWeek)?Math.round((trend-trendPrev)*10)/10:null;
   const weighIns=body.filter(e=>inWin(e.ts,W,0)).length;
 
   const domains=(wCount>0?1:0)+(daysLogged>=2?1:0)+(body.length>=2?1:0);
@@ -28485,9 +28670,9 @@ function renderBodySystemReport(){
   if(!goal){
     goalRow='<div style="font-size:12px;color:var(--tx2);margin-bottom:8px">What are you aiming for? One tap \u2014 the loop will judge itself against it.</div>'+
       '<div style="display:flex;gap:6px;margin-bottom:10px">'+
-      '<button class="btn" style="flex:1;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="setBodyGoal(\'cut\')">Cut \u22120.5/wk</button>'+
+      '<button class="btn" style="flex:1;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="setBodyGoal(\'cut\')">Cut \u2212'+wFmt(0.5,{bare:true})+wUnit()+'/wk</button>'+
       '<button class="btn" style="flex:1;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="setBodyGoal(\'maintain\')">Maintain</button>'+
-      '<button class="btn" style="flex:1;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="setBodyGoal(\'build\')">Build +0.25/wk</button>'+
+      '<button class="btn" style="flex:1;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="setBodyGoal(\'build\')">Build +'+wFmt(0.25,{bare:true})+wUnit()+'/wk</button>'+
       '</div>';
   }
 
@@ -28506,13 +28691,23 @@ function renderBodySystemReport(){
     if(goal){
       const tgt=goal.rate||0;
       const onPace=Math.abs(weekChange-tgt)<=0.25;
-      verdict+=' Goal <b>'+goal.mode+'</b> ('+(tgt>=0?'+':'')+tgt+'kg/wk): '+(onPace?'<span style="color:var(--gr)">on pace \u2713</span>':'<span style="color:var(--go)">off pace</span>')+'.';
+      // The stat row at the top of this same card is already in the person's unit; this clause and the
+      // three buttons below were the last kilograms left on it, so a pounds user read "182.5lb /
+      // -1.3LB WK" and then "Goal cut (-0.5kg/wk)" in the same box.
+      verdict+=' Goal <b>'+goal.mode+'</b> ('+(tgt>=0?'+':'')+wFmt(tgt)+'/wk): '+(onPace?'<span style="color:var(--gr)">on pace \u2713</span>':'<span style="color:var(--go)">off pace</span>')+'.';
     }
   } else { verdict='<span style="color:var(--tx3)">~3 weeks of weight + food unlocks the energy-balance verdict \u2014 keep logging.</span>'; }
 
   // ONE COMPUTED ADJUSTMENT \u2014 weakest link wins (rule-based, costs nothing)
   let adjust='Hold the line \u2014 keep doing exactly this for another week.';
-  if(goal&&goal.mode!=='maintain'&&gkg!=null&&gkg<1.6) adjust='Protein is '+gkg+'g/kg \u2014 push toward 1.6\u20132.2 (\u2248'+Math.round((trend||80)*1.8)+'g/day). Highest-leverage fix this week.';
+  // A CARD MUST NOT CONTRADICT ITSELF FOUR LINES APART. lowConf guarded exactly one branch of this
+  // cascade, so a week with 0 days of food logged fell through to the default and read "Low confidence
+  // — only 0 days of food logged" above "THIS WEEK'S ONE ADJUSTMENT: Hold the line — keep doing exactly
+  // this for another week." There is nothing to hold and nothing to keep doing; the gap IS the
+  // adjustment, and it outranks the others because every one of them is computed from the days that
+  // were not logged.
+  if(lowConf) adjust='Only '+daysLogged+' day'+(daysLogged===1?'':'s')+' of food logged this week \u2014 log most days and the rest of this card becomes a real verdict.';
+  else if(goal&&goal.mode!=='maintain'&&gkg!=null&&gkg<1.6) adjust='Protein is '+gkg+'g/kg \u2014 push toward 1.6\u20132.2 (\u2248'+Math.round((trend||80)*1.8)+'g/day). Highest-leverage fix this week.';
   else if(goal&&goal.mode==='cut'&&tdeeR&&!lowConf&&avgCal!=null&&(avgCal-tdeeR.tdee)>0) adjust='You\'re cutting but eating ~'+Math.round(avgCal-tdeeR.tdee)+' above your real burn \u2014 trim ~250/day and re-check next week.';
   else if(weighIns<2) adjust='Only '+weighIns+' weigh-in'+(weighIns===1?'':'s')+' this week \u2014 2\u20133 quick morning weigh-ins make the trend trustworthy.';
   else if(pVol>0&&wVol<pVol*0.7) adjust='Volume cliff: '+wVol.toLocaleString()+'kg vs '+pVol.toLocaleString()+'kg last week \u2014 protect the floor: even two short sessions count.';
@@ -29273,8 +29468,8 @@ async function _seasonTimes(){
   const key = _salahDateStr(); const c = ls('totry_fast_times');
   if(c && c.key === key && c.fajr) return c;
   let url = null;
-  try{ const g = geoCoarse(); if(g) url = 'https://api.aladhan.com/v1/timings/'+key+'?latitude='+g.lat+'&longitude='+g.lng+'&method=2'; }catch(_){}   // coarsened — see geoCoarse()
-  if(!url){ const city = ls('totry_city'); if(city) url = 'https://api.aladhan.com/v1/timingsByCity/'+key+'?city='+encodeURIComponent(city)+'&country=&method=2'; }
+  try{ const g = geoCoarse(); if(g) url = 'https://api.aladhan.com/v1/timings/'+key+'?latitude='+g.lat+'&longitude='+g.lng+'&method='+SALAH_METHOD+''; }catch(_){}   // coarsened — see geoCoarse()
+  if(!url){ const city = ls('totry_city'); if(city) url = 'https://api.aladhan.com/v1/timingsByCity/'+key+'?city='+encodeURIComponent(city)+'&country=&method='+SALAH_METHOD+''; }
   if(!url) return null;
   try{
     const r = await _fetchT(url, 8000); const j = await r.json();
@@ -35840,7 +36035,8 @@ function openEditTraining(unifiedId){
     const km = a.distance ? mToDisp(a.distance) : null;   // named km for history; it is the person's unit
     const mins = a.moving_time ? Math.round(a.moving_time/60) : null;
     const pace = (km && mins) ? (mins/km) : null;
-    const paceStr = pace ? (Math.floor(pace)+':'+String(Math.round((pace%1)*60)).padStart(2,'0')+' /km') : null;
+    const _pp = _paceParts(pace);
+    const paceStr = _pp ? (_pp.m + ':' + _pp.s + ' /' + _pp.unit) : null;
     const when = a.date ? new Date(a.date).toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'}) : '';
     const stat = (label,val) => val ? '<div style="flex:1;min-width:70px;background:var(--bg3);border-radius:8px;padding:10px;text-align:center"><div style="font-family:DM Mono,monospace;font-size:18px;color:var(--tx)">'+val+'</div><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px">'+label+'</div></div>' : '';
     const stats = [
@@ -35971,14 +36167,25 @@ function renderEditCardioFields(){
   if(cfg.pace){ html += '<div id="edit-cardio-pace" style="font-family:DM Mono,monospace;font-size:11px;color:var(--go);margin:-4px 0 12px 0;min-height:14px"></div>'; }
   wrap.innerHTML = html;
 }
+// Minutes-per-unit -> the parts of "M:SS", carrying when the seconds round up to sixty, and the
+// person's own distance unit. Math.round on the remainder returns 60 for any fraction above 0.9917:
+// 45 minutes over 5.00 miles is 8.9996 min/mi, which printed "8:60". Both pace lines had that bug and
+// only one of them had the unit right — the Strava detail hardcoded "/km" and showed it to a miles
+// user beside a distance already rendered in miles. One helper, so they cannot drift again.
+function _paceParts(perUnit){
+  if(!(perUnit > 0) || !isFinite(perUnit)) return null;
+  let m = Math.floor(perUnit), sec = Math.round((perUnit - m) * 60);
+  if(sec === 60){ m += 1; sec = 0; }
+  return { m: m, s: String(sec).padStart(2,'0'), unit: (typeof dUnit === 'function') ? dUnit() : 'km' };
+}
 function updateEditCardioPace(){
   const paceEl = document.getElementById('edit-cardio-pace');
   if(!paceEl) return;
   const mins = _parseCardioTime(document.getElementById('edit-cardio-time')?.value||'');
   const km = parseFloat(document.getElementById('edit-cardio-distance')?.value||'')||0;   // in dUnit(), converted at the store below
   if(mins>0 && km>0){
-    const secPerKm = (mins*60)/km; const mm=Math.floor(secPerKm/60); const ss=Math.round(secPerKm%60);
-    paceEl.textContent = 'Pace: '+mm+"'"+String(ss).padStart(2,'0')+'"/'+dUnit();
+    const pp = _paceParts(mins/km);
+    paceEl.textContent = pp ? ('Pace: '+pp.m+"'"+pp.s+'"/'+pp.unit) : '';
   } else { paceEl.textContent=''; }
 }
 function saveEditTraining(id){
@@ -37983,6 +38190,10 @@ function toggleEveningHabit(hi){
   const ti = tIdx();
   habits[hi].d[ti] = habits[hi].d[ti] === 1 ? 0 : 1;
   saveH();
+  // Ticking one here IS the person making the list theirs — the same signal adding one gives. The
+  // first-run checklist used to infer that from "any d[] slot is 1", which autoTickHabits satisfies on
+  // its own, so the step arrived pre-ticked on a brand-new install. Set the flag from a real act.
+  try{ ls('totry_habits_touched', true); }catch(_){}
   renderEveningHabitTickList();
   haptic('light');
 }
@@ -38010,6 +38221,13 @@ const _EXAMEN_FACE = {
     title:'Go back over the day, honestly.', blurb:'Seneca did this nightly: what did I do, where did I fall short, what will I do better. Five questions. This closes your day.', cta:'Begin the review' }
 };
 // The noun the door used, for everything inside — see the note on _EXAMEN_FACE.
+// The stored field is called 'repent' forever; only its LABEL belongs to a tradition.
+function _examenLabelRepent(){
+  try{
+    const t = (typeof faithTradition==='function') ? faithTradition() : 'secular';
+    return (t === 'christianity' || t === 'islam' || t === 'hinduism') ? 'Repent' : 'Where you fell short';
+  }catch(_){ return 'Repent'; }
+}
 function _examenNoun(){
   try{
     const t = (typeof faithTradition==='function') ? faithTradition() : 'secular';
@@ -38045,13 +38263,20 @@ function examenStepFor(step){
   const divine = (typeof curFaith==='function' && curFaith().divine) ? curFaith().divine : 'God';
   const theistic = (t === 'islam' || t === 'hinduism');
   const s = Object.assign({}, step);
+  // The swap reached sub/body/placeholder and never the TITLE, and its word list stopped at "God" — so
+  // a secular person walked a step headed "Repent" that told them to "Confess the first. Receive the
+  // second." and offered "I will not check my phone before prayer." as the example resolution. The card
+  // above it had already renamed itself to "Evening review"; the steps inside it had not.
   const swap = function(txt){
     if(!txt) return txt;
     return theistic
       ? txt.replace(/\bGod\b/g, divine).replace(/\bYou saw it\b/g, divine + ' saw it').replace(/\bYour\b/g, 'Your')
-      : txt.replace(/\bGod, give me\b/g, 'Let me find').replace(/\bGod\b/g, 'life').replace(/\bYou saw it\b/g, 'it truly was');
+      : txt.replace(/\bGod, give me\b/g, 'Let me find').replace(/\bGod\b/g, 'life').replace(/\bYou saw it\b/g, 'it truly was')
+           .replace(/\bConfess\b/g, 'Name').replace(/\bconfess\b/g, 'name')
+           .replace(/\bbefore prayer\b/g, 'before I sit down')
+           .replace(/\bRepent\b/g, 'Look honestly');
   };
-  s.sub = swap(s.sub); s.body = swap(s.body); s.placeholder = swap(s.placeholder);
+  s.title = swap(s.title); s.sub = swap(s.sub); s.body = swap(s.body); s.placeholder = swap(s.placeholder);
   if(!theistic && step.field === 'petition'){
     s.title = 'Honesty';
     s.sub = 'Ask yourself for the clarity to see today truly.';
@@ -38136,7 +38361,7 @@ function showExamenStep(idx){
     '<textarea id="examen-input" placeholder="' + step.placeholder + '" style="min-height:' + step.minHeight + 'px;margin-bottom:14px">' + (_examenAnswers[step.field] || '') + '</textarea>' +
     '<div style="display:flex;gap:8px">' +
       (idx > 0 ? '<button class="btn" onclick="examenBack(' + idx + ')" style="flex:1;background:transparent;border:1px solid var(--bd)">Back</button>' : '') +
-      '<button class="btn primary" onclick="examenNext(' + idx + ')" style="flex:2">' + (isLast ? 'Complete Examen' : 'Next →') + '</button>' +
+      '<button class="btn primary" onclick="examenNext(' + idx + ')" style="flex:2">' + (isLast ? ('Complete ' + _examenNoun()) : 'Next →') + '</button>' +
     '</div>' +
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:11px;margin-top:8px">Exit (progress lost)</button>' +
   '</div>';
@@ -38205,7 +38430,7 @@ function showExamenHistory(){
   
   if(!log.length){
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
-      '<h3 style="margin-bottom:8px">Past examens</h3>' +
+      '<h3 style="margin-bottom:8px">Past ' + _examenNoun().toLowerCase() + 's</h3>' +
       '<p class="empty-note">No examens logged yet. Begin one tonight — it builds the practice.</p>' +
       '<button class="btn" onclick="closeModal(this)">Close</button>' +
     '</div>';
@@ -38228,7 +38453,7 @@ function showExamenHistory(){
   
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:4px">' + log.length + ' examen' + (log.length === 1 ? '' : 's') + ' walked</div>' +
-    '<h3 style="margin-bottom:12px">Past examens</h3>' +
+    '<h3 style="margin-bottom:12px">Past ' + _examenNoun().toLowerCase() + 's</h3>' +
     '<div style="max-height:60vh;overflow-y:auto;padding-right:4px;margin-bottom:14px">' + itemsHtml + '</div>' +
     '<button class="btn" onclick="closeModal(this)">Close</button>' +
   '</div>';
@@ -38245,7 +38470,7 @@ function showExamenDetail(idx){
     gratitude: 'Gratitude',
     petition: 'Petition',
     review: 'Review',
-    repent: 'Repent',
+    repent: _examenLabelRepent(),
     renewal: 'Renewal'
   };
   
@@ -38259,7 +38484,9 @@ function showExamenDetail(idx){
       '</div>';
     }
   });
-  if(!body) body = '<p class="empty-note">No written notes — just walked the steps with God.</p>';
+  // "with God" to someone who told the app they do not believe in one.
+  if(!body) body = '<p class="empty-note">No written notes — just walked the steps'
+    + ((typeof faithTradition==='function' && faithTradition()==='christianity') ? ' with God' : '') + '.</p>';
   
   const m = document.createElement('div');
   m.className = 'modal-bg open';
@@ -39873,19 +40100,31 @@ async function readTodaysGospel(){
   const ref = window.__todayGospelRef;
   if(!box || !ref) return;
   box.innerHTML = '<div style="font-size:13px;color:var(--tx3);font-style:italic;padding:6px">Loading the Gospel…</div>';
-  // Parse "John 3:16-21" → book, chapter (we show the whole chapter range start).
-  const m = ref.match(/^([\d]?\s?[A-Za-z ]+?)\s+(\d+):(\d+)(?:-(\d+))?/);
+  // A LECTIONARY READING IS OFTEN MORE THAN ONE RANGE. The old pattern captured the FIRST range and
+  // stopped, so "Matthew 1:1-16, 18-23" rendered verses 1-16 and silently dropped 18-23 — the half
+  // that carries the annunciation — with no note that anything was missing. Two such readings fell in
+  // a single 60-day window of the live API (2026-09-08 and 2026-10-02), so this is the ordinary shape,
+  // not an edge case. Parse every range; a reference that spans chapters still falls through to the
+  // USCCB link rather than being half-rendered.
+  const m = ref.match(/^([\d]?\s?[A-Za-z ]+?)\s+(\d+):([\d,\s\u2013\u2014-]+)$/);
   if(!m){ box.innerHTML = '<div style="font-size:12px;color:var(--tx2);padding:6px">See the full Gospel at the USCCB link below.</div>'; return; }
   const bookName = m[1].trim();
   const chapter = m[2];
-  const vStart = parseInt(m[3]);
-  const vEnd = m[4] ? parseInt(m[4]) : vStart;
+  const ranges = m[3].split(',').map(function(part){
+    const t = part.trim();
+    const span = t.match(/^(\d+)\s*[-\u2013\u2014]\s*(\d+)$/);
+    if(span) return { a:+span[1], b:+span[2] };
+    const one = t.match(/^(\d+)$/);
+    return one ? { a:+one[1], b:+one[1] } : null;
+  }).filter(Boolean);
+  if(!ranges.length){ box.innerHTML = '<div style="font-size:12px;color:var(--tx2);padding:6px">See the full Gospel at the USCCB link below.</div>'; return; }
+  const inRanges = n => ranges.some(function(r){ return n >= r.a && n <= r.b; });
   const usfm = (typeof bibleBookToUSFM==='function') ? bibleBookToUSFM(bookName) : bookName.toUpperCase().slice(0,3);
   let verses = null;
   try{
     const r = await _fetchT('https://bible.helloao.org/api/BSB/'+usfm+'/'+chapter+'.json', 8000);
     if(r.ok){ const d = await r.json(); const all = (d.chapter && d.chapter.content) || []; 
-      verses = all.filter(it => it.type==='verse' && it.number>=vStart && it.number<=vEnd)
+      verses = all.filter(it => it.type==='verse' && inRanges(it.number))
                   .map(v => ({ num:v.number, text: (Array.isArray(v.content)?v.content.map(c=>typeof c==='string'?c:(c.text||'')).join(' '):v.content||'') })); }
   }catch(_){ }
   if(!verses || !verses.length){
@@ -39894,7 +40133,14 @@ async function readTodaysGospel(){
   }
   let html = '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-top:4px">'+
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px">'+ref.replace(/</g,'&lt;')+'</div>';
-  verses.forEach(v => { if(v.text) html += '<p style="font-size:15px;line-height:1.7;color:var(--tx);margin-bottom:8px"><span style="font-size:10px;color:var(--go);vertical-align:super;margin-right:3px">'+v.num+'</span>'+v.text.replace(/</g,'&lt;')+'</p>'; });
+  // The lectionary SKIPS the verses between two ranges; running them together would present the
+  // reading as continuous when it is not. Mark the join so the omission is visible.
+  let _prevNum = null;
+  verses.forEach(v => {
+    if(_prevNum != null && v.num > _prevNum + 1)
+      html += '<p style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);text-align:center;margin:2px 0 8px">\u22ef</p>';
+    _prevNum = v.num;
+    if(v.text) html += '<p style="font-size:15px;line-height:1.7;color:var(--tx);margin-bottom:8px"><span style="font-size:10px;color:var(--go);vertical-align:super;margin-right:3px">'+v.num+'</span>'+v.text.replace(/</g,'&lt;')+'</p>'; });
   html += '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:6px">Berean Standard Bible (public domain)</div></div>';
   box.innerHTML = html;
   haptic('tap');
@@ -43530,7 +43776,12 @@ function calcTDEE(){
       return;
     }
   }
-  if(!(weight >= 30 && weight <= 300)){ showToast('Check your weight', 'Enter a weight between 30 and 300 kg.'); return; }
+  // The maths is right — weight is dispToKg(input) — but the refusal was not: a pounds user who typed
+  // 60 under a box labelled (lb) was told "Enter a weight between 30 and 300 kg", a range in a unit the
+  // app had just stopped showing them. Same numbers, said in the unit they are standing in.
+  if(!(weight >= 30 && weight <= 300)){
+    showToast('Check your weight', 'Enter a weight between ' + wFmt(30, {round:0}) + ' and ' + wFmt(300, {round:0}) + '.');
+    return; }
   if(!(height >= 120 && height <= 230)){ showToast('Check your height', 'Enter a height between 120 and 230 cm.'); return; }
   const activity=parseFloat(document.getElementById('tdee-activity')?.value||1.55);
   const goal=document.getElementById('tdee-goal')?.value||'maintain';
@@ -44116,9 +44367,13 @@ function getFirstRunSteps(){
   const identity = ls('totry_identity');
   const habitsArr = ls('totry_h');
   // NOT "the array is non-empty" — the app seeds six habits itself, so that was true before the person
-  // had done anything. This means "they made this list theirs": added one, or edited the defaults.
-  const hasHabits = !!ls('totry_habits_touched') ||
-    (Array.isArray(habitsArr) && habitsArr.some(h => h && Array.isArray(h.d) && h.d.some(x => x)));
+  // had done anything. This means "they made this list theirs": added one, or ticked one.
+  // The old fallback — "any d[] slot is 1" — had the same flaw one step further in: autoTickHabits
+  // ticks "No vice today" for a person who has merely NAMED something to fight, so on a brand-new
+  // install the step was already ✓ before they had touched a habit at all. A checklist that
+  // congratulates you for work you have not done teaches you to ignore it. Both real acts — adding
+  // one (10-habits.js) and ticking one in the evening (23-evening.js) — now set the flag themselves.
+  const hasHabits = !!ls('totry_habits_touched');
   const coachHistory = ls('totry_coach_history') || [];
   return [
     {
