@@ -3311,7 +3311,11 @@ H.section('dead code that was one caller away from confusing someone');
   for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.js'))) {
     for (const h of scan(fs.readFileSync(path.join(dir, f), 'utf8'))) leftovers.push(f + ':' + h.line + ' ' + h.ctx.slice(-40));
   }
-  // The nine survivors, each verified by hand. The ninth is new in v569: classifyVice now builds a
+  // The ten survivors, each verified by hand. The tenth is new: readTodaysGospel strips a lectionary
+  // verse-part suffix ("5:1-12a") with a '$1' backreference before parsing the reference, because
+  // anchoring the verse part to the end of the string cost roughly fifteen readings a year — All
+  // Saints and the Presentation among them — their full text.
+  // The ninth is from v569: classifyVice now builds a
     // \bKEYWORD regex per keyword and escapes the keyword first, the same way the two search boxes
     // already do — added after bare includes() sent "Cheating on my wife" to the binge-eating
     // playbook and "Energy drinks" to an alcohol-withdrawal seizure warning.
@@ -3319,8 +3323,8 @@ H.section('dead code that was one caller away from confusing someone');
   // parse depends on them), two '\\$&' search-term escapes, one '$1' highlight template, and one
   // genuinely-USD figure (the AI cost ceiling, which says "USD" on the same line). Rewriting any of
   // them to curSym() would parse, ship, and silently break the feature — this repo's signature bug.
-  H.eq(leftovers.length, 9, 'exactly 9 non-currency $ remain in string literals, and no others' +
-       (leftovers.length === 9 ? '' : '\n      ' + leftovers.join('\n      ')));
+  H.eq(leftovers.length, 10, 'exactly 10 non-currency $ remain in string literals, and no others' +
+       (leftovers.length === 10 ? '' : '\n      ' + leftovers.join('\n      ')));
 
   // The accessor itself, and every currency the picker offers.
   const table = (H.html.match(/const CURRENCY_SYMBOLS = \{[\s\S]*?\}/) || [''])[0];
@@ -5149,6 +5153,17 @@ function fnBodyOf(code, name){
   H.ok((ft.match(/clearTimeout\(t\)/g) || []).length >= 2,
        'and clears that timer on BOTH settle paths, so a fast reply costs nothing');
 
+  // AND THE CLOCK OUTLIVES THE HEADERS. The first version cleared the timer inside the resolve
+  // handler, which runs the instant response HEADERS arrive — so the bound covered connect-to-first-
+  // byte and the body read that follows it was unguarded at all 26 call sites. Measured in Chromium
+  // against a server that sends headers and then stalls mid-body: the old shape was STILL HANGING at
+  // 7,004ms; this one aborts at 2,003ms against a 2,000ms budget. That is the whole supermarket-aisle
+  // case the wrapper was written for, so it is asserted rather than assumed.
+  H.ok(/\['json','text','blob','arrayBuffer','formData'\]/.test(ft),
+       'and it wraps the body readers, so a stall AFTER the headers is bounded too');
+  H.ok(!/then\(function\(r\)\{ clearTimeout\(t\); return r; \}/.test(ft),
+       'and does NOT disarm on the headers alone — that is the shape that hung forever');
+
   // The durable half: a NEW untimed remote call fails this and has to be a decision, not an oversight.
   const bad = [];
   H.html.split('\n').forEach((l, n) => {
@@ -5198,6 +5213,22 @@ function fnBodyOf(code, name){
   [['Cheating on my wife','general'], ['Energy drinks','general'], ['Soft drink','general'],
    ['Fizzy drinks','general'], ['Chewing my nails','general']].forEach(([name, want]) =>
     H.eq(classifyVice(name), want, `"${name}" is not confidently placed — it falls through to ${want}`));
+
+  // AND AN EXPLICIT WORD BEATS EVERY FALSE-FRIEND GUARD. The guards used to be checked FIRST and skip
+  // the whole type, so nicotine's ['nail','gum'] killed "Nicotine gum" before the word 'nicotine' was
+  // tested — that person lost the nicotine timeline, permanently and on every device, because the
+  // load-time heal then wrote 'general' back to totry_v and totry_v is in SYNC_KEYS. The same shape
+  // cost "Sportsbet" its gambling playbook. Strong keywords now win outright, in their own pass.
+  [['Nicotine gum','nicotine'], ['Sportsbet','gambling'], ['Unibet','gambling'], ['Pointsbet','gambling']]
+    .forEach(([name, want]) => H.eq(classifyVice(name), want,
+      `"${name}" must keep its ${want} playbook — a guard against a weak word cannot veto an explicit one`));
+
+  // AND PUNCTUATION IS NOT MEANING. "Soft-drink" is the hyphenated spelling of the example the false-
+  // friend list was written for, and the hyphen alone was enough to hand a soft-drink fight the alcohol
+  // playbook — which opens by telling the person that stopping suddenly can cause a seizure.
+  [['Soft-drink','general'], ['Sweet drinks','general'], ['Diet coke','general']]
+    .forEach(([name, want]) => H.eq(classifyVice(name), want,
+      `"${name}" must not be read as alcohol — it got the withdrawal warning`));
 
   // and every real match still lands, stems included
   [['Drinking','alcohol'], ['Wine with dinner','alcohol'], ['Smoking','nicotine'],
@@ -5249,6 +5280,75 @@ function fnBodyOf(code, name){
   H.ok(assembled, 'index.html is exactly what src/ assembles to — if this fails, your edit is in ' +
                   'index.html and the next build will discard it; move it into the module under ' +
                   'src/app/ and run `npm run build:index`. ' + (assembled ? '' : err));
+}
+
+// ── THE FIGHT SURVIVES EVERY DOOR THAT RESETS THE STREAK ─────────────────────────────────────────
+// v565 taught the app that a slip resets the clean streak and not the fight. It wrote that line into
+// two of the eight places that overwrite startDate. Six others still erased the lot for any vice
+// created before fightingSince existed — every vice a long-time user already has — and the worst of
+// them was the honest-slip button. Measured against the shipped bundle before the fix:
+//     before any slip      Day 31 of the fight
+//     after logLoss slip   Day 31 of the fight   <- the SOS button, patched in v565
+//     after honest slip    Day 1  of the fight   <- "I failed before opening this. Be honest."
+// So the app took thirty days off the person who did the harder thing. This drives the REAL button
+// handler over the REAL loadV migration and asserts what the person actually reads on the card.
+H.section('the fight is not erased by a slip — at every door, not just the two that were patched');
+{
+  const ago = n => new Date(Date.now() - n*864e5).toISOString();
+  const store = {};
+  const _ls = (k, v) => { if(v === undefined) return store[k]; store[k] = JSON.parse(JSON.stringify(v)); return v; };
+  const F = H.load(
+    ['loadV','saveV','logHonestLoss','viceFightingSince','viceFightDays','viceCleanDays',
+     'viceStreakAnchor','_calDaysSince','viceMode','viceIsAbstinence'],
+    { ls:_ls, lsArr:k => Array.isArray(store[k]) ? store[k] : [],
+      classifyVice: () => 'general',
+      renderVices(){}, renderScoreboard(){}, renderDayCounter(){}, showToast(){}, haptic(){} }
+  );
+
+  // A LEGACY vice, written the way the app itself stored them before v565: no fightingSince at all.
+  // Thirty days into the fight, never slipped before — the person for whom this button is hardest.
+  const legacy = () => { store.totry_v = [{ n:'Vaping', mode:'quit', type:'general', startDate: ago(30), total:0 }]; };
+
+  legacy();
+  F.loadV();
+  H.ok(store.totry_v[0].fightingSince != null,
+       'loadV stamps fightingSince on a vice that predates it — at the one door every mutation comes through');
+  H.eq(store.totry_v[0].fightingSince, store.totry_v[0].startDate,
+       'and stamps it from the real start, not from now');
+  H.eq(F.viceFightDays(store.totry_v[0]), 31, 'so the card still reads Day 31 of the fight');
+
+  // THE BUTTON ITSELF. Not a re-implementation of what it does — the shipped handler.
+  legacy();
+  F.loadV();
+  F.logHonestLoss('Vaping');
+  const after = store.totry_v[0];
+  H.eq(F.viceCleanDays(after), 0, 'an honest slip still resets the clean streak — that part was never wrong');
+  H.eq(F.viceFightDays(after), 31,
+       'but Day 31 of the fight survives it: honesty costs the streak, never the thirty days of fighting');
+  H.ok((after.cleanDaysTotal||0) === 30, 'and the thirty days are banked, not lost');
+
+  // THE OTHER FIVE DOORS. Each one overwrites startDate; none of them carried the v565 line. With
+  // fightingSince stamped at load, none of them can lose the fight either. Modelled exactly as each
+  // site writes it, so this fails if someone re-introduces a raw reset that runs before loadV.
+  const doors = {
+    'logging a past fight lost (04-fight.js)':        v => { v.startDate = new Date().toISOString(); v.lastLoss = v.startDate; },
+    'backfilling old slips (saveMultiAddLoss)':       v => { v.startDate = ago(2); v.lastLoss = ago(2); },
+    'logging a real use (saveViceUse)':               v => { v.startDate = new Date().toISOString(); },
+    'switching moderation to quit':                   v => { v.mode='quit'; v.startDate = new Date().toISOString(); },
+    'committing to zero from change-mode':            v => { v.mode='quit'; v.startDate = new Date().toISOString(); },
+  };
+  for(const [door, reset] of Object.entries(doors)){
+    legacy();
+    F.loadV();
+    reset(store.totry_v[0]);
+    H.eq(F.viceFightDays(store.totry_v[0]), 31, 'the fight survives ' + door);
+  }
+
+  // AND IT DOES NOT INVENT A FIGHT NOBODY HAS STARTED. A vice with no start and no slip is healed by
+  // the migration above it and reads Day 1 — today — rather than borrowing a date from nowhere.
+  store.totry_v = [{ n:'Doomscrolling', mode:'quit', type:'general' }];
+  F.loadV();
+  H.eq(F.viceFightDays(store.totry_v[0]), 1, 'a vice with nothing recorded starts the fight today, at Day 1');
 }
 
 H.report();

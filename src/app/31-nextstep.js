@@ -396,9 +396,24 @@ function renderHomeHabits(){
   // six days back claimed knowledge of days whose slots belong to a different week.
   let pastPerfect = 0;
   const knowable = Math.min(6, ti);          // days before today, within this week
+  // A HABIT WITH A WEEKLY TARGET CANNOT MAKE A DAY IMPERFECT. v565 taught the habit ROW about h.pw and
+  // stopped there, so someone who lifts three times a week and has hit all three read "2/4 perfect" in
+  // 18px at the top of this card while the row 40px below it said "3 of 3 \u2713". One week, measured two
+  // ways, and the headline is the one that judges. A day a target habit is not due is not a failure, so
+  // only genuinely daily habits can decide whether a day was perfect.
+  const _isDaily = h => !(h && h.pw >= 1 && h.pw <= 6);
+  const _dailyHabits = habits.filter(_isDaily);
   for(let off = 1; off <= knowable; off++){
-    if(habits.every(h => cellFor(h, off))) pastPerfect++;
+    if(_dailyHabits.length && _dailyHabits.every(h => cellFor(h, off))) pastPerfect++;
   }
+  // And when EVERY habit is a weekly target there are no perfect days to count — "0/4 perfect" would be
+  // a verdict on a week the person may be winning. Measure the week itself instead.
+  const _weeklyOnly = !_dailyHabits.length && habits.length > 0;
+  let _wkHits = 0, _wkTarget = 0;
+  if(_weeklyOnly) habits.forEach(h => {
+    _wkTarget += h.pw;
+    for(let off = 0; off <= knowable; off++) if(cellFor(h, off)) _wkHits++;
+  });
   const todayDone = habits.filter(h => cellFor(h, 0)).length;
   const todayTotal = habits.length;
   
@@ -408,7 +423,10 @@ function renderHomeHabits(){
     '<div>' +
       '<div class="eyebrow">' + (knowable ? 'This week so far' : 'This week') + '</div>' +
       '<div class="stat-num" style="font-size:18px;color:var(--tx)">' +
-        (knowable ? (pastPerfect + '/' + knowable + ' perfect') : 'starts today') + '</div>' +
+        (knowable
+          ? (_weeklyOnly ? (_wkHits + ' of ' + _wkTarget + ' this week' + (_wkHits >= _wkTarget ? ' \u2713' : ''))
+                         : (pastPerfect + '/' + knowable + ' perfect'))
+          : 'starts today') + '</div>' +
     '</div>' +
     '<div style="text-align:right">' +
       '<div class="eyebrow">Today so far</div>' +

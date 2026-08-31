@@ -873,7 +873,13 @@ function buildPTCtx(){
     // effort data, has never once reached the model. Verified both ways: with the shape the sync
     // actually writes the line is absent, and adding a start_date field to the same rows produces it.
     const _actDate = x => (x && (x.start_date || x.date)) || null;
-    const _fresh = acts.filter(x => _actDate(x) && (Date.now() - new Date(_actDate(x)).getTime()) < 14*86400000);
+    // NEWEST FIRST, because the line calls itself "Most recent cardio". The stored order is whatever
+    // the Strava sync happened to write, so [0] handed the coach the OLDEST activity in the fortnight:
+    // someone who ran 10km yesterday was described to the model as a twelve-day-old 40km ride, and
+    // yesterday's run was invisible. This is the one place the coach is given real HR and effort data,
+    // so getting it wrong makes it confidently wrong rather than merely silent.
+    const _fresh = acts.filter(x => _actDate(x) && (Date.now() - new Date(_actDate(x)).getTime()) < 14*86400000)
+      .sort((x, y) => new Date(_actDate(y)).getTime() - new Date(_actDate(x)).getTime());
     if(_fresh.length){ const a = _fresh[0];
       cardioCtx = '\nMost recent cardio (Strava, ' + new Date(_actDate(a)).toLocaleDateString('en-AU') + '): ' + (a.type||'activity') + ', ' + (a.distance? dFmt(a.distance):'') + (a.moving_time? ', '+Math.round(a.moving_time/60)+'min':'')
         + (a.avg_hr? ', avg HR '+a.avg_hr+'bpm':'') + (a.max_hr? ' (max '+a.max_hr+')':'')
@@ -3232,8 +3238,24 @@ function _fetchT(u, ms, init){
   const t = setTimeout(function(){ try{ ctrl.abort(); }catch(_){ } }, ms || 9000);
   const opts = {}; for(const k in o) opts[k] = o[k];
   opts.signal = ctrl.signal;
-  return fetch(u, opts).then(function(r){ clearTimeout(t); return r; },
-                             function(e){ clearTimeout(t); throw e; });
+  return fetch(u, opts).then(function(r){
+    // THE CLOCK HAS TO OUTLIVE THE HEADERS. Clearing it the moment the fetch promise settled meant the
+    // bound covered connect-to-first-byte and nothing else: a server that answers and then stalls
+    // mid-transfer — the ordinary shape of one bar in a supermarket aisle, and of a CDN that returns
+    // headers before the origin has finished — left the BODY read unbounded at all 26 call sites. So
+    // the barcode scanner still sat on "Looking up 9310072019283..." forever and the reader still sat
+    // on "Loading...", exactly as they did before v567 added any of this. Disarmed when the body
+    // lands, not when the first byte does.
+    const _done = function(){ clearTimeout(t); };
+    ['json','text','blob','arrayBuffer','formData'].forEach(function(m){
+      if(typeof r[m] !== 'function') return;
+      const _orig = r[m].bind(r);
+      try{ r[m] = function(){ return _orig().then(function(v){ _done(); return v; },
+                                                  function(e){ _done(); throw e; }); }; }
+      catch(_){ /* a Response that refuses the shadow keeps the old behaviour rather than throwing */ }
+    });
+    return r;
+  }, function(e){ clearTimeout(t); throw e; });
 }
 function _readLoading(){ return '<div style="text-align:center;padding:26px;color:var(--tx3);font-size:13px">Loading…</div>'; }
 function _readErr(msg){ return '<div class="card" style="text-align:center;color:var(--tx3);font-size:13px;padding:18px">'+(msg||'Couldn’t load right now. Check your connection and try again.')+'</div>'; }
@@ -3259,9 +3281,14 @@ function openReader(t){
   }catch(_){ }
 }
 function _readBundled(sel,content,bank){
-  if(sel) sel.innerHTML='';
+  // THE PICKER NEEDS NO NETWORK, SO IT STAYS. This cleared it — and once v567 made the fallback fire on
+  // a 9s abort rather than only on a connection that was actually gone, a secular or Buddhist person on
+  // a slow-but-working line watched the Book I–XII dropdown disappear along with the live text. That
+  // dropdown is built entirely from the local STOIC_BOOKS / DHP_CHAPTERS arrays. Deleting it left no
+  // way to choose another book, no way to retry, and no way back to the text at all without leaving the
+  // tab and coming back. Choosing a book is the retry, so the door is left open.
   if(!content) return;
-  content.innerHTML='<div class="card">'+bank.map(v=>'<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--bd)"><div style="font-size:15px;line-height:1.75;color:var(--tx)">“'+v.t+'”</div><div style="font-size:12px;color:var(--tx3);margin-top:6px">— '+v.r+'</div></div>').join('')+'</div>';
+  content.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9.5px;color:var(--tx3);text-align:center;margin-bottom:10px">Kept on your phone — the live text did not answer. Pick a book above to try again.</div>'+'<div class="card">'+bank.map(v=>'<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--bd)"><div style="font-size:15px;line-height:1.75;color:var(--tx)">“'+v.t+'”</div><div style="font-size:12px;color:var(--tx3);margin-top:6px">— '+v.r+'</div></div>').join('')+'</div>';
 }
 // Qur'an — Al-Quran Cloud (free, no key): surah picker + Arabic + English.
 async function _readQuranInit(sel,content){
@@ -3550,7 +3577,20 @@ async function _loadSalahByCity(city){
   // persisted and then silently reused. The bug was never the write; it was that _loadSalah() did not
   // READ it, so the saved city sat there unused and people retyped it every visit.
   try{ const r=await _fetchT('https://api.aladhan.com/v1/timingsByCity/'+_salahDateStr()+'?city='+encodeURIComponent(city)+'&country=&method='+SALAH_METHOD+''); const j=await r.json(); if(j.code!==200||!j.data) throw new Error('c'); try{ ls('totry_city',city); }catch(_){} if(box) box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri)+'<div style="text-align:center;margin-top:8px"><button class="btn" onclick="_promptCity()" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">Change city</button></div>'; }
-  catch(e){ if(box) box.innerHTML=_readErr('Couldn’t find that city — try a larger nearby one.'); }
+  // A STALL IS NOT A TYPO. v567's 9s abort throws into this same catch, so a real city on a slow line
+  // was answered with "Couldn't find that city" — the app blaming the person's typing for the network.
+  // And _readErr renders a card with no controls at all ("Change city" exists only on the success path),
+  // so there was then no way to try again without leaving the tab. Both halves fixed here.
+  catch(e){
+    const _stalled = !!(e && (e.name === 'AbortError' || /abort|network|failed to fetch/i.test(String(e.message || e))));
+    if(box) box.innerHTML = _readErr(_stalled
+      ? 'The connection stalled before the times came back \u2014 the city is fine.'
+      : 'Couldn\u2019t find that city \u2014 try a larger nearby one.') +
+      '<div style="text-align:center;margin-top:8px">' +
+        '<button class="btn" onclick="_loadSalahByCity(' + JSON.stringify(String(city)) + ')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">Try again</button> ' +
+        '<button class="btn" onclick="_promptCity()" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">Change city</button>' +
+      '</div>';
+  }
 }
 function _salahCard(t,h){
   const order=[['Fajr',t.Fajr],['Sunrise',t.Sunrise],['Dhuhr',t.Dhuhr],['Asr',t.Asr],['Maghrib',t.Maghrib],['Isha',t.Isha]];
@@ -4964,8 +5004,15 @@ function renderAdaptiveMorning(){
   // Yesterday's habits
   loadH();
   const yIdx = (tIdx() - 1 + 7) % 7;
-  const yHabitsDone = habits.filter(h => h.d[yIdx] === 1).length;
-  const yHabitsTotal = habits.length;
+  // ONLY THE HABITS THAT WERE DUE. v565 taught the home row about h.pw and this card never heard: a
+  // person whose one habit is "Gym session, 3 days a week" opened the app on a REST morning and was
+  // met with "You skipped your habits yesterday. No shame — but notice it." — while the row below said
+  // "3 of 3 \u2713 this week". It also cost them the other direction: the "Yesterday was a strong day"
+  // branch needs done === total, which a rest day can never satisfy. A day a habit is not due is not a
+  // day it was skipped, and this card is the first thing the app says in the morning.
+  const _dueDaily = habits.filter(h => !(h && h.pw >= 1 && h.pw <= 6));
+  const yHabitsDone = _dueDaily.filter(h => h.d[yIdx] === 1).length;
+  const yHabitsTotal = _dueDaily.length;
   
   // Vices: any recent relapses?
   loadV();

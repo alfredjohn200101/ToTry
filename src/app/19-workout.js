@@ -6,6 +6,13 @@
 // consumer left. Deleted rather than left lying around: a base URL for a dead API is how someone
 // later builds a new call on top of one.
 let currentSession=[],restTimerInt=null,restTimeLeft=0;
+// RECORDS BEATEN DURING THIS SESSION, remembered as they happen. The tick handler writes the new best
+// to totry_prs the moment the set is ticked, so by the time Finish runs detectAndRecordPRs there is no
+// improvement left to find and the summary's PR banner came back EMPTY — for everyone who taps the ✓,
+// which is how the screen is built to be used. The banner only ever appeared for a session shape the
+// tick flow cannot produce. Detection at save still runs, for anything ticked without celebration; this
+// carries what the person was already congratulated for through to the sheet where they look for it.
+let _sessionPRs=[];
 
 // Live workout duration (Hevy shows a running stopwatch the whole session).
 let __sessionStart=null, __sessionDurInt=null;
@@ -196,6 +203,11 @@ function overloadSuggestion(exName, opts){
     let bw = 0, br = 0, be = 0;
     (ex.sets || []).forEach(st => {
       if(st.type && /warm/i.test(st.type)) return;
+      // AND NOT A SET HE NEVER TICKED. v568 put this gate on detectAndRecordPRs only, so the coach
+      // went on prescribing off a 140kg x 5 that was typed into the sheet and never done: "Last time:
+      // 140kg x 5. Try to beat it" sat under a "Best set 85x5" that was gated correctly. Loading a
+      // saved routine writes done:false with real weights, so this needs no typing at all to happen.
+      if(st.done === false) return;
       const w = parseFloat(st.weight)||0, r = parseInt(st.reps)||0;
       const e = estE1RM(w, r);
       if(e > be){ be = e; bw = w; br = r; }

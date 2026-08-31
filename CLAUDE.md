@@ -42,7 +42,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
-- `APP_VERSION` in `src/app/00-boot.js` — currently **v560**. Bump it AND `CACHE` in sw.js together, always.
+- `APP_VERSION` in `src/app/00-boot.js` — currently **v571**. Bump it AND `CACHE` in sw.js together, always.
 
 ## The nervous system (key functions — grep these)
 - `getLifeState()` — returns the whole person {training, nutrition, body, soul, fight, readiness,
@@ -65,13 +65,19 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    reported 1032 PASSED, because the harness extracts functions by name and never parsed the whole
    script. A suite that stays green while the app cannot boot is worse than no suite.
 2. **Run the whole gate before you ship**, not just `npm test`:
-   - `npm test` — 1583 assertions over the real bundle (core math, dead code, privacy promises,
+   - `npm test` — 1651 assertions over the real bundle (core math, dead code, privacy promises,
      the voice gates, the parse check)
-   - `npm run crisis` — types the worst sentence into all TEN free-text doors and asserts a
+   - `npm run crisis` — types the worst sentence into all ELEVEN free-text doors and asserts a
      helpline is on screen and TAPPABLE (geometry, not DOM presence — the bug it was written for
-     had the text in the document and off the screen). Twelve checks in all: the ten doors, the
-     safety net with its container deleted, and the breath ending where a person has just said that
-     a minute of breathing did NOT move their distress
+     had the text in the document and off the screen). Fourteen checks in all: the eleven doors, the
+     safety net with its container deleted, the guest door, and the breath ending where a person has
+     just said that a minute of breathing did NOT move their distress.
+     The eleventh is the Sunday check-in WITH AN OUT-OF-BAND WEIGHT, and the bad weight is the point:
+     v568 added a 20–400kg band eighty lines above the crisis handler, so a disclosure typed into the
+     same form as a fat-fingered weight returned at the band with a grey toast and no helpline, while
+     the identical sentence with the box left blank got the full response. A validation rule must
+     never be able to outrank a disclosure — and this door was not in this list, which is how it
+     shipped. When you add a free-text surface, add its door here the same day.
    - `npm run personas` — 551 assertions, 10 people incl. one built entirely from data that has
      really broken this app (apostrophes, GBP, a completed goal ahead of the live one)
    - `npm run panels` — the widest net in the gate, and the one that finds what code-reading cannot.

@@ -270,7 +270,16 @@ function _examenNoun(){
     return f.noun || 'Review';
   }catch(_){ return 'Review'; }
 }
+// The button label lives in static markup, so it is swapped here with every other faith-facing string
+// rather than left as the one Christian noun on an otherwise translated screen.
+function _syncExamenNounLabels(){
+  try{
+    const el = document.getElementById('examen-noun-plural');
+    if(el) el.textContent = _examenNoun().toLowerCase() + 's';
+  }catch(_){ }
+}
 function applyFaithExamen(){
+  _syncExamenNounLabels();
   const t = (typeof faithTradition==='function') ? faithTradition() : 'secular';
   const f = _EXAMEN_FACE[t] || _EXAMEN_FACE.christianity;
   const card = document.getElementById('examen-card');
@@ -466,7 +475,9 @@ function showExamenHistory(){
   if(!log.length){
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
       '<h3 style="margin-bottom:8px">Past ' + _examenNoun().toLowerCase() + 's</h3>' +
-      '<p class="empty-note">No examens logged yet. Begin one tonight — it builds the practice.</p>' +
+      // The rename reached the two <h3>s and nothing else, so a secular person read "Past reviews"
+      // directly above "No examens logged yet", and a Muslim "Past muhāsabas" above "3 examens walked".
+      '<p class="empty-note">No ' + _examenNoun().toLowerCase() + 's logged yet. Begin one tonight — it builds the practice.</p>' +
       '<button class="btn" onclick="closeModal(this)">Close</button>' +
     '</div>';
     document.body.appendChild(m);
@@ -487,7 +498,7 @@ function showExamenHistory(){
   }).join('');
   
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:4px">' + log.length + ' examen' + (log.length === 1 ? '' : 's') + ' walked</div>' +
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:4px">' + log.length + ' ' + _examenNoun().toLowerCase() + (log.length === 1 ? '' : 's') + ' walked</div>' +
     '<h3 style="margin-bottom:12px">Past ' + _examenNoun().toLowerCase() + 's</h3>' +
     '<div style="max-height:60vh;overflow-y:auto;padding-right:4px;margin-bottom:14px">' + itemsHtml + '</div>' +
     '<button class="btn" onclick="closeModal(this)">Close</button>' +
@@ -527,7 +538,7 @@ function showExamenDetail(idx){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:4px">' + (e.date || (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') : 'Earlier')) + ' · Day ' + (e.day || '?') + '</div>' +
-    '<h3 style="margin-bottom:14px">Examen</h3>' +
+    '<h3 style="margin-bottom:14px">' + _examenNoun() + '</h3>' +
     '<div style="max-height:60vh;overflow-y:auto;padding-right:4px;margin-bottom:14px">' + body + '</div>' +
     '<button class="btn" onclick="showExamenHistory()" style="margin-bottom:8px">Back to list</button>' +
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd)">Close</button>' +

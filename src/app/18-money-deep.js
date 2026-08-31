@@ -344,7 +344,6 @@ function renderTransactions(){
   
   // Render the new cards
   try{ renderSubscriptions(); }catch(_e){ console.warn('renderSubscriptions failed', _e); }
-  try{ renderRecurringFound(); }catch(_e){ console.warn('renderRecurringFound failed', _e); }
   try{ if(typeof renderFamilyContribution==='function') renderFamilyContribution(); }catch(_e){ console.warn('renderFamilyContribution failed', _e); }
   try{ if(typeof renderGiving==='function') renderGiving(); }catch(_e){ console.warn('renderGiving failed', _e); }
   try{ renderSubDetect(); }catch(_){}
@@ -604,6 +603,11 @@ function renderPoker(){
 // pattern-matching on top of it. A subscription is the purest form of money leaking without a
 // decision: nobody chooses it monthly, they chose it once and then stopped noticing. Finding them is
 // not a gotcha, it is handing back a decision. It never cancels anything or judges a single charge.
+// The one description a charge is known by, most specific first. `desc` comes only from the CSV
+// importer, `note` only from the in-app logger, and `category` is the coarse fallback for a row that
+// carries neither — reading any subset of the three is how each of the two detectors this replaced
+// ended up blind to half the app's own transactions.
+function _subDesc(t){ return String((t && (t.desc || t.description || t.note || t.category)) || ''); }
 function _subNorm(str){
   return String(str||'').toLowerCase()
     .replace(/\b(pty|ltd|inc|llc|com|au|usa?)\b/g,'')
@@ -615,15 +619,25 @@ function detectSubscriptions(){
     if(tx.length<6) return [];
     const groups={};
     tx.forEach(function(t){
-      const k=_subNorm(t.note||t.category);
+      // EVERY FIELD BOTH DETECTORS READ. This one saw note/category and was blind to `desc`, which is
+      // the only field the CSV importer writes — the mirror of the bug v564 fixed in the other one.
+      // Most specific first: a statement's merchant beats what the person typed, which beats a coarse
+      // category. With both detectors collapsed into this one, no field is left unread.
+      const k=_subNorm(_subDesc(t));
       if(!k || k.length<3) return;
-      (groups[k]=groups[k]||[]).push({ amt:Math.round(t.amount*100)/100, ts:new Date(t.ts||t.date).getTime(), note:(t.note||t.category||'').slice(0,40) });
+      (groups[k]=groups[k]||[]).push({ amt:Math.round(t.amount*100)/100, ts:new Date(t.ts||t.date).getTime(), note:_subDesc(t).slice(0,40) });
     });
-    const known=(ls('totry_subscriptions')||[]).map(function(x){ return _subNorm(x.name); });
+    // MATCHED BY PREFIX, NOT BY EQUALITY. A person types "Netflix"; their statement says
+    // "NETFLIX.COM SYDNEY". Exact-match dedupe never saw those as the same thing, so the app offered
+    // to track a subscription the person had already told it about — and, in the detector this one
+    // replaces, tapping the offer added a second copy and doubled the subscriptions total.
+    const known=(ls('totry_subscriptions')||[]).map(function(x){ return _subNorm(x.name); })
+      .filter(function(n){ return n && n.length>=3; });
     const dismissed=ls('totry_sub_dismissed')||[];
     const out=[];
     Object.keys(groups).forEach(function(k){
-      if(known.indexOf(k)>=0 || dismissed.indexOf(k)>=0) return;
+      if(dismissed.indexOf(k)>=0) return;
+      if(known.some(function(n){ return n===k || k.indexOf(n)===0 || n.indexOf(k)===0; })) return;
       const g=groups[k].sort(function(a,b){ return a.ts-b.ts; });
       if(g.length<3) return;
       // same-ish amount every time — a real subscription barely moves
@@ -774,104 +788,14 @@ function _otdSeen(){
 //
 // Deterministic, no model: same merchant, same-ish amount, roughly a month apart, three times or
 // more. It offers; it never adds anything on its own, and it goes quiet once the person has said no.
-function _subMerchantKey(desc){
-  return String(desc || '')
-    .toLowerCase()
-    .replace(/[^a-z ]+/g, ' ')        // card refs, store numbers, dates
-    .replace(/\b(pty|ltd|inc|com|au|usa?|payment|purchase|card|xx+)\b/g, ' ')
-    .replace(/\s+/g, ' ').trim().split(' ').slice(0, 2).join(' ');
-}
-
-function detectRecurringCharges(){
-  try{
-    const tx = (ls('totry_transactions') || []).filter(t => t && t.type === 'expense' && t.amount > 0 && t.ts);
-    if(tx.length < 3) return [];
-    const already = (ls('totry_subscriptions') || []).map(s => _subMerchantKey(s.name));
-    const dismissed = ls('totry_sub_dismissed') || [];
-    const groups = {};
-    tx.forEach(function(t){
-      // THE IN-APP LOGGER WRITES `note`, NOT `desc`. Only the CSV importer writes desc, so this saw
-      // imported rows and was blind to every expense the person typed in themselves — which is most of
-      // them. The feature reported "no forgotten charges" to someone paying for four.
-      // My own test seeded `desc:` here, matching this reader instead of saveTransaction's writer, and
-      // went green over a detector that could not fire. Grep the ls(...,write) site, never memory.
-      const k = _subMerchantKey(t.desc || t.description || t.note);
-      if(k.length < 3) return;
-      (groups[k] = groups[k] || []).push(t);
-    });
-    const out = [];
-    Object.keys(groups).forEach(function(k){
-      if(already.indexOf(k) > -1 || dismissed.indexOf(k) > -1) return;
-      const g = groups[k].slice().sort(function(a,b){ return new Date(a.ts) - new Date(b.ts); });
-      if(g.length < 3) return;
-      // Same-ish amount: a subscription can change price, a grocery shop is different every time.
-      const amts = g.map(function(t){ return Math.abs(Number(t.amount)); });
-      const med = amts.slice().sort(function(a,b){ return a-b; })[Math.floor(amts.length/2)];
-      if(!(med > 0)) return;
-      if(!amts.every(function(a){ return Math.abs(a - med) / med <= 0.12; })) return;
-      // Roughly monthly. Weekly groceries and daily coffees are not subscriptions.
-      const gaps = [];
-      for(let i = 1; i < g.length; i++) gaps.push((new Date(g[i].ts) - new Date(g[i-1].ts)) / 864e5);
-      if(!gaps.every(function(d){ return d >= 24 && d <= 38; })) return;
-      out.push({ key:k, name:(g[g.length-1].desc || g[g.length-1].description || k),
-                 amount: Math.round(med * 100) / 100, times: g.length,
-                 lastTs: g[g.length-1].ts });
-    });
-    return out.sort(function(a,b){ return b.amount - a.amount; });
-  }catch(_){ return []; }
-}
-
-function renderRecurringFound(){
-  const box = document.getElementById('recurring-found'); if(!box) return;
-  const found = detectRecurringCharges();
-  if(!found.length){ box.style.display = 'none'; box.innerHTML = ''; return; }
-  // curSym() is the only place a currency symbol comes from — a literal '$' here would show a dollar
-  // sign to someone whose money is in pounds, which is the exact thing the core suite guards against.
-  const sym = curSym();
-  const yearly = found.reduce(function(a, f){ return a + f.amount * 12; }, 0);
-  box.style.display = '';
-  box.innerHTML = '<div class="card" style="margin-bottom:12px;border:1px solid var(--go-bd)">' +
-    '<div class="lbl" style="margin-bottom:6px">Charges you have not told me about</div>' +
-    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.55;margin-bottom:12px">' +
-      'Same amount, same place, month after month — ' + sym + Math.round(yearly).toLocaleString() +
-      ' a year between them, if they all keep going.</div>' +
-    found.slice(0, 5).map(function(f){
-      return '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--bd)">' +
-        '<div style="flex:1;min-width:0">' +
-          '<div style="font-size:13px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
-            _escFew(f.name) + '</div>' +
-          '<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx3);margin-top:2px">' +
-            sym + f.amount.toFixed(2) + ' · ' + f.times + ' times</div>' +
-        '</div>' +
-        '<button class="btn" onclick="' + _jsCode('trackFoundSub(' + JSON.stringify(f.key) + ')') + '" ' +
-          'style="width:auto;padding:8px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)">Track it</button>' +
-        '<button class="fli-del" onclick="' + _jsCode('dismissFoundSub(' + JSON.stringify(f.key) + ')') + '" ' +
-          'aria-label="Not a subscription">×</button>' +
-      '</div>';
-    }).join('') +
-  '</div>';
-}
-
-function trackFoundSub(key){
-  const f = detectRecurringCharges().find(function(x){ return x.key === key; });
-  if(!f) return;
-  const list = ls('totry_subscriptions') || [];
-  list.unshift({ id: Date.now(), name: f.name, amount: f.amount, period: 'monthly',
-                 note: 'found in your statement', addedAt: new Date().toISOString() });
-  ls('totry_subscriptions', list);
-  if(typeof haptic === 'function') haptic('success');
-  if(typeof showToast === 'function') showToast('Tracking it', f.name + ' — now in your subscriptions.');
-  try{ renderSubscriptions(); }catch(_){ }
-  renderRecurringFound();
-}
-
-function dismissFoundSub(key){
-  const d = ls('totry_sub_dismissed') || [];
-  if(d.indexOf(key) < 0) d.push(key);
-  ls('totry_sub_dismissed', d);
-  renderRecurringFound();
-}
-
+// ONE DETECTOR, NOT TWO. v564 added a second one (_subMerchantKey / detectRecurringCharges /
+// renderRecurringFound) beside detectSubscriptions above, and v568's `|| t.note` woke it up: the
+// Subscriptions card then asked the same question twice, a few hundred pixels apart — "CHARGES YOU
+// HAVE NOT TOLD ME ABOUT" and "FOUND IN YOUR STATEMENTS" — naming the same merchants. The two keyed
+// the shared totry_sub_dismissed differently (first-two-words vs the whole name), so saying "Not one"
+// in either left it standing in the other. The one kept is the richer: it checks that the amount
+// barely moves, works out the period, and can say what the charge costs a YEAR, which is the counsel.
+// It has taken the other's only real advantage — reading the CSV importer's `desc` field — with it.
 function renderSubscriptions(){
   const list = ls('totry_subscriptions') || [];
   const box = document.getElementById('subscriptions-list');

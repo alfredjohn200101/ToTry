@@ -63,8 +63,21 @@ function saveCustomExercise(){
   showToast('Created', name + ' added to your workout.');
   haptic('success');
 }
-async function searchExercises(query){
+// EVERY KEYSTROKE WAS A SEARCH, AND THE SLOWEST ONE WON. v564 wired a 260ms-debounced type-ahead onto
+// this, which was already an async function with an AI fallback and no in-flight guard: typing one
+// exercise the 324-item library does not hold sent eight real POSTs to ai-proxy, and whenever an
+// earlier call came back slower than a later one the list settled on a STALE query's rows — tappable
+// straight into the session. So a lifter typing "nordic ham curl" could be looking at "AI result for
+// nordic h" and tap it in. The generation counter makes a superseded search render nothing, and the
+// model is asked only when a person deliberately asks — Find, or Enter — never on the way through a
+// word. The proxy chain is down to one working provider on a free-tier quota; eight calls per search
+// is not a cost this feature can justify.
+let _exSearchGen = 0;
+async function searchExercises(query, opts){
   if(!query.trim())return;
+  const _gen = ++_exSearchGen;
+  const _superseded = () => _gen !== _exSearchGen;
+  const _typeahead = !!(opts && opts.typeahead);
   const res=document.getElementById('pt-ex-results');
   if(!res)return;
   res.innerHTML='<p class="pulsing" style="font-family:Cormorant Garamond,serif;font-size:15px;font-style:italic;color:var(--tx3);text-align:center;padding:16px">Finding exercises...</p>';
@@ -102,8 +115,9 @@ async function searchExercises(query){
     }
   }
   
-  // Third: if still nothing, ask AI for custom exercises
-  if(!exercises.length){
+  // Third: if still nothing, and the person actually asked, ask the AI for custom exercises
+  if(!exercises.length && !_typeahead){
+    if(_superseded()) return;
     try{
       const raw=await api('Return a JSON array of 8 distinct exercises for: "'+query+'". Each must be a different specific exercise (not generic). Format: [{"name":"Exercise Name","equipment":"Equipment needed","primary":"Primary muscle"}]. Only JSON, no markdown.',[],query,500);
       const m=raw.match(/\[[\s\S]*\]/);
@@ -116,8 +130,11 @@ async function searchExercises(query){
     }catch(e){console.log('AI exercise fallback failed:',e);}
   }
   
-  // Render
+  // Render — unless a later keystroke has already started its own search, in which case this result
+  // is describing a query the person has moved on from.
+  if(_superseded()) return;
   if(!exercises.length){
+    if(_typeahead){ res.innerHTML=''; return; }   // mid-word: say nothing rather than "No exercises found"
     const safeQ = query.replace(/'/g,"\\'").replace(/</g,'&lt;');
     res.innerHTML='<div style="text-align:center;padding:16px"><p style="font-size:13px;color:var(--tx3);margin-bottom:12px">No exercises found for "'+query.replace(/</g,'&lt;')+'".</p>'+
       '<button class="btn primary" onclick="openCreateExercise(\''+safeQ+'\')" style="width:auto;padding:10px 18px;font-size:13px">+ Create "'+query.replace(/</g,'&lt;')+'"</button></div>';
@@ -750,7 +767,7 @@ function renderSets(ei){
         // for the thing they came here to stop needing — and it was firing because this read the
         // positive displayed value. Assisted sets do not set records.
         const w=(trk==='assisted') ? 0 : parseFloat(_readWeight()),r=parseInt(rIn.value);
-        if(w&&r&&(s.type||'normal')!=='warmup'){const orm=estE1RM(w,r);const prs=ls('totry_prs')||{};if(!prs[ex.name]||orm>prs[ex.name].orm){showToast('New PR! \u{1F3C6}',ex.name+' \u2014 est. 1RM: '+orm+'kg');prs[ex.name]={orm,weight:w,reps:r,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})};ls('totry_prs',prs);setTimeout(()=>showVerseToast('pr','Word for your PR'),800);}}
+        if(w&&r&&(s.type||'normal')!=='warmup'){const orm=estE1RM(w,r);const prs=ls('totry_prs')||{};if(!prs[ex.name]||orm>prs[ex.name].orm){showToast('New PR! \u{1F3C6}',ex.name+' \u2014 est. 1RM: '+orm+'kg');prs[ex.name]={orm,weight:w,reps:r,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'})};ls('totry_prs',prs);_sessionPRs=(_sessionPRs||[]).filter(p=>p.name!==ex.name).concat([{name:ex.name,orm:orm}]);setTimeout(()=>showVerseToast('pr','Word for your PR'),800);}}
         // Rest timer: use this exercise's remembered rest, default 90s. Hevy-style per-exercise.
         // Hevy rip: warmup sets don't trigger rest \u2014 you ramp, you don't sit.
         const justDone = currentSession[ei] && currentSession[ei].sets && currentSession[ei].sets[si];
@@ -850,6 +867,12 @@ async function saveWorkoutSession(){
       prHit = ((typeof detectAndRecordPRs === 'function')
         ? (detectAndRecordPRs(session.exercises || []) || []) : [])
         .map(function(p){ return { name: p.name, orm: Math.round(p.e1rm || 0) }; });
+      // Anything already celebrated at the tick is invisible to the detection above, by design — it is
+      // ALREADY the stored record. Merge, so the sheet shows every record beaten in this session
+      // whichever way it was entered, and never the same lift twice.
+      (_sessionPRs || []).forEach(function(p){
+        if(!prHit.some(function(x){ return x.name === p.name; })) prHit.push({ name: p.name, orm: Math.round(p.orm || 0) });
+      });
       if(prHit.length && typeof haptic === 'function') haptic('success');
     }catch(_){ prHit = []; }
   }
@@ -871,7 +894,7 @@ async function saveWorkoutSession(){
   stopRestTimer();
   const savedExCount = session.exercises.length;
   stopSessionTimer();
-  currentSession=[];renderWorkoutSession();
+  currentSession=[];_sessionPRs=[];renderWorkoutSession();
   showWorkoutSummary({exercises:savedExCount, sets:cs, vol:vol, durationMin:durationMin, prs:prHit});
   loadH();const gi=habits.findIndex(h=>h.n.toLowerCase().includes('gym'));if(gi>=0){habits[gi].d[tIdx()]=1;saveH();renderHabits();}
   checkMilestones();
@@ -899,11 +922,22 @@ function showWorkoutSummary(s){
     const proSoFar = Math.round(todayEntries.reduce((a,e)=>a+(e.pro||0),0));
     const proGoal = goals.pro || 170;
     const proLeft = Math.max(0, proGoal - proSoFar);
+    // NUMBERS OFF MEANS NUMBERS OFF, HERE TOO. Nourish's gentle mode promises "I'll hold the maths.
+    // You'll still get counsel, just no numbers to fight with" — and this sheet, which opens the second
+    // a session is saved, has been answering with "Roughly ~348 cal burned" and "Protein: 0g of 170g"
+    // the whole time. This file has never mentioned nutGentle. For someone who turned counting off
+    // because counting is the thing that hurt them, a calorie figure and a gram target on the way out
+    // of a workout is the promise broken at the worst moment; the app's own note says a promise that
+    // leaks a figure two cards down is worse than no promise at all. The handoff itself still stands —
+    // it just says the true thing without the arithmetic.
+    const _gentle = (typeof nutGentle==='function') && nutGentle();
     fuelBlock = '<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bd)">'+
       '<div class="eyebrow" style="margin-bottom:6px">Now fuel it</div>'+
       '<div style="font-size:13px;color:var(--tx2);line-height:1.6">'+
-        (burnEst ? 'Roughly <span style="color:var(--go)">~'+burnEst+' cal</span> burned (added to today\'s net). ' : '')+
-        (proLeft > 0 ? 'Protein: <span style="color:var(--gr)">'+proSoFar+'g of '+proGoal+'g</span> — '+proLeft+'g to go. The next meal matters most after training.' : 'Protein: <span style="color:var(--gr)">'+proSoFar+'g</span> — goal hit. Well fuelled.')+
+        (_gentle
+          ? 'You have just asked something of your body \u2014 give it what it needs. The meal after training is the one that matters most.'
+          : ((burnEst ? 'Roughly <span style="color:var(--go)">~'+burnEst+' cal</span> burned (added to today\'s net). ' : '')+
+             (proLeft > 0 ? 'Protein: <span style="color:var(--gr)">'+proSoFar+'g of '+proGoal+'g</span> — '+proLeft+'g to go. The next meal matters most after training.' : 'Protein: <span style="color:var(--gr)">'+proSoFar+'g</span> — goal hit. Well fuelled.')))+
       '</div>'+
       '<button class="btn" onclick="closeModal(this);go(\'nourish\')" style="margin-top:10px;background:var(--bg3);border:1px solid var(--bd);font-size:13px">Log a meal →</button>'+
     '</div>';
@@ -928,7 +962,7 @@ function showWorkoutSummary(s){
 async function clearWorkoutSession(){
   if(!currentSession.length)return;
   if(!(await askConfirm('Clear this session? Anything not saved will be lost.'))) return;
-  currentSession=[];
+  currentSession=[];_sessionPRs=[];
   renderWorkoutSession();
   showToast('Cleared','Session cleared. Ready for the next one.');
 }
@@ -1208,10 +1242,22 @@ function saveEditTraining(id){
   if(shown('edit-cardio-time'))     patch.durationMinutes = mins ? Math.round(mins) : null;
   // dispToM, not *1000: the box holds the person's own unit, so editing a 2-mile run while set
   // to miles used to store 2000m — 1.24 miles — quietly shortening a run they had already logged.
+  // AND CLEAR WHAT THE NEW TYPE DOES NOT HAVE. "Only write what the form showed" was right for the
+  // unit bug it fixed, but it also stopped clearing a field the person just removed by changing the
+  // activity: log an Indoor Run of 5.00km, correct it to Elliptical, and the distance box is gone from
+  // the sheet while distance:5000 stays on the row. The chip then reads "5.0km" on an elliptical
+  // session, _isCardioType still counts it, so the week's total — and the weekly review handed to the
+  // coach — carries 5km nobody covered. The input never renders again for that type, so the person
+  // cannot clear it without deleting the workout. The TYPE's own field list is the authority, not the
+  // DOM: a field absent because the sheet is not rendered must never wipe anything.
+  const _cfg = CARDIO_TYPES[type] || CARDIO_TYPES['Other'] || { fields: [] };
+  const _typeHas = f => (_cfg.fields || []).indexOf(f) > -1;
   if(shown('edit-cardio-distance')) patch.distance = km ? dispToM(km) : null;
+  else if(!_typeHas('distance'))    patch.distance = null;
   if(shown('edit-cardio-activeCal') || shown('edit-cardio-totalCal')) patch.calories = cal || null;
   if(shown('edit-cardio-hr'))       patch.averageHeartRate = hr || null;
   if(shown('edit-cardio-effort'))   patch.effort = effort || null;
+  else if(!_typeHas('effort'))      patch.effort = null;
   workouts[idx] = { ...workouts[idx], ...patch };
   ls('totry_workouts', workouts);
   // Rebuild the burn ledger from the (now edited) workouts — single source of truth, no drift.
@@ -1350,13 +1396,14 @@ function setCardioUnit(u){ ls('totry_distance_unit', u); if(typeof renderCardioF
 function updateCardioPace(){
   const paceEl = document.getElementById('cardio-pace');
   if(!paceEl) return;
-  const unit = (ls('totry_distance_unit')) || 'km';
   const mins = _parseCardioTime(document.getElementById('cardio-time')?.value||'');
   const dist = parseFloat(document.getElementById('cardio-distance')?.value||'')||0;
   if(mins>0 && dist>0){
-    const secPer = (mins*60)/dist;
-    const mm = Math.floor(secPer/60); const ss = Math.round(secPer%60);
-    paceEl.textContent = 'Pace: '+mm+"'"+String(ss).padStart(2,'0')+'"/'+unit;
+    // Rounding the seconds independently of the minutes printed "Pace: 5'60\"/km" for a 5K in 29:59 —
+    // the same run the edit sheet, which already uses _paceParts, calls 6'00\". The v570 commit said
+    // "one formatter now" and this, the LOGGING path, was never changed. It is now.
+    const p = _paceParts(mins/dist);
+    paceEl.textContent = p ? ('Pace: '+p.m+"'"+p.s+'"/'+p.unit) : '';
   } else { paceEl.textContent = ''; }
 }
 // ── DISTANCE UNITS ───────────────────────────────────────────────────────────────────────────
@@ -2116,7 +2163,9 @@ function renderExerciseProgressChart(exName){
     let bestE1RM = 0, bestSet = null;
     (ex.sets || []).forEach(st => {
       const w = parseFloat(st.weight), r = parseInt(st.reps);
-      if(w > 0 && r > 0){
+      // st.done !== false, like the aggregate block below it — the two halves of this one card
+      // disagreed by construction, so the chart plotted a lift the "Best set" line refused.
+      if(w > 0 && r > 0 && st.done !== false){
         const e1rm = estE1RM(w, r);
         if(e1rm > bestE1RM){ bestE1RM = e1rm; bestSet = {w, r}; }
       }
@@ -2787,7 +2836,7 @@ function showExerciseProgress(exName){
     ex.sets.forEach(s => {
       const w = parseFloat(s.weight) || 0;
       const r = parseInt(s.reps) || 0;
-      if(w > 0 && r > 0){
+      if(w > 0 && r > 0 && s.done !== false){
         vol += w * r;
         if(w > maxW){ maxW = w; bestReps = r; }
         // estE1RM, not Epley written out again — it special-cases a single, so the curve and the PR

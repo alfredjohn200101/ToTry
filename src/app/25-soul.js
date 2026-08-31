@@ -89,7 +89,15 @@ async function readTodaysGospel(){
   // a single 60-day window of the live API (2026-09-08 and 2026-10-02), so this is the ordinary shape,
   // not an edge case. Parse every range; a reference that spans chapters still falls through to the
   // USCCB link rather than being half-rendered.
-  const m = ref.match(/^([\d]?\s?[A-Za-z ]+?)\s+(\d+):([\d,\s\u2013\u2014-]+)$/);
+  // AND LECTIONARY REFERENCES ARE NOT ALWAYS PLAIN NUMBERS. Anchoring the verse part to the end of the
+  // string meant two ordinary shapes stopped rendering any text at all: a verse-part suffix ("Matthew
+  // 5:1-12a" — All Saints) and a long/short alternative ("Matthew 4:12-23 or 4:12-17"). Measured over
+  // the live API, 5 of 122 consecutive days regressed from the full reading to "See the full Gospel at
+  // the USCCB link below" — roughly fifteen days a year, including All Saints and the Presentation.
+  // Where both a long and a short form are offered the long one is the reading; a verse-part letter
+  // narrows a verse this reader shows whole, so dropping the letter loses nothing a person would see.
+  const _refMain = String(ref).split(/\s+or\s+/i)[0].replace(/(\d)[a-z]\b/g, '$1').trim();
+  const m = _refMain.match(/^([\d]?\s?[A-Za-z ]+?)\s+(\d+):([\d,\s\u2013\u2014-]+)$/);
   if(!m){ box.innerHTML = '<div style="font-size:12px;color:var(--tx2);padding:6px">See the full Gospel at the USCCB link below.</div>'; return; }
   const bookName = m[1].trim();
   const chapter = m[2];

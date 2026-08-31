@@ -2560,6 +2560,60 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── A RECIPE YOU BUILT, LOGGED ────────────────────────────────────────────────────────────────
+  // "My recipes" is a first-class row in "More ways to log", and for everyone who ever built one and
+  // tapped "Log this" it did NOTHING: v563 replaced the four cal/pro/carb/fat writes with a spread of
+  // `_rTot`, a variable that exists nowhere in the app. Because logRecipeAsMeal is async the
+  // ReferenceError arrived as a rejected promise — no diary row, no toast, no haptic, the modal left
+  // sitting open — and every suite stayed green, because none of them ever pressed the button.
+  // So this presses it, through the app's OWN writer (openRecipeBuilder -> addRecipeIngredient ->
+  // saveCurrentRecipe), and asserts the STORE. The arithmetic is the second half of the point: a
+  // 4-serving recipe of 500cal/40pro/35fat logged as 2 servings is half of it — 250/20/17.5.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    const errs = []; page.on('pageerror', e => errs.push(String(e.message).slice(0, 110)));
+    await page.addInitScript(() => {
+      localStorage.setItem('totry_onboarded','true'); localStorage.setItem('totry_guest','true');
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2800);
+    await page.evaluate(() => openRecipeBuilder()); await page.waitForTimeout(400);
+    await page.locator('button:has-text("Build manually")').first().click(); await page.waitForTimeout(300);
+    await page.evaluate(() => {
+      document.getElementById('recipe-name').value = 'Sunday chilli';
+      document.getElementById('recipe-servings').value = '4';
+      document.getElementById('recipe-add-name').value = 'Beef mince';
+      document.getElementById('recipe-add-cal').value = '500';
+      document.getElementById('recipe-add-pro').value = '40';
+      document.getElementById('recipe-add-fat').value = '35';
+      addRecipeIngredient(); saveCurrentRecipe();
+    });
+    await page.waitForTimeout(500);
+    await page.locator('.modal-bg.open').getByRole('button', { name:'Log this', exact:true }).first().click();
+    await page.waitForTimeout(300);
+    await page.fill('#_at-in', '2'); await page.click('#_at-ok'); await page.waitForTimeout(900);
+
+    const rec = await page.evaluate(() => {
+      const key = new Date().toLocaleDateString('en-AU');
+      const rows = (JSON.parse(localStorage.getItem('totry_nutlog') || '{}')[key] || []);
+      return { rows: rows.length, row: rows[0] || null, modalOpen: !!document.querySelector('.modal-bg.open') };
+    });
+    if(rec.rows !== 1) findings.push('recipes: "Log this" wrote ' + rec.rows + ' diary rows, expected 1');
+    else {
+      const r = rec.row;
+      if(Math.round(r.cal) !== 250) findings.push('recipes: 2 of 4 servings logged ' + r.cal + ' cal, expected 250');
+      if(Math.round(r.pro) !== 20)  findings.push('recipes: protein came out ' + r.pro + 'g, expected 20g');
+      if(Math.round(r.fat*10)/10 !== 17.5) findings.push('recipes: fat came out ' + r.fat + 'g, expected 17.5g');
+      if(r.source !== 'recipe') findings.push('recipes: row is not marked as a recipe (' + r.source + ')');
+    }
+    if(rec.modalOpen) findings.push('recipes: the recipe modal is still open after logging');
+    if(errs.length) findings.push('recipes: page errors — ' + errs.join(' | '));
+    if(!findings.length || !findings.some(f => f.startsWith('recipes')))
+      console.log('recipes: a recipe you built logs as a meal — 2 of 4 servings is half of it, and the sheet closes');
+    await ctx.close();
+  }
+
   // ── TELLING THE TRUTH ABOUT A HISTORY YOU NEVER LOGGED ─────────────────────────────────────────
   // "I need to be honest and say I haven't been clean for a long amount of time or ever." A fight
   // tracker that can only start from today asks a person to begin with a lie. promptMassAddLosses is
@@ -3135,7 +3189,12 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       const d = [0,0,0,0,0,0,0];
       for (let k = 0; k < 3 && k <= ti; k++) d[ti - k] = 1;   // three done, this week
       const hit = d.filter(Boolean).length;
-      ls('totry_h', [{ n:'Gym session', pw:3, d:d.slice(), w:wk },
+      // THE TARGET FOLLOWS THE SEED. The tick loop is bounded by the day of the week (`k <= ti`), so on
+      // a Tuesday it can only lay down two — while pw was hard-coded at 3. The assertion below then
+      // demanded "2 of 2" from a card correctly reading "2 of 3", and this group went red every
+      // Tuesday and only Tuesday, describing nothing wrong with the app. A gate that cries wolf on a
+      // calendar is a gate people re-run instead of trust.
+      ls('totry_h', [{ n:'Gym session', pw:hit, d:d.slice(), w:wk },
                      { n:'Read 10 pages',      d:d.slice(), w:wk }]);
       go('home'); await new Promise(x => setTimeout(x, 1600));
       const row = n => { const e = [...document.querySelectorAll('#tab-home *')]
@@ -3204,17 +3263,19 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     const r = await page.evaluate(async () => {
       go('money'); await new Promise(r => setTimeout(r, 1500));
       if (typeof showMoneyMore === 'function') { showMoneyMore(); await new Promise(r => setTimeout(r, 800)); }
-      const found = (typeof detectRecurringCharges === 'function') ? detectRecurringCharges() : null;
-      if (!found) return { err: 'detectRecurringCharges is not defined' };
-      const box = document.getElementById('recurring-found');
+      // detectSubscriptions is now the ONE detector — the duplicate that used to render a second
+      // card in this same box, keyed on a different normaliser, is gone.
+      const found = (typeof detectSubscriptions === 'function') ? detectSubscriptions() : null;
+      if (!found) return { err: 'detectSubscriptions is not defined' };
+      const box = document.getElementById('sub-detect');
       const before = found.map(f => f.key);
       // tracking one must move it into subscriptions and stop offering it
-      const btn = box ? [...box.querySelectorAll('button')].find(b => /track it/i.test(b.innerText||'')) : null;
+      const btn = box ? [...box.querySelectorAll('button')].find(b => /^track/i.test((b.innerText||'').trim())) : null;
       if (btn) { btn.click(); await new Promise(r => setTimeout(r, 800)); }
       return { names: found.map(f => f.name), keys: before,
                onScreen: !!(box && box.getBoundingClientRect().height > 0),
                subs: (ls('totry_subscriptions') || []).length,
-               stillOffered: (detectRecurringCharges() || []).length };
+               stillOffered: (detectSubscriptions() || []).length };
     });
     await ctx.close();
     if (r.err) findings.push(`recurring: ${r.err}`);

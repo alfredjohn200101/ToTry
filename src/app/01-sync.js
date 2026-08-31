@@ -465,7 +465,13 @@ async function pullFromCloud(){
       // Append-only logs with a stable id/ts — see the note above.
       'totry_payments','totry_transactions','totry_vice_savings_log','totry_feelings','totry_hunger_log',
       // Editable lists — safe to union ONLY because their deletes now tombstone. See note.
-      'totry_bills','totry_assets','totry_subscriptions'];
+      'totry_bills','totry_assets','totry_subscriptions',
+      // v568 added totry_practices to SYNC_KEYS and not to this list, so it fell to the scalar rule:
+      // whichever device wrote last REPLACED the other's whole list. A Muslim using the app on a phone
+      // and an iPad completed the tasbih on each across a week and watched "That's 9 kept" drop back to
+      // "That's 4 kept" on the next pull. It is append-only and every row carries a ts, so syncIdOf
+      // identifies it exactly like the rosary log sitting beside it in SYNC_KEYS.
+      'totry_practices'];
     const idOf = syncIdOf;   // ONE identity function, shared with tombstoneRemoved (see TOMB_KEY)
     // union(local, cloud) kept the FIRST occurrence of each id — always the LOCAL one — so an entry
     // EDITED on the other device never arrived: the correction was silently dropped while both copies
@@ -581,6 +587,15 @@ async function pullFromCloud(){
           const _vCloudNewer = (cts >= lts) && !pendingLocal;
           if(_vCloudNewer && v.startDate) ex.startDate = v.startDate;
           // else keep ex.startDate — ex is the local copy, since local is concatenated first.
+          // THE FIGHT IS THE ONE DATE THAT ONLY EVER MOVES BACKWARDS. `ex` is the LOCAL copy, so a
+          // device whose vices predate fightingSince kept its own missing value, ignored the stamped
+          // one on the cloud side, and then _queueWrite pushed that loss straight back up — undoing
+          // the stamp for every device, permanently. Earliest wins, because a later value can only
+          // have come from a device that stamped it off a truncated history; unlike startDate there
+          // is no case where the fight legitimately restarts, so recency is the wrong rule here.
+          const _exFS = ex.fightingSince ? new Date(ex.fightingSince).getTime() : Infinity;
+          const _vFS  = v.fightingSince  ? new Date(v.fightingSince).getTime()  : Infinity;
+          if(_vFS < _exFS) ex.fightingSince = v.fightingSince;
           ex.urgelog = union(ex.urgelog, v.urgelog);
           if(!ex.type && v.type) ex.type = v.type;
         });

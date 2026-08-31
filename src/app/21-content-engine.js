@@ -106,7 +106,13 @@ function getUnifiedTraining(){
     volume: (typeof displayVolume==='function' && w.exercises && w.exercises.length) ? displayVolume(w) : (w.volume || 0),
     sets: w.completedSets || 0,
     exercises: (w.exercises || []).length,
-    calories: w.calories || null,
+    // v566 taught the GROW handoff that a strength session logged in THIS app has no `calories` field
+    // and must be estimated from duration, and stopped there. This row feeds getUnifiedWeekStats, so
+    // the Sunday synthesis prompt read "3 sessions - 174 min, 15,600kg lifted" with the calorie clause
+    // silently dropped, while an identical Hevy import produced "1044 cal burned". Same cross-front
+    // feature, working only for people who log somewhere else — which is the exact sentence in that
+    // commit message. One burn function, everywhere.
+    calories: ((typeof _burnForWorkout === 'function') ? _burnForWorkout(w) : (Number(w.calories) || 0)) || null,
     distance: w.distance || null,
     hr: w.averageHeartRate || w.avgHeartRate || null,
     activityType: w.type || null,

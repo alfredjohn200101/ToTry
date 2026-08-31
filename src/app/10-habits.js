@@ -445,6 +445,12 @@ function openHabitAnchor(hi){
     '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);line-height:1.3;margin-bottom:6px">After I\u2026 I will '+_escFew(h.n).toLowerCase()+'.</div>'+
     '<div style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px">A habit with no cue waits on motivation, and motivation doesn\u2019t show up daily. Tied to something already in your day, it just happens. Same move as the plans you lock in at the Feeling Door \u2014 decide it now, while you\u2019re clear.</div>'+
     '<input type="text" id="hab-anchor" maxlength="70" placeholder="e.g. I make my coffee" value="'+_escFew(cur)+'" style="font-size:16px;padding:12px;margin-bottom:10px">'+
+    // The target was write-once at creation. Someone who typed it wrong, or left it blank and then
+    // found their week being measured against days that merely passed, had no way back to it short of
+    // deleting the habit and its ticks. This row is the habit's own editor, opened from the very line
+    // that reads "3 of 3 this week", so it is where the target belongs.
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:6px">Days a week you are aiming for</div>'+
+    '<input type="number" id="hab-pw" min="1" max="7" placeholder="blank for most days" value="'+((h.pw>=1&&h.pw<=7)?h.pw:'')+'" style="font-size:16px;padding:12px;margin-bottom:14px">'+
     '<div style="display:flex;flex-wrap:wrap;justify-content:center;margin-bottom:14px">'+chips+'</div>'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="saveHabitAnchor('+hi+')">Lock in my anchor</button>'+
     (cur?'<button class="btn" onclick="clearHabitAnchor('+hi+')" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-bottom:4px">Remove the anchor</button>':'')+
@@ -463,8 +469,17 @@ function saveHabitAnchor(hi){
   const el=document.getElementById('hab-anchor');
   const val=((el&&el.value)||'').trim().slice(0,70);
   if(!val){ if(typeof showToast==='function') showToast('Empty','Name one thing you already do every day.'); return; }
+  // The target rides with the anchor — one sheet, one save. Blank clears it back to "most days".
+  const _pwEl=document.getElementById('hab-pw');
+  const _pwRaw=((_pwEl&&_pwEl.value)||'').trim();
+  if(_pwRaw && !(Number(_pwRaw)>=1 && Number(_pwRaw)<=7)){
+    if(typeof showToast==='function') showToast('Days a week','A number from 1 to 7, or leave it blank for most days.');
+    return;
+  }
   loadH(); if(!habits[hi]) return;
-  habits[hi].a=val; saveH();
+  habits[hi].a=val;
+  if(_pwRaw) habits[hi].pw=Math.round(Number(_pwRaw)); else delete habits[hi].pw;
+  saveH();
   document.querySelector('.modal-bg.open')?.remove();
   _anchorRefresh();
   try{ if(typeof logEvent==='function') logEvent('habit_anchor',{}); }catch(_){}
@@ -508,6 +523,13 @@ function openAddHabit(){
       placeholder:'leave blank for most days'}],
     'Add it',
     function(vals){
+      // "3-4", "every day" and "10" all parsed to something outside 1-7 and were thrown away without a
+      // word — the modal closed, "Added" appeared, and the habit was quietly measured against elapsed
+      // days instead of the target the person had just typed. Blank still means "most days", which is
+      // what the placeholder promises; a number that cannot be a week is worth one sentence.
+      const _pwRaw = String(vals.perweek == null ? '' : vals.perweek).trim();
+      if(_pwRaw && !(Number(_pwRaw) >= 1 && Number(_pwRaw) <= 7))
+        return 'Days a week needs to be a number from 1 to 7 \u2014 or leave it blank for most days.';
       const r = addHabit(vals.habit, vals.perweek);
       if(r === 'dupe') return 'That one is already on your list.';
       if(!r) return 'Give it a name first.';

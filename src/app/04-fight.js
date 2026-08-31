@@ -483,6 +483,24 @@ function loadV(){
   // read "0 days clean" forever. Only ever stamped when there is no start AND no recorded slip, so this
   // can never overwrite a real clean-date or resurrect one a relapse legitimately reset.
   vices.forEach(v=>{ if(v && !v.startDate && !v.lastLoss){ v.startDate=new Date().toISOString(); changed=true; } });
+  // AND STAMP THE FIGHT ITSELF, ONCE, BEFORE ANYTHING IN THIS SESSION CAN RESET THE STREAK.
+  // v565 taught the app that a slip resets the clean streak and NOT the fight — coming back is counted
+  // as coming back. It wrote that line into two of the eight places that overwrite startDate, so the
+  // other six went on erasing the whole history for any vice created before fightingSince existed,
+  // which is every vice a long-time user already has. The worst of them was the honest-slip button:
+  // "I failed before opening this. Be honest." took a man thirty days into the fight to "Day 1 of the
+  // fight", while the SOS button beside it correctly left him at Day 31 — so the app punished the
+  // harder, more honest act, which is the exact opposite of what it is for. Measured on the shipped
+  // bundle: Day 31 -> Day 31 through logLoss, Day 31 -> Day 1 through logHonestLoss.
+  // Sprinkling the same guard across six more call sites is how it was missed the first time.
+  // viceFightingSince already knows the earliest date the app can prove; stamping it here means no
+  // later reset can lose it — including the four paths that reset the anchor without a slip at all.
+  vices.forEach(v=>{
+    if(v && !v.fightingSince && typeof viceFightingSince === 'function'){
+      const _since = viceFightingSince(v);
+      if(_since){ v.fightingSince = _since.toISOString(); changed=true; }
+    }
+  });
   if(changed) ls('totry_v', vices);
 }
 function saveV(){ls('totry_v',vices);}
@@ -919,20 +937,40 @@ const VICE_PLAYBOOK = {
 // Anything that cannot be placed confidently falls through to 'general', whose copy is about riding an
 // urge and is true for any fight.
 function classifyVice(name){
-  const n = (name || '').toLowerCase();
+  // Punctuation is not meaning. "Soft-drink" and "soft drink" are one fight, and the hyphen alone was
+  // enough to send one of them to the alcohol playbook.
+  const n = (name || '').toLowerCase().replace(/[-_/]+/g, ' ').replace(/\s+/g, ' ').trim();
+  // STRONG keywords are unambiguous and win outright. WEAK ones are the ambiguous words that need a
+  // false-friend guard, and `nots` gates ONLY those. The old shape checked `nots` first and skipped the
+  // whole type, so nicotine's ['nail','gum'] killed "Nicotine gum" before the word 'nicotine' was ever
+  // tested, and the person lost the nicotine timeline. A guard against a weak signal must never be able
+  // to veto an explicit one.
   const map = [
-    ['porn', ['porn','lust','masturbat','nsfw','sexual','fap','onlyfans'], []],
-    ['gambling', ['gambl','bet','betting','casino','poker','slots','wager','lottery','sportsbook'], []],
-    ['nicotine', ['smok','cigarette','vap','nicotine','tobacco','juul','dip','chew'], ['nail','gum']],
-    ['alcohol', ['alcohol','drink','beer','wine','liquor','booze','spirits','drunk'],
-                ['energy drink','soft drink','fizzy','sports drink','diet drink','soda','cordial']],
-    ['scrolling', ['scroll','social media','instagram','tiktok','phone','youtube','reddit','twitter','doomscroll','screen'], []],
-    ['food', ['eat','food','binge','sugar','junk','snack','overeat','sweets'], []]
+    ['porn',      ['porn','lust','masturbat','nsfw','sexual','fap','onlyfans'], [], []],
+    // The named books are strong: they carry no other meaning, and under the old classifier they were
+    // only reached by the substring 'bet' inside "Sportsbet".
+    ['gambling',  ['gambl','casino','poker','slots','wager','lottery','sportsbook','sportsbet','pointsbet','unibet','betfair','ladbrokes','tabcorp'], ['bet','betting'], []],
+    ['nicotine',  ['nicotine','cigarette','tobacco','juul','vap'], ['smok','dip','chew'], ['nail']],
+    // 'drink' on its own is not alcohol. It was guarded by a list of named phrases — 'energy drink',
+    // 'soft drink', 'soda', 'cordial' — so anything one spelling away still got the alcohol playbook,
+    // and that playbook OPENS with a withdrawal-seizure warning telling the person to see a GP before
+    // they stop. "Sugary drinks", "Sweet drinks" and the hyphenated "Soft-drink" all landed there. A
+    // blocklist of phrases cannot cover a naming space; a qualifier test can.
+    ['alcohol',   ['alcohol','beer','wine','liquor','booze','spirits','drunk'], ['drink','drinking'],
+                  ['energy','soft','fizzy','sport','sports','diet','zero','sugary','sugar','sweet','juice',
+                   'soda','cordial','cola','coffee','tea','water','milk','protein','shake','smoothie','kombucha']],
+    ['scrolling', ['scroll','social media','instagram','tiktok','youtube','reddit','twitter','doomscroll'], ['phone','screen'], []],
+    // A sweet drink is NOT reclassified as food here. v569 decided these fall through to the honest
+    // 'general' rather than being confidently placed, and asserts it. The defect was only ever that
+    // they reached ALCOHOL and its withdrawal warning; where they land instead was already a decision.
+    ['food',      ['binge','overeat'], ['eat','food','sugar','junk','snack','sweets'], []]
   ];
   const startsWord = k => new RegExp('\\b' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(n);
-  for(const [type, kws, nots] of map){
-    if(nots.some(x => n.indexOf(x) > -1)) continue;
-    if(kws.some(startsWord)) return type;
+  // Two passes, so an explicit word anywhere in the name beats every weak match and every guard.
+  for(const [type, strong] of map){ if(strong.some(startsWord)) return type; }
+  for(const [type, , weak, nots] of map){
+    if(nots.some(startsWord)) continue;
+    if(weak.some(startsWord)) return type;
   }
   return 'general';
 }

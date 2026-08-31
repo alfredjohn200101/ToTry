@@ -9,10 +9,19 @@
 // All three now come from the `key-proxy` edge function (supabase/functions/key-proxy), which holds
 // them as Supabase secrets. Each caller degrades gracefully when the function is not deployed, so
 // nothing here breaks while it is being set up — see the note at each call site.
-async function keyProxy(payload){
+async function keyProxy(payload, ms){
   try{
     if(!sb || !sb.functions) return null;
-    const { data, error } = await sb.functions.invoke('key-proxy', { body: payload });
+    // AND IT HAD NO TIMEOUT OF ITS OWN. sb.functions.invoke() is a fetch the app does not own, so on a
+    // stalled connection it never settles — and esvPassage awaits THIS before it reaches the _fetchT
+    // v567 added, so the Bible reader still hung forever on "Loading" for every Christian (ESV is the
+    // picker's `selected` default) while the three keyless mirrors below it, which would have answered
+    // instantly, were never tried: the chain never got past step one. The invoke cannot be aborted from
+    // here, but the app can stop waiting on it, which is what the fallbacks need.
+    const { data, error } = await Promise.race([
+      sb.functions.invoke('key-proxy', { body: payload }),
+      new Promise(function(res){ setTimeout(function(){ res({ data:null, error:'timeout' }); }, ms || 8000); })
+    ]);
     if(error || !data || data.error) return null;
     return data;
   }catch(_){ return null; }
@@ -100,8 +109,11 @@ async function searchOFF(query){
             carb: Math.round(carb100*g/100*10)/10, fat: Math.round(fat100*g/100*10)/10 },
           nutPick(_off100, g/100));
         const servings = [];
-        if(servingG > 0){ const m = scaleTo(servingG); servings.push({ name: p.serving_size || (servingG+'g'), gramsEquiv:servingG, cal:m.cal, pro:m.pro, carb:m.carb, fat:m.fat }); }
-        servings.push({ name:'100g', gramsEquiv:100, cal:cal100, pro:pro100, carb:carb100, fat:fat100 });
+        // scaleTo already carries all eight nutrients; naming four of them here threw the other four
+        // away one line after they were computed, so a scanned packet still reached the diary with
+        // four macros and the label in the person's hand listed fibre, sugars and salt.
+        if(servingG > 0){ servings.push(Object.assign({ name: p.serving_size || (servingG+'g'), gramsEquiv:servingG }, scaleTo(servingG))); }
+        servings.push(Object.assign({ name:'100g', gramsEquiv:100, cal:cal100, pro:pro100, carb:carb100, fat:fat100 }, nutPick(_off100)));
         return {
           id: 'off_'+p.code,
           name: p.product_name,
@@ -2121,10 +2133,21 @@ async function logRecipeAsMeal(i){
   if(!qty || qty <= 0) return;
   
   const portion = qty / servings;
-  const totalCal = r.ingredients.reduce((a, ing) => a + (ing.cal||0), 0) * portion;
-  const totalPro = r.ingredients.reduce((a, ing) => a + (ing.pro||0), 0) * portion;
-  const totalCarb = r.ingredients.reduce((a, ing) => a + (ing.carb||0), 0) * portion;
-  const totalFat = r.ingredients.reduce((a, ing) => a + (ing.fat||0), 0) * portion;
+  // v563 replaced the four cal/pro/carb/fat writes below with a spread of `_rTot` — a variable that
+  // was never created anywhere in the app. logRecipeAsMeal is async, so the ReferenceError surfaced
+  // as an unhandled rejection rather than a crash: the modal stayed open, nothing was written to the
+  // diary, no toast, no haptic. Silently, every time, for everyone who ever built a recipe and tapped
+  // "Log this". Summed here across the ingredients so the row carries the WHOLE nutrient set the food
+  // databases gave us, which is what that patch was for — and a nutrient no ingredient carries stays
+  // ABSENT rather than becoming a confident zero, the same rule nutPick itself keeps.
+  const _rTot = {};
+  r.ingredients.forEach(function(ing){
+    NUTRIENTS.forEach(function(k){
+      const val = Number(ing && ing[k]);
+      if(isFinite(val)) _rTot[k] = (_rTot[k] || 0) + val;
+    });
+  });
+  const _rRow = nutPick(_rTot, portion);   // one source of truth for the row AND the toast
   
   const today = (typeof nutDayKey==='function')?nutDayKey():new Date().toLocaleDateString('en-AU');
   const log = ls('totry_nutlog') || {};
@@ -2136,14 +2159,14 @@ async function logRecipeAsMeal(i){
     name: r.name,
     serving: qty + (qty === 1 ? ' serving' : ' servings'),
     qty: 1,
-    ...nutPick(_rTot),
+    ..._rRow,
     source: 'recipe'
   });
   ls('totry_nutlog', log);
   
   document.querySelector('.modal-bg.open')?.remove();
   if(typeof renderNutritionLog === 'function') renderNutritionLog();
-  showToast('Logged', r.name + ' · ' + Math.round(totalCal) + ' cal');
+  showToast('Logged', r.name + ' · ' + Math.round(_rRow.cal||0) + ' cal');
   haptic('success');
 }
 
@@ -2651,7 +2674,11 @@ function rememberRecentFood(food){
     recents.unshift({
       name: food.name,
       brand: food.brand || '',
-      cal: food.cal, pro: food.pro, carb: food.carb, fat: food.fat,
+      // FOUR MACROS WAS THE WHOLE ROW. Log broccoli through the serving modal and the diary keeps
+      // twenty nutrients; tap the same food in Recents the next day and it has four, because this
+      // is what Recents stored. nutPick keeps whatever the database actually gave us and leaves
+      // absent nutrients absent, which is the same rule every other diary writer now follows.
+      ...nutPick(food),
       servings: food.servings || null,
       per100: !!food.per100,   // so _quickServing can label a serving-less entry '100g', not '1 serving'
       source: food.source || '',
@@ -4220,7 +4247,12 @@ function renderGrowHandoffs(){
     const inWeek = t => { const x = new Date(t).getTime(); return x > now - W && x <= now; };
 
     // TRAIN → what it earned
-    const ws = (ls('totry_workouts')||[]).filter(w => w && w.ts && inWeek(w.ts));
+    // A RUN IS TRAINING — and getUnifiedTraining is the reader that knows it, merging Strava and
+    // de-duplicating the Hevy copies. Reading totry_workouts directly meant a runner whose whole week
+    // is Strava saw this handoff blank while Home said "3 session(s) this wk".
+    const ws = ((typeof getUnifiedTraining === 'function')
+      ? getUnifiedTraining().map(t => t.raw || t)
+      : (ls('totry_workouts')||[])).filter(w => w && w.ts && inWeek(w.ts));
     // w.calories is set by Strava and Apple Health imports and by nothing else — a strength session
     // logged in THIS app stores durationMin and no calories, so this summed to 0 and the handoff fell
     // back to "fuel what you earned" with no figure, for exactly the people using our own logger.
@@ -4231,7 +4263,11 @@ function renderGrowHandoffs(){
     let trainLine = '';
     if(ws.length){
       const n = ws.length + (ws.length === 1 ? ' session' : ' sessions');
-      trainLine = burned > 0
+      // …but not to someone who turned the numbers off. Gentle mode exists for the person for whom
+      // counting IS the problem, and it promises "no numbers to fight with"; the wordless form of this
+      // line says the same true thing and keeps the handoff.
+      const _gentle = (typeof nutGentle==='function') && nutGentle();
+      trainLine = (burned > 0 && !_gentle)
         ? n + ' this week \u2014 about ' + burned.toLocaleString() + ' cal earned \u2192 fuel it'
         : n + ' this week \u2192 fuel what you earned';
     }
@@ -4351,7 +4387,13 @@ function renderBodySystemReport(){
   const inWin=(t,a,b)=>{const x=new Date(t).getTime();return x>now-a&&x<=now-b;};
 
   // TRAIN: this week vs last week, plus intensity (RPE 9+ share)
-  const ws=(ls('totry_workouts')||[]).filter(w=>w&&w.ts);
+  // Same reader as the handoff above, for the same reason: "0 WORKOUTS / No volume logged" sat one tap
+  // from "3 session(s) this wk", and tapping "Deeper read from Coach" sent the model "Training: 0
+  // workouts, 0kg volume" inside the same request whose system context said three sessions — the app
+  // handing the AI two contradictory answers about the same week.
+  const ws=((typeof getUnifiedTraining === 'function')
+    ? getUnifiedTraining().map(t => t.raw || t)
+    : (ls('totry_workouts')||[])).filter(w=>w&&w.ts);
   const wk=ws.filter(w=>inWin(w.ts,W,0)), pw=ws.filter(w=>inWin(w.ts,2*W,W));
   const wCount=wk.length, wVol=Math.round(wk.reduce((a,w)=>a+(w.volume||0),0));
   const pCount=pw.length, pVol=Math.round(pw.reduce((a,w)=>a+(w.volume||0),0));
@@ -4449,12 +4491,22 @@ function renderBodySystemReport(){
   // this for another week." There is nothing to hold and nothing to keep doing; the gap IS the
   // adjustment, and it outranks the others because every one of them is computed from the days that
   // were not logged.
-  if(lowConf) adjust='Only '+daysLogged+' day'+(daysLogged===1?'':'s')+' of food logged this week \u2014 log most days and the rest of this card becomes a real verdict.';
-  else if(goal&&goal.mode!=='maintain'&&gkg!=null&&gkg<1.6) adjust='Protein is '+gkg+'g/kg \u2014 push toward 1.6\u20132.2 (\u2248'+Math.round((trend||80)*1.8)+'g/day). Highest-leverage fix this week.';
-  else if(goal&&goal.mode==='cut'&&tdeeR&&!lowConf&&avgCal!=null&&(avgCal-tdeeR.tdee)>0) adjust='You\'re cutting but eating ~'+Math.round(avgCal-tdeeR.tdee)+' above your real burn \u2014 trim ~250/day and re-check next week.';
-  else if(weighIns<2) adjust='Only '+weighIns+' weigh-in'+(weighIns===1?'':'s')+' this week \u2014 2\u20133 quick morning weigh-ins make the trend trustworthy.';
-  else if(pVol>0&&wVol<pVol*0.7) adjust='Volume cliff: '+wVol.toLocaleString()+'kg vs '+pVol.toLocaleString()+'kg last week \u2014 protect the floor: even two short sessions count.';
+  // BUT A GAP IN FOOD DATA CANNOT INVALIDATE A READING OF THEIR TRAINING. Putting lowConf at the HEAD
+  // of this cascade fixed one absurdity and created another: it outranked the three adjustments that
+  // have nothing to do with food. Someone training four times a week, logging food on three days,
+  // whose lifting volume just fell from 12,000kg to 6,000kg, read the low-confidence sentence twice —
+  // once as the verdict and again in the gold box headed THIS WEEK'S ONE ADJUSTMENT — and lost "Volume
+  // cliff: 6,000kg vs 12,000kg last week — protect the floor", the one actionable, evidence-backed
+  // instruction the card had. The food-derived branches still defer to lowConf, because they are
+  // computed from the days that were not logged. The others no longer do, and lowConf still catches
+  // the case it was added for: it now sits where 'Hold the line' used to, so nobody with nothing
+  // logged is told to keep doing exactly this.
+  if(pVol>0&&wVol<pVol*0.7) adjust='Volume cliff: '+wVol.toLocaleString()+'kg vs '+pVol.toLocaleString()+'kg last week \u2014 protect the floor: even two short sessions count.';
   else if(intense) adjust=Math.round(hard/totSets*100)+'% of your sets hit RPE 9\u201310 \u2014 strong week; plan a lighter day before your body plans it for you.';
+  else if(!lowConf&&goal&&goal.mode!=='maintain'&&gkg!=null&&gkg<1.6) adjust='Protein is '+gkg+'g/kg \u2014 push toward 1.6\u20132.2 (\u2248'+Math.round((trend||80)*1.8)+'g/day). Highest-leverage fix this week.';
+  else if(!lowConf&&goal&&goal.mode==='cut'&&tdeeR&&avgCal!=null&&(avgCal-tdeeR.tdee)>0) adjust='You\'re cutting but eating ~'+Math.round(avgCal-tdeeR.tdee)+' above your real burn \u2014 trim ~250/day and re-check next week.';
+  else if(weighIns<2) adjust='Only '+weighIns+' weigh-in'+(weighIns===1?'':'s')+' this week \u2014 2\u20133 quick morning weigh-ins make the trend trustworthy.';
+  else if(lowConf) adjust='Only '+daysLogged+' day'+(daysLogged===1?'':'s')+' of food logged this week \u2014 log most days and the rest of this card becomes a real verdict.';
 
   const html='<div class="eyebrow" style="color:var(--go);margin-bottom:8px">Your body, one system \u00b7 last 7 days'+(lowConf?' \u00b7 <span style="color:var(--tx3)">low data</span>':'')+'</div>'+
     goalRow+
@@ -4841,7 +4893,16 @@ function prefillNutGoals(){
       // import, the Eufy screenshot) and every other reader uses. I wrote b.w/b.d, which exist on no
       // entry, so the filter returned [] for everyone with weigh-ins and this could never fire once.
       const last = body.filter(b => b && (b.weight != null)).sort((a,b) => new Date(b.ts||b.date||0) - new Date(a.ts||a.date||0))[0];
-      if(last && last.weight) wEl.value = last.weight;
+      // AND CONVERT IT ON THE WAY IN. totry_body stores kilograms — canonical, everywhere — while
+      // calcTDEE reads this box through dispToKg(). So the stored number went in raw and came back
+      // out divided by 2.2: an 82kg man on pounds opened Nourish to a box labelled "Weight (lb)"
+      // already holding "82", pressed Calculate, and the app saved him 2095 cal and 67g of protein
+      // for a body it had recorded as 37.19kg — against the ~2790 and ~148g its own maths gives him.
+      // No warning and no refusal, because 37kg clears the sanity floor. That target is then the
+      // whole Nourish screen, is synced, is exported, and is what the coach is told he should eat;
+      // in an app whose soul is never to under-fuel anyone, this was the worst number it could hold.
+      // The label above the box was already swapping to (lb); only the value never came with it.
+      if(last && last.weight) wEl.value = kgToDisp(last.weight);
     }
     const hEl = document.getElementById('tdee-height');
     if(hEl && !hEl.value){ const h = ls('totry_height'); if(h) hEl.value = h; }

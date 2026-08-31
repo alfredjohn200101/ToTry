@@ -461,7 +461,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v570';
+const APP_VERSION = 'v571';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -864,6 +864,12 @@ const SYNC_KEYS = [
   // A walked rosary was recorded and a completed tasbih, japa, mettā or stillness sit was not —
   // so the same practice counted as the day's prayer for a Catholic and vanished for everyone else.
   'totry_rosaries','totry_practices',
+  // The weight you are aiming at. v563 made this writable and every surface reads it - the goal card,
+  // the reopened field, the projection, and the AI prompt ("Current weight: 82kg -> goal 78kg") - but
+  // it was never added here, so saveGoalWeight's own syncToCloud() call was a no-op for it. Someone
+  // set a goal, watched the projection build for three weeks, signed in on a new phone and found the
+  // card back at "Want me to tell you where this is heading?".
+  'totry_goal_weight',
   // Values card sort (their own standard) + the loving-kindness/blessing log.
   'totry_values','totry_blessings',
   // Three good things — the evening's gratitude, incl. who it was about and whether it got said.

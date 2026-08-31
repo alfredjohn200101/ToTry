@@ -1024,10 +1024,12 @@ async function loadBibleChapter(){
       const _ref = book.name+' '+chapter+':'+v.num;
       if(_savedRefs.has(_ref)) row.classList.add('highlighted');
       row.innerHTML='<span class="bvn">'+v.num+'</span><span class="bvt">'+v.text.trim()+'</span>';
-      row.onclick=()=>{
+      row.onclick=async ()=>{
         if(row.classList.contains('highlighted')){
-          row.classList.remove('highlighted');
-          unsaveVerseFromReader(_ref);
+          // The class comes off only if the verse actually went, so declining the confirm leaves the
+          // row exactly as it was rather than un-highlighting something still on the shelf.
+          if(await unsaveVerseFromReader(_ref, () => row.classList.add('highlighted')))
+            row.classList.remove('highlighted');
         } else {
           row.classList.add('highlighted');
           saveVerseFromReader(v.text.trim(), _ref);
@@ -1372,14 +1374,31 @@ function saveVerseFromReader(text,ref){
   showToast('Verse saved \u2665', ref);
 }
 // The off-tap. Without this the highlight and the shelf disagreed the moment you tapped twice.
-function unsaveVerseFromReader(ref){
-  if(!ref) return;
+// THE SAME QUESTION THE SHELF ASKS. v570 made the reader's highlight MEAN "saved", which turned a tap
+// that used to drop a CSS class into a permanent delete — on a full-width row, mid-scroll, with no
+// confirmation and no undo. deleteSavedVerse has asked "Remove this from your saved verses?" and
+// offered an undo for this exact data since it was written, under a comment about one-tap destructive
+// actions. Two doors onto one shelf must not disagree about whether losing a verse is a decision.
+// Returns whether it went, so the row can follow.
+async function unsaveVerseFromReader(ref, onRestore){
+  if(!ref) return false;
   const saved = ls('totry_sv') || [];
-  const kept = saved.filter(function(v){ return !(v && v.reference === ref); });
-  if(kept.length === saved.length) return;
-  ls('totry_sv', kept);
+  const hits = [];
+  saved.forEach(function(v, i){ if(v && v.reference === ref) hits.push({ i: i, v: v }); });
+  if(!hits.length) return false;
+  if(typeof askConfirm === 'function' && !(await askConfirm('Remove this from your saved verses?'))) return false;
+  ls('totry_sv', saved.filter(function(v){ return !(v && v.reference === ref); }));
   renderSavedVersesEverywhere();
-  showToast('Removed', ref);
+  if(typeof showUndo === 'function'){
+    showUndo('Verse removed', function(){
+      const cur = ls('totry_sv') || [];
+      hits.forEach(function(h){ cur.splice(Math.min(h.i, cur.length), 0, h.v); });
+      ls('totry_sv', cur);
+      renderSavedVersesEverywhere();
+      try{ if(typeof onRestore === 'function') onRestore(); }catch(_){ }
+    });
+  } else showToast('Removed', ref);
+  return true;
 }
 function renderBibleSavedPanel(){
   // Delegated to renderSavedVersesEverywhere(), which genuinely paints both shelves. The old comment

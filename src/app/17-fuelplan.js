@@ -898,7 +898,13 @@ function _parseCSVLine(line){
 // Try to find date/description/amount columns from a header row.
 function _detectCSVColumns(header){
   const h = header.map(x => x.toLowerCase());
-  const find = (cands) => { for(const c of cands){ const i = h.findIndex(x => x.includes(c)); if(i>=0) return i; } return -1; };
+  const find = (cands, veto) => { for(const c of cands){
+    const i = h.findIndex(x => x.includes(c) && !(veto||[]).some(v => x.includes(v)));
+    if(i>=0) return i; } return -1; };
+  // A COLUMN NAMED LIKE MONEY THAT IS NOT A TRANSACTION. "Credit Limit", "Available Credit" and
+  // "Closing Balance" all contain a credit/debit word and all carry the same large number on every
+  // row — which is precisely what makes them catastrophic if mistaken for the amount.
+  const NOT_A_TX = ['limit','available','balance','score','rate','interest','opening','closing'];
   const out = {
     date: find(['date','posted','transaction date']),
     desc: find(['description','details','narrative','memo','payee','transaction']),
@@ -910,8 +916,8 @@ function _detectCSVColumns(header){
     // earnings and every read built on it was wrong. A debit column is not an amount column; it is
     // half of a pair, and the branch below already knows how to negate it.
     amount: find(['amount','value']),
-    credit: find(['credit','deposit','money in','paid in','received']),
-    debit: find(['debit','withdrawal','withdrawn','money out','paid out']),
+    credit: find(['credit','deposit','money in','paid in','received'], NOT_A_TX),
+    debit: find(['debit','withdrawal','withdrawn','money out','paid out'], NOT_A_TX),
   };
   // AND THE HALF-FIX FROM LAST TIME. Dropping 'debit' from the amount synonyms was not enough: `find`
   // matches a SUBSTRING, so the extremely common
@@ -959,10 +965,17 @@ function handleCSVFile(ev){
         const f = _parseCSVLine(rows[i]);
         if(f.length < 2) continue;
         const desc = cols.desc>=0 ? (f[cols.desc]||'') : (f[1]||'');
-        let amt = 0;
-        if(cols.amount>=0 && f[cols.amount]) amt = _csvAmount(f[cols.amount]);
+        let amt = 0, _fromAmountCol = false;
+        if(cols.amount>=0 && f[cols.amount]){ amt = _csvAmount(f[cols.amount]); _fromAmountCol = !!amt; }
         else if(cols.debit>=0 && f[cols.debit]) amt = -Math.abs(_csvAmount(f[cols.debit]));
-        if(cols.credit>=0 && f[cols.credit]){ const c = _csvAmount(f[cols.credit]); if(c) amt = Math.abs(c); }
+        // AND THE CREDIT COLUMN ONLY SPEAKS AS THE OTHER HALF OF A PAIR. This override was
+        // unconditional, so a column merely NAMED like a credit replaced the real signed amount on
+        // every row of the file: three purchases totalling -$174.29 imported as three incomes of
+        // $5,000 each, and monthIncome() then had the giving and tithe screens asking for a tenth
+        // of $15,000 nobody earned — the same disaster the debit fix was written for, and worse,
+        // because the figure is now the credit limit rather than the spend. A real amount column
+        // is the signed truth and nothing may overrule it.
+        if(!_fromAmountCol && cols.credit>=0 && f[cols.credit]){ const c = _csvAmount(f[cols.credit]); if(c) amt = Math.abs(c); }
         if(!amt) continue;
         const dateStr = cols.date>=0 ? (f[cols.date]||'') : '';
         const when = dateStr ? (_csvDate(dateStr, __csvDayFirst) || new Date()) : new Date();

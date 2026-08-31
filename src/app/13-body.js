@@ -99,6 +99,35 @@ function wDelta(kgDiff, opts){
   return wFmt(n, { signed:true });
 }
 
+// THE RESPONSE TO A DISCLOSURE IS NOT A STEP IN A HAPPY PATH. It used to live inline at the bottom of
+// logBody, below two early returns — so v568's new 20–400 weight band, sitting 80 lines above it, could
+// outrank it: a man who wrote "i want to kill myself" under "What got in your way? Honest answers
+// only." AND fat-fingered 854 into the weight box (the patch's own example of a missed decimal) got a
+// grey "Check that weight" toast and nothing else. No card, no helpline, no bridge to a human. The
+// identical sentence with the weight box left blank reached the full crisis response, so the validation
+// rule was the only difference. That is the same fail-open shape as the smart-quote gate, and CLAUDE.md
+// is explicit that every entry point stays gated. One implementation now, reachable from every exit.
+function _wkCrisisRespond(c){
+  if(!c) return;
+  haptic('warning');
+  // Presented as a modal, the same way the weekly read itself is — an inline card at the top of the
+  // Track tab could be scrolled past by someone who has just closed the form.
+  try{
+    if(typeof showCrisisResponse === 'function'){
+      document.querySelectorAll('.modal-bg:not([id])').forEach(function(m){ m.remove(); });  /* :not([id]) is load-bearing. #journal-modal, #payday-modal and #rest-timer-overlay are STATIC elements that carry .modal-bg, so the bare selector deleted them from the DOM permanently. Three of these four sites are crisis paths I added in v434/v439 — meaning that after a person disclosed something serious, openJournal() threw on its first line ('Cannot set properties of null') and the journal composer was dead for the rest of the session. I diagnosed this exact symptom earlier as MY TEST's fault, which it also was; I did not check whether the shipped code did the same thing. It did. */
+      const m = document.createElement('div');
+      m.className = 'modal-bg open';
+      m.style.alignItems = 'center';
+      m.innerHTML = '<div class="modal" style="max-width:92vw">' +
+        '<div class="modal-handle"></div>' +
+        '<div id="wk-crisis-slot"></div>' +
+        '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;margin-top:10px">Close</button>' +
+      '</div>';
+      document.body.appendChild(m);
+      showCrisisResponse('wk-crisis-slot', c);
+    }
+  }catch(_){ }
+}
 // ── BODY ──────────────────────────────────────────────────────
 async function logBody(){
   const w=dispToKg(parseFloat(document.getElementById('bod-weight').value||'0'));   // typed in their unit, stored in kg
@@ -126,6 +155,7 @@ async function logBody(){
   // the person is then coached against them. Weight is OPTIONAL here, so a blank field still passes —
   // it is only a number that cannot be a body that is refused.
   if(w && (w < 20 || w > 400)){
+    _wkCrisisRespond(_wkCrisis);   // a number no body can be never outranks a sentence like that one
     showToast('Check that weight', 'Between ' + wFmt(20, {round:0}) + ' and ' + wFmt(400, {round:0}) + '. Nothing else you typed is lost.');
     return;
   }
@@ -196,24 +226,7 @@ async function logBody(){
   // discarded or thrown back at them. What changes is that the app stops to meet them instead of sending
   // the sentence off for a cheerful weekly read.
   if(_wkCrisis){
-    haptic('warning');
-    // Presented as a modal, the same way the weekly read itself is — an inline card at the top of the
-    // Track tab could be scrolled past by someone who has just closed the form.
-    try{
-      if(typeof showCrisisResponse === 'function'){
-        document.querySelectorAll('.modal-bg:not([id])').forEach(function(m){ m.remove(); });  /* :not([id]) is load-bearing. #journal-modal, #payday-modal and #rest-timer-overlay are STATIC elements that carry .modal-bg, so the bare selector deleted them from the DOM permanently. Three of these four sites are crisis paths I added in v434/v439 — meaning that after a person disclosed something serious, openJournal() threw on its first line ('Cannot set properties of null') and the journal composer was dead for the rest of the session. I diagnosed this exact symptom earlier as MY TEST's fault, which it also was; I did not check whether the shipped code did the same thing. It did. */
-        const m = document.createElement('div');
-        m.className = 'modal-bg open';
-        m.style.alignItems = 'center';
-        m.innerHTML = '<div class="modal" style="max-width:92vw">' +
-          '<div class="modal-handle"></div>' +
-          '<div id="wk-crisis-slot"></div>' +
-          '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;margin-top:10px">Close</button>' +
-        '</div>';
-        document.body.appendChild(m);
-        showCrisisResponse('wk-crisis-slot', _wkCrisis);
-      }
-    }catch(_){ }
+    _wkCrisisRespond(_wkCrisis);
     showToast('Check-in saved', 'I read what you wrote. Please look at this.');
     return;                                    // no AI weekly read on top of a disclosure
   }
@@ -623,7 +636,12 @@ function saveGoalWeight(){
   const v = parseFloat(el && el.value);
   if(!isFinite(v) || v <= 0){ if(typeof showToast==='function') showToast('Give me a number', 'Any weight you are aiming at.'); return; }
   const kg = (typeof dispToKg === 'function') ? dispToKg(v) : v;
-  ls('totry_goal_weight', Math.round(kg * 10) / 10);
+  // NO SECOND ROUNDING. dispToKg already rounds to 2dp precisely so a lb entry round-trips to the
+  // tenth it was typed as; re-rounding to 1dp here threw that away, and this was the only weight
+  // write site in the app that did it. A pounds user typed 165 and the card, the reopened field and
+  // the AI prompt all came back 164.9 - while a WEIGH-IN of the same 165 in this same file round-trips
+  // exactly, through the same helpers, because it stores dispToKg(v) untouched.
+  ls('totry_goal_weight', kg);
   try{ closeModal(el); }catch(_){ document.querySelectorAll('.modal-bg.open').forEach(function(x){ x.remove(); }); }
   renderBodyGoalCard();
   if(typeof haptic === 'function') haptic('success');
@@ -644,9 +662,15 @@ function bodyGoalProjection(){
     if(!goal) return null;                                   // no goal is a fine way to live
     const t = weightTrendDir();
     if(!t) return null;                                      // not enough behind them to be honest
-    const now = (typeof getTrendWeight === 'function')
-      ? getTrendWeight(ls('totry_body') || [])
-      : ((ls('totry_body') || []).filter(e => e && e.weight > 0).slice(-1)[0] || {}).weight;
+    // THE SAME "NOW" THE TILE SHOWS. getTrendWeight is a per-SAMPLE EMA, so its lag is three WEIGH-INS:
+    // three days for a daily weigher and three WEEKS for a weekly one. v570 rewrote the RATE to a
+    // least-squares slope for precisely this reason and left the GAP on the EMA — so a weekly weigher
+    // standing on their goal read "Now 81kg" in the tile and, 236px below it, "GOAL 81KG - About 15
+    // September - 2 weeks from here", and two identical bodies still got ETAs twelve days apart on
+    // weighing frequency alone. renderBody's tile takes the newest real weigh-in and so does the coach
+    // prompt; this card now answers with the same number rather than a third one.
+    const _weighed = (ls('totry_body') || []).filter(e => e && (parseFloat(e.weight) || 0) > 0);
+    const now = _weighed.length ? parseFloat(_weighed[0].weight) : 0;
     if(!(now > 0)) return null;
     const gap = goal - now;                                  // + means they need to gain
     if(Math.abs(gap) < 0.3) return { kind:'there', now:now, goal:goal };
@@ -731,7 +755,7 @@ function recompRead(){
   else if(down && (sUp||sFlat)){ head='Cutting clean.'; body='Down '+wFmt(kg)+' while your strength '+(sUp?'even rose':'held')+'. You’re losing fat, not muscle — exactly how a cut should look. Keep the protein high.'; }
   else if(up && sUp){ head='Lean gain.'; body='Up '+wFmt(kg)+' and your training’s rising with it — the weight’s going where you want it. If the scale ever climbs faster than your lifts, ease the surplus.'; }
   else if(down && sDown){ tone='warn'; head='Strength is dropping with the weight.'; body='Down '+wFmt(kg)+', but your lifts are falling too — usually the deficit’s too steep or protein’s low. Ease the cut a little and hold your protein; strength is the thing worth protecting.'; }
-  else if(up && sDown){ tone='warn'; head='Gaining faster than you’re building.'; body='Up '+kg+'kg but strength isn’t following — more of this is fat than muscle. Tighten the surplus and make sure the training keeps progressing.'; }
+  else if(up && sDown){ tone='warn'; head='Gaining faster than you’re building.'; body='Up '+wFmt(kg)+' but strength isn’t following — more of this is fat than muscle. Tighten the surplus and make sure the training keeps progressing.'; }
   else return null;                                    // no honest signal strong enough to speak
   // If a smart scale is feeding fat/muscle data, corroborate the read with it — or, when the scale
   // disagrees with the lifts, say so honestly: bioimpedance muscle/fat numbers wobble, and rising
@@ -945,11 +969,11 @@ function renderBodyCompInsight(){
     const dMuscle = (recent.comp.muscleKg!=null && earlier.comp.muscleKg!=null) ? Math.round((recent.comp.muscleKg - earlier.comp.muscleKg)*10)/10 : null;
     // Recomp win: weight roughly flat (or up) but fat down — the scale lies, the body's improving.
     if(dFat!=null && dFat < -0.3 && Math.abs(dWeight) <= 1.5){
-      html += '<div style="font-size:13px;color:var(--tx2);line-height:1.6"><span style="color:var(--gr)">Recomposition.</span> Your weight barely moved ('+(dWeight>0?'+':'')+dWeight+'kg), but you\'ve lost '+Math.abs(dFat)+'kg of fat'+(dMuscle!=null && dMuscle>0?' and gained '+dMuscle+'kg of muscle':'')+'. The scale hides this. Your body is changing — keep going.</div>';
+      html += '<div style="font-size:13px;color:var(--tx2);line-height:1.6"><span style="color:var(--gr)">Recomposition.</span> Your weight barely moved ('+wDelta(dWeight)+'), but you\'ve lost '+wFmt(Math.abs(dFat))+' of fat'+(dMuscle!=null && dMuscle>0?' and gained '+wFmt(dMuscle)+' of muscle':'')+'. The scale hides this. Your body is changing — keep going.</div>';
     } else if(dFat!=null && dMuscle!=null && dFat < 0 && dMuscle > 0){
       html += '<div style="font-size:13px;color:var(--tx2);line-height:1.6"><span style="color:var(--gr)">Fat down, muscle up.</span> Down '+wFmt(Math.abs(dFat))+' fat, up '+wFmt(dMuscle)+' muscle. That\'s exactly the direction that matters.</div>';
     } else if(dMuscle!=null && dMuscle > 0.3){
-      html += '<div style="font-size:13px;color:var(--tx2);line-height:1.6"><span style="color:var(--gr)">Building.</span> You\'ve added '+dMuscle+'kg of muscle. The work is showing.</div>';
+      html += '<div style="font-size:13px;color:var(--tx2);line-height:1.6"><span style="color:var(--gr)">Building.</span> You\'ve added '+wFmt(dMuscle)+' of muscle. The work is showing.</div>';
     }
     // Protein ↔ muscle context (item 10): pair the muscle trend with recent protein intake.
     if(dMuscle!=null){
@@ -957,7 +981,7 @@ function renderBodyCompInsight(){
       Object.keys(log).forEach(k=>{const en=log[k]||[];if(!en.length)return;const ts=en[0].ts?new Date(en[0].ts).getTime():null;if(!ts||now-ts>14*86400000)return;const p=en.reduce((a,e)=>a+(e.pro||0),0);if(p>0){pT+=p;pD++;}});
       if(pD>=3){
         const avgPro=Math.round(pT/pD);
-        html += '<div style="margin-top:8px;font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">Muscle '+(dMuscle>0?'+':'')+dMuscle+'kg · avg protein '+avgPro+'g/day over 2 weeks</div>';
+        html += '<div style="margin-top:8px;font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">Muscle '+wDelta(dMuscle)+' · avg protein '+avgPro+'g/day over 2 weeks</div>';
       }
     }
   }
@@ -1028,7 +1052,10 @@ function saveQuickWeight(){
   document.querySelector('.modal-bg.open')?.remove();
   renderBody();
   try{ if(typeof HealthWrite!=='undefined') HealthWrite.weight(w); }catch(_){}
-  showToast('Logged', w + 'kg saved.');
+  // v568 made this modal unit-aware and counted two display strings; there were three. The person
+  // typed 185 under a label reading WEIGHT (LB) and was told "83.91kg saved", while the tile behind
+  // the toast said 185lb - two numbers and two units for the one weight, in the same second.
+  showToast('Logged', wFmt(w) + ' saved.');
   haptic('success');
 }
 

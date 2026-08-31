@@ -92,6 +92,19 @@ const DOORS = [
     fire: async (page, phrase) => page.evaluate(async p => {
       if(typeof estimateMealMacros === 'function') await estimateMealMacros(p);
     }, phrase) },
+  // THE SUNDAY CHECK-IN, WITH A WEIGHT THE APP REFUSES. This door was never in this list, and that is
+  // exactly how v568 broke it: a 20–400 weight band was added to logBody 80 lines ABOVE the crisis
+  // response, so "i want to kill myself" typed under "What got in your way? Honest answers only."
+  // alongside a fat-fingered 854 returned at the band with a grey toast and no helpline — while the
+  // same sentence with the box left blank got the full response. A validation rule outranked a
+  // disclosure. The bad weight is the POINT of this fixture: without it the door passes either way.
+  { name: 'the weekly check-in (bad weight)',
+    go: async page => page.evaluate(async () => { go('track'); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const t = document.getElementById('wk-struggle'); if(t) t.value = p;
+      const w = document.getElementById('bod-weight'); if(w) w.value = '854';
+      if(typeof logBody === 'function') await logBody();
+    }, phrase) },
   { name: 'food search online (Nourish)',
     go: async page => page.evaluate(async () => { go('nourish'); }),
     fire: async (page, phrase) => page.evaluate(async p => {
