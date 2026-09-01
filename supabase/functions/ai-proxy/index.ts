@@ -36,7 +36,11 @@ const CORS_HEADERS = {
   "Access-Control-Max-Age": "86400",
 };
 
-const DEFAULT_ORDER = ["gemini", "groq", "openrouter", "anthropic"];
+// Free first, paid last — anthropic is the only one that costs money and it stays at the back.
+// Verified live on 1 Sep 2026: gemini, groq and openrouter all answer; mistral and cloudflare are
+// standing free tiers awaiting a key and SKIP silently until one is set, so adding them costs an
+// unconfigured deploy nothing at all.
+const DEFAULT_ORDER = ["gemini", "groq", "openrouter", "mistral", "cloudflare", "anthropic"];
 
 // Candidate models per provider, tried in order. First entry is the preferred one.
 // An env override (GROQ_MODEL etc.) replaces the whole list with that single value.
@@ -56,6 +60,23 @@ const MODELS = {
   openrouter:  ["google/gemma-4-31b-it:free", "nvidia/nemotron-3-super-120b-a12b:free",
                 "google/gemma-4-26b-a4b-it:free"],
   anthropic:   ["claude-haiku-4-5-20251001"],
+  // Mistral La Plateforme — a STANDING free tier, no card, verified 1 Sep 2026 against the vendor's
+  // own console docs. Pixtral is NOT here on purpose: both pixtral ids were retired (12b on 31 Dec
+  // 2025, large on 31 May 2026) and shipping one would be a wasted candidate on the way past.
+  mistral:     ["ministral-8b-2512", "mistral-small-2603", "ministral-14b-2512"],
+  mistralVision: ["ministral-14b-2512", "ministral-8b-2512", "mistral-large-2512"],
+  // Cloudflare Workers AI — 10,000 Neurons/day, standing, resets 00:00 UTC, and on the Free plan it
+  // HARD STOPS rather than billing. Two secrets, because the account id lives in the URL.
+  cloudflare:  ["@cf/google/gemma-4-26b-a4b-it", "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
+                "@cf/openai/gpt-oss-120b", "@cf/meta/llama-3.1-8b-instruct"],
+  // llama-3.2-11b-vision is deliberately absent: it needs a one-time {"prompt":"agree"} licence
+  // handshake before it will answer, which would fail closed on a fresh key with no way to tell why.
+  cloudflareVision: ["@cf/google/gemma-4-26b-a4b-it", "@cf/qwen/qwen3.8-27b"],
+  // NVIDIA NIM — VISION ONLY, and the reason is the finite pool: 1,000-5,000 lifetime credits, not a
+  // recurring allowance. That is a real third leg for the food camera, which had two, and it is not a
+  // text backstop — the text chain has five without it, and chat would drain the pool in days.
+  nvidiaVision: ["google/gemma-4-31b-it", "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+                 "meta/llama-3.2-11b-vision-instruct", "meta/llama-3.2-90b-vision-instruct"],
   // Vision needs image input support — all three verified as accepting images.
   geminiVision:     ["gemini-2.5-flash", "gemini-2.0-flash"],
   openrouterVision: ["google/gemma-4-31b-it:free", "nvidia/nemotron-nano-12b-v2-vl:free",
@@ -203,7 +224,50 @@ async function callAnthropic({ system, messages, max_tokens }) {
   });
 }
 
-const PROVIDERS = { gemini: callGemini, groq: callGroq, openrouter: callOpenRouter, anthropic: callAnthropic };
+async function callMistral({ system, messages, max_tokens }) {
+  const key = Deno.env.get("MISTRAL_API_KEY");
+  if (!key) return { skip: true };
+  const msgs = []; if (system) msgs.push({ role: "system", content: system }); msgs.push(...messages);
+  return await tryModels(modelList("MISTRAL_MODEL", "mistral"), async (model) => {
+    const resp = await fetchWithTimeout("https://api.mistral.ai/v1/chat/completions", {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      // reasoning_effort "none" for the same reason callGemini pins thinkingBudget 0: a reasoning
+      // model spends the output budget thinking before it writes, and the meal estimate is the caller
+      // with the tightest budget in the app.
+      body: JSON.stringify({ model, messages: msgs, max_tokens: max_tokens || 1024, temperature: 0.7,
+                             reasoning_effort: "none" }),
+    }, 20000);
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) return { error: true, status: resp.status, body: data };
+    const text = data?.choices?.[0]?.message?.content || "";
+    if (!text) return { error: true, status: 500, body: data };
+    return { text, provider: "mistral", model, truncated: data?.choices?.[0]?.finish_reason === "length" };
+  });
+}
+
+async function callCloudflare({ system, messages, max_tokens }) {
+  const key = Deno.env.get("CLOUDFLARE_API_TOKEN");
+  const acct = Deno.env.get("CLOUDFLARE_ACCOUNT_ID");
+  // BOTH, or skip. A half-configured deploy would otherwise walk all four candidates collecting 401s
+  // at 20s apiece before falling through — 80 seconds of nothing, on the way to an answer.
+  if (!key || !acct) return { skip: true };
+  const msgs = []; if (system) msgs.push({ role: "system", content: system }); msgs.push(...messages);
+  const url = `https://api.cloudflare.com/client/v4/accounts/${acct}/ai/v1/chat/completions`;
+  return await tryModels(modelList("CLOUDFLARE_MODEL", "cloudflare"), async (model) => {
+    const resp = await fetchWithTimeout(url, {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ model, messages: msgs, max_tokens: max_tokens || 1024, temperature: 0.7 }),
+    }, 20000);
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) return { error: true, status: resp.status, body: data };
+    const text = data?.choices?.[0]?.message?.content || "";
+    if (!text) return { error: true, status: 500, body: data };
+    return { text, provider: "cloudflare", model, truncated: data?.choices?.[0]?.finish_reason === "length" };
+  });
+}
+
+const PROVIDERS = { gemini: callGemini, groq: callGroq, openrouter: callOpenRouter,
+                    mistral: callMistral, cloudflare: callCloudflare, anthropic: callAnthropic };
 
 async function callOpenRouterVision({ system, prompt, image_base64, image_mime, max_tokens }) {
   const key = Deno.env.get("OPENROUTER_API_KEY");
@@ -223,6 +287,87 @@ async function callOpenRouterVision({ system, prompt, image_base64, image_mime, 
     const text = data?.choices?.[0]?.message?.content || "";
     if (!text) return { error: true, status: 500, body: data };
     return { text, provider: "openrouter-vision", model };
+  });
+}
+
+// ── THREE MORE EYES FOR THE FOOD CAMERA ────────────────────────────────────────────────────────
+// Vision had exactly two providers and then a 503, while the text chain had four. The camera is the
+// feature people open in a supermarket aisle on one bar of signal, so it is the LAST place that should
+// be the shallowest. All three below are free and SKIP silently until their key is set.
+
+// Mistral's image part is a plain STRING, not OpenAI's {url:...} object. Copying callOpenRouterVision
+// verbatim here returns 422 with a message about the content parts, which reads like a model problem
+// and is not one. Verified against the vendor's own API reference and every code sample on it.
+async function callMistralVision({ system, prompt, image_base64, image_mime, max_tokens }) {
+  const key = Deno.env.get("MISTRAL_API_KEY");
+  if (!key) return { skip: true };
+  const dataUrl = `data:${image_mime || "image/png"};base64,${image_base64}`;
+  const msgs = []; if (system) msgs.push({ role: "system", content: system });
+  msgs.push({ role: "user", content: [
+    { type: "text", text: prompt }, { type: "image_url", image_url: dataUrl },
+  ]});
+  return await tryModels(modelList("MISTRAL_VISION_MODEL", "mistralVision"), async (model) => {
+    const resp = await fetchWithTimeout("https://api.mistral.ai/v1/chat/completions", {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ model, messages: msgs, max_tokens: max_tokens || 1024, temperature: 0.3,
+                             reasoning_effort: "none" }),
+    }, 30000);
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) return { error: true, status: resp.status, body: data };
+    const text = data?.choices?.[0]?.message?.content || "";
+    if (!text) return { error: true, status: 500, body: data };
+    return { text, provider: "mistral-vision", model };
+  });
+}
+
+// Cloudflare takes the standard OpenAI image part, and insists on a data: URI — an https:// image URL
+// is refused outright. This app only ever sends base64, so that costs nothing.
+async function callCloudflareVision({ system, prompt, image_base64, image_mime, max_tokens }) {
+  const key = Deno.env.get("CLOUDFLARE_API_TOKEN");
+  const acct = Deno.env.get("CLOUDFLARE_ACCOUNT_ID");
+  if (!key || !acct) return { skip: true };
+  const dataUrl = `data:${image_mime || "image/png"};base64,${image_base64}`;
+  const msgs = []; if (system) msgs.push({ role: "system", content: system });
+  msgs.push({ role: "user", content: [
+    { type: "text", text: prompt }, { type: "image_url", image_url: { url: dataUrl } },
+  ]});
+  const url = `https://api.cloudflare.com/client/v4/accounts/${acct}/ai/v1/chat/completions`;
+  return await tryModels(modelList("CLOUDFLARE_VISION_MODEL", "cloudflareVision"), async (model) => {
+    const resp = await fetchWithTimeout(url, {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ model, messages: msgs, max_tokens: max_tokens || 1024, temperature: 0.3 }),
+    }, 30000);
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) return { error: true, status: resp.status, body: data };
+    const text = data?.choices?.[0]?.message?.content || "";
+    if (!text) return { error: true, status: 500, body: data };
+    return { text, provider: "cloudflare-vision", model };
+  });
+}
+
+// NVIDIA's VISION models REJECT role:"system" — the schemas enumerate only user/assistant on three of
+// the four candidates, and the docs add "for system and assistant roles, the object list format is not
+// supported". So the system text is folded into the user's text part, which every candidate accepts.
+// Vision only, deliberately: the free pool is 1,000-5,000 LIFETIME credits, so it is a real backstop
+// for a photo and would be drained in days by chat.
+async function callNvidiaVision({ system, prompt, image_base64, image_mime, max_tokens }) {
+  const key = Deno.env.get("NVIDIA_API_KEY");
+  if (!key) return { skip: true };
+  const dataUrl = `data:${image_mime || "image/png"};base64,${image_base64}`;
+  const text0 = system ? (system + "\n\n" + prompt) : prompt;
+  const msgs = [{ role: "user", content: [
+    { type: "text", text: text0 }, { type: "image_url", image_url: { url: dataUrl } },
+  ]}];
+  return await tryModels(modelList("NVIDIA_VISION_MODEL", "nvidiaVision"), async (model) => {
+    const resp = await fetchWithTimeout("https://integrate.api.nvidia.com/v1/chat/completions", {
+      method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ model, messages: msgs, max_tokens: max_tokens || 1024, temperature: 0.3 }),
+    }, 30000);
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) return { error: true, status: resp.status, body: data };
+    const text = data?.choices?.[0]?.message?.content || "";
+    if (!text) return { error: true, status: 500, body: data };
+    return { text, provider: "nvidia-vision", model };
   });
 }
 
@@ -331,7 +476,11 @@ function json(obj, status = 200) {
 function extractErrorMsg(body) {
   if (!body) return null;
   if (typeof body === "string") return body.slice(0, 300);
-  return body?.error?.message || body?.error?.error?.message || body?.message || JSON.stringify(body).slice(0, 300);
+  // Cloudflare answers {"result":null,"success":false,"errors":[{"code":10000,"message":"..."}]} —
+  // none of the shapes above match it, so every Cloudflare failure used to land in `attempts` as an
+  // unreadable JSON blob, which is how a dead provider hides.
+  return body?.error?.message || body?.error?.error?.message || body?.message ||
+         body?.errors?.[0]?.message || JSON.stringify(body).slice(0, 300);
 }
 
 Deno.serve(async (req) => {
@@ -375,13 +524,24 @@ Deno.serve(async (req) => {
     // ── VISION ──
     if (body.action === "vision" || body.image_base64) {
       const visionArgs = { system: body.system, prompt: body.prompt || "Describe this image.", image_base64: body.image_base64, image_mime: body.image_mime, max_tokens: body.max_tokens || 1024 };
-      let result = await callGeminiVision(visionArgs);
-      if (!result.text) {
-        const fb = await callOpenRouterVision(visionArgs);
-        if (fb.text) result = fb;
-        else return json({ error: "Vision unavailable", details: result.body || fb.body }, 503);
+      // A CHAIN, NOT A PAIR. This was gemini-then-openrouter-then-503, so one bad afternoon at either
+      // took the food camera out entirely. It now walks every configured provider and REPORTS what it
+      // tried — an unconfigured one skips silently, a broken one is named in `attempts`, which is the
+      // only way a dead link ever surfaces instead of hiding behind the next.
+      const visionChain = [
+        ["gemini", callGeminiVision], ["openrouter", callOpenRouterVision],
+        ["mistral", callMistralVision], ["cloudflare", callCloudflareVision],
+        ["nvidia", callNvidiaVision],
+      ];
+      const vAttempts = []; let lastBody = null;
+      for (const [vName, vFn] of visionChain) {
+        const r = await vFn(visionArgs);
+        if (r && r.skip) { vAttempts.push({ provider: vName, skipped: true }); continue; }
+        if (r && r.text) return json({ text: r.text, provider: r.provider, model: r.model, attempts: vAttempts });
+        vAttempts.push({ provider: vName, status: r?.status, error: extractErrorMsg(r?.body) });
+        lastBody = r?.body || lastBody;
       }
-      return json({ text: result.text, provider: result.provider, model: result.model });
+      return json({ error: "Vision unavailable", attempts: vAttempts, details: lastBody }, 503);
     }
 
     const system = body.system || "";

@@ -18,12 +18,19 @@ globalThis.fetch = async (url, opts) => {
             : u.includes('groq') ? 'groq'
             : u.includes('openrouter') ? 'openrouter'
             : u.includes('anthropic') ? 'anthropic'
+            : u.includes('api.mistral.ai') ? 'mistral'
+            : u.includes('api.cloudflare.com') ? 'cloudflare'
+            : u.includes('integrate.api.nvidia.com') ? 'nvidia'
             : u.includes('/rpc/') ? 'quota' : 'other';
   const model = (() => {
     try { const b = JSON.parse(opts.body); return b.model || (u.match(/models\/([^:]+):/) || [])[1] || null; }
     catch (_) { return (u.match(/models\/([^:]+):/) || [])[1] || null; }
   })();
-  calls.push({ who, model });
+  // The BODY is recorded too: three of the new providers differ in the shape they need, and a wrong
+  // shape returns a 4xx that reads exactly like a dead model. Asserting the shape is the only way to
+  // tell those apart before a person meets it.
+  let sentBody = null; try { sentBody = JSON.parse(opts.body); } catch (_) {}
+  calls.push({ who, model, body: sentBody });
   const b = behaviour[who];
   if (typeof b === 'function') return b(model);
   if (b === 'fail') return { ok: false, status: 500, json: async () => ({ error: { message: who + ' down' } }), text: async () => 'down' };
@@ -33,6 +40,9 @@ globalThis.fetch = async (url, opts) => {
     groq:      { choices: [{ message: { content: 'from ' + who } }] },
     openrouter:{ choices: [{ message: { content: 'from ' + who } }] },
     anthropic: { content: [{ text: 'from ' + who }] },
+    mistral:   { choices: [{ message: { content: 'from ' + who } }] },
+    cloudflare:{ choices: [{ message: { content: 'from ' + who } }] },
+    nvidia:    { choices: [{ message: { content: 'from ' + who } }] },
   };
   return { ok: true, status: 200, json: async () => shapes[who] || {}, text: async () => '' };
 };
@@ -91,7 +101,66 @@ ok(r.body.provider === 'groq', 'gemini down falls through to groq, still free');
 reset(); behaviour.gemini = 'fail'; behaviour.groq = 'fail'; behaviour.openrouter = 'fail';
 r = await call({ messages: [{ role: 'user', content: 'hi' }] });
 ok(r.body.provider === 'anthropic', 'the paid provider is the LAST resort, not the first');
-ok(r.body.attempts && r.body.attempts.length === 3, 'and every failed attempt is reported, not swallowed');
+// Precise rather than merely counted: the three that FAILED are named, and the two free providers with
+// no key are reported as SKIPPED rather than silently absent. A count alone passed happily when two new
+// providers were inserted into the chain, which is the assertion equivalent of not looking.
+const _failed = (r.body.attempts || []).filter(a => !a.skipped).map(a => a.provider);
+const _skipped = (r.body.attempts || []).filter(a => a.skipped).map(a => a.provider);
+ok(['gemini','groq','openrouter'].every(p => _failed.includes(p)),
+   'and every failed attempt is reported, not swallowed (' + _failed.join(',') + ')');
+ok(_skipped.includes('mistral') && _skipped.includes('cloudflare'),
+   'and a free provider with no key is reported as skipped, not silently missing');
+
+// ── the new free providers come BEFORE the paid one ─────────────────────────────────────────────
+// The whole point of adding them: anthropic is the only provider that costs money, and it must stay
+// last however many free ones are added in front of it.
+reset({ MISTRAL_API_KEY: 'm' });
+behaviour.gemini = 'fail'; behaviour.groq = 'fail'; behaviour.openrouter = 'fail';
+r = await call({ messages: [{ role: 'user', content: 'hi' }] });
+ok(r.body.provider === 'mistral', 'a configured free provider answers before the paid one');
+
+// HALF-CONFIGURED CLOUDFLARE MUST SKIP. Its account id lives in the URL and its token in the header,
+// so one without the other would walk four candidates collecting 401s at 20s each — 80 seconds of
+// nothing on the way to an answer a person is waiting for.
+reset({ CLOUDFLARE_API_TOKEN: 'cf' });          // no CLOUDFLARE_ACCOUNT_ID
+behaviour.gemini = 'fail'; behaviour.groq = 'fail'; behaviour.openrouter = 'fail';
+r = await call({ messages: [{ role: 'user', content: 'hi' }] });
+ok(!calls.some(c => c.who === 'cloudflare'), 'half-configured cloudflare is never called at all');
+ok(r.body.provider === 'anthropic', 'and the chain still reaches an answer');
+
+// ── the food camera has five providers, and each speaks its own dialect ─────────────────────────
+// Vision was gemini -> openrouter -> 503. One bad afternoon at either took the camera out.
+reset({ MISTRAL_API_KEY: 'm', NVIDIA_API_KEY: 'nv' });
+behaviour.gemini = 'fail'; behaviour.openrouter = 'fail';
+r = await call({ action: 'vision', prompt: 'what is this', image_base64: 'AAAA', image_mime: 'image/jpeg' });
+ok(r.body.provider === 'mistral-vision', 'the camera walks past two dead providers to a third');
+const _mv = calls.find(c => c.who === 'mistral');
+// Found by role, not by index — this call sends no system message, so the user part is messages[0]
+// and an index assertion passed for the wrong reason on a shape it never actually read.
+const _mvUser = (_mv?.body?.messages || []).find(m => m.role === 'user');
+const _mvImg = (_mvUser?.content || []).find(p => p.type === 'image_url');
+ok(typeof _mvImg?.image_url === 'string',
+   "mistral's image_url is a plain STRING — the OpenAI {url:...} object is a 422 there");
+ok(String(_mvImg?.image_url || '').startsWith('data:image/jpeg;base64,'),
+   'and it carries the real data: URI, mime and all');
+
+reset({ NVIDIA_API_KEY: 'nv' });
+behaviour.gemini = 'fail'; behaviour.openrouter = 'fail';
+r = await call({ action: 'vision', system: 'you are a coach', prompt: 'what is this',
+                 image_base64: 'AAAA', image_mime: 'image/jpeg' });
+ok(r.body.provider === 'nvidia-vision', 'and past three to a fourth');
+const _nv = calls.find(c => c.who === 'nvidia');
+ok(!(_nv?.body?.messages || []).some(m => m.role === 'system'),
+   "nvidia's vision models reject role:system, so the system text is folded into the user part");
+ok(String(_nv?.body?.messages?.[0]?.content?.[0]?.text || '').includes('you are a coach'),
+   'and folding it does not throw the system text away');
+
+// And when nothing is configured the camera says so, naming what it tried, rather than hanging.
+reset();
+behaviour.gemini = 'fail'; behaviour.openrouter = 'fail';
+r = await call({ action: 'vision', prompt: 'x', image_base64: 'AAAA' });
+ok(r.status === 503 && (r.body.attempts || []).length === 5,
+   'with every provider down or unset the camera reports all five attempts, not silence');
 
 // ── a retired model must cost one entry, not the provider ───────────────────────────────────────
 // This is the defect that made vision and web search fall over silently: one hardcoded id per provider.

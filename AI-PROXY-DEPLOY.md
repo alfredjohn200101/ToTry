@@ -35,6 +35,53 @@ tested from the client — the order comes from `AI_PROVIDER_ORDER` with no per-
 that env var to `groq`, probe, then `openrouter`, then set it back. Until one of them is confirmed, a
 single Gemini outage takes the food camera, the companion and the coach together.
 
+## FREE PROVIDERS — what is wired, what was rejected, and why
+
+Verified live on 1 Sep 2026, each against the vendor's own API or machine-readable model list. Nothing
+here is from memory or a blog post: this repo has been burned four times by dead endpoints hiding
+behind a fallback chain, so an unverified model id is treated as no model id.
+
+### The text chain — free first, paid last
+`gemini → groq → openrouter → mistral → cloudflare → anthropic`
+
+### The vision chain — the food camera, now five deep instead of two
+`gemini → openrouter → mistral → cloudflare → nvidia → 503 (naming every attempt)`
+
+| Provider | Free? | Secrets | Where to get it |
+|---|---|---|---|
+| Gemini | standing free tier | `GEMINI_API_KEY` | aistudio.google.com/apikey — **live, answering** |
+| Groq | standing free tier | `GROQ_API_KEY` | console.groq.com/keys — **live, answering** |
+| OpenRouter | standing free tier (`:free` models) | `OPENROUTER_API_KEY` | openrouter.ai/keys — **live, answering** |
+| **Mistral** | **standing free tier, no card** | `MISTRAL_API_KEY` | console.mistral.ai → API Keys (shown once) |
+| **Cloudflare** | **10,000 Neurons/day, resets 00:00 UTC, hard-stops rather than billing** | `CLOUDFLARE_API_TOKEN` **and** `CLOUDFLARE_ACCOUNT_ID` | dash.cloudflare.com → Workers AI → Use REST API |
+| **NVIDIA** *(vision only)* | 1,000–5,000 **lifetime** credits, no card | `NVIDIA_API_KEY` | build.nvidia.com/settings/api-keys |
+| Anthropic | PAID, last resort | `ANTHROPIC_API_KEY` | set, but **credit balance is zero** — errors cleanly and falls through |
+
+Every provider SKIPS silently when its key is absent, so keys can be added one at a time and an
+unconfigured one costs nothing. Optional per-provider model pins: `MISTRAL_MODEL`,
+`MISTRAL_VISION_MODEL`, `CLOUDFLARE_MODEL`, `CLOUDFLARE_VISION_MODEL`, `NVIDIA_VISION_MODEL` — a pin is
+tried FIRST and the built-in list still follows it, so a stale pin costs a request, never the provider.
+
+### Three dialects that would fail silently, and are covered by tests
+- **Mistral's `image_url` is a plain STRING**, not OpenAI's `{url:...}` object. The object form returns
+  a 422 that reads exactly like a dead model.
+- **NVIDIA's vision models REJECT `role:"system"`** — three of the four candidates enumerate only
+  user/assistant. The system text is folded into the user's text part instead.
+- **Cloudflare needs BOTH secrets** (the account id is in the URL) and returns a bespoke
+  `{errors:[{message}]}` body that `extractErrorMsg` could not read, so its failures used to land in
+  `attempts` as an unreadable blob. Both fixed; `npm run test:edge` fault-injects all three.
+
+### Rejected, with the reason — do not re-add these
+- **GitHub Models — RETIRED.** Fully shut down 30 Jul 2026. `models.github.ai` returns **410** on every
+  path and `models.inference.ai.azure.com` is **NXDOMAIN**. There is no successor and no key can be
+  obtained. It was a genuinely good free tier, which is exactly why it is worth writing down as dead.
+- **Cerebras — not free.** $5 of credits that expire 30 days after they are granted, and only after a
+  verified payment method is added. Its public model list prices every model non-zero. A free TRIAL
+  behind a card is not a backstop.
+- **Hugging Face — too small, and fails as 402.** $0.10/month of Inference Providers credit on a free
+  account. On exhaustion the router returns **402 Payment Required**, which is the precise shape that
+  has hidden behind this chain before. Not worth a key.
+
 ---
 
 ## ⚠ WHY THE REDEPLOY MATTERED — measured against the LIVE proxy, 28 Aug 2026 (HISTORICAL)
