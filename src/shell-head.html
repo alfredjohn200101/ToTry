@@ -2979,7 +2979,7 @@ input:focus,textarea:focus,select:focus{
       <!-- Enter-only, so typing "bench" showed nothing until you found the Go key — the same defect the
            food search had. The library is 324 exercises deep and the only way in was to type blind. -->
       <input type="text" id="pt-ex-search" placeholder="Search exercises..." autocomplete="off"
-             oninput="clearTimeout(window.__exSearchT);window.__exSearchT=setTimeout(()=>{if(this.value.trim().length>1)searchExercises(this.value,{typeahead:true})},260)"
+             oninput="exSearchInput(this.value)"
              onkeydown="if(event.key==='Enter')searchExercises(this.value)">
       <button class="btn primary" style="width:auto;white-space:nowrap;padding:10px 12px" onclick="searchExercises(document.getElementById('pt-ex-search').value)">Find</button>
     </div>
@@ -3921,7 +3921,7 @@ Amen.</div></div>
       <p style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:12px">A 600-year-old practice. Five questions. This closes your day — do it last.</p>
       <button class="btn primary" onclick="startExamen()" style="margin-bottom:8px">Begin the Examen</button>
       <button class="btn" onclick="showExamenHistory()" style="background:transparent;border:1px solid var(--bd);color:var(--tx2);font-size:12px">View past <span id="examen-noun-plural">examens</span> (<span id="examen-count">0</span>)</button>
-      <div id="examen-done-today" style="display:none;text-align:center;padding:8px 0;color:var(--gr);font-size:13px;font-family:Cormorant Garamond,serif;font-style:italic">✓ Examen complete for today.</div>
+      <div id="examen-done-today" style="display:none;text-align:center;padding:8px 0;color:var(--gr);font-size:13px;font-family:Cormorant Garamond,serif;font-style:italic">✓ <span id="examen-done-noun">Examen</span> complete for today.</div>
     </div>
     
     <button class="btn primary" onclick="completeEvening()">Complete evening check-in</button>
@@ -4329,7 +4329,7 @@ Amen.</div></div>
     
     <div class="card">
       <div class="card-hd" style="margin-bottom:8px">🔍 Search your history</div>
-      <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Find anything you've written — journal entries, wins, saved verses, examens, prayers. One bar searches all of it.</p>
+      <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Find anything you've written — journal entries, wins, saved verses, <span id="examen-noun-search">examens</span>, prayers. One bar searches all of it.</p>
       <button class="btn primary" onclick="openUniversalSearch()">Open search</button>
     </div>
     

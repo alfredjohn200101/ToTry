@@ -172,7 +172,14 @@ function getStreak(){
   for(let i=ti;i>=0;i--){
     // NEVER MISS TWICE: one off day is forgiven; two in a row ends the stretch. The allowance
     // resets on each completed day so every isolated gap is forgiven, not only the first.
-    if(habits.slice(0,3).every(h=>h.d[i]===1)){ s++; _g=false; }
+    // A HABIT WITH A WEEKLY TARGET CANNOT BREAK A DAILY STREAK. This has never heard of h.pw, and it is
+    // rendered under "Habits this week" in Reflect -> Weekly Review — so a 2x/week lifter who had hit
+    // 2 of 2 read "2 of 2 this week ✓" in green on the home card and "0 · HABITS THIS WEEK" one screen
+    // over, at the same moment. That is the exact contradiction the home-card fix was written to end,
+    // surviving in the third place that measures the same week. A day a target habit is not due is not
+    // a day it was missed; only genuinely daily habits can break a daily streak.
+    const _dueDaily = habits.filter(h => !(h && h.pw >= 1 && h.pw <= 6)).slice(0,3);
+    if(_dueDaily.length && _dueDaily.every(h=>h.d[i]===1)){ s++; _g=false; }
     else if(i===ti) continue;                // today still in progress — don't break on it
     else if(!_g){ _g=true; continue; }        // one missed day: forgiven
     else break;                               // two in a row: the stretch ends

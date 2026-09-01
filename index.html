@@ -2979,7 +2979,7 @@ input:focus,textarea:focus,select:focus{
       <!-- Enter-only, so typing "bench" showed nothing until you found the Go key — the same defect the
            food search had. The library is 324 exercises deep and the only way in was to type blind. -->
       <input type="text" id="pt-ex-search" placeholder="Search exercises..." autocomplete="off"
-             oninput="clearTimeout(window.__exSearchT);window.__exSearchT=setTimeout(()=>{if(this.value.trim().length>1)searchExercises(this.value,{typeahead:true})},260)"
+             oninput="exSearchInput(this.value)"
              onkeydown="if(event.key==='Enter')searchExercises(this.value)">
       <button class="btn primary" style="width:auto;white-space:nowrap;padding:10px 12px" onclick="searchExercises(document.getElementById('pt-ex-search').value)">Find</button>
     </div>
@@ -3921,7 +3921,7 @@ Amen.</div></div>
       <p style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:12px">A 600-year-old practice. Five questions. This closes your day — do it last.</p>
       <button class="btn primary" onclick="startExamen()" style="margin-bottom:8px">Begin the Examen</button>
       <button class="btn" onclick="showExamenHistory()" style="background:transparent;border:1px solid var(--bd);color:var(--tx2);font-size:12px">View past <span id="examen-noun-plural">examens</span> (<span id="examen-count">0</span>)</button>
-      <div id="examen-done-today" style="display:none;text-align:center;padding:8px 0;color:var(--gr);font-size:13px;font-family:Cormorant Garamond,serif;font-style:italic">✓ Examen complete for today.</div>
+      <div id="examen-done-today" style="display:none;text-align:center;padding:8px 0;color:var(--gr);font-size:13px;font-family:Cormorant Garamond,serif;font-style:italic">✓ <span id="examen-done-noun">Examen</span> complete for today.</div>
     </div>
     
     <button class="btn primary" onclick="completeEvening()">Complete evening check-in</button>
@@ -4329,7 +4329,7 @@ Amen.</div></div>
     
     <div class="card">
       <div class="card-hd" style="margin-bottom:8px">🔍 Search your history</div>
-      <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Find anything you've written — journal entries, wins, saved verses, examens, prayers. One bar searches all of it.</p>
+      <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Find anything you've written — journal entries, wins, saved verses, <span id="examen-noun-search">examens</span>, prayers. One bar searches all of it.</p>
       <button class="btn primary" onclick="openUniversalSearch()">Open search</button>
     </div>
     
@@ -5292,7 +5292,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v571';
+const APP_VERSION = 'v572';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -11044,7 +11044,11 @@ function _readBundled(sel,content,bank){
   // way to choose another book, no way to retry, and no way back to the text at all without leaving the
   // tab and coming back. Choosing a book is the retry, so the door is left open.
   if(!content) return;
-  content.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9.5px;color:var(--tx3);text-align:center;margin-bottom:10px">Kept on your phone — the live text did not answer. Pick a book above to try again.</div>'+'<div class="card">'+bank.map(v=>'<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--bd)"><div style="font-size:15px;line-height:1.75;color:var(--tx)">“'+v.t+'”</div><div style="font-size:12px;color:var(--tx3);margin-top:6px">— '+v.r+'</div></div>').join('')+'</div>';
+  // …and only SAY "pick a book" where there is one to pick. The Qur'an reader has no book picker, so
+  // that sentence pointed at an empty space and made the offline state read as broken rather than as
+  // a designed fallback.
+  const _hasPicker = !!(sel && sel.querySelector && sel.querySelector('select'));
+  content.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9.5px;color:var(--tx3);text-align:center;margin-bottom:10px">Kept on your phone — the live text did not answer.'+(_hasPicker?' Pick a book above to try again.':'')+'</div>'+'<div class="card">'+bank.map(v=>'<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--bd)"><div style="font-size:15px;line-height:1.75;color:var(--tx)">“'+v.t+'”</div><div style="font-size:12px;color:var(--tx3);margin-top:6px">— '+v.r+'</div></div>').join('')+'</div>';
 }
 // Qur'an — Al-Quran Cloud (free, no key): surah picker + Arabic + English.
 async function _readQuranInit(sel,content){
@@ -11327,6 +11331,13 @@ async function _loadSalah(){
   }catch(e){ box.innerHTML=_readErr('Couldn’t load prayer times right now.'); }
 }
 async function _promptCity(){ try{ const c=await askText('Your city', 'Used only to work out prayer times where you are.', {confirmLabel:'Set city'}); if(c&&c.trim()) _loadSalahByCity(c.trim()); }catch(_){} }
+// A city name safe to sit inside onclick="...('HERE')" — backslash and apostrophe escaped for the JS
+// string, quote and angle bracket for the HTML attribute. See the note in the catch below.
+function _salahCityArg(c){
+  return String(c == null ? '' : c)
+    .replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+    .replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 async function _loadSalahByCity(city){
   const box=document.getElementById('salah-box'); if(box) box.innerHTML=_readLoading();
   // NB: the city is saved further down, only after the API confirms it resolved — so a typo is never
@@ -11343,7 +11354,13 @@ async function _loadSalahByCity(city){
       ? 'The connection stalled before the times came back \u2014 the city is fine.'
       : 'Couldn\u2019t find that city \u2014 try a larger nearby one.') +
       '<div style="text-align:center;margin-top:8px">' +
-        '<button class="btn" onclick="_loadSalahByCity(' + JSON.stringify(String(city)) + ')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">Try again</button> ' +
+        // JSON.stringify wraps the city in DOUBLE quotes, and this is a double-quoted HTML attribute —
+        // so the attribute terminated at the first quote and the browser parsed the rest as a junk
+        // attribute literally named `sydney")`. onclick came out as the string `_loadSalahByCity(`,
+        // btn.onclick was null, and a real tap fired nothing. It was inert for EVERY city, not just
+        // awkward ones. Escaped for a single-quoted JS string inside a double-quoted attribute, so an
+        // apostrophe city ("St John's") survives too.
+        '<button class="btn" onclick="_loadSalahByCity(\'' + _salahCityArg(city) + '\')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">Try again</button> ' +
         '<button class="btn" onclick="_promptCity()" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">Change city</button>' +
       '</div>';
   }
@@ -20933,7 +20950,14 @@ function getStreak(){
   for(let i=ti;i>=0;i--){
     // NEVER MISS TWICE: one off day is forgiven; two in a row ends the stretch. The allowance
     // resets on each completed day so every isolated gap is forgiven, not only the first.
-    if(habits.slice(0,3).every(h=>h.d[i]===1)){ s++; _g=false; }
+    // A HABIT WITH A WEEKLY TARGET CANNOT BREAK A DAILY STREAK. This has never heard of h.pw, and it is
+    // rendered under "Habits this week" in Reflect -> Weekly Review — so a 2x/week lifter who had hit
+    // 2 of 2 read "2 of 2 this week ✓" in green on the home card and "0 · HABITS THIS WEEK" one screen
+    // over, at the same moment. That is the exact contradiction the home-card fix was written to end,
+    // surviving in the third place that measures the same week. A day a target habit is not due is not
+    // a day it was missed; only genuinely daily habits can break a daily streak.
+    const _dueDaily = habits.filter(h => !(h && h.pw >= 1 && h.pw <= 6)).slice(0,3);
+    if(_dueDaily.length && _dueDaily.every(h=>h.d[i]===1)){ s++; _g=false; }
     else if(i===ti) continue;                // today still in progress — don't break on it
     else if(!_g){ _g=true; continue; }        // one missed day: forgiven
     else break;                               // two in a row: the stretch ends
@@ -22722,7 +22746,12 @@ async function unsaveVerseFromReader(ref, onRestore){
   const saved = ls('totry_sv') || [];
   const hits = [];
   saved.forEach(function(v, i){ if(v && v.reference === ref) hits.push({ i: i, v: v }); });
-  if(!hits.length) return false;
+  // NOTHING TO DELETE IS NOT A REASON TO REFUSE. Returning false here meant a row whose verse had
+  // already been removed from the shelf — by the shelf's own × button, or on another device — could
+  // never have its highlight taken off: the tap became a total no-op, and the reader went on showing
+  // it as saved. The highlight MEANS saved, so when it is not saved the honest thing is to let the
+  // highlight go, silently and with nothing to confirm or undo.
+  if(!hits.length) return true;
   if(typeof askConfirm === 'function' && !(await askConfirm('Remove this from your saved verses?'))) return false;
   ls('totry_sv', saved.filter(function(v){ return !(v && v.reference === ref); }));
   renderSavedVersesEverywhere();
@@ -23641,8 +23670,14 @@ function renderBodyGoalCard(){
       ? { day:'numeric', month:'long' }
       : { day:'numeric', month:'long', year:'numeric' });
     head = 'About ' + d; col = 'var(--gr)';
+    // THE COPY HAS TO FOLLOW THE MATHS. "That is the trend, not one weigh-in, so a heavy day does not
+    // move it" was true when the gap came from the smoothed average — and false from the moment the gap
+    // started coming from the latest weigh-in, so the tile and this card could agree. Measured on one
+    // 28-day history, varying only today's number: 81.0 gave "3 weeks", 82.5 gave "6 weeks", 79.5 gave
+    // "1 week". A heavy day DOES move it now. The RATE is still a least-squares slope over the whole
+    // run, which is the honest half of the old claim, so that is what it says.
     body = 'At your own pace of ' + rateTxt + ' a week — ' + p.weeks + ' week' + (p.weeks===1?'':'s') +
-           ' from here. That is the trend, not one weigh-in, so a heavy day does not move it.';
+           ' from here. The pace is measured across every weigh-in; the distance is from today\u2019s.';
   } else if(p.kind === 'steady'){
     head = 'Holding steady.'; col = 'var(--go)';
     body = 'You are not moving toward ' + wf(p.goal) + ' or away from it. If steady is what you wanted, ' +
@@ -23740,6 +23775,11 @@ function bodyGoalProjection(){
     }
     const weeks = Math.abs(gap / perWeek);
     if(!isFinite(weeks) || weeks > 130) return { kind:'far', now:now, goal:goal, perWeek:perWeek, gap:gap };
+    // "0 weeks from here" reads as a bug, and it became reachable the moment the gap started coming
+    // from the latest weigh-in rather than the lagging average: anywhere between the 0.3kg 'there'
+    // band and about half a week of progress rounds to zero. Someone that close is, in the only sense
+    // that matters, there.
+    if(Math.round(weeks) < 1) return { kind:'there', now:now, goal:goal };
     const eta = new Date(Date.now() + weeks * 7 * 86400000);
     return { kind:'onTrack', now:now, goal:goal, perWeek:perWeek, gap:gap,
              weeks: Math.round(weeks), eta: eta };
@@ -28686,8 +28726,12 @@ function renderGrowHandoffs(){
     // A RUN IS TRAINING — and getUnifiedTraining is the reader that knows it, merging Strava and
     // de-duplicating the Hevy copies. Reading totry_workouts directly meant a runner whose whole week
     // is Strava saw this handoff blank while Home said "3 session(s) this wk".
+    // AND DO NOT UNWRAP TO .raw. A Strava activity's raw row carries `date`, not `ts` — that is the
+    // whole reason getUnifiedTraining normalises it — so `.map(t => t.raw || t)` handed the filter
+    // below rows with no `ts` and every run was dropped on the very line meant to include it. The
+    // unified row already has ts, volume, durationMin and calories, which is everything wanted here.
     const ws = ((typeof getUnifiedTraining === 'function')
-      ? getUnifiedTraining().map(t => t.raw || t)
+      ? getUnifiedTraining()
       : (ls('totry_workouts')||[])).filter(w => w && w.ts && inWeek(w.ts));
     // w.calories is set by Strava and Apple Health imports and by nothing else — a strength session
     // logged in THIS app stores durationMin and no calories, so this summed to 0 and the handoff fell
@@ -28734,8 +28778,12 @@ function renderGrowHandoffs(){
     let nourishLine = '';
     if(logged.length){
       const avgPro = Math.round(logged.reduce((a,k) => a + days[k].pro, 0) / logged.length);
+      // …and the gram target 16px under the line that was just gated. Fixing the train handoff and
+      // leaving this one meant the card still handed a numbers-off person a protein figure, on the
+      // same card, in the same glance — which the app's own note calls worse than no promise at all.
+      const _gentleN = (typeof nutGentle==='function') && nutGentle();
       nourishLine = logged.length + ' of 7 days fuelled'
-        + (avgPro > 0 ? ', ' + avgPro + 'g protein a day' : '')
+        + ((avgPro > 0 && !_gentleN) ? ', ' + avgPro + 'g protein a day' : '')
         + ' \u2192 see what it did';
     } else if(ws.length){
       // trained but never logged a meal: the loop is broken at this exact link, and saying so is the
@@ -28827,14 +28875,17 @@ function renderBodySystemReport(){
   // from "3 session(s) this wk", and tapping "Deeper read from Coach" sent the model "Training: 0
   // workouts, 0kg volume" inside the same request whose system context said three sessions — the app
   // handing the AI two contradictory answers about the same week.
+  // Unified rows, NOT their .raw — a Strava row's raw form has `date` and no `ts`, so unwrapping
+  // dropped every run at the filter. `.raw` is used only for the RPE walk below, which needs the
+  // real set objects; the unified row's own `exercises` is a COUNT.
   const ws=((typeof getUnifiedTraining === 'function')
-    ? getUnifiedTraining().map(t => t.raw || t)
+    ? getUnifiedTraining()
     : (ls('totry_workouts')||[])).filter(w=>w&&w.ts);
   const wk=ws.filter(w=>inWin(w.ts,W,0)), pw=ws.filter(w=>inWin(w.ts,2*W,W));
   const wCount=wk.length, wVol=Math.round(wk.reduce((a,w)=>a+(w.volume||0),0));
   const pCount=pw.length, pVol=Math.round(pw.reduce((a,w)=>a+(w.volume||0),0));
   let hard=0, totSets=0;
-  wk.forEach(w=>(w.exercises||[]).forEach(ex=>(ex.sets||[]).forEach(x=>{ if(x){ totSets++; const r=parseFloat(x.rpe); if(r>=9) hard++; } })));
+  wk.forEach(w=>(((w.raw&&w.raw.exercises)||w.exercises||[])).forEach(ex=>((ex&&ex.sets)||[]).forEach(x=>{ if(x){ totSets++; const r=parseFloat(x.rpe); if(r>=9) hard++; } })));
   const intense = totSets>=8 && (hard/totSets)>0.4;
 
   // NOURISH: per-day sums, this week + previous
@@ -34624,16 +34675,25 @@ function getTrainingTrend(){
     const tot = valid.reduce((a,t)=>a + (t.durationMin*60)/mToDisp(t.distance), 0);
     return tot/valid.length;
   };
+  // One formatter for all three sentences in this function — the steady line sits outside the block
+  // where `mmss` is scoped, which is exactly how it kept its own copy of the rounding bug.
+  const mmssSteady = sec => { const p = _paceParts(sec/60); return p ? (p.m+"'"+p.s+'"') : '\u2014'; };
   const oP=paceOf(older), rP=paceOf(recent);
   if(oP && rP){
     const diff = oP - rP; // positive = faster now
     if(Math.abs(diff) >= 5){
-      const mmss = sec => Math.floor(sec/60)+"'"+String(Math.round(sec%60)).padStart(2,'0')+'"';
+      // THE THIRD PACE FORMATTER. _paceParts was introduced under a comment saying "both pace lines
+      // had that bug ... one helper, so they cannot drift again" — there were three, and this one was
+      // never converted, so all three sentences below could print a 60 in the seconds place ("5'60\"/km").
+      // It takes seconds here rather than minutes-per-unit, hence the /60. Strava distances are exact
+      // metres (5006, 10037), so a non-round pace is the norm for the people who see this card, not an
+      // edge case.
+      const mmss = sec => { const p = _paceParts(sec/60); return p ? (p.m+"'"+p.s+'"') : '\u2014'; };
       return diff>0
         ? 'Your '+label+' pace is improving — now ~'+mmss(rP)+'/'+dUnit()+' (was ~'+mmss(oP)+'/'+dUnit()+').'
         : 'Your '+label+' pace has eased to ~'+mmss(rP)+'/'+dUnit()+'. Some weeks are like that.';
     }
-    return 'Your '+label+' pace is holding steady around '+Math.floor(rP/60)+"'"+String(Math.round(rP%60)).padStart(2,'0')+'"/'+dUnit()+'.';
+    return 'Your '+label+' pace is holding steady around '+mmssSteady(rP)+'/'+dUnit()+'.';
   }
   // Otherwise → compare avg HR (lower for similar work can mean improving fitness).
   const hrOf = arr => { const v=arr.filter(t=>t.hr); return v.length ? v.reduce((a,t)=>a+t.hr,0)/v.length : null; };
@@ -35272,6 +35332,22 @@ function saveCustomExercise(){
 // word. The proxy chain is down to one working provider on a free-tier quota; eight calls per search
 // is not a cost this feature can justify.
 let _exSearchGen = 0;
+// EVERY CHANGE OF THE BOX SUPERSEDES WHAT IS IN FLIGHT — including one that starts no search of its
+// own. The generation counter only advanced inside searchExercises, so clearing the box (or cutting it
+// to one character) while the model was thinking could not cancel anything: the abandoned query's AI
+// rows landed in an empty box and were tappable straight into the session. That is the same defect the
+// guard was added for, surviving in the path the `length > 1` check blocks.
+function exSearchInput(v){
+  _exSearchGen++;                                   // whatever is in flight is now stale
+  clearTimeout(window.__exSearchT);
+  const q = String(v == null ? '' : v).trim();
+  if(q.length <= 1){
+    const res = document.getElementById('pt-ex-results');
+    if(res) res.innerHTML = '';                     // an empty box shows nothing, not the last answer
+    return;
+  }
+  window.__exSearchT = setTimeout(function(){ searchExercises(v, { typeahead: true }); }, 260);
+}
 async function searchExercises(query, opts){
   if(!query.trim())return;
   const _gen = ++_exSearchGen;
@@ -35626,7 +35702,11 @@ function _saveSessionDraft(){
   try{
     if(typeof currentSession === 'undefined') return;
     if(currentSession && currentSession.length){
-      ls('totry_session_draft', { session: currentSession, startedAt: (typeof __sessionStart!=='undefined' && __sessionStart) || null, ts: Date.now() });
+      // The records beaten so far ride with the draft. _sessionPRs is a plain module variable, so a
+      // reload mid-session emptied it — and by then the tick handler had already written the new best
+      // into totry_prs, so detectAndRecordPRs at Finish had nothing left to find and the banner went
+      // missing again. That is the exact bug this list was added to fix, returning by a second route.
+      ls('totry_session_draft', { session: currentSession, prs: (typeof _sessionPRs!=='undefined' ? _sessionPRs : []), startedAt: (typeof __sessionStart!=='undefined' && __sessionStart) || null, ts: Date.now() });
     } else {
       ls('totry_session_draft', null);
     }
@@ -35641,6 +35721,7 @@ function restoreSessionDraft(){
     if(d.ts && (Date.now() - d.ts) > 18*3600000){ ls('totry_session_draft', null); return false; }
     if(typeof currentSession !== 'undefined' && currentSession.length) return false;   // never overwrite a live one
     currentSession = d.session;
+    _sessionPRs = Array.isArray(d.prs) ? d.prs : [];
     if(d.startedAt && typeof __sessionStart !== 'undefined') __sessionStart = d.startedAt;
     renderWorkoutSession();
     if(typeof showToast === 'function') showToast('Picked up where you left off', currentSession.length + ' exercise' + (currentSession.length===1?'':'s') + ' from your last session were still open.');
@@ -36069,8 +36150,25 @@ async function saveWorkoutSession(){
       // Anything already celebrated at the tick is invisible to the detection above, by design — it is
       // ALREADY the stored record. Merge, so the sheet shows every record beaten in this session
       // whichever way it was entered, and never the same lift twice.
+      // RECONCILED AGAINST WHAT WAS ACTUALLY DONE. _sessionPRs is appended the moment a set is ticked,
+      // so a lift ticked and then UN-ticked before Finish still reached the banner — routing straight
+      // around the `if(!s.done) return;` gate v568 added so the app cannot celebrate a lift the person
+      // did not do. Kept only where the saved session still holds a ticked, non-warmup set that earns
+      // it, which is the same criterion detectAndRecordPRs applies.
+      const _stillDone = function(name, orm){
+        const ex = (session.exercises || []).find(function(e){ return e && e.name === name; });
+        if(!ex) return false;
+        return (ex.sets || []).some(function(st){
+          if(!st || st.done === false) return false;
+          if(st.type && /warm/i.test(st.type)) return false;
+          const w = parseFloat(st.weight) || 0, r = parseInt(st.reps) || 0;
+          return w > 0 && r > 0 && estE1RM(w, r) >= orm;
+        });
+      };
       (_sessionPRs || []).forEach(function(p){
-        if(!prHit.some(function(x){ return x.name === p.name; })) prHit.push({ name: p.name, orm: Math.round(p.orm || 0) });
+        const orm = Math.round(p.orm || 0);
+        if(!_stillDone(p.name, orm)) return;
+        if(!prHit.some(function(x){ return x.name === p.name; })) prHit.push({ name: p.name, orm: orm });
       });
       if(prHit.length && typeof haptic === 'function') haptic('success');
     }catch(_){ prHit = []; }
@@ -36366,7 +36464,21 @@ function openEditTraining(unifiedId){
   if(w.effort) setv('edit-cardio-effort', w.effort);
   if(typeof updateEditCardioPace==='function') updateEditCardioPace();
 }
+const _EDIT_CARDIO_INPUTS = ['edit-cardio-time','edit-cardio-distance','edit-cardio-activeCal',
+                            'edit-cardio-totalCal','edit-cardio-hr','edit-cardio-effort'];
 function renderEditCardioFields(){
+  // KEEP WHAT IS ALREADY ON SCREEN. This re-renders from scratch on every type change and emits fresh,
+  // EMPTY inputs — so correcting "Indoor Run" to "Elliptical" blanked the time, calories and heart
+  // rate the person had just been looking at, and saveEditTraining then wrote null over all three
+  // while announcing "Saved · Workout updated." A 30-minute session became a session with no duration,
+  // and getUnifiedWeekStats().totalMinutes fell with it, so the week under-credited them for training
+  // they actually did. The note below records an EARLIER version of this same harm from a different
+  // cause — the values are only populated once, by the open path, and nothing has ever restored them.
+  const _keep = {};
+  _EDIT_CARDIO_INPUTS.forEach(function(id){
+    const e = document.getElementById(id);
+    if(e && e.value !== '') _keep[id] = e.value;
+  });
   const type = document.getElementById('edit-cardio-type')?.value || 'Other';
   const cfg = CARDIO_TYPES[type] || CARDIO_TYPES['Other'] || {fields:['time','distance','activeCal','hr']};
   const wrap = document.getElementById('edit-cardio-fields');
@@ -36395,6 +36507,14 @@ function renderEditCardioFields(){
   });
   if(cfg.pace){ html += '<div id="edit-cardio-pace" style="font-family:DM Mono,monospace;font-size:11px;color:var(--go);margin:-4px 0 12px 0;min-height:14px"></div>'; }
   wrap.innerHTML = html;
+  // Restore only into fields the NEW type still has. One the new type does not carry is deliberately
+  // not restored — saveEditTraining clears exactly those, which is how a distance stops following an
+  // elliptical around.
+  Object.keys(_keep).forEach(function(id){
+    const e = document.getElementById(id);
+    if(e) e.value = _keep[id];
+  });
+  if(typeof updateEditCardioPace === 'function') try{ updateEditCardioPace(); }catch(_){ }
 }
 // Minutes-per-unit -> the parts of "M:SS", carrying when the seconds round up to sixty, and the
 // person's own distance unit. Math.round on the remainder returns 60 for any fraction above 0.9917:
@@ -36687,7 +36807,9 @@ function saveCardioManually(){
   // whether it had worked. The distance they typed is `distInput`, and `unit` is their own km/mi
   // choice, which this line also ignored.
   if(distInput) bits.push(distInput+' '+unit);
-  if(cal) bits.push(cal+' cal');
+  // NOT TO SOMEONE WHO TURNED THE NUMBERS OFF. The workout summary sheet was gated and this toast, the
+  // other Train logging door, was not — same promise, same person, one screen apart.
+  if(cal && !((typeof nutGentle==='function') && nutGentle())) bits.push(cal+' cal');
   showToast('Workout logged', bits.join(' \u00b7 ') + ' \u2014 counts as your gym session.');
 }
 async function handleWorkoutScreenshot(event){
@@ -38485,6 +38607,13 @@ function _syncExamenNounLabels(){
   try{
     const el = document.getElementById('examen-noun-plural');
     if(el) el.textContent = _examenNoun().toLowerCase() + 's';
+    // …and the confirmation 33px below it, which is static markup this only ever toggled the DISPLAY
+    // of, never the text. Renaming the button and leaving this made it worse, not better: a Muslim
+    // read "View past muhāsabas (1)" directly above "✓ Examen complete for today."
+    const dn = document.getElementById('examen-done-noun');
+    if(dn) dn.textContent = _examenNoun();
+    const sn = document.getElementById('examen-noun-search');
+    if(sn) sn.textContent = _examenNoun().toLowerCase() + 's';
   }catch(_){ }
 }
 function applyFaithExamen(){
@@ -38670,7 +38799,9 @@ function saveExamen(){
   '</div>';
   document.body.appendChild(m);
   haptic('celebrate');
-  showToast('Examen logged', _examenClose().toast);
+  // The FIRST thing said after the practice, and it was the one Christian noun in an otherwise
+  // translated flow — _examenClose() below it is already tradition-aware.
+  showToast(_examenNoun() + ' logged', _examenClose().toast);
 }
 
 // ── EXAMEN HISTORY VIEWER ──────────────────────────────────────
@@ -38901,7 +39032,7 @@ function showDayActivityDetail(dateKey){
       items.push({kind:'Workout', text: (t.title||'Workout') + ' · ' + (t.exercises||0) + ' exercises'});
     }
   });
-  (ls('totry_examens') || []).forEach(e => { if(matchDate(e.ts)) items.push({kind: 'Examen', text: '5-step walked'}); });
+  (ls('totry_examens') || []).forEach(e => { if(matchDate(e.ts)) items.push({kind: (typeof _examenNoun==='function' ? _examenNoun() : 'Review'), text: '5-step walked'}); });
   (ls('totry_wins') || []).forEach(w => { if(matchDate(w.ts)) items.push({kind: 'Win', text: w.text?.slice(0, 80)}); });
   (ls('totry_fight_log') || []).forEach(f => { if(matchDate(f.ts)) items.push({kind: f.won ? 'Fight won' : 'Fight lost', text: f.vice + (f.trigger ? ' · ' + f.trigger : '')}); });
   (ls('totry_prayers') || []).forEach(p => { if(matchDate(p.createdAt)) items.push({kind: 'Prayer added', text: p.text?.slice(0, 80)}); });
@@ -42973,6 +43104,11 @@ function renderWinsLog(){
 // ── UNIVERSAL SEARCH ────────────────────────────────────────
 // Search across journal, wins, saved verses, examens, prayers. One bar, all your text history.
 function openUniversalSearch(){
+  // The blurb below the bar names what is searchable, and one of those nouns belongs to a tradition.
+  // _syncExamenNounLabels runs from initEveningTab, which a person who never opens the Evening tab has
+  // never triggered — so this line kept saying "examens" to a secular or Muslim user. Sync on open,
+  // where it costs nothing and cannot be missed.
+  try{ if(typeof _syncExamenNounLabels==='function') _syncExamenNounLabels(); }catch(_){ }
   document.querySelector('.modal-bg.open')?.remove();
   const m = document.createElement('div');
   m.className = 'modal-bg open';

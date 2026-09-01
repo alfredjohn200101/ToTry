@@ -2840,6 +2840,59 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── CORRECTING THE ACTIVITY MUST NOT COST THE SESSION ─────────────────────────────────────────
+  // The edit sheet re-renders its whole field list when the activity type changes, and it emitted
+  // fresh EMPTY inputs — so changing "Indoor Run" to "Elliptical" blanked the time, calories and heart
+  // rate on screen, and saving wrote null over all three while announcing "Saved · Workout updated."
+  // A 30-minute session became a session with no duration and the week's total minutes fell with it,
+  // under-crediting training the person had actually done. The distance, by contrast, MUST go: an
+  // elliptical has no distance field, and 5km following it around inflated the week and the weekly
+  // review handed to the coach. So this asserts both directions at once — what survives and what goes.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    const errs = []; page.on('pageerror', e => errs.push(String(e.message).slice(0, 110)));
+    await page.addInitScript(() => { localStorage.setItem('totry_onboarded','true'); localStorage.setItem('totry_guest','true'); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const t = await page.evaluate(async () => {
+      const wait = ms => new Promise(r => setTimeout(r, ms));
+      // the shape logCardioManually writes
+      ls('totry_workouts', [{ id:'manual_x', source:'manual', type:'Indoor Run', splitFocus:'Indoor Run',
+        durationMinutes:30, distance:5000, calories:412, averageHeartRate:151,
+        date:new Date().toLocaleDateString('en-AU'), ts:new Date().toISOString() }]);
+      if (typeof openEditTraining !== 'function') return { err:'openEditTraining missing' };
+      openEditTraining('manual_x'); await wait(500);
+      const sel = document.getElementById('edit-cardio-type');
+      if (!sel) return { err:'the edit sheet has no type select' };
+      sel.value = 'Elliptical'; sel.dispatchEvent(new Event('change')); await wait(400);
+      const held = { time: (document.getElementById('edit-cardio-time')||{}).value,
+                     hr:   (document.getElementById('edit-cardio-hr')||{}).value };
+      saveEditTraining('manual_x'); await wait(600);
+      const w = (ls('totry_workouts') || [])[0] || {};
+      const wk = (typeof getUnifiedWeekStats === 'function') ? getUnifiedWeekStats() : {};
+      return { held, after:{ type:w.type, dur:w.durationMinutes, hr:w.averageHeartRate, cal:w.calories, dist:w.distance },
+               weekMinutes: wk.totalMinutes, weekDistM: wk.totalDistanceM };
+    });
+    if (t.err) findings.push(`edit-type: ${t.err}`);
+    else {
+      if (t.held.time !== '30:00' || t.held.hr !== '151')
+        findings.push(`edit-type: changing the activity blanked the inputs on screen — ${JSON.stringify(t.held)}`);
+      if (t.after.dur !== 30 || t.after.hr !== 151 || t.after.cal !== 412)
+        findings.push(`edit-type: correcting the activity erased the session — ${JSON.stringify(t.after)} instead of 30/151/412`);
+      if (t.after.dist != null)
+        findings.push(`edit-type: an elliptical kept a distance of ${t.after.dist} — it has no distance field`);
+      if (t.weekMinutes !== 30)
+        findings.push(`edit-type: the week lost the session's minutes (${t.weekMinutes}), so training done is under-credited`);
+      if (t.weekDistM !== 0)
+        findings.push(`edit-type: the week still counts ${t.weekDistM}m nobody covered`);
+    }
+    if (errs.length) findings.push(`edit-type: page error — ${errs[0]}`);
+    if (!findings.some(f => f.startsWith('edit-type:')))
+      console.log('edit-type: correcting a run to an elliptical keeps the 30 minutes, the calories and the heart rate, and drops only the distance an elliptical cannot have');
+    await ctx.close();
+  }
+
   // ── THE TWO THINGS A BUDGETING APP IS OPENED FOR ───────────────────────────────────────────────
   // Spending money and paying a bill. Both are asserted on the STORE — a toast saying "Marked paid"
   // is not the same thing as the bill being paid, and that gap is exactly where a screen looks

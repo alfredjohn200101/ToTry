@@ -1385,7 +1385,12 @@ async function unsaveVerseFromReader(ref, onRestore){
   const saved = ls('totry_sv') || [];
   const hits = [];
   saved.forEach(function(v, i){ if(v && v.reference === ref) hits.push({ i: i, v: v }); });
-  if(!hits.length) return false;
+  // NOTHING TO DELETE IS NOT A REASON TO REFUSE. Returning false here meant a row whose verse had
+  // already been removed from the shelf — by the shelf's own × button, or on another device — could
+  // never have its highlight taken off: the tap became a total no-op, and the reader went on showing
+  // it as saved. The highlight MEANS saved, so when it is not saved the honest thing is to let the
+  // highlight go, silently and with nothing to confirm or undo.
+  if(!hits.length) return true;
   if(typeof askConfirm === 'function' && !(await askConfirm('Remove this from your saved verses?'))) return false;
   ls('totry_sv', saved.filter(function(v){ return !(v && v.reference === ref); }));
   renderSavedVersesEverywhere();

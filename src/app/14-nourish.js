@@ -4250,8 +4250,12 @@ function renderGrowHandoffs(){
     // A RUN IS TRAINING — and getUnifiedTraining is the reader that knows it, merging Strava and
     // de-duplicating the Hevy copies. Reading totry_workouts directly meant a runner whose whole week
     // is Strava saw this handoff blank while Home said "3 session(s) this wk".
+    // AND DO NOT UNWRAP TO .raw. A Strava activity's raw row carries `date`, not `ts` — that is the
+    // whole reason getUnifiedTraining normalises it — so `.map(t => t.raw || t)` handed the filter
+    // below rows with no `ts` and every run was dropped on the very line meant to include it. The
+    // unified row already has ts, volume, durationMin and calories, which is everything wanted here.
     const ws = ((typeof getUnifiedTraining === 'function')
-      ? getUnifiedTraining().map(t => t.raw || t)
+      ? getUnifiedTraining()
       : (ls('totry_workouts')||[])).filter(w => w && w.ts && inWeek(w.ts));
     // w.calories is set by Strava and Apple Health imports and by nothing else — a strength session
     // logged in THIS app stores durationMin and no calories, so this summed to 0 and the handoff fell
@@ -4298,8 +4302,12 @@ function renderGrowHandoffs(){
     let nourishLine = '';
     if(logged.length){
       const avgPro = Math.round(logged.reduce((a,k) => a + days[k].pro, 0) / logged.length);
+      // …and the gram target 16px under the line that was just gated. Fixing the train handoff and
+      // leaving this one meant the card still handed a numbers-off person a protein figure, on the
+      // same card, in the same glance — which the app's own note calls worse than no promise at all.
+      const _gentleN = (typeof nutGentle==='function') && nutGentle();
       nourishLine = logged.length + ' of 7 days fuelled'
-        + (avgPro > 0 ? ', ' + avgPro + 'g protein a day' : '')
+        + ((avgPro > 0 && !_gentleN) ? ', ' + avgPro + 'g protein a day' : '')
         + ' \u2192 see what it did';
     } else if(ws.length){
       // trained but never logged a meal: the loop is broken at this exact link, and saying so is the
@@ -4391,14 +4399,17 @@ function renderBodySystemReport(){
   // from "3 session(s) this wk", and tapping "Deeper read from Coach" sent the model "Training: 0
   // workouts, 0kg volume" inside the same request whose system context said three sessions — the app
   // handing the AI two contradictory answers about the same week.
+  // Unified rows, NOT their .raw — a Strava row's raw form has `date` and no `ts`, so unwrapping
+  // dropped every run at the filter. `.raw` is used only for the RPE walk below, which needs the
+  // real set objects; the unified row's own `exercises` is a COUNT.
   const ws=((typeof getUnifiedTraining === 'function')
-    ? getUnifiedTraining().map(t => t.raw || t)
+    ? getUnifiedTraining()
     : (ls('totry_workouts')||[])).filter(w=>w&&w.ts);
   const wk=ws.filter(w=>inWin(w.ts,W,0)), pw=ws.filter(w=>inWin(w.ts,2*W,W));
   const wCount=wk.length, wVol=Math.round(wk.reduce((a,w)=>a+(w.volume||0),0));
   const pCount=pw.length, pVol=Math.round(pw.reduce((a,w)=>a+(w.volume||0),0));
   let hard=0, totSets=0;
-  wk.forEach(w=>(w.exercises||[]).forEach(ex=>(ex.sets||[]).forEach(x=>{ if(x){ totSets++; const r=parseFloat(x.rpe); if(r>=9) hard++; } })));
+  wk.forEach(w=>(((w.raw&&w.raw.exercises)||w.exercises||[])).forEach(ex=>((ex&&ex.sets)||[]).forEach(x=>{ if(x){ totSets++; const r=parseFloat(x.rpe); if(r>=9) hard++; } })));
   const intense = totSets>=8 && (hard/totSets)>0.4;
 
   // NOURISH: per-day sums, this week + previous

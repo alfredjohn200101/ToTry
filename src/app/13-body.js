@@ -585,8 +585,14 @@ function renderBodyGoalCard(){
       ? { day:'numeric', month:'long' }
       : { day:'numeric', month:'long', year:'numeric' });
     head = 'About ' + d; col = 'var(--gr)';
+    // THE COPY HAS TO FOLLOW THE MATHS. "That is the trend, not one weigh-in, so a heavy day does not
+    // move it" was true when the gap came from the smoothed average — and false from the moment the gap
+    // started coming from the latest weigh-in, so the tile and this card could agree. Measured on one
+    // 28-day history, varying only today's number: 81.0 gave "3 weeks", 82.5 gave "6 weeks", 79.5 gave
+    // "1 week". A heavy day DOES move it now. The RATE is still a least-squares slope over the whole
+    // run, which is the honest half of the old claim, so that is what it says.
     body = 'At your own pace of ' + rateTxt + ' a week — ' + p.weeks + ' week' + (p.weeks===1?'':'s') +
-           ' from here. That is the trend, not one weigh-in, so a heavy day does not move it.';
+           ' from here. The pace is measured across every weigh-in; the distance is from today\u2019s.';
   } else if(p.kind === 'steady'){
     head = 'Holding steady.'; col = 'var(--go)';
     body = 'You are not moving toward ' + wf(p.goal) + ' or away from it. If steady is what you wanted, ' +
@@ -684,6 +690,11 @@ function bodyGoalProjection(){
     }
     const weeks = Math.abs(gap / perWeek);
     if(!isFinite(weeks) || weeks > 130) return { kind:'far', now:now, goal:goal, perWeek:perWeek, gap:gap };
+    // "0 weeks from here" reads as a bug, and it became reachable the moment the gap started coming
+    // from the latest weigh-in rather than the lagging average: anywhere between the 0.3kg 'there'
+    // band and about half a week of progress rounds to zero. Someone that close is, in the only sense
+    // that matters, there.
+    if(Math.round(weeks) < 1) return { kind:'there', now:now, goal:goal };
     const eta = new Date(Date.now() + weeks * 7 * 86400000);
     return { kind:'onTrack', now:now, goal:goal, perWeek:perWeek, gap:gap,
              weeks: Math.round(weeks), eta: eta };

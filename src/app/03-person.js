@@ -3288,7 +3288,11 @@ function _readBundled(sel,content,bank){
   // way to choose another book, no way to retry, and no way back to the text at all without leaving the
   // tab and coming back. Choosing a book is the retry, so the door is left open.
   if(!content) return;
-  content.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9.5px;color:var(--tx3);text-align:center;margin-bottom:10px">Kept on your phone — the live text did not answer. Pick a book above to try again.</div>'+'<div class="card">'+bank.map(v=>'<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--bd)"><div style="font-size:15px;line-height:1.75;color:var(--tx)">“'+v.t+'”</div><div style="font-size:12px;color:var(--tx3);margin-top:6px">— '+v.r+'</div></div>').join('')+'</div>';
+  // …and only SAY "pick a book" where there is one to pick. The Qur'an reader has no book picker, so
+  // that sentence pointed at an empty space and made the offline state read as broken rather than as
+  // a designed fallback.
+  const _hasPicker = !!(sel && sel.querySelector && sel.querySelector('select'));
+  content.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9.5px;color:var(--tx3);text-align:center;margin-bottom:10px">Kept on your phone — the live text did not answer.'+(_hasPicker?' Pick a book above to try again.':'')+'</div>'+'<div class="card">'+bank.map(v=>'<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--bd)"><div style="font-size:15px;line-height:1.75;color:var(--tx)">“'+v.t+'”</div><div style="font-size:12px;color:var(--tx3);margin-top:6px">— '+v.r+'</div></div>').join('')+'</div>';
 }
 // Qur'an — Al-Quran Cloud (free, no key): surah picker + Arabic + English.
 async function _readQuranInit(sel,content){
@@ -3571,6 +3575,13 @@ async function _loadSalah(){
   }catch(e){ box.innerHTML=_readErr('Couldn’t load prayer times right now.'); }
 }
 async function _promptCity(){ try{ const c=await askText('Your city', 'Used only to work out prayer times where you are.', {confirmLabel:'Set city'}); if(c&&c.trim()) _loadSalahByCity(c.trim()); }catch(_){} }
+// A city name safe to sit inside onclick="...('HERE')" — backslash and apostrophe escaped for the JS
+// string, quote and angle bracket for the HTML attribute. See the note in the catch below.
+function _salahCityArg(c){
+  return String(c == null ? '' : c)
+    .replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+    .replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 async function _loadSalahByCity(city){
   const box=document.getElementById('salah-box'); if(box) box.innerHTML=_readLoading();
   // NB: the city is saved further down, only after the API confirms it resolved — so a typo is never
@@ -3587,7 +3598,13 @@ async function _loadSalahByCity(city){
       ? 'The connection stalled before the times came back \u2014 the city is fine.'
       : 'Couldn\u2019t find that city \u2014 try a larger nearby one.') +
       '<div style="text-align:center;margin-top:8px">' +
-        '<button class="btn" onclick="_loadSalahByCity(' + JSON.stringify(String(city)) + ')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">Try again</button> ' +
+        // JSON.stringify wraps the city in DOUBLE quotes, and this is a double-quoted HTML attribute —
+        // so the attribute terminated at the first quote and the browser parsed the rest as a junk
+        // attribute literally named `sydney")`. onclick came out as the string `_loadSalahByCity(`,
+        // btn.onclick was null, and a real tap fired nothing. It was inert for EVERY city, not just
+        // awkward ones. Escaped for a single-quoted JS string inside a double-quoted attribute, so an
+        // apostrophe city ("St John's") survives too.
+        '<button class="btn" onclick="_loadSalahByCity(\'' + _salahCityArg(city) + '\')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">Try again</button> ' +
         '<button class="btn" onclick="_promptCity()" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">Change city</button>' +
       '</div>';
   }

@@ -226,16 +226,25 @@ function getTrainingTrend(){
     const tot = valid.reduce((a,t)=>a + (t.durationMin*60)/mToDisp(t.distance), 0);
     return tot/valid.length;
   };
+  // One formatter for all three sentences in this function — the steady line sits outside the block
+  // where `mmss` is scoped, which is exactly how it kept its own copy of the rounding bug.
+  const mmssSteady = sec => { const p = _paceParts(sec/60); return p ? (p.m+"'"+p.s+'"') : '\u2014'; };
   const oP=paceOf(older), rP=paceOf(recent);
   if(oP && rP){
     const diff = oP - rP; // positive = faster now
     if(Math.abs(diff) >= 5){
-      const mmss = sec => Math.floor(sec/60)+"'"+String(Math.round(sec%60)).padStart(2,'0')+'"';
+      // THE THIRD PACE FORMATTER. _paceParts was introduced under a comment saying "both pace lines
+      // had that bug ... one helper, so they cannot drift again" — there were three, and this one was
+      // never converted, so all three sentences below could print a 60 in the seconds place ("5'60\"/km").
+      // It takes seconds here rather than minutes-per-unit, hence the /60. Strava distances are exact
+      // metres (5006, 10037), so a non-round pace is the norm for the people who see this card, not an
+      // edge case.
+      const mmss = sec => { const p = _paceParts(sec/60); return p ? (p.m+"'"+p.s+'"') : '\u2014'; };
       return diff>0
         ? 'Your '+label+' pace is improving — now ~'+mmss(rP)+'/'+dUnit()+' (was ~'+mmss(oP)+'/'+dUnit()+').'
         : 'Your '+label+' pace has eased to ~'+mmss(rP)+'/'+dUnit()+'. Some weeks are like that.';
     }
-    return 'Your '+label+' pace is holding steady around '+Math.floor(rP/60)+"'"+String(Math.round(rP%60)).padStart(2,'0')+'"/'+dUnit()+'.';
+    return 'Your '+label+' pace is holding steady around '+mmssSteady(rP)+'/'+dUnit()+'.';
   }
   // Otherwise → compare avg HR (lower for similar work can mean improving fitness).
   const hrOf = arr => { const v=arr.filter(t=>t.hr); return v.length ? v.reduce((a,t)=>a+t.hr,0)/v.length : null; };

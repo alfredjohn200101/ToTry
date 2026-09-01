@@ -276,6 +276,13 @@ function _syncExamenNounLabels(){
   try{
     const el = document.getElementById('examen-noun-plural');
     if(el) el.textContent = _examenNoun().toLowerCase() + 's';
+    // …and the confirmation 33px below it, which is static markup this only ever toggled the DISPLAY
+    // of, never the text. Renaming the button and leaving this made it worse, not better: a Muslim
+    // read "View past muhāsabas (1)" directly above "✓ Examen complete for today."
+    const dn = document.getElementById('examen-done-noun');
+    if(dn) dn.textContent = _examenNoun();
+    const sn = document.getElementById('examen-noun-search');
+    if(sn) sn.textContent = _examenNoun().toLowerCase() + 's';
   }catch(_){ }
 }
 function applyFaithExamen(){
@@ -461,7 +468,9 @@ function saveExamen(){
   '</div>';
   document.body.appendChild(m);
   haptic('celebrate');
-  showToast('Examen logged', _examenClose().toast);
+  // The FIRST thing said after the practice, and it was the one Christian noun in an otherwise
+  // translated flow — _examenClose() below it is already tradition-aware.
+  showToast(_examenNoun() + ' logged', _examenClose().toast);
 }
 
 // ── EXAMEN HISTORY VIEWER ──────────────────────────────────────
@@ -692,7 +701,7 @@ function showDayActivityDetail(dateKey){
       items.push({kind:'Workout', text: (t.title||'Workout') + ' · ' + (t.exercises||0) + ' exercises'});
     }
   });
-  (ls('totry_examens') || []).forEach(e => { if(matchDate(e.ts)) items.push({kind: 'Examen', text: '5-step walked'}); });
+  (ls('totry_examens') || []).forEach(e => { if(matchDate(e.ts)) items.push({kind: (typeof _examenNoun==='function' ? _examenNoun() : 'Review'), text: '5-step walked'}); });
   (ls('totry_wins') || []).forEach(w => { if(matchDate(w.ts)) items.push({kind: 'Win', text: w.text?.slice(0, 80)}); });
   (ls('totry_fight_log') || []).forEach(f => { if(matchDate(f.ts)) items.push({kind: f.won ? 'Fight won' : 'Fight lost', text: f.vice + (f.trigger ? ' · ' + f.trigger : '')}); });
   (ls('totry_prayers') || []).forEach(p => { if(matchDate(p.createdAt)) items.push({kind: 'Prayer added', text: p.text?.slice(0, 80)}); });

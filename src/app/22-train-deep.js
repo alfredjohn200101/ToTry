@@ -73,6 +73,22 @@ function saveCustomExercise(){
 // word. The proxy chain is down to one working provider on a free-tier quota; eight calls per search
 // is not a cost this feature can justify.
 let _exSearchGen = 0;
+// EVERY CHANGE OF THE BOX SUPERSEDES WHAT IS IN FLIGHT — including one that starts no search of its
+// own. The generation counter only advanced inside searchExercises, so clearing the box (or cutting it
+// to one character) while the model was thinking could not cancel anything: the abandoned query's AI
+// rows landed in an empty box and were tappable straight into the session. That is the same defect the
+// guard was added for, surviving in the path the `length > 1` check blocks.
+function exSearchInput(v){
+  _exSearchGen++;                                   // whatever is in flight is now stale
+  clearTimeout(window.__exSearchT);
+  const q = String(v == null ? '' : v).trim();
+  if(q.length <= 1){
+    const res = document.getElementById('pt-ex-results');
+    if(res) res.innerHTML = '';                     // an empty box shows nothing, not the last answer
+    return;
+  }
+  window.__exSearchT = setTimeout(function(){ searchExercises(v, { typeahead: true }); }, 260);
+}
 async function searchExercises(query, opts){
   if(!query.trim())return;
   const _gen = ++_exSearchGen;
@@ -427,7 +443,11 @@ function _saveSessionDraft(){
   try{
     if(typeof currentSession === 'undefined') return;
     if(currentSession && currentSession.length){
-      ls('totry_session_draft', { session: currentSession, startedAt: (typeof __sessionStart!=='undefined' && __sessionStart) || null, ts: Date.now() });
+      // The records beaten so far ride with the draft. _sessionPRs is a plain module variable, so a
+      // reload mid-session emptied it — and by then the tick handler had already written the new best
+      // into totry_prs, so detectAndRecordPRs at Finish had nothing left to find and the banner went
+      // missing again. That is the exact bug this list was added to fix, returning by a second route.
+      ls('totry_session_draft', { session: currentSession, prs: (typeof _sessionPRs!=='undefined' ? _sessionPRs : []), startedAt: (typeof __sessionStart!=='undefined' && __sessionStart) || null, ts: Date.now() });
     } else {
       ls('totry_session_draft', null);
     }
@@ -442,6 +462,7 @@ function restoreSessionDraft(){
     if(d.ts && (Date.now() - d.ts) > 18*3600000){ ls('totry_session_draft', null); return false; }
     if(typeof currentSession !== 'undefined' && currentSession.length) return false;   // never overwrite a live one
     currentSession = d.session;
+    _sessionPRs = Array.isArray(d.prs) ? d.prs : [];
     if(d.startedAt && typeof __sessionStart !== 'undefined') __sessionStart = d.startedAt;
     renderWorkoutSession();
     if(typeof showToast === 'function') showToast('Picked up where you left off', currentSession.length + ' exercise' + (currentSession.length===1?'':'s') + ' from your last session were still open.');
@@ -870,8 +891,25 @@ async function saveWorkoutSession(){
       // Anything already celebrated at the tick is invisible to the detection above, by design — it is
       // ALREADY the stored record. Merge, so the sheet shows every record beaten in this session
       // whichever way it was entered, and never the same lift twice.
+      // RECONCILED AGAINST WHAT WAS ACTUALLY DONE. _sessionPRs is appended the moment a set is ticked,
+      // so a lift ticked and then UN-ticked before Finish still reached the banner — routing straight
+      // around the `if(!s.done) return;` gate v568 added so the app cannot celebrate a lift the person
+      // did not do. Kept only where the saved session still holds a ticked, non-warmup set that earns
+      // it, which is the same criterion detectAndRecordPRs applies.
+      const _stillDone = function(name, orm){
+        const ex = (session.exercises || []).find(function(e){ return e && e.name === name; });
+        if(!ex) return false;
+        return (ex.sets || []).some(function(st){
+          if(!st || st.done === false) return false;
+          if(st.type && /warm/i.test(st.type)) return false;
+          const w = parseFloat(st.weight) || 0, r = parseInt(st.reps) || 0;
+          return w > 0 && r > 0 && estE1RM(w, r) >= orm;
+        });
+      };
       (_sessionPRs || []).forEach(function(p){
-        if(!prHit.some(function(x){ return x.name === p.name; })) prHit.push({ name: p.name, orm: Math.round(p.orm || 0) });
+        const orm = Math.round(p.orm || 0);
+        if(!_stillDone(p.name, orm)) return;
+        if(!prHit.some(function(x){ return x.name === p.name; })) prHit.push({ name: p.name, orm: orm });
       });
       if(prHit.length && typeof haptic === 'function') haptic('success');
     }catch(_){ prHit = []; }
@@ -1167,7 +1205,21 @@ function openEditTraining(unifiedId){
   if(w.effort) setv('edit-cardio-effort', w.effort);
   if(typeof updateEditCardioPace==='function') updateEditCardioPace();
 }
+const _EDIT_CARDIO_INPUTS = ['edit-cardio-time','edit-cardio-distance','edit-cardio-activeCal',
+                            'edit-cardio-totalCal','edit-cardio-hr','edit-cardio-effort'];
 function renderEditCardioFields(){
+  // KEEP WHAT IS ALREADY ON SCREEN. This re-renders from scratch on every type change and emits fresh,
+  // EMPTY inputs — so correcting "Indoor Run" to "Elliptical" blanked the time, calories and heart
+  // rate the person had just been looking at, and saveEditTraining then wrote null over all three
+  // while announcing "Saved · Workout updated." A 30-minute session became a session with no duration,
+  // and getUnifiedWeekStats().totalMinutes fell with it, so the week under-credited them for training
+  // they actually did. The note below records an EARLIER version of this same harm from a different
+  // cause — the values are only populated once, by the open path, and nothing has ever restored them.
+  const _keep = {};
+  _EDIT_CARDIO_INPUTS.forEach(function(id){
+    const e = document.getElementById(id);
+    if(e && e.value !== '') _keep[id] = e.value;
+  });
   const type = document.getElementById('edit-cardio-type')?.value || 'Other';
   const cfg = CARDIO_TYPES[type] || CARDIO_TYPES['Other'] || {fields:['time','distance','activeCal','hr']};
   const wrap = document.getElementById('edit-cardio-fields');
@@ -1196,6 +1248,14 @@ function renderEditCardioFields(){
   });
   if(cfg.pace){ html += '<div id="edit-cardio-pace" style="font-family:DM Mono,monospace;font-size:11px;color:var(--go);margin:-4px 0 12px 0;min-height:14px"></div>'; }
   wrap.innerHTML = html;
+  // Restore only into fields the NEW type still has. One the new type does not carry is deliberately
+  // not restored — saveEditTraining clears exactly those, which is how a distance stops following an
+  // elliptical around.
+  Object.keys(_keep).forEach(function(id){
+    const e = document.getElementById(id);
+    if(e) e.value = _keep[id];
+  });
+  if(typeof updateEditCardioPace === 'function') try{ updateEditCardioPace(); }catch(_){ }
 }
 // Minutes-per-unit -> the parts of "M:SS", carrying when the seconds round up to sixty, and the
 // person's own distance unit. Math.round on the remainder returns 60 for any fraction above 0.9917:
@@ -1488,7 +1548,9 @@ function saveCardioManually(){
   // whether it had worked. The distance they typed is `distInput`, and `unit` is their own km/mi
   // choice, which this line also ignored.
   if(distInput) bits.push(distInput+' '+unit);
-  if(cal) bits.push(cal+' cal');
+  // NOT TO SOMEONE WHO TURNED THE NUMBERS OFF. The workout summary sheet was gated and this toast, the
+  // other Train logging door, was not — same promise, same person, one screen apart.
+  if(cal && !((typeof nutGentle==='function') && nutGentle())) bits.push(cal+' cal');
   showToast('Workout logged', bits.join(' \u00b7 ') + ' \u2014 counts as your gym session.');
 }
 async function handleWorkoutScreenshot(event){

@@ -904,6 +904,11 @@ function renderWinsLog(){
 // ── UNIVERSAL SEARCH ────────────────────────────────────────
 // Search across journal, wins, saved verses, examens, prayers. One bar, all your text history.
 function openUniversalSearch(){
+  // The blurb below the bar names what is searchable, and one of those nouns belongs to a tradition.
+  // _syncExamenNounLabels runs from initEveningTab, which a person who never opens the Evening tab has
+  // never triggered — so this line kept saying "examens" to a secular or Muslim user. Sync on open,
+  // where it costs nothing and cannot be missed.
+  try{ if(typeof _syncExamenNounLabels==='function') _syncExamenNounLabels(); }catch(_){ }
   document.querySelector('.modal-bg.open')?.remove();
   const m = document.createElement('div');
   m.className = 'modal-bg open';
