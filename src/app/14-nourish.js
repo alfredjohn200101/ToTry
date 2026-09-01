@@ -1228,6 +1228,27 @@ async function _pmDescribe(){
   _pmPendingDescribe = '';
   _renderPhotoMeal();
 }
+// WHAT THE CAMERA ALREADY SAW IS THE TRUTH ABOUT WHAT IS ON THE PLATE. The web knows what a dish
+// USUALLY contains, and "usually" is exactly how 200g of chips arrived on a gyros that had none — this
+// used to replace the item list wholesale with a typical serving. It refines now: the photo decides
+// WHICH components exist, the web decides how much each weighs and what is really in it. Measured
+// against the live chain on the same dish: unconstrained it returned 7 components and ~1,939 cal
+// including pita and tzatziki that were never there; constrained to "meat; chips" it returned exactly
+// those two, kept their grams, and raised the meat from 520 to 800 cal — which is the absorbed cooking
+// fat the camera cannot see. Only with nothing detected at all does it get to propose components.
+function _pmWebPrompt(words, items){
+  const seen = (items || [])
+    .filter(it => it && it.food)
+    .map(it => it.food + (Number(it.grams) > 0 ? ' (~' + Math.round(it.grams) + 'g)' : ''));
+  return 'Find the real nutrition for this dish as it is actually served: "' + String(words).slice(0,300) + '". ' +
+    'Search for the restaurant\'s own published figures if it names one, otherwise a representative recipe for that dish at that size. ' +
+    (seen.length
+      ? 'A photo of THIS person\'s actual plate shows exactly these components and nothing else: ' + seen.join('; ') + '. ' +
+        'Return THESE components and ONLY these — do not add anything the photo did not show, however typical it is of the dish. If the plate has no sauce, there is no sauce. Your job is to correct the GRAMS and the nutrition of the components that are there, using what the dish is actually made of. '
+      : 'Break it into its components with the weight in GRAMS of each as served. ') +
+    'Account for cooking oil and dressing absorbed into those components, which published figures include and photos never show. ' +
+    'Return ONLY this JSON, no markdown: {"meal":"short name","items":[{"food":"component","grams":number,"portion":"e.g. 1 cup","cal":number,"pro":number,"carb":number,"fat":number}],"cal_low":number,"cal_high":number,"assumptions":"1 sentence incl. the source you used","confidence":"high|medium|low"}.';
+}
 // AND LOOK IT UP. For a named dish from a real place — the going-out case — the web knows more than any
 // photo does. This uses the free web-grounded text path that already exists in ai-proxy (Gemini
 // grounding, OpenRouter :online), so it costs nothing and needs no new provider.
@@ -1237,10 +1258,7 @@ async function _pmWebLookup(){
   const res = document.getElementById('nut-search-results');
   if(res && typeof foodWorking === 'function') foodWorking(res, 'Looking it up');
   try{
-    const prompt = 'Find the real nutrition for this dish as it is actually served: "' + words.slice(0,300) + '". ' +
-      'Search for the restaurant\'s own published figures if it names one, otherwise a representative recipe for that dish at that size. ' +
-      'Break it into its components with the weight in GRAMS of each as served. Account for cooking oil, sauces and dressings, which published figures often include and photos never show. ' +
-      'Return ONLY this JSON, no markdown: {"meal":"short name","items":[{"food":"component","grams":number,"portion":"e.g. 1 cup","cal":number,"pro":number,"carb":number,"fat":number}],"cal_low":number,"cal_high":number,"assumptions":"1 sentence incl. the source you used","confidence":"high|medium|low"}.';
+    const prompt = _pmWebPrompt(words, (_photoMeal && _photoMeal.items) || []);
     // 35s, not 25: measured against the live chain, a grounded lookup for "open plate gyros, large,
     // mixed meat" took 16.8s end to end — a web search plus a 4000-token generation is genuinely slower
     // than reading a photo, and cutting it off at 25 would fail the case it exists for. Bounded all the
@@ -1304,8 +1322,13 @@ function _mealPrompt(describe){
   return (describe
       ? 'A person photographed a meal AND told you exactly what it is. THEIR WORDS ARE AUTHORITATIVE — they can see the plate and you cannot. Use the photo only to judge how much of it there is. What they said: "' + String(describe).slice(0,300) + '". '
       : 'This is a photo of a meal. ') +
-    'Identify EACH distinct food/component SEPARATELY. For each, give the weight in GRAMS of the portion actually shown — reason from visual cues (plate size, utensils, a hand). Grams are the number that matters; get those right and the rest follows. ' +
-    'IMPORTANT: account for realistic cooking fats — oil, butter, dressings, sauces — even when they are not directly visible; these are the #1 reason photo calorie estimates run ~30% too low, so do NOT underestimate fat or portion size (lean toward realistic-to-generous, not optimistic). ' +
+    'Identify EACH distinct food/component SEPARATELY — an open plate with meat and chips on it is TWO items with their own weights, never one combined figure. For each, give the weight in GRAMS of the portion actually shown, reasoning from visual cues (plate size, utensils, a hand). Grams are the number that matters; get those right and the rest follows. ' +
+    // ONLY WHAT IS ON THE PLATE. This is the difference between the two ways an estimate goes wrong,
+    // and they pull in opposite directions: a component that is not there must never be invented,
+    // while fat absorbed INTO a food that IS there is invisible and must be counted. A photo-guessed
+    // "typical serving" that adds sauce nobody was given is not an estimate, it is a different meal.
+    'ONLY list components you can actually SEE. If there is no sauce on this plate, there is no sauce — do not add a component because the dish usually comes with one. ' +
+    'IMPORTANT, and separate from that: for the foods that ARE there, account for realistic cooking fats — the oil they were fried or tossed in, butter, dressing already through them — even though it is not visible as its own thing. That absorbed fat is the #1 reason photo calorie estimates run ~30% too low, so do NOT underestimate fat or portion size (lean toward realistic-to-generous, not optimistic). ' +
     (ctx ? 'Context: ' + ctx + ' ' : '') +
     'Return ONLY this JSON, no markdown: {"meal":"short overall name for the meal","items":[{"food":"one item\'s name","grams":number,"portion":"how you describe that portion, e.g. 1 cup","cal":number,"pro":number,"carb":number,"fat":number}],"cal_low":number,"cal_high":number,"assumptions":"1 short sentence on what you assumed, incl. any hidden fat you added","confidence":"high|medium|low"}. ' +
     'cal_low and cal_high are an honest range for the WHOLE meal — published per-dish error for this task is around 40%, so do not pretend to more precision than that. List 1 to 8 items. If this is not food, return {"error":"no food"}.';

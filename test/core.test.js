@@ -5351,4 +5351,33 @@ H.section('the fight is not erased by a slip — at every door, not just the two
   H.eq(F.viceFightDays(store.totry_v[0]), 1, 'a vice with nothing recorded starts the fight today, at Day 1');
 }
 
+// ── THE WEB MAY CORRECT THE PLATE, NEVER ADD TO IT ───────────────────────────────────────────────
+// "Look it up" asks the web what a dish is really made of. Unconstrained, it answers with a TYPICAL
+// serving — and measured against the live chain on one real dish it returned seven components and
+// ~1,939 cal, including 120g of pita and 100g of tzatziki that were not on the plate. Constrained to
+// what the camera actually saw it returned exactly those two components, kept their grams, and raised
+// the meat from 520 to 800 cal, which is the absorbed cooking fat a photo cannot see. That is the whole
+// division of labour: the photo says WHAT is there and HOW MUCH, the web says what is IN it.
+// Asserted on the prompt because the alternative is a network call in the suite — but the constraint is
+// the thing that has to survive an edit, and an untestable constraint is the same as none.
+H.section('the web lookup refines the plate, it does not invent one');
+{
+  const { _pmWebPrompt } = H.load(['_pmWebPrompt']);
+  const withItems = _pmWebPrompt('open plate gyros, large',
+    [{ food:'Mixed meat gyros', grams:220 }, { food:'Chips', grams:150 }]);
+  H.ok(/Mixed meat gyros \(~220g\)/.test(withItems) && /Chips \(~150g\)/.test(withItems),
+       'every component the camera saw is named to the web, with the grams it saw');
+  H.ok(/ONLY these/.test(withItems),
+       'and it is told to return those and nothing else — this is what stops a typical serving arriving');
+  H.ok(/no sauce, there is no sauce/.test(withItems),
+       'said in the plainest terms available, because "typical" is exactly the failure');
+  H.ok(/absorbed into those components/.test(withItems),
+       'while still asking for the cooking fat that IS in the food it can see');
+
+  // With nothing detected there is nothing to protect, so it may propose the components itself.
+  const empty = _pmWebPrompt('open plate gyros, large', []);
+  H.ok(!/ONLY these/.test(empty) && /Break it into its components/.test(empty),
+       'and with no photo behind it, it is free to say what the dish is made of');
+}
+
 H.report();
