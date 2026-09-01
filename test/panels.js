@@ -2560,6 +2560,50 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── THE CAMERA HONOURS "NUMBERS OFF" ─────────────────────────────────────────────────────────
+  // applyNutGentle hides a FIXED LIST of static element ids, and #nut-search-results — where the photo
+  // card renders — was never one of them, so _renderPhotoMeal had no idea gentle mode existed. The
+  // person who turned counting off because counting is the thing that hurt them photographed a plate
+  // and was handed a per-item calorie breakdown and a bold gold TOTAL. applyNutGentle's own comment
+  // says why that is the worse failure: "a numbers off promise that leaks a red over-budget figure two
+  // cards down is worse than no promise at all."
+  // Both arms are asserted, because a gate that suppresses for EVERYONE is also a failure — and the
+  // card must still name the food and still be loggable, or the promise has cost them the feature.
+  {
+    for (const gentle of [true, false]) {
+      const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+      const page = await ctx.newPage();
+      const errs = []; page.on('pageerror', e => errs.push(String(e.message).slice(0, 110)));
+      await page.addInitScript(g => { localStorage.setItem('totry_onboarded','true');
+        localStorage.setItem('totry_guest','true');
+        if (g) localStorage.setItem('totry_nut_gentle','true'); }, gentle);
+      await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+      await page.waitForTimeout(2700);
+      const r = await page.evaluate(async () => {
+        go('nourish'); await new Promise(x => setTimeout(x, 900));
+        // the item shape handleMealPhoto builds, driven through the app's own renderer
+        _photoMeal = { name:'Chicken and rice', confidence:'medium', assumptions:'Assumed a dinner plate.',
+          items:[{ food:'Grilled chicken breast', cal:280, pro:52, carb:0, fat:6, portion:'170g', mult:1 },
+                 { food:'White rice, cooked', cal:234, pro:4, carb:52, fat:1, portion:'180g', mult:1 }] };
+        _renderPhotoMeal(); await new Promise(x => setTimeout(x, 300));
+        const t = (document.getElementById('nut-search-results') || {}).innerText || '';
+        return { cal: /\d+\s*cal/i.test(t), macros: /P\d+\s*C\d+\s*F\d+/.test(t.replace(/\s+/g,' ')),
+                 named: /Grilled chicken breast/.test(t), loggable: /Add 2 items to log/.test(t) };
+      });
+      await ctx.close();
+      const tag = gentle ? 'numbers off' : 'numbers on';
+      if (gentle && (r.cal || r.macros))
+        findings.push('photo-gentle: the photo card shows a calorie/macro figure to someone who turned numbers off');
+      if (!gentle && !(r.cal && r.macros))
+        findings.push('photo-gentle: numbers are ON and the photo card shows none — the gate suppresses for everyone');
+      if (!r.named)   findings.push(`photo-gentle: the card stopped naming the food (${tag})`);
+      if (!r.loggable) findings.push(`photo-gentle: the meal is no longer loggable (${tag})`);
+      if (errs.length) findings.push(`photo-gentle: page error (${tag}) — ${errs[0]}`);
+    }
+    if (!findings.some(f => f.startsWith('photo-gentle:')))
+      console.log('photo-gentle: a photographed plate is named and loggable either way, and only scored when the person asked for numbers');
+  }
+
   // ── A RECIPE YOU BUILT, LOGGED ────────────────────────────────────────────────────────────────
   // "My recipes" is a first-class row in "More ways to log", and for everyone who ever built one and
   // tapped "Log this" it did NOTHING: v563 replaced the four cal/pro/carb/fat writes with a spread of

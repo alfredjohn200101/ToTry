@@ -67,14 +67,24 @@ const MODELS = {
   // 1 Sep 2026 — ministral-8b-2512 failed and the list fell through to it, which is the list working
   // as designed but costs a round trip on every call until the order is corrected.
   mistral:     ["mistral-small-2603", "ministral-14b-2512", "ministral-8b-2512"],
-  mistralVision: ["ministral-14b-2512", "ministral-8b-2512", "mistral-large-2512"],
+  // PROBED LIVE 1 Sep 2026 with a real key: every one of ministral-14b / ministral-8b / mistral-large
+  // returned 403 "This model is not available in your subscription tier". Mistral's vision models are
+  // NOT on the free tier, whatever their capability pages say — capability and entitlement are
+  // different questions and only a real key answers the second. One candidate remains, because
+  // mistral-small-2603 is the id proven available on this key for text and Mistral Small is multimodal:
+  // if it answers, vision stays free here; if not it costs ONE round trip instead of three before the
+  // chain moves on.
+  mistralVision: ["mistral-small-2603"],
   // Cloudflare Workers AI — 10,000 Neurons/day, standing, resets 00:00 UTC, and on the Free plan it
   // HARD STOPS rather than billing. Two secrets, because the account id lives in the URL.
   cloudflare:  ["@cf/google/gemma-4-26b-a4b-it", "@cf/meta/llama-3.3-70b-instruct-fp8-fast",
                 "@cf/openai/gpt-oss-120b", "@cf/meta/llama-3.1-8b-instruct"],
   // llama-3.2-11b-vision is deliberately absent: it needs a one-time {"prompt":"agree"} licence
   // handshake before it will answer, which would fail closed on a fresh key with no way to tell why.
-  cloudflareVision: ["@cf/google/gemma-4-26b-a4b-it", "@cf/qwen/qwen3.8-27b"],
+  // qwen FIRST: probed live with a real 192x192 png, gemma-4-26b-a4b-it failed and qwen3.8-27b
+  // answered ("Black app icon with gold ToTry text"). The `burned` field is what surfaced that — the
+  // provider was working and quietly losing a candidate on every single call.
+  cloudflareVision: ["@cf/qwen/qwen3.8-27b", "@cf/google/gemma-4-26b-a4b-it"],
   // NVIDIA NIM — VISION ONLY, and the reason is the finite pool: 1,000-5,000 lifetime credits, not a
   // recurring allowance. That is a real third leg for the food camera, which had two, and it is not a
   // text backstop — the text chain has five without it, and chat would drain the pool in days.
@@ -371,7 +381,10 @@ async function callNvidiaVision({ system, prompt, image_base64, image_mime, max_
     const resp = await fetchWithTimeout("https://integrate.api.nvidia.com/v1/chat/completions", {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
       body: JSON.stringify({ model, messages: msgs, max_tokens: max_tokens || 1024, temperature: 0.3 }),
-    }, 30000);
+      // 45s, not 30. Warm it answers in 4.9s; the first call of the day aborted at 30s and reported
+      // "The signal has been aborted", which reads exactly like a broken provider and is a cold start.
+      // It is the LAST link in the vision chain, so a slow answer here still beats no answer.
+    }, 45000);
     const data = await resp.json().catch(() => ({}));
     if (!resp.ok) return { error: true, status: resp.status, body: data };
     const text = data?.choices?.[0]?.message?.content || "";

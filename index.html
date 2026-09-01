@@ -25643,6 +25643,15 @@ async function handleMealPhoto(event){
 let _photoMeal = null;
 function _pmTotals(){ return (_photoMeal?_photoMeal.items:[]).reduce((a,it)=>{ const m=it.mult||1; a.cal+=it.cal*m; a.pro+=it.pro*m; a.carb+=it.carb*m; a.fat+=it.fat*m; return a; },{cal:0,pro:0,carb:0,fat:0}); }
 function _renderPhotoMeal(){
+  // NUMBERS OFF REACHES THE CAMERA TOO. applyNutGentle hides a fixed list of static element IDs and
+  // #nut-search-results — where the photo card renders — is not one of them, so this function has never
+  // consulted nutGentle() at all. The result: the person who turned counting off because counting is
+  // the thing that hurt them photographs a plate and is handed a per-item calorie breakdown and a bold
+  // gold TOTAL. applyNutGentle's own comment says why that is worse than making no promise: "a numbers
+  // off promise that leaks a red over-budget figure two cards down is worse than no promise at all."
+  // The card still does its real job — naming what is on the plate, letting them fix it, logging it —
+  // it just stops scoring the meal.
+  const _pmG = (typeof nutGentle === 'function') && nutGentle();
   const res=document.getElementById('nut-search-results'); if(!res||!_photoMeal) return;
   const pm=_photoMeal, R=n=>Math.round(n), esc=s=>String(s).replace(/</g,'&lt;');
   const tot=_pmTotals();
@@ -25677,7 +25686,10 @@ function _renderPhotoMeal(){
     '<div style="display:flex;align-items:center;gap:5px;padding:9px 0;border-top:1px solid var(--bd)">'+
       '<div style="flex:1;min-width:0;cursor:pointer" onclick="_pmEdit('+i+')">'+
         '<div style="font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(it.food||'Tap to name')+'</div>'+
-        '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+R(it.cal*m)+' cal · P'+R(it.pro*m)+' C'+R(it.carb*m)+' F'+R(it.fat*m)+(it.portion?' · '+esc(it.portion):'')+(m!==1?' ×'+m:'')+'</div>'+
+        '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+
+          (_pmG ? (it.portion ? esc(it.portion) : 'logged') + (m!==1?' ×'+m:'')
+                : R(it.cal*m)+' cal · P'+R(it.pro*m)+' C'+R(it.carb*m)+' F'+R(it.fat*m)+(it.portion?' · '+esc(it.portion):'')+(m!==1?' ×'+m:''))+
+        '</div>'+
       '</div>'+
       '<button onclick="_pmEdit('+i+')" aria-label="edit" title="Fix what it is / the numbers" style="width:30px;height:30px;border-radius:7px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px;cursor:pointer;flex-shrink:0">✎</button>'+
       '<button onclick="_pmAdj('+i+',-0.25)" aria-label="less" style="width:30px;height:30px;border-radius:7px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:17px;cursor:pointer;flex-shrink:0">−</button>'+
@@ -25701,8 +25713,11 @@ function _renderPhotoMeal(){
         '<button onclick="_pmAddFat()" title="Cooking oil, butter and dressings don\'t show in a photo — this is why AI apps read low" style="flex:1;padding:8px;border-radius:8px;background:var(--bg3);border:1px dashed var(--bd);color:var(--tx2);font-size:11.5px;cursor:pointer">＋ Hidden fat</button>'+
       '</div>'+
       '<div style="display:flex;justify-content:space-between;align-items:center;border-top:2px solid var(--bd);margin-top:10px;padding-top:10px">'+
-        '<div style="font-size:13px;color:var(--tx);font-weight:600">Total</div>'+
-        '<div style="font-family:DM Mono,monospace;font-size:13px;color:var(--go)">'+R(tot.cal)+' cal · P'+R(tot.pro)+' C'+R(tot.carb)+' F'+R(tot.fat)+'</div>'+
+        '<div style="font-size:13px;color:var(--tx);font-weight:600">'+(_pmG?'On the plate':'Total')+'</div>'+
+        '<div style="font-family:DM Mono,monospace;font-size:13px;color:var(--go)">'+
+          (_pmG ? (pm.items||[]).length + ' item' + ((pm.items||[]).length===1?'':'s')
+                : R(tot.cal)+' cal · P'+R(tot.pro)+' C'+R(tot.carb)+' F'+R(tot.fat))+
+        '</div>'+
       '</div>'+
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin:12px 0 6px">Add to</div>'+
       '<div style="display:flex;gap:6px;margin-bottom:10px">'+
