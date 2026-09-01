@@ -2560,6 +2560,93 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+  // ── YOU CAN SEE IT, THE CAMERA CAN'T ─────────────────────────────────────────────────────────
+  // A photo cannot see how much meat is under the salad or what the kitchen put in the sauce — Cal AI's
+  // own docs admit the photo path fails on exactly that, and the NIH metabolic-kitchen study (102
+  // weighed meals, NUTRITION 2026) found every app in this category running ~a third low. The person in
+  // front of the plate knows. ACETADA (806 dietitian-verified images) measured what that context is
+  // worth: calorie error 211 -> 170 kcal, portion error ~53g better.
+  // Also asserted here: the correction has to TEACH the app, or it is worth making once instead of
+  // forever — that is the largest real accuracy gain available and it is not a model change at all.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    const errs = []; page.on('pageerror', e => errs.push(String(e.message).slice(0, 130)));
+    await page.addInitScript(() => { localStorage.setItem('totry_onboarded','true'); localStorage.setItem('totry_guest','true'); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const t = await page.evaluate(async () => {
+      const w = ms => new Promise(r => setTimeout(r, ms));
+      go('nourish'); await w(900);
+      _photoMeal = { name:'Open plate gyros', confidence:'low', assumptions:'Assumed a dinner plate.',
+        low:700, high:1150, describe:'',
+        items:[{ food:'Mixed meat gyros', grams:220, portion:'220g', cal:520, pro:44, carb:2, fat:36, mult:1 },
+               { food:'White rice, cooked', grams:180, portion:'180g', cal:234, pro:4, carb:52, fat:1, mult:1 }] };
+      _renderPhotoMeal(); await w(300);
+      const el = document.getElementById('nut-search-results'), txt = (el && el.innerText) || '';
+      const box = document.getElementById('pm-describe');
+      const seen = { box: !!box, words: /Use my words/.test(txt), web: /Look it up/.test(txt),
+                     range: /likely 700.1150 cal/.test(txt.replace(/\s+/g,' ')),
+                     offramp: /Tell me what it was/.test(txt),
+                     fns: typeof _pmDescribe === 'function' && typeof _pmWebLookup === 'function' };
+      // correct the gyros from 520 to 420 for the same 220g, then log it
+      _pmEdit(0); await w(150);
+      document.getElementById('pm-e-cal').value = '420';
+      _pmSaveEdit(0); await w(200);
+      _pmLog(); await w(400);
+      const rec = (ls('totry_recent_foods') || []).map(f => f.name);
+      const ov = (typeof getFoodOverride === 'function') ? getFoodOverride({ name:'Mixed meat gyros' }) : null;
+      // WEIGH IT IF YOU CAN. Not everyone can carry a scale, but the person who can should not have to
+      // do arithmetic to use it: typing grams rescales from the density already established, UNLESS
+      // they also typed a macro, in which case the typed macro is the more specific claim and wins.
+      // Three cases, because getting the precedence backwards silently overwrites a person's own number.
+      const gcase = {};
+      {
+        const mk = () => { _photoMeal = { name:'G', confidence:'medium', low:0, high:0, describe:'',
+          items:[{ food:'Mixed meat gyros', grams:220, portion:'220g', cal:520, pro:44, carb:2, fat:36, mult:1 }] };
+          _renderPhotoMeal(); };
+        mk(); _pmEdit(0); await w(120);
+        document.getElementById('pm-e-grams').value = '300'; _pmSaveEdit(0); await w(120);
+        gcase.scaled = { g:_photoMeal.items[0].grams, cal:_photoMeal.items[0].cal };
+        mk(); _pmEdit(0); await w(120);
+        document.getElementById('pm-e-grams').value = '300';
+        document.getElementById('pm-e-cal').value = '400'; _pmSaveEdit(0); await w(120);
+        gcase.typedWins = { g:_photoMeal.items[0].grams, cal:_photoMeal.items[0].cal };
+        mk(); _pmEdit(0); await w(120);
+        document.getElementById('pm-e-cal').value = '450'; _pmSaveEdit(0); await w(120);
+        gcase.calOnly = { g:_photoMeal.items[0].grams, cal:_photoMeal.items[0].cal };
+      }
+      const prompt = (typeof _mealPrompt === 'function') ? _mealPrompt('open plate gyros, large') : '';
+      return { seen, rec, gcase, ovCal: ov && ov.cal,
+               promptGrams: /GRAMS/.test(prompt), promptWords: /AUTHORITATIVE/.test(prompt),
+               promptNoBody: !/bodyweight|calorie target|\bkg\b/i.test(prompt) };
+    });
+    await ctx.close();
+    if (!t.seen.box)     findings.push('photo-describe: no "what did you order" box on the photo card');
+    if (!t.seen.words || !t.seen.web) findings.push('photo-describe: the use-my-words / look-it-up controls are missing');
+    if (!t.seen.fns)     findings.push('photo-describe: _pmDescribe/_pmWebLookup are not defined');
+    if (!t.seen.range)   findings.push('photo-describe: the honest range is not shown — a single number is a claim the app cannot support');
+    if (!t.seen.offramp) findings.push('photo-describe: a LOW confidence estimate committed to a number with no way out');
+    if (!(t.rec || []).includes('Mixed meat gyros'))
+      findings.push('photo-describe: a logged photo item never reached Recents — the correction is thrown away');
+    // 420 cal over 220 g = 190.9 per 100 g. If this is the model's original 520, the edit was not learned.
+    if (!(t.ovCal >= 188 && t.ovCal <= 194))
+      findings.push(`photo-describe: the correction did not become an override (${t.ovCal} cal/100g, expected ~191)`);
+    if (!t.promptGrams)  findings.push('photo-describe: the prompt stopped asking for grams — mass is the half the model is worst at');
+    if (!t.promptWords)  findings.push("photo-describe: the person's own words are no longer authoritative in the prompt");
+    if (!t.promptNoBody) findings.push('photo-describe: the prompt leaks bodyweight or a calorie target to a third-party model');
+    // 520 cal over 220 g, reweighed at 300 g, is 709.
+    if (!(t.gcase && t.gcase.scaled && t.gcase.scaled.g === 300 && Math.abs(t.gcase.scaled.cal - 709) <= 2))
+      findings.push(`photo-describe: typing grams did not rescale the item (${JSON.stringify(t.gcase && t.gcase.scaled)}, expected 300g/709cal)`);
+    if (!(t.gcase && t.gcase.typedWins && t.gcase.typedWins.cal === 400))
+      findings.push(`photo-describe: a typed calorie was overwritten by the grams rescale (${JSON.stringify(t.gcase && t.gcase.typedWins)}, expected 400)`);
+    if (!(t.gcase && t.gcase.calOnly && t.gcase.calOnly.g === 220 && t.gcase.calOnly.cal === 450))
+      findings.push(`photo-describe: correcting only the calories disturbed the weight (${JSON.stringify(t.gcase && t.gcase.calOnly)})`);
+    if (errs.length)     findings.push(`photo-describe: page error — ${errs[0]}`);
+    if (!findings.some(f => f.startsWith('photo-describe:')))
+      console.log('photo-describe: you can tell it what you ordered, it says how sure it is, and correcting it once teaches it for good');
+    }
+
   // ── THE CAMERA HONOURS "NUMBERS OFF" ─────────────────────────────────────────────────────────
   // applyNutGentle hides a FIXED LIST of static element ids, and #nut-search-results — where the photo
   // card renders — was never one of them, so _renderPhotoMeal had no idea gentle mode existed. The

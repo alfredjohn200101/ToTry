@@ -1109,7 +1109,7 @@ async function handleMealPhoto(event){
   const base64 = dataUrl.split(',')[1];
   const mime = 'image/jpeg';
   try{
-      const prompt = 'This is a photo of a meal. Identify EACH distinct food/component SEPARATELY and estimate each one\'s nutrition for the portion actually shown — reason about portion size from visual cues (plate size, utensils, a hand). IMPORTANT: account for realistic cooking fats — oil, butter, dressings, sauces — even when they are not directly visible; these are the #1 reason photo calorie estimates run ~30% too low, so do NOT underestimate fat or portion size (lean toward realistic-to-generous, not optimistic). Return ONLY this JSON, no markdown: {"meal":"short overall name for the meal","items":[{"food":"one item\'s name","portion":"estimated portion, e.g. ~180g or 1 cup","cal":number,"pro":number,"carb":number,"fat":number}],"assumptions":"1 short sentence on what you assumed, incl. any hidden fat you added","confidence":"high|medium|low"}. List 1 to 8 items. If this is not food, return {"error":"no food"}.';
+      const prompt = _mealPrompt(_pmPendingDescribe);
       const {data, error} = await Promise.race([
         // 500. This call bypasses api(), so it never saw the floor raised there — and its prompt asks for a
         // NAME plus an ITEMS ARRAY with a portion, calories and macros for each thing on the plate.
@@ -1144,12 +1144,28 @@ async function handleMealPhoto(event){
       // shape and the old single-macro shape (graceful if the model returns the older format).
       let _items = Array.isArray(parsed.items) ? parsed.items : null;
       if(!_items && parsed.cal!=null){ _items = [{ food: parsed.name||'Meal', portion:'as served', cal:parsed.cal, pro:parsed.pro, carb:parsed.carb, fat:parsed.fat }]; }
-      _items = (_items||[]).filter(it=>it && (it.food||it.name)).map(it=>({ food:String(it.food||it.name||'Item'), portion:String(it.portion||''), cal:Number(it.cal)||0, pro:Number(it.pro)||0, carb:Number(it.carb)||0, fat:Number(it.fat)||0, mult:1 }));
+      _items = (_items||[]).filter(it=>it && (it.food||it.name)).map(it=>({
+        food:String(it.food||it.name||'Item'),
+        // grams first: it is the number the model is worst at and the only one a person can correct by
+        // looking at the plate. The portion string is kept for display, defaulting to the grams.
+        grams:Number(it.grams)||0,
+        portion:String(it.portion || (Number(it.grams)>0 ? Math.round(Number(it.grams))+'g' : '')),
+        cal:Number(it.cal)||0, pro:Number(it.pro)||0, carb:Number(it.carb)||0, fat:Number(it.fat)||0, mult:1 }))
+        .map(_groundItemInTable);
             if(!_items.length){ foodFailed(res, 'I could not make out the food in that photo.',
         'A clearer, closer shot usually does it \u2014 or add the meal yourself.',
         'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()',
         'foodTypeItInstead()', 'Type what it was'); return; }
-      _photoMeal = { name: parsed.meal||parsed.name||'Your meal', items:_items, assumptions:parsed.assumptions||'', confidence:parsed.confidence||'', meal:(typeof currentMealSlot==='function'?currentMealSlot():null) };
+      _photoMeal = { name: parsed.meal||parsed.name||'Your meal', items:_items, assumptions:parsed.assumptions||'',
+        confidence:parsed.confidence||'', meal:(typeof currentMealSlot==='function'?currentMealSlot():null),
+        low:Number(parsed.cal_low)||0, high:Number(parsed.cal_high)||0,
+        describe:_pmPendingDescribe||'',
+        // The image is held IN MEMORY ONLY so "tell it what this is" can re-ask without making the
+        // person photograph their dinner twice. Deliberately never written to storage — a 1280px
+        // base64 frame is ~300KB and totry_ keys are already close enough to the quota that the app
+        // has a "Storage full" path.
+        __img:{ b64:base64, mime:mime } };
+      _pmPendingDescribe = '';
       _renderPhotoMeal();
     }catch(err){
       console.error('meal photo failed', err);
@@ -1158,6 +1174,163 @@ async function handleMealPhoto(event){
         'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()',
         'foodTypeItInstead()', 'Type what it was');
     }
+}
+
+// The words a person types about their own plate, held until the next estimate asks for them.
+let _pmPendingDescribe = '';
+// TELL IT WHAT YOU ORDERED. A photo cannot see what is under the meat, how much of it there is, or
+// what a restaurant put in the sauce — Cal AI's own docs admit the photo path fails on exactly this,
+// and the NIH study found every app in this category running a third low. The person sitting in front
+// of the plate knows. This is the cheapest accuracy in the whole feature: their words are treated as
+// authoritative and the photo is demoted to judging quantity.
+async function _pmDescribe(){
+  const el = document.getElementById('pm-describe');
+  const words = ((el && el.value) || '').trim();
+  if(!words){ if(typeof showToast==='function') showToast('Tell me what it is', 'e.g. "open plate gyros, large, mixed meat".'); return; }
+  if(!_photoMeal || !_photoMeal.__img){
+    // No frame in memory (a reload, or they came from search) — the words alone are still worth more
+    // than nothing, so hand them to the text estimator rather than refusing.
+    if(typeof estimateMealMacros === 'function') return estimateMealMacros(words);
+    return;
+  }
+  const img = _photoMeal.__img;
+  _pmPendingDescribe = words;
+  const res = document.getElementById('nut-search-results');
+  if(res && typeof foodWorking === 'function') foodWorking(res, 'Looking again, with your words');
+  try{
+    // BOUNDED, like the first photo call above it. sb.functions.invoke is a fetch this app does not
+    // own: on a stalled connection it never settles, so the catch never runs and the waiting state
+    // spins for good. Re-asking with words is the same size of job as the first look, so the same 25s.
+    const { data, error } = await Promise.race([
+      sb.functions.invoke('ai-proxy', { body:{
+        action:'vision', prompt:_mealPrompt(words), image_base64:img.b64, image_mime:img.mime, max_tokens:4000 } }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('Timed out')), 25000)),
+    ]).catch(e => ({ error:e }));
+    if(error || !data?.text) throw new Error('no answer');
+    const mm = data.text.match(/\{[\s\S]*\}/);
+    const parsed = mm ? JSON.parse(mm[0]) : null;
+    if(!parsed || parsed.error || !Array.isArray(parsed.items) || !parsed.items.length) throw new Error('unparsed');
+    _photoMeal.items = parsed.items.filter(it=>it && (it.food||it.name)).map(it=>({
+      food:String(it.food||it.name||'Item'), grams:Number(it.grams)||0,
+      portion:String(it.portion || (Number(it.grams)>0 ? Math.round(Number(it.grams))+'g' : '')),
+      cal:Number(it.cal)||0, pro:Number(it.pro)||0, carb:Number(it.carb)||0, fat:Number(it.fat)||0, mult:1 }))
+      .map(_groundItemInTable);
+    _photoMeal.name = parsed.meal || _photoMeal.name;
+    _photoMeal.assumptions = parsed.assumptions || '';
+    _photoMeal.confidence = parsed.confidence || _photoMeal.confidence;
+    _photoMeal.low = Number(parsed.cal_low)||0; _photoMeal.high = Number(parsed.cal_high)||0;
+    _photoMeal.describe = words;
+    if(typeof haptic==='function') haptic('success');
+  }catch(_){
+    if(typeof showToast==='function') showToast('Could not read that back', 'Your words are kept — fix any item by hand and it still logs.');
+    _photoMeal.describe = words;
+  }
+  _pmPendingDescribe = '';
+  _renderPhotoMeal();
+}
+// AND LOOK IT UP. For a named dish from a real place — the going-out case — the web knows more than any
+// photo does. This uses the free web-grounded text path that already exists in ai-proxy (Gemini
+// grounding, OpenRouter :online), so it costs nothing and needs no new provider.
+async function _pmWebLookup(){
+  const words = ((_photoMeal && _photoMeal.describe) || (document.getElementById('pm-describe')||{}).value || '').trim();
+  if(!words){ if(typeof showToast==='function') showToast('Name the dish first', 'Tell me what you ordered and I will look it up.'); return; }
+  const res = document.getElementById('nut-search-results');
+  if(res && typeof foodWorking === 'function') foodWorking(res, 'Looking it up');
+  try{
+    const prompt = 'Find the real nutrition for this dish as it is actually served: "' + words.slice(0,300) + '". ' +
+      'Search for the restaurant\'s own published figures if it names one, otherwise a representative recipe for that dish at that size. ' +
+      'Break it into its components with the weight in GRAMS of each as served. Account for cooking oil, sauces and dressings, which published figures often include and photos never show. ' +
+      'Return ONLY this JSON, no markdown: {"meal":"short name","items":[{"food":"component","grams":number,"portion":"e.g. 1 cup","cal":number,"pro":number,"carb":number,"fat":number}],"cal_low":number,"cal_high":number,"assumptions":"1 sentence incl. the source you used","confidence":"high|medium|low"}.';
+    // 35s, not 25: measured against the live chain, a grounded lookup for "open plate gyros, large,
+    // mixed meat" took 16.8s end to end — a web search plus a 4000-token generation is genuinely slower
+    // than reading a photo, and cutting it off at 25 would fail the case it exists for. Bounded all the
+    // same, because unbounded is how a spinner becomes permanent.
+    const { data, error } = await Promise.race([
+      sb.functions.invoke('ai-proxy', { body:{
+        messages:[{ role:'user', content:prompt }], max_tokens:4000, web_search:true } }),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('Timed out')), 35000)),
+    ]).catch(e => ({ error:e }));
+    if(error || !data?.text) throw new Error('no answer');
+    const mm = data.text.match(/\{[\s\S]*\}/);
+    const parsed = mm ? JSON.parse(mm[0]) : null;
+    if(!parsed || !Array.isArray(parsed.items) || !parsed.items.length) throw new Error('unparsed');
+    _photoMeal = _photoMeal || { meal:(typeof currentMealSlot==='function'?currentMealSlot():null) };
+    _photoMeal.items = parsed.items.filter(it=>it && (it.food||it.name)).map(it=>({
+      food:String(it.food||it.name||'Item'), grams:Number(it.grams)||0,
+      portion:String(it.portion || (Number(it.grams)>0 ? Math.round(Number(it.grams))+'g' : '')),
+      cal:Number(it.cal)||0, pro:Number(it.pro)||0, carb:Number(it.carb)||0, fat:Number(it.fat)||0, mult:1 }))
+      .map(_groundItemInTable);
+    _photoMeal.name = parsed.meal || words.slice(0,40);
+    _photoMeal.assumptions = parsed.assumptions || '';
+    _photoMeal.confidence = parsed.confidence || 'medium';
+    _photoMeal.low = Number(parsed.cal_low)||0; _photoMeal.high = Number(parsed.cal_high)||0;
+    _photoMeal.describe = words; _photoMeal.__web = true;
+    if(typeof haptic==='function') haptic('success');
+  }catch(_){
+    if(typeof showToast==='function') showToast('Nothing solid came back', 'The web did not have it. Your words are kept — adjust by hand.');
+  }
+  _renderPhotoMeal();
+}
+
+// ── WHAT THE MODEL IS TOLD, IN ONE PLACE ───────────────────────────────────────────────────────
+// The photo, the words the person typed, and a web lookup all end up asking the same question, so they
+// share one prompt. Two findings shaped it:
+//  · Nutrition5k (Thames et al., CVPR 2021) measures the halves separately: getting nutrient DENSITY
+//    from an image is ~9.5% error, getting MASS is ~29.5%, and asking for both at once is the paper's
+//    WORST configuration at 26.1%. So grams are asked for explicitly and resolved against the 77-food
+//    table already in this bundle wherever it matches — the model is left the job it is good at.
+//  · ACETADA (arXiv 2507.07048, 806 dietitian-verified images) measured CONTEXT against the same
+//    photos: Gemini's calorie error fell 211 -> 170 kcal and portion error by ~53g. Every best result
+//    included a timestamp or a location. So the meal slot, the hour and this person's own last portion
+//    of a food by that name go in — and nothing else about them does.
+// WHAT IS DELIBERATELY NOT SENT: bodyweight, sex, calorie target. The photo already leaves the device;
+// the body behind it does not need to. nutPromptBlock() keeps the same rule for the text chain.
+function _mealPromptCtx(){
+  const bits = [];
+  try{
+    const slot = (typeof currentMealSlot==='function') ? currentMealSlot() : null;
+    if(slot) bits.push('This is their ' + slot + '.');
+    bits.push('Local time is ' + new Date().toLocaleTimeString('en-AU',{hour:'numeric',minute:'2-digit'}) + '.');
+    // Their OWN last portion of a food by this name is the single most useful prior available, and it
+    // costs nothing — rememberRecentFood already stores it.
+    const rec = (ls('totry_recent_foods') || []).filter(f => f && f.name).slice(0, 8);
+    if(rec.length) bits.push('Foods this person logs often, with the portion they usually record: ' +
+      rec.map(f => f.name + (f.servings && f.servings[0] && f.servings[0].gramsEquiv ? ' (~' + f.servings[0].gramsEquiv + 'g)' : '')).join('; ') + '.');
+  }catch(_){ }
+  return bits.join(' ');
+}
+function _mealPrompt(describe){
+  const ctx = _mealPromptCtx();
+  return (describe
+      ? 'A person photographed a meal AND told you exactly what it is. THEIR WORDS ARE AUTHORITATIVE — they can see the plate and you cannot. Use the photo only to judge how much of it there is. What they said: "' + String(describe).slice(0,300) + '". '
+      : 'This is a photo of a meal. ') +
+    'Identify EACH distinct food/component SEPARATELY. For each, give the weight in GRAMS of the portion actually shown — reason from visual cues (plate size, utensils, a hand). Grams are the number that matters; get those right and the rest follows. ' +
+    'IMPORTANT: account for realistic cooking fats — oil, butter, dressings, sauces — even when they are not directly visible; these are the #1 reason photo calorie estimates run ~30% too low, so do NOT underestimate fat or portion size (lean toward realistic-to-generous, not optimistic). ' +
+    (ctx ? 'Context: ' + ctx + ' ' : '') +
+    'Return ONLY this JSON, no markdown: {"meal":"short overall name for the meal","items":[{"food":"one item\'s name","grams":number,"portion":"how you describe that portion, e.g. 1 cup","cal":number,"pro":number,"carb":number,"fat":number}],"cal_low":number,"cal_high":number,"assumptions":"1 short sentence on what you assumed, incl. any hidden fat you added","confidence":"high|medium|low"}. ' +
+    'cal_low and cal_high are an honest range for the WHOLE meal — published per-dish error for this task is around 40%, so do not pretend to more precision than that. List 1 to 8 items. If this is not food, return {"error":"no food"}.';
+}
+// GRAMS FROM THE MODEL, NUTRITION FROM THE TABLE. COMMON_FOODS_RAW is 77 foods, per-100g, already in
+// the bundle and already fuzzy-matched offline — it is the "standard portion prior" Cal AI's founders
+// describe as how they solved portion size, and it has been sitting here unused by the camera.
+// A miss is silent and leaves the model's own numbers exactly as before, because most plates will miss.
+function _groundItemInTable(it){
+  try{
+    if(!it || !(Number(it.grams) > 0)) return it;
+    if(typeof searchCommonFoods !== 'function') return it;
+    const hit = (searchCommonFoods(it.food, 1) || [])[0];
+    if(!hit || !hit.per100 && !(hit.cal > 0)) return it;
+    const base = (typeof applyFoodOverride === 'function') ? applyFoodOverride(Object.assign({}, hit)) : hit;
+    const g = Number(it.grams);
+    const per = k => (Number(base[k]) || 0) * g / 100;
+    // Only when the table genuinely has calories for it, or we would zero a real item.
+    if(!(per('cal') > 0)) return it;
+    return Object.assign({}, it, {
+      cal: Math.round(per('cal')), pro: Math.round(per('pro')*10)/10,
+      carb: Math.round(per('carb')*10)/10, fat: Math.round(per('fat')*10)/10,
+      __grounded: hit.name,
+    });
+  }catch(_){ return it; }
 }
 
 // ── PHOTO MEAL — per-item, editable (beats Cal AI's single-blob) ──────────────────────────────────
@@ -1194,6 +1367,14 @@ function _renderPhotoMeal(){
         // vision budget to 4000 makes fuller item names — with inches and quotes in them — more likely.
         // _escFew is what every other value="…" in the app uses.
         '<input id="pm-e-name" value="'+_escFew(it.food)+'" placeholder="What is it?" autocomplete="off" style="width:100%;box-sizing:border-box;margin-bottom:6px;font-size:16px;padding:9px">'+
+        // A SCALE BEATS EVERY MODEL, so the person who has one should be able to just say so. Typing
+        // grams rescales that item from the density already established for it — by the food table, by
+        // their own saved correction, or by the estimate itself — which is one honest number instead of
+        // four guessed ones. Nobody has to weigh anything; the box is simply there for whoever can.
+        '<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center">'+
+          '<input id="pm-e-grams" type="number" inputmode="decimal" value="'+(it.grams>0?R(it.grams*m):'')+'" placeholder="grams" style="flex:1;min-width:0;padding:9px;font-size:16px">'+
+          '<div style="font-size:11px;color:var(--tx3);line-height:1.35;flex:1.6">weighed it? type the grams and I\'ll do the rest</div>'+
+        '</div>'+
         '<div style="display:flex;gap:6px;margin-bottom:6px">'+
           '<input id="pm-e-cal" type="number" inputmode="numeric" value="'+R(it.cal*m)+'" placeholder="cal" style="flex:1.3;min-width:0;padding:9px;font-size:16px">'+
           '<input id="pm-e-pro" type="number" inputmode="numeric" value="'+R(it.pro*m)+'" placeholder="P" style="flex:1;min-width:0;padding:9px;font-size:16px">'+
@@ -1232,6 +1413,19 @@ function _renderPhotoMeal(){
       rows+
       // Add a missed item + the hidden-fat one-tap. Photo AI runs ~30% low mainly because cooking oil,
       // butter and dressings are invisible in a 2D image — one tap puts that back. Nobody else does this.
+      // TELL IT WHAT YOU ORDERED. The going-out case: a photo cannot see how much meat is under the
+      // salad or what the kitchen put in the sauce, and the person sitting in front of it can. Their
+      // words are treated as authoritative and the photo is demoted to judging quantity — which is the
+      // half a model is actually good at. "Look it up" then reaches the free web-grounded text path for
+      // a named dish from a real place.
+      '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)">'+
+        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">You can see it — I can\'t</div>'+
+        '<input id="pm-describe" value="'+_escFew(pm.describe||'')+'" placeholder="e.g. open plate gyros, large, mixed meat" autocomplete="off" style="width:100%;box-sizing:border-box;font-size:16px;padding:9px;margin-bottom:6px">'+
+        '<div style="display:flex;gap:6px">'+
+          '<button onclick="_pmDescribe()" style="flex:1;padding:8px;border-radius:8px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:11.5px;cursor:pointer">Use my words</button>'+
+          '<button onclick="_pmWebLookup()" title="Search the web for this dish as it is actually served" style="flex:1;padding:8px;border-radius:8px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:11.5px;cursor:pointer">🔎 Look it up</button>'+
+        '</div>'+
+      '</div>'+
       '<div style="display:flex;gap:6px;margin-top:8px">'+
         '<button onclick="_pmAddItem()" style="flex:1;padding:8px;border-radius:8px;background:var(--bg3);border:1px dashed var(--bd);color:var(--tx2);font-size:11.5px;cursor:pointer">＋ Add an item</button>'+
         '<button onclick="_pmAddFat()" title="Cooking oil, butter and dressings don\'t show in a photo — this is why AI apps read low" style="flex:1;padding:8px;border-radius:8px;background:var(--bg3);border:1px dashed var(--bd);color:var(--tx2);font-size:11.5px;cursor:pointer">＋ Hidden fat</button>'+
@@ -1243,6 +1437,18 @@ function _renderPhotoMeal(){
                 : R(tot.cal)+' cal · P'+R(tot.pro)+' C'+R(tot.carb)+' F'+R(tot.fat))+
         '</div>'+
       '</div>'+
+      ((!_pmG && (pm.low>0 || pm.high>0) && pm.high>pm.low)
+        ? '<div style="font-family:DM Mono,monospace;font-size:9.5px;color:var(--tx3);text-align:right;margin-top:4px">likely '+R(pm.low)+'\u2013'+R(pm.high)+' cal'+(pm.__web?' \u00b7 from the web':'')+'</div>'
+        : '')+
+      // A LOW-CONFIDENCE ESTIMATE SHOULD SAY SO AND OFFER THE WAY OUT, not commit to a number quietly.
+      // This is v570's rule — the app stops saying what it cannot know — applied to the one screen that
+      // guesses hardest.
+      ((pm.confidence==='low')
+        ? '<div style="margin-top:10px;padding:10px;border-radius:10px;background:var(--bg3);border:1px solid var(--bd)">'+
+            '<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-bottom:8px">I am not confident about this one. If you know what it was, telling me beats me guessing.</div>'+
+            '<button onclick="document.getElementById(\'pm-describe\')&&document.getElementById(\'pm-describe\').focus()" style="width:100%;padding:9px;border-radius:8px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:12px;cursor:pointer">Tell me what it was</button>'+
+          '</div>'
+        : '')+
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin:12px 0 6px">Add to</div>'+
       '<div style="display:flex;gap:6px;margin-bottom:10px">'+
         meals.map(mm=>'<button onclick="_pmMeal(\''+mm[0]+'\')" style="flex:1;padding:8px 2px;border-radius:8px;border:1px solid '+(sel===mm[0]?'var(--go)':'var(--bd)')+';background:'+(sel===mm[0]?'var(--go)':'var(--bg3)')+';color:'+(sel===mm[0]?'#1a1505':'var(--tx2)')+';font-size:11px;cursor:pointer">'+mm[1]+' '+mm[2]+'</button>').join('')+
@@ -1264,9 +1470,50 @@ function _pmSaveEdit(i){
   const num=id=>{ const el=document.getElementById(id); const v=parseFloat(el&&el.value); return (isNaN(v)||v<0)?0:v; };
   const name=((document.getElementById('pm-e-name')||{}).value||'').trim();
   const it=_photoMeal.items[i];
+  const _wasName = it.food;
+  const _m0 = it.mult||1;
+  // What the four macro boxes were SHOWING when the form opened — captured before anything is
+  // overwritten, because "did they touch the macros?" is the whole question below and comparing a
+  // value to itself after the fact always answers yes.
+  const R0 = n => Math.round(n);
+  const _shown = { cal:R0(it.cal*_m0), pro:R0(it.pro*_m0), carb:R0(it.carb*_m0), fat:R0(it.fat*_m0) };
+  const _gOld = Number(it.grams)*_m0, _gNew = num('pm-e-grams');
+  const _f = { cal:num('pm-e-cal'), pro:num('pm-e-pro'), carb:num('pm-e-carb'), fat:num('pm-e-fat') };
+  const _macrosUntouched = R0(_f.cal)===_shown.cal && R0(_f.pro)===_shown.pro &&
+                           R0(_f.carb)===_shown.carb && R0(_f.fat)===_shown.fat;
+
   it.food = name || it.food || 'Item';
-  it.cal=num('pm-e-cal'); it.pro=num('pm-e-pro'); it.carb=num('pm-e-carb'); it.fat=num('pm-e-fat');
-  it.mult=1; it.portion=it.portion||'as entered'; it.__edited=true;
+  it.cal=_f.cal; it.pro=_f.pro; it.carb=_f.carb; it.fat=_f.fat;
+
+  // WEIGHED IT. A scale beats every model there is, so if the grams changed and the macro boxes were
+  // left alone, the person is telling us the SIZE and not the numbers — rescale from the density
+  // already established for this food rather than making them do the arithmetic. If they edited the
+  // macros as well, those win: a typed macro is the more specific claim and must not be overwritten.
+  if(_gNew > 0 && Math.abs(_gNew - _gOld) > 0.5){
+    let per = null;
+    if(_gOld > 0 && _shown.cal > 0){
+      per = { cal:_shown.cal/_gOld, pro:_shown.pro/_gOld, carb:_shown.carb/_gOld, fat:_shown.fat/_gOld };
+    } else {
+      // Nothing to scale from — try the offline food table, which is per-100g and needs no network.
+      const g = _groundItemInTable({ food:it.food, grams:_gNew, cal:0, pro:0, carb:0, fat:0 });
+      if(g && g.cal > 0) per = { cal:g.cal/_gNew, pro:g.pro/_gNew, carb:g.carb/_gNew, fat:g.fat/_gNew };
+    }
+    if(per && per.cal > 0 && _macrosUntouched){
+      it.cal = Math.round(per.cal*_gNew);
+      it.pro = Math.round(per.pro*_gNew*10)/10;
+      it.carb= Math.round(per.carb*_gNew*10)/10;
+      it.fat = Math.round(per.fat*_gNew*10)/10;
+    }
+    it.grams = _gNew; it.portion = Math.round(_gNew)+'g'; it.__weighed = true;
+  } else if(_gNew > 0){
+    it.grams = _gNew; it.portion = Math.round(_gNew)+'g';
+  }
+
+  it.mult=1;
+  it.portion = it.portion || 'as entered';
+  it.__edited=true;
+  // A renamed item is no longer the table row it was matched to.
+  if(name && name !== _wasName) it.__grounded = null;
   _photoMeal._editing=null;
   if(typeof haptic==='function') haptic('tap');
   _renderPhotoMeal();
@@ -1308,6 +1555,28 @@ function _pmLog(){
   const R=n=>Math.round(n);
   items.forEach(it=>{ const m=it.mult||1; log[today].push({ id:Date.now()+Math.floor(Math.random()*100000), name:it.food||'Item', brand:'', serving:(it.portion||'1 serving')+(m!==1?' ×'+m:''), qty:1, ...nutPick(it, m), meal:meal, source:'AI photo', ts:(typeof nutStampFor==='function'?nutStampFor():new Date().toISOString()) }); });
   ls('totry_nutlog', log);
+  // REMEMBER WHAT WAS ON THE PLATE. _pmLog wrote straight into the diary and never told the rest of the
+  // app, so a person could photograph their usual chicken and rice, correct the rice from 300 to 200,
+  // and the next day the app had learned nothing — not the food, not the correction, not the portion.
+  // They photograph it again and spend another vision call on a worse answer than the one they already
+  // fixed. rememberRecentFood puts it in Recents (one tap, no AI, works offline); a CORRECTED item also
+  // writes a per-100g override, which _quickServing already consults everywhere else in this file.
+  items.forEach(it=>{
+    try{
+      const m = it.mult||1, g = Number(it.grams)*m;
+      const food = { name:it.food||'Item', brand:'', source:'AI photo',
+                     per100:false, cal:it.cal*m, pro:it.pro*m, carb:it.carb*m, fat:it.fat*m,
+                     servings: g>0 ? [Object.assign({ name:(it.portion||Math.round(g)+'g'), gramsEquiv:Math.round(g) },
+                                     nutPick(it, m))] : null };
+      if(typeof rememberRecentFood==='function') rememberRecentFood(food);
+      // Their correction becomes the truth for this food, everywhere — but only with grams to hang it
+      // on, or a per-100 figure would be invented from a portion nobody measured.
+      if(it.__edited && g > 0 && typeof saveFoodOverride==='function'){
+        const per100 = k => Math.round(((Number(it[k])||0) * m) / g * 100 * 10) / 10;
+        saveFoodOverride(food, { cal:Math.round(per100('cal')), pro:per100('pro'), carb:per100('carb'), fat:per100('fat') });
+      }
+    }catch(_){ }
+  });
   const n=items.length; _photoMeal=null;
   if(typeof haptic==='function') haptic('success');
   if(typeof showToast==='function') showToast('Logged ✓', n+' item'+(n===1?'':'s')+' added to '+meal);
