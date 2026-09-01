@@ -128,6 +128,27 @@ r = await call({ messages: [{ role: 'user', content: 'hi' }] });
 ok(!calls.some(c => c.who === 'cloudflare'), 'half-configured cloudflare is never called at all');
 ok(r.body.provider === 'anthropic', 'and the chain still reaches an answer');
 
+// ── a provider that answers on its THIRD id is also telling you two ids are dead ────────────────
+// The winner was reported and the candidates burned getting to it were not, so a list could rot down
+// to its last entry with nothing ever saying so — which is how every previous endpoint rot survived.
+reset();
+const _seen = [];
+behaviour.groq = (model) => { _seen.push(model);
+  if (_seen.length < 3) return { ok: false, status: 404, json: async () => ({ error: { message: 'model_not_found' } }), text: async () => '' };
+  return { ok: true, status: 200, json: async () => ({ choices: [{ message: { content: 'from groq' } }] }) }; };
+behaviour.gemini = 'fail';
+r = await call({ messages: [{ role: 'user', content: 'hi' }] });
+ok(r.body.provider === 'groq', 'a provider still answers after losing two candidates');
+ok(Array.isArray(r.body.burned) && r.body.burned.length === 2,
+   'and the two dead ids are NAMED in the response (' + JSON.stringify(r.body.burned) + ')');
+
+// ── vision can be addressed provider by provider, or it can never be checked ────────────────────
+reset({ MISTRAL_API_KEY: 'm' });
+r = await call({ action: 'vision', prompt: 'x', image_base64: 'AAAA', prefer: 'mistral' });
+ok(r.body.provider === 'mistral-vision',
+   'prefer reaches a vision provider that gemini would otherwise always answer in front of');
+ok(!calls.some(c => c.who === 'gemini'), 'and it goes FIRST, not merely eventually');
+
 // ── the food camera has five providers, and each speaks its own dialect ─────────────────────────
 // Vision was gemini -> openrouter -> 503. One bad afternoon at either took the camera out.
 reset({ MISTRAL_API_KEY: 'm', NVIDIA_API_KEY: 'nv' });

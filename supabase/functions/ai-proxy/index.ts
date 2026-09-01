@@ -63,7 +63,10 @@ const MODELS = {
   // Mistral La Plateforme — a STANDING free tier, no card, verified 1 Sep 2026 against the vendor's
   // own console docs. Pixtral is NOT here on purpose: both pixtral ids were retired (12b on 31 Dec
   // 2025, large on 31 May 2026) and shipping one would be a wasted candidate on the way past.
-  mistral:     ["ministral-8b-2512", "mistral-small-2603", "ministral-14b-2512"],
+  // mistral-small-2603 first because it is the one that actually answered when probed live on
+  // 1 Sep 2026 — ministral-8b-2512 failed and the list fell through to it, which is the list working
+  // as designed but costs a round trip on every call until the order is corrected.
+  mistral:     ["mistral-small-2603", "ministral-14b-2512", "ministral-8b-2512"],
   mistralVision: ["ministral-14b-2512", "ministral-8b-2512", "mistral-large-2512"],
   // Cloudflare Workers AI — 10,000 Neurons/day, standing, resets 00:00 UTC, and on the Free plan it
   // HARD STOPS rather than billing. Two secrets, because the account id lives in the URL.
@@ -105,14 +108,20 @@ async function fetchWithTimeout(url, options, ms) {
 // Returns the first success, or the LAST error so the caller still reports something meaningful.
 async function tryModels(models, attempt) {
   let last = { error: true, status: 500, body: { message: "no models configured" } };
+  // Which candidates were burned on the way to the winner. A provider that answers on its THIRD id is
+  // working AND telling you two of its ids are dead — that second half was invisible, so a list could
+  // rot down to its last entry without anything ever saying so.
+  const burned = [];
   for (const model of models) {
     try {
       const res = await attempt(model);
-      if (res && res.text) return res;
+      if (res && res.text) return burned.length ? { ...res, burned } : res;
       if (res && res.skip) return res;
       last = res || last;
+      burned.push(model);
     } catch (e) {
       last = { error: true, status: 500, body: { message: String(e?.message || e) } };
+      burned.push(model);
     }
   }
   return last;
@@ -528,16 +537,23 @@ Deno.serve(async (req) => {
       // took the food camera out entirely. It now walks every configured provider and REPORTS what it
       // tried — an unconfigured one skips silently, a broken one is named in `attempts`, which is the
       // only way a dead link ever surfaces instead of hiding behind the next.
-      const visionChain = [
+      let visionChain = [
         ["gemini", callGeminiVision], ["openrouter", callOpenRouterVision],
         ["mistral", callMistralVision], ["cloudflare", callCloudflareVision],
         ["nvidia", callNvidiaVision],
       ];
+      // THE SAME `prefer` THE TEXT PATH HAS. Without it gemini always answers first, so the four links
+      // behind it can never be exercised from outside — and an unexercisable fallback is indistinguishable
+      // from a dead one until the day it is needed. That is how all four previous endpoint rots survived.
+      if (body.prefer && visionChain.some(([n]) => n === body.prefer)) {
+        visionChain = [...visionChain.filter(([n]) => n === body.prefer),
+                       ...visionChain.filter(([n]) => n !== body.prefer)];
+      }
       const vAttempts = []; let lastBody = null;
       for (const [vName, vFn] of visionChain) {
         const r = await vFn(visionArgs);
         if (r && r.skip) { vAttempts.push({ provider: vName, skipped: true }); continue; }
-        if (r && r.text) return json({ text: r.text, provider: r.provider, model: r.model, attempts: vAttempts });
+        if (r && r.text) return json({ text: r.text, provider: r.provider, model: r.model, attempts: vAttempts, burned: r.burned });
         vAttempts.push({ provider: vName, status: r?.status, error: extractErrorMsg(r?.body) });
         lastBody = r?.body || lastBody;
       }
@@ -569,7 +585,7 @@ Deno.serve(async (req) => {
             if (!bestTruncated || res.text.length > bestTruncated.text.length) bestTruncated = { text: res.text, provider: res.provider, model: res.model };
             continue;
           }
-          return json({ text: res.text, provider: res.provider, model: res.model, attempts });
+          return json({ text: res.text, provider: res.provider, model: res.model, attempts, burned: res.burned });
         }
         attempts.push({ provider: name, status: res.status, error: extractErrorMsg(res.body) });
       } catch (e) {
