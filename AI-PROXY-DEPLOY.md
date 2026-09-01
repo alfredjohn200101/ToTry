@@ -2,7 +2,42 @@
 
 This is everything to get the backend matching the app (cache v128).
 
-## ⚠ WHY THE REDEPLOY MATTERS — measured against the LIVE proxy, 28 Aug 2026
+## ✅ DEPLOYED AND VERIFIED LIVE — 31 Aug 2026
+
+Both functions were redeployed on 31 Aug 2026 and probed against the live project. Everything the
+section below describes as broken is now fixed IN PRODUCTION:
+
+| probe | result |
+|---|---|
+| `ai-proxy` text — meal estimate at `max_tokens: 700` | complete JSON, 2.75s, gemini-2.5-flash, no fallbacks |
+| `ai-proxy` vision — the food camera path | complete JSON at `max_tokens: 500`, 2.26s |
+| `key-proxy` FatSecret token | HTTP 200, access token issued |
+| `key-proxy` ESV / USDA | both true |
+| `push_subscriptions` column types | already `text`/`text`/`jsonb`/`jsonb` — the boolean migration was NEVER needed |
+
+700 tokens is the exact budget that used to return 74 characters ending mid-number. The food camera
+works.
+
+**THE FATSECRET `invalid_client` WAS NOT (ONLY) OUR SUBSTRING BUG.** After the substring fix shipped it
+still failed, and the cause was FatSecret's own console: the credentials it shows you most readily are
+the **OAuth 1.0 Consumer Key/Secret**, and this proxy speaks **OAuth 2.0**
+(`oauth.fatsecret.com/connect/token`, `grant_type=client_credentials`, Basic `id:secret`). The OAuth 2.0
+pair is a **Client ID + Client Secret**, and the secret is shown ONCE at creation — a dashboard showing
+a Client ID with no secret beside it means you must regenerate it. Feeding the 1.0 Consumer pair into
+the 2.0 endpoint returns `invalid_client` forever, however carefully it is copied.
+
+Known cosmetic wart: `{"provider":"status"}` reports `working_pair: null` even when the credentials
+work, because `fsWorkingPair` is cached per warm instance and the status path never performs an
+exchange. Trust `{"provider":"fatsecret"}` (a 200 with an access_token), not the status field.
+
+**What is still true:** Gemini is the only verified link in the AI chain. Groq and OpenRouter cannot be
+tested from the client — the order comes from `AI_PROVIDER_ORDER` with no per-request override — so set
+that env var to `groq`, probe, then `openrouter`, then set it back. Until one of them is confirmed, a
+single Gemini outage takes the food camera, the companion and the coach together.
+
+---
+
+## ⚠ WHY THE REDEPLOY MATTERED — measured against the LIVE proxy, 28 Aug 2026 (HISTORICAL)
 
 The deployed `ai-proxy` is behind `supabase/functions/ai-proxy/index.ts` in this repo, and the gap is
 what broke the AI food estimate for every real meal:

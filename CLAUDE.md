@@ -120,7 +120,20 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    links hand off correctly). What is left is yours and cannot be automated: archive → TestFlight,
    the age rating, the App Privacy form, and testing barcode / Face ID / haptics / notifications on
    real hardware. `npm run preflight` checks the rest before you archive.
-2. **Two edge functions need redeploying — and this is what breaks the food camera.** Measured
+2. **DONE (31 Aug 2026) — both edge functions are deployed and verified live.** The food camera works:
+   a meal estimate at `max_tokens: 700` now returns complete JSON in 2.75s, and the vision path in
+   2.26s. FatSecret issues a token (the residual `invalid_client` was NOT our substring bug — this
+   proxy speaks OAuth 2.0 and FatSecret's console offers you the OAuth 1.0 Consumer pair; you need the
+   Client ID + Client Secret, and the secret is shown once at creation). ESV and USDA are live, and the
+   `push_subscriptions` boolean migration turned out never to have been needed — the columns were
+   already `text`/`jsonb`. **What is left: Gemini is still the only VERIFIED provider.** The order comes
+   from `AI_PROVIDER_ORDER` with no per-request override, so to test the fallbacks set it to `groq`,
+   probe, then `openrouter`, then restore. One Gemini outage still takes the food camera, the companion
+   and the coach together. See AI-PROXY-DEPLOY.md, which now opens with the measured results.
+
+   <details><summary>The original entry, kept because its measurements explain the fix</summary>
+
+   **Two edge functions needed redeploying — and this is what broke the food camera.** Measured
    against the LIVE proxy on 28 Aug 2026: the deployed `ai-proxy` does not set Gemini's
    `thinkingConfig.thinkingBudget: 0`, and 2.5 Flash spends the token budget reasoning before it
    writes anything — so at `max_tokens: 700` a meal estimate returned 74 characters ending mid-number
@@ -135,6 +148,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    SECRET); `ai-proxy` — identity came from a client-supplied field, so the public anon key could
    spend someone else's quota. Also the `push_subscriptions` column types in AI-PROXY-DEPLOY.md
    (they were `boolean`; the app writes a time string and an array), with the migration written out.
+   </details>
 3. **The monolith split is FINISHED** — 42 modules, largest 4.9k lines (`03-person.js`), and
    `src/app/app.js` is down to 33 lines. Nothing is left to slice off the front. If you ever split
    a large module further, use `scripts/extract-prefix.js` and run `node scripts/build-index.js
