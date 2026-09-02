@@ -152,7 +152,26 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     }, trad);
     if (r.missing) { findings.push(`${trad} reader: openReader() does not exist`); }
     else {
-      if (r.chars < 400) findings.push(`${trad} reader renders almost nothing (${r.chars} chars)`);
+      // ONE FLOOR CANNOT GUARD FOUR READERS OF DIFFERENT SHAPES. This was `r.chars < 400` for every
+      // tradition, and the Gita reader — one verse, because /slok/ ships 31.5KB per verse and a chapter
+      // would be ~2.2MB — cleared it by 21 characters at 421 while the Qur'an reader returned 126,788.
+      // A global floor that a whole surah passes by three orders of magnitude is not measuring the
+      // Qur'an reader at all, and the one reader it was tight against, it passed anyway. Measured
+      // 2 Sep 2026: islam 126788 · hinduism 1223 · buddhism 2863 · secular 12570. Floors sit well under
+      // each so a short surah or a short chapter is not a false alarm, but a stub cannot pass.
+      const CONTRACT = {
+        islam:    { floor:  600, live: /[\u0600-\u06FF]/,          needs: 'Arabic script' },
+        hinduism: { floor:  700, live: /BHAGAVAD GITA \d+\.\d+/i, needs: 'a chapter.verse reference' },
+        buddhism: { floor:  900, live: null, needs: null },
+        secular:  { floor: 2000, live: null, needs: null },
+      }[trad] || { floor: 400, live: null, needs: null };
+      if (r.chars < CONTRACT.floor)
+        findings.push(`${trad} reader renders almost nothing (${r.chars} chars, floor ${CONTRACT.floor})`);
+      // The bundled pool IS a pass when the network is gone — but then assert the fallback rendered,
+      // not the live contract, or an offline run fails for the wrong reason.
+      const onFallback = /Kept on your phone/i.test(r.text || '');
+      if (!onFallback && CONTRACT.live && !CONTRACT.live.test(r.text || ''))
+        findings.push(`${trad} reader is live but shows no ${CONTRACT.needs} — the text may have rendered without its own script`);
       {
         for (const word of ['Jesus', 'Christ', 'Bible', 'Psalm', 'Amen', 'Rosary', 'Eucharist']) {
           if (new RegExp('\\b' + word, 'i').test(r.text || '')) {
@@ -3685,6 +3704,39 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     }
     if (!findings.some(f => f.startsWith('gentle:')))
       console.log('gentle: numbers off leaves no calorie or macro figure anywhere on the rendered tab');
+  }
+
+  // ── the starter-target strip must name the target the person actually has ────────────────────
+  // The strip fires when a goal is not personalised (no _ts stamp) and prints a calorie figure. It
+  // printed defaultNutGoals().cal — the generic 2100/1900 — while the number in force, and the one on
+  // the ring six inches above it, is the stored goal. Anyone restoring a backup written before the
+  // _ts stamp, or syncing from an older device, read "Your 2100 cal target is a generic starting
+  // point" on a screen showing 2600. Being right that a target is generic does not license being
+  // wrong about what the target is.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { const s = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+      s('totry_onboarded', true); s('totry_name', 'Dan');
+      // No _ts — exactly what an older backup or an older device hands back.
+      s('totry_nut_goals', { cal: 2600, pro: 180 }); });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2700);
+    const strip = await page.evaluate(async () => {
+      go('nourish'); await new Promise(r => setTimeout(r, 1700));
+      const box = document.getElementById('nut-setup-nudge');
+      const t = box ? (box.innerText || '').replace(/\s+/g, ' ').trim() : '';
+      return { text: t, shown: !!t, saysTheirs: /2600/.test(t), saysDefault: /2100|1900/.test(t) };
+    });
+    await ctx.close();
+    if (!strip.shown)
+      findings.push('starter-strip: the seed did not raise the strip at all — this check proved nothing');
+    else if (strip.saysDefault)
+      findings.push(`starter-strip: names a target the person does not have — "${strip.text}" while their goal is 2600`);
+    else if (!strip.saysTheirs)
+      findings.push(`starter-strip: names no target at all — "${strip.text}"`);
+    if (!findings.some(f => f.startsWith('starter-strip:')))
+      console.log('starter-strip: the generic-target nudge names the number the person actually has');
   }
 
   // ── two controls must never share a pixel ────────────────────────────────────────────────────

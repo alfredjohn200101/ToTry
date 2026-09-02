@@ -117,6 +117,69 @@ let fsToken: string | null = null
 let fsExpiry = 0
 let fsWorkingPair: string | null = null   // names only — which id+secret FatSecret actually accepted
 
+// Acquiring a FatSecret token is shared now: the client can still ask for one (provider 'fatsecret'),
+// and this function also uses it itself to run searches (provider 'fatsecret_search'). Returns either
+// the token or the exact body+status the caller should pass back, so both paths report failures the
+// same way.
+type FsTokenResult =
+  | { ok: true; token: string }
+  | { ok: false; status: number; body: Record<string, unknown> }
+
+async function fsAcquireToken(): Promise<FsTokenResult> {
+  const pairs = fsPairs()
+  if (!pairs.length) return { ok: false, status: 501, body: { error: 'fatsecret not configured' } }
+  if (fsToken && Date.now() < fsExpiry) return { ok: true, token: fsToken }
+
+  // Try each pair until one is accepted. Only the LAST failure is reported, because a failure from
+  // a pair we were merely guessing at is noise — but every attempt is named (names only, never
+  // values) so the answer to "which of my four secrets are actually a pair" is in the response.
+  let r: Response | null = null, d: Record<string, unknown> = {}, tried: string[] = []
+  for (const p of pairs) {
+    tried.push(p.id.name + ' + ' + p.secret.name)
+    r = await fetch('https://oauth.fatsecret.com/connect/token', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Basic ' + btoa(p.id.value + ':' + p.secret.value),
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: 'grant_type=client_credentials&scope=basic',
+    })
+    d = await r.json().catch(() => ({}))
+    if (d.access_token) { fsWorkingPair = p.id.name + ' + ' + p.secret.name; break }
+    // invalid_client means THIS pair is not a pair — the next one might be. Anything else (scope,
+    // IP allowlist, 5xx) is not about pairing, so stop rather than hammer their OAuth endpoint.
+    if (d.error && d.error !== 'invalid_client') break
+  }
+  if (!d.access_token) {
+    fsWorkingPair = null
+    // Pass FatSecret's OWN reason through. Swallowing it meant "fatsecret token failed" with no way
+    // to tell apart the three real causes, and the credentials are found — so the fault is at their
+    // end, not in the wiring:
+    //   invalid_client        → the id and secret are not a matching pair (e.g. one rotated, one not)
+    //   invalid_scope         → 'basic' is not granted on this plan
+    //   403 / IP not allowed  → FatSecret allowlists server IPs per app, and Supabase edge functions
+    //                           have no fixed IP. This is the one that cannot be fixed from here; it
+    //                           needs the app's IP restriction turned OFF in the FatSecret console.
+    // An OAuth error body carries no credential, so this is safe to surface.
+    return {
+      ok: false,
+      status: 502,
+      body: {
+        error: 'fatsecret token failed',
+        status: r ? r.status : 0,
+        fatsecret_error: d.error || null,
+        fatsecret_description: d.error_description || null,
+        detail: typeof d === 'object' ? JSON.stringify(d).slice(0, 300) : String(d).slice(0, 300),
+        pairs_tried: tried,
+      },
+    }
+  }
+  fsToken = String(d.access_token)
+  // Expire a minute early so a token is never handed out on its last breath.
+  fsExpiry = Date.now() + (Math.max(60, Number(d.expires_in) || 3600) - 60) * 1000
+  return { ok: true, token: fsToken }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return json({ error: 'POST only' }, 405)
@@ -130,54 +193,42 @@ Deno.serve(async (req: Request) => {
     // Returns a short-lived access token rather than the secret. A leaked hour-long token is a very
     // different thing from a leaked permanent client secret.
     if (provider === 'fatsecret') {
-      const pairs = fsPairs()
-      if (!pairs.length) return json({ error: 'fatsecret not configured' }, 501)
-      if (fsToken && Date.now() < fsExpiry) return json({ access_token: fsToken })
+      const t = await fsAcquireToken()
+      return t.ok ? json({ access_token: t.token }) : json(t.body, t.status)
+    }
 
-      // Try each pair until one is accepted. Only the LAST failure is reported, because a failure from
-      // a pair we were merely guessing at is noise — but every attempt is named (names only, never
-      // values) so the answer to "which of my four secrets are actually a pair" is in the response.
-      let r: Response | null = null, d: Record<string, unknown> = {}, tried: string[] = []
-      for (const p of pairs) {
-        tried.push(p.id.name + ' + ' + p.secret.name)
-        r = await fetch('https://oauth.fatsecret.com/connect/token', {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Basic ' + btoa(p.id.value + ':' + p.secret.value),
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: 'grant_type=client_credentials&scope=basic',
-        })
-        d = await r.json().catch(() => ({}))
-        if (d.access_token) { fsWorkingPair = p.id.name + ' + ' + p.secret.name; break }
-        // invalid_client means THIS pair is not a pair — the next one might be. Anything else (scope,
-        // IP allowlist, 5xx) is not about pairing, so stop rather than hammer their OAuth endpoint.
-        if (d.error && d.error !== 'invalid_client') break
+    // ── FATSECRET SEARCH ─────────────────────────────────────────────────────────────────────────
+    // The search runs HERE, not in the browser. FatSecret's REST API sends no Access-Control-Allow-
+    // Origin header, and the Authorization header forces a preflight, so a browser fetch to it is
+    // blocked 100% of the time — measured against the live API on 2 Sep 2026. The app used to call it
+    // directly: every food search paid for a token exchange and a request that could never succeed,
+    // and the service worker turned the failure into a 503 in the console. CORS does not apply to a
+    // server, so the same call works fine from in here.
+    if (provider === 'fatsecret_search') {
+      const q = String(body.q || '').slice(0, 200)
+      if (!q) return json({ error: 'q required' }, 400)
+      const max = Math.min(50, Math.max(1, Number(body.max_results) || 8))
+
+      const run = async (token: string) => fetch(
+        'https://platform.fatsecret.com/rest/server.api?method=foods.search&search_expression=' +
+        encodeURIComponent(q) + '&format=json&max_results=' + max,
+        { headers: { 'Authorization': 'Bearer ' + token } },
+      )
+
+      let t = await fsAcquireToken()
+      if (!t.ok) return json(t.body, t.status)
+      let r = await run(t.token)
+      // A cached token can go stale between warm invocations. One retry on 401 with a fresh token,
+      // never a loop: if the second one is also rejected the fault is the credential, not the cache.
+      if (r.status === 401) {
+        fsToken = null
+        fsExpiry = 0
+        t = await fsAcquireToken()
+        if (!t.ok) return json(t.body, t.status)
+        r = await run(t.token)
       }
-      if (!d.access_token) {
-        fsWorkingPair = null
-        // Pass FatSecret's OWN reason through. Swallowing it meant "fatsecret token failed" with no way
-        // to tell apart the three real causes, and the credentials are found — so the fault is at their
-        // end, not in the wiring:
-        //   invalid_client        → the id and secret are not a matching pair (e.g. one rotated, one not)
-        //   invalid_scope         → 'basic' is not granted on this plan
-        //   403 / IP not allowed  → FatSecret allowlists server IPs per app, and Supabase edge functions
-        //                           have no fixed IP. This is the one that cannot be fixed from here; it
-        //                           needs the app's IP restriction turned OFF in the FatSecret console.
-        // An OAuth error body carries no credential, so this is safe to surface.
-        return json({
-          error: 'fatsecret token failed',
-          status: r ? r.status : 0,
-          fatsecret_error: d.error || null,
-          fatsecret_description: d.error_description || null,
-          detail: typeof d === 'object' ? JSON.stringify(d).slice(0, 300) : String(d).slice(0, 300),
-          pairs_tried: tried,
-        }, 502)
-      }
-      fsToken = String(d.access_token)
-      // Expire a minute early so a token is never handed out on its last breath.
-      fsExpiry = Date.now() + (Math.max(60, Number(d.expires_in) || 3600) - 60) * 1000
-      return json({ access_token: fsToken })
+      if (!r.ok) return json({ error: 'fatsecret search ' + r.status }, 502)
+      return json(await r.json())
     }
 
     // ── ESV ──────────────────────────────────────────────────────────────────────────────────────

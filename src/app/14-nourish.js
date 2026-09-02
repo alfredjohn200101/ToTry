@@ -26,23 +26,17 @@ async function keyProxy(payload, ms){
     return data;
   }catch(_){ return null; }
 }
-let fsToken=null,fsTokenExpiry=0;
-
-async function getFSToken(){
-  if(fsToken&&Date.now()<fsTokenExpiry)return fsToken;
-  // Returns a short-lived token instead of embedding a permanent client secret. Until key-proxy is
-  // deployed with FATSECRET_ID/FATSECRET_SECRET set this returns null, searchFatSecret() returns [] as
-  // it always did on failure, and searchFood() carries on with USDA, OpenFoodFacts and Nutritionix —
-  // it runs all four through Promise.allSettled, so three sources is a quieter result list, not a
-  // broken search.
-  const d = await keyProxy({ provider:'fatsecret' });
-  if(d && d.access_token){
-    fsToken = d.access_token;
-    fsTokenExpiry = Date.now() + 55*60*1000;   // the proxy already expires its own cache early
-    return fsToken;
-  }
-  return null;
-}
+// FatSecret is searched THROUGH key-proxy, never from here.
+// Their REST API sends no Access-Control-Allow-Origin header, and the Authorization header this call
+// needs forces a preflight, so a browser request to it is blocked 100% of the time — measured against
+// the live API on 2 Sep 2026. This used to run in the browser: every debounced keystroke-search paid
+// for a key-proxy token exchange and then a request that could not succeed, and sw.js turned the
+// failure into a `503 {"error":"offline"}` in the console. It never once returned a food.
+// The token no longer comes to the client at all — the search runs inside the function that holds it.
+// If key-proxy has not yet been redeployed with the fatsecret_search provider it answers "unknown
+// provider", keyProxy() returns null, and this returns [] exactly as it always did on failure:
+// searchFood() carries on with USDA, OpenFoodFacts and Nutritionix, which is a quieter result list,
+// not a broken search.
 // WHY THE FOOD PROVIDERS GET 6s AND A SCRIPTURE READER GETS 9s.
 // These four are not one request with three spares — they are fallbacks for each other, tried in
 // turn until one answers. So cutting a slow provider off early does not cost the person their
@@ -50,20 +44,18 @@ async function getFSToken(){
 // reader has no such alternative (its fallback is a smaller bundled text), which is why it waits
 // longer. And common foods are answered from the local table before any of this runs at all.
 async function searchFatSecret(query){
-  const token=await getFSToken();if(!token)return[];
-  try{
-    const r=await _fetchT('https://platform.fatsecret.com/rest/server.api?method=foods.search&search_expression='+encodeURIComponent(query)+'&format=json&max_results=8',6000,{headers:{'Authorization':'Bearer '+token}});
-    if(r.ok){const d=await r.json();const foods=d.foods?.food||[];
-      return(Array.isArray(foods)?foods:[foods]).map(f=>({
-        id:f.food_id,name:f.food_name,brand:f.brand_name||'',
-        cal:parseFloat(f.food_description?.match(/Calories:\s*([\d.]+)/)?.[1]||0),
-        pro:parseFloat(f.food_description?.match(/Protein:\s*([\d.]+)/)?.[1]||0),
-        carb:parseFloat(f.food_description?.match(/Carbs:\s*([\d.]+)/)?.[1]||0),
-        fat:parseFloat(f.food_description?.match(/Fat:\s*([\d.]+)/)?.[1]||0),
-        source:'FatSecret',
-        servings:[{name:'Per serving',cal:parseFloat(f.food_description?.match(/Calories:\s*([\d.]+)/)?.[1]||0),pro:parseFloat(f.food_description?.match(/Protein:\s*([\d.]+)/)?.[1]||0),carb:parseFloat(f.food_description?.match(/Carbs:\s*([\d.]+)/)?.[1]||0),fat:parseFloat(f.food_description?.match(/Fat:\s*([\d.]+)/)?.[1]||0)}]
-      }));}
-  }catch(e){}return[];
+  const d=await keyProxy({provider:'fatsecret_search', q:query, max_results:8}, 6000);
+  const foods=d&&d.foods&&d.foods.food;
+  if(!foods)return[];
+  return(Array.isArray(foods)?foods:[foods]).map(f=>({
+    id:f.food_id,name:f.food_name,brand:f.brand_name||'',
+    cal:parseFloat(f.food_description?.match(/Calories:\s*([\d.]+)/)?.[1]||0),
+    pro:parseFloat(f.food_description?.match(/Protein:\s*([\d.]+)/)?.[1]||0),
+    carb:parseFloat(f.food_description?.match(/Carbs:\s*([\d.]+)/)?.[1]||0),
+    fat:parseFloat(f.food_description?.match(/Fat:\s*([\d.]+)/)?.[1]||0),
+    source:'FatSecret',
+    servings:[{name:'Per serving',cal:parseFloat(f.food_description?.match(/Calories:\s*([\d.]+)/)?.[1]||0),pro:parseFloat(f.food_description?.match(/Protein:\s*([\d.]+)/)?.[1]||0),carb:parseFloat(f.food_description?.match(/Carbs:\s*([\d.]+)/)?.[1]||0),fat:parseFloat(f.food_description?.match(/Fat:\s*([\d.]+)/)?.[1]||0)}]
+  }));
 }
 async function searchOFF(query){
   try{
@@ -5238,9 +5230,15 @@ function renderNutSetupNudge(){
       // The banner I compressed this morning printed the actual calorie target, and "numbers off" is a
       // promise to someone whose relationship with those numbers is the reason the mode exists. The
       // original five-line version never named a figure. In gentle mode neither does this.
+      // NAME THE NUMBER THEY ACTUALLY HAVE. This printed def.cal — the generic default — while the
+      // target in force is the stored goal whenever one exists unstamped. A person restoring a backup
+      // made before the _ts stamp, or syncing from an older device, read "Your 2100 cal target is a
+      // generic starting point" on a screen showing 2600. The nudge was right that the target is not
+      // personalised; it was wrong about what the target IS, which is the app stating something false
+      // about the person's own data.
       '<span class="setup-strip-t">' + ((typeof nutGentle === 'function' && nutGentle())
         ? 'Your target is a generic starting point.'
-        : ('Your ' + (def.cal || 2100) + ' cal target is a generic starting point.')) + '</span>' +
+        : ('Your ' + ((g && g.cal) || def.cal || 2100) + ' cal target is a generic starting point.')) + '</span>' +
       '<button class="setup-strip-go" onclick="openNutSetup()">Set a real one</button>' +
       '<button class="setup-strip-x" onclick="dismissNutSetup()" aria-label="Dismiss">\u00d7</button>' +
     '</div>';

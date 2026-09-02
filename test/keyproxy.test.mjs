@@ -20,8 +20,30 @@ globalThis.Deno = {
   serve: (h) => { handler = h; },
   env: { get: (k) => ENV[k], toObject: () => ({ ...ENV }) },
 };
-let fetchCalls = [];
+let fetchCalls = [];      // OAuth token exchanges, as 'id:secret'
+let searchCalls = [];     // foods.search requests, as the full URL
+// Fault injection. A COUNT, not a boolean: a one-shot flag clears itself on the first rejection, so
+// the retry's second attempt always succeeded no matter what the handler did — `while (r.status === 401)`
+// in place of `if` passed all 26 assertions. Infinity reproduces the shape that actually spins: a token
+// FatSecret issues and then rejects on every REST call (scope, or the IP allowlist this function's own
+// comments name). Set it to 1 for "stale token, refresh works", Infinity for "it never works".
+let search401 = 0;
 globalThis.fetch = async (url, opts) => {
+  const u = String(url);
+  // The search endpoint is a different call in every respect — GET, Bearer, and a URL that carries the
+  // query — so the stub has to tell them apart or a Bearer header gets base64-decoded as a Basic one.
+  if (u.includes('platform.fatsecret.com')) {
+    searchCalls.push(u);
+    const bearer = ((opts && opts.headers && opts.headers.Authorization) || '').replace('Bearer ', '');
+    // A runaway retry must be observable as a FAILURE, not as a hung test.
+    if (searchCalls.length > 12) throw new Error('runaway retry: more than 12 search calls');
+    if (search401 > 0) { search401--; return { ok: false, status: 401, json: async () => ({}) }; }
+    if (bearer !== 'tok-123') return { ok: false, status: 401, json: async () => ({}) };
+    return { ok: true, status: 200, json: async () => ({ foods: { food: [
+      { food_id: '1', food_name: 'Chicken breast', brand_name: '',
+        food_description: 'Per 100g - Calories: 165kcal | Fat: 3.60g | Carbs: 0.00g | Protein: 31.00g' },
+    ] } }) };
+  }
   const auth = (opts && opts.headers && opts.headers.Authorization) || '';
   const [id, secret] = Buffer.from(auth.replace('Basic ', ''), 'base64').toString().split(':');
   fetchCalls.push(id + ':' + secret);
@@ -39,7 +61,7 @@ const call = async (body) => {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }));
   return { status: res.status, body: await res.json() };
 };
-const setEnv = (o) => { for (const k of Object.keys(ENV)) delete ENV[k]; Object.assign(ENV, o); fetchCalls = []; };
+const setEnv = (o) => { for (const k of Object.keys(ENV)) delete ENV[k]; Object.assign(ENV, o); fetchCalls = []; searchCalls = []; };
 
 console.log('\nkey-proxy, run locally\n');
 
@@ -77,6 +99,52 @@ ok(fetchCalls[0] === 'stale-key:live-secret' && fetchCalls[1] === 'live-key:live
 r = await call({ provider: 'status' });
 ok(r.body.fatsecret.working_pair === 'FATSECRET_ID + fatsecret_consumer_secret',
    'status then names the pair that actually worked, so nobody has to guess again');
+
+// ── 4b. THE SEARCH RUNS HERE, NOT IN THE BROWSER ────────────────────────────────────────────────
+// FatSecret sends no Access-Control-Allow-Origin, and the Authorization header this needs forces a
+// preflight, so the browser could never make this call — it fetched a token and then failed, every
+// time, on every keystroke-debounced search. These run after scenario 4 deliberately: a token is
+// cached by then, which is the state a real warm instance is in.
+searchCalls = [];
+r = await call({ provider: 'fatsecret_search' });
+ok(r.status === 400 && r.body.error === 'q required', 'a search with no query is refused, not sent');
+ok(searchCalls.length === 0, 'and nothing is sent to FatSecret for it');
+
+r = await call({ provider: 'fatsecret_search', q: 'chicken breast' });
+ok(r.status === 200 && r.body.foods.food[0].food_name === 'Chicken breast', 'a real search returns foods');
+ok(searchCalls.length === 1, 'exactly one request, using the token already cached');
+ok(searchCalls[0].includes('search_expression=chicken%20breast'), 'the query is URL-encoded into the request');
+ok(searchCalls[0].includes('max_results=8'), 'and defaults to 8 results');
+ok(r.body.access_token === undefined, 'the token itself never reaches the caller — that is the point');
+
+r = await call({ provider: 'fatsecret_search', q: 'x', max_results: 999 });
+ok(searchCalls[1].includes('max_results=50'), 'an absurd max_results is clamped, not passed through');
+
+// Fault injection: a cached token that FatSecret has stopped accepting. Without the retry this is a
+// 502 on the first search of every cold hour, which would look exactly like the bug just removed.
+search401 = 1;
+const oauthBefore = fetchCalls.length;
+r = await call({ provider: 'fatsecret_search', q: 'oats' });
+ok(r.status === 200, 'a stale cached token is refreshed and the search still succeeds');
+// Two exchanges, not one: refreshing re-runs pair resolution, and this scenario's env deliberately
+// puts a decoy pair first (stale-key + live-secret) before the live one. What matters is that it
+// resolves ONCE and stops — a loop here would hammer FatSecret's OAuth endpoint on every stale token.
+ok(fetchCalls.length === oauthBefore + 2, 'it re-resolved the pairs exactly once — decoy, then the live pair');
+ok(searchCalls.length === 4, 'and re-sent the search exactly once after the refresh');
+
+// ...and a token it NEVER accepts must give up rather than spin. This is the assertion the block
+// above only appeared to make: with a one-shot fault the second attempt always succeeded, so `while`
+// in place of `if` was indistinguishable from correct. With a persistent 401 the mutant hits the
+// stub's runaway guard and this fails, which is the whole point of the retry being bounded.
+searchCalls = [];
+search401 = Infinity;
+const oauthBefore2 = fetchCalls.length;
+r = await call({ provider: 'fatsecret_search', q: 'rice' });
+ok(r.status === 502 && /401/.test(String(r.body.error)),
+   'a token the API keeps rejecting ends in a 502, not a spin');
+ok(searchCalls.length === 2, 'exactly two search attempts: the original and ONE retry');
+ok(fetchCalls.length === oauthBefore2 + 2, 'and exactly one re-resolution behind it');
+search401 = 0;
 
 // ── 5. the other providers were not disturbed ───────────────────────────────────────────────────
 setEnv({ ESV_API_KEY: 'e', USDA_API_KEY: 'u' });

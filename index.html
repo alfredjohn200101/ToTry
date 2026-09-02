@@ -5292,7 +5292,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v573';
+const APP_VERSION = 'v574';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -11235,13 +11235,48 @@ async function _readGitaInit(sel,content){
   const chSel=document.getElementById('gita-ch'); if(chSel) chSel.value=String(window.__gita.ch);
   _readGitaLoad();
 }
+// WHY THIS READER SHOWS ONE VERSE WHERE THE OTHERS SHOW A WHOLE CHAPTER.
+// Not an oversight, and not worth "fixing" by fetching the chapter. Measured against the live API on
+// 2 Sep 2026: /slok/<ch>/<v>/index.json returns 31.5KB for ONE verse, because it ships 27 keys — every
+// commentary in the corpus (tej, siva, purohit, chinmay, adi, gambir, madhav, anand…) where this app
+// renders one English translation. Chapter 2 is 72 verses, so a chapter reader would cost ~2.2MB and 72
+// requests to do what the Qur'an reader does in one. There is no bulk endpoint: /chapter/<n>/index.json
+// is metadata only (2.6KB — name, verses_count, summary), which is what the header below uses.
+// So: the verse stays one verse, and the 2.6KB of context that IS cheap gets rendered with it.
+const _gitaChCache = {};
+async function _gitaChapterMeta(ch){
+  if(_gitaChCache[ch] !== undefined) return _gitaChCache[ch];
+  try{
+    const r = await _fetchT('https://vedicscriptures.github.io/chapter/'+ch+'/index.json');
+    if(!r.ok) throw new Error('net');
+    _gitaChCache[ch] = await r.json();
+  }catch(e){ _gitaChCache[ch] = null; }   // context is a bonus; never let it cost the verse
+  return _gitaChCache[ch];
+}
 async function _readGitaLoad(){
   const content=document.getElementById('read-content'); if(!content) return; content.innerHTML=_readLoading();
   try{
-    const g=window.__gita; const r=await _fetchT('https://vedicscriptures.github.io/slok/'+g.ch+'/'+g.v+'/index.json');
+    const g=window.__gita;
+    // Both at once, and the verse decides the outcome: allSettled so a failed meta fetch still reads.
+    const [vRes, meta] = await Promise.all([
+      _fetchT('https://vedicscriptures.github.io/slok/'+g.ch+'/'+g.v+'/index.json'),
+      _gitaChapterMeta(g.ch).catch(()=>null),
+    ]);
+    const r = vRes;
     if(!r.ok) throw new Error('net'); const j=await r.json();
     const en=(j.siva&&j.siva.et)||(j.purohit&&j.purohit.et)||(j.raman&&j.raman.et)||(j.gambir&&j.gambir.et)||'';
-    content.innerHTML='<div class="card"><div style="font-size:12px;color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+g.ch+'.'+g.v+' <span style="color:var(--tx3);letter-spacing:0">· verse '+g.v+' of '+_gitaCount(g.ch)+'</span></div>'+(j.slok?'<div style="font-size:16px;line-height:1.95;color:var(--tx);margin-bottom:8px">'+j.slok+'</div>':'')+(j.transliteration?'<div style="font-size:12.5px;font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+String(j.transliteration).trim()+'</div>':'')+'<div style="font-size:14px;color:var(--tx2);line-height:1.75">'+en+'</div></div>';
+    // The chapter's NAME sits above the verse (one compact line) and its summary BELOW it. The verse
+    // is what the person opened the reader for, and this app has already learned once what happens
+    // when context is stacked on top of the thing someone came to see.
+    const _esc = t => String(t==null?'':t).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    const chName = meta && (meta.translation || meta.name)
+      ? '<div style="font-family:DM Mono,monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px">Chapter '+g.ch+' · '+_esc(meta.translation||meta.name)+
+        (meta.meaning && meta.meaning.en ? ' — '+_esc(meta.meaning.en) : '')+'</div>'
+      : '';
+    const chSummary = meta && meta.summary && meta.summary.en
+      ? '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><div style="font-family:DM Mono,monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">About this chapter</div><div style="font-size:13px;color:var(--tx3);line-height:1.7">'+_esc(meta.summary.en)+'</div></div>'
+      : '';
+    content.innerHTML='<div class="card">'+chName+'<div style="font-size:12px;color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+g.ch+'.'+g.v+' <span style="color:var(--tx3);letter-spacing:0">· verse '+g.v+' of '+_gitaCount(g.ch)+'</span></div>'+(j.slok?'<div style="font-size:16px;line-height:1.95;color:var(--tx);margin-bottom:8px">'+j.slok+'</div>':'')+(j.transliteration?'<div style="font-size:12.5px;font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+String(j.transliteration).trim()+'</div>':'')+'<div style="font-size:14px;color:var(--tx2);line-height:1.75">'+en+'</div>'+chSummary+'</div>';
   }catch(e){
     const c2=document.getElementById('read-content');
     if(c2) _readBundled(document.getElementById('read-selector'), c2, VS_HINDU);   // see the Qur'an note
@@ -24502,23 +24537,17 @@ async function keyProxy(payload, ms){
     return data;
   }catch(_){ return null; }
 }
-let fsToken=null,fsTokenExpiry=0;
-
-async function getFSToken(){
-  if(fsToken&&Date.now()<fsTokenExpiry)return fsToken;
-  // Returns a short-lived token instead of embedding a permanent client secret. Until key-proxy is
-  // deployed with FATSECRET_ID/FATSECRET_SECRET set this returns null, searchFatSecret() returns [] as
-  // it always did on failure, and searchFood() carries on with USDA, OpenFoodFacts and Nutritionix —
-  // it runs all four through Promise.allSettled, so three sources is a quieter result list, not a
-  // broken search.
-  const d = await keyProxy({ provider:'fatsecret' });
-  if(d && d.access_token){
-    fsToken = d.access_token;
-    fsTokenExpiry = Date.now() + 55*60*1000;   // the proxy already expires its own cache early
-    return fsToken;
-  }
-  return null;
-}
+// FatSecret is searched THROUGH key-proxy, never from here.
+// Their REST API sends no Access-Control-Allow-Origin header, and the Authorization header this call
+// needs forces a preflight, so a browser request to it is blocked 100% of the time — measured against
+// the live API on 2 Sep 2026. This used to run in the browser: every debounced keystroke-search paid
+// for a key-proxy token exchange and then a request that could not succeed, and sw.js turned the
+// failure into a `503 {"error":"offline"}` in the console. It never once returned a food.
+// The token no longer comes to the client at all — the search runs inside the function that holds it.
+// If key-proxy has not yet been redeployed with the fatsecret_search provider it answers "unknown
+// provider", keyProxy() returns null, and this returns [] exactly as it always did on failure:
+// searchFood() carries on with USDA, OpenFoodFacts and Nutritionix, which is a quieter result list,
+// not a broken search.
 // WHY THE FOOD PROVIDERS GET 6s AND A SCRIPTURE READER GETS 9s.
 // These four are not one request with three spares — they are fallbacks for each other, tried in
 // turn until one answers. So cutting a slow provider off early does not cost the person their
@@ -24526,20 +24555,18 @@ async function getFSToken(){
 // reader has no such alternative (its fallback is a smaller bundled text), which is why it waits
 // longer. And common foods are answered from the local table before any of this runs at all.
 async function searchFatSecret(query){
-  const token=await getFSToken();if(!token)return[];
-  try{
-    const r=await _fetchT('https://platform.fatsecret.com/rest/server.api?method=foods.search&search_expression='+encodeURIComponent(query)+'&format=json&max_results=8',6000,{headers:{'Authorization':'Bearer '+token}});
-    if(r.ok){const d=await r.json();const foods=d.foods?.food||[];
-      return(Array.isArray(foods)?foods:[foods]).map(f=>({
-        id:f.food_id,name:f.food_name,brand:f.brand_name||'',
-        cal:parseFloat(f.food_description?.match(/Calories:\s*([\d.]+)/)?.[1]||0),
-        pro:parseFloat(f.food_description?.match(/Protein:\s*([\d.]+)/)?.[1]||0),
-        carb:parseFloat(f.food_description?.match(/Carbs:\s*([\d.]+)/)?.[1]||0),
-        fat:parseFloat(f.food_description?.match(/Fat:\s*([\d.]+)/)?.[1]||0),
-        source:'FatSecret',
-        servings:[{name:'Per serving',cal:parseFloat(f.food_description?.match(/Calories:\s*([\d.]+)/)?.[1]||0),pro:parseFloat(f.food_description?.match(/Protein:\s*([\d.]+)/)?.[1]||0),carb:parseFloat(f.food_description?.match(/Carbs:\s*([\d.]+)/)?.[1]||0),fat:parseFloat(f.food_description?.match(/Fat:\s*([\d.]+)/)?.[1]||0)}]
-      }));}
-  }catch(e){}return[];
+  const d=await keyProxy({provider:'fatsecret_search', q:query, max_results:8}, 6000);
+  const foods=d&&d.foods&&d.foods.food;
+  if(!foods)return[];
+  return(Array.isArray(foods)?foods:[foods]).map(f=>({
+    id:f.food_id,name:f.food_name,brand:f.brand_name||'',
+    cal:parseFloat(f.food_description?.match(/Calories:\s*([\d.]+)/)?.[1]||0),
+    pro:parseFloat(f.food_description?.match(/Protein:\s*([\d.]+)/)?.[1]||0),
+    carb:parseFloat(f.food_description?.match(/Carbs:\s*([\d.]+)/)?.[1]||0),
+    fat:parseFloat(f.food_description?.match(/Fat:\s*([\d.]+)/)?.[1]||0),
+    source:'FatSecret',
+    servings:[{name:'Per serving',cal:parseFloat(f.food_description?.match(/Calories:\s*([\d.]+)/)?.[1]||0),pro:parseFloat(f.food_description?.match(/Protein:\s*([\d.]+)/)?.[1]||0),carb:parseFloat(f.food_description?.match(/Carbs:\s*([\d.]+)/)?.[1]||0),fat:parseFloat(f.food_description?.match(/Fat:\s*([\d.]+)/)?.[1]||0)}]
+  }));
 }
 async function searchOFF(query){
   try{
@@ -29714,9 +29741,15 @@ function renderNutSetupNudge(){
       // The banner I compressed this morning printed the actual calorie target, and "numbers off" is a
       // promise to someone whose relationship with those numbers is the reason the mode exists. The
       // original five-line version never named a figure. In gentle mode neither does this.
+      // NAME THE NUMBER THEY ACTUALLY HAVE. This printed def.cal — the generic default — while the
+      // target in force is the stored goal whenever one exists unstamped. A person restoring a backup
+      // made before the _ts stamp, or syncing from an older device, read "Your 2100 cal target is a
+      // generic starting point" on a screen showing 2600. The nudge was right that the target is not
+      // personalised; it was wrong about what the target IS, which is the app stating something false
+      // about the person's own data.
       '<span class="setup-strip-t">' + ((typeof nutGentle === 'function' && nutGentle())
         ? 'Your target is a generic starting point.'
-        : ('Your ' + (def.cal || 2100) + ' cal target is a generic starting point.')) + '</span>' +
+        : ('Your ' + ((g && g.cal) || def.cal || 2100) + ' cal target is a generic starting point.')) + '</span>' +
       '<button class="setup-strip-go" onclick="openNutSetup()">Set a real one</button>' +
       '<button class="setup-strip-x" onclick="dismissNutSetup()" aria-label="Dismiss">\u00d7</button>' +
     '</div>';
@@ -42863,7 +42896,10 @@ async function loadDemoData(){
     }
     ls('totry_nutlog', log);
   })();
-  ls('totry_nut_goals',{cal:2600,pro:180});
+  // _ts, like every real save writes. Without it the app classes this target as "not personalised"
+  // and shows the demo persona — 92 days in — a strip reading "your target is a generic starting
+  // point", which is both wrong about them and the first thing in frame when the food tab is filmed.
+  ls('totry_nut_goals',{cal:2600,pro:180,_ts:dayAgo(88).getTime()});
   ls('totry_nut_macros',{carb:280,fat:80});
   ls('totry_water',{[auKey(dayAgo(0))]:2100});
   ls('totry_water_goal',3000);

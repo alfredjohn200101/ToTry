@@ -16,13 +16,34 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
-const URL = process.env.TOTRY_URL || 'http://localhost:8137';
+// 8791 is what scripts/serve-www.py binds, and what .claude/launch.json declares. This default
+// said 8137 for long enough that a whole run failed six-for-six on ERR_CONNECTION_REFUSED.
+const URL = process.env.TOTRY_URL || 'http://127.0.0.1:8791';
 const OUT = path.join(__dirname, '..', 'recordings');
 const RAW = path.join(OUT, '_raw');
 // Phone-shaped, then 2x device scale → a true 1080x2340 export.
 const VW = 540, VH = 1170, SCALE = 2;
 
+// Playwright bundles an ffmpeg built --disable-everything: libvpx_vp8 and png, muxers webm and
+// image2. It cannot encode H.264 and has no mp4 muxer, so the encode below throws on it every time.
+// Look for a real ffmpeg first and fall back to reporting the truth, not to a silent webm.
 const FFMPEG = (() => {
+  for (const p of ['/opt/homebrew/bin/ffmpeg', '/usr/local/bin/ffmpeg', '/opt/local/bin/ffmpeg']) {
+    if (fs.existsSync(p)) return p;
+  }
+  try {
+    const which = execFileSync('/usr/bin/which', ['ffmpeg'], { encoding: 'utf8' }).trim();
+    if (which && fs.existsSync(which)) return which;
+  } catch (_) {}
+  return null;
+})();
+
+// ── mp4 without ffmpeg ────────────────────────────────────────────────────────────────────────
+// Playwright's bundled ffmpeg CAN decode VP8 and write PNGs; it just cannot encode H.264 or mux mp4.
+// So when no real ffmpeg exists, go webm → PNG frames → AVFoundation (scripts/png2mp4.swift). One
+// 30s clip is ~750 frames and ~283MB of PNGs, deleted as soon as it is encoded, so the peak cost is
+// one clip's worth. Measured on this machine: 16s to extract, 18s to encode.
+const PW_FFMPEG = (() => {
   const base = path.join(process.env.HOME, 'Library/Caches/ms-playwright');
   try {
     for (const d of fs.readdirSync(base)) {
@@ -34,6 +55,63 @@ const FFMPEG = (() => {
   } catch (_) {}
   return null;
 })();
+const FPS = 25;                                   // what Playwright records at; forced on extraction
+const ENCODER = path.join(__dirname, '..', 'build', 'png2mp4');
+const ENCODER_SRC = path.join(__dirname, 'png2mp4.swift');
+
+function ensureEncoder() {
+  try {
+    if (fs.existsSync(ENCODER) && fs.statSync(ENCODER).mtimeMs > fs.statSync(ENCODER_SRC).mtimeMs) return ENCODER;
+    fs.mkdirSync(path.dirname(ENCODER), { recursive: true });
+    execFileSync('xcrun', ['swiftc', '-O', ENCODER_SRC, '-o', ENCODER], { stdio: ['ignore', 'ignore', 'pipe'] });
+    return ENCODER;
+  } catch (e) {
+    throw new Error('could not build png2mp4: ' + String(e && e.stderr ? e.stderr : e.message).slice(0, 160));
+  }
+}
+
+// Returns the mp4 path, or throws with a real reason rather than quietly handing back a webm.
+//
+// ENCODE TO A PARTIAL AND RENAME. png2mp4.swift removes its destination before AVAssetWriter starts,
+// so encoding straight to recordings/<clip>.mp4 destroys the previous good clip the moment it begins —
+// and any mid-encode failure (a bad frame, or the disk filling under 283MB of PNGs) then leaves a
+// ZERO-BYTE file carrying exactly the name the edit globs for. Reproduced: a corrupt frame 350 left
+// 0 bytes where a 9.1MB clip had been. A rename is atomic, so the old clip is only ever replaced by a
+// finished one, and a failed run leaves last week's good clip exactly where it was.
+function webmToMp4ViaFrames(webm, mp4) {
+  if (!PW_FFMPEG) throw new Error("no ffmpeg at all, not even Playwright's");
+  const enc = ensureEncoder();
+  const frames = webm + '.frames';
+  const partial = mp4 + '.partial.mp4';
+  // AVAssetWriter streams into a sandbox sibling '<dest>.sb-XXXX' and only materialises the
+  // destination at finishWriting, so a failure orphans a multi-MB intermediate too — in the very
+  // directory whose filling started all of this. Sweep them on BOTH paths, not just success.
+  const sweepSb = (p) => {
+    try {
+      const b = path.basename(p);
+      for (const f of fs.readdirSync(OUT)) if (f.startsWith(b + '.sb-')) fs.rmSync(path.join(OUT, f), { force: true });
+    } catch (_) {}
+  };
+  fs.rmSync(frames, { recursive: true, force: true });
+  fs.mkdirSync(frames, { recursive: true });
+  try {
+    // No -vf here. That build has exactly three filters compiled in — crop, pad, scale — so a
+    // '-vf fps=25' fails outright with "No such filter". Extract every frame instead and encode at
+    // the rate Playwright records: 751 frames over 30.04s measured, i.e. exactly FPS.
+    execFileSync(PW_FFMPEG, ['-y', '-i', webm, '-f', 'image2',
+      path.join(frames, 'f%05d.png')], { stdio: ['ignore', 'ignore', 'pipe'] });
+    execFileSync(enc, [frames, String(FPS), partial], { stdio: ['ignore', 'ignore', 'pipe'] });
+    sweepSb(partial);
+    fs.renameSync(partial, mp4);
+    return mp4;
+  } catch (e) {
+    fs.rmSync(partial, { force: true });   // never leave a half-file where the edit will look
+    sweepSb(partial);
+    throw e;
+  } finally {
+    fs.rmSync(frames, { recursive: true, force: true });   // 283MB a clip: never leave these behind
+  }
+}
 
 // ── the demo persona, seeded in-page (same path the Settings button uses) ──────────────────────
 async function seed(page) {
@@ -44,16 +122,35 @@ async function seed(page) {
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForTimeout(1200);
   const ok = await page.evaluate(async () => {
+    // loadDemoData() gates on the app's OWN modal — `await askConfirm(...)` — not window.confirm.
+    // Stubbing only the native one parked the loader on a dialog nobody would ever click: it returned
+    // before writing a single key, and all six clips died at "demo seed failed:" with a blank reason.
+    const yes = async () => true;
     window.confirm = () => true;
+    window.askConfirm = yes;
     window.exportFullBackup = function () {};   // don't spray downloads while recording
     if (typeof loadDemoData !== 'function') return 'loadDemoData missing';
-    loadDemoData();
-    await new Promise(r => setTimeout(r, 1600));
+    if (askConfirm !== yes) return 'askConfirm stub did not take — is it a const now, not a function?';
+    await loadDemoData();                       // it is async: await it instead of racing a fixed timer
+    await new Promise(r => setTimeout(r, 700));
     try { closeCompanion(); } catch (_) {}
     try { closeFeelingDoor(); } catch (_) {}
     document.querySelectorAll('.modal-bg.open').forEach(x => x.remove());
+    // Loading the demo ends by painting a red "demo data · sync off" bar across the top and a toast
+    // over the screen. Both are in frame on every shot. Clear them, and put the header padding back
+    // exactly as _demoBanner() found it rather than guessing at a value.
+    try {
+      const b = document.getElementById('demo-mode-banner');
+      if (b) b.remove();
+      const h = document.querySelector('.hdr');
+      if (h && h.dataset._padWas !== undefined) { h.style.paddingTop = h.dataset._padWas; delete h.dataset._padWas; }
+    } catch (_) {}
+    document.querySelectorAll('.milestone-toast').forEach(x => x.remove());
     if (typeof go === 'function') go('home');
-    return (localStorage.getItem('totry_name') || '').replace(/"/g, '');
+    const name = (localStorage.getItem('totry_name') || '').replace(/"/g, '');
+    // Report what was actually seen. The old version returned '' and told nobody anything.
+    return name || ('no totry_name · keys=' + localStorage.length +
+                    ' · demoFlag=' + localStorage.getItem('totry_demo_mode'));
   });
   if (ok !== 'Alex') throw new Error('demo seed failed: ' + ok);
   await page.waitForTimeout(700);
@@ -91,27 +188,38 @@ const CLIPS = {
     log('restless card reached', /wants OUT|restless/i.test(await page.locator('body').innerText()));
     await beat(page, 2000);
 
-    // the if-then plan: write it calm, get it back later
-    const plan = page.locator('text=my plan for next time').first();
+    // The if-then plan. The demo persona already has one, so the button reads "Update my plan for
+    // next time" — clear the field before typing or the new words land glued onto the old ones, which
+    // is both a mess on camera and the reason this clip once looked like the plan had not changed.
+    const MINE = 'burn it off — 20 push-ups by the back door, not the scroll';
+    const plan = page.locator('.modal-bg.open >> text=my plan for next time').first();
     if (await plan.count()) {
       await tap(page, plan, { post: 1200 });
       const ta = page.locator('.modal-bg.open textarea, .modal-bg.open input[type=text]').first();
       if (await ta.count()) {
         await ta.click();
-        await ta.type('burn it off — 20 push-ups or a fast walk, not the scroll', { delay: 42 });
+        await ta.fill('');
+        await ta.type(MINE, { delay: 42 });
         await beat(page, 900);
       }
-      const lock = page.locator('text=Lock in my plan').first();
-      if (await lock.count()) { await tap(page, lock, { post: 1500 }); log('plan locked in', true); }
+      const lock = page.locator('.modal-bg.open >> text=Lock in my plan').first();
+      if (await lock.count()) { await tap(page, lock, { post: 1600 }); log('plan locked in', true); }
     }
-    await beat(page, 1400);
 
-    // reopen the same feeling — their own words come back
-    await tap(page, '#need-talk-btn', { post: 1200 });
-    await tap(page, '#feel-door >> text=Restless', { post: 1600 });
-    const body = await page.locator('body').innerText();
-    log('own plan mirrored back', /plan you set|push-ups/i.test(body));
-    await beat(page, 2200);
+    // The point of the clip: the card behind refreshes in place and reads their OWN words back.
+    // Asserting on "plan you set" alone was worthless — that heading is on the card either way, so
+    // the check passed even when nothing had been written. Assert the words that were just typed.
+    const card = await page.locator('.modal-bg.open').first().innerText();
+    log('their own words mirrored back', /20 push-ups by the back door/i.test(card));
+    log('mirrored under the plan heading', /THE PLAN YOU SET/i.test(card));
+    await beat(page, 2400);
+
+    // Land the clip by leaving the way a person leaves. "Not now" is not unique in the document —
+    // an unrelated reach-out nudge owns one too — so scope it to the open card.
+    const notNow = page.locator('.modal-bg.open >> text=Not now').first();
+    if (await notNow.count()) { await tap(page, notNow, { post: 1500 }); }
+    log('landed back on home', await page.locator('#need-talk-btn').isVisible());
+    await beat(page, 1400);
   },
 
   // The integration shot: one screen that knows body, fight, spirit and money at once.
@@ -219,7 +327,11 @@ const CLIPS = {
     });
     const page = await ctx.newPage();
     const errors = [];
-    page.on('console', m => { if (m.type() === 'error') errors.push(m.text().slice(0, 200)); });
+    // Chrome refuses navigator.vibrate until the frame has seen a real user gesture, so every
+    // haptic() fired from a seeding script logs one. That is an artifact of driving the app,
+    // not a defect in it — a person's actual tap grants the activation.
+    const BENIGN = /Blocked call to navigator\.vibrate/;
+    page.on('console', m => { if (m.type() === 'error' && !BENIGN.test(m.text())) errors.push(m.text().slice(0, 200)); });
     page.on('pageerror', e => errors.push('PAGEERROR: ' + String(e.message).slice(0, 200)));
 
     const checks = [];
@@ -236,31 +348,51 @@ const CLIPS = {
     const video = page.video();
     await ctx.close();                                     // finalises the webm
 
-    let out = null;
+    let out = null, encodeNote = null;
     if (video) {
       const webm = await video.path();
-      out = path.join(OUT, name + '.mp4');
       if (FFMPEG && fs.existsSync(webm)) {
+        out = path.join(OUT, name + '.mp4');
         try {
           execFileSync(FFMPEG, ['-y', '-i', webm, '-c:v', 'libx264', '-preset', 'medium',
-            '-crf', '20', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], { stdio: 'ignore' });
-        } catch (e) { out = webm; }
-      } else { out = webm; }
+            '-crf', '20', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out],
+            { stdio: ['ignore', 'ignore', 'pipe'] });
+        } catch (e) {
+          // Say WHY. Swallowing this with stdio:'ignore' is how the mp4 step stayed broken while
+          // the run still printed a video path and reported ok.
+          const why = (e && e.stderr ? String(e.stderr) : String(e && e.message || e)).trim().split('\n').slice(-2).join(' ');
+          try { fs.unlinkSync(out); } catch (_) {}
+          out = webm;
+          encodeNote = 'mp4 encode FAILED, kept webm — ' + why.slice(0, 220);
+        }
+      } else {
+        try {
+          out = webmToMp4ViaFrames(webm, path.join(OUT, name + '.mp4'));
+          encodeNote = 'no ffmpeg — encoded via PNG frames + AVFoundation (scripts/png2mp4.swift)';
+        } catch (e) {
+          out = webm;
+          encodeNote = 'mp4 FAILED, kept webm — ' + String(e && e.message || e).slice(0, 220);
+        }
+      }
     }
-    results.push({ name, out, checks, errors, fatal });
+    results.push({ name, out, checks, errors, fatal, encodeNote });
     console.log(`\n── ${name} ──`);
     if (fatal) console.log('  FATAL: ' + fatal);
     checks.forEach(c => console.log(`  ${c.pass ? 'PASS' : 'FAIL'}  ${c.what}`));
     if (errors.length) console.log('  console errors: ' + errors.length + ' → ' + errors[0]);
     if (out) console.log('  video: ' + out);
+    if (encodeNote) console.log('  NOTE:  ' + encodeNote);
   }
 
   await browser.close();
 
-  const failed = results.filter(r => r.fatal || r.checks.some(c => !c.pass) || r.errors.length);
+  // encodeNote was ignored here, so a clip whose mp4 encode failed still printed `  ok  ` and the
+  // run exited 0 — the same shape of silent pass this script was just fixed for twice.
+  const _encodeFailed = r => !!(r.encodeNote && /FAILED/.test(r.encodeNote));
+  const failed = results.filter(r => r.fatal || r.checks.some(c => !c.pass) || r.errors.length || _encodeFailed(r));
   console.log('\n════ SUMMARY ════');
   results.forEach(r => {
-    const bad = (r.fatal ? 1 : 0) + r.checks.filter(c => !c.pass).length + r.errors.length;
+    const bad = (r.fatal ? 1 : 0) + r.checks.filter(c => !c.pass).length + r.errors.length + (_encodeFailed(r) ? 1 : 0);
     console.log(`${bad ? 'ISSUES' : '  ok  '}  ${r.name}  (${r.checks.filter(c=>c.pass).length}/${r.checks.length} checks)`);
   });
   fs.writeFileSync(path.join(OUT, 'run-report.json'), JSON.stringify(results, null, 2));

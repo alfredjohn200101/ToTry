@@ -3479,13 +3479,48 @@ async function _readGitaInit(sel,content){
   const chSel=document.getElementById('gita-ch'); if(chSel) chSel.value=String(window.__gita.ch);
   _readGitaLoad();
 }
+// WHY THIS READER SHOWS ONE VERSE WHERE THE OTHERS SHOW A WHOLE CHAPTER.
+// Not an oversight, and not worth "fixing" by fetching the chapter. Measured against the live API on
+// 2 Sep 2026: /slok/<ch>/<v>/index.json returns 31.5KB for ONE verse, because it ships 27 keys — every
+// commentary in the corpus (tej, siva, purohit, chinmay, adi, gambir, madhav, anand…) where this app
+// renders one English translation. Chapter 2 is 72 verses, so a chapter reader would cost ~2.2MB and 72
+// requests to do what the Qur'an reader does in one. There is no bulk endpoint: /chapter/<n>/index.json
+// is metadata only (2.6KB — name, verses_count, summary), which is what the header below uses.
+// So: the verse stays one verse, and the 2.6KB of context that IS cheap gets rendered with it.
+const _gitaChCache = {};
+async function _gitaChapterMeta(ch){
+  if(_gitaChCache[ch] !== undefined) return _gitaChCache[ch];
+  try{
+    const r = await _fetchT('https://vedicscriptures.github.io/chapter/'+ch+'/index.json');
+    if(!r.ok) throw new Error('net');
+    _gitaChCache[ch] = await r.json();
+  }catch(e){ _gitaChCache[ch] = null; }   // context is a bonus; never let it cost the verse
+  return _gitaChCache[ch];
+}
 async function _readGitaLoad(){
   const content=document.getElementById('read-content'); if(!content) return; content.innerHTML=_readLoading();
   try{
-    const g=window.__gita; const r=await _fetchT('https://vedicscriptures.github.io/slok/'+g.ch+'/'+g.v+'/index.json');
+    const g=window.__gita;
+    // Both at once, and the verse decides the outcome: allSettled so a failed meta fetch still reads.
+    const [vRes, meta] = await Promise.all([
+      _fetchT('https://vedicscriptures.github.io/slok/'+g.ch+'/'+g.v+'/index.json'),
+      _gitaChapterMeta(g.ch).catch(()=>null),
+    ]);
+    const r = vRes;
     if(!r.ok) throw new Error('net'); const j=await r.json();
     const en=(j.siva&&j.siva.et)||(j.purohit&&j.purohit.et)||(j.raman&&j.raman.et)||(j.gambir&&j.gambir.et)||'';
-    content.innerHTML='<div class="card"><div style="font-size:12px;color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+g.ch+'.'+g.v+' <span style="color:var(--tx3);letter-spacing:0">· verse '+g.v+' of '+_gitaCount(g.ch)+'</span></div>'+(j.slok?'<div style="font-size:16px;line-height:1.95;color:var(--tx);margin-bottom:8px">'+j.slok+'</div>':'')+(j.transliteration?'<div style="font-size:12.5px;font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+String(j.transliteration).trim()+'</div>':'')+'<div style="font-size:14px;color:var(--tx2);line-height:1.75">'+en+'</div></div>';
+    // The chapter's NAME sits above the verse (one compact line) and its summary BELOW it. The verse
+    // is what the person opened the reader for, and this app has already learned once what happens
+    // when context is stacked on top of the thing someone came to see.
+    const _esc = t => String(t==null?'':t).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    const chName = meta && (meta.translation || meta.name)
+      ? '<div style="font-family:DM Mono,monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px">Chapter '+g.ch+' · '+_esc(meta.translation||meta.name)+
+        (meta.meaning && meta.meaning.en ? ' — '+_esc(meta.meaning.en) : '')+'</div>'
+      : '';
+    const chSummary = meta && meta.summary && meta.summary.en
+      ? '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><div style="font-family:DM Mono,monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">About this chapter</div><div style="font-size:13px;color:var(--tx3);line-height:1.7">'+_esc(meta.summary.en)+'</div></div>'
+      : '';
+    content.innerHTML='<div class="card">'+chName+'<div style="font-size:12px;color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+g.ch+'.'+g.v+' <span style="color:var(--tx3);letter-spacing:0">· verse '+g.v+' of '+_gitaCount(g.ch)+'</span></div>'+(j.slok?'<div style="font-size:16px;line-height:1.95;color:var(--tx);margin-bottom:8px">'+j.slok+'</div>':'')+(j.transliteration?'<div style="font-size:12.5px;font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+String(j.transliteration).trim()+'</div>':'')+'<div style="font-size:14px;color:var(--tx2);line-height:1.75">'+en+'</div>'+chSummary+'</div>';
   }catch(e){
     const c2=document.getElementById('read-content');
     if(c2) _readBundled(document.getElementById('read-selector'), c2, VS_HINDU);   // see the Qur'an note

@@ -290,7 +290,10 @@ async function loadDemoData(){
     }
     ls('totry_nutlog', log);
   })();
-  ls('totry_nut_goals',{cal:2600,pro:180});
+  // _ts, like every real save writes. Without it the app classes this target as "not personalised"
+  // and shows the demo persona — 92 days in — a strip reading "your target is a generic starting
+  // point", which is both wrong about them and the first thing in frame when the food tab is filmed.
+  ls('totry_nut_goals',{cal:2600,pro:180,_ts:dayAgo(88).getTime()});
   ls('totry_nut_macros',{carb:280,fat:80});
   ls('totry_water',{[auKey(dayAgo(0))]:2100});
   ls('totry_water_goal',3000);
