@@ -43,6 +43,54 @@ Verified in the actual shipping bundle, not just the repo:
 
 ---
 
+## ✅ BUILD 4 ARCHIVED AND UPLOADED — 2 Sep 2026
+
+v573 (`APP_VERSION` in the shipped bundle), version 1.0, **build 4**, 2.1 MB, signed *Apple
+Distribution: Alfred John (L4BD53PLVF)*. Verified in the exported .ipa before upload:
+`get-task-allow: false`, `beta-reports-active: true`, both HealthKit entitlements,
+`PrivacyInfo.xcprivacy` present, 7 usage descriptions, arm64 only with no simulator slice,
+`ITSAppUsesNonExemptEncryption: false`, min iOS 15.0.
+
+**`CURRENT_PROJECT_VERSION` is now 5**, so the next archive cannot collide with what was just sent.
+
+### ⛔ ARCHIVING FROM THE COMMAND LINE NEEDS MANUAL SIGNING — automatic FAILS
+
+The first attempt failed, and it will fail the same way every time:
+
+```
+error: Communication with Apple failed: Your team has no devices from which to generate a
+provisioning profile.
+error: No profiles for 'app.totry' were found: Xcode couldn't find any iOS App Development
+provisioning profiles matching 'app.totry'.
+```
+
+Automatic signing reaches for a **Development** profile, and there has never been one for `app.totry`
+— only `ToTryAppStore`, which is a genuine App Store profile (no provisioned devices,
+`get-task-allow: false`, valid to 6 Aug 2027). Archiving is a DISTRIBUTION action and does not need a
+development profile at all. Name the distribution profile explicitly and it succeeds:
+
+```bash
+xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+  -destination 'generic/platform=iOS' -archivePath /tmp/ToTry-archive.xcarchive \
+  -allowProvisioningUpdates CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=L4BD53PLVF \
+  PROVISIONING_PROFILE_SPECIFIER=ToTryAppStore "CODE_SIGN_IDENTITY=Apple Distribution" archive
+```
+
+Then export with `-exportArchive` and an ExportOptions.plist using `method: app-store-connect`,
+`signingStyle: manual`, and `provisioningProfiles: { app.totry: ToTryAppStore }`.
+
+There is **no `.xcworkspace`** — this is SPM-based Capacitor, so `-project ios/App/App.xcodeproj` is
+correct and `-workspace` will error. There is also no shared `.xcscheme`; Xcode autogenerates it.
+
+### Uploading is the part that needs a human
+
+An App Store Connect API key exists at `~/.appstoreconnect/private_keys/AuthKey_49872NRTQS.p8`, but the
+**issuer ID** that pairs with it is not stored anywhere on this machine, so `xcrun altool` cannot be
+driven without it. `open /tmp/ToTry-archive.xcarchive` → Organizer → Distribute App → App Store Connect
+→ Upload uses the Apple ID already signed into Xcode and needs no key at all.
+
+---
+
 ## 1 · Archive and upload
 
 ```bash
