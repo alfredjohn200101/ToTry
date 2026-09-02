@@ -215,20 +215,43 @@ Deno.serve(async (req: Request) => {
         { headers: { 'Authorization': 'Bearer ' + token } },
       )
 
+      // FATSECRET ANSWERS 200 FOR EVERY ERROR, AUTH INCLUDED. Measured against the live API on
+      // 2 Sep 2026: a garbage bearer returns 200 {"error":{"code":13,"message":"Invalid token: Unable
+      // to decode token"}}, no token at all returns 200 code 2, and a non-allowlisted IP returns 200
+      // code 21. It never returns 401 on this endpoint. So `if (!r.ok)` classified every one of those
+      // as SUCCESS and passed the error body through as if it were food, and a refresh keyed on 401
+      // could never fire. Read the BODY, not the status.
+      const fsErr = (d: Record<string, unknown> | null) => {
+        const e = d && (d as { error?: unknown }).error
+        return e && typeof e === 'object' ? (e as { code?: number; message?: string }) : null
+      }
       let t = await fsAcquireToken()
       if (!t.ok) return json(t.body, t.status)
       let r = await run(t.token)
-      // A cached token can go stale between warm invocations. One retry on 401 with a fresh token,
-      // never a loop: if the second one is also rejected the fault is the credential, not the cache.
-      if (r.status === 401) {
+      let d = await r.json().catch(() => null)
+      let err = fsErr(d)
+      // Code 13 is the measured "invalid token", which is what a token gone stale between warm
+      // invocations looks like. One retry with a fresh token, never a loop: if the second is rejected
+      // too, the fault is the credential or the account, not the cache. The 401 stays as a belt in
+      // case they ever start using the status line properly.
+      if (r.status === 401 || (err && err.code === 13)) {
         fsToken = null
         fsExpiry = 0
         t = await fsAcquireToken()
         if (!t.ok) return json(t.body, t.status)
         r = await run(t.token)
+        d = await r.json().catch(() => null)
+        err = fsErr(d)
       }
       if (!r.ok) return json({ error: 'fatsecret search ' + r.status }, 502)
-      return json(await r.json())
+      // Pass FatSecret's OWN reason through, as the token path above already does. Code 21 —
+      // "Invalid IP address detected" — is the one that cannot be fixed from here: FatSecret
+      // allowlists IPs per app and Supabase edge functions have no stable egress IP (three
+      // consecutive calls came from 52.64.65.67, 16.176.20.17 and 3.107.185.74). That needs the
+      // app's IP restriction turned OFF in the FatSecret console.
+      if (err) return json({ error: 'fatsecret search failed', fatsecret_code: err.code ?? null,
+                             fatsecret_message: err.message ?? null }, 502)
+      return json(d)
     }
 
     // ── ESV ──────────────────────────────────────────────────────────────────────────────────────

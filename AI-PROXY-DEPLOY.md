@@ -2,6 +2,40 @@
 
 This is everything to get the backend matching the app (cache v128).
 
+## ⛔ FATSECRET SEARCH IS BLOCKED BY AN IP ALLOWLIST — 2 Sep 2026, after the deploy
+
+`key-proxy` was deployed with `fatsecret_search` and the provider now exists. FatSecret refuses it:
+
+```
+{"error":{"code":21,"message":"Invalid IP address detected:  '3.26.14.148'"}}
+```
+
+**This cannot be fixed from our side, and an allowlist cannot be made to work.** Three consecutive
+calls came from three different addresses — `52.64.65.67`, `16.176.20.17`, `3.107.185.74` (AWS
+ap-southeast-2). Supabase edge functions have no stable egress IP, so there is no address to allow.
+
+**The fix is in the FatSecret console: turn the app's IP restriction OFF.** Until then the food search
+runs on USDA, OpenFoodFacts and Nutritionix, exactly as it did before — no user-visible breakage.
+
+### And FatSecret answers 200 for EVERY error, auth included
+
+Measured directly against `platform.fatsecret.com` on 2 Sep 2026:
+
+| request | status | body |
+|---|---|---|
+| garbage bearer token | **200** | `{"error":{"code":13,"message":"Invalid token: Unable to decode token"}}` |
+| no token at all | **200** | `{"error":{"code":2,...}}` |
+| non-allowlisted IP | **200** | `{"error":{"code":21,...}}` |
+
+It never returns 401 on this endpoint. The first cut of `fatsecret_search` checked `if (!r.ok)`, which
+classified every one of those as SUCCESS and handed the error object to the app as though it were food
+— and its refresh-on-401 could never fire, so a token gone stale would have been passed through as a
+result. It now reads the BODY: any `error` object becomes a 502 carrying FatSecret's own code and
+message, and code 13 (their "invalid token") triggers exactly one refresh-and-retry. A non-auth error
+like code 21 is terminal and costs no extra token exchange. **Requires one more `key-proxy` deploy.**
+
+---
+
 ## ⚠️ KEY-PROXY IS ONE DEPLOY BEHIND — 2 Sep 2026 (v574)
 
 `supabase/functions/key-proxy` gained a **`fatsecret_search`** provider and has NOT been deployed.

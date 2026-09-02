@@ -22,12 +22,16 @@ globalThis.Deno = {
 };
 let fetchCalls = [];      // OAuth token exchanges, as 'id:secret'
 let searchCalls = [];     // foods.search requests, as the full URL
-// Fault injection. A COUNT, not a boolean: a one-shot flag clears itself on the first rejection, so
-// the retry's second attempt always succeeded no matter what the handler did — `while (r.status === 401)`
-// in place of `if` passed all 26 assertions. Infinity reproduces the shape that actually spins: a token
-// FatSecret issues and then rejects on every REST call (scope, or the IP allowlist this function's own
-// comments name). Set it to 1 for "stale token, refresh works", Infinity for "it never works".
-let search401 = 0;
+// Fault injection, in the shape the REAL API uses. Measured against platform.fatsecret.com on
+// 2 Sep 2026: it answers HTTP 200 for every error including auth — a garbage bearer returns
+// 200 {"error":{"code":13,"message":"Invalid token: Unable to decode token"}}, and it never returns
+// 401 on this endpoint. The first version of this stub returned a 401, which is a shape FatSecret does
+// not produce, so it was testing a branch that could never fire in production.
+// A COUNT, not a boolean: a one-shot flag clears itself on the first rejection, so the retry's second
+// attempt always succeeded whatever the handler did. Set it to 1 for "stale token, refresh works",
+// Infinity for a token the API never accepts.
+let searchBadToken = 0;
+let searchApiError = null;   // a NON-auth error (e.g. code 21, the IP allowlist) — must not be retried
 globalThis.fetch = async (url, opts) => {
   const u = String(url);
   // The search endpoint is a different call in every respect — GET, Bearer, and a URL that carries the
@@ -37,8 +41,10 @@ globalThis.fetch = async (url, opts) => {
     const bearer = ((opts && opts.headers && opts.headers.Authorization) || '').replace('Bearer ', '');
     // A runaway retry must be observable as a FAILURE, not as a hung test.
     if (searchCalls.length > 12) throw new Error('runaway retry: more than 12 search calls');
-    if (search401 > 0) { search401--; return { ok: false, status: 401, json: async () => ({}) }; }
-    if (bearer !== 'tok-123') return { ok: false, status: 401, json: async () => ({}) };
+    const fsError = (code, message) => ({ ok: true, status: 200, json: async () => ({ error: { code, message } }) });
+    if (searchApiError) return fsError(searchApiError.code, searchApiError.message);
+    if (searchBadToken > 0) { searchBadToken--; return fsError(13, 'Invalid token: Unable to decode token'); }
+    if (bearer !== 'tok-123') return fsError(13, 'Invalid token: Unable to decode token');
     return { ok: true, status: 200, json: async () => ({ foods: { food: [
       { food_id: '1', food_name: 'Chicken breast', brand_name: '',
         food_description: 'Per 100g - Calories: 165kcal | Fat: 3.60g | Carbs: 0.00g | Protein: 31.00g' },
@@ -122,7 +128,7 @@ ok(searchCalls[1].includes('max_results=50'), 'an absurd max_results is clamped,
 
 // Fault injection: a cached token that FatSecret has stopped accepting. Without the retry this is a
 // 502 on the first search of every cold hour, which would look exactly like the bug just removed.
-search401 = 1;
+searchBadToken = 1;
 const oauthBefore = fetchCalls.length;
 r = await call({ provider: 'fatsecret_search', q: 'oats' });
 ok(r.status === 200, 'a stale cached token is refreshed and the search still succeeds');
@@ -137,14 +143,31 @@ ok(searchCalls.length === 4, 'and re-sent the search exactly once after the refr
 // in place of `if` was indistinguishable from correct. With a persistent 401 the mutant hits the
 // stub's runaway guard and this fails, which is the whole point of the retry being bounded.
 searchCalls = [];
-search401 = Infinity;
+searchBadToken = Infinity;
 const oauthBefore2 = fetchCalls.length;
 r = await call({ provider: 'fatsecret_search', q: 'rice' });
-ok(r.status === 502 && /401/.test(String(r.body.error)),
-   'a token the API keeps rejecting ends in a 502, not a spin');
+ok(r.status === 502 && r.body.fatsecret_code === 13,
+   'a token the API keeps rejecting ends in a 502 carrying FatSecret\'s own code, not a spin');
 ok(searchCalls.length === 2, 'exactly two search attempts: the original and ONE retry');
 ok(fetchCalls.length === oauthBefore2 + 2, 'and exactly one re-resolution behind it');
-search401 = 0;
+searchBadToken = 0;
+
+// ── 4d. AN ERROR INSIDE A 200 IS STILL AN ERROR ────────────────────────────────────────────────
+// This is the live failure on 2 Sep 2026: FatSecret allowlists IPs per app, Supabase edge functions
+// have no stable egress IP (three consecutive calls came from 52.64.65.67, 16.176.20.17, 3.107.185.74),
+// so every search returns 200 {"error":{"code":21,"message":"Invalid IP address detected"}}. Under
+// `if (!r.ok)` that was a 200 SUCCESS and the error object was handed to the app as if it were food.
+searchCalls = [];
+const oauthBefore3 = fetchCalls.length;
+searchApiError = { code: 21, message: "Invalid IP address detected:  '3.26.14.148'" };
+r = await call({ provider: 'fatsecret_search', q: 'oats' });
+ok(r.status === 502, 'an error delivered inside a 200 is reported as a failure, not passed through');
+ok(r.body.fatsecret_code === 21 && /Invalid IP/.test(String(r.body.fatsecret_message)),
+   "and carries FatSecret's own code and message, so the cause is not guesswork");
+ok(r.body.foods === undefined, 'the error body is never handed back as though it were foods');
+ok(searchCalls.length === 1, 'a non-auth error is terminal — it is NOT retried');
+ok(fetchCalls.length === oauthBefore3, 'and costs no extra token exchange');
+searchApiError = null;
 
 // ── 5. the other providers were not disturbed ───────────────────────────────────────────────────
 setEnv({ ESV_API_KEY: 'e', USDA_API_KEY: 'u' });
