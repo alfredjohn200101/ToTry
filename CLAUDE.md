@@ -126,10 +126,15 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    proxy speaks OAuth 2.0 and FatSecret's console offers you the OAuth 1.0 Consumer pair; you need the
    Client ID + Client Secret, and the secret is shown once at creation). ESV and USDA are live, and the
    `push_subscriptions` boolean migration turned out never to have been needed — the columns were
-   already `text`/`jsonb`. **What is left: Gemini is still the only VERIFIED provider.** The order comes
-   from `AI_PROVIDER_ORDER` with no per-request override, so to test the fallbacks set it to `groq`,
-   probe, then `openrouter`, then restore. One Gemini outage still takes the food camera, the companion
-   and the coach together. See AI-PROXY-DEPLOY.md, which now opens with the measured results.
+   already `text`/`jsonb`. **The AI chain is no longer one provider deep — five of six are VERIFIED
+   LIVE (2 Sep 2026).** `body.prefer` now exists, so each link is probeable without touching any env
+   var — that is what "make the four links behind gemini actually checkable" bought. Measured:
+   gemini (gemini-2.5-flash), groq (openai/gpt-oss-120b), openrouter (nvidia/nemotron-3-super-120b),
+   mistral (mistral-small-2603) and cloudflare (@cf/google/gemma-4-26b-a4b-it) each answered when
+   preferred. `prefer:anthropic` fell through to gemini, which is correct — ANTHROPIC_API_KEY is unset
+   and a missing key skips silently; it is the paid last resort behind five free ones. A Gemini outage
+   no longer takes the food camera, the companion and the coach with it.
+   See AI-PROXY-DEPLOY.md, which now opens with the measured results.
 
    <details><summary>The original entry, kept because its measurements explain the fix</summary>
 

@@ -110,10 +110,33 @@ Known cosmetic wart: `{"provider":"status"}` reports `working_pair: null` even w
 work, because `fsWorkingPair` is cached per warm instance and the status path never performs an
 exchange. Trust `{"provider":"fatsecret"}` (a 200 with an access_token), not the status field.
 
-**What is still true:** Gemini is the only verified link in the AI chain. Groq and OpenRouter cannot be
-tested from the client — the order comes from `AI_PROVIDER_ORDER` with no per-request override — so set
-that env var to `groq`, probe, then `openrouter`, then set it back. Until one of them is confirmed, a
-single Gemini outage takes the food camera, the companion and the coach together.
+**No longer true — the chain is five deep, verified live 2 Sep 2026.** This used to say Gemini was the
+only confirmed link and that testing the others meant juggling `AI_PROVIDER_ORDER`. `body.prefer` now
+puts a named provider at the front of the chain for one request, so each link is probeable from the
+client with nothing to set and nothing to restore:
+
+```bash
+for P in gemini groq openrouter mistral cloudflare anthropic; do
+  curl -s -X POST "https://oklvalcgxeoudgpldzkk.supabase.co/functions/v1/ai-proxy" \
+    -H "apikey: $ANON" -H "Authorization: Bearer $ANON" -H "Content-Type: application/json" \
+    -d "{\"prefer\":\"$P\",\"max_tokens\":2000,\"messages\":[{\"role\":\"user\",\"content\":\"Reply with exactly: OK\"}]}"
+done
+```
+
+Check the `provider` field in each reply — if it does not match what you preferred, that link did not
+serve. Measured:
+
+| preferred | served by | model |
+|---|---|---|
+| gemini | gemini | `gemini-2.5-flash` |
+| groq | groq | `openai/gpt-oss-120b` |
+| openrouter | openrouter | `nvidia/nemotron-3-super-120b-a12b:free` |
+| mistral | mistral | `mistral-small-2603` |
+| cloudflare | cloudflare | `@cf/google/gemma-4-26b-a4b-it` |
+| anthropic | **gemini** | not configured — `ANTHROPIC_API_KEY` unset, and a missing key skips silently |
+
+Anthropic falling through is correct: it is the paid last resort behind five free providers. A single
+Gemini outage no longer takes the food camera, the companion and the coach together.
 
 ## FREE PROVIDERS — what is wired, what was rejected, and why
 
