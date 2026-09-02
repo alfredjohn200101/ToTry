@@ -62,6 +62,31 @@ unconfigured one costs nothing. Optional per-provider model pins: `MISTRAL_MODEL
 `MISTRAL_VISION_MODEL`, `CLOUDFLARE_MODEL`, `CLOUDFLARE_VISION_MODEL`, `NVIDIA_VISION_MODEL` — a pin is
 tried FIRST and the built-in list still follows it, so a stale pin costs a request, never the provider.
 
+### Probed live against real keys — 2 Sep 2026
+
+| probe | result |
+|---|---|
+| text, default order | gemini `gemini-2.5-flash` |
+| text `prefer:groq` | groq `openai/gpt-oss-120b` — **burned** `llama-3.1-8b-instant`, `llama-3.3-70b-versatile` |
+| text `prefer:mistral` | mistral `mistral-small-2603` (burned `ministral-8b-2512`) |
+| text `prefer:cloudflare` | cloudflare `@cf/google/gemma-4-26b-a4b-it` |
+| text `prefer:anthropic` | falls through — *"credit balance is too low"*, then gemini answers |
+| vision `prefer:mistral` | **mistral-small-2603 — multimodal AND on the free tier** |
+| vision `prefer:cloudflare` | `@cf/qwen/qwen3.8-27b` (burned `gemma-4-26b-a4b-it`) |
+| vision `prefer:nvidia` | `google/gemma-4-31b-it`, 4.9s warm (cold start once hit the 30s abort — now 45s) |
+| web_search default | gemini, `grounded: true` |
+| web_search `prefer:groq` | groq, **`grounded: false`** — an answer from training data is never labelled as looked up |
+
+**The `burned` field is what makes a rotting list visible.** Three providers were each answering fine
+while quietly losing candidates on every call — groq two of four, mistral one, cloudflare-vision one.
+All three lists are now ordered by what actually answered. A dead candidate is kept at the BACK rather
+than deleted: a vendor reinstating a model is at least as common as retiring one, and a candidate that
+never fires is free while a missing one is a provider that cannot recover.
+
+**Entitlement is not capability.** Mistral's ministral/large vision ids all return 403 *"not available
+in your subscription tier"* despite being documented as image-capable. Only a real key answers that
+question — a capability page never will.
+
 ### Three dialects that would fail silently, and are covered by tests
 - **Mistral's `image_url` is a plain STRING**, not OpenAI's `{url:...}` object. The object form returns
   a 422 that reads exactly like a dead model.

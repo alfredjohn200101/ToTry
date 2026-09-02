@@ -61,8 +61,15 @@ const MODELS = {
   //   404 "The model `qwen/qwen3-32b` does not exist or you do not have access to it"
   // so it is a wasted attempt on the way to the next provider. The four below are untried against a
   // key from here; whichever answers first wins and `attempts` in the response names it.
-  groq:        ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "openai/gpt-oss-120b",
-                "meta-llama/llama-4-scout-17b-16e-instruct"],
+  // PROBED LIVE 2 Sep 2026 against a real key: groq answered on openai/gpt-oss-120b having BURNED
+  // llama-3.1-8b-instant and llama-3.3-70b-versatile first — two dead candidates on the front of the
+  // list, so every groq call was paying two wasted round trips before it said anything. The provider
+  // was working the whole time and nothing surfaced the cost; the `burned` field added the day before
+  // is what made it visible. The two are kept at the back rather than deleted, because a vendor
+  // reinstating a model is at least as common as retiring one, and a candidate that never fires is
+  // free while a missing one is a provider that cannot recover.
+  groq:        ["openai/gpt-oss-120b", "meta-llama/llama-4-scout-17b-16e-instruct",
+                "llama-3.3-70b-versatile", "llama-3.1-8b-instant"],
   // Verified present in OpenRouter's public /api/v1/models on 17 Aug and re-verified 28 Aug 2026
   // (all three still listed; the free tier was returning 429 that day, which is quota, not rot).
   openrouter:  ["google/gemma-4-31b-it:free", "nvidia/nemotron-3-super-120b-a12b:free",
@@ -82,6 +89,10 @@ const MODELS = {
   // mistral-small-2603 is the id proven available on this key for text and Mistral Small is multimodal:
   // if it answers, vision stays free here; if not it costs ONE round trip instead of three before the
   // chain moves on.
+  // CONFIRMED LIVE 2 Sep 2026: mistral-small-2603 IS multimodal and IS on the free tier — it read a
+  // real 192x192 png and answered "ToTry by Alfred John logo". The ministral/mistral-large vision ids
+  // all return 403 "not available in your subscription tier", so capability and ENTITLEMENT are
+  // different questions and only a real key answers the second. One candidate, and it is the right one.
   mistralVision: ["mistral-small-2603"],
   // Cloudflare Workers AI — 10,000 Neurons/day, standing, resets 00:00 UTC, and on the Free plan it
   // HARD STOPS rather than billing. Two secrets, because the account id lives in the URL.
