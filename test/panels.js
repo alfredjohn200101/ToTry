@@ -2616,8 +2616,31 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
         document.getElementById('pm-e-cal').value = '450'; _pmSaveEdit(0); await w(120);
         gcase.calOnly = { g:_photoMeal.items[0].grams, cal:_photoMeal.items[0].cal };
       }
+      // WEIGH MODE — the override for the person who owns a scale. The photo has already done the hard
+      // half by naming what is on the plate; this replaces how much. The grams box used to live inside
+      // the per-item edit form, which meant four taps and five fields per item — it worked and nobody
+      // would use it. One column of weights instead: name left, grams right, go down the plate.
+      const weigh = {};
+      {
+        _photoMeal = { name:'G', confidence:'medium', low:0, high:0, describe:'',
+          items:[{ food:'Mixed meat gyros', grams:220, portion:'220g', cal:520, pro:44, carb:2, fat:36, mult:1 },
+                 { food:'Chips', grams:150, portion:'150g', cal:400, pro:5, carb:52, fat:19, mult:1 }] };
+        _renderPhotoMeal(); await w(200);
+        weigh.entry = /I weighed it/.test((document.getElementById('nut-search-results')||{}).innerText || '');
+        _pmWeighMode(true); await w(200);
+        const b0 = document.getElementById('pm-w-0');
+        weigh.boxes = !!b0 && !!document.getElementById('pm-w-1');
+        const rc = b0 ? b0.getBoundingClientRect() : { width:0, height:0 };
+        weigh.target = { w:Math.round(rc.width), h:Math.round(rc.height) };
+        b0.value = '260'; _pmWeighSet(0); await w(150);
+        document.getElementById('pm-w-1').value = '120'; _pmWeighSet(1); await w(150);
+        weigh.meat = { g:_photoMeal.items[0].grams, cal:_photoMeal.items[0].cal };
+        weigh.chips = { g:_photoMeal.items[1].grams, cal:_photoMeal.items[1].cal };
+        _pmWeighMode(false); await w(150);
+        weigh.exits = /Add 2 items to log/.test((document.getElementById('nut-search-results')||{}).innerText || '');
+      }
       const prompt = (typeof _mealPrompt === 'function') ? _mealPrompt('open plate gyros, large') : '';
-      return { seen, rec, gcase, ovCal: ov && ov.cal,
+      return { seen, rec, gcase, weigh, ovCal: ov && ov.cal,
                promptGrams: /GRAMS/.test(prompt), promptWords: /AUTHORITATIVE/.test(prompt),
                promptNoBody: !/bodyweight|calorie target|\bkg\b/i.test(prompt) };
     });
@@ -2642,9 +2665,24 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       findings.push(`photo-describe: a typed calorie was overwritten by the grams rescale (${JSON.stringify(t.gcase && t.gcase.typedWins)}, expected 400)`);
     if (!(t.gcase && t.gcase.calOnly && t.gcase.calOnly.g === 220 && t.gcase.calOnly.cal === 450))
       findings.push(`photo-describe: correcting only the calories disturbed the weight (${JSON.stringify(t.gcase && t.gcase.calOnly)})`);
+    // 520 over 220g reweighed at 260g is 615; 400 over 150g at 120g is 320.
+    if (!t.weigh || !t.weigh.entry) findings.push('weigh: no way into weigh mode from the photo card');
+    if (!t.weigh || !t.weigh.boxes) findings.push('weigh: weigh mode renders no grams field per item');
+    if (t.weigh && (t.weigh.target.w < 24 || t.weigh.target.h < 24))
+      findings.push(`weigh: the grams field is ${t.weigh.target.w}x${t.weigh.target.h} — under the 24px tap floor`);
+    if (!(t.weigh && t.weigh.meat.g === 260 && Math.abs(t.weigh.meat.cal - 615) <= 2))
+      findings.push(`weigh: weighing an item did not rescale it (${JSON.stringify(t.weigh && t.weigh.meat)}, expected 260g/615cal)`);
+    if (!(t.weigh && t.weigh.chips.g === 120 && Math.abs(t.weigh.chips.cal - 320) <= 2))
+      findings.push(`weigh: a SECOND weighed item did not rescale (${JSON.stringify(t.weigh && t.weigh.chips)}, expected 120g/320cal)`);
+    if (!(t.weigh && t.weigh.exits)) findings.push('weigh: no way back out of weigh mode to logging');
     if (errs.length)     findings.push(`photo-describe: page error — ${errs[0]}`);
-    if (!findings.some(f => f.startsWith('photo-describe:')))
+    // BOTH prefixes, because the weigh assertions live in this group and push under 'weigh:'. Checking
+    // only one meant a weigh failure would print this success line AND a finding — a suite that
+    // congratulates itself while reporting a defect is the shape that stops being read.
+    if (!findings.some(f => f.startsWith('photo-describe:') || f.startsWith('weigh:'))) {
       console.log('photo-describe: you can tell it what you ordered, it says how sure it is, and correcting it once teaches it for good');
+      console.log('weigh: the photo says what is on the plate and the scale says how much — 260g of gyros is 615 cal, and a second item weighs independently');
+    }
     }
 
   // ── THE CAMERA HONOURS "NUMBERS OFF" ─────────────────────────────────────────────────────────

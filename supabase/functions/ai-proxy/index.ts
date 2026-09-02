@@ -41,6 +41,14 @@ const CORS_HEADERS = {
 // standing free tiers awaiting a key and SKIP silently until one is set, so adding them costs an
 // unconfigured deploy nothing at all.
 const DEFAULT_ORDER = ["gemini", "groq", "openrouter", "mistral", "cloudflare", "anthropic"];
+// ONLY THESE TWO CAN ACTUALLY SEARCH — Gemini through google_search grounding, OpenRouter through its
+// ":online" model suffix. The others answer from training data, which for "what is in this dish" is
+// still a useful answer and is why they belong at the BACK of a web-search request rather than nowhere:
+// the old list was ["gemini","openrouter","anthropic"], so a bad afternoon at the two searchers fell
+// straight to the one provider that costs money and currently has no credit, while four working free
+// providers sat unused. The caller is told which it got — see `grounded` below — because an answer
+// composed from memory must not be presented as one looked up.
+const SEARCH_CAPABLE = ["gemini", "openrouter"];
 
 // Candidate models per provider, tried in order. First entry is the preferred one.
 // An env override (GROQ_MODEL etc.) replaces the whole list with that single value.
@@ -579,7 +587,9 @@ Deno.serve(async (req) => {
     const web_search = body.web_search === true;
 
     // ── WEB SEARCH: prefer search-capable providers (Gemini grounding, OpenRouter :online) ──
-    let order = web_search ? ["gemini", "openrouter", "anthropic"] : DEFAULT_ORDER.slice();
+    let order = web_search
+      ? SEARCH_CAPABLE.concat(DEFAULT_ORDER.filter((p) => SEARCH_CAPABLE.indexOf(p) < 0))
+      : DEFAULT_ORDER.slice();
     const envOrder = Deno.env.get("AI_PROVIDER_ORDER");
     if (!web_search && envOrder) order = envOrder.split(",").map((s) => s.trim()).filter(Boolean);
     if (body.prefer && order.includes(body.prefer)) order = [body.prefer, ...order.filter((p) => p !== body.prefer)];
@@ -598,7 +608,12 @@ Deno.serve(async (req) => {
             if (!bestTruncated || res.text.length > bestTruncated.text.length) bestTruncated = { text: res.text, provider: res.provider, model: res.model };
             continue;
           }
-          return json({ text: res.text, provider: res.provider, model: res.model, attempts, burned: res.burned });
+          // grounded says whether the answer was actually LOOKED UP or composed from training data.
+          // Without it the caller cannot tell the difference, and "from the web" on a screen is a claim
+          // about where a number came from.
+          return json({ text: res.text, provider: res.provider, model: res.model, attempts,
+                        burned: res.burned,
+                        grounded: !!web_search && SEARCH_CAPABLE.indexOf(name) > -1 });
         }
         attempts.push({ provider: name, status: res.status, error: extractErrorMsg(res.body) });
       } catch (e) {

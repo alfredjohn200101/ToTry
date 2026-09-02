@@ -128,6 +128,27 @@ r = await call({ messages: [{ role: 'user', content: 'hi' }] });
 ok(!calls.some(c => c.who === 'cloudflare'), 'half-configured cloudflare is never called at all');
 ok(r.body.provider === 'anthropic', 'and the chain still reaches an answer');
 
+// ── a web-search request must not fall off a cliff into the paid provider ──────────────────────
+// The order was ["gemini","openrouter","anthropic"]: only the first two can actually search, and when
+// both were down it went straight to the one provider that costs money — which currently has no credit
+// — while four working FREE providers sat unused. Searchers first, then the rest of the free chain
+// answering from training data, which for "what is in this dish" still beats no answer.
+reset({ MISTRAL_API_KEY: 'm' });
+behaviour.gemini = 'fail'; behaviour.openrouter = 'fail';
+r = await call({ messages: [{ role: 'user', content: 'what is in a gyros' }], web_search: true });
+ok(r.body.provider === 'groq' || r.body.provider === 'mistral',
+   'with both searchers down a web-search request reaches the free chain, not the paid provider (' + r.body.provider + ')');
+ok(r.body.grounded === false,
+   'and it says so: an answer composed from training data is NOT reported as looked up');
+
+reset();
+r = await call({ messages: [{ role: 'user', content: 'what is in a gyros' }], web_search: true });
+ok(r.body.provider === 'gemini' && r.body.grounded === true,
+   'while a searcher answering IS reported as grounded, so "from the web" on a screen is a true claim');
+
+r = await call({ messages: [{ role: 'user', content: 'hi' }] });
+ok(!r.body.grounded, 'and an ordinary request is never labelled grounded at all');
+
 // ── a provider that answers on its THIRD id is also telling you two ids are dead ────────────────
 // The winner was reported and the candidates burned getting to it were not, so a list could rot down
 // to its last entry with nothing ever saying so — which is how every previous endpoint rot survived.

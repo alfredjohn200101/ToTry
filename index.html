@@ -25758,7 +25758,11 @@ async function _pmWebLookup(){
     _photoMeal.assumptions = parsed.assumptions || '';
     _photoMeal.confidence = parsed.confidence || 'medium';
     _photoMeal.low = Number(parsed.cal_low)||0; _photoMeal.high = Number(parsed.cal_high)||0;
-    _photoMeal.describe = words; _photoMeal.__web = true;
+    // ONLY IF IT WAS ACTUALLY LOOKED UP. A web-search request now falls through the whole free chain,
+    // and the providers past the first two answer from training data rather than searching — a fine
+    // answer, but "from the web" printed under a number is a claim about where that number came from.
+    // ai-proxy reports which it was.
+    _photoMeal.describe = words; _photoMeal.__web = !!data.grounded;
     if(typeof haptic==='function') haptic('success');
   }catch(_){
     if(typeof showToast==='function') showToast('Nothing solid came back', 'The web did not have it. Your words are kept — adjust by hand.');
@@ -25855,6 +25859,22 @@ function _renderPhotoMeal(){
   const sel = pm.meal || (typeof currentMealSlot==='function'?currentMealSlot():'dinner');
   const rows = pm.items.map((it,i)=>{
     const m=it.mult||1;
+    if(pm._weighing){
+      // One field per item and nothing else. inputmode decimal so the number pad opens; enter moves on
+      // rather than submitting, because a plate is usually more than one weight.
+      return ''+
+      '<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--bd)">'+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(it.food||'Item')+'</div>'+
+          (_pmG ? '' : '<div style="font-family:DM Mono,monospace;font-size:10px;color:'+(it.__weighed?'var(--gr)':'var(--tx3)')+'">'+R(it.cal*m)+' cal'+(it.__weighed?' · weighed':'')+'</div>')+
+        '</div>'+
+        '<input id="pm-w-'+i+'" type="number" inputmode="decimal" value="'+(it.grams>0?R(it.grams*m):'')+'" placeholder="g" '+
+          'onchange="_pmWeighSet('+i+')" onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}" '+
+          'aria-label="Weight in grams of '+_escFew(it.food||'item')+'" '+
+          'style="width:86px;flex-shrink:0;padding:9px;font-size:16px;text-align:right">'+
+        '<div style="font-size:12px;color:var(--tx3);flex-shrink:0">g</div>'+
+      '</div>';
+    }
     if(pm._editing===i){
       // Edit mode — the thing Cal AI won't let you do: correct WHAT it is AND the numbers.
       return ''+
@@ -25925,6 +25945,11 @@ function _renderPhotoMeal(){
           '<button onclick="_pmWebLookup()" title="Search the web for this dish as it is actually served" style="flex:1;padding:8px;border-radius:8px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:11.5px;cursor:pointer">🔎 Look it up</button>'+
         '</div>'+
       '</div>'+
+      // A SCALE IS THE MOST ACCURATE READING THERE IS, and the photo has already done the hard half by
+      // naming what is on the plate. This is the override: keep what it saw, replace how much.
+      (pm._weighing
+        ? '<button onclick="_pmWeighMode(false)" class="btn primary" style="margin-top:10px">Done weighing</button>'
+        : '<button onclick="_pmWeighMode(true)" style="width:100%;margin-top:8px;padding:9px;border-radius:8px;background:var(--bg3);border:1px dashed var(--bd);color:var(--tx2);font-size:11.5px;cursor:pointer">\u2696\ufe0f I weighed it \u00b7 set the grams</button>')+
       '<div style="display:flex;gap:6px;margin-top:8px">'+
         '<button onclick="_pmAddItem()" style="flex:1;padding:8px;border-radius:8px;background:var(--bg3);border:1px dashed var(--bd);color:var(--tx2);font-size:11.5px;cursor:pointer">＋ Add an item</button>'+
         '<button onclick="_pmAddFat()" title="Cooking oil, butter and dressings don\'t show in a photo — this is why AI apps read low" style="flex:1;padding:8px;border-radius:8px;background:var(--bg3);border:1px dashed var(--bd);color:var(--tx2);font-size:11.5px;cursor:pointer">＋ Hidden fat</button>'+
@@ -25964,6 +25989,54 @@ function _pmRemove(i){ if(!_photoMeal)return; if(_photoMeal._editing===i) _photo
 function _pmMeal(m){ if(!_photoMeal)return; _photoMeal.meal=m; _renderPhotoMeal(); }
 // Correct WHAT the item is + its macros — the fix Cal AI locks you out of (it hands you one guess).
 function _pmEdit(i){ if(!_photoMeal||!_photoMeal.items[i])return; _photoMeal._editing=i; _renderPhotoMeal(); setTimeout(()=>{ const el=document.getElementById('pm-e-name'); if(el){ try{ el.focus(); if(el.value) el.select(); }catch(_){} } }, 40); }
+// A SCALE BEATS EVERY MODEL THERE IS. Rescale one item to a weighed number, keeping the density that
+// was already established for it — by the food table, by the person's own saved correction, or by the
+// estimate itself. Extracted so the edit form and weigh mode cannot drift into two answers for the
+// same question. Returns false when there is nothing to scale from, so the caller can leave it alone
+// rather than invent a figure.
+function _pmRescaleTo(it, grams){
+  if(!it || !(grams > 0)) return false;
+  const m = it.mult || 1;
+  const gOld = Number(it.grams) * m;
+  let per = null;
+  if(gOld > 0 && it.cal * m > 0){
+    per = { cal:it.cal*m/gOld, pro:it.pro*m/gOld, carb:it.carb*m/gOld, fat:it.fat*m/gOld };
+  } else {
+    // Nothing to scale from — the offline food table is per-100g and needs no network.
+    const g = _groundItemInTable({ food:it.food, grams:grams, cal:0, pro:0, carb:0, fat:0 });
+    if(g && g.cal > 0) per = { cal:g.cal/grams, pro:g.pro/grams, carb:g.carb/grams, fat:g.fat/grams };
+  }
+  if(!per || !(per.cal > 0)){ it.grams = grams; it.portion = Math.round(grams)+'g'; return false; }
+  it.cal = Math.round(per.cal*grams);
+  it.pro = Math.round(per.pro*grams*10)/10;
+  it.carb= Math.round(per.carb*grams*10)/10;
+  it.fat = Math.round(per.fat*grams*10)/10;
+  it.grams = grams; it.mult = 1; it.portion = Math.round(grams)+'g';
+  it.__weighed = true; it.__edited = true;
+  return true;
+}
+// WEIGH MODE. The photo says WHAT is on the plate; a scale says how much. Putting the grams box inside
+// the per-item edit form meant four taps and five fields per item to use a scale — so it worked and
+// nobody would. This turns the whole list into one column of weights: name on the left, grams on the
+// right, go down the plate. Nobody has to own a scale, and the person who does should not have to fight
+// the app to use it.
+function _pmWeighMode(on){
+  if(!_photoMeal) return;
+  _photoMeal._weighing = !!on;
+  _photoMeal._editing = null;
+  if(typeof haptic==='function') haptic('tap');
+  _renderPhotoMeal();
+}
+function _pmWeighSet(i){
+  if(!_photoMeal || !_photoMeal.items[i]) return;
+  const el = document.getElementById('pm-w-'+i);
+  const g = parseFloat(el && el.value);
+  if(!(g > 0)) return;
+  const ok = _pmRescaleTo(_photoMeal.items[i], g);
+  if(!ok && typeof showToast==='function')
+    showToast('Weight saved', 'I had nothing to scale that one from, so its numbers are unchanged — set them in the item if you know them.');
+  _renderPhotoMeal();
+}
 function _pmSaveEdit(i){
   if(!_photoMeal||!_photoMeal.items[i])return;
   const num=id=>{ const el=document.getElementById(id); const v=parseFloat(el&&el.value); return (isNaN(v)||v<0)?0:v; };
@@ -25989,21 +26062,14 @@ function _pmSaveEdit(i){
   // already established for this food rather than making them do the arithmetic. If they edited the
   // macros as well, those win: a typed macro is the more specific claim and must not be overwritten.
   if(_gNew > 0 && Math.abs(_gNew - _gOld) > 0.5){
-    let per = null;
-    if(_gOld > 0 && _shown.cal > 0){
-      per = { cal:_shown.cal/_gOld, pro:_shown.pro/_gOld, carb:_shown.carb/_gOld, fat:_shown.fat/_gOld };
+    // The same rescaler weigh mode uses — but only when the macro boxes were left alone. A typed macro
+    // is the more specific claim and must never be overwritten by a size change.
+    if(_macrosUntouched){
+      const _keep = { cal:_shown.cal, pro:_shown.pro, carb:_shown.carb, fat:_shown.fat, grams:_gOld, mult:1 };
+      _pmRescaleTo(Object.assign(it, { cal:_keep.cal, pro:_keep.pro, carb:_keep.carb, fat:_keep.fat, grams:_gOld, mult:1 }), _gNew);
     } else {
-      // Nothing to scale from — try the offline food table, which is per-100g and needs no network.
-      const g = _groundItemInTable({ food:it.food, grams:_gNew, cal:0, pro:0, carb:0, fat:0 });
-      if(g && g.cal > 0) per = { cal:g.cal/_gNew, pro:g.pro/_gNew, carb:g.carb/_gNew, fat:g.fat/_gNew };
+      it.grams = _gNew; it.portion = Math.round(_gNew)+'g'; it.__weighed = true;
     }
-    if(per && per.cal > 0 && _macrosUntouched){
-      it.cal = Math.round(per.cal*_gNew);
-      it.pro = Math.round(per.pro*_gNew*10)/10;
-      it.carb= Math.round(per.carb*_gNew*10)/10;
-      it.fat = Math.round(per.fat*_gNew*10)/10;
-    }
-    it.grams = _gNew; it.portion = Math.round(_gNew)+'g'; it.__weighed = true;
   } else if(_gNew > 0){
     it.grams = _gNew; it.portion = Math.round(_gNew)+'g';
   }
