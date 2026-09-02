@@ -183,8 +183,13 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    - MONEY leads with what staying clean bought, once there is something to lead with
    - CALENDAR was a question, and the code answered it: the view is already in Today, the screen is
      only the editor
-7. **Then:** the "reach out first" scheduled nudges (post-wrapper), and whatever the App Store
-   feedback turns up.
+7. **The "reach out first" scheduled nudges are BUILT** — this entry said "then", and the code was
+   already there. `scheduleReachOut()` (`src/app/02-native.js`) is called from five sites including
+   boot, and it is not a sketch: it separates web from native (web cannot background-fire, so it shows
+   the plan and deliberately logs nothing), only records a nudge that Notify.schedule actually
+   confirmed, and serialises the confirmations on one chain so two of them cannot lose an entry.
+   `reachOutSuggestion()` feeds the moment and the evening; `totry_reachouts` holds the history.
+   **What is actually left is only the App Store** (1), and whatever its feedback turns up.
 
 ## Files in this handoff
 - `index.html`, `sw.js` — the app.
