@@ -2,6 +2,52 @@
 
 This is everything to get the backend matching the app (cache v128).
 
+## ⚠️ KEY-PROXY IS ONE DEPLOY BEHIND — 2 Sep 2026 (v574)
+
+`supabase/functions/key-proxy` gained a **`fatsecret_search`** provider and has NOT been deployed.
+Probed against the live project on 2 Sep 2026:
+
+| probe | result |
+|---|---|
+| `{"provider":"fatsecret_search","q":"chicken breast"}` | `{"error":"unknown provider"}` **400** — the deployed copy predates it |
+| `{"provider":"fatsecret"}` (control) | **200** with an `access_token` — deployed, credentials live |
+
+```bash
+supabase functions deploy key-proxy
+```
+
+**Why it exists.** `searchFatSecret()` used to call `platform.fatsecret.com` straight from the browser
+with an `Authorization` header. Measured against the live API on 2 Sep 2026: FatSecret answers a CORS
+preflight with **200 and no `Access-Control-Allow-Origin` header**, on both the OPTIONS and the GET —
+and an Authorization header forces a preflight. So the browser blocked it **100% of the time**. It never
+once returned a food; it only cost a token exchange per search and logged a `503 {"error":"offline"}`
+(sw.js:92 synthesises that when a fetch throws). Capacitor does not patch `fetch` here — there is no
+`CapacitorHttp` in `capacitor.config.json` — so it was equally dead in the iOS shell. CORS does not
+apply to a server, so the search now runs inside the function that already holds the token, and the
+token no longer reaches the client at all.
+
+**Until it is deployed** the app degrades exactly as it always did on failure: `keyProxy()` sees
+`data.error`, returns `null`, `searchFatSecret()` returns `[]`, and `searchFood()` carries on with USDA,
+OpenFoodFacts and Nutritionix through `Promise.allSettled`. A quieter result list, not a broken search.
+The only visible trace is one 400 in the console — which is why the log-food clip from
+`node scripts/record-reels.js` reports ISSUES until you deploy.
+
+**Confirm it after deploying:**
+
+```bash
+curl -s -X POST "https://oklvalcgxeoudgpldzkk.supabase.co/functions/v1/key-proxy" \
+  -H "apikey: sb_publishable_YdBhqYPvyxeUH0E2z--84w_RXxrIuE3" \
+  -H "Authorization: Bearer sb_publishable_YdBhqYPvyxeUH0E2z--84w_RXxrIuE3" \
+  -H "Content-Type: application/json" \
+  -d '{"provider":"fatsecret_search","q":"chicken breast"}'
+```
+
+You want a `200` whose body has `foods.food[]`. A `502 {"error":"fatsecret search 401"}` means the token
+is issued but rejected on the REST call — scope, or the IP allowlist named further down; the function
+retries once with a fresh token and then gives up rather than spinning.
+
+---
+
 ## ✅ DEPLOYED AND VERIFIED LIVE — 31 Aug 2026
 
 Both functions were redeployed on 31 Aug 2026 and probed against the live project. Everything the

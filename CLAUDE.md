@@ -42,7 +42,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
-- `APP_VERSION` in `src/app/00-boot.js` — currently **v571**. Bump it AND `CACHE` in sw.js together, always.
+- `APP_VERSION` in `src/app/00-boot.js` — currently **v574**. Bump it AND `CACHE` in sw.js together, always.
 
 ## The nervous system (key functions — grep these)
 - `getLifeState()` — returns the whole person {training, nutrition, body, soul, fight, readiness,
@@ -65,7 +65,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    reported 1032 PASSED, because the harness extracts functions by name and never parsed the whole
    script. A suite that stays green while the app cannot boot is worse than no suite.
 2. **Run the whole gate before you ship**, not just `npm test`:
-   - `npm test` — 1651 assertions over the real bundle (core math, dead code, privacy promises,
+   - `npm test` — 1656 assertions over the real bundle (core math, dead code, privacy promises,
      the voice gates, the parse check)
    - `npm run crisis` — types the worst sentence into all ELEVEN free-text doors and asserts a
      helpline is on screen and TAPPABLE (geometry, not DOM presence — the bug it was written for
