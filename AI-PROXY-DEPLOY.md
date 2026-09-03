@@ -138,6 +138,28 @@ serve. Measured:
 Anthropic falling through is correct: it is the paid last resort behind five free providers. A single
 Gemini outage no longer takes the food camera, the companion and the coach together.
 
+**The VISION chain is a different chain, and it had never been probed.** `prefer` works on it too
+(ai-proxy:580). Measured 2 Sep 2026 with a real PNG, checking the `provider` field on each reply:
+
+| preferred | served by | model |
+|---|---|---|
+| gemini | gemini-vision | `gemini-2.5-flash` |
+| openrouter | **gemini-vision** | did NOT serve — `attempts` names it: `{"provider":"openrouter","status":429}` |
+| mistral | mistral-vision | `mistral-small-2603` |
+| cloudflare | cloudflare-vision | `@cf/qwen/qwen3.8-27b` |
+| nvidia | nvidia-vision | `google/gemma-4-31b-it` |
+
+So the food camera has FOUR working providers, not five. OpenRouter's vision 429 is a per-model
+free-tier quota, not a dead key or a retired id — **OpenRouter text answers fine on the same
+credentials** (`nvidia/nemotron-3-super-120b-a12b:free`), so nothing needs rotating. It is consistent
+across repeated calls, not a momentary limit. Nothing to fix in code: the chain does exactly what it
+should, which is skip it and serve from the next link. Worth re-probing before assuming it is still
+limited — quotas reset.
+
+This is the failure `prefer` was built to expose. Gemini answers first in normal use, so a rate-limited
+OpenRouter is invisible from the outside — indistinguishable from a healthy fallback until the day
+Gemini is down and it is needed.
+
 ## FREE PROVIDERS — what is wired, what was rejected, and why
 
 Verified live on 1 Sep 2026, each against the vendor's own API or machine-readable model list. Nothing
