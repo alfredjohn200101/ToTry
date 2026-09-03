@@ -99,7 +99,13 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    Add a test when you add core math, and FAULT-INJECT it: an assertion you have never seen fail is
    not yet a test.
 3. **Bump `APP_VERSION` (`src/app/00-boot.js`) and `CACHE` (sw.js) together** on every release,
-   then `npm run build:index && npm run build:www && npx cap sync ios`. `npm run preflight` checks
+   then `npm run build:index && npm run build:www && npx cap sync` — **`cap sync` with no platform, or
+   android silently rots.** This line said `cap sync ios`, and on 2 Sep 2026 the Android web bundle was
+   found sitting at v567 against a v574 source, seven versions behind, because nothing ever synced it
+   and `preflight` does not look at it. It is gitignored so it never reached the repo, and Android has
+   never shipped (no keystore, `versionName "1.0"`), which is why it went unnoticed — but a local
+   Android build would have packaged v567. `npm run sync` already does both platforms.
+   `npm run preflight` checks
    all of it — the repo has already sat four versions ahead of the iOS bundle without anyone seeing.
 4. **Quality over speed. Honest assessment** — never claim done when it isn't.
    - **Read the whole gate BEFORE `git push`, not after.** v542 went out with `npm run panels` red
