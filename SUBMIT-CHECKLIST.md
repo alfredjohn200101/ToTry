@@ -43,6 +43,43 @@ Verified in the actual shipping bundle, not just the repo:
 
 ---
 
+## ✅ BUILD 5 ARCHIVED AND UPLOADED — 4 Sep 2026
+
+v574, version 1.0, **build 5**, 2.1 MB, signed *Apple Distribution: Alfred John (L4BD53PLVF)*.
+Uploaded through Xcode Organizer → Distribute App → App Store Connect. Verified in the exported .ipa
+BEFORE upload, from the built binary rather than the project settings:
+
+| check | result |
+|---|---|
+| `get-task-allow` | `false` |
+| `beta-reports-active` | `true` |
+| HealthKit entitlements | both present (incl. background-delivery) |
+| architecture | `arm64` only — no simulator slice |
+| `PrivacyInfo.xcprivacy` | present |
+| usage descriptions | 7 |
+| `ITSAppUsesNonExemptEncryption` | `false` — the export-compliance question is not asked |
+| min iOS | 15.0 |
+| web bundle inside the .app | **v574** |
+
+**`CURRENT_PROJECT_VERSION` is now 6**, so the next archive cannot collide with what was just sent.
+
+### Uploading still needs Organizer, not the command line
+
+`~/.appstoreconnect/private_keys/AuthKey_49872NRTQS.p8` exists but the **issuer ID** that pairs with it
+is still not on this machine, so `xcrun altool` cannot be driven. Organizer uses the Apple ID already
+signed into Xcode and needs no key. Note Organizer reads archives from
+`~/Library/Developer/Xcode/Archives/<date>/` — an archive written anywhere else (e.g. by the xcodebuild
+command below with a custom `-archivePath`) must be copied there before it appears in the list.
+
+### What is in build 5 that was not in build 4
+
+v574: the FatSecret food search moved server-side into `key-proxy` (the browser call was CORS-blocked
+100% of the time, on iOS too); the starter-target strip now names the person's own calorie number
+rather than the generic default; the demo persona no longer reports its own target as generic; and the
+Bhagavad Gita reader carries chapter context (421 → 1,223 characters).
+
+---
+
 ## ✅ BUILD 4 ARCHIVED AND UPLOADED — 2 Sep 2026
 
 v573 (`APP_VERSION` in the shipped bundle), version 1.0, **build 4**, 2.1 MB, signed *Apple
