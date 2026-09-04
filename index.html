@@ -11108,6 +11108,8 @@ const STOIC_BOOKS = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XI
 const STOIC_PAGE = 'The Thoughts of the Emperor Marcus Aurelius Antoninus/Book ';
 async function _readStoicInit(sel,content){
   let i=0; try{ if(typeof getDayCount==='function') i=getDayCount()%STOIC_BOOKS.length; }catch(_){ }
+  // A plan day asked for a specific book; honour it and clear the request, as the Qur'an reader does.
+  try{ if(window.__stoicJump){ const j=STOIC_BOOKS.indexOf(window.__stoicJump); if(j>-1) i=j; window.__stoicJump=0; } }catch(_){ }
   if(sel) sel.innerHTML='<select id="stoic-bk" onchange="_readStoicLoad(this.value)" style="'+_selStyle()+'">'+
     STOIC_BOOKS.map((b,n)=>'<option value="'+b+'"'+(n===i?' selected':'')+'>Book '+b+'</option>').join('')+'</select>';
   _readStoicLoad(STOIC_BOOKS[i]);
@@ -11189,6 +11191,7 @@ const DHP_CHAPTERS = [
 ];
 async function _readDhammapadaInit(sel,content){
   let i=0; try{ if(typeof getDayCount==='function') i=getDayCount()%DHP_CHAPTERS.length; }catch(_){ }
+  try{ if(window.__dhpJump){ const j=DHP_CHAPTERS.findIndex(c=>c[0]===window.__dhpJump); if(j>-1) i=j; window.__dhpJump=0; } }catch(_){ }
   if(sel) sel.innerHTML='<select id="dhp-ch" onchange="_readDhammapadaLoad(this.value)" style="'+_selStyle()+'">'+
     DHP_CHAPTERS.map((c,n)=>'<option value="'+c[0]+'"'+(n===i?' selected':'')+'>'+_escFew(c[1])+'</option>').join('')+'</select>';
   _readDhammapadaLoad(DHP_CHAPTERS[i][0]);
@@ -11940,6 +11943,25 @@ function _planOpenFull(id,i){
   const ref=days.length?String(days[_planClamp(i,days.length)].r||''):'';
   if(t==='hinduism'){ const m=ref.match(/(\d+)\.(\d+)/); if(m) window.__gita={ch:+m[1],v:+m[2]}; }
   if(t==='islam'){ const m=ref.match(/(\d+):(\d+)/); if(m) window.__quranJump=+m[1]; }
+  // BUDDHISM AND SECULAR WERE MISSING, so "Open it in the Dhammapada" and "Open it in the Stoics"
+  // dropped the person on whatever passage the day-count happened to pick — a plan day citing
+  // Dhammapada 103 opened a different chapter, and Meditations 5.1 opened Book X. Two of the five
+  // traditions had a button that quietly went somewhere else.
+  if(t==='buddhism'){
+    const m=ref.match(/(\d+)/);
+    if(m && typeof DHP_CHAPTERS!=='undefined'){
+      const v=+m[1];
+      const hit=DHP_CHAPTERS.find(c=>{ const r=String(c[0]).replace('dhp','').split('-'); return v>=+r[0] && v<=+r[1]; });
+      if(hit) window.__dhpJump=hit[0];
+    }
+  }
+  if(t==='secular'){
+    const m=ref.match(/(\d+)\s*[.:]\s*\d+/) || ref.match(/(\d+)/);
+    if(m && typeof STOIC_BOOKS!=='undefined'){
+      const n=+m[1];
+      if(n>=1 && n<=STOIC_BOOKS.length) window.__stoicJump=STOIC_BOOKS[n-1];
+    }
+  }
   if(typeof openReader==='function') openReader(t);
 }
 
@@ -23368,7 +23390,27 @@ async function logBody(){
   // totry_body and every later reader could still hand it to a model. Gating the moment is not the
   // same as gating the record; that is the whole lesson of v449.
   try{ if(_wkCrisis) newEntry.flagged = true; }catch(_){ }
-  entries.unshift(newEntry);
+  // ONE WEIGH-IN PER DAY, WHICHEVER DOOR YOU CAME THROUGH. saveQuickWeight already finds today's
+  // entry and replaces it; this unconditionally unshifted a second one — and in a different date
+  // format ("4 Sept" here vs "04/09/2026" there), so RECENT WEIGH-INS showed the same day twice with
+  // two different weights and no way to tell which was current. Same identity test saveQuickWeight
+  // uses (ts first, falling back to either date string), and a merge rather than a clobber so a
+  // check-in with no weight typed cannot wipe a weight logged earlier the same day.
+  const _todayFull = new Date().toLocaleDateString('en-AU');
+  const _todayShort = new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+  const _iToday = entries.findIndex(e => e && (e.ts
+    ? new Date(e.ts).toLocaleDateString('en-AU') === _todayFull
+    : (e.date === _todayShort || e.date === _todayFull)));
+  if(_iToday > -1){
+    const prev = entries[_iToday];
+    const merged = Object.assign({}, prev, newEntry);
+    if(!(newEntry.weight > 0) && prev.weight > 0) merged.weight = prev.weight;   // never lose a weight
+    if(!newEntry.photo && prev.photo) merged.photo = prev.photo;
+    merged.date = prev.date;                                   // keep the day's existing identity
+    entries[_iToday] = merged;
+  } else {
+    entries.unshift(newEntry);
+  }
   ls('totry_body',entries.slice(0,1000));
   
   // Reset form
@@ -33216,17 +33258,29 @@ function renderBills(){
 }
 
 // ── CATEGORY BUDGETS ─────────────────────────────────────────
+// THE ROWS ON SCREEN ARE THE AUTHORITY, NOT THE CONSTANT. The editor built inputs only for the seven
+// EXPENSE_CATEGORIES and saveBudgets rebuilt the whole map from those same seven — so any budget with a
+// key outside that list (a legacy category, one seeded by demo data, one renamed since) had no field,
+// could not be edited, and was silently DESTROYED the next time "Save budgets" was tapped, under a
+// toast that said it had saved. Show everything that exists; save exactly what was shown.
+function _budgetEditorCats(budgets){
+  const seen = new Set(EXPENSE_CATEGORIES.map(c => String(c).toLowerCase()));
+  const extra = Object.keys(budgets || {}).filter(c => !seen.has(String(c).toLowerCase()));
+  return EXPENSE_CATEGORIES.concat(extra);
+}
+function _budgetInputId(cat){ return 'budget-' + String(cat).replace(/[^a-z0-9]/gi, ''); }
 function openBudgetLogger(){
   const budgets = ls('totry_budgets') || {};
+  const CATS = _budgetEditorCats(budgets);
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:88vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:14px">Set category budgets</h3>' +
     '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Monthly limit per expense category. Leave blank to skip.</p>' +
-    EXPENSE_CATEGORIES.map(cat => 
+    CATS.map(cat => 
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
         '<div style="flex:1;font-size:13px;color:var(--tx)">' + cat + '</div>' +
-        '<input type="number" id="budget-' + cat.replace(/[^a-z]/gi, '') + '" step="10" value="' + (budgets[cat] || '') + '" placeholder="'+curSym()+'" style="max-width:100px;text-align:right">' +
+        '<input type="number" id="' + _budgetInputId(cat) + '" step="10" value="' + (budgets[cat] || '') + '" placeholder="'+curSym()+'" style="max-width:100px;text-align:right">' +
       '</div>'
     ).join('') +
     '<button class="btn primary" onclick="saveBudgets()" style="margin-top:14px;margin-bottom:8px">Save budgets</button>' +
@@ -33236,8 +33290,10 @@ function openBudgetLogger(){
 }
 function saveBudgets(){
   const out = {};
-  EXPENSE_CATEGORIES.forEach(cat => {
-    const v = parseFloat(document.getElementById('budget-' + cat.replace(/[^a-z]/gi, ''))?.value || 0);
+  // Same list the editor rendered — including any category outside EXPENSE_CATEGORIES — so a budget
+  // this screen never showed can never be dropped by a save it took no part in.
+  _budgetEditorCats(ls('totry_budgets') || {}).forEach(cat => {
+    const v = parseFloat(document.getElementById(_budgetInputId(cat))?.value || 0);
     if(v > 0) out[cat] = v;
   });
   ls('totry_budgets', out);

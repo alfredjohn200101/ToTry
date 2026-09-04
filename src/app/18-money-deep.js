@@ -1013,17 +1013,29 @@ function renderBills(){
 }
 
 // ── CATEGORY BUDGETS ─────────────────────────────────────────
+// THE ROWS ON SCREEN ARE THE AUTHORITY, NOT THE CONSTANT. The editor built inputs only for the seven
+// EXPENSE_CATEGORIES and saveBudgets rebuilt the whole map from those same seven — so any budget with a
+// key outside that list (a legacy category, one seeded by demo data, one renamed since) had no field,
+// could not be edited, and was silently DESTROYED the next time "Save budgets" was tapped, under a
+// toast that said it had saved. Show everything that exists; save exactly what was shown.
+function _budgetEditorCats(budgets){
+  const seen = new Set(EXPENSE_CATEGORIES.map(c => String(c).toLowerCase()));
+  const extra = Object.keys(budgets || {}).filter(c => !seen.has(String(c).toLowerCase()));
+  return EXPENSE_CATEGORIES.concat(extra);
+}
+function _budgetInputId(cat){ return 'budget-' + String(cat).replace(/[^a-z0-9]/gi, ''); }
 function openBudgetLogger(){
   const budgets = ls('totry_budgets') || {};
+  const CATS = _budgetEditorCats(budgets);
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:88vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:14px">Set category budgets</h3>' +
     '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Monthly limit per expense category. Leave blank to skip.</p>' +
-    EXPENSE_CATEGORIES.map(cat => 
+    CATS.map(cat => 
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">' +
         '<div style="flex:1;font-size:13px;color:var(--tx)">' + cat + '</div>' +
-        '<input type="number" id="budget-' + cat.replace(/[^a-z]/gi, '') + '" step="10" value="' + (budgets[cat] || '') + '" placeholder="'+curSym()+'" style="max-width:100px;text-align:right">' +
+        '<input type="number" id="' + _budgetInputId(cat) + '" step="10" value="' + (budgets[cat] || '') + '" placeholder="'+curSym()+'" style="max-width:100px;text-align:right">' +
       '</div>'
     ).join('') +
     '<button class="btn primary" onclick="saveBudgets()" style="margin-top:14px;margin-bottom:8px">Save budgets</button>' +
@@ -1033,8 +1045,10 @@ function openBudgetLogger(){
 }
 function saveBudgets(){
   const out = {};
-  EXPENSE_CATEGORIES.forEach(cat => {
-    const v = parseFloat(document.getElementById('budget-' + cat.replace(/[^a-z]/gi, ''))?.value || 0);
+  // Same list the editor rendered — including any category outside EXPENSE_CATEGORIES — so a budget
+  // this screen never showed can never be dropped by a save it took no part in.
+  _budgetEditorCats(ls('totry_budgets') || {}).forEach(cat => {
+    const v = parseFloat(document.getElementById(_budgetInputId(cat))?.value || 0);
     if(v > 0) out[cat] = v;
   });
   ls('totry_budgets', out);

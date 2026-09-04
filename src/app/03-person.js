@@ -3337,6 +3337,8 @@ const STOIC_BOOKS = ['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XI
 const STOIC_PAGE = 'The Thoughts of the Emperor Marcus Aurelius Antoninus/Book ';
 async function _readStoicInit(sel,content){
   let i=0; try{ if(typeof getDayCount==='function') i=getDayCount()%STOIC_BOOKS.length; }catch(_){ }
+  // A plan day asked for a specific book; honour it and clear the request, as the Qur'an reader does.
+  try{ if(window.__stoicJump){ const j=STOIC_BOOKS.indexOf(window.__stoicJump); if(j>-1) i=j; window.__stoicJump=0; } }catch(_){ }
   if(sel) sel.innerHTML='<select id="stoic-bk" onchange="_readStoicLoad(this.value)" style="'+_selStyle()+'">'+
     STOIC_BOOKS.map((b,n)=>'<option value="'+b+'"'+(n===i?' selected':'')+'>Book '+b+'</option>').join('')+'</select>';
   _readStoicLoad(STOIC_BOOKS[i]);
@@ -3418,6 +3420,7 @@ const DHP_CHAPTERS = [
 ];
 async function _readDhammapadaInit(sel,content){
   let i=0; try{ if(typeof getDayCount==='function') i=getDayCount()%DHP_CHAPTERS.length; }catch(_){ }
+  try{ if(window.__dhpJump){ const j=DHP_CHAPTERS.findIndex(c=>c[0]===window.__dhpJump); if(j>-1) i=j; window.__dhpJump=0; } }catch(_){ }
   if(sel) sel.innerHTML='<select id="dhp-ch" onchange="_readDhammapadaLoad(this.value)" style="'+_selStyle()+'">'+
     DHP_CHAPTERS.map((c,n)=>'<option value="'+c[0]+'"'+(n===i?' selected':'')+'>'+_escFew(c[1])+'</option>').join('')+'</select>';
   _readDhammapadaLoad(DHP_CHAPTERS[i][0]);
@@ -4169,6 +4172,25 @@ function _planOpenFull(id,i){
   const ref=days.length?String(days[_planClamp(i,days.length)].r||''):'';
   if(t==='hinduism'){ const m=ref.match(/(\d+)\.(\d+)/); if(m) window.__gita={ch:+m[1],v:+m[2]}; }
   if(t==='islam'){ const m=ref.match(/(\d+):(\d+)/); if(m) window.__quranJump=+m[1]; }
+  // BUDDHISM AND SECULAR WERE MISSING, so "Open it in the Dhammapada" and "Open it in the Stoics"
+  // dropped the person on whatever passage the day-count happened to pick — a plan day citing
+  // Dhammapada 103 opened a different chapter, and Meditations 5.1 opened Book X. Two of the five
+  // traditions had a button that quietly went somewhere else.
+  if(t==='buddhism'){
+    const m=ref.match(/(\d+)/);
+    if(m && typeof DHP_CHAPTERS!=='undefined'){
+      const v=+m[1];
+      const hit=DHP_CHAPTERS.find(c=>{ const r=String(c[0]).replace('dhp','').split('-'); return v>=+r[0] && v<=+r[1]; });
+      if(hit) window.__dhpJump=hit[0];
+    }
+  }
+  if(t==='secular'){
+    const m=ref.match(/(\d+)\s*[.:]\s*\d+/) || ref.match(/(\d+)/);
+    if(m && typeof STOIC_BOOKS!=='undefined'){
+      const n=+m[1];
+      if(n>=1 && n<=STOIC_BOOKS.length) window.__stoicJump=STOIC_BOOKS[n-1];
+    }
+  }
   if(typeof openReader==='function') openReader(t);
 }
 

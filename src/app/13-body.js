@@ -192,7 +192,27 @@ async function logBody(){
   // totry_body and every later reader could still hand it to a model. Gating the moment is not the
   // same as gating the record; that is the whole lesson of v449.
   try{ if(_wkCrisis) newEntry.flagged = true; }catch(_){ }
-  entries.unshift(newEntry);
+  // ONE WEIGH-IN PER DAY, WHICHEVER DOOR YOU CAME THROUGH. saveQuickWeight already finds today's
+  // entry and replaces it; this unconditionally unshifted a second one — and in a different date
+  // format ("4 Sept" here vs "04/09/2026" there), so RECENT WEIGH-INS showed the same day twice with
+  // two different weights and no way to tell which was current. Same identity test saveQuickWeight
+  // uses (ts first, falling back to either date string), and a merge rather than a clobber so a
+  // check-in with no weight typed cannot wipe a weight logged earlier the same day.
+  const _todayFull = new Date().toLocaleDateString('en-AU');
+  const _todayShort = new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'});
+  const _iToday = entries.findIndex(e => e && (e.ts
+    ? new Date(e.ts).toLocaleDateString('en-AU') === _todayFull
+    : (e.date === _todayShort || e.date === _todayFull)));
+  if(_iToday > -1){
+    const prev = entries[_iToday];
+    const merged = Object.assign({}, prev, newEntry);
+    if(!(newEntry.weight > 0) && prev.weight > 0) merged.weight = prev.weight;   // never lose a weight
+    if(!newEntry.photo && prev.photo) merged.photo = prev.photo;
+    merged.date = prev.date;                                   // keep the day's existing identity
+    entries[_iToday] = merged;
+  } else {
+    entries.unshift(newEntry);
+  }
   ls('totry_body',entries.slice(0,1000));
   
   // Reset form
