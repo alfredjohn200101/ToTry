@@ -343,7 +343,10 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     });
     modalFindings.forEach(x => findings.push(`tap target under 24pt: ${x}`));
     tiny.forEach(x => findings.push(`tap target under 24pt: ${x}`));
-    console.log(`tap targets under 24pt: ${tiny.length}`);
+    console.log(`tap targets under 24pt: ${tiny.length + modalFindings.length}`);
+
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(2200);
 
     // ── a sheet must announce itself and hold the keyboard ────────────────────────────────────
     // 171 of this app's 174 bottom-sheets had no dialog role, no name and no focus trap: to a screen
@@ -575,6 +578,11 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       const h = el => el ? Math.round(el.getBoundingClientRect().height) : 0;
       eveningStep(1); await new Promise(x=>setTimeout(x,250));
       const win = document.getElementById('evening-win');
+      // MEASURE IT HERE. The back-click below deliberately returns to step 0, where this field is
+      // legitimately not shown — reading its box at the end of the walk reported the app as having
+      // lost the person's words when all that had happened was the test walking away from them.
+      const winReachable = !!(win && win.getBoundingClientRect().height > 0);
+      const winValue = win ? win.value : '';
       const backAt1 = panel.querySelector('.mstep-back');
       const q = backAt1 ? backAt1.getBoundingClientRect() : null;
       if (backAt1) backAt1.click();
@@ -586,8 +594,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
                nav: h(panel.querySelector('.mstep-nav')),
                back: { exists: !!backAt1, size: q ? Math.round(Math.min(q.width, q.height)) : 0, landedOn,
                        hiddenAt0: !backAt0 || getComputedStyle(backAt0).display === 'none' },
-               winReachable: !!(win && win.getBoundingClientRect().height > 0),
-               winValue: win ? win.value : '' };
+               winReachable, winValue };
     });
     if (r.stepped && r.nav === 0)
       findings.push('evening: coming back after completing it leaves the panel stepped with the stepper HIDDEN — what they wrote is saved and unreachable');
@@ -795,6 +802,8 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       // and the words must still be reachable by walking to their step
       morningStep(3); await new Promise(x=>setTimeout(x,250));
       const g = document.getElementById('morning-gratitude');
+      // Measured on step 3, which owns this field — see the note in the evening check.
+      const gratitudeReachable = !!(g && g.getBoundingClientRect().height > 0);
       // A stepper has to reverse. Seven steps forward with no way back one meant a typo on step 2
       // could only be reached by leaving stepped mode for good.
       morningStep(0); await new Promise(x=>setTimeout(x,220));
@@ -808,7 +817,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       const back = { exists: !!backAt2, hiddenAt0,
                      size: q ? Math.round(Math.min(q.width, q.height)) : 0,
                      landedOn: (typeof _mStep !== 'undefined' ? _mStep : -1) };
-      return { first, second, back, gratitudeReachable: !!(g && g.getBoundingClientRect().height > 0) };
+      return { first, second, back, gratitudeReachable };
     });
     if (r.second.stepped && r.second.nav === 0)
       findings.push(`morning: coming back to a finished ritual leaves it stepped with the stepper HIDDEN — ${r.second.controls} control(s) on the whole screen and no way to advance`);
@@ -3354,6 +3363,11 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
         wf.value = '85.4'; wf.dispatchEvent(new Event('input', { bubbles:true }));
         await logBody(); await new Promise(r => setTimeout(r, 800));
         out.honestAdded = (ls('totry_body')||[]).length - n0;
+        const _today = new Date().toDateString();
+        const _todays = (ls('totry_body')||[]).filter(function(e){
+          try{ return new Date(e.ts || e.date).toDateString() === _today; }catch(_){ return false; } });
+        out.honestStored = _todays.length ? Number(_todays[0].weight) : null;
+        out.todayRows = _todays.length;
       }
 
       // 3. delete every weigh-in — the tiles and the chart must go with them.
@@ -3386,8 +3400,10 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       findings.push('body-truth: the weekly check-in accepted 854kg, and that weight feeds the calorie maths');
     if (!body.reflectionKept)
       findings.push('body-truth: refusing the weight also threw away the reflection they had written');
-    if (body.honestAdded !== 1)
-      findings.push(`body-truth: an honest 85.4kg was not accepted (${body.honestAdded} entries added)`);
+    if (body.honestStored !== 85.4)
+      findings.push(`body-truth: an honest 85.4kg was not accepted — today's weigh-in reads ${body.honestStored}`);
+    if (body.todayRows !== 1)
+      findings.push(`body-truth: one day now holds ${body.todayRows} weigh-ins — a second entry for the same day skews every delta drawn from it`);
     if (body.stored !== 0)
       findings.push('body-truth: the weigh-ins were not actually deleted');
     else {
