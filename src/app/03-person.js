@@ -5028,10 +5028,23 @@ function completeMorning(){
 
   const po=document.querySelector('.prayer-opts');if(po)po.style.display='none';
   const dc=document.getElementById('morning-complete-direct');if(dc)dc.style.display='none';
+  _morningCloseStepDone();
   checkMilestones();
   // Refresh the home anchor so "Your next step" advances past the morning immediately.
   if(typeof renderNextStep==='function') renderNextStep();
   if(typeof renderHomeCalendar==='function') renderHomeCalendar();
+}
+// A HEADING OVER NOTHING. Once the morning is kept, completeMorning/initMorningTab hide .prayer-opts
+// and #morning-complete-direct — but left #morning-pray-lbl and #morning-pray-sub standing, so the
+// last step of a re-entered morning was a title and a subtitle with no content and no control beneath
+// them. Say what is true instead of hiding it, which would leave the step blank.
+function _morningCloseStepDone(){
+  try{
+    const lbl = document.getElementById('morning-pray-lbl');
+    const sub = document.getElementById('morning-pray-sub');
+    if(lbl) lbl.textContent = 'Your morning is kept';
+    if(sub) sub.textContent = 'Nothing else to do here today. Come back tonight to close the day.';
+  }catch(_){ }
 }
 function initMorningTab(){
   try{ renderMorningLightCard(); }catch(_){}   // so the card stops asking once they have been out
@@ -5050,6 +5063,7 @@ function initMorningTab(){
 
     const po=document.querySelector('.prayer-opts');if(po)po.style.display='none';
     const dc=document.getElementById('morning-complete-direct');if(dc)dc.style.display='none';
+    _morningCloseStepDone();
     if(today[0].gratitude)document.getElementById('morning-gratitude').value=today[0].gratitude;
     if(today[0].intention)document.getElementById('morning-intention').value=today[0].intention;
   }

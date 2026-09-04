@@ -536,7 +536,7 @@ function renderTodayForYou(){
       // No "Stay in the fight" button here — the "Fighting an urge right now?" section below
       // already gives a direct, in-place way to go through an urge. This just nudges habits.
       actEl.innerHTML =
-        (untickedHabits.length ? '<div style="font-size:11px;color:var(--tx3);text-align:center;font-family:DM Mono,monospace">' + untickedHabits.length + ' habit' + (untickedHabits.length>1?'s':'') + ' still to tick below</div>' : '<div style="font-size:11px;color:var(--tx3);text-align:center;font-family:DM Mono,monospace">If an urge hits, the section below is right there.</div>');
+        (untickedHabits.length ? '<div style="font-size:11px;color:var(--tx3);text-align:center;font-family:DM Mono,monospace">' + untickedHabits.length + ' habit' + (untickedHabits.length>1?'s':'') + ' still open today \u00b7 they tick as you log</div>' : '<div style="font-size:11px;color:var(--tx3);text-align:center;font-family:DM Mono,monospace">If an urge hits, the section below is right there.</div>');
     }
     return;
   }
@@ -545,7 +545,12 @@ function renderTodayForYou(){
     const h = untickedHabits[0];
     if(msgEl) msgEl.textContent = (first ? first + ', one' : 'One') + ' thing today: ' + h.n + '.';
     if(actEl){
-      actEl.innerHTML = '<div style="font-size:12px;color:var(--tx3);line-height:1.5">Tap its circle in <span style="color:var(--go)">Today\'s habits</span> below when it\'s done. Small steps, every day.</div>';
+      // NAME A ROUTE THAT EXISTS. This said "Tap its circle in Today's habits below" — but every one of
+      // the 42 cells in that grid has onclick === null, by design: ticking by hand lives in the evening
+      // check-in, and habits otherwise tick themselves from what you log. The card was instructing a
+      // tap that does nothing, on the app's first screen.
+      actEl.innerHTML = '<div style="font-size:12px;color:var(--tx3);line-height:1.5;margin-bottom:8px">It ticks itself when you log it \u2014 or tick it by hand tonight.</div>' +
+        '<button class="btn" onclick="go(\'reflect\')" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Tick it in tonight\u2019s check-in</button>';
     }
     return;
   }

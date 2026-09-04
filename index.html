@@ -306,7 +306,10 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .hero-inner{position:relative;z-index:1;padding:22px 20px;display:flex;flex-direction:column;width:100%}
 .hero-greeting{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;color:#fff;line-height:1.12;letter-spacing:-0.01em}
 .hero-sub{font-size:13.5px;color:rgba(242,239,232,0.66);margin-top:7px;line-height:1.55;max-width:300px}
-.hero-identity{display:flex;align-items:baseline;gap:7px;margin-top:18px;cursor:pointer;flex-wrap:wrap}
+/* 4px of vertical padding, and 18px -> 14px of margin to give it back, so the row grows from 20.5px
+   to 28.5px of hit area without moving a pixel on screen. It is a div with onclick, which is why
+   the 24pt tap-target gate never caught it. */
+.hero-identity{display:flex;align-items:baseline;gap:7px;margin-top:14px;padding:4px 0;cursor:pointer;flex-wrap:wrap}
 .hero-dayn{font-family:'Outfit',sans-serif;font-size:30px;font-weight:500;color:var(--go);line-height:1;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;letter-spacing:-0.01em}
 .hero-dayl{font-family:'DM Mono',monospace;font-size:9px;color:rgba(242,239,232,0.5);text-transform:uppercase;letter-spacing:0.16em}
 .hero-identity-text{font-size:13px;color:rgba(242,239,232,0.6);font-style:italic;font-family:'Cormorant Garamond',serif;flex-basis:100%;margin-top:3px;line-height:1.35}
@@ -12799,10 +12802,23 @@ function completeMorning(){
 
   const po=document.querySelector('.prayer-opts');if(po)po.style.display='none';
   const dc=document.getElementById('morning-complete-direct');if(dc)dc.style.display='none';
+  _morningCloseStepDone();
   checkMilestones();
   // Refresh the home anchor so "Your next step" advances past the morning immediately.
   if(typeof renderNextStep==='function') renderNextStep();
   if(typeof renderHomeCalendar==='function') renderHomeCalendar();
+}
+// A HEADING OVER NOTHING. Once the morning is kept, completeMorning/initMorningTab hide .prayer-opts
+// and #morning-complete-direct — but left #morning-pray-lbl and #morning-pray-sub standing, so the
+// last step of a re-entered morning was a title and a subtitle with no content and no control beneath
+// them. Say what is true instead of hiding it, which would leave the step blank.
+function _morningCloseStepDone(){
+  try{
+    const lbl = document.getElementById('morning-pray-lbl');
+    const sub = document.getElementById('morning-pray-sub');
+    if(lbl) lbl.textContent = 'Your morning is kept';
+    if(sub) sub.textContent = 'Nothing else to do here today. Come back tonight to close the day.';
+  }catch(_){ }
 }
 function initMorningTab(){
   try{ renderMorningLightCard(); }catch(_){}   // so the card stops asking once they have been out
@@ -12821,6 +12837,7 @@ function initMorningTab(){
 
     const po=document.querySelector('.prayer-opts');if(po)po.style.display='none';
     const dc=document.getElementById('morning-complete-direct');if(dc)dc.style.display='none';
+    _morningCloseStepDone();
     if(today[0].gratitude)document.getElementById('morning-gratitude').value=today[0].gratitude;
     if(today[0].intention)document.getElementById('morning-intention').value=today[0].intention;
   }
@@ -46713,7 +46730,7 @@ function renderTodayForYou(){
       // No "Stay in the fight" button here — the "Fighting an urge right now?" section below
       // already gives a direct, in-place way to go through an urge. This just nudges habits.
       actEl.innerHTML =
-        (untickedHabits.length ? '<div style="font-size:11px;color:var(--tx3);text-align:center;font-family:DM Mono,monospace">' + untickedHabits.length + ' habit' + (untickedHabits.length>1?'s':'') + ' still to tick below</div>' : '<div style="font-size:11px;color:var(--tx3);text-align:center;font-family:DM Mono,monospace">If an urge hits, the section below is right there.</div>');
+        (untickedHabits.length ? '<div style="font-size:11px;color:var(--tx3);text-align:center;font-family:DM Mono,monospace">' + untickedHabits.length + ' habit' + (untickedHabits.length>1?'s':'') + ' still open today \u00b7 they tick as you log</div>' : '<div style="font-size:11px;color:var(--tx3);text-align:center;font-family:DM Mono,monospace">If an urge hits, the section below is right there.</div>');
     }
     return;
   }
@@ -46722,7 +46739,12 @@ function renderTodayForYou(){
     const h = untickedHabits[0];
     if(msgEl) msgEl.textContent = (first ? first + ', one' : 'One') + ' thing today: ' + h.n + '.';
     if(actEl){
-      actEl.innerHTML = '<div style="font-size:12px;color:var(--tx3);line-height:1.5">Tap its circle in <span style="color:var(--go)">Today\'s habits</span> below when it\'s done. Small steps, every day.</div>';
+      // NAME A ROUTE THAT EXISTS. This said "Tap its circle in Today's habits below" — but every one of
+      // the 42 cells in that grid has onclick === null, by design: ticking by hand lives in the evening
+      // check-in, and habits otherwise tick themselves from what you log. The card was instructing a
+      // tap that does nothing, on the app's first screen.
+      actEl.innerHTML = '<div style="font-size:12px;color:var(--tx3);line-height:1.5;margin-bottom:8px">It ticks itself when you log it \u2014 or tick it by hand tonight.</div>' +
+        '<button class="btn" onclick="go(\'reflect\')" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Tick it in tonight\u2019s check-in</button>';
     }
     return;
   }

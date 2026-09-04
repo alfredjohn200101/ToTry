@@ -306,7 +306,10 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .hero-inner{position:relative;z-index:1;padding:22px 20px;display:flex;flex-direction:column;width:100%}
 .hero-greeting{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;color:#fff;line-height:1.12;letter-spacing:-0.01em}
 .hero-sub{font-size:13.5px;color:rgba(242,239,232,0.66);margin-top:7px;line-height:1.55;max-width:300px}
-.hero-identity{display:flex;align-items:baseline;gap:7px;margin-top:18px;cursor:pointer;flex-wrap:wrap}
+/* 4px of vertical padding, and 18px -> 14px of margin to give it back, so the row grows from 20.5px
+   to 28.5px of hit area without moving a pixel on screen. It is a div with onclick, which is why
+   the 24pt tap-target gate never caught it. */
+.hero-identity{display:flex;align-items:baseline;gap:7px;margin-top:14px;padding:4px 0;cursor:pointer;flex-wrap:wrap}
 .hero-dayn{font-family:'Outfit',sans-serif;font-size:30px;font-weight:500;color:var(--go);line-height:1;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;letter-spacing:-0.01em}
 .hero-dayl{font-family:'DM Mono',monospace;font-size:9px;color:rgba(242,239,232,0.5);text-transform:uppercase;letter-spacing:0.16em}
 .hero-identity-text{font-size:13px;color:rgba(242,239,232,0.6);font-style:italic;font-family:'Cormorant Garamond',serif;flex-basis:100%;margin-top:3px;line-height:1.35}
