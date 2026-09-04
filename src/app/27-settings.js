@@ -785,7 +785,7 @@ function showPrivacyPolicy(){
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">3. What gets sent to third parties</strong></p>' +
       '<p style="margin-bottom:6px">Some app features call external services to work. Each one sees something specific:</p>' +
       '<ul style="margin:0 0 12px 18px;padding:0;line-height:1.7">' +
-        '<li><strong style="color:var(--tx)">Coach &amp; AI features</strong> — your message + relevant context (recent state from your logs) goes to whichever AI provider responds first: Google (Gemini), Groq (Llama), OpenRouter, or Anthropic. These companies have their own privacy policies. By default many providers retain prompts for safety review for 30 days, and some may use prompts to improve models unless their enterprise tier is used. I use their standard API tiers — assume your Coach messages may be reviewed by automated systems and could be retained briefly by the provider.</li>' +
+        '<li><strong style="color:var(--tx)">Coach &amp; AI features</strong> — your message + relevant context (recent state from your logs) goes to whichever AI provider responds first: Google (Gemini), Groq, OpenRouter, Mistral, Cloudflare, or Anthropic. These companies have their own privacy policies. By default many providers retain prompts for safety review for 30 days, and some may use prompts to improve models unless their enterprise tier is used. I use their standard API tiers — assume your Coach messages may be reviewed by automated systems and could be retained briefly by the provider.</li>' +
         '<li><strong style="color:var(--tx)">Photos you send to the coach</strong> \u2014 five things can send an image, and all of them go to whichever vision model answers first (Google Gemini, then OpenRouter as a fallback): a <strong>form check</strong> (a photo of you doing the movement \u2014 your body is in it), a <strong>meal photo</strong>, a <strong>barcode or package photo</strong> when the scanner cannot read the code, a <strong>workout screenshot</strong>, and a <strong>smart-scale screenshot</strong> (your weight and body composition are in it). Each is sent when you choose that action, never in the background, and is not stored by me.</li>' +
         '<li><strong style="color:var(--tx)">Barcode scanning</strong> — the barcode is sent to OpenFoodFacts (open database).</li>' +
         '<li><strong style="color:var(--tx)">USDA food search</strong> — the search query is sent to api.nal.usda.gov.</li>' +
@@ -808,7 +808,7 @@ function showPrivacyPolicy(){
       '<p style="margin-bottom:12px">Two things do count <em>usage</em>, and you should know exactly what they are. <strong>A visitor counter</strong> (GoatCounter) records page views and where visits came from — cookie-free, no personal data, no cross-site tracking, no profile of you. <strong>Anonymous feature counts</strong> go to my own database against a random ID that is not your email — which <em>features</em> got used, with no content attached: &ldquo;app opened&rdquo;, &ldquo;reminder set&rdquo;, &ldquo;import run&rdquo;, &ldquo;a breathing exercise was done&rdquo;. Neither ever includes what you log: your vices, prayers, journal, food, money and body data are never in it. They record <em>that</em> a feature was used, never what you put into it — not the feeling you picked, not the vice, not your day rating, not the name you gave anything. <strong>One exception, and it is the only one:</strong> if the app hits an error, it sends the error message and the line it came from, so I can fix it. That text comes from the code, not from you \u2014 but I would rather tell you it exists than let you find it. There is no per-person record of whether you slipped or held on; watching someone&rsquo;s fight from the outside is the opposite of what this is for. You can switch both off in Settings &rarr; Your data, and the app works exactly the same — though a message you send me still reaches me, because you pressed send.</p>' +
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">6. What I cannot control</strong></p>' +
-      '<p style="margin-bottom:12px">Once your Coach message reaches Google or Anthropic, that data is governed by their privacy policies, not mine. I have no influence over their model-training practices or retention periods. If a provider has a security breach, I cannot prevent it. Treat your Coach messages the way you would treat a message to any cloud service — not a sealed diary.</p>' +
+      '<p style="margin-bottom:12px">Once your Coach message reaches Google, Groq, OpenRouter, Mistral, Cloudflare or Anthropic, that data is governed by their privacy policies, not mine. I have no influence over their model-training practices or retention periods. If a provider has a security breach, I cannot prevent it. Treat your Coach messages the way you would treat a message to any cloud service — not a sealed diary.</p>' +
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">7. Your control</strong></p>' +
       '<p style="margin-bottom:12px">Export everything (Settings → Your data → Export). Delete your account and all server-side data (Settings → Account → Delete account permanently). Clear local data by clearing your browser. You can do any of these at any time without asking me.</p>' +
@@ -1056,12 +1056,21 @@ function runUniversalSearch(query){
 // Downloads every ToTry key as one JSON file — the safety net against device loss or
 // sync failure. Restore reads it back. Uses SYNC_KEYS as the canonical list of app data.
 async function exportFullBackup(){
+  // "FULL" MUST MEAN FULL. This walked SYNC_KEYS — the keys that go to the cloud — and so produced 68
+  // keys where its sibling exportAllData produces 87 from the same device, while both write the SAME
+  // filename (totry-backup-<date>.json) and therefore overwrite each other in Downloads. The button
+  // labelled "Download everything as one file" was the SMALLER of the two, and anything local-only was
+  // silently absent from the file someone keeps before wiping their phone. Same source of truth as
+  // exportAllData now: everything on the device except sign-in and API tokens.
   const data = {};
   let count = 0;
-  SYNC_KEYS.forEach(k => {
+  for(let i = 0; i < localStorage.length; i++){
+    const k = localStorage.key(i);
+    if(!k) continue;
+    if(typeof backupSafeKey === 'function' && !backupSafeKey(k)) continue;
     const v = localStorage.getItem(k);
     if(v !== null){ data[k] = v; count++; }
-  });
+  }
   const backup = {
     app: 'ToTry',
     version: (typeof APP_VERSION !== 'undefined' ? APP_VERSION : 'v40'),

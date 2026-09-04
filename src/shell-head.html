@@ -267,7 +267,12 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 .mw-s{font-size:11.5px;color:var(--tx3);line-height:1.3}
 .mw-ch{flex:0 0 auto;color:var(--tx3);font-size:15px}
 
-.qb{font-size:11px;padding:14px 10px;margin-top:-9px;margin-bottom:-9px;border-radius:var(--rp);border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;transition:all 0.15s}
+/* NO NEGATIVE VERTICAL MARGINS. padding grew to 14px to clear the 24pt tap floor, but the -9px
+   top and bottom stayed — so a 44px pill sat on a 31px pitch and every wrapped row overlapped the
+   one below by 13px: the bottom third of Chest tapped Glutes, and the orb-adjacent Core pill was
+   unreachable entirely. .qbtns already spaces these with gap:5px; the pull was fighting it. This
+   is the same harm panels.js documents for .fli-del — a tap-floor fix creating a collision. */
+.qb{font-size:11px;padding:14px 10px;border-radius:var(--rp);border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;transition:all 0.15s}
 .meal-chip{font-size:11px;padding:8px 4px;border-radius:8px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);cursor:pointer;font-family:'Outfit',sans-serif;text-align:center;transition:all 0.15s}
 .meal-chip.selected{background:var(--go);color:#000;border-color:var(--go)}
 .qb:active{border-color:var(--go-bd);color:var(--go)}
@@ -4528,7 +4533,7 @@ Amen.</div></div>
 
     <div class="card">
       <div class="card-hd" style="margin-bottom:8px">Privacy &amp; legal</div>
-      <p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.6">Your data lives in two places: on this device, and in your account so it follows you if you change or lose your phone. A few things stay on the device only — your progress photos, and your cycle data unless you switch backup on yourself. When you use AI features (Coach, scripture, screenshot reading), your request and relevant context are sent to an AI provider (Google, Groq, OpenRouter or Anthropic) to generate a reply; their handling is governed by their own policies. ToTry does not sell your data and runs no ads. Please read the full privacy policy for details.</p>
+      <p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.6">Your data lives in two places: on this device, and in your account so it follows you if you change or lose your phone. A few things stay on the device only — your progress photos, and your cycle data unless you switch backup on yourself. When you use AI features (Coach, scripture, screenshot reading), your request and relevant context are sent to an AI provider (Google, Groq, OpenRouter, Mistral, Cloudflare or Anthropic) to generate a reply; their handling is governed by their own policies. ToTry does not sell your data and runs no ads. Please read the full privacy policy for details.</p>
       <button class="btn" onclick="showPrivacyPolicy()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px;margin-bottom:8px">Privacy policy</button>
       <button class="btn" onclick="showTermsOfUse()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px">Terms of use</button>
     </div>

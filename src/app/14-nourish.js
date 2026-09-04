@@ -3609,7 +3609,7 @@ function applyNutGentle(eaten, goalCal){
   if(tb){ tb.textContent = on ? 'numbers off' : 'numbers on'; tb.style.color = on ? 'var(--go)' : 'var(--tx3)'; }
   // Every numeric surface in Nourish, not just the hero — a "numbers off" promise that leaks a red
   // over-budget figure two cards down is worse than no promise at all.
-  const HIDE = ['nut-equation','nut-extended','nut-meal-split','nut-macro-glance','nut-nudge',
+  const HIDE = ['nut-equation','eq-burn','nut-extended','nut-meal-split','nut-macro-glance','nut-nudge',
                 'nut-net-card','nut-weekly-digest','nut-trend-card','adaptive-tdee-card'];
   // 'nut-extended' was in here, so turning gentle mode OFF forced the four extended macros back to
   // display:grid — including for a day whose entries carry no fibre, sugar, sodium or saturated fat,
@@ -3938,7 +3938,11 @@ function renderNutritionLog(){
   if(e('eq-food')) e('eq-food').textContent = Math.round(totals.cal);
   if(e('eq-rem')){ e('eq-rem').textContent = remCal>=0 ? remCal : ('+'+Math.abs(remCal)); e('eq-rem').style.color = remCal>=0 ? 'var(--go)' : 'var(--re)'; }
   // Exercise surfaced honestly — NOT eaten back (it's already inside your adaptive target). Accurate, not MFP's double-count.
-  if(e('eq-burn')){ const b=(typeof burned!=='undefined'&&burned)?Math.round(burned):0; if(b>0){ e('eq-burn').textContent='🔥 '+b+' burned · already in your target'; e('eq-burn').style.display=''; } else { e('eq-burn').style.display='none'; } }
+  // NUMBERS OFF MEANS NO NUMBERS. This sits OUTSIDE #nut-equation, so applyNutGentle's HIDE list
+  // never reached it — and it re-showed itself on every render anyway, printing a raw calorie
+  // count directly under a ring deliberately blanked to "On your way". Numbers off is a promise
+  // to someone whose relationship with those figures is the reason the mode exists.
+  if(e('eq-burn')){ const _g=(typeof nutGentle==='function'&&nutGentle()); const b=(typeof burned!=='undefined'&&burned)?Math.round(burned):0; if(b>0&&!_g){ e('eq-burn').textContent='🔥 '+b+' burned · already in your target'; e('eq-burn').style.display=''; } else { e('eq-burn').style.display='none'; } }
   // ── Three macro bars (Protein / Carbs / Fat), colored, eaten / target ──
   const _mb=(barId,lblId,eaten,goal)=>{ const bar=e(barId); if(bar){ const pct=goal>0?Math.min(100,Math.round((eaten/goal)*100)):0; bar.style.width=pct+'%'; } const lbl=e(lblId); if(lbl) lbl.textContent=Math.round(eaten||0)+'g / '+(Math.round(goal)||0)+'g'; };
   _mb('nut-pro-bar','nut-pro-goal-lbl',totals.pro,goalPro);

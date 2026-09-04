@@ -267,7 +267,12 @@ input::placeholder,textarea::placeholder{color:var(--tx3)}
 .mw-s{font-size:11.5px;color:var(--tx3);line-height:1.3}
 .mw-ch{flex:0 0 auto;color:var(--tx3);font-size:15px}
 
-.qb{font-size:11px;padding:14px 10px;margin-top:-9px;margin-bottom:-9px;border-radius:var(--rp);border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;transition:all 0.15s}
+/* NO NEGATIVE VERTICAL MARGINS. padding grew to 14px to clear the 24pt tap floor, but the -9px
+   top and bottom stayed — so a 44px pill sat on a 31px pitch and every wrapped row overlapped the
+   one below by 13px: the bottom third of Chest tapped Glutes, and the orb-adjacent Core pill was
+   unreachable entirely. .qbtns already spaces these with gap:5px; the pull was fighting it. This
+   is the same harm panels.js documents for .fli-del — a tap-floor fix creating a collision. */
+.qb{font-size:11px;padding:14px 10px;border-radius:var(--rp);border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;transition:all 0.15s}
 .meal-chip{font-size:11px;padding:8px 4px;border-radius:8px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);cursor:pointer;font-family:'Outfit',sans-serif;text-align:center;transition:all 0.15s}
 .meal-chip.selected{background:var(--go);color:#000;border-color:var(--go)}
 .qb:active{border-color:var(--go-bd);color:var(--go)}
@@ -4528,7 +4533,7 @@ Amen.</div></div>
 
     <div class="card">
       <div class="card-hd" style="margin-bottom:8px">Privacy &amp; legal</div>
-      <p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.6">Your data lives in two places: on this device, and in your account so it follows you if you change or lose your phone. A few things stay on the device only — your progress photos, and your cycle data unless you switch backup on yourself. When you use AI features (Coach, scripture, screenshot reading), your request and relevant context are sent to an AI provider (Google, Groq, OpenRouter or Anthropic) to generate a reply; their handling is governed by their own policies. ToTry does not sell your data and runs no ads. Please read the full privacy policy for details.</p>
+      <p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.6">Your data lives in two places: on this device, and in your account so it follows you if you change or lose your phone. A few things stay on the device only — your progress photos, and your cycle data unless you switch backup on yourself. When you use AI features (Coach, scripture, screenshot reading), your request and relevant context are sent to an AI provider (Google, Groq, OpenRouter, Mistral, Cloudflare or Anthropic) to generate a reply; their handling is governed by their own policies. ToTry does not sell your data and runs no ads. Please read the full privacy policy for details.</p>
       <button class="btn" onclick="showPrivacyPolicy()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px;margin-bottom:8px">Privacy policy</button>
       <button class="btn" onclick="showTermsOfUse()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px">Terms of use</button>
     </div>
@@ -28171,7 +28176,7 @@ function applyNutGentle(eaten, goalCal){
   if(tb){ tb.textContent = on ? 'numbers off' : 'numbers on'; tb.style.color = on ? 'var(--go)' : 'var(--tx3)'; }
   // Every numeric surface in Nourish, not just the hero — a "numbers off" promise that leaks a red
   // over-budget figure two cards down is worse than no promise at all.
-  const HIDE = ['nut-equation','nut-extended','nut-meal-split','nut-macro-glance','nut-nudge',
+  const HIDE = ['nut-equation','eq-burn','nut-extended','nut-meal-split','nut-macro-glance','nut-nudge',
                 'nut-net-card','nut-weekly-digest','nut-trend-card','adaptive-tdee-card'];
   // 'nut-extended' was in here, so turning gentle mode OFF forced the four extended macros back to
   // display:grid — including for a day whose entries carry no fibre, sugar, sodium or saturated fat,
@@ -28500,7 +28505,11 @@ function renderNutritionLog(){
   if(e('eq-food')) e('eq-food').textContent = Math.round(totals.cal);
   if(e('eq-rem')){ e('eq-rem').textContent = remCal>=0 ? remCal : ('+'+Math.abs(remCal)); e('eq-rem').style.color = remCal>=0 ? 'var(--go)' : 'var(--re)'; }
   // Exercise surfaced honestly — NOT eaten back (it's already inside your adaptive target). Accurate, not MFP's double-count.
-  if(e('eq-burn')){ const b=(typeof burned!=='undefined'&&burned)?Math.round(burned):0; if(b>0){ e('eq-burn').textContent='🔥 '+b+' burned · already in your target'; e('eq-burn').style.display=''; } else { e('eq-burn').style.display='none'; } }
+  // NUMBERS OFF MEANS NO NUMBERS. This sits OUTSIDE #nut-equation, so applyNutGentle's HIDE list
+  // never reached it — and it re-showed itself on every render anyway, printing a raw calorie
+  // count directly under a ring deliberately blanked to "On your way". Numbers off is a promise
+  // to someone whose relationship with those figures is the reason the mode exists.
+  if(e('eq-burn')){ const _g=(typeof nutGentle==='function'&&nutGentle()); const b=(typeof burned!=='undefined'&&burned)?Math.round(burned):0; if(b>0&&!_g){ e('eq-burn').textContent='🔥 '+b+' burned · already in your target'; e('eq-burn').style.display=''; } else { e('eq-burn').style.display='none'; } }
   // ── Three macro bars (Protein / Carbs / Fat), colored, eaten / target ──
   const _mb=(barId,lblId,eaten,goal)=>{ const bar=e(barId); if(bar){ const pct=goal>0?Math.min(100,Math.round((eaten/goal)*100)):0; bar.style.width=pct+'%'; } const lbl=e(lblId); if(lbl) lbl.textContent=Math.round(eaten||0)+'g / '+(Math.round(goal)||0)+'g'; };
   _mb('nut-pro-bar','nut-pro-goal-lbl',totals.pro,goalPro);
@@ -43462,7 +43471,7 @@ function showPrivacyPolicy(){
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">3. What gets sent to third parties</strong></p>' +
       '<p style="margin-bottom:6px">Some app features call external services to work. Each one sees something specific:</p>' +
       '<ul style="margin:0 0 12px 18px;padding:0;line-height:1.7">' +
-        '<li><strong style="color:var(--tx)">Coach &amp; AI features</strong> — your message + relevant context (recent state from your logs) goes to whichever AI provider responds first: Google (Gemini), Groq (Llama), OpenRouter, or Anthropic. These companies have their own privacy policies. By default many providers retain prompts for safety review for 30 days, and some may use prompts to improve models unless their enterprise tier is used. I use their standard API tiers — assume your Coach messages may be reviewed by automated systems and could be retained briefly by the provider.</li>' +
+        '<li><strong style="color:var(--tx)">Coach &amp; AI features</strong> — your message + relevant context (recent state from your logs) goes to whichever AI provider responds first: Google (Gemini), Groq, OpenRouter, Mistral, Cloudflare, or Anthropic. These companies have their own privacy policies. By default many providers retain prompts for safety review for 30 days, and some may use prompts to improve models unless their enterprise tier is used. I use their standard API tiers — assume your Coach messages may be reviewed by automated systems and could be retained briefly by the provider.</li>' +
         '<li><strong style="color:var(--tx)">Photos you send to the coach</strong> \u2014 five things can send an image, and all of them go to whichever vision model answers first (Google Gemini, then OpenRouter as a fallback): a <strong>form check</strong> (a photo of you doing the movement \u2014 your body is in it), a <strong>meal photo</strong>, a <strong>barcode or package photo</strong> when the scanner cannot read the code, a <strong>workout screenshot</strong>, and a <strong>smart-scale screenshot</strong> (your weight and body composition are in it). Each is sent when you choose that action, never in the background, and is not stored by me.</li>' +
         '<li><strong style="color:var(--tx)">Barcode scanning</strong> — the barcode is sent to OpenFoodFacts (open database).</li>' +
         '<li><strong style="color:var(--tx)">USDA food search</strong> — the search query is sent to api.nal.usda.gov.</li>' +
@@ -43485,7 +43494,7 @@ function showPrivacyPolicy(){
       '<p style="margin-bottom:12px">Two things do count <em>usage</em>, and you should know exactly what they are. <strong>A visitor counter</strong> (GoatCounter) records page views and where visits came from — cookie-free, no personal data, no cross-site tracking, no profile of you. <strong>Anonymous feature counts</strong> go to my own database against a random ID that is not your email — which <em>features</em> got used, with no content attached: &ldquo;app opened&rdquo;, &ldquo;reminder set&rdquo;, &ldquo;import run&rdquo;, &ldquo;a breathing exercise was done&rdquo;. Neither ever includes what you log: your vices, prayers, journal, food, money and body data are never in it. They record <em>that</em> a feature was used, never what you put into it — not the feeling you picked, not the vice, not your day rating, not the name you gave anything. <strong>One exception, and it is the only one:</strong> if the app hits an error, it sends the error message and the line it came from, so I can fix it. That text comes from the code, not from you \u2014 but I would rather tell you it exists than let you find it. There is no per-person record of whether you slipped or held on; watching someone&rsquo;s fight from the outside is the opposite of what this is for. You can switch both off in Settings &rarr; Your data, and the app works exactly the same — though a message you send me still reaches me, because you pressed send.</p>' +
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">6. What I cannot control</strong></p>' +
-      '<p style="margin-bottom:12px">Once your Coach message reaches Google or Anthropic, that data is governed by their privacy policies, not mine. I have no influence over their model-training practices or retention periods. If a provider has a security breach, I cannot prevent it. Treat your Coach messages the way you would treat a message to any cloud service — not a sealed diary.</p>' +
+      '<p style="margin-bottom:12px">Once your Coach message reaches Google, Groq, OpenRouter, Mistral, Cloudflare or Anthropic, that data is governed by their privacy policies, not mine. I have no influence over their model-training practices or retention periods. If a provider has a security breach, I cannot prevent it. Treat your Coach messages the way you would treat a message to any cloud service — not a sealed diary.</p>' +
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">7. Your control</strong></p>' +
       '<p style="margin-bottom:12px">Export everything (Settings → Your data → Export). Delete your account and all server-side data (Settings → Account → Delete account permanently). Clear local data by clearing your browser. You can do any of these at any time without asking me.</p>' +
@@ -43733,12 +43742,21 @@ function runUniversalSearch(query){
 // Downloads every ToTry key as one JSON file — the safety net against device loss or
 // sync failure. Restore reads it back. Uses SYNC_KEYS as the canonical list of app data.
 async function exportFullBackup(){
+  // "FULL" MUST MEAN FULL. This walked SYNC_KEYS — the keys that go to the cloud — and so produced 68
+  // keys where its sibling exportAllData produces 87 from the same device, while both write the SAME
+  // filename (totry-backup-<date>.json) and therefore overwrite each other in Downloads. The button
+  // labelled "Download everything as one file" was the SMALLER of the two, and anything local-only was
+  // silently absent from the file someone keeps before wiping their phone. Same source of truth as
+  // exportAllData now: everything on the device except sign-in and API tokens.
   const data = {};
   let count = 0;
-  SYNC_KEYS.forEach(k => {
+  for(let i = 0; i < localStorage.length; i++){
+    const k = localStorage.key(i);
+    if(!k) continue;
+    if(typeof backupSafeKey === 'function' && !backupSafeKey(k)) continue;
     const v = localStorage.getItem(k);
     if(v !== null){ data[k] = v; count++; }
-  });
+  }
   const backup = {
     app: 'ToTry',
     version: (typeof APP_VERSION !== 'undefined' ? APP_VERSION : 'v40'),
