@@ -470,7 +470,7 @@ function openFeedback(){
       '<button class="meal-chip" id="fb-type-other" onclick="setFeedbackType(\'other\')" style="flex:1">💬 Other</button>' +
     '</div>' +
     '<textarea id="fb-text" placeholder="Tell me what\'s on your mind..." style="height:120px;resize:none;margin-bottom:10px;font-size:16px;line-height:1.6"></textarea>' +
-    '<label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:12px;color:var(--tx3);cursor:pointer">' +
+    '<label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;min-height:32px;font-size:12px;color:var(--tx3);cursor:pointer">' +
       '<input type="checkbox" id="fb-include-state" checked style="width:auto;margin:0"> Include basic app info (helps me debug)' +
     '</label>' +
     '<button class="btn primary" onclick="submitFeedback()" style="margin-bottom:8px">Send</button>' +

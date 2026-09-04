@@ -264,14 +264,14 @@ function _renderRosaryStep(){
   ov.innerHTML=
     '<div style="padding:calc(env(safe-area-inset-top,0px) + 16px) 20px 10px;display:flex;align-items:center;justify-content:space-between;gap:12px">'+
       '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);letter-spacing:0.1em;text-transform:uppercase;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.sec)+'</div>'+
-      '<button onclick="closeRosary()" aria-label="Close" style="background:none;border:none;color:var(--tx3);font-size:22px;cursor:pointer;line-height:1;flex:none">×</button>'+
+      '<button onclick="closeRosary()" aria-label="Close" style="background:none;border:none;color:var(--tx3);font-size:22px;cursor:pointer;line-height:1;flex:none;min-width:44px;min-height:44px;margin:-11px">×</button>'+
     '</div>'+
     '<div style="height:3px;background:rgba(255,255,255,0.06);margin:0 20px;border-radius:2px"><div style="height:100%;width:'+pct+'%;background:var(--go);border-radius:2px;transition:width .25s"></div></div>'+
     '<div onclick="_rosaryGo(1)" style="flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;padding:24px 26px;overflow-y:auto;cursor:pointer">'+
       '<div style="max-width:34ch;margin:0 auto">'+bodyHtml+'</div>'+
     '</div>'+
     '<div style="padding:14px 20px calc(env(safe-area-inset-bottom,0px) + 20px);display:flex;align-items:center;gap:12px">'+
-      (_rosary.i>0?'<button onclick="_rosaryGo(-1)" style="flex:none;width:52px;height:52px;border-radius:50%;background:none;border:1px solid var(--bd);color:var(--tx2);font-size:20px;cursor:pointer">‹</button>':'<div style="width:52px"></div>')+
+      (_rosary.i>0?'<button onclick="_rosaryGo(-1)" style="flex:none;width:52px;height:52px;border-radius:50%;background:none;border:1px solid var(--bd);color:var(--tx2);font-size:20px;cursor:pointer">‹</button>':'')+
       '<button onclick="_rosaryGo(1)" class="btn primary" style="flex:1;margin:0;padding:16px;font-size:15px">'+(s.last?'Finish · Amen':(s.announce?'Begin the decade':'Next'))+'</button>'+
     '</div>';
 }

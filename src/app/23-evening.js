@@ -561,7 +561,7 @@ function updateExamenCount(){
 }
 
 // ── ACTIVITY HEATMAP ────────────────────────────────────────
-// Last 13 weeks grid. Each cell = a day. Lit by activity level.
+// Last 12 weeks grid. Each cell = a day. Lit by activity level.
 // Activity = journal entry + workout + evening reflection + examen + prayer + win
 function computeDayActivity(){
   // Returns Map: 'DD/MM/YYYY' (au) → activity score
@@ -589,9 +589,9 @@ function renderActivityHeatmap(){
   if(!container) return;
   
   const activity = computeDayActivity();
-  const weeks = 13;
+  const weeks = 12;   // a clean three months, and it divides the width into cells you can actually hit
   
-  // Find start: 13 weeks ago, aligned to Monday
+  // Find start: 12 weeks ago, aligned to Monday
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const start = new Date(today);
@@ -601,13 +601,13 @@ function renderActivityHeatmap(){
   
   // Build SVG
   const cellSize = 14;
-  const gap = 3;
-  const labelWidth = 22;
+  const gap = 2;
+  const labelWidth = 15;
   const monthLabelHeight = 14;
   const svgWidth = labelWidth + weeks * (cellSize + gap);
   const svgHeight = monthLabelHeight + 7 * (cellSize + gap) + 4;
   
-  let svg = '<svg aria-hidden="true" viewBox="0 0 ' + svgWidth + ' ' + svgHeight + '" style="width:100%;max-width:' + svgWidth + 'px;display:block">';
+  let svg = '<svg aria-hidden="true" viewBox="0 0 ' + svgWidth + ' ' + svgHeight + '" style="width:100%;max-width:420px;display:block">';
   
   // Day labels (M W F)
   ['M', 'W', 'F'].forEach((lbl, i) => {

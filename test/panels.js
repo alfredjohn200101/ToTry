@@ -229,12 +229,20 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await page.waitForTimeout(3000);
     const tiny = await page.evaluate(async () => {
       const out = [];
-      for (const t of ['home', 'fight', 'grow', 'money', 'soul', 'nourish', 'reflect', 'track', 'morning']) {
+      // WHAT THIS USED TO MISS. It walked #tab-<name> for nine tabs — so 'settings' was not even in
+      // the list, and nothing living in a modal, sheet or full-screen overlay was ever measured. A
+      // sweep on 5 Sep 2026 found six controls under the floor in exactly those places: the serving
+      // modal's "Correct them →" (15px), a saved passage's delete (18.5px), the rosary overlay's only
+      // exit (13x22), the recovery-bridge links (15px), and 89 heatmap cells at 14x14 under copy that
+      // says "Tap a day". Scanning the whole document while each tab is open covers the tab AND
+      // whatever is open over it; `seen` keeps persistent chrome from being reported once per tab.
+      const seen = new Set();
+      for (const t of ['home', 'fight', 'grow', 'money', 'soul', 'nourish', 'reflect', 'track', 'morning', 'settings', 'read', 'bible']) {
         try { go(t); } catch (e) { continue; }
         await new Promise(r => setTimeout(r, 320));
-        const pane = document.getElementById('tab-' + t);
-        if (!pane || getComputedStyle(pane).display === 'none') continue;
-        pane.querySelectorAll('button,a[href],[onclick]').forEach(el => {
+        try { document.querySelectorAll('#tab-' + t + ' details').forEach(d => { d.open = true; }); } catch (e) {}
+        await new Promise(r => setTimeout(r, 220));
+        document.querySelectorAll('button,a[href],[onclick]').forEach(el => {
           const cs = getComputedStyle(el);
           if (cs.display === 'none' || cs.visibility === 'hidden') return;
           // Same phantom as the overlap sweep: a control inside a collapsed <details> keeps its rect.
@@ -243,11 +251,68 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
           const r = el.getBoundingClientRect();
           if (!r.width && !r.height) return;
           const m = Math.min(r.width, r.height);
-          if (m < 24) out.push(`${t} ${r.width.toFixed(0)}x${r.height.toFixed(0)} "${(el.innerText || el.getAttribute('aria-label') || '').trim().slice(0, 24)}"`);
+          if (m >= 24) return;
+          const label = (el.innerText || el.getAttribute('aria-label') || el.getAttribute('onclick') || '').trim().slice(0, 26);
+          const key = (el.id || el.className || el.tagName) + '|' + label + '|' + Math.round(r.width) + 'x' + Math.round(r.height);
+          if (seen.has(key)) return;                 // persistent chrome, already reported under another tab
+          seen.add(key);
+          out.push(`${t} ${r.width.toFixed(0)}x${r.height.toFixed(0)} "${label}"`);
         });
       }
       return out;
     });
+    // AND THE SURFACES THAT ONLY EXIST WHEN OPENED. Scanning the document while a tab is showing
+    // still cannot see a modal, sheet or overlay that nothing has opened — which is where the worst
+    // ones were: the rosary overlay's ONLY exit was 13x22, the serving modal's "Correct them" was
+    // 15px among controls of 36-44, and the recovery bridge's "find one" — the single link out of
+    // this app into a room with actual people — was 57x15 at the tail of a sentence.
+    //
+    // The opener list is DISCOVERED from window, not hardcoded, so a modal added next month is
+    // covered the day it is written rather than the day someone remembers to add it here.
+    const modalFindings = await page.evaluate(async () => {
+      const out = [];
+      // Never .remove() a host with an id: #serving-modal and #journal-modal are STATIC elements in
+      // the shell. Removing them deletes the app's own UI and every later check silently measures
+      // nothing — a green scan over a DOM you destroyed yourself.
+      const closeAll = () => {
+        document.querySelectorAll('.modal-bg.open').forEach(x => { if (x.id) x.classList.remove('open'); else x.remove(); });
+        document.querySelectorAll('#feel-door.open,.companion-overlay.open,.sheet.open').forEach(x => x.classList.remove('open'));
+        ['rosary-overlay','sos-overlay'].forEach(id => document.getElementById(id)?.remove());
+        document.getElementById('companion-backdrop')?.classList.remove('open');
+        document.getElementById('feel-backdrop')?.classList.remove('open');
+      };
+      const names = Object.keys(window).filter(k => /^(open|show)[A-Z]/.test(k)
+        && typeof window[k] === 'function' && window[k].length === 0).sort();
+      for (const nm of names) {
+        closeAll();
+        // Race every opener. Several of these fetch, and fetch in this app has no timeout — awaiting
+        // one that stalls hangs the whole gate rather than failing it.
+        try { await Promise.race([Promise.resolve(window[nm]()), new Promise(r => setTimeout(r, 1200))]); }
+        catch (e) { continue; }   // needs state we have not built: not a finding
+        await new Promise(r => setTimeout(r, 380));
+        const hosts = [...document.querySelectorAll('.modal-bg.open,#rosary-overlay,#sos-overlay,#feel-door.open,.companion-overlay.open,.sheet.open')]
+          .filter(h => { const c = getComputedStyle(h); return c.display !== 'none' && c.visibility !== 'hidden'; });
+        hosts.forEach(host => host.querySelectorAll('button,a[href],[onclick],input[type=checkbox],input[type=radio],select').forEach(el => {
+          const cs = getComputedStyle(el);
+          if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') return;
+          // A checkbox or radio inside a <label> is not the tap target — the whole label row is, and
+          // it toggles the input. Measuring the 17x17 box instead reported three false positives in
+          // a row here, and a gate that cries wolf every time is a gate people learn to skip.
+          let hit = el;
+          if (el.tagName === 'INPUT') {
+            const lab = el.closest('label') || (el.id && document.querySelector(`label[for="${el.id}"]`));
+            if (lab) hit = lab;
+          }
+          const q = hit.getBoundingClientRect();
+          if (!q.width && !q.height) return;
+          if (Math.min(q.width, q.height) >= 24) return;
+          out.push(`${nm}: ${Math.round(q.width)}x${Math.round(q.height)} "${(el.innerText||el.getAttribute('aria-label')||'').trim().replace(/\s+/g,' ').slice(0,30)}"`);
+        }));
+        closeAll();
+      }
+      return [...new Set(out)];
+    });
+    modalFindings.forEach(x => findings.push(`tap target under 24pt: ${x}`));
     tiny.forEach(x => findings.push(`tap target under 24pt: ${x}`));
     console.log(`tap targets under 24pt: ${tiny.length}`);
 

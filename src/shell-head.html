@@ -775,7 +775,9 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .ex-name{font-size:13px;font-weight:500;color:var(--tx);margin-bottom:2px}
 .ex-meta{font-size:11px;color:var(--tx3);font-family:'DM Mono',monospace;letter-spacing:0.04em}
 .session-exercise{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:12px 14px;margin-bottom:8px}
-.se-name{font-size:14px;font-weight:500;color:var(--tx);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.se-name{font-size:14px;font-weight:500;color:var(--tx);margin-bottom:8px;display:flex;justify-content:flex-start;align-items:center;gap:2px}
+.se-name button{min-width:32px;min-height:32px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.se-name .se-form{margin-left:auto}
 .se-del{background:none;border:none;color:var(--tx3);cursor:pointer;font-size:16px;padding:0 4px}
 .set-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
 .set-num{font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3);width:24px;flex-shrink:0}
@@ -4341,7 +4343,7 @@ Amen.</div></div>
     
     <div class="card">
       <div class="card-hd" style="margin-bottom:8px">📈 Show-up heatmap</div>
-      <p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.5">The days you actually showed up — past 13 weeks. Tap a day to see what you did.</p>
+      <p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.5">The days you actually showed up — past 12 weeks. Tap a day to see what you did.</p>
       <div id="activity-heatmap" style="overflow-x:auto"></div>
       <div id="activity-heatmap-legend" style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em"></div>
     </div>
@@ -4794,7 +4796,7 @@ Amen.</div></div>
          barcode can hand back a different product's macros entirely). The big trackers make you
          hunt through duplicate community entries hoping one is right. Instead: fix it once against
          the label in your hand, and every future scan uses YOUR numbers. -->
-    <button type="button" id="sm-fix-open" onclick="openFoodFix()" style="background:none;border:none;color:var(--tx3);font-size:11.5px;font-family:'DM Mono',monospace;cursor:pointer;padding:0;margin:-4px 0 14px;text-decoration:underline;text-underline-offset:3px">Numbers look wrong? Correct them &rarr;</button>
+    <button type="button" id="sm-fix-open" onclick="openFoodFix()" style="background:none;border:none;color:var(--tx3);font-size:11.5px;font-family:'DM Mono',monospace;cursor:pointer;padding:9px 0;margin:-4px 0 14px;text-decoration:underline;text-underline-offset:3px">Numbers look wrong? Correct them &rarr;</button>
     <div id="sm-fix-panel" style="display:none;background:var(--bg3);border:1px solid var(--go-bd);border-radius:10px;padding:12px;margin-bottom:14px">
       <div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-bottom:10px">Type what the label says for <b id="sm-fix-serving" style="color:var(--go)">this serving</b>. Leave anything you don't know blank. Saved for every future scan.</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">

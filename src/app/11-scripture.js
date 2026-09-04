@@ -102,7 +102,7 @@ function renderSavedVerses(containerId){
         '<div class="sv-r">' + (v.reference || '') + '</div>' +
         '<div class="sv-d">' + (v.date || '') + '</div>' +
       '</div>' +
-      '<button onclick="deleteSavedVerse(' + i + ')" aria-label="Remove verse" style="background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0">\u00D7</button>' +
+      '<button onclick="deleteSavedVerse(' + i + ')" aria-label="Remove verse" style="background:none;border:none;color:var(--tx3);min-width:28px;min-height:28px;font-size:18px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0">\u00D7</button>' +
     '</div>';
     list.appendChild(el);
   });

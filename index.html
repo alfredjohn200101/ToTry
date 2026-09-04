@@ -775,7 +775,9 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .ex-name{font-size:13px;font-weight:500;color:var(--tx);margin-bottom:2px}
 .ex-meta{font-size:11px;color:var(--tx3);font-family:'DM Mono',monospace;letter-spacing:0.04em}
 .session-exercise{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:12px 14px;margin-bottom:8px}
-.se-name{font-size:14px;font-weight:500;color:var(--tx);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.se-name{font-size:14px;font-weight:500;color:var(--tx);margin-bottom:8px;display:flex;justify-content:flex-start;align-items:center;gap:2px}
+.se-name button{min-width:32px;min-height:32px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.se-name .se-form{margin-left:auto}
 .se-del{background:none;border:none;color:var(--tx3);cursor:pointer;font-size:16px;padding:0 4px}
 .set-row{display:flex;gap:6px;align-items:center;margin-bottom:6px}
 .set-num{font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3);width:24px;flex-shrink:0}
@@ -4341,7 +4343,7 @@ Amen.</div></div>
     
     <div class="card">
       <div class="card-hd" style="margin-bottom:8px">📈 Show-up heatmap</div>
-      <p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.5">The days you actually showed up — past 13 weeks. Tap a day to see what you did.</p>
+      <p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.5">The days you actually showed up — past 12 weeks. Tap a day to see what you did.</p>
       <div id="activity-heatmap" style="overflow-x:auto"></div>
       <div id="activity-heatmap-legend" style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em"></div>
     </div>
@@ -4794,7 +4796,7 @@ Amen.</div></div>
          barcode can hand back a different product's macros entirely). The big trackers make you
          hunt through duplicate community entries hoping one is right. Instead: fix it once against
          the label in your hand, and every future scan uses YOUR numbers. -->
-    <button type="button" id="sm-fix-open" onclick="openFoodFix()" style="background:none;border:none;color:var(--tx3);font-size:11.5px;font-family:'DM Mono',monospace;cursor:pointer;padding:0;margin:-4px 0 14px;text-decoration:underline;text-underline-offset:3px">Numbers look wrong? Correct them &rarr;</button>
+    <button type="button" id="sm-fix-open" onclick="openFoodFix()" style="background:none;border:none;color:var(--tx3);font-size:11.5px;font-family:'DM Mono',monospace;cursor:pointer;padding:9px 0;margin:-4px 0 14px;text-decoration:underline;text-underline-offset:3px">Numbers look wrong? Correct them &rarr;</button>
     <div id="sm-fix-panel" style="display:none;background:var(--bg3);border:1px solid var(--go-bd);border-radius:10px;padding:12px;margin-bottom:14px">
       <div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-bottom:10px">Type what the label says for <b id="sm-fix-serving" style="color:var(--go)">this serving</b>. Leave anything you don't know blank. Saved for every future scan.</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
@@ -14496,10 +14498,10 @@ function openRecoveryBridge(){
     '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.3;margin-bottom:8px">People who do this properly.</div>'+
     '<div style="text-align:center;font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">I am a tool, and a tool is not enough on its own. None of these is better than the others — different people need different rooms. Pick whichever you would actually walk into.</div>'+
     opts.map(function(o){
-      const link=o[3]?(' <a href="'+o[3]+'" target="_blank" rel="noopener" style="color:var(--go);text-decoration:none">find one \u2192</a>'):'';
+      const link=o[3]?('<a href="'+o[3]+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;min-height:36px;margin-top:2px;font-size:12.5px;font-weight:600;color:var(--go);text-decoration:none">find one \u2192</a>'):'';
       return '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:13px 15px;margin-bottom:9px">'+
         '<div style="font-size:14px;color:var(--tx);margin-bottom:3px">'+o[0]+'&nbsp;&nbsp;'+o[1]+'</div>'+
-        '<div style="font-size:12px;color:var(--tx2);line-height:1.6">'+o[2]+link+'</div></div>';
+        '<div style="font-size:12px;color:var(--tx2);line-height:1.6">'+o[2]+'</div>'+link+'</div>';
     }).join('')+
     '<div style="font-size:11.5px;color:var(--tx3);line-height:1.6;margin:6px 0 14px;text-align:center">Going does not mean this stopped working. It means you took it seriously enough to bring someone real into it.</div>'+
     '<button class="btn primary" onclick="closeModal(this)">Okay</button>'+
@@ -21606,7 +21608,7 @@ function renderSavedVerses(containerId){
         '<div class="sv-r">' + (v.reference || '') + '</div>' +
         '<div class="sv-d">' + (v.date || '') + '</div>' +
       '</div>' +
-      '<button onclick="deleteSavedVerse(' + i + ')" aria-label="Remove verse" style="background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0">\u00D7</button>' +
+      '<button onclick="deleteSavedVerse(' + i + ')" aria-label="Remove verse" style="background:none;border:none;color:var(--tx3);min-width:28px;min-height:28px;font-size:18px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0">\u00D7</button>' +
     '</div>';
     list.appendChild(el);
   });
@@ -36418,7 +36420,7 @@ function renderWorkoutSession(){
       '<div style="font-size:11px;color:var(--tx2);line-height:1.5;margin-bottom:6px;padding:6px 9px;background:rgba(91,185,125,0.08);border:1px solid var(--go-bd);border-radius:6px">↗ <span style="color:var(--gr)">'+prog.text+'</span></div>' : '';
     
     card.innerHTML='<div class="se-name">'+ex.name + supersetBadge +
-      '<button class="se-form" title="Show form & instructions" onclick="showExerciseForm(\''+safeName+'\')" style="background:none;border:none;color:var(--go);font-size:11px;cursor:pointer;padding:0 6px;margin-left:4px;font-family:DM Mono,monospace">FORM</button>'+
+      '<button class="se-form" title="Show form & instructions" onclick="showExerciseForm(\''+safeName+'\')" style="background:none;border:none;color:var(--go);font-size:11px;cursor:pointer;padding:0 6px;font-family:DM Mono,monospace">FORM</button>'+
       '<button title="Swap exercise \u2014 keeps your sets" onclick="swapExercise('+ei+')" style="background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;padding:0 5px;font-family:DM Mono,monospace">\u21c4</button>'+
       supersetBtn + upBtn + downBtn +
       '<button class="se-del" onclick="removeExFromSession('+ei+')" aria-label="Remove this exercise from the session">&#215;</button></div>'+
@@ -39474,7 +39476,7 @@ function updateExamenCount(){
 }
 
 // ── ACTIVITY HEATMAP ────────────────────────────────────────
-// Last 13 weeks grid. Each cell = a day. Lit by activity level.
+// Last 12 weeks grid. Each cell = a day. Lit by activity level.
 // Activity = journal entry + workout + evening reflection + examen + prayer + win
 function computeDayActivity(){
   // Returns Map: 'DD/MM/YYYY' (au) → activity score
@@ -39502,9 +39504,9 @@ function renderActivityHeatmap(){
   if(!container) return;
   
   const activity = computeDayActivity();
-  const weeks = 13;
+  const weeks = 12;   // a clean three months, and it divides the width into cells you can actually hit
   
-  // Find start: 13 weeks ago, aligned to Monday
+  // Find start: 12 weeks ago, aligned to Monday
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const start = new Date(today);
@@ -39514,13 +39516,13 @@ function renderActivityHeatmap(){
   
   // Build SVG
   const cellSize = 14;
-  const gap = 3;
-  const labelWidth = 22;
+  const gap = 2;
+  const labelWidth = 15;
   const monthLabelHeight = 14;
   const svgWidth = labelWidth + weeks * (cellSize + gap);
   const svgHeight = monthLabelHeight + 7 * (cellSize + gap) + 4;
   
-  let svg = '<svg aria-hidden="true" viewBox="0 0 ' + svgWidth + ' ' + svgHeight + '" style="width:100%;max-width:' + svgWidth + 'px;display:block">';
+  let svg = '<svg aria-hidden="true" viewBox="0 0 ' + svgWidth + ' ' + svgHeight + '" style="width:100%;max-width:420px;display:block">';
   
   // Day labels (M W F)
   ['M', 'W', 'F'].forEach((lbl, i) => {
@@ -41256,14 +41258,14 @@ function _renderRosaryStep(){
   ov.innerHTML=
     '<div style="padding:calc(env(safe-area-inset-top,0px) + 16px) 20px 10px;display:flex;align-items:center;justify-content:space-between;gap:12px">'+
       '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);letter-spacing:0.1em;text-transform:uppercase;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.sec)+'</div>'+
-      '<button onclick="closeRosary()" aria-label="Close" style="background:none;border:none;color:var(--tx3);font-size:22px;cursor:pointer;line-height:1;flex:none">×</button>'+
+      '<button onclick="closeRosary()" aria-label="Close" style="background:none;border:none;color:var(--tx3);font-size:22px;cursor:pointer;line-height:1;flex:none;min-width:44px;min-height:44px;margin:-11px">×</button>'+
     '</div>'+
     '<div style="height:3px;background:rgba(255,255,255,0.06);margin:0 20px;border-radius:2px"><div style="height:100%;width:'+pct+'%;background:var(--go);border-radius:2px;transition:width .25s"></div></div>'+
     '<div onclick="_rosaryGo(1)" style="flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;padding:24px 26px;overflow-y:auto;cursor:pointer">'+
       '<div style="max-width:34ch;margin:0 auto">'+bodyHtml+'</div>'+
     '</div>'+
     '<div style="padding:14px 20px calc(env(safe-area-inset-bottom,0px) + 20px);display:flex;align-items:center;gap:12px">'+
-      (_rosary.i>0?'<button onclick="_rosaryGo(-1)" style="flex:none;width:52px;height:52px;border-radius:50%;background:none;border:1px solid var(--bd);color:var(--tx2);font-size:20px;cursor:pointer">‹</button>':'<div style="width:52px"></div>')+
+      (_rosary.i>0?'<button onclick="_rosaryGo(-1)" style="flex:none;width:52px;height:52px;border-radius:50%;background:none;border:1px solid var(--bd);color:var(--tx2);font-size:20px;cursor:pointer">‹</button>':'')+
       '<button onclick="_rosaryGo(1)" class="btn primary" style="flex:1;margin:0;padding:16px;font-size:15px">'+(s.last?'Finish · Amen':(s.announce?'Begin the decade':'Next'))+'</button>'+
     '</div>';
 }
@@ -42675,7 +42677,7 @@ function openFeedback(){
       '<button class="meal-chip" id="fb-type-other" onclick="setFeedbackType(\'other\')" style="flex:1">💬 Other</button>' +
     '</div>' +
     '<textarea id="fb-text" placeholder="Tell me what\'s on your mind..." style="height:120px;resize:none;margin-bottom:10px;font-size:16px;line-height:1.6"></textarea>' +
-    '<label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:12px;color:var(--tx3);cursor:pointer">' +
+    '<label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;min-height:32px;font-size:12px;color:var(--tx3);cursor:pointer">' +
       '<input type="checkbox" id="fb-include-state" checked style="width:auto;margin:0"> Include basic app info (helps me debug)' +
     '</label>' +
     '<button class="btn primary" onclick="submitFeedback()" style="margin-bottom:8px">Send</button>' +

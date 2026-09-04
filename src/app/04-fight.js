@@ -1501,10 +1501,10 @@ function openRecoveryBridge(){
     '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.3;margin-bottom:8px">People who do this properly.</div>'+
     '<div style="text-align:center;font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">I am a tool, and a tool is not enough on its own. None of these is better than the others — different people need different rooms. Pick whichever you would actually walk into.</div>'+
     opts.map(function(o){
-      const link=o[3]?(' <a href="'+o[3]+'" target="_blank" rel="noopener" style="color:var(--go);text-decoration:none">find one \u2192</a>'):'';
+      const link=o[3]?('<a href="'+o[3]+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;min-height:36px;margin-top:2px;font-size:12.5px;font-weight:600;color:var(--go);text-decoration:none">find one \u2192</a>'):'';
       return '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:13px 15px;margin-bottom:9px">'+
         '<div style="font-size:14px;color:var(--tx);margin-bottom:3px">'+o[0]+'&nbsp;&nbsp;'+o[1]+'</div>'+
-        '<div style="font-size:12px;color:var(--tx2);line-height:1.6">'+o[2]+link+'</div></div>';
+        '<div style="font-size:12px;color:var(--tx2);line-height:1.6">'+o[2]+'</div>'+link+'</div>';
     }).join('')+
     '<div style="font-size:11.5px;color:var(--tx3);line-height:1.6;margin:6px 0 14px;text-align:center">Going does not mean this stopped working. It means you took it seriously enough to bring someone real into it.</div>'+
     '<button class="btn primary" onclick="closeModal(this)">Okay</button>'+
