@@ -101,7 +101,12 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
      completed, and RE-ENTERED; the companion's dismiss gesture (handle dismisses, conversation
      scrolls); and one person walked through a whole day in a single session.
    - `npm run test:edge` — runs the Supabase functions locally with Deno stubbed (Node strips the TS)
-   - `npm run preflight` — version/cache/bundle parity across source, www and the iOS build
+   - `npm run preflight` — bundle parity across source, www, iOS **and Android**, by sha256. It
+     compared APP_VERSION STRINGS until 5 Sep 2026 and reported that as "the iOS bundle matches the
+     source" — so it went green all session with ios/ and android/ three commits stale, all three
+     reading v576. A version is a label a human types; the bundle is a file. It hashes the file now,
+     and it looks at Android, which it never did — the gap this document names two rules below and
+     then relies on preflight to catch.
    Add a test when you add core math, and FAULT-INJECT it: an assertion you have never seen fail is
    not yet a test.
 3. **Bump `APP_VERSION` (`src/app/00-boot.js`) and `CACHE` (sw.js) together** on every release,
