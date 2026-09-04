@@ -2504,6 +2504,12 @@ function _momentWin(i){
     const moments=ls('totry_moments_won')||[];
     moments.unshift({v:v.n, ts:new Date().toISOString(), kind:_viceStakeKind(v)});
     ls('totry_moments_won', moments.slice(0,300));
+    // THE URGE, NOT JUST THE WIN. The card's own "· Peaks" insight is gated on
+    // v.urgelog.length >= 3, and the SOS door (04-fight.js:1080, :1224) pushes there — but this,
+    // the vice card's own primary button, only ever incremented the counters. So a person could
+    // win five urges through the front door and the card would still say it had nothing to show
+    // them about when their hard hour is.
+    try{ if(!Array.isArray(v.urgelog)) v.urgelog=[]; v.urgelog.push({ts:new Date().toISOString(), won:true}); if(v.urgelog.length>400) v.urgelog=v.urgelog.slice(-400); }catch(_){ }
     _recordFightMoment(v.n, true);   // teach the risk-window engine when the pull hits
     saveV();
   }

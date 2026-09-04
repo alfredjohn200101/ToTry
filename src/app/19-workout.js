@@ -363,7 +363,10 @@ function weeklyLoadByModality(){
     if(!ts || ts < weekAgo) return;
     const mod = sessionModality(w);
     if(!by[mod]) by[mod] = { minutes: 0, sessions: 0, effortSum: 0, effortN: 0 };
-    by[mod].minutes += w.durationMinutes || 0;
+    // BOTH SPELLINGS. saveWorkoutSession writes durationMin; only the Strava mapping above produces
+    // durationMinutes — so a workout logged IN the app added a session to Training mix and zero
+    // minutes, while an imported one counted fully. src/app/06-train.js:440 already reads both.
+    by[mod].minutes += (w.durationMinutes || w.durationMin || 0);
     by[mod].sessions += 1;
     if(w.effort){ by[mod].effortSum += w.effort; by[mod].effortN += 1; }
   });
