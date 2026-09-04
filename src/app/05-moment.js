@@ -1647,7 +1647,11 @@ function openCBA(i){
     'Both columns, honestly \u2014 including what it genuinely gives you. A list that pretends it does nothing for you is a list you won\u2019t believe at 11pm.',
     [{id:'gain',label:'',type:'textarea',placeholder:'What it actually gives me\u2026', value:c.gain||''},
      {id:'cost',label:'',type:'textarea',placeholder:'What it actually costs me\u2026', value:c.cost||''},
-     {id:'free',label:'',type:'text',placeholder:'What being free of it would look like', value:c.free||''}],
+     // A TEXTAREA LIKE ITS TWO SIBLINGS. This was the only single-line field of the three, and the
+     // answer people give it is the longest — "Clear-headed. Not hiding anything. Able to look my
+     // future wife in the eye." measured 517.6px against 362px of visible box, so most of what
+     // someone wrote about their own freedom was scrolled out of sight the moment they looked away.
+     {id:'free',label:'',type:'textarea',placeholder:'What being free of it would look like', value:c.free||''}],
     'Keep this',
     function(vals){
       // Re-resolve by NAME inside the callback. `v` was captured before the form opened, and any

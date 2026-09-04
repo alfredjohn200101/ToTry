@@ -333,7 +333,7 @@ function renderTransactions(){
           return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--bd);font-size:12px">' +
             '<div style="flex:1;min-width:0;cursor:pointer" onclick="editTransaction(' + _jsCode(JSON.stringify(t.id)) + ')"><div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(t.note || t.category || 'Transaction') + '</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + (t.date || (t.ts ? new Date(t.ts).toLocaleDateString('en-AU') : '')) +
               ((t.category || t.cat) ? ' \u00b7 ' + (t.category || t.cat) : '') + '</div></div>' +
-            '<div style="display:flex;align-items:center;gap:6px"><span style="font-family:DM Mono,monospace;color:' + color + '">' + sign + curSym() + t.amount + '</span><button onclick="deleteTransaction(' + _jsCode(JSON.stringify(t.id)) + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
+            '<div style="display:flex;align-items:center;gap:6px"><span style="font-family:DM Mono,monospace;color:' + color + '">' + sign + curSym() + _money2(t.amount) + '</span><button onclick="deleteTransaction(' + _jsCode(JSON.stringify(t.id)) + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
           '</div>';
         }).join('') +
         ((list.length > recentList.length)
@@ -669,7 +669,7 @@ function renderSubDetect(){
   el.style.display='block';
   el.innerHTML='<div style="background:var(--bg3);border:1px solid var(--go-bd);border-radius:12px;padding:13px 15px;margin-bottom:12px">'+
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px">Found in your statements</div>'+
-    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:10px">'+found.length+' charge'+(found.length===1?'':'s')+' that repeat like subscriptions \u2014 about <b style="color:var(--tx)">'+curSym()+total.toLocaleString()+'/year</b> between them. Not an accusation, just the ones you may have stopped noticing.</div>'+
+    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:10px">'+found.length+' charge'+(found.length===1?'':'s')+(found.length===1?' that repeats':' that repeat')+' like subscriptions \u2014 about <b style="color:var(--tx)">'+curSym()+total.toLocaleString()+'/year</b> between them. Not an accusation, just the ones you may have stopped noticing.</div>'+
     found.map(function(f){ return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--bd)">'+
       '<div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+_escFew(f.name)+'</div>'+
       '<div style="font-family:DM Mono,monospace;font-size:9.5px;color:var(--tx3)">'+curSym()+f.amount+'/'+f.period+' \u00b7 seen '+f.seen+'\u00d7 \u00b7 ~'+curSym()+f.yearly.toLocaleString()+'/yr</div></div>'+
@@ -817,7 +817,7 @@ function renderSubscriptions(){
     return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--bd);font-size:12px">' +
       '<div style="flex:1;min-width:0">' +
         '<div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(s.name) + '</div>' +
-        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">'+curSym() + s.amount + ' / ' + _escFew(s.period) + (s.note ? ' · ' + _escFew(s.note) : '') + '</div>' +
+        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">'+curSym() + _money2(s.amount) + ' / ' + _escFew(_period1(s.period)) + (s.note ? ' · ' + _escFew(s.note) : '') + '</div>' +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:8px"><span style="font-family:DM Mono,monospace;color:var(--re)">~'+curSym() + monthly.toFixed(2) + '/mo</span><button onclick="deleteSubscription(' + s.id + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
     '</div>';
@@ -1024,6 +1024,20 @@ function _budgetEditorCats(budgets){
   return EXPENSE_CATEGORIES.concat(extra);
 }
 function _budgetInputId(cat){ return 'budget-' + String(cat).replace(/[^a-z0-9]/gi, ''); }
+// Money is written to 2dp everywhere it is SAID (showToast at :123 uses toFixed(2)) but the lists
+// printed the raw stored number — "−$88.2" for 88.20, "+$3200" for 3200.00 — directly under a summary
+// that was correctly formatted. And subscriptions carried two vocabularies for one idea: detection
+// stores period "month", the manual form stores "monthly", so the same list read "/ month" beside
+// "/ monthly". One shape for each, at the point of display.
+function _money2(v){ const n = Number(v); return isFinite(n) ? n.toFixed(2) : String(v == null ? '' : v); }
+function _period1(p){
+  const k = String(p == null ? '' : p).toLowerCase();
+  if(k.startsWith('week')) return 'week';
+  if(k.startsWith('year') || k.startsWith('annual')) return 'year';
+  if(k.startsWith('fortnight') || k.startsWith('biweek')) return 'fortnight';
+  if(k.startsWith('month')) return 'month';
+  return k || 'month';
+}
 function openBudgetLogger(){
   const budgets = ls('totry_budgets') || {};
   const CATS = _budgetEditorCats(budgets);

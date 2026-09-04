@@ -1151,7 +1151,7 @@ function confirmRestore(){
 function exportJournal(){
   const entries=ls('totry_journal')||[];if(!entries.length){showToast('No entries','Write journal entries first.');return;}
   const text=entries.map(e=>'=== '+e.date+' (Day '+e.day+') ===\nMood: '+e.mood+'\n\n'+e.text+'\n').join('\n\n');
-  copyToClipboard(text);showToast('Copied!',entries.length+' entries copied to clipboard.');
+  copyToClipboard(text);showToast('Copied!',entries.length+' '+(entries.length===1?'entry':'entries')+' copied to clipboard.');
 }
 function exportWins(){
   const wins=ls('totry_wins')||[];if(!wins.length){showToast('No wins','Log some wins first.');return;}
