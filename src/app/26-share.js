@@ -229,7 +229,11 @@ function askConfirm(title, body, opts){
     if(body) m.setAttribute('aria-describedby', '_ac-body');
     document.body.appendChild(m);
     const yes = m.querySelector('#_ac-yes'), no = m.querySelector('#_ac-no');
-    yes.onclick = function(){ try{ if(typeof haptic==='function') haptic('tap'); }catch(_){ } finish(true); };
+    // A destructive yes must not feel like an ordinary tap. `danger` is already computed above and
+    // decides the button's colour; the hand should get the same signal the eye does. One line here
+    // covers every confirm in the app — removing a vice, deleting a journal entry, a prayer, a
+    // sacrament — rather than each caller remembering.
+    yes.onclick = function(){ try{ if(typeof haptic==='function') haptic(danger ? 'warning' : 'tap'); }catch(_){ } finish(true); };
     if(no) no.onclick = function(){ finish(false); };
     // A notice (no cancel button) must still be dismissible by the backdrop — but it resolves true,
     // because there was never a choice to decline.

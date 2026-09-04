@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v574-the-search-runs-where-cors-cannot'
+const CACHE = 'totry-v576-two-doors-that-were-never-gated'
 
 const CORE = [
   './',

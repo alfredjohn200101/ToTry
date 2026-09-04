@@ -81,7 +81,7 @@ function initSettingsTab(){
 
 // Dev panel gate — called on every settings open AND on auth state change
 function checkDevPanelVisibility(){
-  // +studio is a plus-address: it delivers to the same inbox but is a DIFFERENT To Try account with
+  // +studio is a plus-address: it delivers to the same inbox but is a DIFFERENT ToTry account with
   // no real data in it. That is the account tutorials get filmed on, so a real vice, a real debt
   // figure or a real journal entry can never end up in a frame.
   const DEV_EMAILS = ['alfredjohn200101@gmail.com','alfredjohn200101@yahoo.com','alfredjohn200101+studio@gmail.com'];
@@ -446,7 +446,7 @@ async function loadDemoData(){
 // USE it. Steps with no `target` show a centered card (intro/outro). `tab` is the tab to open;
 // `find` returns the element to highlight (a function so it runs after the tab is shown).
 const TOUR_STEPS = [
-  { tab:'home', title:'Welcome to To Try', caption:'A 60-second walk through how it all fits together. Tap Next \u2014 or Skip anytime.' },
+  { tab:'home', title:'Welcome to ToTry', caption:'A 60-second walk through how it all fits together. Tap Next \u2014 or Skip anytime.' },
   { tab:'home', find:()=>document.getElementById('home-habit-list'),
     title:'Your daily habits', caption:'These are the things you\u2019re building \u2014 the last seven days at a glance. Workouts and prayer tick themselves when you log them; you tick the rest when you close the day.' },
   { tab:'home', find:()=>document.getElementById('home-quickwin-list'),
@@ -771,7 +771,7 @@ function showPrivacyPolicy(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:6px">Privacy policy</h3>' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px">To Try by Alfred John · Last updated June 2026 · Plain English</div>' +
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px">ToTry by Alfred John · Last updated June 2026 · Plain English</div>' +
     '<div style="font-size:13px;color:var(--tx2);line-height:1.7;overflow-y:auto;max-height:60vh;padding-right:6px">' +
     
       '<p style="margin-bottom:12px">This is a one-person project, not a corporation. I (Alfred) built this and I run it. I will not pretend the app does more privacy work than it does. Here is exactly what happens to your data.</p>' +
@@ -814,7 +814,7 @@ function showPrivacyPolicy(){
       '<p style="margin-bottom:12px">Export everything (Settings → Your data → Export). Delete your account and all server-side data (Settings → Account → Delete account permanently). Clear local data by clearing your browser. You can do any of these at any time without asking me.</p>' +
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">8. Children</strong></p>' +
-      '<p style="margin-bottom:12px">To Try is not designed for users under 16. I cannot verify age. If you are under 16, please don\'t use this app without a parent\'s knowledge.</p>' +
+      '<p style="margin-bottom:12px">ToTry is not designed for users under 16. I cannot verify age. If you are under 16, please don\'t use this app without a parent\'s knowledge.</p>' +
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">9. Contact</strong></p>' +
       '<p style="margin-bottom:12px">Email <strong style="color:var(--tx)">totrybyaj@gmail.com</strong> or DM <strong style="color:var(--tx)">@totry_aj</strong> on Instagram if you have a privacy concern. I respond personally — there is no support team.</p>' +
@@ -833,10 +833,10 @@ function showTermsOfUse(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:6px">Terms of use</h3>' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px">To Try by Alfred John · Last updated June 2026</div>' +
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px">ToTry by Alfred John · Last updated June 2026</div>' +
     '<div style="font-size:13px;color:var(--tx2);line-height:1.7;overflow-y:auto;max-height:60vh;padding-right:6px">' +
     
-      '<p style="margin-bottom:12px">By using To Try, you agree to these terms. They are written in plain English so you can actually read them.</p>' +
+      '<p style="margin-bottom:12px">By using ToTry, you agree to these terms. They are written in plain English so you can actually read them.</p>' +
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">1. What this app is</strong></p>' +
       '<p style="margin-bottom:12px">A free self-improvement app built by one person (Alfred John) on a Christian foundation. It tracks habits, training, nutrition, finances, faith practices, and provides AI coaching. Use it for personal growth.</p>' +
@@ -872,7 +872,7 @@ function showTermsOfUse(){
       '<p style="margin-bottom:12px">One account per person. You can export your data or delete your account at any time. See the Privacy policy for how data is handled.</p>' +
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">8. Changes</strong></p>' +
-      '<p style="margin-bottom:12px">Features may change. To Try is free today and the intention is to keep it free for as long as it can be sustained — but that can\'t be guaranteed forever. If anything about cost or terms changes materially, I\'ll tell you in-app first.</p>' +
+      '<p style="margin-bottom:12px">Features may change. ToTry is free today and the intention is to keep it free for as long as it can be sustained — but that can\'t be guaranteed forever. If anything about cost or terms changes materially, I\'ll tell you in-app first.</p>' +
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">9. Contact</strong></p>' +
       '<p><strong style="color:var(--tx)">totrybyaj@gmail.com</strong> · <strong style="color:var(--tx)">@totry_aj</strong> on Instagram · <strong style="color:var(--tx)">@alfred_john</strong> (personal).</p>' +
@@ -1072,7 +1072,7 @@ async function exportFullBackup(){
   const blob = new Blob([JSON.stringify(backup, null, 2)], {type: 'application/json'});
   // The one SaveFile caller that threw its result away, so a CANCELLED share sheet and an outright
   // failed write both produced "Backup saved". Its sibling exportAllData already does this correctly.
-  const _r = await SaveFile.save(blob, 'totry-backup-' + new Date().toISOString().slice(0,10) + '.json', 'To Try backup');
+  const _r = await SaveFile.save(blob, 'totry-backup-' + new Date().toISOString().slice(0,10) + '.json', 'ToTry backup');
   if(_r === null) return;                                   // dismissed — they chose; say nothing
   if(!_r){ showToast('Not saved', 'Nothing was written. Try again in a moment.'); return; }
   // Name the exclusions. Progress photos and un-backed-up cycle data never leave the device by design
@@ -1177,7 +1177,7 @@ window.addEventListener('beforeinstallprompt',(e)=>{
   e.preventDefault();deferredInstallPrompt=e;
   if(!isNativeApp() && !ls('totry_pwa_dismissed'))setTimeout(()=>{const b=document.getElementById('pwa-banner');if(b)b.style.display='block';},2000);
 });
-window.addEventListener('appinstalled',()=>{ls('totry_pwa_installed',true);showToast('To Try installed \u2713','Find it on your home screen.');});
+window.addEventListener('appinstalled',()=>{ls('totry_pwa_installed',true);showToast('ToTry installed \u2713','Find it on your home screen.');});
 
 function isIOSSafari(){const ua=navigator.userAgent;return /iP(ad|hone|od)/.test(ua)&&/WebKit/.test(ua)&&!/(CriOS|FxiOS|OPiOS|mercury)/.test(ua);}
 // ── "IS THIS AN INSTALLED APP, OR A BROWSER TAB?" ────────────────────────────────────────────────
@@ -1188,7 +1188,7 @@ function isIOSSafari(){const ua=navigator.userAgent;return /iP(ad|hone|od)/.test
 // genuinely says iPhone + WebKit).
 //
 // The result, confirmed on a device: the native app told people to
-//   "Install To Try on your iPhone — 1. Tap the Share button at the bottom of Safari"
+//   "Install ToTry on your iPhone — 1. Tap the Share button at the bottom of Safari"
 // inside an app that has no Safari and no Share button, and the notification settings told them to add
 // the app to their Home Screen before reminders would work. It also silently withheld the daily
 // "good to see you back" greeting from native users, because that was gated on the same check.

@@ -1,6 +1,6 @@
 {
-  "name": "To Try — by Alfred John",
-  "short_name": "To Try",
+  "name": "ToTry — by Alfred John",
+  "short_name": "ToTry",
   "description": "A free self-improvement app for anyone trying to be better. Vice tracking, faith, habits, finance, fitness, nutrition and more. By Alfred John.",
   "start_url": "./index.html",
   "scope": "./",
@@ -9,7 +9,11 @@
   "background_color": "#0C0C0E",
   "theme_color": "#0C0C0E",
   "lang": "en-AU",
-  "categories": ["health", "lifestyle", "fitness"],
+  "categories": [
+    "health",
+    "lifestyle",
+    "fitness"
+  ],
   "icons": [
     {
       "src": "icon-192.png",

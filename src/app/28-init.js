@@ -51,8 +51,8 @@ function _scheduleNativeReminders(prefs){
     const parse = (t, dh, dm) => { const a=String(t||'').split(':'); const h=parseInt(a[0],10), m=parseInt(a[1],10); return [isNaN(h)?dh:h, isNaN(m)?dm:m]; };
     const [mh,mm] = parse(p.morning, 7, 30);
     const [eh,em] = parse(p.evening, 21, 0);
-    Notify.scheduleDaily('reminder_morning','To Try','A quiet minute to set your intention for today.', mh, mm, { route:'morning' });
-    Notify.scheduleDaily('reminder_evening','To Try','Close the day with grace — a moment to look back honestly.', eh, em, { route:'evening' });
+    Notify.scheduleDaily('reminder_morning','ToTry','A quiet minute to set your intention for today.', mh, mm, { route:'morning' });
+    Notify.scheduleDaily('reminder_evening','ToTry','Close the day with grace — a moment to look back honestly.', eh, em, { route:'evening' });
   }catch(_){}
 }
 // Re-arm native reminders on every launch (the OS can clear pending ones; times/patterns shift).
@@ -202,7 +202,7 @@ async function _verifyNativeNotifPermission(){
     const warn = document.createElement('div');
     warn.className = 'notif-perm-warn';
     warn.style.cssText = 'margin-top:10px;padding:10px 12px;border:1px solid var(--go-bd);background:var(--go-bg);border-radius:8px;font-size:12px;color:var(--go);line-height:1.55';
-    warn.textContent = 'Reminders are switched on in here, but iOS is not allowing notifications — so nothing can actually reach you. Turn them on in iOS Settings \u2192 Notifications \u2192 To Try.';
+    warn.textContent = 'Reminders are switched on in here, but iOS is not allowing notifications — so nothing can actually reach you. Turn them on in iOS Settings \u2192 Notifications \u2192 ToTry.';
     box.appendChild(warn);
   }catch(_){}
 }
@@ -241,13 +241,13 @@ function renderPushSettings(){
     return;
   }
   if(!('Notification' in window) || !('PushManager' in window)){
-    box.innerHTML = head + '<div style="font-size:12px;color:var(--tx3);line-height:1.6">This browser cannot receive notifications. On iPhone: open in Safari and add To Try to your Home Screen first.</div>';
+    box.innerHTML = head + '<div style="font-size:12px;color:var(--tx3);line-height:1.6">This browser cannot receive notifications. On iPhone: open in Safari and add ToTry to your Home Screen first.</div>';
     return;
   }
   if(ios && !_isStandalone()){
     box.innerHTML = head +
-      '<div style="font-size:13px;color:var(--tx2);line-height:1.65">To get morning and evening reminders on iPhone, To Try needs to live on your Home Screen first:</div>' +
-      '<div style="font-size:12px;color:var(--tx3);line-height:1.7;margin-top:8px">1. Tap the <b>Share</b> button in Safari<br>2. Choose <b>Add to Home Screen</b><br>3. Open To Try from your Home Screen and come back here</div>';
+      '<div style="font-size:13px;color:var(--tx2);line-height:1.65">To get morning and evening reminders on iPhone, ToTry needs to live on your Home Screen first:</div>' +
+      '<div style="font-size:12px;color:var(--tx3);line-height:1.7;margin-top:8px">1. Tap the <b>Share</b> button in Safari<br>2. Choose <b>Add to Home Screen</b><br>3. Open ToTry from your Home Screen and come back here</div>';
     return;
   }
   if(prefs.enabled && Notification.permission==='granted'){

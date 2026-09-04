@@ -91,7 +91,7 @@ const Lock = {
   label(kind){ return kind==='faceId' ? 'Face ID' : kind==='touchId' ? 'Touch ID' : 'your passcode'; },
   async prove(reason){
     const p=this._p(); if(!p) return { ok:false, unavailable:true };
-    try{ return (await p.authenticate({ reason: reason || 'Unlock To Try' })) || { ok:false }; }
+    try{ return (await p.authenticate({ reason: reason || 'Unlock ToTry' })) || { ok:false }; }
     catch(e){ console.warn('[Lock] authenticate threw', e); return { ok:false, unavailable:true }; }
   }
 };
@@ -105,19 +105,30 @@ function _lockOverlay(){
   el = document.createElement('div');
   el.id = 'app-lock';
   // Covers everything, including any open sheet, and cannot be dismissed by tapping away.
-  el.style.cssText = 'position:fixed;inset:0;z-index:100000;background:var(--bg,#0a0a0c);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center';
+  // SAFE AREA. This was a flat padding:32px — the only full-screen surface in the app that ignored the
+  // notch and the home indicator, while .ob, .sos-overlay and .hdr all pad with var(--st)/var(--sb).
+  // On a 16 Pro Max the lock title sat under the Dynamic Island and the crisis helpline row ran into
+  // the home indicator, which is the one row on this screen that must stay reachable.
+  el.style.cssText = 'position:fixed;inset:0;z-index:100000;background:var(--bg,#0a0a0c);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:0;padding:calc(var(--st) + 32px) 32px calc(var(--sb) + 32px);text-align:center;overflow-y:auto;-webkit-overflow-scrolling:touch';
   el.innerHTML =
-    '<div style="font-size:34px">\u{1F512}</div>' +
-    '<div style="font-family:Cormorant Garamond,serif;font-size:28px;color:var(--go)">To Try</div>' +
-    '<div id="app-lock-msg" style="font-size:13px;color:var(--tx2);line-height:1.6;max-width:280px">Locked — just for you.</div>' +
-    '<button class="btn primary" id="app-lock-btn" style="max-width:240px" onclick="unlockApp()">Unlock</button>' +
+    // COMPOSED, NOT CENTRED. This was an emoji padlock over a header-sized wordmark, the whole clump
+    // dead-centre with ~370px of dead space above and ~300px below — a fragment centred in a viewport
+    // rather than a screen. The brand is the hero at .ob-logo scale (the size onboarding uses for a
+    // full-screen moment), the emoji is gone, and Unlock is a quiet retry rather than a gold slab
+    // shouting louder than the name: on iOS Face ID prompts itself, so that button is the fallback.
+    '<div style="flex:1"></div>' +
+    '<div class="ob-logo" style="margin-bottom:10px">To<em>Try</em></div>' +
+    '<div id="app-lock-msg" style="font-size:13px;color:var(--tx3);line-height:1.6;max-width:280px">Locked \u2014 just for you.</div>' +
+    '<button class="btn" id="app-lock-btn" style="max-width:200px;margin-top:22px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px" onclick="unlockApp()">Unlock</button>' +
+    '<div style="flex:1"></div>' +
     // CRISIS HELP IS NEVER BEHIND A GATE. The sign-in screen states the rule in its own comment
     // ("Crisis help must never sit behind a login") and carries the numbers for exactly that reason —
     // but this overlay is opaque at z-index 100000, so it covers them along with everything else. A
     // cancelled Face ID, or a face it will not read at 2am, left a person on a black screen with one
     // button and no way to reach a human. These numbers are hardcoded, need no network and no account,
     // and reveal nothing private, so carrying them here costs the lock nothing at all.
-    '<div style="margin-top:6px;padding-top:14px;border-top:1px solid var(--bd);max-width:300px">' +
+    // It sits at the FOOT now rather than floating mid-screen — where a person looks for help.
+    '<div style="padding-top:14px;border-top:1px solid var(--bd);max-width:320px;width:100%">' +
       '<div style="font-size:11.5px;color:var(--tx3);line-height:1.6;margin-bottom:6px">Need real help right now? You don&#8217;t have to unlock anything.</div>' +
       '<div style="font-size:12.5px;line-height:1.9;color:var(--tx3)">' +
         '&#127462;&#127482; Lifeline <a href="tel:131114" style="color:var(--go);text-decoration:none">13 11 14</a> &nbsp;&#183;&nbsp; ' +
@@ -133,7 +144,7 @@ function _lockOverlay(){
 async function unlockApp(){
   const msg = document.getElementById('app-lock-msg');
   if(msg) msg.textContent = 'Verifying…';
-  const r = await Lock.prove('Unlock To Try');
+  const r = await Lock.prove('Unlock ToTry');
   if(r && r.ok){
     _lockShown = false;
     const el = document.getElementById('app-lock'); if(el) el.remove();
@@ -174,7 +185,7 @@ document.addEventListener('visibilitychange', function(){
     // Only after a real absence. Presenting the share sheet, the camera scanner or a permission prompt
     // also hides the web view, and demanding Face ID on the way back from those would be maddening.
     // The stated threat model is "people hand their unlocked phone to a partner, a friend, a child" —
-    // and a 20-second grace window defeats exactly that: hand the phone over, they reopen To Try within
+    // and a 20-second grace window defeats exactly that: hand the phone over, they reopen ToTry within
     // twenty seconds, and the journal is simply there. The window exists for a real reason (the share
     // sheet, the barcode scanner and permission prompts all hide the web view), so it is kept but cut to
     // a length that covers a returning dialog without covering a handover.
@@ -216,7 +227,7 @@ async function toggleAppLock(){
   // Prove it works BEFORE committing to it — turning a lock on without testing it is how someone ends up
   // locked out. And require the same proof to turn it off, so grabbing an open phone can't quietly
   // remove the protection for good.
-  const r = await Lock.prove(on ? 'Turn off the lock on To Try' : 'Turn on the lock for To Try');
+  const r = await Lock.prove(on ? 'Turn off the lock on ToTry' : 'Turn on the lock for ToTry');
   if(r && r.unavailable){
     try{ ls('totry_lock_on', false); }catch(_){}
     try{ Lock._mirrorToNative(false); }catch(_){}
@@ -231,7 +242,7 @@ async function toggleAppLock(){
   try{ Lock._mirrorToNative(!on); }catch(_){}
   if(typeof haptic==='function') haptic('success');
   if(typeof showToast==='function'){
-    showToast(!on ? 'Lock on' : 'Lock off', !on ? 'To Try will ask for you when it opens.' : 'The app opens without asking now.');
+    showToast(!on ? 'Lock on' : 'Lock off', !on ? 'ToTry will ask for you when it opens.' : 'The app opens without asking now.');
   }
   renderLockRow();
 }

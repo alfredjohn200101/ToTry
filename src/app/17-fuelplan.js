@@ -462,7 +462,7 @@ function _fuelToggleShopItem(el, idx){
 function _fuelCopyShopList(){
   const plan = ls('totry_meal_plan'); if(!plan || !plan.shopping) return;
   const groups={}, order=[]; plan.shopping.forEach(function(s){ const k=(s.shop||'Shopping'); if(!groups[k]){ groups[k]=[]; order.push(k); } groups[k].push(s); });
-  let txt='My To Try shopping list\n';
+  let txt='My ToTry shopping list\n';
   order.forEach(function(k){ txt+='\n'+k+':\n'; groups[k].forEach(function(s){ txt+='  - '+(s.item||'')+(s.price?(' ('+curSym()+s.price+')'):'')+'\n'; }); });
   txt+='\nTotal: '+curSym()+(plan.total||0);
   try{ if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(function(){ if(typeof showToast==='function') showToast('Copied','Shopping list copied — paste it anywhere.'); }, function(){ if(typeof showToast==='function') showToast('List ready', txt.slice(0,80)); }); return; } }catch(_){}
@@ -936,7 +936,7 @@ function openCSVImport(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:6px">Import transactions</div>'+
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:14px">Export a CSV from your banking app (most banks let you do this), then upload it here. To Try reads the date, description, and amount, auto-sorts each into a category, and lets you review before saving. The file itself is never uploaded \u2014 it\u2019s read on your phone. What you choose to save is stored with the rest of your data, and syncs to your account if you\u2019re signed in.</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:14px">Export a CSV from your banking app (most banks let you do this), then upload it here. ToTry reads the date, description, and amount, auto-sorts each into a category, and lets you review before saving. The file itself is never uploaded \u2014 it\u2019s read on your phone. What you choose to save is stored with the rest of your data, and syncs to your account if you\u2019re signed in.</div>'+
     '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:16px;padding:10px 12px;background:var(--bg3);border-radius:8px">Works with standard bank exports (columns like Date, Description, Amount). Negative amounts = spending, positive = income.</div>'+
     '<button class="btn primary" onclick="document.getElementById(&quot;csv-import-input&quot;).click()" style="margin-bottom:8px">Choose CSV file</button>'+
     '<button class="btn" onclick="closeModal(this)">Cancel</button></div>';

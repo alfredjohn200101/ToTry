@@ -1053,7 +1053,7 @@ function _renderShareCanvas(style, theme){
   ctx.strokeStyle = C.line; ctx.lineWidth = 1.5;
   ctx.strokeRect(60,60,960,960);
 
-  // ── Wordmark (To Try) in the app's serif ──
+  // ── Wordmark (ToTry) in the app's serif ──
   const wmY = 150;
   ctx.font = '300 46px "Cormorant Garamond", Georgia, serif';
   const toW = ctx.measureText('To ').width;

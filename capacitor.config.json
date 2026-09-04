@@ -1,6 +1,6 @@
 {
   "appId": "app.totry",
-  "appName": "To Try",
+  "appName": "ToTry",
   "webDir": "www",
   "ios": {
     "contentInset": "never",

@@ -28,7 +28,7 @@ function openCreateExercise(prefillName){
     '</select>'+
     '<label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:18px;cursor:pointer">'+
       '<input type="checkbox" id="cx-share" style="margin-top:3px;width:18px;height:18px;flex-shrink:0">'+
-      '<span style="font-size:12px;color:var(--tx2);line-height:1.5">Share with the community<br><span style="color:var(--tx3)">Off by default — this stays private to you. Tick to add it to To Try\u2019s shared library so other users can find it too.</span></span>'+
+      '<span style="font-size:12px;color:var(--tx2);line-height:1.5">Share with the community<br><span style="color:var(--tx3)">Off by default — this stays private to you. Tick to add it to ToTry\u2019s shared library so other users can find it too.</span></span>'+
     '</label>'+
     '<button class="btn primary" onclick="saveCustomExercise()" style="margin-bottom:8px">Create &amp; add to workout</button>'+
     '<button class="btn" onclick="closeModal(this)">Cancel</button></div>';
@@ -919,7 +919,9 @@ async function saveWorkoutSession(){
     // free some space and finish again — see the note above.
     if(typeof showToast==='function') showToast('Not saved \u2014 your session is still here',
       'There was no room to write it. Free some space in Settings \u2192 Your data, then tap Finish again. Nothing has been lost.');
-    if(typeof haptic==='function') haptic('error');
+    // 'error' is NOT one of haptic()'s patterns (tap|success|warning|celebrate|light|alert) — it fell
+    // through to impact MEDIUM, so a failed save felt exactly like an ordinary tap.
+    if(typeof haptic==='function') haptic('warning');
     return;
   }
   if(typeof logEvent==='function') logEvent('workout_logged');
@@ -1015,7 +1017,7 @@ async function clearWorkoutSession(){
 // Manual/screenshot entries are fully editable; Hevy/Strava synced entries can be deleted
 // locally (they live in their source app, so we only remove our copy).
 // ── SESSION PROOF (per-workout video/photo reference) ─────────────────────────
-// To Try is the record + content layer over Hevy/Strava. A user can attach proof (a clip/photo)
+// ToTry is the record + content layer over Hevy/Strava. A user can attach proof (a clip/photo)
 // to a session — but we DON'T host the file: it lives in their own camera roll / Photos. We keep a
 // lightweight reference + an optional small thumbnail (data URL, compressed) so the weekly review
 // can assemble a content package. Beats Hevy's one-photo-per-workout cap.
@@ -1052,7 +1054,7 @@ function attachSessionProof(unifiedId){
     if(isVideo){
       arr.push({ kind:'video', name:file.name||'clip', at:Date.now() });
       _saveSessionProof(unifiedId, arr);
-      showToast('Proof noted \u{1F3AC}','Your clip stays in your camera roll \u2014 To Try points to it for your weekly review.');
+      showToast('Proof noted \u{1F3AC}','Your clip stays in your camera roll \u2014 ToTry points to it for your weekly review.');
       const wrap=document.getElementById('session-proof-wrap'); if(wrap) wrap.innerHTML=_renderProofChips(unifiedId);
     } else {
       // Compress the image to a small thumbnail data URL (reuse the app's image handling pattern).
@@ -1124,8 +1126,8 @@ function openEditTraining(unifiedId){
       (stats ? '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">'+stats+'</div>' : '<div style="font-size:12px;color:var(--tx3);margin-bottom:16px">No detailed metrics on this activity.</div>')+
       '<div class="lbl" style="margin-top:4px">Proof <span style="font-weight:400;color:var(--tx3)">\u00b7 for your weekly review</span></div>'+
       '<div id="session-proof-wrap">'+_renderProofChips(unifiedId)+'</div>'+
-      '<div style="font-size:11px;color:var(--tx3);margin-bottom:12px;line-height:1.5">Synced from Strava. Edit it in Strava; you can remove it from To Try here.</div>'+
-      '<button class="btn" onclick="deleteTraining(&quot;strava&quot;,&quot;'+rawId+'&quot;)" style="background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re);margin-bottom:8px">Remove from To Try</button>'+
+      '<div style="font-size:11px;color:var(--tx3);margin-bottom:12px;line-height:1.5">Synced from Strava. Edit it in Strava; you can remove it from ToTry here.</div>'+
+      '<button class="btn" onclick="deleteTraining(&quot;strava&quot;,&quot;'+rawId+'&quot;)" style="background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re);margin-bottom:8px">Remove from ToTry</button>'+
       '<button class="btn" onclick="closeModal(this)">Cancel</button></div>';
     document.body.appendChild(m);
     return;
@@ -1168,8 +1170,8 @@ function openEditTraining(unifiedId){
       (exList || '<div style="font-size:12px;color:var(--tx3);margin-bottom:12px">No exercise detail came through on this session.</div>')+
       '<div class="lbl" style="margin-top:4px">Proof <span style="font-weight:400;color:var(--tx3)">\u00b7 for your weekly review</span></div>'+
       '<div id="session-proof-wrap">'+_renderProofChips(unifiedId)+'</div>'+
-      (fromHevy ? '<div style="font-size:11px;color:var(--tx3);margin:6px 0 12px;line-height:1.5">Synced from Hevy. Edit the exercises in Hevy; you can remove it from To Try here.</div>' : '<div style="font-size:11px;color:var(--tx3);margin:6px 0 12px;line-height:1.5">You logged this one here. Set-by-set editing is not in yet \u2014 for now you can remove it and log it again.</div>')+
-      '<button class="btn" onclick="deleteTraining(&quot;workout&quot;,&quot;'+w.id+'&quot;)" style="background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re);margin-bottom:8px">Remove from To Try</button>'+
+      (fromHevy ? '<div style="font-size:11px;color:var(--tx3);margin:6px 0 12px;line-height:1.5">Synced from Hevy. Edit the exercises in Hevy; you can remove it from ToTry here.</div>' : '<div style="font-size:11px;color:var(--tx3);margin:6px 0 12px;line-height:1.5">You logged this one here. Set-by-set editing is not in yet \u2014 for now you can remove it and log it again.</div>')+
+      '<button class="btn" onclick="deleteTraining(&quot;workout&quot;,&quot;'+w.id+'&quot;)" style="background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re);margin-bottom:8px">Remove from ToTry</button>'+
       '<button class="btn" onclick="closeModal(this)">Cancel</button></div>';
     document.body.appendChild(m);
     return;
@@ -3024,16 +3026,16 @@ function setCalApp(n,ic,sc,st){
 }
 
 function useToTryTracker(){
-  // Make To Try's own tracker behave exactly like picking an external app: it becomes the linked
+  // Make ToTry's own tracker behave exactly like picking an external app: it becomes the linked
   // tracker, the row shows it, and selecting it takes you straight into Nourish (where food + weight
   // tracking live together) — so users stay in-app instead of bouncing out to MyFitnessPal.
-  ls('totry_ca',{name:'To Try',icon:'&#x1F34E;',scheme:'totry-internal',store:''});
-  const cn=document.getElementById('cal-name'); if(cn)cn.textContent='To Try';
+  ls('totry_ca',{name:'ToTry',icon:'&#x1F34E;',scheme:'totry-internal',store:''});
+  const cn=document.getElementById('cal-name'); if(cn)cn.textContent='ToTry';
   const ci=document.getElementById('cal-icon'); if(ci)ci.innerHTML='&#x1F34E;';
   const cs=document.getElementById('cal-sub'); if(cs)cs.textContent='Calorie tracker · in-app';
   const cp=document.getElementById('cal-picker'); if(cp)cp.style.display='none';
   if(typeof renderCalAppPref==='function') renderCalAppPref();
-  showToast('Using To Try','Food & weight tracking, all in one place.');
+  showToast('Using ToTry','Food & weight tracking, all in one place.');
   // Go straight to Nourish, the same way picking an external app would open that app.
   if(typeof go==='function') go('nourish');
 }
@@ -3041,8 +3043,8 @@ function useToTryTracker(){
 function openLinkedCalApp(){
   const ca=ls('totry_ca');
   if(!ca){toggleCalPicker();return;}
-  // To Try's own tracker → just go to Nourish in-app (no external app to launch).
-  if(ca.scheme==='totry-internal' || ca.name==='To Try'){ if(typeof go==='function') go('nourish'); return; }
+  // ToTry's own tracker → just go to Nourish in-app (no external app to launch).
+  if(ca.scheme==='totry-internal' || ca.name==='ToTry'){ if(typeof go==='function') go('nourish'); return; }
   // Try the scheme; if the app opens (page hides) cancel the store fallback. Store opens in a
   // NEW tab so the PWA never navigates away to a white screen.
   let opened=false;

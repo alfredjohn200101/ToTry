@@ -1070,6 +1070,8 @@ function fightVice(i){
 
 // Path 1: Live SOS intervention (the original flow)
 function startLiveIntervention(i){
+  // fightVice buzzes one tap earlier; the door it opens should acknowledge the tap too.
+  try{ if(typeof haptic==='function') haptic('tap'); }catch(_){ }
   document.querySelector('.modal-bg.open')?.remove();
   loadV();
   curVice=i;
@@ -1386,7 +1388,7 @@ function _overridePlan(p){
   return bits.join('<br><br>');
 }
 
-// THE BRIDGE TO REAL HELP. To Try is a tool for men who feel voiceless — not a replacement for real
+// THE BRIDGE TO REAL HELP. ToTry is a tool for men who feel voiceless — not a replacement for real
 // people. When something feels bigger than a tool should hold, the brother's job is to hand a man
 // toward real help and make that feel like STRENGTH, not failure or shame. Faith-aware: a priest and
 // confession are real help too. This is the soul of knowing our own limits — never positioning the
@@ -2251,6 +2253,9 @@ let _compReturnFocus = null;
 function openCompanion(){
   const ov = document.getElementById('companion-overlay');
   if(!ov) return;
+  // The same sheet should feel the same however it is reached — and an unbidden arrival should be
+  // signalled at all.
+  try{ if(typeof haptic==='function') haptic('light'); }catch(_){ }
   ls('totry_companion_last', String(Date.now()));
   // Reset to the check-in phase.
   _compPhase('comp-checkin');

@@ -28,6 +28,7 @@ function openJournal(){
 // Same data shape as the full journal so entries appear in the main list.
 let _qjMood = '\u{1F642}';
 function openQuickJournal(){
+  try{ if(typeof haptic==='function') haptic('light'); }catch(_){ }   // parity with the chip beside it
   _qjMood = '\u{1F642}';
   document.querySelector('.modal-bg.open')?.remove();
   
@@ -267,6 +268,9 @@ function saveEntry(){
     showToast('Saved', 'I read what you wrote. Please look at this.');
     return;
   }
+  // saveQuickJournal fires haptic('success') for the same store. The longer, more deliberate write
+  // got no confirmation at all — the person who invested most got the least.
+  haptic('success');
   showToast(when.backdated?'Added':'Saved', when.backdated?('Backdated to '+when.date):'In your journal.');
 }
 function renderJournal(){

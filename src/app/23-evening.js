@@ -1016,11 +1016,18 @@ function initEveningTab(){
     const todays=ritualLog('totry_evenings').find(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
     if(todays){
       const setv=(id,v)=>{const n=document.getElementById(id); if(n&&v!=null&&n.value==='') n.value=v;};
-      setv('review-proud', todays.win);
-      setv('review-release', todays.release);
+      // THE IDS WERE WRONG, AND THAT ERASED PEOPLE'S EVENINGS. completeEvening() reads #evening-win,
+      // #evening-release, #evening-see and #eve-task1..3 — but this prefill wrote to #review-proud
+      // (which is the WEEKLY review textarea, a different surface entirely) and to #review-release and
+      // #tomorrow-1..3, none of which exist in the document at all. So "editable right up until
+      // midnight" reopened blank, and completing again overwrote the saved entry with those blanks:
+      // the win, the thing released and the hardest answer of the day, gone, silently.
+      setv('evening-win', todays.win);
+      setv('evening-release', todays.release);
+      setv('evening-see', todays.see);
       setv('evening-steps', todays.steps);
       if(todays.rings){ setv('evening-move', todays.rings.move); setv('evening-exercise', todays.rings.exercise); setv('evening-stand', todays.rings.stand); setv('evening-total-burn', todays.rings.total); }
-      if(todays.tasks){ setv('tomorrow-1', todays.tasks[0]); setv('tomorrow-2', todays.tasks[1]); setv('tomorrow-3', todays.tasks[2]); }
+      if(todays.tasks){ setv('eve-task1', todays.tasks[0]); setv('eve-task2', todays.tasks[1]); setv('eve-task3', todays.tasks[2]); }
     }
   }catch(_){ }
   const ps=document.getElementById('partner-section');

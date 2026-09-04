@@ -220,7 +220,7 @@ function cycleToggleAI(){
 async function cycleToggleBackup(){
   const c=cycleGet();
   if(!c.backup){
-    if(!(await askConfirm('Back your cycle data up to your To Try account?\n\nRight now it lives only on this device. Backing it up means it survives a reinstall \u2014 but it also means it leaves this phone and sits on a server. This is the most sensitive data in the app. Most people should leave this off.\n\nTurn backup on?'))) return;
+    if(!(await askConfirm('Back your cycle data up to your ToTry account?\n\nRight now it lives only on this device. Backing it up means it survives a reinstall \u2014 but it also means it leaves this phone and sits on a server. This is the most sensitive data in the app. Most people should leave this off.\n\nTurn backup on?'))) return;
     c.backup=true; cycleSet(c);
     // Turning backup off tombstones the key so a stale server copy can never sync back. Turning it
     // ON again is the explicit reversal, so lift it — otherwise she would push a backup she could
@@ -265,7 +265,7 @@ async function cycleDeleteAll(){
   haptic('success'); renderCycleSurfaces();
   // Say what is actually guaranteed. The server copy is deleted, and if that call cannot go through
   // right now the entry is blocked from ever syncing back and the delete is retried until it lands.
-  showToast('Deleted','Gone from this device and from my server — and it will not come back on a sync. If you use To Try on another phone, delete it there too.');
+  showToast('Deleted','Gone from this device and from my server — and it will not come back on a sync. If you use ToTry on another phone, delete it there too.');
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────────────────────
@@ -888,7 +888,7 @@ function buildPTCtx(){
     }
   }catch(_){}
 
-  return (typeof brotherSys==='function' ? brotherSys() : '') + `You are the personal strength & nutrition coach inside To Try, ${userName}'s app.${trainGoal ? ` They built this plan for ${trainGoal}${trainDays ? `, training ${trainDays} days a week` : ''} — coach toward that, not toward a generic programme.` : ''} You know them and their training, and you coach like a real PT who's invested in their progress — not a generic exercise database.
+  return (typeof brotherSys==='function' ? brotherSys() : '') + `You are the personal strength & nutrition coach inside ToTry, ${userName}'s app.${trainGoal ? ` They built this plan for ${trainGoal}${trainDays ? `, training ${trainDays} days a week` : ''} — coach toward that, not toward a generic programme.` : ''} You know them and their training, and you coach like a real PT who's invested in their progress — not a generic exercise database.
 
 WHO THEY ARE:
 ${userName} | Day ${dayCount} of their journey${goalIntent?'\nGoal: '+goalIntent:''}

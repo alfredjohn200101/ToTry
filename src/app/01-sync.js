@@ -249,7 +249,7 @@ function enableSyncMonitoring(){
 }
 
 // ── SHARED COMMUNITY LIBRARY ──────────────────────────────────────────────────
-// To Try grows its own knowledge from real use. When a user creates an exercise we don't have,
+// ToTry grows its own knowledge from real use. When a user creates an exercise we don't have,
 // or a web food lookup finds a real product, we contribute it to a SHARED table so every other
 // user benefits — the library expands naturally from the community instead of staying capped at
 // what we hardcoded. Contributions are deduped by name, lightly validated, and pulled on open.

@@ -10,7 +10,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="To Try">
+<meta name="apple-mobile-web-app-title" content="ToTry">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0C0C0E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,7 +21,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
-<title>To Try &#8212; by Alfred John</title>
+<title>ToTry &#8212; by Alfred John</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap"></noscript>
 <style>
@@ -70,6 +70,13 @@
 .dim{color:var(--tx2)}
 .gold{color:var(--go)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+/* NO SCROLLBARS, ANYWHERE. This is the loudest "it's a web page" tell in a wrapped app, and it was on
+   EVERY screen: .tab (which is every tab) asked for scrollbar-width:thin plus a 2px ::-webkit-scrollbar
+   with a --bg4 thumb, and the six other scrollers (.ob, .sos-overlay, .feel-door, .comp-conversation,
+   .modal, .serving-modal) inherited WebKit's default overlay bar. Only .nav ever hid its own. Scrolling
+   still works exactly as before — iOS shows position through momentum and rubber-band, not a rail. */
+*::-webkit-scrollbar{width:0;height:0;background:transparent}
+*{scrollbar-width:none;-ms-overflow-style:none}
 html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Outfit',sans-serif;overflow:hidden}
 /* APP-WIDE DAYPART AMBIENCE — a whisper of colour behind everything that shifts with the hour, so
    the WHOLE app breathes with the day, not just the home. Faint by design; never touches legibility. */
@@ -171,10 +178,8 @@ button[onclick^="deleteTransaction("],button[onclick^="deleteSubscription("],but
 .nb span{font-size:10px;letter-spacing:0.06em;text-transform:uppercase;font-weight:500}
 .nb.active{color:var(--go);border-top-color:var(--go)}
 .tabs{flex:1;overflow:hidden;order:2}
-.tab{display:none;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px calc(var(--sb) + 120px);scrollbar-width:thin;scrollbar-color:var(--bg4) transparent}
+.tab{display:none;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px calc(var(--sb) + 120px)}
 .tab.active{display:block}
-.tab::-webkit-scrollbar{width:2px}
-.tab::-webkit-scrollbar-thumb{background:var(--bg4)}
 .lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px;margin-top:4px;display:block}
 .card + .lbl, .card+.lbl{margin-top:18px}
 .card{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,0.2),0 1px 1px rgba(0,0,0,0.12)}
@@ -1349,7 +1354,10 @@ input:focus,textarea:focus,select:focus{
 </head>
 <body>
 <div id="boot-splash" style="position:fixed;inset:0;background:var(--bg,#0a0a0c);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.35s ease">
-  <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:34px;color:#c8a96e;letter-spacing:0.02em">To <em style="font-style:italic">Try</em></div>
+  <!-- .logo-main, not a third hand-rolled wordmark. This was 34px all-gold on a hardcoded #c8a96e with
+       a space in the name, so the very first thing a person saw did not match the app they were about
+       to open. Size is the only override. -->
+  <div class="logo-main" style="font-size:34px;letter-spacing:0.02em">To<em>Try</em></div>
   <div style="font-family:'DM Mono',monospace;font-size:9px;color:#6a6a72;text-transform:uppercase;letter-spacing:0.2em;margin-top:8px">by Alfred John</div>
   <div style="margin-top:22px;width:26px;height:26px;border:2px solid rgba(200,169,110,0.25);border-top-color:#c8a96e;border-radius:50%;animation:bootspin 0.7s linear infinite"></div>
 </div>
@@ -1364,9 +1372,9 @@ input:focus,textarea:focus,select:focus{
   <!-- Logo at top — honour the notch/Dynamic Island in the native shell (var(--st) = safe-area-top;
        max() keeps the original 32px in a browser where --st is 0). -->
   <div style="position:absolute;top:max(32px, calc(var(--st) + 16px));left:0;right:0;text-align:center">
-    <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:36px;color:var(--go)">
-      To <span style="font-style:italic;font-weight:300">Try</span>
-    </div>
+    <!-- .logo-main again — this was a fourth wordmark: all gold, spaced, with the italic done by a
+         hand-styled span rather than the class's own em rule. -->
+    <div class="logo-main" style="font-size:36px">To<em>Try</em></div>
     <div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.2em;margin-top:4px">BY ALFRED JOHN</div>
   </div>
   
@@ -1470,7 +1478,7 @@ input:focus,textarea:focus,select:focus{
 <div class="ob" id="onboard">
   <div class="ob-prog"><div class="ob-dot on"></div><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot"></div></div>
   <div class="ob-step active" id="ob1">
-    <div class="ob-logo">To <em>Try</em></div>
+    <div class="ob-logo">To<em>Try</em></div>
     <div class="ob-by">by Alfred John</div>
     <div class="ob-title">The only thing required is that you try.</div>
     <div class="ob-desc">An app for anyone trying to be better at anything. Built by someone who needed it himself — and shared freely, in that spirit.</div>
@@ -1480,7 +1488,7 @@ input:focus,textarea:focus,select:focus{
   <!-- WHAT IT IS — instant "I get it" for a brand-new user, before asking anything -->
   <div class="ob-step" id="ob-what">
     <div class="ob-title" style="margin-bottom:6px">One life, to tend well.</div>
-    <div class="ob-desc" style="margin-bottom:20px">You've been given a whole life to look after — not one corner of it. To Try holds all of it in one place, with a coach who sees how it connects. These are the parts you'll tend:</div>
+    <div class="ob-desc" style="margin-bottom:20px">You've been given a whole life to look after — not one corner of it. ToTry holds all of it in one place, with a coach who sees how it connects. These are the parts you'll tend:</div>
     <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
       <div style="display:flex;gap:12px;align-items:flex-start">
         <div style="font-size:20px;flex-shrink:0;width:28px;text-align:center">🛡️</div>
@@ -1617,7 +1625,7 @@ input:focus,textarea:focus,select:focus{
   </div>
   <div class="ob-step" id="ob-faith">
     <div class="ob-title">What&rsquo;s your path?</div>
-    <div class="ob-desc">To Try meets you in your own tradition &mdash; your sacred text, your daily verse, the way it speaks to you. Or choose none, and lean on grounded, tested wisdom instead. You can change this anytime in Settings.</div>
+    <div class="ob-desc">ToTry meets you in your own tradition &mdash; your sacred text, your daily verse, the way it speaks to you. Or choose none, and lean on grounded, tested wisdom instead. You can change this anytime in Settings.</div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
       <button class="btn" style="text-align:left;padding:14px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx)" onclick="obPickFaith('christianity')"><b style="font-size:14px">✝ Christianity</b><div style="font-size:12px;color:var(--tx3);margin-top:2px">Bible &middot; the Church &middot; the Rosary</div></button>
       <button class="btn" style="text-align:left;padding:14px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx)" onclick="obPickFaith('islam')"><b style="font-size:14px">☪ Islam</b><div style="font-size:12px;color:var(--tx3);margin-top:2px">Qur&rsquo;an &middot; prayer &middot; dhikr</div></button>
@@ -1715,7 +1723,7 @@ input:focus,textarea:focus,select:focus{
 </div>
 <div class="hdr">
   <div class="hdr-row">
-    <div><div class="logo-main">To <em>Try</em></div><div class="logo-sub">by Alfred John</div></div>
+    <div><div class="logo-main">To<em>Try</em></div><div class="logo-sub">by Alfred John</div></div>
     <div style="display:flex;align-items:center;gap:12px">
       <!-- Singular by default: the static markup is only ever seen before hydration, and anyone seeing it
            un-hydrated is on day 1. It used to read "1 days in" for that first beat — the very first words a
@@ -2675,7 +2683,9 @@ input:focus,textarea:focus,select:focus{
        bar: logging food first is a decided thing and npm run panels asserts it. Here it is one line, in
        the first screenful, and the 170px of settings stay where they were moved to. -->
   <div id="nut-setup-nudge"></div>
-  <input type="file" id="meal-photo-input" accept="image/*" capture="environment" style="display:none" onchange="handleMealPhoto(event)">
+  <!-- No capture=: on iOS that FORCES the camera and removes Photo Library, so a plate you already
+       photographed could not be logged. Without it the OS offers Take Photo / Photo Library / Files. -->
+  <input type="file" id="meal-photo-input" accept="image/*" style="display:none" onchange="handleMealPhoto(event)">
   <input type="file" id="food-csv-input" accept=".csv" style="display:none" onchange="importFoodCSV(event)">
   <div id="nut-search-results" style="margin-bottom:12px"></div>
   <div id="nut-recent-foods" style="margin-bottom:12px"></div>
@@ -2936,7 +2946,7 @@ input:focus,textarea:focus,select:focus{
 
   <!-- LOG PANEL -->
   <div id="pt-panel-log">
-    <!-- Native logging front and center: To Try IS a full strength + cardio tracker on its own,
+    <!-- Native logging front and center: ToTry IS a full strength + cardio tracker on its own,
          no Strava/Hevy required. These two actions make that obvious to every user. -->
     <div style="display:flex;gap:10px;margin-bottom:14px">
       <button onclick="document.getElementById('pt-ex-search')?.focus();document.getElementById('pt-ex-search')?.scrollIntoView({behavior:'smooth',block:'center'})" style="flex:1;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:12px;padding:14px 10px;cursor:pointer;text-align:center">
@@ -3060,7 +3070,7 @@ input:focus,textarea:focus,select:focus{
           <button class="btn" onclick="setCalApp('CalAI','&#x1F916;','calai://','https://apps.apple.com/app/calai-calorie-counter-ai/id6447167650')">CalAI</button>
           <button class="btn" onclick="setCalApp('Cronometer','&#x1F4CA;','cronometer://','https://apps.apple.com/app/cronometer/id1145935738')">Cronometer</button>
         </div>
-        <button class="btn" onclick="useToTryTracker()" style="margin-top:8px;background:none;border:1px solid var(--go-bd);color:var(--go);font-size:12px">Use To Try's built-in tracker</button>
+        <button class="btn" onclick="useToTryTracker()" style="margin-top:8px;background:none;border:1px solid var(--go-bd);color:var(--go);font-size:12px">Use ToTry's built-in tracker</button>
       </div>
     </div>
   </div>
@@ -3927,7 +3937,7 @@ Amen.</div></div>
     <button class="btn primary" onclick="completeEvening()">Complete evening check-in</button>
     <div id="evening-done" style="display:none;text-align:center;padding:24px 16px;margin-top:8px">
       <div style="font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--go);margin-bottom:8px">Day complete. Rest well.</div>
-      <div style="font-size:13px;color:var(--tx2);line-height:1.6">You showed up today — and that means more than you think. The least any of us can do, every single day, is at least <em style="color:var(--go)">To Try</em>. Tomorrow's a fresh one.</div>
+      <div style="font-size:13px;color:var(--tx2);line-height:1.6">You showed up today — and that means more than you think. The least any of us can do, every single day, is at least <em style="color:var(--go)">ToTry</em>. Tomorrow's a fresh one.</div>
     <button class="btn primary" onclick="go('home')" style="margin-top:16px;max-width:220px;margin-left:auto;margin-right:auto">Back to home &rarr;</button>
     </div>
   </div>
@@ -4090,7 +4100,7 @@ Amen.</div></div>
          same directory the sign-in screen and the AI crisis response already use — one resource,
          reachable, 130+ countries. -->
     <div class="crisis-line">&#127760; <a href="https://findahelpline.com" target="_blank" rel="noopener" style="color:var(--bl)">Find support in your country</a></div>
-    <div style="font-size:11px;color:var(--tx2);margin-top:8px;line-height:1.5">To Try is a self-improvement tool, not a substitute for professional support.</div>
+    <div style="font-size:11px;color:var(--tx2);margin-top:8px;line-height:1.5">ToTry is a self-improvement tool, not a substitute for professional support.</div>
   </div>
 
   <!-- Feedback + raffle — the founder's direct line from the people using it -->
@@ -4102,8 +4112,8 @@ Amen.</div></div>
 
   <!-- Honest beta framing — shown on web/PWA only; hidden inside the native app (see initSettingsTab). -->
   <div id="beta-web-note" class="card" style="display:none;margin-bottom:14px;border:1px solid var(--go-bd);background:var(--go-bg)">
-    <div class="card-hd" style="margin-bottom:6px">You're on the To Try beta</div>
-    <div style="font-size:12px;color:var(--tx2);line-height:1.6">This is the web version — everything here is real and saved to your account. A couple of things need the phone itself: <strong style="color:var(--tx)">Apple Health sync</strong> and <strong style="color:var(--tx)">reminders that reach you first</strong>. Those arrive with the To Try app on the App Store. When it lands you'll get a link, sign in with this same email, and pick up exactly where you are — nothing lost.</div>
+    <div class="card-hd" style="margin-bottom:6px">You're on the ToTry beta</div>
+    <div style="font-size:12px;color:var(--tx2);line-height:1.6">This is the web version — everything here is real and saved to your account. A couple of things need the phone itself: <strong style="color:var(--tx)">Apple Health sync</strong> and <strong style="color:var(--tx)">reminders that reach you first</strong>. Those arrive with the ToTry app on the App Store. When it lands you'll get a link, sign in with this same email, and pick up exactly where you are — nothing lost.</div>
   </div>
 
   <!-- ═══ GROUP 2: PREFERENCES (collapsed — set once, rarely changed) ═══ -->
@@ -4266,7 +4276,7 @@ Amen.</div></div>
   <details class="settings-group">
     <summary>🕯 Faith &amp; meaning <span class="settings-group-hint">Your path, and how much surfaces</span></summary>
     <div class="card">
-      <p style="font-size:12.5px;color:var(--tx2);margin-bottom:12px;line-height:1.6">To Try was built honestly from a Christian heart &mdash; and made to serve you in yours. Choose your path and the daily reading, the reader, and the companion&rsquo;s voice follow it. Or choose none, and lean on grounded, tested wisdom instead. Every practical feature works fully either way.</p>
+      <p style="font-size:12.5px;color:var(--tx2);margin-bottom:12px;line-height:1.6">ToTry was built honestly from a Christian heart &mdash; and made to serve you in yours. Choose your path and the daily reading, the reader, and the companion&rsquo;s voice follow it. Or choose none, and lean on grounded, tested wisdom instead. Every practical feature works fully either way.</p>
       <div class="lbl" style="margin-bottom:8px">Your path</div>
       <div id="faith-tradition-options" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px">
         <button class="faithtr-opt" data-tr="christianity" onclick="setFaithTradition('christianity')" style="text-align:left;padding:12px 13px;border-radius:11px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);cursor:pointer">
@@ -4348,7 +4358,7 @@ Amen.</div></div>
     <summary>🔗 Connected apps <span class="settings-group-hint">Strava, Hevy, Apple Health</span></summary>
     
     <div class="card">
-      <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Apps you use alongside To Try. We open them with one tap and import data where possible.</p>
+      <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Apps you use alongside ToTry. We open them with one tap and import data where possible.</p>
       <div id="connected-apps-list"></div>
       <button class="btn" onclick="showAddAppPicker()" style="margin-top:10px;font-size:12px">+ Add another app</button>
     </div>
@@ -4391,7 +4401,7 @@ Amen.</div></div>
   <div class="card" id="support-card" style="display:none;background:linear-gradient(135deg, rgba(200,169,110,0.06), rgba(140,107,182,0.04));border-color:var(--go-bd)">
     <div class="card-hd" style="margin-bottom:6px">☕ Support the project</div>
     <div style="font-size:13px;color:var(--tx2);line-height:1.7">
-      <p style="margin-bottom:10px">To Try costs about $20-50 AUD/month to keep running (AI calls + hosting). If it has helped you, you can chip in.</p>
+      <p style="margin-bottom:10px">ToTry costs about $20-50 AUD/month to keep running (AI calls + hosting). If it has helped you, you can chip in.</p>
       <p style="margin-bottom:14px;font-size:12px;color:var(--tx3);font-style:italic">Optional. Never unlocks features. Just keeps the app free for everyone.</p>
       <a href="https://buymeacoffee.com/totrybyaj" target="_blank" rel="noopener" class="btn primary" style="display:block;text-align:center;text-decoration:none;padding:11px;font-size:13px">Buy me a coffee →</a>
     </div>
@@ -4403,7 +4413,7 @@ Amen.</div></div>
 
     <!-- Revealed by renderLockRow() only on native, because the web has no way to unlock. -->
     <div class="card" id="lock-row" style="display:none">
-      <div class="card-hd" style="margin-bottom:8px">🔒 Lock To Try with <span id="lock-kind">Face ID</span></div>
+      <div class="card-hd" style="margin-bottom:8px">🔒 Lock ToTry with <span id="lock-kind">Face ID</span></div>
       <div id="lock-sub" style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:10px">Your journal, your fight and your money, behind Face ID. Off by default.</div>
       <button class="btn" id="lock-btn" style="background:var(--bg3);border:1px solid var(--bd);font-size:12px" onclick="toggleAppLock()">Turn on</button>
     </div>
@@ -4487,14 +4497,14 @@ Amen.</div></div>
 
   <!-- HELP IMPROVE — always visible, this is the QA channel -->
   <div class="card" style="background:linear-gradient(135deg,rgba(140,107,182,0.08),rgba(200,169,110,0.05));border-color:var(--go-bd)">
-    <div class="card-hd" style="margin-bottom:6px">💡 Help improve To Try</div>
+    <div class="card-hd" style="margin-bottom:6px">💡 Help improve ToTry</div>
     <p style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:12px">Found a bug? Got an idea? Something feel off? Tell me directly — this app gets better because real people say what's wrong. Every message is read.</p>
     <button class="btn primary" onclick="openFeedback()">Send feedback or report a bug</button>
   </div>
 
   <!-- ═══ GROUP 8: ABOUT (collapsed — read once, rarely revisited) ═══ -->
   <details class="settings-group">
-    <summary>ℹ About To Try <span class="settings-group-hint">Privacy, terms, contact</span></summary>
+    <summary>ℹ About ToTry <span class="settings-group-hint">Privacy, terms, contact</span></summary>
     
     <div class="card">
       <div class="card-hd" style="margin-bottom:6px">About</div>
@@ -4518,7 +4528,7 @@ Amen.</div></div>
 
     <div class="card">
       <div class="card-hd" style="margin-bottom:8px">Privacy &amp; legal</div>
-      <p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.6">Your data lives in two places: on this device, and in your account so it follows you if you change or lose your phone. A few things stay on the device only — your progress photos, and your cycle data unless you switch backup on yourself. When you use AI features (Coach, scripture, screenshot reading), your request and relevant context are sent to an AI provider (Google, Groq, OpenRouter or Anthropic) to generate a reply; their handling is governed by their own policies. To Try does not sell your data and runs no ads. Please read the full privacy policy for details.</p>
+      <p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.6">Your data lives in two places: on this device, and in your account so it follows you if you change or lose your phone. A few things stay on the device only — your progress photos, and your cycle data unless you switch backup on yourself. When you use AI features (Coach, scripture, screenshot reading), your request and relevant context are sent to an AI provider (Google, Groq, OpenRouter or Anthropic) to generate a reply; their handling is governed by their own policies. ToTry does not sell your data and runs no ads. Please read the full privacy policy for details.</p>
       <button class="btn" onclick="showPrivacyPolicy()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px;margin-bottom:8px">Privacy policy</button>
       <button class="btn" onclick="showTermsOfUse()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px">Terms of use</button>
     </div>
@@ -4801,7 +4811,7 @@ Amen.</div></div>
 <div id="pwa-banner" style="display:none;position:fixed;bottom:calc(var(--sb) + 80px);left:12px;right:12px;background:var(--bg2);border:1px solid var(--go-bd);border-radius:var(--r);padding:14px 16px;z-index:600;box-shadow:0 8px 32px rgba(0,0,0,0.5);max-width:406px;margin:0 auto">
   <div style="display:flex;align-items:center;gap:12px">
     <img src="icon-192.png" style="width:44px;height:44px;border-radius:10px;flex-shrink:0" onerror="this.style.display='none'">
-    <div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:2px">Add To Try to your home screen</div><div style="font-size:11px;color:var(--tx2);line-height:1.4">Works offline. Your data stays.</div></div>
+    <div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:2px">Add ToTry to your home screen</div><div style="font-size:11px;color:var(--tx2);line-height:1.4">Works offline. Your data stays.</div></div>
   </div>
   <div style="display:flex;gap:8px;margin-top:12px">
     <button class="btn primary" style="flex:1;padding:9px" id="pwa-install-btn">Add to home screen</button>
@@ -4812,7 +4822,7 @@ Amen.</div></div>
 <div id="ios-install-banner" style="display:none;position:fixed;bottom:calc(var(--sb) + 80px);left:12px;right:12px;background:var(--bg2);border:1px solid var(--go-bd);border-radius:var(--r);padding:14px 16px;z-index:600;box-shadow:0 8px 32px rgba(0,0,0,0.5);max-width:406px;margin:0 auto">
   <div style="display:flex;justify-content:space-between;align-items:flex-start">
     <div style="flex:1">
-      <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:6px">Install To Try on your iPhone</div>
+      <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:6px">Install ToTry on your iPhone</div>
       <div style="font-size:12px;color:var(--tx2);line-height:1.7">1. Tap the <strong style="color:var(--go)">Share button</strong> &#8599;&#65038; at the bottom of Safari<br>2. Tap <strong style="color:var(--go)">"Add to Home Screen"</strong><br>3. Tap <strong style="color:var(--go)">"Add"</strong> in the top right</div>
       <div style="font-size:11px;color:var(--tx3);margin-top:6px;line-height:1.4">Your data saves permanently. Works offline.</div>
     </div>
@@ -4999,11 +5009,11 @@ async function exportAllData(){
       const k = localStorage.key(i);
       if(backupSafeKey(k)) dump[k] = localStorage.getItem(k);   // never the sign-in or any API token
     }
-    const payload = { app:'To Try', version:(typeof APP_VERSION!=='undefined'?APP_VERSION:'?'), exported:new Date().toISOString(), keys:Object.keys(dump).length, data:dump };
+    const payload = { app:'ToTry', version:(typeof APP_VERSION!=='undefined'?APP_VERSION:'?'), exported:new Date().toISOString(), keys:Object.keys(dump).length, data:dump };
     const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
     // Through SaveFile: an <a download> does nothing in a WKWebView, so on iOS this used to produce no
     // file and no error — the export promise, silently broken in the App Store build.
-    const _r = await SaveFile.save(blob, 'totry-backup-' + new Date().toISOString().slice(0,10) + '.json', 'To Try backup');
+    const _r = await SaveFile.save(blob, 'totry-backup-' + new Date().toISOString().slice(0,10) + '.json', 'ToTry backup');
     if(_r === null) return;   // share sheet dismissed — they chose not to; don't tell them it's saved
     if(typeof haptic==='function') haptic('success');
     if(typeof showToast==='function') showToast(_r ? 'Backup saved' : 'Not saved', _r ? (payload.keys + ' items exported. Your sign-in and app tokens are deliberately left out, so the file is safe to keep.') : 'Nothing was written. Try again in a moment.');
@@ -5024,7 +5034,7 @@ async function importAllData(ev){
       // Same rule inbound: a file from someone else must never be able to install their session
       // or tokens on this device.
       const keys = Object.keys(data).filter(backupSafeKey);
-      if(!keys.length){ showToast('Nothing to restore', 'That file has no To Try data.'); return; }
+      if(!keys.length){ showToast('Nothing to restore', 'That file has no ToTry data.'); return; }
       if(!(await askConfirm('Restore ' + keys.length + ' items from this backup? This overwrites matching data on this device.'))) return;
       // One restore path for both entry points. My first version of this fix duplicated the counting
       // loop inline here, which is the same duplicate-implementation problem the two plate calculators
@@ -5292,7 +5302,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v574';
+const APP_VERSION = 'v576';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -6004,7 +6014,7 @@ function enableSyncMonitoring(){
 }
 
 // ── SHARED COMMUNITY LIBRARY ──────────────────────────────────────────────────
-// To Try grows its own knowledge from real use. When a user creates an exercise we don't have,
+// ToTry grows its own knowledge from real use. When a user creates an exercise we don't have,
 // or a web food lookup finds a real product, we contribute it to a SHARED table so every other
 // user benefits — the library expands naturally from the community instead of staying capped at
 // what we hardcoded. Contributions are deduped by name, lightly validated, and pulled on open.
@@ -6449,7 +6459,7 @@ function stopSyncLoop(){
 // ─── NOTIFICATIONS ─────────────────────────────────────────────
 // ════════════════════════════════════════════════════════════════════════════════════════════
 // NATIVE WRAPPER READINESS LAYER
-// To Try ships now as a PWA. But iOS PWAs can't do reliable background push — which is exactly what
+// ToTry ships now as a PWA. But iOS PWAs can't do reliable background push — which is exactly what
 // "the sibling reaching out first at the right moment" needs. So this layer abstracts notifications
 // behind ONE interface that:
 //   • detects if we're running inside a native wrapper (Capacitor) — window.Capacitor is present
@@ -6624,7 +6634,7 @@ const Health = {
       try{ ls('totry_health_connected', gotSomething); }catch(_){}
       if(!gotSomething){
         return { ok:false, reason:'no-permission',
-                 message:'Apple Health did not share anything. If you tapped "Don\u2019t Allow", open Settings \u2192 Health \u2192 Data Access & Devices \u2192 To Try and turn on what you want me to see.' };
+                 message:'Apple Health did not share anything. If you tapped "Don\u2019t Allow", open Settings \u2192 Health \u2192 Data Access & Devices \u2192 ToTry and turn on what you want me to see.' };
       }
       try{ synced && (synced.workouts = await this.syncWorkouts(30)); }catch(_){}   // 30 days on first connect
       try{ synced && (synced.sleepNights = await this.syncSleep(30)); }catch(_){}
@@ -6858,7 +6868,7 @@ async function connectAppleHealth(){
 // silently erasing weeks of a person's training history would be the worse surprise — but it says so
 // plainly, and Settings → Your data → Delete still removes it all.
 async function disconnectAppleHealth(){
-  if(!(await askConfirm('Turn off Apple Health?\n\nThe app stops reading your steps, sleep and workouts, and stops syncing them to your account.\n\nWhat you\'ve already imported stays in your history. To revoke the permission itself, use iOS Settings → Health → Data Access & Devices → To Try.'))) return;
+  if(!(await askConfirm('Turn off Apple Health?\n\nThe app stops reading your steps, sleep and workouts, and stops syncing them to your account.\n\nWhat you\'ve already imported stays in your history. To revoke the permission itself, use iOS Settings → Health → Data Access & Devices → ToTry.'))) return;
   try{ ls('totry_health_connected', false); }catch(_){}
   // The write side rides on the same grant — leaving it "on" would be a switch pointing at nothing.
   try{ ls('totry_health_write', false); }catch(_){}
@@ -6919,7 +6929,7 @@ function renderHealthCard(){
     // Web/PWA is the beta — HealthKit is native-only. Be honest (a heads-up), never a dead button.
     if(typeof Health==='undefined' || !Health.isNative()){
       if(title) title.textContent='Apple Health';
-      if(sub) sub.textContent='Automatic steps & activity sync arrives with the To Try app on the App Store — you’ll sign in with this same email and pick up right here.';
+      if(sub) sub.textContent='Automatic steps & activity sync arrives with the ToTry app on the App Store — you’ll sign in with this same email and pick up right here.';
       if(btn) btn.style.display='none';
       if(off) off.style.display='none';
       return;
@@ -7145,7 +7155,7 @@ function scheduleReachOut(){
         // reading the same snapshot would lose an entry, which is the same shape of bug as the phantom
         // sends this is fixing.
         _reachConfirm = _reachConfirm.then(function(){
-          return Promise.resolve(Notify.schedule('reachout_'+i, 'To Try', body, t, { route:'reachout', vice:best.v.n }))
+          return Promise.resolve(Notify.schedule('reachout_'+i, 'ToTry', body, t, { route:'reachout', vice:best.v.n }))
             .then(function(ok){
               if(ok === false) return;   // never scheduled — do not blame the person for not answering it
               const l = _reachLog();
@@ -7177,7 +7187,7 @@ function _reachOutRowHTML(){
         const _native = (typeof Notify==='object' && Notify.isNative && Notify.isNative());
         status = _native
           ? ('Next: ' + new Date(st.next).toLocaleString('en-AU',{weekday:'short',hour:'numeric',minute:'2-digit'})+' · '+_reachCount7()+' of '+REACHOUT_MAX_PER_WEEK+' used this week.')
-          : 'Ready when you install To Try as an app \u2014 a browser cannot wake itself at your hard hour.';
+          : 'Ready when you install ToTry as an app \u2014 a browser cannot wake itself at your hard hour.';
       }
   else if(st.hold) status='Holding — '+st.hold+'.';
   else status='Nothing scheduled right now.';
@@ -7205,7 +7215,7 @@ function _reachOutRowHTML(){
     // Say the limit out loud. A browser cannot wake itself, so on the web this works out your hard
     // hour and holds it — nothing buzzes. Claiming otherwise would be the exact promise this app
     // is built not to make.
-    (_native ? '' : '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);line-height:1.6;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">In the browser I can work out your hard hour but I can’t buzz you — a web page can’t wake itself. The check-in starts once To Try is installed as an app; what you set here is kept and waiting. Quiet hours only ever silence what I send you — if you open me at 3am I’ll still meet you properly.</div>')+
+    (_native ? '' : '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);line-height:1.6;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">In the browser I can work out your hard hour but I can’t buzz you — a web page can’t wake itself. The check-in starts once ToTry is installed as an app; what you set here is kept and waiting. Quiet hours only ever silence what I send you — if you open me at 3am I’ll still meet you properly.</div>')+
   '</div>';
 }
 function saveQuietHours(){
@@ -7750,7 +7760,7 @@ function _ptIntel(){
   return out;
 }
 // ── THE NERVOUS SYSTEM ────────────────────────────────────────────────────────
-// getLifeState() is the single sensory cortex of To Try. Every "brain" — the coach, the
+// getLifeState() is the single sensory cortex of ToTry. Every "brain" — the coach, the
 // proactive nudge, the home insight, the weekly synthesis — reads from THIS instead of each
 // re-gathering raw streams with its own date logic. That's what turns separate trackers into
 // one system that genuinely knows the person: body, mind, and soul gathered once, consistently,
@@ -7976,7 +7986,7 @@ function cycleToggleAI(){
 async function cycleToggleBackup(){
   const c=cycleGet();
   if(!c.backup){
-    if(!(await askConfirm('Back your cycle data up to your To Try account?\n\nRight now it lives only on this device. Backing it up means it survives a reinstall \u2014 but it also means it leaves this phone and sits on a server. This is the most sensitive data in the app. Most people should leave this off.\n\nTurn backup on?'))) return;
+    if(!(await askConfirm('Back your cycle data up to your ToTry account?\n\nRight now it lives only on this device. Backing it up means it survives a reinstall \u2014 but it also means it leaves this phone and sits on a server. This is the most sensitive data in the app. Most people should leave this off.\n\nTurn backup on?'))) return;
     c.backup=true; cycleSet(c);
     // Turning backup off tombstones the key so a stale server copy can never sync back. Turning it
     // ON again is the explicit reversal, so lift it — otherwise she would push a backup she could
@@ -8021,7 +8031,7 @@ async function cycleDeleteAll(){
   haptic('success'); renderCycleSurfaces();
   // Say what is actually guaranteed. The server copy is deleted, and if that call cannot go through
   // right now the entry is blocked from ever syncing back and the delete is retried until it lands.
-  showToast('Deleted','Gone from this device and from my server — and it will not come back on a sync. If you use To Try on another phone, delete it there too.');
+  showToast('Deleted','Gone from this device and from my server — and it will not come back on a sync. If you use ToTry on another phone, delete it there too.');
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────────────────────
@@ -8644,7 +8654,7 @@ function buildPTCtx(){
     }
   }catch(_){}
 
-  return (typeof brotherSys==='function' ? brotherSys() : '') + `You are the personal strength & nutrition coach inside To Try, ${userName}'s app.${trainGoal ? ` They built this plan for ${trainGoal}${trainDays ? `, training ${trainDays} days a week` : ''} — coach toward that, not toward a generic programme.` : ''} You know them and their training, and you coach like a real PT who's invested in their progress — not a generic exercise database.
+  return (typeof brotherSys==='function' ? brotherSys() : '') + `You are the personal strength & nutrition coach inside ToTry, ${userName}'s app.${trainGoal ? ` They built this plan for ${trainGoal}${trainDays ? `, training ${trainDays} days a week` : ''} — coach toward that, not toward a generic programme.` : ''} You know them and their training, and you coach like a real PT who's invested in their progress — not a generic exercise database.
 
 WHO THEY ARE:
 ${userName} | Day ${dayCount} of their journey${goalIntent?'\nGoal: '+goalIntent:''}
@@ -14004,6 +14014,8 @@ function fightVice(i){
 
 // Path 1: Live SOS intervention (the original flow)
 function startLiveIntervention(i){
+  // fightVice buzzes one tap earlier; the door it opens should acknowledge the tap too.
+  try{ if(typeof haptic==='function') haptic('tap'); }catch(_){ }
   document.querySelector('.modal-bg.open')?.remove();
   loadV();
   curVice=i;
@@ -14320,7 +14332,7 @@ function _overridePlan(p){
   return bits.join('<br><br>');
 }
 
-// THE BRIDGE TO REAL HELP. To Try is a tool for men who feel voiceless — not a replacement for real
+// THE BRIDGE TO REAL HELP. ToTry is a tool for men who feel voiceless — not a replacement for real
 // people. When something feels bigger than a tool should hold, the brother's job is to hand a man
 // toward real help and make that feel like STRENGTH, not failure or shame. Faith-aware: a priest and
 // confession are real help too. This is the soul of knowing our own limits — never positioning the
@@ -15185,6 +15197,9 @@ let _compReturnFocus = null;
 function openCompanion(){
   const ov = document.getElementById('companion-overlay');
   if(!ov) return;
+  // The same sheet should feel the same however it is reached — and an unbidden arrival should be
+  // signalled at all.
+  try{ if(typeof haptic==='function') haptic('light'); }catch(_){ }
   ls('totry_companion_last', String(Date.now()));
   // Reset to the check-in phase.
   _compPhase('comp-checkin');
@@ -15412,8 +15427,20 @@ function saveIfThen(feeling, action){
 // cost someone the thing that was actually helping them in the moment.
 function _saveIfThenFromModal(feeling){
   const v=document.getElementById('ifthen-act');
-  const ok=(v && v.value && v.value.trim());
-  saveIfThen(feeling, v?v.value:'');
+  const raw=(v && v.value) ? v.value : '';
+  const ok=raw.trim();
+  // GATED, AND NOT STORED. This door is two taps from all seven Feeling Door paths, and it was the
+  // only free-text surface in the moment flow with no crisis check — its sibling _letGoSaveJournal
+  // has had one since v449. Worse than the missing gate was the READ-BACK: whatever was typed here
+  // is replayed verbatim under "THE PLAN YOU SET FOR THIS" every later time that feeling is chosen.
+  // A disclosure must never become a person's own standing instruction, so it is met here and NOT
+  // saved — this store has no `flagged` field to keep it out of later reads.
+  const _ifCrisis = (typeof journalCrisisOf==='function') ? journalCrisisOf(raw) : null;
+  if(_ifCrisis){
+    document.querySelector('.modal-bg.open')?.remove();
+    if(typeof journalMeetCrisis==='function' && journalMeetCrisis(_ifCrisis)) return;
+  }
+  saveIfThen(feeling, raw);
   if(!ok) return;                                   // nothing saved → leave the plan modal open
   document.querySelector('.modal-bg.open')?.remove();
   setTimeout(function(){ try{ if(typeof _feelMove==='function') _feelMove(feeling); }catch(_){} }, 180);
@@ -15534,6 +15561,15 @@ function _startSmallestThing(){
     openFormModal('The thing you\u2019re avoiding','What\u2019s the one thing? Don\u2019t overthink it.',[{id:'thing',label:'',type:'text',placeholder:'e.g. the assignment, the call, the gym'}],'Start it small',(vals)=>{
       if(!vals.thing||!vals.thing.trim()) return 'Just name it.';
       const t = vals.thing.trim();
+      // GATED. This door does not store anything, but it ECHOES: the next modal reads "Don't do <what
+      // you typed>. Just START it." Typed as a disclosure that rendered "Don't do I want to kill
+      // myself tonight. Just START it — the smallest first step", with no helpline anywhere on screen.
+      // Meet the person instead of instructing them.
+      const _avCrisis = (typeof journalCrisisOf==='function') ? journalCrisisOf(t) : null;
+      if(_avCrisis){
+        setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_avCrisis); }catch(_){ } }, 250);
+        return true;   // closes the form; the crisis card takes the screen instead of the 2-minute nudge
+      }
       setTimeout(()=>{ const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center'; m.innerHTML='<div class="modal" style="text-align:center"><div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:10px">Just 2 minutes</div><div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:20px">Don\u2019t do <b style="color:var(--tx)">'+t.replace(/</g,'&lt;')+'</b>. Just START it \u2014 the smallest first step, for 2 minutes. Open the doc. Put on the shoes. Dial the number. You\u2019re allowed to stop after 2 minutes. You won\u2019t want to.</div><button class="btn primary" onclick="closeModal(this)">I\u2019m starting now</button></div>'; document.body.appendChild(m); if(typeof haptic==='function') haptic('tap'); }, 250);
       return true;
     });
@@ -17181,7 +17217,7 @@ function openProgressCheckin(){
   m.innerHTML='<div class="modal" style="text-align:center;max-height:92vh;overflow-y:auto">'+
     '<div class="modal-handle"></div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">How far have you come?</div>'+
-    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Since you started with To Try — what have you noticed? Tap any that fit. '+_raffleCopy('intro')+'</div>'+
+    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Since you started with ToTry — what have you noticed? Tap any that fit. '+_raffleCopy('intro')+'</div>'+
     '<div class="pc-areas" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px"></div>'+
     '<textarea class="pc-note" placeholder="Anything you’d want Alfy to know? What’s working, what’s missing?" style="width:100%;min-height:70px;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:16px;font-family:inherit;margin-bottom:14px;resize:vertical;box-sizing:border-box"></textarea>'+
     '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:16px">'+_raffleCopy('send')+'</div>'+
@@ -17629,7 +17665,7 @@ function nextSmallThingHTML(){
 
 
 // ── WRITE BACK TO APPLE HEALTH ──────────────────────────────────────────────────────────────────
-// The app has always DECLARED this: NSHealthUpdateUsageDescription says "To Try can record activity you
+// The app has always DECLARED this: NSHealthUpdateUsageDescription says "ToTry can record activity you
 // log here back to Apple Health, so your data stays in one place", and the privacy policy promised
 // anything written back happens "only at your request". Neither was true — capacitor-health exposes only
 // query methods, and nothing else wrote. So the app asked for a permission it could not use and described
@@ -17782,7 +17818,7 @@ const Lock = {
   label(kind){ return kind==='faceId' ? 'Face ID' : kind==='touchId' ? 'Touch ID' : 'your passcode'; },
   async prove(reason){
     const p=this._p(); if(!p) return { ok:false, unavailable:true };
-    try{ return (await p.authenticate({ reason: reason || 'Unlock To Try' })) || { ok:false }; }
+    try{ return (await p.authenticate({ reason: reason || 'Unlock ToTry' })) || { ok:false }; }
     catch(e){ console.warn('[Lock] authenticate threw', e); return { ok:false, unavailable:true }; }
   }
 };
@@ -17796,19 +17832,30 @@ function _lockOverlay(){
   el = document.createElement('div');
   el.id = 'app-lock';
   // Covers everything, including any open sheet, and cannot be dismissed by tapping away.
-  el.style.cssText = 'position:fixed;inset:0;z-index:100000;background:var(--bg,#0a0a0c);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center';
+  // SAFE AREA. This was a flat padding:32px — the only full-screen surface in the app that ignored the
+  // notch and the home indicator, while .ob, .sos-overlay and .hdr all pad with var(--st)/var(--sb).
+  // On a 16 Pro Max the lock title sat under the Dynamic Island and the crisis helpline row ran into
+  // the home indicator, which is the one row on this screen that must stay reachable.
+  el.style.cssText = 'position:fixed;inset:0;z-index:100000;background:var(--bg,#0a0a0c);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:0;padding:calc(var(--st) + 32px) 32px calc(var(--sb) + 32px);text-align:center;overflow-y:auto;-webkit-overflow-scrolling:touch';
   el.innerHTML =
-    '<div style="font-size:34px">\u{1F512}</div>' +
-    '<div style="font-family:Cormorant Garamond,serif;font-size:28px;color:var(--go)">To Try</div>' +
-    '<div id="app-lock-msg" style="font-size:13px;color:var(--tx2);line-height:1.6;max-width:280px">Locked — just for you.</div>' +
-    '<button class="btn primary" id="app-lock-btn" style="max-width:240px" onclick="unlockApp()">Unlock</button>' +
+    // COMPOSED, NOT CENTRED. This was an emoji padlock over a header-sized wordmark, the whole clump
+    // dead-centre with ~370px of dead space above and ~300px below — a fragment centred in a viewport
+    // rather than a screen. The brand is the hero at .ob-logo scale (the size onboarding uses for a
+    // full-screen moment), the emoji is gone, and Unlock is a quiet retry rather than a gold slab
+    // shouting louder than the name: on iOS Face ID prompts itself, so that button is the fallback.
+    '<div style="flex:1"></div>' +
+    '<div class="ob-logo" style="margin-bottom:10px">To<em>Try</em></div>' +
+    '<div id="app-lock-msg" style="font-size:13px;color:var(--tx3);line-height:1.6;max-width:280px">Locked \u2014 just for you.</div>' +
+    '<button class="btn" id="app-lock-btn" style="max-width:200px;margin-top:22px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px" onclick="unlockApp()">Unlock</button>' +
+    '<div style="flex:1"></div>' +
     // CRISIS HELP IS NEVER BEHIND A GATE. The sign-in screen states the rule in its own comment
     // ("Crisis help must never sit behind a login") and carries the numbers for exactly that reason —
     // but this overlay is opaque at z-index 100000, so it covers them along with everything else. A
     // cancelled Face ID, or a face it will not read at 2am, left a person on a black screen with one
     // button and no way to reach a human. These numbers are hardcoded, need no network and no account,
     // and reveal nothing private, so carrying them here costs the lock nothing at all.
-    '<div style="margin-top:6px;padding-top:14px;border-top:1px solid var(--bd);max-width:300px">' +
+    // It sits at the FOOT now rather than floating mid-screen — where a person looks for help.
+    '<div style="padding-top:14px;border-top:1px solid var(--bd);max-width:320px;width:100%">' +
       '<div style="font-size:11.5px;color:var(--tx3);line-height:1.6;margin-bottom:6px">Need real help right now? You don&#8217;t have to unlock anything.</div>' +
       '<div style="font-size:12.5px;line-height:1.9;color:var(--tx3)">' +
         '&#127462;&#127482; Lifeline <a href="tel:131114" style="color:var(--go);text-decoration:none">13 11 14</a> &nbsp;&#183;&nbsp; ' +
@@ -17824,7 +17871,7 @@ function _lockOverlay(){
 async function unlockApp(){
   const msg = document.getElementById('app-lock-msg');
   if(msg) msg.textContent = 'Verifying…';
-  const r = await Lock.prove('Unlock To Try');
+  const r = await Lock.prove('Unlock ToTry');
   if(r && r.ok){
     _lockShown = false;
     const el = document.getElementById('app-lock'); if(el) el.remove();
@@ -17865,7 +17912,7 @@ document.addEventListener('visibilitychange', function(){
     // Only after a real absence. Presenting the share sheet, the camera scanner or a permission prompt
     // also hides the web view, and demanding Face ID on the way back from those would be maddening.
     // The stated threat model is "people hand their unlocked phone to a partner, a friend, a child" —
-    // and a 20-second grace window defeats exactly that: hand the phone over, they reopen To Try within
+    // and a 20-second grace window defeats exactly that: hand the phone over, they reopen ToTry within
     // twenty seconds, and the journal is simply there. The window exists for a real reason (the share
     // sheet, the barcode scanner and permission prompts all hide the web view), so it is kept but cut to
     // a length that covers a returning dialog without covering a handover.
@@ -17907,7 +17954,7 @@ async function toggleAppLock(){
   // Prove it works BEFORE committing to it — turning a lock on without testing it is how someone ends up
   // locked out. And require the same proof to turn it off, so grabbing an open phone can't quietly
   // remove the protection for good.
-  const r = await Lock.prove(on ? 'Turn off the lock on To Try' : 'Turn on the lock for To Try');
+  const r = await Lock.prove(on ? 'Turn off the lock on ToTry' : 'Turn on the lock for ToTry');
   if(r && r.unavailable){
     try{ ls('totry_lock_on', false); }catch(_){}
     try{ Lock._mirrorToNative(false); }catch(_){}
@@ -17922,7 +17969,7 @@ async function toggleAppLock(){
   try{ Lock._mirrorToNative(!on); }catch(_){}
   if(typeof haptic==='function') haptic('success');
   if(typeof showToast==='function'){
-    showToast(!on ? 'Lock on' : 'Lock off', !on ? 'To Try will ask for you when it opens.' : 'The app opens without asking now.');
+    showToast(!on ? 'Lock on' : 'Lock off', !on ? 'ToTry will ask for you when it opens.' : 'The app opens without asking now.');
   }
   renderLockRow();
 }
@@ -20175,7 +20222,7 @@ function editViceStart(i){
     '<div style="text-align:center;font-size:12px;color:var(--tx3);margin-bottom:16px">When did your current streak actually start?</div>' +
     '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Streak start date</div>' +
     '<input type="date" id="edit-vice-start" value="' + currentStart + '" max="' + today + '" style="margin-bottom:14px;font-size:16px;padding:12px">' +
-    '<p style="font-size:11px;color:var(--tx3);line-height:1.6;margin-bottom:14px">If you quit before installing To Try, set the real date so your day count matches your life.</p>' +
+    '<p style="font-size:11px;color:var(--tx3);line-height:1.6;margin-bottom:14px">If you quit before installing ToTry, set the real date so your day count matches your life.</p>' +
     '<button class="btn primary" onclick="saveViceStart(' + i + ')" style="margin-bottom:8px">Save start date</button>' +
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Cancel</button>' +
     '</div>';
@@ -22838,6 +22885,7 @@ function openJournal(){
 // Same data shape as the full journal so entries appear in the main list.
 let _qjMood = '\u{1F642}';
 function openQuickJournal(){
+  try{ if(typeof haptic==='function') haptic('light'); }catch(_){ }   // parity with the chip beside it
   _qjMood = '\u{1F642}';
   document.querySelector('.modal-bg.open')?.remove();
   
@@ -23077,6 +23125,9 @@ function saveEntry(){
     showToast('Saved', 'I read what you wrote. Please look at this.');
     return;
   }
+  // saveQuickJournal fires haptic('success') for the same store. The longer, more deliberate write
+  // got no confirmation at all — the person who invested most got the least.
+  haptic('success');
   showToast(when.backdated?'Added':'Saved', when.backdated?('Backdated to '+when.date):'In your journal.');
 }
 function renderJournal(){
@@ -23637,7 +23688,7 @@ async function deleteWeightEntry(key){
   ls('totry_body', filtered);
   if(typeof syncToCloud==='function') syncToCloud();
   renderBody();
-  haptic('success'); showToast('Deleted','Weigh-in removed.');
+  haptic('warning'); showToast('Deleted','Weigh-in removed.');   // a loss should not feel like a win
 }
 // ── RECOMP READ (the Train×Nourish squeeze #5) ─────────────────────────────────────────────────
 // The read no single-purpose app can give: it needs BOTH your weight trend AND your strength trend.
@@ -26521,13 +26572,16 @@ async function openBarcodeScanner(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:8px">Scan a barcode</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">Snap a photo of the product barcode (or pick one from your library). We\'ll read the number and look it up.</p>' +
-    // capture="environment" hints the rear camera on phones; without it the OS shows Camera + Library
+    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">The barcode itself \u2014 the striped lines and digits, not the meal. Take a photo or pick one from your library, and we\'ll read the number and look it up.</p>' +
+    // NO capture= HERE, DELIBERATELY. capture="environment" does not "hint" the rear camera on iOS — it
+    // FORCES it, removing Photo Library from the picker entirely, while the sheet copy promised a
+    // library option that could never appear. Without it iOS offers Photo Library / Take Photo /
+    // Choose File, which is what a person wants when the barcode is in a photo they already took.
     // Revealed only when a live scan can really happen (native + camera + permission not denied), so it
     // is never a button that does nothing. Fails closed.
     '<button class="btn primary" id="barcode-live-btn" style="display:none;margin-bottom:8px" onclick="startLiveBarcodeScan()">\u2b1c Scan with camera</button>' +
-    '<input type="file" id="barcode-photo-input" accept="image/*" capture="environment" style="display:none" onchange="readBarcodePhoto(event)">' +
-    '<button class="btn primary" id="barcode-photo-btn" onclick="document.getElementById(\'barcode-photo-input\').click()" style="margin-bottom:8px">📷 Take / choose barcode photo</button>' +
+    '<input type="file" id="barcode-photo-input" accept="image/*" style="display:none" onchange="readBarcodePhoto(event)">' +
+    '<button class="btn primary" id="barcode-photo-btn" onclick="document.getElementById(\'barcode-photo-input\').click()" style="margin-bottom:8px">📷 Barcode photo \u2014 take or choose</button>' +
     '<div id="barcode-photo-status" style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);text-align:center;margin:6px 0;min-height:16px"></div>' +
     '<div style="display:flex;align-items:center;gap:8px;margin:10px 0"><div style="flex:1;height:1px;background:var(--bd)"></div><span style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">or type it</span><div style="flex:1;height:1px;background:var(--bd)"></div></div>' +
     '<input type="text" id="barcode-manual" placeholder="e.g. 5060337504331" inputmode="numeric" style="font-family:DM Mono,monospace;margin-bottom:10px">' +
@@ -27480,7 +27534,11 @@ function addFoodToLog(){
   document.getElementById('serving-modal').classList.remove('open');
   document.getElementById('nut-search-in').value='';
   document.getElementById('nut-search-results').innerHTML='';
-  renderNutritionLog();showToast('Added', (typeof nutGentle==='function'&&nutGentle()) ? entry.name : (entry.name+' \u2014 '+entry.cal+' cal'));
+  // THE ONE FOOD-LOG PATH THAT DID NOT CONFIRM. Eight other commits of the same entry fire
+  // haptic('success') — quickAddLog, _pmLog, logEstimatedMeal, logRecipeAsMeal, confirmRepeatYesterday,
+  // logSavedMeal, quickLogSearchFood, quickLogRecent — and this, the one a person actually uses most,
+  // was silent. The only haptic in the function sat in the edit branch, which returns before here.
+  renderNutritionLog();haptic('success');showToast('Added', (typeof nutGentle==='function'&&nutGentle()) ? entry.name : (entry.name+' \u2014 '+entry.cal+' cal'));
   // The brother notices if this entry pushed you over today's calorie line — and speaks once, gently,
   // knowing your week (he'll cut you slack if you've trained hard). Only when crossing, never nagging.
   try{
@@ -27996,7 +28054,7 @@ function renderNourishmentScore(totals, goals){
 // ── GENTLE MODE — numbers off, nourishment still counted ─────────────────────────────────────────
 // The evidence here is blunt: calorie-tracking UIs elicit perfectionist, all-or-nothing thinking —
 // a known eating-disorder risk factor — and a large share of people in ED treatment say a tracking
-// app contributed to theirs. So To Try ships the antidote no mainstream tracker will: keep the
+// app contributed to theirs. So ToTry ships the antidote no mainstream tracker will: keep the
 // LOGGING (the whole-life counsel still works — energy, training, recovery) but let a person turn
 // the NUMBERS OFF. Food as fuel for a life, not a maths test to win. Never a red "over budget".
 // ONE gentle-aware nutrition block for EVERY prompt builder.
@@ -28542,7 +28600,7 @@ function renderNutritionLog(){
       mealEntries.forEach(en => {
         const row=document.createElement('div');
         row.className='food-log-item';
-        row.innerHTML='<div style="min-width:0;flex:1"><div class="fli-name">'+_escFew(en.name)+'</div>'+((en.serving||en.qty)?'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3)">'+_escFew(en.serving||'serving')+(en.qty?(' \u00d7 '+en.qty):'')+'</div>':'')+'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3);margin-top:2px">P '+(Math.round((en.pro||0)*10)/10)+'g \u00b7 C '+(Math.round((en.carb||0)*10)/10)+'g \u00b7 F '+(Math.round((en.fat||0)*10)/10)+'g</div></div><div style="display:flex;align-items:center;gap:6px"><span class="fli-cal">'+en.cal+' cal</span><button class="fli-del" style="font-size:14px;color:var(--tx3)" onclick="editFoodEntry(\''+today+'\','+en.id+')" title="Edit">✎</button><button class="fli-del" onclick="deleteFoodEntry(\''+today+'\','+en.id+')" aria-label="Delete '+_escFew(en.name)+'">&#215;</button></div>';
+        row.innerHTML='<div style="min-width:0;flex:1"><div class="fli-name">'+_escFew(en.name)+'</div>'+((en.serving||en.qty)?'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3)">'+_escFew(en.serving||'serving')+(en.qty?(' \u00d7 '+en.qty):'')+'</div>':'')+'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3);margin-top:2px">P '+(Math.round((en.pro||0)*10)/10)+'g \u00b7 C '+(Math.round((en.carb||0)*10)/10)+'g \u00b7 F '+(Math.round((en.fat||0)*10)/10)+'g</div></div><div style="display:flex;align-items:center;gap:6px"><span class="fli-cal">'+en.cal+' cal</span><button class="fli-del" style="font-size:14px;color:var(--tx3)" onclick="editFoodEntry(\''+today+'\','+_jsCode(JSON.stringify(en.id))+')" title="Edit">✎</button><button class="fli-del" onclick="deleteFoodEntry(\''+today+'\','+_jsCode(JSON.stringify(en.id))+')" aria-label="Delete '+_escFew(en.name)+'">&#215;</button></div>';
         // NUMBERS OFF — strip the calorie figure and the macro breakdown from the row. What you ate
         // still shows (that IS the log, and the whole-life counsel still uses it); what it "cost" doesn't.
         if(_gentleOn){
@@ -31422,7 +31480,7 @@ function _fuelToggleShopItem(el, idx){
 function _fuelCopyShopList(){
   const plan = ls('totry_meal_plan'); if(!plan || !plan.shopping) return;
   const groups={}, order=[]; plan.shopping.forEach(function(s){ const k=(s.shop||'Shopping'); if(!groups[k]){ groups[k]=[]; order.push(k); } groups[k].push(s); });
-  let txt='My To Try shopping list\n';
+  let txt='My ToTry shopping list\n';
   order.forEach(function(k){ txt+='\n'+k+':\n'; groups[k].forEach(function(s){ txt+='  - '+(s.item||'')+(s.price?(' ('+curSym()+s.price+')'):'')+'\n'; }); });
   txt+='\nTotal: '+curSym()+(plan.total||0);
   try{ if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(function(){ if(typeof showToast==='function') showToast('Copied','Shopping list copied — paste it anywhere.'); }, function(){ if(typeof showToast==='function') showToast('List ready', txt.slice(0,80)); }); return; } }catch(_){}
@@ -31896,7 +31954,7 @@ function openCSVImport(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:6px">Import transactions</div>'+
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:14px">Export a CSV from your banking app (most banks let you do this), then upload it here. To Try reads the date, description, and amount, auto-sorts each into a category, and lets you review before saving. The file itself is never uploaded \u2014 it\u2019s read on your phone. What you choose to save is stored with the rest of your data, and syncs to your account if you\u2019re signed in.</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:14px">Export a CSV from your banking app (most banks let you do this), then upload it here. ToTry reads the date, description, and amount, auto-sorts each into a category, and lets you review before saving. The file itself is never uploaded \u2014 it\u2019s read on your phone. What you choose to save is stored with the rest of your data, and syncs to your account if you\u2019re signed in.</div>'+
     '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:16px;padding:10px 12px;background:var(--bg3);border-radius:8px">Works with standard bank exports (columns like Date, Description, Amount). Negative amounts = spending, positive = income.</div>'+
     '<button class="btn primary" onclick="document.getElementById(&quot;csv-import-input&quot;).click()" style="margin-bottom:8px">Choose CSV file</button>'+
     '<button class="btn" onclick="closeModal(this)">Cancel</button></div>';
@@ -32349,7 +32407,7 @@ function openAllTransactions(){
         rows.map(function(t){
           const sign = t.type === 'expense' ? '\u2212' : '+';
           const color = t.type === 'expense' ? 'var(--re)' : (t.type === 'transfer' ? 'var(--tx3)' : 'var(--gr)');
-          return '<div onclick="closeModal(this);editTransaction(' + t.id + ')" style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--bd);font-size:12px;cursor:pointer">'+
+          return '<div onclick="closeModal(this);editTransaction(' + _jsCode(JSON.stringify(t.id)) + ')" style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--bd);font-size:12px;cursor:pointer">'+
             '<span style="flex:1;min-width:0;color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(t.note || t.category || 'Transaction') + '</span>'+
             '<span style="font-family:DM Mono,monospace;color:' + color + ';flex-shrink:0">' + sign + curSym() + (t.amount||0) + '</span></div>';
         }).join('');
@@ -32467,9 +32525,9 @@ function renderTransactions(){
           const sign = t.type === 'expense' ? '−' : '+';
           const color = t.type === 'expense' ? 'var(--re)' : 'var(--gr)';
           return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--bd);font-size:12px">' +
-            '<div style="flex:1;min-width:0;cursor:pointer" onclick="editTransaction(' + t.id + ')"><div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(t.note || t.category || 'Transaction') + '</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + (t.date || (t.ts ? new Date(t.ts).toLocaleDateString('en-AU') : '')) +
+            '<div style="flex:1;min-width:0;cursor:pointer" onclick="editTransaction(' + _jsCode(JSON.stringify(t.id)) + ')"><div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(t.note || t.category || 'Transaction') + '</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + (t.date || (t.ts ? new Date(t.ts).toLocaleDateString('en-AU') : '')) +
               ((t.category || t.cat) ? ' \u00b7 ' + (t.category || t.cat) : '') + '</div></div>' +
-            '<div style="display:flex;align-items:center;gap:6px"><span style="font-family:DM Mono,monospace;color:' + color + '">' + sign + curSym() + t.amount + '</span><button onclick="deleteTransaction(' + t.id + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
+            '<div style="display:flex;align-items:center;gap:6px"><span style="font-family:DM Mono,monospace;color:' + color + '">' + sign + curSym() + t.amount + '</span><button onclick="deleteTransaction(' + _jsCode(JSON.stringify(t.id)) + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
           '</div>';
         }).join('') +
         ((list.length > recentList.length)
@@ -33027,7 +33085,7 @@ function scheduleBillReminders(){
       const at = new Date(parts[0], parts[1]-1, parts[2], 9, 0, 0, 0);
       if(at.getTime() <= Date.now() + 60000) return;        // already due or past — a nudge is noise now
       const amt = Number(b.amount != null ? b.amount : b.amt) || 0;
-      Notify.schedule(_billNotifId(b), 'To Try',
+      Notify.schedule(_billNotifId(b), 'ToTry',
         (b.name || 'A bill') + ' is due today' + (amt ? (' \u2014 ' + curSym() + amt.toLocaleString()) : '') + '.',
         at, { route:'money' });
       n++;
@@ -33047,7 +33105,7 @@ function scheduleBillReminders(){
       if(parts.length !== 3 || parts.some(isNaN)) return;
       const at = new Date(parts[0], parts[1]-1, parts[2], 9, 0, 0, 0);
       if(at.getTime() <= Date.now() + 60000) return;
-      Notify.schedule(id, 'To Try',
+      Notify.schedule(id, 'ToTry',
         (d.n || 'A debt') + ' is due today \u2014 ' + curSym() + Math.round(outstanding).toLocaleString() + ' left.',
         at, { route:'money' });
       n++;
@@ -34853,10 +34911,10 @@ function _weekStats(){
   let nutDays = 0; try{ const nl=ls('totry_nutlog')||{}; for(let i=0;i<7;i++){ const d=new Date(now-i*86400000).toLocaleDateString('en-AU'); if((nl[d]||[]).length) nutDays++; } }catch(_){}
   return { workouts: workouts.length, journalEntries: journal.length, wins, slips7, longestStreak: longest, reclaimed, nutDays };
 }
-// ── WEEKLY CONTENT ENGINE — To Try is the PRODUCER, never the editor ──────────────
+// ── WEEKLY CONTENT ENGINE — ToTry is the PRODUCER, never the editor ──────────────
 // Assembles the real week (stats + discipline thread + session-proof clips) into a postable
 // package: a storyboard (ordered clips + what each shows) + a ready caption. The user finishes in
-// CapCut/IG/TikTok. To Try never stores or edits video — clips live in their camera roll.
+// CapCut/IG/TikTok. ToTry never stores or edits video — clips live in their camera roll.
 function _weekProofClips(){
   // Gather session-proof attached to this week's sessions, for the storyboard.
   const now = Date.now(), wk = now - 7*86400000;
@@ -34904,7 +34962,7 @@ async function generateWeeklyContent(){
           board +
           '<div style="margin-top:14px;padding:12px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Caption</div><div id="weekly-caption-text" style="font-size:13px;color:var(--tx);line-height:1.6">'+cap+'</div><button class="btn" onclick="(function(){var t=document.getElementById(&quot;weekly-caption-text&quot;);if(t&&navigator.clipboard){navigator.clipboard.writeText(t.textContent).then(function(){showToast(&quot;Copied&quot;,&quot;Caption copied \u2014 paste it in your editor.&quot;);});}})()" style="margin-top:10px;width:auto;padding:8px 14px;font-size:12px;background:none;border:1px solid var(--go-bd);color:var(--go)">Copy caption</button></div>'+
           (clips.length ? '<div style="margin-top:12px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Your clips (open these in your editor)</div><div style="display:flex;flex-wrap:wrap;gap:8px">'+clips.map(c=>c.thumb?'<img src="'+c.thumb+'" style="width:48px;height:48px;object-fit:cover;border-radius:8px">':'<div style="padding:8px 10px;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;font-size:11px;color:var(--tx2)">\u{1F3AC} '+(c.name||'clip').slice(0,14)+'</div>').join('')+'</div></div>' : '<div style="margin-top:12px;font-size:11px;color:var(--tx3);line-height:1.5">No clips attached this week. Add proof to your sessions (in any workout) and they\u2019ll appear here for next week\u2019s package.</div>')+
-          '<div style="margin-top:12px;font-size:11px;color:var(--tx3);line-height:1.5">To Try produces \u2014 you finish it in CapCut, Reels, or TikTok. Your videos stay in your camera roll.</div>';
+          '<div style="margin-top:12px;font-size:11px;color:var(--tx3);line-height:1.5">ToTry produces \u2014 you finish it in CapCut, Reels, or TikTok. Your videos stay in your camera roll.</div>';
       } else {
         box.innerHTML = '<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t assemble it right now \u2014 try again shortly.</div>';
       }
@@ -35693,7 +35751,7 @@ function openCreateExercise(prefillName){
     '</select>'+
     '<label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:18px;cursor:pointer">'+
       '<input type="checkbox" id="cx-share" style="margin-top:3px;width:18px;height:18px;flex-shrink:0">'+
-      '<span style="font-size:12px;color:var(--tx2);line-height:1.5">Share with the community<br><span style="color:var(--tx3)">Off by default — this stays private to you. Tick to add it to To Try\u2019s shared library so other users can find it too.</span></span>'+
+      '<span style="font-size:12px;color:var(--tx2);line-height:1.5">Share with the community<br><span style="color:var(--tx3)">Off by default — this stays private to you. Tick to add it to ToTry\u2019s shared library so other users can find it too.</span></span>'+
     '</label>'+
     '<button class="btn primary" onclick="saveCustomExercise()" style="margin-bottom:8px">Create &amp; add to workout</button>'+
     '<button class="btn" onclick="closeModal(this)">Cancel</button></div>';
@@ -36584,7 +36642,9 @@ async function saveWorkoutSession(){
     // free some space and finish again — see the note above.
     if(typeof showToast==='function') showToast('Not saved \u2014 your session is still here',
       'There was no room to write it. Free some space in Settings \u2192 Your data, then tap Finish again. Nothing has been lost.');
-    if(typeof haptic==='function') haptic('error');
+    // 'error' is NOT one of haptic()'s patterns (tap|success|warning|celebrate|light|alert) — it fell
+    // through to impact MEDIUM, so a failed save felt exactly like an ordinary tap.
+    if(typeof haptic==='function') haptic('warning');
     return;
   }
   if(typeof logEvent==='function') logEvent('workout_logged');
@@ -36680,7 +36740,7 @@ async function clearWorkoutSession(){
 // Manual/screenshot entries are fully editable; Hevy/Strava synced entries can be deleted
 // locally (they live in their source app, so we only remove our copy).
 // ── SESSION PROOF (per-workout video/photo reference) ─────────────────────────
-// To Try is the record + content layer over Hevy/Strava. A user can attach proof (a clip/photo)
+// ToTry is the record + content layer over Hevy/Strava. A user can attach proof (a clip/photo)
 // to a session — but we DON'T host the file: it lives in their own camera roll / Photos. We keep a
 // lightweight reference + an optional small thumbnail (data URL, compressed) so the weekly review
 // can assemble a content package. Beats Hevy's one-photo-per-workout cap.
@@ -36717,7 +36777,7 @@ function attachSessionProof(unifiedId){
     if(isVideo){
       arr.push({ kind:'video', name:file.name||'clip', at:Date.now() });
       _saveSessionProof(unifiedId, arr);
-      showToast('Proof noted \u{1F3AC}','Your clip stays in your camera roll \u2014 To Try points to it for your weekly review.');
+      showToast('Proof noted \u{1F3AC}','Your clip stays in your camera roll \u2014 ToTry points to it for your weekly review.');
       const wrap=document.getElementById('session-proof-wrap'); if(wrap) wrap.innerHTML=_renderProofChips(unifiedId);
     } else {
       // Compress the image to a small thumbnail data URL (reuse the app's image handling pattern).
@@ -36789,8 +36849,8 @@ function openEditTraining(unifiedId){
       (stats ? '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">'+stats+'</div>' : '<div style="font-size:12px;color:var(--tx3);margin-bottom:16px">No detailed metrics on this activity.</div>')+
       '<div class="lbl" style="margin-top:4px">Proof <span style="font-weight:400;color:var(--tx3)">\u00b7 for your weekly review</span></div>'+
       '<div id="session-proof-wrap">'+_renderProofChips(unifiedId)+'</div>'+
-      '<div style="font-size:11px;color:var(--tx3);margin-bottom:12px;line-height:1.5">Synced from Strava. Edit it in Strava; you can remove it from To Try here.</div>'+
-      '<button class="btn" onclick="deleteTraining(&quot;strava&quot;,&quot;'+rawId+'&quot;)" style="background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re);margin-bottom:8px">Remove from To Try</button>'+
+      '<div style="font-size:11px;color:var(--tx3);margin-bottom:12px;line-height:1.5">Synced from Strava. Edit it in Strava; you can remove it from ToTry here.</div>'+
+      '<button class="btn" onclick="deleteTraining(&quot;strava&quot;,&quot;'+rawId+'&quot;)" style="background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re);margin-bottom:8px">Remove from ToTry</button>'+
       '<button class="btn" onclick="closeModal(this)">Cancel</button></div>';
     document.body.appendChild(m);
     return;
@@ -36833,8 +36893,8 @@ function openEditTraining(unifiedId){
       (exList || '<div style="font-size:12px;color:var(--tx3);margin-bottom:12px">No exercise detail came through on this session.</div>')+
       '<div class="lbl" style="margin-top:4px">Proof <span style="font-weight:400;color:var(--tx3)">\u00b7 for your weekly review</span></div>'+
       '<div id="session-proof-wrap">'+_renderProofChips(unifiedId)+'</div>'+
-      (fromHevy ? '<div style="font-size:11px;color:var(--tx3);margin:6px 0 12px;line-height:1.5">Synced from Hevy. Edit the exercises in Hevy; you can remove it from To Try here.</div>' : '<div style="font-size:11px;color:var(--tx3);margin:6px 0 12px;line-height:1.5">You logged this one here. Set-by-set editing is not in yet \u2014 for now you can remove it and log it again.</div>')+
-      '<button class="btn" onclick="deleteTraining(&quot;workout&quot;,&quot;'+w.id+'&quot;)" style="background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re);margin-bottom:8px">Remove from To Try</button>'+
+      (fromHevy ? '<div style="font-size:11px;color:var(--tx3);margin:6px 0 12px;line-height:1.5">Synced from Hevy. Edit the exercises in Hevy; you can remove it from ToTry here.</div>' : '<div style="font-size:11px;color:var(--tx3);margin:6px 0 12px;line-height:1.5">You logged this one here. Set-by-set editing is not in yet \u2014 for now you can remove it and log it again.</div>')+
+      '<button class="btn" onclick="deleteTraining(&quot;workout&quot;,&quot;'+w.id+'&quot;)" style="background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re);margin-bottom:8px">Remove from ToTry</button>'+
       '<button class="btn" onclick="closeModal(this)">Cancel</button></div>';
     document.body.appendChild(m);
     return;
@@ -38689,16 +38749,16 @@ function setCalApp(n,ic,sc,st){
 }
 
 function useToTryTracker(){
-  // Make To Try's own tracker behave exactly like picking an external app: it becomes the linked
+  // Make ToTry's own tracker behave exactly like picking an external app: it becomes the linked
   // tracker, the row shows it, and selecting it takes you straight into Nourish (where food + weight
   // tracking live together) — so users stay in-app instead of bouncing out to MyFitnessPal.
-  ls('totry_ca',{name:'To Try',icon:'&#x1F34E;',scheme:'totry-internal',store:''});
-  const cn=document.getElementById('cal-name'); if(cn)cn.textContent='To Try';
+  ls('totry_ca',{name:'ToTry',icon:'&#x1F34E;',scheme:'totry-internal',store:''});
+  const cn=document.getElementById('cal-name'); if(cn)cn.textContent='ToTry';
   const ci=document.getElementById('cal-icon'); if(ci)ci.innerHTML='&#x1F34E;';
   const cs=document.getElementById('cal-sub'); if(cs)cs.textContent='Calorie tracker · in-app';
   const cp=document.getElementById('cal-picker'); if(cp)cp.style.display='none';
   if(typeof renderCalAppPref==='function') renderCalAppPref();
-  showToast('Using To Try','Food & weight tracking, all in one place.');
+  showToast('Using ToTry','Food & weight tracking, all in one place.');
   // Go straight to Nourish, the same way picking an external app would open that app.
   if(typeof go==='function') go('nourish');
 }
@@ -38706,8 +38766,8 @@ function useToTryTracker(){
 function openLinkedCalApp(){
   const ca=ls('totry_ca');
   if(!ca){toggleCalPicker();return;}
-  // To Try's own tracker → just go to Nourish in-app (no external app to launch).
-  if(ca.scheme==='totry-internal' || ca.name==='To Try'){ if(typeof go==='function') go('nourish'); return; }
+  // ToTry's own tracker → just go to Nourish in-app (no external app to launch).
+  if(ca.scheme==='totry-internal' || ca.name==='ToTry'){ if(typeof go==='function') go('nourish'); return; }
   // Try the scheme; if the app opens (page hides) cancel the store fallback. Store opens in a
   // NEW tab so the PWA never navigates away to a white screen.
   let opened=false;
@@ -39753,11 +39813,18 @@ function initEveningTab(){
     const todays=ritualLog('totry_evenings').find(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===today);
     if(todays){
       const setv=(id,v)=>{const n=document.getElementById(id); if(n&&v!=null&&n.value==='') n.value=v;};
-      setv('review-proud', todays.win);
-      setv('review-release', todays.release);
+      // THE IDS WERE WRONG, AND THAT ERASED PEOPLE'S EVENINGS. completeEvening() reads #evening-win,
+      // #evening-release, #evening-see and #eve-task1..3 — but this prefill wrote to #review-proud
+      // (which is the WEEKLY review textarea, a different surface entirely) and to #review-release and
+      // #tomorrow-1..3, none of which exist in the document at all. So "editable right up until
+      // midnight" reopened blank, and completing again overwrote the saved entry with those blanks:
+      // the win, the thing released and the hardest answer of the day, gone, silently.
+      setv('evening-win', todays.win);
+      setv('evening-release', todays.release);
+      setv('evening-see', todays.see);
       setv('evening-steps', todays.steps);
       if(todays.rings){ setv('evening-move', todays.rings.move); setv('evening-exercise', todays.rings.exercise); setv('evening-stand', todays.rings.stand); setv('evening-total-burn', todays.rings.total); }
-      if(todays.tasks){ setv('tomorrow-1', todays.tasks[0]); setv('tomorrow-2', todays.tasks[1]); setv('tomorrow-3', todays.tasks[2]); }
+      if(todays.tasks){ setv('eve-task1', todays.tasks[0]); setv('eve-task2', todays.tasks[1]); setv('eve-task3', todays.tasks[2]); }
     }
   }catch(_){ }
   const ps=document.getElementById('partner-section');
@@ -40251,7 +40318,7 @@ async function generateWeeklySynthesis(){
     // brotherSys() carries sexNote() and faithVoiceNote(). Every other AI surface builds on it; this
   // one did not, so the weekly synthesis was the single place that could call a woman brother and
   // speak Christian framing to a Muslim or secular person.
-  const response=await api((typeof brotherSys==='function'?brotherSys():'')+'You are this person\'s wise mentor, the personal coach inside To Try by Alfred John. You see their body, mind, and soul as one life — never as separate trackers.',[],prompt,800);
+  const response=await api((typeof brotherSys==='function'?brotherSys():'')+'You are this person\'s wise mentor, the personal coach inside ToTry by Alfred John. You see their body, mind, and soul as one life — never as separate trackers.',[],prompt,800);
     if(response&&response.trim()){
       const synthesis = {
         weekKey:thisWeekKey,
@@ -41862,7 +41929,7 @@ function _renderShareCanvas(style, theme){
   ctx.strokeStyle = C.line; ctx.lineWidth = 1.5;
   ctx.strokeRect(60,60,960,960);
 
-  // ── Wordmark (To Try) in the app's serif ──
+  // ── Wordmark (ToTry) in the app's serif ──
   const wmY = 150;
   ctx.font = '300 46px "Cormorant Garamond", Georgia, serif';
   const toW = ctx.measureText('To ').width;
@@ -42251,7 +42318,11 @@ function askConfirm(title, body, opts){
     if(body) m.setAttribute('aria-describedby', '_ac-body');
     document.body.appendChild(m);
     const yes = m.querySelector('#_ac-yes'), no = m.querySelector('#_ac-no');
-    yes.onclick = function(){ try{ if(typeof haptic==='function') haptic('tap'); }catch(_){ } finish(true); };
+    // A destructive yes must not feel like an ordinary tap. `danger` is already computed above and
+    // decides the button's colour; the hand should get the same signal the eye does. One line here
+    // covers every confirm in the app — removing a vice, deleting a journal entry, a prayer, a
+    // sacrament — rather than each caller remembering.
+    yes.onclick = function(){ try{ if(typeof haptic==='function') haptic(danger ? 'warning' : 'tap'); }catch(_){ } finish(true); };
     if(no) no.onclick = function(){ finish(false); };
     // A notice (no cancel button) must still be dismissible by the backdrop — but it resolves true,
     // because there was never a choice to decline.
@@ -42687,7 +42758,7 @@ function initSettingsTab(){
 
 // Dev panel gate — called on every settings open AND on auth state change
 function checkDevPanelVisibility(){
-  // +studio is a plus-address: it delivers to the same inbox but is a DIFFERENT To Try account with
+  // +studio is a plus-address: it delivers to the same inbox but is a DIFFERENT ToTry account with
   // no real data in it. That is the account tutorials get filmed on, so a real vice, a real debt
   // figure or a real journal entry can never end up in a frame.
   const DEV_EMAILS = ['alfredjohn200101@gmail.com','alfredjohn200101@yahoo.com','alfredjohn200101+studio@gmail.com'];
@@ -43052,7 +43123,7 @@ async function loadDemoData(){
 // USE it. Steps with no `target` show a centered card (intro/outro). `tab` is the tab to open;
 // `find` returns the element to highlight (a function so it runs after the tab is shown).
 const TOUR_STEPS = [
-  { tab:'home', title:'Welcome to To Try', caption:'A 60-second walk through how it all fits together. Tap Next \u2014 or Skip anytime.' },
+  { tab:'home', title:'Welcome to ToTry', caption:'A 60-second walk through how it all fits together. Tap Next \u2014 or Skip anytime.' },
   { tab:'home', find:()=>document.getElementById('home-habit-list'),
     title:'Your daily habits', caption:'These are the things you\u2019re building \u2014 the last seven days at a glance. Workouts and prayer tick themselves when you log them; you tick the rest when you close the day.' },
   { tab:'home', find:()=>document.getElementById('home-quickwin-list'),
@@ -43377,7 +43448,7 @@ function showPrivacyPolicy(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:6px">Privacy policy</h3>' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px">To Try by Alfred John · Last updated June 2026 · Plain English</div>' +
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px">ToTry by Alfred John · Last updated June 2026 · Plain English</div>' +
     '<div style="font-size:13px;color:var(--tx2);line-height:1.7;overflow-y:auto;max-height:60vh;padding-right:6px">' +
     
       '<p style="margin-bottom:12px">This is a one-person project, not a corporation. I (Alfred) built this and I run it. I will not pretend the app does more privacy work than it does. Here is exactly what happens to your data.</p>' +
@@ -43420,7 +43491,7 @@ function showPrivacyPolicy(){
       '<p style="margin-bottom:12px">Export everything (Settings → Your data → Export). Delete your account and all server-side data (Settings → Account → Delete account permanently). Clear local data by clearing your browser. You can do any of these at any time without asking me.</p>' +
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">8. Children</strong></p>' +
-      '<p style="margin-bottom:12px">To Try is not designed for users under 16. I cannot verify age. If you are under 16, please don\'t use this app without a parent\'s knowledge.</p>' +
+      '<p style="margin-bottom:12px">ToTry is not designed for users under 16. I cannot verify age. If you are under 16, please don\'t use this app without a parent\'s knowledge.</p>' +
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">9. Contact</strong></p>' +
       '<p style="margin-bottom:12px">Email <strong style="color:var(--tx)">totrybyaj@gmail.com</strong> or DM <strong style="color:var(--tx)">@totry_aj</strong> on Instagram if you have a privacy concern. I respond personally — there is no support team.</p>' +
@@ -43439,10 +43510,10 @@ function showTermsOfUse(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:6px">Terms of use</h3>' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px">To Try by Alfred John · Last updated June 2026</div>' +
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px">ToTry by Alfred John · Last updated June 2026</div>' +
     '<div style="font-size:13px;color:var(--tx2);line-height:1.7;overflow-y:auto;max-height:60vh;padding-right:6px">' +
     
-      '<p style="margin-bottom:12px">By using To Try, you agree to these terms. They are written in plain English so you can actually read them.</p>' +
+      '<p style="margin-bottom:12px">By using ToTry, you agree to these terms. They are written in plain English so you can actually read them.</p>' +
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">1. What this app is</strong></p>' +
       '<p style="margin-bottom:12px">A free self-improvement app built by one person (Alfred John) on a Christian foundation. It tracks habits, training, nutrition, finances, faith practices, and provides AI coaching. Use it for personal growth.</p>' +
@@ -43478,7 +43549,7 @@ function showTermsOfUse(){
       '<p style="margin-bottom:12px">One account per person. You can export your data or delete your account at any time. See the Privacy policy for how data is handled.</p>' +
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">8. Changes</strong></p>' +
-      '<p style="margin-bottom:12px">Features may change. To Try is free today and the intention is to keep it free for as long as it can be sustained — but that can\'t be guaranteed forever. If anything about cost or terms changes materially, I\'ll tell you in-app first.</p>' +
+      '<p style="margin-bottom:12px">Features may change. ToTry is free today and the intention is to keep it free for as long as it can be sustained — but that can\'t be guaranteed forever. If anything about cost or terms changes materially, I\'ll tell you in-app first.</p>' +
     
       '<p style="margin-bottom:6px"><strong style="color:var(--tx)">9. Contact</strong></p>' +
       '<p><strong style="color:var(--tx)">totrybyaj@gmail.com</strong> · <strong style="color:var(--tx)">@totry_aj</strong> on Instagram · <strong style="color:var(--tx)">@alfred_john</strong> (personal).</p>' +
@@ -43678,7 +43749,7 @@ async function exportFullBackup(){
   const blob = new Blob([JSON.stringify(backup, null, 2)], {type: 'application/json'});
   // The one SaveFile caller that threw its result away, so a CANCELLED share sheet and an outright
   // failed write both produced "Backup saved". Its sibling exportAllData already does this correctly.
-  const _r = await SaveFile.save(blob, 'totry-backup-' + new Date().toISOString().slice(0,10) + '.json', 'To Try backup');
+  const _r = await SaveFile.save(blob, 'totry-backup-' + new Date().toISOString().slice(0,10) + '.json', 'ToTry backup');
   if(_r === null) return;                                   // dismissed — they chose; say nothing
   if(!_r){ showToast('Not saved', 'Nothing was written. Try again in a moment.'); return; }
   // Name the exclusions. Progress photos and un-backed-up cycle data never leave the device by design
@@ -43783,7 +43854,7 @@ window.addEventListener('beforeinstallprompt',(e)=>{
   e.preventDefault();deferredInstallPrompt=e;
   if(!isNativeApp() && !ls('totry_pwa_dismissed'))setTimeout(()=>{const b=document.getElementById('pwa-banner');if(b)b.style.display='block';},2000);
 });
-window.addEventListener('appinstalled',()=>{ls('totry_pwa_installed',true);showToast('To Try installed \u2713','Find it on your home screen.');});
+window.addEventListener('appinstalled',()=>{ls('totry_pwa_installed',true);showToast('ToTry installed \u2713','Find it on your home screen.');});
 
 function isIOSSafari(){const ua=navigator.userAgent;return /iP(ad|hone|od)/.test(ua)&&/WebKit/.test(ua)&&!/(CriOS|FxiOS|OPiOS|mercury)/.test(ua);}
 // ── "IS THIS AN INSTALLED APP, OR A BROWSER TAB?" ────────────────────────────────────────────────
@@ -43794,7 +43865,7 @@ function isIOSSafari(){const ua=navigator.userAgent;return /iP(ad|hone|od)/.test
 // genuinely says iPhone + WebKit).
 //
 // The result, confirmed on a device: the native app told people to
-//   "Install To Try on your iPhone — 1. Tap the Share button at the bottom of Safari"
+//   "Install ToTry on your iPhone — 1. Tap the Share button at the bottom of Safari"
 // inside an app that has no Safari and no Share button, and the notification settings told them to add
 // the app to their Home Screen before reminders would work. It also silently withheld the daily
 // "good to see you back" greeting from native users, because that was gated on the same check.
@@ -43886,8 +43957,8 @@ function _scheduleNativeReminders(prefs){
     const parse = (t, dh, dm) => { const a=String(t||'').split(':'); const h=parseInt(a[0],10), m=parseInt(a[1],10); return [isNaN(h)?dh:h, isNaN(m)?dm:m]; };
     const [mh,mm] = parse(p.morning, 7, 30);
     const [eh,em] = parse(p.evening, 21, 0);
-    Notify.scheduleDaily('reminder_morning','To Try','A quiet minute to set your intention for today.', mh, mm, { route:'morning' });
-    Notify.scheduleDaily('reminder_evening','To Try','Close the day with grace — a moment to look back honestly.', eh, em, { route:'evening' });
+    Notify.scheduleDaily('reminder_morning','ToTry','A quiet minute to set your intention for today.', mh, mm, { route:'morning' });
+    Notify.scheduleDaily('reminder_evening','ToTry','Close the day with grace — a moment to look back honestly.', eh, em, { route:'evening' });
   }catch(_){}
 }
 // Re-arm native reminders on every launch (the OS can clear pending ones; times/patterns shift).
@@ -44037,7 +44108,7 @@ async function _verifyNativeNotifPermission(){
     const warn = document.createElement('div');
     warn.className = 'notif-perm-warn';
     warn.style.cssText = 'margin-top:10px;padding:10px 12px;border:1px solid var(--go-bd);background:var(--go-bg);border-radius:8px;font-size:12px;color:var(--go);line-height:1.55';
-    warn.textContent = 'Reminders are switched on in here, but iOS is not allowing notifications — so nothing can actually reach you. Turn them on in iOS Settings \u2192 Notifications \u2192 To Try.';
+    warn.textContent = 'Reminders are switched on in here, but iOS is not allowing notifications — so nothing can actually reach you. Turn them on in iOS Settings \u2192 Notifications \u2192 ToTry.';
     box.appendChild(warn);
   }catch(_){}
 }
@@ -44076,13 +44147,13 @@ function renderPushSettings(){
     return;
   }
   if(!('Notification' in window) || !('PushManager' in window)){
-    box.innerHTML = head + '<div style="font-size:12px;color:var(--tx3);line-height:1.6">This browser cannot receive notifications. On iPhone: open in Safari and add To Try to your Home Screen first.</div>';
+    box.innerHTML = head + '<div style="font-size:12px;color:var(--tx3);line-height:1.6">This browser cannot receive notifications. On iPhone: open in Safari and add ToTry to your Home Screen first.</div>';
     return;
   }
   if(ios && !_isStandalone()){
     box.innerHTML = head +
-      '<div style="font-size:13px;color:var(--tx2);line-height:1.65">To get morning and evening reminders on iPhone, To Try needs to live on your Home Screen first:</div>' +
-      '<div style="font-size:12px;color:var(--tx3);line-height:1.7;margin-top:8px">1. Tap the <b>Share</b> button in Safari<br>2. Choose <b>Add to Home Screen</b><br>3. Open To Try from your Home Screen and come back here</div>';
+      '<div style="font-size:13px;color:var(--tx2);line-height:1.65">To get morning and evening reminders on iPhone, ToTry needs to live on your Home Screen first:</div>' +
+      '<div style="font-size:12px;color:var(--tx3);line-height:1.7;margin-top:8px">1. Tap the <b>Share</b> button in Safari<br>2. Choose <b>Add to Home Screen</b><br>3. Open ToTry from your Home Screen and come back here</div>';
     return;
   }
   if(prefs.enabled && Notification.permission==='granted'){
@@ -45617,7 +45688,7 @@ function applyHomeProgressiveDisclosure(){
   try{
     // HOW LONG THEY HAVE HAD THE APP, NOT WHAT THEIR COUNTER SAYS. getDayCount() honours the
     // "Begin again — Day 1" reset in Settings, which is about their journey, not their familiarity
-    // with the app. So someone who had used To Try for eight months and chose to start again had the
+    // with the app. So someone who had used ToTry for eight months and chose to start again had the
     // home stripped back to a new-user's home — the in-the-moment help they had come to rely on
     // hidden from them at the exact moment they had just declared they were starting over.
     const day = (typeof daysInstalled==='function') ? daysInstalled() : 99;
@@ -46982,7 +47053,7 @@ function _showStravaModal(){
       '<button class="btn" onclick="closeModal(this)">Got it</button>' +
     '</div>';
     document.body.appendChild(m);
-    try{ const st = ls('totry_strava_last'); if(st){ const f = document.createElement('div'); f.style.cssText='font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-align:center;margin-top:10px'; f.textContent='Last sync: ' + new Date(st.ts).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}) + ' \u00b7 ' + st.count + ' pulled \u00b7 one-way (Strava \u2192 To Try)'; const mm = m.querySelector('.modal'); if(mm) mm.appendChild(f); } }catch(_){}
+    try{ const st = ls('totry_strava_last'); if(st){ const f = document.createElement('div'); f.style.cssText='font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-align:center;margin-top:10px'; f.textContent='Last sync: ' + new Date(st.ts).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}) + ' \u00b7 ' + st.count + ' pulled \u00b7 one-way (Strava \u2192 ToTry)'; const mm = m.querySelector('.modal'); if(mm) mm.appendChild(f); } }catch(_){}
     return;
   }
   
@@ -47002,8 +47073,8 @@ function _showStravaModal(){
         '<div><div style="font-size:16px;font-weight:500;color:var(--tx)">Connect Strava on the web</div><div style="font-size:11px;color:var(--tx3)">Once — then it syncs here on its own</div></div>' +
       '</div>' +
       '<p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:12px">Strava’s sign-in can’t hand you back into the app on iOS, so you connect it once in your browser instead.</p>' +
-      '<p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">Open To Try on the web, sign in with <b>this same account</b>, then Settings → Connected apps → Strava. Your runs and rides start syncing into this app by themselves — nothing else to do here.</p>' +
-      '<button class="btn primary" onclick="openStravaOnWeb()" style="margin-bottom:8px">Open To Try on the web</button>' +
+      '<p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">Open ToTry on the web, sign in with <b>this same account</b>, then Settings → Connected apps → Strava. Your runs and rides start syncing into this app by themselves — nothing else to do here.</p>' +
+      '<button class="btn primary" onclick="openStravaOnWeb()" style="margin-bottom:8px">Open ToTry on the web</button>' +
       '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Later</button>' +
     '</div>';
     document.body.appendChild(m);
@@ -47022,7 +47093,7 @@ function _showStravaModal(){
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Cancel</button>' +
     '</div>';
   document.body.appendChild(m);
-    try{ const st = ls('totry_strava_last'); if(st){ const f = document.createElement('div'); f.style.cssText='font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-align:center;margin-top:10px'; f.textContent='Last sync: ' + new Date(st.ts).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}) + ' \u00b7 ' + st.count + ' pulled \u00b7 one-way (Strava \u2192 To Try)'; const mm = m.querySelector('.modal'); if(mm) mm.appendChild(f); } }catch(_){}
+    try{ const st = ls('totry_strava_last'); if(st){ const f = document.createElement('div'); f.style.cssText='font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-align:center;margin-top:10px'; f.textContent='Last sync: ' + new Date(st.ts).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}) + ' \u00b7 ' + st.count + ' pulled \u00b7 one-way (Strava \u2192 ToTry)'; const mm = m.querySelector('.modal'); if(mm) mm.appendChild(f); } }catch(_){}
 }
 
 // Opens the web build so a native user can complete the Strava OAuth round trip in a real browser.
@@ -48007,7 +48078,7 @@ async function hevyFetch(path, method, bodyObj){
 // ═══════════════════════════════════════════════════════════════════
 // WS2 — REAL HEVY INTEGRATION. Read the user's actual routines + folders and
 // surface THOSE (not an app-invented split). A Hevy user trains from Hevy;
-// To Try should reflect their real routines, with last weights per exercise.
+// ToTry should reflect their real routines, with last weights per exercise.
 // ═══════════════════════════════════════════════════════════════════
 // Single source of truth for "does this user train from Hevy?"
 function isHevyUser(){
@@ -48634,7 +48705,7 @@ function importHevyCSV(event){
 
 // Minimal RFC-4180-ish CSV parser: handles quoted fields, commas in quotes, escaped quotes, newlines
 // ── UNIFIED IMPORT ENGINE ─────────────────────────────────────────────────────
-// To Try is the engine between other apps — it should accept fuel from ANY of them.
+// ToTry is the engine between other apps — it should accept fuel from ANY of them.
 // Every CSV importer (weight, food, workouts) runs through this one path:
 //   Tier 1: deterministic column matching against a rich multi-app/multi-locale synonym
 //           dictionary. Free, instant, offline. Handles ~95% of real exports.

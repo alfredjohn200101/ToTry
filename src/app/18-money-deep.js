@@ -213,7 +213,7 @@ function openAllTransactions(){
         rows.map(function(t){
           const sign = t.type === 'expense' ? '\u2212' : '+';
           const color = t.type === 'expense' ? 'var(--re)' : (t.type === 'transfer' ? 'var(--tx3)' : 'var(--gr)');
-          return '<div onclick="closeModal(this);editTransaction(' + t.id + ')" style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--bd);font-size:12px;cursor:pointer">'+
+          return '<div onclick="closeModal(this);editTransaction(' + _jsCode(JSON.stringify(t.id)) + ')" style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--bd);font-size:12px;cursor:pointer">'+
             '<span style="flex:1;min-width:0;color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(t.note || t.category || 'Transaction') + '</span>'+
             '<span style="font-family:DM Mono,monospace;color:' + color + ';flex-shrink:0">' + sign + curSym() + (t.amount||0) + '</span></div>';
         }).join('');
@@ -331,9 +331,9 @@ function renderTransactions(){
           const sign = t.type === 'expense' ? '−' : '+';
           const color = t.type === 'expense' ? 'var(--re)' : 'var(--gr)';
           return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--bd);font-size:12px">' +
-            '<div style="flex:1;min-width:0;cursor:pointer" onclick="editTransaction(' + t.id + ')"><div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(t.note || t.category || 'Transaction') + '</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + (t.date || (t.ts ? new Date(t.ts).toLocaleDateString('en-AU') : '')) +
+            '<div style="flex:1;min-width:0;cursor:pointer" onclick="editTransaction(' + _jsCode(JSON.stringify(t.id)) + ')"><div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(t.note || t.category || 'Transaction') + '</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + (t.date || (t.ts ? new Date(t.ts).toLocaleDateString('en-AU') : '')) +
               ((t.category || t.cat) ? ' \u00b7 ' + (t.category || t.cat) : '') + '</div></div>' +
-            '<div style="display:flex;align-items:center;gap:6px"><span style="font-family:DM Mono,monospace;color:' + color + '">' + sign + curSym() + t.amount + '</span><button onclick="deleteTransaction(' + t.id + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
+            '<div style="display:flex;align-items:center;gap:6px"><span style="font-family:DM Mono,monospace;color:' + color + '">' + sign + curSym() + t.amount + '</span><button onclick="deleteTransaction(' + _jsCode(JSON.stringify(t.id)) + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
           '</div>';
         }).join('') +
         ((list.length > recentList.length)
@@ -891,7 +891,7 @@ function scheduleBillReminders(){
       const at = new Date(parts[0], parts[1]-1, parts[2], 9, 0, 0, 0);
       if(at.getTime() <= Date.now() + 60000) return;        // already due or past — a nudge is noise now
       const amt = Number(b.amount != null ? b.amount : b.amt) || 0;
-      Notify.schedule(_billNotifId(b), 'To Try',
+      Notify.schedule(_billNotifId(b), 'ToTry',
         (b.name || 'A bill') + ' is due today' + (amt ? (' \u2014 ' + curSym() + amt.toLocaleString()) : '') + '.',
         at, { route:'money' });
       n++;
@@ -911,7 +911,7 @@ function scheduleBillReminders(){
       if(parts.length !== 3 || parts.some(isNaN)) return;
       const at = new Date(parts[0], parts[1]-1, parts[2], 9, 0, 0, 0);
       if(at.getTime() <= Date.now() + 60000) return;
-      Notify.schedule(id, 'To Try',
+      Notify.schedule(id, 'ToTry',
         (d.n || 'A debt') + ' is due today \u2014 ' + curSym() + Math.round(outstanding).toLocaleString() + ' left.',
         at, { route:'money' });
       n++;

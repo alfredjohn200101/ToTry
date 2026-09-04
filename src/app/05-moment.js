@@ -167,8 +167,20 @@ function saveIfThen(feeling, action){
 // cost someone the thing that was actually helping them in the moment.
 function _saveIfThenFromModal(feeling){
   const v=document.getElementById('ifthen-act');
-  const ok=(v && v.value && v.value.trim());
-  saveIfThen(feeling, v?v.value:'');
+  const raw=(v && v.value) ? v.value : '';
+  const ok=raw.trim();
+  // GATED, AND NOT STORED. This door is two taps from all seven Feeling Door paths, and it was the
+  // only free-text surface in the moment flow with no crisis check — its sibling _letGoSaveJournal
+  // has had one since v449. Worse than the missing gate was the READ-BACK: whatever was typed here
+  // is replayed verbatim under "THE PLAN YOU SET FOR THIS" every later time that feeling is chosen.
+  // A disclosure must never become a person's own standing instruction, so it is met here and NOT
+  // saved — this store has no `flagged` field to keep it out of later reads.
+  const _ifCrisis = (typeof journalCrisisOf==='function') ? journalCrisisOf(raw) : null;
+  if(_ifCrisis){
+    document.querySelector('.modal-bg.open')?.remove();
+    if(typeof journalMeetCrisis==='function' && journalMeetCrisis(_ifCrisis)) return;
+  }
+  saveIfThen(feeling, raw);
   if(!ok) return;                                   // nothing saved → leave the plan modal open
   document.querySelector('.modal-bg.open')?.remove();
   setTimeout(function(){ try{ if(typeof _feelMove==='function') _feelMove(feeling); }catch(_){} }, 180);
@@ -289,6 +301,15 @@ function _startSmallestThing(){
     openFormModal('The thing you\u2019re avoiding','What\u2019s the one thing? Don\u2019t overthink it.',[{id:'thing',label:'',type:'text',placeholder:'e.g. the assignment, the call, the gym'}],'Start it small',(vals)=>{
       if(!vals.thing||!vals.thing.trim()) return 'Just name it.';
       const t = vals.thing.trim();
+      // GATED. This door does not store anything, but it ECHOES: the next modal reads "Don't do <what
+      // you typed>. Just START it." Typed as a disclosure that rendered "Don't do I want to kill
+      // myself tonight. Just START it — the smallest first step", with no helpline anywhere on screen.
+      // Meet the person instead of instructing them.
+      const _avCrisis = (typeof journalCrisisOf==='function') ? journalCrisisOf(t) : null;
+      if(_avCrisis){
+        setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_avCrisis); }catch(_){ } }, 250);
+        return true;   // closes the form; the crisis card takes the screen instead of the 2-minute nudge
+      }
       setTimeout(()=>{ const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center'; m.innerHTML='<div class="modal" style="text-align:center"><div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:10px">Just 2 minutes</div><div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:20px">Don\u2019t do <b style="color:var(--tx)">'+t.replace(/</g,'&lt;')+'</b>. Just START it \u2014 the smallest first step, for 2 minutes. Open the doc. Put on the shoes. Dial the number. You\u2019re allowed to stop after 2 minutes. You won\u2019t want to.</div><button class="btn primary" onclick="closeModal(this)">I\u2019m starting now</button></div>'; document.body.appendChild(m); if(typeof haptic==='function') haptic('tap'); }, 250);
       return true;
     });
@@ -1936,7 +1957,7 @@ function openProgressCheckin(){
   m.innerHTML='<div class="modal" style="text-align:center;max-height:92vh;overflow-y:auto">'+
     '<div class="modal-handle"></div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">How far have you come?</div>'+
-    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Since you started with To Try — what have you noticed? Tap any that fit. '+_raffleCopy('intro')+'</div>'+
+    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Since you started with ToTry — what have you noticed? Tap any that fit. '+_raffleCopy('intro')+'</div>'+
     '<div class="pc-areas" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px"></div>'+
     '<textarea class="pc-note" placeholder="Anything you’d want Alfy to know? What’s working, what’s missing?" style="width:100%;min-height:70px;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:16px;font-family:inherit;margin-bottom:14px;resize:vertical;box-sizing:border-box"></textarea>'+
     '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:16px">'+_raffleCopy('send')+'</div>'+

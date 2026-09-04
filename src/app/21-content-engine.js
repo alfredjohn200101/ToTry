@@ -1,7 +1,7 @@
-// ── WEEKLY CONTENT ENGINE — To Try is the PRODUCER, never the editor ──────────────
+// ── WEEKLY CONTENT ENGINE — ToTry is the PRODUCER, never the editor ──────────────
 // Assembles the real week (stats + discipline thread + session-proof clips) into a postable
 // package: a storyboard (ordered clips + what each shows) + a ready caption. The user finishes in
-// CapCut/IG/TikTok. To Try never stores or edits video — clips live in their camera roll.
+// CapCut/IG/TikTok. ToTry never stores or edits video — clips live in their camera roll.
 function _weekProofClips(){
   // Gather session-proof attached to this week's sessions, for the storyboard.
   const now = Date.now(), wk = now - 7*86400000;
@@ -49,7 +49,7 @@ async function generateWeeklyContent(){
           board +
           '<div style="margin-top:14px;padding:12px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Caption</div><div id="weekly-caption-text" style="font-size:13px;color:var(--tx);line-height:1.6">'+cap+'</div><button class="btn" onclick="(function(){var t=document.getElementById(&quot;weekly-caption-text&quot;);if(t&&navigator.clipboard){navigator.clipboard.writeText(t.textContent).then(function(){showToast(&quot;Copied&quot;,&quot;Caption copied \u2014 paste it in your editor.&quot;);});}})()" style="margin-top:10px;width:auto;padding:8px 14px;font-size:12px;background:none;border:1px solid var(--go-bd);color:var(--go)">Copy caption</button></div>'+
           (clips.length ? '<div style="margin-top:12px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Your clips (open these in your editor)</div><div style="display:flex;flex-wrap:wrap;gap:8px">'+clips.map(c=>c.thumb?'<img src="'+c.thumb+'" style="width:48px;height:48px;object-fit:cover;border-radius:8px">':'<div style="padding:8px 10px;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;font-size:11px;color:var(--tx2)">\u{1F3AC} '+(c.name||'clip').slice(0,14)+'</div>').join('')+'</div></div>' : '<div style="margin-top:12px;font-size:11px;color:var(--tx3);line-height:1.5">No clips attached this week. Add proof to your sessions (in any workout) and they\u2019ll appear here for next week\u2019s package.</div>')+
-          '<div style="margin-top:12px;font-size:11px;color:var(--tx3);line-height:1.5">To Try produces \u2014 you finish it in CapCut, Reels, or TikTok. Your videos stay in your camera roll.</div>';
+          '<div style="margin-top:12px;font-size:11px;color:var(--tx3);line-height:1.5">ToTry produces \u2014 you finish it in CapCut, Reels, or TikTok. Your videos stay in your camera roll.</div>';
       } else {
         box.innerHTML = '<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t assemble it right now \u2014 try again shortly.</div>';
       }

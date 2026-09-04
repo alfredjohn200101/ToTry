@@ -10,7 +10,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="To Try">
+<meta name="apple-mobile-web-app-title" content="ToTry">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0C0C0E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,7 +21,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
-<title>To Try &#8212; by Alfred John</title>
+<title>ToTry &#8212; by Alfred John</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" media="print" onload="this.media='all'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap"></noscript>
 <style>
@@ -70,6 +70,13 @@
 .dim{color:var(--tx2)}
 .gold{color:var(--go)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+/* NO SCROLLBARS, ANYWHERE. This is the loudest "it's a web page" tell in a wrapped app, and it was on
+   EVERY screen: .tab (which is every tab) asked for scrollbar-width:thin plus a 2px ::-webkit-scrollbar
+   with a --bg4 thumb, and the six other scrollers (.ob, .sos-overlay, .feel-door, .comp-conversation,
+   .modal, .serving-modal) inherited WebKit's default overlay bar. Only .nav ever hid its own. Scrolling
+   still works exactly as before — iOS shows position through momentum and rubber-band, not a rail. */
+*::-webkit-scrollbar{width:0;height:0;background:transparent}
+*{scrollbar-width:none;-ms-overflow-style:none}
 html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Outfit',sans-serif;overflow:hidden}
 /* APP-WIDE DAYPART AMBIENCE — a whisper of colour behind everything that shifts with the hour, so
    the WHOLE app breathes with the day, not just the home. Faint by design; never touches legibility. */
@@ -171,10 +178,8 @@ button[onclick^="deleteTransaction("],button[onclick^="deleteSubscription("],but
 .nb span{font-size:10px;letter-spacing:0.06em;text-transform:uppercase;font-weight:500}
 .nb.active{color:var(--go);border-top-color:var(--go)}
 .tabs{flex:1;overflow:hidden;order:2}
-.tab{display:none;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px calc(var(--sb) + 120px);scrollbar-width:thin;scrollbar-color:var(--bg4) transparent}
+.tab{display:none;height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px calc(var(--sb) + 120px)}
 .tab.active{display:block}
-.tab::-webkit-scrollbar{width:2px}
-.tab::-webkit-scrollbar-thumb{background:var(--bg4)}
 .lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px;margin-top:4px;display:block}
 .card + .lbl, .card+.lbl{margin-top:18px}
 .card{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 2px rgba(0,0,0,0.2),0 1px 1px rgba(0,0,0,0.12)}
@@ -1349,7 +1354,10 @@ input:focus,textarea:focus,select:focus{
 </head>
 <body>
 <div id="boot-splash" style="position:fixed;inset:0;background:var(--bg,#0a0a0c);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity 0.35s ease">
-  <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:34px;color:#c8a96e;letter-spacing:0.02em">To <em style="font-style:italic">Try</em></div>
+  <!-- .logo-main, not a third hand-rolled wordmark. This was 34px all-gold on a hardcoded #c8a96e with
+       a space in the name, so the very first thing a person saw did not match the app they were about
+       to open. Size is the only override. -->
+  <div class="logo-main" style="font-size:34px;letter-spacing:0.02em">To<em>Try</em></div>
   <div style="font-family:'DM Mono',monospace;font-size:9px;color:#6a6a72;text-transform:uppercase;letter-spacing:0.2em;margin-top:8px">by Alfred John</div>
   <div style="margin-top:22px;width:26px;height:26px;border:2px solid rgba(200,169,110,0.25);border-top-color:#c8a96e;border-radius:50%;animation:bootspin 0.7s linear infinite"></div>
 </div>
@@ -1364,9 +1372,9 @@ input:focus,textarea:focus,select:focus{
   <!-- Logo at top — honour the notch/Dynamic Island in the native shell (var(--st) = safe-area-top;
        max() keeps the original 32px in a browser where --st is 0). -->
   <div style="position:absolute;top:max(32px, calc(var(--st) + 16px));left:0;right:0;text-align:center">
-    <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:36px;color:var(--go)">
-      To <span style="font-style:italic;font-weight:300">Try</span>
-    </div>
+    <!-- .logo-main again — this was a fourth wordmark: all gold, spaced, with the italic done by a
+         hand-styled span rather than the class's own em rule. -->
+    <div class="logo-main" style="font-size:36px">To<em>Try</em></div>
     <div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.2em;margin-top:4px">BY ALFRED JOHN</div>
   </div>
   
@@ -1470,7 +1478,7 @@ input:focus,textarea:focus,select:focus{
 <div class="ob" id="onboard">
   <div class="ob-prog"><div class="ob-dot on"></div><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot"></div></div>
   <div class="ob-step active" id="ob1">
-    <div class="ob-logo">To <em>Try</em></div>
+    <div class="ob-logo">To<em>Try</em></div>
     <div class="ob-by">by Alfred John</div>
     <div class="ob-title">The only thing required is that you try.</div>
     <div class="ob-desc">An app for anyone trying to be better at anything. Built by someone who needed it himself — and shared freely, in that spirit.</div>
@@ -1480,7 +1488,7 @@ input:focus,textarea:focus,select:focus{
   <!-- WHAT IT IS — instant "I get it" for a brand-new user, before asking anything -->
   <div class="ob-step" id="ob-what">
     <div class="ob-title" style="margin-bottom:6px">One life, to tend well.</div>
-    <div class="ob-desc" style="margin-bottom:20px">You've been given a whole life to look after — not one corner of it. To Try holds all of it in one place, with a coach who sees how it connects. These are the parts you'll tend:</div>
+    <div class="ob-desc" style="margin-bottom:20px">You've been given a whole life to look after — not one corner of it. ToTry holds all of it in one place, with a coach who sees how it connects. These are the parts you'll tend:</div>
     <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
       <div style="display:flex;gap:12px;align-items:flex-start">
         <div style="font-size:20px;flex-shrink:0;width:28px;text-align:center">🛡️</div>
@@ -1617,7 +1625,7 @@ input:focus,textarea:focus,select:focus{
   </div>
   <div class="ob-step" id="ob-faith">
     <div class="ob-title">What&rsquo;s your path?</div>
-    <div class="ob-desc">To Try meets you in your own tradition &mdash; your sacred text, your daily verse, the way it speaks to you. Or choose none, and lean on grounded, tested wisdom instead. You can change this anytime in Settings.</div>
+    <div class="ob-desc">ToTry meets you in your own tradition &mdash; your sacred text, your daily verse, the way it speaks to you. Or choose none, and lean on grounded, tested wisdom instead. You can change this anytime in Settings.</div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-top:6px">
       <button class="btn" style="text-align:left;padding:14px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx)" onclick="obPickFaith('christianity')"><b style="font-size:14px">✝ Christianity</b><div style="font-size:12px;color:var(--tx3);margin-top:2px">Bible &middot; the Church &middot; the Rosary</div></button>
       <button class="btn" style="text-align:left;padding:14px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx)" onclick="obPickFaith('islam')"><b style="font-size:14px">☪ Islam</b><div style="font-size:12px;color:var(--tx3);margin-top:2px">Qur&rsquo;an &middot; prayer &middot; dhikr</div></button>
@@ -1715,7 +1723,7 @@ input:focus,textarea:focus,select:focus{
 </div>
 <div class="hdr">
   <div class="hdr-row">
-    <div><div class="logo-main">To <em>Try</em></div><div class="logo-sub">by Alfred John</div></div>
+    <div><div class="logo-main">To<em>Try</em></div><div class="logo-sub">by Alfred John</div></div>
     <div style="display:flex;align-items:center;gap:12px">
       <!-- Singular by default: the static markup is only ever seen before hydration, and anyone seeing it
            un-hydrated is on day 1. It used to read "1 days in" for that first beat — the very first words a
@@ -2675,7 +2683,9 @@ input:focus,textarea:focus,select:focus{
        bar: logging food first is a decided thing and npm run panels asserts it. Here it is one line, in
        the first screenful, and the 170px of settings stay where they were moved to. -->
   <div id="nut-setup-nudge"></div>
-  <input type="file" id="meal-photo-input" accept="image/*" capture="environment" style="display:none" onchange="handleMealPhoto(event)">
+  <!-- No capture=: on iOS that FORCES the camera and removes Photo Library, so a plate you already
+       photographed could not be logged. Without it the OS offers Take Photo / Photo Library / Files. -->
+  <input type="file" id="meal-photo-input" accept="image/*" style="display:none" onchange="handleMealPhoto(event)">
   <input type="file" id="food-csv-input" accept=".csv" style="display:none" onchange="importFoodCSV(event)">
   <div id="nut-search-results" style="margin-bottom:12px"></div>
   <div id="nut-recent-foods" style="margin-bottom:12px"></div>
@@ -2936,7 +2946,7 @@ input:focus,textarea:focus,select:focus{
 
   <!-- LOG PANEL -->
   <div id="pt-panel-log">
-    <!-- Native logging front and center: To Try IS a full strength + cardio tracker on its own,
+    <!-- Native logging front and center: ToTry IS a full strength + cardio tracker on its own,
          no Strava/Hevy required. These two actions make that obvious to every user. -->
     <div style="display:flex;gap:10px;margin-bottom:14px">
       <button onclick="document.getElementById('pt-ex-search')?.focus();document.getElementById('pt-ex-search')?.scrollIntoView({behavior:'smooth',block:'center'})" style="flex:1;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:12px;padding:14px 10px;cursor:pointer;text-align:center">
@@ -3060,7 +3070,7 @@ input:focus,textarea:focus,select:focus{
           <button class="btn" onclick="setCalApp('CalAI','&#x1F916;','calai://','https://apps.apple.com/app/calai-calorie-counter-ai/id6447167650')">CalAI</button>
           <button class="btn" onclick="setCalApp('Cronometer','&#x1F4CA;','cronometer://','https://apps.apple.com/app/cronometer/id1145935738')">Cronometer</button>
         </div>
-        <button class="btn" onclick="useToTryTracker()" style="margin-top:8px;background:none;border:1px solid var(--go-bd);color:var(--go);font-size:12px">Use To Try's built-in tracker</button>
+        <button class="btn" onclick="useToTryTracker()" style="margin-top:8px;background:none;border:1px solid var(--go-bd);color:var(--go);font-size:12px">Use ToTry's built-in tracker</button>
       </div>
     </div>
   </div>
@@ -3927,7 +3937,7 @@ Amen.</div></div>
     <button class="btn primary" onclick="completeEvening()">Complete evening check-in</button>
     <div id="evening-done" style="display:none;text-align:center;padding:24px 16px;margin-top:8px">
       <div style="font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--go);margin-bottom:8px">Day complete. Rest well.</div>
-      <div style="font-size:13px;color:var(--tx2);line-height:1.6">You showed up today — and that means more than you think. The least any of us can do, every single day, is at least <em style="color:var(--go)">To Try</em>. Tomorrow's a fresh one.</div>
+      <div style="font-size:13px;color:var(--tx2);line-height:1.6">You showed up today — and that means more than you think. The least any of us can do, every single day, is at least <em style="color:var(--go)">ToTry</em>. Tomorrow's a fresh one.</div>
     <button class="btn primary" onclick="go('home')" style="margin-top:16px;max-width:220px;margin-left:auto;margin-right:auto">Back to home &rarr;</button>
     </div>
   </div>
@@ -4090,7 +4100,7 @@ Amen.</div></div>
          same directory the sign-in screen and the AI crisis response already use — one resource,
          reachable, 130+ countries. -->
     <div class="crisis-line">&#127760; <a href="https://findahelpline.com" target="_blank" rel="noopener" style="color:var(--bl)">Find support in your country</a></div>
-    <div style="font-size:11px;color:var(--tx2);margin-top:8px;line-height:1.5">To Try is a self-improvement tool, not a substitute for professional support.</div>
+    <div style="font-size:11px;color:var(--tx2);margin-top:8px;line-height:1.5">ToTry is a self-improvement tool, not a substitute for professional support.</div>
   </div>
 
   <!-- Feedback + raffle — the founder's direct line from the people using it -->
@@ -4102,8 +4112,8 @@ Amen.</div></div>
 
   <!-- Honest beta framing — shown on web/PWA only; hidden inside the native app (see initSettingsTab). -->
   <div id="beta-web-note" class="card" style="display:none;margin-bottom:14px;border:1px solid var(--go-bd);background:var(--go-bg)">
-    <div class="card-hd" style="margin-bottom:6px">You're on the To Try beta</div>
-    <div style="font-size:12px;color:var(--tx2);line-height:1.6">This is the web version — everything here is real and saved to your account. A couple of things need the phone itself: <strong style="color:var(--tx)">Apple Health sync</strong> and <strong style="color:var(--tx)">reminders that reach you first</strong>. Those arrive with the To Try app on the App Store. When it lands you'll get a link, sign in with this same email, and pick up exactly where you are — nothing lost.</div>
+    <div class="card-hd" style="margin-bottom:6px">You're on the ToTry beta</div>
+    <div style="font-size:12px;color:var(--tx2);line-height:1.6">This is the web version — everything here is real and saved to your account. A couple of things need the phone itself: <strong style="color:var(--tx)">Apple Health sync</strong> and <strong style="color:var(--tx)">reminders that reach you first</strong>. Those arrive with the ToTry app on the App Store. When it lands you'll get a link, sign in with this same email, and pick up exactly where you are — nothing lost.</div>
   </div>
 
   <!-- ═══ GROUP 2: PREFERENCES (collapsed — set once, rarely changed) ═══ -->
@@ -4266,7 +4276,7 @@ Amen.</div></div>
   <details class="settings-group">
     <summary>🕯 Faith &amp; meaning <span class="settings-group-hint">Your path, and how much surfaces</span></summary>
     <div class="card">
-      <p style="font-size:12.5px;color:var(--tx2);margin-bottom:12px;line-height:1.6">To Try was built honestly from a Christian heart &mdash; and made to serve you in yours. Choose your path and the daily reading, the reader, and the companion&rsquo;s voice follow it. Or choose none, and lean on grounded, tested wisdom instead. Every practical feature works fully either way.</p>
+      <p style="font-size:12.5px;color:var(--tx2);margin-bottom:12px;line-height:1.6">ToTry was built honestly from a Christian heart &mdash; and made to serve you in yours. Choose your path and the daily reading, the reader, and the companion&rsquo;s voice follow it. Or choose none, and lean on grounded, tested wisdom instead. Every practical feature works fully either way.</p>
       <div class="lbl" style="margin-bottom:8px">Your path</div>
       <div id="faith-tradition-options" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px">
         <button class="faithtr-opt" data-tr="christianity" onclick="setFaithTradition('christianity')" style="text-align:left;padding:12px 13px;border-radius:11px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);cursor:pointer">
@@ -4348,7 +4358,7 @@ Amen.</div></div>
     <summary>🔗 Connected apps <span class="settings-group-hint">Strava, Hevy, Apple Health</span></summary>
     
     <div class="card">
-      <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Apps you use alongside To Try. We open them with one tap and import data where possible.</p>
+      <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Apps you use alongside ToTry. We open them with one tap and import data where possible.</p>
       <div id="connected-apps-list"></div>
       <button class="btn" onclick="showAddAppPicker()" style="margin-top:10px;font-size:12px">+ Add another app</button>
     </div>
@@ -4391,7 +4401,7 @@ Amen.</div></div>
   <div class="card" id="support-card" style="display:none;background:linear-gradient(135deg, rgba(200,169,110,0.06), rgba(140,107,182,0.04));border-color:var(--go-bd)">
     <div class="card-hd" style="margin-bottom:6px">☕ Support the project</div>
     <div style="font-size:13px;color:var(--tx2);line-height:1.7">
-      <p style="margin-bottom:10px">To Try costs about $20-50 AUD/month to keep running (AI calls + hosting). If it has helped you, you can chip in.</p>
+      <p style="margin-bottom:10px">ToTry costs about $20-50 AUD/month to keep running (AI calls + hosting). If it has helped you, you can chip in.</p>
       <p style="margin-bottom:14px;font-size:12px;color:var(--tx3);font-style:italic">Optional. Never unlocks features. Just keeps the app free for everyone.</p>
       <a href="https://buymeacoffee.com/totrybyaj" target="_blank" rel="noopener" class="btn primary" style="display:block;text-align:center;text-decoration:none;padding:11px;font-size:13px">Buy me a coffee →</a>
     </div>
@@ -4403,7 +4413,7 @@ Amen.</div></div>
 
     <!-- Revealed by renderLockRow() only on native, because the web has no way to unlock. -->
     <div class="card" id="lock-row" style="display:none">
-      <div class="card-hd" style="margin-bottom:8px">🔒 Lock To Try with <span id="lock-kind">Face ID</span></div>
+      <div class="card-hd" style="margin-bottom:8px">🔒 Lock ToTry with <span id="lock-kind">Face ID</span></div>
       <div id="lock-sub" style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:10px">Your journal, your fight and your money, behind Face ID. Off by default.</div>
       <button class="btn" id="lock-btn" style="background:var(--bg3);border:1px solid var(--bd);font-size:12px" onclick="toggleAppLock()">Turn on</button>
     </div>
@@ -4487,14 +4497,14 @@ Amen.</div></div>
 
   <!-- HELP IMPROVE — always visible, this is the QA channel -->
   <div class="card" style="background:linear-gradient(135deg,rgba(140,107,182,0.08),rgba(200,169,110,0.05));border-color:var(--go-bd)">
-    <div class="card-hd" style="margin-bottom:6px">💡 Help improve To Try</div>
+    <div class="card-hd" style="margin-bottom:6px">💡 Help improve ToTry</div>
     <p style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:12px">Found a bug? Got an idea? Something feel off? Tell me directly — this app gets better because real people say what's wrong. Every message is read.</p>
     <button class="btn primary" onclick="openFeedback()">Send feedback or report a bug</button>
   </div>
 
   <!-- ═══ GROUP 8: ABOUT (collapsed — read once, rarely revisited) ═══ -->
   <details class="settings-group">
-    <summary>ℹ About To Try <span class="settings-group-hint">Privacy, terms, contact</span></summary>
+    <summary>ℹ About ToTry <span class="settings-group-hint">Privacy, terms, contact</span></summary>
     
     <div class="card">
       <div class="card-hd" style="margin-bottom:6px">About</div>
@@ -4518,7 +4528,7 @@ Amen.</div></div>
 
     <div class="card">
       <div class="card-hd" style="margin-bottom:8px">Privacy &amp; legal</div>
-      <p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.6">Your data lives in two places: on this device, and in your account so it follows you if you change or lose your phone. A few things stay on the device only — your progress photos, and your cycle data unless you switch backup on yourself. When you use AI features (Coach, scripture, screenshot reading), your request and relevant context are sent to an AI provider (Google, Groq, OpenRouter or Anthropic) to generate a reply; their handling is governed by their own policies. To Try does not sell your data and runs no ads. Please read the full privacy policy for details.</p>
+      <p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.6">Your data lives in two places: on this device, and in your account so it follows you if you change or lose your phone. A few things stay on the device only — your progress photos, and your cycle data unless you switch backup on yourself. When you use AI features (Coach, scripture, screenshot reading), your request and relevant context are sent to an AI provider (Google, Groq, OpenRouter or Anthropic) to generate a reply; their handling is governed by their own policies. ToTry does not sell your data and runs no ads. Please read the full privacy policy for details.</p>
       <button class="btn" onclick="showPrivacyPolicy()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px;margin-bottom:8px">Privacy policy</button>
       <button class="btn" onclick="showTermsOfUse()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px">Terms of use</button>
     </div>
@@ -4801,7 +4811,7 @@ Amen.</div></div>
 <div id="pwa-banner" style="display:none;position:fixed;bottom:calc(var(--sb) + 80px);left:12px;right:12px;background:var(--bg2);border:1px solid var(--go-bd);border-radius:var(--r);padding:14px 16px;z-index:600;box-shadow:0 8px 32px rgba(0,0,0,0.5);max-width:406px;margin:0 auto">
   <div style="display:flex;align-items:center;gap:12px">
     <img src="icon-192.png" style="width:44px;height:44px;border-radius:10px;flex-shrink:0" onerror="this.style.display='none'">
-    <div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:2px">Add To Try to your home screen</div><div style="font-size:11px;color:var(--tx2);line-height:1.4">Works offline. Your data stays.</div></div>
+    <div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:2px">Add ToTry to your home screen</div><div style="font-size:11px;color:var(--tx2);line-height:1.4">Works offline. Your data stays.</div></div>
   </div>
   <div style="display:flex;gap:8px;margin-top:12px">
     <button class="btn primary" style="flex:1;padding:9px" id="pwa-install-btn">Add to home screen</button>
@@ -4812,7 +4822,7 @@ Amen.</div></div>
 <div id="ios-install-banner" style="display:none;position:fixed;bottom:calc(var(--sb) + 80px);left:12px;right:12px;background:var(--bg2);border:1px solid var(--go-bd);border-radius:var(--r);padding:14px 16px;z-index:600;box-shadow:0 8px 32px rgba(0,0,0,0.5);max-width:406px;margin:0 auto">
   <div style="display:flex;justify-content:space-between;align-items:flex-start">
     <div style="flex:1">
-      <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:6px">Install To Try on your iPhone</div>
+      <div style="font-size:13px;font-weight:600;color:var(--tx);margin-bottom:6px">Install ToTry on your iPhone</div>
       <div style="font-size:12px;color:var(--tx2);line-height:1.7">1. Tap the <strong style="color:var(--go)">Share button</strong> &#8599;&#65038; at the bottom of Safari<br>2. Tap <strong style="color:var(--go)">"Add to Home Screen"</strong><br>3. Tap <strong style="color:var(--go)">"Add"</strong> in the top right</div>
       <div style="font-size:11px;color:var(--tx3);margin-top:6px;line-height:1.4">Your data saves permanently. Works offline.</div>
     </div>

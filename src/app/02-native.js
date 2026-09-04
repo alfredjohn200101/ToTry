@@ -2,7 +2,7 @@
 // ─── NOTIFICATIONS ─────────────────────────────────────────────
 // ════════════════════════════════════════════════════════════════════════════════════════════
 // NATIVE WRAPPER READINESS LAYER
-// To Try ships now as a PWA. But iOS PWAs can't do reliable background push — which is exactly what
+// ToTry ships now as a PWA. But iOS PWAs can't do reliable background push — which is exactly what
 // "the sibling reaching out first at the right moment" needs. So this layer abstracts notifications
 // behind ONE interface that:
 //   • detects if we're running inside a native wrapper (Capacitor) — window.Capacitor is present
@@ -177,7 +177,7 @@ const Health = {
       try{ ls('totry_health_connected', gotSomething); }catch(_){}
       if(!gotSomething){
         return { ok:false, reason:'no-permission',
-                 message:'Apple Health did not share anything. If you tapped "Don\u2019t Allow", open Settings \u2192 Health \u2192 Data Access & Devices \u2192 To Try and turn on what you want me to see.' };
+                 message:'Apple Health did not share anything. If you tapped "Don\u2019t Allow", open Settings \u2192 Health \u2192 Data Access & Devices \u2192 ToTry and turn on what you want me to see.' };
       }
       try{ synced && (synced.workouts = await this.syncWorkouts(30)); }catch(_){}   // 30 days on first connect
       try{ synced && (synced.sleepNights = await this.syncSleep(30)); }catch(_){}
@@ -411,7 +411,7 @@ async function connectAppleHealth(){
 // silently erasing weeks of a person's training history would be the worse surprise — but it says so
 // plainly, and Settings → Your data → Delete still removes it all.
 async function disconnectAppleHealth(){
-  if(!(await askConfirm('Turn off Apple Health?\n\nThe app stops reading your steps, sleep and workouts, and stops syncing them to your account.\n\nWhat you\'ve already imported stays in your history. To revoke the permission itself, use iOS Settings → Health → Data Access & Devices → To Try.'))) return;
+  if(!(await askConfirm('Turn off Apple Health?\n\nThe app stops reading your steps, sleep and workouts, and stops syncing them to your account.\n\nWhat you\'ve already imported stays in your history. To revoke the permission itself, use iOS Settings → Health → Data Access & Devices → ToTry.'))) return;
   try{ ls('totry_health_connected', false); }catch(_){}
   // The write side rides on the same grant — leaving it "on" would be a switch pointing at nothing.
   try{ ls('totry_health_write', false); }catch(_){}
@@ -472,7 +472,7 @@ function renderHealthCard(){
     // Web/PWA is the beta — HealthKit is native-only. Be honest (a heads-up), never a dead button.
     if(typeof Health==='undefined' || !Health.isNative()){
       if(title) title.textContent='Apple Health';
-      if(sub) sub.textContent='Automatic steps & activity sync arrives with the To Try app on the App Store — you’ll sign in with this same email and pick up right here.';
+      if(sub) sub.textContent='Automatic steps & activity sync arrives with the ToTry app on the App Store — you’ll sign in with this same email and pick up right here.';
       if(btn) btn.style.display='none';
       if(off) off.style.display='none';
       return;
@@ -698,7 +698,7 @@ function scheduleReachOut(){
         // reading the same snapshot would lose an entry, which is the same shape of bug as the phantom
         // sends this is fixing.
         _reachConfirm = _reachConfirm.then(function(){
-          return Promise.resolve(Notify.schedule('reachout_'+i, 'To Try', body, t, { route:'reachout', vice:best.v.n }))
+          return Promise.resolve(Notify.schedule('reachout_'+i, 'ToTry', body, t, { route:'reachout', vice:best.v.n }))
             .then(function(ok){
               if(ok === false) return;   // never scheduled — do not blame the person for not answering it
               const l = _reachLog();
@@ -730,7 +730,7 @@ function _reachOutRowHTML(){
         const _native = (typeof Notify==='object' && Notify.isNative && Notify.isNative());
         status = _native
           ? ('Next: ' + new Date(st.next).toLocaleString('en-AU',{weekday:'short',hour:'numeric',minute:'2-digit'})+' · '+_reachCount7()+' of '+REACHOUT_MAX_PER_WEEK+' used this week.')
-          : 'Ready when you install To Try as an app \u2014 a browser cannot wake itself at your hard hour.';
+          : 'Ready when you install ToTry as an app \u2014 a browser cannot wake itself at your hard hour.';
       }
   else if(st.hold) status='Holding — '+st.hold+'.';
   else status='Nothing scheduled right now.';
@@ -758,7 +758,7 @@ function _reachOutRowHTML(){
     // Say the limit out loud. A browser cannot wake itself, so on the web this works out your hard
     // hour and holds it — nothing buzzes. Claiming otherwise would be the exact promise this app
     // is built not to make.
-    (_native ? '' : '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);line-height:1.6;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">In the browser I can work out your hard hour but I can’t buzz you — a web page can’t wake itself. The check-in starts once To Try is installed as an app; what you set here is kept and waiting. Quiet hours only ever silence what I send you — if you open me at 3am I’ll still meet you properly.</div>')+
+    (_native ? '' : '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);line-height:1.6;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">In the browser I can work out your hard hour but I can’t buzz you — a web page can’t wake itself. The check-in starts once ToTry is installed as an app; what you set here is kept and waiting. Quiet hours only ever silence what I send you — if you open me at 3am I’ll still meet you properly.</div>')+
   '</div>';
 }
 function saveQuietHours(){
@@ -1303,7 +1303,7 @@ function _ptIntel(){
   return out;
 }
 // ── THE NERVOUS SYSTEM ────────────────────────────────────────────────────────
-// getLifeState() is the single sensory cortex of To Try. Every "brain" — the coach, the
+// getLifeState() is the single sensory cortex of ToTry. Every "brain" — the coach, the
 // proactive nudge, the home insight, the weekly synthesis — reads from THIS instead of each
 // re-gathering raw streams with its own date logic. That's what turns separate trackers into
 // one system that genuinely knows the person: body, mind, and soul gathered once, consistently,

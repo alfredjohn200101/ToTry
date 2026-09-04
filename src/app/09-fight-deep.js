@@ -2021,7 +2021,7 @@ function editViceStart(i){
     '<div style="text-align:center;font-size:12px;color:var(--tx3);margin-bottom:16px">When did your current streak actually start?</div>' +
     '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Streak start date</div>' +
     '<input type="date" id="edit-vice-start" value="' + currentStart + '" max="' + today + '" style="margin-bottom:14px;font-size:16px;padding:12px">' +
-    '<p style="font-size:11px;color:var(--tx3);line-height:1.6;margin-bottom:14px">If you quit before installing To Try, set the real date so your day count matches your life.</p>' +
+    '<p style="font-size:11px;color:var(--tx3);line-height:1.6;margin-bottom:14px">If you quit before installing ToTry, set the real date so your day count matches your life.</p>' +
     '<button class="btn primary" onclick="saveViceStart(' + i + ')" style="margin-bottom:8px">Save start date</button>' +
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Cancel</button>' +
     '</div>';

@@ -59,7 +59,7 @@ function _showStravaModal(){
       '<button class="btn" onclick="closeModal(this)">Got it</button>' +
     '</div>';
     document.body.appendChild(m);
-    try{ const st = ls('totry_strava_last'); if(st){ const f = document.createElement('div'); f.style.cssText='font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-align:center;margin-top:10px'; f.textContent='Last sync: ' + new Date(st.ts).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}) + ' \u00b7 ' + st.count + ' pulled \u00b7 one-way (Strava \u2192 To Try)'; const mm = m.querySelector('.modal'); if(mm) mm.appendChild(f); } }catch(_){}
+    try{ const st = ls('totry_strava_last'); if(st){ const f = document.createElement('div'); f.style.cssText='font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-align:center;margin-top:10px'; f.textContent='Last sync: ' + new Date(st.ts).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}) + ' \u00b7 ' + st.count + ' pulled \u00b7 one-way (Strava \u2192 ToTry)'; const mm = m.querySelector('.modal'); if(mm) mm.appendChild(f); } }catch(_){}
     return;
   }
   
@@ -79,8 +79,8 @@ function _showStravaModal(){
         '<div><div style="font-size:16px;font-weight:500;color:var(--tx)">Connect Strava on the web</div><div style="font-size:11px;color:var(--tx3)">Once — then it syncs here on its own</div></div>' +
       '</div>' +
       '<p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:12px">Strava’s sign-in can’t hand you back into the app on iOS, so you connect it once in your browser instead.</p>' +
-      '<p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">Open To Try on the web, sign in with <b>this same account</b>, then Settings → Connected apps → Strava. Your runs and rides start syncing into this app by themselves — nothing else to do here.</p>' +
-      '<button class="btn primary" onclick="openStravaOnWeb()" style="margin-bottom:8px">Open To Try on the web</button>' +
+      '<p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">Open ToTry on the web, sign in with <b>this same account</b>, then Settings → Connected apps → Strava. Your runs and rides start syncing into this app by themselves — nothing else to do here.</p>' +
+      '<button class="btn primary" onclick="openStravaOnWeb()" style="margin-bottom:8px">Open ToTry on the web</button>' +
       '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Later</button>' +
     '</div>';
     document.body.appendChild(m);
@@ -99,7 +99,7 @@ function _showStravaModal(){
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Cancel</button>' +
     '</div>';
   document.body.appendChild(m);
-    try{ const st = ls('totry_strava_last'); if(st){ const f = document.createElement('div'); f.style.cssText='font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-align:center;margin-top:10px'; f.textContent='Last sync: ' + new Date(st.ts).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}) + ' \u00b7 ' + st.count + ' pulled \u00b7 one-way (Strava \u2192 To Try)'; const mm = m.querySelector('.modal'); if(mm) mm.appendChild(f); } }catch(_){}
+    try{ const st = ls('totry_strava_last'); if(st){ const f = document.createElement('div'); f.style.cssText='font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-align:center;margin-top:10px'; f.textContent='Last sync: ' + new Date(st.ts).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}) + ' \u00b7 ' + st.count + ' pulled \u00b7 one-way (Strava \u2192 ToTry)'; const mm = m.querySelector('.modal'); if(mm) mm.appendChild(f); } }catch(_){}
 }
 
 // Opens the web build so a native user can complete the Strava OAuth round trip in a real browser.

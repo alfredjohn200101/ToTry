@@ -2010,13 +2010,16 @@ async function openBarcodeScanner(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:8px">Scan a barcode</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">Snap a photo of the product barcode (or pick one from your library). We\'ll read the number and look it up.</p>' +
-    // capture="environment" hints the rear camera on phones; without it the OS shows Camera + Library
+    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">The barcode itself \u2014 the striped lines and digits, not the meal. Take a photo or pick one from your library, and we\'ll read the number and look it up.</p>' +
+    // NO capture= HERE, DELIBERATELY. capture="environment" does not "hint" the rear camera on iOS — it
+    // FORCES it, removing Photo Library from the picker entirely, while the sheet copy promised a
+    // library option that could never appear. Without it iOS offers Photo Library / Take Photo /
+    // Choose File, which is what a person wants when the barcode is in a photo they already took.
     // Revealed only when a live scan can really happen (native + camera + permission not denied), so it
     // is never a button that does nothing. Fails closed.
     '<button class="btn primary" id="barcode-live-btn" style="display:none;margin-bottom:8px" onclick="startLiveBarcodeScan()">\u2b1c Scan with camera</button>' +
-    '<input type="file" id="barcode-photo-input" accept="image/*" capture="environment" style="display:none" onchange="readBarcodePhoto(event)">' +
-    '<button class="btn primary" id="barcode-photo-btn" onclick="document.getElementById(\'barcode-photo-input\').click()" style="margin-bottom:8px">📷 Take / choose barcode photo</button>' +
+    '<input type="file" id="barcode-photo-input" accept="image/*" style="display:none" onchange="readBarcodePhoto(event)">' +
+    '<button class="btn primary" id="barcode-photo-btn" onclick="document.getElementById(\'barcode-photo-input\').click()" style="margin-bottom:8px">📷 Barcode photo \u2014 take or choose</button>' +
     '<div id="barcode-photo-status" style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);text-align:center;margin:6px 0;min-height:16px"></div>' +
     '<div style="display:flex;align-items:center;gap:8px;margin:10px 0"><div style="flex:1;height:1px;background:var(--bd)"></div><span style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">or type it</span><div style="flex:1;height:1px;background:var(--bd)"></div></div>' +
     '<input type="text" id="barcode-manual" placeholder="e.g. 5060337504331" inputmode="numeric" style="font-family:DM Mono,monospace;margin-bottom:10px">' +
@@ -2969,7 +2972,11 @@ function addFoodToLog(){
   document.getElementById('serving-modal').classList.remove('open');
   document.getElementById('nut-search-in').value='';
   document.getElementById('nut-search-results').innerHTML='';
-  renderNutritionLog();showToast('Added', (typeof nutGentle==='function'&&nutGentle()) ? entry.name : (entry.name+' \u2014 '+entry.cal+' cal'));
+  // THE ONE FOOD-LOG PATH THAT DID NOT CONFIRM. Eight other commits of the same entry fire
+  // haptic('success') — quickAddLog, _pmLog, logEstimatedMeal, logRecipeAsMeal, confirmRepeatYesterday,
+  // logSavedMeal, quickLogSearchFood, quickLogRecent — and this, the one a person actually uses most,
+  // was silent. The only haptic in the function sat in the edit branch, which returns before here.
+  renderNutritionLog();haptic('success');showToast('Added', (typeof nutGentle==='function'&&nutGentle()) ? entry.name : (entry.name+' \u2014 '+entry.cal+' cal'));
   // The brother notices if this entry pushed you over today's calorie line — and speaks once, gently,
   // knowing your week (he'll cut you slack if you've trained hard). Only when crossing, never nagging.
   try{
@@ -3485,7 +3492,7 @@ function renderNourishmentScore(totals, goals){
 // ── GENTLE MODE — numbers off, nourishment still counted ─────────────────────────────────────────
 // The evidence here is blunt: calorie-tracking UIs elicit perfectionist, all-or-nothing thinking —
 // a known eating-disorder risk factor — and a large share of people in ED treatment say a tracking
-// app contributed to theirs. So To Try ships the antidote no mainstream tracker will: keep the
+// app contributed to theirs. So ToTry ships the antidote no mainstream tracker will: keep the
 // LOGGING (the whole-life counsel still works — energy, training, recovery) but let a person turn
 // the NUMBERS OFF. Food as fuel for a life, not a maths test to win. Never a red "over budget".
 // ONE gentle-aware nutrition block for EVERY prompt builder.
@@ -4031,7 +4038,7 @@ function renderNutritionLog(){
       mealEntries.forEach(en => {
         const row=document.createElement('div');
         row.className='food-log-item';
-        row.innerHTML='<div style="min-width:0;flex:1"><div class="fli-name">'+_escFew(en.name)+'</div>'+((en.serving||en.qty)?'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3)">'+_escFew(en.serving||'serving')+(en.qty?(' \u00d7 '+en.qty):'')+'</div>':'')+'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3);margin-top:2px">P '+(Math.round((en.pro||0)*10)/10)+'g \u00b7 C '+(Math.round((en.carb||0)*10)/10)+'g \u00b7 F '+(Math.round((en.fat||0)*10)/10)+'g</div></div><div style="display:flex;align-items:center;gap:6px"><span class="fli-cal">'+en.cal+' cal</span><button class="fli-del" style="font-size:14px;color:var(--tx3)" onclick="editFoodEntry(\''+today+'\','+en.id+')" title="Edit">✎</button><button class="fli-del" onclick="deleteFoodEntry(\''+today+'\','+en.id+')" aria-label="Delete '+_escFew(en.name)+'">&#215;</button></div>';
+        row.innerHTML='<div style="min-width:0;flex:1"><div class="fli-name">'+_escFew(en.name)+'</div>'+((en.serving||en.qty)?'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3)">'+_escFew(en.serving||'serving')+(en.qty?(' \u00d7 '+en.qty):'')+'</div>':'')+'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3);margin-top:2px">P '+(Math.round((en.pro||0)*10)/10)+'g \u00b7 C '+(Math.round((en.carb||0)*10)/10)+'g \u00b7 F '+(Math.round((en.fat||0)*10)/10)+'g</div></div><div style="display:flex;align-items:center;gap:6px"><span class="fli-cal">'+en.cal+' cal</span><button class="fli-del" style="font-size:14px;color:var(--tx3)" onclick="editFoodEntry(\''+today+'\','+_jsCode(JSON.stringify(en.id))+')" title="Edit">✎</button><button class="fli-del" onclick="deleteFoodEntry(\''+today+'\','+_jsCode(JSON.stringify(en.id))+')" aria-label="Delete '+_escFew(en.name)+'">&#215;</button></div>';
         // NUMBERS OFF — strip the calorie figure and the macro breakdown from the row. What you ate
         // still shows (that IS the log, and the whole-life counsel still uses it); what it "cost" doesn't.
         if(_gentleOn){

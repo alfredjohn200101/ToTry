@@ -397,7 +397,7 @@ function nextSmallThingHTML(){
 
 
 // ── WRITE BACK TO APPLE HEALTH ──────────────────────────────────────────────────────────────────
-// The app has always DECLARED this: NSHealthUpdateUsageDescription says "To Try can record activity you
+// The app has always DECLARED this: NSHealthUpdateUsageDescription says "ToTry can record activity you
 // log here back to Apple Health, so your data stays in one place", and the privacy policy promised
 // anything written back happens "only at your request". Neither was true — capacitor-health exposes only
 // query methods, and nothing else wrote. So the app asked for a permission it could not use and described

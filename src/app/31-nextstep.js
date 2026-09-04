@@ -125,7 +125,7 @@ function applyHomeProgressiveDisclosure(){
   try{
     // HOW LONG THEY HAVE HAD THE APP, NOT WHAT THEIR COUNTER SAYS. getDayCount() honours the
     // "Begin again — Day 1" reset in Settings, which is about their journey, not their familiarity
-    // with the app. So someone who had used To Try for eight months and chose to start again had the
+    // with the app. So someone who had used ToTry for eight months and chose to start again had the
     // home stripped back to a new-user's home — the in-the-moment help they had come to rely on
     // hidden from them at the exact moment they had just declared they were starting over.
     const day = (typeof daysInstalled==='function') ? daysInstalled() : 99;

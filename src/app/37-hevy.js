@@ -342,7 +342,7 @@ async function hevyFetch(path, method, bodyObj){
 // ═══════════════════════════════════════════════════════════════════
 // WS2 — REAL HEVY INTEGRATION. Read the user's actual routines + folders and
 // surface THOSE (not an app-invented split). A Hevy user trains from Hevy;
-// To Try should reflect their real routines, with last weights per exercise.
+// ToTry should reflect their real routines, with last weights per exercise.
 // ═══════════════════════════════════════════════════════════════════
 // Single source of truth for "does this user train from Hevy?"
 function isHevyUser(){

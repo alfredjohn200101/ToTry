@@ -517,7 +517,7 @@ async function deleteWeightEntry(key){
   ls('totry_body', filtered);
   if(typeof syncToCloud==='function') syncToCloud();
   renderBody();
-  haptic('success'); showToast('Deleted','Weigh-in removed.');
+  haptic('warning'); showToast('Deleted','Weigh-in removed.');   // a loss should not feel like a win
 }
 // ── RECOMP READ (the Train×Nourish squeeze #5) ─────────────────────────────────────────────────
 // The read no single-purpose app can give: it needs BOTH your weight trend AND your strength trend.

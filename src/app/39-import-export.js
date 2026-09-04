@@ -321,7 +321,7 @@ function importHevyCSV(event){
 
 // Minimal RFC-4180-ish CSV parser: handles quoted fields, commas in quotes, escaped quotes, newlines
 // ── UNIFIED IMPORT ENGINE ─────────────────────────────────────────────────────
-// To Try is the engine between other apps — it should accept fuel from ANY of them.
+// ToTry is the engine between other apps — it should accept fuel from ANY of them.
 // Every CSV importer (weight, food, workouts) runs through this one path:
 //   Tier 1: deterministic column matching against a rich multi-app/multi-locale synonym
 //           dictionary. Free, instant, offline. Handles ~95% of real exports.

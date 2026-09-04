@@ -168,11 +168,11 @@ async function exportAllData(){
       const k = localStorage.key(i);
       if(backupSafeKey(k)) dump[k] = localStorage.getItem(k);   // never the sign-in or any API token
     }
-    const payload = { app:'To Try', version:(typeof APP_VERSION!=='undefined'?APP_VERSION:'?'), exported:new Date().toISOString(), keys:Object.keys(dump).length, data:dump };
+    const payload = { app:'ToTry', version:(typeof APP_VERSION!=='undefined'?APP_VERSION:'?'), exported:new Date().toISOString(), keys:Object.keys(dump).length, data:dump };
     const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
     // Through SaveFile: an <a download> does nothing in a WKWebView, so on iOS this used to produce no
     // file and no error — the export promise, silently broken in the App Store build.
-    const _r = await SaveFile.save(blob, 'totry-backup-' + new Date().toISOString().slice(0,10) + '.json', 'To Try backup');
+    const _r = await SaveFile.save(blob, 'totry-backup-' + new Date().toISOString().slice(0,10) + '.json', 'ToTry backup');
     if(_r === null) return;   // share sheet dismissed — they chose not to; don't tell them it's saved
     if(typeof haptic==='function') haptic('success');
     if(typeof showToast==='function') showToast(_r ? 'Backup saved' : 'Not saved', _r ? (payload.keys + ' items exported. Your sign-in and app tokens are deliberately left out, so the file is safe to keep.') : 'Nothing was written. Try again in a moment.');
@@ -193,7 +193,7 @@ async function importAllData(ev){
       // Same rule inbound: a file from someone else must never be able to install their session
       // or tokens on this device.
       const keys = Object.keys(data).filter(backupSafeKey);
-      if(!keys.length){ showToast('Nothing to restore', 'That file has no To Try data.'); return; }
+      if(!keys.length){ showToast('Nothing to restore', 'That file has no ToTry data.'); return; }
       if(!(await askConfirm('Restore ' + keys.length + ' items from this backup? This overwrites matching data on this device.'))) return;
       // One restore path for both entry points. My first version of this fix duplicated the counting
       // loop inline here, which is the same duplicate-implementation problem the two plate calculators
@@ -461,7 +461,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v574';
+const APP_VERSION = 'v576';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }

@@ -105,6 +105,36 @@ const DOORS = [
       const w = document.getElementById('bod-weight'); if(w) w.value = '854';
       if(typeof logBody === 'function') await logBody();
     }, phrase) },
+  // THE TWO MOMENT-FLOW DOORS. Neither was in this list, and both shipped ungated — found on
+  // 4 Sep 2026 by driving the app rather than reading it. The if-then plan is two taps from ALL SEVEN
+  // Feeling Door paths, and it did something worse than miss the gate: it SAVED the disclosure and
+  // replayed it verbatim under "THE PLAN YOU SET FOR THIS" every later time that feeling was chosen —
+  // a person's own worst sentence handed back as their standing instruction. The avoiding door echoed
+  // it into "Don't do <it>. Just START it — the smallest first step." Both now assert the helpline,
+  // and the if-then door also asserts the phrase is NOT persisted, because gating the moment without
+  // gating the read-back would leave the worse half of the harm in place.
+  { name: 'the if-then plan (Feeling Door)',
+    go: async page => page.evaluate(async () => { if(typeof _feelMove==='function') _feelMove('anxious'); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      if(typeof _lockItIn === 'function') _lockItIn('anxious');
+      await new Promise(r => setTimeout(r, 400));
+      const t = document.getElementById('ifthen-act'); if(t) t.value = p;
+      if(typeof _saveIfThenFromModal === 'function') _saveIfThenFromModal('anxious');
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p => {
+      const stored = JSON.stringify(JSON.parse(localStorage.getItem('totry_if_then') || '[]'));
+      return stored.includes(p) ? 'the disclosure was SAVED as an if-then plan and will be read back' : null;
+    }, phrase) },
+  { name: 'the thing you are avoiding (Feeling Door)',
+    go: async page => page.evaluate(async () => { if(typeof _startSmallestThing==='function') _startSmallestThing(); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      await new Promise(r => setTimeout(r, 300));
+      const i = document.getElementById('fm-thing'); if(i) i.value = p;
+      const b = [...document.querySelectorAll('button')].find(x => /Start it small/i.test(x.innerText||''));
+      if(b) b.click();
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p =>
+      (document.body.innerText||'').includes(p) ? 'the disclosure is echoed back on screen as an instruction' : null, phrase) },
   { name: 'food search online (Nourish)',
     go: async page => page.evaluate(async () => { go('nourish'); }),
     fire: async (page, phrase) => page.evaluate(async p => {
@@ -164,6 +194,14 @@ const PROBE = `(() => {
     else if (!r.tels) findings.push(`${door.name}: crisis card has no tel: link`);
     else if (!r.usable) findings.push(`${door.name}: the helpline is NOT usable — ${JSON.stringify(r.detail)}`);
     else console.log(`  ✓ ${door.name.padEnd(34)} ${r.detail.number} (${r.detail.href})${r.lifted?' [rescued into overlay]':''}`);
+    // A SEPARATE question, deliberately NOT part of the chain above. Some doors can show a perfect
+    // helpline and still do harm — by storing the disclosure, or printing it back as counsel. Chaining
+    // this as an `else if` (as it first was) skipped the usable-helpline checks for exactly the two
+    // doors that most needed them, and they passed on a weaker test than every other door.
+    if (door.also) {
+      try { const extra = await door.also(page, PHRASE); if (extra) findings.push(`${door.name}: ${extra}`); }
+      catch (e) { findings.push(`${door.name}: also-check threw — ${String(e.message).slice(0,80)}`); }
+    }
     if (errs.length) findings.push(`${door.name}: page error — ${errs[0]}`);
     await ctx.close();
   }
