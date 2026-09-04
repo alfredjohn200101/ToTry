@@ -3280,6 +3280,42 @@ function openReader(t){
     if(saved.length && typeof renderSavedVerses==='function') renderSavedVerses('read-saved-list');
   }catch(_){ }
 }
+// KEEPING A LINE IS NOT A CHRISTIAN FEATURE. The Bible reader has always let you tap a verse to put
+// it on your shelf, and the shelf itself — read-saved-panel, right below the text — sits on THIS
+// screen for every tradition. Only the Christian reader could ever fill it, so four of five people
+// met a saved-passages panel they had no way of ever putting anything into. Same gesture, same
+// store (totry_sv), same tap-again-to-unsave, for the Qur'an, the Gita, the Dhammapada and the
+// Meditations. The rows carry an index rather than their own text in an attribute, because the
+// passage is arbitrary user-facing prose and quoting it into markup is how quotes break markup.
+function _readMakeSavable(items){
+  if(!items || !items.length) return;
+  let saved;
+  try{ saved = new Set((ls('totry_sv')||[]).map(function(x){ return x && x.reference; }).filter(Boolean)); }
+  catch(_){ saved = new Set(); }
+  document.querySelectorAll('#read-content .rd-v').forEach(function(row){
+    const it = items[Number(row.getAttribute('data-sv-i'))];
+    if(!it || !it.text || !it.ref) return;
+    row.classList.add('rd-v-tap');
+    if(saved.has(it.ref)) row.classList.add('rd-v-saved');
+    row.onclick = async function(){
+      if(row.classList.contains('rd-v-saved')){
+        if(typeof unsaveVerseFromReader === 'function' &&
+           await unsaveVerseFromReader(it.ref, function(){ row.classList.add('rd-v-saved'); }))
+          row.classList.remove('rd-v-saved');
+      } else {
+        row.classList.add('rd-v-saved');
+        if(typeof saveVerseFromReader === 'function') saveVerseFromReader(it.text, it.ref);
+      }
+      // the shelf below is on this same screen, so it has to reflect the tap that just happened
+      try{
+        const panel = document.getElementById('read-saved-panel');
+        const list = (ls('totry_sv')||[]);
+        if(panel) panel.style.display = list.length ? '' : 'none';
+        if(list.length && typeof renderSavedVerses === 'function') renderSavedVerses('read-saved-list');
+      }catch(_){ }
+    };
+  });
+}
 function _readBundled(sel,content,bank){
   // THE PICKER NEEDS NO NETWORK, SO IT STAYS. This cleared it — and once v567 made the fallback fire on
   // a 9s abort rather than only on a connection that was actually gone, a secular or Buddhist person on
@@ -3309,7 +3345,9 @@ async function _readQuranLoad(n){
     let ar=null,en=null;
     try{ const r=await _fetchT('https://api.alquran.cloud/v1/surah/'+n+'/editions/quran-uthmani,en.sahih'); const j=await r.json(); if(j&&j.data&&j.data.length>=2){ ar=j.data[0].ayahs; en=j.data[1].ayahs; } }catch(e){}
     if(!en){ const r2=await _fetchT('https://api.alquran.cloud/v1/surah/'+n+'/en.sahih'); const j2=await r2.json(); en=j2.data.ayahs; }
-    content.innerHTML='<div class="card">'+en.map((a,i)=>'<div style="margin-bottom:15px">'+(ar&&ar[i]?'<div dir="rtl" style="font-size:21px;line-height:2.1;color:var(--tx);text-align:right;margin-bottom:5px">'+ar[i].text+'</div>':'')+'<div style="font-size:13.5px;color:var(--tx2);line-height:1.65">'+a.text+' <span style="color:var(--tx3);font-size:11px">('+n+':'+a.numberInSurah+')</span></div></div>').join('')+'</div>';
+    const _svItems=en.map(a=>({ text:String(a.text||'').trim(), ref:'Qur\u2019an '+n+':'+a.numberInSurah }));
+    content.innerHTML='<div class="card">'+en.map((a,i)=>'<div class="rd-v" data-sv-i="'+i+'" style="margin-bottom:15px">'+(ar&&ar[i]?'<div dir="rtl" style="font-size:21px;line-height:2.1;color:var(--tx);text-align:right;margin-bottom:5px">'+ar[i].text+'</div>':'')+'<div style="font-size:13.5px;color:var(--tx2);line-height:1.65">'+a.text+' <span style="color:var(--tx3);font-size:11px">('+n+':'+a.numberInSurah+')</span></div></div>').join('')+'</div>';
+    _readMakeSavable(_svItems);
   }catch(e){
     // Offline: the bundled pool, not an error box. The Dhammapada and Meditations readers added later
     // do this; the Qur'an and Gita ones did not, so the same loss of signal produced a dead tab for two
@@ -3365,6 +3403,7 @@ async function _readStoicLoad(book){
     const paras=text.split(/\n+/).map(function(x){ return x.replace(/\s+/g,' ').trim(); })
       .filter(function(x){ return x.length>40 && !/^=+.*=+$/.test(x) && !/^(Notes?|Footnotes?|References?)$/i.test(x); });
     if(!paras.length) throw new Error('empty');
+    const _svItems=[];
     content.innerHTML='<div class="card">'+
       '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:12px">Meditations &middot; Book '+_escFew(book)+'</div>'+
       paras.map(function(t,n){
@@ -3379,13 +3418,15 @@ async function _readStoicLoad(book){
         const m=/^(\d{1,3})\.\s+([\s\S]+)$/.exec(t);
         const label=m?m[1]:'';
         const bodyText=m?m[2]:t;
-        return '<div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)">'+
+        _svItems.push({ text:bodyText, ref:'Meditations '+book+(label?'.'+label:'') });
+        return '<div class="rd-v" data-sv-i="'+(_svItems.length-1)+'" style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)">'+
           (label?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-bottom:5px">'+_escFew(label)+'</div>':'')+
           '<div style="font-size:15px;line-height:1.85;color:var(--tx)">'+_escFew(bodyText)+'</div>'+
         '</div>';
       }).join('')+
       '<div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-align:center;margin-top:6px;letter-spacing:0.08em">MARCUS AURELIUS &middot; TRANS. GEORGE LONG 1862 &middot; VIA WIKISOURCE &middot; PUBLIC DOMAIN</div>'+
     '</div>';
+    _readMakeSavable(_svItems);
   }catch(e){
     // Offline, or the page moved — the bundled passages rather than an empty tab.
     _readBundled(document.getElementById('read-selector'),content,VS_SECULAR);   // see the note in the Dhammapada fallback
@@ -3451,11 +3492,13 @@ async function _readDhammapadaLoad(uid){
     });
     if(!seen.length) throw new Error('empty');
     const title=(DHP_CHAPTERS.find(function(c){ return c[0]===uid; })||['',''])[1];
+    const _svItems=[];
     content.innerHTML='<div class="card">'+
       '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:12px">Dhammapada &middot; '+_escFew(title)+'</div>'+
       seen.map(function(n){
         const v=verses[n];
-        return '<div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)">'+
+        _svItems.push({ text:v.en.join(' ').trim(), ref:'Dhammapada '+n });
+        return '<div class="rd-v" data-sv-i="'+(_svItems.length-1)+'" style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)">'+
           '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-bottom:5px">'+n+'</div>'+
           (v.pli.length?'<div style="font-family:Cormorant Garamond,serif;font-size:14px;font-style:italic;color:var(--tx3);line-height:1.75;margin-bottom:7px">'+_escFew(v.pli.join(' '))+'</div>':'')+
           '<div style="font-size:15px;line-height:1.85;color:var(--tx)">'+_escFew(v.en.join(' '))+'</div>'+
@@ -3463,6 +3506,7 @@ async function _readDhammapadaLoad(uid){
       }).join('')+
       '<div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-align:center;margin-top:6px;letter-spacing:0.08em">TRANSLATED BY BHIKKHU SUJATO &middot; SUTTACENTRAL &middot; PUBLIC DOMAIN</div>'+
     '</div>';
+    _readMakeSavable(_svItems);
   }catch(e){
     // Offline or the endpoint moved — show the bundled selection rather than an empty tab.
     const sel=document.getElementById('read-selector');
@@ -3523,7 +3567,8 @@ async function _readGitaLoad(){
     const chSummary = meta && meta.summary && meta.summary.en
       ? '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><div style="font-family:DM Mono,monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">About this chapter</div><div style="font-size:13px;color:var(--tx3);line-height:1.7">'+_esc(meta.summary.en)+'</div></div>'
       : '';
-    content.innerHTML='<div class="card">'+chName+'<div style="font-size:12px;color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+g.ch+'.'+g.v+' <span style="color:var(--tx3);letter-spacing:0">· verse '+g.v+' of '+_gitaCount(g.ch)+'</span></div>'+(j.slok?'<div style="font-size:16px;line-height:1.95;color:var(--tx);margin-bottom:8px">'+j.slok+'</div>':'')+(j.transliteration?'<div style="font-size:12.5px;font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+String(j.transliteration).trim()+'</div>':'')+'<div style="font-size:14px;color:var(--tx2);line-height:1.75">'+en+'</div>'+chSummary+'</div>';
+    content.innerHTML='<div class="card">'+chName+'<div class="rd-v" data-sv-i="0"><div style="font-size:12px;color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+g.ch+'.'+g.v+' <span style="color:var(--tx3);letter-spacing:0">· verse '+g.v+' of '+_gitaCount(g.ch)+'</span></div>'+(j.slok?'<div style="font-size:16px;line-height:1.95;color:var(--tx);margin-bottom:8px">'+j.slok+'</div>':'')+(j.transliteration?'<div style="font-size:12.5px;font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+String(j.transliteration).trim()+'</div>':'')+'<div style="font-size:14px;color:var(--tx2);line-height:1.75">'+en+'</div></div>'+chSummary+'</div>';
+    _readMakeSavable([{ text:String(en||'').replace(/<[^>]*>/g,'').trim(), ref:'Bhagavad Gita '+g.ch+'.'+g.v }]);
   }catch(e){
     const c2=document.getElementById('read-content');
     if(c2) _readBundled(document.getElementById('read-selector'), c2, VS_HINDU);   // see the Qur'an note

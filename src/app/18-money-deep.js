@@ -227,7 +227,7 @@ function editTransaction(id){
   const t = list.find(x => x && x.id === id);
   if(!t){ if(typeof showToast==='function') showToast('That entry is gone','It may have been removed on another device.'); return; }
   const cats = (typeof EXPENSE_CATEGORIES !== 'undefined' && EXPENSE_CATEGORIES.length)
-    ? EXPENSE_CATEGORIES : ['Food','Transport','Bills','Shopping','Eating out','Entertainment','Health','Other'];
+    ? EXPENSE_CATEGORIES : ['Food','Rent/bills','Transport','Health','Entertainment','Shopping','Other'];
   openFormModal('Edit transaction', 'Correct what it was, or what it cost.',
     [ {id:'note', label:'What was it', type:'text', value: t.note || ''},
       {id:'amount', label:'Amount', type:'number', prefix:curSym(), value: (t.amount != null ? t.amount : '')},

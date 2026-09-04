@@ -148,7 +148,25 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       await new Promise(res => setTimeout(res, 12500));  // live fetch, then the 9s fallback
       const el = document.getElementById('read-content');
       const txt = el ? (el.innerText || '').trim() : '';
-      return { chars: txt.length, text: txt.slice(0, 4000) };
+      // KEEPING A LINE IS NOT A CHRISTIAN FEATURE. The saved-passages shelf sits on THIS screen for
+      // every tradition, but only the Bible reader could ever put anything on it — so four people in
+      // five met a shelf they had no way of filling. Tap the first passage and watch the shelf.
+      let keep;
+      try{
+        const row = document.querySelector('#read-content .rd-v');
+        if(!row){ keep = { rows: 0 }; }
+        else {
+          const before = (ls('totry_sv') || []).length;
+          row.click();
+          await new Promise(res => setTimeout(res, 450));
+          const after = (ls('totry_sv') || []);
+          keep = { rows: document.querySelectorAll('#read-content .rd-v').length,
+                   grew: after.length === before + 1,
+                   ref: after[0] ? after[0].reference : null,
+                   highlighted: row.classList.contains('rd-v-saved') };
+        }
+      }catch(e){ keep = { err: String(e && e.message).slice(0, 60) }; }
+      return { chars: txt.length, text: txt.slice(0, 4000), keep };
     }, trad);
     if (r.missing) { findings.push(`${trad} reader: openReader() does not exist`); }
     else {
@@ -172,6 +190,17 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       const onFallback = /Kept on your phone/i.test(r.text || '');
       if (!onFallback && CONTRACT.live && !CONTRACT.live.test(r.text || ''))
         findings.push(`${trad} reader is live but shows no ${CONTRACT.needs} — the text may have rendered without its own script`);
+      // Only meaningful against the live text — the bundled offline pool renders no passage rows.
+      if (!onFallback) {
+        if (r.keep && r.keep.err)
+          findings.push(`${trad} reader: keeping a passage threw — ${r.keep.err}`);
+        else if (!r.keep || !r.keep.rows)
+          findings.push(`${trad} reader offers no passage to keep, yet the saved-passages shelf is on the same screen`);
+        else if (!r.keep.grew)
+          findings.push(`${trad} reader: tapping a passage did not put it on the shelf`);
+        else if (!r.keep.highlighted)
+          findings.push(`${trad} reader: a kept passage is not marked as kept, so the next tap cannot mean "unkeep"`);
+      }
       {
         for (const word of ['Jesus', 'Christ', 'Bible', 'Psalm', 'Amen', 'Rosary', 'Eucharist']) {
           if (new RegExp('\\b' + word, 'i').test(r.text || '')) {
@@ -181,7 +210,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       }
     }
     if (errors.length) findings.push(`${trad} reader: PAGE ERROR ${[...new Set(errors)][0]}`);
-    console.log(`${trad} reader: ${r.missing ? 'MISSING' : r.chars + ' chars'}`);
+    console.log(`${trad} reader: ${r.missing ? 'MISSING' : r.chars + ' chars'}${r.keep && r.keep.ref ? ', kept "' + r.keep.ref + '"' : ''}`);
     await ctx.close();
   }
 
@@ -546,8 +575,17 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       const h = el => el ? Math.round(el.getBoundingClientRect().height) : 0;
       eveningStep(1); await new Promise(x=>setTimeout(x,250));
       const win = document.getElementById('evening-win');
+      const backAt1 = panel.querySelector('.mstep-back');
+      const q = backAt1 ? backAt1.getBoundingClientRect() : null;
+      if (backAt1) backAt1.click();
+      await new Promise(x=>setTimeout(x,300));
+      const landedOn = (typeof _eStep !== 'undefined' ? _eStep : -1);
+      eveningStep(0); await new Promise(x=>setTimeout(x,200));
+      const backAt0 = panel.querySelector('.mstep-back');
       return { stepped: panel.classList.contains('stepped'),
                nav: h(panel.querySelector('.mstep-nav')),
+               back: { exists: !!backAt1, size: q ? Math.round(Math.min(q.width, q.height)) : 0, landedOn,
+                       hiddenAt0: !backAt0 || getComputedStyle(backAt0).display === 'none' },
                winReachable: !!(win && win.getBoundingClientRect().height > 0),
                winValue: win ? win.value : '' };
     });
@@ -555,7 +593,15 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       findings.push('evening: coming back after completing it leaves the panel stepped with the stepper HIDDEN — what they wrote is saved and unreachable');
     else if (!r.winReachable)
       findings.push('evening: on a second visit their own win field cannot be reached');
-    else console.log(`evening: a finished ritual re-opens usable — stepper back (${r.nav}px), "${r.winValue.slice(0,26)}" still editable`);
+    else if (!r.back.exists)
+      findings.push('evening: the stepper only goes forward — the only way back to an earlier step is "Show the whole evening", which leaves stepped mode for good');
+    else if (r.back.landedOn !== 0)
+      findings.push(`evening: the back control does not step back — from step 1 it landed on ${r.back.landedOn}`);
+    else if (r.back.size < 24)
+      findings.push(`evening: the back control is ${r.back.size}px, under the touch floor`);
+    else if (!r.back.hiddenAt0)
+      findings.push('evening: a back control is offered on the first step, where there is nothing to go back to');
+    else console.log(`evening: a finished ritual re-opens usable — "${r.winValue.slice(0,26)}" still editable, and the stepper goes back (${r.back.size}px, 1 → ${r.back.landedOn})`);
     await ctx.close();
   }
 
@@ -749,13 +795,34 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       // and the words must still be reachable by walking to their step
       morningStep(3); await new Promise(x=>setTimeout(x,250));
       const g = document.getElementById('morning-gratitude');
-      return { first, second, gratitudeReachable: !!(g && g.getBoundingClientRect().height > 0) };
+      // A stepper has to reverse. Seven steps forward with no way back one meant a typo on step 2
+      // could only be reached by leaving stepped mode for good.
+      morningStep(0); await new Promise(x=>setTimeout(x,220));
+      const backAt0 = document.querySelector('#tab-morning .mstep-back');
+      const hiddenAt0 = !backAt0 || getComputedStyle(backAt0).display === 'none';
+      morningStep(2); await new Promise(x=>setTimeout(x,220));
+      const backAt2 = document.querySelector('#tab-morning .mstep-back');
+      const q = backAt2 ? backAt2.getBoundingClientRect() : null;
+      if (backAt2) backAt2.click();
+      await new Promise(x=>setTimeout(x,300));
+      const back = { exists: !!backAt2, hiddenAt0,
+                     size: q ? Math.round(Math.min(q.width, q.height)) : 0,
+                     landedOn: (typeof _mStep !== 'undefined' ? _mStep : -1) };
+      return { first, second, back, gratitudeReachable: !!(g && g.getBoundingClientRect().height > 0) };
     });
     if (r.second.stepped && r.second.nav === 0)
       findings.push(`morning: coming back to a finished ritual leaves it stepped with the stepper HIDDEN — ${r.second.controls} control(s) on the whole screen and no way to advance`);
     else if (!r.gratitudeReachable)
       findings.push('morning: on a second visit their own gratitude field cannot be reached, though the app promises it stays editable until midnight');
-    else console.log(`morning: a finished ritual re-opens usable — stepper back (${r.second.nav}px), their words still reachable`);
+    else if (!r.back.exists)
+      findings.push('morning: the stepper only goes forward — no way back a step, so a typo on step 2 can only be reached by leaving stepped mode for good');
+    else if (r.back.landedOn !== 1)
+      findings.push(`morning: the back control does not step back — from step 2 it landed on ${r.back.landedOn}`);
+    else if (r.back.size < 24)
+      findings.push(`morning: the back control is ${r.back.size}px, under the touch floor`);
+    else if (!r.back.hiddenAt0)
+      findings.push('morning: a back control is offered on the first step, where there is nothing to go back to');
+    else console.log(`morning: a finished ritual re-opens usable — their words still reachable, and the stepper goes back (${r.back.size}px, 2 → ${r.back.landedOn})`);
     await ctx.close();
   }
 

@@ -78,6 +78,8 @@ function morningStep(n){
   const nextBtn = pane.querySelector('.mstep-next');
   if(nextBtn) nextBtn.textContent = (_mStep === _MORNING_STEPS.length - 1) ? '' : 'Next \u2192';
   if(nextBtn) nextBtn.style.display = (_mStep === _MORNING_STEPS.length - 1) ? 'none' : '';
+  const backBtn = pane.querySelector('.mstep-back');
+  if(backBtn) backBtn.style.display = (_mStep === 0) ? 'none' : '';
   try{ pane.scrollTop = 0; window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){ }
   if(typeof haptic === 'function') haptic('tap');
 }
@@ -99,12 +101,25 @@ function morningShowAll(){
   const nav = pane.querySelector('.mstep-nav'); if(nav) nav.style.display = 'none';
   const foot = pane.querySelector('.mstep-foot'); if(foot) foot.style.display = 'none';
   ls('totry_morning_flow', 'all');
+  renderMorningFlow();   // so the way back is on screen now, not only on the next visit
   if(typeof haptic === 'function') haptic('tap');
 }
 function renderMorningFlow(){
   const pane = document.getElementById('tab-morning');
   if(!pane) return;
-  if(ls('totry_morning_flow') === 'all'){ pane.classList.remove('stepped'); return; }
+  if(ls('totry_morning_flow') === 'all'){
+    pane.classList.remove('stepped');
+    if(!pane.querySelector('.mstep-restep')){
+      const rb = document.createElement('button');
+      rb.className = 'mstep-restep'; rb.type = 'button';
+      rb.textContent = 'Step through it instead';
+      rb.onclick = function(){ ls('totry_morning_flow',''); renderMorningFlow(); if(typeof haptic==='function') haptic('tap'); };
+      const after = pane.querySelector('.a11y-only') || pane.querySelector('.hub-back-bar');
+      if(after && after.nextSibling) pane.insertBefore(rb, after.nextSibling); else pane.insertBefore(rb, pane.firstChild);
+    }
+    return;
+  }
+  const _rb0 = pane.querySelector('.mstep-restep'); if(_rb0) _rb0.remove();
   _morningAssignSteps(pane);
   pane.classList.add('dawn');
   // RESTORE the stepper before anything else. morningFinished() hides the nav and foot with an INLINE
@@ -128,10 +143,12 @@ function renderMorningFlow(){
 
     const foot = document.createElement('div');
     foot.className = 'mstep-foot';
-    foot.innerHTML = '<button class="btn primary mstep-next" style="flex:1">Next \u2192</button>' +
+    foot.innerHTML = '<button class="mstep-back" type="button" aria-label="Back a step">\u2039</button>' +
+                     '<button class="btn primary mstep-next" style="flex:1">Next \u2192</button>' +
                      '<button class="mstep-all" type="button">Show the whole morning</button>';
     pane.appendChild(foot);
     foot.querySelector('.mstep-next').onclick = () => morningStep(_mStep + 1);
+    foot.querySelector('.mstep-back').onclick = () => morningStep(_mStep - 1);
     foot.querySelector('.mstep-all').onclick = morningShowAll;
   }
   pane.classList.add('stepped');

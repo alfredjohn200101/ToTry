@@ -60,6 +60,8 @@ function eveningStep(n){
   if(lbl) lbl.textContent = _EVENING_STEPS[_eStep].label;
   const next = panel.querySelector('.mstep-next');
   if(next) next.style.display = (_eStep === _EVENING_STEPS.length - 1) ? 'none' : '';
+  const back = panel.querySelector('.mstep-back');
+  if(back) back.style.display = (_eStep === 0) ? 'none' : '';
   try{ window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){ }
   if(typeof haptic === 'function') haptic('tap');
 }
@@ -100,6 +102,7 @@ function eveningShowAll(){
   const nav = panel.querySelector('.mstep-nav'); if(nav) nav.style.display = 'none';
   const foot = panel.querySelector('.mstep-foot'); if(foot) foot.style.display = 'none';
   ls('totry_evening_flow', 'all');
+  renderEveningFlow();   // so the way back is on screen now, not only on the next visit
   if(typeof haptic === 'function') haptic('tap');
 }
 function renderEveningFlow(){
@@ -107,7 +110,18 @@ function renderEveningFlow(){
   const tab = document.getElementById('tab-reflect');
   if(!panel) return;
   if(tab) tab.classList.add('dusk');
-  if(ls('totry_evening_flow') === 'all'){ panel.classList.remove('stepped'); return; }
+  if(ls('totry_evening_flow') === 'all'){
+    panel.classList.remove('stepped');
+    if(!panel.querySelector('.mstep-restep')){
+      const rb = document.createElement('button');
+      rb.className = 'mstep-restep'; rb.type = 'button';
+      rb.textContent = 'Step through it instead';
+      rb.onclick = function(){ ls('totry_evening_flow',''); renderEveningFlow(); if(typeof haptic==='function') haptic('tap'); };
+      panel.insertBefore(rb, panel.firstChild);
+    }
+    return;
+  }
+  const _rb0 = panel.querySelector('.mstep-restep'); if(_rb0) _rb0.remove();
   _eveningAssignSteps(panel);
   // Same restore as the morning, same reason — see the note there. eveningFinished() hides the nav
   // and foot inline, and this builder only runs when they are absent, so a second visit came back
@@ -123,10 +137,12 @@ function renderEveningFlow(){
     panel.insertBefore(nav, panel.firstChild);
     const foot = document.createElement('div');
     foot.className = 'mstep-foot';
-    foot.innerHTML = '<button class="btn primary mstep-next" style="flex:1">Next \u2192</button>' +
+    foot.innerHTML = '<button class="mstep-back" type="button" aria-label="Back a step">\u2039</button>' +
+                     '<button class="btn primary mstep-next" style="flex:1">Next \u2192</button>' +
                      '<button class="mstep-all" type="button">Show the whole evening</button>';
     panel.appendChild(foot);
     foot.querySelector('.mstep-next').onclick = () => eveningStep(_eStep + 1);
+    foot.querySelector('.mstep-back').onclick = () => eveningStep(_eStep - 1);
     foot.querySelector('.mstep-all').onclick = eveningShowAll;
   }
   panel.classList.add('stepped');
@@ -600,20 +616,21 @@ function renderActivityHeatmap(){
   start.setDate(start.getDate() - (weeks - 1) * 7); // back N weeks
   
   // Build SVG
-  const cellSize = 14;
-  const gap = 2;
-  const labelWidth = 15;
-  const monthLabelHeight = 14;
+  const gap = 3;
+  const labelWidth = 16;
+  const avail = container.clientWidth || 340;
+  const cellSize = Math.max(24, Math.min(34, Math.floor((avail - labelWidth) / weeks) - gap));
+  const monthLabelHeight = 16;
   const svgWidth = labelWidth + weeks * (cellSize + gap);
   const svgHeight = monthLabelHeight + 7 * (cellSize + gap) + 4;
   
-  let svg = '<svg aria-hidden="true" viewBox="0 0 ' + svgWidth + ' ' + svgHeight + '" style="width:100%;max-width:420px;display:block">';
+  let svg = '<svg aria-hidden="true" viewBox="0 0 ' + svgWidth + ' ' + svgHeight + '" style="width:' + svgWidth + 'px;display:block">';
   
   // Day labels (M W F)
   ['M', 'W', 'F'].forEach((lbl, i) => {
     const dayIdx = [0, 2, 4][i]; // Mon=0, Wed=2, Fri=4
     const y = monthLabelHeight + dayIdx * (cellSize + gap) + cellSize - 3;
-    svg += '<text x="0" y="' + y + '" font-family="DM Mono, monospace" font-size="9" fill="var(--tx3)">' + lbl + '</text>';
+    svg += '<text x="0" y="' + y + '" font-family="DM Mono, monospace" font-size="11" fill="var(--tx3)">' + lbl + '</text>';
   });
   
   // Month labels (along top, show start of each month)
@@ -624,7 +641,7 @@ function renderActivityHeatmap(){
     const month = cellDate.getMonth();
     if(month !== lastMonth){
       const monthName = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][month];
-      svg += '<text x="' + (labelWidth + w * (cellSize + gap)) + '" y="' + (monthLabelHeight - 3) + '" font-family="DM Mono, monospace" font-size="9" fill="var(--tx3)">' + monthName + '</text>';
+      svg += '<text x="' + (labelWidth + w * (cellSize + gap)) + '" y="' + (monthLabelHeight - 3) + '" font-family="DM Mono, monospace" font-size="11" fill="var(--tx3)">' + monthName + '</text>';
       lastMonth = month;
     }
   }

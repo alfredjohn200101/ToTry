@@ -94,7 +94,11 @@ function renderScoreboard(){
       '<div style="text-align:right"><div class="vsr-pct" style="font-size:15px;color:'+headCol+'">'+head+'</div></div></div>'+
       '<div class="vsr-meta"><span>'+meta+'</span><span>'+(v.lastWin?'Last win: '+new Date(v.lastWin).toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'')+'</span></div>';
     bv.appendChild(row);
-  });}
+  });
+    const _bvLbl = bv.previousElementSibling;
+    if(_bvLbl && _bvLbl.classList.contains('lbl')) _bvLbl.style.display = bv.children.length ? '' : 'none';
+    bv.style.display = bv.children.length ? '' : 'none';
+  }
   const ael=e('achievements');
   if(ael){ael.innerHTML='';let earned=0;
     ACHS.forEach(a=>{if(a.check(vices,tw,day,str)){earned++;const el=document.createElement('div');el.className='ach';el.innerHTML='<div class="ach-icon">'+a.icon+'</div><div><div class="ach-title">'+a.title+'</div><div class="ach-desc">'+a.desc+'</div></div>';ael.appendChild(el);}});

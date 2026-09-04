@@ -399,6 +399,8 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .mstep-label{font-family:'DM Mono',monospace;font-size:9.5px;letter-spacing:.1em;
   text-transform:uppercase;color:var(--tx3)}
 .mstep-foot{display:flex;gap:10px;align-items:center;margin:18px 0 6px}
+.mstep-restep{display:block;width:100%;min-height:40px;margin:0 0 14px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;color:var(--tx2);font-size:12px;font-family:'DM Mono',monospace;letter-spacing:0.04em;cursor:pointer}
+.mstep-back{flex:none;width:46px;min-height:46px;border-radius:12px;background:none;border:1px solid var(--bd);color:var(--tx2);font-size:20px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
 .mstep-all{background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;
   padding:8px 4px;text-decoration:underline;text-underline-offset:3px}
 .ritual-hero{position:relative;border-radius:22px;overflow:hidden;margin-bottom:18px;min-height:148px;display:flex;box-shadow:var(--e2)}
@@ -700,6 +702,9 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .bible-verse-row{display:flex;gap:10px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.03);cursor:pointer;transition:background 0.1s;border-radius:4px}
 .bible-verse-row:hover{background:var(--bg3)}
 .bible-verse-row.highlighted{background:var(--go-bg);border-radius:6px;padding:5px 8px}
+.rd-v-tap{cursor:pointer;border-radius:6px;transition:background 0.1s}
+.rd-v-tap:hover{background:var(--bg3)}
+.rd-v-saved{background:var(--go-bg);padding-left:10px;padding-right:10px;border-left:2px solid var(--go)}
 .bvn{font-family:'DM Mono',monospace;font-size:10px;color:var(--go);min-width:22px;padding-top:2px;flex-shrink:0}
 .bvt{font-size:14px;color:var(--tx2);line-height:1.7;flex:1}
 .bible-search-result{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 12px;margin-bottom:6px;cursor:pointer}
@@ -11063,6 +11068,42 @@ function openReader(t){
     if(saved.length && typeof renderSavedVerses==='function') renderSavedVerses('read-saved-list');
   }catch(_){ }
 }
+// KEEPING A LINE IS NOT A CHRISTIAN FEATURE. The Bible reader has always let you tap a verse to put
+// it on your shelf, and the shelf itself — read-saved-panel, right below the text — sits on THIS
+// screen for every tradition. Only the Christian reader could ever fill it, so four of five people
+// met a saved-passages panel they had no way of ever putting anything into. Same gesture, same
+// store (totry_sv), same tap-again-to-unsave, for the Qur'an, the Gita, the Dhammapada and the
+// Meditations. The rows carry an index rather than their own text in an attribute, because the
+// passage is arbitrary user-facing prose and quoting it into markup is how quotes break markup.
+function _readMakeSavable(items){
+  if(!items || !items.length) return;
+  let saved;
+  try{ saved = new Set((ls('totry_sv')||[]).map(function(x){ return x && x.reference; }).filter(Boolean)); }
+  catch(_){ saved = new Set(); }
+  document.querySelectorAll('#read-content .rd-v').forEach(function(row){
+    const it = items[Number(row.getAttribute('data-sv-i'))];
+    if(!it || !it.text || !it.ref) return;
+    row.classList.add('rd-v-tap');
+    if(saved.has(it.ref)) row.classList.add('rd-v-saved');
+    row.onclick = async function(){
+      if(row.classList.contains('rd-v-saved')){
+        if(typeof unsaveVerseFromReader === 'function' &&
+           await unsaveVerseFromReader(it.ref, function(){ row.classList.add('rd-v-saved'); }))
+          row.classList.remove('rd-v-saved');
+      } else {
+        row.classList.add('rd-v-saved');
+        if(typeof saveVerseFromReader === 'function') saveVerseFromReader(it.text, it.ref);
+      }
+      // the shelf below is on this same screen, so it has to reflect the tap that just happened
+      try{
+        const panel = document.getElementById('read-saved-panel');
+        const list = (ls('totry_sv')||[]);
+        if(panel) panel.style.display = list.length ? '' : 'none';
+        if(list.length && typeof renderSavedVerses === 'function') renderSavedVerses('read-saved-list');
+      }catch(_){ }
+    };
+  });
+}
 function _readBundled(sel,content,bank){
   // THE PICKER NEEDS NO NETWORK, SO IT STAYS. This cleared it — and once v567 made the fallback fire on
   // a 9s abort rather than only on a connection that was actually gone, a secular or Buddhist person on
@@ -11092,7 +11133,9 @@ async function _readQuranLoad(n){
     let ar=null,en=null;
     try{ const r=await _fetchT('https://api.alquran.cloud/v1/surah/'+n+'/editions/quran-uthmani,en.sahih'); const j=await r.json(); if(j&&j.data&&j.data.length>=2){ ar=j.data[0].ayahs; en=j.data[1].ayahs; } }catch(e){}
     if(!en){ const r2=await _fetchT('https://api.alquran.cloud/v1/surah/'+n+'/en.sahih'); const j2=await r2.json(); en=j2.data.ayahs; }
-    content.innerHTML='<div class="card">'+en.map((a,i)=>'<div style="margin-bottom:15px">'+(ar&&ar[i]?'<div dir="rtl" style="font-size:21px;line-height:2.1;color:var(--tx);text-align:right;margin-bottom:5px">'+ar[i].text+'</div>':'')+'<div style="font-size:13.5px;color:var(--tx2);line-height:1.65">'+a.text+' <span style="color:var(--tx3);font-size:11px">('+n+':'+a.numberInSurah+')</span></div></div>').join('')+'</div>';
+    const _svItems=en.map(a=>({ text:String(a.text||'').trim(), ref:'Qur\u2019an '+n+':'+a.numberInSurah }));
+    content.innerHTML='<div class="card">'+en.map((a,i)=>'<div class="rd-v" data-sv-i="'+i+'" style="margin-bottom:15px">'+(ar&&ar[i]?'<div dir="rtl" style="font-size:21px;line-height:2.1;color:var(--tx);text-align:right;margin-bottom:5px">'+ar[i].text+'</div>':'')+'<div style="font-size:13.5px;color:var(--tx2);line-height:1.65">'+a.text+' <span style="color:var(--tx3);font-size:11px">('+n+':'+a.numberInSurah+')</span></div></div>').join('')+'</div>';
+    _readMakeSavable(_svItems);
   }catch(e){
     // Offline: the bundled pool, not an error box. The Dhammapada and Meditations readers added later
     // do this; the Qur'an and Gita ones did not, so the same loss of signal produced a dead tab for two
@@ -11148,6 +11191,7 @@ async function _readStoicLoad(book){
     const paras=text.split(/\n+/).map(function(x){ return x.replace(/\s+/g,' ').trim(); })
       .filter(function(x){ return x.length>40 && !/^=+.*=+$/.test(x) && !/^(Notes?|Footnotes?|References?)$/i.test(x); });
     if(!paras.length) throw new Error('empty');
+    const _svItems=[];
     content.innerHTML='<div class="card">'+
       '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:12px">Meditations &middot; Book '+_escFew(book)+'</div>'+
       paras.map(function(t,n){
@@ -11162,13 +11206,15 @@ async function _readStoicLoad(book){
         const m=/^(\d{1,3})\.\s+([\s\S]+)$/.exec(t);
         const label=m?m[1]:'';
         const bodyText=m?m[2]:t;
-        return '<div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)">'+
+        _svItems.push({ text:bodyText, ref:'Meditations '+book+(label?'.'+label:'') });
+        return '<div class="rd-v" data-sv-i="'+(_svItems.length-1)+'" style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)">'+
           (label?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-bottom:5px">'+_escFew(label)+'</div>':'')+
           '<div style="font-size:15px;line-height:1.85;color:var(--tx)">'+_escFew(bodyText)+'</div>'+
         '</div>';
       }).join('')+
       '<div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-align:center;margin-top:6px;letter-spacing:0.08em">MARCUS AURELIUS &middot; TRANS. GEORGE LONG 1862 &middot; VIA WIKISOURCE &middot; PUBLIC DOMAIN</div>'+
     '</div>';
+    _readMakeSavable(_svItems);
   }catch(e){
     // Offline, or the page moved — the bundled passages rather than an empty tab.
     _readBundled(document.getElementById('read-selector'),content,VS_SECULAR);   // see the note in the Dhammapada fallback
@@ -11234,11 +11280,13 @@ async function _readDhammapadaLoad(uid){
     });
     if(!seen.length) throw new Error('empty');
     const title=(DHP_CHAPTERS.find(function(c){ return c[0]===uid; })||['',''])[1];
+    const _svItems=[];
     content.innerHTML='<div class="card">'+
       '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:12px">Dhammapada &middot; '+_escFew(title)+'</div>'+
       seen.map(function(n){
         const v=verses[n];
-        return '<div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)">'+
+        _svItems.push({ text:v.en.join(' ').trim(), ref:'Dhammapada '+n });
+        return '<div class="rd-v" data-sv-i="'+(_svItems.length-1)+'" style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)">'+
           '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-bottom:5px">'+n+'</div>'+
           (v.pli.length?'<div style="font-family:Cormorant Garamond,serif;font-size:14px;font-style:italic;color:var(--tx3);line-height:1.75;margin-bottom:7px">'+_escFew(v.pli.join(' '))+'</div>':'')+
           '<div style="font-size:15px;line-height:1.85;color:var(--tx)">'+_escFew(v.en.join(' '))+'</div>'+
@@ -11246,6 +11294,7 @@ async function _readDhammapadaLoad(uid){
       }).join('')+
       '<div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-align:center;margin-top:6px;letter-spacing:0.08em">TRANSLATED BY BHIKKHU SUJATO &middot; SUTTACENTRAL &middot; PUBLIC DOMAIN</div>'+
     '</div>';
+    _readMakeSavable(_svItems);
   }catch(e){
     // Offline or the endpoint moved — show the bundled selection rather than an empty tab.
     const sel=document.getElementById('read-selector');
@@ -11306,7 +11355,8 @@ async function _readGitaLoad(){
     const chSummary = meta && meta.summary && meta.summary.en
       ? '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><div style="font-family:DM Mono,monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">About this chapter</div><div style="font-size:13px;color:var(--tx3);line-height:1.7">'+_esc(meta.summary.en)+'</div></div>'
       : '';
-    content.innerHTML='<div class="card">'+chName+'<div style="font-size:12px;color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+g.ch+'.'+g.v+' <span style="color:var(--tx3);letter-spacing:0">· verse '+g.v+' of '+_gitaCount(g.ch)+'</span></div>'+(j.slok?'<div style="font-size:16px;line-height:1.95;color:var(--tx);margin-bottom:8px">'+j.slok+'</div>':'')+(j.transliteration?'<div style="font-size:12.5px;font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+String(j.transliteration).trim()+'</div>':'')+'<div style="font-size:14px;color:var(--tx2);line-height:1.75">'+en+'</div>'+chSummary+'</div>';
+    content.innerHTML='<div class="card">'+chName+'<div class="rd-v" data-sv-i="0"><div style="font-size:12px;color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+g.ch+'.'+g.v+' <span style="color:var(--tx3);letter-spacing:0">· verse '+g.v+' of '+_gitaCount(g.ch)+'</span></div>'+(j.slok?'<div style="font-size:16px;line-height:1.95;color:var(--tx);margin-bottom:8px">'+j.slok+'</div>':'')+(j.transliteration?'<div style="font-size:12.5px;font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+String(j.transliteration).trim()+'</div>':'')+'<div style="font-size:14px;color:var(--tx2);line-height:1.75">'+en+'</div></div>'+chSummary+'</div>';
+    _readMakeSavable([{ text:String(en||'').replace(/<[^>]*>/g,'').trim(), ref:'Bhagavad Gita '+g.ch+'.'+g.v }]);
   }catch(e){
     const c2=document.getElementById('read-content');
     if(c2) _readBundled(document.getElementById('read-selector'), c2, VS_HINDU);   // see the Qur'an note
@@ -21017,7 +21067,11 @@ function renderScoreboard(){
       '<div style="text-align:right"><div class="vsr-pct" style="font-size:15px;color:'+headCol+'">'+head+'</div></div></div>'+
       '<div class="vsr-meta"><span>'+meta+'</span><span>'+(v.lastWin?'Last win: '+new Date(v.lastWin).toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'')+'</span></div>';
     bv.appendChild(row);
-  });}
+  });
+    const _bvLbl = bv.previousElementSibling;
+    if(_bvLbl && _bvLbl.classList.contains('lbl')) _bvLbl.style.display = bv.children.length ? '' : 'none';
+    bv.style.display = bv.children.length ? '' : 'none';
+  }
   const ael=e('achievements');
   if(ael){ael.innerHTML='';let earned=0;
     ACHS.forEach(a=>{if(a.check(vices,tw,day,str)){earned++;const el=document.createElement('div');el.className='ach';el.innerHTML='<div class="ach-icon">'+a.icon+'</div><div><div class="ach-title">'+a.title+'</div><div class="ach-desc">'+a.desc+'</div></div>';ael.appendChild(el);}});
@@ -32508,7 +32562,7 @@ function editTransaction(id){
   const t = list.find(x => x && x.id === id);
   if(!t){ if(typeof showToast==='function') showToast('That entry is gone','It may have been removed on another device.'); return; }
   const cats = (typeof EXPENSE_CATEGORIES !== 'undefined' && EXPENSE_CATEGORIES.length)
-    ? EXPENSE_CATEGORIES : ['Food','Transport','Bills','Shopping','Eating out','Entertainment','Health','Other'];
+    ? EXPENSE_CATEGORIES : ['Food','Rent/bills','Transport','Health','Entertainment','Shopping','Other'];
   openFormModal('Edit transaction', 'Correct what it was, or what it cost.',
     [ {id:'note', label:'What was it', type:'text', value: t.note || ''},
       {id:'amount', label:'Amount', type:'number', prefix:curSym(), value: (t.amount != null ? t.amount : '')},
@@ -34580,6 +34634,8 @@ function morningStep(n){
   const nextBtn = pane.querySelector('.mstep-next');
   if(nextBtn) nextBtn.textContent = (_mStep === _MORNING_STEPS.length - 1) ? '' : 'Next \u2192';
   if(nextBtn) nextBtn.style.display = (_mStep === _MORNING_STEPS.length - 1) ? 'none' : '';
+  const backBtn = pane.querySelector('.mstep-back');
+  if(backBtn) backBtn.style.display = (_mStep === 0) ? 'none' : '';
   try{ pane.scrollTop = 0; window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){ }
   if(typeof haptic === 'function') haptic('tap');
 }
@@ -34601,12 +34657,25 @@ function morningShowAll(){
   const nav = pane.querySelector('.mstep-nav'); if(nav) nav.style.display = 'none';
   const foot = pane.querySelector('.mstep-foot'); if(foot) foot.style.display = 'none';
   ls('totry_morning_flow', 'all');
+  renderMorningFlow();   // so the way back is on screen now, not only on the next visit
   if(typeof haptic === 'function') haptic('tap');
 }
 function renderMorningFlow(){
   const pane = document.getElementById('tab-morning');
   if(!pane) return;
-  if(ls('totry_morning_flow') === 'all'){ pane.classList.remove('stepped'); return; }
+  if(ls('totry_morning_flow') === 'all'){
+    pane.classList.remove('stepped');
+    if(!pane.querySelector('.mstep-restep')){
+      const rb = document.createElement('button');
+      rb.className = 'mstep-restep'; rb.type = 'button';
+      rb.textContent = 'Step through it instead';
+      rb.onclick = function(){ ls('totry_morning_flow',''); renderMorningFlow(); if(typeof haptic==='function') haptic('tap'); };
+      const after = pane.querySelector('.a11y-only') || pane.querySelector('.hub-back-bar');
+      if(after && after.nextSibling) pane.insertBefore(rb, after.nextSibling); else pane.insertBefore(rb, pane.firstChild);
+    }
+    return;
+  }
+  const _rb0 = pane.querySelector('.mstep-restep'); if(_rb0) _rb0.remove();
   _morningAssignSteps(pane);
   pane.classList.add('dawn');
   // RESTORE the stepper before anything else. morningFinished() hides the nav and foot with an INLINE
@@ -34630,10 +34699,12 @@ function renderMorningFlow(){
 
     const foot = document.createElement('div');
     foot.className = 'mstep-foot';
-    foot.innerHTML = '<button class="btn primary mstep-next" style="flex:1">Next \u2192</button>' +
+    foot.innerHTML = '<button class="mstep-back" type="button" aria-label="Back a step">\u2039</button>' +
+                     '<button class="btn primary mstep-next" style="flex:1">Next \u2192</button>' +
                      '<button class="mstep-all" type="button">Show the whole morning</button>';
     pane.appendChild(foot);
     foot.querySelector('.mstep-next').onclick = () => morningStep(_mStep + 1);
+    foot.querySelector('.mstep-back').onclick = () => morningStep(_mStep - 1);
     foot.querySelector('.mstep-all').onclick = morningShowAll;
   }
   pane.classList.add('stepped');
@@ -38975,6 +39046,8 @@ function eveningStep(n){
   if(lbl) lbl.textContent = _EVENING_STEPS[_eStep].label;
   const next = panel.querySelector('.mstep-next');
   if(next) next.style.display = (_eStep === _EVENING_STEPS.length - 1) ? 'none' : '';
+  const back = panel.querySelector('.mstep-back');
+  if(back) back.style.display = (_eStep === 0) ? 'none' : '';
   try{ window.scrollTo({ top:0, behavior:'smooth' }); }catch(_){ }
   if(typeof haptic === 'function') haptic('tap');
 }
@@ -39015,6 +39088,7 @@ function eveningShowAll(){
   const nav = panel.querySelector('.mstep-nav'); if(nav) nav.style.display = 'none';
   const foot = panel.querySelector('.mstep-foot'); if(foot) foot.style.display = 'none';
   ls('totry_evening_flow', 'all');
+  renderEveningFlow();   // so the way back is on screen now, not only on the next visit
   if(typeof haptic === 'function') haptic('tap');
 }
 function renderEveningFlow(){
@@ -39022,7 +39096,18 @@ function renderEveningFlow(){
   const tab = document.getElementById('tab-reflect');
   if(!panel) return;
   if(tab) tab.classList.add('dusk');
-  if(ls('totry_evening_flow') === 'all'){ panel.classList.remove('stepped'); return; }
+  if(ls('totry_evening_flow') === 'all'){
+    panel.classList.remove('stepped');
+    if(!panel.querySelector('.mstep-restep')){
+      const rb = document.createElement('button');
+      rb.className = 'mstep-restep'; rb.type = 'button';
+      rb.textContent = 'Step through it instead';
+      rb.onclick = function(){ ls('totry_evening_flow',''); renderEveningFlow(); if(typeof haptic==='function') haptic('tap'); };
+      panel.insertBefore(rb, panel.firstChild);
+    }
+    return;
+  }
+  const _rb0 = panel.querySelector('.mstep-restep'); if(_rb0) _rb0.remove();
   _eveningAssignSteps(panel);
   // Same restore as the morning, same reason — see the note there. eveningFinished() hides the nav
   // and foot inline, and this builder only runs when they are absent, so a second visit came back
@@ -39038,10 +39123,12 @@ function renderEveningFlow(){
     panel.insertBefore(nav, panel.firstChild);
     const foot = document.createElement('div');
     foot.className = 'mstep-foot';
-    foot.innerHTML = '<button class="btn primary mstep-next" style="flex:1">Next \u2192</button>' +
+    foot.innerHTML = '<button class="mstep-back" type="button" aria-label="Back a step">\u2039</button>' +
+                     '<button class="btn primary mstep-next" style="flex:1">Next \u2192</button>' +
                      '<button class="mstep-all" type="button">Show the whole evening</button>';
     panel.appendChild(foot);
     foot.querySelector('.mstep-next').onclick = () => eveningStep(_eStep + 1);
+    foot.querySelector('.mstep-back').onclick = () => eveningStep(_eStep - 1);
     foot.querySelector('.mstep-all').onclick = eveningShowAll;
   }
   panel.classList.add('stepped');
@@ -39515,20 +39602,21 @@ function renderActivityHeatmap(){
   start.setDate(start.getDate() - (weeks - 1) * 7); // back N weeks
   
   // Build SVG
-  const cellSize = 14;
-  const gap = 2;
-  const labelWidth = 15;
-  const monthLabelHeight = 14;
+  const gap = 3;
+  const labelWidth = 16;
+  const avail = container.clientWidth || 340;
+  const cellSize = Math.max(24, Math.min(34, Math.floor((avail - labelWidth) / weeks) - gap));
+  const monthLabelHeight = 16;
   const svgWidth = labelWidth + weeks * (cellSize + gap);
   const svgHeight = monthLabelHeight + 7 * (cellSize + gap) + 4;
   
-  let svg = '<svg aria-hidden="true" viewBox="0 0 ' + svgWidth + ' ' + svgHeight + '" style="width:100%;max-width:420px;display:block">';
+  let svg = '<svg aria-hidden="true" viewBox="0 0 ' + svgWidth + ' ' + svgHeight + '" style="width:' + svgWidth + 'px;display:block">';
   
   // Day labels (M W F)
   ['M', 'W', 'F'].forEach((lbl, i) => {
     const dayIdx = [0, 2, 4][i]; // Mon=0, Wed=2, Fri=4
     const y = monthLabelHeight + dayIdx * (cellSize + gap) + cellSize - 3;
-    svg += '<text x="0" y="' + y + '" font-family="DM Mono, monospace" font-size="9" fill="var(--tx3)">' + lbl + '</text>';
+    svg += '<text x="0" y="' + y + '" font-family="DM Mono, monospace" font-size="11" fill="var(--tx3)">' + lbl + '</text>';
   });
   
   // Month labels (along top, show start of each month)
@@ -39539,7 +39627,7 @@ function renderActivityHeatmap(){
     const month = cellDate.getMonth();
     if(month !== lastMonth){
       const monthName = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][month];
-      svg += '<text x="' + (labelWidth + w * (cellSize + gap)) + '" y="' + (monthLabelHeight - 3) + '" font-family="DM Mono, monospace" font-size="9" fill="var(--tx3)">' + monthName + '</text>';
+      svg += '<text x="' + (labelWidth + w * (cellSize + gap)) + '" y="' + (monthLabelHeight - 3) + '" font-family="DM Mono, monospace" font-size="11" fill="var(--tx3)">' + monthName + '</text>';
       lastMonth = month;
     }
   }
@@ -49183,38 +49271,50 @@ function renderIdentity(){
   if(!el)return;
   if(id){
     // Identity set - show with highlighted "becoming" phrase
-    if(labelEl)labelEl.textContent='Who you are becoming';
     let txt=id;
     if(txt.toLowerCase().startsWith('i am becoming a person who')){
       const rest=txt.substring(26);
       txt='I am becoming a person who<em>'+rest+'</em>';
     }
-    el.innerHTML=txt;
     // Evidence: reflect his own actions back as proof he's living into this identity.
     // Identity isn't just a sentence — it's reinforced by what he's actually done.
     const evEl=document.getElementById('identity-evidence');
-    if(evEl){
-      try{
-        loadV();
-        const wins=ls('totry_wins')||[];
-        let totalClean=0;
-        (vices||[]).forEach(v=>{ if(viceIsAbstinence(v)) totalClean += (v.cleanDaysTotal||0) + (typeof viceCleanDays==='function'?viceCleanDays(v):0); });
-        const dayCount = (typeof getDayCount==='function') ? getDayCount() : 0;
-        // The day count is already the persistent header badge on EVERY screen, it is in the coach's
-        // sentence above this, and it is on the share button below it — four times on one screen. This
-        // strip's job is the evidence nothing else carries: what the days were spent fighting for. The
-        // number stays only when there is nothing else true to say.
-        const bits=[];
-        if(totalClean>0) bits.push(totalClean+' clean day'+(totalClean===1?'':'s')+' fought for');
-        if(wins.length>0) bits.push(wins.length+' win'+(wins.length===1?'':'s')+' logged');
-        if(!bits.length && dayCount>1) bits.push(dayCount+' days on the journey');
+    let bits=[];
+    try{
+      loadV();
+      const wins=ls('totry_wins')||[];
+      let totalClean=0;
+      (vices||[]).forEach(v=>{ if(viceIsAbstinence(v)) totalClean += (v.cleanDaysTotal||0) + (typeof viceCleanDays==='function'?viceCleanDays(v):0); });
+      const dayCount = (typeof getDayCount==='function') ? getDayCount() : 0;
+      // The day count is already the persistent header badge on EVERY screen, it is in the coach's
+      // sentence above this, and it is on the share button below it — four times on one screen. This
+      // strip's job is the evidence nothing else carries: what the days were spent fighting for. The
+      // number stays only when there is nothing else true to say.
+      if(totalClean>0) bits.push(totalClean+' clean day'+(totalClean===1?'':'s')+' fought for');
+      if(wins.length>0) bits.push(wins.length+' win'+(wins.length===1?'':'s')+' logged');
+      if(!bits.length && dayCount>1) bits.push(dayCount+' days on the journey');
+    }catch(e){ bits=[]; }
+    // The hero line at the top of home already carries this sentence, in the place a person
+    // actually reads it. Printing the same words again 800px down the same screen was not
+    // emphasis, it was a stutter. When the hero has it and there is evidence to give, this strip
+    // leads with the evidence instead — the one thing the hero cannot say. With no evidence yet
+    // it keeps the sentence, so the strip is never empty and a new person still meets it here.
+    const heroHasIt = (function(){ try{ const hr=document.getElementById('hero-identity');
+      return !!hr && getComputedStyle(hr).display!=='none' && (hr.innerText||'').trim().length>0;
+    }catch(_){ return false; } })();
+    if(heroHasIt && bits.length){
+      if(labelEl)labelEl.textContent='Proof you are living it';
+      el.innerHTML='<span style="color:var(--tx)">\u2713 '+bits.slice(0,2).join(' \u00B7 ')+' \u2014 this is you, proving it.</span>';
+      if(evEl) evEl.style.display='none';
+    } else {
+      if(labelEl)labelEl.textContent='Who you are becoming';
+      el.innerHTML=txt;
+      if(evEl){
         if(bits.length){
           evEl.style.display='block';
-          evEl.textContent='✓ '+bits.slice(0,2).join(' · ')+' — this is you, proving it.';
-        } else {
-          evEl.style.display='none';
-        }
-      }catch(e){ evEl.style.display='none'; }
+          evEl.textContent='\u2713 '+bits.slice(0,2).join(' \u00B7 ')+' \u2014 this is you, proving it.';
+        } else { evEl.style.display='none'; }
+      }
     }
   }else{
     // No identity - check if user has affirmations and rotate through them

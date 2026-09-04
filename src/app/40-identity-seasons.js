@@ -10,38 +10,50 @@ function renderIdentity(){
   if(!el)return;
   if(id){
     // Identity set - show with highlighted "becoming" phrase
-    if(labelEl)labelEl.textContent='Who you are becoming';
     let txt=id;
     if(txt.toLowerCase().startsWith('i am becoming a person who')){
       const rest=txt.substring(26);
       txt='I am becoming a person who<em>'+rest+'</em>';
     }
-    el.innerHTML=txt;
     // Evidence: reflect his own actions back as proof he's living into this identity.
     // Identity isn't just a sentence — it's reinforced by what he's actually done.
     const evEl=document.getElementById('identity-evidence');
-    if(evEl){
-      try{
-        loadV();
-        const wins=ls('totry_wins')||[];
-        let totalClean=0;
-        (vices||[]).forEach(v=>{ if(viceIsAbstinence(v)) totalClean += (v.cleanDaysTotal||0) + (typeof viceCleanDays==='function'?viceCleanDays(v):0); });
-        const dayCount = (typeof getDayCount==='function') ? getDayCount() : 0;
-        // The day count is already the persistent header badge on EVERY screen, it is in the coach's
-        // sentence above this, and it is on the share button below it — four times on one screen. This
-        // strip's job is the evidence nothing else carries: what the days were spent fighting for. The
-        // number stays only when there is nothing else true to say.
-        const bits=[];
-        if(totalClean>0) bits.push(totalClean+' clean day'+(totalClean===1?'':'s')+' fought for');
-        if(wins.length>0) bits.push(wins.length+' win'+(wins.length===1?'':'s')+' logged');
-        if(!bits.length && dayCount>1) bits.push(dayCount+' days on the journey');
+    let bits=[];
+    try{
+      loadV();
+      const wins=ls('totry_wins')||[];
+      let totalClean=0;
+      (vices||[]).forEach(v=>{ if(viceIsAbstinence(v)) totalClean += (v.cleanDaysTotal||0) + (typeof viceCleanDays==='function'?viceCleanDays(v):0); });
+      const dayCount = (typeof getDayCount==='function') ? getDayCount() : 0;
+      // The day count is already the persistent header badge on EVERY screen, it is in the coach's
+      // sentence above this, and it is on the share button below it — four times on one screen. This
+      // strip's job is the evidence nothing else carries: what the days were spent fighting for. The
+      // number stays only when there is nothing else true to say.
+      if(totalClean>0) bits.push(totalClean+' clean day'+(totalClean===1?'':'s')+' fought for');
+      if(wins.length>0) bits.push(wins.length+' win'+(wins.length===1?'':'s')+' logged');
+      if(!bits.length && dayCount>1) bits.push(dayCount+' days on the journey');
+    }catch(e){ bits=[]; }
+    // The hero line at the top of home already carries this sentence, in the place a person
+    // actually reads it. Printing the same words again 800px down the same screen was not
+    // emphasis, it was a stutter. When the hero has it and there is evidence to give, this strip
+    // leads with the evidence instead — the one thing the hero cannot say. With no evidence yet
+    // it keeps the sentence, so the strip is never empty and a new person still meets it here.
+    const heroHasIt = (function(){ try{ const hr=document.getElementById('hero-identity');
+      return !!hr && getComputedStyle(hr).display!=='none' && (hr.innerText||'').trim().length>0;
+    }catch(_){ return false; } })();
+    if(heroHasIt && bits.length){
+      if(labelEl)labelEl.textContent='Proof you are living it';
+      el.innerHTML='<span style="color:var(--tx)">\u2713 '+bits.slice(0,2).join(' \u00B7 ')+' \u2014 this is you, proving it.</span>';
+      if(evEl) evEl.style.display='none';
+    } else {
+      if(labelEl)labelEl.textContent='Who you are becoming';
+      el.innerHTML=txt;
+      if(evEl){
         if(bits.length){
           evEl.style.display='block';
-          evEl.textContent='✓ '+bits.slice(0,2).join(' · ')+' — this is you, proving it.';
-        } else {
-          evEl.style.display='none';
-        }
-      }catch(e){ evEl.style.display='none'; }
+          evEl.textContent='\u2713 '+bits.slice(0,2).join(' \u00B7 ')+' \u2014 this is you, proving it.';
+        } else { evEl.style.display='none'; }
+      }
     }
   }else{
     // No identity - check if user has affirmations and rotate through them
