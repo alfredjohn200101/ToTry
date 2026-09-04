@@ -40,18 +40,36 @@ try {
   if (where) console.log('     ' + where);
 }
 
-// ── 1. the three copies of the app must be the same version ──────────────────────────────────────
-const SRC = 'index.html', WWW = 'www/index.html', IOS = 'ios/App/App/public/index.html';
+// ── 1. the copies of the app must be the same BYTES, not merely the same version ─────────────────
+// This compared APP_VERSION strings and reported the result as "the iOS bundle matches the source".
+// Those are different claims. Every edit made without bumping the version — which is most edits, for
+// most of a release's life — left the platform bundles arbitrarily stale while this printed a tick.
+// Caught 5 Sep 2026 with ios/ and android/ 3 commits behind a v576 source, both reading v576, both
+// green here. The version is a label a human types; the hash is the file. Compare the file.
+const crypto = require('crypto');
+const SRC = 'index.html', WWW = 'www/index.html',
+      IOS = 'ios/App/App/public/index.html',
+      AND = 'android/app/src/main/assets/public/index.html';
+const sha = f => { const t = read(f); return t == null ? null : crypto.createHash('sha256').update(t).digest('hex'); };
+const short = h => h ? h.slice(0,12) : '(none)';
 const vSrc = appVersion(read(SRC)), vWww = appVersion(read(WWW)), vIos = appVersion(read(IOS));
-if (!vSrc) bad(`could not read APP_VERSION from ${SRC}`);
-else if (!vWww) bad('www/ is not built — run `npm run build:www`');
-else if (vWww !== vSrc) bad(`www/ is ${vWww} but the source is ${vSrc} — run \`npm run build:www\``);
-else good(`www/ matches the source (${vSrc})`);
+const hSrc = sha(SRC), hWww = sha(WWW), hIos = sha(IOS), hAnd = sha(AND);
 
-if (vSrc && !vIos) soft('no iOS bundle yet — run `npx cap sync ios` before archiving');
-else if (vSrc && vIos !== vSrc) {
-  bad(`the iOS bundle is ${vIos} but the source is ${vSrc} — AN ARCHIVE RIGHT NOW WOULD SHIP ${vIos}. Run \`npm run sync\``);
-} else if (vIos) good(`the iOS bundle matches the source (${vIos})`);
+if (!vSrc) bad(`could not read APP_VERSION from ${SRC}`);
+else if (!hWww) bad('www/ is not built — run `npm run build:www`');
+else if (hWww !== hSrc) bad(`www/ is NOT the source — ${short(hWww)} vs ${short(hSrc)}${vWww !== vSrc ? ` (and ${vWww} vs ${vSrc})` : ' (same version, different bytes — an edit after the last build)'} — run \`npm run build:www\``);
+else good(`www/ is byte-identical to the source (${vSrc}, ${short(hSrc)})`);
+
+if (hSrc && !hIos) soft('no iOS bundle yet — run `npm run sync` before archiving');
+else if (hSrc && hIos !== hSrc) {
+  bad(`the iOS bundle is NOT the source — ${short(hIos)} vs ${short(hSrc)}. AN ARCHIVE RIGHT NOW WOULD SHIP ${vIos || 'that bundle'}. Run \`npm run sync\``);
+} else if (hIos) good(`the iOS bundle is byte-identical to the source (${vIos}, ${short(hSrc)})`);
+
+// Android was never checked here at all — the gap that let its bundle sit seven versions behind.
+if (hSrc && !hAnd) soft('no Android bundle yet — run `npm run sync` (cap sync with no platform, or android rots)');
+else if (hSrc && hAnd !== hSrc) {
+  bad(`the Android bundle is NOT the source — ${short(hAnd)} vs ${short(hSrc)}. Run \`npm run sync\` — \`cap sync ios\` does not touch it`);
+} else if (hAnd) good(`the Android bundle is byte-identical to the source (${short(hSrc)})`);
 
 // ── 2. the service-worker cache name must be bumped with the version ─────────────────────────────
 // A stale CACHE means returning users keep the old shell — every fix in the release reaches nobody.
