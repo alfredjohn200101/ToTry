@@ -400,6 +400,45 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
 
     a11y.forEach(x => findings.push(`sheet a11y: ${x}`));
     console.log(`sheet a11y: ${a11y.length ? a11y.length + ' problems' : 'dialog role, name, focus in/out, Tab trapped'}`);
+
+    // ── a name the person typed is TEXT, wherever it is shown again ───────────────────────────
+    // A routine named `<img src=x onerror=...>` executed on save: renderRoutines() built the card
+    // with the raw name, and showToast() assigned title and message straight into innerHTML. The
+    // toast is the one that matters — 519 call sites feed it, several with free text (a routine
+    // name, a vice name, a food name), so one unescaped sink there is reachable from all of them.
+    // Driven, not grepped: an escaper can be present in the source and still be applied to the
+    // wrong half of the string.
+    const inject = await page.evaluate(async () => {
+      window.__pwn = 0;
+      const evil = '<img src=x onerror="window.__pwn=(window.__pwn||0)+1">Legs';
+      const out = {};
+      try {
+        ls('totry_routines', [{ id: 1, name: evil, exercises: [{ name: 'Bench Press', sets: [] }] }]);
+        go('train'); await new Promise(r => setTimeout(r, 700));
+        if (typeof setPTTab === 'function') setPTTab('routines');
+        if (typeof renderRoutines === 'function') renderRoutines();
+        await new Promise(r => setTimeout(r, 500));
+        const list = document.getElementById('pt-routines-list');
+        out.cardImgs = list ? list.querySelectorAll('img').length : 0;
+        out.cardShowsItLiterally = !!(list && (list.innerText || '').includes('<img'));
+        if (typeof showToast === 'function') showToast('Routine saved', evil + ' \u00b7 1 exercises');
+        await new Promise(r => setTimeout(r, 400));
+        const toast = document.querySelector('.milestone-toast');
+        out.toastImgs = toast ? toast.querySelectorAll('img').length : 0;
+        out.toastShowsItLiterally = !!(toast && (toast.innerText || '').includes('<img'));
+        toast?.remove();
+      } catch (e) { out.err = String(e && e.message).slice(0, 60); }
+      out.pwn = window.__pwn;
+      return out;
+    });
+    if (inject.err) findings.push(`injection: the check itself threw — ${inject.err}`);
+    else if (inject.pwn > 0)
+      findings.push(`injection: a routine name EXECUTED — the payload fired ${inject.pwn} time(s) from a field the person typed`);
+    else if (inject.cardImgs || inject.toastImgs)
+      findings.push(`injection: markup from a routine name became real elements (card ${inject.cardImgs}, toast ${inject.toastImgs})`);
+    else if (!inject.cardShowsItLiterally || !inject.toastShowsItLiterally)
+      findings.push('injection: nothing executed, but the name is not shown back as the person typed it either');
+    else console.log('injection: a routine name is text in the card and in the toast, and executes nowhere');
     await ctx.close();
   }
 

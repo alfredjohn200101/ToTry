@@ -173,7 +173,9 @@ function showToast(title,msg,onTap){
   t.setAttribute('role', onTap ? 'button' : (_urgent ? 'alert' : 'status'));
   t.setAttribute('aria-live', _urgent ? 'assertive' : 'polite');
   t.setAttribute('aria-atomic', 'true');
-  t.innerHTML='<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-weight:500;margin-bottom:4px">'+title+'</div><div style="font-size:13px;line-height:1.5;opacity:0.85">'+msg+'</div>';
+  // Both halves are escaped: this is a shared sink for 519 callers and several pass free text the
+  // person typed. A routine named `<img src=x onerror=...>` used to execute here on save.
+  t.innerHTML='<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-weight:500;margin-bottom:4px">'+_escFew(title)+'</div><div style="font-size:13px;line-height:1.5;opacity:0.85">'+_escFew(msg)+'</div>';
   const _fire=()=>{ if(typeof onTap==='function'){ try{ onTap(); }catch(_){} } t.remove(); };
   t.onclick=_fire;
   if(onTap){
