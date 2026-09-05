@@ -3659,6 +3659,27 @@ function applyNutGentle(eaten, goalCal){
 // and find themselves silently stranded three days in the past, and 0 always means "today, right
 // now", so midnight rollover needs no code at all.
 let _nutDayOff = 0;              // 0 = today. Negative = days back. NEVER positive.
+// ...but the SCREEN does. The note above is right that the key needs no rollover code — nutDayKey()
+// recomputes from Date every call. What it misses is that nothing recomputes it while the app sits
+// open: leave Nourish on screen across midnight and the diary keeps showing yesterday's food, and
+// keeps taking today's under yesterday's key. This records the calendar day the log was actually
+// painted for and repaints when the real day moves on. Guarded so it costs nothing when the tab is
+// not on screen — the app just deleted a 1Hz timer that painted elements which did not exist.
+let _nutPaintedDay = null;
+function _nutCheckRollover(){
+  try{
+    if(_nutDayOff !== 0 || !_nutPaintedDay) return;
+    if(document.hidden) return;
+    const pane = document.getElementById('tab-nourish');
+    if(!pane || getComputedStyle(pane).display === 'none') return;
+    if(new Date().toLocaleDateString('en-AU') === _nutPaintedDay) return;
+    if(typeof renderNutritionLog === 'function') renderNutritionLog();
+  }catch(_){ }
+}
+try{
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) _nutCheckRollover(); });
+  setInterval(_nutCheckRollover, 60000);
+}catch(_){ }
 const NUT_DAY_MIN = -120;
 function nutViewDate(){ const d=new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate()+_nutDayOff); return d; }
 function nutDayKey(){ return nutViewDate().toLocaleDateString('en-AU'); }
@@ -3737,6 +3758,8 @@ function renderNutDayNav(){
 }
 
 function renderNutritionLog(){
+  // The real calendar day this paint belongs to — NOT nutDayKey(), which is the day being VIEWED.
+  try{ _nutPaintedDay = new Date().toLocaleDateString('en-AU'); }catch(_){ }
   if(typeof renderAdaptiveNutrition==='function') renderAdaptiveNutrition();
   // Before any of the empty-plate early returns below — the brand-new user with nothing logged is
   // exactly who needs the "set a real target" nudge, so it must run up here, not after.

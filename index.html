@@ -28429,6 +28429,27 @@ function applyNutGentle(eaten, goalCal){
 // and find themselves silently stranded three days in the past, and 0 always means "today, right
 // now", so midnight rollover needs no code at all.
 let _nutDayOff = 0;              // 0 = today. Negative = days back. NEVER positive.
+// ...but the SCREEN does. The note above is right that the key needs no rollover code — nutDayKey()
+// recomputes from Date every call. What it misses is that nothing recomputes it while the app sits
+// open: leave Nourish on screen across midnight and the diary keeps showing yesterday's food, and
+// keeps taking today's under yesterday's key. This records the calendar day the log was actually
+// painted for and repaints when the real day moves on. Guarded so it costs nothing when the tab is
+// not on screen — the app just deleted a 1Hz timer that painted elements which did not exist.
+let _nutPaintedDay = null;
+function _nutCheckRollover(){
+  try{
+    if(_nutDayOff !== 0 || !_nutPaintedDay) return;
+    if(document.hidden) return;
+    const pane = document.getElementById('tab-nourish');
+    if(!pane || getComputedStyle(pane).display === 'none') return;
+    if(new Date().toLocaleDateString('en-AU') === _nutPaintedDay) return;
+    if(typeof renderNutritionLog === 'function') renderNutritionLog();
+  }catch(_){ }
+}
+try{
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) _nutCheckRollover(); });
+  setInterval(_nutCheckRollover, 60000);
+}catch(_){ }
 const NUT_DAY_MIN = -120;
 function nutViewDate(){ const d=new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate()+_nutDayOff); return d; }
 function nutDayKey(){ return nutViewDate().toLocaleDateString('en-AU'); }
@@ -28507,6 +28528,8 @@ function renderNutDayNav(){
 }
 
 function renderNutritionLog(){
+  // The real calendar day this paint belongs to — NOT nutDayKey(), which is the day being VIEWED.
+  try{ _nutPaintedDay = new Date().toLocaleDateString('en-AU'); }catch(_){ }
   if(typeof renderAdaptiveNutrition==='function') renderAdaptiveNutrition();
   // Before any of the empty-plate early returns below — the brand-new user with nothing logged is
   // exactly who needs the "set a real target" nudge, so it must run up here, not after.
@@ -36952,7 +36975,7 @@ async function saveWorkoutSession(){
   // logged HERE as coming from Hevy: the history showed a HEVY tag, the card read "From your Hevy", and
   // the detail modal told you to go edit it in Hevy. For someone who has never heard of Hevy that is a
   // claim the app cannot keep, and it left in-app sessions with no edit path at all.
-  const session={id:Date.now(),source:'manual',date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}),ts:new Date().toISOString(),day:getDayCount(),exercises:JSON.parse(JSON.stringify(currentSession)),completedSets:cs,totalSets:ts,volume:vol,durationMin:durationMin,splitFocus:getUserSplit()[tIdx()]?.focus||'Workout'};
+  const session={id:Date.now(),source:'manual',date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}),ts:new Date().toISOString(),day:getDayCount(),exercises:JSON.parse(JSON.stringify(currentSession.filter(ex => (ex && Array.isArray(ex.sets)) ? ex.sets.some(st => st && st.done) : false))),completedSets:cs,totalSets:ts,volume:vol,durationMin:durationMin,splitFocus:getUserSplit()[tIdx()]?.focus||'Workout'};
   const history=ls('totry_workouts')||[];history.unshift(session);
   const _saved = ls('totry_workouts',_capWorkouts(history));
   // PRs were detected on a HEVY SYNC and nowhere else — so a person who logged their session in this
@@ -38469,7 +38492,14 @@ async function deleteWorkoutFromHistory(id){
   showToast('Deleted', 'Session removed from history.');
   haptic('warning');
 }
-function reloadSession(id){const session=(ls('totry_workouts')||[]).find(s=>s.id==id);if(!session)return;currentSession=session.exercises.map(ex=>({...ex,sets:ex.sets.map(s=>({...s,done:false}))}));setPTTab('log');renderWorkoutSession();showToast('Session reloaded','Last performance shown as placeholders');}
+// MAKE THE CODE MATCH THE PROMISE. The toast says "Last performance shown as placeholders" and the
+// fields held last week's REAL values — the same colour as typed text, not the dim placeholder grey.
+// Tapping the done check re-reads the input, so one tap with nothing typed wrote last week's
+// performance into today's session and on into volume, PRs and the progression maths. renderSets()
+// already derives placeholders from the last performance and already renders a "tap to use last
+// time" button, so clearing the values gives exactly what the toast describes, plus one tap to
+// accept them — which is the affordance sitting right beside the field.
+function reloadSession(id){const session=(ls('totry_workouts')||[]).find(s=>s.id==id);if(!session)return;currentSession=session.exercises.map(ex=>({...ex,sets:ex.sets.map(s=>({...s,weight:'',reps:'',done:false}))}));setPTTab('log');renderWorkoutSession();showToast('Session reloaded','Last time is shown under each field \u2014 tap to reuse it.');}
 
 // ── MUSCLE GROUP CLASSIFICATION ─────────────────────────────
 // Maps exercise names to one or more major muscle groups (chest, back, shoulders,

@@ -868,7 +868,7 @@ async function saveWorkoutSession(){
   // logged HERE as coming from Hevy: the history showed a HEVY tag, the card read "From your Hevy", and
   // the detail modal told you to go edit it in Hevy. For someone who has never heard of Hevy that is a
   // claim the app cannot keep, and it left in-app sessions with no edit path at all.
-  const session={id:Date.now(),source:'manual',date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}),ts:new Date().toISOString(),day:getDayCount(),exercises:JSON.parse(JSON.stringify(currentSession)),completedSets:cs,totalSets:ts,volume:vol,durationMin:durationMin,splitFocus:getUserSplit()[tIdx()]?.focus||'Workout'};
+  const session={id:Date.now(),source:'manual',date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short',year:'numeric'}),ts:new Date().toISOString(),day:getDayCount(),exercises:JSON.parse(JSON.stringify(currentSession.filter(ex => (ex && Array.isArray(ex.sets)) ? ex.sets.some(st => st && st.done) : false))),completedSets:cs,totalSets:ts,volume:vol,durationMin:durationMin,splitFocus:getUserSplit()[tIdx()]?.focus||'Workout'};
   const history=ls('totry_workouts')||[];history.unshift(session);
   const _saved = ls('totry_workouts',_capWorkouts(history));
   // PRs were detected on a HEVY SYNC and nowhere else — so a person who logged their session in this
@@ -2385,7 +2385,14 @@ async function deleteWorkoutFromHistory(id){
   showToast('Deleted', 'Session removed from history.');
   haptic('warning');
 }
-function reloadSession(id){const session=(ls('totry_workouts')||[]).find(s=>s.id==id);if(!session)return;currentSession=session.exercises.map(ex=>({...ex,sets:ex.sets.map(s=>({...s,done:false}))}));setPTTab('log');renderWorkoutSession();showToast('Session reloaded','Last performance shown as placeholders');}
+// MAKE THE CODE MATCH THE PROMISE. The toast says "Last performance shown as placeholders" and the
+// fields held last week's REAL values — the same colour as typed text, not the dim placeholder grey.
+// Tapping the done check re-reads the input, so one tap with nothing typed wrote last week's
+// performance into today's session and on into volume, PRs and the progression maths. renderSets()
+// already derives placeholders from the last performance and already renders a "tap to use last
+// time" button, so clearing the values gives exactly what the toast describes, plus one tap to
+// accept them — which is the affordance sitting right beside the field.
+function reloadSession(id){const session=(ls('totry_workouts')||[]).find(s=>s.id==id);if(!session)return;currentSession=session.exercises.map(ex=>({...ex,sets:ex.sets.map(s=>({...s,weight:'',reps:'',done:false}))}));setPTTab('log');renderWorkoutSession();showToast('Session reloaded','Last time is shown under each field \u2014 tap to reuse it.');}
 
 // ── MUSCLE GROUP CLASSIFICATION ─────────────────────────────
 // Maps exercise names to one or more major muscle groups (chest, back, shoulders,
