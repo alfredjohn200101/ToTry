@@ -1056,7 +1056,10 @@ function startLiveIntervention(i){
   document.querySelector('.modal-bg.open')?.remove();
   loadV();
   curVice=i;
-  vices[i].total=(vices[i].total||0)+1;
+  // ONE URGE, ONE BATTLE. This incremented `total` here AND the win path increments it again when
+  // the same urge is seen through, so a person who met five urges and won all five read "5 of 10
+  // battles won" — a perfect record shown as half. The urgelog push two lines down is the real
+  // record that an urge was met; `total` belongs to the outcome, not the opening.
   if(!vices[i].urgelog)vices[i].urgelog=[];
   vices[i].urgelog.push(new Date().toISOString());
   if(vices[i].urgelog.length>50)vices[i].urgelog=vices[i].urgelog.slice(-50);

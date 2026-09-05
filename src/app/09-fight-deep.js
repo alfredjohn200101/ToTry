@@ -868,7 +868,7 @@ function renderVices(){
         })() +
         '<div style="display:flex;gap:10px;margin-top:8px;font-size:10px;align-items:center">' +
           '<button onclick="openRecoveryTimeline(' + i + ')" style="background:none;border:none;color:var(--gr);cursor:pointer;padding:4px 0">\uD83C\uDF3F What moderation is earning you</button>' +
-          '<button onclick="openViceManage(' + i + ')" style="background:none;border:none;color:var(--tx3);cursor:pointer;padding:4px 0;margin-left:auto">Manage</button>' +
+          '<button onclick="openViceManage(' + i + ')" style="background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;padding:10px 8px;min-height:34px;margin-left:auto">Manage</button>' +
         '</div>';
       list.appendChild(c);
       return;
@@ -2134,7 +2134,21 @@ function saveViceUse(i){
     }
     if(used > (v.lastLoss?new Date(v.lastLoss).getTime():0)) v.lastLoss=ts;
     if(_movesAnchor) v.startDate=ts;                // streak restarts from when it actually happened
-    v.relapseCount=(v.relapseCount||0)+1;
+    // COUNT THE SAME THING relapseHistory COUNTS. This sat outside the _movesAnchor block that owns
+    // the history push, so logging a slip older than the current streak's start bumped the count
+    // without adding a history entry — and the card read "came back 1 time" beside a clean streak
+    // that had never been broken. One meaning: a slip that actually restarted the streak.
+    if(_movesAnchor) v.relapseCount=(v.relapseCount||0)+1;
+  } else if(typeof viceMode==='function' && viceMode(v)==='moderate'){
+    // A MODERATION GOAL HAD NOWHERE TO PUT A MISS. This branch only ever handled abstinence, so
+    // "Log a day I missed" on a moderation card wrote the use into totry_vice_uses and stopped —
+    // modWithin/modOver, which is what the card's own "within your limit" line counts, never moved.
+    // The person told the app they went over and the app kept saying they were inside their limit.
+    // modEndSession scores a session the same way; this is the same increment for a logged one.
+    const _lim = parseInt(v.modLimit, 10) || 0;
+    if(_lim > 0 && qty > _lim) v.modOver = (v.modOver||0)+1;
+    else v.modWithin = (v.modWithin||0)+1;
+    v.lastModCheck = new Date().toISOString();
   }
   saveV();
   document.querySelector('.modal-bg.open')?.remove();
