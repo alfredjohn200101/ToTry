@@ -1031,7 +1031,7 @@ function _showCSVPreview(rawParsed){
   const transfers = parsed.filter(p=>p.type==='transfer');
   const preview = parsed.slice(0,8).map(p =>
     '<div style="display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px">'+
-    '<span style="color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">'+p.desc+' <span style="color:var(--tx3)">\u00b7 '+p.category+'</span></span>'+
+    '<span style="color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">'+_escFew(p.desc)+' <span style="color:var(--tx3)">\u00b7 '+_escFew(p.category)+'</span></span>'+
     '<span style="color:'+(p.type==='expense'?'var(--re)':'var(--gr)')+';flex-shrink:0">'+(p.type==='expense'?'\u2212':'+')+curSym()+p.amount.toFixed(2)+'</span></div>'
   ).join('');
   const m = document.createElement('div');

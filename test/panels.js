@@ -439,6 +439,37 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     else if (!inject.cardShowsItLiterally || !inject.toastShowsItLiterally)
       findings.push('injection: nothing executed, but the name is not shown back as the person typed it either');
     else console.log('injection: a routine name is text in the card and in the toast, and executes nowhere');
+    // The same class, a different door: a bank CSV's Description column is text from a third party,
+    // and the Review-import preview put it straight into innerHTML — so a row described as
+    // `<img src=x onerror=...>` executed on PREVIEW, before the person approved the import.
+    const csvInject = await page.evaluate(async () => {
+      window.__csvPwn = 0;
+      const out = {};
+      try {
+        go('money'); await new Promise(r => setTimeout(r, 600));
+        const iso = new Date().toISOString();
+        _showCSVPreview([
+          { desc:'<img src=x onerror=window.__csvPwn=1>', category:'Other', amount:12.34, type:'expense', ts:iso, date:iso.slice(0,10) },
+          { desc:'Coffee Roasters', category:'Eating out', amount:4.5, type:'expense', ts:iso, date:iso.slice(0,10) },
+        ]);
+        await new Promise(r => setTimeout(r, 700));
+        const host = document.querySelector('.modal-bg.open');
+        out.imgs = host ? host.querySelectorAll('img').length : 0;
+        out.showsLiterally = !!(host && /<img/.test(host.innerText || ''));
+        host?.remove();
+      } catch (e) { out.err = String(e && e.message).slice(0, 60); }
+      out.pwn = window.__csvPwn;
+      return out;
+    });
+    if (csvInject.err) findings.push(`injection (CSV): the check itself threw — ${csvInject.err}`);
+    else if (csvInject.pwn > 0)
+      findings.push('injection (CSV): a bank statement Description EXECUTED on the review screen, before the import was approved');
+    else if (csvInject.imgs)
+      findings.push(`injection (CSV): markup from a Description became ${csvInject.imgs} real element(s)`);
+    else if (!csvInject.showsLiterally)
+      findings.push('injection (CSV): nothing executed, but the description is not shown as it appears in the file either');
+    else console.log('injection (CSV): a bank Description is text on the review screen, and executes nowhere');
+
 
     // ── clean days are lived once, however many fights they cover ─────────────────────────────
     // The PROOF strip summed clean days across vices, so two kept clean through the same ten days

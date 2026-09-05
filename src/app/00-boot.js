@@ -772,11 +772,22 @@ async function signOut(){
   if(cyc) losses.push('your cycle log (backup is off, so it is only on this device)');
   if(pending) losses.push(pending + ' change' + (pending===1?'':'s') + ' that have not reached the cloud yet');
 
-  const msg = losses.length
-    ? ('Signing out clears this device. Everything synced comes back when you sign in \u2014 but these '
-       + 'are only here and will be gone for good:\n\n\u2022 ' + losses.join('\n\u2022 ')
-       + '\n\nSettings \u2192 Your data \u2192 Export saves them first. Sign out anyway?')
-    : 'Sign out? Everything is synced, so it all comes back when you sign in.';
+  // A GUEST HAS NO CLOUD, AND THIS TOLD THEM THE OPPOSITE. The only guard was `if(!sb) return`, and
+  // sb exists for a guest too — so someone who had never made an account tapped Sign out, read
+  // "Everything is synced, so it all comes back when you sign in", confirmed, and lost every key on
+  // the device with nothing anywhere to restore from. The losses list above counts photos, cycle and
+  // outbox depth as the only casualties, which is true ONLY when the rest is really in the cloud.
+  const _signedIn = !!currentUser;
+  const msg = !_signedIn
+    ? ('You are not signed in, so none of this is in the cloud \u2014 it is all on this device only. '
+       + 'Clearing it now deletes everything: your streaks, your journal, your logs, all of it, with '
+       + 'nothing to restore from.\n\nSettings \u2192 Your data \u2192 Export saves it all to a file '
+       + 'first. Clear this device anyway?')
+    : losses.length
+      ? ('Signing out clears this device. Everything synced comes back when you sign in \u2014 but these '
+         + 'are only here and will be gone for good:\n\n\u2022 ' + losses.join('\n\u2022 ')
+         + '\n\nSettings \u2192 Your data \u2192 Export saves them first. Sign out anyway?')
+      : 'Sign out? Everything is synced, so it all comes back when you sign in.';
   if(!(await askConfirm(msg))) return;
 
   try {
