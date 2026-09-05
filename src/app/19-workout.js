@@ -92,7 +92,14 @@ function setPTTab(tab){
   // the app could never be reopened. The container now exists; the else-branch keeps PRs rendering
   // even if the history renderer is ever removed.
   if(tab==='history'){renderMuscleGroupCard();if(typeof renderWorkoutHistory==='function')renderWorkoutHistory();else if(typeof renderPersonalRecords==='function')renderPersonalRecords();if(typeof renderStravaActivities==='function')renderStravaActivities();if(typeof populateExerciseSelect==='function')populateExerciseSelect();if(typeof renderPlateauCard==='function')renderPlateauCard();}
-  if(tab==='log'){ if(typeof renderSplitOverview==='function') renderSplitOverview(); }
+  // The Log panel's routine box (#pt-empty-routines) is written by renderWorkoutSession(), which
+  // this did not call — so a routine built and saved in the Routines panel was absent from Log
+  // until a full reload, which is the one thing that panel promises ("Build a session in the Log
+  // tab, save it here, then assign it to a day").
+  if(tab==='log'){
+    if(typeof renderSplitOverview==='function') renderSplitOverview();
+    if(typeof renderWorkoutSession==='function') renderWorkoutSession();
+  }
   if(tab==='routines'){renderRoutines();}
   if(tab==='mobility'){if(typeof renderMobilityPanel==='function')renderMobilityPanel();}
   // The PT coach's saved conversation was loaded into ptH at boot and SENT to the model on every

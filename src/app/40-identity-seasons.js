@@ -212,11 +212,13 @@ function getSoberStreak(){
     // clean time is a debt. Every other elapsed-day count in this file is already clamped
     // (getDayCount, totalDaysTrying, viceCleanDays); this was the one that was not. An unparseable
     // date returns 0 too, so the card can never show NaN.
-    const start=ls('totry_start');
-    if(!start)return 0;
-    const t=new Date(start).getTime();
-    if(isNaN(t))return 0;
-    return Math.max(0, Math.floor((Date.now()-t)/86400000));
+    // ONE CONVENTION FOR "how long have I been here". This counted ELAPSED whole days from
+    // totry_start, while getDayCount() — which the header badge, the coach's sentence and the
+    // "Share my Day N" button all use — counts the first day as day 1. So on someone's first day
+    // Home showed "1 DAY IN" at the top, "Share my Day 1" at the bottom, and a 0 in the biggest
+    // number on the screen. Three numbers for one person, in one scroll. getDayCount() already
+    // clamps a device clock that sits behind totry_start, which is what the note above guarded.
+    return (typeof getDayCount==='function') ? getDayCount() : 1;
   }
   // Return the longest CURRENT clean streak across all vices
   return Math.max(0, ...vices.map(v => viceCleanDays(v)));

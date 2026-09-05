@@ -13,7 +13,11 @@ function checkPreviewBanner(){
   // Hide the 60-day preview banner while the first-run checklist is still showing,
   // so a new user isn't hit with two onboarding cards at once.
   const firstRunActive = document.getElementById('firstrun-card')?.style.display === 'block';
-  if(day <= 7 && !dismissed && !firstRunActive){
+  // ...and the same for the tour prompt, which is the OTHER onboarding card. The guard above only
+  // knew about the checklist, so dismissing that left the 60-day preview banner and the welcome
+  // tour on Home together — two cards, 142px and 152px, both introducing the app, stacked.
+  const tourActive = document.getElementById('home-tour-prompt')?.style.display === 'block';
+  if(day <= 7 && !dismissed && !firstRunActive && !tourActive){
     banner.style.display = 'block';
   } else {
     banner.style.display = 'none';

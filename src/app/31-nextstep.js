@@ -110,7 +110,22 @@ function getNextStep(){
   if(!prayedToday && hour < 17){
     return { text:'Take a moment to pray', sub:'A short scripture and prayer for today.', action:'soul' };
   }
-  // 5. Everything core is done.
+  // 5. Everything core is done — unless a habit is still open, which the card further down the
+  //    same screen says out loud. The hero read "You've done today's work" at 325px while
+  //    "1 habit still open today" sat at 764px. Same person, same scroll, opposite claims. Counted
+  //    exactly as 32-presence.js:531 counts it, so the two cannot drift apart again.
+  try{
+    if(typeof loadH === 'function') loadH();
+    const _ti = (typeof tIdx === 'function') ? tIdx() : -1;
+    const _open = (typeof habits !== 'undefined' && Array.isArray(habits) && _ti >= 0)
+      ? habits.filter(h => !(h.d && h.d[_ti] === 1)) : [];
+    if(_open.length){
+      return { text: _open.length === 1 ? 'One habit still open' : _open.length + ' habits still open',
+               sub: _open.length === 1 ? _open[0].n + ' \u2014 tick it tonight, or let it go with grace.'
+                                       : 'Tick what you did tonight. A miss is feedback, not failure.',
+               action:'reflect' };
+    }
+  }catch(_){ }
   return { text:'You\u2019ve done today\u2019s work', sub:'Rest, or revisit anything you like.', action:'reflect', done:true };
 }
 // The home's time-aware greeting — this is what makes the home FEEL different through the day.
@@ -269,7 +284,8 @@ function renderHomeGreeting(){
   if(h >= 21 || h < 5) daypart = 'night';
   try{ document.body.setAttribute('data-daypart', daypart); }catch(_){}
   // Identity line in the hero (what they're becoming), quietly shown.
-  try{ const idEl=document.getElementById('hero-identity-text'); const row=document.getElementById('hero-identity'); const identity=ls('totry_identity'); if(idEl){ if(identity){ const _t=identity.replace(/^I am\s+/i,'').trim(); idEl.textContent = _t; if(row) row.style.display=''; } else { idEl.textContent=''; if(row) row.style.display='none'; } } }catch(_){}
+  try{ const idEl=document.getElementById('hero-identity-text'); const row=document.getElementById('hero-identity'); const identity=ls('totry_identity'); if(idEl){ if(identity){ let _t=identity.replace(/^I am\s+/i,'').trim(); _t=_t.charAt(0).toUpperCase()+_t.slice(1);   // stripping "I am" left a lowercase fragment in italic serif under the greeting; a capital makes it a line rather than a truncation
+    idEl.textContent = _t; if(row) row.style.display=''; } else { idEl.textContent=''; if(row) row.style.display='none'; } } }catch(_){}
   hiEl.textContent = hi;
   // Honor the man's chosen faith intensity — 'light' surfaces the daily verse more gently.
   try{ const vp=document.querySelector('.hero-verse'); if(vp) vp.style.display = (faithLevel()==='light') ? 'none' : ''; }catch(_){}

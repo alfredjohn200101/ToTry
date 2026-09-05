@@ -13229,6 +13229,11 @@ function saveSplitDay(dayIdx){
   ls('totry_split',split);
   document.querySelector('.modal-bg.open')?.remove();
   renderSplitOverview();
+  // AND THE CARD ABOVE IT. renderSplitOverview() repaints the day list; the today card is written
+  // by loadTodaySplitCard() and was left alone — so assigning a routine to today updated the list
+  // while the card 200px above it still read "No routine set for today. Build a routine in Routines
+  // & Split and assign it to today", telling the person to do the thing they had just done.
+  if(typeof loadTodaySplitCard==='function') loadTodaySplitCard();
   showToast('Day updated','Split saved.');
 }
 
@@ -33821,7 +33826,14 @@ function setPTTab(tab){
   // the app could never be reopened. The container now exists; the else-branch keeps PRs rendering
   // even if the history renderer is ever removed.
   if(tab==='history'){renderMuscleGroupCard();if(typeof renderWorkoutHistory==='function')renderWorkoutHistory();else if(typeof renderPersonalRecords==='function')renderPersonalRecords();if(typeof renderStravaActivities==='function')renderStravaActivities();if(typeof populateExerciseSelect==='function')populateExerciseSelect();if(typeof renderPlateauCard==='function')renderPlateauCard();}
-  if(tab==='log'){ if(typeof renderSplitOverview==='function') renderSplitOverview(); }
+  // The Log panel's routine box (#pt-empty-routines) is written by renderWorkoutSession(), which
+  // this did not call — so a routine built and saved in the Routines panel was absent from Log
+  // until a full reload, which is the one thing that panel promises ("Build a session in the Log
+  // tab, save it here, then assign it to a day").
+  if(tab==='log'){
+    if(typeof renderSplitOverview==='function') renderSplitOverview();
+    if(typeof renderWorkoutSession==='function') renderWorkoutSession();
+  }
   if(tab==='routines'){renderRoutines();}
   if(tab==='mobility'){if(typeof renderMobilityPanel==='function')renderMobilityPanel();}
   // The PT coach's saved conversation was loaded into ptH at boot and SENT to the model on every
@@ -45419,7 +45431,11 @@ function checkPreviewBanner(){
   // Hide the 60-day preview banner while the first-run checklist is still showing,
   // so a new user isn't hit with two onboarding cards at once.
   const firstRunActive = document.getElementById('firstrun-card')?.style.display === 'block';
-  if(day <= 7 && !dismissed && !firstRunActive){
+  // ...and the same for the tour prompt, which is the OTHER onboarding card. The guard above only
+  // knew about the checklist, so dismissing that left the 60-day preview banner and the welcome
+  // tour on Home together — two cards, 142px and 152px, both introducing the app, stacked.
+  const tourActive = document.getElementById('home-tour-prompt')?.style.display === 'block';
+  if(day <= 7 && !dismissed && !firstRunActive && !tourActive){
     banner.style.display = 'block';
   } else {
     banner.style.display = 'none';
@@ -45867,7 +45883,22 @@ function getNextStep(){
   if(!prayedToday && hour < 17){
     return { text:'Take a moment to pray', sub:'A short scripture and prayer for today.', action:'soul' };
   }
-  // 5. Everything core is done.
+  // 5. Everything core is done — unless a habit is still open, which the card further down the
+  //    same screen says out loud. The hero read "You've done today's work" at 325px while
+  //    "1 habit still open today" sat at 764px. Same person, same scroll, opposite claims. Counted
+  //    exactly as 32-presence.js:531 counts it, so the two cannot drift apart again.
+  try{
+    if(typeof loadH === 'function') loadH();
+    const _ti = (typeof tIdx === 'function') ? tIdx() : -1;
+    const _open = (typeof habits !== 'undefined' && Array.isArray(habits) && _ti >= 0)
+      ? habits.filter(h => !(h.d && h.d[_ti] === 1)) : [];
+    if(_open.length){
+      return { text: _open.length === 1 ? 'One habit still open' : _open.length + ' habits still open',
+               sub: _open.length === 1 ? _open[0].n + ' \u2014 tick it tonight, or let it go with grace.'
+                                       : 'Tick what you did tonight. A miss is feedback, not failure.',
+               action:'reflect' };
+    }
+  }catch(_){ }
   return { text:'You\u2019ve done today\u2019s work', sub:'Rest, or revisit anything you like.', action:'reflect', done:true };
 }
 // The home's time-aware greeting — this is what makes the home FEEL different through the day.
@@ -46026,7 +46057,8 @@ function renderHomeGreeting(){
   if(h >= 21 || h < 5) daypart = 'night';
   try{ document.body.setAttribute('data-daypart', daypart); }catch(_){}
   // Identity line in the hero (what they're becoming), quietly shown.
-  try{ const idEl=document.getElementById('hero-identity-text'); const row=document.getElementById('hero-identity'); const identity=ls('totry_identity'); if(idEl){ if(identity){ const _t=identity.replace(/^I am\s+/i,'').trim(); idEl.textContent = _t; if(row) row.style.display=''; } else { idEl.textContent=''; if(row) row.style.display='none'; } } }catch(_){}
+  try{ const idEl=document.getElementById('hero-identity-text'); const row=document.getElementById('hero-identity'); const identity=ls('totry_identity'); if(idEl){ if(identity){ let _t=identity.replace(/^I am\s+/i,'').trim(); _t=_t.charAt(0).toUpperCase()+_t.slice(1);   // stripping "I am" left a lowercase fragment in italic serif under the greeting; a capital makes it a line rather than a truncation
+    idEl.textContent = _t; if(row) row.style.display=''; } else { idEl.textContent=''; if(row) row.style.display='none'; } } }catch(_){}
   hiEl.textContent = hi;
   // Honor the man's chosen faith intensity — 'light' surfaces the daily verse more gently.
   try{ const vp=document.querySelector('.hero-verse'); if(vp) vp.style.display = (faithLevel()==='light') ? 'none' : ''; }catch(_){}
@@ -49461,11 +49493,13 @@ function getSoberStreak(){
     // clean time is a debt. Every other elapsed-day count in this file is already clamped
     // (getDayCount, totalDaysTrying, viceCleanDays); this was the one that was not. An unparseable
     // date returns 0 too, so the card can never show NaN.
-    const start=ls('totry_start');
-    if(!start)return 0;
-    const t=new Date(start).getTime();
-    if(isNaN(t))return 0;
-    return Math.max(0, Math.floor((Date.now()-t)/86400000));
+    // ONE CONVENTION FOR "how long have I been here". This counted ELAPSED whole days from
+    // totry_start, while getDayCount() — which the header badge, the coach's sentence and the
+    // "Share my Day N" button all use — counts the first day as day 1. So on someone's first day
+    // Home showed "1 DAY IN" at the top, "Share my Day 1" at the bottom, and a 0 in the biggest
+    // number on the screen. Three numbers for one person, in one scroll. getDayCount() already
+    // clamps a device clock that sits behind totry_start, which is what the note above guarded.
+    return (typeof getDayCount==='function') ? getDayCount() : 1;
   }
   // Return the longest CURRENT clean streak across all vices
   return Math.max(0, ...vices.map(v => viceCleanDays(v)));

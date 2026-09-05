@@ -189,6 +189,11 @@ function saveSplitDay(dayIdx){
   ls('totry_split',split);
   document.querySelector('.modal-bg.open')?.remove();
   renderSplitOverview();
+  // AND THE CARD ABOVE IT. renderSplitOverview() repaints the day list; the today card is written
+  // by loadTodaySplitCard() and was left alone — so assigning a routine to today updated the list
+  // while the card 200px above it still read "No routine set for today. Build a routine in Routines
+  // & Split and assign it to today", telling the person to do the thing they had just done.
+  if(typeof loadTodaySplitCard==='function') loadTodaySplitCard();
   showToast('Day updated','Split saved.');
 }
 
