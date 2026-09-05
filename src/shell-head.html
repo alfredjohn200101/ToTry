@@ -3588,27 +3588,27 @@ input:focus,textarea:focus,select:focus{
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
       <div>
         <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;color:var(--tx2)">Training adherence</span><span id="wk-train-val" style="font-family:DM Mono,monospace;font-size:11px;color:var(--go)">&mdash;</span></div>
-        <input type="range" min="1" max="10" value="5" id="wk-train" oninput="document.getElementById(&apos;wk-train-val&apos;).textContent=this.value+&apos;/10&apos;" style="width:100%">
+        <input type="range" min="1" max="10" value="5" id="wk-train" oninput="this.dataset.touched=&apos;1&apos;;document.getElementById(&apos;wk-train-val&apos;).textContent=this.value+&apos;/10&apos;" style="width:100%">
       </div>
       <div>
         <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;color:var(--tx2)">Nutrition adherence</span><span id="wk-nut-val" style="font-family:DM Mono,monospace;font-size:11px;color:var(--go)">&mdash;</span></div>
-        <input type="range" min="1" max="10" value="5" id="wk-nut" oninput="document.getElementById(&apos;wk-nut-val&apos;).textContent=this.value+&apos;/10&apos;" style="width:100%">
+        <input type="range" min="1" max="10" value="5" id="wk-nut" oninput="this.dataset.touched=&apos;1&apos;;document.getElementById(&apos;wk-nut-val&apos;).textContent=this.value+&apos;/10&apos;" style="width:100%">
       </div>
       <div>
         <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;color:var(--tx2)">Sleep quality</span><span id="wk-sleep-val" style="font-family:DM Mono,monospace;font-size:11px;color:var(--go)">&mdash;</span></div>
-        <input type="range" min="1" max="10" value="5" id="wk-sleep" oninput="document.getElementById(&apos;wk-sleep-val&apos;).textContent=this.value+&apos;/10&apos;" style="width:100%">
+        <input type="range" min="1" max="10" value="5" id="wk-sleep" oninput="this.dataset.touched=&apos;1&apos;;document.getElementById(&apos;wk-sleep-val&apos;).textContent=this.value+&apos;/10&apos;" style="width:100%">
       </div>
       <div>
         <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;color:var(--tx2)">Stress level</span><span id="wk-stress-val" style="font-family:DM Mono,monospace;font-size:11px;color:var(--re)">&mdash;</span></div>
-        <input type="range" min="1" max="10" value="5" id="wk-stress" oninput="document.getElementById(&apos;wk-stress-val&apos;).textContent=this.value+&apos;/10&apos;" style="width:100%">
+        <input type="range" min="1" max="10" value="5" id="wk-stress" oninput="this.dataset.touched=&apos;1&apos;;document.getElementById(&apos;wk-stress-val&apos;).textContent=this.value+&apos;/10&apos;" style="width:100%">
       </div>
       <div>
         <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;color:var(--tx2)">Energy</span><span id="wk-energy-val" style="font-family:DM Mono,monospace;font-size:11px;color:var(--go)">&mdash;</span></div>
-        <input type="range" min="1" max="10" value="5" id="wk-energy" oninput="document.getElementById(&apos;wk-energy-val&apos;).textContent=this.value+&apos;/10&apos;" style="width:100%">
+        <input type="range" min="1" max="10" value="5" id="wk-energy" oninput="this.dataset.touched=&apos;1&apos;;document.getElementById(&apos;wk-energy-val&apos;).textContent=this.value+&apos;/10&apos;" style="width:100%">
       </div>
       <div>
         <div style="display:flex;justify-content:space-between;margin-bottom:4px"><span id="wk-faith-label" style="font-size:12px;color:var(--tx2)">Faith / connection with God</span><span id="wk-faith-val" style="font-family:DM Mono,monospace;font-size:11px;color:var(--go)">&mdash;</span></div>
-        <input type="range" min="1" max="10" value="5" id="wk-faith" oninput="document.getElementById(&apos;wk-faith-val&apos;).textContent=this.value+&apos;/10&apos;" style="width:100%">
+        <input type="range" min="1" max="10" value="5" id="wk-faith" oninput="this.dataset.touched=&apos;1&apos;;document.getElementById(&apos;wk-faith-val&apos;).textContent=this.value+&apos;/10&apos;" style="width:100%">
       </div>
     </div>
     

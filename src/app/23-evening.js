@@ -1042,6 +1042,20 @@ function initEveningTab(){
       setv('evening-win', todays.win);
       setv('evening-release', todays.release);
       setv('evening-see', todays.see);
+      // AND THE RATING, which is a page-load global. `let dayRating=3` is assigned only by
+      // setDayRate() and read only by completeEvening(), so a reload put it back to the hardcoded 3.
+      // Every other field on this form was restored here — the block's own comment is about exactly
+      // this failure — but the rating was not, so completing the evening a second time wrote 3 over
+      // whatever the person had actually chosen, silently, along with the on-screen buttons showing
+      // nothing selected. Restore the value AND the pressed state, so the form says what is stored.
+      if(todays.rating != null){
+        dayRating = todays.rating;
+        try{
+          document.querySelectorAll('.dr-btn').forEach(function(b, i){
+            b.classList.toggle('on', (i + 1) === todays.rating);
+          });
+        }catch(_){ }
+      }
       setv('evening-steps', todays.steps);
       if(todays.rings){ setv('evening-move', todays.rings.move); setv('evening-exercise', todays.rings.exercise); setv('evening-stand', todays.rings.stand); setv('evening-total-burn', todays.rings.total); }
       if(todays.tasks){ setv('eve-task1', todays.tasks[0]); setv('eve-task2', todays.tasks[1]); setv('eve-task3', todays.tasks[2]); }

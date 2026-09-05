@@ -131,12 +131,21 @@ function _wkCrisisRespond(c){
 // ── BODY ──────────────────────────────────────────────────────
 async function logBody(){
   const w=dispToKg(parseFloat(document.getElementById('bod-weight').value||'0'));   // typed in their unit, stored in kg
-  const trainScore=parseInt(document.getElementById('wk-train')?.value||0);
-  const nutScore=parseInt(document.getElementById('wk-nut')?.value||0);
-  const sleepScore=parseInt(document.getElementById('wk-sleep')?.value||0);
-  const stressScore=parseInt(document.getElementById('wk-stress')?.value||0);
-  const energyScore=parseInt(document.getElementById('wk-energy')?.value||0);
-  const faithScore=parseInt(document.getElementById('wk-faith')?.value||0);
+  // A SLIDER NOBODY MOVED IS NOT A 5. These read .value unconditionally, and a range input's value
+  // is its midpoint whether or not anyone touched it — so an entirely untouched weekly check-in
+  // saved a full record of six 5/10s. Those numbers are not inert: they feed computeReadiness(),
+  // they go to the coach in the brief, and the Track history card prints them back at the person as
+  // "Train 5/10 · Food 5/10 · Sleep 5/10" — six answers they never gave. The sliders now mark
+  // themselves on first move (see the oninput handlers in shell-head.html); unanswered reads null,
+  // and null means the question was not answered rather than answered in the middle.
+  const _score = id => { const el = document.getElementById(id);
+    return (el && el.dataset && el.dataset.touched) ? parseInt(el.value || 0) : null; };
+  const trainScore=_score('wk-train');
+  const nutScore=_score('wk-nut');
+  const sleepScore=_score('wk-sleep');
+  const stressScore=_score('wk-stress');
+  const energyScore=_score('wk-energy');
+  const faithScore=_score('wk-faith');
   const winText=document.getElementById('wk-win')?.value.trim()||'';
   const struggleText=document.getElementById('wk-struggle')?.value.trim()||'';
   const focusText=document.getElementById('wk-focus')?.value.trim()||'';
@@ -160,7 +169,11 @@ async function logBody(){
     return;
   }
   // Require AT LEAST weight OR scores OR text - some data to be useful
-  const hasAnyData = w > 0 || trainScore || winText || struggleText || focusText;
+  // trainScore was always 5 and therefore always truthy, so this guard was dead code and a wholly
+  // empty check-in saved silently. With an untouched slider now reading null it can actually fire.
+  const hasAnyData = w > 0 || trainScore != null || nutScore != null || sleepScore != null ||
+                     stressScore != null || energyScore != null || faithScore != null ||
+                     winText || struggleText || focusText;
   if(!hasAnyData){
     showToast('Add some data','Fill in at least weight, scores, or text before logging.');
     return;
@@ -253,7 +266,7 @@ async function logBody(){
   showToast('Check-in logged','Your coach is reading your week...');
   
   // If we have scores/text, trigger AI coach response
-  if(trainScore && (winText || struggleText || focusText)){
+  if(trainScore != null && (winText || struggleText || focusText)){
     setTimeout(()=>generateWeeklyCoachResponse(newEntry), 1500);
   }
 }
@@ -528,14 +541,50 @@ function renderWeightHistory(){
     }).join('');
 }
 async function deleteWeightEntry(key){
-  if(!(await askConfirm('Delete this weigh-in?'))) return;
+  // A WEIGH-IN IS NOT ONLY A WEIGHT. The weekly check-in is stored on the SAME entry — the six
+  // scores, the win, the struggle, the focus, the note, the body fat, the photo. This asked
+  // "Delete this weigh-in?" with no body and no undo, and took all of it, then tombstoned the
+  // deletion so the cloud copy went too. Someone tidying a fat-fingered number lost the only place
+  // they had written down what a hard week felt like.
   const entries = ls('totry_body') || [];
+  const target = entries.find(e => (e.ts||e.date) === key);
+  const attached = [];
+  if(target){
+    try{
+      const sc = target.scores || {};
+      const answered = Object.keys(sc).filter(k => sc[k] != null).length;
+      if(answered) attached.push(answered + ' check-in answer' + (answered===1?'':'s'));
+      if(target.win || target.struggle || target.focus) attached.push('what you wrote about the week');
+      if(target.note) attached.push('your note');
+      if(target.bodyFat != null && target.bodyFat !== '') attached.push('body fat');
+      if(target.photo) attached.push('a progress photo');
+    }catch(_){ }
+  }
+  const ask = attached.length
+    ? ('Delete this weigh-in?\n\nThe rest of that day goes with it:\n\n\u2022 ' + attached.join('\n\u2022 '))
+    : 'Delete this weigh-in?';
+  if(!(await askConfirm(ask))) return;
   const filtered = entries.filter(e => (e.ts||e.date) !== key);
   tombstoneRemoved('totry_body', entries, filtered);   // or the next cloud pull unions it back
   ls('totry_body', filtered);
   if(typeof syncToCloud==='function') syncToCloud();
   renderBody();
-  haptic('warning'); showToast('Deleted','Weigh-in removed.');   // a loss should not feel like a win
+  haptic('warning');
+  // The app has an undo and uses it for a saved verse; losing a week of reflection deserves one too.
+  if(typeof showUndo === 'function'){
+    showUndo('Weigh-in removed', function(){
+      try{
+        const now = ls('totry_body') || [];
+        if(target && !now.some(e => (e.ts||e.date) === key)){
+          now.push(target);
+          now.sort((a,b) => new Date(b.ts||b.date) - new Date(a.ts||a.date));
+          ls('totry_body', now);
+          if(typeof syncToCloud==='function') syncToCloud();
+          renderBody();
+        }
+      }catch(_){ }
+    });
+  } else { showToast('Deleted','Weigh-in removed.'); }
 }
 // ── RECOMP READ (the Train×Nourish squeeze #5) ─────────────────────────────────────────────────
 // The read no single-purpose app can give: it needs BOTH your weight trend AND your strength trend.
