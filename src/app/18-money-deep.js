@@ -1195,12 +1195,18 @@ function renderNetWorth(){
   const totalAssets = assets.reduce((s, a) => s + (a.value || 0), 0);
   loadF();
   const totalDebts = (typeof debts !== 'undefined' && debts) ? debts.reduce((s, d) => s + (d.t - d.p), 0) : 0;
-  const netWorth = totalAssets - totalDebts;
+  // ROUND ONCE, THEN SUBTRACT. Each tile rounded its own figure independently, so the card could
+  // print three numbers where the first two did not make the third — assets 1,234.6 and debts 200.4
+  // display as 1,235 and 200 while the net rounds 1,034.2 to 1,034, and 1,235 − 200 is 1,035. A
+  // person checking the app's arithmetic against itself found it wrong by a pound.
+  const _rAssets = Math.round(totalAssets);
+  const _rDebts = Math.round(totalDebts);
+  const netWorth = _rAssets - _rDebts;
   
   summary.innerHTML = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Assets</div><div style="font-size:14px;color:var(--gr);margin-top:3px">'+curSym() + Math.round(totalAssets).toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Debts</div><div style="font-size:14px;color:var(--re);margin-top:3px">'+curSym() + Math.round(totalDebts).toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px;border:1px solid var(--go-bd)"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Net</div><div style="font-size:14px;color:' + (netWorth >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:3px">'+curSym() + Math.round(netWorth).toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Assets</div><div style="font-size:14px;color:var(--gr);margin-top:3px">'+curSym() + _rAssets.toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Debts</div><div style="font-size:14px;color:var(--re);margin-top:3px">'+curSym() + _rDebts.toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px;border:1px solid var(--go-bd)"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Net</div><div style="font-size:14px;color:' + (netWorth >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:3px">'+curSym() + netWorth.toLocaleString() + '</div></div>' +
   '</div>';
   
   if(!assets.length){

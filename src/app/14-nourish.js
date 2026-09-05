@@ -579,7 +579,7 @@ const COMMON_FOODS_RAW = [
   ['White fish (cod), cooked', [105,23,0,0.9,0,0,78],   [['1 fillet (150g)',150]], 'fish'],
   ['Tuna, canned in springwater', [116,26,0,1,0,0,247], [['1 can (95g)',95]], 'fish'],
   ['Prawns, cooked',           [99,24,0.2,0.3,0,0,111], [['100 g',100]], 'shrimp seafood'],
-  ['Egg, whole',               [143,13,1.1,9.5,0,1.1,142],[['1 large egg (50g)',50]], ''],
+  ['Egg, whole',               [143,13,1.1,9.5,0,1.1,142],[['1 large egg (50g)',50]], 'eggs'],
   ['Egg white',                [52,11,0.7,0.2,0,0.7,166],[['1 white (33g)',33]], ''],
   ['Greek yogurt, plain',      [59,10,3.6,0.4,0,3.2,36],[['1 tub (170g)',170],['100 g',100]], ''],
   ['Cottage cheese',           [98,11,3.4,4.3,0,2.7,364],[['1/2 cup (110g)',110],['100 g',100]], ''],
@@ -3289,7 +3289,10 @@ function renderRecentFoods(){
     show.map(f => {
       const star = f.fav ? '★' : '☆';
       const starColor = f.fav ? 'var(--go)' : 'var(--tx3)';
-      const safe = f.name.replace(/'/g,"\\'").replace(/</g,'&lt;');
+      // The three consumers below interpolate `safe` into onclick attributes delimited by DOUBLE
+      // quotes, so a double quote in a food name closed the attribute and killed every button on
+      // the card. Escaped as an entity: the attribute survives and the name still reads correctly.
+      const safe = f.name.replace(/'/g,"\\'").replace(/</g,'&lt;').replace(/"/g,'&quot;');
       // The serving the (+) button will log — the same source of truth quickLogRecent uses.
       const _qs = (typeof _quickServing === 'function') ? _quickServing(f) : { cal: f.cal, pro: f.pro, label: '' };
       return '<div class="food-result" style="display:flex;align-items:center;justify-content:space-between;gap:6px">' +

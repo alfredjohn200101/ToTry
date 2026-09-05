@@ -22997,7 +22997,7 @@ function renderBibleSavedPanel(){
 }
 
 // ── JOURNAL ───────────────────────────────────────────────────
-let curMood='&#128528;';
+let curMood='\u{1F610}';
 const PROMPTS=[
   'What was the hardest moment today and how did you handle it?','What did you choose well today, even if it was small?',
   'What is one thing you want to do differently tomorrow?','How did your faith show up \u2014 or not \u2014 today?',
@@ -23011,7 +23011,7 @@ const PROMPTS=[
   'If someone watched your whole day on replay, what would they see?','What promise did you keep today, even a small one?',
 ];
 function openJournal(){
-  curMood='&#128528;';
+  curMood='\u{1F610}';
   document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('on'));
   document.getElementById('journal-text').value='';
   document.getElementById('j-urges').value='';
@@ -25349,7 +25349,7 @@ const COMMON_FOODS_RAW = [
   ['White fish (cod), cooked', [105,23,0,0.9,0,0,78],   [['1 fillet (150g)',150]], 'fish'],
   ['Tuna, canned in springwater', [116,26,0,1,0,0,247], [['1 can (95g)',95]], 'fish'],
   ['Prawns, cooked',           [99,24,0.2,0.3,0,0,111], [['100 g',100]], 'shrimp seafood'],
-  ['Egg, whole',               [143,13,1.1,9.5,0,1.1,142],[['1 large egg (50g)',50]], ''],
+  ['Egg, whole',               [143,13,1.1,9.5,0,1.1,142],[['1 large egg (50g)',50]], 'eggs'],
   ['Egg white',                [52,11,0.7,0.2,0,0.7,166],[['1 white (33g)',33]], ''],
   ['Greek yogurt, plain',      [59,10,3.6,0.4,0,3.2,36],[['1 tub (170g)',170],['100 g',100]], ''],
   ['Cottage cheese',           [98,11,3.4,4.3,0,2.7,364],[['1/2 cup (110g)',110],['100 g',100]], ''],
@@ -28059,7 +28059,10 @@ function renderRecentFoods(){
     show.map(f => {
       const star = f.fav ? '★' : '☆';
       const starColor = f.fav ? 'var(--go)' : 'var(--tx3)';
-      const safe = f.name.replace(/'/g,"\\'").replace(/</g,'&lt;');
+      // The three consumers below interpolate `safe` into onclick attributes delimited by DOUBLE
+      // quotes, so a double quote in a food name closed the attribute and killed every button on
+      // the card. Escaped as an entity: the attribute survives and the name still reads correctly.
+      const safe = f.name.replace(/'/g,"\\'").replace(/</g,'&lt;').replace(/"/g,'&quot;');
       // The serving the (+) button will log — the same source of truth quickLogRecent uses.
       const _qs = (typeof _quickServing === 'function') ? _quickServing(f) : { cal: f.cal, pro: f.pro, label: '' };
       return '<div class="food-result" style="display:flex;align-items:center;justify-content:space-between;gap:6px">' +
@@ -33658,12 +33661,18 @@ function renderNetWorth(){
   const totalAssets = assets.reduce((s, a) => s + (a.value || 0), 0);
   loadF();
   const totalDebts = (typeof debts !== 'undefined' && debts) ? debts.reduce((s, d) => s + (d.t - d.p), 0) : 0;
-  const netWorth = totalAssets - totalDebts;
+  // ROUND ONCE, THEN SUBTRACT. Each tile rounded its own figure independently, so the card could
+  // print three numbers where the first two did not make the third — assets 1,234.6 and debts 200.4
+  // display as 1,235 and 200 while the net rounds 1,034.2 to 1,034, and 1,235 − 200 is 1,035. A
+  // person checking the app's arithmetic against itself found it wrong by a pound.
+  const _rAssets = Math.round(totalAssets);
+  const _rDebts = Math.round(totalDebts);
+  const netWorth = _rAssets - _rDebts;
   
   summary.innerHTML = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Assets</div><div style="font-size:14px;color:var(--gr);margin-top:3px">'+curSym() + Math.round(totalAssets).toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Debts</div><div style="font-size:14px;color:var(--re);margin-top:3px">'+curSym() + Math.round(totalDebts).toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px;border:1px solid var(--go-bd)"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Net</div><div style="font-size:14px;color:' + (netWorth >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:3px">'+curSym() + Math.round(netWorth).toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Assets</div><div style="font-size:14px;color:var(--gr);margin-top:3px">'+curSym() + _rAssets.toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Debts</div><div style="font-size:14px;color:var(--re);margin-top:3px">'+curSym() + _rDebts.toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px;border:1px solid var(--go-bd)"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Net</div><div style="font-size:14px;color:' + (netWorth >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:3px">'+curSym() + netWorth.toLocaleString() + '</div></div>' +
   '</div>';
   
   if(!assets.length){

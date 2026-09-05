@@ -1,5 +1,5 @@
 // ── JOURNAL ───────────────────────────────────────────────────
-let curMood='&#128528;';
+let curMood='\u{1F610}';
 const PROMPTS=[
   'What was the hardest moment today and how did you handle it?','What did you choose well today, even if it was small?',
   'What is one thing you want to do differently tomorrow?','How did your faith show up \u2014 or not \u2014 today?',
@@ -13,7 +13,7 @@ const PROMPTS=[
   'If someone watched your whole day on replay, what would they see?','What promise did you keep today, even a small one?',
 ];
 function openJournal(){
-  curMood='&#128528;';
+  curMood='\u{1F610}';
   document.querySelectorAll('.mood-btn').forEach(b=>b.classList.remove('on'));
   document.getElementById('journal-text').value='';
   document.getElementById('j-urges').value='';
