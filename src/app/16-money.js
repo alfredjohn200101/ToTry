@@ -29,7 +29,7 @@ function renderDebtTruth(){
   const active=debts.filter(d=>_debtBalance(d)>0); if(!active.length) return;
   const bits=[];
   const mi=totalMonthlyInterest(active);
-  if(mi>=1) bits.push('Interest alone takes <b style="color:var(--re)">'+curSym()+Math.round(mi).toLocaleString()+'/month</b> before a dollar touches the balance.');
+  if(mi>=1) bits.push('Interest alone takes <b style="color:var(--re)">'+curSym()+Math.round(mi).toLocaleString()+'/month</b> before any of it touches the balance.');
   const rate=monthlyPaymentRate();
   if(rate && active.length>1 && active.some(d=>(parseFloat(d.interest)||0)>0)){
     const av=projectPayoff(active, rate, 'avalanche');
@@ -126,7 +126,7 @@ function calcDebtFreeDate(){
   // Saying so plainly is worth more than a comforting number that will never arrive.
   if(proj.neverClears){
     if(dd) dd.textContent='Not yet on track';
-    if(ddesc) ddesc.innerHTML='At '+curSym()+Math.round(rate).toLocaleString()+'/month the interest ('+curSym()+proj.monthlyInterest.toLocaleString()+'/mo) is eating the payment — the balance grows. Getting above that line is the whole battle, and every dollar reclaimed goes straight at it.';
+    if(ddesc) ddesc.innerHTML='At '+curSym()+Math.round(rate).toLocaleString()+'/month the interest ('+curSym()+proj.monthlyInterest.toLocaleString()+'/mo) is eating the payment — the balance grows. Getting above that line is the whole battle, and everything reclaimed goes straight at it.';
     return;
   }
   const fd=new Date(); fd.setMonth(fd.getMonth()+proj.months);

@@ -426,7 +426,7 @@ function brotherSpeaks(moment){
     }
     else if(moment.kind === 'spendHeavy'){
       title = 'One thing on the money.';
-      body = 'I know the debt\u2019s been on your shoulders. This isn\u2019t about guilt \u2014 it\u2019s that every dollar you hold is a dollar closer to free. Is this one worth it? Sometimes it is. You decide \u2014 I just didn\u2019t want you to drift past it without a beat.';
+      body = 'I know the debt\u2019s been on your shoulders. This isn\u2019t about guilt \u2014 it\u2019s that everything you hold onto is a step closer to free. Is this one worth it? Sometimes it is. You decide \u2014 I just didn\u2019t want you to drift past it without a beat.';
     }
     else return;
 

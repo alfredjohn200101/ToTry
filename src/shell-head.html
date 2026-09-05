@@ -3648,7 +3648,7 @@ input:focus,textarea:focus,select:focus{
 <div id="tab-money" class="tab">
   <div style="margin-bottom:10px">
     <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.2;margin-bottom:2px">Stewardship</div>
-    <div style="font-size:12.5px;color:var(--tx3);margin-top:3px;line-height:1.55">Money is freedom, not just numbers. Every dollar reclaimed from a vice, every debt paid down, is a chain off your shoulders. Steward it well.</div>
+    <div style="font-size:12.5px;color:var(--tx3);margin-top:3px;line-height:1.55">Money is freedom, not just numbers. Everything reclaimed from a vice, every debt paid down, is a chain off your shoulders. Steward it well.</div>
   </div>
   <!-- The impulse door. A spending urge is a threshold moment exactly like a craving — same dopamine
        spike, same crash, same shame loop — so it gets the same before-it-takes-over treatment rather
@@ -3696,7 +3696,7 @@ input:focus,textarea:focus,select:focus{
   <div class="card money-more">
     <div class="card-hd" style="margin-bottom:10px">Add / update</div>
     <div class="row"><input type="text" id="dn" placeholder="Who you owe"><input type="number" id="dt" data-cur-ph="Total {c}" placeholder="Total $" style="max-width:110px;flex:none"></div>
-    <div class="row"><input type="number" id="dp" data-cur-ph="Paid so far {c}" placeholder="Paid so far $"><input type="date" id="dd" style="max-width:145px;flex:none"></div>
+    <div class="row"><input type="number" id="dp" data-cur-ph="Paid so far {c}" placeholder="Paid so far $"><label for="dd" style="display:flex;flex-direction:column;gap:3px;max-width:145px;flex:none"><span style="font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em">Target date</span><input type="date" id="dd" aria-label="Target date to clear this debt" style="width:100%"></label></div>
     <div class="row"><input type="number" id="di" inputmode="decimal" placeholder="Interest rate % (for Avalanche)" step="0.1"></div>
     <button class="btn" onclick="addDebt()" style="margin-bottom:10px">Add this debt</button>
     <div class="divider"></div>
@@ -4739,7 +4739,7 @@ Amen.</div></div>
   <div class="modal">
     <div class="modal-handle"></div>
     <h3>You just got paid.</h3>
-    <p>Before a single dollar goes anywhere else.</p>
+    <p>Before anything else gets a share.</p>
     <input type="number" id="paid-amt" data-cur-ph="Amount received ({c})" placeholder="Amount received ($)" style="margin-bottom:12px">
     <button class="btn primary" onclick="calcPayday()" style="margin-bottom:8px">Tell me exactly what to do</button>
     <button class="btn" onclick="document.getElementById('payday-modal').classList.remove('open')">Cancel</button>

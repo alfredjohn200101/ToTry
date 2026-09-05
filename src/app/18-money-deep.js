@@ -120,7 +120,7 @@ function quickSpend(){
   document.getElementById('qs-amount').value = '';
   document.getElementById('qs-cat').value = '';
   renderTransactions();
-  showToast('Logged', '−'+curSym() + amount.toFixed(2) + ' · ' + cat);
+  showToast('Logged', '−'+curSym() + _moneyG(amount) + ' · ' + cat);
   haptic('success');
 }
 
@@ -183,7 +183,10 @@ function saveTransaction(){
   ls('totry_transactions', list.slice(0, 1000)); // unified with confirmCSVImport — was 500 here, so one quick spend after a CSV import deleted 500 transactions
   document.querySelector('.modal-bg.open')?.remove();
   renderTransactions();
-  showToast('Logged', (window.__transType === 'expense' ? '−' : '+') + curSym() + amount + ' · ' + window.__transCategory);
+  // The quick-spend path (line ~123) already formats to two decimals. The same £12 logged through
+  // this door read "−$12" there and "−$12.00" here, so the app looked like it had recorded two
+  // different things.
+  showToast('Logged', (window.__transType === 'expense' ? '−' : '+') + curSym() + _moneyG(amount) + ' · ' + window.__transCategory);
   haptic('success');
 }
 // Every other record here can be corrected — debts, bills, assets, subscriptions. A transaction
@@ -215,7 +218,7 @@ function openAllTransactions(){
           const color = t.type === 'expense' ? 'var(--re)' : (t.type === 'transfer' ? 'var(--tx3)' : 'var(--gr)');
           return '<div onclick="closeModal(this);editTransaction(' + _jsCode(JSON.stringify(t.id)) + ')" style="display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--bd);font-size:12px;cursor:pointer">'+
             '<span style="flex:1;min-width:0;color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(t.note || t.category || 'Transaction') + '</span>'+
-            '<span style="font-family:DM Mono,monospace;color:' + color + ';flex-shrink:0">' + sign + curSym() + (t.amount||0) + '</span></div>';
+            '<span style="font-family:DM Mono,monospace;color:' + color + ';flex-shrink:0">' + sign + curSym() + _moneyG(t.amount||0) + '</span></div>';
         }).join('');
     }).join('') +
     '<button class="btn" onclick="closeModal(this)" style="margin-top:16px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Close</button>'+
@@ -231,7 +234,12 @@ function editTransaction(id){
   openFormModal('Edit transaction', 'Correct what it was, or what it cost.',
     [ {id:'note', label:'What was it', type:'text', value: t.note || ''},
       {id:'amount', label:'Amount', type:'number', prefix:curSym(), value: (t.amount != null ? t.amount : '')},
-      {id:'category', label:'Category (' + cats.join(', ') + ')', type:'text', value: t.category || t.cat || ''} ],
+      // A chooser, not free text: the valid names used to live only in this label, so a typo or a
+      // lowercase spelling silently created a category the budgets could never match.
+      {id:'category', label:'Category', type:'select', options: cats,
+       value: (function(){ const c = t.category || t.cat || '';
+         const hit = cats.find(x => String(x).toLowerCase() === String(c).toLowerCase());
+         return hit || c || cats[0]; })()} ],
     'Save changes',
     function(v){
       const amt = parseFloat(v.amount);
@@ -303,7 +311,16 @@ function renderTransactions(){
   if(breakdown){
     const byCategory = {};
     thisMonth.filter(t => t.type === 'expense').forEach(t => {
-      const _c = t.category || 'Uncategorised';   // was t.category — an unset one keyed the string "undefined"
+      // ...and fold the spellings together. The two spend-entry paths wrote the same category with
+      // different casing, and existing rows still carry both, so "Food" and "food" showed as two
+      // lines splitting one month's spend. Match against the canonical list when one fits.
+      let _c = t.category || 'Uncategorised';   // was t.category — an unset one keyed the string "undefined"
+      try{
+        if(typeof EXPENSE_CATEGORIES !== 'undefined'){
+          const _hit = EXPENSE_CATEGORIES.find(x => String(x).toLowerCase() === String(_c).toLowerCase());
+          if(_hit) _c = _hit;
+        }
+      }catch(_){ }
       byCategory[_c] = (byCategory[_c] || 0) + t.amount;
     });
     const cats = Object.entries(byCategory).sort((a,b)=>b[1]-a[1]);
@@ -424,6 +441,19 @@ function openFormModal(title, subtitle, fields, submitLabel, onSubmit){
     // type:'textarea' renders a real multi-line field. It used to fall through to <input type="text">,
     // which silently turned a "write me a few sentences" prompt into a one-line box — the form looked
     // fine and quietly discouraged the very answer it was asking for.
+    // type:'select' renders a real chooser from f.options. The transaction editor asked for a
+    // category as FREE TEXT with the valid names only in the label — so typing "food" created a
+    // second category beside "Food", and the budget for Food never saw that spend again.
+    if(f.type === 'select' && Array.isArray(f.options)){
+      const _esc = t => String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+      return '<label for="fm-'+f.id+'" style="display:block;font-size:11px;color:var(--tx3);margin-bottom:6px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.08em">'+(f.label||'')+'</label>'+
+        '<div style="position:relative;margin-bottom:14px">'+
+        '<select id="fm-'+f.id+'" style="width:100%;min-height:44px">'+
+        f.options.map(function(o){
+          const sel = (String(o).toLowerCase() === String(f.value==null?'':f.value).toLowerCase()) ? ' selected' : '';
+          return '<option value="'+_esc(o)+'"'+sel+'>'+_esc(o)+'</option>';
+        }).join('')+'</select></div>';
+    }
     if(f.type === 'textarea'){
       return '<label for="fm-'+f.id+'" style="display:block;font-size:11px;color:var(--tx3);margin-bottom:6px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.1em">'+f.label+'</label>'+
         '<div style="position:relative;margin-bottom:14px">'+
@@ -823,7 +853,10 @@ function renderSubscriptions(){
     '</div>';
   }).join('');
   if(totalBox){
-    totalBox.textContent = 'Total: ~'+curSym() + monthlyTotal.toFixed(0) + '/mo · ~'+curSym() + annualTotal.toFixed(0) + '/year';
+    // ROUND ONCE, THEN DERIVE. The two figures were rounded independently, so the same line could
+    // say ~$81/mo and ~$977/year — and 81 x 12 is 972. Whichever a person checked, the app was wrong.
+    const _mo = Math.round(monthlyTotal);
+    totalBox.textContent = 'Total: ~'+curSym() + _mo + '/mo · ~'+curSym() + (_mo * 12) + '/year';
   }
 }
 
@@ -1002,7 +1035,7 @@ function renderBills(){
     return '<div style="background:' + urgency.bg + ';border:1px solid ' + urgency.border + ';border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">' +
       '<div style="flex:1;min-width:0">' +
         '<div style="font-size:13px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(b.name||b.n||'Bill') + '</div>' +
-        '<div style="font-family:DM Mono,monospace;font-size:10px;color:' + urgency.color + ';margin-top:2px">'+curSym() + (Number(b.amount!=null?b.amount:b.amt)||0).toLocaleString() + ' · ' + urgency.label + '</div>' +
+        '<div style="font-family:DM Mono,monospace;font-size:10px;color:' + urgency.color + ';margin-top:2px">'+curSym() + _moneyG(Number(b.amount!=null?b.amount:b.amt)||0) + ' · ' + urgency.label + '</div>' +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:6px">' +
         '<button class="btn" aria-label="Mark paid" style="width:auto;padding:13px 15px;font-size:10px;background:var(--gr);color:#000;border:none" onclick="markBillPaid(' + b.id + ')">✓</button>' +
@@ -1030,10 +1063,16 @@ function _budgetInputId(cat){ return 'budget-' + String(cat).replace(/[^a-z0-9]/
 // stores period "month", the manual form stores "monthly", so the same list read "/ month" beside
 // "/ monthly". One shape for each, at the point of display.
 function _money2(v){ const n = Number(v); return isFinite(n) ? n.toFixed(2) : String(v == null ? '' : v); }
+// Same two decimals, WITH thousands grouping — _money2 alone turns 1200.5 into "1200.50", which
+// reads worse than the raw number it replaced. Every amount a person typed goes through this.
+function _moneyG(v){ const n = Number(v);
+  return isFinite(n) ? n.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})
+                     : String(v == null ? '' : v); }
 function _period1(p){
   const k = String(p == null ? '' : p).toLowerCase();
   if(k.startsWith('week')) return 'week';
   if(k.startsWith('year') || k.startsWith('annual')) return 'year';
+  if(k.startsWith('quarter')) return 'quarter';   // "/ quarterly" sat among "/ week", "/ month", "/ year"
   if(k.startsWith('fortnight') || k.startsWith('biweek')) return 'fortnight';
   if(k.startsWith('month')) return 'month';
   return k || 'month';
@@ -1123,7 +1162,7 @@ function renderBudgets(){
     return '<div style="margin-bottom:14px">' +
       '<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12px;margin-bottom:4px">' +
         '<span style="color:var(--tx)">' + cat + '</span>' +
-        '<span style="font-family:DM Mono,monospace;color:' + (over ? 'var(--re)' : 'var(--tx2)') + '">'+curSym() + Math.round(spent) + ' / '+curSym() + limit + '</span>' +
+        '<span style="font-family:DM Mono,monospace;color:' + (over ? 'var(--re)' : 'var(--tx2)') + '">'+curSym() + _moneyG(spent) + ' / '+curSym() + _moneyG(limit) + '</span>' +
       '</div>' +
       '<div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-bottom:4px">' +
         '<div style="height:100%;background:' + barColor + ';width:' + pct + '%;transition:width 0.3s"></div>' +
