@@ -2374,6 +2374,11 @@ async function deleteWorkoutFromHistory(id){
   ls('totry_workouts', _kept);
   document.querySelector('.modal-bg.open')?.remove();
   if(typeof renderUnifiedTraining==='function') renderUnifiedTraining();
+  // AND REDRAW THE LIST THE ROW IS IN. renderUnifiedTraining() paints the analytics above, not
+  // #pt-history-list, so the deleted session stayed on screen with its "Repeat session" button —
+  // which then looked up an id that was no longer in storage and silently did nothing. The delete
+  // had worked; the only thing that disagreed was the screen.
+  if(typeof renderWorkoutHistory==='function') renderWorkoutHistory();
   showToast('Deleted', 'Session removed from history.');
   haptic('warning');
 }
@@ -2625,6 +2630,15 @@ function computeBodyPartFrequency(){
   return out;
 }
 
+// Math.round(v/1000)+'k' printed "0k kg" for every real session under 500kg per muscle group —
+// beside a full-width bar, and directly under a session row correctly reading "288kg vol". The same
+// screen said 288 and 0. It also flattened everything between: 3,715kg read "4k". Under a tonne,
+// say the kilos; over it, keep one decimal so 3,715 is 3.7t rather than 4.
+function _volLabel(v){
+  const n = Math.round(Number(v) || 0);
+  if(n < 1000) return n + ' kg';
+  return (n / 1000).toFixed(1).replace(/\.0$/, '') + 't';
+}
 function renderMuscleGroupCard(){
   const container = document.getElementById('pt-muscle-card');
   if(typeof renderMuscleHeatmap==='function') renderMuscleHeatmap();
@@ -2670,7 +2684,7 @@ function renderMuscleGroupCard(){
         '<div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">' +
           '<div style="height:100%;background:var(--go);width:' + pct + '%;transition:width 0.4s"></div>' +
         '</div>' +
-        '<div style="min-width:80px;text-align:right;font-family:DM Mono,monospace;color:var(--tx2)">' + Math.round(v/1000) + 'k kg</div>' +
+        '<div style="min-width:80px;text-align:right;font-family:DM Mono,monospace;color:var(--tx2)">' + _volLabel(v) + '</div>' +
         '<div style="min-width:60px;text-align:right;font-family:DM Mono,monospace;font-size:10px">' + freqLabel + '</div>' +
       '</div>';
     }).join('');
