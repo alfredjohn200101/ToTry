@@ -645,7 +645,20 @@ function renderVices(){
       const sub = fr && fr.direction
         ? fr.thisWeek + ' this week \u00b7 ' + (fr.direction === 'down' ? 'down from ' + fr.lastWeek
             : fr.direction === 'up' ? 'was ' + fr.lastWeek : 'same as last week')
-        : (viceCleanDays(v) + ' day' + (viceCleanDays(v) === 1 ? '' : 's') + ' clean');
+        : (function(){
+            // viceCleanDays() returns 0 for anything non-abstinence, deliberately — a letting-go goal
+            // has no clean days because it has no unclean ones. Printing that 0 as "0 days clean" put
+            // both relapse language and a FALSE ZERO on the row, contradicting the open card for the
+            // same goal on the same screen: "41 days of choosing yourself" above, "0 days clean" below.
+            const _lg = (typeof viceMode==='function') ? viceMode(v)==='letgo' : (v && v.kind==='letgo');
+            if(_lg){
+              let _d = 0;
+              try{ _d = (typeof _calDaysSince==='function' && v.startDate) ? _calDaysSince(v.startDate)+1 : 0; }catch(_){ }
+              return _d > 0 ? ('day ' + _d + ' of choosing yourself') : 'choosing yourself';
+            }
+            const _c = viceCleanDays(v);
+            return _c + ' day' + (_c === 1 ? '' : 's') + ' clean';
+          })();
       const col = fr && fr.direction === 'down' ? 'var(--gr)' : fr && fr.direction === 'up' ? 'var(--go)' : 'var(--tx3)';
       const row = document.createElement('button');
       row.className = 'vice-row';
@@ -1917,6 +1930,12 @@ function applyViceMode(i, mode){
   if(mode === true) mode = 'moderate';
   else if(mode === false) mode = 'quit';
   if(mode !== 'moderate' && mode !== 'quit' && mode !== 'watch') mode = 'quit';
+  // A LETTING-GO GOAL COULD NOT LEAVE. viceMode() returns 'letgo' whenever v.kind === 'letgo', and
+  // this only ever writes v.mode — so for a letting-go goal every option in the chooser was inert:
+  // none could take effect, none was ever shown as current, and picking "quit" still reset
+  // startDate on the way past, destroying "day 42 of choosing yourself" for nothing. Choosing a
+  // goal is a real decision and it is theirs to make, so honour it by clearing the kind as well.
+  if(v.kind === 'letgo') delete v.kind;
   if(mode === 'moderate'){
     const lim = parseInt(document.getElementById('change-mode-limit')?.value);
     if(isNaN(lim) || lim < 1){ showToast('Set a limit','Enter how many times per week is within your limit.'); return; }
@@ -1980,9 +1999,14 @@ function openViceManage(i){
     // set the real day, backfill what you missed. There was no way to simply decide today is day one
     // again, which is a different act entirely: not admitting a fall, but choosing to begin. It costs
     // the streak and keeps the fight, which is the point — "Day N of the fight" does not move.
-    row('Start again from today', 'curVice='+i+';restartVice('+i+')')+
-    row('It happened earlier — set the real day', 'curVice='+i+';promptLossDate()')+
-    row('Log slips from before I started here', 'curVice='+i+';promptMassAddLosses()')+
+    // ...but not for a letting-go goal. These three are all confessions of a slip — restart the
+    // clock, set the day it happened, backfill the ones you missed — and a grief or an attachment
+    // being released has no slips to confess. Offering them frames letting go as relapse, which is
+    // the exact inversion of what the kind exists for.
+    ((typeof viceMode==='function' ? viceMode(v) : v.kind) === 'letgo' ? '' :
+      row('Start again from today', 'curVice='+i+';restartVice('+i+')')+
+      row('It happened earlier — set the real day', 'curVice='+i+';promptLossDate()')+
+      row('Log slips from before I started here', 'curVice='+i+';promptMassAddLosses()'))+
     // MONEY IS NOT THE STAKE FOR EVERY FIGHT. _viceStakeKind already knows this — the in-the-moment
     // card has always refused to price a porn or masturbation win in dollars — but the settings sheet
     // still offered "Track the money it costs" for every vice, which asks a person what their lust

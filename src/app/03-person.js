@@ -602,6 +602,13 @@ function getLifeState(){
       kind: v.kind || null,
       cleanDays: ((typeof viceIsAbstinence==='function') ? viceIsAbstinence(v) : (v.mode!=='moderate'))
                    ? ((typeof viceCleanDays==='function') ? viceCleanDays(v) : null) : null,
+      // A letting-go goal has no clean days — it has no unclean ones — so cleanDays is null for it
+      // by design. It still has a length, and without it every reader of this state had to print
+      // "day 0" or nothing: the woven row on Home said "letting go, day 0" on day 1 and on day 42
+      // alike, while the vice card two taps away said "day 42 of choosing yourself".
+      letGoDays: (v.kind === 'letgo' && v.startDate)
+                   ? (function(){ try{ return (typeof _calDaysSince==='function') ? _calDaysSince(v.startDate)+1 : null; }catch(_){ return null; } })()
+                   : null,
       uses7: uses7.reduce((a,u)=>a+(parseInt(u.qty,10)||1),0),
       daysSinceUse: lastUse ? Math.max(0, Math.floor((now-lastUse)/86400000)) : null,
       turnedAway7: turned7,

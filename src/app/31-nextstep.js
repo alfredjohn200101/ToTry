@@ -221,7 +221,7 @@ function renderLifeWoven(){
   // THE FIGHT — clean streak (quit) or holding the line (moderate)
   const vs=(s.fight&&s.fight.vices)||[]; let fightTxt;
   if(!vs.length) fightTxt='no fight named yet';
-  else { const q=vs.filter(v=>viceIsAbstinence(v)); if(q.length){ const mc=Math.max.apply(null,q.map(v=>v.cleanDays||0)); fightTxt=mc+' day'+(mc===1?'':'s')+' clean'; } else { const lg=vs.filter(v=>v.kind==='letgo'); fightTxt = lg.length ? 'letting go, day '+Math.max.apply(null,lg.map(v=>v.cleanDays||0)) : 'holding your line'; } }
+  else { const q=vs.filter(v=>viceIsAbstinence(v)); if(q.length){ const mc=Math.max.apply(null,q.map(v=>v.cleanDays||0)); fightTxt=mc+' day'+(mc===1?'':'s')+' clean'; } else { const lg=vs.filter(v=>v.kind==='letgo'); /* v.cleanDays is null for a letting-go goal BY DESIGN: viceCleanDays() refuses to count clean days for something that has no unclean ones. So `|| 0` printed 'letting go, day 0' forever — on day 1 and day 42 alike — while the vice card said '41 days of choosing yourself'. renderHomeQuickWins already counts this correctly from startDate; same sum here. */ const lgDay=lg.length?Math.max.apply(null,lg.map(function(v){ return v.letGoDays || 0; })):0; fightTxt = lg.length ? (lgDay>0 ? 'letting go, day '+lgDay : 'letting go') : 'holding your line'; } }
   // SPIRIT — the daily rhythm
   const mornDone=ritualLog('totry_mornings').some(dOn); const evenDone=ritualLog('totry_evenings').some(dOn);
   const spiritTxt = evenDone?'day closed ✓' : mornDone?'reflect tonight' : (h<15?'set your intention':'reflect on today');
