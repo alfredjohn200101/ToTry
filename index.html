@@ -27485,16 +27485,33 @@ function openFoodFix(){
   const ge = s.gramsEquiv || 100;
   const lbl = document.getElementById('sm-fix-serving');
   if(lbl) lbl.textContent = s.name || (ge + (currentFood.__unit||'g'));
-  const m = ge / 100;
+  // THE MACROS COME FROM THE SERVING, not from a per-100 base times ge/100. That multiplication is
+  // only valid when currentFood.cal IS a per-100 figure — true for a barcode food, false for the
+  // curated COMMON_FOODS rows, where _buildCommonFood sets the top-level macros from the DEFAULT
+  // PORTION and never sets per100. So this scaled already-per-portion numbers a second time and
+  // prefilled them ~1.7x too high for chicken breast, 1.18x for a banana, 1.8x for rice — including
+  // on the "100 g" option. Tapping "Correct them" and saving with nothing edited inflated every
+  // macro; correcting only the one number you knew was wrong silently saved the other seven at 1.7x.
+  // And the result was then badged "your numbers ✓", marking the now-wrong figures as MORE
+  // trustworthy than the database they replaced, in the search row, the modal and every logged meal.
+  // The panel now prefills exactly what the modal shows above it — s.cal at qty 1 — which is what
+  // this function's own comment always said it did.
   const set = (id, v) => { const el = document.getElementById(id); if(el) el.value = (v && !isNaN(v)) ? Math.round(v*10)/10 : ''; };
-  set('fix-cal', (currentFood.cal||0)*m);
-  set('fix-pro', (currentFood.pro||0)*m);
-  set('fix-carb', (currentFood.carb||0)*m);
-  set('fix-fat', (currentFood.fat||0)*m);
-  set('fix-fiber', (currentFood.fiber||0)*m);
-  set('fix-sugar', (currentFood.sugar||0)*m);
-  set('fix-sodium', (currentFood.sodium||0)*m);
-  set('fix-potassium', (currentFood.potassium||0)*m);
+  const _hasServingMacros = s && s.cal != null;
+  const m = _hasServingMacros ? 1 : (ge / 100);
+  const _base = _hasServingMacros ? s : currentFood;
+  set('fix-cal', (_base.cal||0)*m);
+  set('fix-pro', (_base.pro||0)*m);
+  set('fix-carb', (_base.carb||0)*m);
+  set('fix-fat', (_base.fat||0)*m);
+  // Micros live on currentFood only, and the preview scales them with the same rule as
+  // updateServingPreview — the serving decides, not the per100 flag.
+  const _gramServing = !!(ge && s && (s.__gram || /^\s*100\s*(g|ml)\b/i.test(String(s.name||''))));
+  const microMult = (s && s.gramsEquiv && (currentFood.per100 || _gramServing)) ? (s.gramsEquiv / 100) : 1;
+  set('fix-fiber', (currentFood.fiber||0)*microMult);
+  set('fix-sugar', (currentFood.sugar||0)*microMult);
+  set('fix-sodium', (currentFood.sodium||0)*microMult);
+  set('fix-potassium', (currentFood.potassium||0)*microMult);
   panel.style.display = 'block';
   try{ panel.scrollIntoView({behavior:'smooth', block:'center'}); }catch(_){ }
 }
