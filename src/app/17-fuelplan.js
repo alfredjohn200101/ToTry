@@ -606,6 +606,17 @@ function renderHomeCalendar(){
 function renderCalendar(){
   // Dispatch to the active view (day / week / month). Week is the default.
   const view = ls('totry_cal_view') || 'week';
+  // AND PAINT THE SWITCHER TO MATCH. The selected-segment styling lived only in setCalView(), and
+  // the markup hardcodes Week as the selected one — so reopening the app on Day or Month restored
+  // the right pane under a switcher still saying Week.
+  ['day','week','month'].forEach(function(x){
+    const b = document.getElementById('calview-'+x);
+    if(!b) return;
+    const on = x === view;
+    b.style.background = on ? 'var(--bg)' : 'transparent';
+    b.style.border = on ? '1px solid var(--bd)' : 'none';
+    b.style.color = on ? 'var(--tx)' : 'var(--tx3)';
+  });
   const wk=document.getElementById('cal-week-view'), dy=document.getElementById('cal-day-view'), mo=document.getElementById('cal-month-view');
   if(wk) wk.style.display = view==='week'?'block':'none';
   if(dy) dy.style.display = view==='day'?'block':'none';
@@ -628,9 +639,9 @@ function renderCalendarDay(){
   const wrap = document.getElementById('cal-day-view');
   if(!wrap) return;
   const events = _calEvents();
-  const todayDow = (new Date().getDay()+6)%7;
+  const today = (typeof _calDayISO !== 'undefined' && _calDayISO) ? new Date(_calDayISO + 'T12:00:00') : new Date();
+  const todayDow = (today.getDay()+6)%7;
   const dayName = CAL_DAYS[todayDow];
-  const today = new Date();
   const dateLabel = today.toLocaleDateString('en-AU', {weekday:'long', day:'numeric', month:'long'});
   const dayEvents = events.filter(e => e.day === todayDow).sort((a,b)=>(a.start||'').localeCompare(b.start||''));
   let html = '<div style="font-family:DM Mono,monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--go);margin-bottom:10px">'+dateLabel+'</div>';
@@ -710,10 +721,14 @@ function renderCalendarMonth(){
   for(let d=1; d<=daysInMonth; d++){
     const cellDate = new Date(year, month, d);
     const dow = (cellDate.getDay()+6)%7;
-    const dayEvents = events.filter(e => e.day === dow);
+    const _calCellISO = cellDate.toISOString().slice(0,10);
+    // A ONE-OFF IS NOT A WEEKLY. This matched on weekday alone, so an event saved with "Repeats
+    // every week" OFF was drawn on that weekday in every week of the grid, for ever. Scope a
+    // non-recurring event to the week it actually belongs to.
+    const dayEvents = events.filter(e => e.day === dow && (e.recurring !== false || _calSameWeek(e, cellDate)));
     const isToday = cellDate.toDateString() === todayStr;
     const dots = dayEvents.slice(0,4).map(e => '<span style="width:5px;height:5px;border-radius:50%;background:'+(CAL_TYPE_COLORS[e.type]||CAL_TYPE_COLORS.other)+'"></span>').join('');
-    html += '<div onclick="calJumpToDay('+dow+')" style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:5px;gap:3px;border-radius:7px;cursor:pointer;background:'+(isToday?'rgba(200,169,110,0.16)':'var(--bg3)')+';border:1px solid '+(isToday?'var(--go-bd)':'transparent')+'">'+
+    html += '<div onclick="calJumpToDay('+dow+',\''+_calCellISO+'\')" style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:5px;gap:3px;border-radius:7px;cursor:pointer;background:'+(isToday?'rgba(200,169,110,0.16)':'var(--bg3)')+';border:1px solid '+(isToday?'var(--go-bd)':'transparent')+'">'+
       '<div style="font-size:12px;color:'+(isToday?'var(--go)':'var(--tx2)')+'">'+d+'</div>'+
       '<div style="display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:80%">'+dots+'</div></div>';
   }
@@ -727,9 +742,26 @@ function calMonthShift(delta){
   window.__calMonthRef = ref.toISOString();
   renderCalendarMonth();
 }
-function calJumpToDay(dow){
-  // Tapping a month-grid day jumps to the day view (shows that weekday's recurring events).
+function calJumpToDay(dow, iso){
+  // Tapping a month-grid day jumps to the day view. The date was thrown away — every cell opened
+  // today, whichever one you tapped — so the day view now gets the date it was asked for.
+  _calDayISO = iso || null;
   setCalView('day');
+}
+// The day the day-view is showing. Null means today, which is what every other entry point wants.
+let _calDayISO = null;
+// A one-off event belongs to the week it was created in. Events carry no date of their own beyond
+// `ts`, so that is the anchor; without a ts we cannot place it and it is treated as recurring,
+// which is the behaviour it had before.
+function _calSameWeek(e, cellDate){
+  try{
+    if(!e || !e.ts) return true;
+    const made = new Date(e.ts);
+    if(isNaN(made.getTime())) return true;
+    const mondayOf = d => { const x = new Date(d); const off = (x.getDay()+6)%7;
+      x.setHours(0,0,0,0); x.setDate(x.getDate()-off); return x.getTime(); };
+    return mondayOf(made) === mondayOf(cellDate);
+  }catch(_){ return true; }
 }
 
 function renderCalInsight(events){
@@ -744,7 +776,11 @@ function renderCalInsight(events){
     const [sh,sm] = e.start.split(':').map(Number);
     const [eh,em] = e.end.split(':').map(Number);
     let mins = (eh*60+em) - (sh*60+sm);
-    if(mins <= 0) return;
+    // AN OVERNIGHT SHIFT IS NOT ZERO HOURS. 22:00 to 06:00 gives -960 here and was dropped by the
+    // guard below, so night shift — the pattern most likely to be someone's whole working week —
+    // counted for nothing in "Your time".
+    if(mins < 0) mins += 1440;
+    if(mins <= 0) return;   // start equals end: nothing to count
     hoursByType[e.type] = (hoursByType[e.type]||0) + mins;
     totalMins += mins;
   });
