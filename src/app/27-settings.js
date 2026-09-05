@@ -1155,7 +1155,10 @@ function exportJournal(){
 }
 function exportWins(){
   const wins=ls('totry_wins')||[];if(!wins.length){showToast('No wins','Log some wins first.');return;}
-  const text=wins.map(w=>'\u2b50 Day '+w.day+' \u2014 '+w.date+'\n'+w.text).join('\n\n');
+  // Only the wins typed on this screen carry `day`; the ones the Fight logs do not, so every one of
+  // those exported as "Day undefined". renderWinsLog() three hundred lines up already guards this
+  // exact field — `w.date + (w.day ? ' · Day '+w.day : '')` — and the export did not. Same guard.
+  const text=wins.map(w=>'\u2b50 ' + (w.day ? 'Day '+w.day+' \u2014 ' : '') + w.date + '\n' + w.text).join('\n\n');
   copyToClipboard(text);showToast('Copied!',wins.length+' wins copied to clipboard.');
 }
 function copyToClipboard(text){

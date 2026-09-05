@@ -3957,6 +3957,10 @@ function renderNutritionLog(){
   if(e('eq-goal')) e('eq-goal').textContent = goalCal;
   if(e('eq-food')) e('eq-food').textContent = Math.round(totals.cal);
   if(e('eq-rem')){ e('eq-rem').textContent = remCal>=0 ? remCal : ('+'+Math.abs(remCal)); e('eq-rem').style.color = remCal>=0 ? 'var(--go)' : 'var(--re)'; }
+  // AND THE WORD, which said "left" whichever side of the target they were on. Over by 600 the row
+  // read "= +600 left" — a plus sign and a word that both mean the opposite of what happened. The
+  // number keeps its sign for the eye; the word now says which side of the line it is.
+  if(e('eq-rem-lbl')) e('eq-rem-lbl').textContent = remCal >= 0 ? 'left' : 'over';
   // Exercise surfaced honestly — NOT eaten back (it's already inside your adaptive target). Accurate, not MFP's double-count.
   // NUMBERS OFF MEANS NO NUMBERS. This sits OUTSIDE #nut-equation, so applyNutGentle's HIDE list
   // never reached it — and it re-showed itself on every render anyway, printing a raw calorie
@@ -4348,7 +4352,7 @@ function renderAdaptiveTDEE(){
   if(dir !== 'maintaining' && r.trendWeight){
     const perDay = r.weightChangeKg / r.days;
     const in4w = Math.round((r.trendWeight + perDay*28)*10)/10;
-    forecastLine = '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:4px">If this trend holds: ~' + in4w + 'kg in 4 weeks.</div>';
+    forecastLine = '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:4px">If this trend holds: ~' + wDelta(in4w) + ' in 4 weeks.</div>';
   }
   // THE LOOP CLOSER: if real burn differs meaningfully from the set goal, offer (never force)
   // a one-tap goal update. Consent-based, like everything in this app.
@@ -4373,8 +4377,8 @@ function renderAdaptiveTDEE(){
       '<div style="font-size:12px;color:var(--tx3)">cal/day maintenance</div>' +
     '</div>' +
     '<div style="font-size:12px;color:var(--tx2);line-height:1.6">Calculated from your real intake and weight trend over ' + r.days + ' days — not a formula. ' +
-      'You\'re <span style="color:' + dirColor + '">' + dir + '</span>' + (dir!=='maintaining' ? ' (' + (r.weightChangeKg>0?'+':'') + r.weightChangeKg + 'kg)' : '') + ' on about ' + r.avgIntake.toLocaleString() + ' cal/day.</div>' +
-    (r.trendWeight ? '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:6px;padding-top:6px;border-top:1px solid var(--bd)">Trend weight: ' + r.trendWeight + 'kg (smoothed, ignores daily water swings)</div>' : '') +
+      'You\'re <span style="color:' + dirColor + '">' + dir + '</span>' + (dir!=='maintaining' ? ' (' + wDelta(r.weightChangeKg) + ')' : '') + ' on about ' + r.avgIntake.toLocaleString() + ' cal/day.</div>' +
+    (r.trendWeight ? '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:6px;padding-top:6px;border-top:1px solid var(--bd)">Trend weight: ' + wFmt(r.trendWeight) + ' (smoothed, ignores daily water swings)</div>' : '') +
     forecastLine +
     goalSuggest;
 }

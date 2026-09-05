@@ -237,6 +237,10 @@ function overloadSuggestion(exName, opts){
 // Adaptive nutrition (WS1, MacroFactor-style but free + suggestion-only). Looks at the body-weight
 // trend over ~2 weeks vs the user's goal direction, and suggests a calorie adjustment. Never changes
 // goals silently — returns a suggestion the user approves. Returns null if not enough data.
+// EVERY WEIGHT HERE GOES THROUGH wDelta. These lines hand-rolled `toFixed(1) + 'kg'`, which is
+// exactly what the wDelta comment in 13-body.js warns against — so a pounds user was told her
+// weight "held about steady (-0.1kg over 28 days)" in a unit she never chose, on the card whose
+// whole job is telling her what her own body is doing.
 function adaptiveNutritionSuggestion(){
   const body = ls('totry_body') || [];
   if(body.length < 2) return null;
@@ -258,13 +262,13 @@ function adaptiveNutritionSuggestion(){
   // Healthy rates: lose ~0.25–0.75 kg/wk, gain ~0.1–0.4 kg/wk.
   let msg = null, dir = 0;
   if(want === 'lose'){
-    if(perWeek > -0.1){ msg = 'Your weight has held about steady (' + (deltaKg>=0?'+':'') + deltaKg.toFixed(1) + 'kg over ' + Math.round(days) + ' days) while you\u2019re aiming to lose. Consider dropping ~150 cal.'; dir = -150; }
-    else if(perWeek < -1.0){ msg = 'You\u2019re losing fast (' + perWeek.toFixed(1) + 'kg/wk) \u2014 that can cost muscle. Consider adding ~150 cal to slow it to a sustainable rate.'; dir = 150; }
+    if(perWeek > -0.1){ msg = 'Your weight has held about steady (' + wDelta(deltaKg) + ' over ' + Math.round(days) + ' days) while you\u2019re aiming to lose. Consider dropping ~150 cal.'; dir = -150; }
+    else if(perWeek < -1.0){ msg = 'You\u2019re losing fast (' + wDelta(perWeek) + '/wk) \u2014 that can cost muscle. Consider adding ~150 cal to slow it to a sustainable rate.'; dir = 150; }
   } else if(want === 'gain'){
-    if(perWeek < 0.05){ msg = 'Your weight is flat (' + (deltaKg>=0?'+':'') + deltaKg.toFixed(1) + 'kg over ' + Math.round(days) + ' days) while you\u2019re aiming to gain. Consider adding ~150 cal.'; dir = 150; }
-    else if(perWeek > 0.6){ msg = 'You\u2019re gaining fast (' + perWeek.toFixed(1) + 'kg/wk) \u2014 more of that is fat. Consider trimming ~150 cal.'; dir = -150; }
+    if(perWeek < 0.05){ msg = 'Your weight is flat (' + wDelta(deltaKg) + ' over ' + Math.round(days) + ' days) while you\u2019re aiming to gain. Consider adding ~150 cal.'; dir = 150; }
+    else if(perWeek > 0.6){ msg = 'You\u2019re gaining fast (' + wDelta(perWeek) + '/wk) \u2014 more of that is fat. Consider trimming ~150 cal.'; dir = -150; }
   } else {
-    if(Math.abs(perWeek) > 0.4){ msg = 'You\u2019re aiming to maintain but trending ' + (perWeek>0?'up':'down') + ' (' + perWeek.toFixed(1) + 'kg/wk). Consider ' + (perWeek>0?'trimming':'adding') + ' ~150 cal.'; dir = perWeek>0 ? -150 : 150; }
+    if(Math.abs(perWeek) > 0.4){ msg = 'You\u2019re aiming to maintain but trending ' + (perWeek>0?'up':'down') + ' (' + wDelta(perWeek) + '/wk). Consider ' + (perWeek>0?'trimming':'adding') + ' ~150 cal.'; dir = perWeek>0 ? -150 : 150; }
   }
   if(!msg) return null;
   return { message: msg, suggestedCal: Math.max(1200, Math.round(goals.cal + dir)), currentCal: goals.cal, perWeek: perWeek.toFixed(2), days: Math.round(days) };

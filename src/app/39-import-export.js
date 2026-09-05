@@ -631,8 +631,13 @@ function exportWorkouts(){
                  (s.day ? ' (Day ' + s.day + ')' : '') + ' ===';
     const title = s.splitFocus || s.type || 'Session';
     const meta = [
-      s.durationMinutes ? s.durationMinutes + ' min' : '',
-      s.distance ? (Math.round(s.distance) + ' m') : '',
+      // Sessions logged in ToTry write durationMin; the importer writes durationMinutes. Six other
+      // call sites already read both spellings — this one read only the importer's, so every session
+      // the person logged in this app exported with a blank duration.
+      (s.durationMinutes || s.durationMin) ? ((s.durationMinutes || s.durationMin) + ' min') : '',
+      // And distance was printed in raw metres — "5000 m" for a 5k — while the app has dFmt for
+      // exactly this and the person may have chosen miles.
+      s.distance ? ((typeof dFmt === 'function') ? dFmt(s.distance) : (Math.round(s.distance) + ' m')) : '',
       s.calories ? (Math.round(s.calories) + ' cal') : '',
       s.averageHeartRate ? (Math.round(s.averageHeartRate) + ' bpm') : '',
       s.sourceName ? ('via ' + s.sourceName) : ''

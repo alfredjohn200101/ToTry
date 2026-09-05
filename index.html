@@ -2648,7 +2648,7 @@ input:focus,textarea:focus,select:focus{
         <span class="cal-eq-op">&minus;</span>
         <span><b id="eq-food">0</b> eaten</span>
         <span class="cal-eq-op">=</span>
-        <span><b id="eq-rem">0</b> left</span>
+        <span><b id="eq-rem">0</b> <span id="eq-rem-lbl">left</span></span>
       </div>
       <div id="eq-burn" style="display:none;font-family:'DM Mono',monospace;font-size:9.5px;color:var(--tx3);text-align:center;line-height:1.3;margin-top:4px"></div>
     </div>
@@ -28727,6 +28727,10 @@ function renderNutritionLog(){
   if(e('eq-goal')) e('eq-goal').textContent = goalCal;
   if(e('eq-food')) e('eq-food').textContent = Math.round(totals.cal);
   if(e('eq-rem')){ e('eq-rem').textContent = remCal>=0 ? remCal : ('+'+Math.abs(remCal)); e('eq-rem').style.color = remCal>=0 ? 'var(--go)' : 'var(--re)'; }
+  // AND THE WORD, which said "left" whichever side of the target they were on. Over by 600 the row
+  // read "= +600 left" — a plus sign and a word that both mean the opposite of what happened. The
+  // number keeps its sign for the eye; the word now says which side of the line it is.
+  if(e('eq-rem-lbl')) e('eq-rem-lbl').textContent = remCal >= 0 ? 'left' : 'over';
   // Exercise surfaced honestly — NOT eaten back (it's already inside your adaptive target). Accurate, not MFP's double-count.
   // NUMBERS OFF MEANS NO NUMBERS. This sits OUTSIDE #nut-equation, so applyNutGentle's HIDE list
   // never reached it — and it re-showed itself on every render anyway, printing a raw calorie
@@ -29118,7 +29122,7 @@ function renderAdaptiveTDEE(){
   if(dir !== 'maintaining' && r.trendWeight){
     const perDay = r.weightChangeKg / r.days;
     const in4w = Math.round((r.trendWeight + perDay*28)*10)/10;
-    forecastLine = '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:4px">If this trend holds: ~' + in4w + 'kg in 4 weeks.</div>';
+    forecastLine = '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:4px">If this trend holds: ~' + wDelta(in4w) + ' in 4 weeks.</div>';
   }
   // THE LOOP CLOSER: if real burn differs meaningfully from the set goal, offer (never force)
   // a one-tap goal update. Consent-based, like everything in this app.
@@ -29143,8 +29147,8 @@ function renderAdaptiveTDEE(){
       '<div style="font-size:12px;color:var(--tx3)">cal/day maintenance</div>' +
     '</div>' +
     '<div style="font-size:12px;color:var(--tx2);line-height:1.6">Calculated from your real intake and weight trend over ' + r.days + ' days — not a formula. ' +
-      'You\'re <span style="color:' + dirColor + '">' + dir + '</span>' + (dir!=='maintaining' ? ' (' + (r.weightChangeKg>0?'+':'') + r.weightChangeKg + 'kg)' : '') + ' on about ' + r.avgIntake.toLocaleString() + ' cal/day.</div>' +
-    (r.trendWeight ? '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:6px;padding-top:6px;border-top:1px solid var(--bd)">Trend weight: ' + r.trendWeight + 'kg (smoothed, ignores daily water swings)</div>' : '') +
+      'You\'re <span style="color:' + dirColor + '">' + dir + '</span>' + (dir!=='maintaining' ? ' (' + wDelta(r.weightChangeKg) + ')' : '') + ' on about ' + r.avgIntake.toLocaleString() + ' cal/day.</div>' +
+    (r.trendWeight ? '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:6px;padding-top:6px;border-top:1px solid var(--bd)">Trend weight: ' + wFmt(r.trendWeight) + ' (smoothed, ignores daily water swings)</div>' : '') +
     forecastLine +
     goalSuggest;
 }
@@ -34149,6 +34153,10 @@ function overloadSuggestion(exName, opts){
 // Adaptive nutrition (WS1, MacroFactor-style but free + suggestion-only). Looks at the body-weight
 // trend over ~2 weeks vs the user's goal direction, and suggests a calorie adjustment. Never changes
 // goals silently — returns a suggestion the user approves. Returns null if not enough data.
+// EVERY WEIGHT HERE GOES THROUGH wDelta. These lines hand-rolled `toFixed(1) + 'kg'`, which is
+// exactly what the wDelta comment in 13-body.js warns against — so a pounds user was told her
+// weight "held about steady (-0.1kg over 28 days)" in a unit she never chose, on the card whose
+// whole job is telling her what her own body is doing.
 function adaptiveNutritionSuggestion(){
   const body = ls('totry_body') || [];
   if(body.length < 2) return null;
@@ -34170,13 +34178,13 @@ function adaptiveNutritionSuggestion(){
   // Healthy rates: lose ~0.25–0.75 kg/wk, gain ~0.1–0.4 kg/wk.
   let msg = null, dir = 0;
   if(want === 'lose'){
-    if(perWeek > -0.1){ msg = 'Your weight has held about steady (' + (deltaKg>=0?'+':'') + deltaKg.toFixed(1) + 'kg over ' + Math.round(days) + ' days) while you\u2019re aiming to lose. Consider dropping ~150 cal.'; dir = -150; }
-    else if(perWeek < -1.0){ msg = 'You\u2019re losing fast (' + perWeek.toFixed(1) + 'kg/wk) \u2014 that can cost muscle. Consider adding ~150 cal to slow it to a sustainable rate.'; dir = 150; }
+    if(perWeek > -0.1){ msg = 'Your weight has held about steady (' + wDelta(deltaKg) + ' over ' + Math.round(days) + ' days) while you\u2019re aiming to lose. Consider dropping ~150 cal.'; dir = -150; }
+    else if(perWeek < -1.0){ msg = 'You\u2019re losing fast (' + wDelta(perWeek) + '/wk) \u2014 that can cost muscle. Consider adding ~150 cal to slow it to a sustainable rate.'; dir = 150; }
   } else if(want === 'gain'){
-    if(perWeek < 0.05){ msg = 'Your weight is flat (' + (deltaKg>=0?'+':'') + deltaKg.toFixed(1) + 'kg over ' + Math.round(days) + ' days) while you\u2019re aiming to gain. Consider adding ~150 cal.'; dir = 150; }
-    else if(perWeek > 0.6){ msg = 'You\u2019re gaining fast (' + perWeek.toFixed(1) + 'kg/wk) \u2014 more of that is fat. Consider trimming ~150 cal.'; dir = -150; }
+    if(perWeek < 0.05){ msg = 'Your weight is flat (' + wDelta(deltaKg) + ' over ' + Math.round(days) + ' days) while you\u2019re aiming to gain. Consider adding ~150 cal.'; dir = 150; }
+    else if(perWeek > 0.6){ msg = 'You\u2019re gaining fast (' + wDelta(perWeek) + '/wk) \u2014 more of that is fat. Consider trimming ~150 cal.'; dir = -150; }
   } else {
-    if(Math.abs(perWeek) > 0.4){ msg = 'You\u2019re aiming to maintain but trending ' + (perWeek>0?'up':'down') + ' (' + perWeek.toFixed(1) + 'kg/wk). Consider ' + (perWeek>0?'trimming':'adding') + ' ~150 cal.'; dir = perWeek>0 ? -150 : 150; }
+    if(Math.abs(perWeek) > 0.4){ msg = 'You\u2019re aiming to maintain but trending ' + (perWeek>0?'up':'down') + ' (' + wDelta(perWeek) + '/wk). Consider ' + (perWeek>0?'trimming':'adding') + ' ~150 cal.'; dir = perWeek>0 ? -150 : 150; }
   }
   if(!msg) return null;
   return { message: msg, suggestedCal: Math.max(1200, Math.round(goals.cal + dir)), currentCal: goals.cal, perWeek: perWeek.toFixed(2), days: Math.round(days) };
@@ -44226,7 +44234,10 @@ function exportJournal(){
 }
 function exportWins(){
   const wins=ls('totry_wins')||[];if(!wins.length){showToast('No wins','Log some wins first.');return;}
-  const text=wins.map(w=>'\u2b50 Day '+w.day+' \u2014 '+w.date+'\n'+w.text).join('\n\n');
+  // Only the wins typed on this screen carry `day`; the ones the Fight logs do not, so every one of
+  // those exported as "Day undefined". renderWinsLog() three hundred lines up already guards this
+  // exact field — `w.date + (w.day ? ' · Day '+w.day : '')` — and the export did not. Same guard.
+  const text=wins.map(w=>'\u2b50 ' + (w.day ? 'Day '+w.day+' \u2014 ' : '') + w.date + '\n' + w.text).join('\n\n');
   copyToClipboard(text);showToast('Copied!',wins.length+' wins copied to clipboard.');
 }
 function copyToClipboard(text){
@@ -49455,8 +49466,13 @@ function exportWorkouts(){
                  (s.day ? ' (Day ' + s.day + ')' : '') + ' ===';
     const title = s.splitFocus || s.type || 'Session';
     const meta = [
-      s.durationMinutes ? s.durationMinutes + ' min' : '',
-      s.distance ? (Math.round(s.distance) + ' m') : '',
+      // Sessions logged in ToTry write durationMin; the importer writes durationMinutes. Six other
+      // call sites already read both spellings — this one read only the importer's, so every session
+      // the person logged in this app exported with a blank duration.
+      (s.durationMinutes || s.durationMin) ? ((s.durationMinutes || s.durationMin) + ' min') : '',
+      // And distance was printed in raw metres — "5000 m" for a 5k — while the app has dFmt for
+      // exactly this and the person may have chosen miles.
+      s.distance ? ((typeof dFmt === 'function') ? dFmt(s.distance) : (Math.round(s.distance) + ' m')) : '',
       s.calories ? (Math.round(s.calories) + ' cal') : '',
       s.averageHeartRate ? (Math.round(s.averageHeartRate) + ' bpm') : '',
       s.sourceName ? ('via ' + s.sourceName) : ''
