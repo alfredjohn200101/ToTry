@@ -578,7 +578,10 @@ function renderWorkoutSession(){
     const progBadge = prog ?
       '<div style="font-size:11px;color:var(--tx2);line-height:1.5;margin-bottom:6px;padding:6px 9px;background:rgba(91,185,125,0.08);border:1px solid var(--go-bd);border-radius:6px">↗ <span style="color:var(--gr)">'+prog.text+'</span></div>' : '';
     
-    card.innerHTML='<div class="se-name">'+ex.name + supersetBadge +
+    // A THIRD EXECUTING SINK, same class as the routine name and the bank-CSV description. Exercise
+    // names are not all from the catalogue — addCustomExercise() lets a person type their own, and
+    // that name lands here raw. Driven with `<img src=x onerror=...>`: it fired.
+    card.innerHTML='<div class="se-name">'+_escFew(ex.name) + supersetBadge +
       '<button class="se-form" title="Show form & instructions" onclick="showExerciseForm(\''+safeName+'\')" style="background:none;border:none;color:var(--go);font-size:11px;cursor:pointer;padding:0 6px;font-family:DM Mono,monospace">FORM</button>'+
       '<button title="Swap exercise \u2014 keeps your sets" onclick="swapExercise('+ei+')" style="background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;padding:0 5px;font-family:DM Mono,monospace">\u21c4</button>'+
       supersetBtn + upBtn + downBtn +

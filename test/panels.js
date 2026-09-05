@@ -470,6 +470,53 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       findings.push('injection (CSV): nothing executed, but the description is not shown as it appears in the file either');
     else console.log('injection (CSV): a bank Description is text on the review screen, and executes nowhere');
 
+    // ── NOTHING A PERSON TYPED MAY EVER RUN ───────────────────────────────────────────────────
+    // Four separate executing sinks turned up in four different doors: a routine name, a bank
+    // statement's Description, a custom exercise name, and the "focus" line of a weekly review.
+    // Escaping each one as it is found is whack-a-mole; this seeds a payload into EVERY store that
+    // holds text a person typed, walks the whole app, and asserts none of it ran. `rendered` is
+    // reported too, because a payload that never reaches a screen proves nothing — a check that
+    // silently stops covering anything is worse than no check.
+    const typedTextSweep = await page.evaluate(async () => {
+      const iso = new Date().toISOString(), au = new Date().toLocaleDateString('en-AU');
+      const P = n => '<img src=x onerror=window.__typed=' + n + '>MARK' + n;
+      const stores = [
+        ['totry_v',             [{ id:1, n:P(1), kind:'abstain', mode:'quit', startDate:iso, w:1, total:2 }]],
+        ['totry_routines',      [{ id:1, name:P(2), exercises:[{ name:'Bench Press', sets:[] }] }]],
+        ['totry_h',             [{ n:P(3), d:[0,0,0,0,0,0,0], w:(typeof _habitWeekStamp==='function'?_habitWeekStamp():'') }]],
+        ['totry_reviews',       [{ week:'Week of 5 Sep', day:9, proud:P(4), focus:P(5) }]],
+        ['totry_journal',       [{ ts:iso, text:P(6), mood:'\u{1F610}' }]],
+        ['totry_transactions',  [{ id:1, note:P(7), amount:12, category:'Food', date:iso.slice(0,10), ts:iso }]],
+        ['totry_recent_foods',  [{ name:P(8), cal:100, pro:5, carb:10, fat:2, serving:'1' }]],
+        ['totry_cal_events',    [{ id:1, title:P(9), type:'work', day:1, start:'09:00', end:'17:00', recurring:true, ts:iso }]],
+        ['totry_relationships', [{ id:1, name:P(10), role:'friend' }]],
+        ['totry_assets',        [{ id:1, name:P(11), value:100 }]],
+        ['totry_wins',          [{ id:1, ts:iso, date:'5 Sep', text:P(12) }]],
+        ['totry_saved_meals',   [{ id:1, name:P(13), cal:400, pro:30, items:[] }]],
+      ];
+      window.__typed = 0;
+      stores.forEach(([k, v]) => { try{ ls(k, v); }catch(_){ } });
+      try{ ls('totry_f', { d:[{ id:1, n:P(14), t:500, p:50 }], u:0, i:0 }); }catch(_){ }
+      try{ ls('totry_identity', P(15)); ls('totry_why', P(16)); }catch(_){ }
+      try{ if(typeof loadV==='function') loadV(); if(typeof loadH==='function') loadH(); if(typeof loadF==='function') loadF(); }catch(_){ }
+      const seenMarks = new Set();
+      for (const t of ['home','fight','grow','track','money','soul','reflect','settings','train','calendar','why','nourish']) {
+        try{ go(t); }catch(_){ continue; }
+        await new Promise(r => setTimeout(r, 420));
+        const txt = document.body.innerText || '';
+        for (let n = 1; n <= 16; n++) if (txt.indexOf('MARK' + n) !== -1) seenMarks.add(n);
+      }
+      const injected = document.querySelectorAll('img[src="x"]').length;
+      return { fired: window.__typed, injected, rendered: seenMarks.size, of: 16 };
+    });
+    if (typedTextSweep.fired)
+      findings.push(`typed text EXECUTED: a value the person typed ran as code (payload ${typedTextSweep.fired}) — see the four sinks this check was written for`);
+    else if (typedTextSweep.injected)
+      findings.push(`typed text became markup: ${typedTextSweep.injected} injected element(s) from values a person typed`);
+    else if (typedTextSweep.rendered === 0)
+      findings.push('typed-text sweep rendered nothing at all — the check is covering no surface and proves nothing');
+    else console.log(`typed text: seeded 16 user-typed values across 12 stores, ${typedTextSweep.rendered} reached a screen, none ran`);
+
 
     // ── clean days are lived once, however many fights they cover ─────────────────────────────
     // The PROOF strip summed clean days across vices, so two kept clean through the same ten days

@@ -1284,7 +1284,7 @@ function renderReviewHistory(){
   const reviews=ls('totry_reviews')||[];const hist=document.getElementById('review-history');if(!hist)return;
   hist.innerHTML='';if(!reviews.length)return;
   hist.innerHTML='<div class="lbl" style="margin-top:8px">Past reviews</div>';
-  reviews.slice(0,8).forEach(r=>{const item=document.createElement('div');item.className='review-item';item.innerHTML='<div class="ri-week">'+r.week+' \u2014 Day '+r.day+'</div><div style="font-size:13px;color:var(--tx);margin-bottom:2px">'+r.proud+'</div><div style="font-size:12px;color:var(--tx3)">Focus: '+r.focus+'</div>';hist.appendChild(item);});
+  reviews.slice(0,8).forEach(r=>{const item=document.createElement('div');item.className='review-item';item.innerHTML='<div class="ri-week">'+_escFew(r.week)+' \u2014 Day '+_escFew(r.day)+'</div><div style="font-size:13px;color:var(--tx);margin-bottom:2px">'+_escFew(r.proud)+'</div><div style="font-size:12px;color:var(--tx3)">Focus: '+_escFew(r.focus)+'</div>';hist.appendChild(item);});
 }
 
 // ── MILESTONES + TOAST ────────────────────────────────────────

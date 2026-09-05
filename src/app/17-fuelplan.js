@@ -595,7 +595,7 @@ function renderHomeCalendar(){
   } else {
     const items = todayEvents.slice(0,3).map(e => {
       const col = CAL_TYPE_COLORS[e.type] || CAL_TYPE_COLORS.other;
-      return '<span style="color:'+col+'">\u25cf</span> '+e.start+' '+e.title;
+      return '<span style="color:'+col+'">\u25cf</span> '+e.start+' '+_escFew(e.title);
     }).join('<br>');
     const more = todayEvents.length > 3 ? '<br><span style="color:var(--tx3);font-size:11px">+ '+(todayEvents.length-3)+' more</span>' : '';
     summary.innerHTML = items + more;
@@ -656,7 +656,7 @@ function renderCalendarDay(){
       const isPast = e.end ? false : (sh*60+(sm||0) < nowMin - 60);
       html += '<div onclick="deleteCalEvent('+e.id+')" style="display:flex;align-items:center;gap:12px;padding:12px 13px;margin-bottom:7px;background:var(--bg3);border-radius:9px;border-left:3px solid '+col+';cursor:pointer;opacity:'+(isPast?'0.5':'1')+'">'+
         '<div style="font-family:DM Mono,monospace;font-size:12px;color:'+col+';flex-shrink:0;min-width:46px">'+(e.start||'')+'</div>'+
-        '<div style="flex:1;min-width:0"><div style="font-size:14px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+e.title+'</div>'+
+        '<div style="flex:1;min-width:0"><div style="font-size:14px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_escFew(e.title)+'</div>'+
         '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:1px">'+time+(e.recurring?' \u00b7 weekly':'')+'</div></div>'+
         '<span style="color:var(--tx3);font-size:12px;flex-shrink:0">\u00d7</span></div>';
     });
@@ -687,7 +687,7 @@ function renderCalendarWeek(){
         const col = CAL_TYPE_COLORS[e.type] || CAL_TYPE_COLORS.other;
         const time = e.start + (e.end ? '\u2013'+e.end : '');
         html += '<div onclick="deleteCalEvent('+e.id+')" style="display:flex;align-items:center;gap:10px;padding:9px 11px;margin-bottom:5px;background:var(--bg3);border-radius:8px;border-left:3px solid '+col+';cursor:pointer">'+
-          '<div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+e.title+'</div>'+
+          '<div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_escFew(e.title)+'</div>'+
           '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:1px">'+time+(e.recurring?' \u00b7 weekly':'')+'</div></div>'+
           '<span style="color:var(--tx3);font-size:11px;flex-shrink:0">\u00d7</span></div>';
       });
