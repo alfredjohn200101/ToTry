@@ -526,6 +526,12 @@ async function parseCalendarAI(){
   const btn = document.getElementById('cal-ai-btn');
   const text = (input?.value||'').trim();
   if(!text){ showToast('Nothing to add','Paste a roster or type your schedule first.'); return; }
+  // A FREE-TEXT BOX THAT GOES TO A MODEL, WITH NO GATE. Typing a suicide disclosure here returned
+  // the parser's own failure toast — "Couldn't read that clearly ... or rephrase" — which reads as
+  // the app brushing the sentence off. detectCrisis() already answered "suicide" for it in this very
+  // page; this door just never asked. Gated before the text leaves the device.
+  const _calC = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
+  if(_calC && typeof journalMeetCrisis==='function' && journalMeetCrisis(_calC)) return;
   if(btn){ btn.textContent = 'Reading...'; btn.disabled = true; }
   try{
     const sys = 'You extract calendar events from messy text (work rosters, class timetables, plain notes) into strict JSON. Today is '+new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'.';

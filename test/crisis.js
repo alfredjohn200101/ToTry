@@ -34,6 +34,50 @@ const PHRASE = 'i want to kill myself';
 
 // Each entry point: how to get there, and how the person submits their text.
 const DOORS = [
+  // ── THE FIRST THINGS A PERSON EVER TYPES ─────────────────────────────────────────────────────
+  // Found 5 Sep 2026 by an audit that walked onboarding as a new person. Three free-text fields in
+  // the first five minutes of the app — the identity sentence, the why, and "what are you fighting"
+  // — took a suicide disclosure, showed nothing, stored it verbatim, and printed it back as who the
+  // person is becoming, why it matters to them, and a vice on their card with a clean-day counter
+  // attached. detectCrisis() already answered "suicide" for the sentence in that same page. The
+  // doors simply never asked, and none of them were in this list.
+  { name: 'onboarding · the identity sentence',
+    go: async page => page.evaluate(async () => { if(typeof startOnboarding==='function') startOnboarding();
+      document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
+      document.getElementById('ob3')?.classList.add('active'); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('ob-identity'); if(i){ i.value = p; i.dispatchEvent(new Event('input',{bubbles:true})); }
+      if(typeof obNextToWhy === 'function') obNextToWhy();
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p =>
+      (ls('totry_identity')||'') === p ? 'the disclosure was stored as their identity' : null, phrase) },
+  { name: 'onboarding · why it matters',
+    go: async page => page.evaluate(async () => { if(typeof startOnboarding==='function') startOnboarding();
+      document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
+      document.getElementById('ob-why')?.classList.add('active'); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('ob-why-text'); if(i){ i.value = p; i.dispatchEvent(new Event('input',{bubbles:true})); }
+      if(typeof finishWhyStep === 'function') finishWhyStep();
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p =>
+      (ls('totry_why')||'') === p ? 'the disclosure was stored as their why' : null, phrase) },
+  { name: 'onboarding · what are you fighting',
+    go: async page => page.evaluate(async () => { if(typeof startOnboarding==='function') startOnboarding(); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('ob-custom'); if(i){ i.value = p; i.dispatchEvent(new Event('input',{bubbles:true})); }
+      if(typeof obPersistVices === 'function') obPersistVices();
+    }, phrase),
+    also: async (page, phrase) => page.evaluate(p =>
+      ((ls('totry_v')||[]).some(v => v && v.n === p)) ? 'the disclosure became a vice card' : null, phrase) },
+  // The calendar's paste-your-roster box goes straight to a model. Typing a disclosure into it
+  // returned the parser's own failure toast — "Couldn't read that clearly ... or rephrase" — which
+  // reads as the app brushing the sentence aside.
+  { name: "the calendar's Add with AI",
+    go: async page => page.evaluate(async () => { go('calendar'); }),
+    fire: async (page, phrase) => page.evaluate(async p => {
+      const i = document.getElementById('cal-ai-input'); if(i){ i.value = p; i.dispatchEvent(new Event('input',{bubbles:true})); }
+      if(typeof parseCalendarAI === 'function') await parseCalendarAI();
+    }, phrase) },
   { name: 'scripture search (Soul → Read)',
     go: async page => page.evaluate(async () => { go('bible'); if(typeof setBibleTab==='function') setBibleTab('read'); }),
     fire: async (page, phrase) => page.evaluate(async p => { await searchBible(p); }, phrase) },

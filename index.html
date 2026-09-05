@@ -10261,6 +10261,19 @@ function fillWhy(text){
 function obNextToWhy(){
   // Save identity first
   const identity=document.getElementById('ob-identity')?.value.trim();
+  // THE FIRST THING A PERSON EVER TYPES IN THIS APP, and it had no crisis gate. Someone answering
+  // "I am becoming a person who...", "Why does this matter?" or "what are you fighting?" honestly at
+  // their worst got no helpline — the sentence was stored verbatim and echoed back to them as their
+  // own identity, their own why, or a vice on their card. detectCrisis() was already in the bundle
+  // and already returned "suicide" for it; these three doors simply never asked. Their words are
+  // kept, exactly as the journal and the weekly check-in keep them — what changes is that the app
+  // stops and meets them first.
+  const _obC = (identity && typeof journalCrisisOf==='function') ? journalCrisisOf(identity) : null;
+  if(_obC && typeof journalMeetCrisis==='function' && journalMeetCrisis(_obC)) return;
+  // BEFORE the write, not after. The journal and the weekly check-in keep what a person wrote,
+  // deliberately — grace over shame, nothing they said is thrown back at them. This is the opposite
+  // case: storing it makes the app PRINT IT BACK as who they are becoming, on Home, every day, in
+  // italic serif under the greeting. Meeting them and keeping it would be the harm.
   if(identity) ls('totry_identity', identity);
   document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
   document.getElementById('ob-why').classList.add('active');
@@ -10269,6 +10282,8 @@ function obNextToWhy(){
 
 function finishWhyStep(){
   const why=document.getElementById('ob-why-text')?.value.trim();
+  const _whyC = (why && typeof journalCrisisOf==='function') ? journalCrisisOf(why) : null;   // see obNextToWhy
+  if(_whyC && typeof journalMeetCrisis==='function' && journalMeetCrisis(_whyC)) return;
   if(why) ls('totry_why', why);
   // Continue to the faith / path step (then season)
   document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
@@ -10336,6 +10351,10 @@ function obPersistVices(){
   try{
     const customEl = document.getElementById('ob-custom');
     const custom = customEl ? customEl.value.trim() : '';
+    // Gated BEFORE it becomes a vice card: a disclosure typed here used to end up printed back as
+    // something the person is "fighting", with a clean-day counter attached to it. See obNextToWhy.
+    const _vC = (custom && typeof journalCrisisOf==='function') ? journalCrisisOf(custom) : null;
+    if(_vC && typeof journalMeetCrisis==='function' && journalMeetCrisis(_vC)) return;
     if(custom && obVices.indexOf(custom) < 0) obVices.push(custom);
     if(obVices.length){
       const ex=ls('totry_v')||[];
@@ -31644,6 +31663,12 @@ async function parseCalendarAI(){
   const btn = document.getElementById('cal-ai-btn');
   const text = (input?.value||'').trim();
   if(!text){ showToast('Nothing to add','Paste a roster or type your schedule first.'); return; }
+  // A FREE-TEXT BOX THAT GOES TO A MODEL, WITH NO GATE. Typing a suicide disclosure here returned
+  // the parser's own failure toast — "Couldn't read that clearly ... or rephrase" — which reads as
+  // the app brushing the sentence off. detectCrisis() already answered "suicide" for it in this very
+  // page; this door just never asked. Gated before the text leaves the device.
+  const _calC = (typeof journalCrisisOf==='function') ? journalCrisisOf(text) : null;
+  if(_calC && typeof journalMeetCrisis==='function' && journalMeetCrisis(_calC)) return;
   if(btn){ btn.textContent = 'Reading...'; btn.disabled = true; }
   try{
     const sys = 'You extract calendar events from messy text (work rosters, class timetables, plain notes) into strict JSON. Today is '+new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'.';
@@ -46190,7 +46215,15 @@ function renderHomeHabits(){
   // five days they had never seen. getDayCount() is 1 on the first day, so this is 0 then, and the
   // card falls to its own "starts today" / "day one" copy.
   const _daysHere = (typeof getDayCount === 'function') ? Math.max(0, getDayCount() - 1) : 6;
-  const knowable = Math.min(6, ti, _daysHere);   // days before today, this week, since they arrived
+  // ...but never argue with their own data. A tick on an earlier day this week is proof they were
+  // here for it, whatever the install date says — a restored backup, a reinstall, a device clock
+  // that moved. Clamping on getDayCount() alone told someone with three sessions logged this week
+  // that it was their first day.
+  let _tickedBack = 0;
+  for(let off = 1; off <= Math.min(6, ti); off++){
+    if(habits.some(h => cellFor(h, off))) _tickedBack = off;
+  }
+  const knowable = Math.min(6, ti, Math.max(_daysHere, _tickedBack));
   // Counted INCLUSIVE of today, because the seven cells beside these captions include today. The
   // loops started at off=1 while the row rendered a tick for off=0, so every caption sat exactly
   // one behind its own ticks: "5/5 this week" printed next to six green cells.

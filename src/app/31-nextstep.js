@@ -417,7 +417,15 @@ function renderHomeHabits(){
   // five days they had never seen. getDayCount() is 1 on the first day, so this is 0 then, and the
   // card falls to its own "starts today" / "day one" copy.
   const _daysHere = (typeof getDayCount === 'function') ? Math.max(0, getDayCount() - 1) : 6;
-  const knowable = Math.min(6, ti, _daysHere);   // days before today, this week, since they arrived
+  // ...but never argue with their own data. A tick on an earlier day this week is proof they were
+  // here for it, whatever the install date says — a restored backup, a reinstall, a device clock
+  // that moved. Clamping on getDayCount() alone told someone with three sessions logged this week
+  // that it was their first day.
+  let _tickedBack = 0;
+  for(let off = 1; off <= Math.min(6, ti); off++){
+    if(habits.some(h => cellFor(h, off))) _tickedBack = off;
+  }
+  const knowable = Math.min(6, ti, Math.max(_daysHere, _tickedBack));
   // Counted INCLUSIVE of today, because the seven cells beside these captions include today. The
   // loops started at off=1 while the row rendered a tick for off=0, so every caption sat exactly
   // one behind its own ticks: "5/5 this week" printed next to six green cells.

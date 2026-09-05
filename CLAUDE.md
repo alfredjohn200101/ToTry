@@ -67,7 +67,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 2. **Run the whole gate before you ship**, not just `npm test`:
    - `npm test` — 1656 assertions over the real bundle (core math, dead code, privacy promises,
      the voice gates, the parse check)
-   - `npm run crisis` — types the worst sentence into all SIXTEEN free-text doors and asserts a
+   - `npm run crisis` — types the worst sentence into all TWENTY free-text doors and asserts a
      helpline is on screen and TAPPABLE (geometry, not DOM presence — the bug it was written for
      had the text in the document and off the screen). Fourteen checks in all: the eleven doors, the
      safety net with its container deleted, the guest door, and the breath ending where a person has
@@ -78,6 +78,13 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
      as an instruction. Doors can carry an `also` assertion for the question a helpline check
      cannot answer — did this door STORE the disclosure, or print it back? Keep `also` OUT of the
      helpline if/else chain; wiring it as an `else if` silently skips the usable-helpline checks.
+     Doors 17-20 were added 5 Sep 2026 after an audit walked onboarding as a new person: the identity
+     sentence, "why does this matter?", "what are you fighting?" — the first three things anybody
+     types in this app — and the calendar's paste-a-roster AI box. All four took a suicide
+     disclosure, showed no helpline, and stored it verbatim: as who the person is becoming, as their
+     why, and as a vice card with a clean-day counter attached to it. detectCrisis() already answered
+     "suicide" for that sentence in the same page. The doors simply never asked. Three of them carry
+     an `also` assertion for what the helpline check cannot see — whether the disclosure was STORED.
      The eleventh is the Sunday check-in WITH AN OUT-OF-BAND WEIGHT, and the bad weight is the point:
      v568 added a 20–400kg band eighty lines above the crisis handler, so a disclosure typed into the
      same form as a fat-fingered weight returned at the band with a grey toast and no helpline, while
