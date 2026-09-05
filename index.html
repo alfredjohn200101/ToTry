@@ -797,12 +797,6 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .set-done{width:28px;height:28px;border-radius:50%;border:1px solid var(--bd);background:var(--bg3);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;transition:all 0.15s}
 .set-done.on{background:var(--gr);border-color:var(--gr)}
 .add-set-btn{font-size:11px;color:var(--bl);background:none;border:none;cursor:pointer;font-family:'Outfit',sans-serif;padding:4px 0}
-.pt-split-day-card{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 14px;margin-bottom:6px}
-.pt-sdc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
-.pt-sdc-day{font-family:'DM Mono',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em}
-.pt-sdc-focus{font-size:13px;font-weight:500;color:var(--tx)}
-.pt-sdc-detail{font-size:11px;color:var(--tx3);line-height:1.5;margin-top:3px}
-.pt-sdc-today{border-color:var(--go-bd);background:var(--go-bg)}
 .workout-history-item{padding:10px 0;border-bottom:1px solid var(--bd);cursor:pointer}
 .workout-history-item:last-child{border-bottom:none}
 .whi-date{font-family:'DM Mono',monospace;font-size:9px;color:var(--go);margin-bottom:3px;letter-spacing:0.06em}
@@ -12487,13 +12481,9 @@ function renderDayCounter(){
   const hq=document.getElementById('hero-quote');if(hq)hq.textContent=quotes[day%quotes.length];
   const dots=document.getElementById('streak-dots');
   if(dots){dots.innerHTML='';const streak=getStreak();for(let i=0;i<7;i++){const d=document.createElement('div');d.className='sdot'+(i<streak?' on':'');dots.appendChild(d);}}
-  loadV();const tw=vices.reduce((a,v)=>a+(v.w||0),0);
-  const hw=document.getElementById('h-wins');if(hw)hw.textContent=tw;
-  const hs=document.getElementById('h-streak');if(hs)hs.textContent=getStreak();
-  loadH();const ti=tIdx();const done=habits.filter(h=>h.d[ti]===1).length;
-  const hh=document.getElementById('h-habits');if(hh)hh.textContent=done+'/'+habits.length;
-  loadF();const owed=debts.reduce((a,d)=>a+(d.t-d.p),0);
-  const hd=document.getElementById('h-debt');if(hd)hd.textContent=owed>0?curSym()+Math.round(owed).toLocaleString():'Clear';
+  // The four #h-* header counters these fed are not in the shell; loadV/loadH/loadF stay because
+  // the renders below read the globals they populate.
+  loadV(); loadH(); loadF();
   loadTodaySplitCard();
   const tmrw=ls('totry_tomorrow_tasks');
   // Only show a list that was written FOR today (or last night). Nothing checked the stamp, so a list
@@ -13786,37 +13776,13 @@ function renderMorningPledge(){
     '<div style="font-size:10.5px;color:var(--tx3);line-height:1.5;margin-top:8px">One day only. If it breaks, nothing here punishes you \u2014 you just make it again tomorrow.</div>';
 }
 
-// Sobriety clock
-let sobClockInt=null;
-function startSobrietyClock(){
-  if(sobClockInt){ clearInterval(sobClockInt); sobClockInt=null; } // prevent stacked 1s timers
-  updateSobrietyClock();
-  sobClockInt=setInterval(updateSobrietyClock,1000);
-}
-function updateSobrietyClock(){
-  loadV();if(!vices.length)return;
-  // THE LONGEST ABSTINENCE FIGHT, not simply the first vice that is not letting-go. find() returned
-  // whatever sat at index 0, so someone moderating drinking (tracked 300 days) and quitting porn
-  // (9 days clean) was told in 48px type that they were 300 days clean. A moderation or watch fight
-  // has no clean streak at all — viceCleanDays already returns 0 for them — so the headline has to
-  // come from an abstinence fight or not be shown.
-  const _abst = (vices||[]).filter(x => x && x.kind !== 'letgo' &&
-    (typeof viceIsAbstinence !== 'function' || viceIsAbstinence(x)));
-  const v = _abst.sort((a,b) => (typeof viceCleanDays === 'function' ? viceCleanDays(b) - viceCleanDays(a) : 0))[0];
-  if(!v) return;
-  // Same anchor the vice card uses, or the two disagree on the same screen — see viceStreakAnchor.
-  const since=(typeof viceStreakAnchor==='function' ? viceStreakAnchor(v) : null)
-              || new Date(ls('totry_start')||Date.now());
-  const diff=Math.max(0,Date.now()-since.getTime());
-  const days=_calDaysSince(since);
-  const hours=Math.floor((diff%86400000)/3600000);
-  const mins=Math.floor((diff%3600000)/60000);
-  const secs=Math.floor((diff%60000)/1000);
-  const dEl=document.getElementById('sob-days');
-  const hEl=document.getElementById('sob-hms');
-  if(dEl){dEl.textContent=days;dEl.className='sob-big '+(days>=1?'clean':'');}
-  if(hEl)hEl.textContent=hours+'h '+mins+'m '+secs+'s';
-}
+// THE SOBRIETY CLOCK IS GONE, and it was not merely dead — it was dead and RUNNING.
+// startSobrietyClock() was called at boot and set a 1000ms interval for the life of the app.
+// Every tick, updateSobrietyClock() called loadV() — a localStorage read plus a JSON.parse —
+// and wrote the result into #sob-days and #sob-hms, two ids that are nowhere in the shell.
+// A wakeup a second, forever, on a phone, to paint nothing. The live replacement is the
+// per-vice .vice-live-clock, ticked by the interval in 09-fight-deep.js against a class that
+// actually exists.
 
 // Craving log
 
@@ -19282,12 +19248,8 @@ function renderVices(){
   // Hide the whole clock when there's no quit-vice to count: a big "0 Days clean" over an empty or
   // moderation-only fight is confusing, and against grace-over-shame.
   const quitVices = vices.filter(v => viceIsAbstinence(v));
-  const sobClock=document.getElementById('sob-clock-main');
-  if(sobClock) sobClock.style.display = quitVices.length ? '' : 'none';
   if(quitVices.length){
     const maxClean=Math.max(...quitVices.map(v=>viceCleanDays(v)));
-    const cleanEl=document.getElementById('sob-days');
-    if(cleanEl)cleanEl.textContent=maxClean;
     
     // Start live ticker for vices with sub-7-day streaks
     if(!window.__viceTickerRunning){
@@ -21400,15 +21362,8 @@ function autoTickHabits(){
 // Orphan renderer kept as a safe delegate — old callers route to the unified home renderer
 function renderHabits(){
   if(typeof renderHomeHabits === 'function') renderHomeHabits();
-  // Update header counts that still exist
-  loadH();
-  const ti = tIdx();
-  let done = 0;
-  habits.forEach(h => { if(h.d[ti] === 1) done++; });
-  const s = getStreak();
-  const hs = document.getElementById('h-streak'); if(hs) hs.textContent = s;
-  const hh = document.getElementById('h-habits'); if(hh) hh.textContent = done + '/' + habits.length;
-  const hsc = document.getElementById('h-score'); if(hsc) hsc.textContent = done + '/' + habits.length + ' today';
+  // The "header counts that still exist" did not: #h-streak, #h-habits and #h-score are nowhere in
+  // the shell, so this counted the day's habits and the streak and dropped both on the floor.
 }
 // ── HABIT ANCHORING ("after I ___, I will ___") ───────────────────────────────────────────────
 // The SAME mechanic as the Feeling Door's if-then plans (getIfThen/saveIfThen, line ~10445 —
@@ -23513,10 +23468,8 @@ async function logBody(){
   });
   
   _pendingBodyPhoto = null;
-  const preview = document.getElementById('bod-photo-preview');
-  if(preview) preview.style.display='none';
-  const photoInput = document.getElementById('bod-photo');
-  if(photoInput) photoInput.value='';
+  // #bod-photo / #bod-photo-preview are from a photo-in-the-check-in design that no longer exists;
+  // progress photos live in #progress-photo-input / handleProgressPhoto().
   
   renderBody();
   renderBodyCollage();
@@ -24665,8 +24618,8 @@ function updateTrackerDisplay(){
   // totry_water_<date>. This function read totry_trackers, where nothing has ever written water — so
   // whenever it ran it replaced a real reading with a hardcoded 0 and a person's logged water vanished
   // from the screen. Two owners for one element; the one that has the data keeps it.
-  const s=document.getElementById('sleep-count');const st=document.getElementById('steps-count');
-  if(s)s.textContent=t.sleep;if(st)st.textContent=(t.steps||0).toLocaleString();
+  const s=document.getElementById('sleep-count');   // #steps-count is not in the shell
+  if(s)s.textContent=t.sleep;
   // Honour the user's own sleep goal instead of a hardcoded "7-9 hours" — a target they set should
   // actually show, and the value goes green once they've met it.
   try{
@@ -30966,8 +30919,6 @@ function renderFinance(){
   const owed=debts.reduce((a,d)=>a+(d.t-d.p),0),paid=debts.reduce((a,d)=>a+d.p,0);
   ['f-debt','h-debt'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=curSym()+Math.round(owed).toLocaleString();});
   const fp=document.getElementById('f-paid');if(fp)fp.textContent=curSym()+Math.round(paid).toLocaleString();
-  const fu=document.getElementById('f-usa');if(fu)fu.textContent=curSym()+Math.round(usaS).toLocaleString();
-  const fi=document.getElementById('f-india');if(fi)fi.textContent=curSym()+Math.round(indiaS).toLocaleString();
   const dl=document.getElementById('debt-list');if(!dl)return;dl.innerHTML='';
   const _noDebts = !debts.length;
   if(_noDebts){
@@ -33852,7 +33803,7 @@ function getUserSplit(){
 
 function initPTTab(){
   try{ if(typeof restoreSessionDraft==='function') restoreSessionDraft(); }catch(_){}
-  renderSplitDayCards();renderWorkoutSession();loadTodaySplitCard();updateStravaBtn();
+  renderWorkoutSession();loadTodaySplitCard();
   if(typeof renderSplitOverview==='function') renderSplitOverview();
   const history=ls('totry_workouts')||[];if(history.length>=2)getProgressiveSuggestion();
 }
@@ -38082,26 +38033,10 @@ function renderRoutines(){
   container.innerHTML='';
   routines.forEach(r=>{const card=document.createElement('div');card.className='card';card.style.marginBottom='8px';const _ex=(r&&Array.isArray(r.exercises))?r.exercises:[];card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div style="font-size:14px;font-weight:500;color:var(--tx)">'+(r.name||'Routine')+'</div><button style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:14px;padding:0 4px" onclick="deleteRoutine('+r.id+')" aria-label="Delete this routine">&#215;</button></div><div style="font-size:12px;color:var(--tx3);margin-bottom:10px">'+_ex.length+' exercises \u00b7 '+_ex.map(e=>e&&e.name||'?').slice(0,3).join(', ')+(_ex.length>3?'...':'')+'</div><button class="btn primary" style="padding:9px" onclick="loadRoutine('+r.id+')">Load this routine \u2192</button>';container.appendChild(card);});
 }
-function renderSplitDayCards(){
-  const split=getUserSplit();const ti=tIdx();const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  const container=document.getElementById('pt-split-days');if(!container)return;container.innerHTML='';
-  if(!split.some(s=>s)){ // brand-new user, no plan yet — invite instead of showing nothing
-    container.innerHTML='<div class="empty-note">No training plan yet.<br>Link Hevy / Strava, or let me build you one.</div>'+
-      '<div style="text-align:center;margin-bottom:6px"><button class="btn primary" onclick="setupTraining()" style="width:auto;padding:9px 16px;font-size:13px">Set up my training</button></div>';
-    return;
-  }
-  split.forEach((s,i)=>{
-    if(!s){ return; }   // no plan set for this day yet (new user) — skip, don't crash
-    const isRest = s.rest === true || /^rest/i.test(s.focus||'');
-    const card=document.createElement('div');
-    card.className='pt-split-day-card'+(i===ti?' pt-sdc-today':'')+(isRest?' pt-sdc-rest':'');
-    if(isRest) card.style.opacity='0.62';
-    const focusColor = isRest ? 'var(--tx3)' : 'var(--tx)';
-    card.innerHTML='<div class="pt-sdc-top"><span class="pt-sdc-day">'+days[i]+(i===ti?' \u2605':'')+'</span>'+(isRest?'<span style="font-size:9px;font-family:DM Mono,monospace;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Rest</span>':'')+'</div><div class="pt-sdc-focus" style="color:'+focusColor+'">'+(isRest?'😴 Rest day':s.focus)+'</div><div class="pt-sdc-detail">'+(s.detail||'')+'</div>';
-    card.onclick=()=>{const sel=document.getElementById('pt-split-day-sel');if(sel)sel.value=i;const f=document.getElementById('pt-split-focus');if(f)f.value=s.focus;const d=document.getElementById('pt-split-detail');if(d)d.value=s.detail||'';};
-    container.appendChild(card);
-  });
-}
+// renderSplitDayCards() removed. It painted .pt-split-day-card rows into #pt-split-days — an id
+// that is not in the shell — so it returned on its first line at both call sites. Its live
+// successor is renderSplitOverview() in 04-fight.js, which fills #pt-split-overview. Its
+// new-user invite ('No training plan yet — let me build you one') had never been reachable.
 // Old saveSplitDay removed (unified into routines)
 
 // ── PER-EXERCISE PROGRESS CHART ───────────────────────────────
@@ -38292,7 +38227,6 @@ function renderWorkoutHistory(){
     };
     container.appendChild(item);
   });
-  updateStravaBtn();
 }
 
 async function deleteWorkoutFromHistory(id){
@@ -38779,7 +38713,6 @@ function importTemplate(idx){
   
   if(typeof renderRoutines === 'function') renderRoutines();
   if(typeof renderSplitOverview === 'function') renderSplitOverview();
-  if(typeof renderSplitDayCards === 'function') renderSplitDayCards();
   if(typeof loadTodaySplitCard === 'function') loadTodaySplitCard();
 }
 function renderPersonalRecords(){
@@ -38912,7 +38845,9 @@ async function getProgressiveSuggestion(){
   if(suggestion){const el=document.getElementById('pt-today-split-detail');if(el)el.textContent=suggestion;}
 }
 
-function updateStravaBtn(){const btn=document.getElementById('strava-link-status');const t=ls('strava_token');if(btn)btn.textContent=(t&&t.expires_at>Date.now()/1000)?'Connected \u2713':'Connect';}
+// updateStravaBtn() removed: #strava-link-status is not in the shell, and it read 'strava_token'
+// while the app writes 'totry_strava_token' — dead twice over. Connection state is shown by
+// renderUnifiedTraining() in 21-content-engine.js, which reads the key the app actually writes.
 function tryApp(e,sc,st){
   e.preventDefault();
   // Try the app's scheme. If the app opens, the page hides — cancel the store fallback.
@@ -44634,9 +44569,6 @@ async function initApp(){
   // Personalise coach
   const cw=document.getElementById('coach-welcome');
   if(cw)cw.textContent='Hey '+userName+'. Day '+getDayCount()+'. Your coach is here \u2014 vices, faith, habits, finances, training. What do you need right now?';
-  // PT coach
-  const ptw=document.getElementById('pt-coach-welcome');
-  if(ptw)ptw.textContent='Your PT coach. What do you need today?';
   // Core renders
   initHabits();renderHabits();
   loadF();renderFinance();
@@ -44645,8 +44577,6 @@ async function initApp(){
   renderBody();updateTrackerDisplay();
   renderDayCounter();
   renderSavedVerses();
-  // Sobriety clock
-  startSobrietyClock();
   // Restore calorie app
   const ca=ls('totry_ca');if(ca){const cn=document.getElementById('cal-name');const ci=document.getElementById('cal-icon');if(cn)cn.textContent=ca.name;if(ci)ci.innerHTML=ca.icon;}
   // Debt strategy
@@ -47612,7 +47542,6 @@ async function syncStravaActivities(){
       if(typeof showToast==='function') showToast('Strava up to date', total ? 'No new activities since last sync.' : 'Connected, but no activities found on Strava yet. Record one and sync again.');
     }
     if(typeof renderUnifiedTraining==='function') renderUnifiedTraining();
-    updateStravaBtn();
   }catch(e){
     console.error('Strava sync error:', e);
   }

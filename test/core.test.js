@@ -3270,6 +3270,36 @@ H.section('the fixes I shipped today, checked against themselves')
   H.ok(/!== want/.test(ih), 'so it corrects a mismatch in either direction');
 }
 
+H.section('code that updates an element the app can never create');
+{
+  // THE CONTAINER THAT WAS NEVER IN THE FILE. This app's signature failure is code that parses,
+  // passes every test, and does nothing — and the sharpest version is a function that reaches for
+  // an element id nothing renders. shell-head.html carries the scar in its own comment above
+  // #pt-history-list: renderWorkoutHistory() "always built this list AND a per-session modal ...
+  // but its container was never in the file, so the function was unreachable and a workout logged
+  // in the app could never be opened again." Guarded reads (`const el = byId(x); if (el) ...`) never
+  // throw, so nothing anywhere reports it. The value is computed and dropped on the floor.
+  //
+  // An id is unreachable when its literal appears ONLY inside getElementById() — never as an id="…"
+  // attribute, never assigned in JS, never sitting in a table that innerHTML interpolates. That last
+  // case is why this counts literals rather than pattern-matching construction: the cardio field ids
+  // ('cardio-time', 'cardio-distance', …) live in a lookup table and ARE created, and a cruder check
+  // called all ten of them dead.
+  const idsRead = new Set();
+  let m; const rd = /getElementById\(\s*'([^']+)'\s*\)/g;
+  while ((m = rd.exec(H.html))) idsRead.add(m[1]);
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const orphans = [...idsRead].filter(id => {
+    if (H.html.includes('id="' + id + '"')) return false;
+    const all = (H.html.match(new RegExp("'" + esc(id) + "'", 'g')) || []).length;
+    const inGet = (H.html.match(new RegExp("getElementById\\(\\s*'" + esc(id) + "'\\s*\\)", 'g')) || []).length;
+    return all === inGet;
+  }).sort();
+  H.ok(orphans.length === 0,
+    orphans.length ? `${orphans.length} element id(s) are updated but can never exist: ${orphans.join(', ')}`
+                   : `all ${idsRead.size} element ids reached for are ones the app can actually create`);
+}
+
 H.section('dead code that was one caller away from confusing someone');
 {
   // 31 functions with no caller and no string reference, ~16KB, removed at v477. Each had a live

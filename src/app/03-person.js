@@ -4699,13 +4699,9 @@ function renderDayCounter(){
   const hq=document.getElementById('hero-quote');if(hq)hq.textContent=quotes[day%quotes.length];
   const dots=document.getElementById('streak-dots');
   if(dots){dots.innerHTML='';const streak=getStreak();for(let i=0;i<7;i++){const d=document.createElement('div');d.className='sdot'+(i<streak?' on':'');dots.appendChild(d);}}
-  loadV();const tw=vices.reduce((a,v)=>a+(v.w||0),0);
-  const hw=document.getElementById('h-wins');if(hw)hw.textContent=tw;
-  const hs=document.getElementById('h-streak');if(hs)hs.textContent=getStreak();
-  loadH();const ti=tIdx();const done=habits.filter(h=>h.d[ti]===1).length;
-  const hh=document.getElementById('h-habits');if(hh)hh.textContent=done+'/'+habits.length;
-  loadF();const owed=debts.reduce((a,d)=>a+(d.t-d.p),0);
-  const hd=document.getElementById('h-debt');if(hd)hd.textContent=owed>0?curSym()+Math.round(owed).toLocaleString():'Clear';
+  // The four #h-* header counters these fed are not in the shell; loadV/loadH/loadF stay because
+  // the renders below read the globals they populate.
+  loadV(); loadH(); loadF();
   loadTodaySplitCard();
   const tmrw=ls('totry_tomorrow_tasks');
   // Only show a list that was written FOR today (or last night). Nothing checked the stamp, so a list

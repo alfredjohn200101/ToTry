@@ -427,15 +427,8 @@ function autoTickHabits(){
 // Orphan renderer kept as a safe delegate — old callers route to the unified home renderer
 function renderHabits(){
   if(typeof renderHomeHabits === 'function') renderHomeHabits();
-  // Update header counts that still exist
-  loadH();
-  const ti = tIdx();
-  let done = 0;
-  habits.forEach(h => { if(h.d[ti] === 1) done++; });
-  const s = getStreak();
-  const hs = document.getElementById('h-streak'); if(hs) hs.textContent = s;
-  const hh = document.getElementById('h-habits'); if(hh) hh.textContent = done + '/' + habits.length;
-  const hsc = document.getElementById('h-score'); if(hsc) hsc.textContent = done + '/' + habits.length + ' today';
+  // The "header counts that still exist" did not: #h-streak, #h-habits and #h-score are nowhere in
+  // the shell, so this counted the day's habits and the streak and dropped both on the floor.
 }
 // ── HABIT ANCHORING ("after I ___, I will ___") ───────────────────────────────────────────────
 // The SAME mechanic as the Feeling Door's if-then plans (getIfThen/saveIfThen, line ~10445 —

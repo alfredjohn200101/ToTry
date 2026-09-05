@@ -225,10 +225,8 @@ async function logBody(){
   });
   
   _pendingBodyPhoto = null;
-  const preview = document.getElementById('bod-photo-preview');
-  if(preview) preview.style.display='none';
-  const photoInput = document.getElementById('bod-photo');
-  if(photoInput) photoInput.value='';
+  // #bod-photo / #bod-photo-preview are from a photo-in-the-check-in design that no longer exists;
+  // progress photos live in #progress-photo-input / handleProgressPhoto().
   
   renderBody();
   renderBodyCollage();
@@ -1377,8 +1375,8 @@ function updateTrackerDisplay(){
   // totry_water_<date>. This function read totry_trackers, where nothing has ever written water — so
   // whenever it ran it replaced a real reading with a hardcoded 0 and a person's logged water vanished
   // from the screen. Two owners for one element; the one that has the data keeps it.
-  const s=document.getElementById('sleep-count');const st=document.getElementById('steps-count');
-  if(s)s.textContent=t.sleep;if(st)st.textContent=(t.steps||0).toLocaleString();
+  const s=document.getElementById('sleep-count');   // #steps-count is not in the shell
+  if(s)s.textContent=t.sleep;
   // Honour the user's own sleep goal instead of a hardcoded "7-9 hours" — a target they set should
   // actually show, and the value goes green once they've met it.
   try{

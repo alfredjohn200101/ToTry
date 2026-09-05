@@ -398,7 +398,6 @@ async function syncStravaActivities(){
       if(typeof showToast==='function') showToast('Strava up to date', total ? 'No new activities since last sync.' : 'Connected, but no activities found on Strava yet. Record one and sync again.');
     }
     if(typeof renderUnifiedTraining==='function') renderUnifiedTraining();
-    updateStravaBtn();
   }catch(e){
     console.error('Strava sync error:', e);
   }

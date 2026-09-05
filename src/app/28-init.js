@@ -513,9 +513,6 @@ async function initApp(){
   // Personalise coach
   const cw=document.getElementById('coach-welcome');
   if(cw)cw.textContent='Hey '+userName+'. Day '+getDayCount()+'. Your coach is here \u2014 vices, faith, habits, finances, training. What do you need right now?';
-  // PT coach
-  const ptw=document.getElementById('pt-coach-welcome');
-  if(ptw)ptw.textContent='Your PT coach. What do you need today?';
   // Core renders
   initHabits();renderHabits();
   loadF();renderFinance();
@@ -524,8 +521,6 @@ async function initApp(){
   renderBody();updateTrackerDisplay();
   renderDayCounter();
   renderSavedVerses();
-  // Sobriety clock
-  startSobrietyClock();
   // Restore calorie app
   const ca=ls('totry_ca');if(ca){const cn=document.getElementById('cal-name');const ci=document.getElementById('cal-icon');if(cn)cn.textContent=ca.name;if(ci)ci.innerHTML=ca.icon;}
   // Debt strategy

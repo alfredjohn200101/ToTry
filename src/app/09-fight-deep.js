@@ -974,12 +974,8 @@ function renderVices(){
   // Hide the whole clock when there's no quit-vice to count: a big "0 Days clean" over an empty or
   // moderation-only fight is confusing, and against grace-over-shame.
   const quitVices = vices.filter(v => viceIsAbstinence(v));
-  const sobClock=document.getElementById('sob-clock-main');
-  if(sobClock) sobClock.style.display = quitVices.length ? '' : 'none';
   if(quitVices.length){
     const maxClean=Math.max(...quitVices.map(v=>viceCleanDays(v)));
-    const cleanEl=document.getElementById('sob-days');
-    if(cleanEl)cleanEl.textContent=maxClean;
     
     // Start live ticker for vices with sub-7-day streaks
     if(!window.__viceTickerRunning){

@@ -2170,26 +2170,10 @@ function renderRoutines(){
   container.innerHTML='';
   routines.forEach(r=>{const card=document.createElement('div');card.className='card';card.style.marginBottom='8px';const _ex=(r&&Array.isArray(r.exercises))?r.exercises:[];card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div style="font-size:14px;font-weight:500;color:var(--tx)">'+(r.name||'Routine')+'</div><button style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:14px;padding:0 4px" onclick="deleteRoutine('+r.id+')" aria-label="Delete this routine">&#215;</button></div><div style="font-size:12px;color:var(--tx3);margin-bottom:10px">'+_ex.length+' exercises \u00b7 '+_ex.map(e=>e&&e.name||'?').slice(0,3).join(', ')+(_ex.length>3?'...':'')+'</div><button class="btn primary" style="padding:9px" onclick="loadRoutine('+r.id+')">Load this routine \u2192</button>';container.appendChild(card);});
 }
-function renderSplitDayCards(){
-  const split=getUserSplit();const ti=tIdx();const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  const container=document.getElementById('pt-split-days');if(!container)return;container.innerHTML='';
-  if(!split.some(s=>s)){ // brand-new user, no plan yet — invite instead of showing nothing
-    container.innerHTML='<div class="empty-note">No training plan yet.<br>Link Hevy / Strava, or let me build you one.</div>'+
-      '<div style="text-align:center;margin-bottom:6px"><button class="btn primary" onclick="setupTraining()" style="width:auto;padding:9px 16px;font-size:13px">Set up my training</button></div>';
-    return;
-  }
-  split.forEach((s,i)=>{
-    if(!s){ return; }   // no plan set for this day yet (new user) — skip, don't crash
-    const isRest = s.rest === true || /^rest/i.test(s.focus||'');
-    const card=document.createElement('div');
-    card.className='pt-split-day-card'+(i===ti?' pt-sdc-today':'')+(isRest?' pt-sdc-rest':'');
-    if(isRest) card.style.opacity='0.62';
-    const focusColor = isRest ? 'var(--tx3)' : 'var(--tx)';
-    card.innerHTML='<div class="pt-sdc-top"><span class="pt-sdc-day">'+days[i]+(i===ti?' \u2605':'')+'</span>'+(isRest?'<span style="font-size:9px;font-family:DM Mono,monospace;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Rest</span>':'')+'</div><div class="pt-sdc-focus" style="color:'+focusColor+'">'+(isRest?'😴 Rest day':s.focus)+'</div><div class="pt-sdc-detail">'+(s.detail||'')+'</div>';
-    card.onclick=()=>{const sel=document.getElementById('pt-split-day-sel');if(sel)sel.value=i;const f=document.getElementById('pt-split-focus');if(f)f.value=s.focus;const d=document.getElementById('pt-split-detail');if(d)d.value=s.detail||'';};
-    container.appendChild(card);
-  });
-}
+// renderSplitDayCards() removed. It painted .pt-split-day-card rows into #pt-split-days — an id
+// that is not in the shell — so it returned on its first line at both call sites. Its live
+// successor is renderSplitOverview() in 04-fight.js, which fills #pt-split-overview. Its
+// new-user invite ('No training plan yet — let me build you one') had never been reachable.
 // Old saveSplitDay removed (unified into routines)
 
 // ── PER-EXERCISE PROGRESS CHART ───────────────────────────────
@@ -2380,7 +2364,6 @@ function renderWorkoutHistory(){
     };
     container.appendChild(item);
   });
-  updateStravaBtn();
 }
 
 async function deleteWorkoutFromHistory(id){
@@ -2867,7 +2850,6 @@ function importTemplate(idx){
   
   if(typeof renderRoutines === 'function') renderRoutines();
   if(typeof renderSplitOverview === 'function') renderSplitOverview();
-  if(typeof renderSplitDayCards === 'function') renderSplitDayCards();
   if(typeof loadTodaySplitCard === 'function') loadTodaySplitCard();
 }
 function renderPersonalRecords(){
@@ -3000,7 +2982,9 @@ async function getProgressiveSuggestion(){
   if(suggestion){const el=document.getElementById('pt-today-split-detail');if(el)el.textContent=suggestion;}
 }
 
-function updateStravaBtn(){const btn=document.getElementById('strava-link-status');const t=ls('strava_token');if(btn)btn.textContent=(t&&t.expires_at>Date.now()/1000)?'Connected \u2713':'Connect';}
+// updateStravaBtn() removed: #strava-link-status is not in the shell, and it read 'strava_token'
+// while the app writes 'totry_strava_token' — dead twice over. Connection state is shown by
+// renderUnifiedTraining() in 21-content-engine.js, which reads the key the app actually writes.
 function tryApp(e,sc,st){
   e.preventDefault();
   // Try the app's scheme. If the app opens, the page hides — cancel the store fallback.

@@ -739,37 +739,13 @@ function renderMorningPledge(){
     '<div style="font-size:10.5px;color:var(--tx3);line-height:1.5;margin-top:8px">One day only. If it breaks, nothing here punishes you \u2014 you just make it again tomorrow.</div>';
 }
 
-// Sobriety clock
-let sobClockInt=null;
-function startSobrietyClock(){
-  if(sobClockInt){ clearInterval(sobClockInt); sobClockInt=null; } // prevent stacked 1s timers
-  updateSobrietyClock();
-  sobClockInt=setInterval(updateSobrietyClock,1000);
-}
-function updateSobrietyClock(){
-  loadV();if(!vices.length)return;
-  // THE LONGEST ABSTINENCE FIGHT, not simply the first vice that is not letting-go. find() returned
-  // whatever sat at index 0, so someone moderating drinking (tracked 300 days) and quitting porn
-  // (9 days clean) was told in 48px type that they were 300 days clean. A moderation or watch fight
-  // has no clean streak at all — viceCleanDays already returns 0 for them — so the headline has to
-  // come from an abstinence fight or not be shown.
-  const _abst = (vices||[]).filter(x => x && x.kind !== 'letgo' &&
-    (typeof viceIsAbstinence !== 'function' || viceIsAbstinence(x)));
-  const v = _abst.sort((a,b) => (typeof viceCleanDays === 'function' ? viceCleanDays(b) - viceCleanDays(a) : 0))[0];
-  if(!v) return;
-  // Same anchor the vice card uses, or the two disagree on the same screen — see viceStreakAnchor.
-  const since=(typeof viceStreakAnchor==='function' ? viceStreakAnchor(v) : null)
-              || new Date(ls('totry_start')||Date.now());
-  const diff=Math.max(0,Date.now()-since.getTime());
-  const days=_calDaysSince(since);
-  const hours=Math.floor((diff%86400000)/3600000);
-  const mins=Math.floor((diff%3600000)/60000);
-  const secs=Math.floor((diff%60000)/1000);
-  const dEl=document.getElementById('sob-days');
-  const hEl=document.getElementById('sob-hms');
-  if(dEl){dEl.textContent=days;dEl.className='sob-big '+(days>=1?'clean':'');}
-  if(hEl)hEl.textContent=hours+'h '+mins+'m '+secs+'s';
-}
+// THE SOBRIETY CLOCK IS GONE, and it was not merely dead — it was dead and RUNNING.
+// startSobrietyClock() was called at boot and set a 1000ms interval for the life of the app.
+// Every tick, updateSobrietyClock() called loadV() — a localStorage read plus a JSON.parse —
+// and wrote the result into #sob-days and #sob-hms, two ids that are nowhere in the shell.
+// A wakeup a second, forever, on a phone, to paint nothing. The live replacement is the
+// per-vice .vice-live-clock, ticked by the interval in 09-fight-deep.js against a class that
+// actually exists.
 
 // Craving log
 
