@@ -307,7 +307,13 @@ function renderReadinessCard(){
   const col = r.level==='go' ? 'var(--gr)' : (r.level==='moderate' ? 'var(--go)' : 'var(--re)');
   const icon = r.level==='go' ? '\u2705' : (r.level==='moderate' ? '\u26a1' : '\ud83d\udecc');
   const label = r.level==='go' ? 'Ready to go' : (r.level==='moderate' ? 'Train controlled' : 'Recover today');
-  const reasonTxt = r.reasons.length ? r.reasons.slice(0,3).join(' \u00b7 ') : 'based on your recent days';
+  // WHAT IT IS ACTUALLY BUILT FROM. With no self-report the reasons array is empty, and this said
+  // "based on your recent days" over a footer reading "From your check-ins" — citing a source the
+  // person may never have used. Name the real basis instead.
+  const _selfReported = (r.sleep != null || r.stress != null || r.energy != null);
+  const reasonTxt = r.reasons.length ? r.reasons.slice(0,3).join(' \u00b7 ')
+    : (_selfReported ? 'based on your recent days' : 'from your training alone \u2014 no check-in yet');
+  const _sourceLine = _selfReported ? 'From your check-ins' : 'Tap to add how you slept';
   card.style.display = 'block';
   card.innerHTML = '<div class="lbl">Readiness</div>'+
     '<div class="card" style="margin-bottom:12px;cursor:pointer" onclick="explainReadiness()">'+
@@ -321,7 +327,7 @@ function renderReadinessCard(){
         '<div style="color:var(--tx3);font-size:16px;flex-shrink:0">›</div>'+
       '</div>'+
       '<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-top:10px">'+r.advice+'</div>'+
-      '<div style="font-size:10px;color:var(--tx3);margin-top:8px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.08em">From your check-ins · tap for the full picture</div>'+
+      '<div style="font-size:10px;color:var(--tx3);margin-top:8px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.08em">'+_sourceLine+' · tap for the full picture</div>'+
     '</div>';
 }
 

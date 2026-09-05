@@ -588,6 +588,16 @@ function refreshAIMorning(){
   // Force regenerate
   const today=new Date().toLocaleDateString('en-AU');
   localStorage.removeItem('totry_ai_morning_'+today);
+  // AND CLEAR THE ONCE-A-DAY GUARD, or this button deletes the card instead of refreshing it.
+  // showAIMorningSentence() refuses to re-fire when __aiMorningAttempted is set — right, because
+  // that guard exists so tab switches do not spam the AI. But it is set the moment a sentence is
+  // generated and never cleared on success, so this ran: drop the cache, re-enter, meet the guard
+  // with no cache left, and fall into `if(!cached) card.style.display='none'`. On a person's first
+  // day the sentence is always generated in-session, so the only control on the card destroyed it
+  // every single time. A deliberate tap is not navigation — it is the person asking for another
+  // sentence, and it gets one.
+  window.__aiMorningAttempted = false;
+  try{ localStorage.removeItem('totry_ai_morning_tried_'+today); }catch(_){ }
   showAIMorningSentence();
 }
 

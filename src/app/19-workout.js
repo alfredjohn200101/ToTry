@@ -720,9 +720,23 @@ function computeReadiness(){
       considerScores({ sleep: rated }, d.toISOString());
     });
   }catch(_){ }
-  // If we have nothing self-reported and no training history, no signal.
+  // If we have nothing self-reported and no RECENT training, no signal.
+  //
+  // This asked `!history.length` against every workout ever stored, with no recency limit at all —
+  // so one session from 300 days ago satisfied it, the no-signal return was skipped, and the
+  // function fell through to `let score = 50` with an empty reasons array. The card only hides on
+  // a null, so it drew a confident 50/100 ring, "Train controlled", and training advice, for a
+  // person whose sleep, stress and energy were all null. Every term below that could move the
+  // number off 50 without a self-report looks at yesterday (interferenceNote) or the last seven
+  // days (weeklyLoadByModality), so the guard now asks the same question they do: is there any
+  // training in the window the scoring actually reads?
   const history = ls('totry_workouts') || [];
-  if(sleep==null && stress==null && energy==null && !history.length) return null;
+  const RECENT_TRAINING_MS = 7 * 86400000;
+  const recentTraining = history.some(w => {
+    const t = new Date((w && (w.ts || w.date)) || 0).getTime();
+    return isFinite(t) && t > 0 && (nowMs - t) <= RECENT_TRAINING_MS && t <= nowMs + 86400000;
+  });
+  if(sleep==null && stress==null && energy==null && !recentTraining) return null;
   // Base from self-report (default neutral 6/10 if missing).
   let score = 50;
   const reasons = [];

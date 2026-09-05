@@ -34446,9 +34446,23 @@ function computeReadiness(){
       considerScores({ sleep: rated }, d.toISOString());
     });
   }catch(_){ }
-  // If we have nothing self-reported and no training history, no signal.
+  // If we have nothing self-reported and no RECENT training, no signal.
+  //
+  // This asked `!history.length` against every workout ever stored, with no recency limit at all —
+  // so one session from 300 days ago satisfied it, the no-signal return was skipped, and the
+  // function fell through to `let score = 50` with an empty reasons array. The card only hides on
+  // a null, so it drew a confident 50/100 ring, "Train controlled", and training advice, for a
+  // person whose sleep, stress and energy were all null. Every term below that could move the
+  // number off 50 without a self-report looks at yesterday (interferenceNote) or the last seven
+  // days (weeklyLoadByModality), so the guard now asks the same question they do: is there any
+  // training in the window the scoring actually reads?
   const history = ls('totry_workouts') || [];
-  if(sleep==null && stress==null && energy==null && !history.length) return null;
+  const RECENT_TRAINING_MS = 7 * 86400000;
+  const recentTraining = history.some(w => {
+    const t = new Date((w && (w.ts || w.date)) || 0).getTime();
+    return isFinite(t) && t > 0 && (nowMs - t) <= RECENT_TRAINING_MS && t <= nowMs + 86400000;
+  });
+  if(sleep==null && stress==null && energy==null && !recentTraining) return null;
   // Base from self-report (default neutral 6/10 if missing).
   let score = 50;
   const reasons = [];
@@ -34814,7 +34828,13 @@ function renderReadinessCard(){
   const col = r.level==='go' ? 'var(--gr)' : (r.level==='moderate' ? 'var(--go)' : 'var(--re)');
   const icon = r.level==='go' ? '\u2705' : (r.level==='moderate' ? '\u26a1' : '\ud83d\udecc');
   const label = r.level==='go' ? 'Ready to go' : (r.level==='moderate' ? 'Train controlled' : 'Recover today');
-  const reasonTxt = r.reasons.length ? r.reasons.slice(0,3).join(' \u00b7 ') : 'based on your recent days';
+  // WHAT IT IS ACTUALLY BUILT FROM. With no self-report the reasons array is empty, and this said
+  // "based on your recent days" over a footer reading "From your check-ins" — citing a source the
+  // person may never have used. Name the real basis instead.
+  const _selfReported = (r.sleep != null || r.stress != null || r.energy != null);
+  const reasonTxt = r.reasons.length ? r.reasons.slice(0,3).join(' \u00b7 ')
+    : (_selfReported ? 'based on your recent days' : 'from your training alone \u2014 no check-in yet');
+  const _sourceLine = _selfReported ? 'From your check-ins' : 'Tap to add how you slept';
   card.style.display = 'block';
   card.innerHTML = '<div class="lbl">Readiness</div>'+
     '<div class="card" style="margin-bottom:12px;cursor:pointer" onclick="explainReadiness()">'+
@@ -34828,7 +34848,7 @@ function renderReadinessCard(){
         '<div style="color:var(--tx3);font-size:16px;flex-shrink:0">›</div>'+
       '</div>'+
       '<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-top:10px">'+r.advice+'</div>'+
-      '<div style="font-size:10px;color:var(--tx3);margin-top:8px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.08em">From your check-ins · tap for the full picture</div>'+
+      '<div style="font-size:10px;color:var(--tx3);margin-top:8px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.08em">'+_sourceLine+' · tap for the full picture</div>'+
     '</div>';
 }
 
@@ -41605,6 +41625,16 @@ function refreshAIMorning(){
   // Force regenerate
   const today=new Date().toLocaleDateString('en-AU');
   localStorage.removeItem('totry_ai_morning_'+today);
+  // AND CLEAR THE ONCE-A-DAY GUARD, or this button deletes the card instead of refreshing it.
+  // showAIMorningSentence() refuses to re-fire when __aiMorningAttempted is set — right, because
+  // that guard exists so tab switches do not spam the AI. But it is set the moment a sentence is
+  // generated and never cleared on success, so this ran: drop the cache, re-enter, meet the guard
+  // with no cache left, and fall into `if(!cached) card.style.display='none'`. On a person's first
+  // day the sentence is always generated in-session, so the only control on the card destroyed it
+  // every single time. A deliberate tap is not navigation — it is the person asking for another
+  // sentence, and it gets one.
+  window.__aiMorningAttempted = false;
+  try{ localStorage.removeItem('totry_ai_morning_tried_'+today); }catch(_){ }
   showAIMorningSentence();
 }
 
