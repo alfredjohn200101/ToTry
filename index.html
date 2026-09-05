@@ -3625,7 +3625,7 @@ input:focus,textarea:focus,select:focus{
     
     <!-- WEEK SNAPSHOT — just weight here; full body measurements live in the Measurements card -->
     <div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;margin-top:14px">This week's weight (optional)</div>
-    <div class="row"><input type="number" id="bod-weight" placeholder="Weight (kg)" step="0.1"><input type="number" id="bod-bf" placeholder="Body fat % (opt)" step="0.1"></div>
+    <div class="row"><input type="number" id="bod-weight" placeholder="Weight (kg)" step="0.1"></div>
     <input type="text" id="bod-note" placeholder="Anything else worth noting..." style="margin-bottom:8px">
     <div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:10px;padding:8px 10px;background:var(--bg3);border-radius:8px">📏 Tracking waist, chest, arms, or an Evolt scan? Use the <span class="tlink" onclick="openMeasurementLogger()">Measurements card</span> above — no need to enter those twice.</div>
     <button class="btn primary" onclick="logBody()">Log this week</button>
@@ -23496,7 +23496,7 @@ async function logBody(){
     date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'}),
     ts:new Date().toISOString(),
     weight:w,
-    bf:parseFloat(document.getElementById('bod-bf')?.value||'0'),
+    bf:parseFloat(document.getElementById('bod-bf')?.value || '0') || 0,
     note:document.getElementById('bod-note')?.value.trim()||'',
     photo:_pendingBodyPhoto,
     // New PT-coach dimensions
@@ -23839,18 +23839,35 @@ async function generateWeeklyCoachResponse(entry){
   }
 }
 // Recent weight entries with delete — weight was previously un-removable (a "trapped entry").
+let _weighShowAll = false;
+function toggleWeighShowAll(){ _weighShowAll = !_weighShowAll; renderWeightHistory(); }
 function renderWeightHistory(){
   const wrap = document.getElementById('bod-weight-history');
   if(!wrap) return;
   const entries = (ls('totry_body')||[]).filter(e => e.weight > 0);
   if(!entries.length){ wrap.innerHTML = ''; return; }
+  // EVERY WEIGH-IN HAS TO BE REACHABLE. This showed the 8 newest and nothing else, and the delete
+  // control lives on the row — so the 9th weigh-in onward could never be corrected or removed,
+  // however wrong it was. deleteWeightEntry() handles any key; only the render withheld it.
+  const _shown = _weighShowAll ? entries : entries.slice(0,8);
+  const _thisYear = new Date().getFullYear();
   wrap.innerHTML = '<div class="lbl" style="margin-bottom:6px">Recent weigh-ins</div>' +
-    entries.slice(0,8).map(e => {
-      const when = e.ts ? new Date(e.ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : (e.date||'');
+    _shown.map(e => {
+      // ...and dated unambiguously. "5 Sep" on two entries a year apart is the same label twice.
+      const _d = e.ts ? new Date(e.ts) : null;
+      const _opts = (_d && _d.getFullYear() !== _thisYear)
+        ? {day:'numeric',month:'short',year:'numeric'} : {day:'numeric',month:'short'};
+      const when = _d ? _d.toLocaleDateString('en-AU',_opts) : (e.date||'');
       return '<div class="body-entry"><span style="font-size:14px;color:var(--tx)">'+wFmt(e.weight)+'</span>'+
         '<span style="display:flex;align-items:center;gap:10px"><span style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+when+'</span>'+
         '<button class="fli-del" onclick="deleteWeightEntry(&quot;'+(e.ts||e.date)+'&quot;)" aria-label="Delete this weigh-in">\u00d7</button></span></div>';
-    }).join('');
+    }).join('') +
+    // The way back to the rest of them. Without this the list simply stopped at eight with no
+    // sign there were more, which is why nobody noticed the older ones were unreachable.
+    (entries.length > 8
+      ? '<button onclick="toggleWeighShowAll()" style="width:100%;min-height:34px;margin-top:6px;background:none;border:none;color:var(--tx3);font-size:11.5px;font-family:\'DM Mono\',monospace;cursor:pointer">'
+        + (_weighShowAll ? 'Show fewer' : 'Show all ' + entries.length + ' weigh-ins') + '</button>'
+      : '');
 }
 async function deleteWeightEntry(key){
   // A WEIGH-IN IS NOT ONLY A WEIGHT. The weekly check-in is stored on the SAME entry — the six
@@ -23955,6 +23972,13 @@ function renderBodyGoalCard(){
   if(p.kind === 'there'){
     head = 'You are there.'; col = 'var(--gr)';
     body = 'Holding at ' + wf(p.now) + '. The work now is staying, which is its own kind of work.';
+  } else if(p.kind === 'passed'){
+    // They set a target, reached it, and kept going. That is not drifting away from a goal.
+    head = 'You went past it.'; col = 'var(--gr)';
+    body = 'You set ' + wf(p.goal) + ' and you are at ' + wf(p.now) + ' \u2014 ' +
+           ((typeof wFmt === 'function') ? wFmt(p.by) : (Math.round(p.by*10)/10 + 'kg')) +
+           ' beyond it. If this is where you meant to end up, set the new number so the app is ' +
+           'aiming where you are.';
   } else if(p.kind === 'onTrack'){
     // Carry the year whenever the target is not in THIS one. A projection is the only future date the
     // app prints, and at a slow honest pace it can land years out: "About 9 July" for 9 July 2028 reads
@@ -24060,6 +24084,15 @@ function bodyGoalProjection(){
     const gap = goal - now;                                  // + means they need to gain
     if(Math.abs(gap) < 0.3) return { kind:'there', now:now, goal:goal };
     const perWeek = t.perWeek;                               // smoothed, kg/week, signed
+    // HAVING PASSED THE GOAL IS NOT THE SAME AS DRIFTING FROM IT. The `moving` test compares the sign
+    // of the gap with the sign of the trend and nothing asks whether the goal was already CROSSED —
+    // so someone who set 80kg, reached it, and kept going to 78 has a gap that flipped sign, and the
+    // card flips with it to "going away from your goal". They are not going away from it; they went
+    // past it, which is the thing they were trying to do. Say that instead.
+    const _startW = (function(){ try{ const w=(ls('totry_body')||[]).filter(e=>e&&(parseFloat(e.weight)||0)>0);
+      return w.length ? parseFloat(w[w.length-1].weight) : null; }catch(_){ return null; } })();
+    const _passed = (_startW != null) && ((_startW < goal && now > goal) || (_startW > goal && now < goal));
+    if(_passed) return { kind:'passed', now:now, goal:goal, by:Math.abs(gap) };
     const moving = (gap > 0 && perWeek > 0.05) || (gap < 0 && perWeek < -0.05);
     if(!moving){
       // Either holding steady or moving the other way. Both are worth saying plainly; neither is a
@@ -24230,6 +24263,14 @@ function renderBody(){
       } else {
         bmiEl.textContent = 'Add your height for BMI';
         bmiEl.style.cursor = 'pointer';
+        // A working button 13px tall. It has a role and a handler; it needed a box a thumb can find.
+        bmiEl.style.padding = '7px 10px';
+        bmiEl.style.minHeight = '24px';
+        bmiEl.style.display = 'inline-flex';
+        bmiEl.style.alignItems = 'center';
+        bmiEl.style.justifyContent = 'center';
+        bmiEl.setAttribute('tabindex','0');
+        bmiEl.onkeydown = function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); bmiEl.onclick(); } };
         bmiEl.setAttribute('role','button');
         bmiEl.onclick = function(){
           try{
