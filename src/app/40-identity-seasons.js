@@ -22,8 +22,15 @@ function renderIdentity(){
     try{
       loadV();
       const wins=ls('totry_wins')||[];
+      // CLEAN DAYS DO NOT ADD UP ACROSS VICES — they are the same calendar days lived once. This
+      // summed them, so two vices kept clean through the same ten days read as twenty, on a screen
+      // whose woven row said "10 days clean" and whose TODAY card said "day 10 free of Lust" at the
+      // same moment. With the demo person it claimed 27 (23 + 4) where the 4 sit inside the 23.
+      // A number that overstates what someone has done is the same failure as one that understates
+      // it: they stop believing the screen. The longest current clean fight is what the rest of Home
+      // shows, so it is what this shows.
       let totalClean=0;
-      (vices||[]).forEach(v=>{ if(viceIsAbstinence(v)) totalClean += (v.cleanDaysTotal||0) + (typeof viceCleanDays==='function'?viceCleanDays(v):0); });
+      (vices||[]).forEach(v=>{ if(viceIsAbstinence(v)) totalClean = Math.max(totalClean, (typeof viceCleanDays==='function'?viceCleanDays(v):0)); });
       const dayCount = (typeof getDayCount==='function') ? getDayCount() : 0;
       // The day count is already the persistent header badge on EVERY screen, it is in the coach's
       // sentence above this, and it is on the share button below it — four times on one screen. This

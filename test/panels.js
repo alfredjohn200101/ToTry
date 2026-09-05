@@ -439,6 +439,31 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     else if (!inject.cardShowsItLiterally || !inject.toastShowsItLiterally)
       findings.push('injection: nothing executed, but the name is not shown back as the person typed it either');
     else console.log('injection: a routine name is text in the card and in the toast, and executes nowhere');
+
+    // ── clean days are lived once, however many fights they cover ─────────────────────────────
+    // The PROOF strip summed clean days across vices, so two kept clean through the same ten days
+    // read as twenty — on a screen whose woven row said "10 days clean" at the same moment. A number
+    // that overstates what someone has done costs the same trust as one that understates it.
+    const clean = await page.evaluate(async () => {
+      const ten = new Date(Date.now() - 10 * 864e5).toISOString();
+      ls('totry_identity', 'I am becoming a person who keeps their promises');
+      ls('totry_v', [{ id: 1, n: 'Lust', kind: 'abstain', mode: 'quit', startDate: ten, lastSlip: ten, w: 3, total: 5 },
+                     { id: 2, n: 'Doomscrolling', kind: 'abstain', mode: 'quit', startDate: ten, lastSlip: ten, w: 2, total: 4 }]);
+      go('home'); await new Promise(r => setTimeout(r, 800));
+      if (typeof renderIdentity === 'function') renderIdentity();
+      await new Promise(r => setTimeout(r, 250));
+      loadV();
+      const per = (vices || []).map(v => (typeof viceCleanDays === 'function' ? viceCleanDays(v) : 0));
+      const el = document.getElementById('identity-text');
+      const txt = el ? (el.innerText || '') : '';
+      const m = txt.match(/(\d+)\s+clean days?/);
+      return { longest: Math.max(0, ...per), claimed: m ? Number(m[1]) : null, txt: txt.trim().slice(0, 70) };
+    });
+    if (clean.claimed == null)
+      console.log('clean days: the proof strip is not claiming a clean-day count here');
+    else if (clean.claimed > clean.longest)
+      findings.push(`clean days: the proof strip claims ${clean.claimed} where the longest fight is ${clean.longest} — overlapping streaks added together ("${clean.txt}")`);
+    else console.log(`clean days: two vices clean through the same ten days reads as ${clean.claimed}, not ${clean.longest * 2}`);
     await ctx.close();
   }
 

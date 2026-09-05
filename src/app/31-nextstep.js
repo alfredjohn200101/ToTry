@@ -395,7 +395,17 @@ function renderHomeHabits(){
   // Only days this week are knowable (the ring holds Monday->Sunday of the current week), so counting
   // six days back claimed knowledge of days whose slots belong to a different week.
   let pastPerfect = 0;
-  const knowable = Math.min(6, ti);          // days before today, within this week
+  // DAYS WE CAN ACTUALLY SPEAK TO: ones that have happened this week AND that the person has had
+  // the app for. Counting from Monday alone graded days before they installed — someone who signed
+  // up on a Saturday met a card reading "0/5 perfect" and six rows of "0/5 this week", a verdict on
+  // five days they had never seen. getDayCount() is 1 on the first day, so this is 0 then, and the
+  // card falls to its own "starts today" / "day one" copy.
+  const _daysHere = (typeof getDayCount === 'function') ? Math.max(0, getDayCount() - 1) : 6;
+  const knowable = Math.min(6, ti, _daysHere);   // days before today, this week, since they arrived
+  // Counted INCLUSIVE of today, because the seven cells beside these captions include today. The
+  // loops started at off=1 while the row rendered a tick for off=0, so every caption sat exactly
+  // one behind its own ticks: "5/5 this week" printed next to six green cells.
+  const elapsed = knowable + 1;
   // A HABIT WITH A WEEKLY TARGET CANNOT MAKE A DAY IMPERFECT. v565 taught the habit ROW about h.pw and
   // stopped there, so someone who lifts three times a week and has hit all three read "2/4 perfect" in
   // 18px at the top of this card while the row 40px below it said "3 of 3 \u2713". One week, measured two
@@ -403,7 +413,7 @@ function renderHomeHabits(){
   // only genuinely daily habits can decide whether a day was perfect.
   const _isDaily = h => !(h && h.pw >= 1 && h.pw <= 6);
   const _dailyHabits = habits.filter(_isDaily);
-  for(let off = 1; off <= knowable; off++){
+  for(let off = 0; off <= knowable; off++){
     if(_dailyHabits.length && _dailyHabits.every(h => cellFor(h, off))) pastPerfect++;
   }
   // And when EVERY habit is a weekly target there are no perfect days to count — "0/4 perfect" would be
@@ -425,7 +435,7 @@ function renderHomeHabits(){
       '<div class="stat-num" style="font-size:18px;color:var(--tx)">' +
         (knowable
           ? (_weeklyOnly ? (_wkHits + ' of ' + _wkTarget + ' this week' + (_wkHits >= _wkTarget ? ' \u2713' : ''))
-                         : (pastPerfect + '/' + knowable + ' perfect'))
+                         : (pastPerfect + '/' + elapsed + ' perfect'))
           : 'starts today') + '</div>' +
     '</div>' +
     '<div style="text-align:right">' +
@@ -452,7 +462,7 @@ function renderHomeHabits(){
     
     // Past 6 days hit count for at-a-glance pattern
     let pastHits = 0;
-    for(let off = 1; off <= knowable; off++) if(cellFor(h, off)) pastHits++;
+    for(let off = 0; off <= knowable; off++) if(cellFor(h, off)) pastHits++;
     // Against a TARGET when the person set one, against elapsed days when they did not. Someone who
     // lifts three times a week and has done all three was reading "3/5 this week" — measured against
     // days that merely passed, so two planned rest days looked like two failures. With a target it
@@ -474,7 +484,7 @@ function renderHomeHabits(){
       (_anc
         ? '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">after ' + _escFew(_anc) + '</div>'
         : (!window.__anchorHintShown ? (window.__anchorHintShown = true, '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">\uFF0B anchor it to a cue</div>') : '')) +
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:' + pastColor + ';margin-top:2px">' + (knowable ? ((_pw ? (_weekHits + ' of ' + _pw + (_weekHits >= _pw ? ' \u2713' : '')) : (pastHits + '/' + knowable)) + ' this week') : 'day one') + '</div>';
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:' + pastColor + ';margin-top:2px">' + (knowable ? ((_pw ? (_weekHits + ' of ' + _pw + (_weekHits >= _pw ? ' \u2713' : '')) : (pastHits + '/' + elapsed)) + ' this week') : 'day one') + '</div>';
     nameCell.onclick = function(){ if(typeof openHabitAnchor==='function') openHabitAnchor(hi); };
     row.appendChild(nameCell);
     
