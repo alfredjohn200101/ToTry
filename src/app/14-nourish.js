@@ -3484,14 +3484,25 @@ function nourishmentScore(totals, goals){
 // Protein-first (it's what this audience is chasing); over-cal is met with grace; under-cal warns
 // against undereating (anti-ED); a hit target is affirmed. No mainstream tracker turns the log into
 // counsel like this. Returns {tone,text} or '' (nothing logged yet / nothing worth saying).
-function _nutrientNudge(totals, goals){
+function _nutrientNudge(totals, goals, entries){
   try{
     if(!goals || !goals.cal || !totals || !(totals.cal>0)) return '';
     const h=new Date().getHours();
     const calLeft=Math.round((goals.cal||0)-(totals.cal||0));
     const proLeft=Math.round((goals.pro||0)-(totals.pro||0));
     const proPct=goals.pro?(totals.pro/goals.pro):1;
-    const dayLeft = h<11?'most of the day':h<15?'lunch and dinner':h<19?'dinner':h<22?'a snack':'the day almost done';
+    // NAME MEALS THAT ARE STILL AHEAD, not meals the clock says are ahead. This read the hour alone,
+    // so someone who had already logged lunch and dinner at 2pm was told they had "lunch and dinner"
+    // to get their protein in — coaching them to eat food they had eaten. Intersect the clock window
+    // with the slots that are actually empty; when nothing is left, say so instead of inventing one.
+    const _has = s2 => (entries||[]).some(e => ((e && e.meal) || 'snack') === s2);
+    const _ahead = ['lunch','dinner'].filter(m2 => !_has(m2) &&
+      (m2 === 'lunch' ? h < 15 : h < 22));
+    const dayLeft = (entries && entries.length)
+      ? (_ahead.length === 2 ? 'lunch and dinner'
+         : _ahead.length === 1 ? _ahead[0]
+         : (h < 22 && !_has('snack')) ? 'a snack' : 'what is left of today')
+      : (h<11?'most of the day':h<15?'lunch and dinner':h<19?'dinner':h<22?'a snack':'the day almost done');
     // Over on calories — grace, never shame.
     if(totals.cal > goals.cal*1.1){ return {tone:'over', text:'About '+Math.abs(calLeft)+' cal over today — no drama, tomorrow resets. Still hungry? Lean protein and veg.'}; }
     // Protein short with eating time left — the highest-value nudge, with a concrete fix.
@@ -3850,7 +3861,7 @@ function renderNutritionLog(){
   }, {cal:0, pro:0, carb:0, fat:0});
   try{ if(typeof renderNourishmentScore==='function') renderNourishmentScore(totals, goals); }catch(_){}
   try{ if(typeof renderHungerNudge==='function') renderHungerNudge(); }catch(_){}
-  try{ const _nEl=document.getElementById('nut-nudge'); if(_nEl){ const _nd=(typeof _nutrientNudge==='function')?_nutrientNudge(totals,goals):''; if(_nd&&_nd.text){ const _c=_nd.tone==='over'?'var(--re)':_nd.tone==='good'?'var(--gr)':'var(--go)'; _nEl.style.display='block'; _nEl.innerHTML='<div style="font-size:12px;color:'+_c+';line-height:1.55;padding:9px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;margin-top:10px">'+_nd.text+'</div>'; } else { _nEl.style.display='none'; _nEl.innerHTML=''; } } }catch(_){}
+  try{ const _nEl=document.getElementById('nut-nudge'); if(_nEl){ const _nd=(typeof _nutrientNudge==='function')?_nutrientNudge(totals,goals,entries):''; if(_nd&&_nd.text){ const _c=_nd.tone==='over'?'var(--re)':_nd.tone==='good'?'var(--gr)':'var(--go)'; _nEl.style.display='block'; _nEl.innerHTML='<div style="font-size:12px;color:'+_c+';line-height:1.55;padding:9px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;margin-top:10px">'+_nd.text+'</div>'; } else { _nEl.style.display='none'; _nEl.innerHTML=''; } } }catch(_){}
   
   // Net calories: consumed − burned (from workouts, screenshots, Strava)
   const burns = ls('totry_calorie_burns') || {};

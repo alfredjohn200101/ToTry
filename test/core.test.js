@@ -1823,7 +1823,15 @@ H.section('the offline floor must be reachable for a REAL outage');
     .replace(/<!--[\s\S]*?-->/g, '')
     .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
   const i = code.indexOf('async function checkAuthAndStart(');
-  const body = code.slice(i, i + 4200);
+  const body = (function(){
+    let depth = 0, started = false;
+    for(let k = i; k < code.length; k++){
+      const c = code[k];
+      if(c === '{'){ depth++; started = true; }
+      else if(c === '}'){ depth--; if(started && depth === 0) return code.slice(i, k + 1); }
+    }
+    return code.slice(i, i + 8000);
+  })();
 
   H.ok(/Promise\.race\(/.test(body), 'the session lookup is bounded, not awaited indefinitely');
   H.ok(/__timeout/.test(body) && /bootWithoutCloud\('session-timeout'\)/.test(body),

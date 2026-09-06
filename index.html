@@ -7681,10 +7681,33 @@ async function checkAuthAndStart(){
         document.getElementById('onboard').style.display = 'none';
         if(typeof initApp === 'function') await initApp();
       } else {
-        // Logged in but not onboarded yet - show onboarding starting at name
+        // Logged in but not onboarded yet — show onboarding, RESUMING where they stopped.
+        // This always inherited the DOM's default (screen one), so closing the app partway through
+        // setup asked for the name they had already given and the identity they had already typed,
+        // with everything they had entered still sitting in storage. Pick the furthest step whose
+        // answer is already saved and start after it.
         document.getElementById('onboard').classList.add('active');
         document.getElementById('onboard').style.display = 'block';
         _clearBootSplash();
+        try{
+          const have = k => { try{ const v = ls(k); return !!(v && String(v).trim()); }catch(_){ return false; } };
+          let resumeAt = null;
+          if(have('totry_name')) resumeAt = 'ob-moment';
+          if(have('totry_identity')) resumeAt = 'ob-why';
+          if(have('totry_why')) resumeAt = 'ob-faith';
+          if(have('totry_season')) resumeAt = 'ob5';
+          if(resumeAt && document.getElementById(resumeAt)){
+            const nameEl = document.getElementById('ob-name');
+            if(nameEl && have('totry_name')){ nameEl.value = ls('totry_name'); try{ userName = ls('totry_name'); }catch(_){ } }
+            const idEl = document.getElementById('ob-identity');
+            if(idEl && have('totry_identity')) idEl.value = ls('totry_identity');
+            const whyEl = document.getElementById('ob-why-text');
+            if(whyEl && have('totry_why')) whyEl.value = ls('totry_why');
+            document.querySelectorAll('.ob-step').forEach(function(x){ x.classList.remove('active'); });
+            document.getElementById(resumeAt).classList.add('active');
+          }
+          if(typeof obDots === 'function') obDots();
+        }catch(_){ }
         try{ const sc=document.getElementById('ob-chip-strava'); if(sc && typeof isStravaApproved==='function' && isStravaApproved()) sc.style.display=''; }catch(_){}
         try{ const gh=document.getElementById('ob-chip-googlehealth'); if(gh && !(typeof isNativeApp==='function' && isNativeApp())) gh.style.display=''; }catch(_){}
       }
@@ -28438,14 +28461,25 @@ function nourishmentScore(totals, goals){
 // Protein-first (it's what this audience is chasing); over-cal is met with grace; under-cal warns
 // against undereating (anti-ED); a hit target is affirmed. No mainstream tracker turns the log into
 // counsel like this. Returns {tone,text} or '' (nothing logged yet / nothing worth saying).
-function _nutrientNudge(totals, goals){
+function _nutrientNudge(totals, goals, entries){
   try{
     if(!goals || !goals.cal || !totals || !(totals.cal>0)) return '';
     const h=new Date().getHours();
     const calLeft=Math.round((goals.cal||0)-(totals.cal||0));
     const proLeft=Math.round((goals.pro||0)-(totals.pro||0));
     const proPct=goals.pro?(totals.pro/goals.pro):1;
-    const dayLeft = h<11?'most of the day':h<15?'lunch and dinner':h<19?'dinner':h<22?'a snack':'the day almost done';
+    // NAME MEALS THAT ARE STILL AHEAD, not meals the clock says are ahead. This read the hour alone,
+    // so someone who had already logged lunch and dinner at 2pm was told they had "lunch and dinner"
+    // to get their protein in — coaching them to eat food they had eaten. Intersect the clock window
+    // with the slots that are actually empty; when nothing is left, say so instead of inventing one.
+    const _has = s2 => (entries||[]).some(e => ((e && e.meal) || 'snack') === s2);
+    const _ahead = ['lunch','dinner'].filter(m2 => !_has(m2) &&
+      (m2 === 'lunch' ? h < 15 : h < 22));
+    const dayLeft = (entries && entries.length)
+      ? (_ahead.length === 2 ? 'lunch and dinner'
+         : _ahead.length === 1 ? _ahead[0]
+         : (h < 22 && !_has('snack')) ? 'a snack' : 'what is left of today')
+      : (h<11?'most of the day':h<15?'lunch and dinner':h<19?'dinner':h<22?'a snack':'the day almost done');
     // Over on calories — grace, never shame.
     if(totals.cal > goals.cal*1.1){ return {tone:'over', text:'About '+Math.abs(calLeft)+' cal over today — no drama, tomorrow resets. Still hungry? Lean protein and veg.'}; }
     // Protein short with eating time left — the highest-value nudge, with a concrete fix.
@@ -28804,7 +28838,7 @@ function renderNutritionLog(){
   }, {cal:0, pro:0, carb:0, fat:0});
   try{ if(typeof renderNourishmentScore==='function') renderNourishmentScore(totals, goals); }catch(_){}
   try{ if(typeof renderHungerNudge==='function') renderHungerNudge(); }catch(_){}
-  try{ const _nEl=document.getElementById('nut-nudge'); if(_nEl){ const _nd=(typeof _nutrientNudge==='function')?_nutrientNudge(totals,goals):''; if(_nd&&_nd.text){ const _c=_nd.tone==='over'?'var(--re)':_nd.tone==='good'?'var(--gr)':'var(--go)'; _nEl.style.display='block'; _nEl.innerHTML='<div style="font-size:12px;color:'+_c+';line-height:1.55;padding:9px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;margin-top:10px">'+_nd.text+'</div>'; } else { _nEl.style.display='none'; _nEl.innerHTML=''; } } }catch(_){}
+  try{ const _nEl=document.getElementById('nut-nudge'); if(_nEl){ const _nd=(typeof _nutrientNudge==='function')?_nutrientNudge(totals,goals,entries):''; if(_nd&&_nd.text){ const _c=_nd.tone==='over'?'var(--re)':_nd.tone==='good'?'var(--gr)':'var(--go)'; _nEl.style.display='block'; _nEl.innerHTML='<div style="font-size:12px;color:'+_c+';line-height:1.55;padding:9px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;margin-top:10px">'+_nd.text+'</div>'; } else { _nEl.style.display='none'; _nEl.innerHTML=''; } } }catch(_){}
   
   // Net calories: consumed − burned (from workouts, screenshots, Strava)
   const burns = ls('totry_calorie_burns') || {};

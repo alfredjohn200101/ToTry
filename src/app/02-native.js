@@ -1180,10 +1180,33 @@ async function checkAuthAndStart(){
         document.getElementById('onboard').style.display = 'none';
         if(typeof initApp === 'function') await initApp();
       } else {
-        // Logged in but not onboarded yet - show onboarding starting at name
+        // Logged in but not onboarded yet — show onboarding, RESUMING where they stopped.
+        // This always inherited the DOM's default (screen one), so closing the app partway through
+        // setup asked for the name they had already given and the identity they had already typed,
+        // with everything they had entered still sitting in storage. Pick the furthest step whose
+        // answer is already saved and start after it.
         document.getElementById('onboard').classList.add('active');
         document.getElementById('onboard').style.display = 'block';
         _clearBootSplash();
+        try{
+          const have = k => { try{ const v = ls(k); return !!(v && String(v).trim()); }catch(_){ return false; } };
+          let resumeAt = null;
+          if(have('totry_name')) resumeAt = 'ob-moment';
+          if(have('totry_identity')) resumeAt = 'ob-why';
+          if(have('totry_why')) resumeAt = 'ob-faith';
+          if(have('totry_season')) resumeAt = 'ob5';
+          if(resumeAt && document.getElementById(resumeAt)){
+            const nameEl = document.getElementById('ob-name');
+            if(nameEl && have('totry_name')){ nameEl.value = ls('totry_name'); try{ userName = ls('totry_name'); }catch(_){ } }
+            const idEl = document.getElementById('ob-identity');
+            if(idEl && have('totry_identity')) idEl.value = ls('totry_identity');
+            const whyEl = document.getElementById('ob-why-text');
+            if(whyEl && have('totry_why')) whyEl.value = ls('totry_why');
+            document.querySelectorAll('.ob-step').forEach(function(x){ x.classList.remove('active'); });
+            document.getElementById(resumeAt).classList.add('active');
+          }
+          if(typeof obDots === 'function') obDots();
+        }catch(_){ }
         try{ const sc=document.getElementById('ob-chip-strava'); if(sc && typeof isStravaApproved==='function' && isStravaApproved()) sc.style.display=''; }catch(_){}
         try{ const gh=document.getElementById('ob-chip-googlehealth'); if(gh && !(typeof isNativeApp==='function' && isNativeApp())) gh.style.display=''; }catch(_){}
       }
