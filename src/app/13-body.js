@@ -996,7 +996,19 @@ function renderBody(){
       // pad clipped the highest weigh-in's number on every single render — the one number on
       // the chart a person looks for first.
       pad=18;
-    const x=i=>pad+(i/(pts.length-1))*(W-2*pad);const y=w=>H-pad-((w-mn)/range)*(H-2*pad);
+    // SPACED BY TIME, NOT BY INDEX. Every point sat an equal distance apart whatever the gap between
+    // them, so three weigh-ins in one week and one three months later drew the same shape — a line
+    // whose slope said nothing true about the rate of change the card underneath it reports. The
+    // training chart already scales on timestamps; this is the same scale.
+    const _ts = p => { try{ const t=new Date(p.ts||p.date).getTime(); return isFinite(t)?t:0; }catch(_){ return 0; } };
+    const _tsv = pts.map(_ts);
+    const _valid = _tsv.every(t => t > 0);
+    const minTs = _valid ? Math.min(..._tsv) : 0, maxTs = _valid ? Math.max(..._tsv) : 1;
+    const tsRange = (maxTs - minTs) || 1;
+    const x = i => _valid
+      ? pad + ((_tsv[i] - minTs) / tsRange) * (W - 2*pad)
+      : pad + (i/(Math.max(1, pts.length-1)))*(W-2*pad);   // undated rows: fall back to even spacing
+    const y=w=>H-pad-((w-mn)/range)*(H-2*pad);
     const pathD=pts.map((p,i)=>(i===0?'M':'L')+x(i).toFixed(1)+','+y(p.weight).toFixed(1)).join(' ');
     const svg=document.getElementById('weight-chart');
     if(svg)svg.innerHTML='<defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5BB97D" stop-opacity="0.25"/><stop offset="100%" stop-color="#5BB97D" stop-opacity="0"/></linearGradient></defs><path d="'+pathD+' L'+x(pts.length-1).toFixed(1)+','+H+' L'+x(0).toFixed(1)+','+H+' Z" fill="url(#wg)"/><path d="'+pathD+'" stroke="#5BB97D" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+pts.map((p,i)=>'<circle cx="'+x(i).toFixed(1)+'" cy="'+y(p.weight).toFixed(1)+'" r="3.5" fill="#5BB97D"/><text x="'+x(i).toFixed(1)+'" y="'+(y(p.weight)-8).toFixed(1)+'" text-anchor="middle" fill="rgba(242,239,232,0.4)" font-size="8" font-family="DM Mono,monospace">'+((typeof wFmt==='function')?wFmt(p.weight,{bare:true}):p.weight)+'</text>').join('');

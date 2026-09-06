@@ -691,6 +691,11 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 @keyframes fnBreathe{0%,100%{transform:scale(0.85);opacity:0.7}50%{transform:scale(1.12);opacity:1}}
 .fade-up{animation:fadeUpY 0.3s ease forwards}
 .pulsing{animation:pulse 1.5s ease infinite}
+/* A toast fired FROM a sheet sat on top of the sheet's own output — tap "Calculate" in the plate
+   maths and the answer you asked for was covered by the confirmation that it had been worked out.
+   When a sheet is open the toast moves to the top of the screen instead, clear of the content it
+   is talking about. One rule, so it holds for every sheet, not just the plate one. */
+body.sheet-open .milestone-toast{bottom:auto;top:calc(var(--st) + 12px)}
 .milestone-toast{position:fixed;bottom:calc(var(--sb) + 100px);left:50%;transform:translateX(-50%);background:var(--go);color:#000;border-radius:var(--r);padding:14px 20px;z-index:1200;max-width:340px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.4);animation:fadeUpFromBottom 0.3s ease forwards;cursor:pointer}
 @keyframes fadeUpFromBottom{from{opacity:0;transform:translate(-50%,16px)}to{opacity:1;transform:translate(-50%,0)}}
 

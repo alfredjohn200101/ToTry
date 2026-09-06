@@ -155,6 +155,24 @@ function setCheckin(field, value){
 // interrupts; ordinary confirmations are role=status/polite so a stream of "Saved" does not talk over
 // whatever the person is doing. A tappable toast also gets an explicit role=button and Enter/Space, since
 // it was previously a div with an onclick — invisible to the keyboard.
+// Keep body.sheet-open true whenever a bottom sheet is on screen, so the toast rule above can move
+// out of its way. Sheets are created ad hoc all over the app (document.createElement + .modal-bg
+// open + appendChild), so there is no single open-helper to hook — watching the body is the one
+// place that covers all of them, including sheets written later.
+try{
+  if(typeof MutationObserver === 'function'){
+    const _syncSheetFlag = function(){
+      try{
+        const open = [...document.querySelectorAll('.modal-bg.open')]
+          .some(function(m){ const c = getComputedStyle(m); return c.display !== 'none' && c.visibility !== 'hidden'; });
+        document.body.classList.toggle('sheet-open', open);
+      }catch(_){ }
+    };
+    new MutationObserver(_syncSheetFlag).observe(document.body,
+      { childList:true, subtree:true, attributes:true, attributeFilter:['class','style'] });
+    _syncSheetFlag();
+  }
+}catch(_){ }
 function showToast(title,msg,onTap){
   try{
     const _failedAt = window.__lsLastWriteFailed || 0;

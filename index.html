@@ -691,6 +691,11 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 @keyframes fnBreathe{0%,100%{transform:scale(0.85);opacity:0.7}50%{transform:scale(1.12);opacity:1}}
 .fade-up{animation:fadeUpY 0.3s ease forwards}
 .pulsing{animation:pulse 1.5s ease infinite}
+/* A toast fired FROM a sheet sat on top of the sheet's own output — tap "Calculate" in the plate
+   maths and the answer you asked for was covered by the confirmation that it had been worked out.
+   When a sheet is open the toast moves to the top of the screen instead, clear of the content it
+   is talking about. One rule, so it holds for every sheet, not just the plate one. */
+body.sheet-open .milestone-toast{bottom:auto;top:calc(var(--st) + 12px)}
 .milestone-toast{position:fixed;bottom:calc(var(--sb) + 100px);left:50%;transform:translateX(-50%);background:var(--go);color:#000;border-radius:var(--r);padding:14px 20px;z-index:1200;max-width:340px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.4);animation:fadeUpFromBottom 0.3s ease forwards;cursor:pointer}
 @keyframes fadeUpFromBottom{from{opacity:0;transform:translate(-50%,16px)}to{opacity:1;transform:translate(-50%,0)}}
 
@@ -24456,7 +24461,19 @@ function renderBody(){
       // pad clipped the highest weigh-in's number on every single render — the one number on
       // the chart a person looks for first.
       pad=18;
-    const x=i=>pad+(i/(pts.length-1))*(W-2*pad);const y=w=>H-pad-((w-mn)/range)*(H-2*pad);
+    // SPACED BY TIME, NOT BY INDEX. Every point sat an equal distance apart whatever the gap between
+    // them, so three weigh-ins in one week and one three months later drew the same shape — a line
+    // whose slope said nothing true about the rate of change the card underneath it reports. The
+    // training chart already scales on timestamps; this is the same scale.
+    const _ts = p => { try{ const t=new Date(p.ts||p.date).getTime(); return isFinite(t)?t:0; }catch(_){ return 0; } };
+    const _tsv = pts.map(_ts);
+    const _valid = _tsv.every(t => t > 0);
+    const minTs = _valid ? Math.min(..._tsv) : 0, maxTs = _valid ? Math.max(..._tsv) : 1;
+    const tsRange = (maxTs - minTs) || 1;
+    const x = i => _valid
+      ? pad + ((_tsv[i] - minTs) / tsRange) * (W - 2*pad)
+      : pad + (i/(Math.max(1, pts.length-1)))*(W-2*pad);   // undated rows: fall back to even spacing
+    const y=w=>H-pad-((w-mn)/range)*(H-2*pad);
     const pathD=pts.map((p,i)=>(i===0?'M':'L')+x(i).toFixed(1)+','+y(p.weight).toFixed(1)).join(' ');
     const svg=document.getElementById('weight-chart');
     if(svg)svg.innerHTML='<defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5BB97D" stop-opacity="0.25"/><stop offset="100%" stop-color="#5BB97D" stop-opacity="0"/></linearGradient></defs><path d="'+pathD+' L'+x(pts.length-1).toFixed(1)+','+H+' L'+x(0).toFixed(1)+','+H+' Z" fill="url(#wg)"/><path d="'+pathD+'" stroke="#5BB97D" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+pts.map((p,i)=>'<circle cx="'+x(i).toFixed(1)+'" cy="'+y(p.weight).toFixed(1)+'" r="3.5" fill="#5BB97D"/><text x="'+x(i).toFixed(1)+'" y="'+(y(p.weight)-8).toFixed(1)+'" text-anchor="middle" fill="rgba(242,239,232,0.4)" font-size="8" font-family="DM Mono,monospace">'+((typeof wFmt==='function')?wFmt(p.weight,{bare:true}):p.weight)+'</text>').join('');
@@ -43007,6 +43024,24 @@ function setCheckin(field, value){
 // interrupts; ordinary confirmations are role=status/polite so a stream of "Saved" does not talk over
 // whatever the person is doing. A tappable toast also gets an explicit role=button and Enter/Space, since
 // it was previously a div with an onclick — invisible to the keyboard.
+// Keep body.sheet-open true whenever a bottom sheet is on screen, so the toast rule above can move
+// out of its way. Sheets are created ad hoc all over the app (document.createElement + .modal-bg
+// open + appendChild), so there is no single open-helper to hook — watching the body is the one
+// place that covers all of them, including sheets written later.
+try{
+  if(typeof MutationObserver === 'function'){
+    const _syncSheetFlag = function(){
+      try{
+        const open = [...document.querySelectorAll('.modal-bg.open')]
+          .some(function(m){ const c = getComputedStyle(m); return c.display !== 'none' && c.visibility !== 'hidden'; });
+        document.body.classList.toggle('sheet-open', open);
+      }catch(_){ }
+    };
+    new MutationObserver(_syncSheetFlag).observe(document.body,
+      { childList:true, subtree:true, attributes:true, attributeFilter:['class','style'] });
+    _syncSheetFlag();
+  }
+}catch(_){ }
 function showToast(title,msg,onTap){
   try{
     const _failedAt = window.__lsLastWriteFailed || 0;
