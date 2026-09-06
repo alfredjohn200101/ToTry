@@ -4841,8 +4841,13 @@ function fnBodyOf(code, name){
   }
   {
     const store = {};
+    // reclaimedFigure() formats through _moneyG, which is declared in a LATER module. That is legal
+    // and live \u2014 the bundle is one script, so top-level function declarations hoist across all 42
+    // (17-fuelplan.js has called 23-evening.js's _escFew in production for versions). This isolated
+    // harness has no such scope, so hand it the real implementation rather than a stub, or the test
+    // measures a ReferenceError instead of the number the person sees.
     const f = new Function('ls', 'curSym', 'loadV', 'vices', 'totalReclaimed',
-      H.extractFn('reclaimedFigure') + 'return reclaimedFigure;');
+      H.extractFn('_moneyG') + H.extractFn('reclaimedFigure') + 'return reclaimedFigure;');
     H.eq(f(k => store[k], () => '$', () => {}, [{ n: 'W', costAmount: 60 }], () => 771)().model, 'per-vice',
       'a per-vice cost model wins — it is the only one that knows real clean days');
     store.totry_vs = { weekly: 50, saved: 900 };
@@ -5416,6 +5421,153 @@ H.section('the web lookup refines the plate, it does not invent one');
   const empty = _pmWebPrompt('open plate gyros, large', []);
   H.ok(!/ONLY these/.test(empty) && /Break it into its components/.test(empty),
        'and with no photo behind it, it is free to say what the dish is made of');
+}
+
+H.section('a number and its noun agree — "1 days clean" is the sentence this app says most');
+{
+  const { plural } = H.load(['plural']);
+  H.eq(plural(1,'day'), '1 day', 'day one reads like English');
+  H.eq(plural(0,'day'), '0 days', 'and so does none');
+  H.eq(plural(2,'day'), '2 days', 'and so does more than one');
+  // The first cut of this helper took the PLURAL and stripped /e?s$/ off it, which produced
+  // "2 battls" and "2 tims". It went in, and only a fault-check before shipping caught it.
+  H.eq(plural(2,'battle'), '2 battles', 'a word ending in e keeps its e');
+  H.eq(plural(2,'time'),   '2 times',   'and so does this one');
+  H.eq(plural(2,'loss'),   '2 losses',  'a sibilant takes -es, not a bare -s');
+  H.eq(plural(2,'match'),  '2 matches', 'and so does a -ch');
+  H.eq(plural(2,'entry'),  '2 entries', 'the irregulars are listed, never guessed');
+  H.eq(plural(2,'person'), '2 people',  'and so is this one');
+  H.eq(plural(-1,'day'),   '-1 day',    'a magnitude of one is still singular');
+  // The call sites that matter: the ones a person on day one actually reads.
+  H.ok(/plural\(clean,'day'\)/.test(H.html),      'the vice line counts through it');
+  H.ok(/plural\(days,'day'\)/.test(H.html),       'so does the moment');
+  H.ok(/plural\(e\.wins,'win'\)/.test(H.html),    'so does a journal tag');
+  H.ok(/plural\(e\.urges,'battle'\)/.test(H.html),'and so does the one beside it');
+}
+
+H.section('a person’s own typing never leaves as live HTML — the doors the static scan missed');
+{
+  // addRecipeIngredient() reads a free-text <input> and pushes it straight into the list that
+  // renderRecipeIngredients() writes with innerHTML. It carried no shared sink, so the sweep that
+  // found the other five injection doors walked past this one.
+  const rri = H.extractFn('renderRecipeIngredients');
+  H.ok(/_escFew\(ing\.name\)/.test(rri), 'the ingredient a person typed is escaped where it is drawn');
+  H.ok(!/\+ ing\.name \+/.test(rri),     'and the raw value has no path of its own left');
+  // The scripture search hands the person's free text to the MODEL and prints what comes back.
+  const html = H.html;
+  H.ok(!/'\+v\.text\+'/.test(html),      'a verse the model wrote is not markup');
+  H.ok(!/'\+v\.reference\+'/.test(html), 'nor is its reference');
+  H.ok(!/'\+d\.reference\+'/.test(html), 'nor is the KJV endpoint’s');
+  H.ok(!/src="'\+e\.photo\+'"/.test(html), 'a stored photo string cannot close its own src attribute');
+}
+
+H.section('the app’s VOICE converts too, not just its cards');
+{
+  // Screens were converted one card at a time over several versions. Nothing ever told the model
+  // which units the person reads, so the coach, the companion and the brother all answered a
+  // pounds-and-miles person in kilograms and kilometres.
+  const brief = H.extractFn('lifeStateBrief');
+  H.ok(/UNITS:/.test(brief), 'the shared brief states the units the figures are in');
+  H.ok(/wUnit\(\)/.test(brief) && /dUnit\(\)/.test(brief), 'and reads the person’s own two preferences');
+  H.ok(/never quote them a kg or a km/.test(brief), 'and says plainly what not to do');
+  H.ok(/_wu !== 'kg' \|\| _du !== 'km'/.test(brief),
+       'a metric person gets no extra instruction — this costs them nothing');
+}
+
+H.section('body weight is converted everywhere it is SAID, not only on the cards that were reported');
+{
+  const html = H.html;
+  H.ok(!/weeklyChange\.toFixed\(1\) \+ 'kg\/week/.test(html), 'the rate-of-change reason converts');
+  H.ok(!/wDelta\.toFixed\(1\) \+ 'kg in a week/.test(html),   'so does the weekly check-in');
+  H.ok(!/w \+ 'kg saved/.test(html),                          'so does the toast after a weigh-in');
+  H.ok(!/'\+s\.wt\+'kg /.test(html),                          'so does the saved-weight shelf');
+  H.ok(/wDelta\(stats\.weightChange\)/.test(html),            'and so does the year in review');
+}
+
+H.section('money is written the same way everywhere it is said');
+{
+  const html = H.html;
+  // _moneyG existed and was used in exactly one module. Fourteen other sites printed the raw
+  // stored number beside it — "$845.6" under a summary that read "$845.60".
+  // Every amount printed after a currency symbol must pass through SOMETHING — _moneyG for the
+  // exact ones a person typed, a round-and-group for the approximations. viceMoneySaved() is the
+  // one bare identifier left and it groups on its own call, so it is named rather than excepted.
+  const raw = [...new Set((html.match(/curSym\(\)\s*\+\s*[A-Za-z_$][\w$.]*/g) || [])
+    .filter(x => !/_moneyG|_money2|Math\.round|Math\.abs|toFixed|toLocaleString/.test(x)))]
+    .filter(x => x !== 'curSym()+viceMoneySaved');
+  H.ok(raw.length === 0, `no amount reaches a person unformatted (found ${raw.length}: ${raw.join(', ')})`);
+  H.ok(/viceMoneySaved\(v\)\.toLocaleString\(\)/.test(html), 'and the named exception does group its own number');
+}
+
+H.section('every button calls a function that exists');
+{
+  // The signature failure of this codebase is the one that PARSES: a control that looks right,
+  // reads right and does nothing, because the handler names a function nobody ever wrote (or one
+  // that was renamed underneath it). The id sweep above asks the same question of elements; this
+  // asks it of behaviour. Handler bodies have their string literals stripped first — a naive scan
+  // reports Suscipe() out of "Suscipe (Take Lord, Receive)" and then gets ignored for being noisy.
+  const KW = new Set(['if','for','while','switch','catch','function','return','typeof','new','delete',
+    'void','do','else','try','in','of','var','let','const','await','async']);
+  const BUILTIN = new Set(['alert','confirm','prompt','parseInt','parseFloat','String','Number','Boolean',
+    'Array','Object','Math','Date','JSON','encodeURIComponent','decodeURIComponent','setTimeout',
+    'setInterval','clearTimeout','clearInterval','isNaN','isFinite','fetch','event','Event','RegExp',
+    'Set','Map','Promise','console','window','document','Audio','Image','Blob','URL','FormData','Intl',
+    'requestAnimationFrame','structuredClone']);
+  // &apos; must be in this list. Without it the stripper cannot see where a string starts, so a
+  // quoted key survives into the scan and its tail reads as a call — which is how this check first
+  // reported volume() as a missing function on a line that only ever said 'totry_bw_volume'.
+  const unescape = t => t.replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&apos;/g,"'")
+                         .replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
+  const stripStrings = t => t.replace(/'(?:\\.|[^'\\])*'/g,"''").replace(/"(?:\\.|[^"\\])*"/g,'""');
+  const called = new Map();
+  const ATTR = /\b(?:onclick|oninput|onchange|onsubmit|onfocus|onblur|onkeyup|onkeydown|onkeypress)\s*=\s*"([^"]*)"/g;
+  let m;
+  while((m = ATTR.exec(H.html))){
+    const body = stripStrings(unescape(m[1]));
+    let c; const CALL = /(?<![.\w$])([A-Za-z_$][\w$]*)\s*\(/g;
+    while((c = CALL.exec(body))){
+      const n = c[1];
+      if(KW.has(n) || BUILTIN.has(n)) continue;
+      if(!called.has(n)) called.set(n, unescape(m[1]).slice(0,80));
+    }
+  }
+  const defined = new Set();
+  for(const d of H.html.matchAll(/\bfunction\s+([A-Za-z_$][\w$]*)\s*\(/g)) defined.add(d[1]);
+  for(const d of H.html.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?(?:function\b|\()/g)) defined.add(d[1]);
+  for(const d of H.html.matchAll(/window\.([A-Za-z_$][\w$]*)\s*=[^=]/g)) defined.add(d[1]);
+  const orphans = [...called.keys()].filter(n => !defined.has(n));
+  H.ok(called.size > 200, `the scan actually found the handlers (saw ${called.size} distinct calls)`);
+  H.ok(orphans.length === 0,
+    orphans.length
+      ? `${orphans.length} handler(s) call a function that does not exist: ${orphans.map(n => n + '() — ' + called.get(n)).slice(0,5).join(' | ')}`
+      : 'no control is wired to a function that was never written');
+}
+
+H.section('an undo that a sync cannot quietly reverse');
+{
+  // deleteFoodEntry() tombstones the row so other devices honour the deletion. Restoring it in
+  // localStorage alone therefore does NOT restore it: the next merge reads the tombstone and
+  // deletes it a second time, on this device or another, with nothing on screen to explain it.
+  const dfe = H.extractFn('deleteFoodEntry');
+  H.ok(/showUndo\(/.test(dfe), 'a deleted meal can be put back');
+  H.ok(/tombstoneRevoke\('totry_nutlog'/.test(dfe),
+    'and the restore revokes the tombstone, or the next sync deletes it again');
+  // Order matters: revoking before the row is back would leave a window where a pull sees neither.
+  // Measured on the CODE, not the prose \u2014 the first cut of this compared raw indexes and matched
+  // the word tombstoneRevoke inside the comment four lines above the call, so it failed on code
+  // that was already correct. A test that reads comments is not reading the program.
+  const dfeCode = dfe.replace(/\/\/[^\n]*/g, '');
+  H.ok(dfeCode.indexOf("ls('totry_nutlog',l2)") < dfeCode.indexOf('tombstoneRevoke'),
+    'the row is written back before its tombstone is lifted');
+  H.ok(/!arr\.some\(e=>e\.id===removed\.id\)/.test(dfe),
+    'and a double-tap on undo cannot duplicate the entry');
+
+  const rwa = H.extractFn('removeWhyAffirmation');
+  H.ok(/showUndo\(/.test(rwa), 'a sentence the person wrote about their why can be put back');
+  const rjs = H.extractFn('resetJourneyStart');
+  H.ok(/showUndo\(/.test(rjs), 'and so can a journey-start date they chose deliberately');
+  H.ok(/const _prev = ls\('totry_journey_start'\)/.test(rjs),
+    'which means reading it BEFORE removing it — the value is gone by the time the snack is tapped');
 }
 
 H.report();

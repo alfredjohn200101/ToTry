@@ -154,15 +154,17 @@ function renderVerseResults(verses,feeling){
   card.innerHTML='';
   const hdr=document.createElement('div');
   hdr.style.cssText='font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:14px';
-  hdr.textContent=verses.length+' verses for: '+feeling.slice(0,50)+(feeling.length>50?'...':'');
+  hdr.textContent=plural(verses.length,'verse')+' for: '+feeling.slice(0,50)+(feeling.length>50?'...':'');
   card.appendChild(hdr);
   verses.forEach((v,i)=>{
     const block=document.createElement('div');
     block.className='verse-result-block';
+    // Same as the search block above: these fields are the MODEL'S, and the model was handed
+    // this person's own free text. Not app-authored content, so not app-trusted markup.
     block.innerHTML=
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.08em;margin-bottom:8px">'+v.reference+'</div>'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:16px;color:var(--tx);line-height:1.65;font-style:italic;margin-bottom:10px">&#8220;'+v.verse+'&#8221;</div>'+
-      '<div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:10px">'+v.reflection+'</div>'+
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.08em;margin-bottom:8px">'+_escFew(v.reference)+'</div>'+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:16px;color:var(--tx);line-height:1.65;font-style:italic;margin-bottom:10px">&#8220;'+_escFew(v.verse)+'&#8221;</div>'+
+      '<div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:10px">'+_escFew(v.reflection)+'</div>'+
       '<div style="display:flex;gap:6px">'+
         '<button class="btn" style="flex:1;padding:7px;font-size:11px" onclick="saveVerseResult('+i+')">Save &#9825;</button>'+
         '<button class="btn" style="flex:1;padding:7px;font-size:11px" onclick="readVerseContext(\''+encodeURIComponent(v.reference)+'\')">Read in Bible &#8599;</button>'+
@@ -1159,7 +1161,8 @@ async function searchBible(query){
           res.innerHTML='';
           const el=document.createElement('div');
           el.className='bible-search-result';
-          el.innerHTML='<div class="bsr-ref">'+d.reference+' (KJV)</div><div class="bsr-text">'+d.text.trim()+'</div>';
+          // Third-party scripture API text. Not app-authored, not ours to trust as markup.
+          el.innerHTML='<div class="bsr-ref">'+_escFew(d.reference)+' (KJV)</div><div class="bsr-text">'+_escFew(d.text.trim())+'</div>';
           el.onclick=()=>saveVerseFromReader(d.text.trim(),d.reference+' (KJV)');
           res.appendChild(el);
           return;
@@ -1201,7 +1204,10 @@ async function searchBible(query){
         verses.forEach(v=>{
           const el=document.createElement('div');
           el.className='bible-search-result';
-          el.innerHTML='<div class="bsr-ref">'+v.reference+'</div><div class="bsr-text">'+v.text+'</div>'+(v.relevance?'<div style="font-size:12px;color:var(--bl);margin-top:6px;line-height:1.5">'+v.relevance+'</div>':'');
+          // These three fields are the MODEL'S output, and the model was handed the person's own
+          // free text. A crafted query can make it emit markup, so it is not app-authored content.
+          // data.reading above already goes through textContent; these went out as live HTML.
+          el.innerHTML='<div class="bsr-ref">'+_escFew(v.reference)+'</div><div class="bsr-text">'+_escFew(v.text)+'</div>'+(v.relevance?'<div style="font-size:12px;color:var(--bl);margin-top:6px;line-height:1.5">'+_escFew(v.relevance)+'</div>':'');
           el.onclick=()=>saveVerseFromReader(v.text,v.reference);
           res.appendChild(el);
           if(!shown.includes(v.reference))shown.push(v.reference);

@@ -42,7 +42,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
-- `APP_VERSION` in `src/app/00-boot.js` — currently **v574**. Bump it AND `CACHE` in sw.js together, always.
+- `APP_VERSION` in `src/app/00-boot.js` — currently **v581**. Bump it AND `CACHE` in sw.js together, always.
 
 ## The nervous system (key functions — grep these)
 - `getLifeState()` — returns the whole person {training, nutrition, body, soul, fight, readiness,
@@ -65,8 +65,27 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    reported 1032 PASSED, because the harness extracts functions by name and never parsed the whole
    script. A suite that stays green while the app cannot boot is worse than no suite.
 2. **Run the whole gate before you ship**, not just `npm test`:
-   - `npm test` — 1656 assertions over the real bundle (core math, dead code, privacy promises,
-     the voice gates, the parse check)
+   - `npm test` — 1697 assertions over the real bundle (core math, dead code, privacy promises,
+     the voice gates, the parse check). Four classes were added on 6 Sep 2026 after an audit of the
+     PREVIOUS round's own fixes, each of which had been fixed only where it was reported:
+     **(a) a person's own typing as live HTML** — the v579 sweep found five doors by looking for typed
+     fields reaching shared sinks. `addRecipeIngredient()` reads a free-text input and
+     `renderRecipeIngredients()` writes it with `innerHTML`, with no shared sink in between, so the
+     scan walked past it. **A model's reply is the same class**: the scripture search hands the person's
+     own words to the AI and printed `v.text`/`v.reference`/`v.relevance`/`v.verse`/`v.reflection` as
+     markup — `data.reading` two lines above used `textContent`. Third-party scripture endpoints too.
+     After every `api()` + `JSON.parse`, grep the next ~45 lines for `innerHTML`.
+     **(b) the app's VOICE never converted its units.** Screens were converted card by card from v529;
+     nothing ever told the MODEL, so the coach, the companion and the brother all answered a
+     pounds-and-miles person in kilograms. Fixed once in `lifeStateBrief()`, which every AI surface
+     reads, and only for non-metric people. When a preference changes what a person SEES, ask
+     separately what the app SAYS.
+     **(c) `plural(n, singular)`** — "1 days clean" is the sentence this app says most, and day one is
+     where everybody starts and where anybody who slips returns. Takes the SINGULAR: the first cut took
+     the plural and stripped `/e?s$/`, which produced "2 battls" and "2 tims".
+     **(d) every button calls a function that exists** — the id sweep asked this of elements; nothing
+     asked it of behaviour. Strip string literals from the handler body first (and unescape `&apos;`),
+     or "Suscipe (Take Lord, Receive)" reports a missing `Suscipe()` and the check gets ignored.
    - `npm run crisis` — types the worst sentence into all TWENTY free-text doors and asserts a
      helpline is on screen and TAPPABLE (geometry, not DOM presence — the bug it was written for
      had the text in the document and off the screen). Fourteen checks in all: the eleven doors, the

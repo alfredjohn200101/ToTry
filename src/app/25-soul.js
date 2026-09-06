@@ -368,7 +368,20 @@ function addWhyAffirmation(){
   inp.value = ''; renderWhyAffirmations(); haptic('success');
 }
 function removeWhyAffirmation(i){
-  const list = ls('totry_affirmations') || []; list.splice(i,1); ls('totry_affirmations', list); renderWhyAffirmations();
+  // These are sentences the person wrote about their own why. One tap deleted one with no
+  // confirmation and no way back \u2014 and nobody can retype a sentence they cannot remember.
+  const list = ls('totry_affirmations') || [];
+  const gone = list[i];
+  list.splice(i,1); ls('totry_affirmations', list); renderWhyAffirmations();
+  if(gone != null && typeof showUndo === 'function'){
+    showUndo('Removed', function(){
+      const l2 = ls('totry_affirmations') || [];
+      l2.splice(Math.min(i, l2.length), 0, gone);
+      ls('totry_affirmations', l2);
+      if(typeof tombstoneRevoke==='function') tombstoneRevoke('totry_affirmations', (typeof syncIdOf==='function') ? syncIdOf(gone) : gone);
+      renderWhyAffirmations();
+    });
+  }
 }
 // Promises + letters reuse the existing storage + renderers, just targeting the Why page containers.
 function addPromiseFromWhy(){

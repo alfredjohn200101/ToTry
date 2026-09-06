@@ -1890,7 +1890,7 @@ function _recoveryPhaseNote(days){
   if(days<=10) return d+'the pull is still loud but already weakening. Feed the clean dopamine.';
   if(days<=21) return d+'the flat window. If it all feels grey, that’s your reward system recalibrating — not failure. This is exactly when a real high helps most.';
   if(days<=45) return d+'the fog is lifting, colour coming back. Keep feeding it clean.';
-  return days+' days clean — you’re rebuilding. The vice moves you less because you’re becoming someone it moves less.';
+  return plural(days,'day')+' clean — you’re rebuilding. The vice moves you less because you’re becoming someone it moves less.';
 }
 function openNaturalHighs(){
   const HIGHS=[

@@ -89,7 +89,7 @@ function addToGoal(id){
   goal.current=(goal.current||0)+amount;
   ls('totry_finance_goals',goals);
   renderFinanceGoals();
-  showToast('Added '+curSym()+amount,goal.name+' is now at '+curSym()+Math.round(goal.current).toLocaleString());
+  showToast('Added '+curSym()+_moneyG(amount),goal.name+' is now at '+curSym()+Math.round(goal.current).toLocaleString());
 }
 
 async function deleteFinanceGoal(id){
@@ -309,7 +309,8 @@ function renderBodyCollage(){
   withPhotos.forEach((e, i) => {
     const div = document.createElement('div');
     div.style.cssText = 'position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--bd);cursor:pointer';
-    div.innerHTML = '<img loading="lazy" decoding="async" src="'+e.photo+'" style="width:100%;height:120px;object-fit:cover;display:block">'+
+    // A stored/restored photo string lands inside a quoted src= attribute; escape so it cannot close it.
+    div.innerHTML = '<img loading="lazy" decoding="async" src="'+_escFew(e.photo)+'" style="width:100%;height:120px;object-fit:cover;display:block">'+
       '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.85),transparent);padding:4px 6px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-align:center">'+e.date+'</div><div style="font-size:11px;color:var(--tx);text-align:center;font-weight:500">'+(e.weight!=null&&e.weight!==''?((typeof wFmt==='function')?wFmt(e.weight):(e.weight+'kg')):'')+'</div></div>';
     div.onclick = () => viewBodyPhoto(i);
     container.appendChild(div);
@@ -582,7 +583,7 @@ function _pledgeSaid(v, from){
       (viceMode(v)==='moderate'?'Today, I hold my line.':viceMode(v)==='watch'?'Today, I just look at it honestly.':'Today, not this.')+'</div>'+
     '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:14px">'+word+'</div>'+
     (n>1
-      ? '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.08em;margin-bottom:16px">'+n+' days now, you\u2019ve chosen this on purpose</div>'
+      ? '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.08em;margin-bottom:16px">'+plural(n,'day')+' now, you\u2019ve chosen this on purpose</div>'
       : '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Just today. Tomorrow gets its own.</div>')+
     (from==='morning'
       ? '<button class="btn primary" onclick="closeModal(this)">Back to my morning</button>'
@@ -1602,7 +1603,7 @@ function renderUrgeInsights(){
       '<div style="font-size:12px;color:var(--tx2);line-height:1.7">'+
         (p.riskWindow?'Hardest time: <b style="color:var(--tx)">'+p.riskWindow+'</b>'+(p.riskDay?', especially <b style="color:var(--tx)">'+p.riskDay+'s</b>':'')+'.<br>':'')+
         (p.topTrigger?'Most common trigger: <b style="color:var(--tx)">'+p.topTrigger+'</b>.<br>':'')+
-        'Win rate: <b style="color:'+trendColor+'">'+p.winRate+'%</b>'+(p.trend?' ('+p.trend+')':'')+' over '+p.total+' battles.'+
+        'Win rate: <b style="color:'+trendColor+'">'+p.winRate+'%</b>'+(p.trend?' ('+p.trend+')':'')+' over '+plural(p.total,'battle')+'.'+
       '</div>'+
       (override ? '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)"><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">How to get ahead of it</div><div style="font-size:12px;color:var(--tx2);line-height:1.7">'+override+'</div></div>' : '')+
       '</div>';

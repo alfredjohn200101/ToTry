@@ -353,10 +353,10 @@ function adjustCaloriesFromWeightTrend(){
       reason = 'Weight is up ' + wFmt(weeklyChange) + ' this week. Tightening your calories.';
     } else if(userGoal === 'gain'){
       calAdjustment = -100;
-      reason = 'Gaining too fast at ' + weeklyChange.toFixed(1) + 'kg/week. Pulling calories back.';
+      reason = 'Gaining too fast at ' + wDelta(weeklyChange) + '/week. Pulling calories back.';
     } else {
       calAdjustment = -150;
-      reason = 'Trending up at ' + weeklyChange.toFixed(1) + 'kg/week. Adjusting to hold steady.';
+      reason = 'Trending up at ' + wDelta(weeklyChange) + '/week. Adjusting to hold steady.';
     }
   } else {
     // On target - no change

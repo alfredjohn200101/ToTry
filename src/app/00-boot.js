@@ -435,6 +435,22 @@ function _jsAttr(s){
     .replace(/\r?\n/g, ' ');
 }
 
+// One number, one noun, the right ending. "1 days clean" is the single most-seen sentence in
+// this app \u2014 day one is where everybody starts and where anybody who slips returns \u2014 and it
+// read as broken English on the day a person most needed it to sound like it meant them.
+// Takes the SINGULAR and adds to it. The first cut took the plural and stripped /e?s$/, which
+// turned "battles" into "battl" and "times" into "tim"; a helper that has to guess where a word
+// ends will always be wrong somewhere, so it is never asked to.
+// The irregulars live INSIDE the function on purpose. plural() is hoisted; a const beside it is
+// not, so a call from anything that runs during module evaluation would hit the temporal dead zone
+// and throw, in a helper whose whole job is to be safe to call from anywhere.
+function plural(n, singular){
+  const IRREG = { person:'people', entry:'entries', life:'lives', foot:'feet' };
+  const c = Number(n);
+  const w = String(singular == null ? '' : singular);
+  if(Math.abs(c) === 1) return c + ' ' + w;
+  return c + ' ' + (IRREG[w] || (/(s|x|z|ch|sh)$/.test(w) ? w + 'es' : w + 's'));
+}
 function curSym(){
   try{ return CURRENCY_SYMBOLS[ls('totry_currency') || 'AUD'] || '\u0024'; }
   catch(_){ return '\u0024'; }
@@ -461,7 +477,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v580';
+const APP_VERSION = 'v581';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }

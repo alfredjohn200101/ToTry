@@ -182,7 +182,7 @@ async function generateWeeklySynthesis(){
   summary+='Prayers added: '+prayers.length+' (answered: '+answeredPrayers.length+')\n';
   summary+='Fight wins: '+wonFights+'/'+fightLog.length+'\n';
   if(avgRating) summary+='Avg day rating: '+avgRating+'/5\n';
-  if(transactions.length) summary+='Money: '+curSym()+earnedThisWeek+' in / '+curSym()+spentThisWeek+' out\n';
+  if(transactions.length) summary+='Money: '+curSym()+_moneyG(earnedThisWeek)+' in / '+curSym()+_moneyG(spentThisWeek)+' out\n';
   if(checkins.length){
     const avgPhys=checkins.reduce((s,c)=>s+c.physical,0)/checkins.length;
     const avgEmot=checkins.reduce((s,c)=>s+c.emotional,0)/checkins.length;
@@ -297,7 +297,7 @@ function showWeeklySynthesisModal(synthesis){
   if(s.fights > 0) statRows.push({label:'Fights won', value: s.wins + '/' + s.fights});
   if(s.prayers > 0) statRows.push({label:'Prayers added', value: s.prayers + (s.answeredPrayers ? ' (' + s.answeredPrayers + ' answered)' : '')});
   if(s.avgRating) statRows.push({label:'Avg day rating', value: s.avgRating + '/5'});
-  if(s.spent || s.earned) statRows.push({label:'Money', value: curSym() + s.earned + ' in / '+curSym() + s.spent + ' out'});
+  if(s.spent || s.earned) statRows.push({label:'Money', value: curSym() + _moneyG(s.earned) + ' in / '+curSym() + _moneyG(s.spent) + ' out'});
   
   const statsHtml = statRows.length ?
     '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:14px">' +
@@ -461,7 +461,7 @@ function showYearInReview(year){
   if(stats.weightChange !== null) // Body weight follows the person's unit; the line above it is LIFTED volume, which stays kg on
   // purpose (see CLAUDE.md) — the two sit next to each other and are deliberately different.
   details.push(['Weight change', (typeof wDelta === 'function') ? wDelta(stats.weightChange)
-    : ((stats.weightChange > 0 ? '+' : '') + stats.weightChange + ' kg')]);
+    : (typeof wDelta==='function' ? wDelta(stats.weightChange) : ((stats.weightChange>0?'+':'')+stats.weightChange+' kg'))]);
   if(stats.viceSavings > 0) details.push(['Money saved from vices', curSym() + stats.viceSavings.toLocaleString()]);
   if(stats.yearIncome > 0 || stats.yearExpenses > 0) details.push(['Money flow', curSym() + stats.yearIncome.toLocaleString() + ' in / '+curSym() + stats.yearExpenses.toLocaleString() + ' out']);
   if(stats.winRate > 0) details.push(['Battle win rate', stats.winRate + '%']);

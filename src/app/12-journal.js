@@ -287,8 +287,8 @@ function renderJournal(){
     const e=rec.e;
     const item=document.createElement('div');item.className='j-entry';
     if(rec.kind==='journal'){
-      const wTag=e.wins>0?'<span class="je-tag w">+'+e.wins+' wins</span>':'';
-      const lTag=e.urges>0?'<span class="je-tag l">'+e.urges+' battles</span>':'';
+      const wTag=e.wins>0?'<span class="je-tag w">+'+plural(e.wins,'win')+'</span>':'';
+      const lTag=e.urges>0?'<span class="je-tag l">'+plural(e.urges,'battle')+'</span>':'';
       const dTag=e.day?'<span class="je-tag">Day '+e.day+'</span>':'';
       item.innerHTML='<div class="je-date">'+_escFew(e.date||'')+'</div><div class="je-mood">'+_escFew(e.mood||'')+'</div><div class="je-prev">'+_escFew(String(e.text||'').slice(0,240))+'</div><div class="je-tags">'+dTag+wTag+lTag+'</div>';
       item.onclick=()=>{const m=document.createElement('div');m.className='modal-bg open';m.innerHTML='<div class="modal"><div class="modal-handle"></div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);margin-bottom:8px;letter-spacing:0.1em">'+e.date+(e.day?' \u2014 Day '+e.day:'')+'</div><div style="font-size:28px;margin-bottom:12px">'+_escFew(e.mood||'')+'</div><div style="font-size:14px;line-height:1.75;color:var(--tx);white-space:pre-wrap;margin-bottom:16px">'+_escFew(e.text||'')+'</div><button class="btn" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx3);margin-bottom:8px" onclick="this.closest(\'.modal-bg\').remove();deleteJournalEntry(\''+String(e.ts||'').replace(/[\\'"\\\\]/g,'')+'\')">Delete this entry</button><button class="btn" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div>';document.body.appendChild(m);};

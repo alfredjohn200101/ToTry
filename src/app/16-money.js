@@ -156,7 +156,7 @@ function reclaimedFigure(){
     const vs = ls('totry_vs');
     if(vs && vs.saved != null){
       return { amount: vs.saved, model: 'legacy',
-               desc: curSym()+vs.weekly+'/week \u00d7 '+(vs.weeks || Math.max(1, Math.round(vs.saved/(vs.weekly||1))))+' weeks.' };
+               desc: curSym()+_moneyG(vs.weekly)+'/week \u00d7 '+(vs.weeks || Math.max(1, Math.round(vs.saved/(vs.weekly||1))))+' weeks.' };
     }
   }catch(_){ }
   return { amount: 0, model: 'none', desc: '' };

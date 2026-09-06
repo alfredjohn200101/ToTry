@@ -2438,7 +2438,10 @@ function renderRecipeIngredients(){
     r.ingredients.forEach((ing, i) => {
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid var(--bd);font-size:12px';
-      row.innerHTML = '<div style="flex:1;color:var(--tx)">' + ing.name + '</div>' +
+      // addRecipeIngredient() reads a free-text <input> and pushes it straight in, so this is the
+      // person's own typing going out as live HTML. The static scan that found the other injection
+      // doors missed this one because the value never passes through a shared sink.
+      row.innerHTML = '<div style="flex:1;color:var(--tx)">' + _escFew(ing.name) + '</div>' +
         '<div style="font-family:DM Mono,monospace;color:var(--tx3);font-size:10px">' + Math.round(ing.cal||0) + 'kcal · P' + Math.round(ing.pro||0) + ' C' + Math.round(ing.carb||0) + ' F' + Math.round(ing.fat||0) + '</div>' +
         '<button onclick="removeRecipeIngredient(' + i + ')" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer;padding:0 4px">×</button>';
       box.appendChild(row);
@@ -4682,7 +4685,7 @@ async function openWarmupCalc(){
     '<div style="text-align:center;font-size:12px;color:var(--tx3);margin-bottom:14px">Rest ~45–60s between warmup sets.</div>'+
     ramp.map(s=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 4px;border-bottom:1px solid var(--bd)">'+
       '<span style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3)">'+s.pct+'</span>'+
-      '<span style="font-size:15px;color:var(--tx)">'+s.wt+'kg <span style="color:var(--tx3);font-size:12px">'+s.reps+'</span></span>'+
+      '<span style="font-size:15px;color:var(--tx)">'+wFmt(s.wt)+' <span style="color:var(--tx3);font-size:12px">'+s.reps+'</span></span>'+
     '</div>').join('')+
     '<button class="btn primary" onclick="closeModal(this)" style="margin-top:14px">Got it</button>'+
     '</div>';
@@ -5195,14 +5198,37 @@ function editFoodEntry(date, id){
 // keys each entry by syncIdOf, so the tombstone has to be recorded the same way, from the same diff.
 function deleteFoodEntry(date,id){
   const log=ls('totry_nutlog')||{};
+  let removed=null, idx=-1;
   if(log[date]){
     const before=log[date];
+    idx=before.findIndex(e=>e.id===id);
+    removed=idx>=0?before[idx]:null;
     const after=before.filter(e=>e.id!==id);
     tombstoneRemoved('totry_nutlog', before, after);
     log[date]=after;
   }
   ls('totry_nutlog',log);
   renderNutritionLog();
+  // A logged meal is a minute of someone's day and a mis-tap took it with no confirmation and no
+  // way back. Undo rather than a confirm dialog: this is a frequent, ordinary action and a modal on
+  // every one of them is its own kind of harm.
+  // The tombstone is the part that is easy to get wrong. tombstoneRemoved() has already recorded
+  // this id as deleted, so putting the row back in localStorage alone would let the very next merge
+  // delete it a second time — silently, and possibly on another device. tombstoneRevoke() is what
+  // makes the restore outrank the deletion, and it exists for exactly this.
+  if(removed && typeof showUndo==='function'){
+    showUndo(_escFew(removed.name||'Entry')+' removed', function(){
+      const l2=ls('totry_nutlog')||{};
+      const arr=Array.isArray(l2[date])?l2[date]:[];
+      if(!arr.some(e=>e.id===removed.id)){
+        arr.splice(idx>=0&&idx<=arr.length?idx:arr.length, 0, removed);
+        l2[date]=arr;
+        ls('totry_nutlog',l2);
+        if(typeof tombstoneRevoke==='function') tombstoneRevoke('totry_nutlog', removed.id);
+      }
+      renderNutritionLog();
+    });
+  }
 }
 
 

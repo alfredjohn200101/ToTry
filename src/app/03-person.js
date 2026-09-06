@@ -460,7 +460,7 @@ function brotherGuidance(){
       if(life.readiness && life.readiness.level){ if(/low|rest|depleted|poor/i.test(life.readiness.level)) bits.push('your body\u2019s running low today'); }
       if(life.fight && life.fight.wins7 != null && life.fight.wins7 > 0) bits.push(life.fight.wins7+' urges beaten this week');
       if(life.training && life.training.sessions7 >= 4) bits.push('you\u2019ve trained hard this week');
-      if(life.money && life.money.reclaimed > 0) bits.push(curSym()+life.money.reclaimed+' reclaimed toward your freedom');
+      if(life.money && life.money.reclaimed > 0) bits.push(curSym()+Math.round(life.money.reclaimed).toLocaleString()+' reclaimed toward your freedom');
       if(bits.length) read = 'Looking at where you\u2019re at \u2014 '+bits.slice(0,2).join(', ')+'. ';
     }
     const headline = step ? step.text : 'Just take the next small step.';
@@ -716,6 +716,19 @@ function getLifeState(){
 function lifeStateBrief(s){
   const lines = [];
   const t = s.training, n = s.nutrition, b = s.body, soul = s.soul, f = s.fight;
+  // Every number below is canonical \u2014 kilograms and metres \u2014 because that is how they are stored.
+  // Nothing ever told the model that, so the coach, the companion and the brother all answered a
+  // pounds-and-miles person in kilometres and kilos. The screens were converted one card at a time;
+  // the app's actual VOICE was never converted at all. Said once, here, for every AI surface.
+  try{
+    const _wu = (typeof wUnit==='function') ? wUnit() : 'kg';
+    const _du = (typeof dUnit==='function') ? dUnit() : 'km';
+    if(_wu !== 'kg' || _du !== 'km'){
+      lines.push('UNITS: figures below are in kg and km (how this app stores them), but this person '+
+        'reads weight in '+_wu+' and distance in '+_du+'. Convert every number you say back to '+
+        _wu+' and '+_du+' \u2014 never quote them a kg or a km.');
+    }
+  }catch(_){ }
   if(t.sessions7 != null) lines.push('Training: '+t.sessions7+' sessions in 7 days ('+t.daysTrained7+' days)'+(t.lastTitle?', last: '+t.lastTitle:''));
   // Gentle mode ("numbers on/off") is a promise that this person does not see calorie or macro
   // figures — often because counting them is the thing that hurt them. Handing the raw numbers to the
@@ -820,7 +833,7 @@ function lifeStateBrief(s){
       + ' Use THEIR words, not yours, and ask whether a choice moves toward these. NEVER score, grade or rank them against their values, and never imply they are failing them.');
   }
   if(s.readiness) lines.push('Readiness today: '+s.readiness.score+'/100 ('+s.readiness.level+')');
-  if(s.money && (s.money.hasDebt || s.money.reclaimed > 0)) lines.push('Money: '+(s.money.hasDebt?(curSym()+s.money.totalDebt+' debt remaining'):'no tracked debt')+(s.money.reclaimed>0?(', '+curSym()+s.money.reclaimed+' reclaimed from vices'):'')+'. (Debt is a real weight — freedom is the goal.)');
+  if(s.money && (s.money.hasDebt || s.money.reclaimed > 0)) lines.push('Money: '+(s.money.hasDebt?(curSym()+Math.round(s.money.totalDebt).toLocaleString()+' debt remaining'):'no tracked debt')+(s.money.reclaimed>0?(', '+curSym()+Math.round(s.money.reclaimed).toLocaleString()+' reclaimed from vices'):'')+'. (Debt is a real weight — freedom is the goal.)');
   if(s.sex) lines.push('They are '+(s.sex==='female'?'a woman':'a man')+' — speak as an older sibling who understands what that means for them (training, nutrition, the specific pressures), same love, attuned to who they actually are. Never patronising.');
   if(s.activity.daysQuiet != null && s.activity.daysQuiet >= 2) lines.push('Note: nothing logged in '+s.activity.daysQuiet+' days.');
   try{
@@ -939,7 +952,7 @@ function buildCtx(){
     const clean=viceCleanDays(v);
     if(v.kind==='letgo'){ return v.n+': '+clean+' day'+(clean===1?'':'s')+' into letting go (a grief/attachment they’re releasing — healing goal, NOT a clean-streak; going back is part of it, meet with grace, never "days clean" or relapse language)'; }
     const total=(v.cleanDaysTotal||0)+clean;
-    let s=v.n+': '+clean+' days clean';
+    let s=v.n+': '+plural(clean,'day')+' clean';
     if(v.relapseCount>0)s+=' ('+total+' total across '+v.relapseCount+' attempts)';
     return s;
   }).join(' | ')||'none set';
@@ -2268,12 +2281,23 @@ function saveJourneyStart(){
 }
 
 function resetJourneyStart(){
+  // The custom anchor is a date a person chose deliberately \u2014 often the day they actually quit,
+  // which may predate the app by years. One tap threw it away with nothing offered back.
+  const _prev = ls('totry_journey_start');
   localStorage.removeItem('totry_journey_start');
   if(typeof syncToCloud==='function') syncToCloud('totry_journey_start', null);
   document.querySelector('.modal-bg.open')?.remove();
   if(typeof initSettingsTab==='function') initSettingsTab();
   if(typeof renderDayCounter==='function') renderDayCounter();
   showToast('Reset', 'Back to account creation date.');
+  if(_prev && typeof showUndo === 'function'){
+    showUndo('Journey start reset', function(){
+      ls('totry_journey_start', _prev);
+      if(typeof syncToCloud==='function') syncToCloud('totry_journey_start', _prev);
+      if(typeof initSettingsTab==='function') initSettingsTab();
+      if(typeof renderDayCounter==='function') renderDayCounter();
+    });
+  }
 }
 
 // ── ONBOARDING ────────────────────────────────────────────────
@@ -3448,7 +3472,8 @@ function _readBundled(sel,content,bank){
   // that sentence pointed at an empty space and made the offline state read as broken rather than as
   // a designed fallback.
   const _hasPicker = !!(sel && sel.querySelector && sel.querySelector('select'));
-  content.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9.5px;color:var(--tx3);text-align:center;margin-bottom:10px">Kept on your phone — the live text did not answer.'+(_hasPicker?' Pick a book above to try again.':'')+'</div>'+'<div class="card">'+bank.map(v=>'<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--bd)"><div style="font-size:15px;line-height:1.75;color:var(--tx)">“'+v.t+'”</div><div style="font-size:12px;color:var(--tx3);margin-top:6px">— '+v.r+'</div></div>').join('')+'</div>';
+  // Third-party scripture API text. Not app-authored, not ours to trust as markup.
+  content.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9.5px;color:var(--tx3);text-align:center;margin-bottom:10px">Kept on your phone — the live text did not answer.'+(_hasPicker?' Pick a book above to try again.':'')+'</div>'+'<div class="card">'+bank.map(v=>'<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--bd)"><div style="font-size:15px;line-height:1.75;color:var(--tx)">“'+_escFew(v.t)+'”</div><div style="font-size:12px;color:var(--tx3);margin-top:6px">— '+_escFew(v.r)+'</div></div>').join('')+'</div>';
 }
 // Qur'an — Al-Quran Cloud (free, no key): surah picker + Arabic + English.
 async function _readQuranInit(sel,content){
@@ -3456,7 +3481,8 @@ async function _readQuranInit(sel,content){
   if(!surahs){ try{ const r=await _fetchT('https://api.alquran.cloud/v1/surah'); const j=await r.json(); surahs=(j&&j.data)||null; window.__quranSurahs=surahs; }catch(e){ surahs=null; } }
   let start=1; try{ if(typeof getDayCount==='function'){ start=(getDayCount()%20)+1; } }catch(_){ }
   try{ if(window.__quranJump){ start=window.__quranJump; window.__quranJump=0; } }catch(_){ }
-  if(sel){ sel.innerHTML = surahs ? '<select id="quran-surah" onchange="_readQuranLoad(this.value)" style="'+_selStyle()+'">'+surahs.map(s=>'<option value="'+s.number+'"'+(s.number===start?' selected':'')+'>'+s.number+'. '+s.englishName+'</option>').join('')+'</select>' : ''; }
+  // Third-party scripture API text. Not app-authored, not ours to trust as markup.
+  if(sel){ sel.innerHTML = surahs ? '<select id="quran-surah" onchange="_readQuranLoad(this.value)" style="'+_selStyle()+'">'+surahs.map(s=>'<option value="'+s.number+'"'+(s.number===start?' selected':'')+'>'+s.number+'. '+_escFew(s.englishName)+'</option>').join('')+'</select>' : ''; }
   _readQuranLoad(String(start));
 }
 async function _readQuranLoad(n){
@@ -3466,7 +3492,8 @@ async function _readQuranLoad(n){
     try{ const r=await _fetchT('https://api.alquran.cloud/v1/surah/'+n+'/editions/quran-uthmani,en.sahih'); const j=await r.json(); if(j&&j.data&&j.data.length>=2){ ar=j.data[0].ayahs; en=j.data[1].ayahs; } }catch(e){}
     if(!en){ const r2=await _fetchT('https://api.alquran.cloud/v1/surah/'+n+'/en.sahih'); const j2=await r2.json(); en=j2.data.ayahs; }
     const _svItems=en.map(a=>({ text:String(a.text||'').trim(), ref:'Qur\u2019an '+n+':'+a.numberInSurah }));
-    content.innerHTML='<div class="card">'+en.map((a,i)=>'<div class="rd-v" data-sv-i="'+i+'" style="margin-bottom:15px">'+(ar&&ar[i]?'<div dir="rtl" style="font-size:21px;line-height:2.1;color:var(--tx);text-align:right;margin-bottom:5px">'+ar[i].text+'</div>':'')+'<div style="font-size:13.5px;color:var(--tx2);line-height:1.65">'+a.text+' <span style="color:var(--tx3);font-size:11px">('+n+':'+a.numberInSurah+')</span></div></div>').join('')+'</div>';
+    // Third-party scripture API text. Not app-authored, not ours to trust as markup.
+    content.innerHTML='<div class="card">'+en.map((a,i)=>'<div class="rd-v" data-sv-i="'+i+'" style="margin-bottom:15px">'+(ar&&ar[i]?'<div dir="rtl" style="font-size:21px;line-height:2.1;color:var(--tx);text-align:right;margin-bottom:5px">'+ar[i].text+'</div>':'')+'<div style="font-size:13.5px;color:var(--tx2);line-height:1.65">'+_escFew(a.text)+' <span style="color:var(--tx3);font-size:11px">('+n+':'+a.numberInSurah+')</span></div></div>').join('')+'</div>';
     _readMakeSavable(_svItems);
   }catch(e){
     // Offline: the bundled pool, not an error box. The Dhammapada and Meditations readers added later
@@ -3687,7 +3714,8 @@ async function _readGitaLoad(){
     const chSummary = meta && meta.summary && meta.summary.en
       ? '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><div style="font-family:DM Mono,monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">About this chapter</div><div style="font-size:13px;color:var(--tx3);line-height:1.7">'+_esc(meta.summary.en)+'</div></div>'
       : '';
-    content.innerHTML='<div class="card">'+chName+'<div class="rd-v" data-sv-i="0"><div style="font-size:12px;color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+g.ch+'.'+g.v+' <span style="color:var(--tx3);letter-spacing:0">· verse '+g.v+' of '+_gitaCount(g.ch)+'</span></div>'+(j.slok?'<div style="font-size:16px;line-height:1.95;color:var(--tx);margin-bottom:8px">'+j.slok+'</div>':'')+(j.transliteration?'<div style="font-size:12.5px;font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+String(j.transliteration).trim()+'</div>':'')+'<div style="font-size:14px;color:var(--tx2);line-height:1.75">'+en+'</div></div>'+chSummary+'</div>';
+    // Third-party scripture API text. Not app-authored, not ours to trust as markup.
+    content.innerHTML='<div class="card">'+chName+'<div class="rd-v" data-sv-i="0"><div style="font-size:12px;color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+_escFew(g.ch)+'.'+_escFew(g.v)+' <span style="color:var(--tx3);letter-spacing:0">· verse '+_escFew(g.v)+' of '+_gitaCount(g.ch)+'</span></div>'+(j.slok?'<div style="font-size:16px;line-height:1.95;color:var(--tx);margin-bottom:8px">'+_escFew(j.slok)+'</div>':'')+(j.transliteration?'<div style="font-size:12.5px;font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+String(j.transliteration).trim()+'</div>':'')+'<div style="font-size:14px;color:var(--tx2);line-height:1.75">'+en+'</div></div>'+chSummary+'</div>';
     _readMakeSavable([{ text:String(en||'').replace(/<[^>]*>/g,'').trim(), ref:'Bhagavad Gita '+g.ch+'.'+g.v }]);
   }catch(e){
     const c2=document.getElementById('read-content');
@@ -3724,7 +3752,8 @@ function _renderDailyPassage(el,t){
 // Islam — prayer times (Aladhan, free) + Hijri + a daily ayah. Geolocation, with a city fallback.
 function _renderIslamToday(el){
   const a=VS_ISLAM[_dailyIndex(VS_ISLAM.length)];
-  el.innerHTML='<div class="card" style="text-align:center;padding:22px 18px;margin-bottom:12px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Ayah for today</div><div style="font-family:Cormorant Garamond,serif;font-size:20px;font-style:italic;line-height:1.6;color:var(--tx);margin-bottom:10px">“'+a.t+'”</div><div style="font-size:12px;color:var(--go)">— '+a.r+'</div></div><div id="salah-box">'+_readLoading()+'</div>';
+  // Third-party scripture API text. Not app-authored, not ours to trust as markup.
+  el.innerHTML='<div class="card" style="text-align:center;padding:22px 18px;margin-bottom:12px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Ayah for today</div><div style="font-family:Cormorant Garamond,serif;font-size:20px;font-style:italic;line-height:1.6;color:var(--tx);margin-bottom:10px">“'+_escFew(a.t)+'”</div><div style="font-size:12px;color:var(--go)">— '+_escFew(a.r)+'</div></div><div id="salah-box">'+_readLoading()+'</div>';
   _loadSalah();
 }
 // THE CARD NAMED A METHOD THE APP DOES NOT ASK FOR. Every prayer-time request sends Aladhan's

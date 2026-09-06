@@ -462,11 +462,16 @@ function renderHomeHabits(){
                          : (pastPerfect + '/' + elapsed + ' perfect'))
           : 'starts today') + '</div>' +
     '</div>' +
-    '<div style="text-align:right">' +
+    '<div style="text-align:right;cursor:pointer;min-height:34px" id="home-habit-today">' +
       '<div class="eyebrow">Today so far</div>' +
-      '<div class="stat-num" style="font-size:18px;color:var(--tx2)">' + todayDone + '/' + todayTotal + '</div>' +
+      '<div class="stat-num" style="font-size:18px;color:var(--tx2);border-bottom:1px dotted var(--bd);display:inline-block">' + todayDone + '/' + todayTotal + '</div>' +
     '</div>';
   list.appendChild(summary);
+  // This card counted the day and offered no way to move it. The grid is deliberately read-only
+  // (ticking belongs to the evening, where it is one step of closing the day) \u2014 but "0/3" with no
+  // route is a scoreboard with no game. The score itself is now the door to the tick list.
+  const _todayTile = summary.querySelector('#home-habit-today');
+  if(_todayTile) _todayTile.onclick = function(){ if(typeof go === 'function') go('reflect'); };
   
   // Day-letter row across the top
   const headerRow = document.createElement('div');
@@ -565,7 +570,7 @@ function renderHomeHabits(){
   
   const footer = document.createElement('div');
   footer.style.cssText = 'margin-top:14px;padding-top:10px;border-top:1px solid var(--bd);font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-align:center;letter-spacing:0.05em;line-height:1.5';
-footer.innerHTML = 'Tap a habit\'s name to anchor it to something you already do \u00b7 past 6 days on the left';
+footer.innerHTML = 'Tap a name to anchor it to something you already do \u00b7 tap today\'s score to tick them off \u00b7 past 6 days on the left';
   list.appendChild(footer);
 }
 

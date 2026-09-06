@@ -209,7 +209,11 @@ function renderEveningHabitTickList(){
   const list = document.getElementById('evening-habit-tick-list');
   if(!list) return;
   if(!habits.length){
-    list.innerHTML = '<p class="empty-note">No habits to tick. Add some in Settings.</p>';
+    // "Add some in Settings" was a dead end — there is no habit UI in Settings, and this is the
+    // same lie that was fixed on Home's habit card while this copy sat here untouched. Give the
+    // person the actual door instead of the name of a room that does not hold it.
+    list.innerHTML = '<p class="empty-note" style="margin-bottom:10px">No habits yet \u2014 pick one small thing you want to be true of you most days.</p>' +
+      '<button class="btn primary" style="width:auto;padding:9px 18px;font-size:13px" onclick="openAddHabit()">Add your first habit</button>';
     return;
   }
   list.innerHTML = '';

@@ -37,15 +37,18 @@ function renderWeeklyCheckin(){
   const w1 = avg(body.filter(b => (now - new Date(b.ts).getTime()) < week));
   const w2 = avg(body.filter(b => { const a = now - new Date(b.ts).getTime(); return a >= week && a < 2*week; }));
   const wDelta = (w1 != null && w2 != null) ? (w1 - w2) : null;
+  // Local name shadows the global wDelta() formatter, so format through the module-level one by
+  // its own name. Printed 'kg' by hand until now \u2014 a pounds user read someone else's body.
+  const _wkStr = (wDelta == null) ? '' : (typeof window.wDelta === 'function' ? window.wDelta(wDelta) : ((wDelta>0?'+':'')+wDelta.toFixed(1)+'kg'));
   let focus;
   if(trained < 3) focus = 'Training was the gap \u2014 ' + trained + ' session' + (trained===1?'':'s') + ' last week. Book the first one today.';
   else if(proDays >= 3 && proAvg < goals.pro * 0.85) focus = 'Protein ran ' + (goals.pro - proAvg) + 'g/day under target. One extra serve at lunch closes it.';
-  else if(wDelta != null && Math.abs(wDelta) > 1.2) focus = 'Weight moved ' + (wDelta>0?'+':'') + wDelta.toFixed(1) + 'kg in a week \u2014 faster than intended. Worth a look.';
+  else if(wDelta != null && Math.abs(wDelta) > 1.2) focus = 'Weight moved ' + _wkStr + ' in a week \u2014 faster than intended. Worth a look.';
   else focus = 'No weak link stands out. Hold the line and let the weeks stack.';
   box.innerHTML = '<div style="background:var(--bg2);border:1px solid var(--go-bd);border-radius:var(--r);padding:16px;position:relative">'+
     '<button onclick="ls(\'totry_weekcheck\',\''+wk+'\');renderWeeklyCheckin()" aria-label="Dismiss this weekly check-in" style="position:absolute;top:2px;right:4px;background:none;border:none;color:var(--tx3);font-size:16px;padding:10px 12px;line-height:1;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center">\u00d7</button>'+
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">Weekly check-in</div>'+
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:6px">Trained <b style="color:var(--tx)">'+trained+'\u00d7</b>'+(proDays?' \u00b7 protein <b style="color:var(--tx)">'+proAvg+'g/day</b>':'')+(wDelta!=null?' \u00b7 weight <b style="color:var(--tx)">'+(wDelta>0?'+':'')+wDelta.toFixed(1)+'kg</b>':'')+'</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:6px">Trained <b style="color:var(--tx)">'+trained+'\u00d7</b>'+(proDays?' \u00b7 protein <b style="color:var(--tx)">'+proAvg+'g/day</b>':'')+(wDelta!=null?' \u00b7 weight <b style="color:var(--tx)">'+_wkStr+'</b>':'')+'</div>'+
     '<div style="font-size:13px;color:var(--tx);line-height:1.6;margin-bottom:12px">'+focus+'</div>'+
     '<button class="btn" onclick="ls(\'totry_weekcheck\',\''+wk+'\');go(\'grow\')" style="font-size:13px;padding:10px;background:var(--bg3);border:1px solid var(--bd)">Read the full week \u2192</button></div>';
   box.style.display = 'block';

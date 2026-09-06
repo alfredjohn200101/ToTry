@@ -8,14 +8,6 @@
         "/Users/alfredjohn/Desktop/ToTry/scripts/serve-www.py"
       ],
       "port": 8791
-    },
-    {
-      "name": "native-bundle-session",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": [
-        "/private/tmp/claude-501/-Users-alfredjohn-Desktop-ToTry/0fcac028-f9bf-4731-ab57-8b340678f2e7/scratchpad/serve-www.py"
-      ],
-      "port": 8791
     }
   ]
 }

@@ -1552,7 +1552,7 @@ function fightEvidenceLine(){
         // clean" — two numbers for one fight, on one screen, apparently disagreeing. It meant "past
         // your old best of 13". Say both numbers and which is which, or the sentence costs more than
         // it gives.
-        bits.push(best.name + ': ' + best.current + ' days \u2014 your longest yet, past your old best of ' + best.prev);
+        bits.push(best.name + ': ' + plural(best.current,'day') + ' \u2014 your longest yet, past your old best of ' + best.prev);
       }
     }catch(_){ }
   }catch(_){ }
@@ -1802,7 +1802,7 @@ function confirmViceClean(i){
   loadV(); const v=vices[i]; if(!v) return;
   v.lastConfirm=new Date().toISOString(); saveV();
   try{ renderVices(); if(typeof haptic==='function') haptic('tap'); }catch(_){}
-  if(typeof showToast==='function') showToast('Good','Then it counts. '+viceCleanDays(v)+' days that are actually yours.');
+  if(typeof showToast==='function') showToast('Good','Then it counts. '+plural(viceCleanDays(v),'day')+' that are actually yours.');
 }
 
 // Money reclaimed by staying clean — the vice→stewardship pipe. A vice can carry an optional
@@ -2067,7 +2067,7 @@ function saveViceStart(i){
   renderVices();
   renderDayCounter();
   const days = viceCleanDays(vices[i]);
-  showToast('Updated', vices[i].n + ' — now showing ' + days + ' days clean.');
+  showToast('Updated', vices[i].n + ' — now showing ' + plural(days,'day') + ' clean.');
   haptic('success');
 }
 

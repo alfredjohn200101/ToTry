@@ -500,7 +500,7 @@ function openFamilyContribution(){
       list.unshift({ id: Date.now(), amount: n, note: (v.note||'').trim(), date: new Date().toISOString() });
       ls('totry_family_contrib', list.slice(0,200));
       if(typeof syncToCloud==='function') syncToCloud();
-      renderFamilyContribution(); haptic('success'); showToast('Logged', curSym()+n+' contribution saved.');
+      renderFamilyContribution(); haptic('success'); showToast('Logged', curSym()+_moneyG(n)+' contribution saved.');
       return true;
     });
 }
@@ -526,7 +526,7 @@ function setFamilyTarget(){
       const d = Math.max(1, Math.min(28, parseInt(v.dueDay)||1));
       ls('totry_family_target', { amount: n, dueDay: d });
       if(typeof syncToCloud==='function') syncToCloud();
-      renderFamilyContribution(); haptic('success'); showToast('Target set',curSym()+n+'/month by the '+d+(d===1?'st':d===2?'nd':d===3?'rd':'th')+'.');
+      renderFamilyContribution(); haptic('success'); showToast('Target set',curSym()+_moneyG(n)+'/month by the '+d+(d===1?'st':d===2?'nd':d===3?'rd':'th')+'.');
       return true;
     });
 }
@@ -588,7 +588,7 @@ function openPokerSession(){
       if(typeof syncToCloud==='function') syncToCloud();
       renderPoker(); haptic(co>=bi?'success':'warning');
       const net = co-bi;
-      showToast(net>=0?'Session logged \u2014 up '+curSym()+net:'Session logged \u2014 down '+curSym()+Math.abs(net), 'Tracked honestly.');
+      showToast(net>=0?'Session logged \u2014 up '+curSym()+_moneyG(net):'Session logged \u2014 down '+curSym()+_moneyG(Math.abs(net)), 'Tracked honestly.');
       return true;
     });
 }
@@ -702,7 +702,7 @@ function renderSubDetect(){
     '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:10px">'+found.length+' charge'+(found.length===1?'':'s')+(found.length===1?' that repeats':' that repeat')+' like subscriptions \u2014 about <b style="color:var(--tx)">'+curSym()+total.toLocaleString()+'/year</b> between them. Not an accusation, just the ones you may have stopped noticing.</div>'+
     found.map(function(f){ return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--bd)">'+
       '<div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+_escFew(f.name)+'</div>'+
-      '<div style="font-family:DM Mono,monospace;font-size:9.5px;color:var(--tx3)">'+curSym()+f.amount+'/'+f.period+' \u00b7 seen '+f.seen+'\u00d7 \u00b7 ~'+curSym()+f.yearly.toLocaleString()+'/yr</div></div>'+
+      '<div style="font-family:DM Mono,monospace;font-size:9.5px;color:var(--tx3)">'+curSym()+_moneyG(f.amount)+'/'+_period1(f.period)+' \u00b7 seen '+f.seen+'\u00d7 \u00b7 ~'+curSym()+f.yearly.toLocaleString()+'/yr</div></div>'+
       '<button class="btn" style="width:auto;padding:5px 10px;font-size:11px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go)" onclick="_subAccept(\''+String(f.key).replace(/'/g,"")+'\')">Track</button>'+
       '<button class="btn" style="width:auto;padding:5px 8px;font-size:11px;color:var(--tx3)" onclick="_subDismiss(\''+String(f.key).replace(/'/g,"")+'\')">Not one</button>'+
     '</div>'; }).join('')+
@@ -856,7 +856,7 @@ function renderSubscriptions(){
     // ROUND ONCE, THEN DERIVE. The two figures were rounded independently, so the same line could
     // say ~$81/mo and ~$977/year — and 81 x 12 is 972. Whichever a person checked, the app was wrong.
     const _mo = Math.round(monthlyTotal);
-    totalBox.textContent = 'Total: ~'+curSym() + _mo + '/mo · ~'+curSym() + (_mo * 12) + '/year';
+    totalBox.textContent = 'Total: ~'+curSym() + Math.round(_mo).toLocaleString() + '/mo · ~'+curSym() + Math.round(_mo * 12).toLocaleString() + '/year';
   }
 }
 
@@ -1417,7 +1417,7 @@ function calcViceSavings(){
   const saved=Math.round(weekly*weeks);
   // Persist below, but let the one owner decide what is displayed — see reclaimedFigure.
   if(typeof renderReclaimed !== 'function'){ const sn=document.getElementById('saved-num'); if(sn) sn.textContent=curSym()+saved.toLocaleString(); }
-  const sd=document.getElementById('saved-desc');if(sd)sd.textContent=curSym()+weekly+'/week \u00d7 '+weeks+' weeks. '+curSym()+saved.toLocaleString()+' redirected.';
+  const sd=document.getElementById('saved-desc');if(sd)sd.textContent=curSym()+_moneyG(weekly)+'/week \u00d7 '+weeks+' weeks. '+curSym()+saved.toLocaleString()+' redirected.';
   ls('totry_vs',{weekly,since,saved,fields:{w,va,g,o}});
   if(typeof renderReclaimed === 'function') renderReclaimed();
   if(typeof syncToCloud==='function') syncToCloud();

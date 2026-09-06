@@ -240,7 +240,7 @@ function saveScaleScreenshotEntry(){
   if(typeof renderWeightHistory==='function') renderWeightHistory();
   if(typeof adjustCaloriesFromWeightTrend==='function') adjustCaloriesFromWeightTrend();
   haptic('celebrate');
-  showToast('Logged ✓', w + 'kg saved with your full body composition.');
+  showToast('Logged ✓', wFmt(w) + ' saved with your full body composition.');
 }
 
 // Works for ANY workout app's CSV (Hevy, Strong, FitNotes, etc.) via the unified engine:
