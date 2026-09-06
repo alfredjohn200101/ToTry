@@ -25512,7 +25512,12 @@ function searchCommonFoods(query, limit){
     const hay = nm + ' ' + (f.__aliases||'');
     const firstWord = nm.split(/[ ,]/)[0];
     let s = 0;
+    // IN ENGLISH THE HEAD NOUN IS THE LAST WORD. "rice cakes" is a cake; "white rice, cooked" is
+    // rice. Prefix-matching ranked above that, so the app's own "Rice" chip returned Rice cakes
+    // first — a snack one tap from being logged as the staple the person meant.
+    const headWord = nm.replace(/[,(].*$/, '').trim().split(/\s+/).pop();
     if(nm === ql) s += 1000;
+    else if(headWord === ql) s += 800;
     else if(nm.startsWith(ql)) s += 700;
     else if(firstWord === ql) s += 500;
     else if(hay.includes(ql)) s += 350;
@@ -25781,7 +25786,7 @@ async function searchFood(query){
     ownCard.style.cssText='margin-top:8px';
     const _off = (typeof navigator!=='undefined' && navigator.onLine === false);
     ownCard.innerHTML='<div class="fr-name">\u270f\ufe0f Create it yourself</div><div class="fr-brand">' +
-      (_off ? 'You are offline \u2014 the two above need a connection. This one does not.' : 'Type the numbers off the packet. Saved for next time.') + '</div>';
+      (_off ? 'You are offline \u2014 the web and AI options need a connection. This one does not.' : 'Type the numbers off the packet. Saved for next time.') + '</div>';
     ownCard.onclick=()=>{ if(typeof openCustomFoodCreator==='function') openCustomFoodCreator(query); };
     if(_off) res.insertBefore(ownCard, res.firstChild); else res.appendChild(ownCard);
     return;
@@ -25843,7 +25848,7 @@ function openCustomFoodCreator(prefillName){
       '<div><div class="eyebrow">Carbs (g)</div><input type="number" id="cf-carb" inputmode="decimal" placeholder="0"></div>' +
       '<div><div class="eyebrow">Fat (g)</div><input type="number" id="cf-fat" inputmode="decimal" placeholder="0"></div>' +
     '</div>' +
-    '<label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:12px;color:var(--tx3);cursor:pointer">' +
+    '<label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;min-height:32px;font-size:12px;color:var(--tx3);cursor:pointer">' +
       '<input type="checkbox" id="cf-save-library" checked style="width:auto;margin:0"> Save to my foods for next time' +
     '</label>' +
     '<button class="btn primary" onclick="saveCustomFood()" style="margin-bottom:8px">Add to today</button>' +
@@ -27355,6 +27360,10 @@ async function logRecipeAsMeal(i){
     name: r.name,
     serving: qty + (qty === 1 ? ' serving' : ' servings'),
     qty: 1,
+    // EVERY OTHER LOGGER WRITES THIS. Without it the entry carries no meal, and the meal split files
+    // it under Snacks — so a recipe cooked for dinner appeared as a snack, and the "your usual for
+    // dinner" card never learned it.
+    meal: (typeof currentMealSlot === 'function' ? currentMealSlot() : null),
     ..._rRow,
     source: 'recipe'
   });
