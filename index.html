@@ -26778,7 +26778,9 @@ async function estimateMealMacros(description){
         '</div>').join('');
       card.innerHTML='<div class="fr-name" style="margin-bottom:6px">'+(meal.name||description)+'</div>'+
         (itemsHtml?'<div style="margin:8px 0">'+itemsHtml+'</div>':'')+
-        '<div class="fr-macros" style="margin-top:8px"><span class="fr-cal">'+Math.round(t.cal||0)+' cal</span><span>P: '+Math.round(t.pro||0)+'g</span><span>C: '+Math.round(t.carb||0)+'g</span><span>F: '+Math.round(t.fat||0)+'g</span></div>'+
+        // Same promise, same shape — see the note on the saved-meals shelf.
+        (( typeof nutGentle==='function' && nutGentle() ) ? '' :
+          '<div class="fr-macros" style="margin-top:8px"><span class="fr-cal">'+Math.round(t.cal||0)+' cal</span><span>P: '+Math.round(t.pro||0)+'g</span><span>C: '+Math.round(t.carb||0)+'g</span><span>F: '+Math.round(t.fat||0)+'g</span></div>') +
         (meal.note?'<div class="fr-brand" style="margin-top:8px">'+meal.note+'</div>':'');
       res.appendChild(card);
       // If the AI judged the description too vague to be confident, be honest about it: we've given
@@ -28115,7 +28117,13 @@ function renderSavedMeals(){
       const totCal = Math.round(m.items.reduce((a,i)=>a+(i.cal||0),0));
       return '<div class="food-result" style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
         '<div style="flex:1;min-width:0"><div class="fr-name">' + m.name.replace(/</g,'&lt;') + '</div>' +
-        '<div class="fr-macros"><span class="fr-cal">' + totCal + ' cal</span><span style="color:var(--tx3)">' + m.items.length + ' item' + (m.items.length>1?'s':'') + '</span></div></div>' +
+        // "Numbers off" is the setting someone with a history of counting turns on so the app stops
+        // putting calories in front of them, and this shelf kept printing them. Gated at the builder
+        // rather than in applyNutGentle's HIDE pass, because this box is rebuilt after that pass runs
+        // — which is exactly why renderMealSplit already carries its own guard.
+        (( typeof nutGentle==='function' && nutGentle() )
+          ? ('<div class="fr-macros"><span style="color:var(--tx3)">' + m.items.length + ' item' + (m.items.length>1?'s':'') + '</span></div></div>')
+          : ('<div class="fr-macros"><span class="fr-cal">' + totCal + ' cal</span><span style="color:var(--tx3)">' + m.items.length + ' item' + (m.items.length>1?'s':'') + '</span></div></div>')) +
         '<button class="fli-del" onclick="deleteSavedMeal('+m.id+')" title="Delete this saved meal">&times;</button>' +
         '<button onclick="logSavedMeal('+m.id+')" title="Log this meal" style="background:var(--go);border:none;color:#1a1505;font-size:18px;font-weight:700;width:34px;height:34px;border-radius:8px;cursor:pointer;flex-shrink:0;line-height:1">+</button>' +
       '</div>';
