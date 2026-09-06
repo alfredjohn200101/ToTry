@@ -733,7 +733,7 @@ function renderSets(ei){
     numEl.style.cssText='font-family:\'DM Mono\',monospace;font-size:11px;color:var(--tx3);font-weight:600;min-width:20px;text-align:center';
     numEl.textContent=(si+1);
     row.appendChild(numEl);
-    const tb=document.createElement('button');tb.style.cssText='background:none;border:1px solid var(--bd);border-radius:4px;color:var(--tx3);font-size:9px;font-family:"DM Mono",monospace;width:20px;height:28px;cursor:pointer;flex-shrink:0';
+    const tb=document.createElement('button');tb.style.cssText='background:none;border:1px solid var(--bd);border-radius:4px;color:var(--tx3);font-size:9px;font-family:"DM Mono",monospace;min-width:24px;height:28px;cursor:pointer;flex-shrink:0';
     tb.textContent=tl[s.type||'normal'];tb.onclick=()=>{const types=['normal','warmup','drop','failure'];const cur=types.indexOf(s.type||'normal');currentSession[ei].sets[si].type=types[(cur+1)%types.length];renderSets(ei);};row.appendChild(tb);
     // Hevy's killer feature: tap your previous-session number to instantly fill this set.
     // The single biggest friction-remover for progressive overload.
@@ -2089,7 +2089,7 @@ function saveBuilderRoutine(){
   document.querySelector('.modal-bg.open')?.remove();
   _builderRoutine = null;
   if(typeof renderRoutines === 'function') renderRoutines();
-  showToast('Routine saved', name + ' · ' + r.exercises.length + ' exercises');
+  showToast('Routine saved', name + ' · ' + r.exercises.length + ' exercise' + (r.exercises.length===1?'':'s'));
   haptic('success');
 }
 
@@ -2171,7 +2171,7 @@ function renderRoutines(){
   const routines=ls('totry_routines')||[];const container=document.getElementById('pt-routines-list');if(!container)return;
   if(!routines.length){container.innerHTML='<div style="text-align:center;padding:24px 16px"><div style="font-family:\'Cormorant Garamond\',serif;font-size:18px;font-style:italic;color:var(--tx3);margin-bottom:6px">No routines saved yet.</div><div style="font-size:13px;color:var(--tx3)">Log a session and save it as a routine.</div></div>';return;}
   container.innerHTML='';
-  routines.forEach(r=>{const card=document.createElement('div');card.className='card';card.style.marginBottom='8px';const _ex=(r&&Array.isArray(r.exercises))?r.exercises:[];card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div style="font-size:14px;font-weight:500;color:var(--tx)">'+_escFew(r.name||'Routine')+'</div><button style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:14px;padding:0 4px" onclick="deleteRoutine('+r.id+')" aria-label="Delete this routine">&#215;</button></div><div style="font-size:12px;color:var(--tx3);margin-bottom:10px">'+_ex.length+' exercises \u00b7 '+_ex.map(e=>e&&e.name||'?').slice(0,3).join(', ')+(_ex.length>3?'...':'')+'</div><button class="btn primary" style="padding:9px" onclick="loadRoutine('+r.id+')">Load this routine \u2192</button>';container.appendChild(card);});
+  routines.forEach(r=>{const card=document.createElement('div');card.className='card';card.style.marginBottom='8px';const _ex=(r&&Array.isArray(r.exercises))?r.exercises:[];card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div style="font-size:14px;font-weight:500;color:var(--tx)">'+_escFew(r.name||'Routine')+'</div><button style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:14px;padding:0 4px" onclick="deleteRoutine('+r.id+')" aria-label="Delete this routine">&#215;</button></div><div style="font-size:12px;color:var(--tx3);margin-bottom:10px">'+_ex.length+' exercise'+(_ex.length===1?'':'s')+' \u00b7 '+_ex.map(e=>e&&e.name||'?').slice(0,3).join(', ')+(_ex.length>3?'...':'')+'</div><button class="btn primary" style="padding:9px" onclick="loadRoutine('+r.id+')">Load this routine \u2192</button>';container.appendChild(card);});
 }
 // renderSplitDayCards() removed. It painted .pt-split-day-card rows into #pt-split-days — an id
 // that is not in the shell — so it returned on its first line at both call sites. Its live

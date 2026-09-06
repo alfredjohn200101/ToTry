@@ -4726,6 +4726,11 @@ Amen.</div></div>
       <button class="btn success" onclick="logWin()" style="flex:1">I beat it</button>
       <button class="btn" onclick="closeSos()" style="flex:1">Close</button>
     </div>
+    <!-- THE HONEST OPTION HAS TO SURVIVE TO THE LAST SCREEN. Every earlier SOS phase offers "I gave
+         in — log it honestly" beside the win; this final one offered only "I beat it" and "Close",
+         so the person it fits least is the one who slipped — and the app's whole posture is that a
+         lapse is feedback, not failure. Leaving them nothing but "Close" teaches them to lie to it. -->
+    <button class="btn danger" onclick="logLoss()" style="width:100%;margin-top:8px">I gave in &#8212; log it honestly</button>
   </div>
 </div>
 

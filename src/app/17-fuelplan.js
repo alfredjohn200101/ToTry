@@ -654,11 +654,11 @@ function renderCalendarDay(){
       const time = e.start + (e.end ? '\u2013'+e.end : '');
       const [sh,sm]=(e.start||'0:0').split(':').map(Number);
       const isPast = e.end ? false : (sh*60+(sm||0) < nowMin - 60);
-      html += '<div onclick="deleteCalEvent('+e.id+')" style="display:flex;align-items:center;gap:12px;padding:12px 13px;margin-bottom:7px;background:var(--bg3);border-radius:9px;border-left:3px solid '+col+';cursor:pointer;opacity:'+(isPast?'0.5':'1')+'">'+
+      html += '<div onclick="editCalEvent('+e.id+')" style="display:flex;align-items:center;gap:12px;padding:12px 13px;margin-bottom:7px;background:var(--bg3);border-radius:9px;border-left:3px solid '+col+';cursor:pointer;opacity:'+(isPast?'0.5':'1')+'">'+
         '<div style="font-family:DM Mono,monospace;font-size:12px;color:'+col+';flex-shrink:0;min-width:46px">'+(e.start||'')+'</div>'+
         '<div style="flex:1;min-width:0"><div style="font-size:14px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_escFew(e.title)+'</div>'+
         '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:1px">'+time+(e.recurring?' \u00b7 weekly':'')+'</div></div>'+
-        '<span style="color:var(--tx3);font-size:12px;flex-shrink:0">\u00d7</span></div>';
+        '<button onclick="event.stopPropagation();deleteCalEvent('+e.id+')" aria-label="Remove this event" style="background:none;border:none;color:var(--tx3);font-size:14px;min-width:32px;min-height:32px;flex-shrink:0;cursor:pointer">\u00d7</button></div>';
     });
   }
   wrap.innerHTML = html;
@@ -686,10 +686,10 @@ function renderCalendarWeek(){
       dayEvents.forEach(e => {
         const col = CAL_TYPE_COLORS[e.type] || CAL_TYPE_COLORS.other;
         const time = e.start + (e.end ? '\u2013'+e.end : '');
-        html += '<div onclick="deleteCalEvent('+e.id+')" style="display:flex;align-items:center;gap:10px;padding:9px 11px;margin-bottom:5px;background:var(--bg3);border-radius:8px;border-left:3px solid '+col+';cursor:pointer">'+
+        html += '<div onclick="editCalEvent('+e.id+')" style="display:flex;align-items:center;gap:10px;padding:9px 11px;margin-bottom:5px;background:var(--bg3);border-radius:8px;border-left:3px solid '+col+';cursor:pointer">'+
           '<div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_escFew(e.title)+'</div>'+
           '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:1px">'+time+(e.recurring?' \u00b7 weekly':'')+'</div></div>'+
-          '<span style="color:var(--tx3);font-size:11px;flex-shrink:0">\u00d7</span></div>';
+          '<button onclick="event.stopPropagation();deleteCalEvent('+e.id+')" aria-label="Remove this event" style="background:none;border:none;color:var(--tx3);font-size:14px;min-width:32px;min-height:32px;flex-shrink:0;cursor:pointer">\u00d7</button></div>';
       });
     }
     html += '</div>';
@@ -798,6 +798,9 @@ function renderCalInsight(events){
 
 function openEventLogger(){
   const m=document.createElement('div'); m.className='modal-bg open'; m.id='event-modal';
+  // Opened fresh from "+ Add one" means this is not an edit, whatever the last one was.
+  if(!_evEditPending) _evEditId = null;
+  _evEditPending = false;
   // Time options every 15 min, 05:00–23:45, in 12h-ish labels but 24h values.
   let timeOpts='<option value="">—</option>';
   for(let h=5; h<=23; h++){ for(let mn=0; mn<60; mn+=15){ const v=String(h).padStart(2,'0')+':'+String(mn).padStart(2,'0'); const ampm=h<12?'am':'pm'; const h12=h%12===0?12:h%12; timeOpts+='<option value="'+v+'">'+h12+':'+String(mn).padStart(2,'0')+' '+ampm+'</option>'; } }
@@ -845,6 +848,33 @@ function _evSetType(t){
     b.style.background=on?'var(--go-bg)':'var(--bg3)'; b.style.borderColor=on?'var(--go-bd)':'var(--bd)'; b.style.color=on?'var(--go)':'var(--tx2)';
   });
 }
+// AN EVENT COULD ONLY BE DELETED. Tapping a row went straight to "Remove this from your week?",
+// so a shift that moved by an hour meant deleting it and typing the whole thing again — and the
+// only other control on the row was the same delete. The row edits now; the x still removes.
+let _evEditId = null, _evEditPending = false;
+function editCalEvent(id){
+  const ev = (ls('totry_cal_events')||[]).find(function(e){ return e && e.id === id; });
+  if(!ev){ if(typeof showToast==='function') showToast('That one is gone','It may have been removed already.'); return; }
+  _evEditId = id; _evEditPending = true;
+  openEventLogger();
+  // The form is built synchronously by openEventLogger, so it is safe to fill straight after.
+  try{
+    const set = (i,v) => { const el=document.getElementById(i); if(el) el.value = v == null ? '' : v; };
+    set('ev-title', ev.title); set('ev-start', ev.start); set('ev-end', ev.end);
+    const rec = document.getElementById('ev-recurring'); if(rec) rec.checked = !!ev.recurring;
+    window.__evType = ev.type || 'other';
+    window.__evDays = new Set([ev.day]);
+    if(typeof _evSetType === 'function') _evSetType(window.__evType);
+    document.querySelectorAll('#ev-days [data-day]').forEach(function(b){
+      const on = Number(b.getAttribute('data-day')) === ev.day;
+      b.style.background = on ? 'var(--go-bg)' : 'var(--bg3)';
+      b.style.borderColor = on ? 'var(--go-bd)' : 'var(--bd)';
+      b.style.color = on ? 'var(--go)' : 'var(--tx2)';
+    });
+    const save = document.querySelector('#event-modal .btn.primary');
+    if(save) save.textContent = 'Save changes';
+  }catch(_){ }
+}
 function _saveEventFromModal(){
   const title=(document.getElementById('ev-title')?.value||'').trim();
   const start=document.getElementById('ev-start')?.value||'';
@@ -854,14 +884,17 @@ function _saveEventFromModal(){
   if(!title){ showToast('Add a name','What is the event?'); return; }
   if(!days.length){ showToast('Pick a day','Tap at least one day.'); return; }
   if(!start){ showToast('Set a start time','When does it start?'); return; }
-  const list=(ls('totry_cal_events')||[]);
+  let list=(ls('totry_cal_events')||[]);
+  // Editing replaces rather than adds — otherwise "save changes" would leave the old copy behind.
+  if(_evEditId != null) list = list.filter(function(e){ return !(e && e.id === _evEditId); });
   const wk=_currentWeekStamp();
   days.forEach(d=>{ list.push({ id: Date.now()+d+Math.floor(Math.random()*1000), title:title.slice(0,50), type:window.__evType||'other', day:d, start, end:end||null, recurring, weekStamp: recurring?null:wk }); });
   _saveCalEvents(list);
   document.getElementById('event-modal')?.remove();
   renderCalendar();
   if(typeof haptic==='function') haptic('success');
-  showToast('Added', title+(days.length>1?(' on '+days.length+' days'):'')+'.');
+  showToast(_evEditId != null ? 'Updated' : 'Added', title+(days.length>1?(' on '+days.length+' days'):'')+'.');
+  _evEditId = null;
 }
 async function deleteCalEvent(id){
   if(!(await askConfirm('Remove this from your week?'))) return;

@@ -1263,7 +1263,14 @@ function closeYourFew(){
 // ── WEEKLY REVIEW ─────────────────────────────────────────────
 function initReviewTab(){
   try{ if(typeof applyFaithReflect==='function') applyFaithReflect(); }catch(_){}
-  loadV();const tw=vices.reduce((a,v)=>a+(v.w||0),0);
+  // v.w IS THE LIFETIME WIN COUNT. Printed under a card headed "This week", it told someone with
+  // 200 wins over eight months that they had won 200 of them this week. checkMilestones below
+  // wants the lifetime figure and keeps it; a weekly card gets the dated count.
+  loadV();
+  const _weekAgo = Date.now() - 7*86400000;
+  const tw = (ls('totry_wins')||[]).filter(function(w){
+    try{ return w && w.ts && new Date(w.ts).getTime() >= _weekAgo; }catch(_){ return false; }
+  }).length;
   const ws=document.getElementById('week-stats');
   if(ws){ws.innerHTML='';[{num:getDayCount(),lbl:'Day'},{num:tw,lbl:'Vice wins'},{num:getStreak(),lbl:'Habits this week'}].forEach(s=>{const m=document.createElement('div');m.className='week-stat';m.innerHTML='<div class="ws-num">'+s.num+'</div><div class="ws-lbl">'+s.lbl+'</div>';ws.appendChild(m);});}
   renderReviewHistory();
@@ -1277,7 +1284,10 @@ function saveWeeklyReview(){
   const rp=document.getElementById('review-proud');if(rp)rp.value='';
   const rf=document.getElementById('review-focus');if(rf)rf.value='';
   renderReviewHistory();
-  const btn=document.querySelector('#tab-review .btn.primary');
+  // #tab-review is not the id of this pane — it is #reflect-panel-review — so this lookup returned
+  // null and the confirmation it drives never appeared. Saving the weekly review cleared both boxes
+  // and said nothing, which reads exactly like losing what you just wrote.
+  const btn=document.querySelector('#reflect-panel-review .btn.primary');
   if(btn){btn.textContent='Week logged \u2713';setTimeout(()=>{btn.textContent='Complete this week\'s review';},2000);}
 }
 function renderReviewHistory(){
