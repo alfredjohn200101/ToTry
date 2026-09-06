@@ -39,6 +39,17 @@ function renderConnectedApps(){
   // Connected apps shows only what you've actually linked (no force-injected entries). Hevy + Strava
   // are connectable right from the Train tab, and land here once linked.
   const used = ls('totry_apps_used') || [];
+  // THE SUMMARY NAMED APPS THE SUB-PAGE DID NOT OFFER. It was the static string "Strava, Hevy, Apple
+  // Health", so someone tapped in expecting to add Strava and found a list of whatever they had
+  // already linked. A hint that promises is worse than one that reports: say what IS linked.
+  try{
+    const hint = document.getElementById('connected-apps-hint');
+    if(hint){
+      const names = used.map(function(id){ return (APPS[id] && APPS[id].name) || id; }).filter(Boolean);
+      hint.textContent = names.length ? names.slice(0,3).join(', ') + (names.length>3 ? ' +'+(names.length-3) : '')
+                                      : 'Nothing linked yet';
+    }
+  }catch(_){ }
   
   if(used.length === 0){
     list.innerHTML = '<p class="empty-note">No apps linked yet.</p>';

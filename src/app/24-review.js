@@ -435,9 +435,9 @@ function showYearInReview(year){
   
   // Build the headline stats — only show ones that have data
   const heroStats = [];
-  if(stats.daysTried > 0) heroStats.push({big: stats.daysTried, label: 'days you tried'});
-  if(stats.totalWins > 0) heroStats.push({big: stats.totalWins, label: 'urges fought and won'});
-  if(stats.workouts > 0) heroStats.push({big: stats.workouts, label: 'sessions trained'});
+  if(stats.daysTried > 0) heroStats.push({big: stats.daysTried, label: 'day' + (stats.daysTried===1?'':'s') + ' you tried'});
+  if(stats.totalWins > 0) heroStats.push({big: stats.totalWins, label: 'urge' + (stats.totalWins===1?'':'s') + ' fought and won'});
+  if(stats.workouts > 0) heroStats.push({big: stats.workouts, label: 'session' + (stats.workouts===1?'':'s') + ' trained'});
   if(stats.longestStreak > 0) heroStats.push({big: stats.longestStreak, label: 'longest clean streak (days)'});
   
   const heroHtml = heroStats.length ?
@@ -488,7 +488,7 @@ function showYearInReview(year){
     '<h3 style="margin-bottom:14px">' + year + ' in review</h3>' +
     heroHtml +
     detailHtml +
-    '<div style="font-family:Cormorant Garamond,serif;font-size:16px;font-style:italic;color:var(--tx2);text-align:center;line-height:1.6;margin-bottom:14px">"The least we can do everyday, is to try."<br>You did. ' + stats.daysTried + ' times this year.</div>' +
+    '<div style="font-family:Cormorant Garamond,serif;font-size:16px;font-style:italic;color:var(--tx2);text-align:center;line-height:1.6;margin-bottom:14px">"The least we can do everyday, is to try."<br>You did. ' + stats.daysTried + ' time' + (stats.daysTried===1?'':'s') + ' this year.</div>' +
     '<button class="btn primary" onclick="generateShareCard();closeModal(this)" style="margin-bottom:8px">Share this year</button>' +
     '<button class="btn" onclick="closeModal(this)">Close</button>' +
   '</div>';

@@ -4582,7 +4582,7 @@ function updateHubBackBar(name){
       if(tab){
         const bar=document.createElement('div');
         bar.id='hub-back-bar';
-        bar.style.cssText='display:flex;align-items:center;gap:6px;margin-bottom:12px;cursor:pointer;color:var(--tx3);font-size:13px;user-select:none';
+        bar.style.cssText='display:flex;align-items:center;gap:6px;min-height:34px;padding:6px 2px;margin-bottom:8px;cursor:pointer;color:var(--tx3);font-size:13px;user-select:none';
         const back = window.__prevTab && window.__prevTab !== 'coach' ? window.__prevTab : 'home';
         const lbl = HUB_LABELS[back] || ({home:'Home',grow:'Grow',soul:'Soul',track:'Track',money:'Money',settings:'Settings'}[back]) || 'Back';
         bar.innerHTML='<span style="font-size:18px;line-height:1">\u2039</span><span>'+lbl+'</span>';
@@ -4596,7 +4596,7 @@ function updateHubBackBar(name){
   if(!tab) return;
   const bar=document.createElement('div');
   bar.id='hub-back-bar';
-  bar.style.cssText='display:flex;align-items:center;gap:6px;margin-bottom:12px;cursor:pointer;color:var(--tx3);font-size:13px;user-select:none';
+  bar.style.cssText='display:flex;align-items:center;gap:6px;min-height:34px;padding:6px 2px;margin-bottom:8px;cursor:pointer;color:var(--tx3);font-size:13px;user-select:none';
   bar.innerHTML='<span style="font-size:18px;line-height:1">‹</span><span>'+(HUB_LABELS[parent]||'Back')+'</span>';
   bar.onclick=()=>go(parent);
   tab.insertBefore(bar, tab.firstChild);

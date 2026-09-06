@@ -4154,8 +4154,8 @@ Amen.</div></div>
       <div class="card-hd" style="margin-bottom:10px">Display & locale</div>
       <p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">Changes apply immediately.</p>
       
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-        <div class="pref-wide">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;align-items:end">
+        <div class="pref-wide" style="display:flex;flex-direction:column">
           <div class="eyebrow">Currency</div>
             <!-- The retrofit landed at v480: 166 string sites now call curSym(), and the static ones
                  above declare data-cur-text / data-cur-ph for applyCurrencySymbols() to fill. This
@@ -4189,7 +4189,7 @@ Amen.</div></div>
                canonical kilograms; only the two edges convert. Lifted load is a different quantity
                and is deliberately still kg. -->
           <div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">Your body weight, everywhere you see it and everywhere you type it. Lifted loads stay in kg.</div>
-          <select id="settings-weight-unit" onchange="savePref('totry_weight_unit',this.value);if(typeof syncWeightUnitLabels==='function')syncWeightUnitLabels();if(typeof renderBody==='function')renderBody();if(typeof go==='function')go('settings');showToast('Saved','Weight now shows in '+this.value+'.')">
+          <select id="settings-weight-unit" onchange="savePref('totry_weight_unit',this.value);if(typeof syncWeightUnitLabels==='function')syncWeightUnitLabels();if(typeof renderBody==='function')renderBody();showToast('Saved','Weight now shows in '+this.value+'.')">
             <option value="kg">kg</option>
             <option value="lb">lb</option>
           </select>
@@ -4253,7 +4253,7 @@ Amen.</div></div>
       </div>
       <div class="setting-row">
         <div><div class="sr-label">Height (for BMI)</div><div class="sr-desc">Used in body tracking</div></div>
-        <input type="number" id="settings-height" placeholder="cm" style="width:70px;flex:none;padding:6px 8px;font-size:16px" onchange="ls('totry_height',parseInt(this.value))">
+        <input type="number" id="settings-height" placeholder="cm" aria-label="Your height in centimetres" min="80" max="250" style="width:70px;flex:none;padding:6px 8px;font-size:16px" onchange="(function(el){ const v=parseInt(el.value,10); if(!el.value){ ls('totry_height',0); return; } if(!isFinite(v)||v<80||v><span style="font-size:12px;color:var(--tx3);margin-left:6px;align-self:center">cm</span>250){ if(typeof showToast==='function') showToast('Check that height', 'A height in centimetres, somewhere between 80 and 250. Nothing saved.'); el.value = ls('totry_height')||''; return; } ls('totry_height',v); if(typeof renderBody==='function') renderBody(); })(this)">
       </div>
       <div class="setting-row" style="border-bottom:none">
         <div><div class="sr-label">Someone you love</div><div class="sr-desc">Evening nudge to reach out to a person you love</div></div>
@@ -4385,7 +4385,7 @@ Amen.</div></div>
 
   <!-- ═══ GROUP 5: APPS LINKED (collapsed — set once) ═══ -->
   <details class="settings-group" id="connected-apps-section">
-    <summary>🔗 Connected apps <span class="settings-group-hint">Strava, Hevy, Apple Health</span></summary>
+    <summary>🔗 Connected apps <span class="settings-group-hint" id="connected-apps-hint">Nothing linked yet</span></summary>
     
     <div class="card">
       <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Apps you use alongside ToTry. We open them with one tap and import data where possible.</p>
@@ -4484,15 +4484,12 @@ Amen.</div></div>
       </div>
     </div>
     
-    <div class="card">
-      <div class="card-hd" style="margin-bottom:8px">Full backup</div>
-      <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Your data syncs to the cloud, but you can also keep your own copy. Download everything as a single file &mdash; every log, reflection, and setting &mdash; and restore it on any device, even with no account.</p>
-      <button class="btn" onclick="exportAllData()" style="background:var(--bg3);border:1px solid var(--go-bd);color:var(--go);font-size:13px;margin-bottom:8px">Download my full backup</button>
-      <label class="btn" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px;margin-bottom:0;cursor:pointer;text-align:center;display:block">
-        Restore from a backup file
-        <input type="file" accept="application/json,.json" onchange="importAllData(event)" style="display:none">
-      </label>
-    </div>
+    <!-- A SECOND "Full backup" card used to sit here, one card below the "Export your data" one,
+         with its own export and restore. Both wrote totry-backup-<date>.json and so overwrote
+         each other in Downloads — see the note above exportFullBackup(), which was widened to
+         the same source of truth as exportAllData. Two doors to one file, and the person had no
+         way to know which of the two files they were keeping. The surviving card carries both
+         directions: exportFullBackup() and restoreFullBackup(). -->
 
     <div class="card">
       <div class="card-hd" style="margin-bottom:8px">Account</div>

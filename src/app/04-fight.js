@@ -1397,7 +1397,7 @@ function setFaithTradition(tr){
   // Refresh the daily verse immediately so the pill shows the new tradition's scripture.
   try{ if(typeof pickDailyContextualVerse==='function'){ vi = pickDailyContextualVerse(); } if(typeof showV==='function') showV(activeVerses()[vi]); }catch(_){}
   const f = FAITHS[tr];
-  if(typeof showToast==='function') showToast('Path set', 'Your daily '+f.scriptureWord+' and the companion’s voice now follow '+f.label+'.');
+  if(typeof showToast==='function') showToast('Path set', 'Your daily '+String(f.scriptureWord||'').replace(/^(the|an|a)\s+/i,'')+' and the companion’s voice now follow '+f.label+'.');
 }
 function setFaithLevel(level){
   ls('totry_faith_level', level);

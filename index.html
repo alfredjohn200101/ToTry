@@ -4154,8 +4154,8 @@ Amen.</div></div>
       <div class="card-hd" style="margin-bottom:10px">Display & locale</div>
       <p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">Changes apply immediately.</p>
       
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-        <div class="pref-wide">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;align-items:end">
+        <div class="pref-wide" style="display:flex;flex-direction:column">
           <div class="eyebrow">Currency</div>
             <!-- The retrofit landed at v480: 166 string sites now call curSym(), and the static ones
                  above declare data-cur-text / data-cur-ph for applyCurrencySymbols() to fill. This
@@ -4189,7 +4189,7 @@ Amen.</div></div>
                canonical kilograms; only the two edges convert. Lifted load is a different quantity
                and is deliberately still kg. -->
           <div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">Your body weight, everywhere you see it and everywhere you type it. Lifted loads stay in kg.</div>
-          <select id="settings-weight-unit" onchange="savePref('totry_weight_unit',this.value);if(typeof syncWeightUnitLabels==='function')syncWeightUnitLabels();if(typeof renderBody==='function')renderBody();if(typeof go==='function')go('settings');showToast('Saved','Weight now shows in '+this.value+'.')">
+          <select id="settings-weight-unit" onchange="savePref('totry_weight_unit',this.value);if(typeof syncWeightUnitLabels==='function')syncWeightUnitLabels();if(typeof renderBody==='function')renderBody();showToast('Saved','Weight now shows in '+this.value+'.')">
             <option value="kg">kg</option>
             <option value="lb">lb</option>
           </select>
@@ -4253,7 +4253,7 @@ Amen.</div></div>
       </div>
       <div class="setting-row">
         <div><div class="sr-label">Height (for BMI)</div><div class="sr-desc">Used in body tracking</div></div>
-        <input type="number" id="settings-height" placeholder="cm" style="width:70px;flex:none;padding:6px 8px;font-size:16px" onchange="ls('totry_height',parseInt(this.value))">
+        <input type="number" id="settings-height" placeholder="cm" aria-label="Your height in centimetres" min="80" max="250" style="width:70px;flex:none;padding:6px 8px;font-size:16px" onchange="(function(el){ const v=parseInt(el.value,10); if(!el.value){ ls('totry_height',0); return; } if(!isFinite(v)||v<80||v><span style="font-size:12px;color:var(--tx3);margin-left:6px;align-self:center">cm</span>250){ if(typeof showToast==='function') showToast('Check that height', 'A height in centimetres, somewhere between 80 and 250. Nothing saved.'); el.value = ls('totry_height')||''; return; } ls('totry_height',v); if(typeof renderBody==='function') renderBody(); })(this)">
       </div>
       <div class="setting-row" style="border-bottom:none">
         <div><div class="sr-label">Someone you love</div><div class="sr-desc">Evening nudge to reach out to a person you love</div></div>
@@ -4385,7 +4385,7 @@ Amen.</div></div>
 
   <!-- ═══ GROUP 5: APPS LINKED (collapsed — set once) ═══ -->
   <details class="settings-group" id="connected-apps-section">
-    <summary>🔗 Connected apps <span class="settings-group-hint">Strava, Hevy, Apple Health</span></summary>
+    <summary>🔗 Connected apps <span class="settings-group-hint" id="connected-apps-hint">Nothing linked yet</span></summary>
     
     <div class="card">
       <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Apps you use alongside ToTry. We open them with one tap and import data where possible.</p>
@@ -4484,15 +4484,12 @@ Amen.</div></div>
       </div>
     </div>
     
-    <div class="card">
-      <div class="card-hd" style="margin-bottom:8px">Full backup</div>
-      <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Your data syncs to the cloud, but you can also keep your own copy. Download everything as a single file &mdash; every log, reflection, and setting &mdash; and restore it on any device, even with no account.</p>
-      <button class="btn" onclick="exportAllData()" style="background:var(--bg3);border:1px solid var(--go-bd);color:var(--go);font-size:13px;margin-bottom:8px">Download my full backup</button>
-      <label class="btn" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px;margin-bottom:0;cursor:pointer;text-align:center;display:block">
-        Restore from a backup file
-        <input type="file" accept="application/json,.json" onchange="importAllData(event)" style="display:none">
-      </label>
-    </div>
+    <!-- A SECOND "Full backup" card used to sit here, one card below the "Export your data" one,
+         with its own export and restore. Both wrote totry-backup-<date>.json and so overwrote
+         each other in Downloads — see the note above exportFullBackup(), which was widened to
+         the same source of truth as exportAllData. Two doors to one file, and the person had no
+         way to know which of the two files they were keeping. The surviving card carries both
+         directions: exportFullBackup() and restoreFullBackup(). -->
 
     <div class="card">
       <div class="card-hd" style="margin-bottom:8px">Account</div>
@@ -12420,7 +12417,7 @@ function updateHubBackBar(name){
       if(tab){
         const bar=document.createElement('div');
         bar.id='hub-back-bar';
-        bar.style.cssText='display:flex;align-items:center;gap:6px;margin-bottom:12px;cursor:pointer;color:var(--tx3);font-size:13px;user-select:none';
+        bar.style.cssText='display:flex;align-items:center;gap:6px;min-height:34px;padding:6px 2px;margin-bottom:8px;cursor:pointer;color:var(--tx3);font-size:13px;user-select:none';
         const back = window.__prevTab && window.__prevTab !== 'coach' ? window.__prevTab : 'home';
         const lbl = HUB_LABELS[back] || ({home:'Home',grow:'Grow',soul:'Soul',track:'Track',money:'Money',settings:'Settings'}[back]) || 'Back';
         bar.innerHTML='<span style="font-size:18px;line-height:1">\u2039</span><span>'+lbl+'</span>';
@@ -12434,7 +12431,7 @@ function updateHubBackBar(name){
   if(!tab) return;
   const bar=document.createElement('div');
   bar.id='hub-back-bar';
-  bar.style.cssText='display:flex;align-items:center;gap:6px;margin-bottom:12px;cursor:pointer;color:var(--tx3);font-size:13px;user-select:none';
+  bar.style.cssText='display:flex;align-items:center;gap:6px;min-height:34px;padding:6px 2px;margin-bottom:8px;cursor:pointer;color:var(--tx3);font-size:13px;user-select:none';
   bar.innerHTML='<span style="font-size:18px;line-height:1">‹</span><span>'+(HUB_LABELS[parent]||'Back')+'</span>';
   bar.onclick=()=>go(parent);
   tab.insertBefore(bar, tab.firstChild);
@@ -14610,7 +14607,7 @@ function setFaithTradition(tr){
   // Refresh the daily verse immediately so the pill shows the new tradition's scripture.
   try{ if(typeof pickDailyContextualVerse==='function'){ vi = pickDailyContextualVerse(); } if(typeof showV==='function') showV(activeVerses()[vi]); }catch(_){}
   const f = FAITHS[tr];
-  if(typeof showToast==='function') showToast('Path set', 'Your daily '+f.scriptureWord+' and the companion’s voice now follow '+f.label+'.');
+  if(typeof showToast==='function') showToast('Path set', 'Your daily '+String(f.scriptureWord||'').replace(/^(the|an|a)\s+/i,'')+' and the companion’s voice now follow '+f.label+'.');
 }
 function setFaithLevel(level){
   ls('totry_faith_level', level);
@@ -33158,7 +33155,7 @@ function renderTransactions(){
           return '<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--bd);font-size:12px">' +
             '<div style="flex:1;min-width:0;cursor:pointer" onclick="editTransaction(' + _jsCode(JSON.stringify(t.id)) + ')"><div style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(t.note || t.category || 'Transaction') + '</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + (t.date || (t.ts ? new Date(t.ts).toLocaleDateString('en-AU') : '')) +
               ((t.category || t.cat) ? ' \u00b7 ' + (t.category || t.cat) : '') + '</div></div>' +
-            '<div style="display:flex;align-items:center;gap:6px"><span style="font-family:DM Mono,monospace;color:' + color + '">' + sign + curSym() + _money2(t.amount) + '</span><button onclick="deleteTransaction(' + _jsCode(JSON.stringify(t.id)) + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
+            '<div style="display:flex;align-items:center;gap:6px"><span style="font-family:DM Mono,monospace;color:' + color + '">' + sign + curSym() + _moneyG(t.amount) + '</span><button onclick="deleteTransaction(' + _jsCode(JSON.stringify(t.id)) + ')" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button></div>' +
           '</div>';
         }).join('') +
         ((list.length > recentList.length)
@@ -41315,9 +41312,9 @@ function showYearInReview(year){
   
   // Build the headline stats — only show ones that have data
   const heroStats = [];
-  if(stats.daysTried > 0) heroStats.push({big: stats.daysTried, label: 'days you tried'});
-  if(stats.totalWins > 0) heroStats.push({big: stats.totalWins, label: 'urges fought and won'});
-  if(stats.workouts > 0) heroStats.push({big: stats.workouts, label: 'sessions trained'});
+  if(stats.daysTried > 0) heroStats.push({big: stats.daysTried, label: 'day' + (stats.daysTried===1?'':'s') + ' you tried'});
+  if(stats.totalWins > 0) heroStats.push({big: stats.totalWins, label: 'urge' + (stats.totalWins===1?'':'s') + ' fought and won'});
+  if(stats.workouts > 0) heroStats.push({big: stats.workouts, label: 'session' + (stats.workouts===1?'':'s') + ' trained'});
   if(stats.longestStreak > 0) heroStats.push({big: stats.longestStreak, label: 'longest clean streak (days)'});
   
   const heroHtml = heroStats.length ?
@@ -41368,7 +41365,7 @@ function showYearInReview(year){
     '<h3 style="margin-bottom:14px">' + year + ' in review</h3>' +
     heroHtml +
     detailHtml +
-    '<div style="font-family:Cormorant Garamond,serif;font-size:16px;font-style:italic;color:var(--tx2);text-align:center;line-height:1.6;margin-bottom:14px">"The least we can do everyday, is to try."<br>You did. ' + stats.daysTried + ' times this year.</div>' +
+    '<div style="font-family:Cormorant Garamond,serif;font-size:16px;font-style:italic;color:var(--tx2);text-align:center;line-height:1.6;margin-bottom:14px">"The least we can do everyday, is to try."<br>You did. ' + stats.daysTried + ' time' + (stats.daysTried===1?'':'s') + ' this year.</div>' +
     '<button class="btn primary" onclick="generateShareCard();closeModal(this)" style="margin-bottom:8px">Share this year</button>' +
     '<button class="btn" onclick="closeModal(this)">Close</button>' +
   '</div>';
@@ -47771,6 +47768,17 @@ function renderConnectedApps(){
   // Connected apps shows only what you've actually linked (no force-injected entries). Hevy + Strava
   // are connectable right from the Train tab, and land here once linked.
   const used = ls('totry_apps_used') || [];
+  // THE SUMMARY NAMED APPS THE SUB-PAGE DID NOT OFFER. It was the static string "Strava, Hevy, Apple
+  // Health", so someone tapped in expecting to add Strava and found a list of whatever they had
+  // already linked. A hint that promises is worse than one that reports: say what IS linked.
+  try{
+    const hint = document.getElementById('connected-apps-hint');
+    if(hint){
+      const names = used.map(function(id){ return (APPS[id] && APPS[id].name) || id; }).filter(Boolean);
+      hint.textContent = names.length ? names.slice(0,3).join(', ') + (names.length>3 ? ' +'+(names.length-3) : '')
+                                      : 'Nothing linked yet';
+    }
+  }catch(_){ }
   
   if(used.length === 0){
     list.innerHTML = '<p class="empty-note">No apps linked yet.</p>';
