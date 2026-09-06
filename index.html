@@ -2785,7 +2785,7 @@ input:focus,textarea:focus,select:focus{
       <div id="nut-care" style="display:none;margin-top:12px"></div>
     <!-- Calorie-by-meal split (MFP's glanceable insight): where today's calories came from -->
     <div id="nut-meal-split" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
-      <div class="eyebrow" style="margin-bottom:6px">Where today's calories came from</div>
+      <div class="eyebrow" id="meal-split-hd" style="margin-bottom:6px">Where today's calories came from</div>
       <div id="nut-meal-split-bar" style="display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--bg3);margin-bottom:6px"></div>
       <div id="nut-meal-split-legend" style="display:flex;flex-wrap:wrap;gap:10px;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3)"></div>
     </div>
@@ -25770,7 +25770,13 @@ async function searchFood(query){
   const _settled = await Promise.allSettled([searchUSDA(coreQuery), searchFatSecret(coreQuery), searchOFF(coreQuery), searchNutritionix(coreQuery)].map(p=>_srcTimeout(p, 3500)));
   const [usdaR, fsR, offR, nxR] = _settled.map(s => (s.status==='fulfilled' && Array.isArray(s.value)) ? s.value : []);
   // Personal custom foods match first — the user made these, they're most relevant
-  const customMatches = (ls('totry_custom_foods')||[]).filter(f => f.name.toLowerCase().includes(ql));
+  // Give a person's own foods the same servings[] the community branch builds, or the row label,
+  // the "+" instant-log and what lands in Recents all lose the serving they typed and fall back to
+  // "1 serving" — for a food they created precisely because they knew its portion.
+  const customMatches = (ls('totry_custom_foods')||[]).filter(f => f.name.toLowerCase().includes(ql))
+    .map(f => ({ ...f, per100:false,
+      servings: (Array.isArray(f.servings) && f.servings.length) ? f.servings
+                : [{ name: f.serving || '1 serving', cal:f.cal||0, pro:f.pro||0, carb:f.carb||0, fat:f.fat||0 }] }));
   // Community foods contributed by other users. Verified (real online data) rank above estimates.
   // We only surface community items the live databases DIDN'T already return — no point showing a
   // community protein bar when USDA/OFF already has the real one (online verified beats community).
@@ -28470,7 +28476,7 @@ function renderNourishmentScore(totals, goals){
           '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:DM Mono,monospace;font-size:16px;color:var(--tx)">'+r.score+'</div>'+
         '</div>'+
         '<div style="flex:1;min-width:0">'+
-          '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em">Nourishment · today</div>'+
+          '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em">Nourishment · ' + ((typeof nutDayLabel==='function') ? nutDayLabel().toLowerCase() : 'today') + '</div>'+
           '<div style="font-size:15px;color:'+r.col+';font-weight:600">'+r.tier+'</div>'+
           '<div style="font-size:11.5px;color:var(--tx3);line-height:1.4;margin-top:2px">'+r.tip+'</div>'+
       (r.basis ? '<div style="font-size:10.5px;color:var(--tx3);opacity:.75;line-height:1.4;margin-top:5px">'+
@@ -29201,6 +29207,13 @@ function renderNutWeeklyDigest(){
 
 // Calorie-by-meal split bar (MFP's glanceable nutrition insight).
 function renderMealSplit(){
+  // The heading said "today's" whatever day you were looking at. nutDayLabel() is the same
+  // source the day-nav prints, so the card and the nav cannot disagree.
+  try{ const _hd=document.getElementById('meal-split-hd');
+    if(_hd) _hd.textContent = 'Where ' + ((typeof nutIsToday==='function' && nutIsToday()) ? "today's"
+      : (function(){ const _l = (typeof nutDayLabel==='function' ? nutDayLabel() : 'that day');
+          return /^(Today|Yesterday)$/.test(_l) ? (_l.toLowerCase() + "'s") : ("the " + _l + "'s"); })()) + ' calories came from';
+  }catch(_){ }
   const wrap = document.getElementById('nut-meal-split');
   const bar = document.getElementById('nut-meal-split-bar');
   const legend = document.getElementById('nut-meal-split-legend');
