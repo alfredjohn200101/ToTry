@@ -237,7 +237,7 @@ function askConfirm(title, body, opts){
     const danger = opts.danger !== false;         // destructive unless told otherwise
     m.innerHTML =
       '<div class="modal" style="text-align:left;max-width:340px">'+
-        '<div id="_ac-title" style="font-family:Cormorant Garamond,serif;font-size:21px;color:var(--tx);line-height:1.3;margin-bottom:'+(body?'8px':'16px')+'">'+_escFew(title)+'</div>'+
+        '<div id="_ac-title" style="font-family:Cormorant Garamond,serif;font-size:21px;color:var(--tx);line-height:1.3;white-space:pre-wrap;margin-bottom:'+(body?'8px':'16px')+'">'+_escFew(title)+'</div>'+
         (body ? '<div id="_ac-body" style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:16px;white-space:pre-wrap">'+_escFew(body)+'</div>' : '')+
         '<button class="btn" id="_ac-yes" style="margin-bottom:8px;'+(danger
           ? 'background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re)'

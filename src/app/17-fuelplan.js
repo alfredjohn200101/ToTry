@@ -648,12 +648,29 @@ function renderCalendarDay(){
   if(!dayEvents.length){
     html += '<div class="empty-note">Nothing scheduled today.<br>Tap "+ Add one" to block something in.</div>';
   } else {
-    const nowMin = today.getHours()*60 + today.getMinutes();
+    // "PASSED" MEANS PASSED NOW, ON THE DAY YOU ARE LOOKING AT. `today` is noon of the VIEWED date
+    // when you arrive from the month grid, so this made nowMin a hard 720 — an event at 09:00 next
+    // Sunday rendered greyed out as though it had already happened, and an 18:00 two weeks ago
+    // rendered live. A day that is not today has no "now": nothing on it is passed or pending.
+    const _real = new Date();
+    const _viewingToday = today.toDateString() === _real.toDateString();
+    const nowMin = _viewingToday ? (_real.getHours()*60 + _real.getMinutes()) : null;
     dayEvents.forEach(e => {
       const col = CAL_TYPE_COLORS[e.type] || CAL_TYPE_COLORS.other;
       const time = e.start + (e.end ? '\u2013'+e.end : '');
       const [sh,sm]=(e.start||'0:0').split(':').map(Number);
-      const isPast = e.end ? false : (sh*60+(sm||0) < nowMin - 60);
+      // AND AN END TIME IS A REASON TO DECIDE, NOT TO GIVE UP. `e.end ? false` meant the events the
+      // app knows most about — a 12:00-13:00 lift, a 9-5 shift, anything the roster parser fills an
+      // end for — could never read as finished, while a vaguer no-end entry could. Dim once the end
+      // has passed; wrap past midnight the way renderCalInsight does for overnight shifts.
+      const _startMin = sh*60+(sm||0);
+      let _endMin = null;
+      if(e.end){
+        const [eh,em] = String(e.end).split(':').map(Number);
+        if(isFinite(eh)){ _endMin = eh*60+(em||0); if(_endMin < _startMin) _endMin += 1440; }
+      }
+      const isPast = (nowMin == null) ? false
+        : (_endMin != null ? (_endMin < nowMin) : (_startMin < nowMin - 60));
       html += '<div onclick="editCalEvent('+e.id+')" style="display:flex;align-items:center;gap:12px;padding:12px 13px;margin-bottom:7px;background:var(--bg3);border-radius:9px;border-left:3px solid '+col+';cursor:pointer;opacity:'+(isPast?'0.5':'1')+'">'+
         '<div style="font-family:DM Mono,monospace;font-size:12px;color:'+col+';flex-shrink:0;min-width:46px">'+(e.start||'')+'</div>'+
         '<div style="flex:1;min-width:0"><div style="font-size:14px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_escFew(e.title)+'</div>'+

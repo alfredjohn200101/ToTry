@@ -32188,12 +32188,29 @@ function renderCalendarDay(){
   if(!dayEvents.length){
     html += '<div class="empty-note">Nothing scheduled today.<br>Tap "+ Add one" to block something in.</div>';
   } else {
-    const nowMin = today.getHours()*60 + today.getMinutes();
+    // "PASSED" MEANS PASSED NOW, ON THE DAY YOU ARE LOOKING AT. `today` is noon of the VIEWED date
+    // when you arrive from the month grid, so this made nowMin a hard 720 — an event at 09:00 next
+    // Sunday rendered greyed out as though it had already happened, and an 18:00 two weeks ago
+    // rendered live. A day that is not today has no "now": nothing on it is passed or pending.
+    const _real = new Date();
+    const _viewingToday = today.toDateString() === _real.toDateString();
+    const nowMin = _viewingToday ? (_real.getHours()*60 + _real.getMinutes()) : null;
     dayEvents.forEach(e => {
       const col = CAL_TYPE_COLORS[e.type] || CAL_TYPE_COLORS.other;
       const time = e.start + (e.end ? '\u2013'+e.end : '');
       const [sh,sm]=(e.start||'0:0').split(':').map(Number);
-      const isPast = e.end ? false : (sh*60+(sm||0) < nowMin - 60);
+      // AND AN END TIME IS A REASON TO DECIDE, NOT TO GIVE UP. `e.end ? false` meant the events the
+      // app knows most about — a 12:00-13:00 lift, a 9-5 shift, anything the roster parser fills an
+      // end for — could never read as finished, while a vaguer no-end entry could. Dim once the end
+      // has passed; wrap past midnight the way renderCalInsight does for overnight shifts.
+      const _startMin = sh*60+(sm||0);
+      let _endMin = null;
+      if(e.end){
+        const [eh,em] = String(e.end).split(':').map(Number);
+        if(isFinite(eh)){ _endMin = eh*60+(em||0); if(_endMin < _startMin) _endMin += 1440; }
+      }
+      const isPast = (nowMin == null) ? false
+        : (_endMin != null ? (_endMin < nowMin) : (_startMin < nowMin - 60));
       html += '<div onclick="editCalEvent('+e.id+')" style="display:flex;align-items:center;gap:12px;padding:12px 13px;margin-bottom:7px;background:var(--bg3);border-radius:9px;border-left:3px solid '+col+';cursor:pointer;opacity:'+(isPast?'0.5':'1')+'">'+
         '<div style="font-family:DM Mono,monospace;font-size:12px;color:'+col+';flex-shrink:0;min-width:46px">'+(e.start||'')+'</div>'+
         '<div style="flex:1;min-width:0"><div style="font-size:14px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_escFew(e.title)+'</div>'+
@@ -40123,6 +40140,17 @@ function computeDayActivity(){
   (ls('totry_wins') || []).forEach(w => addDate(w.ts));
   (ls('totry_fight_log') || []).forEach(f => addDate(f.ts));
   (ls('totry_prayers') || []).forEach(p => addDate(p.createdAt));
+  // THREE GOOD THINGS COUNTS AS SHOWING UP. It is stored per day, synced and backed up, and until
+  // now nothing anywhere read it back — so a day someone wrote three good things on scored zero
+  // here, and tapping that cell said "A quiet day · Nothing logged this day". The keys are already
+  // DD/MM/YYYY, so they go straight in rather than through addDate.
+  try{
+    const _tgt = ls('totry_tgt') || {};
+    Object.keys(_tgt).forEach(function(k){
+      const e = _tgt[k];
+      if(e && (e.a || e.b || e.c)) map[k] = (map[k] || 0) + 1;
+    });
+  }catch(_){ }
   return map;
 }
 
@@ -40248,6 +40276,12 @@ function showDayActivityDetail(dateKey){
   (ls('totry_wins') || []).forEach(w => { if(matchDate(w.ts)) items.push({kind: 'Win', text: w.text?.slice(0, 80)}); });
   (ls('totry_fight_log') || []).forEach(f => { if(matchDate(f.ts)) items.push({kind: f.won ? 'Fight won' : 'Fight lost', text: f.vice + (f.trigger ? ' · ' + f.trigger : '')}); });
   (ls('totry_prayers') || []).forEach(p => { if(matchDate(p.createdAt)) items.push({kind: 'Prayer added', text: p.text?.slice(0, 80)}); });
+  // ...and it is readable back. getTGT() has always taken a date parameter that nothing passed.
+  try{
+    const _t = (typeof getTGT === 'function') ? getTGT(dateKey) : null;
+    if(_t && (_t.a || _t.b || _t.c))
+      items.push({ kind: 'Three good things', text: [_t.a, _t.b, _t.c].filter(Boolean).join(' \u00b7 ') });
+  }catch(_){ }
   // Nutrition logged that day
   const nutLog = (ls('totry_nutlog') || {})[dateKey];
   if(nutLog && nutLog.length){
@@ -43106,7 +43140,7 @@ function askConfirm(title, body, opts){
     const danger = opts.danger !== false;         // destructive unless told otherwise
     m.innerHTML =
       '<div class="modal" style="text-align:left;max-width:340px">'+
-        '<div id="_ac-title" style="font-family:Cormorant Garamond,serif;font-size:21px;color:var(--tx);line-height:1.3;margin-bottom:'+(body?'8px':'16px')+'">'+_escFew(title)+'</div>'+
+        '<div id="_ac-title" style="font-family:Cormorant Garamond,serif;font-size:21px;color:var(--tx);line-height:1.3;white-space:pre-wrap;margin-bottom:'+(body?'8px':'16px')+'">'+_escFew(title)+'</div>'+
         (body ? '<div id="_ac-body" style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:16px;white-space:pre-wrap">'+_escFew(body)+'</div>' : '')+
         '<button class="btn" id="_ac-yes" style="margin-bottom:8px;'+(danger
           ? 'background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re)'

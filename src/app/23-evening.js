@@ -597,6 +597,17 @@ function computeDayActivity(){
   (ls('totry_wins') || []).forEach(w => addDate(w.ts));
   (ls('totry_fight_log') || []).forEach(f => addDate(f.ts));
   (ls('totry_prayers') || []).forEach(p => addDate(p.createdAt));
+  // THREE GOOD THINGS COUNTS AS SHOWING UP. It is stored per day, synced and backed up, and until
+  // now nothing anywhere read it back — so a day someone wrote three good things on scored zero
+  // here, and tapping that cell said "A quiet day · Nothing logged this day". The keys are already
+  // DD/MM/YYYY, so they go straight in rather than through addDate.
+  try{
+    const _tgt = ls('totry_tgt') || {};
+    Object.keys(_tgt).forEach(function(k){
+      const e = _tgt[k];
+      if(e && (e.a || e.b || e.c)) map[k] = (map[k] || 0) + 1;
+    });
+  }catch(_){ }
   return map;
 }
 
@@ -722,6 +733,12 @@ function showDayActivityDetail(dateKey){
   (ls('totry_wins') || []).forEach(w => { if(matchDate(w.ts)) items.push({kind: 'Win', text: w.text?.slice(0, 80)}); });
   (ls('totry_fight_log') || []).forEach(f => { if(matchDate(f.ts)) items.push({kind: f.won ? 'Fight won' : 'Fight lost', text: f.vice + (f.trigger ? ' · ' + f.trigger : '')}); });
   (ls('totry_prayers') || []).forEach(p => { if(matchDate(p.createdAt)) items.push({kind: 'Prayer added', text: p.text?.slice(0, 80)}); });
+  // ...and it is readable back. getTGT() has always taken a date parameter that nothing passed.
+  try{
+    const _t = (typeof getTGT === 'function') ? getTGT(dateKey) : null;
+    if(_t && (_t.a || _t.b || _t.c))
+      items.push({ kind: 'Three good things', text: [_t.a, _t.b, _t.c].filter(Boolean).join(' \u00b7 ') });
+  }catch(_){ }
   // Nutrition logged that day
   const nutLog = (ls('totry_nutlog') || {})[dateKey];
   if(nutLog && nutLog.length){
