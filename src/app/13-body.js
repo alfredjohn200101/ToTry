@@ -991,7 +991,11 @@ function renderBody(){
     const bmiEmpty = document.getElementById('bod-bmi'); if(bmiEmpty) bmiEmpty.textContent = '';
   }
   if(weighed.length>=2){
-    const pts=weighed.slice(0,12).reverse(),weights=pts.map(e=>e.weight),mn=Math.min(...weights),mx=Math.max(...weights),range=mx-mn||1,W=340,H=90,pad=12;
+    const pts=weighed.slice(0,12).reverse(),weights=pts.map(e=>e.weight),mn=Math.min(...weights),mx=Math.max(...weights),range=mx-mn||1,W=340,H=90,
+      // The peak's label sits 8 above the point and needs ~6 more for its own ascent, so a 12
+      // pad clipped the highest weigh-in's number on every single render — the one number on
+      // the chart a person looks for first.
+      pad=18;
     const x=i=>pad+(i/(pts.length-1))*(W-2*pad);const y=w=>H-pad-((w-mn)/range)*(H-2*pad);
     const pathD=pts.map((p,i)=>(i===0?'M':'L')+x(i).toFixed(1)+','+y(p.weight).toFixed(1)).join(' ');
     const svg=document.getElementById('weight-chart');
@@ -1187,14 +1191,14 @@ function openMeasurementLogger(){
     '<h3 style="margin-bottom:6px">Log measurements</h3>' +
     '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Same tape, same time of day, every time. Decimal places ok (e.g. 87.5).</p>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
-      '<div><div class="eyebrow">Waist (cm)</div><input type="number" id="meas-waist" step="0.5" placeholder="' + (last.waist || '') + '" value="' + (last.waist || '') + '"></div>' +
-      '<div><div class="eyebrow">Chest (cm)</div><input type="number" id="meas-chest" step="0.5" placeholder="' + (last.chest || '') + '" value="' + (last.chest || '') + '"></div>' +
-      '<div><div class="eyebrow">Arm L (cm)</div><input type="number" id="meas-arml" step="0.5" placeholder="' + (last.armL || '') + '" value="' + (last.armL || '') + '"></div>' +
-      '<div><div class="eyebrow">Arm R (cm)</div><input type="number" id="meas-armr" step="0.5" placeholder="' + (last.armR || '') + '" value="' + (last.armR || '') + '"></div>' +
-      '<div><div class="eyebrow">Thigh L (cm)</div><input type="number" id="meas-thighl" step="0.5" placeholder="' + (last.thighL || '') + '" value="' + (last.thighL || '') + '"></div>' +
-      '<div><div class="eyebrow">Thigh R (cm)</div><input type="number" id="meas-thighr" step="0.5" placeholder="' + (last.thighR || '') + '" value="' + (last.thighR || '') + '"></div>' +
-      '<div><div class="eyebrow">Neck (cm)</div><input type="number" id="meas-neck" step="0.5" placeholder="' + (last.neck || '') + '" value="' + (last.neck || '') + '"></div>' +
-      '<div><div class="eyebrow">Body fat % (opt)</div><input type="number" id="meas-bf" step="0.1" placeholder="' + (last.bf || '') + '" value="' + (last.bf || '') + '"></div>' +
+      '<div><div class="eyebrow">Waist (cm)</div><input type="number" id="meas-waist" step="0.5" placeholder="' + (last.waist || '') + '"></div>' +
+      '<div><div class="eyebrow">Chest (cm)</div><input type="number" id="meas-chest" step="0.5" placeholder="' + (last.chest || '') + '"></div>' +
+      '<div><div class="eyebrow">Arm L (cm)</div><input type="number" id="meas-arml" step="0.5" placeholder="' + (last.armL || '') + '"></div>' +
+      '<div><div class="eyebrow">Arm R (cm)</div><input type="number" id="meas-armr" step="0.5" placeholder="' + (last.armR || '') + '"></div>' +
+      '<div><div class="eyebrow">Thigh L (cm)</div><input type="number" id="meas-thighl" step="0.5" placeholder="' + (last.thighL || '') + '"></div>' +
+      '<div><div class="eyebrow">Thigh R (cm)</div><input type="number" id="meas-thighr" step="0.5" placeholder="' + (last.thighR || '') + '"></div>' +
+      '<div><div class="eyebrow">Neck (cm)</div><input type="number" id="meas-neck" step="0.5" placeholder="' + (last.neck || '') + '"></div>' +
+      '<div><div class="eyebrow">Body fat % (opt)</div><input type="number" id="meas-bf" step="0.1" placeholder="' + (last.bf || '') + '"></div>' +
     '</div>' +
     // Evolt 360 body scan section — for Revo gym users with access to the scanner
     '<details style="margin-bottom:14px">' +
@@ -1202,12 +1206,12 @@ function openMeasurementLogger(){
       '<div style="padding:12px 2px 0">' +
         '<p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Got a body scan at the gym (Evolt 360 / InBody)? Enter the key numbers from your printout to track composition over time.</p>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
-          '<div><div class="eyebrow">Skeletal muscle (kg)</div><input type="number" id="meas-smm" step="0.1" placeholder="' + (last.smm || '') + '" value="' + (last.smm || '') + '"></div>' +
-          '<div><div class="eyebrow">Body fat mass (kg)</div><input type="number" id="meas-fatmass" step="0.1" placeholder="' + (last.fatMass || '') + '" value="' + (last.fatMass || '') + '"></div>' +
-          '<div><div class="eyebrow">Visceral fat level</div><input type="number" id="meas-visceral" step="0.5" placeholder="' + (last.visceral || '') + '" value="' + (last.visceral || '') + '"></div>' +
-          '<div><div class="eyebrow">Total body water (%)</div><input type="number" id="meas-tbw" step="0.1" placeholder="' + (last.tbw || '') + '" value="' + (last.tbw || '') + '"></div>' +
-          '<div><div class="eyebrow">BMR (cal)</div><input type="number" id="meas-bmr" step="1" placeholder="' + (last.bmr || '') + '" value="' + (last.bmr || '') + '"></div>' +
-          '<div><div class="eyebrow">Evolt points</div><input type="number" id="meas-evoltpts" step="1" placeholder="' + (last.evoltPts || '') + '" value="' + (last.evoltPts || '') + '"></div>' +
+          '<div><div class="eyebrow">Skeletal muscle (kg)</div><input type="number" id="meas-smm" step="0.1" placeholder="' + (last.smm || '') + '"></div>' +
+          '<div><div class="eyebrow">Body fat mass (kg)</div><input type="number" id="meas-fatmass" step="0.1" placeholder="' + (last.fatMass || '') + '"></div>' +
+          '<div><div class="eyebrow">Visceral fat level</div><input type="number" id="meas-visceral" step="0.5" placeholder="' + (last.visceral || '') + '"></div>' +
+          '<div><div class="eyebrow">Total body water (%)</div><input type="number" id="meas-tbw" step="0.1" placeholder="' + (last.tbw || '') + '"></div>' +
+          '<div><div class="eyebrow">BMR (cal)</div><input type="number" id="meas-bmr" step="1" placeholder="' + (last.bmr || '') + '"></div>' +
+          '<div><div class="eyebrow">Evolt points</div><input type="number" id="meas-evoltpts" step="1" placeholder="' + (last.evoltPts || '') + '"></div>' +
         '</div>' +
       '</div>' +
     '</details>' +
@@ -1221,10 +1225,24 @@ function saveMeasurement(){
   const keys = ['waist','chest','armL','armR','thighL','thighR','neck','bf','smm','fatMass','visceral','tbw','bmr','evoltPts'];
   const entry = {date: new Date().toLocaleDateString('en-AU'), ts: new Date().toISOString()};
   let any = false;
+  // A BAND, LIKE THE WEIGH-IN HAS. Any positive number was accepted, so a fat-fingered 400 became a
+  // permanent baseline that poisoned every "since your first snapshot" line after it — and there was
+  // no edit and no delete for anything but the newest row, so it could not be taken back.
+  const BANDS = { waist:[30,250], chest:[40,250], armL:[10,100], armR:[10,100], thighL:[20,120],
+                  thighR:[20,120], neck:[15,80], bf:[1,70], smm:[5,120], fatMass:[1,200],
+                  visceral:[1,60], tbw:[5,120], bmr:[500,6000], evoltPts:[0,1000] };
+  const rejected = [];
   vals.forEach((id, i) => {
     const v = parseFloat(document.getElementById('meas-' + id)?.value);
-    if(v && v > 0){ entry[keys[i]] = v; any = true; }
+    if(!(v && v > 0)) return;
+    const band = BANDS[keys[i]];
+    if(band && (v < band[0] || v > band[1])){ rejected.push(keys[i] + ' (' + v + ')'); return; }
+    entry[keys[i]] = v; any = true;
   });
+  if(rejected.length){
+    showToast('Check that number', rejected.join(', ') + ' looks like a typo, so I have not saved it. Everything else is fine.');
+    if(!any) return;
+  }
   if(!any){ showToast('Empty', 'Add at least one measurement.'); return; }
   const list = ls('totry_measurements') || [];
   list.unshift(entry);
@@ -1275,7 +1293,7 @@ function renderMeasurements(){
     row.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
       '<div style="flex:1"><div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">' + e.date + '</div>' +
       '<div style="color:var(--tx2);margin-top:2px;line-height:1.5">' + parts.join(' · ') + '</div></div>' +
-      (i === 0 ? '<button onclick="deleteMeasurement(0)" style="background:none;border:none;color:var(--tx3);font-size:14px;cursor:pointer">×</button>' : '') +
+      '<button class="fli-del" onclick="deleteMeasurement(' + i + ')" aria-label="Delete this snapshot" style="min-width:32px;min-height:32px">\u00d7</button>' +
     '</div>';
     history.appendChild(row);
   });
