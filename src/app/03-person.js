@@ -2362,16 +2362,98 @@ function selectHevyTier(tier){
 // The signed-up path's aha. The name step earns its place because it changes THIS screen — nothing
 // else asked here would, so nothing else is asked here. Rendered from FEELINGS (one source of truth,
 // same chips as renderFeelingDoor) so the founder's demo and the real door can never drift apart.
+// THE PROGRESS DOTS HAD SIX MARKS FOR TWELVE SCREENS, and three different functions lit them with
+// hand-typed indices (i < 2, i < 3, i < step-1) — so they disagreed with each other AND with the
+// number of screens, and any screen added later inherited the bug by default. One ordered list, one
+// function, called from every transition.
+const OB_STEPS = ['ob1','ob-what','ob2','ob-moment','ob-apps','ob-fork','ob3','ob-why','ob-faith','ob4','ob5','ob6'];
+// A WAY BACK. Every onboarding transition moved forward and none returned; the phone's own back
+// gesture does nothing inside a single-page step flow, so a mistyped name or a season picked too
+// fast could only be undone by killing the app and starting again. Walks OB_STEPS, which is the
+// same order the dots use, so the two can never disagree about where "back" is.
+function obBack(){
+  try{
+    const act = document.querySelector('.ob-step.active');
+    const at = act ? OB_STEPS.indexOf(act.id) : -1;
+    if(at <= 0) return;
+    const prev = document.getElementById(OB_STEPS[at-1]);
+    if(!prev) return;
+    document.querySelectorAll('.ob-step').forEach(function(x){ x.classList.remove('active'); });
+    prev.classList.add('active');
+    try{ window.scrollTo(0,0); }catch(_){ }
+    if(typeof haptic === 'function') haptic('tap');
+  }catch(_){ }
+}
+function obDots(id){
+  try{
+    const row = document.getElementById('ob-prog');
+    if(!row) return;
+    // No argument means "whichever screen is showing" — see the observer below. Passing an id stays
+    // supported for the transitions that already knew where they were going.
+    if(id == null){ const act = document.querySelector('.ob-step.active'); id = act ? act.id : null; }
+    if(row.children.length !== OB_STEPS.length){
+      row.innerHTML = OB_STEPS.map(function(){ return '<div class="ob-dot"></div>'; }).join('');
+      row.setAttribute('role','progressbar');
+      row.setAttribute('aria-valuemin','1');
+      row.setAttribute('aria-valuemax',String(OB_STEPS.length));
+    }
+    const at = OB_STEPS.indexOf(id);
+    const n = at < 0 ? 1 : at + 1;
+    row.setAttribute('aria-valuenow', String(n));
+    row.setAttribute('aria-label', 'Step ' + n + ' of ' + OB_STEPS.length);
+    [...row.children].forEach(function(d,i){ d.classList.toggle('on', i < n); });
+    const back = document.getElementById('ob-back');
+    if(back) back.style.display = (at > 0) ? 'inline-flex' : 'none';
+  }catch(_){ }
+}
+// ...and it updates itself. Only three of the nine transitions called the old dot code, which is
+// how the row drifted out of step in the first place. Watching the .ob-step class means every
+// transition is covered, including ones written later. obDots only touches .ob-dot elements, so it
+// cannot retrigger this.
+try{
+  const _obRoot = document.getElementById('onboard');
+  if(_obRoot && typeof MutationObserver === 'function'){
+    new MutationObserver(function(muts){
+      for(let i=0;i<muts.length;i++){
+        const t = muts[i].target;
+        if(t && t.classList && t.classList.contains('ob-step')){ obDots(); return; }
+      }
+    }).observe(_obRoot, { subtree:true, attributes:true, attributeFilter:['class'] });
+  }
+}catch(_){ }
 function obNextToMoment(){
   const el = document.getElementById('ob-name');
   const n = el ? el.value.trim() : '';
-  if(!n){ if(el) el.style.borderColor = 'var(--re)'; return; }
+  if(!n){
+    // A RED BORDER AND NOTHING ELSE. The step just refused to advance with no word about why, which
+    // reads as the button being broken rather than the field being empty — on the second screen of
+    // the app, before anyone has any reason to trust it.
+    if(el){
+      el.style.borderColor = 'var(--re)';
+      el.setAttribute('aria-invalid','true');
+      let msg = document.getElementById('ob-name-err');
+      if(!msg){
+        msg = document.createElement('div');
+        msg.id = 'ob-name-err';
+        msg.setAttribute('role','alert');
+        msg.style.cssText = 'font-size:12px;color:var(--re);margin-top:6px;line-height:1.5';
+        el.insertAdjacentElement('afterend', msg);
+      }
+      msg.textContent = 'What should I call you? First name is plenty.';
+      try{ el.focus(); }catch(_){ }
+    }
+    return;
+  }
+  try{
+    const _err = document.getElementById('ob-name-err'); if(_err) _err.remove();
+    if(el){ el.style.borderColor = ''; el.removeAttribute('aria-invalid'); }
+  }catch(_){ }
   try{ userName = n; }catch(_){}
   ls('totry_name', n);
   renderObMoment();
   document.querySelectorAll('.ob-step').forEach(s => s.classList.remove('active'));
   document.getElementById('ob-moment').classList.add('active');
-  document.querySelectorAll('.ob-dot').forEach((d,i) => d.classList.toggle('on', i < 2));
+  obDots('ob-moment');
   window.scrollTo(0,0);
 }
 function renderObMoment(){
@@ -2450,7 +2532,7 @@ function finishAppsStep(){
   document.querySelectorAll('.ob-step').forEach(s => s.classList.remove('active'));
   document.getElementById('ob-fork').classList.add('active');
   // Update progress dots
-  document.querySelectorAll('.ob-dot').forEach((d, i) => d.classList.toggle('on', i < 3));
+  obDots('ob3');
   window.scrollTo(0, 0);
 }
 
@@ -2482,7 +2564,19 @@ function fillWhy(text){
 
 function obNextToWhy(){
   // Save identity first
-  const identity=document.getElementById('ob-identity')?.value.trim();
+  const _identityRaw=document.getElementById('ob-identity')?.value.trim();
+  // STORE IT THE WAY THE REST OF THE APP STORES IT. saveIdentity() prefixes "I am becoming a person
+  // who ..." when the person did not type it; onboarding wrote the bare fragment, so Home and the
+  // coach met a sentence with no subject — and the two doors to the same field disagreed about what
+  // a stored identity looks like.
+  const identity = (function(){
+    const t = _identityRaw || '';
+    if(!t) return t;
+    const lower = t.toLowerCase();
+    if(lower.startsWith('i am becoming a person who')) return t;
+    if(lower.startsWith('who ')) return 'I am becoming a person ' + t;
+    return 'I am becoming a person who ' + t.replace(/^who /i, '');
+  })();
   // THE FIRST THING A PERSON EVER TYPES IN THIS APP, and it had no crisis gate. Someone answering
   // "I am becoming a person who...", "Why does this matter?" or "what are you fighting?" honestly at
   // their worst got no helpline — the sentence was stored verbatim and echoed back to them as their
@@ -2559,7 +2653,7 @@ function obNext(step){
   const targetId = (typeof step === 'string' && step.startsWith('ob')) ? step : ('ob'+step);
   document.getElementById(targetId).classList.add('active');
   if(typeof step === 'number'){
-    document.querySelectorAll('.ob-dot').forEach((d,i)=>d.classList.toggle('on',i<step-1));
+    obDots(OB_STEPS[Math.max(0, Math.min(OB_STEPS.length-1, step-1))]);
   }
   window.scrollTo(0,0);
 }

@@ -610,6 +610,9 @@ async function proceedAfterAuth(user){
     } else {
       document.getElementById('onboard').classList.add('active');
       document.getElementById('onboard').style.display = 'block';
+      // Paint the progress row for screen one. The observer covers every transition AFTER this, but
+      // the first screen is not a transition, so without this the row is empty until you move.
+      try{ if(typeof obDots === 'function') obDots(); }catch(_){ }
       try{ const sc=document.getElementById('ob-chip-strava'); if(sc && typeof isStravaApproved==='function' && isStravaApproved()) sc.style.display=''; }catch(_){}
         try{ const gh=document.getElementById('ob-chip-googlehealth'); if(gh && !(typeof isNativeApp==='function' && isNativeApp())) gh.style.display=''; }catch(_){}
     }

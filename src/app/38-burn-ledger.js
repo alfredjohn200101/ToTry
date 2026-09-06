@@ -75,7 +75,15 @@ async function syncHevyWorkouts(){
         resp = await hevyFetch('/v1/workouts?page=' + page + '&pageSize=' + pageSize, 'GET');
       }catch(e){
         console.warn('[hevy] sync via proxy failed', e);
-        showToast('Hevy sync failed', 'Hevy error: ' + ((e && e.message) ? String(e.message).slice(0,90) : 'no detail') + '. Key saved — if this repeats, redeploy the ai-proxy function.');
+        {
+          const _m = (e && e.message) ? String(e.message) : '';
+          const _offline = (typeof navigator !== 'undefined' && navigator.onLine === false) ||
+                           /network|failed to fetch|load failed|timeout|abort/i.test(_m);
+          showToast(_offline ? 'No connection' : 'Hevy sync failed',
+            _offline
+              ? 'Your key is saved. I will pull your sessions in as soon as you are back online.'
+              : 'Your key is saved and I will keep trying. Nothing you did is wrong \u2014 Hevy did not answer this time.');
+        }
         break;
       }
       if(!resp || !resp.ok){

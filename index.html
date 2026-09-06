@@ -1129,7 +1129,7 @@ body{font-variant-numeric:lining-nums}
    which is exactly 30px. Re-listing them here and setting line-height:30px stacked the padding on top
    of a taller line box, so the two phone numbers a person reaches for first grew to 40px and sat off
    their own baseline. Match that rule instead of overriding it, so every crisis link is one shape. */
-a[href^="sms:"], .crisis-line a, .crisis-card a{
+a[href^="sms:"], .crisis-line a, .crisis-card a, .crisis-links a{
   display:inline-block;padding:5px 6px;margin:1px -2px;min-height:30px;
   line-height:20px;box-sizing:border-box}
 
@@ -1435,7 +1435,7 @@ input:focus,textarea:focus,select:focus{
          and can't get in, the numbers still have to be right here, one tap, on the first screen. -->
     <div style="margin-top:22px;padding-top:14px;border-top:1px solid var(--bd);text-align:center">
       <div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:8px">If you need real help right now, you don&apos;t need an account:</div>
-      <div style="font-size:12.5px;line-height:1.9;color:var(--tx3)">
+      <div class="crisis-links" style="font-size:12.5px;line-height:1.9;color:var(--tx3)">
         &#127462;&#127482; Lifeline <a href="tel:131114" style="color:var(--go);text-decoration:none">13 11 14</a> &nbsp;·&nbsp; Beyond Blue <a href="tel:1300224636" style="color:var(--go);text-decoration:none">1300 22 4636</a><br>
         &#127482;&#127480; <a href="tel:988" style="color:var(--go);text-decoration:none">988</a> &nbsp;·&nbsp; &#127468;&#127463; Samaritans <a href="tel:116123" style="color:var(--go);text-decoration:none">116 123</a><br>
         &#127760; <a href="https://findahelpline.com" target="_blank" rel="noopener" style="color:var(--bl);text-decoration:none">findahelpline.com</a> &mdash; anywhere in the world
@@ -1492,7 +1492,13 @@ input:focus,textarea:focus,select:focus{
 </div>
 
 <div class="ob" id="onboard">
-  <div class="ob-prog"><div class="ob-dot on"></div><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot"></div></div>
+  <!-- TWELVE SCREENS AND NO WAY BACK. Every step advanced and none returned, so a mistyped name or a
+       season chosen too fast could only be undone by killing the app and starting over — and the
+       phone's own back gesture does nothing here. obDots() hides this on the first screen. -->
+  <button id="ob-back" type="button" onclick="obBack()" aria-label="Back a step"
+          style="display:none;position:absolute;top:calc(var(--st,0px) + 10px);left:10px;min-width:44px;min-height:44px;background:none;border:none;color:var(--tx3);font-size:22px;line-height:1;cursor:pointer;z-index:5">&#8249;</button>
+  <!-- Filled by obDots() from OB_STEPS, so a new screen cannot leave the row one short. -->
+  <div class="ob-prog" id="ob-prog"></div>
   <div class="ob-step active" id="ob1">
     <div class="ob-logo">To<em>Try</em></div>
     <div class="ob-by">by Alfred John</div>
@@ -5470,6 +5476,9 @@ async function proceedAfterAuth(user){
     } else {
       document.getElementById('onboard').classList.add('active');
       document.getElementById('onboard').style.display = 'block';
+      // Paint the progress row for screen one. The observer covers every transition AFTER this, but
+      // the first screen is not a transition, so without this the row is empty until you move.
+      try{ if(typeof obDots === 'function') obDots(); }catch(_){ }
       try{ const sc=document.getElementById('ob-chip-strava'); if(sc && typeof isStravaApproved==='function' && isStravaApproved()) sc.style.display=''; }catch(_){}
         try{ const gh=document.getElementById('ob-chip-googlehealth'); if(gh && !(typeof isNativeApp==='function' && isNativeApp())) gh.style.display=''; }catch(_){}
     }
@@ -10158,16 +10167,98 @@ function selectHevyTier(tier){
 // The signed-up path's aha. The name step earns its place because it changes THIS screen — nothing
 // else asked here would, so nothing else is asked here. Rendered from FEELINGS (one source of truth,
 // same chips as renderFeelingDoor) so the founder's demo and the real door can never drift apart.
+// THE PROGRESS DOTS HAD SIX MARKS FOR TWELVE SCREENS, and three different functions lit them with
+// hand-typed indices (i < 2, i < 3, i < step-1) — so they disagreed with each other AND with the
+// number of screens, and any screen added later inherited the bug by default. One ordered list, one
+// function, called from every transition.
+const OB_STEPS = ['ob1','ob-what','ob2','ob-moment','ob-apps','ob-fork','ob3','ob-why','ob-faith','ob4','ob5','ob6'];
+// A WAY BACK. Every onboarding transition moved forward and none returned; the phone's own back
+// gesture does nothing inside a single-page step flow, so a mistyped name or a season picked too
+// fast could only be undone by killing the app and starting again. Walks OB_STEPS, which is the
+// same order the dots use, so the two can never disagree about where "back" is.
+function obBack(){
+  try{
+    const act = document.querySelector('.ob-step.active');
+    const at = act ? OB_STEPS.indexOf(act.id) : -1;
+    if(at <= 0) return;
+    const prev = document.getElementById(OB_STEPS[at-1]);
+    if(!prev) return;
+    document.querySelectorAll('.ob-step').forEach(function(x){ x.classList.remove('active'); });
+    prev.classList.add('active');
+    try{ window.scrollTo(0,0); }catch(_){ }
+    if(typeof haptic === 'function') haptic('tap');
+  }catch(_){ }
+}
+function obDots(id){
+  try{
+    const row = document.getElementById('ob-prog');
+    if(!row) return;
+    // No argument means "whichever screen is showing" — see the observer below. Passing an id stays
+    // supported for the transitions that already knew where they were going.
+    if(id == null){ const act = document.querySelector('.ob-step.active'); id = act ? act.id : null; }
+    if(row.children.length !== OB_STEPS.length){
+      row.innerHTML = OB_STEPS.map(function(){ return '<div class="ob-dot"></div>'; }).join('');
+      row.setAttribute('role','progressbar');
+      row.setAttribute('aria-valuemin','1');
+      row.setAttribute('aria-valuemax',String(OB_STEPS.length));
+    }
+    const at = OB_STEPS.indexOf(id);
+    const n = at < 0 ? 1 : at + 1;
+    row.setAttribute('aria-valuenow', String(n));
+    row.setAttribute('aria-label', 'Step ' + n + ' of ' + OB_STEPS.length);
+    [...row.children].forEach(function(d,i){ d.classList.toggle('on', i < n); });
+    const back = document.getElementById('ob-back');
+    if(back) back.style.display = (at > 0) ? 'inline-flex' : 'none';
+  }catch(_){ }
+}
+// ...and it updates itself. Only three of the nine transitions called the old dot code, which is
+// how the row drifted out of step in the first place. Watching the .ob-step class means every
+// transition is covered, including ones written later. obDots only touches .ob-dot elements, so it
+// cannot retrigger this.
+try{
+  const _obRoot = document.getElementById('onboard');
+  if(_obRoot && typeof MutationObserver === 'function'){
+    new MutationObserver(function(muts){
+      for(let i=0;i<muts.length;i++){
+        const t = muts[i].target;
+        if(t && t.classList && t.classList.contains('ob-step')){ obDots(); return; }
+      }
+    }).observe(_obRoot, { subtree:true, attributes:true, attributeFilter:['class'] });
+  }
+}catch(_){ }
 function obNextToMoment(){
   const el = document.getElementById('ob-name');
   const n = el ? el.value.trim() : '';
-  if(!n){ if(el) el.style.borderColor = 'var(--re)'; return; }
+  if(!n){
+    // A RED BORDER AND NOTHING ELSE. The step just refused to advance with no word about why, which
+    // reads as the button being broken rather than the field being empty — on the second screen of
+    // the app, before anyone has any reason to trust it.
+    if(el){
+      el.style.borderColor = 'var(--re)';
+      el.setAttribute('aria-invalid','true');
+      let msg = document.getElementById('ob-name-err');
+      if(!msg){
+        msg = document.createElement('div');
+        msg.id = 'ob-name-err';
+        msg.setAttribute('role','alert');
+        msg.style.cssText = 'font-size:12px;color:var(--re);margin-top:6px;line-height:1.5';
+        el.insertAdjacentElement('afterend', msg);
+      }
+      msg.textContent = 'What should I call you? First name is plenty.';
+      try{ el.focus(); }catch(_){ }
+    }
+    return;
+  }
+  try{
+    const _err = document.getElementById('ob-name-err'); if(_err) _err.remove();
+    if(el){ el.style.borderColor = ''; el.removeAttribute('aria-invalid'); }
+  }catch(_){ }
   try{ userName = n; }catch(_){}
   ls('totry_name', n);
   renderObMoment();
   document.querySelectorAll('.ob-step').forEach(s => s.classList.remove('active'));
   document.getElementById('ob-moment').classList.add('active');
-  document.querySelectorAll('.ob-dot').forEach((d,i) => d.classList.toggle('on', i < 2));
+  obDots('ob-moment');
   window.scrollTo(0,0);
 }
 function renderObMoment(){
@@ -10246,7 +10337,7 @@ function finishAppsStep(){
   document.querySelectorAll('.ob-step').forEach(s => s.classList.remove('active'));
   document.getElementById('ob-fork').classList.add('active');
   // Update progress dots
-  document.querySelectorAll('.ob-dot').forEach((d, i) => d.classList.toggle('on', i < 3));
+  obDots('ob3');
   window.scrollTo(0, 0);
 }
 
@@ -10278,7 +10369,19 @@ function fillWhy(text){
 
 function obNextToWhy(){
   // Save identity first
-  const identity=document.getElementById('ob-identity')?.value.trim();
+  const _identityRaw=document.getElementById('ob-identity')?.value.trim();
+  // STORE IT THE WAY THE REST OF THE APP STORES IT. saveIdentity() prefixes "I am becoming a person
+  // who ..." when the person did not type it; onboarding wrote the bare fragment, so Home and the
+  // coach met a sentence with no subject — and the two doors to the same field disagreed about what
+  // a stored identity looks like.
+  const identity = (function(){
+    const t = _identityRaw || '';
+    if(!t) return t;
+    const lower = t.toLowerCase();
+    if(lower.startsWith('i am becoming a person who')) return t;
+    if(lower.startsWith('who ')) return 'I am becoming a person ' + t;
+    return 'I am becoming a person who ' + t.replace(/^who /i, '');
+  })();
   // THE FIRST THING A PERSON EVER TYPES IN THIS APP, and it had no crisis gate. Someone answering
   // "I am becoming a person who...", "Why does this matter?" or "what are you fighting?" honestly at
   // their worst got no helpline — the sentence was stored verbatim and echoed back to them as their
@@ -10355,7 +10458,7 @@ function obNext(step){
   const targetId = (typeof step === 'string' && step.startsWith('ob')) ? step : ('ob'+step);
   document.getElementById(targetId).classList.add('active');
   if(typeof step === 'number'){
-    document.querySelectorAll('.ob-dot').forEach((d,i)=>d.classList.toggle('on',i<step-1));
+    obDots(OB_STEPS[Math.max(0, Math.min(OB_STEPS.length-1, step-1))]);
   }
   window.scrollTo(0,0);
 }
@@ -48848,7 +48951,15 @@ async function syncHevyWorkouts(){
         resp = await hevyFetch('/v1/workouts?page=' + page + '&pageSize=' + pageSize, 'GET');
       }catch(e){
         console.warn('[hevy] sync via proxy failed', e);
-        showToast('Hevy sync failed', 'Hevy error: ' + ((e && e.message) ? String(e.message).slice(0,90) : 'no detail') + '. Key saved — if this repeats, redeploy the ai-proxy function.');
+        {
+          const _m = (e && e.message) ? String(e.message) : '';
+          const _offline = (typeof navigator !== 'undefined' && navigator.onLine === false) ||
+                           /network|failed to fetch|load failed|timeout|abort/i.test(_m);
+          showToast(_offline ? 'No connection' : 'Hevy sync failed',
+            _offline
+              ? 'Your key is saved. I will pull your sessions in as soon as you are back online.'
+              : 'Your key is saved and I will keep trying. Nothing you did is wrong \u2014 Hevy did not answer this time.');
+        }
         break;
       }
       if(!resp || !resp.ok){

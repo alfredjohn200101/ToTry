@@ -1129,7 +1129,7 @@ body{font-variant-numeric:lining-nums}
    which is exactly 30px. Re-listing them here and setting line-height:30px stacked the padding on top
    of a taller line box, so the two phone numbers a person reaches for first grew to 40px and sat off
    their own baseline. Match that rule instead of overriding it, so every crisis link is one shape. */
-a[href^="sms:"], .crisis-line a, .crisis-card a{
+a[href^="sms:"], .crisis-line a, .crisis-card a, .crisis-links a{
   display:inline-block;padding:5px 6px;margin:1px -2px;min-height:30px;
   line-height:20px;box-sizing:border-box}
 
@@ -1435,7 +1435,7 @@ input:focus,textarea:focus,select:focus{
          and can't get in, the numbers still have to be right here, one tap, on the first screen. -->
     <div style="margin-top:22px;padding-top:14px;border-top:1px solid var(--bd);text-align:center">
       <div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:8px">If you need real help right now, you don&apos;t need an account:</div>
-      <div style="font-size:12.5px;line-height:1.9;color:var(--tx3)">
+      <div class="crisis-links" style="font-size:12.5px;line-height:1.9;color:var(--tx3)">
         &#127462;&#127482; Lifeline <a href="tel:131114" style="color:var(--go);text-decoration:none">13 11 14</a> &nbsp;·&nbsp; Beyond Blue <a href="tel:1300224636" style="color:var(--go);text-decoration:none">1300 22 4636</a><br>
         &#127482;&#127480; <a href="tel:988" style="color:var(--go);text-decoration:none">988</a> &nbsp;·&nbsp; &#127468;&#127463; Samaritans <a href="tel:116123" style="color:var(--go);text-decoration:none">116 123</a><br>
         &#127760; <a href="https://findahelpline.com" target="_blank" rel="noopener" style="color:var(--bl);text-decoration:none">findahelpline.com</a> &mdash; anywhere in the world
@@ -1492,7 +1492,13 @@ input:focus,textarea:focus,select:focus{
 </div>
 
 <div class="ob" id="onboard">
-  <div class="ob-prog"><div class="ob-dot on"></div><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot"></div><div class="ob-dot"></div></div>
+  <!-- TWELVE SCREENS AND NO WAY BACK. Every step advanced and none returned, so a mistyped name or a
+       season chosen too fast could only be undone by killing the app and starting over — and the
+       phone's own back gesture does nothing here. obDots() hides this on the first screen. -->
+  <button id="ob-back" type="button" onclick="obBack()" aria-label="Back a step"
+          style="display:none;position:absolute;top:calc(var(--st,0px) + 10px);left:10px;min-width:44px;min-height:44px;background:none;border:none;color:var(--tx3);font-size:22px;line-height:1;cursor:pointer;z-index:5">&#8249;</button>
+  <!-- Filled by obDots() from OB_STEPS, so a new screen cannot leave the row one short. -->
+  <div class="ob-prog" id="ob-prog"></div>
   <div class="ob-step active" id="ob1">
     <div class="ob-logo">To<em>Try</em></div>
     <div class="ob-by">by Alfred John</div>
