@@ -2935,7 +2935,7 @@ function addFoodToLog(){
     pro:Math.round((s.pro||0)*qty*10)/10,
     carb:Math.round((s.carb||0)*qty*10)/10,
     fat:Math.round((s.fat||0)*qty*10)/10,
-    serving:s.name,
+    serving: (s.__exact ? ((currentFood.__unit === 'ml') ? 'ml' : 'g') : s.name),
     qty,
     meal: meal,
     ts:(typeof nutStampFor==='function'?nutStampFor():new Date().toISOString()),

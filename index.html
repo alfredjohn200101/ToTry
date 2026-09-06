@@ -19762,7 +19762,7 @@ async function openRecoveryTimeline(i){
   m.innerHTML = '<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
     '<div class="src-tag" style="color:var(--gr);margin-bottom:4px">'+(_moderate?'WHAT HOLDING YOUR LINE IS WORTH':'WHAT YOU\u2019RE EARNING')+'</div>'+
     '<div style="font-size:20px;font-weight:500;color:var(--tx);margin-bottom:2px">'+String(v.n||'Your streak').replace(/</g,'&lt;')+'</div>'+
-    '<div style="font-size:13px;color:var(--go);font-family:DM Mono,monospace;margin-bottom:16px">'+days+' day'+(days===1?'':'s')+' clean'+(viceMoneySaved(v)>0?(' \u00b7 '+curSym()+viceMoneySaved(v).toLocaleString()+' reclaimed'):'')+'</div>'+
+    '<div style="font-size:13px;color:var(--go);font-family:DM Mono,monospace;margin-bottom:16px">'+(_moderate ? ((function(){ let _d=0; try{ _d=(typeof _calDaysSince==='function' && v.startDate)?_calDaysSince(v.startDate)+1:0; }catch(_){ } return _d>0 ? ('day '+_d+' of keeping it in check') : 'keeping it in check'; })()) : (days+' day'+(days===1?'':'s')+' clean'))+(viceMoneySaved(v)>0?(' \u00b7 '+curSym()+viceMoneySaved(v).toLocaleString()+' reclaimed'):'')+'</div>'+
     '<div id="recovery-timeline-body"><div style="font-size:13px;color:var(--tx3);text-align:center;padding:20px">Loading what your body and soul are gaining\u2026</div></div>'+
     '<button class="btn" onclick="closeModal(this)" style="margin-top:14px">Close</button></div>';
   document.body.appendChild(m);
@@ -27889,7 +27889,7 @@ function addFoodToLog(){
     pro:Math.round((s.pro||0)*qty*10)/10,
     carb:Math.round((s.carb||0)*qty*10)/10,
     fat:Math.round((s.fat||0)*qty*10)/10,
-    serving:s.name,
+    serving: (s.__exact ? ((currentFood.__unit === 'ml') ? 'ml' : 'g') : s.name),
     qty,
     meal: meal,
     ts:(typeof nutStampFor==='function'?nutStampFor():new Date().toISOString()),
