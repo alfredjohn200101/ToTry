@@ -4454,6 +4454,180 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     await ctx.close();
   }
 
+
+  // ── THE MONTH GRID, IN A TIMEZONE THAT IS NOT THIS MACHINE'S ────────────────────────────────
+  // Two blind spots met here and hid a critical bug for a whole release. (1) No test in this repo
+  // had ever opened the month grid — grep renderCalendarMonth across test/ returned nothing.
+  // (2) No test had ever set a timezoneId, so the entire gate — 1697 assertions, 551 personas, every
+  // panel — ran in the host's own zone and could not contrast two.
+  // The bug: the cell is new Date(y,m,d), LOCAL midnight, and its onclick carried
+  // toISOString().slice(0,10), which is the day BEFORE at any positive UTC offset. The grid painted
+  // today in gold and opened yesterday, with yesterday's events, for UTC+1 through UTC+14 — all of
+  // Europe on summer time, Africa, the Middle East, India, Asia, and this app's own home timezone,
+  // for all 24 hours of every day. Worse, the same cell's DOTS scope off the local date and were
+  // right, so one cell disagreed with itself. It was introduced by the PREVIOUS round's fix for
+  // "tapping any date opens today": one wrong day swapped for another.
+  for(const tz of ['Australia/Sydney','Europe/London','Asia/Kolkata','America/Los_Angeles','Pacific/Kiritimati']){
+    const ctx=await browser.newContext({viewport:{width:414,height:896},timezoneId:tz});
+    const page=await ctx.newPage();
+    await page.goto(`http://127.0.0.1:${PORT}/`,{waitUntil:'domcontentloaded'});
+    await page.waitForTimeout(2200);
+    const r=await page.evaluate(()=>{
+      let w=document.getElementById('cal-month-view');
+      if(!w){ w=document.createElement('div'); w.id='cal-month-view'; document.body.appendChild(w); }
+      if(typeof renderCalendarMonth!=='function') return {err:'renderCalendarMonth is gone'};
+      renderCalendarMonth();
+      const cells=[...w.querySelectorAll('[onclick^="calJumpToDay"]')];
+      if(!cells.length) return {err:'the month grid rendered no day cells'};
+      const now=new Date();
+      // the cell the app ITSELF painted as today
+      const gold=cells.find(c=>c.textContent.trim().startsWith(String(now.getDate())) &&
+                               // the today cell is --go-bd + a gold wash; /var\(--go\)/ does NOT match
+                               // var(--go-bd), and this check first failed in all five zones on that
+                               // alone \u2014 the measurement was broken, not the app.
+                               /go-bd|rgba\(200,169,110/.test(c.getAttribute('style')||''));
+      const m=((gold||cells[now.getDate()-1]).getAttribute('onclick')||'').match(/'([0-9-]{10})'/);
+      return { painted: !!gold, opens: m?m[1]:'?', should: _todayLocalISO(), cells: cells.length };
+    });
+    await ctx.close();
+    if(r.err) findings.push(`month grid (${tz}): ${r.err}`);
+    else if(!r.painted) findings.push(`month grid (${tz}): no cell is painted as today`);
+    else if(r.opens !== r.should) findings.push(`month grid (${tz}): the cell painted as today opens ${r.opens}, but today is ${r.should}`);
+  }
+  console.log('month grid: the gold cell opens its own date in Sydney, London, Kolkata, Los Angeles and Kiritimati (UTC+14)');
+
+
+  // ── A PHONE WITH NO ROOM LEFT ───────────────────────────────────────────────────────────────
+  // panels already checks that a full device SAYS "Storage full" instead of "Saved". It never
+  // checked whether the app still WORKS. loadH() ended with a raw localStorage.setItem for a
+  // one-time migration FLAG, outside the try/catch on the line above it and bypassing ls() — so on
+  // a full phone the least important write in the app threw, took loadH() with it, and Home fell
+  // back to a quote card with no greeting and no next step. Seven such unguarded raw writes existed,
+  // including both OAuth state writes and the sign-in email.
+  {
+    const ctx=await browser.newContext({viewport:{width:414,height:896}});
+    const page=await ctx.newPage();
+    const errs=[]; page.on('pageerror',e=>errs.push(String(e.message).slice(0,120)));
+    await page.addInitScript(()=>{
+      localStorage.setItem('totry_start', JSON.stringify(new Date(Date.now()-9*864e5).toISOString()));
+      localStorage.setItem('totry_onboarded', JSON.stringify(true));
+      localStorage.setItem('totry_name', JSON.stringify('Sam'));
+      const real = localStorage.setItem.bind(localStorage);
+      localStorage.setItem = function(k,v){
+        if(String(k).indexOf('totry_')===0 && !localStorage.getItem(k)){
+          const e=new Error('QuotaExceededError'); e.name='QuotaExceededError'; e.code=22; throw e;
+        }
+        return real(k,v);
+      };
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`,{waitUntil:'domcontentloaded'});
+    await page.waitForTimeout(3000);
+    const r=await page.evaluate(()=>({
+      day: (typeof getDayCount==='function') ? getDayCount() : null,
+      habitsArray: Array.isArray(typeof habits!=='undefined'?habits:null),
+      greeted: /How.s the day/i.test((document.getElementById('tab-home')||document.body).innerText||''),
+    }));
+    await ctx.close();
+    if(!r.greeted) findings.push('full phone: Home lost its greeting and next step — a raw write threw and took the render with it');
+    else if(r.day !== 10) findings.push(`full phone: a person on day 10 is told day ${r.day}`);
+    else if(!r.habitsArray) findings.push('full phone: habits never became an array, so every h.d[i] downstream throws');
+    else if(errs.length) findings.push(`full phone: ${errs.length} page error(s) — ${errs[0]}`);
+    else console.log('full phone: Home still greets by name, day 10 still reads 10, no page errors');
+  }
+
+
+  // ── ONBOARDING'S PROGRESS BAR, WALKED THE WAY A PERSON WALKS IT ─────────────────────────────
+  // OB_STEPS was built from the order the divs sit in the DOCUMENT and never driven. The real flow
+  // is ob1 -> ob2 (name) -> ob-moment -> ob-what, so tapping "Nothing right now" ran the bar
+  // BACKWARDS, 4 dots to 2, on a forward tap — and obBack() walks the same list, so it then offered
+  // to return someone to ob2, a screen they had never seen. obNext() also indexed OB_STEPS by the
+  // step NUMBER, assuming position N-1 always holds 'obN', so obNext(5) lit the dot for ob-apps.
+  // Nothing static could see any of it: the list parsed, every id existed, every dot rendered.
+  {
+    const ctx=await browser.newContext({viewport:{width:414,height:896}});
+    const page=await ctx.newPage();
+    await page.goto(`http://127.0.0.1:${PORT}/`,{waitUntil:'domcontentloaded'});
+    await page.waitForTimeout(2500);
+    const walk=await page.evaluate(async()=>{
+      const wait=ms=>new Promise(r=>setTimeout(r,ms));
+      const ac=document.getElementById('auth-container'); if(ac) ac.style.display='none';
+      const ob=document.getElementById('onboard'); if(!ob) return {err:'no #onboard'};
+      ob.classList.add('active'); ob.style.display='block';
+      document.querySelectorAll('.ob-step').forEach(s=>s.classList.remove('active'));
+      document.getElementById('ob1').classList.add('active');
+      if(typeof obDots==='function') obDots();
+      const now=()=>{const r=document.getElementById('ob-prog'); return r?parseInt(r.getAttribute('aria-valuenow'),10)||0:0;};
+      const at=()=>{const a=document.querySelector('.ob-step.active'); return a?a.id:null;};
+      const set=(id,v)=>{const e=document.getElementById(id); if(e) e.value=v;};
+      const seq=[];
+      const tap=async fn=>{ try{fn();}catch(e){} await wait(230); seq.push({id:at(), n:now()}); };
+      seq.push({id:at(), n:now()});
+      await tap(()=>obNext(2));
+      set('ob-name','Sam');           await tap(()=>obNextToMoment());
+      await tap(()=>obSkipMoment());
+      await tap(()=>obNextToApps());
+      await tap(()=>skipAppsStep());
+      await tap(()=>obStartFoundation());
+      set('ob-identity','someone who keeps their promises'); await tap(()=>obNextToWhy());
+      set('ob-why','For my future family');                  await tap(()=>finishWhyStep());
+      await tap(()=>obPickFaith('secular'));
+      await tap(()=>obNext(5));
+      await tap(()=>obNext(6));
+      return {seq};
+    });
+    await ctx.close();
+    if(walk.err) findings.push('onboarding: '+walk.err);
+    else {
+      const back = walk.seq.filter((x,i)=>i>0 && x.n < walk.seq[i-1].n);
+      const stuck = walk.seq.filter((x,i)=>i>0 && x.id === walk.seq[i-1].id);
+      if(back.length) findings.push(`onboarding: the progress bar runs BACKWARDS on a forward tap (${walk.seq.map(x=>x.n).join('→')})`);
+      else if(stuck.length) findings.push(`onboarding: a forward tap did not move (${walk.seq.map(x=>x.id).join(' → ')})`);
+      else if(walk.seq[walk.seq.length-1].n !== walk.seq.length) findings.push(`onboarding: ${walk.seq.length} taps but the bar ended at ${walk.seq[walk.seq.length-1].n}`);
+      else console.log(`onboarding: all ${walk.seq.length} steps advance 1→${walk.seq.length}, no tap goes backwards or stalls`);
+    }
+  }
+
+
+  // ── NOTHING THE TOAST LANDS ON ─────────────────────────────────────────────────────────────
+  // The toast moves clear of open SHEETS, and the FEELING DOOR is not one — it is #feel-door.open
+  // with its own backdrop, not .modal-bg.open. So on the very first tap into the app the
+  // "Kept on this device" toast sat in its default corner on top of two of the ten feeling chips:
+  // elementFromPoint at the centre of "Fired up" and "Actually good" returned the toast, not the
+  // chip. Every tap-target and accessible-name assertion in this suite passed it, because the chips
+  // were the right size, correctly named, and simply not clickable.
+  {
+    const ctx=await browser.newContext({viewport:{width:414,height:896}});
+    const page=await ctx.newPage();
+    await page.addInitScript(()=>localStorage.setItem('totry_onboarded', JSON.stringify(true)));
+    await page.goto(`http://127.0.0.1:${PORT}/`,{waitUntil:'domcontentloaded'});
+    await page.addStyleTag({content:':root{--st:59px;--sb:34px}'});
+    await page.waitForTimeout(2600);
+    const r=await page.evaluate(async()=>{
+      const wait=ms=>new Promise(r=>setTimeout(r,ms));
+      if(typeof openFeelingDoor!=='function') return {err:'openFeelingDoor is gone'};
+      openFeelingDoor(); await wait(700);
+      showToast('Kept on this device','Add an account any time to keep it safe.');
+      await wait(300);
+      const door=document.getElementById('feel-door');
+      if(!door) return {err:'#feel-door did not open'};
+      const ctrls=[...door.querySelectorAll('.feel-chip, button, [onclick], [role="button"], input, textarea, select')];
+      const blocked=[];
+      ctrls.forEach(c=>{
+        const q=c.getBoundingClientRect();
+        if(q.width<2||q.height<2) return;
+        const hit=document.elementFromPoint(q.x+q.width/2, q.y+q.height/2);
+        if(!(hit===c || c.contains(hit))) blocked.push((c.innerText||c.getAttribute('aria-label')||'?').split('\n')[0].slice(0,20));
+      });
+      return {n:ctrls.length, blocked, sheetFlag: document.body.classList.contains('sheet-open')};
+    });
+    await ctx.close();
+    if(r.err) findings.push('feeling door: '+r.err);
+    else if(!r.sheetFlag) findings.push('feeling door: body.sheet-open never set, so the toast stays in its default corner');
+    else if(r.blocked.length) findings.push(`feeling door: the toast covers ${r.blocked.length} control(s) — ${r.blocked.join(', ')}`);
+    else if(r.n < 8) findings.push(`feeling door: only ${r.n} controls found — the scan is not reaching the chips`);
+    else console.log(`feeling door: all ${r.n} controls stay tappable with a toast on screen`);
+  }
+
   await browser.close(); server.close();
 
   // The sacraments panel staying hidden for a secular person is the v427 gate working, not a finding.

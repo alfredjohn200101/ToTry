@@ -738,7 +738,15 @@ function renderCalendarMonth(){
   for(let d=1; d<=daysInMonth; d++){
     const cellDate = new Date(year, month, d);
     const dow = (cellDate.getDay()+6)%7;
-    const _calCellISO = cellDate.toISOString().slice(0,10);
+    // LOCAL midnight, formatted as UTC, is the day BEFORE at any positive offset. cellDate is
+    // new Date(year, month, d) \u2014 local midnight \u2014 so at UTC+10 toISOString() returned the 5th
+    // for the cell painted as the 6th: the grid highlighted today in gold and opened yesterday,
+    // with yesterday's events. Everything from UTC+1 to UTC+14, all 24 hours of every day, which
+    // includes this app's own home timezone and all of Europe on summer time.
+    // This line IS the previous round's fix for "tapping any date opens today" (ae93f6b) \u2014 it
+    // replaced one wrong day with another, which is why the dots two lines down disagree with it:
+    // they scope off local `dow` and `cellDate` and are right, while the onclick was not.
+    const _calCellISO = _todayLocalISO(cellDate);
     // A ONE-OFF IS NOT A WEEKLY. This matched on weekday alone, so an event saved with "Repeats
     // every week" OFF was drawn on that weekday in every week of the grid, for ever. Scope a
     // non-recurring event to the week it actually belongs to.
@@ -755,6 +763,11 @@ function renderCalendarMonth(){
 }
 function calMonthShift(delta){
   const ref = window.__calMonthRef ? new Date(window.__calMonthRef) : new Date();
+  // setMonth() on a day-of-month the target month does not have OVERFLOWS: 31 Jan + 1 month is
+  // 31 February, which JavaScript rolls forward to 3 March. So from the 29th-31st the › arrow
+  // skipped February entirely and it could not be reached going forward at all. Anchor to the 1st
+  // before shifting — the grid only ever uses the month and year of this reference.
+  ref.setDate(1);
   ref.setMonth(ref.getMonth()+delta);
   window.__calMonthRef = ref.toISOString();
   renderCalendarMonth();

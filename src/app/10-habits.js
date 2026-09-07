@@ -124,7 +124,12 @@ function loadH(){
       }
     }
   }catch(_){ }
-  localStorage.setItem('totry_grat_habit_migrated','1');
+  // OUTSIDE the try above, and a raw write that bypasses ls(). On a full phone this threw and
+  // took loadH() with it, so `habits` never got assigned: Home half-rendered, the greeting and
+  // the next step vanished, and the day counter fell back to "1 day in" for someone on day 10.
+  // A one-time migration FLAG is the least important write in the app; it must never be the one
+  // that decides whether Home renders.
+  try{ localStorage.setItem('totry_grat_habit_migrated','1'); }catch(_){ }
   const _hRaw=ls('totry_h');
   habits=Array.isArray(_hRaw)?_hRaw:lsArr('totry_h');
   // Guarantee every habit has a valid 7-day array — AND that habits is a list at all. Dozens of core
@@ -488,7 +493,7 @@ function saveHabitAnchor(hi){
   _anchorRefresh();
   try{ if(typeof logEvent==='function') logEvent('habit_anchor',{}); }catch(_){}
   if(typeof haptic==='function') haptic('success');
-  if(typeof showToast==='function') showToast('Anchored','After you '+_escFew(val)+' \u2014 that\u2019s the cue. I\u2019ll show it with the habit.');
+  if(typeof showToast==='function') showToast('Anchored','After you '+val+' \u2014 that\u2019s the cue. I\u2019ll show it with the habit.');
 }
 function clearHabitAnchor(hi){
   loadH(); if(!habits[hi]) return;

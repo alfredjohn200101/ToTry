@@ -119,7 +119,7 @@ function startStravaOAuth(){
   if(!STRAVA_CLIENT_ID) return;
   const scope = 'read,activity:read_all';
   const state = Math.random().toString(36).slice(2);
-  localStorage.setItem('totry_strava_oauth_state', state);
+  try{ localStorage.setItem('totry_strava_oauth_state', state); }catch(_){ }
   const url = 'https://www.strava.com/oauth/authorize' +
     '?client_id=' + STRAVA_CLIENT_ID +
     '&response_type=code' +

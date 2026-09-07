@@ -292,7 +292,7 @@ function toggleReachOut(){
 const GOATCOUNTER_CODE = 'totry'; // traffic + referrers 2192 totry.goatcounter.com (dashboard kept private)
 function _anonId(){
   let id = localStorage.getItem('totry_anon');
-  if(!id){ id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)); localStorage.setItem('totry_anon', id); }
+  if(!id){ id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)); try{ localStorage.setItem('totry_anon', id); }catch(_){ } }
   return id;
 }
 // One switch turns BOTH counters off, everywhere. An app whose whole promise is "your confession stays

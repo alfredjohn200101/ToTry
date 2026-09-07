@@ -457,7 +457,8 @@ async function generateWeeklyCoachResponse(entry){
   if(entry && entry.flagged) return;                 // never write a coach response onto a disclosure
   
   // Build context
-  let context = `User: Day ${dayCount} of journey. Season: ${season}.`;
+  // Its own context string, so lifeStateBrief()'s UNITS line never reached it.
+  let context = `User: Day ${dayCount} of journey. Season: ${season}.` + (typeof _unitsNote==='function' ? _unitsNote() : '');
   if(identity) context += ` Identity: "${identity}".`;
   context += `\nThis week\'s check-in:`;
   if(entry.weight) context += `\n- Weight: ${entry.weight}kg`;
@@ -528,6 +529,12 @@ async function generateWeeklyCoachResponse(entry){
 }
 // Recent weight entries with delete — weight was previously un-removable (a "trapped entry").
 let _weighShowAll = false;
+// The Track tab's check-in history rendered EVERY entry ever. At 400 weigh-ins that is 21,230px
+// of cards, and at the app's own 1,000-row storage cap it is 56,490px \u2014 with the summary the
+// person actually came for pushed 1,830px below a card they have to scroll past every time.
+// Same pattern as the weigh-in list above: the recent ones, and a way to see the rest.
+let _bodyHistShowAll = false;
+function toggleBodyHistShowAll(){ _bodyHistShowAll = !_bodyHistShowAll; try{ renderBody(); }catch(_){ } }
 function toggleWeighShowAll(){ _weighShowAll = !_weighShowAll; renderWeightHistory(); }
 function renderWeightHistory(){
   const wrap = document.getElementById('bod-weight-history');
@@ -1032,7 +1039,8 @@ function renderBody(){
     }
     // Full entry per check-in (not just weight) so progress reads as a story over time:
     // weight + change, body-fat, the scores, and the win/struggle/focus reflections.
-    entries.forEach((e,i)=>{
+    const _histShown = _bodyHistShowAll ? entries : entries.slice(0, 12);
+    _histShown.forEach((e,i)=>{
       const prev=entries[i+1];
       // prev was simply the next row, so a weightless reflection between two weigh-ins swallowed the
       // delta and the later one rendered "81.2kg —" with nothing to compare against. Step back to the
@@ -1065,6 +1073,14 @@ function renderBody(){
       card.innerHTML=html;
       hist.appendChild(card);
     });
+    if(entries.length > 12){
+      const more=document.createElement('button');
+      more.className='btn';
+      more.style.cssText='width:100%;margin-top:10px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px;min-height:34px';
+      more.textContent = _bodyHistShowAll ? 'Show fewer' : ('Show all ' + entries.length + ' check-ins');
+      more.onclick = toggleBodyHistShowAll;
+      hist.appendChild(more);
+    }
   }
   
   // Render measurements + progress photos
@@ -1478,7 +1494,7 @@ function adjustTracker(type,delta){
   ls('totry_trackers',trackers);
   // Sleep is shared with the readiness model (via totry_checkins). Mirror precise hours into today's
   // sleep check-in so readiness uses what you logged here, and Morning/Track never disagree.
-  if(type==='sleep'){ try{ const _iso=new Date().toISOString().slice(0,10); const _ck=ls('totry_checkins')||[]; const _i=_ck.findIndex(c=>(c.ts||'').slice(0,10)===_iso && c.kind==='sleep'); const _e={kind:'sleep',scores:{sleep:trackers[today].sleep},ts:new Date().toISOString()}; if(_i>=0)_ck[_i]=_e; else _ck.unshift(_e); ls('totry_checkins',_ck.slice(0,300)); }catch(_){} }
+  if(type==='sleep'){ try{ const _iso=_todayLocalISO(); const _ck=ls('totry_checkins')||[]; const _i=_ck.findIndex(c=>c.ts&&_todayLocalISO(c.ts)===_iso && c.kind==='sleep'); const _e={kind:'sleep',scores:{sleep:trackers[today].sleep},ts:new Date().toISOString()}; if(_i>=0)_ck[_i]=_e; else _ck.unshift(_e); ls('totry_checkins',_ck.slice(0,300)); }catch(_){} }
   // Steps are shared with the coach/whole-person brief (via totry_today_steps). Keep them in lockstep
   // so logging steps here isn't invisible to the coach, and vice-versa. (Was two disconnected stores.)
   if(type==='steps'){ try{ ls('totry_today_steps', trackers[today].steps); }catch(_){} }

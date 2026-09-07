@@ -84,8 +84,13 @@ function renderCoachQuickReplies(){
   if(longestStreak >= 7){
     chips.push({p: 4, label: '🔥 Keep me sharp at day ' + longestStreak, prompt: 'I am on a ' + longestStreak + '-day clean streak. How do I keep building without getting complacent?'});
   }
-  if(habitsTotal > 0 && habitsToday < habitsTotal / 2){
-    chips.push({p: 4, label: '📋 What habits matter most?', prompt: 'I have only hit ' + habitsToday + '/' + habitsTotal + ' habits today. Which ones matter most for me to finish before bed?'});
+  // NOT ON DAY ONE, AND NOT THE WORD "ONLY". This fired for a brand-new person against habits the
+  // app had suggested for them, putting "I have only hit 0/6 habits today" in their own mouth as the
+  // coach's FIRST offered question \u2014 a self-criticism about work they had never agreed to. It needs
+  // a few days of their own record before the question means anything, and it never needs "only".
+  if(habitsTotal > 0 && habitsToday < habitsTotal / 2 && habitsToday > 0
+     && (typeof daysInstalled !== 'function' || daysInstalled() >= 4)){
+    chips.push({p: 4, label: '📋 What habits matter most?', prompt: 'I hit ' + habitsToday + ' of ' + habitsTotal + ' habits today. Which ones matter most, and which could I let go?'});
   }
   if(prayers.length > 0){
     chips.push({p: 3, label: '🙏 Pray with me', prompt: 'I have ' + prayers.length + ' prayer' + (prayers.length===1?'':'s') + ' I am still praying about. Help me bring them to God right now.'});

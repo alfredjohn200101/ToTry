@@ -502,7 +502,7 @@ function renderTourPrompt(){
   card.style.display='block';
   card.innerHTML='<div style="font-family:Cormorant Garamond,serif;font-size:18px;color:var(--tx);margin-bottom:4px">A quick look around?</div>'+
     '<div style="font-size:13px;color:var(--tx2);line-height:1.55;margin-bottom:12px">There\u2019s a lot new in here. Want a 60-second tour of how it all fits together?</div>'+
-    '<div style="display:flex;gap:8px"><button class="bclass="btn" style="flex:1;font-size:13px" onclick="acceptTourPrompt()">Show me<'+
+    '<div style="display:flex;gap:8px"><button class="btn" style="flex:1;font-size:13px" onclick="acceptTourPrompt()">Show me</button>'+
     '<button class="btn" style="flex:1;font-size:13px;background:var(--bg3);border:1px solid var(--bd)" onclick="dismissTourPrompt()">No thanks</button></div>';
 }
 function acceptTourPrompt(){ ls('totry_tour_offered', true); const c=document.getElementById('home-tour-prompt'); if(c)c.style.display='none'; if(typeof startFeatureTour==='function') startFeatureTour(); }
@@ -1081,7 +1081,7 @@ async function exportFullBackup(){
   const blob = new Blob([JSON.stringify(backup, null, 2)], {type: 'application/json'});
   // The one SaveFile caller that threw its result away, so a CANCELLED share sheet and an outright
   // failed write both produced "Backup saved". Its sibling exportAllData already does this correctly.
-  const _r = await SaveFile.save(blob, 'totry-backup-' + new Date().toISOString().slice(0,10) + '.json', 'ToTry backup');
+  const _r = await SaveFile.save(blob, 'totry-backup-' + _todayLocalISO() + '.json', 'ToTry backup');
   if(_r === null) return;                                   // dismissed — they chose; say nothing
   if(!_r){ showToast('Not saved', 'Nothing was written. Try again in a moment.'); return; }
   // Name the exclusions. Progress photos and un-backed-up cycle data never leave the device by design

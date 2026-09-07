@@ -221,7 +221,13 @@ function renderLifeWoven(){
   // THE FIGHT — clean streak (quit) or holding the line (moderate)
   const vs=(s.fight&&s.fight.vices)||[]; let fightTxt;
   if(!vs.length) fightTxt='no fight named yet';
-  else { const q=vs.filter(v=>viceIsAbstinence(v)); if(q.length){ const mc=Math.max.apply(null,q.map(v=>v.cleanDays||0)); fightTxt=mc+' day'+(mc===1?'':'s')+' clean'; } else { const lg=vs.filter(v=>v.kind==='letgo'); /* v.cleanDays is null for a letting-go goal BY DESIGN: viceCleanDays() refuses to count clean days for something that has no unclean ones. So `|| 0` printed 'letting go, day 0' forever — on day 1 and day 42 alike — while the vice card said '41 days of choosing yourself'. renderHomeQuickWins already counts this correctly from startDate; same sum here. */ const lgDay=lg.length?Math.max.apply(null,lg.map(function(v){ return v.letGoDays || 0; })):0; fightTxt = lg.length ? (lgDay>0 ? 'letting go, day '+lgDay : 'letting go') : 'holding your line'; } }
+  else { const q=vs.filter(v=>viceIsAbstinence(v)); if(q.length){ const mc=Math.max.apply(null,q.map(v=>v.cleanDays||0));
+    // "0 days clean", sixty seconds after naming your first fight, directly under a vice card
+    // that says "Day 1 of the fight". Two surfaces, one person, opposite arithmetic \u2014 and the one
+    // that greets them is the discouraging one. Zero full days HAVE passed, so the number is not
+    // wrong; it is the wrong thing to say. Day one is where everybody starts, and where anybody
+    // who slips returns.
+    fightTxt = mc === 0 ? 'day one' : plural(mc,'day')+' clean'; } else { const lg=vs.filter(v=>v.kind==='letgo'); /* v.cleanDays is null for a letting-go goal BY DESIGN: viceCleanDays() refuses to count clean days for something that has no unclean ones. So `|| 0` printed 'letting go, day 0' forever — on day 1 and day 42 alike — while the vice card said '41 days of choosing yourself'. renderHomeQuickWins already counts this correctly from startDate; same sum here. */ const lgDay=lg.length?Math.max.apply(null,lg.map(function(v){ return v.letGoDays || 0; })):0; fightTxt = lg.length ? (lgDay>0 ? 'letting go, day '+lgDay : 'letting go') : 'holding your line'; } }
   // SPIRIT — the daily rhythm
   const mornDone=ritualLog('totry_mornings').some(dOn); const evenDone=ritualLog('totry_evenings').some(dOn);
   const spiritTxt = evenDone?'day closed ✓' : mornDone?'reflect tonight' : (h<15?'set your intention':'reflect on today');
@@ -471,7 +477,23 @@ function renderHomeHabits(){
   // (ticking belongs to the evening, where it is one step of closing the day) \u2014 but "0/3" with no
   // route is a scoreboard with no game. The score itself is now the door to the tick list.
   const _todayTile = summary.querySelector('#home-habit-today');
-  if(_todayTile) _todayTile.onclick = function(){ if(typeof go === 'function') go('reflect'); };
+  if(_todayTile) _todayTile.onclick = function(){
+    if(typeof go !== 'function') return;
+    go('reflect');
+    // go('reflect') lands on evening step 0 — the mood question — and the tick boxes are on step 3,
+    // so "tap today's score to tick them off" put the person three taps from any tick box. Land on
+    // the step that actually HOLDS the list, found at runtime rather than hardcoded, because the
+    // evening's step anchors have been renumbered before and a magic 3 would rot silently.
+    let _tries = 0;
+    const _land = function(){
+      const tl = document.getElementById('evening-habit-tick-list');
+      const holder = tl && tl.closest ? tl.closest('[data-mstep]') : null;
+      const n = holder ? parseInt(holder.getAttribute('data-mstep'), 10) : NaN;
+      if(isFinite(n) && typeof eveningStep === 'function'){ eveningStep(n); return; }
+      if(++_tries < 12) setTimeout(_land, 90);   // the flow renders on a timeout after go()
+    };
+    setTimeout(_land, 120);
+  };
   
   // Day-letter row across the top
   const headerRow = document.createElement('div');

@@ -99,7 +99,14 @@ function renderFirstRun(){
         ? '<div style="width:22px;height:22px;border-radius:50%;background:var(--gr);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#000;font-size:13px;font-weight:700">✓</div>'
         : '<div style="width:22px;height:22px;border-radius:50%;border:2px solid var(--bd2);flex-shrink:0"></div>';
       const textStyle = s.done ? 'color:var(--tx3);text-decoration:line-through' : 'color:var(--tx)';
-      const tap = s.done ? '' : ' onclick="' + s.action.replace(/"/g,'&quot;') + '"';
+      // A DIV WITH AN ONCLICK IS NOT A BUTTON. These four rows are the app's own "four quick things
+      // to start" — the first thing a new person is offered — and a keyboard or Full Keyboard Access
+      // user could not reach any of them: no role, no tabindex, no key handler. Give them the three
+      // things that make a div behave like the button it already looks like.
+      const tap = s.done ? '' :
+        ' role="button" tabindex="0"' +
+        ' onclick="' + s.action.replace(/"/g,'&quot;') + '"' +
+        ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();this.click();}"';
       return '<div' + tap + ' style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)' + (s.done ? '' : ';cursor:pointer') + '">' +
         check +
         '<div style="flex:1">' +

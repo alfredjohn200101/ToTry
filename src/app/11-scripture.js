@@ -98,9 +98,11 @@ function renderSavedVerses(containerId){
     el.className = 'sv-item';
     el.innerHTML = '<div style="display:flex;align-items:flex-start;gap:8px">' +
       '<div style="flex:1">' +
-        '<div class="sv-v">\u201C' + (v.verse || '') + '\u201D</div>' +
-        '<div class="sv-r">' + (v.reference || '') + '</div>' +
-        '<div class="sv-d">' + (v.date || '') + '</div>' +
+        // v581 escaped the verse CARD and not the shelf it saves to. The shelf re-renders the
+        // model's own output every time Saved is opened, so this was the durable half of that door.
+        '<div class="sv-v">\u201C' + _escFew(v.verse || '') + '\u201D</div>' +
+        '<div class="sv-r">' + _escFew(v.reference || '') + '</div>' +
+        '<div class="sv-d">' + _escFew(v.date || '') + '</div>' +
       '</div>' +
       '<button onclick="deleteSavedVerse(' + i + ')" aria-label="Remove verse" style="background:none;border:none;color:var(--tx3);min-width:28px;min-height:28px;font-size:18px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0">\u00D7</button>' +
     '</div>';
@@ -186,7 +188,7 @@ function saveVerseResult(idx){
     saved.unshift({verse:v.verse,reference:v.reference,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'})});
     ls('totry_sv',saved.slice(0,200));
     renderSavedVerses();
-    showToast('Verse saved &#9825;',v.reference);
+    showToast('Verse saved \u2661',v.reference);   // the entity is printed literally now that showToast escapes
   }else{
     showToast('Already saved',v.reference);
   }
@@ -1025,7 +1027,7 @@ async function loadBibleChapter(){
       const row=document.createElement('div');row.className='bible-verse-row';
       const _ref = book.name+' '+chapter+':'+v.num;
       if(_savedRefs.has(_ref)) row.classList.add('highlighted');
-      row.innerHTML='<span class="bvn">'+v.num+'</span><span class="bvt">'+v.text.trim()+'</span>';
+      row.innerHTML='<span class="bvn">'+v.num+'</span><span class="bvt">'+_escFew(v.text.trim())+'</span>';   // third-party chapter text
       row.onclick=async ()=>{
         if(row.classList.contains('highlighted')){
           // The class comes off only if the verse actually went, so declining the confirm leaves the
@@ -1147,7 +1149,7 @@ async function searchBible(query){
         res.innerHTML='';
         const el=document.createElement('div');
         el.className='bible-search-result';
-        el.innerHTML='<div class="bsr-ref">'+query+' (ESV)</div><div class="bsr-text">'+esvText+'</div>';
+        el.innerHTML='<div class="bsr-ref">'+_escFew(query)+' (ESV)</div><div class="bsr-text">'+_escFew(esvText)+'</div>';
         el.onclick=()=>saveVerseFromReader(esvText, query+' (ESV)');
         res.appendChild(el);
         return;

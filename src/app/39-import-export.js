@@ -587,7 +587,7 @@ async function exportFoodCSV(){
   });
   
   const blob = new Blob([csv], {type: 'text/csv'});
-  const _r = await SaveFile.save(blob, 'totry-food-log-' + new Date().toISOString().slice(0,10) + '.csv', 'Food log');
+  const _r = await SaveFile.save(blob, 'totry-food-log-' + _todayLocalISO() + '.csv', 'Food log');
   if(_r === null) return;   // dismissed
   // "Downloaded" is browser language: on iOS this hands the file to the share sheet, so the person
   // chose where it went. Say the true thing for the platform they're on.

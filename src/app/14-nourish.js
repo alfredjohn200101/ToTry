@@ -4419,7 +4419,11 @@ function renderAdaptiveTDEE(){
   if(dir !== 'maintaining' && r.trendWeight){
     const perDay = r.weightChangeKg / r.days;
     const in4w = Math.round((r.trendWeight + perDay*28)*10)/10;
-    forecastLine = '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:4px">If this trend holds: ~' + wDelta(in4w) + ' in 4 weeks.</div>';
+    // wFmt, NOT wDelta. in4w is an absolute projected WEIGHT, and wDelta formats a CHANGE — it signs
+    // positives, so a woman losing weight read "If this trend holds: ~+76.8kg in 4 weeks", which
+    // says she will gain 76.8kg. An earlier round's unit sweep converted this line and reached for
+    // the wrong one of the two formatters; converting a number correctly is only half the job.
+    forecastLine = '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:4px">If this trend holds: ~' + wFmt(in4w) + ' in 4 weeks.</div>';
   }
   // THE LOOP CLOSER: if real burn differs meaningfully from the set goal, offer (never force)
   // a one-tap goal update. Consent-based, like everything in this app.
@@ -5217,14 +5221,19 @@ function deleteFoodEntry(date,id){
   // delete it a second time — silently, and possibly on another device. tombstoneRevoke() is what
   // makes the restore outrank the deletion, and it exists for exactly this.
   if(removed && typeof showUndo==='function'){
-    showUndo(_escFew(removed.name||'Entry')+' removed', function(){
+    showUndo((removed.name||'Entry')+' removed', function(){   // showUndo escapes; escaping here too printed &#39;
       const l2=ls('totry_nutlog')||{};
       const arr=Array.isArray(l2[date])?l2[date]:[];
       if(!arr.some(e=>e.id===removed.id)){
         arr.splice(idx>=0&&idx<=arr.length?idx:arr.length, 0, removed);
         l2[date]=arr;
         ls('totry_nutlog',l2);
-        if(typeof tombstoneRevoke==='function') tombstoneRevoke('totry_nutlog', removed.id);
+        // syncIdOf(), NOT removed.id. Tombstones are keyed by syncIdOf(x) — 'i'+x.id — on both
+        // sides, and 01-sync.js says so in its own comment: if the two ever disagree the tombstone
+        // silently never matches. Passing the raw id revoked nothing, so the meal came back on
+        // screen and the next pull deleted it again and pushed that deletion to every device for
+        // 180 days. removeWhyAffirmation, added in the same commit, already had this right.
+        if(typeof tombstoneRevoke==='function') tombstoneRevoke('totry_nutlog', (typeof syncIdOf==='function') ? syncIdOf(removed) : removed.id);
       }
       renderNutritionLog();
     });

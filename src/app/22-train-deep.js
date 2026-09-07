@@ -1646,7 +1646,7 @@ function confirmScreenshotWorkout(detected){
   const mins = detected.durationMinutes || 0;
   const cal = detected.calories || 0;
   const hr = detected.averageHeartRate || null;
-  const dateStr = detected.date || new Date().toISOString().slice(0,10);
+  const dateStr = detected.date || _todayLocalISO();
   
   // Save as a logged workout
   const session = {

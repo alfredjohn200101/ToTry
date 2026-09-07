@@ -10,6 +10,10 @@
 // same payee, same cents, same direction = the same event, whatever order the rows arrive in.
 function _txFingerprint(t){
   const d = new Date(t.ts);
+  // DELIBERATELY UTC, and the only one left in the app. Every other toISOString().slice(0,10) was
+  // a local date computed in UTC and shipped the wrong day; this one is a cross-device dedup key,
+  // so it must be the SAME string on every device. A local date would give two phones in two
+  // timezones different fingerprints for one transaction and the dedup would stop working.
   const day = isNaN(d.getTime()) ? '' : d.toISOString().slice(0,10);
   const desc = String(t.note || t.desc || '').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,24);
   return day+'|'+desc+'|'+Math.round((t.amount||0)*100)+'|'+(t.type||'');
@@ -339,7 +343,15 @@ function renderTransactions(){
   }
   
   if(recent){
-    const recentList = thisMonth.slice(0, 8);
+    // "Recent" must mean recent, not "first eight in whatever order the array happens to be in".
+    // This relied on the store being newest-first, which is true only for a bank export that
+    // happened to be sorted that way \u2014 import an oldest-first statement, or merge two devices, and
+    // the card headed "Recent (this month)" showed the OLDEST eight of the month.
+    const recentList = thisMonth.slice().sort(function(a,b){
+      const ta = new Date((a && (a.ts || a.date)) || 0).getTime();
+      const tb = new Date((b && (b.ts || b.date)) || 0).getTime();
+      return (isFinite(tb)?tb:0) - (isFinite(ta)?ta:0);
+    }).slice(0, 8);
     if(!recentList.length){
       recent.innerHTML = '<p class="empty-note">No transactions this month yet</p>';
     } else {

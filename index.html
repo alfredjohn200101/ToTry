@@ -5045,7 +5045,7 @@ async function exportAllData(){
     const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
     // Through SaveFile: an <a download> does nothing in a WKWebView, so on iOS this used to produce no
     // file and no error — the export promise, silently broken in the App Store build.
-    const _r = await SaveFile.save(blob, 'totry-backup-' + new Date().toISOString().slice(0,10) + '.json', 'ToTry backup');
+    const _r = await SaveFile.save(blob, 'totry-backup-' + _todayLocalISO() + '.json', 'ToTry backup');
     if(_r === null) return;   // share sheet dismissed — they chose not to; don't tell them it's saved
     if(typeof haptic==='function') haptic('success');
     if(typeof showToast==='function') showToast(_r ? 'Backup saved' : 'Not saved', _r ? (payload.keys + ' items exported. Your sign-in and app tokens are deliberately left out, so the file is safe to keep.') : 'Nothing was written. Try again in a moment.');
@@ -5279,6 +5279,21 @@ function latestByDate(list){
   }catch(_){ return null; }
 }
 
+// THE UNITS THE PERSON READS, for any prompt that builds its own context. v581 put this in
+// lifeStateBrief() \u2014 the brief every AI surface reads \u2014 and that was still only most of them:
+// the Sunday check-in assembles its own context string and states kilograms directly, so a pounds
+// user finished the check-in and the coach answered her in kg anyway. Any prompt that names a
+// weight or a distance appends this.
+function _unitsNote(){
+  try{
+    const wu = (typeof wUnit==='function') ? wUnit() : 'kg';
+    const du = (typeof dUnit==='function') ? dUnit() : 'km';
+    if(wu === 'kg' && du === 'km') return '';
+    return '\nUNITS: figures here are in kg and km (how this app stores them), but this person reads '
+         + 'weight in ' + wu + ' and distance in ' + du + '. Convert every number you say back to '
+         + wu + ' and ' + du + ' \u2014 never quote them a kg or a km.';
+  }catch(_){ return ''; }
+}
 function _todayLocalISO(d){
   const t = d ? new Date(d) : new Date();
   const p = n => String(n).padStart(2, '0');
@@ -5350,7 +5365,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v581';
+const APP_VERSION = 'v582';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5478,7 +5493,7 @@ async function proceedAfterAuth(user){
   try{
     currentUser = user;
     syncEnabled = true;
-    if(user && user.email){ localStorage.setItem('totry_user_email', user.email); }
+    if(user && user.email){ try{ localStorage.setItem('totry_user_email', user.email); }catch(_){ } }
     const restored = await restoreFromCloud();
     try{ if(typeof flushOutbox==='function') await flushOutbox(); }catch(_){ }
     if(typeof repairJourneyStart === 'function') repairJourneyStart();
@@ -5549,7 +5564,7 @@ async function authSendOtp(){
     }
     
     // Save email for verify step
-    localStorage.setItem('totry_pending_email', email);
+    try{ localStorage.setItem('totry_pending_email', email); }catch(_){ }
     document.getElementById('auth-email-display').textContent = email;
     authShowStep('otp');
     setTimeout(()=>document.getElementById('auth-otp-input')?.focus(), 100);
@@ -5591,7 +5606,7 @@ async function authVerifyOtp(){
     
     if(data?.user){
       localStorage.removeItem('totry_pending_email');
-      localStorage.setItem('totry_user_email', email);
+      try{ localStorage.setItem('totry_user_email', email); }catch(_){ }
       await proceedAfterAuth(data.user);
     }
   } catch(e){
@@ -8571,15 +8586,8 @@ function lifeStateBrief(s){
   // Nothing ever told the model that, so the coach, the companion and the brother all answered a
   // pounds-and-miles person in kilometres and kilos. The screens were converted one card at a time;
   // the app's actual VOICE was never converted at all. Said once, here, for every AI surface.
-  try{
-    const _wu = (typeof wUnit==='function') ? wUnit() : 'kg';
-    const _du = (typeof dUnit==='function') ? dUnit() : 'km';
-    if(_wu !== 'kg' || _du !== 'km'){
-      lines.push('UNITS: figures below are in kg and km (how this app stores them), but this person '+
-        'reads weight in '+_wu+' and distance in '+_du+'. Convert every number you say back to '+
-        _wu+' and '+_du+' \u2014 never quote them a kg or a km.');
-    }
-  }catch(_){ }
+  const _un = (typeof _unitsNote==='function') ? _unitsNote() : '';
+  if(_un) lines.push(_un.replace(/^\\n/,'').replace(/^\n/,''));
   if(t.sessions7 != null) lines.push('Training: '+t.sessions7+' sessions in 7 days ('+t.daysTrained7+' days)'+(t.lastTitle?', last: '+t.lastTitle:''));
   // Gentle mode ("numbers on/off") is a promise that this person does not see calorie or macro
   // figures — often because counting them is the thing that hurt them. Handing the raw numbers to the
@@ -10022,9 +10030,13 @@ function daysInstalled(){
   try{
     const st = ls('totry_start');
     if(!st) return 1;
-    const t = new Date(st).getTime();
-    if(isNaN(t)) return 1;
-    return Math.max(1, Math.floor((Date.now() - t) / 86400000) + 1);
+    const _s = new Date(st);
+    if(isNaN(_s.getTime())) return 1;
+    // Local midnights, for the same reason as getDayCount(). Counting 24-hour blocks meant somebody
+    // who installed at 9pm was still on "day 1" at 9am the next calendar day.
+    _s.setHours(0,0,0,0);
+    const _n = new Date(); _n.setHours(0,0,0,0);
+    return Math.max(1, Math.round((_n - _s) / 86400000) + 1);
   }catch(_){ return 1; }
 }
 
@@ -10036,9 +10048,15 @@ function getDayCountForDate(d){
     if(!anchorStr) return 1;
     const anchor = new Date(anchorStr);
     if(isNaN(anchor)) return 1;
-    const t = (d instanceof Date) ? d.getTime() : new Date(d).getTime();
-    if(isNaN(t)) return getDayCount();
-    return Math.max(1, Math.floor((t - anchor) / 86400000) + 1);
+    const _d = (d instanceof Date) ? new Date(d) : new Date(d);
+    if(isNaN(_d.getTime())) return getDayCount();
+    // MIDNIGHT TO MIDNIGHT, exactly as getDayCount() above. This sibling kept counting elapsed
+    // 24-hour blocks from a full timestamp, so two entries written seconds apart could land either
+    // side of a 24h multiple and be tagged Day 5 and Day 6 in the same list, under a header reading
+    // 6. getDayCount() was fixed for this; the other writer into the same store was not.
+    const _a = new Date(anchor); _a.setHours(0,0,0,0);
+    _d.setHours(0,0,0,0);
+    return Math.max(1, Math.round((_d - _a) / 86400000) + 1);
   }catch(_){ return getDayCount(); }
 }
 
@@ -10087,8 +10105,11 @@ function restartJourney(){
 // which may predate when they installed the app. Honest anchor, not a fake streak.
 function editJourneyStart(){
   const current = ls('totry_journey_start') || ls('totry_start') || new Date().toISOString();
-  const currentDate = new Date(current).toISOString().slice(0,10);
-  const today = new Date().toISOString().slice(0,10);
+  // A <input type="date"> is a LOCAL calendar date. Filling it from toISOString() handed it the
+  // UTC day, which at any positive offset is yesterday — so opening this and pressing Save without
+  // changing anything moved the anchor back one day and added a phantom day to the counter.
+  const currentDate = _todayLocalISO(current);
+  const today = _todayLocalISO();
   
   const total = totalDaysTrying();
   const rc = restartCount();
@@ -10140,14 +10161,21 @@ function resetJourneyStart(){
   document.querySelector('.modal-bg.open')?.remove();
   if(typeof initSettingsTab==='function') initSettingsTab();
   if(typeof renderDayCounter==='function') renderDayCounter();
-  showToast('Reset', 'Back to account creation date.');
+  // NO TOAST BESIDE THE UNDO. The toast is 76px tall at z-index 1200 and the undo snack is 54px at
+  // z-index 700, and they overlap: elementFromPoint at the UNDO button's own centre returned the
+  // toast's div for the whole five seconds both were alive, so the tap dismissed the toast and
+  // undid nothing. The snack already says what happened AND offers the way back, which is strictly
+  // more than the toast did. Only when there is nothing to undo does the toast speak instead.
+  // This was the only one of twelve showUndo sites that fired a toast in the same tick.
   if(_prev && typeof showUndo === 'function'){
-    showUndo('Journey start reset', function(){
+    showUndo('Journey start reset \u2014 back to your account start', function(){
       ls('totry_journey_start', _prev);
       if(typeof syncToCloud==='function') syncToCloud('totry_journey_start', _prev);
       if(typeof initSettingsTab==='function') initSettingsTab();
       if(typeof renderDayCounter==='function') renderDayCounter();
     });
+  } else {
+    showToast('Reset', 'Back to account creation date.');
   }
 }
 
@@ -10241,7 +10269,13 @@ function selectHevyTier(tier){
 // hand-typed indices (i < 2, i < 3, i < step-1) — so they disagreed with each other AND with the
 // number of screens, and any screen added later inherited the bug by default. One ordered list, one
 // function, called from every transition.
-const OB_STEPS = ['ob1','ob-what','ob2','ob-moment','ob-apps','ob-fork','ob3','ob-why','ob-faith','ob4','ob5','ob6'];
+// THE ORDER A PERSON ACTUALLY WALKS, not the order the divs happen to sit in the document. This
+// was built from document order and never driven, so it had ob-what before ob2 and ob-moment.
+// The real flow is ob1 \u2192 ob2 (name) \u2192 ob-moment \u2192 ob-what: so tapping "Nothing right now" on
+// ob-moment ran the progress bar BACKWARDS, 4 dots to 2, on a forward tap \u2014 and obBack(), which
+// walks this same list, then offered to return someone to ob2, a screen they had never seen.
+// Verified by driving every step's own buttons, which is the only thing that could have shown it.
+const OB_STEPS = ['ob1','ob2','ob-moment','ob-what','ob-apps','ob-fork','ob3','ob-why','ob-faith','ob4','ob5','ob6'];
 // A WAY BACK. Every onboarding transition moved forward and none returned; the phone's own back
 // gesture does nothing inside a single-page step flow, so a mistyped name or a season picked too
 // fast could only be undone by killing the app and starting again. Walks OB_STEPS, which is the
@@ -10527,9 +10561,10 @@ function obNext(step){
   // Accept either a numeric step (→ 'ob'+N) or a full element id like 'ob-what'
   const targetId = (typeof step === 'string' && step.startsWith('ob')) ? step : ('ob'+step);
   document.getElementById(targetId).classList.add('active');
-  if(typeof step === 'number'){
-    obDots(OB_STEPS[Math.max(0, Math.min(OB_STEPS.length-1, step-1))]);
-  }
+  // Light the dot for the step we actually landed on. This used to index OB_STEPS by the NUMBER,
+  // which silently assumed position N-1 always holds 'obN' — it does not, and obNext(5) lit the
+  // dot for ob-apps. The target id is already resolved two lines above; use it.
+  obDots(targetId);
   window.scrollTo(0,0);
 }
 
@@ -11566,7 +11601,7 @@ async function _readGitaLoad(){
       ? '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><div style="font-family:DM Mono,monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">About this chapter</div><div style="font-size:13px;color:var(--tx3);line-height:1.7">'+_esc(meta.summary.en)+'</div></div>'
       : '';
     // Third-party scripture API text. Not app-authored, not ours to trust as markup.
-    content.innerHTML='<div class="card">'+chName+'<div class="rd-v" data-sv-i="0"><div style="font-size:12px;color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+_escFew(g.ch)+'.'+_escFew(g.v)+' <span style="color:var(--tx3);letter-spacing:0">· verse '+_escFew(g.v)+' of '+_gitaCount(g.ch)+'</span></div>'+(j.slok?'<div style="font-size:16px;line-height:1.95;color:var(--tx);margin-bottom:8px">'+_escFew(j.slok)+'</div>':'')+(j.transliteration?'<div style="font-size:12.5px;font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+String(j.transliteration).trim()+'</div>':'')+'<div style="font-size:14px;color:var(--tx2);line-height:1.75">'+en+'</div></div>'+chSummary+'</div>';
+    content.innerHTML='<div class="card">'+chName+'<div class="rd-v" data-sv-i="0"><div style="font-size:12px;color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+_escFew(g.ch)+'.'+_escFew(g.v)+' <span style="color:var(--tx3);letter-spacing:0">· verse '+_escFew(g.v)+' of '+_gitaCount(g.ch)+'</span></div>'+(j.slok?'<div style="font-size:16px;line-height:1.95;color:var(--tx);margin-bottom:8px">'+_escFew(j.slok)+'</div>':'')+(j.transliteration?'<div style="font-size:12.5px;font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+_escFew(String(j.transliteration).trim())+'</div>':'')+'<div style="font-size:14px;color:var(--tx2);line-height:1.75">'+_escFew(en)+'</div></div>'+chSummary+'</div>';
     _readMakeSavable([{ text:String(en||'').replace(/<[^>]*>/g,'').trim(), ref:'Bhagavad Gita '+g.ch+'.'+g.v }]);
   }catch(e){
     const c2=document.getElementById('read-content');
@@ -11598,7 +11633,7 @@ function _renderDailyPassage(el,t){
   const bank=(t==='hinduism')?VS_HINDU:(t==='buddhism')?VS_BUDDHIST:VS_SECULAR;
   const v=bank[_dailyIndex(bank.length)];
   const kind=(t==='hinduism')?'Today’s verse':(t==='buddhism')?'Today’s teaching':'Today’s reflection';
-  el.innerHTML='<div class="card" style="text-align:center;padding:28px 20px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:16px">'+kind+'</div><div id="daily-passage-text" style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;line-height:1.65;color:var(--tx);margin-bottom:14px">“'+v.t+'”</div><div id="daily-passage-ref" style="font-size:12px;color:var(--go)">— '+v.r+'</div>'+((typeof _verseToolsHTML==='function')?_verseToolsHTML('daily-passage-text','daily-passage-ref'):'')+'</div><div style="display:flex;gap:8px;margin-top:12px"><button class=\'btn\' onclick=\'openBreathMenu()\' style=\'flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12.5px\'>Sit with it \u2014 a minute</button><button class=\'btn\' onclick=\'openJournal()\' style=\'flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12.5px\'>Write what it stirs</button></div>';
+  el.innerHTML='<div class="card" style="text-align:center;padding:28px 20px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:16px">'+kind+'</div><div id="daily-passage-text" style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;line-height:1.65;color:var(--tx);margin-bottom:14px">“'+_escFew(v.t)+'”</div><div id="daily-passage-ref" style="font-size:12px;color:var(--go)">— '+_escFew(v.r)+'</div>'+((typeof _verseToolsHTML==='function')?_verseToolsHTML('daily-passage-text','daily-passage-ref'):'')+'</div><div style="display:flex;gap:8px;margin-top:12px"><button class=\'btn\' onclick=\'openBreathMenu()\' style=\'flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12.5px\'>Sit with it \u2014 a minute</button><button class=\'btn\' onclick=\'openJournal()\' style=\'flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12.5px\'>Write what it stirs</button></div>';
 }
 // Islam — prayer times (Aladhan, free) + Hijri + a daily ayah. Geolocation, with a city fallback.
 function _renderIslamToday(el){
@@ -13581,7 +13616,7 @@ function viewBodyPhoto(idx){
   m.className = 'modal-bg open';
   m.style.alignItems = 'center';
   m.innerHTML = '<div class="modal" style="max-width:90vw;padding:20px">'+
-    '<div style="text-align:center"><img loading="lazy" decoding="async" src="'+entry.photo+'" style="max-width:100%;max-height:60vh;border-radius:8px;margin-bottom:14px"></div>'+
+    '<div style="text-align:center"><img loading="lazy" decoding="async" src="'+_escFew(entry.photo)+'" style="max-width:100%;max-height:60vh;border-radius:8px;margin-bottom:14px"></div>'+
     '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-align:center;margin-bottom:4px">'+entry.date+'</div>'+
     '<div style="font-size:14px;font-weight:500;color:var(--tx);text-align:center;margin-bottom:8px">'+(entry.weight!=null&&entry.weight!==''?((typeof wFmt==='function')?wFmt(entry.weight):(entry.weight+'kg')):'')+'</div>'+
     (entry.note?'<div style="font-size:12px;color:var(--tx2);text-align:center;font-style:italic;margin-bottom:10px">'+_escFew(entry.note)+'</div>':'')+
@@ -21324,7 +21359,12 @@ function loadH(){
       }
     }
   }catch(_){ }
-  localStorage.setItem('totry_grat_habit_migrated','1');
+  // OUTSIDE the try above, and a raw write that bypasses ls(). On a full phone this threw and
+  // took loadH() with it, so `habits` never got assigned: Home half-rendered, the greeting and
+  // the next step vanished, and the day counter fell back to "1 day in" for someone on day 10.
+  // A one-time migration FLAG is the least important write in the app; it must never be the one
+  // that decides whether Home renders.
+  try{ localStorage.setItem('totry_grat_habit_migrated','1'); }catch(_){ }
   const _hRaw=ls('totry_h');
   habits=Array.isArray(_hRaw)?_hRaw:lsArr('totry_h');
   // Guarantee every habit has a valid 7-day array — AND that habits is a list at all. Dozens of core
@@ -21688,7 +21728,7 @@ function saveHabitAnchor(hi){
   _anchorRefresh();
   try{ if(typeof logEvent==='function') logEvent('habit_anchor',{}); }catch(_){}
   if(typeof haptic==='function') haptic('success');
-  if(typeof showToast==='function') showToast('Anchored','After you '+_escFew(val)+' \u2014 that\u2019s the cue. I\u2019ll show it with the habit.');
+  if(typeof showToast==='function') showToast('Anchored','After you '+val+' \u2014 that\u2019s the cue. I\u2019ll show it with the habit.');
 }
 function clearHabitAnchor(hi){
   loadH(); if(!habits[hi]) return;
@@ -21878,9 +21918,11 @@ function renderSavedVerses(containerId){
     el.className = 'sv-item';
     el.innerHTML = '<div style="display:flex;align-items:flex-start;gap:8px">' +
       '<div style="flex:1">' +
-        '<div class="sv-v">\u201C' + (v.verse || '') + '\u201D</div>' +
-        '<div class="sv-r">' + (v.reference || '') + '</div>' +
-        '<div class="sv-d">' + (v.date || '') + '</div>' +
+        // v581 escaped the verse CARD and not the shelf it saves to. The shelf re-renders the
+        // model's own output every time Saved is opened, so this was the durable half of that door.
+        '<div class="sv-v">\u201C' + _escFew(v.verse || '') + '\u201D</div>' +
+        '<div class="sv-r">' + _escFew(v.reference || '') + '</div>' +
+        '<div class="sv-d">' + _escFew(v.date || '') + '</div>' +
       '</div>' +
       '<button onclick="deleteSavedVerse(' + i + ')" aria-label="Remove verse" style="background:none;border:none;color:var(--tx3);min-width:28px;min-height:28px;font-size:18px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0">\u00D7</button>' +
     '</div>';
@@ -21966,7 +22008,7 @@ function saveVerseResult(idx){
     saved.unshift({verse:v.verse,reference:v.reference,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'})});
     ls('totry_sv',saved.slice(0,200));
     renderSavedVerses();
-    showToast('Verse saved &#9825;',v.reference);
+    showToast('Verse saved \u2661',v.reference);   // the entity is printed literally now that showToast escapes
   }else{
     showToast('Already saved',v.reference);
   }
@@ -22805,7 +22847,7 @@ async function loadBibleChapter(){
       const row=document.createElement('div');row.className='bible-verse-row';
       const _ref = book.name+' '+chapter+':'+v.num;
       if(_savedRefs.has(_ref)) row.classList.add('highlighted');
-      row.innerHTML='<span class="bvn">'+v.num+'</span><span class="bvt">'+v.text.trim()+'</span>';
+      row.innerHTML='<span class="bvn">'+v.num+'</span><span class="bvt">'+_escFew(v.text.trim())+'</span>';   // third-party chapter text
       row.onclick=async ()=>{
         if(row.classList.contains('highlighted')){
           // The class comes off only if the verse actually went, so declining the confirm leaves the
@@ -22927,7 +22969,7 @@ async function searchBible(query){
         res.innerHTML='';
         const el=document.createElement('div');
         el.className='bible-search-result';
-        el.innerHTML='<div class="bsr-ref">'+query+' (ESV)</div><div class="bsr-text">'+esvText+'</div>';
+        el.innerHTML='<div class="bsr-ref">'+_escFew(query)+' (ESV)</div><div class="bsr-text">'+_escFew(esvText)+'</div>';
         el.onclick=()=>saveVerseFromReader(esvText, query+' (ESV)');
         res.appendChild(el);
         return;
@@ -23971,7 +24013,8 @@ async function generateWeeklyCoachResponse(entry){
   if(entry && entry.flagged) return;                 // never write a coach response onto a disclosure
   
   // Build context
-  let context = `User: Day ${dayCount} of journey. Season: ${season}.`;
+  // Its own context string, so lifeStateBrief()'s UNITS line never reached it.
+  let context = `User: Day ${dayCount} of journey. Season: ${season}.` + (typeof _unitsNote==='function' ? _unitsNote() : '');
   if(identity) context += ` Identity: "${identity}".`;
   context += `\nThis week\'s check-in:`;
   if(entry.weight) context += `\n- Weight: ${entry.weight}kg`;
@@ -24042,6 +24085,12 @@ async function generateWeeklyCoachResponse(entry){
 }
 // Recent weight entries with delete — weight was previously un-removable (a "trapped entry").
 let _weighShowAll = false;
+// The Track tab's check-in history rendered EVERY entry ever. At 400 weigh-ins that is 21,230px
+// of cards, and at the app's own 1,000-row storage cap it is 56,490px \u2014 with the summary the
+// person actually came for pushed 1,830px below a card they have to scroll past every time.
+// Same pattern as the weigh-in list above: the recent ones, and a way to see the rest.
+let _bodyHistShowAll = false;
+function toggleBodyHistShowAll(){ _bodyHistShowAll = !_bodyHistShowAll; try{ renderBody(); }catch(_){ } }
 function toggleWeighShowAll(){ _weighShowAll = !_weighShowAll; renderWeightHistory(); }
 function renderWeightHistory(){
   const wrap = document.getElementById('bod-weight-history');
@@ -24546,7 +24595,8 @@ function renderBody(){
     }
     // Full entry per check-in (not just weight) so progress reads as a story over time:
     // weight + change, body-fat, the scores, and the win/struggle/focus reflections.
-    entries.forEach((e,i)=>{
+    const _histShown = _bodyHistShowAll ? entries : entries.slice(0, 12);
+    _histShown.forEach((e,i)=>{
       const prev=entries[i+1];
       // prev was simply the next row, so a weightless reflection between two weigh-ins swallowed the
       // delta and the later one rendered "81.2kg —" with nothing to compare against. Step back to the
@@ -24579,6 +24629,14 @@ function renderBody(){
       card.innerHTML=html;
       hist.appendChild(card);
     });
+    if(entries.length > 12){
+      const more=document.createElement('button');
+      more.className='btn';
+      more.style.cssText='width:100%;margin-top:10px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px;min-height:34px';
+      more.textContent = _bodyHistShowAll ? 'Show fewer' : ('Show all ' + entries.length + ' check-ins');
+      more.onclick = toggleBodyHistShowAll;
+      hist.appendChild(more);
+    }
   }
   
   // Render measurements + progress photos
@@ -24992,7 +25050,7 @@ function adjustTracker(type,delta){
   ls('totry_trackers',trackers);
   // Sleep is shared with the readiness model (via totry_checkins). Mirror precise hours into today's
   // sleep check-in so readiness uses what you logged here, and Morning/Track never disagree.
-  if(type==='sleep'){ try{ const _iso=new Date().toISOString().slice(0,10); const _ck=ls('totry_checkins')||[]; const _i=_ck.findIndex(c=>(c.ts||'').slice(0,10)===_iso && c.kind==='sleep'); const _e={kind:'sleep',scores:{sleep:trackers[today].sleep},ts:new Date().toISOString()}; if(_i>=0)_ck[_i]=_e; else _ck.unshift(_e); ls('totry_checkins',_ck.slice(0,300)); }catch(_){} }
+  if(type==='sleep'){ try{ const _iso=_todayLocalISO(); const _ck=ls('totry_checkins')||[]; const _i=_ck.findIndex(c=>c.ts&&_todayLocalISO(c.ts)===_iso && c.kind==='sleep'); const _e={kind:'sleep',scores:{sleep:trackers[today].sleep},ts:new Date().toISOString()}; if(_i>=0)_ck[_i]=_e; else _ck.unshift(_e); ls('totry_checkins',_ck.slice(0,300)); }catch(_){} }
   // Steps are shared with the coach/whole-person brief (via totry_today_steps). Keep them in lockstep
   // so logging steps here isn't invisible to the coach, and vice-versa. (Was two disconnected stores.)
   if(type==='steps'){ try{ ls('totry_today_steps', trackers[today].steps); }catch(_){} }
@@ -29462,7 +29520,11 @@ function renderAdaptiveTDEE(){
   if(dir !== 'maintaining' && r.trendWeight){
     const perDay = r.weightChangeKg / r.days;
     const in4w = Math.round((r.trendWeight + perDay*28)*10)/10;
-    forecastLine = '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:4px">If this trend holds: ~' + wDelta(in4w) + ' in 4 weeks.</div>';
+    // wFmt, NOT wDelta. in4w is an absolute projected WEIGHT, and wDelta formats a CHANGE — it signs
+    // positives, so a woman losing weight read "If this trend holds: ~+76.8kg in 4 weeks", which
+    // says she will gain 76.8kg. An earlier round's unit sweep converted this line and reached for
+    // the wrong one of the two formatters; converting a number correctly is only half the job.
+    forecastLine = '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:4px">If this trend holds: ~' + wFmt(in4w) + ' in 4 weeks.</div>';
   }
   // THE LOOP CLOSER: if real burn differs meaningfully from the set goal, offer (never force)
   // a one-tap goal update. Consent-based, like everything in this app.
@@ -30260,14 +30322,19 @@ function deleteFoodEntry(date,id){
   // delete it a second time — silently, and possibly on another device. tombstoneRevoke() is what
   // makes the restore outrank the deletion, and it exists for exactly this.
   if(removed && typeof showUndo==='function'){
-    showUndo(_escFew(removed.name||'Entry')+' removed', function(){
+    showUndo((removed.name||'Entry')+' removed', function(){   // showUndo escapes; escaping here too printed &#39;
       const l2=ls('totry_nutlog')||{};
       const arr=Array.isArray(l2[date])?l2[date]:[];
       if(!arr.some(e=>e.id===removed.id)){
         arr.splice(idx>=0&&idx<=arr.length?idx:arr.length, 0, removed);
         l2[date]=arr;
         ls('totry_nutlog',l2);
-        if(typeof tombstoneRevoke==='function') tombstoneRevoke('totry_nutlog', removed.id);
+        // syncIdOf(), NOT removed.id. Tombstones are keyed by syncIdOf(x) — 'i'+x.id — on both
+        // sides, and 01-sync.js says so in its own comment: if the two ever disagree the tombstone
+        // silently never matches. Passing the raw id revoked nothing, so the meal came back on
+        // screen and the next pull deleted it again and pushed that deletion to every device for
+        // 180 days. removeWhyAffirmation, added in the same commit, already had this right.
+        if(typeof tombstoneRevoke==='function') tombstoneRevoke('totry_nutlog', (typeof syncIdOf==='function') ? syncIdOf(removed) : removed.id);
       }
       renderNutritionLog();
     });
@@ -32353,7 +32420,15 @@ function renderCalendarMonth(){
   for(let d=1; d<=daysInMonth; d++){
     const cellDate = new Date(year, month, d);
     const dow = (cellDate.getDay()+6)%7;
-    const _calCellISO = cellDate.toISOString().slice(0,10);
+    // LOCAL midnight, formatted as UTC, is the day BEFORE at any positive offset. cellDate is
+    // new Date(year, month, d) \u2014 local midnight \u2014 so at UTC+10 toISOString() returned the 5th
+    // for the cell painted as the 6th: the grid highlighted today in gold and opened yesterday,
+    // with yesterday's events. Everything from UTC+1 to UTC+14, all 24 hours of every day, which
+    // includes this app's own home timezone and all of Europe on summer time.
+    // This line IS the previous round's fix for "tapping any date opens today" (ae93f6b) \u2014 it
+    // replaced one wrong day with another, which is why the dots two lines down disagree with it:
+    // they scope off local `dow` and `cellDate` and are right, while the onclick was not.
+    const _calCellISO = _todayLocalISO(cellDate);
     // A ONE-OFF IS NOT A WEEKLY. This matched on weekday alone, so an event saved with "Repeats
     // every week" OFF was drawn on that weekday in every week of the grid, for ever. Scope a
     // non-recurring event to the week it actually belongs to.
@@ -32370,6 +32445,11 @@ function renderCalendarMonth(){
 }
 function calMonthShift(delta){
   const ref = window.__calMonthRef ? new Date(window.__calMonthRef) : new Date();
+  // setMonth() on a day-of-month the target month does not have OVERFLOWS: 31 Jan + 1 month is
+  // 31 February, which JavaScript rolls forward to 3 March. So from the 29th-31st the › arrow
+  // skipped February entirely and it could not be reached going forward at all. Anchor to the 1st
+  // before shifting — the grid only ever uses the month and year of this reference.
+  ref.setDate(1);
   ref.setMonth(ref.getMonth()+delta);
   window.__calMonthRef = ref.toISOString();
   renderCalendarMonth();
@@ -32893,6 +32973,10 @@ function openSpendingRead(justImported){
 // same payee, same cents, same direction = the same event, whatever order the rows arrive in.
 function _txFingerprint(t){
   const d = new Date(t.ts);
+  // DELIBERATELY UTC, and the only one left in the app. Every other toISOString().slice(0,10) was
+  // a local date computed in UTC and shipped the wrong day; this one is a cross-device dedup key,
+  // so it must be the SAME string on every device. A local date would give two phones in two
+  // timezones different fingerprints for one transaction and the dedup would stop working.
   const day = isNaN(d.getTime()) ? '' : d.toISOString().slice(0,10);
   const desc = String(t.note || t.desc || '').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,24);
   return day+'|'+desc+'|'+Math.round((t.amount||0)*100)+'|'+(t.type||'');
@@ -33222,7 +33306,15 @@ function renderTransactions(){
   }
   
   if(recent){
-    const recentList = thisMonth.slice(0, 8);
+    // "Recent" must mean recent, not "first eight in whatever order the array happens to be in".
+    // This relied on the store being newest-first, which is true only for a bank export that
+    // happened to be sorted that way \u2014 import an oldest-first statement, or merge two devices, and
+    // the card headed "Recent (this month)" showed the OLDEST eight of the month.
+    const recentList = thisMonth.slice().sort(function(a,b){
+      const ta = new Date((a && (a.ts || a.date)) || 0).getTime();
+      const tb = new Date((b && (b.ts || b.date)) || 0).getTime();
+      return (isFinite(tb)?tb:0) - (isFinite(ta)?ta:0);
+    }).slice(0, 8);
     if(!recentList.length){
       recent.innerHTML = '<p class="empty-note">No transactions this month yet</p>';
     } else {
@@ -35413,8 +35505,12 @@ function renderMorningDayAhead(){
 
 function logMorningSleep(v){
   const checkins = ls('totry_checkins') || [];
-  const today = new Date().toISOString().slice(0,10);
-  const existingIdx = checkins.findIndex(c => (c.ts||'').slice(0,10) === today && c.kind === 'sleep');
+  // `ts` is a UTC instant; its first ten characters are the UTC day, not the person's. Comparing
+  // one against the other means 7am and 11am on the same local morning fall on different UTC days
+  // at any positive offset — so the answer given at 7am was invisible at 11am, the readiness card
+  // vanished, and answering again wrote a SECOND sleep row for the same night. Compare local days.
+  const today = _todayLocalISO();
+  const existingIdx = checkins.findIndex(c => c.kind === 'sleep' && c.ts && _todayLocalISO(c.ts) === today);
   const entry = { kind:'sleep', scores:{ sleep:v }, ts:new Date().toISOString() };
   if(existingIdx >= 0) checkins[existingIdx] = entry; else checkins.unshift(entry);
   ls('totry_checkins', checkins.slice(0,300));
@@ -35459,8 +35555,8 @@ function _showMorningReadiness(v){
 function _restoreMorningSleep(){
   try{
     const checkins = ls('totry_checkins') || [];
-    const today = new Date().toISOString().slice(0,10);
-    const c = checkins.find(c => (c.ts||'').slice(0,10) === today && c.kind === 'sleep');
+    const today = _todayLocalISO();   // the person's day, not UTC's — see logMorningSleep
+    const c = checkins.find(c => c.kind === 'sleep' && c.ts && _todayLocalISO(c.ts) === today);
     if(c && c.scores && c.scores.sleep!=null){
       document.querySelectorAll('#morning-sleep-opts .sleep-opt').forEach(b => {
         const on = parseInt(b.getAttribute('data-v'),10) === c.scores.sleep;
@@ -38182,7 +38278,7 @@ function confirmScreenshotWorkout(detected){
   const mins = detected.durationMinutes || 0;
   const cal = detected.calories || 0;
   const hr = detected.averageHeartRate || null;
-  const dateStr = detected.date || new Date().toISOString().slice(0,10);
+  const dateStr = detected.date || _todayLocalISO();
   
   // Save as a logged workout
   const session = {
@@ -43158,7 +43254,14 @@ try{
   if(typeof MutationObserver === 'function'){
     const _syncSheetFlag = function(){
       try{
-        const open = [...document.querySelectorAll('.modal-bg.open')]
+        // .feel-door TOO. This watched .modal-bg.open only, and the FEELING DOOR — the orb's primary
+        // action and the first thing many people ever tap — is not one: it is #feel-door.open with
+        // its own backdrop. So sheet-open stayed false there and the toast sat in its default corner,
+        // on top of two of the ten feeling chips. Hit-tested: elementFromPoint at the centre of the
+        // "Fired up" and "Actually good" chips returned the toast, not the chip.
+        // Every fixed full-screen overlay in the app is one of these two shapes; both are listed, and
+        // the selector is the place to add a third if one is ever written.
+        const open = [...document.querySelectorAll('.modal-bg.open, .feel-door.open')]
           .some(function(m){ const c = getComputedStyle(m); return c.display !== 'none' && c.visibility !== 'hidden'; });
         document.body.classList.toggle('sheet-open', open);
       }catch(_){ }
@@ -43172,7 +43275,23 @@ function showToast(title,msg,onTap){
   try{
     const _failedAt = window.__lsLastWriteFailed || 0;
     if(_failedAt && (Date.now() - _failedAt) < 2000){
-      const _success = /saved|logged|added|updated|done|complete|tracked|recorded|\u2713/i.test(String(title||''));
+      // TITLE **AND** MESSAGE. This tested the title alone, and 269 of the app's 332 toast titles do
+      // not contain one of those words — so on a full phone a person still read "Held your line" and
+      // "Morning kept \u2014 Gratitude and intention saved for today" for things that went nowhere. The
+      // second of those literally says "saved", in the message.
+      // Broad on purpose: a real write failed within the last two seconds, so a toast fired in that
+      // window is almost certainly about it. The one thing never overwritten is a message that is
+      // already telling the truth about failing \u2014 replacing one honest error with another helps nobody.
+      const _txt = String(title||'') + ' \u00b7 ' + String(msg||'');
+      // INVERTED, after driving it. A success VOCABULARY cannot work here: "Held your line \u00b7 One more
+      // day you chose yourself" contains no success word at all and is still a congratulation for a
+      // win that was never written. Within two seconds of a real failed write, the truth about that
+      // write outranks anything else the app wanted to say \u2014 so the default is to tell it, and only
+      // two kinds of message are let through: one already honest about failing, and a network/status
+      // note that was never a claim about saving in the first place.
+      const _alreadyHonest = /not saved|couldn|could not|can\u2019t|cannot|failed|error|no room|out of room|storage full|went wrong/i.test(_txt);
+      const _statusOnly = /offline|connecting|checking|loading|signing in|syncing|no connection|reconnect/i.test(_txt);
+      const _success = !_alreadyHonest && !_statusOnly;
       if(_success){
         title = 'Not saved';
         msg = 'This device is out of room, so that did not save. Settings \u2192 Your data to free some space.';
@@ -44105,7 +44224,7 @@ function renderTourPrompt(){
   card.style.display='block';
   card.innerHTML='<div style="font-family:Cormorant Garamond,serif;font-size:18px;color:var(--tx);margin-bottom:4px">A quick look around?</div>'+
     '<div style="font-size:13px;color:var(--tx2);line-height:1.55;margin-bottom:12px">There\u2019s a lot new in here. Want a 60-second tour of how it all fits together?</div>'+
-    '<div style="display:flex;gap:8px"><button class="bclass="btn" style="flex:1;font-size:13px" onclick="acceptTourPrompt()">Show me<'+
+    '<div style="display:flex;gap:8px"><button class="btn" style="flex:1;font-size:13px" onclick="acceptTourPrompt()">Show me</button>'+
     '<button class="btn" style="flex:1;font-size:13px;background:var(--bg3);border:1px solid var(--bd)" onclick="dismissTourPrompt()">No thanks</button></div>';
 }
 function acceptTourPrompt(){ ls('totry_tour_offered', true); const c=document.getElementById('home-tour-prompt'); if(c)c.style.display='none'; if(typeof startFeatureTour==='function') startFeatureTour(); }
@@ -44684,7 +44803,7 @@ async function exportFullBackup(){
   const blob = new Blob([JSON.stringify(backup, null, 2)], {type: 'application/json'});
   // The one SaveFile caller that threw its result away, so a CANCELLED share sheet and an outright
   // failed write both produced "Backup saved". Its sibling exportAllData already does this correctly.
-  const _r = await SaveFile.save(blob, 'totry-backup-' + new Date().toISOString().slice(0,10) + '.json', 'ToTry backup');
+  const _r = await SaveFile.save(blob, 'totry-backup-' + _todayLocalISO() + '.json', 'ToTry backup');
   if(_r === null) return;                                   // dismissed — they chose; say nothing
   if(!_r){ showToast('Not saved', 'Nothing was written. Try again in a moment.'); return; }
   // Name the exclusions. Progress photos and un-backed-up cycle data never leave the device by design
@@ -45136,7 +45255,7 @@ function toggleReachOut(){
 const GOATCOUNTER_CODE = 'totry'; // traffic + referrers 2192 totry.goatcounter.com (dashboard kept private)
 function _anonId(){
   let id = localStorage.getItem('totry_anon');
-  if(!id){ id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)); localStorage.setItem('totry_anon', id); }
+  if(!id){ id = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2)); try{ localStorage.setItem('totry_anon', id); }catch(_){ } }
   return id;
 }
 // One switch turns BOTH counters off, everywhere. An app whose whole promise is "your confession stays
@@ -46244,7 +46363,14 @@ function renderFirstRun(){
         ? '<div style="width:22px;height:22px;border-radius:50%;background:var(--gr);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#000;font-size:13px;font-weight:700">✓</div>'
         : '<div style="width:22px;height:22px;border-radius:50%;border:2px solid var(--bd2);flex-shrink:0"></div>';
       const textStyle = s.done ? 'color:var(--tx3);text-decoration:line-through' : 'color:var(--tx)';
-      const tap = s.done ? '' : ' onclick="' + s.action.replace(/"/g,'&quot;') + '"';
+      // A DIV WITH AN ONCLICK IS NOT A BUTTON. These four rows are the app's own "four quick things
+      // to start" — the first thing a new person is offered — and a keyboard or Full Keyboard Access
+      // user could not reach any of them: no role, no tabindex, no key handler. Give them the three
+      // things that make a div behave like the button it already looks like.
+      const tap = s.done ? '' :
+        ' role="button" tabindex="0"' +
+        ' onclick="' + s.action.replace(/"/g,'&quot;') + '"' +
+        ' onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();this.click();}"';
       return '<div' + tap + ' style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)' + (s.done ? '' : ';cursor:pointer') + '">' +
         check +
         '<div style="flex:1">' +
@@ -46721,7 +46847,13 @@ function renderLifeWoven(){
   // THE FIGHT — clean streak (quit) or holding the line (moderate)
   const vs=(s.fight&&s.fight.vices)||[]; let fightTxt;
   if(!vs.length) fightTxt='no fight named yet';
-  else { const q=vs.filter(v=>viceIsAbstinence(v)); if(q.length){ const mc=Math.max.apply(null,q.map(v=>v.cleanDays||0)); fightTxt=mc+' day'+(mc===1?'':'s')+' clean'; } else { const lg=vs.filter(v=>v.kind==='letgo'); /* v.cleanDays is null for a letting-go goal BY DESIGN: viceCleanDays() refuses to count clean days for something that has no unclean ones. So `|| 0` printed 'letting go, day 0' forever — on day 1 and day 42 alike — while the vice card said '41 days of choosing yourself'. renderHomeQuickWins already counts this correctly from startDate; same sum here. */ const lgDay=lg.length?Math.max.apply(null,lg.map(function(v){ return v.letGoDays || 0; })):0; fightTxt = lg.length ? (lgDay>0 ? 'letting go, day '+lgDay : 'letting go') : 'holding your line'; } }
+  else { const q=vs.filter(v=>viceIsAbstinence(v)); if(q.length){ const mc=Math.max.apply(null,q.map(v=>v.cleanDays||0));
+    // "0 days clean", sixty seconds after naming your first fight, directly under a vice card
+    // that says "Day 1 of the fight". Two surfaces, one person, opposite arithmetic \u2014 and the one
+    // that greets them is the discouraging one. Zero full days HAVE passed, so the number is not
+    // wrong; it is the wrong thing to say. Day one is where everybody starts, and where anybody
+    // who slips returns.
+    fightTxt = mc === 0 ? 'day one' : plural(mc,'day')+' clean'; } else { const lg=vs.filter(v=>v.kind==='letgo'); /* v.cleanDays is null for a letting-go goal BY DESIGN: viceCleanDays() refuses to count clean days for something that has no unclean ones. So `|| 0` printed 'letting go, day 0' forever — on day 1 and day 42 alike — while the vice card said '41 days of choosing yourself'. renderHomeQuickWins already counts this correctly from startDate; same sum here. */ const lgDay=lg.length?Math.max.apply(null,lg.map(function(v){ return v.letGoDays || 0; })):0; fightTxt = lg.length ? (lgDay>0 ? 'letting go, day '+lgDay : 'letting go') : 'holding your line'; } }
   // SPIRIT — the daily rhythm
   const mornDone=ritualLog('totry_mornings').some(dOn); const evenDone=ritualLog('totry_evenings').some(dOn);
   const spiritTxt = evenDone?'day closed ✓' : mornDone?'reflect tonight' : (h<15?'set your intention':'reflect on today');
@@ -46971,7 +47103,23 @@ function renderHomeHabits(){
   // (ticking belongs to the evening, where it is one step of closing the day) \u2014 but "0/3" with no
   // route is a scoreboard with no game. The score itself is now the door to the tick list.
   const _todayTile = summary.querySelector('#home-habit-today');
-  if(_todayTile) _todayTile.onclick = function(){ if(typeof go === 'function') go('reflect'); };
+  if(_todayTile) _todayTile.onclick = function(){
+    if(typeof go !== 'function') return;
+    go('reflect');
+    // go('reflect') lands on evening step 0 — the mood question — and the tick boxes are on step 3,
+    // so "tap today's score to tick them off" put the person three taps from any tick box. Land on
+    // the step that actually HOLDS the list, found at runtime rather than hardcoded, because the
+    // evening's step anchors have been renumbered before and a magic 3 would rot silently.
+    let _tries = 0;
+    const _land = function(){
+      const tl = document.getElementById('evening-habit-tick-list');
+      const holder = tl && tl.closest ? tl.closest('[data-mstep]') : null;
+      const n = holder ? parseInt(holder.getAttribute('data-mstep'), 10) : NaN;
+      if(isFinite(n) && typeof eveningStep === 'function'){ eveningStep(n); return; }
+      if(++_tries < 12) setTimeout(_land, 90);   // the flow renders on a timeout after go()
+    };
+    setTimeout(_land, 120);
+  };
   
   // Day-letter row across the top
   const headerRow = document.createElement('div');
@@ -47783,8 +47931,13 @@ function renderCoachQuickReplies(){
   if(longestStreak >= 7){
     chips.push({p: 4, label: '🔥 Keep me sharp at day ' + longestStreak, prompt: 'I am on a ' + longestStreak + '-day clean streak. How do I keep building without getting complacent?'});
   }
-  if(habitsTotal > 0 && habitsToday < habitsTotal / 2){
-    chips.push({p: 4, label: '📋 What habits matter most?', prompt: 'I have only hit ' + habitsToday + '/' + habitsTotal + ' habits today. Which ones matter most for me to finish before bed?'});
+  // NOT ON DAY ONE, AND NOT THE WORD "ONLY". This fired for a brand-new person against habits the
+  // app had suggested for them, putting "I have only hit 0/6 habits today" in their own mouth as the
+  // coach's FIRST offered question \u2014 a self-criticism about work they had never agreed to. It needs
+  // a few days of their own record before the question means anything, and it never needs "only".
+  if(habitsTotal > 0 && habitsToday < habitsTotal / 2 && habitsToday > 0
+     && (typeof daysInstalled !== 'function' || daysInstalled() >= 4)){
+    chips.push({p: 4, label: '📋 What habits matter most?', prompt: 'I hit ' + habitsToday + ' of ' + habitsTotal + ' habits today. Which ones matter most, and which could I let go?'});
   }
   if(prayers.length > 0){
     chips.push({p: 3, label: '🙏 Pray with me', prompt: 'I have ' + prayers.length + ' prayer' + (prayers.length===1?'':'s') + ' I am still praying about. Help me bring them to God right now.'});
@@ -48108,7 +48261,7 @@ function startStravaOAuth(){
   if(!STRAVA_CLIENT_ID) return;
   const scope = 'read,activity:read_all';
   const state = Math.random().toString(36).slice(2);
-  localStorage.setItem('totry_strava_oauth_state', state);
+  try{ localStorage.setItem('totry_strava_oauth_state', state); }catch(_){ }
   const url = 'https://www.strava.com/oauth/authorize' +
     '?client_id=' + STRAVA_CLIENT_ID +
     '&response_type=code' +
@@ -48416,7 +48569,7 @@ function offerGoogleHealthConnect(){
 
 function startGoogleHealthOAuth(){
   const state = 'gh_' + Math.random().toString(36).slice(2);
-  localStorage.setItem('totry_google_oauth_state', state);
+  try{ localStorage.setItem('totry_google_oauth_state', state); }catch(_){ }
   const url = 'https://accounts.google.com/o/oauth2/v2/auth' +
     '?client_id=' + encodeURIComponent(GOOGLE_CLIENT_ID) +
     '&redirect_uri=' + encodeURIComponent(GOOGLE_REDIRECT_URI) +
@@ -49973,7 +50126,7 @@ async function exportFoodCSV(){
   });
   
   const blob = new Blob([csv], {type: 'text/csv'});
-  const _r = await SaveFile.save(blob, 'totry-food-log-' + new Date().toISOString().slice(0,10) + '.csv', 'Food log');
+  const _r = await SaveFile.save(blob, 'totry-food-log-' + _todayLocalISO() + '.csv', 'Food log');
   if(_r === null) return;   // dismissed
   // "Downloaded" is browser language: on iOS this hands the file to the share sheet, so the person
   // chose where it went. Say the true thing for the platform they're on.
@@ -50276,18 +50429,31 @@ function getResilienceStreak(){
   const start=ls('totry_start');
   if(!start)return 1;
   const today=new Date();today.setHours(0,0,0,0);
+  // READ THE LOGS ONCE. This used to re-read and re-parse every morning, evening, journal entry,
+  // workout and check-in INSIDE the day loop — 365 passes over five stores, each one re-running
+  // JSON.parse and building a Date per row. For a person a year in that is ~1 second of blocked main
+  // thread every time Home renders; measured at 7ms for a new user and 0.9-1.1s for a long one.
+  // One pass, into a Set of local date strings, then the day walk is O(days).
+  const _days = new Set();
+  const _add = (ts) => { try{ if(ts!=null) _days.add(new Date(ts).toLocaleDateString('en-AU')); }catch(_){ } };
+  try{ ritualLog('totry_mornings').forEach(m => _add(m && m.ts)); }catch(_){ }
+  try{ ritualLog('totry_evenings').forEach(e => _add(e && e.ts)); }catch(_){ }
+  try{ (ls('totry_journal')||[]).forEach(j => _add(j && j.ts)); }catch(_){ }
+  try{ (ls('totry_workouts')||[]).forEach(w => _add(w && w.ts)); }catch(_){ }
+  try{ (ls('totry_checkins')||[]).forEach(c => { if(c && c.date) _days.add(c.date); }); }catch(_){ }
+  try{ const lo = ls('totry_last_open'); if(lo) _days.add(lo); }catch(_){ }
+  // NO 365 CAP. The loop stopped at a year, so someone who had shown up every day for 500 days was
+  // told 365 and the number never moved again — the one person the tile exists for is the one it
+  // stops counting for. Bounded by their own history instead, with a sane ceiling for corrupt data.
+  const _startMs = (function(){ try{ const d=new Date(start); d.setHours(0,0,0,0); return d.getTime(); }catch(_){ return NaN; } })();
+  const _sinceStart = isFinite(_startMs) ? Math.floor((today.getTime()-_startMs)/86400000)+1 : 365;
+  const _limit = Math.max(1, Math.min(_sinceStart + 2, 20000));
   let streak=0;let _graceUsed=false;
-  for(let i=0;i<365;i++){
+  for(let i=0;i<_limit;i++){
     const checkDate=new Date(today);
     checkDate.setDate(today.getDate()-i);
     const dateStr=checkDate.toLocaleDateString('en-AU');
-    const hasActivity=
-      ritualLog('totry_mornings').some(m=>new Date(m.ts).toLocaleDateString('en-AU')===dateStr)||
-      ritualLog('totry_evenings').some(e=>new Date(e.ts).toLocaleDateString('en-AU')===dateStr)||
-      (ls('totry_journal')||[]).some(j=>new Date(j.ts).toLocaleDateString('en-AU')===dateStr)||
-      (ls('totry_workouts')||[]).some(w=>new Date(w.ts).toLocaleDateString('en-AU')===dateStr)||
-      (ls('totry_checkins')||[]).some(c=>c.date===dateStr)||
-      ls('totry_last_open')===dateStr;
+    const hasActivity = _days.has(dateStr);
     // NEVER MISS TWICE (Lally 2010): a single off day never breaks the chain, but two IN A ROW does.
     // The allowance resets on every day they showed up — so it forgives each isolated gap, not just
     // the first one in the whole history.
@@ -50331,7 +50497,12 @@ function renderDualStreaks(){
   // number under it — 106 days in the fight, described as 106 days clean. The number never being 0
   // is also why the old "A fresh start" reframe is gone: a fight does not reset, so it has no zero
   // to soften. The clean streak still lives on the nav card above, where it always did.
-  try{ const ss=document.querySelector('.streak-card.sober .streak-sub'); if(ss) ss.textContent='Days since day 0'; }catch(_){}
+  // ...and "Days since day 0" was the SECOND wrong label on the same number. It reads as days since
+  // the journey began, which is what the header on this very screen already shows — so the tile said
+  // 11 under a header saying day 43 and the two looked like a contradiction. The number is the
+  // longest FIGHT. Name that, in the same words the vice card uses ("Day N of the fight"), so the
+  // two surfaces agree about what is being counted.
+  try{ const ss=document.querySelector('.streak-card.sober .streak-sub'); if(ss) ss.textContent='Days in the fight'; }catch(_){}
 }
 
 function showResilienceInfo(){
@@ -50546,8 +50717,13 @@ function showUndo(message, undoFn){
   
   const snack = document.createElement('div');
   snack.className = 'undo-snack';
+  // ESCAPE AT THE SINK. `message` reaches here as live HTML and two callers build it from a name
+  // the person typed — 'Goal removed: '+removed.name (04-fight.js) and 'Removed '+removed.name
+  // (24-review.js). v581 closed showToast the same way and did not look at this one, which is the
+  // same shared-sink shape one function further along.
+  const _m = (typeof _escFew === 'function') ? _escFew(message) : String(message == null ? '' : message);
   snack.innerHTML = 
-    '<span class="undo-msg">' + message + '</span>' +
+    '<span class="undo-msg">' + _m + '</span>' +
     '<button class="undo-btn" id="_undo-btn">Undo</button>' +
     '<button class="undo-close" id="_undo-close" aria-label="Close">&#215;</button>';
   document.body.appendChild(snack);

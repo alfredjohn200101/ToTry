@@ -228,18 +228,31 @@ function getResilienceStreak(){
   const start=ls('totry_start');
   if(!start)return 1;
   const today=new Date();today.setHours(0,0,0,0);
+  // READ THE LOGS ONCE. This used to re-read and re-parse every morning, evening, journal entry,
+  // workout and check-in INSIDE the day loop — 365 passes over five stores, each one re-running
+  // JSON.parse and building a Date per row. For a person a year in that is ~1 second of blocked main
+  // thread every time Home renders; measured at 7ms for a new user and 0.9-1.1s for a long one.
+  // One pass, into a Set of local date strings, then the day walk is O(days).
+  const _days = new Set();
+  const _add = (ts) => { try{ if(ts!=null) _days.add(new Date(ts).toLocaleDateString('en-AU')); }catch(_){ } };
+  try{ ritualLog('totry_mornings').forEach(m => _add(m && m.ts)); }catch(_){ }
+  try{ ritualLog('totry_evenings').forEach(e => _add(e && e.ts)); }catch(_){ }
+  try{ (ls('totry_journal')||[]).forEach(j => _add(j && j.ts)); }catch(_){ }
+  try{ (ls('totry_workouts')||[]).forEach(w => _add(w && w.ts)); }catch(_){ }
+  try{ (ls('totry_checkins')||[]).forEach(c => { if(c && c.date) _days.add(c.date); }); }catch(_){ }
+  try{ const lo = ls('totry_last_open'); if(lo) _days.add(lo); }catch(_){ }
+  // NO 365 CAP. The loop stopped at a year, so someone who had shown up every day for 500 days was
+  // told 365 and the number never moved again — the one person the tile exists for is the one it
+  // stops counting for. Bounded by their own history instead, with a sane ceiling for corrupt data.
+  const _startMs = (function(){ try{ const d=new Date(start); d.setHours(0,0,0,0); return d.getTime(); }catch(_){ return NaN; } })();
+  const _sinceStart = isFinite(_startMs) ? Math.floor((today.getTime()-_startMs)/86400000)+1 : 365;
+  const _limit = Math.max(1, Math.min(_sinceStart + 2, 20000));
   let streak=0;let _graceUsed=false;
-  for(let i=0;i<365;i++){
+  for(let i=0;i<_limit;i++){
     const checkDate=new Date(today);
     checkDate.setDate(today.getDate()-i);
     const dateStr=checkDate.toLocaleDateString('en-AU');
-    const hasActivity=
-      ritualLog('totry_mornings').some(m=>new Date(m.ts).toLocaleDateString('en-AU')===dateStr)||
-      ritualLog('totry_evenings').some(e=>new Date(e.ts).toLocaleDateString('en-AU')===dateStr)||
-      (ls('totry_journal')||[]).some(j=>new Date(j.ts).toLocaleDateString('en-AU')===dateStr)||
-      (ls('totry_workouts')||[]).some(w=>new Date(w.ts).toLocaleDateString('en-AU')===dateStr)||
-      (ls('totry_checkins')||[]).some(c=>c.date===dateStr)||
-      ls('totry_last_open')===dateStr;
+    const hasActivity = _days.has(dateStr);
     // NEVER MISS TWICE (Lally 2010): a single off day never breaks the chain, but two IN A ROW does.
     // The allowance resets on every day they showed up — so it forgives each isolated gap, not just
     // the first one in the whole history.
@@ -283,7 +296,12 @@ function renderDualStreaks(){
   // number under it — 106 days in the fight, described as 106 days clean. The number never being 0
   // is also why the old "A fresh start" reframe is gone: a fight does not reset, so it has no zero
   // to soften. The clean streak still lives on the nav card above, where it always did.
-  try{ const ss=document.querySelector('.streak-card.sober .streak-sub'); if(ss) ss.textContent='Days since day 0'; }catch(_){}
+  // ...and "Days since day 0" was the SECOND wrong label on the same number. It reads as days since
+  // the journey began, which is what the header on this very screen already shows — so the tile said
+  // 11 under a header saying day 43 and the two looked like a contradiction. The number is the
+  // longest FIGHT. Name that, in the same words the vice card uses ("Day N of the fight"), so the
+  // two surfaces agree about what is being counted.
+  try{ const ss=document.querySelector('.streak-card.sober .streak-sub'); if(ss) ss.textContent='Days in the fight'; }catch(_){}
 }
 
 function showResilienceInfo(){

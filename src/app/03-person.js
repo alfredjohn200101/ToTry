@@ -720,15 +720,8 @@ function lifeStateBrief(s){
   // Nothing ever told the model that, so the coach, the companion and the brother all answered a
   // pounds-and-miles person in kilometres and kilos. The screens were converted one card at a time;
   // the app's actual VOICE was never converted at all. Said once, here, for every AI surface.
-  try{
-    const _wu = (typeof wUnit==='function') ? wUnit() : 'kg';
-    const _du = (typeof dUnit==='function') ? dUnit() : 'km';
-    if(_wu !== 'kg' || _du !== 'km'){
-      lines.push('UNITS: figures below are in kg and km (how this app stores them), but this person '+
-        'reads weight in '+_wu+' and distance in '+_du+'. Convert every number you say back to '+
-        _wu+' and '+_du+' \u2014 never quote them a kg or a km.');
-    }
-  }catch(_){ }
+  const _un = (typeof _unitsNote==='function') ? _unitsNote() : '';
+  if(_un) lines.push(_un.replace(/^\\n/,'').replace(/^\n/,''));
   if(t.sessions7 != null) lines.push('Training: '+t.sessions7+' sessions in 7 days ('+t.daysTrained7+' days)'+(t.lastTitle?', last: '+t.lastTitle:''));
   // Gentle mode ("numbers on/off") is a promise that this person does not see calorie or macro
   // figures — often because counting them is the thing that hurt them. Handing the raw numbers to the
@@ -2171,9 +2164,13 @@ function daysInstalled(){
   try{
     const st = ls('totry_start');
     if(!st) return 1;
-    const t = new Date(st).getTime();
-    if(isNaN(t)) return 1;
-    return Math.max(1, Math.floor((Date.now() - t) / 86400000) + 1);
+    const _s = new Date(st);
+    if(isNaN(_s.getTime())) return 1;
+    // Local midnights, for the same reason as getDayCount(). Counting 24-hour blocks meant somebody
+    // who installed at 9pm was still on "day 1" at 9am the next calendar day.
+    _s.setHours(0,0,0,0);
+    const _n = new Date(); _n.setHours(0,0,0,0);
+    return Math.max(1, Math.round((_n - _s) / 86400000) + 1);
   }catch(_){ return 1; }
 }
 
@@ -2185,9 +2182,15 @@ function getDayCountForDate(d){
     if(!anchorStr) return 1;
     const anchor = new Date(anchorStr);
     if(isNaN(anchor)) return 1;
-    const t = (d instanceof Date) ? d.getTime() : new Date(d).getTime();
-    if(isNaN(t)) return getDayCount();
-    return Math.max(1, Math.floor((t - anchor) / 86400000) + 1);
+    const _d = (d instanceof Date) ? new Date(d) : new Date(d);
+    if(isNaN(_d.getTime())) return getDayCount();
+    // MIDNIGHT TO MIDNIGHT, exactly as getDayCount() above. This sibling kept counting elapsed
+    // 24-hour blocks from a full timestamp, so two entries written seconds apart could land either
+    // side of a 24h multiple and be tagged Day 5 and Day 6 in the same list, under a header reading
+    // 6. getDayCount() was fixed for this; the other writer into the same store was not.
+    const _a = new Date(anchor); _a.setHours(0,0,0,0);
+    _d.setHours(0,0,0,0);
+    return Math.max(1, Math.round((_d - _a) / 86400000) + 1);
   }catch(_){ return getDayCount(); }
 }
 
@@ -2236,8 +2239,11 @@ function restartJourney(){
 // which may predate when they installed the app. Honest anchor, not a fake streak.
 function editJourneyStart(){
   const current = ls('totry_journey_start') || ls('totry_start') || new Date().toISOString();
-  const currentDate = new Date(current).toISOString().slice(0,10);
-  const today = new Date().toISOString().slice(0,10);
+  // A <input type="date"> is a LOCAL calendar date. Filling it from toISOString() handed it the
+  // UTC day, which at any positive offset is yesterday — so opening this and pressing Save without
+  // changing anything moved the anchor back one day and added a phantom day to the counter.
+  const currentDate = _todayLocalISO(current);
+  const today = _todayLocalISO();
   
   const total = totalDaysTrying();
   const rc = restartCount();
@@ -2289,14 +2295,21 @@ function resetJourneyStart(){
   document.querySelector('.modal-bg.open')?.remove();
   if(typeof initSettingsTab==='function') initSettingsTab();
   if(typeof renderDayCounter==='function') renderDayCounter();
-  showToast('Reset', 'Back to account creation date.');
+  // NO TOAST BESIDE THE UNDO. The toast is 76px tall at z-index 1200 and the undo snack is 54px at
+  // z-index 700, and they overlap: elementFromPoint at the UNDO button's own centre returned the
+  // toast's div for the whole five seconds both were alive, so the tap dismissed the toast and
+  // undid nothing. The snack already says what happened AND offers the way back, which is strictly
+  // more than the toast did. Only when there is nothing to undo does the toast speak instead.
+  // This was the only one of twelve showUndo sites that fired a toast in the same tick.
   if(_prev && typeof showUndo === 'function'){
-    showUndo('Journey start reset', function(){
+    showUndo('Journey start reset \u2014 back to your account start', function(){
       ls('totry_journey_start', _prev);
       if(typeof syncToCloud==='function') syncToCloud('totry_journey_start', _prev);
       if(typeof initSettingsTab==='function') initSettingsTab();
       if(typeof renderDayCounter==='function') renderDayCounter();
     });
+  } else {
+    showToast('Reset', 'Back to account creation date.');
   }
 }
 
@@ -2390,7 +2403,13 @@ function selectHevyTier(tier){
 // hand-typed indices (i < 2, i < 3, i < step-1) — so they disagreed with each other AND with the
 // number of screens, and any screen added later inherited the bug by default. One ordered list, one
 // function, called from every transition.
-const OB_STEPS = ['ob1','ob-what','ob2','ob-moment','ob-apps','ob-fork','ob3','ob-why','ob-faith','ob4','ob5','ob6'];
+// THE ORDER A PERSON ACTUALLY WALKS, not the order the divs happen to sit in the document. This
+// was built from document order and never driven, so it had ob-what before ob2 and ob-moment.
+// The real flow is ob1 \u2192 ob2 (name) \u2192 ob-moment \u2192 ob-what: so tapping "Nothing right now" on
+// ob-moment ran the progress bar BACKWARDS, 4 dots to 2, on a forward tap \u2014 and obBack(), which
+// walks this same list, then offered to return someone to ob2, a screen they had never seen.
+// Verified by driving every step's own buttons, which is the only thing that could have shown it.
+const OB_STEPS = ['ob1','ob2','ob-moment','ob-what','ob-apps','ob-fork','ob3','ob-why','ob-faith','ob4','ob5','ob6'];
 // A WAY BACK. Every onboarding transition moved forward and none returned; the phone's own back
 // gesture does nothing inside a single-page step flow, so a mistyped name or a season picked too
 // fast could only be undone by killing the app and starting again. Walks OB_STEPS, which is the
@@ -2676,9 +2695,10 @@ function obNext(step){
   // Accept either a numeric step (→ 'ob'+N) or a full element id like 'ob-what'
   const targetId = (typeof step === 'string' && step.startsWith('ob')) ? step : ('ob'+step);
   document.getElementById(targetId).classList.add('active');
-  if(typeof step === 'number'){
-    obDots(OB_STEPS[Math.max(0, Math.min(OB_STEPS.length-1, step-1))]);
-  }
+  // Light the dot for the step we actually landed on. This used to index OB_STEPS by the NUMBER,
+  // which silently assumed position N-1 always holds 'obN' — it does not, and obNext(5) lit the
+  // dot for ob-apps. The target id is already resolved two lines above; use it.
+  obDots(targetId);
   window.scrollTo(0,0);
 }
 
@@ -3715,7 +3735,7 @@ async function _readGitaLoad(){
       ? '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><div style="font-family:DM Mono,monospace;font-size:9.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">About this chapter</div><div style="font-size:13px;color:var(--tx3);line-height:1.7">'+_esc(meta.summary.en)+'</div></div>'
       : '';
     // Third-party scripture API text. Not app-authored, not ours to trust as markup.
-    content.innerHTML='<div class="card">'+chName+'<div class="rd-v" data-sv-i="0"><div style="font-size:12px;color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+_escFew(g.ch)+'.'+_escFew(g.v)+' <span style="color:var(--tx3);letter-spacing:0">· verse '+_escFew(g.v)+' of '+_gitaCount(g.ch)+'</span></div>'+(j.slok?'<div style="font-size:16px;line-height:1.95;color:var(--tx);margin-bottom:8px">'+_escFew(j.slok)+'</div>':'')+(j.transliteration?'<div style="font-size:12.5px;font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+String(j.transliteration).trim()+'</div>':'')+'<div style="font-size:14px;color:var(--tx2);line-height:1.75">'+en+'</div></div>'+chSummary+'</div>';
+    content.innerHTML='<div class="card">'+chName+'<div class="rd-v" data-sv-i="0"><div style="font-size:12px;color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+_escFew(g.ch)+'.'+_escFew(g.v)+' <span style="color:var(--tx3);letter-spacing:0">· verse '+_escFew(g.v)+' of '+_gitaCount(g.ch)+'</span></div>'+(j.slok?'<div style="font-size:16px;line-height:1.95;color:var(--tx);margin-bottom:8px">'+_escFew(j.slok)+'</div>':'')+(j.transliteration?'<div style="font-size:12.5px;font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+_escFew(String(j.transliteration).trim())+'</div>':'')+'<div style="font-size:14px;color:var(--tx2);line-height:1.75">'+_escFew(en)+'</div></div>'+chSummary+'</div>';
     _readMakeSavable([{ text:String(en||'').replace(/<[^>]*>/g,'').trim(), ref:'Bhagavad Gita '+g.ch+'.'+g.v }]);
   }catch(e){
     const c2=document.getElementById('read-content');
@@ -3747,7 +3767,7 @@ function _renderDailyPassage(el,t){
   const bank=(t==='hinduism')?VS_HINDU:(t==='buddhism')?VS_BUDDHIST:VS_SECULAR;
   const v=bank[_dailyIndex(bank.length)];
   const kind=(t==='hinduism')?'Today’s verse':(t==='buddhism')?'Today’s teaching':'Today’s reflection';
-  el.innerHTML='<div class="card" style="text-align:center;padding:28px 20px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:16px">'+kind+'</div><div id="daily-passage-text" style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;line-height:1.65;color:var(--tx);margin-bottom:14px">“'+v.t+'”</div><div id="daily-passage-ref" style="font-size:12px;color:var(--go)">— '+v.r+'</div>'+((typeof _verseToolsHTML==='function')?_verseToolsHTML('daily-passage-text','daily-passage-ref'):'')+'</div><div style="display:flex;gap:8px;margin-top:12px"><button class=\'btn\' onclick=\'openBreathMenu()\' style=\'flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12.5px\'>Sit with it \u2014 a minute</button><button class=\'btn\' onclick=\'openJournal()\' style=\'flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12.5px\'>Write what it stirs</button></div>';
+  el.innerHTML='<div class="card" style="text-align:center;padding:28px 20px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:16px">'+kind+'</div><div id="daily-passage-text" style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;line-height:1.65;color:var(--tx);margin-bottom:14px">“'+_escFew(v.t)+'”</div><div id="daily-passage-ref" style="font-size:12px;color:var(--go)">— '+_escFew(v.r)+'</div>'+((typeof _verseToolsHTML==='function')?_verseToolsHTML('daily-passage-text','daily-passage-ref'):'')+'</div><div style="display:flex;gap:8px;margin-top:12px"><button class=\'btn\' onclick=\'openBreathMenu()\' style=\'flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12.5px\'>Sit with it \u2014 a minute</button><button class=\'btn\' onclick=\'openJournal()\' style=\'flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12.5px\'>Write what it stirs</button></div>';
 }
 // Islam — prayer times (Aladhan, free) + Hijri + a daily ayah. Geolocation, with a city fallback.
 function _renderIslamToday(el){

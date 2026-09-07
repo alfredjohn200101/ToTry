@@ -163,7 +163,14 @@ try{
   if(typeof MutationObserver === 'function'){
     const _syncSheetFlag = function(){
       try{
-        const open = [...document.querySelectorAll('.modal-bg.open')]
+        // .feel-door TOO. This watched .modal-bg.open only, and the FEELING DOOR — the orb's primary
+        // action and the first thing many people ever tap — is not one: it is #feel-door.open with
+        // its own backdrop. So sheet-open stayed false there and the toast sat in its default corner,
+        // on top of two of the ten feeling chips. Hit-tested: elementFromPoint at the centre of the
+        // "Fired up" and "Actually good" chips returned the toast, not the chip.
+        // Every fixed full-screen overlay in the app is one of these two shapes; both are listed, and
+        // the selector is the place to add a third if one is ever written.
+        const open = [...document.querySelectorAll('.modal-bg.open, .feel-door.open')]
           .some(function(m){ const c = getComputedStyle(m); return c.display !== 'none' && c.visibility !== 'hidden'; });
         document.body.classList.toggle('sheet-open', open);
       }catch(_){ }
@@ -177,7 +184,23 @@ function showToast(title,msg,onTap){
   try{
     const _failedAt = window.__lsLastWriteFailed || 0;
     if(_failedAt && (Date.now() - _failedAt) < 2000){
-      const _success = /saved|logged|added|updated|done|complete|tracked|recorded|\u2713/i.test(String(title||''));
+      // TITLE **AND** MESSAGE. This tested the title alone, and 269 of the app's 332 toast titles do
+      // not contain one of those words — so on a full phone a person still read "Held your line" and
+      // "Morning kept \u2014 Gratitude and intention saved for today" for things that went nowhere. The
+      // second of those literally says "saved", in the message.
+      // Broad on purpose: a real write failed within the last two seconds, so a toast fired in that
+      // window is almost certainly about it. The one thing never overwritten is a message that is
+      // already telling the truth about failing \u2014 replacing one honest error with another helps nobody.
+      const _txt = String(title||'') + ' \u00b7 ' + String(msg||'');
+      // INVERTED, after driving it. A success VOCABULARY cannot work here: "Held your line \u00b7 One more
+      // day you chose yourself" contains no success word at all and is still a congratulation for a
+      // win that was never written. Within two seconds of a real failed write, the truth about that
+      // write outranks anything else the app wanted to say \u2014 so the default is to tell it, and only
+      // two kinds of message are let through: one already honest about failing, and a network/status
+      // note that was never a claim about saving in the first place.
+      const _alreadyHonest = /not saved|couldn|could not|can\u2019t|cannot|failed|error|no room|out of room|storage full|went wrong/i.test(_txt);
+      const _statusOnly = /offline|connecting|checking|loading|signing in|syncing|no connection|reconnect/i.test(_txt);
+      const _success = !_alreadyHonest && !_statusOnly;
       if(_success){
         title = 'Not saved';
         msg = 'This device is out of room, so that did not save. Settings \u2192 Your data to free some space.';

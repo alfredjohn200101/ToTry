@@ -22,7 +22,7 @@ function offerGoogleHealthConnect(){
 
 function startGoogleHealthOAuth(){
   const state = 'gh_' + Math.random().toString(36).slice(2);
-  localStorage.setItem('totry_google_oauth_state', state);
+  try{ localStorage.setItem('totry_google_oauth_state', state); }catch(_){ }
   const url = 'https://accounts.google.com/o/oauth2/v2/auth' +
     '?client_id=' + encodeURIComponent(GOOGLE_CLIENT_ID) +
     '&redirect_uri=' + encodeURIComponent(GOOGLE_REDIRECT_URI) +

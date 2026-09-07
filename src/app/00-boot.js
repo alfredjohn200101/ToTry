@@ -172,7 +172,7 @@ async function exportAllData(){
     const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
     // Through SaveFile: an <a download> does nothing in a WKWebView, so on iOS this used to produce no
     // file and no error — the export promise, silently broken in the App Store build.
-    const _r = await SaveFile.save(blob, 'totry-backup-' + new Date().toISOString().slice(0,10) + '.json', 'ToTry backup');
+    const _r = await SaveFile.save(blob, 'totry-backup-' + _todayLocalISO() + '.json', 'ToTry backup');
     if(_r === null) return;   // share sheet dismissed — they chose not to; don't tell them it's saved
     if(typeof haptic==='function') haptic('success');
     if(typeof showToast==='function') showToast(_r ? 'Backup saved' : 'Not saved', _r ? (payload.keys + ' items exported. Your sign-in and app tokens are deliberately left out, so the file is safe to keep.') : 'Nothing was written. Try again in a moment.');
@@ -406,6 +406,21 @@ function latestByDate(list){
   }catch(_){ return null; }
 }
 
+// THE UNITS THE PERSON READS, for any prompt that builds its own context. v581 put this in
+// lifeStateBrief() \u2014 the brief every AI surface reads \u2014 and that was still only most of them:
+// the Sunday check-in assembles its own context string and states kilograms directly, so a pounds
+// user finished the check-in and the coach answered her in kg anyway. Any prompt that names a
+// weight or a distance appends this.
+function _unitsNote(){
+  try{
+    const wu = (typeof wUnit==='function') ? wUnit() : 'kg';
+    const du = (typeof dUnit==='function') ? dUnit() : 'km';
+    if(wu === 'kg' && du === 'km') return '';
+    return '\nUNITS: figures here are in kg and km (how this app stores them), but this person reads '
+         + 'weight in ' + wu + ' and distance in ' + du + '. Convert every number you say back to '
+         + wu + ' and ' + du + ' \u2014 never quote them a kg or a km.';
+  }catch(_){ return ''; }
+}
 function _todayLocalISO(d){
   const t = d ? new Date(d) : new Date();
   const p = n => String(n).padStart(2, '0');
@@ -477,7 +492,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v581';
+const APP_VERSION = 'v582';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -605,7 +620,7 @@ async function proceedAfterAuth(user){
   try{
     currentUser = user;
     syncEnabled = true;
-    if(user && user.email){ localStorage.setItem('totry_user_email', user.email); }
+    if(user && user.email){ try{ localStorage.setItem('totry_user_email', user.email); }catch(_){ } }
     const restored = await restoreFromCloud();
     try{ if(typeof flushOutbox==='function') await flushOutbox(); }catch(_){ }
     if(typeof repairJourneyStart === 'function') repairJourneyStart();
@@ -676,7 +691,7 @@ async function authSendOtp(){
     }
     
     // Save email for verify step
-    localStorage.setItem('totry_pending_email', email);
+    try{ localStorage.setItem('totry_pending_email', email); }catch(_){ }
     document.getElementById('auth-email-display').textContent = email;
     authShowStep('otp');
     setTimeout(()=>document.getElementById('auth-otp-input')?.focus(), 100);
@@ -718,7 +733,7 @@ async function authVerifyOtp(){
     
     if(data?.user){
       localStorage.removeItem('totry_pending_email');
-      localStorage.setItem('totry_user_email', email);
+      try{ localStorage.setItem('totry_user_email', email); }catch(_){ }
       await proceedAfterAuth(data.user);
     }
   } catch(e){

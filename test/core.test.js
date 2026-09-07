@@ -5466,12 +5466,25 @@ H.section('the app’s VOICE converts too, not just its cards');
   // Screens were converted one card at a time over several versions. Nothing ever told the model
   // which units the person reads, so the coach, the companion and the brother all answered a
   // pounds-and-miles person in kilograms and kilometres.
-  const brief = H.extractFn('lifeStateBrief');
-  H.ok(/UNITS:/.test(brief), 'the shared brief states the units the figures are in');
-  H.ok(/wUnit\(\)/.test(brief) && /dUnit\(\)/.test(brief), 'and reads the person’s own two preferences');
-  H.ok(/never quote them a kg or a km/.test(brief), 'and says plainly what not to do');
-  H.ok(/_wu !== 'kg' \|\| _du !== 'km'/.test(brief),
+  // v581 put this inside lifeStateBrief(), which was still only MOST of the AI surfaces: the Sunday
+  // check-in assembles its own context string and stated kilograms directly, so a pounds user
+  // finished the check-in and the coach answered her in kg regardless. One definition now, in a
+  // helper any prompt can append.
+  const note = H.extractFn('_unitsNote');
+  H.ok(/UNITS:/.test(note), 'there is one definition of the units instruction');
+  H.ok(/wUnit\(\)/.test(note) && /dUnit\(\)/.test(note), 'and it reads the person’s own two preferences');
+  H.ok(/never quote them a kg or a km/.test(note), 'and says plainly what not to do');
+  H.ok(/wu === 'kg' && du === 'km'/.test(note) && /return ''/.test(note),
        'a metric person gets no extra instruction — this costs them nothing');
+  // A real newline, not a literal backslash-n. The first cut of this helper shipped '\\n' and the
+  // instruction arrived glued to the sentence before it; driving it is what showed that, not reading.
+  H.ok(!/'\\\\nUNITS:/.test(H.html), 'the instruction starts on its own line');
+  H.ok(/_unitsNote/.test(H.extractFn('lifeStateBrief')), 'the shared brief appends it');
+  {
+    // Every prompt that builds its OWN context and names a unit must carry it too.
+    const checkin = H.html.slice(H.html.indexOf('User: Day ${dayCount} of journey'), H.html.indexOf('User: Day ${dayCount} of journey') + 400);
+    H.ok(/_unitsNote/.test(checkin), 'and so does the Sunday check-in, which builds its own');
+  }
 }
 
 H.section('body weight is converted everywhere it is SAID, not only on the cards that were reported');
@@ -5482,6 +5495,20 @@ H.section('body weight is converted everywhere it is SAID, not only on the cards
   H.ok(!/w \+ 'kg saved/.test(html),                          'so does the toast after a weigh-in');
   H.ok(!/'\+s\.wt\+'kg /.test(html),                          'so does the saved-weight shelf');
   H.ok(/wDelta\(stats\.weightChange\)/.test(html),            'and so does the year in review');
+
+  // AN ABSOLUTE WEIGHT IS NOT A CHANGE. wDelta() signs positives, so running a projected WEIGHT
+  // through it told a woman who is losing weight "If this trend holds: ~+76.8kg in 4 weeks".
+  // An earlier round's unit sweep converted the number correctly and reached for the wrong one of
+  // the two formatters — converting a unit is only half of saying it right.
+  H.ok(/wFmt\(in4w\)/.test(html),  'the 4-week projection is an absolute weight, formatted with wFmt');
+  H.ok(!/wDelta\(in4w\)/.test(html), 'and never with the delta formatter, which would sign it');
+  {
+    // Executed: the two formatters genuinely differ on a positive number, so this is not a
+    // distinction without a difference.
+    const { wFmt, wDelta } = H.load(['wFmt','wDelta'], { wUnit: () => 'kg', kgToDisp: n => n });
+    H.ok(String(wDelta(76.8)).startsWith('+'), 'wDelta signs a positive');
+    H.ok(!String(wFmt(76.8)).startsWith('+'),  'wFmt does not — that sign is the whole bug');
+  }
 }
 
 H.section('money is written the same way everywhere it is said');
@@ -5550,8 +5577,24 @@ H.section('an undo that a sync cannot quietly reverse');
   // deletes it a second time, on this device or another, with nothing on screen to explain it.
   const dfe = H.extractFn('deleteFoodEntry');
   H.ok(/showUndo\(/.test(dfe), 'a deleted meal can be put back');
-  H.ok(/tombstoneRevoke\('totry_nutlog'/.test(dfe),
-    'and the restore revokes the tombstone, or the next sync deletes it again');
+  // THIS ASSERTION USED TO BE `/tombstoneRevoke\('totry_nutlog'/` AND IT WENT GREEN ON A BUG.
+  // The call was there; the ARGUMENT was wrong. Tombstones are keyed by syncIdOf(x) = 'i'+x.id, and
+  // the revoke passed the raw x.id, so it matched nothing: the meal came back on screen and the next
+  // pull deleted it again and pushed that deletion to every device for 180 days. Fault-injecting by
+  // DELETING the call made the old assertion fail, which is why it looked like a real test. It was
+  // only ever checking that a function was named. Check the argument, and check the identity function
+  // both sides use is the same one.
+  H.ok(/tombstoneRevoke\('totry_nutlog',\s*\(typeof syncIdOf==='function'\)\s*\?\s*syncIdOf\(removed\)/.test(dfe),
+    'the restore revokes the tombstone under the SAME key tombstoneRemoved() wrote it under');
+  H.ok(!/tombstoneRevoke\('totry_nutlog',\s*removed\.id\s*\)/.test(dfe),
+    'and never under the raw id, which matches no tombstone at all');
+  {
+    // Executed, not grepped: build the real syncIdOf and confirm the two forms genuinely differ, so
+    // this can never again be argued as a distinction without a difference.
+    const { syncIdOf } = H.load(['syncIdOf']);
+    H.eq(syncIdOf({ id: 222 }), 'i222', 'syncIdOf prefixes an id — a bare 222 is a different key');
+    H.ok(syncIdOf({ id: 222 }) !== 222, 'so passing removed.id revokes nothing');
+  }
   // Order matters: revoking before the row is back would leave a window where a pull sees neither.
   // Measured on the CODE, not the prose \u2014 the first cut of this compared raw indexes and matched
   // the word tombstoneRevoke inside the comment four lines above the call, so it failed on code
@@ -5568,6 +5611,190 @@ H.section('an undo that a sync cannot quietly reverse');
   H.ok(/showUndo\(/.test(rjs), 'and so can a journey-start date they chose deliberately');
   H.ok(/const _prev = ls\('totry_journey_start'\)/.test(rjs),
     'which means reading it BEFORE removing it — the value is gone by the time the snack is tapped');
+}
+
+H.section('a local date is never computed in UTC');
+{
+  // ONE ROOT, TEN SITES. `new Date().toISOString().slice(0,10)` is the UTC day, and at any positive
+  // offset — UTC+1 to UTC+14, which is all of Europe on summer time, Africa, the Middle East, India,
+  // Asia, Australia, NZ, and this app's own home timezone — that is YESTERDAY for part or all of the
+  // day. It shipped as: the calendar's gold "today" cell opening yesterday with yesterday's events;
+  // the journey-start editor pre-filling yesterday, so opening it and pressing Save with no change
+  // added a phantom day to the counter; a screenshot workout filed on the wrong day; the morning's
+  // sleep answer vanishing between 7am and 11am, taking the readiness card with it and writing a
+  // second row for the same night; and three backup filenames dated a day early.
+  const html = H.html;
+  const utcDates = (html.match(/\.toISOString\(\)\s*\.?\s*slice\(0\s*,\s*10\)/g) || []).length;
+  H.eq(utcDates, 1,
+    `exactly one toISOString().slice(0,10) survives — the tx fingerprint, which MUST be UTC so two ` +
+    `devices in two timezones key the same transaction identically (found ${utcDates})`);
+  H.ok(/DELIBERATELY UTC, and the only one left/.test(html),
+    'and it says in the code why it is the exception, so the next sweep does not "fix" it');
+
+  // The calendar cell — the critical one. It is also a fix that MOVED a bug: this very line was the
+  // previous round's repair for "tapping any date opens today".
+  H.ok(/const _calCellISO = _todayLocalISO\(cellDate\)/.test(html),
+    'every month-grid cell hands the day view its own LOCAL date');
+
+  // Month arrows: setMonth() on the 31st overflows into the month after next.
+  const shift = H.extractFn('calMonthShift');
+  H.ok(/ref\.setDate\(1\)/.test(shift.replace(/\/\/[^\n]*/g,'')),
+    'the month reference is anchored to the 1st before shifting, or February is unreachable from 31 January');
+
+  // The three writers into totry_checkins must agree on whose day it is.
+  const logSleep = H.extractFn('logMorningSleep');
+  const restore  = H.extractFn('_restoreMorningSleep');
+  H.ok(/_todayLocalISO\(c\.ts\)/.test(logSleep),  'the morning sleep WRITE matches on the local day');
+  H.ok(/_todayLocalISO\(c\.ts\)/.test(restore),   'and the restore reads it back on the same basis');
+
+  // The day-count siblings. getDayCount() was fixed to count local midnights; the two functions
+  // reading the same anchor kept counting elapsed 24-hour blocks, so two entries seconds apart
+  // could be tagged Day 5 and Day 6 in one list under a header reading 6.
+  const strip = t => t.replace(/\/\/[^\n]*/g,'');
+  ['getDayCount','getDayCountForDate','daysInstalled'].forEach(fn => {
+    const body = strip(H.extractFn(fn));
+    H.ok(/setHours\(0\s*,\s*0\s*,\s*0\s*,\s*0\)/.test(body),
+      `${fn}() counts local midnights, not elapsed 24-hour blocks`);
+    H.ok(!/Math\.floor\(\([^)]*\)\s*\/\s*86400000\)/.test(body),
+      `${fn}() does not floor a raw millisecond difference`);
+  });
+}
+
+H.section('an undo a thumb can actually reach');
+{
+  // The undo snack sits at z-index 700; the milestone toast at 1200, 76px tall, over the same
+  // corner. Firing both in one tick left a real <button>, 57x24, with an accessible name, correctly
+  // positioned — and completely unreachable: elementFromPoint at its own centre returned the toast
+  // for the whole five seconds. Every DOM-presence and tap-target assertion in this suite passed it.
+  // Exactly one of the twelve showUndo sites did this, and it was one of the three v581 added.
+  const src = H.html;
+  const lines = src.split('\n');
+  const clashes = [];
+  lines.forEach((l, i) => {
+    if (!/showUndo\(/.test(l) || /function showUndo/.test(l)) return;
+    const win = lines.slice(Math.max(0, i - 6), i).join('\n').replace(/\/\/[^\n]*/g, '');
+    if (/showToast\(/.test(win)) clashes.push(i + 1);
+  });
+  H.eq(clashes, [], `no showUndo fires a toast in the same tick — the toast lands on top of it (lines ${clashes.join(', ')})`);
+  H.ok(lines.filter(l => /showUndo\(/.test(l) && !/function showUndo/.test(l)).length >= 10,
+    'and the scan actually found the call sites it is guarding');
+}
+
+H.section('a full phone is never congratulated for what it did not save');
+{
+  // The guard existed and tested the TITLE only — and 269 of this app's 332 toast titles contain no
+  // success word, so "Held your line · One more day you chose yourself" and "Morning kept ·
+  // Gratitude and intention saved for today" both still congratulated a person for writes that went
+  // nowhere. The second literally says "saved", in the message the guard never read.
+  const st = H.extractFn('showToast');
+  H.ok(/_alreadyHonest/.test(st) && /_statusOnly/.test(st),
+    'the decision is inverted: within 2s of a real failure, only an honest message or a network note passes');
+  H.ok(/const _success = !_alreadyHonest && !_statusOnly/.test(st),
+    'nothing is allowed to affirm by default, because a success VOCABULARY cannot catch a congratulation');
+  H.ok(/String\(title\|\|''\) \+ '[^']*' \+ String\(msg\|\|''\)/.test(st),
+    'and it reads the message as well as the title');
+  H.ok(/__lsLastWriteFailed/.test(st) && /< 2000/.test(st),
+    'scoped to two seconds after a write actually failed, so a healthy phone is untouched');
+  H.ok(/window\.__lsLastWriteFailed = Date\.now\(\)/.test(H.html),
+    'and ls() really does set that flag on every failed write — a guard nothing arms is not a guard');
+}
+
+H.section('the resilience streak counts the person who needs it most, and does not block the app');
+{
+  const grs = H.extractFn('getResilienceStreak');
+  // A HARD 365 CAP. The loop ran `i<365`, so someone who had shown up every day for 500 days was
+  // told 365 and the number never moved again — the tile stopped counting for exactly the person it
+  // exists to honour. Driven: 500 days of daily activity now returns 500.
+  H.ok(!/for\s*\(\s*let\s+i\s*=\s*0\s*;\s*i\s*<\s*365\s*;/.test(grs),
+    'no 365-day ceiling — the streak is bounded by the person’s own history');
+  H.ok(/_sinceStart/.test(grs) && /Math\.min\(/.test(grs),
+    'bounded by days since their start, with a ceiling only against corrupt data');
+  // O(365 × every log). It re-read and re-parsed five stores INSIDE the day loop, so Home blocked
+  // the main thread for ~1s for a long-term person (7ms for a new one). Measured after: 2ms at 500 days.
+  H.ok(/new Set\(\)/.test(grs), 'the logs are read once into a set of days');
+  const loopBody = grs.slice(grs.indexOf('for(let i=0'));
+  H.ok(!/ritualLog\(|JSON\.parse|ls\('totry_journal'\)|ls\('totry_workouts'\)/.test(loopBody),
+    'and nothing re-reads or re-parses storage inside the day loop');
+  H.ok(/_days\.has\(dateStr\)/.test(loopBody), 'the loop is a set lookup per day');
+  // The grace rule must survive the rewrite: one missed day forgiven, two in a row ends it.
+  H.ok(/_graceUsed=true/.test(grs) && /else break/.test(grs),
+    'never-miss-twice is intact — one isolated gap is still forgiven');
+}
+
+H.section('a long history is not an endless scroll');
+{
+  const rb = H.extractFn('renderBody');
+  // Every check-in ever, unbounded: 400 entries is 21,230px of cards, and at the app's own 1,000-row
+  // storage cap it is 56,490px — pushing the summary the person came for far below the fold. The
+  // weigh-in list eight hundred lines above already had exactly this pattern; this one never got it.
+  H.ok(/_bodyHistShowAll \? entries : entries\.slice\(0, 12\)/.test(rb),
+    'the check-in history renders the recent twelve by default');
+  H.ok(/_histShown\.forEach/.test(rb), 'and the loop walks the bounded list, not the whole store');
+  H.ok(/Show all ' \+ entries\.length \+ ' check-ins/.test(rb),
+    'with a control that names how many there are');
+  H.ok(/toggleBodyHistShowAll/.test(H.html), 'and a toggle that actually exists');
+  // The delta still steps back to the last row WITH a weight, which the bounding must not break.
+  H.ok(/const prev=entries\[i\+1\]/.test(rb),
+    'and prev still indexes the FULL list, so bounding the view cannot change a single delta');
+}
+
+H.section('day one is not a failure, and the app does not put shame in a person’s mouth');
+{
+  const html = H.html;
+  // Sixty seconds after naming their first fight, Home read "0 days clean" — directly under a vice
+  // card saying "Day 1 of the fight". Two surfaces, one person, opposite arithmetic, and the one
+  // that greets them was the discouraging one. Zero full days HAVE passed; it is the wrong thing to
+  // say, not the wrong number.
+  H.ok(/mc === 0 \? 'day one'/.test(html), 'Home says "day one", agreeing with the vice card');
+  H.ok(!/mc\+' day'\+\(mc===1\?'':'s'\)\+' clean'/.test(html), 'and never "0 days clean"');
+  // The coach's FIRST offered question put "I have only hit 0/6 habits today" in a new person's own
+  // mouth — a self-criticism about habits the app had suggested for them, on day one.
+  // COMMENTS STRIPPED. The phrase survives in the note explaining why it was removed, and this
+  // assertion matched that note and failed on correct code — the second time in this session a test
+  // read prose instead of the program.
+  const codeOnly = html.replace(/\/\/[^\n]*/g, '');
+  H.ok(!/I have only hit /.test(codeOnly), 'no suggested question begins with "I have only hit"');
+  H.ok(/daysInstalled\(\) >= 4/.test(html),
+    'and the habits question waits for a few days of the person’s own record before it means anything');
+}
+
+H.section('the first four things a new person is offered can be reached by keyboard');
+{
+  // The welcome checklist rows are the app's own "four quick things to start" and were plain divs
+  // with an onclick: no role, no tabindex, no key handler. A keyboard or Full Keyboard Access user
+  // could not reach any of the four.
+  H.ok(/role="button" tabindex="0"/.test(H.html), 'each row announces itself as a button and takes focus');
+  // Matched against the ESCAPED form the bundle actually contains: the handler is emitted from
+  // inside a JS string, so the quotes arrive as \\' and a naive pattern misses it.
+  H.ok(/event\.preventDefault\(\);this\.click\(\);/.test(H.html), 'and Enter or Space activates it');
+}
+
+H.section('a label says what its number is');
+{
+  const html = H.html;
+  // The tile counts the longest FIGHT. It was labelled "Days clean" (wrong), then "Days since day 0"
+  // (also wrong — that is what the header on the same screen already shows), so it read 11 under a
+  // header saying day 43 and looked like a contradiction.
+  H.ok(/textContent='Days in the fight'/.test(html), 'the fight tile is labelled for the fight');
+  H.ok(!/textContent='Days since day 0'/.test(html), 'not for days since day 0, which is a different number');
+}
+
+H.section('"Recent" means recent');
+{
+  // slice(0,8) took the first eight in ARRAY order, which is only newest-first if the bank export
+  // happened to be sorted that way. Import an oldest-first statement, or merge two devices, and the
+  // card headed "Recent (this month)" showed the oldest eight of the month.
+  H.ok(/thisMonth\.slice\(\)\.sort\(/.test(H.html), 'the recent list is sorted by time before it is cut');
+  H.ok(!/const recentList = thisMonth\.slice\(0, 8\);/.test(H.html), 'not taken in array order');
+}
+
+H.section('the tour prompt is a button, not a broken tag');
+{
+  const html = H.html;
+  // Shipped as class="bclass="btn" with no closing </button>, so it drew as an unstyled white box
+  // with a stray "<" beside a correctly styled sibling.
+  H.ok(!/class="bclass=/.test(html), 'no mangled class attribute survives');
+  H.ok(/onclick="acceptTourPrompt\(\)">Show me<\/button>/.test(html), 'and the button closes itself');
 }
 
 H.report();

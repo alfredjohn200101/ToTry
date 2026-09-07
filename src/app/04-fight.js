@@ -326,7 +326,7 @@ function viewBodyPhoto(idx){
   m.className = 'modal-bg open';
   m.style.alignItems = 'center';
   m.innerHTML = '<div class="modal" style="max-width:90vw;padding:20px">'+
-    '<div style="text-align:center"><img loading="lazy" decoding="async" src="'+entry.photo+'" style="max-width:100%;max-height:60vh;border-radius:8px;margin-bottom:14px"></div>'+
+    '<div style="text-align:center"><img loading="lazy" decoding="async" src="'+_escFew(entry.photo)+'" style="max-width:100%;max-height:60vh;border-radius:8px;margin-bottom:14px"></div>'+
     '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-align:center;margin-bottom:4px">'+entry.date+'</div>'+
     '<div style="font-size:14px;font-weight:500;color:var(--tx);text-align:center;margin-bottom:8px">'+(entry.weight!=null&&entry.weight!==''?((typeof wFmt==='function')?wFmt(entry.weight):(entry.weight+'kg')):'')+'</div>'+
     (entry.note?'<div style="font-size:12px;color:var(--tx2);text-align:center;font-style:italic;margin-bottom:10px">'+_escFew(entry.note)+'</div>':'')+

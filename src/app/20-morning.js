@@ -239,8 +239,12 @@ function renderMorningDayAhead(){
 
 function logMorningSleep(v){
   const checkins = ls('totry_checkins') || [];
-  const today = new Date().toISOString().slice(0,10);
-  const existingIdx = checkins.findIndex(c => (c.ts||'').slice(0,10) === today && c.kind === 'sleep');
+  // `ts` is a UTC instant; its first ten characters are the UTC day, not the person's. Comparing
+  // one against the other means 7am and 11am on the same local morning fall on different UTC days
+  // at any positive offset — so the answer given at 7am was invisible at 11am, the readiness card
+  // vanished, and answering again wrote a SECOND sleep row for the same night. Compare local days.
+  const today = _todayLocalISO();
+  const existingIdx = checkins.findIndex(c => c.kind === 'sleep' && c.ts && _todayLocalISO(c.ts) === today);
   const entry = { kind:'sleep', scores:{ sleep:v }, ts:new Date().toISOString() };
   if(existingIdx >= 0) checkins[existingIdx] = entry; else checkins.unshift(entry);
   ls('totry_checkins', checkins.slice(0,300));
@@ -285,8 +289,8 @@ function _showMorningReadiness(v){
 function _restoreMorningSleep(){
   try{
     const checkins = ls('totry_checkins') || [];
-    const today = new Date().toISOString().slice(0,10);
-    const c = checkins.find(c => (c.ts||'').slice(0,10) === today && c.kind === 'sleep');
+    const today = _todayLocalISO();   // the person's day, not UTC's — see logMorningSleep
+    const c = checkins.find(c => c.kind === 'sleep' && c.ts && _todayLocalISO(c.ts) === today);
     if(c && c.scores && c.scores.sleep!=null){
       document.querySelectorAll('#morning-sleep-opts .sleep-opt').forEach(b => {
         const on = parseInt(b.getAttribute('data-v'),10) === c.scores.sleep;
