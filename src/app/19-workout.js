@@ -680,6 +680,16 @@ function renderMobilityPanel(){
 // together: training, recovery, and (uniquely) the soul side feed one picture.
 // ═══════════════════════════════════════════════════════════════════
 // Returns { score 0-100, level 'go'|'moderate'|'rest', reasons[], advice } or null if no data.
+// HOURS ARE NOT A RATING. The morning asks how you slept and stores 3/5/7/9 for
+// Rough/Okay/Good/Great on a 1-10 scale; a duration is a different quantity that happens to
+// land in the same numeric range, which is exactly why mixing them was invisible \u2014 five hours
+// read as "Okay". One definition of the conversion, used by the watch path below and by the
+// Track tab's manual entry, which was writing raw hours straight into the rating field.
+// Deliberately coarse: a proxy for how a person would rate the night, not a measurement.
+function _sleepHoursToRating(hrs){
+  const h = parseFloat(hrs) || 0;
+  return h >= 8 ? 9 : h >= 7 ? 7 : h >= 6 ? 6 : h >= 5 ? 4 : 3;
+}
 function computeReadiness(){
   const checkins = ls('totry_checkins') || [];
   const body = ls('totry_body') || [];
@@ -726,7 +736,7 @@ function computeReadiness(){
       if(hrs <= 0) return;
       // 4h -> 3, 6h -> 6, 7h -> 7, 8h+ -> 9. Deliberately coarse: this is a proxy for how a person
       // would rate the night, not a measurement of it.
-      const rated = hrs >= 8 ? 9 : hrs >= 7 ? 7 : hrs >= 6 ? 6 : hrs >= 5 ? 4 : 3;
+      const rated = _sleepHoursToRating(hrs);
       d.setHours(9, 0, 0, 0);
       considerScores({ sleep: rated }, d.toISOString());
     });

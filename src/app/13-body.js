@@ -1504,7 +1504,16 @@ function adjustTracker(type,delta){
   ls('totry_trackers',trackers);
   // Sleep is shared with the readiness model (via totry_checkins). Mirror precise hours into today's
   // sleep check-in so readiness uses what you logged here, and Morning/Track never disagree.
-  if(type==='sleep'){ try{ const _iso=_todayLocalISO(); const _ck=ls('totry_checkins')||[]; const _i=_ck.findIndex(c=>c.ts&&_todayLocalISO(c.ts)===_iso && c.kind==='sleep'); const _e={kind:'sleep',scores:{sleep:trackers[today].sleep},ts:new Date().toISOString()}; if(_i>=0)_ck[_i]=_e; else _ck.unshift(_e); ls('totry_checkins',_ck.slice(0,300)); }catch(_){} }
+  if(type==='sleep'){ try{ const _iso=_todayLocalISO(); const _ck=ls('totry_checkins')||[]; const _i=_ck.findIndex(c=>c.ts&&_todayLocalISO(c.ts)===_iso && c.kind==='sleep'); const _hrs=trackers[today].sleep;
+    // TWO DIFFERENT QUANTITIES WERE SHARING ONE FIELD. The morning stores a 1-10 RATING (3/5/7/9 for
+    // Rough/Okay/Good/Great); this wrote raw HOURS into the same scores.sleep, so readiness read a
+    // duration as a quality score and five hours came out as "Okay". Convert through the app's own
+    // mapping, the same one the watch path uses.
+    // AND IT MUST NOT OVERWRITE A SELF-REPORT. `_ck[_i]=_e` replaced whatever was there, so entering
+    // last night's hours here erased the "Rough" the person had chosen in the morning. Their own
+    // answer about how they slept outranks a number of hours; only fill in when they have not said.
+    const _e={kind:'sleep',scores:{sleep:(typeof _sleepHoursToRating==='function')?_sleepHoursToRating(_hrs):_hrs},hours:_hrs,src:'hours',ts:new Date().toISOString()};
+    if(_i>=0){ if((_ck[_i]||{}).src !== 'self'){ _ck[_i]=_e; } else { _ck[_i].hours=_hrs; } } else _ck.unshift(_e); ls('totry_checkins',_ck.slice(0,300)); }catch(_){} }
   // Steps are shared with the coach/whole-person brief (via totry_today_steps). Keep them in lockstep
   // so logging steps here isn't invisible to the coach, and vice-versa. (Was two disconnected stores.)
   if(type==='steps'){ try{ ls('totry_today_steps', trackers[today].steps); }catch(_){} }

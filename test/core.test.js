@@ -4957,11 +4957,30 @@ function fnBodyOf(code, name){
   const cr = H.extractFn('computeReadiness');
   H.ok(/totry_trackers/.test(cr), 'readiness consults the tracker store');
   H.ok(/_sleepSrc !== 'health'/.test(cr), 'only for figures the watch actually wrote');
-  H.ok(/hrs >= 8 \? 9 :/.test(cr), 'mapped onto the 1-10 scale the self-reports use, not dropped in raw');
+  // The mapping moved into _sleepHoursToRating() so the Track tab's MANUAL hours entry could use
+  // the same one — it had been writing raw hours into the rating field and overwriting the morning's
+  // answer. Assert the behaviour, not where the literal happens to live.
+  H.ok(/_sleepHoursToRating\(/.test(cr), 'hours go through the shared mapping, not in raw');
+  {
+    const { _sleepHoursToRating } = H.load(['_sleepHoursToRating']);
+    H.eq(_sleepHoursToRating(8), 9, 'eight hours reads as a good night');
+    H.eq(_sleepHoursToRating(7), 7, 'seven is fine');
+    H.eq(_sleepHoursToRating(5), 4, 'five is not "Okay" — that was the collision');
+    H.eq(_sleepHoursToRating(4), 3, 'four is rough');
+  }
+  // And the Track tab uses it too, rather than writing a duration into a quality field.
+  H.ok(/_sleepHoursToRating==='function'\)\?_sleepHoursToRating\(_hrs\)/.test(H.code()),
+    'the Track tab converts its manual hours the same way');
+  H.ok(/\(_ck\[_i\]\|\|\{\}\)\.src !== 'self'/.test(H.code()),
+    'and never overwrites an answer the person gave in the morning');
   {
     const store = {};
+    // computeReadiness now converts hours through _sleepHoursToRating(), which is declared beside
+    // it — legal and live (one script, one scope, function declarations hoist), but invisible to
+    // this isolated harness. Hand it the real one rather than a stub, or the test measures a
+    // ReferenceError swallowed into null instead of the readiness a person would see.
     const g = new Function('ls', 'interferenceNote', 'weeklyLoadByModality', 'cyclePhase',
-      cr + 'return computeReadiness;')(k => store[k], () => null, () => ({}), () => null);
+      H.extractFn('_sleepHoursToRating') + cr + 'return computeReadiness;')(k => store[k], () => null, () => ({}), () => null);
     const key = new Date().toLocaleDateString('en-AU');
     store.totry_workouts = [{}]; store.totry_checkins = [];
     store.totry_trackers = { [key]: { sleep: 4, _sleepSrc: 'health' } };

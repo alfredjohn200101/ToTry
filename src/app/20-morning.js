@@ -245,7 +245,7 @@ function logMorningSleep(v){
   // vanished, and answering again wrote a SECOND sleep row for the same night. Compare local days.
   const today = _todayLocalISO();
   const existingIdx = checkins.findIndex(c => c.kind === 'sleep' && c.ts && _todayLocalISO(c.ts) === today);
-  const entry = { kind:'sleep', scores:{ sleep:v }, ts:new Date().toISOString() };
+  const entry = { kind:'sleep', scores:{ sleep:v }, src:'self', ts:new Date().toISOString() };   // src:'self' — the Track tab must not overwrite this
   if(existingIdx >= 0) checkins[existingIdx] = entry; else checkins.unshift(entry);
   ls('totry_checkins', checkins.slice(0,300));
   // Single source of truth for sleep: mirror into the daily trackers store the Track tab reads, so

@@ -5388,7 +5388,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v587';
+const APP_VERSION = 'v588';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -25254,7 +25254,16 @@ function adjustTracker(type,delta){
   ls('totry_trackers',trackers);
   // Sleep is shared with the readiness model (via totry_checkins). Mirror precise hours into today's
   // sleep check-in so readiness uses what you logged here, and Morning/Track never disagree.
-  if(type==='sleep'){ try{ const _iso=_todayLocalISO(); const _ck=ls('totry_checkins')||[]; const _i=_ck.findIndex(c=>c.ts&&_todayLocalISO(c.ts)===_iso && c.kind==='sleep'); const _e={kind:'sleep',scores:{sleep:trackers[today].sleep},ts:new Date().toISOString()}; if(_i>=0)_ck[_i]=_e; else _ck.unshift(_e); ls('totry_checkins',_ck.slice(0,300)); }catch(_){} }
+  if(type==='sleep'){ try{ const _iso=_todayLocalISO(); const _ck=ls('totry_checkins')||[]; const _i=_ck.findIndex(c=>c.ts&&_todayLocalISO(c.ts)===_iso && c.kind==='sleep'); const _hrs=trackers[today].sleep;
+    // TWO DIFFERENT QUANTITIES WERE SHARING ONE FIELD. The morning stores a 1-10 RATING (3/5/7/9 for
+    // Rough/Okay/Good/Great); this wrote raw HOURS into the same scores.sleep, so readiness read a
+    // duration as a quality score and five hours came out as "Okay". Convert through the app's own
+    // mapping, the same one the watch path uses.
+    // AND IT MUST NOT OVERWRITE A SELF-REPORT. `_ck[_i]=_e` replaced whatever was there, so entering
+    // last night's hours here erased the "Rough" the person had chosen in the morning. Their own
+    // answer about how they slept outranks a number of hours; only fill in when they have not said.
+    const _e={kind:'sleep',scores:{sleep:(typeof _sleepHoursToRating==='function')?_sleepHoursToRating(_hrs):_hrs},hours:_hrs,src:'hours',ts:new Date().toISOString()};
+    if(_i>=0){ if((_ck[_i]||{}).src !== 'self'){ _ck[_i]=_e; } else { _ck[_i].hours=_hrs; } } else _ck.unshift(_e); ls('totry_checkins',_ck.slice(0,300)); }catch(_){} }
   // Steps are shared with the coach/whole-person brief (via totry_today_steps). Keep them in lockstep
   // so logging steps here isn't invisible to the coach, and vice-versa. (Was two disconnected stores.)
   if(type==='steps'){ try{ ls('totry_today_steps', trackers[today].steps); }catch(_){} }
@@ -35401,6 +35410,16 @@ function renderMobilityPanel(){
 // together: training, recovery, and (uniquely) the soul side feed one picture.
 // ═══════════════════════════════════════════════════════════════════
 // Returns { score 0-100, level 'go'|'moderate'|'rest', reasons[], advice } or null if no data.
+// HOURS ARE NOT A RATING. The morning asks how you slept and stores 3/5/7/9 for
+// Rough/Okay/Good/Great on a 1-10 scale; a duration is a different quantity that happens to
+// land in the same numeric range, which is exactly why mixing them was invisible \u2014 five hours
+// read as "Okay". One definition of the conversion, used by the watch path below and by the
+// Track tab's manual entry, which was writing raw hours straight into the rating field.
+// Deliberately coarse: a proxy for how a person would rate the night, not a measurement.
+function _sleepHoursToRating(hrs){
+  const h = parseFloat(hrs) || 0;
+  return h >= 8 ? 9 : h >= 7 ? 7 : h >= 6 ? 6 : h >= 5 ? 4 : 3;
+}
 function computeReadiness(){
   const checkins = ls('totry_checkins') || [];
   const body = ls('totry_body') || [];
@@ -35447,7 +35466,7 @@ function computeReadiness(){
       if(hrs <= 0) return;
       // 4h -> 3, 6h -> 6, 7h -> 7, 8h+ -> 9. Deliberately coarse: this is a proxy for how a person
       // would rate the night, not a measurement of it.
-      const rated = hrs >= 8 ? 9 : hrs >= 7 ? 7 : hrs >= 6 ? 6 : hrs >= 5 ? 4 : 3;
+      const rated = _sleepHoursToRating(hrs);
       d.setHours(9, 0, 0, 0);
       considerScores({ sleep: rated }, d.toISOString());
     });
@@ -35772,7 +35791,7 @@ function logMorningSleep(v){
   // vanished, and answering again wrote a SECOND sleep row for the same night. Compare local days.
   const today = _todayLocalISO();
   const existingIdx = checkins.findIndex(c => c.kind === 'sleep' && c.ts && _todayLocalISO(c.ts) === today);
-  const entry = { kind:'sleep', scores:{ sleep:v }, ts:new Date().toISOString() };
+  const entry = { kind:'sleep', scores:{ sleep:v }, src:'self', ts:new Date().toISOString() };   // src:'self' — the Track tab must not overwrite this
   if(existingIdx >= 0) checkins[existingIdx] = entry; else checkins.unshift(entry);
   ls('totry_checkins', checkins.slice(0,300));
   // Single source of truth for sleep: mirror into the daily trackers store the Track tab reads, so
