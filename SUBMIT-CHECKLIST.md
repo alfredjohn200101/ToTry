@@ -7,6 +7,7 @@ Everything on the code side is done and **verified against a real Release archiv
 
 | # | What | Why it matters | Where |
 |---|------|----------------|-------|
+| 0 | **Everything below was written around v424 — read it with that in mind** | The build table, the "build number 3" line and the version references in the older sections are stale by ~170 versions. The BUILD 6 section at the top is current and verified; the App Privacy, age-rating and review-notes sections further down are still accurate because they describe the app's behaviour, which has not changed in those respects. | — |
 | 1 | ~~Run the account-deletion SQL~~ | ✅ **DONE 12 Aug 2026.** `public.delete_own_account()` created; verified `security_definer = true`, no arguments, `authenticated_can_run = true`, `anon_can_run = false`. "Delete account permanently" now removes the auth user and their email, so 5.1.1(v) is genuinely satisfied. |
 | 2 | **Register your iPhone** *(optional — only to run a dev build on the phone)* | Your iPhone is paired and visible to the Mac, but it is not registered in the developer account and there is no iOS **Development** profile for `app.totry` — only `ToTryAppStore`. So a dev build cannot install. This does **not** block submission: archiving uses the distribution profile, which exists and is valid. | Xcode → open `ios/App/App.xcodeproj` → pick **Alfred's iPhone** as the destination → **Product ▸ Run** → click **Register** when prompted. Needs your Apple ID in Xcode ▸ Settings ▸ Accounts. Or skip it entirely: archive and upload, then install through **TestFlight**, which also tests the exact build you are submitting. |
 
@@ -40,6 +41,50 @@ Verified in the actual shipping bundle, not just the repo:
 | Account deletion (5.1.1(v), mandatory) | ✅ **Complete.** Deletes `user_data`, `push_subscriptions`, `feedback` **and now the auth user itself** via the `delete-user` edge function (v421). Until it is deployed the app honestly reports that the account itself survived. |
 | Row Level Security on every table | ✅ enabled + policies, 12 Aug 2026 (`supabase-rls-fix.sql`) — verified signed-out: `user_data` and `feedback` return 0 rows to the public anon key |
 | DELETE policies so deletion is truthful | ✅ in the same script — without them `deleteAccount()` reported success while rows survived |
+
+---
+
+## ✅ BUILD 6 ARCHIVED — 8 Sep 2026 — **v593, and this is the one to upload**
+
+`~/Library/Developer/Xcode/Archives/2026-09-08/ToTry-v593.xcarchive`, version 1.0, **build 6**,
+signed *Apple Distribution: Alfred John (L4BD53PLVF)*. Archived with `xcodebuild archive
+-allowProvisioningUpdates`, which fetched the distribution profile itself. Verified from the built
+binary rather than the project settings:
+
+| check | result |
+|---|---|
+| web bundle inside the .app | **v593**, sha256 `645beea4e01a` — byte-identical to `index.html` |
+| version / build | 1.0 / **6** (App Store Connect already holds 4 and 5; 6 is unused) |
+| `PrivacyInfo.xcprivacy` | present inside the .app |
+| usage descriptions | 7 |
+| architecture | `arm64` only, no simulator slice |
+| `ITSAppUsesNonExemptEncryption` | `false` — the export-compliance question is not asked |
+| launches | verified: built for the simulator from the same source, boots in ~2.8s, Home renders, navigation works |
+
+### ⚠️ DO NOT SUBMIT OR PROMOTE BUILD 5
+
+Build 5 carries **v574**. Between v574 and v593 the app gained, among much else: crisis gates on the
+first three things anybody types (onboarding's identity, why and vices) and on the calendar's AI box —
+in v574 a suicide disclosure typed there is stored verbatim and printed back as a vice card with a
+clean-day counter, with no helpline; six HTML-injection doors including the shared toast sink and
+model output rendered as markup; a suicide disclosure pasted into the coach's system prompt on every
+later message; the calendar opening the wrong day at every positive UTC offset; and a cross-device
+merge that destroyed a measurement, a saved passage or a rostered shift. If build 5 is visible to any
+tester, they are running that.
+
+### Uploading still needs Organizer, not the command line
+
+`~/.appstoreconnect/private_keys/AuthKey_49872NRTQS.p8` exists but the **issuer ID** that pairs with
+it is still not on this machine, so `xcrun altool` cannot be driven. Organizer uses the Apple ID
+already signed into Xcode and needs no key: **Window ▸ Organizer ▸ ToTry-v593 ▸ Distribute App**.
+
+### Installing straight to the phone (optional, and not needed to submit)
+
+Your iPhone 16 Pro Max is paired and visible to the Mac, but there are **zero provisioning profiles
+on this machine** and no iOS *Development* profile for `app.totry` — only the distribution one, which
+cannot install to a device. Open `ios/App/App.xcodeproj`, choose **Alfred's iPhone**, **Product ▸
+Run**, and click **Register** when prompted (needs your Apple ID in Xcode ▸ Settings ▸ Accounts).
+TestFlight is the better path anyway: it tests the exact binary you are submitting.
 
 ---
 
