@@ -1900,7 +1900,16 @@ async function searchFoodOnline(query){
     }
   }catch(_){ }
   const res=document.getElementById('nut-search-results');
-  if(res) res.innerHTML='<p class="pulsing" style="font-family:\'Cormorant Garamond\',serif;font-size:15px;font-style:italic;color:var(--tx3);text-align:center;padding:16px">Searching the web for "'+query+'"...</p>';
+  // THE MODULE'S OWN CONTRACT, WHICH THIS PATH ALONE IGNORED. foodWorking() exists (line 345) and
+  // gives the three things this module decided every food path owes a person while it waits: a
+  // ticking count, a way out that still lets them log the meal, and an ending in plain words. This
+  // one printed a bare pulsing line instead — 40 seconds of it, with no elapsed time and no exit,
+  // and then restarted the clock at "just a moment" for another 24. The contract was written after
+  // watching exactly that happen on 17% battery.
+  if(res){
+    if(typeof foodWorking === 'function') foodWorking(res, 'Looking up ' + query + ' on the web\u2026');
+    else res.innerHTML = '<p class="pulsing" style="font-family:\'Cormorant Garamond\',serif;font-size:15px;font-style:italic;color:var(--tx3);text-align:center;padding:14px">Searching the web\u2026</p>';
+  }
   const prompt='Find the real nutrition facts for this specific food/product by searching the web: "'+query+'".\n'+
     'Prioritise AUSTRALIAN sources and products first (the user base is in Australia): the brand\u2019s AU site, Woolworths/Coles, FSANZ/AUSNUT, then broaden to other regions only if needed.\n'+
     'Use the actual product label. Give values for ONE standard serving (state what the serving is). '+
@@ -4858,6 +4867,10 @@ function renderGrowHandoffs(){
 // changes, which reveals your real burn, which tunes your targets. This card shows the
 // whole loop for the last 7 days in one glance, with a Coach hand-off to make sense of it.
 function renderBodySystemReport(){
+  // This card renders on the GROW hub, not only in Nourish \u2014 which is why the gentle-mode promise
+  // ("this person does not see calorie or macro figures") was being kept on one tab and broken on
+  // another. Read it once, here, and let every figure below ask.
+  const _gentleCard = (typeof nutGentle === 'function') && nutGentle();
   const containers = ['body-system-report-grow'].map(id=>document.getElementById(id)).filter(Boolean);
   if(!containers.length) return;
   const now = Date.now(), W = 7*86400000;
@@ -4898,7 +4911,19 @@ function renderBodySystemReport(){
   Object.entries(log).forEach(([dayKey, es])=>{ (es||[]).forEach(e=>{ if(!e||!e.ts) return;
     if(inWin(e.ts,W,0)){ (day[dayKey]=day[dayKey]||{c:0,p:0}); day[dayKey].c+=e.cal||0; day[dayKey].p+=e.pro||0; }
     else if(inWin(e.ts,2*W,W)){ (pday[dayKey]=pday[dayKey]||{c:0}); pday[dayKey].c+=e.cal||0; } }); });
-  const dks=Object.keys(day).filter(k=>day[k].c>0);
+  // "8/7 DAYS". The window above is 7 x 24 HOURS by timestamp, but the buckets are LOCAL CALENDAR
+  // days — so a window that opens mid-afternoon eight days ago catches that evening's meals and
+  // today's, and a person who logs dinner every night is told they logged 8 of 7 days. Keep the
+  // window for the totals and bound the DAY COUNT to the seven calendar days it claims to describe.
+  const _last7 = (function(){
+    const out = {};
+    for(let i=0;i<7;i++){
+      const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i);
+      out[d.toLocaleDateString('en-AU')] = true;
+    }
+    return out;
+  })();
+  const dks=Object.keys(day).filter(k=>day[k].c>0 && _last7[k]);
   const daysLogged=dks.length;
   const avgCal=daysLogged?Math.round(dks.reduce((a,k)=>a+day[k].c,0)/daysLogged):null;
   const avgPro=daysLogged?Math.round(dks.reduce((a,k)=>a+day[k].p,0)/daysLogged):null;
@@ -4985,6 +5010,10 @@ function renderBodySystemReport(){
   // logged is told to keep doing exactly this.
   if(pVol>0&&wVol<pVol*0.7) adjust='Volume cliff: '+wVol.toLocaleString()+'kg vs '+pVol.toLocaleString()+'kg last week \u2014 protect the floor: even two short sessions count.';
   else if(intense) adjust=Math.round(hard/totSets*100)+'% of your sets hit RPE 9\u201310 \u2014 strong week; plan a lighter day before your body plans it for you.';
+  // Under gentle mode the same two adjustments are said without a figure. The instruction is the
+  // point; the number was never the point.
+  else if(_gentleCard&&!lowConf&&goal&&goal.mode!=='maintain'&&gkg!=null&&gkg<1.6) adjust='Protein is running low for what you are asking of your body \u2014 add a solid source to one more meal a day.';
+  else if(_gentleCard&&!lowConf&&goal&&goal.mode==='cut'&&tdeeR&&avgCal!=null&&(avgCal-tdeeR.tdee)>0) adjust='You are eating a little above what this goal needs \u2014 nothing dramatic, just slightly smaller portions at the meal you least look forward to.';
   else if(!lowConf&&goal&&goal.mode!=='maintain'&&gkg!=null&&gkg<1.6) adjust='Protein is '+gkg+'g/kg \u2014 push toward 1.6\u20132.2 (\u2248'+Math.round((trend||80)*1.8)+'g/day). Highest-leverage fix this week.';
   else if(!lowConf&&goal&&goal.mode==='cut'&&tdeeR&&avgCal!=null&&(avgCal-tdeeR.tdee)>0) adjust='You\'re cutting but eating ~'+Math.round(avgCal-tdeeR.tdee)+' above your real burn \u2014 trim ~250/day and re-check next week.';
   else if(weighIns<2) adjust='Only '+weighIns+' weigh-in'+(weighIns===1?'':'s')+' this week \u2014 2\u20133 quick morning weigh-ins make the trend trustworthy.';
@@ -4994,7 +5023,13 @@ function renderBodySystemReport(){
     goalRow+
     '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">'+
     stat(wCount+arrow(wCount,pCount),'workout'+(wCount===1?'':'s'),wCount>0?'var(--go)':'var(--tx3)')+
-    stat((avgCal!=null?avgCal.toLocaleString():'\u2014')+arrow(avgCal,pAvgCal),'avg cal/day')+
+    // GENTLE MODE REACHES THIS CARD TOO. The promise is "this person does not see calorie or macro
+    // figures", and it was kept on the Nourish tab and nowhere else — this card renders on GROW, so
+    // a woman who turned numbers off read "1,076 AVG CAL/DAY" on the hub. Same data, said as shape:
+    // how many days she actually fuelled, which is the thing the card is really telling her.
+    (_gentleCard
+      ? stat((daysLogged!=null?daysLogged:'\u2014')+'/7','days fuelled', daysLogged>=5?'var(--gr)':'var(--tx3)')
+      : stat((avgCal!=null?avgCal.toLocaleString():'\u2014')+arrow(avgCal,pAvgCal),'avg cal/day'))+
     stat(trend!=null?wFmt(trend):'\u2014',weekChange!=null?(wDelta(weekChange)+' wk'):'trend',weekChange!=null?(weekChange<0?'var(--gr)':'var(--go)'):'var(--tx)')+
     '</div>'+
     '<div style="font-size:12px;color:var(--tx2);line-height:1.65">'+
@@ -5017,6 +5052,20 @@ function setBodyGoal(mode){
 }
 function askCoachWeekRead(){
   const c = window.__weekReadCtx || {};
+  // THIS TEXT IS TYPED AS THE PERSON. sendCoachPrompt() puts it straight into the visible input and
+  // sends it, so every figure here appears on screen in her own words — and it quoted her weight in
+  // KILOGRAMS three times to someone who reads pounds, and her calorie average out loud to someone
+  // who has numbers turned OFF. The coach's own context builders (nutPromptBlock, buildCtx,
+  // lifeStateBrief) already carry this week's data to the model, gentle-aware and unit-aware, so
+  // restating it in her mouth bought nothing and broke a promise. Ask the question a person would
+  // actually ask; the data is already in the room.
+  if((typeof nutGentle === 'function' && nutGentle()) || (typeof wUnit === 'function' && wUnit() !== 'kg')){
+    go('coach');
+    setTimeout(function(){ if(typeof sendCoachPrompt === 'function'){
+      sendCoachPrompt('Read my week as one system \u2014 training, food, and how my body responded. Is it working, and what is the single adjustment for next week?');
+    } }, 400);
+    return;
+  }
   const p = 'Read my week as one system. Goal: ' + (c.goal ? c.goal.mode + ' at ' + c.goal.rate + 'kg/wk' : 'not set') +
     '. Training: ' + (c.wCount||0) + ' workouts, ' + (c.wVol||0) + 'kg volume. Food: ' + (c.avgCal!=null?c.avgCal:'?') + ' avg cal, ' +
     (c.avgPro!=null?c.avgPro:'?') + 'g protein (' + (c.gkg!=null?c.gkg:'?') + 'g/kg) across ' + (c.daysLogged||0) + ' days. Body: trend ' +

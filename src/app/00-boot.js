@@ -139,6 +139,17 @@ function restoreKeys(data){
       out.ok++;                                               // counted only after the write returned
       if(typeof syncToCloud === 'function' && typeof SYNC_KEYS !== 'undefined' && SYNC_KEYS.indexOf(k) !== -1){
         let parsed; try{ parsed = JSON.parse(data[k]); }catch(_){ parsed = data[k]; }
+        // A RESTORE IS A DELIBERATE ACT AND MUST OUTRANK AN OLD DELETION. tombstoneRevoke's own note
+        // says exactly this. Without it, restoring a backup to get a deleted journal entry back said
+        // "Restored 25 data sets" and the next cloud pull read the surviving tombstone and deleted
+        // the entry again — then wrote the shortened list back up, so it went to every device. The
+        // person did the one thing the app told them to do to recover, was told it worked, and lost
+        // it a second time without being told anything at all.
+        try{
+          if(typeof tombstoneRevoke === 'function' && typeof syncIdOf === 'function' && Array.isArray(parsed)){
+            tombstoneRevoke.apply(null, [k].concat(parsed.map(syncIdOf)));
+          }
+        }catch(_){ }
         try{ syncToCloud(k, parsed); }catch(_){ }             // a cloud hiccup must not un-count a local write
       }
     }catch(e){
@@ -416,9 +427,15 @@ function _unitsNote(){
     const wu = (typeof wUnit==='function') ? wUnit() : 'kg';
     const du = (typeof dUnit==='function') ? dUnit() : 'km';
     if(wu === 'kg' && du === 'km') return '';
-    return '\nUNITS: figures here are in kg and km (how this app stores them), but this person reads '
-         + 'weight in ' + wu + ' and distance in ' + du + '. Convert every number you say back to '
-         + wu + ' and ' + du + ' \u2014 never quote them a kg or a km.';
+    // SAY WHAT IS TRUE OF THE FIGURES, NOT WHAT WAS TRUE OF THE STORE. The first cut of this said
+    // "figures here are in kg and km \u2014 convert every number back", and the very next line of the brief
+    // was already converted by wFmt(): "Weight: 152.1lb". Telling a model to convert an
+    // already-converted number is worse than saying nothing \u2014 it can answer 335lb, or 69lb. Every
+    // figure that reaches a prompt is now converted at the source, so the instruction is simply:
+    // these are already theirs, use them as they are, and answer in the same units.
+    return '\nUNITS: every figure here is ALREADY in this person\u2019s own units \u2014 weight in ' + wu +
+           ', distance in ' + du + '. Do NOT convert them. Quote them back exactly as given, and use ' +
+           wu + ' and ' + du + ' for anything you work out yourself. Never say kg or km to them.';
   }catch(_){ return ''; }
 }
 function _todayLocalISO(d){
@@ -492,7 +509,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v582';
+const APP_VERSION = 'v585';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -884,6 +901,9 @@ const SYNC_KEYS = [
   'totry_subscriptions','totry_bills','totry_budgets','totry_assets','totry_f','totry_payments','totry_family_contrib','totry_poker_sessions','totry_family_target',
   // Habits & wins — totry_h is the habit grid, totry_trackers holds daily sleep/steps/weight
   'totry_habits','totry_h','totry_sv','totry_vs','totry_wins','totry_streaks',
+  // A trophy case must survive a restore and a second device, or "once earned, earned" only
+  // holds until someone changes phone. Append-only, so the union merge cannot lose one.
+  'totry_achievements_earned',
   'totry_step_goal','totry_sleep_goal','totry_trackers','totry_today_steps','totry_cravings',
   // Relationships, promises, letters
   'totry_relationships','totry_letters','totry_promises','totry_affirmations','totry_checkins','totry_freezes',

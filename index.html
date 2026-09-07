@@ -4663,7 +4663,13 @@ Amen.</div></div>
       <button class="sos-loc-btn" onclick="setLocation('bed')"><span class="sos-loc-icon">&#127769;</span><span class="sos-loc-label">In bed / late night</span></button>
     </div>
     <button class="btn" style="margin-top:8px;font-size:12px;opacity:0.6" onclick="closeSos()">Close</button>
-    <button class="btn" style="margin-top:6px;font-size:11px;opacity:0.5;color:var(--re-bd);background:transparent;border:none;text-decoration:underline" onclick="logHonestlyBeforeIntervention()">I failed before opening this. Be honest.</button>
+    <!-- --re-bd is a BORDER token: rgba(210,95,82,0.30). Used as a text colour and then multiplied by
+         opacity:0.5, this rendered at 15% effective alpha — measured at 1.16:1, on the LIVE SOS, on
+         the button that offers to tell the truth. Making honesty the hardest thing on the screen to
+         see is the opposite of what this app is for; a lapse is feedback, not failure, and the
+         honest option must never be the one that is hidden. Solid --re at full opacity; it stays
+         visually secondary through its size and its underline, which is what secondary should mean. -->
+    <button class="btn" style="margin-top:6px;font-size:11.5px;color:var(--re);background:transparent;border:none;text-decoration:underline;min-height:34px" onclick="logHonestlyBeforeIntervention()">I failed before opening this. Be honest.</button>
   </div>
   <div class="sos-phase" id="sos-p1">
     <div class="sos-phase-lbl">Step 1 of 3 &#8212; Break the moment</div>
@@ -5012,6 +5018,17 @@ function restoreKeys(data){
       out.ok++;                                               // counted only after the write returned
       if(typeof syncToCloud === 'function' && typeof SYNC_KEYS !== 'undefined' && SYNC_KEYS.indexOf(k) !== -1){
         let parsed; try{ parsed = JSON.parse(data[k]); }catch(_){ parsed = data[k]; }
+        // A RESTORE IS A DELIBERATE ACT AND MUST OUTRANK AN OLD DELETION. tombstoneRevoke's own note
+        // says exactly this. Without it, restoring a backup to get a deleted journal entry back said
+        // "Restored 25 data sets" and the next cloud pull read the surviving tombstone and deleted
+        // the entry again — then wrote the shortened list back up, so it went to every device. The
+        // person did the one thing the app told them to do to recover, was told it worked, and lost
+        // it a second time without being told anything at all.
+        try{
+          if(typeof tombstoneRevoke === 'function' && typeof syncIdOf === 'function' && Array.isArray(parsed)){
+            tombstoneRevoke.apply(null, [k].concat(parsed.map(syncIdOf)));
+          }
+        }catch(_){ }
         try{ syncToCloud(k, parsed); }catch(_){ }             // a cloud hiccup must not un-count a local write
       }
     }catch(e){
@@ -5289,9 +5306,15 @@ function _unitsNote(){
     const wu = (typeof wUnit==='function') ? wUnit() : 'kg';
     const du = (typeof dUnit==='function') ? dUnit() : 'km';
     if(wu === 'kg' && du === 'km') return '';
-    return '\nUNITS: figures here are in kg and km (how this app stores them), but this person reads '
-         + 'weight in ' + wu + ' and distance in ' + du + '. Convert every number you say back to '
-         + wu + ' and ' + du + ' \u2014 never quote them a kg or a km.';
+    // SAY WHAT IS TRUE OF THE FIGURES, NOT WHAT WAS TRUE OF THE STORE. The first cut of this said
+    // "figures here are in kg and km \u2014 convert every number back", and the very next line of the brief
+    // was already converted by wFmt(): "Weight: 152.1lb". Telling a model to convert an
+    // already-converted number is worse than saying nothing \u2014 it can answer 335lb, or 69lb. Every
+    // figure that reaches a prompt is now converted at the source, so the instruction is simply:
+    // these are already theirs, use them as they are, and answer in the same units.
+    return '\nUNITS: every figure here is ALREADY in this person\u2019s own units \u2014 weight in ' + wu +
+           ', distance in ' + du + '. Do NOT convert them. Quote them back exactly as given, and use ' +
+           wu + ' and ' + du + ' for anything you work out yourself. Never say kg or km to them.';
   }catch(_){ return ''; }
 }
 function _todayLocalISO(d){
@@ -5365,7 +5388,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v582';
+const APP_VERSION = 'v585';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -5757,6 +5780,9 @@ const SYNC_KEYS = [
   'totry_subscriptions','totry_bills','totry_budgets','totry_assets','totry_f','totry_payments','totry_family_contrib','totry_poker_sessions','totry_family_target',
   // Habits & wins — totry_h is the habit grid, totry_trackers holds daily sleep/steps/weight
   'totry_habits','totry_h','totry_sv','totry_vs','totry_wins','totry_streaks',
+  // A trophy case must survive a restore and a second device, or "once earned, earned" only
+  // holds until someone changes phone. Append-only, so the union merge cannot lose one.
+  'totry_achievements_earned',
   'totry_step_goal','totry_sleep_goal','totry_trackers','totry_today_steps','totry_cravings',
   // Relationships, promises, letters
   'totry_relationships','totry_letters','totry_promises','totry_affirmations','totry_checkins','totry_freezes',
@@ -6313,7 +6339,13 @@ async function pullFromCloud(){
       // and an iPad completed the tasbih on each across a week and watched "That's 9 kept" drop back to
       // "That's 4 kept" on the next pull. It is append-only and every row carries a ts, so syncIdOf
       // identifies it exactly like the rosary log sitting beside it in SYNC_KEYS.
-      'totry_practices'];
+      'totry_practices',
+      // A trophy case is the purest append-only list in the app: earning one on your phone and
+      // another on your laptop must give you BOTH. Adding it to SYNC_KEYS alone would have hit
+      // exactly the scalar rule described two entries up \u2014 last writer replaces the whole list \u2014
+      // which for achievements means a trophy quietly disappearing on the other device.
+      // syncIdOf() returns a non-object unchanged, so the titles union by value.
+      'totry_achievements_earned'];
     const idOf = syncIdOf;   // ONE identity function, shared with tombstoneRemoved (see TOMB_KEY)
     // union(local, cloud) kept the FIRST occurrence of each id — always the LOCAL one — so an entry
     // EDITED on the other device never arrived: the correction was silently dropped while both copies
@@ -8606,7 +8638,7 @@ function lifeStateBrief(s){
       lines.push('Nutrition: avg '+(n.avgCal7||'?')+' cal / '+(n.avgPro7||'?')+'g protein over '+n.daysLogged7+' logged days; today '+n.todayCal+' cal / '+n.todayPro+'g');
     }
   }
-  if(b.currentWeight) lines.push('Weight: '+wFmt(b.currentWeight)+(b.recomp&&b.recomp.dFat!=null?' (last stretch: '+(b.recomp.dWeight>0?'+':'')+b.recomp.dWeight+'kg scale, '+(b.recomp.dFat>0?'+':'')+b.recomp.dFat+'kg fat'+(b.recomp.dMuscle!=null?', '+(b.recomp.dMuscle>0?'+':'')+b.recomp.dMuscle+'kg muscle':'')+')':''));
+  if(b.currentWeight) lines.push('Weight: '+wFmt(b.currentWeight)+(b.recomp&&b.recomp.dFat!=null?' (last stretch: '+wDelta(b.recomp.dWeight)+' scale, '+wDelta(b.recomp.dFat)+' fat'+(b.recomp.dMuscle!=null?', '+wDelta(b.recomp.dMuscle)+' muscle':'')+')':''));
   const soulBits = [];
   if(soul.spiritual!=null) soulBits.push('spiritual '+soul.spiritual.toFixed(1)+'/10');
   if(soul.emotional!=null) soulBits.push('emotional '+soul.emotional.toFixed(1)+'/10');
@@ -10933,6 +10965,17 @@ function _sabbathLine(){
   if(t === 'hinduism' || t === 'buddhism') return 'Rest is also discipline.<br>You don\'t have to perform today.<br>Stillness is part of the practice, not a pause from it.';
   return 'Rest is also discipline.<br>You don\'t have to perform today.<br>You were built to need it.';
 }
+// THE BODY WAS MADE TRADITION-AWARE AND THE HEADING WAS NOT. _sabbathLine() above speaks to all five
+// traditions; the title "Sabbath day \u{1F54A}\uFE0F" is static markup, so on a Sunday a Muslim, Hindu,
+// Buddhist or secular person read a heading naming an observance that is not theirs, under a dove.
+// The card's actual point — rest is also discipline, you do not have to perform today — is universal.
+// Only the label was not. (A Muslim's day is Friday and a Jew's is Saturday; naming this one "Sabbath"
+// for them would be wrong even on the right day.)
+function _sabbathTitle(){
+  const t = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
+  if(t === 'christianity') return 'Sabbath day \u{1F54A}\uFE0F';
+  return 'A day to rest';
+}
 function _nextStepCloseSub(){
   const t = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
   if(t === 'christianity') return 'Your evening reflection and examen.';
@@ -10955,6 +10998,7 @@ function applyFaithUIGate(){
     // Muslim a Confession tracker as if it were his. "Faith is full but never forced" cuts both ways —
     // full for a Catholic, never imposed on anyone else.
     try{ const _sb=document.getElementById('sabbath-text'); if(_sb) _sb.innerHTML=_sabbathLine(); }catch(_){ }
+    try{ const _st=document.querySelector('#sabbath-card .sabbath-title'); if(_st) _st.textContent=_sabbathTitle(); }catch(_){ }
     const sac = document.getElementById('bst-sacraments');
     if(sac){
       const christian = (t === 'christianity');
@@ -14893,7 +14937,16 @@ function renderUrgeInsights(){
       '<div style="font-size:12px;color:var(--tx2);line-height:1.7">'+
         (p.riskWindow?'Hardest time: <b style="color:var(--tx)">'+p.riskWindow+'</b>'+(p.riskDay?', especially <b style="color:var(--tx)">'+p.riskDay+'s</b>':'')+'.<br>':'')+
         (p.topTrigger?'Most common trigger: <b style="color:var(--tx)">'+p.topTrigger+'</b>.<br>':'')+
-        'Win rate: <b style="color:'+trendColor+'">'+p.winRate+'%</b>'+(p.trend?' ('+p.trend+')':'')+' over '+plural(p.total,'battle')+'.'+
+        // NOT A BARE WIN RATE AT ZERO. viceFrequencyRead and the vice card both removed this
+        // percentage, for a reason written down twice in 09-fight-deep.js: it told a person who had
+        // been honest fifteen days running that they had won 0%. It was removed from the card and
+        // left standing here, on the panel a person opens precisely when they are trying to
+        // understand a bad stretch. Above zero the number is real information and stays. At zero it
+        // is a scoreboard of losses, so say the thing that is actually true instead: they logged
+        // every one of them, which is the behaviour this app exists to reinforce.
+        (p.winRate > 0
+          ? 'Win rate: <b style="color:'+trendColor+'">'+p.winRate+'%</b>'+(p.trend?' ('+p.trend+')':'')+' over '+plural(p.total,'battle')+'.'
+          : 'You logged <b style="color:var(--tx)">'+plural(p.total,'battle')+'</b> honestly'+(p.trend?' ('+p.trend+')':'')+' \u2014 every one of them named, none hidden.')+
       '</div>'+
       (override ? '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)"><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">How to get ahead of it</div><div style="font-size:12px;color:var(--tx2);line-height:1.7">'+override+'</div></div>' : '')+
       '</div>';
@@ -20260,8 +20313,16 @@ function viceFightDays(v){
 // broken and resumed, so someone who has never fallen reads 0 rather than a misleading 1.
 function viceCameBack(v){
   if(!v) return 0;
-  const n = (v.relapseHistory||[]).length || Number(v.relapseCount) || 0;
-  return Math.max(0, n);
+  // THE HIGHER OF THE TWO, NOT THE FIRST TRUTHY ONE. `||` preferred relapseHistory.length whenever
+  // it was non-zero, and the two records disagree for anyone whose comebacks predate relapseHistory
+  // existing: their count says 7 and their history is empty. The first honest slip after that writes
+  // ONE history entry — truthy — so it short-circuited a relapseCount of 8 and the card read "came
+  // back 1 time". They lost seven comebacks from view at the exact moment they were honest, and
+  // "came back" is the one number on that card that is meant to say the falling never ended it.
+  // Neither record can legitimately shrink, so take the larger and let the other catch up.
+  const _hist = (v.relapseHistory || []).length;
+  const _count = Number(v.relapseCount) || 0;
+  return Math.max(0, _hist, _count);
 }
 
 // ── SHOWING UP IS THE MEASURE, NOT ONLY STAYING CLEAN ────────────────────────────────────────
@@ -21334,9 +21395,25 @@ function renderScoreboard(){
     if(_bvLbl && _bvLbl.classList.contains('lbl')) _bvLbl.style.display = bv.children.length ? '' : 'none';
     bv.style.display = bv.children.length ? '' : 'none';
   }
+  // ONCE EARNED, EARNED. Every achievement was recomputed live from CURRENT state, so "Faithful"
+  // (check: str >= 7, the LIVE clean streak) vanished from the trophy case the moment a person
+  // honestly logged a slip — and so could "Unstoppable", whose win rate can fall back under 70%.
+  // This app's first rule is that a lapse is feedback, not failure, and honesty is the single
+  // behaviour it most wants to reinforce. Taking a trophy away for being honest does the opposite,
+  // silently, on the day it costs most. A trophy records that something HAPPENED; nothing that
+  // happens later can make it not have happened.
+  const _achKey = 'totry_achievements_earned';
+  let _achSeen = [];
+  try{ _achSeen = ls(_achKey) || []; if(!Array.isArray(_achSeen)) _achSeen = []; }catch(_){ _achSeen = []; }
+  const _achNow = ACHS.filter(a => { try{ return a.check(vices, tw, day, str); }catch(_){ return false; } }).map(a => a.title);
+  const _achAll = _achSeen.slice();
+  _achNow.forEach(t => { if(_achAll.indexOf(t) === -1) _achAll.push(t); });
+  if(_achAll.length !== _achSeen.length){ try{ ls(_achKey, _achAll); }catch(_){ } }
+  const _achHas = function(a){ return _achAll.indexOf(a.title) !== -1; };
+
   const ael=e('achievements');
   if(ael){ael.innerHTML='';let earned=0;
-    ACHS.forEach(a=>{if(a.check(vices,tw,day,str)){earned++;const el=document.createElement('div');el.className='ach';el.innerHTML='<div class="ach-icon">'+a.icon+'</div><div><div class="ach-title">'+a.title+'</div><div class="ach-desc">'+a.desc+'</div></div>';ael.appendChild(el);}});
+    ACHS.forEach(a=>{if(_achHas(a)){earned++;const el=document.createElement('div');el.className='ach';el.innerHTML='<div class="ach-icon">'+a.icon+'</div><div><div class="ach-title">'+a.title+'</div><div class="ach-desc">'+a.desc+'</div></div>';ael.appendChild(el);}});
     if(!earned)ael.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:16px">Fight your first urge to unlock achievements.</p>';
   }
 }
@@ -21447,7 +21524,7 @@ function getStreak(){
 // exactly the kind of change that looks safe and is not.
 function isFaithHabitName(name){
   const n = String(name || '').toLowerCase();
-  return /prayer|scripture|salah|qur|puja|gita|sutta|dhikr|japa|meditation|stillness|reflection/.test(n);
+  return /\b(prayer|pray|scripture|salah|qur|puja|gita|sutta|dhikr|japa|meditation|stillness|reflection)\b/.test(n);
 }
 function faithHabitName(){
   const f = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
@@ -21532,16 +21609,22 @@ function autoTickHabits(){
       if(/gratitude/.test(name)){
         // Gratitude habit: ticks when the morning's gratitude field was actually filled that day.
         shouldTick = allMornings.some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===dateStr && (m.gratitude||'').trim());
-      } else if(/morning|intention/.test(name) || (isFaithHabitName(name) && !/evening|night/.test(name))){
+      } else if(/\b(morning|intention)\b/.test(name) || (isFaithHabitName(name) && !/\b(evening|night)\b/.test(name))){
         shouldTick = allMornings.some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===dateStr);
-      } else if(/workout|gym|train|lift|exercise/.test(name)){
+      // WORD BOUNDARIES, AND THE ABSTINENCE SENSE OF "CLEAN". These matched SUBSTRINGS of the habit
+      // name, so nine of fourteen ordinary habits auto-ticked as something else: "Clean the kitchen"
+      // counted as staying clean, "Great posture" and "Create something" as hitting a nutrition
+      // target, "Wonder at the sky" as an urge resisted, "Stretch at night" as an evening ritual.
+      // Auto-tick writes into the person's own record of themselves, so a wrong guess marks days
+      // they did not do the thing \u2014 which is worse than not guessing, because they cannot tell.
+      } else if(/\b(workout|gym|train|training|lift|lifting|exercise|run|running)\b/.test(name)){
         shouldTick = allWorkouts.some(w=>w.date===dateStr || (w.ts && new Date(w.ts).toLocaleDateString('en-AU')===dateStr))
                   || allStrava.some(a=>a.date && new Date(a.date).toLocaleDateString('en-AU')===dateStr);
-      } else if(/evening|wind down|night|reflect/.test(name)){
+      } else if(/\b(evening|wind down|winddown|examen)\b|\bnight(ly)? (routine|ritual|prayer|reflection)\b|\breflect\b/.test(name)){
         shouldTick = allEvenings.some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===dateStr);
-      } else if(/journal|write|diary/.test(name)){
+      } else if(/\b(journal|journalling|journaling|diary)\b|\bwrite\b(?!\s+to\b)/.test(name)){
         shouldTick = allJournal.some(j=>j.ts && new Date(j.ts).toLocaleDateString('en-AU')===dateStr);
-      } else if(/nutrition|macro|protein|calorie|eat|under|target/.test(name)){
+      } else if(/\b(nutrition|macros?|protein|calories?|eat|eating|under target|hit target)\b/.test(name)){
         // Direction-aware: lose → stayed UNDER calorie target; gain → hit protein/over; else → logged + hit protein.
         const entries = nutLog[dateStr] || [];
         if(entries.length && nutGoals.cal){
@@ -21551,7 +21634,7 @@ function autoTickHabits(){
           else if(nutGoalIntent==='gain'||nutGoalIntent==='build'){ shouldTick = pro >= (nutGoals.pro||0)*0.9; }
           else { shouldTick = cals>0 && pro >= (nutGoals.pro||0)*0.9; }
         }
-      } else if(/sober|clean|no urge|abstain|won|fight|no vice/.test(name)){
+      } else if(/\b(sober|abstain|abstinence|no urge|no vice)\b|\b(stay(ing)? clean|clean day|days clean|clean streak)\b|\bfight\b/.test(name)){
         // Check ALL relapse history (not just lastLoss) for a loss on this day.
         const lossThatDay = vices.some(v=>{
           if(v.lastLoss && new Date(v.lastLoss).toLocaleDateString('en-AU')===dateStr) return true;
@@ -21608,23 +21691,26 @@ function autoTickHabits(){
     // Check various habit patterns
     // Mutually exclusive (else-if): the FIRST matching category wins, so a habit named
     // "evening reflection" matches evening only — it won't also trip the journal rule.
-    if(/morning|gratitude|intention/.test(name) || (isFaithHabitName(name) && !/evening|night/.test(name))){
+    // THE SECOND COPY OF THE SAME CASCADE. The patterns above were tightened and this twin was
+    // left on substrings — caught only because the guard was written over the CLASS rather than
+    // the site. Two cascades, one rule; if a third is ever written it has to come here too.
+    if(/\b(morning|gratitude|intention)\b/.test(name) || (isFaithHabitName(name) && !/\b(evening|night)\b/.test(name))){
       const mornings=ls('totry_mornings')||[];
       shouldTick=mornings.some(m=>new Date(m.ts).toLocaleDateString('en-AU')===today);
     }
-    else if(/workout|gym|train|lift|exercise/.test(name)){
+    else if(/\b(workout|gym|train|training|lift|lifting|exercise|run|running)\b/.test(name)){
       const workouts=ls('totry_workouts')||[];
       shouldTick=workouts.some(w=>w.date===today || (w.ts && new Date(w.ts).toLocaleDateString('en-AU')===today));
     }
-    else if(/evening|wind down|night|reflect/.test(name)){
+    else if(/\b(evening|wind down|winddown|examen)\b|\bnight(ly)? (routine|ritual|prayer|reflection)\b|\breflect\b/.test(name)){
       const evenings=ls('totry_evenings')||[];
       shouldTick=evenings.some(e=>new Date(e.ts).toLocaleDateString('en-AU')===today);
     }
-    else if(/journal|write|diary/.test(name)){
+    else if(/\b(journal|journalling|journaling|diary)\b|\bwrite\b(?!\s+to\b)/.test(name)){
       const journals=ls('totry_journal')||[];
       shouldTick=journals.some(j=>new Date(j.ts).toLocaleDateString('en-AU')===today);
     }
-    else if(/sober|clean|no urge|abstain|won|fight/.test(name)){
+    else if(/\b(sober|abstain|abstinence|no urge|no vice)\b|\b(stay(ing)? clean|clean day|days clean|clean streak)\b|\bfight\b/.test(name)){
       // Check vices for losses today
       loadV();
       const losses=vices.filter(v=>v.lastLoss && new Date(v.lastLoss).toLocaleDateString('en-AU')===today);
@@ -22772,8 +22858,38 @@ async function loadBibleChapter(){
   const translation=document.getElementById('br-translation').value;
   const book=BIBLE_BOOKS.find(b=>b.id===bookId);if(!book)return;
   document.getElementById('br-loading').style.display='block';
+  // A TICKING COUNT, because 14 seconds of a bare pulsing line reads as a dead app and a person
+  // on 17% battery has no way to tell waiting from broken. The nutrition module learned this and
+  // wrote foodWorking()/foodFailed() for it; the reader never got the same treatment. Cleared in
+  // every exit path below.
+  try{
+    if(window.__brTick) clearInterval(window.__brTick);
+    const _lp = document.querySelector('#br-loading .pulsing');
+    if(_lp){
+      const _t0 = Date.now();
+      const _base = 'Loading scripture';
+      _lp.textContent = _base + '\u2026';
+      window.__brTick = setInterval(function(){
+        const _s = Math.round((Date.now() - _t0) / 1000);
+        _lp.textContent = _base + '\u2026 ' + _s + 's' + (_s >= 8 ? ' \u00b7 slow connection, still trying' : '');
+      }, 1000);
+    }
+  }catch(_){ }
   document.getElementById('br-chapter-display').style.display='none';
   let verses=null, apiUsed='', lastError='';
+  // A BUDGET FOR THE WHOLE CASCADE, NOT PER REQUEST. Four sources are tried in sequence and each
+  // carried its own 8000ms bound; _fetchT's own note reasons about ONE request, and nobody added
+  // them up. On a stalled connection \u2014 which never settles, so no catch ever fires early \u2014 that is
+  // 33 seconds parked on a bare pulsing "Loading scripture..." with no elapsed time and no way
+  // out. Each source now gets whatever is LEFT of a 14s budget, so the worst case is 14s and the
+  // later sources still get a real chance when an early one fails fast.
+  const _deadline = Date.now() + 14000;
+  // The floor was Math.max(1200, ...) so that a later source still got a real chance — which is
+  // exactly what broke the bound: driven with every request HANGING, the cascade took 16.4s, because
+  // three sources each claimed their 1200ms floor after the budget was already spent. Past the
+  // deadline the honest thing is to stop trying, not to try briefly four more times.
+  const _left = function(){ return Math.max(0, _deadline - Date.now()); };
+  const _outOfTime = function(){ return _left() < 600; };
   
   // Translation preference: 'esv' uses ESV, anything else skips ESV and goes straight to public
   const wantsESV = (translation === 'esv' || translation === undefined || translation === null || translation === '');
@@ -22805,27 +22921,31 @@ async function loadBibleChapter(){
       const _hid = (translation==='kjv') ? null : (translation==='web' ? 'ENGWEBP' : 'eng_asv');
       if(!_hid) throw new Error('helloao has no KJV');
       const _usfm = _helloaoBook(book.name);
-      const r=await _fetchT('https://bible.helloao.org/api/'+_hid+'/'+_usfm+'/'+chapter+'.json', 8000);
+      if(_outOfTime()) throw new Error('out of time');
+      const r=await _fetchT('https://bible.helloao.org/api/'+_hid+'/'+_usfm+'/'+chapter+'.json', _left());
       if(r.ok){const d=await r.json();const vs=d.chapter?.verses||d.verses||[];if(vs.length){verses=vs.map(v=>({num:v.number||v.verseNumber,text:v.text||v.content}));apiUsed=translation==='kjv'?'KJV':'ASV';}}
-    }catch(e){ lastError = lastError || 'helloao failed'; }
+    }catch(e){ lastError = 'helloao failed'; }
   }
   
   // 3. bible-api.com (KJV/WEB)
   if(!verses){
     try{
-      const r=await _fetchT('https://bible-api.com/'+encodeURIComponent(book.name+' '+chapter)+'?translation='+(translation==='kjv'?'kjv':'web'), 8000);
+      if(_outOfTime()) throw new Error('out of time');
+      const r=await _fetchT('https://bible-api.com/'+encodeURIComponent(book.name+' '+chapter)+'?translation='+(translation==='kjv'?'kjv':'web'), _left());
       if(r.ok){const d=await r.json();if(d.verses){verses=d.verses.map(v=>({num:v.verse,text:v.text}));apiUsed=translation==='kjv'?'KJV':'WEB';}}
-    }catch(e){ lastError = lastError || 'bible-api failed'; }
+    }catch(e){ lastError = 'bible-api failed'; }
   }
   
   // 4. jsdelivr fallback
   if(!verses){
     try{
-      const r=await _fetchT('https://cdn.jsdelivr.net/gh/wldeh/bible-api/bibles/'+(translation||'en-asv')+'/books/'+String(bookId).replace(/^(\d)-/, function(_m, d){ return d; })+'/chapters/'+chapter+'.json', 8000);
+      if(_outOfTime()) throw new Error('out of time');
+      const r=await _fetchT('https://cdn.jsdelivr.net/gh/wldeh/bible-api/bibles/'+(translation||'en-asv')+'/books/'+String(bookId).replace(/^(\d)-/, function(_m, d){ return d; })+'/chapters/'+chapter+'.json', _left());
       if(r.ok){const d=await r.json();if(d.verses){verses=d.verses.map(v=>({num:v.verse||v.verseNumber||v.v,text:v.text||v.t}));apiUsed='ASV';}}
-    }catch(e){ lastError = lastError || 'jsdelivr failed'; }
+    }catch(e){ lastError = 'jsdelivr failed'; }
   }
   
+  try{ if(window.__brTick){ clearInterval(window.__brTick); window.__brTick = null; } }catch(_){ }
   document.getElementById('br-loading').style.display='none';
   if(verses && verses.length){
     document.getElementById('br-chapter-display').style.display='block';
@@ -22874,7 +22994,33 @@ async function loadBibleChapter(){
   }else{
     document.getElementById('br-chapter-display').style.display='block';
     document.getElementById('br-chapter-title').textContent='Could not load';
-    document.getElementById('br-verses').innerHTML='<p style="font-size:13px;color:var(--tx3);padding:8px">Could not load chapter. '+(lastError?'<br><span style="font-size:11px">('+lastError+')</span>':'')+'</p>';
+    // THE REASON WAS ALWAYS WRONG. lastError was assigned first by the ESV branch and every later
+    // failure used `lastError = lastError || ...`, so whatever actually broke, the person was told
+    // the problem was a missing ESV key. Offline, that reads as "this app needs a key I do not have"
+    // when the truth is simply "no connection". Each source now reports itself, and being offline is
+    // detected and said plainly.
+    // AND IT IS NO LONGER A DEAD END. Four network sources, no chapter on the phone — but the app
+    // does carry 127 verses in CONTEXTUAL_VERSES, so it can still put scripture in front of someone
+    // who opened this to read scripture, instead of an error and nothing.
+    const _off = (typeof navigator !== 'undefined' && navigator.onLine === false);
+    const _why = _off ? 'You are offline \u2014 the chapter text lives online.'
+                      : (lastError ? _escFew(lastError) : '');
+    let _html = '<p style="font-size:13px;color:var(--tx3);padding:8px;line-height:1.6">Could not load ' +
+      _escFew(book.name + ' ' + chapter) + '. ' + _why + '</p>';
+    try{
+      const _pool = [].concat.apply([], Object.keys(CONTEXTUAL_VERSES || {}).map(function(k){ return CONTEXTUAL_VERSES[k] || []; }));
+      if(_pool.length){
+        // Deterministic pick, so re-opening offline does not shuffle scripture at a person.
+        const _pick = _pool[(String(bookId).length + Number(chapter||1)) % _pool.length];
+        _html += '<div style="padding:10px 8px;border-top:1px solid var(--bd);margin-top:6px">' +
+          '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.1em;margin-bottom:6px">ON THIS PHONE, WHILE YOU WAIT</div>' +
+          '<div style="font-family:Cormorant Garamond,serif;font-size:16px;line-height:1.7;color:var(--tx);font-style:italic">\u201C' + _escFew(_pick.text) + '\u201D</div>' +
+          '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:6px">' + _escFew(_pick.ref) + '</div>' +
+          '</div>';
+      }
+    }catch(_){ }
+    _html += '<button class="btn" onclick="loadBibleChapter()" style="margin:10px 8px 0;width:auto;padding:8px 16px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);min-height:34px">Try again</button>';
+    document.getElementById('br-verses').innerHTML = _html;
   }
 }
 // Fetch Tyndale Open Study Notes for the current chapter (free, no key, via helloao commentary API).
@@ -24017,7 +24163,7 @@ async function generateWeeklyCoachResponse(entry){
   let context = `User: Day ${dayCount} of journey. Season: ${season}.` + (typeof _unitsNote==='function' ? _unitsNote() : '');
   if(identity) context += ` Identity: "${identity}".`;
   context += `\nThis week\'s check-in:`;
-  if(entry.weight) context += `\n- Weight: ${entry.weight}kg`;
+  if(entry.weight) context += `\n- Weight: ${wFmt(entry.weight)}`;
   if(entry.scores){
     context += `\n- Training adherence: ${entry.scores.train}/10`;
     context += `\n- Nutrition adherence: ${entry.scores.nutrition}/10`;
@@ -24038,7 +24184,7 @@ async function generateWeeklyCoachResponse(entry){
     }
     if(entry.weight && prev?.weight){
       const diff = (entry.weight - prev.weight).toFixed(1);
-      context += `\nWeight change since last check-in: ${diff > 0 ? '+' : ''}${diff}kg.`;
+      context += `\nWeight change since last check-in: ${wDelta(diff)}.`;
     }
   }
   
@@ -24158,7 +24304,13 @@ async function deleteWeightEntry(key){
         if(target && !now.some(e => (e.ts||e.date) === key)){
           now.push(target);
           now.sort((a,b) => new Date(b.ts||b.date) - new Date(a.ts||a.date));
+          // Revoke the tombstone the delete wrote, under the SAME identity tombstoneRemoved()
+          // used (syncIdOf). Restoring the row in localStorage alone is not a restore: the next
+          // pull reads the tombstone and deletes it again, then writes the shortened list back
+          // up, so it goes on every device and stands for 180 days. v582 fixed exactly this at
+          // deleteFoodEntry and nowhere else \u2014 three of the four tombstoning deletes still had it.
           ls('totry_body', now);
+          if(typeof tombstoneRevoke==='function' && typeof syncIdOf==='function') tombstoneRevoke('totry_body', syncIdOf(target));
           if(typeof syncToCloud==='function') syncToCloud();
           renderBody();
         }
@@ -27001,7 +27153,16 @@ async function searchFoodOnline(query){
     }
   }catch(_){ }
   const res=document.getElementById('nut-search-results');
-  if(res) res.innerHTML='<p class="pulsing" style="font-family:\'Cormorant Garamond\',serif;font-size:15px;font-style:italic;color:var(--tx3);text-align:center;padding:16px">Searching the web for "'+query+'"...</p>';
+  // THE MODULE'S OWN CONTRACT, WHICH THIS PATH ALONE IGNORED. foodWorking() exists (line 345) and
+  // gives the three things this module decided every food path owes a person while it waits: a
+  // ticking count, a way out that still lets them log the meal, and an ending in plain words. This
+  // one printed a bare pulsing line instead — 40 seconds of it, with no elapsed time and no exit,
+  // and then restarted the clock at "just a moment" for another 24. The contract was written after
+  // watching exactly that happen on 17% battery.
+  if(res){
+    if(typeof foodWorking === 'function') foodWorking(res, 'Looking up ' + query + ' on the web\u2026');
+    else res.innerHTML = '<p class="pulsing" style="font-family:\'Cormorant Garamond\',serif;font-size:15px;font-style:italic;color:var(--tx3);text-align:center;padding:14px">Searching the web\u2026</p>';
+  }
   const prompt='Find the real nutrition facts for this specific food/product by searching the web: "'+query+'".\n'+
     'Prioritise AUSTRALIAN sources and products first (the user base is in Australia): the brand\u2019s AU site, Woolworths/Coles, FSANZ/AUSNUT, then broaden to other regions only if needed.\n'+
     'Use the actual product label. Give values for ONE standard serving (state what the serving is). '+
@@ -29959,6 +30120,10 @@ function renderGrowHandoffs(){
 // changes, which reveals your real burn, which tunes your targets. This card shows the
 // whole loop for the last 7 days in one glance, with a Coach hand-off to make sense of it.
 function renderBodySystemReport(){
+  // This card renders on the GROW hub, not only in Nourish \u2014 which is why the gentle-mode promise
+  // ("this person does not see calorie or macro figures") was being kept on one tab and broken on
+  // another. Read it once, here, and let every figure below ask.
+  const _gentleCard = (typeof nutGentle === 'function') && nutGentle();
   const containers = ['body-system-report-grow'].map(id=>document.getElementById(id)).filter(Boolean);
   if(!containers.length) return;
   const now = Date.now(), W = 7*86400000;
@@ -29999,7 +30164,19 @@ function renderBodySystemReport(){
   Object.entries(log).forEach(([dayKey, es])=>{ (es||[]).forEach(e=>{ if(!e||!e.ts) return;
     if(inWin(e.ts,W,0)){ (day[dayKey]=day[dayKey]||{c:0,p:0}); day[dayKey].c+=e.cal||0; day[dayKey].p+=e.pro||0; }
     else if(inWin(e.ts,2*W,W)){ (pday[dayKey]=pday[dayKey]||{c:0}); pday[dayKey].c+=e.cal||0; } }); });
-  const dks=Object.keys(day).filter(k=>day[k].c>0);
+  // "8/7 DAYS". The window above is 7 x 24 HOURS by timestamp, but the buckets are LOCAL CALENDAR
+  // days — so a window that opens mid-afternoon eight days ago catches that evening's meals and
+  // today's, and a person who logs dinner every night is told they logged 8 of 7 days. Keep the
+  // window for the totals and bound the DAY COUNT to the seven calendar days it claims to describe.
+  const _last7 = (function(){
+    const out = {};
+    for(let i=0;i<7;i++){
+      const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i);
+      out[d.toLocaleDateString('en-AU')] = true;
+    }
+    return out;
+  })();
+  const dks=Object.keys(day).filter(k=>day[k].c>0 && _last7[k]);
   const daysLogged=dks.length;
   const avgCal=daysLogged?Math.round(dks.reduce((a,k)=>a+day[k].c,0)/daysLogged):null;
   const avgPro=daysLogged?Math.round(dks.reduce((a,k)=>a+day[k].p,0)/daysLogged):null;
@@ -30086,6 +30263,10 @@ function renderBodySystemReport(){
   // logged is told to keep doing exactly this.
   if(pVol>0&&wVol<pVol*0.7) adjust='Volume cliff: '+wVol.toLocaleString()+'kg vs '+pVol.toLocaleString()+'kg last week \u2014 protect the floor: even two short sessions count.';
   else if(intense) adjust=Math.round(hard/totSets*100)+'% of your sets hit RPE 9\u201310 \u2014 strong week; plan a lighter day before your body plans it for you.';
+  // Under gentle mode the same two adjustments are said without a figure. The instruction is the
+  // point; the number was never the point.
+  else if(_gentleCard&&!lowConf&&goal&&goal.mode!=='maintain'&&gkg!=null&&gkg<1.6) adjust='Protein is running low for what you are asking of your body \u2014 add a solid source to one more meal a day.';
+  else if(_gentleCard&&!lowConf&&goal&&goal.mode==='cut'&&tdeeR&&avgCal!=null&&(avgCal-tdeeR.tdee)>0) adjust='You are eating a little above what this goal needs \u2014 nothing dramatic, just slightly smaller portions at the meal you least look forward to.';
   else if(!lowConf&&goal&&goal.mode!=='maintain'&&gkg!=null&&gkg<1.6) adjust='Protein is '+gkg+'g/kg \u2014 push toward 1.6\u20132.2 (\u2248'+Math.round((trend||80)*1.8)+'g/day). Highest-leverage fix this week.';
   else if(!lowConf&&goal&&goal.mode==='cut'&&tdeeR&&avgCal!=null&&(avgCal-tdeeR.tdee)>0) adjust='You\'re cutting but eating ~'+Math.round(avgCal-tdeeR.tdee)+' above your real burn \u2014 trim ~250/day and re-check next week.';
   else if(weighIns<2) adjust='Only '+weighIns+' weigh-in'+(weighIns===1?'':'s')+' this week \u2014 2\u20133 quick morning weigh-ins make the trend trustworthy.';
@@ -30095,7 +30276,13 @@ function renderBodySystemReport(){
     goalRow+
     '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">'+
     stat(wCount+arrow(wCount,pCount),'workout'+(wCount===1?'':'s'),wCount>0?'var(--go)':'var(--tx3)')+
-    stat((avgCal!=null?avgCal.toLocaleString():'\u2014')+arrow(avgCal,pAvgCal),'avg cal/day')+
+    // GENTLE MODE REACHES THIS CARD TOO. The promise is "this person does not see calorie or macro
+    // figures", and it was kept on the Nourish tab and nowhere else — this card renders on GROW, so
+    // a woman who turned numbers off read "1,076 AVG CAL/DAY" on the hub. Same data, said as shape:
+    // how many days she actually fuelled, which is the thing the card is really telling her.
+    (_gentleCard
+      ? stat((daysLogged!=null?daysLogged:'\u2014')+'/7','days fuelled', daysLogged>=5?'var(--gr)':'var(--tx3)')
+      : stat((avgCal!=null?avgCal.toLocaleString():'\u2014')+arrow(avgCal,pAvgCal),'avg cal/day'))+
     stat(trend!=null?wFmt(trend):'\u2014',weekChange!=null?(wDelta(weekChange)+' wk'):'trend',weekChange!=null?(weekChange<0?'var(--gr)':'var(--go)'):'var(--tx)')+
     '</div>'+
     '<div style="font-size:12px;color:var(--tx2);line-height:1.65">'+
@@ -30118,6 +30305,20 @@ function setBodyGoal(mode){
 }
 function askCoachWeekRead(){
   const c = window.__weekReadCtx || {};
+  // THIS TEXT IS TYPED AS THE PERSON. sendCoachPrompt() puts it straight into the visible input and
+  // sends it, so every figure here appears on screen in her own words — and it quoted her weight in
+  // KILOGRAMS three times to someone who reads pounds, and her calorie average out loud to someone
+  // who has numbers turned OFF. The coach's own context builders (nutPromptBlock, buildCtx,
+  // lifeStateBrief) already carry this week's data to the model, gentle-aware and unit-aware, so
+  // restating it in her mouth bought nothing and broke a promise. Ask the question a person would
+  // actually ask; the data is already in the room.
+  if((typeof nutGentle === 'function' && nutGentle()) || (typeof wUnit === 'function' && wUnit() !== 'kg')){
+    go('coach');
+    setTimeout(function(){ if(typeof sendCoachPrompt === 'function'){
+      sendCoachPrompt('Read my week as one system \u2014 training, food, and how my body responded. Is it working, and what is the single adjustment for next week?');
+    } }, 400);
+    return;
+  }
   const p = 'Read my week as one system. Goal: ' + (c.goal ? c.goal.mode + ' at ' + c.goal.rate + 'kg/wk' : 'not set') +
     '. Training: ' + (c.wCount||0) + ' workouts, ' + (c.wVol||0) + 'kg volume. Food: ' + (c.avgCal!=null?c.avgCal:'?') + ' avg cal, ' +
     (c.avgPro!=null?c.avgPro:'?') + 'g protein (' + (c.gkg!=null?c.gkg:'?') + 'g/kg) across ' + (c.daysLogged||0) + ' days. Body: trend ' +
@@ -36138,7 +36339,12 @@ function renderUnifiedTraining(){
     if(t.durationMin) parts.push(t.durationMin+'min');
     if(t.volume) parts.push(Math.round(t.volume).toLocaleString()+'kg');
     if(t.sets) parts.push(t.sets + (t.sets === 1 ? ' set' : ' sets'));
-    if(t.calories) parts.push(Math.round(t.calories)+' cal');
+    // GENTLE MODE IS A PROMISE, NOT A NOURISH-TAB SETTING. Somebody who turned numbers off often
+    // did it because counting is the thing that hurt them, and this row is a calorie figure on
+    // every session in their training history \u2014 on the same screen whose session-summary sheet
+    // was deliberately gated. The distance and the minutes are the training; the calories are the
+    // counting.
+    if(t.calories && !(typeof nutGentle==='function' && nutGentle())) parts.push(Math.round(t.calories)+' cal');
     if(t.hr) parts.push(Math.round(t.hr)+' bpm');
     return parts.join(' \u00b7 ');
   };
@@ -41697,6 +41903,8 @@ async function deleteRelationship(id){
       const cur=ls('totry_relationships')||[];
       cur.push(removed);
       ls('totry_relationships',cur);
+      // See the note at 13-body.js: without this the next pull deletes them again, everywhere.
+      if(typeof tombstoneRevoke==='function' && typeof syncIdOf==='function') tombstoneRevoke('totry_relationships', syncIdOf(removed));
       renderRelationships();
     });
   }
@@ -41791,6 +41999,8 @@ async function deleteLetter(id){
       const cur=ls('totry_letters')||[];
       cur.push(removed);
       ls('totry_letters',cur);
+      // Same as above — a letter someone wrote is not a row to lose quietly.
+      if(typeof tombstoneRevoke==='function' && typeof syncIdOf==='function') tombstoneRevoke('totry_letters', syncIdOf(removed));
       renderLetters();
     });
   }
@@ -45754,6 +45964,18 @@ function calcTDEE(){
   const res=document.getElementById('tdee-result');
   if(res){
     res.style.display='block';
+    // NUMBERS OFF REACHES HERE TOO — and the app ROUTES them here: with no targets set, the setup
+    // nudge offers "Set a real one", which opens this calculator. It then printed her calorie target,
+    // her protein, carbs and fat, and a paragraph naming the size of her deficit. The targets are
+    // still calculated and still saved above (that is what makes the rest of the app work); she just
+    // does not have to look at them, which is the whole promise.
+    if(typeof nutGentle === 'function' && nutGentle()){
+      res.innerHTML =
+        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">Your targets are set</div>' +
+        '<div style="font-size:13px;color:var(--tx2);line-height:1.7">Worked out from what you told me and saved. You have numbers turned off, so I will keep them to myself \u2014 the app will use them quietly to tell you whether a day was light, steady or full.</div>' +
+        '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-top:10px;font-style:italic">You can see them any time in Settings if you ever want to.</div>';
+      return;
+    }
     res.innerHTML='<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">'+t.label+'</div>'+
       '<div class="macro-grid" style="margin-bottom:10px">'+
       '<div class="macro-met"><div class="mm-l">Calories</div><div class="mm-v cal">'+t.cal+'</div></div>'+

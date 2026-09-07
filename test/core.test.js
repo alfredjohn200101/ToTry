@@ -5473,7 +5473,20 @@ H.section('the app’s VOICE converts too, not just its cards');
   const note = H.extractFn('_unitsNote');
   H.ok(/UNITS:/.test(note), 'there is one definition of the units instruction');
   H.ok(/wUnit\(\)/.test(note) && /dUnit\(\)/.test(note), 'and it reads the person’s own two preferences');
-  H.ok(/never quote them a kg or a km/.test(note), 'and says plainly what not to do');
+  H.ok(/Never say kg or km to them/.test(note), 'and says plainly what not to do');
+  // The first cut said "figures here are in kg — convert every number back", while the very next
+  // line of the brief was ALREADY converted by wFmt(): "Weight: 152.1lb". Telling a model to convert
+  // an already-converted number can answer 335lb, or 69lb — worse than saying nothing. Every figure
+  // reaching a prompt is converted at the source now, so the instruction must match that.
+  H.ok(/ALREADY in this person/.test(note) && /Do NOT convert them/.test(note),
+    'the instruction matches what the figures actually are');
+  // H.code() strips comments. FOUR absence assertions in this session matched the note explaining
+  // why a thing was removed and failed on correct code. The prose says the words the code no longer
+  // does; never run !/.../ against raw source again.
+  H.ok(!/figures here are in kg and km/.test(H.code(note)), 'and no longer claims they are raw kilograms');
+  H.ok(!/\$\{entry\.weight\}kg/.test(H.html), 'the Sunday check-in states the weight in the person’s unit');
+  H.ok(/wDelta\(b\.recomp\.dWeight\)/.test(H.html),
+    'and the brief’s recomp deltas are converted like the weight beside them');
   H.ok(/wu === 'kg' && du === 'km'/.test(note) && /return ''/.test(note),
        'a metric person gets no extra instruction — this costs them nothing');
   // A real newline, not a literal backslash-n. The first cut of this helper shipped '\\n' and the
@@ -5795,6 +5808,247 @@ H.section('the tour prompt is a button, not a broken tag');
   // with a stray "<" beside a correctly styled sibling.
   H.ok(!/class="bclass=/.test(html), 'no mangled class attribute survives');
   H.ok(/onclick="acceptTourPrompt\(\)">Show me<\/button>/.test(html), 'and the button closes itself');
+}
+
+H.section('"numbers off" is a promise the whole app keeps, not just the Nourish tab');
+{
+  // Gentle mode is usually chosen by someone for whom counting is the thing that hurt them. It was
+  // honoured on the Nourish tab and broken in four places outside it — and the gate could not see
+  // any of them, because the gentle check reads only #tab-nourish innerText.
+  const html = H.html;
+
+  // (1) The Grow hub's "Your body, one system" card renders on tab-grow and printed an average
+  // calorie/day tile, a protein g/kg ratio and a gram target.
+  const rbs = H.extractFn('renderBodySystemReport');
+  H.ok(/const _gentleCard = \(typeof nutGentle === 'function'\) && nutGentle\(\)/.test(rbs),
+    'the Grow card reads the gentle promise once, at the top');
+  H.ok(/_gentleCard\s*\n?\s*\? stat\(\(daysLogged/.test(rbs.replace(/\s+/g,' ')) || /_gentleCard/.test(rbs),
+    'and the calorie tile becomes days-fuelled instead of a figure');
+  H.ok(/_gentleCard&&!lowConf&&goal&&goal\.mode!=='maintain'/.test(rbs),
+    'and the protein adjustment is said without a g/kg number');
+
+  // (2) "Deeper read from Coach" is TYPED AS THE PERSON — sendCoachPrompt puts it in the visible
+  // input — so it quoted her weight in kilograms three times and her calories out loud.
+  const acw = H.extractFn('askCoachWeekRead');
+  H.ok(/nutGentle\(\)\) \|\| \(typeof wUnit === 'function' && wUnit\(\) !== 'kg'\)/.test(acw),
+    'the coach ask goes human when numbers are off OR the person does not read kilograms');
+  H.ok(/Read my week as one system \\u2014 training, food, and how my body responded/.test(acw)
+       || /Read my week as one system — training, food, and how my body responded/.test(acw),
+    'and asks the question a person would actually ask');
+
+  // (3) The TDEE calculator — which the app ROUTES a gentle person to via "Set a real one".
+  H.ok(/if\(typeof nutGentle === 'function' && nutGentle\(\)\)\{[\s\S]{0,400}Your targets are set/.test(html),
+    'the calculator still saves the targets and simply does not show them');
+
+  // (4) Every row of the training history printed a calorie figure.
+  H.ok(/if\(t\.calories && !\(typeof nutGentle==='function' && nutGentle\(\)\)\)/.test(html),
+    'the training history row asks before printing calories');
+
+  // The promise must not cost a person who wants numbers anything.
+  H.ok(/stat\(\(avgCal!=null\?avgCal\.toLocaleString\(\):'\\u2014'\)\+arrow\(avgCal,pAvgCal\),'avg cal\/day'\)/.test(html),
+    'and with numbers ON the calorie tile is exactly as it was');
+}
+
+H.section('waiting is not the same as broken, and a dead end is not an answer');
+{
+  const lbc = H.extractFn('loadBibleChapter');
+  // FOUR SOURCES, EACH WITH ITS OWN 8000ms BOUND, AND NOBODY ADDED THEM UP. _fetchT's own note
+  // reasons about ONE request. On a stalled connection — which never settles, so no catch fires
+  // early — the reader parked on a bare pulsing line. Measured before: 16.4s; the first attempt at a
+  // budget still overshot because a Math.max(1200,...) floor let three spent sources each claim it.
+  H.ok(/const _deadline = Date\.now\(\) \+ 14000/.test(lbc), 'the whole cascade shares one wall-clock budget');
+  H.ok(/Math\.max\(0, _deadline - Date\.now\(\)\)/.test(lbc), 'and past the deadline there is no per-source floor left to claim');
+  H.ok(/_outOfTime\(\)/.test(lbc), 'each remaining source checks the deadline before it starts');
+  H.ok(!/_fetchT\([^)]*, 8000\)/.test(lbc), 'no source inside the cascade keeps its own fixed 8s bound');
+  // A ticking count, because 14s of a pulsing line reads as a dead app.
+  H.ok(/__brTick/.test(lbc) && /'s'/.test(lbc), 'the reader says how long it has been waiting');
+  H.ok((lbc.match(/clearInterval\(window\.__brTick\)/g)||[]).length >= 2, 'and clears that timer on every exit');
+  // THE REASON WAS ALWAYS WRONG: lastError was set first by the ESV branch and every later failure
+  // used `lastError = lastError || ...`, so whatever broke, the person was told it was a missing key.
+  // Comments stripped — for the THIRD time this session an absence assertion matched the note
+  // explaining why the thing was removed. Any !/.../.test(H.html) needs this; the prose says the
+  // words the code no longer does.
+  H.ok(!/lastError = lastError \|\|/.test(H.html.replace(/\/\/[^\n]*/g,'')),
+    'each source reports its own failure, not the first one recorded');
+  H.ok(/navigator\.onLine === false/.test(lbc), 'and being offline is detected and said plainly');
+  // Not a dead end: the app carries 127 verses, so it can still put scripture in front of someone.
+  H.ok(/ON THIS PHONE, WHILE YOU WAIT/.test(lbc), 'a failed chapter still offers scripture that is on the phone');
+  H.ok(/Try again/.test(lbc), 'and a way to retry');
+
+  // The nutrition module wrote foodWorking() for exactly this and one food path ignored it.
+  const sfo = H.extractFn('searchFoodOnline');
+  H.ok(/foodWorking\(res,/.test(sfo), 'the web lookup uses the module’s own waiting contract');
+  H.ok(!/res\.innerHTML='<p class="pulsing"/.test(sfo), 'not a bare pulsing line with no count and no exit');
+  H.ok(/detectCrisis/.test(sfo) && sfo.indexOf('detectCrisis') < sfo.indexOf('foodWorking'),
+    'and the crisis gate still runs BEFORE anything else on that door');
+}
+
+H.section('every undo that restores a tombstoned row revokes its tombstone — all of them');
+{
+  // v582 fixed this at deleteFoodEntry AND NOWHERE ELSE. Three of the four deletes that write a
+  // tombstone still restored the row in localStorage only, so the next pull deleted a weigh-in, a
+  // person or a letter a second time, wrote the shortened list back up, and it stood on every
+  // device for 180 days. That is the first of the four shapes a fix fails in, in my own fix.
+  // This assertion is written over the CLASS so a new undo cannot join it silently.
+  const html = H.html;
+  const tombKeys = [...new Set([...html.matchAll(/tombstoneRemoved\('(totry_[a-z_]+)'/g)].map(m => m[1]))];
+  H.ok(tombKeys.length >= 4, `the scan found the tombstoning deletes (saw ${tombKeys.length}: ${tombKeys.join(', ')})`);
+  const revoked = new Set([...html.matchAll(/tombstoneRevoke\('(totry_[a-z_]+)'/g)].map(m => m[1]));
+  // A key needs a revoke only if some undo restores it. Find the keys written back inside a showUndo.
+  const lines = html.split('\n');
+  const restoredInUndo = new Set();
+  lines.forEach((l, i) => {
+    if (!/showUndo\(/.test(l) || /function showUndo/.test(l)) return;
+    const body = lines.slice(i, i + 16).join('\n');
+    for (const m of body.matchAll(/ls\('(totry_[a-z_]+)'\s*,/g)) restoredInUndo.add(m[1]);
+  });
+  const mustRevoke = tombKeys.filter(k => restoredInUndo.has(k));
+  const missing = mustRevoke.filter(k => !revoked.has(k));
+  H.ok(mustRevoke.length >= 3, `several undos restore a tombstoned key (${mustRevoke.join(', ')})`);
+  H.eq(missing, [],
+    `every undo that puts a tombstoned row back also revokes its tombstone (missing: ${missing.join(', ')})`);
+  // And the revoke must use the SAME identity function the tombstone was written under.
+  const rawId = [...html.matchAll(/tombstoneRevoke\('totry_[a-z_]+',\s*([a-zA-Z_$][\w$.]*)\s*\)/g)]
+    .map(m => m[1]).filter(x => /\.(id|ts)$/.test(x));
+  H.eq(rawId, [], `no revoke passes a raw id where the tombstone was keyed by syncIdOf (${rawId.join(', ')})`);
+}
+
+H.section('the honest option is never the hardest thing on the screen to see');
+{
+  // --re-bd is a BORDER token — rgba(210,95,82,0.30). On the LIVE SOS it was used as a TEXT colour
+  // and then multiplied by opacity:0.5, giving 15% effective alpha (measured 1.16:1) on the button
+  // that says "I failed before opening this. Be honest." A lapse is feedback, not failure; making
+  // honesty the least legible thing on a crisis screen is the opposite of what this app is for.
+  const html = H.code();
+  H.ok(/I failed before opening this\. Be honest\./.test(html), 'the honest option is still offered on the SOS');
+  const btn = html.slice(Math.max(0, html.indexOf('I failed before opening this') - 420),
+                         html.indexOf('I failed before opening this'));
+  H.ok(!/opacity:0\.[0-5]/.test(btn), 'and is not dimmed by an opacity multiplier');
+  H.ok(!/color:var\(--re-bd\)/.test(btn), 'and does not take its text colour from a 30%-alpha border token');
+  H.ok(/color:var\(--re\)/.test(btn), 'it uses the solid accent');
+
+  // The invariant, over the whole app: a *-bd token is 28-30% alpha by definition, so using one as
+  // TEXT and then multiplying by an opacity below 1 can never clear AA. Border colours are chosen to
+  // be subtle; text has to be read.
+  const bad = [];
+  html.split('\n').forEach((l, i) => {
+    const m = /color:\s*var\((--[a-z]+-bd)\)/.exec(l);
+    if (!m || /border-color/.test(l.slice(Math.max(0, m.index - 7), m.index + 6))) return;
+    const op = /opacity:\s*(0\.\d+)/.exec(l);
+    if (op && parseFloat(op[1]) < 1) bad.push(`${i + 1}: ${m[1]} x ${op[1]}`);
+  });
+  H.eq(bad, [], `no text takes a border token AND an opacity multiplier (${bad.join(' | ')})`);
+}
+
+H.section('a Sunday card does not name someone else’s observance');
+{
+  // _sabbathLine() was made tradition-aware for all five; the TITLE stayed static markup, so on a
+  // Sunday a Muslim, Hindu, Buddhist or secular person read "Sabbath day 🕊️" under a dove. The
+  // card's point — rest is also discipline, you don't have to perform today — is universal; the
+  // label was not. (A Muslim's day is Friday, a Jew's Saturday; naming this one "Sabbath" for them
+  // would be wrong even on the right day.) Driven across all five traditions.
+  const st = H.extractFn('_sabbathTitle');
+  H.ok(/t === 'christianity'/.test(st), 'the Christian heading is kept for the Christian');
+  H.ok(/return 'A day to rest'/.test(st), 'and everyone else gets one that is theirs');
+  H.ok(/_sabbathTitle\(\)/.test(H.code()), 'and the renderer actually calls it');
+  // The body was already right — assert both halves move together from now on.
+  const sl = H.extractFn('_sabbathLine');
+  ['christianity','islam','hinduism'].forEach(t =>
+    H.ok(new RegExp("'"+t+"'").test(sl), `_sabbathLine still speaks to ${t}`));
+}
+
+H.section('a restore outranks a deletion from before it');
+{
+  // Restoring a backup to recover a deleted journal entry said "Restored 25 data sets" — and the
+  // next cloud pull read the surviving tombstone, deleted the entry again, and wrote the shortened
+  // list back up to every device. The person did the one thing the app tells them to do to recover,
+  // was told it worked, and lost it a second time in silence. tombstoneRevoke's own note already
+  // says a deliberate act now outranks a deletion from before; restore was not asking it.
+  const rk = H.extractFn('restoreKeys');
+  H.ok(/tombstoneRevoke\.apply\(null, \[k\]\.concat\(parsed\.map\(syncIdOf\)\)\)/.test(rk),
+    'a restore revokes the tombstones for every row it puts back');
+  H.ok(/Array\.isArray\(parsed\)/.test(rk), 'guarded to the array stores, which are the ones tombstoned');
+  H.ok(rk.indexOf('tombstoneRevoke') < rk.indexOf('syncToCloud(k, parsed)'),
+    'and revokes BEFORE queueing the upload, so the cloud copy is never written under a live tombstone');
+}
+
+H.section('being honest never costs you something you already earned');
+{
+  // Every achievement was recomputed live from CURRENT state. "Faithful" is `str >= 7` against the
+  // LIVE clean streak, so the day a person honestly logged a slip the trophy left the case — driven:
+  // before ["First Battle","First Victory","On Fire","Unstoppable","Faithful"], after the slip the
+  // same list minus "Faithful". Honesty is the single behaviour this app most wants to reinforce.
+  // A trophy records that something HAPPENED; nothing later can make it not have happened.
+  const rs = H.extractFn('renderScoreboard');
+  H.ok(/totry_achievements_earned/.test(rs), 'earned achievements are persisted');
+  H.ok(/_achHas\(a\)/.test(rs), 'and the case renders the union of earned-ever, not what is true right now');
+  H.ok(!/ACHS\.forEach\(a=>\{if\(a\.check\(vices,tw,day,str\)\)\{earned\+\+/.test(H.code(rs)),
+    'never straight off a live check');
+  // Blast radius: a trophy case that does not survive a restore or a second device is a half-fix.
+  H.ok(/'totry_achievements_earned'/.test(H.code()), 'the key exists in the key lists');
+  // BRACKET-MATCHED, not a fixed window. A slice of N characters is a guess about how long a list
+  // is today; both of these first failed on correct code because the array had outgrown the number
+  // I picked. Same trap as the fixed 4200-char window that broke the checkAuthAndStart check.
+  // Find the array that CONTAINS the needle: scan back to its opening bracket, then forward to the
+  // match. Looking forward from the needle for '[' finds whatever bracket comes next, which for a
+  // key in the middle of a list is the wrong array entirely — it returned 5 characters.
+  const arrayAt = (needle) => {
+    const i = H.html.indexOf(needle);
+    if (i < 0) return '';
+    let start = -1, d = 0;
+    for (let j = i; j >= 0; j--) {
+      if (H.html[j] === ']') d++;
+      else if (H.html[j] === '[') { if (!d) { start = j; break; } d--; }
+    }
+    if (start < 0) return '';
+    d = 0;
+    for (let j = start; j < H.html.length; j++) {
+      if (H.html[j] === '[') d++;
+      else if (H.html[j] === ']') { d--; if (!d) return H.html.slice(start, j + 1); }
+    }
+    return '';
+  };
+  const sync = arrayAt('const SYNC_KEYS');
+  H.ok(sync.length > 500, `the SYNC_KEYS array was actually found (${sync.length} chars)`);
+  H.ok(/totry_achievements_earned/.test(sync), 'it is in SYNC_KEYS, so it follows the person to a new phone');
+  // ...and in the union list, or it falls to the scalar rule and the last device to write wins —
+  // the exact bug the comment two entries above it in 01-sync.js documents for totry_practices.
+  const unionArr = arrayAt("'totry_rosaries'");
+  H.ok(unionArr.length > 300, `the append-only union list was actually found (${unionArr.length} chars)`);
+  H.ok(/totry_achievements_earned/.test(unionArr),
+    'and in the append-only union list, so a trophy earned on each device gives you both');
+}
+
+H.section('auto-tick never marks a day off a word that happens to appear in the name');
+{
+  // These matched SUBSTRINGS of the habit name. Nine of fourteen ordinary habits auto-ticked as
+  // something else: "Clean the kitchen" as staying clean, "Great posture" and "Create something" as
+  // hitting a nutrition target ("eat" inside "Great"), "Wonder at the sky" as an urge resisted
+  // ("won"), "Stretch at night" as an evening ritual. Auto-tick writes into a person's own record of
+  // themselves, so a wrong guess marks days they did not do the thing — and they cannot tell.
+  const html = H.code();
+  const olds = [
+    /\/sober\|clean\|no urge\|abstain\|won\|fight\|no vice\//,
+    /\/nutrition\|macro\|protein\|calorie\|eat\|under\|target\//,
+    /\/workout\|gym\|train\|lift\|exercise\//,
+    /\/evening\|wind down\|night\|reflect\//,
+    /\/journal\|write\|diary\//,
+  ];
+  olds.forEach((re, i) => H.ok(!re.test(html), `auto-tick pattern ${i + 1} is not a bare substring alternation`));
+  H.ok(/stay\(ing\)\? clean\|clean day\|days clean\|clean streak/.test(html),
+    '"clean" only counts in its abstinence sense, not in "Clean the kitchen"');
+  H.ok(/\\b\(sober\|abstain\|abstinence\|no urge\|no vice\)\\b/.test(html), 'and the rest are word-bounded');
+  {
+    // Executed both ways, so this is not a claim about regex syntax but about behaviour.
+    const abstain = /\b(sober|abstain|abstinence|no urge|no vice)\b|\b(stay(ing)? clean|clean day|days clean|clean streak)\b|\bfight\b/;
+    const nutrition = /\b(nutrition|macros?|protein|calories?|eat|eating|under target|hit target)\b/;
+    ['clean the kitchen','wonder at the sky'].forEach(n =>
+      H.ok(!abstain.test(n), `"${n}" is not an abstinence habit`));
+    ['great posture','create something'].forEach(n =>
+      H.ok(!nutrition.test(n), `"${n}" is not a nutrition habit`));
+    ['stay clean','no urge acted on'].forEach(n => H.ok(abstain.test(n), `"${n}" still auto-ticks`));
+    ['hit protein','eat under target'].forEach(n => H.ok(nutrition.test(n), `"${n}" still auto-ticks`));
+  }
 }
 
 H.report();

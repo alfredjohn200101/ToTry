@@ -60,4 +60,9 @@ function report(){
   process.exit(failed ? 1 : 0);
 }
 
-module.exports = { extractFn, load, eq, approx, ok, section, report, html };
+// Source with // comments stripped. Four absence assertions in one session matched the COMMENT
+// explaining why a thing had been removed, and so failed on correct code — twice I nearly
+// diagnosed a regression that did not exist. Any !/.../.test() over source goes through this.
+function code(t){ return String(t == null ? html : t).replace(/\/\/[^\n]*/g, ''); }
+
+module.exports = { extractFn, load, eq, approx, ok, section, report, html, code };

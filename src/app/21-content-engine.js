@@ -316,7 +316,12 @@ function renderUnifiedTraining(){
     if(t.durationMin) parts.push(t.durationMin+'min');
     if(t.volume) parts.push(Math.round(t.volume).toLocaleString()+'kg');
     if(t.sets) parts.push(t.sets + (t.sets === 1 ? ' set' : ' sets'));
-    if(t.calories) parts.push(Math.round(t.calories)+' cal');
+    // GENTLE MODE IS A PROMISE, NOT A NOURISH-TAB SETTING. Somebody who turned numbers off often
+    // did it because counting is the thing that hurt them, and this row is a calorie figure on
+    // every session in their training history \u2014 on the same screen whose session-summary sheet
+    // was deliberately gated. The distance and the minutes are the training; the calories are the
+    // counting.
+    if(t.calories && !(typeof nutGentle==='function' && nutGentle())) parts.push(Math.round(t.calories)+' cal');
     if(t.hr) parts.push(Math.round(t.hr)+' bpm');
     return parts.join(' \u00b7 ');
   };

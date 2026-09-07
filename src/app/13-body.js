@@ -461,7 +461,7 @@ async function generateWeeklyCoachResponse(entry){
   let context = `User: Day ${dayCount} of journey. Season: ${season}.` + (typeof _unitsNote==='function' ? _unitsNote() : '');
   if(identity) context += ` Identity: "${identity}".`;
   context += `\nThis week\'s check-in:`;
-  if(entry.weight) context += `\n- Weight: ${entry.weight}kg`;
+  if(entry.weight) context += `\n- Weight: ${wFmt(entry.weight)}`;
   if(entry.scores){
     context += `\n- Training adherence: ${entry.scores.train}/10`;
     context += `\n- Nutrition adherence: ${entry.scores.nutrition}/10`;
@@ -482,7 +482,7 @@ async function generateWeeklyCoachResponse(entry){
     }
     if(entry.weight && prev?.weight){
       const diff = (entry.weight - prev.weight).toFixed(1);
-      context += `\nWeight change since last check-in: ${diff > 0 ? '+' : ''}${diff}kg.`;
+      context += `\nWeight change since last check-in: ${wDelta(diff)}.`;
     }
   }
   
@@ -602,7 +602,13 @@ async function deleteWeightEntry(key){
         if(target && !now.some(e => (e.ts||e.date) === key)){
           now.push(target);
           now.sort((a,b) => new Date(b.ts||b.date) - new Date(a.ts||a.date));
+          // Revoke the tombstone the delete wrote, under the SAME identity tombstoneRemoved()
+          // used (syncIdOf). Restoring the row in localStorage alone is not a restore: the next
+          // pull reads the tombstone and deletes it again, then writes the shortened list back
+          // up, so it goes on every device and stands for 180 days. v582 fixed exactly this at
+          // deleteFoodEntry and nowhere else \u2014 three of the four tombstoning deletes still had it.
           ls('totry_body', now);
+          if(typeof tombstoneRevoke==='function' && typeof syncIdOf==='function') tombstoneRevoke('totry_body', syncIdOf(target));
           if(typeof syncToCloud==='function') syncToCloud();
           renderBody();
         }

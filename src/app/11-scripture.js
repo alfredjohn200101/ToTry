@@ -952,8 +952,38 @@ async function loadBibleChapter(){
   const translation=document.getElementById('br-translation').value;
   const book=BIBLE_BOOKS.find(b=>b.id===bookId);if(!book)return;
   document.getElementById('br-loading').style.display='block';
+  // A TICKING COUNT, because 14 seconds of a bare pulsing line reads as a dead app and a person
+  // on 17% battery has no way to tell waiting from broken. The nutrition module learned this and
+  // wrote foodWorking()/foodFailed() for it; the reader never got the same treatment. Cleared in
+  // every exit path below.
+  try{
+    if(window.__brTick) clearInterval(window.__brTick);
+    const _lp = document.querySelector('#br-loading .pulsing');
+    if(_lp){
+      const _t0 = Date.now();
+      const _base = 'Loading scripture';
+      _lp.textContent = _base + '\u2026';
+      window.__brTick = setInterval(function(){
+        const _s = Math.round((Date.now() - _t0) / 1000);
+        _lp.textContent = _base + '\u2026 ' + _s + 's' + (_s >= 8 ? ' \u00b7 slow connection, still trying' : '');
+      }, 1000);
+    }
+  }catch(_){ }
   document.getElementById('br-chapter-display').style.display='none';
   let verses=null, apiUsed='', lastError='';
+  // A BUDGET FOR THE WHOLE CASCADE, NOT PER REQUEST. Four sources are tried in sequence and each
+  // carried its own 8000ms bound; _fetchT's own note reasons about ONE request, and nobody added
+  // them up. On a stalled connection \u2014 which never settles, so no catch ever fires early \u2014 that is
+  // 33 seconds parked on a bare pulsing "Loading scripture..." with no elapsed time and no way
+  // out. Each source now gets whatever is LEFT of a 14s budget, so the worst case is 14s and the
+  // later sources still get a real chance when an early one fails fast.
+  const _deadline = Date.now() + 14000;
+  // The floor was Math.max(1200, ...) so that a later source still got a real chance — which is
+  // exactly what broke the bound: driven with every request HANGING, the cascade took 16.4s, because
+  // three sources each claimed their 1200ms floor after the budget was already spent. Past the
+  // deadline the honest thing is to stop trying, not to try briefly four more times.
+  const _left = function(){ return Math.max(0, _deadline - Date.now()); };
+  const _outOfTime = function(){ return _left() < 600; };
   
   // Translation preference: 'esv' uses ESV, anything else skips ESV and goes straight to public
   const wantsESV = (translation === 'esv' || translation === undefined || translation === null || translation === '');
@@ -985,27 +1015,31 @@ async function loadBibleChapter(){
       const _hid = (translation==='kjv') ? null : (translation==='web' ? 'ENGWEBP' : 'eng_asv');
       if(!_hid) throw new Error('helloao has no KJV');
       const _usfm = _helloaoBook(book.name);
-      const r=await _fetchT('https://bible.helloao.org/api/'+_hid+'/'+_usfm+'/'+chapter+'.json', 8000);
+      if(_outOfTime()) throw new Error('out of time');
+      const r=await _fetchT('https://bible.helloao.org/api/'+_hid+'/'+_usfm+'/'+chapter+'.json', _left());
       if(r.ok){const d=await r.json();const vs=d.chapter?.verses||d.verses||[];if(vs.length){verses=vs.map(v=>({num:v.number||v.verseNumber,text:v.text||v.content}));apiUsed=translation==='kjv'?'KJV':'ASV';}}
-    }catch(e){ lastError = lastError || 'helloao failed'; }
+    }catch(e){ lastError = 'helloao failed'; }
   }
   
   // 3. bible-api.com (KJV/WEB)
   if(!verses){
     try{
-      const r=await _fetchT('https://bible-api.com/'+encodeURIComponent(book.name+' '+chapter)+'?translation='+(translation==='kjv'?'kjv':'web'), 8000);
+      if(_outOfTime()) throw new Error('out of time');
+      const r=await _fetchT('https://bible-api.com/'+encodeURIComponent(book.name+' '+chapter)+'?translation='+(translation==='kjv'?'kjv':'web'), _left());
       if(r.ok){const d=await r.json();if(d.verses){verses=d.verses.map(v=>({num:v.verse,text:v.text}));apiUsed=translation==='kjv'?'KJV':'WEB';}}
-    }catch(e){ lastError = lastError || 'bible-api failed'; }
+    }catch(e){ lastError = 'bible-api failed'; }
   }
   
   // 4. jsdelivr fallback
   if(!verses){
     try{
-      const r=await _fetchT('https://cdn.jsdelivr.net/gh/wldeh/bible-api/bibles/'+(translation||'en-asv')+'/books/'+String(bookId).replace(/^(\d)-/, function(_m, d){ return d; })+'/chapters/'+chapter+'.json', 8000);
+      if(_outOfTime()) throw new Error('out of time');
+      const r=await _fetchT('https://cdn.jsdelivr.net/gh/wldeh/bible-api/bibles/'+(translation||'en-asv')+'/books/'+String(bookId).replace(/^(\d)-/, function(_m, d){ return d; })+'/chapters/'+chapter+'.json', _left());
       if(r.ok){const d=await r.json();if(d.verses){verses=d.verses.map(v=>({num:v.verse||v.verseNumber||v.v,text:v.text||v.t}));apiUsed='ASV';}}
-    }catch(e){ lastError = lastError || 'jsdelivr failed'; }
+    }catch(e){ lastError = 'jsdelivr failed'; }
   }
   
+  try{ if(window.__brTick){ clearInterval(window.__brTick); window.__brTick = null; } }catch(_){ }
   document.getElementById('br-loading').style.display='none';
   if(verses && verses.length){
     document.getElementById('br-chapter-display').style.display='block';
@@ -1054,7 +1088,33 @@ async function loadBibleChapter(){
   }else{
     document.getElementById('br-chapter-display').style.display='block';
     document.getElementById('br-chapter-title').textContent='Could not load';
-    document.getElementById('br-verses').innerHTML='<p style="font-size:13px;color:var(--tx3);padding:8px">Could not load chapter. '+(lastError?'<br><span style="font-size:11px">('+lastError+')</span>':'')+'</p>';
+    // THE REASON WAS ALWAYS WRONG. lastError was assigned first by the ESV branch and every later
+    // failure used `lastError = lastError || ...`, so whatever actually broke, the person was told
+    // the problem was a missing ESV key. Offline, that reads as "this app needs a key I do not have"
+    // when the truth is simply "no connection". Each source now reports itself, and being offline is
+    // detected and said plainly.
+    // AND IT IS NO LONGER A DEAD END. Four network sources, no chapter on the phone — but the app
+    // does carry 127 verses in CONTEXTUAL_VERSES, so it can still put scripture in front of someone
+    // who opened this to read scripture, instead of an error and nothing.
+    const _off = (typeof navigator !== 'undefined' && navigator.onLine === false);
+    const _why = _off ? 'You are offline \u2014 the chapter text lives online.'
+                      : (lastError ? _escFew(lastError) : '');
+    let _html = '<p style="font-size:13px;color:var(--tx3);padding:8px;line-height:1.6">Could not load ' +
+      _escFew(book.name + ' ' + chapter) + '. ' + _why + '</p>';
+    try{
+      const _pool = [].concat.apply([], Object.keys(CONTEXTUAL_VERSES || {}).map(function(k){ return CONTEXTUAL_VERSES[k] || []; }));
+      if(_pool.length){
+        // Deterministic pick, so re-opening offline does not shuffle scripture at a person.
+        const _pick = _pool[(String(bookId).length + Number(chapter||1)) % _pool.length];
+        _html += '<div style="padding:10px 8px;border-top:1px solid var(--bd);margin-top:6px">' +
+          '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.1em;margin-bottom:6px">ON THIS PHONE, WHILE YOU WAIT</div>' +
+          '<div style="font-family:Cormorant Garamond,serif;font-size:16px;line-height:1.7;color:var(--tx);font-style:italic">\u201C' + _escFew(_pick.text) + '\u201D</div>' +
+          '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:6px">' + _escFew(_pick.ref) + '</div>' +
+          '</div>';
+      }
+    }catch(_){ }
+    _html += '<button class="btn" onclick="loadBibleChapter()" style="margin:10px 8px 0;width:auto;padding:8px 16px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);min-height:34px">Try again</button>';
+    document.getElementById('br-verses').innerHTML = _html;
   }
 }
 // Fetch Tyndale Open Study Notes for the current chapter (free, no key, via helloao commentary API).

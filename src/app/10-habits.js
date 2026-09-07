@@ -99,9 +99,25 @@ function renderScoreboard(){
     if(_bvLbl && _bvLbl.classList.contains('lbl')) _bvLbl.style.display = bv.children.length ? '' : 'none';
     bv.style.display = bv.children.length ? '' : 'none';
   }
+  // ONCE EARNED, EARNED. Every achievement was recomputed live from CURRENT state, so "Faithful"
+  // (check: str >= 7, the LIVE clean streak) vanished from the trophy case the moment a person
+  // honestly logged a slip — and so could "Unstoppable", whose win rate can fall back under 70%.
+  // This app's first rule is that a lapse is feedback, not failure, and honesty is the single
+  // behaviour it most wants to reinforce. Taking a trophy away for being honest does the opposite,
+  // silently, on the day it costs most. A trophy records that something HAPPENED; nothing that
+  // happens later can make it not have happened.
+  const _achKey = 'totry_achievements_earned';
+  let _achSeen = [];
+  try{ _achSeen = ls(_achKey) || []; if(!Array.isArray(_achSeen)) _achSeen = []; }catch(_){ _achSeen = []; }
+  const _achNow = ACHS.filter(a => { try{ return a.check(vices, tw, day, str); }catch(_){ return false; } }).map(a => a.title);
+  const _achAll = _achSeen.slice();
+  _achNow.forEach(t => { if(_achAll.indexOf(t) === -1) _achAll.push(t); });
+  if(_achAll.length !== _achSeen.length){ try{ ls(_achKey, _achAll); }catch(_){ } }
+  const _achHas = function(a){ return _achAll.indexOf(a.title) !== -1; };
+
   const ael=e('achievements');
   if(ael){ael.innerHTML='';let earned=0;
-    ACHS.forEach(a=>{if(a.check(vices,tw,day,str)){earned++;const el=document.createElement('div');el.className='ach';el.innerHTML='<div class="ach-icon">'+a.icon+'</div><div><div class="ach-title">'+a.title+'</div><div class="ach-desc">'+a.desc+'</div></div>';ael.appendChild(el);}});
+    ACHS.forEach(a=>{if(_achHas(a)){earned++;const el=document.createElement('div');el.className='ach';el.innerHTML='<div class="ach-icon">'+a.icon+'</div><div><div class="ach-title">'+a.title+'</div><div class="ach-desc">'+a.desc+'</div></div>';ael.appendChild(el);}});
     if(!earned)ael.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:16px">Fight your first urge to unlock achievements.</p>';
   }
 }
@@ -212,7 +228,7 @@ function getStreak(){
 // exactly the kind of change that looks safe and is not.
 function isFaithHabitName(name){
   const n = String(name || '').toLowerCase();
-  return /prayer|scripture|salah|qur|puja|gita|sutta|dhikr|japa|meditation|stillness|reflection/.test(n);
+  return /\b(prayer|pray|scripture|salah|qur|puja|gita|sutta|dhikr|japa|meditation|stillness|reflection)\b/.test(n);
 }
 function faithHabitName(){
   const f = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
@@ -297,16 +313,22 @@ function autoTickHabits(){
       if(/gratitude/.test(name)){
         // Gratitude habit: ticks when the morning's gratitude field was actually filled that day.
         shouldTick = allMornings.some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===dateStr && (m.gratitude||'').trim());
-      } else if(/morning|intention/.test(name) || (isFaithHabitName(name) && !/evening|night/.test(name))){
+      } else if(/\b(morning|intention)\b/.test(name) || (isFaithHabitName(name) && !/\b(evening|night)\b/.test(name))){
         shouldTick = allMornings.some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===dateStr);
-      } else if(/workout|gym|train|lift|exercise/.test(name)){
+      // WORD BOUNDARIES, AND THE ABSTINENCE SENSE OF "CLEAN". These matched SUBSTRINGS of the habit
+      // name, so nine of fourteen ordinary habits auto-ticked as something else: "Clean the kitchen"
+      // counted as staying clean, "Great posture" and "Create something" as hitting a nutrition
+      // target, "Wonder at the sky" as an urge resisted, "Stretch at night" as an evening ritual.
+      // Auto-tick writes into the person's own record of themselves, so a wrong guess marks days
+      // they did not do the thing \u2014 which is worse than not guessing, because they cannot tell.
+      } else if(/\b(workout|gym|train|training|lift|lifting|exercise|run|running)\b/.test(name)){
         shouldTick = allWorkouts.some(w=>w.date===dateStr || (w.ts && new Date(w.ts).toLocaleDateString('en-AU')===dateStr))
                   || allStrava.some(a=>a.date && new Date(a.date).toLocaleDateString('en-AU')===dateStr);
-      } else if(/evening|wind down|night|reflect/.test(name)){
+      } else if(/\b(evening|wind down|winddown|examen)\b|\bnight(ly)? (routine|ritual|prayer|reflection)\b|\breflect\b/.test(name)){
         shouldTick = allEvenings.some(e=>e.ts && new Date(e.ts).toLocaleDateString('en-AU')===dateStr);
-      } else if(/journal|write|diary/.test(name)){
+      } else if(/\b(journal|journalling|journaling|diary)\b|\bwrite\b(?!\s+to\b)/.test(name)){
         shouldTick = allJournal.some(j=>j.ts && new Date(j.ts).toLocaleDateString('en-AU')===dateStr);
-      } else if(/nutrition|macro|protein|calorie|eat|under|target/.test(name)){
+      } else if(/\b(nutrition|macros?|protein|calories?|eat|eating|under target|hit target)\b/.test(name)){
         // Direction-aware: lose → stayed UNDER calorie target; gain → hit protein/over; else → logged + hit protein.
         const entries = nutLog[dateStr] || [];
         if(entries.length && nutGoals.cal){
@@ -316,7 +338,7 @@ function autoTickHabits(){
           else if(nutGoalIntent==='gain'||nutGoalIntent==='build'){ shouldTick = pro >= (nutGoals.pro||0)*0.9; }
           else { shouldTick = cals>0 && pro >= (nutGoals.pro||0)*0.9; }
         }
-      } else if(/sober|clean|no urge|abstain|won|fight|no vice/.test(name)){
+      } else if(/\b(sober|abstain|abstinence|no urge|no vice)\b|\b(stay(ing)? clean|clean day|days clean|clean streak)\b|\bfight\b/.test(name)){
         // Check ALL relapse history (not just lastLoss) for a loss on this day.
         const lossThatDay = vices.some(v=>{
           if(v.lastLoss && new Date(v.lastLoss).toLocaleDateString('en-AU')===dateStr) return true;
@@ -373,23 +395,26 @@ function autoTickHabits(){
     // Check various habit patterns
     // Mutually exclusive (else-if): the FIRST matching category wins, so a habit named
     // "evening reflection" matches evening only — it won't also trip the journal rule.
-    if(/morning|gratitude|intention/.test(name) || (isFaithHabitName(name) && !/evening|night/.test(name))){
+    // THE SECOND COPY OF THE SAME CASCADE. The patterns above were tightened and this twin was
+    // left on substrings — caught only because the guard was written over the CLASS rather than
+    // the site. Two cascades, one rule; if a third is ever written it has to come here too.
+    if(/\b(morning|gratitude|intention)\b/.test(name) || (isFaithHabitName(name) && !/\b(evening|night)\b/.test(name))){
       const mornings=ls('totry_mornings')||[];
       shouldTick=mornings.some(m=>new Date(m.ts).toLocaleDateString('en-AU')===today);
     }
-    else if(/workout|gym|train|lift|exercise/.test(name)){
+    else if(/\b(workout|gym|train|training|lift|lifting|exercise|run|running)\b/.test(name)){
       const workouts=ls('totry_workouts')||[];
       shouldTick=workouts.some(w=>w.date===today || (w.ts && new Date(w.ts).toLocaleDateString('en-AU')===today));
     }
-    else if(/evening|wind down|night|reflect/.test(name)){
+    else if(/\b(evening|wind down|winddown|examen)\b|\bnight(ly)? (routine|ritual|prayer|reflection)\b|\breflect\b/.test(name)){
       const evenings=ls('totry_evenings')||[];
       shouldTick=evenings.some(e=>new Date(e.ts).toLocaleDateString('en-AU')===today);
     }
-    else if(/journal|write|diary/.test(name)){
+    else if(/\b(journal|journalling|journaling|diary)\b|\bwrite\b(?!\s+to\b)/.test(name)){
       const journals=ls('totry_journal')||[];
       shouldTick=journals.some(j=>new Date(j.ts).toLocaleDateString('en-AU')===today);
     }
-    else if(/sober|clean|no urge|abstain|won|fight/.test(name)){
+    else if(/\b(sober|abstain|abstinence|no urge|no vice)\b|\b(stay(ing)? clean|clean day|days clean|clean streak)\b|\bfight\b/.test(name)){
       // Check vices for losses today
       loadV();
       const losses=vices.filter(v=>v.lastLoss && new Date(v.lastLoss).toLocaleDateString('en-AU')===today);

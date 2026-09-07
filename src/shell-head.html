@@ -4663,7 +4663,13 @@ Amen.</div></div>
       <button class="sos-loc-btn" onclick="setLocation('bed')"><span class="sos-loc-icon">&#127769;</span><span class="sos-loc-label">In bed / late night</span></button>
     </div>
     <button class="btn" style="margin-top:8px;font-size:12px;opacity:0.6" onclick="closeSos()">Close</button>
-    <button class="btn" style="margin-top:6px;font-size:11px;opacity:0.5;color:var(--re-bd);background:transparent;border:none;text-decoration:underline" onclick="logHonestlyBeforeIntervention()">I failed before opening this. Be honest.</button>
+    <!-- --re-bd is a BORDER token: rgba(210,95,82,0.30). Used as a text colour and then multiplied by
+         opacity:0.5, this rendered at 15% effective alpha — measured at 1.16:1, on the LIVE SOS, on
+         the button that offers to tell the truth. Making honesty the hardest thing on the screen to
+         see is the opposite of what this app is for; a lapse is feedback, not failure, and the
+         honest option must never be the one that is hidden. Solid --re at full opacity; it stays
+         visually secondary through its size and its underline, which is what secondary should mean. -->
+    <button class="btn" style="margin-top:6px;font-size:11.5px;color:var(--re);background:transparent;border:none;text-decoration:underline;min-height:34px" onclick="logHonestlyBeforeIntervention()">I failed before opening this. Be honest.</button>
   </div>
   <div class="sos-phase" id="sos-p1">
     <div class="sos-phase-lbl">Step 1 of 3 &#8212; Break the moment</div>

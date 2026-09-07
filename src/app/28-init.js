@@ -791,6 +791,18 @@ function calcTDEE(){
   const res=document.getElementById('tdee-result');
   if(res){
     res.style.display='block';
+    // NUMBERS OFF REACHES HERE TOO — and the app ROUTES them here: with no targets set, the setup
+    // nudge offers "Set a real one", which opens this calculator. It then printed her calorie target,
+    // her protein, carbs and fat, and a paragraph naming the size of her deficit. The targets are
+    // still calculated and still saved above (that is what makes the rest of the app work); she just
+    // does not have to look at them, which is the whole promise.
+    if(typeof nutGentle === 'function' && nutGentle()){
+      res.innerHTML =
+        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">Your targets are set</div>' +
+        '<div style="font-size:13px;color:var(--tx2);line-height:1.7">Worked out from what you told me and saved. You have numbers turned off, so I will keep them to myself \u2014 the app will use them quietly to tell you whether a day was light, steady or full.</div>' +
+        '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-top:10px;font-style:italic">You can see them any time in Settings if you ever want to.</div>';
+      return;
+    }
     res.innerHTML='<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">'+t.label+'</div>'+
       '<div class="macro-grid" style="margin-bottom:10px">'+
       '<div class="macro-met"><div class="mm-l">Calories</div><div class="mm-v cal">'+t.cal+'</div></div>'+

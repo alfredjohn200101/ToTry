@@ -471,7 +471,13 @@ async function pullFromCloud(){
       // and an iPad completed the tasbih on each across a week and watched "That's 9 kept" drop back to
       // "That's 4 kept" on the next pull. It is append-only and every row carries a ts, so syncIdOf
       // identifies it exactly like the rosary log sitting beside it in SYNC_KEYS.
-      'totry_practices'];
+      'totry_practices',
+      // A trophy case is the purest append-only list in the app: earning one on your phone and
+      // another on your laptop must give you BOTH. Adding it to SYNC_KEYS alone would have hit
+      // exactly the scalar rule described two entries up \u2014 last writer replaces the whole list \u2014
+      // which for achievements means a trophy quietly disappearing on the other device.
+      // syncIdOf() returns a non-object unchanged, so the titles union by value.
+      'totry_achievements_earned'];
     const idOf = syncIdOf;   // ONE identity function, shared with tombstoneRemoved (see TOMB_KEY)
     // union(local, cloud) kept the FIRST occurrence of each id — always the LOCAL one — so an entry
     // EDITED on the other device never arrived: the correction was silently dropped while both copies

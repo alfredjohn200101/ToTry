@@ -4525,7 +4525,12 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     const r=await page.evaluate(()=>({
       day: (typeof getDayCount==='function') ? getDayCount() : null,
       habitsArray: Array.isArray(typeof habits!=='undefined'?habits:null),
-      greeted: /How.s the day/i.test((document.getElementById('tab-home')||document.body).innerText||''),
+      // GREET BY NAME, not by one phrasing. This asserted /How's the day/ and went red every
+      // evening from the day it was written: the greeting has four time-of-day variants
+      // ("Still up, X?", "Good morning, X.", "How's the day, X?", "Good evening, X.") and all four
+      // carry the name. The name is the signal that Home rendered its own greeting at all; the
+      // wording is not. A time-dependent assertion is a test that fails on correct code.
+      greeted: /\bSam\b/.test((document.getElementById('tab-home')||document.body).innerText||''),
     }));
     await ctx.close();
     if(!r.greeted) findings.push('full phone: Home lost its greeting and next step — a raw write threw and took the render with it');

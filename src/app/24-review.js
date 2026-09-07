@@ -642,6 +642,8 @@ async function deleteRelationship(id){
       const cur=ls('totry_relationships')||[];
       cur.push(removed);
       ls('totry_relationships',cur);
+      // See the note at 13-body.js: without this the next pull deletes them again, everywhere.
+      if(typeof tombstoneRevoke==='function' && typeof syncIdOf==='function') tombstoneRevoke('totry_relationships', syncIdOf(removed));
       renderRelationships();
     });
   }
@@ -736,6 +738,8 @@ async function deleteLetter(id){
       const cur=ls('totry_letters')||[];
       cur.push(removed);
       ls('totry_letters',cur);
+      // Same as above — a letter someone wrote is not a row to lose quietly.
+      if(typeof tombstoneRevoke==='function' && typeof syncIdOf==='function') tombstoneRevoke('totry_letters', syncIdOf(removed));
       renderLetters();
     });
   }

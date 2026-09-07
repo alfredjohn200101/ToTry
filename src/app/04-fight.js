@@ -1603,7 +1603,16 @@ function renderUrgeInsights(){
       '<div style="font-size:12px;color:var(--tx2);line-height:1.7">'+
         (p.riskWindow?'Hardest time: <b style="color:var(--tx)">'+p.riskWindow+'</b>'+(p.riskDay?', especially <b style="color:var(--tx)">'+p.riskDay+'s</b>':'')+'.<br>':'')+
         (p.topTrigger?'Most common trigger: <b style="color:var(--tx)">'+p.topTrigger+'</b>.<br>':'')+
-        'Win rate: <b style="color:'+trendColor+'">'+p.winRate+'%</b>'+(p.trend?' ('+p.trend+')':'')+' over '+plural(p.total,'battle')+'.'+
+        // NOT A BARE WIN RATE AT ZERO. viceFrequencyRead and the vice card both removed this
+        // percentage, for a reason written down twice in 09-fight-deep.js: it told a person who had
+        // been honest fifteen days running that they had won 0%. It was removed from the card and
+        // left standing here, on the panel a person opens precisely when they are trying to
+        // understand a bad stretch. Above zero the number is real information and stays. At zero it
+        // is a scoreboard of losses, so say the thing that is actually true instead: they logged
+        // every one of them, which is the behaviour this app exists to reinforce.
+        (p.winRate > 0
+          ? 'Win rate: <b style="color:'+trendColor+'">'+p.winRate+'%</b>'+(p.trend?' ('+p.trend+')':'')+' over '+plural(p.total,'battle')+'.'
+          : 'You logged <b style="color:var(--tx)">'+plural(p.total,'battle')+'</b> honestly'+(p.trend?' ('+p.trend+')':'')+' \u2014 every one of them named, none hidden.')+
       '</div>'+
       (override ? '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)"><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">How to get ahead of it</div><div style="font-size:12px;color:var(--tx2);line-height:1.7">'+override+'</div></div>' : '')+
       '</div>';

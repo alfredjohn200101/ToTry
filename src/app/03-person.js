@@ -740,7 +740,7 @@ function lifeStateBrief(s){
       lines.push('Nutrition: avg '+(n.avgCal7||'?')+' cal / '+(n.avgPro7||'?')+'g protein over '+n.daysLogged7+' logged days; today '+n.todayCal+' cal / '+n.todayPro+'g');
     }
   }
-  if(b.currentWeight) lines.push('Weight: '+wFmt(b.currentWeight)+(b.recomp&&b.recomp.dFat!=null?' (last stretch: '+(b.recomp.dWeight>0?'+':'')+b.recomp.dWeight+'kg scale, '+(b.recomp.dFat>0?'+':'')+b.recomp.dFat+'kg fat'+(b.recomp.dMuscle!=null?', '+(b.recomp.dMuscle>0?'+':'')+b.recomp.dMuscle+'kg muscle':'')+')':''));
+  if(b.currentWeight) lines.push('Weight: '+wFmt(b.currentWeight)+(b.recomp&&b.recomp.dFat!=null?' (last stretch: '+wDelta(b.recomp.dWeight)+' scale, '+wDelta(b.recomp.dFat)+' fat'+(b.recomp.dMuscle!=null?', '+wDelta(b.recomp.dMuscle)+' muscle':'')+')':''));
   const soulBits = [];
   if(soul.spiritual!=null) soulBits.push('spiritual '+soul.spiritual.toFixed(1)+'/10');
   if(soul.emotional!=null) soulBits.push('emotional '+soul.emotional.toFixed(1)+'/10');
@@ -3067,6 +3067,17 @@ function _sabbathLine(){
   if(t === 'hinduism' || t === 'buddhism') return 'Rest is also discipline.<br>You don\'t have to perform today.<br>Stillness is part of the practice, not a pause from it.';
   return 'Rest is also discipline.<br>You don\'t have to perform today.<br>You were built to need it.';
 }
+// THE BODY WAS MADE TRADITION-AWARE AND THE HEADING WAS NOT. _sabbathLine() above speaks to all five
+// traditions; the title "Sabbath day \u{1F54A}\uFE0F" is static markup, so on a Sunday a Muslim, Hindu,
+// Buddhist or secular person read a heading naming an observance that is not theirs, under a dove.
+// The card's actual point — rest is also discipline, you do not have to perform today — is universal.
+// Only the label was not. (A Muslim's day is Friday and a Jew's is Saturday; naming this one "Sabbath"
+// for them would be wrong even on the right day.)
+function _sabbathTitle(){
+  const t = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
+  if(t === 'christianity') return 'Sabbath day \u{1F54A}\uFE0F';
+  return 'A day to rest';
+}
 function _nextStepCloseSub(){
   const t = (typeof faithTradition === 'function') ? faithTradition() : 'secular';
   if(t === 'christianity') return 'Your evening reflection and examen.';
@@ -3089,6 +3100,7 @@ function applyFaithUIGate(){
     // Muslim a Confession tracker as if it were his. "Faith is full but never forced" cuts both ways —
     // full for a Catholic, never imposed on anyone else.
     try{ const _sb=document.getElementById('sabbath-text'); if(_sb) _sb.innerHTML=_sabbathLine(); }catch(_){ }
+    try{ const _st=document.querySelector('#sabbath-card .sabbath-title'); if(_st) _st.textContent=_sabbathTitle(); }catch(_){ }
     const sac = document.getElementById('bst-sacraments');
     if(sac){
       const christian = (t === 'christianity');

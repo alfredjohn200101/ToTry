@@ -1724,8 +1724,16 @@ function viceFightDays(v){
 // broken and resumed, so someone who has never fallen reads 0 rather than a misleading 1.
 function viceCameBack(v){
   if(!v) return 0;
-  const n = (v.relapseHistory||[]).length || Number(v.relapseCount) || 0;
-  return Math.max(0, n);
+  // THE HIGHER OF THE TWO, NOT THE FIRST TRUTHY ONE. `||` preferred relapseHistory.length whenever
+  // it was non-zero, and the two records disagree for anyone whose comebacks predate relapseHistory
+  // existing: their count says 7 and their history is empty. The first honest slip after that writes
+  // ONE history entry — truthy — so it short-circuited a relapseCount of 8 and the card read "came
+  // back 1 time". They lost seven comebacks from view at the exact moment they were honest, and
+  // "came back" is the one number on that card that is meant to say the falling never ended it.
+  // Neither record can legitimately shrink, so take the larger and let the other catch up.
+  const _hist = (v.relapseHistory || []).length;
+  const _count = Number(v.relapseCount) || 0;
+  return Math.max(0, _hist, _count);
 }
 
 // ── SHOWING UP IS THE MEASURE, NOT ONLY STAYING CLEAN ────────────────────────────────────────
