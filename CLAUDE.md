@@ -126,6 +126,22 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
      all five traditions running their own reading plan; the morning and evening rituals stepped,
      completed, and RE-ENTERED; the companion's dismiss gesture (handle dismisses, conversation
      scrolls); and one person walked through a whole day in a single session.
+     **Four checks added 7 Sep 2026, each for a defect nothing static could see.** (a) THE MONTH GRID
+     IN FIVE TIMEZONES \u2014 no test had ever opened that view, and no test in this repo had ever set a
+     `timezoneId`, so the whole gate ran in the host's own zone and could not contrast two. The grid
+     painted today in gold and opened YESTERDAY at every positive UTC offset, this app's home zone
+     included; the same cell's dots were computed locally and were right, so one cell disagreed with
+     itself. It was also the PREVIOUS round's fix for "tapping any date opens today" \u2014 one wrong day
+     swapped for another. (b) A FULL PHONE \u2014 panels checked that a full device SAYS "Storage full";
+     it never checked the app still WORKS. A raw `localStorage.setItem` for a one-time migration FLAG
+     sat outside the try/catch at the end of `loadH()` and took Home's greeting and next step with it.
+     (c) THE TWELVE-STEP ONBOARDING WALK \u2014 `OB_STEPS` was built from DOCUMENT order and never driven;
+     the real flow is ob1\u2192ob2\u2192ob-moment\u2192ob-what, so a forward tap ran the bar backwards 4\u21922 and the
+     back arrow offered a screen the person had never seen. (d) HIT-TESTING EVERY CONTROL UNDER A
+     TOAST \u2014 the toast moves clear of `.modal-bg.open` sheets, and the FEELING DOOR is not one
+     (`#feel-door.open`), so on the first tap into the app it sat on top of two of the ten feeling
+     chips. Right size, correct accessible name, simply not clickable: every geometry and
+     DOM-presence assertion in the suite passed it.
    - `npm run test:edge` — runs the Supabase functions locally with Deno stubbed (Node strips the TS)
    - `npm run preflight` — bundle parity across source, www, iOS **and Android**, by sha256. It
      compared APP_VERSION STRINGS until 5 Sep 2026 and reported that as "the iOS bundle matches the
