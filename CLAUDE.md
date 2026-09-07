@@ -42,7 +42,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
-- `APP_VERSION` in `src/app/00-boot.js` — currently **v581**. Bump it AND `CACHE` in sw.js together, always.
+- `APP_VERSION` in `src/app/00-boot.js` — currently **v582**. Bump it AND `CACHE` in sw.js together, always.
 
 ## The nervous system (key functions — grep these)
 - `getLifeState()` — returns the whole person {training, nutrition, body, soul, fight, readiness,
@@ -65,7 +65,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    reported 1032 PASSED, because the harness extracts functions by name and never parsed the whole
    script. A suite that stays green while the app cannot boot is worse than no suite.
 2. **Run the whole gate before you ship**, not just `npm test`:
-   - `npm test` — 1697 assertions over the real bundle (core math, dead code, privacy promises,
+   - `npm test` — 1749 assertions over the real bundle (core math, dead code, privacy promises,
      the voice gates, the parse check). Four classes were added on 6 Sep 2026 after an audit of the
      PREVIOUS round's own fixes, each of which had been fixed only where it was reported:
      **(a) a person's own typing as live HTML** — the v579 sweep found five doors by looking for typed
@@ -147,7 +147,18 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 4. **Quality over speed. Honest assessment** — never claim done when it isn't.
    - **Read the whole gate BEFORE `git push`, not after.** v542 went out with `npm run panels` red
      because the output was read after the push.
-   - **Review the FIXES, not only the original code.** Three adversarial rounds ran over v533–v544:
+   - **A TEST THAT GREPS A CALL PASSES ON A WRONG ARGUMENT.** v581's undo asserted
+     `/tombstoneRevoke\('totry_nutlog'/` and was fault-injected by DELETING the call — which is the
+     one mutation a name-match is guaranteed to catch. The shipped bug was the argument: tombstones
+     are keyed `syncIdOf(x)` = `'i'+x.id` and the code passed the raw `x.id`, so the restored meal
+     was silently deleted again by the next pull, on every device, for 180 days. Fault-inject by
+     CORRUPTING the argument, and prefer an assertion that EXECUTES (`H.load(['syncIdOf'])`, then
+     assert `'i222' !== 222`). Two other v582 tests matched their own explanatory COMMENT and failed
+     on correct code — strip comments before any ordering or absence check.
+   - **Review the FIXES, not only the original code.** Measured again over v581 (7 Sep 2026): of 31
+     findings that survived three diverse-lens refuters, **nine were introduced by v581 itself** —
+     the commit whose entire subject was auditing the previous round. The yield does not fall off.
+     Three adversarial rounds ran over v533–v544:
      round 1 (the rebuild) found 11 defects, round 2 (the fixes for round 1) found 9 — and one of
      those fixes had caused harm worse than the bug it repaired. A fix fails in four recognisable
      ways: it covers only the reported case, it moves the bug, it is gated in the wrong place, or its
