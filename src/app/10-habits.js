@@ -313,7 +313,19 @@ function autoTickHabits(){
       if(/gratitude/.test(name)){
         // Gratitude habit: ticks when the morning's gratitude field was actually filled that day.
         shouldTick = allMornings.some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===dateStr && (m.gratitude||'').trim());
-      } else if(/\b(morning|intention)\b/.test(name) || (isFaithHabitName(name) && !/\b(evening|night)\b/.test(name))){
+      // PRAYING COUNTS AS PRAYING. The faith habit was folded in with morning/intention and ticked
+      // off the MORNING RITUAL — so filling in the morning ticked "Prayer / scripture" for someone
+      // who had not prayed, and actually praying, finishing a rosary or keeping a passage ticked
+      // nothing at all. The records exist: totry_practices (japa, dhikr, tasbih, stillness),
+      // totry_rosaries, and totry_sv for a passage kept. The morning still counts, because for a
+      // person of faith it contains a prayer \u2014 it just is not the only thing that does.
+      } else if(isFaithHabitName(name) && !/\b(evening|night)\b/.test(name)){
+        const _on = (arr, f) => (arr||[]).some(x => x && x[f] && new Date(x[f]).toLocaleDateString('en-AU')===dateStr);
+        shouldTick = allMornings.some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===dateStr)
+                  || _on(ls('totry_practices'), 'ts')
+                  || _on(ls('totry_rosaries'), 'ts')
+                  || _on(ls('totry_sv'), 'ts') || _on(ls('totry_sv'), 'date');
+      } else if(/\b(morning|intention)\b/.test(name)){
         shouldTick = allMornings.some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===dateStr);
       // WORD BOUNDARIES, AND THE ABSTINENCE SENSE OF "CLEAN". These matched SUBSTRINGS of the habit
       // name, so nine of fourteen ordinary habits auto-ticked as something else: "Clean the kitchen"
@@ -398,7 +410,15 @@ function autoTickHabits(){
     // THE SECOND COPY OF THE SAME CASCADE. The patterns above were tightened and this twin was
     // left on substrings — caught only because the guard was written over the CLASS rather than
     // the site. Two cascades, one rule; if a third is ever written it has to come here too.
-    if(/\b(morning|gratitude|intention)\b/.test(name) || (isFaithHabitName(name) && !/\b(evening|night)\b/.test(name))){
+    if(isFaithHabitName(name) && !/\b(evening|night)\b/.test(name)){
+      // Same rule as the backfill above — praying is what ticks the prayer habit.
+      const _on = (arr, f) => (arr||[]).some(x => x && x[f] && new Date(x[f]).toLocaleDateString('en-AU')===today);
+      shouldTick = (ls('totry_mornings')||[]).some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===today)
+                || _on(ls('totry_practices'), 'ts')
+                || _on(ls('totry_rosaries'), 'ts')
+                || _on(ls('totry_sv'), 'ts') || _on(ls('totry_sv'), 'date');
+    }
+    else if(/\b(morning|gratitude|intention)\b/.test(name)){
       const mornings=ls('totry_mornings')||[];
       shouldTick=mornings.some(m=>new Date(m.ts).toLocaleDateString('en-AU')===today);
     }

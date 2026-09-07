@@ -5388,7 +5388,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v585';
+const APP_VERSION = 'v586';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -20447,9 +20447,17 @@ function viceSpendPicture(v){
     const lasts = Math.max(1, parseFloat(v.lastsDays)||30);
     const since = v.lastPurchase ? Math.max(0, Math.floor((Date.now()-new Date(v.lastPurchase))/86400000)) : days;
     avoided = Math.floor(since / lasts) * amt;
-  } else if(per === 'day'){ avoided = amt * days; }
-  else if(per === 'use'){ avoided = amt * ((parseFloat(v.costUses)||7) * (days/7)); }
-  else { avoided = amt * (days/7); }
+  }
+  // LIFETIME CLEAN DAYS, NOT THE CURRENT STREAK. `days` is viceCleanDays(v), which resets to 0 the
+  // moment a person logs a slip — so being honest silently deleted every dollar the Money tab said
+  // staying clean had put back. That money was really not spent; a later slip cannot un-spend it.
+  // cleanDaysTotal already banks each broken stretch (04-fight.js adds cleanBeforeReset on every
+  // relapse), so the true figure is that plus whatever they are on now. The 'purchase' model above
+  // is measured from lastPurchase and never used `days`, so it was already right.
+  const _bankedDays = Math.max(0, (parseFloat(v.cleanDaysTotal) || 0)) + days;
+  if(per === 'day'){ avoided = amt * _bankedDays; }
+  else if(per === 'use'){ avoided = amt * ((parseFloat(v.costUses)||7) * (_bankedDays/7)); }
+  else { avoided = amt * (_bankedDays/7); }   // 'week' is the DEFAULT costPer, so this is the common case
   avoided = Math.round(avoided);
   const net = avoided - Math.round(owed);
   return {
@@ -21609,7 +21617,19 @@ function autoTickHabits(){
       if(/gratitude/.test(name)){
         // Gratitude habit: ticks when the morning's gratitude field was actually filled that day.
         shouldTick = allMornings.some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===dateStr && (m.gratitude||'').trim());
-      } else if(/\b(morning|intention)\b/.test(name) || (isFaithHabitName(name) && !/\b(evening|night)\b/.test(name))){
+      // PRAYING COUNTS AS PRAYING. The faith habit was folded in with morning/intention and ticked
+      // off the MORNING RITUAL — so filling in the morning ticked "Prayer / scripture" for someone
+      // who had not prayed, and actually praying, finishing a rosary or keeping a passage ticked
+      // nothing at all. The records exist: totry_practices (japa, dhikr, tasbih, stillness),
+      // totry_rosaries, and totry_sv for a passage kept. The morning still counts, because for a
+      // person of faith it contains a prayer \u2014 it just is not the only thing that does.
+      } else if(isFaithHabitName(name) && !/\b(evening|night)\b/.test(name)){
+        const _on = (arr, f) => (arr||[]).some(x => x && x[f] && new Date(x[f]).toLocaleDateString('en-AU')===dateStr);
+        shouldTick = allMornings.some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===dateStr)
+                  || _on(ls('totry_practices'), 'ts')
+                  || _on(ls('totry_rosaries'), 'ts')
+                  || _on(ls('totry_sv'), 'ts') || _on(ls('totry_sv'), 'date');
+      } else if(/\b(morning|intention)\b/.test(name)){
         shouldTick = allMornings.some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===dateStr);
       // WORD BOUNDARIES, AND THE ABSTINENCE SENSE OF "CLEAN". These matched SUBSTRINGS of the habit
       // name, so nine of fourteen ordinary habits auto-ticked as something else: "Clean the kitchen"
@@ -21694,7 +21714,15 @@ function autoTickHabits(){
     // THE SECOND COPY OF THE SAME CASCADE. The patterns above were tightened and this twin was
     // left on substrings — caught only because the guard was written over the CLASS rather than
     // the site. Two cascades, one rule; if a third is ever written it has to come here too.
-    if(/\b(morning|gratitude|intention)\b/.test(name) || (isFaithHabitName(name) && !/\b(evening|night)\b/.test(name))){
+    if(isFaithHabitName(name) && !/\b(evening|night)\b/.test(name)){
+      // Same rule as the backfill above — praying is what ticks the prayer habit.
+      const _on = (arr, f) => (arr||[]).some(x => x && x[f] && new Date(x[f]).toLocaleDateString('en-AU')===today);
+      shouldTick = (ls('totry_mornings')||[]).some(m=>m.ts && new Date(m.ts).toLocaleDateString('en-AU')===today)
+                || _on(ls('totry_practices'), 'ts')
+                || _on(ls('totry_rosaries'), 'ts')
+                || _on(ls('totry_sv'), 'ts') || _on(ls('totry_sv'), 'date');
+    }
+    else if(/\b(morning|gratitude|intention)\b/.test(name)){
       const mornings=ls('totry_mornings')||[];
       shouldTick=mornings.some(m=>new Date(m.ts).toLocaleDateString('en-AU')===today);
     }
@@ -43711,7 +43739,22 @@ function tellUser(title, body, opts){
   function label(el){
     const h = el.querySelector('.modal-title, h1, h2, h3, h4, .sheet-title');
     const t = (h && h.textContent || '').trim().replace(/\s+/g,' ').slice(0,120);
-    return t || 'Dialog';
+    if(t) return t;
+    // FALL BACK TO WHAT THE SHEET ACTUALLY SAYS FIRST. Only a minority of these sheets use an
+    // h-tag or .modal-title, so 40 of the app's 70 announced to a screen reader as the literal
+    // word "Dialog" — while their own opening line read "Log a period start", "Recommend a split
+    // for me", "Land the day." Every one of them had a name; nothing was looking for it.
+    // Requires a letter, so a sheet that opens on a bare emoji ("\u{1F9F9}", "\u{1F494}") keeps
+    // looking rather than announcing as a picture nobody can hear.
+    try{
+      const inner = el.querySelector('.modal') || el;
+      const kids = inner.children ? [].slice.call(inner.children) : [];
+      for(let i = 0; i < kids.length; i++){
+        const line = (kids[i].innerText || kids[i].textContent || '').trim().split('\n')[0].trim().replace(/\s+/g,' ');
+        if(line.length > 1 && line.length < 90 && /[A-Za-z\u00C0-\u024F]/.test(line)) return line.slice(0,120);
+      }
+    }catch(_){ }
+    return 'Dialog';
   }
   function dress(el){
     if(!el || el.getAttribute('role')) return;

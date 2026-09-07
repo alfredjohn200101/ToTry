@@ -4633,6 +4633,51 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     else console.log(`feeling door: all ${r.n} controls stay tappable with a toast on screen`);
   }
 
+
+  // ── EVERY SHEET SAYS WHAT IT IS ─────────────────────────────────────────────────────────────
+  // The a11y check above builds ONE synthetic sheet with an <h3> and proves the naming MECHANISM
+  // works. It never surveyed the real ones — and only a minority of them use an h-tag or
+  // .modal-title, so 40 of the app's 70 sheets announced to a screen reader as the literal word
+  // "Dialog", while their own opening line read "Log a period start", "Recommend a split for me",
+  // "Land the day." Every one had a name; nothing looked for it. A mechanism test is not a survey.
+  {
+    const ctx=await browser.newContext({viewport:{width:414,height:896}});
+    const page=await ctx.newPage();
+    await page.addInitScript(()=>{
+      localStorage.setItem('totry_onboarded', JSON.stringify(true));
+      localStorage.setItem('totry_start', JSON.stringify(new Date(Date.now()-30*864e5).toISOString()));
+      localStorage.setItem('totry_v', JSON.stringify([{n:'Lust / PMO',type:'porn',mode:'quit',
+        startDate:new Date(Date.now()-9*864e5).toISOString(),w:5,total:6}]));
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`,{waitUntil:'domcontentloaded'});
+    await page.waitForTimeout(2800);
+    const r=await page.evaluate(async()=>{
+      const wait=ms=>new Promise(r=>setTimeout(r,ms));
+      const openers=Object.keys(window).filter(k=>/^(open|show)[A-Z]/.test(k)
+        && typeof window[k]==='function' && window[k].length===0);
+      let named=0; const unnamed=[];
+      for(const fn of openers){
+        try{ window[fn](); }catch(e){ continue; }
+        await wait(80);
+        [...document.querySelectorAll('.modal-bg.open')].forEach(m=>{
+          let al=(m.getAttribute('aria-label')||'').trim();
+          if(!al){ const lb=m.getAttribute('aria-labelledby');
+                   const t=lb&&document.getElementById(lb); if(t) al=(t.textContent||'').trim(); }
+          if(!al || al==='Dialog') unnamed.push(fn); else named++;
+        });
+        [...document.querySelectorAll('.modal-bg.open')].forEach(m=>{
+          m.classList.remove('open'); if(m.parentNode && !m.id) m.remove();
+        });
+        await wait(25);
+      }
+      return {openers:openers.length, named, unnamed};
+    });
+    await ctx.close();
+    if(r.openers < 40) findings.push(`sheet names: only ${r.openers} openers found — the scan is not reaching them`);
+    else if(r.unnamed.length) findings.push(`sheet names: ${r.unnamed.length} sheet(s) announce as "Dialog" — ${r.unnamed.slice(0,4).join(', ')}`);
+    else console.log(`sheet names: all ${r.named} sheets opened from ${r.openers} openers announce something a person can hear`);
+  }
+
   await browser.close(); server.close();
 
   // The sacraments panel staying hidden for a secular person is the v427 gate working, not a finding.

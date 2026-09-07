@@ -6051,4 +6051,52 @@ H.section('auto-tick never marks a day off a word that happens to appear in the 
   }
 }
 
+H.section('praying is what ticks the prayer habit');
+{
+  // The faith habit was folded in with morning/intention and ticked off the MORNING RITUAL. So
+  // filling in the morning ticked "Prayer / scripture" for someone who had not prayed, and actually
+  // praying \u2014 a rosary, a japa or dhikr practice, keeping a passage \u2014 ticked nothing at all. All
+  // three records existed and none of them were read. Driven across both cascades.
+  // Plain substring checks: a RegExp built from a STRING needs its backslashes doubled twice over,
+  // and the first cut of this threw "Unterminated group" \u2014 an assertion that cannot compile guards
+  // nothing, and it took down the whole suite rather than failing one line.
+  const html = H.code();
+  ['totry_practices', 'totry_rosaries', 'totry_sv'].forEach(k =>
+    H.ok(html.includes("_on(ls('" + k + "')"),
+      'the prayer habit reads ' + k + ' \u2014 a real record of practice'));
+  // Both cascades, not one. The last time a rule lived in two cascades I fixed only the first.
+  const both = html.split('isFaithHabitName(name) && !').length - 1;
+  H.ok(both >= 2, 'the faith rule is applied in both auto-tick cascades (found ' + both + ')');
+  // And the faith branch must be tested BEFORE the morning branch, or morning|intention absorbs it.
+  const iFaith = html.indexOf('isFaithHabitName(name) && !');
+  const iMorning = html.indexOf('(morning|gratitude|intention)');
+  H.ok(iFaith > 0 && iMorning > 0 && iFaith < iMorning,
+    'and it is tested before the morning branch, which used to swallow it');
+}
+
+H.section('money a person did not spend stays not-spent');
+{
+  // avoided = amt * days, where days is viceCleanDays(v) — the CURRENT streak, which resets to 0
+  // the moment someone logs a slip. So being honest silently deleted every dollar the Money tab
+  // said staying clean had put back. That money really was not spent; a later slip cannot un-spend
+  // it. cleanDaysTotal already banks each broken stretch (04-fight.js adds cleanBeforeReset on
+  // every relapse) and nothing was reading it here.
+  const vsp = H.extractFn('viceSpendPicture');
+  H.ok(/_bankedDays/.test(vsp), 'the day and use models count banked clean days');
+  H.ok(/cleanDaysTotal/.test(vsp), 'which is where the broken stretches already live');
+  H.ok(!/avoided = amt \* days;/.test(H.code(vsp)), 'not the current streak alone');
+  // 'week' is the DEFAULT costPer — the most common case — and the first cut of this fix left that
+  // branch on the current streak. Assert every model banks, not the two that were easy to see.
+  H.ok(!/avoided = amt \* \(days\/7\)/.test(H.code(vsp)), 'and the weekly model, which is the default, banks too');
+  H.eq((H.code(vsp).match(/_bankedDays/g) || []).length, 4,
+    'all three cost models plus the definition use the banked figure');
+  {
+    // Executed: 20 clean days at $15/day is $300 before an honest slip, and still $300 after.
+    const amt = 15;
+    const banked = (v) => amt * (Math.max(0, v.cleanDaysTotal || 0) + v.days);
+    H.eq(banked({ cleanDaysTotal: 0,  days: 20 }), 300, 'before the slip');
+    H.eq(banked({ cleanDaysTotal: 20, days: 0  }), 300, 'and after it — the same money');
+  }
+}
+
 H.report();

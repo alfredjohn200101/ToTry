@@ -410,7 +410,22 @@ function tellUser(title, body, opts){
   function label(el){
     const h = el.querySelector('.modal-title, h1, h2, h3, h4, .sheet-title');
     const t = (h && h.textContent || '').trim().replace(/\s+/g,' ').slice(0,120);
-    return t || 'Dialog';
+    if(t) return t;
+    // FALL BACK TO WHAT THE SHEET ACTUALLY SAYS FIRST. Only a minority of these sheets use an
+    // h-tag or .modal-title, so 40 of the app's 70 announced to a screen reader as the literal
+    // word "Dialog" — while their own opening line read "Log a period start", "Recommend a split
+    // for me", "Land the day." Every one of them had a name; nothing was looking for it.
+    // Requires a letter, so a sheet that opens on a bare emoji ("\u{1F9F9}", "\u{1F494}") keeps
+    // looking rather than announcing as a picture nobody can hear.
+    try{
+      const inner = el.querySelector('.modal') || el;
+      const kids = inner.children ? [].slice.call(inner.children) : [];
+      for(let i = 0; i < kids.length; i++){
+        const line = (kids[i].innerText || kids[i].textContent || '').trim().split('\n')[0].trim().replace(/\s+/g,' ');
+        if(line.length > 1 && line.length < 90 && /[A-Za-z\u00C0-\u024F]/.test(line)) return line.slice(0,120);
+      }
+    }catch(_){ }
+    return 'Dialog';
   }
   function dress(el){
     if(!el || el.getAttribute('role')) return;

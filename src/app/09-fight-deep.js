@@ -1858,9 +1858,17 @@ function viceSpendPicture(v){
     const lasts = Math.max(1, parseFloat(v.lastsDays)||30);
     const since = v.lastPurchase ? Math.max(0, Math.floor((Date.now()-new Date(v.lastPurchase))/86400000)) : days;
     avoided = Math.floor(since / lasts) * amt;
-  } else if(per === 'day'){ avoided = amt * days; }
-  else if(per === 'use'){ avoided = amt * ((parseFloat(v.costUses)||7) * (days/7)); }
-  else { avoided = amt * (days/7); }
+  }
+  // LIFETIME CLEAN DAYS, NOT THE CURRENT STREAK. `days` is viceCleanDays(v), which resets to 0 the
+  // moment a person logs a slip — so being honest silently deleted every dollar the Money tab said
+  // staying clean had put back. That money was really not spent; a later slip cannot un-spend it.
+  // cleanDaysTotal already banks each broken stretch (04-fight.js adds cleanBeforeReset on every
+  // relapse), so the true figure is that plus whatever they are on now. The 'purchase' model above
+  // is measured from lastPurchase and never used `days`, so it was already right.
+  const _bankedDays = Math.max(0, (parseFloat(v.cleanDaysTotal) || 0)) + days;
+  if(per === 'day'){ avoided = amt * _bankedDays; }
+  else if(per === 'use'){ avoided = amt * ((parseFloat(v.costUses)||7) * (_bankedDays/7)); }
+  else { avoided = amt * (_bankedDays/7); }   // 'week' is the DEFAULT costPer, so this is the common case
   avoided = Math.round(avoided);
   const net = avoided - Math.round(owed);
   return {
