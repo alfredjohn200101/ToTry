@@ -170,7 +170,13 @@ try{
         // "Fired up" and "Actually good" chips returned the toast, not the chip.
         // Every fixed full-screen overlay in the app is one of these two shapes; both are listed, and
         // the selector is the place to add a third if one is ever written.
-        const open = [...document.querySelectorAll('.modal-bg.open, .feel-door.open')]
+        // .companion-overlay TOO \u2014 the third full-screen surface this rule has had to learn about,
+        // and the third time it was found by a control being unusable rather than by reading code.
+        // Driven: with the companion open, four of five points on "Just let me in \u2192" returned
+        // .milestone-toast, and clicking it left the companion OPEN. The way out of a takeover shown
+        // to someone mid-urge did nothing. The class is "a full-screen surface"; if a fourth is ever
+        // written, it belongs in this selector on the day it is written, not after someone finds it.
+        const open = [...document.querySelectorAll('.modal-bg.open, .feel-door.open, .companion-overlay.open')]
           .some(function(m){ const c = getComputedStyle(m); return c.display !== 'none' && c.visibility !== 'hidden'; });
         document.body.classList.toggle('sheet-open', open);
       }catch(_){ }
@@ -220,6 +226,7 @@ function showToast(title,msg,onTap){
   const _fire=()=>{ if(typeof onTap==='function'){ try{ onTap(); }catch(_){} } t.remove(); };
   t.onclick=_fire;
   if(onTap){
+    t.style.pointerEvents = 'auto';   // this one really is a control; the rest stay transparent
     // A toast you can act on must be reachable and operable without a mouse.
     t.setAttribute('tabindex','0');
     t.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); _fire(); } });
@@ -420,9 +427,25 @@ function tellUser(title, body, opts){
     try{
       const inner = el.querySelector('.modal') || el;
       const kids = inner.children ? [].slice.call(inner.children) : [];
-      for(let i = 0; i < kids.length; i++){
-        const line = (kids[i].innerText || kids[i].textContent || '').trim().split('\n')[0].trim().replace(/\s+/g,' ');
-        if(line.length > 1 && line.length < 90 && /[A-Za-z\u00C0-\u024F]/.test(line)) return line.slice(0,120);
+      // SKIP THE CONTROLS. Taking the first child with letters named five sheets after a BUTTON
+      // inside them, so a screen reader announced the dialog as "Save recipe" — an action, read as a
+      // title. A control is what the sheet offers, never what it is. Two passes: prose first, and a
+      // control only if the sheet genuinely has nothing else to say.
+      const isControl = (n) => {
+        if(!n) return false;
+        if(/^(BUTTON|A|INPUT|SELECT|TEXTAREA|LABEL)$/.test(n.tagName)) return true;
+        if(n.getAttribute && (n.getAttribute('role') === 'button' || n.hasAttribute('onclick'))) return true;
+        // a wrapper whose entire content is controls is still a control row
+        const kidsOf = n.children ? [].slice.call(n.children) : [];
+        return kidsOf.length > 0 && kidsOf.every(c => /^(BUTTON|A|INPUT|SELECT|TEXTAREA)$/.test(c.tagName));
+      };
+      const lineOf = (n) => (n.innerText || n.textContent || '').trim().split('\n')[0].trim().replace(/\s+/g,' ');
+      for(let pass = 0; pass < 2; pass++){
+        for(let i = 0; i < kids.length; i++){
+          if(pass === 0 && isControl(kids[i])) continue;
+          const line = lineOf(kids[i]);
+          if(line.length > 1 && line.length < 90 && /[A-Za-z\u00C0-\u024F]/.test(line)) return line.slice(0,120);
+        }
       }
     }catch(_){ }
     return 'Dialog';

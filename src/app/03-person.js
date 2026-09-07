@@ -901,7 +901,10 @@ function buildPTCtx(){
     }
   }catch(_){}
 
-  return (typeof brotherSys==='function' ? brotherSys() : '') + `You are the personal strength & nutrition coach inside ToTry, ${userName}'s app.${trainGoal ? ` They built this plan for ${trainGoal}${trainDays ? `, training ${trainDays} days a week` : ''} — coach toward that, not toward a generic programme.` : ''} You know them and their training, and you coach like a real PT who's invested in their progress — not a generic exercise database.
+  // The PT coach converts its own figures with wFmt/dFmt but never told the model WHICH units
+  // those are, so it could read \"152.1lb\" and answer in kilograms. The note now says the figures
+  // are already the person's and must not be converted, which is exactly this case.
+  return (typeof brotherSys==='function' ? brotherSys() : '') + (typeof _unitsNote==='function' ? _unitsNote() : '') + `You are the personal strength & nutrition coach inside ToTry, ${userName}'s app.${trainGoal ? ` They built this plan for ${trainGoal}${trainDays ? `, training ${trainDays} days a week` : ''} — coach toward that, not toward a generic programme.` : ''} You know them and their training, and you coach like a real PT who's invested in their progress — not a generic exercise database.
 
 WHO THEY ARE:
 ${userName} | Day ${dayCount} of their journey${goalIntent?'\nGoal: '+goalIntent:''}
@@ -943,7 +946,15 @@ function buildCtx(){
   // Per-vice clean days with grace
   const viceDetails=vices.map(v=>{
     const clean=viceCleanDays(v);
-    if(v.kind==='letgo'){ return v.n+': '+clean+' day'+(clean===1?'':'s')+' into letting go (a grief/attachment they’re releasing — healing goal, NOT a clean-streak; going back is part of it, meet with grace, never "days clean" or relapse language)'; }
+    // viceCleanDays() is 0 for a letting-go goal BY DESIGN \u2014 it has no clean days because it has no
+    // unclean ones. getLifeState already computes letGoDays for exactly this, after the woven row
+    // on Home said "letting go, day 0" on day 1 and day 42 alike. The coach was still being told
+    // "0 days into letting go" about a grief someone was three weeks into releasing.
+    if(v.kind==='letgo'){
+      const _lg = (v.startDate && typeof _calDaysSince==='function')
+        ? (function(){ try{ return _calDaysSince(v.startDate)+1; }catch(_){ return clean; } })() : clean;
+      return v.n+': '+plural(_lg,'day')+' into letting go (a grief/attachment they’re releasing — healing goal, NOT a clean-streak; going back is part of it, meet with grace, never "days clean" or relapse language)';
+    }
     const total=(v.cleanDaysTotal||0)+clean;
     let s=v.n+': '+plural(clean,'day')+' clean';
     if(v.relapseCount>0)s+=' ('+total+' total across '+v.relapseCount+' attempts)';
@@ -993,7 +1004,20 @@ function buildCtx(){
   // Today's workouts logged
   const workouts = ls('totry_workouts') || [];
   const todayDateStr = new Date().toLocaleDateString('en-AU', {weekday:'short', day:'numeric', month:'short', year:'numeric'});
-  const workoutsToday = workouts.filter(w => w.date === todayDateStr);
+  // MATCH ON ts TOO. A session imported from Apple Health is written with a `ts` and NO `date`
+  // field (02-native.js syncWorkouts), so `w.date === todayDateStr` never matched one: a person
+  // whose training comes off their watch had "Trained today" silently absent from every coach
+  // reply, on the day they trained. Of the 34 readers of totry_workouts this was the only one
+  // still matching on date alone \u2014 every other already handles ts, which is why it survived.
+  // Integration IS the product here; a front whose data another front cannot see is the exact
+  // failure this app exists to avoid.
+  const _sameLocalDay = (w) => {
+    if(w && w.date === todayDateStr) return true;
+    if(!w || !w.ts) return false;
+    try{ return new Date(w.ts).toLocaleDateString('en-AU', {weekday:'short', day:'numeric', month:'short', year:'numeric'}) === todayDateStr; }
+    catch(_){ return false; }
+  };
+  const workoutsToday = workouts.filter(_sameLocalDay);
   const calsBurnedToday = Math.round((ls('totry_calorie_burns') || {})[todayKey] || 0);
   // Gentle mode is about CALORIE FIGURES, not about food specifically. The nutrition line was fixed and
   // these two were not, so with numbers off the prompt still carried "Burned 620 cal from training
@@ -1123,11 +1147,30 @@ function buildCtx(){
   // ── END LIVE STATE ──
   
   // Latest weekly check-in
-  const lastCheckin=bodyEntries.find(e=>e.scores);
+  // NEVER HAND A DISCLOSURE TO THE MODEL. The Sunday check-in is one of the twenty crisis doors and
+  // logBody DOES mark the row (13-body.js:207 sets flagged when detectCrisis fires) — and 13-body's
+  // own AI read honours it at :455. This builder did not, so a suicide disclosure typed into "What
+  // got in your way?" was pasted verbatim into the coach's SYSTEM PROMPT and re-sent with EVERY
+  // message the person wrote afterwards, for as long as it stayed the latest check-in.
+  // The same !flagged rule already guards totry_evenings and totry_journal in getLifeState; the body
+  // store can hold free text too and was the one that never got it.
+  const lastCheckin=bodyEntries.filter(e=>e && !e.flagged).find(e=>e.scores);
   let checkinCtx='';
   if(lastCheckin&&lastCheckin.scores){
     const s=lastCheckin.scores;
-    checkinCtx='\nLATEST WEEKLY CHECK-IN: Training '+s.train+'/10, Nutrition '+s.nutrition+'/10, Sleep '+s.sleep+'/10, Stress '+s.stress+'/10, Energy '+s.energy+'/10, Faith '+s.faith+'/10';
+    // A QUESTION LEFT BLANK IS NOT A SCORE OF NULL. The sliders that were never touched store null
+    // (v581 stopped them defaulting to 5, deliberately, so an untouched slider does not invent a
+    // number) — and this pasted them straight in, so the coach was told "Sleep null/10, Stress
+    // null/10, Faith undefined/10" and answered as if those were readings. Name only what they
+    // actually said, and say plainly that the rest was left blank, which is itself information.
+    const _sc = [['Training',s.train],['Nutrition',s.nutrition],['Sleep',s.sleep],
+                 ['Stress',s.stress],['Energy',s.energy],['Faith',s.faith]];
+    const _given = _sc.filter(function(x){ return x[1] !== null && x[1] !== undefined && x[1] !== ''; });
+    const _blank = _sc.filter(function(x){ return !(x[1] !== null && x[1] !== undefined && x[1] !== ''); });
+    if(_given.length){
+      checkinCtx = '\nLATEST WEEKLY CHECK-IN: ' + _given.map(function(x){ return x[0]+' '+x[1]+'/10'; }).join(', ')
+        + (_blank.length ? ' (they left ' + _blank.map(function(x){ return x[0].toLowerCase(); }).join(', ') + ' blank \u2014 do not assume a value)' : '');
+    }
     if(lastCheckin.win)checkinCtx+='\n  Their recent win: "'+lastCheckin.win+'"';
     if(lastCheckin.struggle)checkinCtx+='\n  Their recent struggle: "'+lastCheckin.struggle+'"';
     if(lastCheckin.focus)checkinCtx+='\n  Their focus this week: "'+lastCheckin.focus+'"';
@@ -1178,7 +1221,11 @@ function buildCtx(){
   let stepsCtx=todaySteps?('\nTODAY\'S STEPS: '+todaySteps+(stepGoal?(' (goal '+stepGoal+(todaySteps>=stepGoal?' — hit it':'')+')'):'')):(stepGoal?('\nSTEP GOAL: '+stepGoal+'/day (none logged yet today)'):'');
   if(sleepGoal) stepsCtx+='\nSLEEP GOAL: '+sleepGoal+'h a night';
   
-  return brotherSys() + sharedWisdomNote() + `You're their whole-life coach here as well as their brother — you have their REAL data right now, so use it.
+  // THE MAIN COACH NEVER GOT THE UNITS NOTE. _unitsNote() was added to lifeStateBrief() and then to
+  // the Sunday check-in, and buildCtx \u2014 318 lines, the biggest AI surface in the app, the one a
+  // person actually talks to \u2014 builds its own context and calls neither. Third miss of the same
+  // fix. It costs a metric person nothing: _unitsNote() returns '' unless they read lb or mi.
+  return brotherSys() + sharedWisdomNote() + (typeof _unitsNote==='function' ? _unitsNote() : '') + `You're their whole-life coach here as well as their brother — you have their REAL data right now, so use it.
 
 WHO THEY ARE:
 ${userName} | Day ${getDayCount()} of their journey | ${streak} day${streak===1?'':'s'} of habits kept THIS WEEK (resets Monday — not an all-time streak, never call it one)${identity?'\nIDENTITY (who they are becoming): "'+identity+'"':''}${season?'\nCURRENT SEASON: '+season:''}${why?'\nTHEIR WHY: "'+why+'"':''}
@@ -1196,7 +1243,7 @@ BODY & TRAINING:
 Today's planned training: ${todayFocus}
 Weight: ${currentWeight?wFmt(currentWeight):'Not logged'}
 ${(typeof nutGentle==='function'&&nutGentle())?'Nutrition target: held privately \u2014 numbers are turned off for this person.':('Nutrition target: '+nutGoals.cal+' cal / '+nutGoals.pro+'g protein')}${stravaCtx}${stepsCtx}${checkinCtx}
-${(function(){ let s=''; try{ if(typeof computeReadiness==='function'){ const rd=computeReadiness(); if(rd) s+='\\nReadiness today: '+rd.score+'/100 ('+rd.level+'). '+rd.advice; } if(typeof detectVicePatterns==='function'){ const vp=detectVicePatterns(); if(vp&&vp.patterns&&vp.patterns.length) s+='\\nVice patterns (use gently, only if they raise it): '+vp.patterns.join(' '); } const fw = (typeof ls==='function') ? (ls('totry_feeling_wins')||[]) : []; if(fw.length){ const _since = Date.now()-7*86400000; const _recent = fw.filter(w=>w.ts && new Date(w.ts).getTime()>=_since); if(_recent.length){ s+='\\nIN THE LAST WEEK they reached for help the instant an urge rose and got through it '+_recent.length+' time(s) \u2014 this is them fighting in real time; honour it. Recent feelings they named: '+_recent.slice(0,3).map(w=>String.fromCharCode(34)+(w.feeling||'an urge').slice(0,60)+String.fromCharCode(34)).join(', ')+'.'; } } }catch(e){} return s; })()}
+${(function(){ let s=''; try{ /* readiness is already stated once, properly, in checkinCtx above — saying it twice made the coach repeat itself */ if(typeof detectVicePatterns==='function'){ const vp=detectVicePatterns(); if(vp&&vp.patterns&&vp.patterns.length) s+='\nVice patterns (use gently, only if they raise it): '+vp.patterns.join(' '); } const fw = (typeof ls==='function') ? (ls('totry_feeling_wins')||[]) : []; if(fw.length){ const _since = Date.now()-7*86400000; const _recent = fw.filter(w=>w.ts && new Date(w.ts).getTime()>=_since); if(_recent.length){ s+='\nIN THE LAST WEEK they reached for help the instant an urge rose and got through it '+_recent.length+' time(s) \u2014 this is them fighting in real time; honour it. Recent feelings they named: '+_recent.slice(0,3).map(w=>String.fromCharCode(34)+(w.feeling||'an urge').slice(0,60)+String.fromCharCode(34)).join(', ')+'.'; } } }catch(e){} return s; })()}
 
 FINANCES: ${curSym()}${Math.round(owed).toLocaleString()} debt remaining${prayerCtx}${sacramentCtx}
 
@@ -4384,7 +4431,10 @@ function _planCarry(id,i){
   const days=_planDays(p); if(!days.length) return;
   const day=days[_planClamp(i,days.length)], saved=ls('totry_sv')||[];
   if(!saved.some(function(v){ return v&&v.verse===day.t; })){
-    saved.unshift({verse:day.t, reference:day.r, date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'})});
+    // ts AS WELL AS date. `date` here is a display string like "5 Sep" \u2014 no year \u2014 so nothing could ask
+    // WHEN a passage was kept: v586 added "keeping a passage ticks the prayer habit" reading ts and
+    // date, and neither existed in a usable form, so it ticked nothing and the fix looked done.
+    saved.unshift({verse:day.t, reference:day.r, ts:new Date().toISOString(), date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'})});
     ls('totry_sv', saved.slice(0,200));
     if(typeof renderSavedVerses==='function'){ try{ renderSavedVerses(); }catch(_){} }
   }
@@ -4610,7 +4660,7 @@ function saveHdrVerse(){
   if(!v||v.includes('Loading'))return;
   const saved=ls('totry_sv')||[];
   if(!saved.find(sv=>sv.verse===v)){
-    saved.unshift({verse:v,reference:r,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'})});
+    saved.unshift({verse:v,reference:r,ts:new Date().toISOString(),date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'})});   // ts \u2014 see the note at the other save site
     ls('totry_sv',saved.slice(0,200));renderSavedVerses();
   }
   const btn=document.getElementById('vsave-btn');

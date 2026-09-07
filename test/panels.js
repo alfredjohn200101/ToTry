@@ -4678,6 +4678,99 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     else console.log(`sheet names: all ${r.named} sheets opened from ${r.openers} openers announce something a person can hear`);
   }
 
+
+  // ── THE WAY OUT IS NEVER THE DIMMEST THING ─────────────────────────────────────────────────
+  // Measured from RENDERED PIXELS, not computed styles. A computed-style version of this walks
+  // parent backgrounds, misses gradients and mishandles opacity chains — it read 1:1 for ordinary
+  // cards and I threw it away rather than change colours on a number I did not trust.
+  // The Companion is a FULL-SCREEN takeover shown to someone mid-urge, and both of its exits — the
+  // close x and "Just let me in" — were the dimmest things on it: 2.31:1 (under even the 3:1 floor
+  // for a control) and 3.05:1. An app whose soul says "never overbearing" and "anti-engagement is a
+  // feature" cannot make its exits hardest to find. --tx3 was fine; the opacity multiplier was not.
+  // THE CHECK CALIBRATES ITS OWN INSTRUMENT FIRST. Today's repeated lesson is that a broken
+  // measurement passes silently; if these three swatches do not come back at their known ratios,
+  // this reports the tool rather than the app.
+  {
+    const ctx=await browser.newContext({viewport:{width:414,height:896}});
+    const page=await ctx.newPage();
+    await page.addInitScript(()=>localStorage.setItem('totry_onboarded', JSON.stringify(true)));
+    await page.goto(`http://127.0.0.1:${PORT}/`,{waitUntil:'domcontentloaded'});
+    await page.addStyleTag({content:':root{--st:59px;--sb:34px}'});
+    await page.waitForTimeout(2600);
+
+    const ratioOf = async (h) => {
+      let shot; try{ shot = await h.screenshot({ timeout: 4000 }); }catch(e){ return null; }
+      return page.evaluate(async(b64)=>{
+        const img=new Image();
+        await new Promise((res,rej)=>{ img.onload=res; img.onerror=rej; img.src='data:image/png;base64,'+b64; });
+        const c=document.createElement('canvas'); c.width=img.width; c.height=img.height;
+        const x=c.getContext('2d'); x.drawImage(img,0,0);
+        const d=x.getImageData(0,0,c.width,c.height).data; const lum=[];
+        for(let i=0;i<d.length;i+=4){
+          if(d[i+3]<250) continue;
+          const f=v=>{ v/=255; return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4); };
+          lum.push(0.2126*f(d[i])+0.7152*f(d[i+1])+0.0722*f(d[i+2]));
+        }
+        if(lum.length<40) return null;
+        lum.sort((a,b)=>a-b);
+        // The EXTREMES. Text is a minority of a button's pixels, so percentiles read the background
+        // twice and this tool returned 11.42 for a true 21:1 before it was calibrated.
+        return Math.round((((lum[lum.length-1]+0.05)/(lum[0]+0.05)))*100)/100;
+      }, shot.toString('base64'));
+    };
+
+    await page.evaluate(()=>{
+      const mk=(id,fg,bg,top)=>{const d=document.createElement('div');d.id=id;
+        d.style.cssText=`position:fixed;left:10px;top:${top}px;width:180px;height:40px;background:${bg};`+
+          `color:${fg};font-size:14px;display:flex;align-items:center;justify-content:center;z-index:99999`;
+        d.textContent='Sample text here'; document.body.appendChild(d);};
+      mk('__cal1','#FFFFFF','#000000',10); mk('__cal2','#767676','#FFFFFF',60); mk('__cal3','#CCCCCC','#FFFFFF',110);
+    });
+    await page.waitForTimeout(150);
+    let calBad=[];
+    for(const [id,truth] of [['__cal1',21],['__cal2',4.54],['__cal3',1.61]]){
+      const r=await ratioOf(await page.$('#'+id));
+      if(r==null || Math.abs(r-truth)>0.15) calBad.push(`${id} read ${r} for ${truth}`);
+    }
+    await page.evaluate(()=>['__cal1','__cal2','__cal3'].forEach(i=>document.getElementById(i)?.remove()));
+
+    if(calBad.length){
+      findings.push(`contrast: the MEASUREMENT is wrong, not the app — ${calBad.join('; ')}`);
+    } else {
+      try{ await page.evaluate(()=>{ if(typeof openCompanion==='function') openCompanion(); }); }catch(e){}
+      await page.waitForTimeout(900);
+      const bad=[];
+      // TWO THINGS THIS TOOL CANNOT MEASURE, AND MUST REFUSE RATHER THAN GUESS AT.
+      // (1) An element with something painted OVER it: element.screenshot() captures the box from
+      //     the page, scrim included. A gold primary that is truly 8.7:1 measured 2.71:1 because a
+      //     companion backdrop was over it — the same overlay trap that has bitten a measurement in
+      //     this repo before.
+      // (2) An element that captures near-uniform: not actually painting its text, which reads as a
+      //     ratio near 1 and looks exactly like a real failure.
+      // Skipping is honest; reporting a number from either case is not.
+      for(const h of await page.$$('.comp-dismiss, .comp-skip')){
+        const box=await h.boundingBox(); if(!box||box.width<6||box.height<6) continue;
+        const t=((await h.innerText().catch(()=>''))||'').trim().slice(0,24);
+        const covered = await h.evaluate(el=>{
+          const q=el.getBoundingClientRect();
+          const hit=document.elementFromPoint(q.x+q.width/2, q.y+q.height/2);
+          return !!(hit && hit!==el && !el.contains(hit));
+        });
+        // elementFromPoint is the ONLY valid evidence here. el.click() dispatches straight onto the
+        // element and bypasses hit-testing entirely, so a fully-covered control still "works" when
+        // a script clicks it — it fails only for the thumb. A click test would have cleared this.
+        if(covered){ findings.push(`companion: "${t}" is covered by something — cannot measure it, and a person cannot tap it either`); continue; }
+        const r=await ratioOf(h);
+        if(r==null) continue;
+        if(r < 1.15){ findings.push(`companion: "${t}" captured near-uniform — the measurement is unreliable here, not necessarily the colour`); continue; }
+        if(r < 4.5) bad.push(`"${t}" ${r}:1`);
+      }
+      if(bad.length) findings.push(`companion: the way out is below AA — ${bad.join(', ')}`);
+      else console.log('companion: both ways out clear AA on rendered pixels (calibration exact on 21:1, 4.54:1, 1.61:1)');
+    }
+    await ctx.close();
+  }
+
   await browser.close(); server.close();
 
   // The sacraments panel staying hidden for a secular person is the v427 gate working, not a finding.

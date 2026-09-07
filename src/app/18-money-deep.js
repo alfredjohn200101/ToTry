@@ -1027,7 +1027,15 @@ function renderBills(){
     if(!b.paid) return true;
     return new Date(b.paidAt || now).getTime() > now - 30 * 86400000;
   });
-  if(cleaned.length !== list.length) ls('totry_bills', cleaned);
+  // A HOUSEKEEPING PRUNE IS STILL A DELETE. totry_bills is unioned across devices, so writing the
+  // shorter list without a tombstone meant the next pull brought every pruned bill back, the next
+  // render pruned them again, and the two never settled \u2014 and on a second device they simply
+  // reappeared. Found by the class scanner the moment its two defects were repaired; the broken
+  // version could not see this shape at all.
+  if(cleaned.length !== list.length){
+    try{ if(typeof tombstoneRemoved === 'function') tombstoneRemoved('totry_bills', list, cleaned); }catch(_){ }
+    ls('totry_bills', cleaned);
+  }
   
   const unpaid = cleaned.filter(b => !b.paid).sort((a, b) => new Date(a.due) - new Date(b.due));
   if(!unpaid.length){

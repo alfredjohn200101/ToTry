@@ -1071,7 +1071,9 @@ async function loadBibleChapter(){
       const row=document.createElement('div');row.className='bible-verse-row';
       const _ref = book.name+' '+chapter+':'+v.num;
       if(_savedRefs.has(_ref)) row.classList.add('highlighted');
-      row.innerHTML='<span class="bvn">'+v.num+'</span><span class="bvt">'+_escFew(v.text.trim())+'</span>';   // third-party chapter text
+      // v.num IS THIRD-PARTY TOO. I escaped v.text on this line and left the verse NUMBER beside it
+      // untouched — same object, same API, same line, one field apart.
+      row.innerHTML='<span class="bvn">'+_escFew(v.num)+'</span><span class="bvt">'+_escFew(v.text.trim())+'</span>';
       row.onclick=async ()=>{
         if(row.classList.contains('highlighted')){
           // The class comes off only if the verse actually went, so declining the confirm leaves the
@@ -1470,7 +1472,16 @@ async function unsaveVerseFromReader(ref, onRestore){
   // highlight go, silently and with nothing to confirm or undo.
   if(!hits.length) return true;
   if(typeof askConfirm === 'function' && !(await askConfirm('Remove this from your saved verses?'))) return false;
-  ls('totry_sv', saved.filter(function(v){ return !(v && v.reference === ref); }));
+  // TOMBSTONE THIS DOOR TOO. v587 added totry_sv to the union list, and that list's own comment
+  // states the precondition — union without a tombstone makes the DELETE the thing that never
+  // survives. Only the shelf's x button (deleteSavedVerse, line 142) got one; THIS door — tapping a
+  // highlighted row off, the gesture both readers advertise — recorded nothing. So un-saving from
+  // the reader was undone by the next pull and the verse came back, still highlighted, for ever on
+  // two devices. The tell was three lines below: the undo already calls tombstoneRevoke, which
+  // could only ever have been a no-op, because nothing was tombstoned to revoke.
+  const _kept = saved.filter(function(v){ return !(v && v.reference === ref); });
+  try{ if(typeof tombstoneRemoved==='function') tombstoneRemoved('totry_sv', saved, _kept); }catch(_){ }
+  ls('totry_sv', _kept);
   renderSavedVersesEverywhere();
   if(typeof showUndo === 'function'){
     showUndo('Verse removed', function(){

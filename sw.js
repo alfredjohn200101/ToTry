@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v588-hours-are-not-a-rating'
+const CACHE = 'totry-v593-no-prompt-gives-two-orders'
 
 const CORE = [
   './',

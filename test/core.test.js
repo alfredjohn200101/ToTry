@@ -3028,20 +3028,48 @@ H.section('two devices do not destroy each other\'s work')
   // deleteWorkoutFromHistory (the other workout button, same key as deleteTraining), deletePrayer and
   // deleteRoutine. A per-key check cannot see a second delete site for a key already covered. This scans
   // for the pattern instead: any filtered write to a union'd key with no tombstone within reach above it.
-  const ARR_KEYS = ['totry_workouts','totry_body','totry_journal','totry_mornings','totry_evenings',
-    'totry_confessions','totry_masses','totry_routines','totry_saved_meals','totry_family_contrib',
-    'totry_poker_sessions','totry_examens','totry_prayers','totry_strava_activities','totry_feeling_wins',
-    'totry_custom_exercises','totry_wins','totry_moments_won','totry_fight_log','totry_cravings',
-    'totry_blessings','totry_reachouts','totry_rosaries','totry_syntheses','totry_reviews',
-    'totry_vice_uses','totry_impulse_holds','totry_freezes','totry_checkins','totry_mood_log',
-    'totry_fast_log','totry_releases'];
+  // DERIVED FROM THE BUNDLE, NOT HARDCODED. This list was written by hand and drifted twelve keys
+  // behind the real one in 01-sync.js — it never gained totry_sv, totry_measurements,
+  // totry_cal_events, totry_letters, totry_promises, totry_relationships, totry_transactions,
+  // totry_bills, totry_assets, totry_subscriptions, totry_practices or totry_achievements_earned.
+  // A ratchet whose input list is maintained separately from the thing it guards stops guarding it
+  // the first time somebody adds a key and does not think of the test. Read the real array instead.
+  // Anchored on a string that occurs ONCE (checked below), comments stripped, brackets matched —
+  // all three of which I have got wrong before on exactly this array.
+  const ARR_KEYS = (() => {
+    const anchor = "safe to union ONLY because their deletes now tombstone";
+    const hits = H.html.split(anchor).length - 1;
+    H.eq(hits, 1, 'the union list is found by an anchor that appears exactly once');
+    const at = H.html.indexOf(anchor);
+    let start = -1, d = 0;
+    for (let j = at; j >= 0; j--) {
+      if (H.html[j] === ']') d++;
+      else if (H.html[j] === '[') { if (!d) { start = j; break; } d--; }
+    }
+    d = 0;
+    let end = start;
+    for (let j = start; j < H.html.length; j++) {
+      if (H.html[j] === '[') d++;
+      else if (H.html[j] === ']') { d--; if (!d) { end = j; break; } }
+    }
+    const body = H.html.slice(start, end + 1).replace(/\/\/[^\n]*/g, '');
+    return [...new Set([...body.matchAll(/'(totry_[a-z_]+)'/g)].map(m => m[1]))];
+  })();
+  H.ok(ARR_KEYS.length >= 40, `the union list was actually read from the bundle (${ARR_KEYS.length} keys)`);
+  ['totry_sv', 'totry_measurements', 'totry_cal_events'].forEach(k =>
+    H.ok(ARR_KEYS.includes(k), `${k} is in the derived list — the hardcoded one had missed it`));
   // Precise about what a DELETE looks like: the value written is either a .filter() result inline, or a
   // variable assigned from one just above. "Any .filter() nearby" was the first attempt and it cried wolf
   // on three unshift() writes whose only sin was sitting near unrelated code — and a ratchet that cries
   // wolf gets switched off, which is the same outcome as one that cannot fail.
   const uncovered = [];
   for (const key of ARR_KEYS) {
-    const re = new RegExp("ls\\('" + key + "'\\s*,\\s*([A-Za-z_$][\\w$]*|[^;]{0,80}?\\.filter\\()", 'g');
+    // THE INLINE-FILTER ALTERNATIVE MUST COME FIRST. This was written the other way round, and a
+    // regex alternation is ORDERED — so `ls('totry_sv', saved.filter(...))` matched the bare
+    // identifier `saved`, isInlineFilter came out false, the nearest `const saved = ls('totry_sv')`
+    // has no .filter(, and the line was skipped as "not a delete". The check could not see the very
+    // shape it was written for.
+    const re = new RegExp("ls\\('" + key + "'\\s*,\\s*([^;]{0,80}?\\.filter\\(|[A-Za-z_$][\\w$]*)", 'g');
     let m;
     while ((m = re.exec(code)) !== null) {
       const arg = m[1];
@@ -5520,9 +5548,18 @@ H.section('the app’s VOICE converts too, not just its cards');
   H.ok(!/'\\\\nUNITS:/.test(H.html), 'the instruction starts on its own line');
   H.ok(/_unitsNote/.test(H.extractFn('lifeStateBrief')), 'the shared brief appends it');
   {
-    // Every prompt that builds its OWN context and names a unit must carry it too.
+    // EVERY prompt that builds its OWN context. This fix reached lifeStateBrief, then the Sunday
+    // check-in, and left the two BIGGEST surfaces — buildCtx (318 lines, the coach a person actually
+    // talks to) and buildPTCtx (which converts with wFmt/dFmt and never said which units those were,
+    // so it could read "152.1lb" and answer in kilograms). Three misses of one fix; assert the set.
     const checkin = H.html.slice(H.html.indexOf('User: Day ${dayCount} of journey'), H.html.indexOf('User: Day ${dayCount} of journey') + 400);
-    H.ok(/_unitsNote/.test(checkin), 'and so does the Sunday check-in, which builds its own');
+    H.ok(/_unitsNote/.test(checkin), 'the Sunday check-in, which builds its own');
+    ['buildCtx', 'buildPTCtx'].forEach(fn =>
+      H.ok(/_unitsNote/.test(H.extractFn(fn)), `${fn}() carries the units note`));
+    // A metric person must pay nothing for this.
+    const note = H.extractFn('_unitsNote');
+    H.ok(/wu === 'kg' && du === 'km'/.test(note) && /return ''/.test(note),
+      'and it is still empty for someone who reads kg and km');
   }
 }
 
@@ -6123,6 +6160,48 @@ H.section('money a person did not spend stays not-spent');
     H.eq(banked({ cleanDaysTotal: 0,  days: 20 }), 300, 'before the slip');
     H.eq(banked({ cleanDaysTotal: 20, days: 0  }), 300, 'and after it — the same money');
   }
+}
+
+H.section('a toast cannot block a control it happens to sit over');
+{
+  // The toast sits at z-index 1200 over everything, and in ONE audit it was found covering four
+  // separate controls: the SOS undo button, two Feeling Door chips, both of the Companion's exits,
+  // and then the Companion's grab handle — that last one caused by the very fix that moved it off
+  // the exits. Repositioning it per-surface is a losing game; each fix moved the bug somewhere else.
+  // An informational toast has no business taking a tap at all.
+  const html = H.code();
+  H.ok(/\.milestone-toast\{pointer-events:none;/.test(html),
+    'a toast does not intercept pointer events by default');
+  const st = H.extractFn('showToast');
+  H.ok(/t\.style\.pointerEvents = 'auto'/.test(st),
+    'and one that really has an onTap handler opts back in');
+  H.ok(st.indexOf("pointerEvents = 'auto'") > st.indexOf('if(onTap){'),
+    'only inside the onTap branch — a plain toast must stay transparent');
+  // Driven separately: a tappable toast is hit-testable and fires; a plain one is transparent and
+  // still visible. Keep the visual behaviour asserted too, or "fixing" this by hiding it would pass.
+  H.ok(!/\.milestone-toast\{[^}]*display:none/.test(html), 'and it is still shown, not hidden');
+}
+
+H.section('a prompt never gives the model two orders it cannot both obey');
+{
+  // The fuel planner embeds getLifeState().brief, which under gentle mode says never to state a
+  // calorie figure — and then told the model to hit a kcal target within 5%. The render already
+  // hid its OWN numbers; the model's free text was what nothing guarded, so a meal could come back
+  // named "Chicken and rice (600 cal)" to the one person who must not read that.
+  const fg = H.extractFn('_fuelGenerate');
+  H.ok(/_fuelGentle/.test(fg), 'the fuel prompt knows whether numbers are off');
+  H.ok(/build the plan TO the calorie and protein targets given/.test(fg),
+    'and still sizes the plan by the target — the numbers are how it is built');
+  H.ok(/Do NOT write any calorie/.test(fg),
+    'while forbidding a figure in any text it returns');
+  H.ok(/_gentleRule \+ "Build a realistic /.test(H.code(fg)),
+    'and the rule is actually prepended to the prompt, not merely defined');
+  // A person who wants numbers must be unaffected.
+  H.ok(/: ''/.test(fg), 'a numbers-on person gets no extra instruction at all');
+  // The renderer's own guards must stay — this fix must not become the reason they were removed.
+  const fr = H.extractFn('_fuelRenderPlan');
+  H.ok(/_gentle\?''/.test(H.code(fr).replace(/\s/g,'')) || /_gentle \?/.test(fr),
+    'and the plan renderer still hides its own figures under gentle mode');
 }
 
 H.report();

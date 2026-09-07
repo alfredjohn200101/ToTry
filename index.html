@@ -493,7 +493,13 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .comp-phase{display:none;flex-direction:column;flex:1;min-height:0;animation:compFade .5s ease}
 .comp-phase.active{display:flex}
 @keyframes compFade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.comp-dismiss{position:absolute;top:calc(var(--st) + 18px);right:20px;background:none;border:none;color:var(--tx3);font-size:30px;line-height:1;cursor:pointer;opacity:.55;padding:4px 10px;z-index:2}
+/* THE TWO WAYS OUT WERE THE DIMMEST THINGS ON THE SCREEN. Measured from rendered pixels: the
+   close x at 2.31:1 — under even the 3:1 floor for a control — and the skip at 3.05:1, on a
+   FULL-SCREEN takeover shown to someone mid-urge. An app whose stated soul is "never
+   overbearing" and "anti-engagement is a feature" cannot make its exits the hardest things to
+   find. --tx3 is fine; the opacity multiplier on top of it was the problem. At full opacity
+   --tx3 on --bg measures ~5.5:1, which clears AA and still reads as secondary. */
+.comp-dismiss{position:absolute;top:calc(var(--st) + 18px);right:20px;background:none;border:none;color:var(--tx3);font-size:30px;line-height:1;cursor:pointer;padding:4px 10px;z-index:2}
 .comp-greeting{font-family:'Cormorant Garamond',serif;font-size:32px;font-weight:300;color:var(--tx);line-height:1.25;margin-top:8vh;margin-bottom:10px}
 .comp-sub{font-size:14px;color:var(--tx3);line-height:1.6;margin-bottom:36px;max-width:340px}
 .comp-choices{display:flex;flex-direction:column;gap:12px;margin-bottom:24px}
@@ -502,7 +508,7 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
 .comp-choice-good{border-color:var(--go-bd)}
 .comp-choice-pull{border-color:var(--bl)}
 .comp-choice-emoji{font-size:24px;flex-shrink:0}
-.comp-skip{margin-top:auto;background:none;border:none;color:var(--tx3);font-size:13px;cursor:pointer;padding:14px;opacity:.7}
+.comp-skip{margin-top:auto;background:none;border:none;color:var(--tx3);font-size:13px;cursor:pointer;padding:14px}   /* opacity removed — see .comp-dismiss above */
 .comp-vice-chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 16px}
 .comp-vice-chip{padding:10px 16px;background:var(--bg3);border:1px solid var(--bd);border-radius:999px;font-size:14px;color:var(--tx2);cursor:pointer;transition:transform .15s ease}
 .comp-vice-chip:active{transform:scale(.96)}
@@ -696,7 +702,13 @@ body[data-daypart="night"] .hero-aurora{background:radial-gradient(120% 80% at 8
    When a sheet is open the toast moves to the top of the screen instead, clear of the content it
    is talking about. One rule, so it holds for every sheet, not just the plate one. */
 body.sheet-open .milestone-toast{bottom:auto;top:calc(var(--st) + 12px)}
-.milestone-toast{position:fixed;bottom:calc(var(--sb) + 100px);left:50%;transform:translateX(-50%);background:var(--go);color:#000;border-radius:var(--r);padding:14px 20px;z-index:1200;max-width:340px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.4);animation:fadeUpFromBottom 0.3s ease forwards;cursor:pointer}
+/* A TOAST DOES NOT INTERCEPT TAPS UNLESS IT IS TAPPABLE. It sits at z-index 1200 over everything,
+   and it has now been found covering FOUR different controls in one audit: the SOS undo button,
+   two Feeling Door chips, both of the Companion's exits, and then the Companion's grab handle —
+   that last one caused by the very fix that moved it off the exits. Chasing which surface it
+   lands on is a losing game; an informational toast has no business taking a tap at all.
+   showToast re-enables pointer events on the ones that really do have an onTap handler. */
+.milestone-toast{pointer-events:none;position:fixed;bottom:calc(var(--sb) + 100px);left:50%;transform:translateX(-50%);background:var(--go);color:#000;border-radius:var(--r);padding:14px 20px;z-index:1200;max-width:340px;width:90%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.4);animation:fadeUpFromBottom 0.3s ease forwards;cursor:pointer}
 @keyframes fadeUpFromBottom{from{opacity:0;transform:translate(-50%,16px)}to{opacity:1;transform:translate(-50%,0)}}
 
 /* ── BIBLE READER ── */
@@ -5388,7 +5400,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v588';
+const APP_VERSION = 'v593';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -8806,7 +8818,10 @@ function buildPTCtx(){
     }
   }catch(_){}
 
-  return (typeof brotherSys==='function' ? brotherSys() : '') + `You are the personal strength & nutrition coach inside ToTry, ${userName}'s app.${trainGoal ? ` They built this plan for ${trainGoal}${trainDays ? `, training ${trainDays} days a week` : ''} — coach toward that, not toward a generic programme.` : ''} You know them and their training, and you coach like a real PT who's invested in their progress — not a generic exercise database.
+  // The PT coach converts its own figures with wFmt/dFmt but never told the model WHICH units
+  // those are, so it could read \"152.1lb\" and answer in kilograms. The note now says the figures
+  // are already the person's and must not be converted, which is exactly this case.
+  return (typeof brotherSys==='function' ? brotherSys() : '') + (typeof _unitsNote==='function' ? _unitsNote() : '') + `You are the personal strength & nutrition coach inside ToTry, ${userName}'s app.${trainGoal ? ` They built this plan for ${trainGoal}${trainDays ? `, training ${trainDays} days a week` : ''} — coach toward that, not toward a generic programme.` : ''} You know them and their training, and you coach like a real PT who's invested in their progress — not a generic exercise database.
 
 WHO THEY ARE:
 ${userName} | Day ${dayCount} of their journey${goalIntent?'\nGoal: '+goalIntent:''}
@@ -8848,7 +8863,15 @@ function buildCtx(){
   // Per-vice clean days with grace
   const viceDetails=vices.map(v=>{
     const clean=viceCleanDays(v);
-    if(v.kind==='letgo'){ return v.n+': '+clean+' day'+(clean===1?'':'s')+' into letting go (a grief/attachment they’re releasing — healing goal, NOT a clean-streak; going back is part of it, meet with grace, never "days clean" or relapse language)'; }
+    // viceCleanDays() is 0 for a letting-go goal BY DESIGN \u2014 it has no clean days because it has no
+    // unclean ones. getLifeState already computes letGoDays for exactly this, after the woven row
+    // on Home said "letting go, day 0" on day 1 and day 42 alike. The coach was still being told
+    // "0 days into letting go" about a grief someone was three weeks into releasing.
+    if(v.kind==='letgo'){
+      const _lg = (v.startDate && typeof _calDaysSince==='function')
+        ? (function(){ try{ return _calDaysSince(v.startDate)+1; }catch(_){ return clean; } })() : clean;
+      return v.n+': '+plural(_lg,'day')+' into letting go (a grief/attachment they’re releasing — healing goal, NOT a clean-streak; going back is part of it, meet with grace, never "days clean" or relapse language)';
+    }
     const total=(v.cleanDaysTotal||0)+clean;
     let s=v.n+': '+plural(clean,'day')+' clean';
     if(v.relapseCount>0)s+=' ('+total+' total across '+v.relapseCount+' attempts)';
@@ -8898,7 +8921,20 @@ function buildCtx(){
   // Today's workouts logged
   const workouts = ls('totry_workouts') || [];
   const todayDateStr = new Date().toLocaleDateString('en-AU', {weekday:'short', day:'numeric', month:'short', year:'numeric'});
-  const workoutsToday = workouts.filter(w => w.date === todayDateStr);
+  // MATCH ON ts TOO. A session imported from Apple Health is written with a `ts` and NO `date`
+  // field (02-native.js syncWorkouts), so `w.date === todayDateStr` never matched one: a person
+  // whose training comes off their watch had "Trained today" silently absent from every coach
+  // reply, on the day they trained. Of the 34 readers of totry_workouts this was the only one
+  // still matching on date alone \u2014 every other already handles ts, which is why it survived.
+  // Integration IS the product here; a front whose data another front cannot see is the exact
+  // failure this app exists to avoid.
+  const _sameLocalDay = (w) => {
+    if(w && w.date === todayDateStr) return true;
+    if(!w || !w.ts) return false;
+    try{ return new Date(w.ts).toLocaleDateString('en-AU', {weekday:'short', day:'numeric', month:'short', year:'numeric'}) === todayDateStr; }
+    catch(_){ return false; }
+  };
+  const workoutsToday = workouts.filter(_sameLocalDay);
   const calsBurnedToday = Math.round((ls('totry_calorie_burns') || {})[todayKey] || 0);
   // Gentle mode is about CALORIE FIGURES, not about food specifically. The nutrition line was fixed and
   // these two were not, so with numbers off the prompt still carried "Burned 620 cal from training
@@ -9028,11 +9064,30 @@ function buildCtx(){
   // ── END LIVE STATE ──
   
   // Latest weekly check-in
-  const lastCheckin=bodyEntries.find(e=>e.scores);
+  // NEVER HAND A DISCLOSURE TO THE MODEL. The Sunday check-in is one of the twenty crisis doors and
+  // logBody DOES mark the row (13-body.js:207 sets flagged when detectCrisis fires) — and 13-body's
+  // own AI read honours it at :455. This builder did not, so a suicide disclosure typed into "What
+  // got in your way?" was pasted verbatim into the coach's SYSTEM PROMPT and re-sent with EVERY
+  // message the person wrote afterwards, for as long as it stayed the latest check-in.
+  // The same !flagged rule already guards totry_evenings and totry_journal in getLifeState; the body
+  // store can hold free text too and was the one that never got it.
+  const lastCheckin=bodyEntries.filter(e=>e && !e.flagged).find(e=>e.scores);
   let checkinCtx='';
   if(lastCheckin&&lastCheckin.scores){
     const s=lastCheckin.scores;
-    checkinCtx='\nLATEST WEEKLY CHECK-IN: Training '+s.train+'/10, Nutrition '+s.nutrition+'/10, Sleep '+s.sleep+'/10, Stress '+s.stress+'/10, Energy '+s.energy+'/10, Faith '+s.faith+'/10';
+    // A QUESTION LEFT BLANK IS NOT A SCORE OF NULL. The sliders that were never touched store null
+    // (v581 stopped them defaulting to 5, deliberately, so an untouched slider does not invent a
+    // number) — and this pasted them straight in, so the coach was told "Sleep null/10, Stress
+    // null/10, Faith undefined/10" and answered as if those were readings. Name only what they
+    // actually said, and say plainly that the rest was left blank, which is itself information.
+    const _sc = [['Training',s.train],['Nutrition',s.nutrition],['Sleep',s.sleep],
+                 ['Stress',s.stress],['Energy',s.energy],['Faith',s.faith]];
+    const _given = _sc.filter(function(x){ return x[1] !== null && x[1] !== undefined && x[1] !== ''; });
+    const _blank = _sc.filter(function(x){ return !(x[1] !== null && x[1] !== undefined && x[1] !== ''); });
+    if(_given.length){
+      checkinCtx = '\nLATEST WEEKLY CHECK-IN: ' + _given.map(function(x){ return x[0]+' '+x[1]+'/10'; }).join(', ')
+        + (_blank.length ? ' (they left ' + _blank.map(function(x){ return x[0].toLowerCase(); }).join(', ') + ' blank \u2014 do not assume a value)' : '');
+    }
     if(lastCheckin.win)checkinCtx+='\n  Their recent win: "'+lastCheckin.win+'"';
     if(lastCheckin.struggle)checkinCtx+='\n  Their recent struggle: "'+lastCheckin.struggle+'"';
     if(lastCheckin.focus)checkinCtx+='\n  Their focus this week: "'+lastCheckin.focus+'"';
@@ -9083,7 +9138,11 @@ function buildCtx(){
   let stepsCtx=todaySteps?('\nTODAY\'S STEPS: '+todaySteps+(stepGoal?(' (goal '+stepGoal+(todaySteps>=stepGoal?' — hit it':'')+')'):'')):(stepGoal?('\nSTEP GOAL: '+stepGoal+'/day (none logged yet today)'):'');
   if(sleepGoal) stepsCtx+='\nSLEEP GOAL: '+sleepGoal+'h a night';
   
-  return brotherSys() + sharedWisdomNote() + `You're their whole-life coach here as well as their brother — you have their REAL data right now, so use it.
+  // THE MAIN COACH NEVER GOT THE UNITS NOTE. _unitsNote() was added to lifeStateBrief() and then to
+  // the Sunday check-in, and buildCtx \u2014 318 lines, the biggest AI surface in the app, the one a
+  // person actually talks to \u2014 builds its own context and calls neither. Third miss of the same
+  // fix. It costs a metric person nothing: _unitsNote() returns '' unless they read lb or mi.
+  return brotherSys() + sharedWisdomNote() + (typeof _unitsNote==='function' ? _unitsNote() : '') + `You're their whole-life coach here as well as their brother — you have their REAL data right now, so use it.
 
 WHO THEY ARE:
 ${userName} | Day ${getDayCount()} of their journey | ${streak} day${streak===1?'':'s'} of habits kept THIS WEEK (resets Monday — not an all-time streak, never call it one)${identity?'\nIDENTITY (who they are becoming): "'+identity+'"':''}${season?'\nCURRENT SEASON: '+season:''}${why?'\nTHEIR WHY: "'+why+'"':''}
@@ -9101,7 +9160,7 @@ BODY & TRAINING:
 Today's planned training: ${todayFocus}
 Weight: ${currentWeight?wFmt(currentWeight):'Not logged'}
 ${(typeof nutGentle==='function'&&nutGentle())?'Nutrition target: held privately \u2014 numbers are turned off for this person.':('Nutrition target: '+nutGoals.cal+' cal / '+nutGoals.pro+'g protein')}${stravaCtx}${stepsCtx}${checkinCtx}
-${(function(){ let s=''; try{ if(typeof computeReadiness==='function'){ const rd=computeReadiness(); if(rd) s+='\\nReadiness today: '+rd.score+'/100 ('+rd.level+'). '+rd.advice; } if(typeof detectVicePatterns==='function'){ const vp=detectVicePatterns(); if(vp&&vp.patterns&&vp.patterns.length) s+='\\nVice patterns (use gently, only if they raise it): '+vp.patterns.join(' '); } const fw = (typeof ls==='function') ? (ls('totry_feeling_wins')||[]) : []; if(fw.length){ const _since = Date.now()-7*86400000; const _recent = fw.filter(w=>w.ts && new Date(w.ts).getTime()>=_since); if(_recent.length){ s+='\\nIN THE LAST WEEK they reached for help the instant an urge rose and got through it '+_recent.length+' time(s) \u2014 this is them fighting in real time; honour it. Recent feelings they named: '+_recent.slice(0,3).map(w=>String.fromCharCode(34)+(w.feeling||'an urge').slice(0,60)+String.fromCharCode(34)).join(', ')+'.'; } } }catch(e){} return s; })()}
+${(function(){ let s=''; try{ /* readiness is already stated once, properly, in checkinCtx above — saying it twice made the coach repeat itself */ if(typeof detectVicePatterns==='function'){ const vp=detectVicePatterns(); if(vp&&vp.patterns&&vp.patterns.length) s+='\nVice patterns (use gently, only if they raise it): '+vp.patterns.join(' '); } const fw = (typeof ls==='function') ? (ls('totry_feeling_wins')||[]) : []; if(fw.length){ const _since = Date.now()-7*86400000; const _recent = fw.filter(w=>w.ts && new Date(w.ts).getTime()>=_since); if(_recent.length){ s+='\nIN THE LAST WEEK they reached for help the instant an urge rose and got through it '+_recent.length+' time(s) \u2014 this is them fighting in real time; honour it. Recent feelings they named: '+_recent.slice(0,3).map(w=>String.fromCharCode(34)+(w.feeling||'an urge').slice(0,60)+String.fromCharCode(34)).join(', ')+'.'; } } }catch(e){} return s; })()}
 
 FINANCES: ${curSym()}${Math.round(owed).toLocaleString()} debt remaining${prayerCtx}${sacramentCtx}
 
@@ -12289,7 +12348,10 @@ function _planCarry(id,i){
   const days=_planDays(p); if(!days.length) return;
   const day=days[_planClamp(i,days.length)], saved=ls('totry_sv')||[];
   if(!saved.some(function(v){ return v&&v.verse===day.t; })){
-    saved.unshift({verse:day.t, reference:day.r, date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'})});
+    // ts AS WELL AS date. `date` here is a display string like "5 Sep" \u2014 no year \u2014 so nothing could ask
+    // WHEN a passage was kept: v586 added "keeping a passage ticks the prayer habit" reading ts and
+    // date, and neither existed in a usable form, so it ticked nothing and the fix looked done.
+    saved.unshift({verse:day.t, reference:day.r, ts:new Date().toISOString(), date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'})});
     ls('totry_sv', saved.slice(0,200));
     if(typeof renderSavedVerses==='function'){ try{ renderSavedVerses(); }catch(_){} }
   }
@@ -12515,7 +12577,7 @@ function saveHdrVerse(){
   if(!v||v.includes('Loading'))return;
   const saved=ls('totry_sv')||[];
   if(!saved.find(sv=>sv.verse===v)){
-    saved.unshift({verse:v,reference:r,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'})});
+    saved.unshift({verse:v,reference:r,ts:new Date().toISOString(),date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'})});   // ts \u2014 see the note at the other save site
     ls('totry_sv',saved.slice(0,200));renderSavedVerses();
   }
   const btn=document.getElementById('vsave-btn');
@@ -23012,7 +23074,9 @@ async function loadBibleChapter(){
       const row=document.createElement('div');row.className='bible-verse-row';
       const _ref = book.name+' '+chapter+':'+v.num;
       if(_savedRefs.has(_ref)) row.classList.add('highlighted');
-      row.innerHTML='<span class="bvn">'+v.num+'</span><span class="bvt">'+_escFew(v.text.trim())+'</span>';   // third-party chapter text
+      // v.num IS THIRD-PARTY TOO. I escaped v.text on this line and left the verse NUMBER beside it
+      // untouched — same object, same API, same line, one field apart.
+      row.innerHTML='<span class="bvn">'+_escFew(v.num)+'</span><span class="bvt">'+_escFew(v.text.trim())+'</span>';
       row.onclick=async ()=>{
         if(row.classList.contains('highlighted')){
           // The class comes off only if the verse actually went, so declining the confirm leaves the
@@ -23411,7 +23475,16 @@ async function unsaveVerseFromReader(ref, onRestore){
   // highlight go, silently and with nothing to confirm or undo.
   if(!hits.length) return true;
   if(typeof askConfirm === 'function' && !(await askConfirm('Remove this from your saved verses?'))) return false;
-  ls('totry_sv', saved.filter(function(v){ return !(v && v.reference === ref); }));
+  // TOMBSTONE THIS DOOR TOO. v587 added totry_sv to the union list, and that list's own comment
+  // states the precondition — union without a tombstone makes the DELETE the thing that never
+  // survives. Only the shelf's x button (deleteSavedVerse, line 142) got one; THIS door — tapping a
+  // highlighted row off, the gesture both readers advertise — recorded nothing. So un-saving from
+  // the reader was undone by the next pull and the verse came back, still highlighted, for ever on
+  // two devices. The tell was three lines below: the undo already calls tombstoneRevoke, which
+  // could only ever have been a no-op, because nothing was tombstoned to revoke.
+  const _kept = saved.filter(function(v){ return !(v && v.reference === ref); });
+  try{ if(typeof tombstoneRemoved==='function') tombstoneRemoved('totry_sv', saved, _kept); }catch(_){ }
+  ls('totry_sv', _kept);
   renderSavedVersesEverywhere();
   if(typeof showUndo === 'function'){
     showUndo('Verse removed', function(){
@@ -32167,11 +32240,24 @@ async function _fuelGenerate(){
   load.innerHTML = '<div class="modal" style="text-align:center"><div style="font-size:26px;margin-bottom:10px">🍽️</div><div style="font-family:Cormorant Garamond,serif;font-size:20px;color:var(--tx);margin-bottom:6px">Building your plan…</div><div style="font-size:12px;color:var(--tx3);line-height:1.6">Fitting your targets, budget and training, and building your shopping list.</div></div>';
   document.body.appendChild(load);
   let brief=''; try{ if(typeof getLifeState==='function') brief = getLifeState().brief || ''; }catch(_){ brief=''; }
+  // RESOLVE THE CONTRADICTION FOR A NUMBERS-OFF PERSON. The brief embedded above tells the model
+  // never to state a calorie figure; this prompt then tells it to hit a kcal target within 5%. Two
+  // instructions that cannot both be followed, and the model resolves it however it likes — which
+  // for a person whose relationship with counting is the thing that hurt them can mean a plan whose
+  // meal names carry the numbers. The render already hides its OWN figures under gentle mode; the
+  // model's free text is the part nothing was guarding. Say both halves plainly instead.
+  const _fuelGentle = (typeof nutGentle==='function') && nutGentle();
+  const _gentleRule = _fuelGentle
+    ? "\n\nIMPORTANT: build the plan TO the calorie and protein targets given \u2014 they are how the plan is "
+      + "sized \u2014 but this person has numbers turned OFF and must never read one. Do NOT write any calorie "
+      + "or macro figure in ANY text you return: not in a meal name, not in a note, not in the shopping "
+      + "list, not in the summary. Describe portions in food terms (a palm of chicken, a fist of rice)."
+    : '';
   const sys = "You are a registered-dietitian-level meal planner in a faith-rooted whole-life app. You are honest, evidence-based and non-partial: food-first, never push brands or supplements, cite where prices came from, and separate general guidance from individual advice. Build realistic, affordable plans from REAL products at the named supermarket, using web search for CURRENT prices. Return ONLY valid JSON, no prose.";
   const dietStr = _fuelDietStr(p);
   const shops = _fuelShopChains(p); const shopsStr = shops.join(', ') || (p.chain || 'your supermarket');
   const timingStr = preworkout.length ? ('Their gym sessions and pre-gym meal deadlines: '+preworkout.map(function(x){return x.day+' gym '+x.sessionStart+' (finish the pre-gym meal by '+x.eatBy+')';}).join('; ')+'.') : '';
-  const prompt = "Build a realistic "+(p.mealsPerDay||4)+"-meal day for one person, plus a weekly shopping list, in "+(p.country||'Australia')+". Context: "+brief+". Daily targets: the meals MUST total close to "+cal+" kcal (within ~5%) and reach about "+ctx.pro+"g protein (goal: "+ctx.goalDir+") — adjust portion sizes to hit these numbers. Weekly grocery budget ~"+curSym()+(p.budget||0)+". STRICTLY respect these dietary requirements and NEVER include any forbidden food (e.g. if vegan, no animal products; if 'no beef', no beef anywhere): "+dietStr+(p.restrictions?('; '+p.restrictions):'')+". "+((p.includeSupps!==false)?"May include 1-2 evidence-backed supermarket supplements (creatine, whey, electrolytes), optional and food-first.":"No supplements.")+" Give FULL macros per meal: cal, protein, carbs, fat. The DAY must also cover MICRONUTRIENTS — enough fibre, iron, calcium, healthy fats/omega-3, potassium, and a real range of vegetables and fruit; summarise this in 'microNote' with rough fibre grams. "+(preworkout.length?("Time carbohydrate around training. "+timingStr+" In 'carbNote', say what to eat before training referencing those times."):"In 'carbNote', explain carb timing generally and note that adding their training schedule unlocks exact meal times.")+" If their context shows an eating-related struggle or a hard time of day (late-night snacking, stress/boredom eating, alcohol, a risk window), address it directly in the plan — e.g. build in a genuinely satisfying planned snack for that window so they are not reaching for the vice on an empty stomach — and name it warmly in that meal's 'why' or in carbNote (like a big brother who knows their fight). The person shops at these stores: "+shopsStr+". For EVERY shopping item, set 'shop' to exactly ONE of those store names — choose the store that is cheapest or most likely to stock it, so the list is organised store-by-store for one trip each. Use typical current prices at that store (estimates, to confirm in-store). Keep 'items' and 'why' SHORT. Return ONLY compact JSON, no prose: {\"meals\":[{\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"carbs\":0,\"fat\":0,\"why\":\"\"}],\"microNote\":\"\",\"carbNote\":\"\",\"shopping\":[{\"item\":\"\",\"price\":0,\"shop\":\"\"}],\"total\":0,\"note\":\"\"}. Each \"why\" ties the meal to their goal. \"note\" says prices are estimates and the science is general.";
+  const prompt = _gentleRule + "Build a realistic "+(p.mealsPerDay||4)+"-meal day for one person, plus a weekly shopping list, in "+(p.country||'Australia')+". Context: "+brief+". Daily targets: the meals MUST total close to "+cal+" kcal (within ~5%) and reach about "+ctx.pro+"g protein (goal: "+ctx.goalDir+") — adjust portion sizes to hit these numbers. Weekly grocery budget ~"+curSym()+(p.budget||0)+". STRICTLY respect these dietary requirements and NEVER include any forbidden food (e.g. if vegan, no animal products; if 'no beef', no beef anywhere): "+dietStr+(p.restrictions?('; '+p.restrictions):'')+". "+((p.includeSupps!==false)?"May include 1-2 evidence-backed supermarket supplements (creatine, whey, electrolytes), optional and food-first.":"No supplements.")+" Give FULL macros per meal: cal, protein, carbs, fat. The DAY must also cover MICRONUTRIENTS — enough fibre, iron, calcium, healthy fats/omega-3, potassium, and a real range of vegetables and fruit; summarise this in 'microNote' with rough fibre grams. "+(preworkout.length?("Time carbohydrate around training. "+timingStr+" In 'carbNote', say what to eat before training referencing those times."):"In 'carbNote', explain carb timing generally and note that adding their training schedule unlocks exact meal times.")+" If their context shows an eating-related struggle or a hard time of day (late-night snacking, stress/boredom eating, alcohol, a risk window), address it directly in the plan — e.g. build in a genuinely satisfying planned snack for that window so they are not reaching for the vice on an empty stomach — and name it warmly in that meal's 'why' or in carbNote (like a big brother who knows their fight). The person shops at these stores: "+shopsStr+". For EVERY shopping item, set 'shop' to exactly ONE of those store names — choose the store that is cheapest or most likely to stock it, so the list is organised store-by-store for one trip each. Use typical current prices at that store (estimates, to confirm in-store). Keep 'items' and 'why' SHORT. Return ONLY compact JSON, no prose: {\"meals\":[{\"name\":\"\",\"items\":\"\",\"cal\":0,\"pro\":0,\"carbs\":0,\"fat\":0,\"why\":\"\"}],\"microNote\":\"\",\"carbNote\":\"\",\"shopping\":[{\"item\":\"\",\"price\":0,\"shop\":\"\"}],\"total\":0,\"note\":\"\"}. Each \"why\" ties the meal to their goal. \"note\" says prices are estimates and the science is general.";
   const parsePlan = function(t){ try{
     let c=(t||'').replace(/```json|```/g,'').trim();
     c = c.slice(c.indexOf('{'), c.lastIndexOf('}')+1);
@@ -32860,7 +32946,16 @@ function _saveEventFromModal(){
   if(!start){ showToast('Set a start time','When does it start?'); return; }
   let list=(ls('totry_cal_events')||[]);
   // Editing replaces rather than adds — otherwise "save changes" would leave the old copy behind.
-  if(_evEditId != null) list = list.filter(function(e){ return !(e && e.id === _evEditId); });
+  // AND THE REMOVED ROW MUST BE TOMBSTONED, because v587 added totry_cal_events to the cloud union.
+  // Before that, replacing locally was enough; after it, the old row still sits in the cloud and the
+  // next pull unions it straight back — so editing a shift DUPLICATED it on every device, and the
+  // duplicate was then pushed up. That is my own change's blast radius, and it is the case my notes
+  // already name: never rewrite an entry's identity on edit without tombstoning what you replaced.
+  if(_evEditId != null){
+    const _before = list;
+    list = list.filter(function(e){ return !(e && e.id === _evEditId); });
+    try{ if(typeof tombstoneRemoved === 'function') tombstoneRemoved('totry_cal_events', _before, list); }catch(_){ }
+  }
   const wk=_currentWeekStamp();
   days.forEach(d=>{ list.push({ id: Date.now()+d+Math.floor(Math.random()*1000), title:title.slice(0,50), type:window.__evType||'other', day:d, start, end:end||null, recurring, weekStamp: recurring?null:wk }); });
   _saveCalEvents(list);
@@ -34260,7 +34355,15 @@ function renderBills(){
     if(!b.paid) return true;
     return new Date(b.paidAt || now).getTime() > now - 30 * 86400000;
   });
-  if(cleaned.length !== list.length) ls('totry_bills', cleaned);
+  // A HOUSEKEEPING PRUNE IS STILL A DELETE. totry_bills is unioned across devices, so writing the
+  // shorter list without a tombstone meant the next pull brought every pruned bill back, the next
+  // render pruned them again, and the two never settled \u2014 and on a second device they simply
+  // reappeared. Found by the class scanner the moment its two defects were repaired; the broken
+  // version could not see this shape at all.
+  if(cleaned.length !== list.length){
+    try{ if(typeof tombstoneRemoved === 'function') tombstoneRemoved('totry_bills', list, cleaned); }catch(_){ }
+    ls('totry_bills', cleaned);
+  }
   
   const unpaid = cleaned.filter(b => !b.paid).sort((a, b) => new Date(a.due) - new Date(b.due));
   if(!unpaid.length){
@@ -43550,7 +43653,13 @@ try{
         // "Fired up" and "Actually good" chips returned the toast, not the chip.
         // Every fixed full-screen overlay in the app is one of these two shapes; both are listed, and
         // the selector is the place to add a third if one is ever written.
-        const open = [...document.querySelectorAll('.modal-bg.open, .feel-door.open')]
+        // .companion-overlay TOO \u2014 the third full-screen surface this rule has had to learn about,
+        // and the third time it was found by a control being unusable rather than by reading code.
+        // Driven: with the companion open, four of five points on "Just let me in \u2192" returned
+        // .milestone-toast, and clicking it left the companion OPEN. The way out of a takeover shown
+        // to someone mid-urge did nothing. The class is "a full-screen surface"; if a fourth is ever
+        // written, it belongs in this selector on the day it is written, not after someone finds it.
+        const open = [...document.querySelectorAll('.modal-bg.open, .feel-door.open, .companion-overlay.open')]
           .some(function(m){ const c = getComputedStyle(m); return c.display !== 'none' && c.visibility !== 'hidden'; });
         document.body.classList.toggle('sheet-open', open);
       }catch(_){ }
@@ -43600,6 +43709,7 @@ function showToast(title,msg,onTap){
   const _fire=()=>{ if(typeof onTap==='function'){ try{ onTap(); }catch(_){} } t.remove(); };
   t.onclick=_fire;
   if(onTap){
+    t.style.pointerEvents = 'auto';   // this one really is a control; the rest stay transparent
     // A toast you can act on must be reachable and operable without a mouse.
     t.setAttribute('tabindex','0');
     t.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); _fire(); } });
@@ -43800,9 +43910,25 @@ function tellUser(title, body, opts){
     try{
       const inner = el.querySelector('.modal') || el;
       const kids = inner.children ? [].slice.call(inner.children) : [];
-      for(let i = 0; i < kids.length; i++){
-        const line = (kids[i].innerText || kids[i].textContent || '').trim().split('\n')[0].trim().replace(/\s+/g,' ');
-        if(line.length > 1 && line.length < 90 && /[A-Za-z\u00C0-\u024F]/.test(line)) return line.slice(0,120);
+      // SKIP THE CONTROLS. Taking the first child with letters named five sheets after a BUTTON
+      // inside them, so a screen reader announced the dialog as "Save recipe" — an action, read as a
+      // title. A control is what the sheet offers, never what it is. Two passes: prose first, and a
+      // control only if the sheet genuinely has nothing else to say.
+      const isControl = (n) => {
+        if(!n) return false;
+        if(/^(BUTTON|A|INPUT|SELECT|TEXTAREA|LABEL)$/.test(n.tagName)) return true;
+        if(n.getAttribute && (n.getAttribute('role') === 'button' || n.hasAttribute('onclick'))) return true;
+        // a wrapper whose entire content is controls is still a control row
+        const kidsOf = n.children ? [].slice.call(n.children) : [];
+        return kidsOf.length > 0 && kidsOf.every(c => /^(BUTTON|A|INPUT|SELECT|TEXTAREA)$/.test(c.tagName));
+      };
+      const lineOf = (n) => (n.innerText || n.textContent || '').trim().split('\n')[0].trim().replace(/\s+/g,' ');
+      for(let pass = 0; pass < 2; pass++){
+        for(let i = 0; i < kids.length; i++){
+          if(pass === 0 && isControl(kids[i])) continue;
+          const line = lineOf(kids[i]);
+          if(line.length > 1 && line.length < 90 && /[A-Za-z\u00C0-\u024F]/.test(line)) return line.slice(0,120);
+        }
       }
     }catch(_){ }
     return 'Dialog';

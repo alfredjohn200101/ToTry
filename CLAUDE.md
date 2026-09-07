@@ -42,7 +42,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
-- `APP_VERSION` in `src/app/00-boot.js` — currently **v582**. Bump it AND `CACHE` in sw.js together, always.
+- `APP_VERSION` in `src/app/00-boot.js` — currently **v589**. Bump it AND `CACHE` in sw.js together, always.
 
 ## The nervous system (key functions — grep these)
 - `getLifeState()` — returns the whole person {training, nutrition, body, soul, fight, readiness,
@@ -65,7 +65,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    reported 1032 PASSED, because the harness extracts functions by name and never parsed the whole
    script. A suite that stays green while the app cannot boot is worse than no suite.
 2. **Run the whole gate before you ship**, not just `npm test`:
-   - `npm test` — 1749 assertions over the real bundle (core math, dead code, privacy promises,
+   - `npm test` — 1838 assertions over the real bundle (core math, dead code, privacy promises,
      the voice gates, the parse check). Four classes were added on 6 Sep 2026 after an audit of the
      PREVIOUS round's own fixes, each of which had been fixed only where it was reported:
      **(a) a person's own typing as live HTML** — the v579 sweep found five doors by looking for typed
@@ -163,6 +163,28 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 4. **Quality over speed. Honest assessment** — never claim done when it isn't.
    - **Read the whole gate BEFORE `git push`, not after.** v542 went out with `npm run panels` red
      because the output was read after the push.
+   - **CALIBRATE THE INSTRUMENT, AND SAY SO WHEN IT FAILS.** A contrast probe built from computed
+     styles read 1:1 for ordinary cards (it walked parent backgrounds and missed gradients and
+     opacity chains); its pixel-reading replacement still read 11.42 for a true 21:1, because text
+     is a MINORITY of a button's pixels so a 5th percentile is still background. A measurement
+     tool's failure mode is a plausible number, not an error. The panels contrast check now measures
+     three swatches whose ratios are known (21:1, 4.54:1, 1.61:1) BEFORE it looks at the app, and if
+     they come back wrong it reports "the MEASUREMENT is wrong, not the app" and fails on that.
+     Five separate analysis scripts gave confident wrong answers in one session — matching a COMMENT
+     as code, scanning backwards for a bracket that opens forwards, anchoring on a string that is in
+     two arrays (so it compared an array with itself and reported a gap of zero), and fixed-size
+     slice windows the arrays had outgrown. Strip comments (`H.code()`), assert your anchor is
+     unique, bracket-match instead of slicing, and be as suspicious of a tool that CLEARS a finding
+     as one that raises it — that last one nearly buried a real cross-device data-loss bug.
+     CALIBRATION ALONE IS NOT ENOUGH EITHER: after the swatches came back exact, the same tool called
+     two ordinary buttons AA failures. Both were artifacts — one captured THROUGH a
+     `#companion-backdrop` scrim (`element.screenshot()` grabs the box from the page, overlay
+     included), the other captured near-uniform because it was not painting its text, which reads as
+     ~1:1 and looks exactly like a real failure. Three hypotheses were wrong first (mid-animation,
+     ancestor opacity, glyph antialiasing) and the answer only came from LOOKING at the captured PNG.
+     So: calibrate; REFUSE to report when the subject is covered or the capture is uniform (say that,
+     not a number); and never act on one instrument — the single contrast fix that was kept had CSS
+     evidence (an explicit opacity multiplier), a measurement, and the number moving as predicted.
    - **A TEST THAT GREPS A CALL PASSES ON A WRONG ARGUMENT.** v581's undo asserted
      `/tombstoneRevoke\('totry_nutlog'/` and was fault-injected by DELETING the call — which is the
      one mutation a name-match is guaranteed to catch. The shipped bug was the argument: tombstones
