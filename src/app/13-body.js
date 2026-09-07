@@ -1335,7 +1335,11 @@ function renderMeasurements(){
 async function deleteMeasurement(idx){
   if(!(await askConfirm('Delete this measurement snapshot?'))) return;
   const list = ls('totry_measurements') || [];
+  const _removed = list[idx];
   list.splice(idx, 1);
+  // Tombstone the delete — see the note in deleteSavedVerse. This list is about to be unioned
+  // across devices, and a union without a tombstone makes the deletion undoable instead.
+  try{ if(typeof tombstoneRemoved==='function' && _removed) tombstoneRemoved('totry_measurements', list.concat([_removed]), list); }catch(_){ }
   ls('totry_measurements', list);
   renderMeasurements();
 }

@@ -464,8 +464,15 @@ H.section('sync merge — append-only unions, editable lists do not');
   // without it one device's whole list replaces the other's. totry_letters and totry_relationships
   // moved into that second group at v483: a letter written on a phone was simply gone on a laptop.
   // They stay out of this list, and are asserted below with the tombstone that makes them safe.
-  ['totry_measurements'].forEach(k => {
-    H.ok(!ARR.has(k), k + ' is NOT unioned — it has a delete path and no tombstone, so a removed item must stay removed');
+  // totry_measurements MOVED INTO THE SECOND GROUP, the same way totry_letters and
+  // totry_relationships did at v483 and for the same reason: it was in SYNC_KEYS and not here, so it
+  // fell to the scalar rule and a body measurement entered on a phone was destroyed the moment the
+  // laptop synced. It is unioned now, and deleteMeasurement records a tombstone, which is the
+  // precondition. totry_sv and totry_cal_events made the same move at the same time.
+  ['totry_measurements', 'totry_sv', 'totry_cal_events'].forEach(k => {
+    H.ok(ARR.has(k), k + ' is unioned, so a device switch cannot destroy it');
+    H.ok(new RegExp("tombstoneRemoved\\('" + k + "'").test(H.code()),
+      k + ' tombstones its delete, which is what makes unioning it safe');
   });
 
   // MOVED AT v517, the same way totry_letters and totry_relationships moved at v483. Outside the

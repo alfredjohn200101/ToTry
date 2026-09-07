@@ -928,7 +928,15 @@ function _saveEventFromModal(){
 }
 async function deleteCalEvent(id){
   if(!(await askConfirm('Remove this from your week?'))) return;
-  _saveCalEvents((ls('totry_cal_events')||[]).filter(e => e.id !== id));
+  const _before = ls('totry_cal_events') || [];
+  const _after = _before.filter(e => e.id !== id);
+  // TOMBSTONE THE DELETE, because this list is about to be UNIONED across devices. It was in
+  // SYNC_KEYS but not the append-only union list, so it fell to the scalar rule and the last
+  // device to write replaced the other's whole list \u2014 enter it on your phone, open your laptop,
+  // and it is gone. Union fixes that; without a tombstone, union then makes the DELETE undoable
+  // instead, which is the trap the union list's own comment warns about. Both halves or neither.
+  try{ if(typeof tombstoneRemoved==='function') tombstoneRemoved('totry_cal_events', _before, _after); }catch(_){ }
+  _saveCalEvents(_after);
   renderCalendar();
 }
 

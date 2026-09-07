@@ -5388,7 +5388,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v586';
+const APP_VERSION = 'v587';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -6334,6 +6334,13 @@ async function pullFromCloud(){
       'totry_payments','totry_transactions','totry_vice_savings_log','totry_feelings','totry_hunger_log',
       // Editable lists — safe to union ONLY because their deletes now tombstone. See note.
       'totry_bills','totry_assets','totry_subscriptions',
+      // These three were in SYNC_KEYS and NOT here, so they fell to the scalar rule and the last
+      // device to write replaced the other's whole list: a body measurement, a saved passage or a
+      // rostered shift entered on your phone was destroyed the moment your laptop synced. Their
+      // deletes tombstone now (deleteMeasurement, deleteSavedVerse, deleteCalEvent), which is the
+      // precondition this list's own comment states \u2014 union without it would make the DELETE the
+      // thing that never survives instead.
+      'totry_measurements','totry_sv','totry_cal_events',
       // v568 added totry_practices to SYNC_KEYS and not to this list, so it fell to the scalar rule:
       // whichever device wrote last REPLACED the other's whole list. A Muslim using the app on a phone
       // and an iPad completed the tasbih on each across a week and watched "That's 9 kept" drop back to
@@ -22068,6 +22075,12 @@ async function deleteSavedVerse(idx){
   if(idx < 0 || idx >= saved.length) return;
   const removed = saved[idx];
   saved.splice(idx, 1);
+  // TOMBSTONE THE DELETE, because this list is about to be UNIONED across devices. It was in
+  // SYNC_KEYS but not the append-only union list, so it fell to the scalar rule and the last
+  // device to write replaced the other's whole list \u2014 enter it on your phone, open your laptop,
+  // and it is gone. Union fixes that; without a tombstone, union then makes the DELETE undoable
+  // instead, which is the trap the union list's own comment warns about. Both halves or neither.
+  try{ if(typeof tombstoneRemoved==='function') tombstoneRemoved('totry_sv', saved.concat([removed]), saved); }catch(_){ }
   ls('totry_sv', saved);
   // Repaint every shelf that exists, so the one the person is looking at is always among them.
   renderSavedVersesEverywhere();
@@ -22075,6 +22088,10 @@ async function deleteSavedVerse(idx){
     const cur = ls('totry_sv') || [];
     cur.splice(idx, 0, removed);
     ls('totry_sv', cur);
+    // The delete tombstones now, so the undo has to revoke it or the next pull removes the verse
+    // again. Caught by the class-level guard the moment the tombstone was added, which is the whole
+    // reason that guard is written over the class and not over one call site.
+    try{ if(typeof tombstoneRevoke==='function' && typeof syncIdOf==='function') tombstoneRevoke('totry_sv', syncIdOf(removed)); }catch(_){ }
     renderSavedVersesEverywhere();
   });
 }
@@ -23401,6 +23418,9 @@ async function unsaveVerseFromReader(ref, onRestore){
       const cur = ls('totry_sv') || [];
       hits.forEach(function(h){ cur.splice(Math.min(h.i, cur.length), 0, h.v); });
       ls('totry_sv', cur);
+      // Same as the other saved-verse undo — revoke, or the pull undoes the restore.
+      try{ if(typeof tombstoneRevoke==='function' && typeof syncIdOf==='function'){
+        hits.forEach(function(h){ tombstoneRevoke('totry_sv', syncIdOf(h.v)); }); } }catch(_){ }
       renderSavedVersesEverywhere();
       try{ if(typeof onRestore === 'function') onRestore(); }catch(_){ }
     });
@@ -25065,7 +25085,11 @@ function renderMeasurements(){
 async function deleteMeasurement(idx){
   if(!(await askConfirm('Delete this measurement snapshot?'))) return;
   const list = ls('totry_measurements') || [];
+  const _removed = list[idx];
   list.splice(idx, 1);
+  // Tombstone the delete — see the note in deleteSavedVerse. This list is about to be unioned
+  // across devices, and a union without a tombstone makes the deletion undoable instead.
+  try{ if(typeof tombstoneRemoved==='function' && _removed) tombstoneRemoved('totry_measurements', list.concat([_removed]), list); }catch(_){ }
   ls('totry_measurements', list);
   renderMeasurements();
 }
@@ -32839,7 +32863,15 @@ function _saveEventFromModal(){
 }
 async function deleteCalEvent(id){
   if(!(await askConfirm('Remove this from your week?'))) return;
-  _saveCalEvents((ls('totry_cal_events')||[]).filter(e => e.id !== id));
+  const _before = ls('totry_cal_events') || [];
+  const _after = _before.filter(e => e.id !== id);
+  // TOMBSTONE THE DELETE, because this list is about to be UNIONED across devices. It was in
+  // SYNC_KEYS but not the append-only union list, so it fell to the scalar rule and the last
+  // device to write replaced the other's whole list \u2014 enter it on your phone, open your laptop,
+  // and it is gone. Union fixes that; without a tombstone, union then makes the DELETE undoable
+  // instead, which is the trap the union list's own comment warns about. Both halves or neither.
+  try{ if(typeof tombstoneRemoved==='function') tombstoneRemoved('totry_cal_events', _before, _after); }catch(_){ }
+  _saveCalEvents(_after);
   renderCalendar();
 }
 

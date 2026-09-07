@@ -466,6 +466,13 @@ async function pullFromCloud(){
       'totry_payments','totry_transactions','totry_vice_savings_log','totry_feelings','totry_hunger_log',
       // Editable lists — safe to union ONLY because their deletes now tombstone. See note.
       'totry_bills','totry_assets','totry_subscriptions',
+      // These three were in SYNC_KEYS and NOT here, so they fell to the scalar rule and the last
+      // device to write replaced the other's whole list: a body measurement, a saved passage or a
+      // rostered shift entered on your phone was destroyed the moment your laptop synced. Their
+      // deletes tombstone now (deleteMeasurement, deleteSavedVerse, deleteCalEvent), which is the
+      // precondition this list's own comment states \u2014 union without it would make the DELETE the
+      // thing that never survives instead.
+      'totry_measurements','totry_sv','totry_cal_events',
       // v568 added totry_practices to SYNC_KEYS and not to this list, so it fell to the scalar rule:
       // whichever device wrote last REPLACED the other's whole list. A Muslim using the app on a phone
       // and an iPad completed the tasbih on each across a week and watched "That's 9 kept" drop back to

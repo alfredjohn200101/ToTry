@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v586-every-sheet-says-what-it-is'
+const CACHE = 'totry-v587-a-measurement-survives-two-devices'
 
 const CORE = [
   './',

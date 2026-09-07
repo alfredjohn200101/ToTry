@@ -134,6 +134,12 @@ async function deleteSavedVerse(idx){
   if(idx < 0 || idx >= saved.length) return;
   const removed = saved[idx];
   saved.splice(idx, 1);
+  // TOMBSTONE THE DELETE, because this list is about to be UNIONED across devices. It was in
+  // SYNC_KEYS but not the append-only union list, so it fell to the scalar rule and the last
+  // device to write replaced the other's whole list \u2014 enter it on your phone, open your laptop,
+  // and it is gone. Union fixes that; without a tombstone, union then makes the DELETE undoable
+  // instead, which is the trap the union list's own comment warns about. Both halves or neither.
+  try{ if(typeof tombstoneRemoved==='function') tombstoneRemoved('totry_sv', saved.concat([removed]), saved); }catch(_){ }
   ls('totry_sv', saved);
   // Repaint every shelf that exists, so the one the person is looking at is always among them.
   renderSavedVersesEverywhere();
@@ -141,6 +147,10 @@ async function deleteSavedVerse(idx){
     const cur = ls('totry_sv') || [];
     cur.splice(idx, 0, removed);
     ls('totry_sv', cur);
+    // The delete tombstones now, so the undo has to revoke it or the next pull removes the verse
+    // again. Caught by the class-level guard the moment the tombstone was added, which is the whole
+    // reason that guard is written over the class and not over one call site.
+    try{ if(typeof tombstoneRevoke==='function' && typeof syncIdOf==='function') tombstoneRevoke('totry_sv', syncIdOf(removed)); }catch(_){ }
     renderSavedVersesEverywhere();
   });
 }
@@ -1467,6 +1477,9 @@ async function unsaveVerseFromReader(ref, onRestore){
       const cur = ls('totry_sv') || [];
       hits.forEach(function(h){ cur.splice(Math.min(h.i, cur.length), 0, h.v); });
       ls('totry_sv', cur);
+      // Same as the other saved-verse undo — revoke, or the pull undoes the restore.
+      try{ if(typeof tombstoneRevoke==='function' && typeof syncIdOf==='function'){
+        hits.forEach(function(h){ tombstoneRevoke('totry_sv', syncIdOf(h.v)); }); } }catch(_){ }
       renderSavedVersesEverywhere();
       try{ if(typeof onRestore === 'function') onRestore(); }catch(_){ }
     });
