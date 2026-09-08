@@ -66,6 +66,35 @@ fetched a development profile this time. This does NOT block TestFlight — Orga
 complains about signing, that is why, and the fix is to pick the distribution profile in the
 Organizer sheet rather than to re-archive.
 
+### The IPA is built, signed for distribution, and waiting
+
+`~/Library/Developer/Xcode/Archives/2026-09-09/ToTry-v596-build7.ipa` (2.2 MB). Exported from the
+archive with `-exportArchive`, method `app-store-connect`. Verified by unzipping it and reading
+the files, not by trusting the export log:
+
+| check | result |
+|---|---|
+| web bundle inside `Payload/ToTry.app` | **v596**, sha256 `99a4de4e84a5` — identical to source |
+| version / build | 1.0 / 7 |
+| signature | **`Apple Distribution: Alfred John (L4BD53PLVF)`** |
+
+Note the signature: the ARCHIVE was Apple Development, and the export re-signed it to Apple
+Distribution, which is exactly what was expected. Nothing about signing is outstanding.
+
+**One value is missing and it is the only thing standing between this file and TestFlight.**
+`~/.appstoreconnect/private_keys/AuthKey_49872NRTQS.p8` is on this machine; the **issuer ID** that
+pairs with it is not, and it cannot be derived from the key. Get it from App Store Connect →
+Users and Access → Integrations → App Store Connect API (it is a UUID at the top of the page),
+then either upload from the terminal:
+
+```
+xcrun altool --upload-app \
+  -f ~/Library/Developer/Xcode/Archives/2026-09-09/ToTry-v596-build7.ipa \
+  -t ios --apiKey 49872NRTQS --apiIssuer <YOUR-ISSUER-UUID>
+```
+
+...or skip the credential entirely and use the GUI, which signs you in with your Apple ID:
+
 **The path to a phone, in order:**
 1. Xcode → Window → Organizer → select `ToTry-v596` → **Distribute App** → App Store Connect →
    Upload. (`altool` cannot do this from the CLI here — the issuer ID is not on this machine.)
