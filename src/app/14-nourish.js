@@ -4086,14 +4086,21 @@ function renderNutritionLog(){
       const everLogged = Object.keys(log).some(k => (log[k]||[]).length) || (ls('totry_recent_foods')||[]).length;
       const hasGoals = !!(ls('totry_nut_goals')||{}).cal;
       if(!everLogged && !hasGoals){
-        // TRUE first-run only: no targets AND nothing ever logged. If targets already exist (even with
-        // nothing logged yet) we must NOT say "no targets to figure out" — the dashboard above shows them.
+        // TRUE first-run only: no targets AND nothing ever logged.
+        // THE GUARD IS NOT ENOUGH, AND THE ORIGINAL NOTE BELOW SHOWS SOMEONE ALREADY SENSED IT.
+        // `!hasGoals` means "no SAVED goals" — it does not mean "no numbers on screen". The hero above
+        // paints a generic 2100 cal ring and three goal bars for exactly this person, and the nudge at
+        // :5419 then calls that target "a generic starting point". Measured on v594 at 414x896: the ring
+        // (y186-521) and this card are on ONE screen together, so "no targets to figure out yet" denied
+        // something 344px above it. The copy now agrees with the ring instead of contradicting it.
+        // Original note, still true as far as it goes: if targets already exist (even with nothing
+        // logged yet) we must NOT say "no targets to figure out" — the dashboard above shows them.
         // First-ever use: don't confront them with a setup wall or a feature list. One warm,
         // low-pressure step. Goals can derive from real intake later — just log one thing.
         list.innerHTML='<div style="text-align:center;padding:22px 14px;line-height:1.6">'+
           '<div style="font-size:26px;margin-bottom:10px">🍽️</div>'+
           '<div style="font-size:15px;color:var(--tx);margin-bottom:6px">Let\'s start simple.</div>'+
-          '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">No setup, no targets to figure out yet. Just log one thing you ate today — we\'ll learn your rhythm from there.</div>'+
+          '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">Nothing to set up — the target above is only a starting point. Log one thing you ate today and we\'ll learn your rhythm from there.</div>'+
           '<button class="btn" style="width:auto;padding:10px 20px;font-size:13px" onclick="document.getElementById(&apos;nut-search-in&apos;)?.focus()">Log one thing</button>'+
           '</div>';
         _nutTailRenders(totals, goalCal);

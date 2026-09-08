@@ -42,10 +42,20 @@ function renderScoreboard(){
   const e=id=>document.getElementById(id);
   // The hero is how long they have been in this, not how many urges they beat — see the note in the
   // markup. Someone with a long fight and no clean day has still been fighting for that long.
-  // ELAPSED here, ordinal on the card. The card says "Day 301 of the fight" and this says "300 days
-  // in the fight" — the same relationship as an age and a birthday: you have lived 30 years and you
-  // are in your 31st. Each number is phrased to match what it counts, rather than one number wearing
-  // two labels.
+  //
+  // IT IS THE ORDINAL, and the "elapsed here, ordinal on the card / an age and a birthday" rule that
+  // used to sit here is withdrawn. That rule only holds while the two numbers wear DIFFERENT labels,
+  // and they do not: 40-identity-seasons.js:304 renames the .streak-card.sober tile to the exact words
+  // this hero uses, "Days in the fight", explicitly so "the two surfaces agree about what is being
+  // counted" — and that rename never reached here. Measured on v594, day one: the tile printed 1 and
+  // this hero printed 0 under the identical label. One quantity, one label, two answers.
+  // What a person met on the day they decided was an 80px green ZERO — the largest glyph in the tab,
+  // in the app's success colour — directly above "Every number here is a moment you chose who you're
+  // becoming." 31-nextstep.js:222 already records this app judging that exact shape a defect ("'0 days
+  // clean', sixty seconds after naming your first fight"). Day one is where everybody starts and where
+  // anybody who slips returns; it may not read zero.
+  // _fightMax stays ELAPSED because line 66 needs it: that comparison asks "has this person never
+  // slipped", a question about their history, not about which glyph is on screen.
   const _fightMax = (vices||[]).reduce((a,v) => {
     const since = (typeof viceFightingSince === 'function') ? viceFightingSince(v) : null;
     const elapsed = (since && typeof _calDaysSince === 'function') ? _calDaysSince(since) : 0;
@@ -53,8 +63,10 @@ function renderScoreboard(){
   }, 0);
   const _cameBack = (vices||[]).reduce((a,v) =>
     a + (typeof viceCameBack === 'function' ? viceCameBack(v) : 0), 0);
-  if(e('sc-total'))e('sc-total').textContent=_fightMax;
-  if(e('sc-total-lbl'))e('sc-total-lbl').textContent = _fightMax === 1 ? 'Day in the fight' : 'Days in the fight';
+  // No vices named at all means there is no fight to be on day one of — 0 is the honest answer there.
+  const _fightDay = (vices||[]).length ? _fightMax + 1 : 0;
+  if(e('sc-total'))e('sc-total').textContent=_fightDay;
+  if(e('sc-total-lbl'))e('sc-total-lbl').textContent = _fightDay === 1 ? 'Day in the fight' : 'Days in the fight';
   if(e('sc-rate'))e('sc-rate').textContent=_cameBack;      // came back, not a win rate
   if(e('sc-fought'))e('sc-fought').textContent=tw;         // urges actually met and turned away
   // For someone who has never slipped, the clean streak IS the length of the fight, so this tile

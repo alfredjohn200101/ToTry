@@ -5916,7 +5916,30 @@ H.section('a label says what its number is');
   // The tile counts the longest FIGHT. It was labelled "Days clean" (wrong), then "Days since day 0"
   // (also wrong — that is what the header on the same screen already shows), so it read 11 under a
   // header saying day 43 and looked like a contradiction.
-  H.ok(/textContent='Days in the fight'/.test(html), 'the fight tile is labelled for the fight');
+  H.ok(/'Day in the fight' : 'Days in the fight'/.test(html),
+    'the fight tile is labelled for the fight, singular on day one');
+
+  // ONE LABEL, ONE NUMBER. 40-identity-seasons.js:304 renamed the .streak-card.sober tile to
+  // "Days in the fight" explicitly so "the two surfaces agree about what is being counted" — and the
+  // rename never reached the Score hero, which carries the identical label from a different variable.
+  // Measured on v594, day one: the tile printed 1 and the hero printed 0. What a person met on the day
+  // they decided was an 80px green ZERO in the app's success colour, directly above "Every number here
+  // is a moment you chose who you're becoming." The hero now prints the ordinal, like the tile and like
+  // the vice card's "Day N of the fight". _fightMax stays elapsed because the tile-hiding test on the
+  // line below asks whether they have ever slipped, which is a question about history.
+  {
+    // Comment-stripped, so these cannot pass by matching the note above them — that has happened here
+    // before and is why H.code() exists.
+    const hab = H.code(html);
+    H.ok(/_fightDay\s*=\s*\(vices\|\|\[\]\)\.length\s*\?\s*_fightMax\s*\+\s*1\s*:\s*0/.test(hab),
+      'the Score hero counts the ordinal day of the fight, not elapsed days');
+    H.ok(/sc-total'\)\)e\('sc-total'\)\.textContent=_fightDay/.test(hab),
+      'and the hero renders that ordinal, not _fightMax');
+    H.ok(/_fightDay === 1 \? 'Day in the fight'/.test(hab),
+      'the hero says "Day in the fight" on day one');
+    H.ok(/\(str === _fightMax\)/.test(hab),
+      'the clean-streak tile still hides on elapsed — that test asks whether they ever slipped');
+  }
   H.ok(!/textContent='Days since day 0'/.test(html), 'not for days since day 0, which is a different number');
 }
 

@@ -871,6 +871,21 @@ body.sheet-open .milestone-toast{bottom:auto;top:calc(var(--st) + 12px)}
 .settings-group{margin-bottom:12px}
 .settings-group summary{cursor:pointer;padding:14px 16px;background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);font-size:14px;font-weight:500;color:var(--tx);list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:background 0.15s}
 .settings-group summary::-webkit-details-marker{display:none}
+/* EVERY <details> IN THE APP GETS THE SAME AFFORDANCE, and it is the one the app already had.
+   Before this, of 15 folds only the 8 .settings-group ones had a designed disclosure (the rotating
+   ▾ two rules above). Two user-facing folds — "How to export from MyFitnessPal" on Nourish and
+   "Start from a proven program" on Train — rendered the BROWSER'S OWN black ▶ triangle in the middle
+   of a designed app. Three more suppressed the marker and added nothing, so nothing on the row said
+   they opened at all: worst of these is the Nourish targets pill, 40px closed and 524px open, hiding
+   twelve controls behind a row with no affordance whatsoever.
+   Killing the marker alone would have MOVED the bug — a fold with neither a triangle nor a chevron is
+   worse than one with the wrong triangle — so the kill and the chevron are one rule set, deliberately
+   inseparable. The first draft of this fix invented a second idiom ("open ›") and had to be undone:
+   the app already owns ▾, and a second affordance for one job is the exact inconsistency being fixed. */
+details>summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px}
+details>summary::-webkit-details-marker{display:none}
+details>summary::after{content:'▾';color:var(--tx3);font-size:11px;flex:none;transition:transform 0.2s}
+details[open]>summary::after{transform:rotate(180deg)}
 .settings-group summary::after{content:'▾';color:var(--tx3);font-size:11px;transition:transform 0.2s}
 .settings-group[open] summary{background:var(--bg3);border-bottom-left-radius:0;border-bottom-right-radius:0}
 .settings-group[open] summary::after{transform:rotate(180deg)}
@@ -2756,8 +2771,12 @@ input:focus,textarea:focus,select:focus{
        exists to compensate for, which is the exact condition it was written to fix. It lives beside
        the target it is warning about, one line, above the day. -->
   <details id="nut-goals-details" style="margin-bottom:14px">
+    <!-- This pill is 40px closed and 524px open: it hides 12 controls (age, weight, height, sex,
+         activity, "Save my goals"). It suppressed the browser marker and never added an affordance of
+         its own, so nothing on the row told a person it opens at all — the worst of the two failures,
+         and the reason the marker-kill above could not ship on its own. -->
     <summary style="cursor:pointer;padding:12px;background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);font-family:DM Mono,monospace;font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.12em;list-style:none">
-      ⚙ Your target · goals & TDEE calculator
+      ⚙ Your target · goals &amp; TDEE calculator
     </summary>
     <div class="card" style="margin-top:8px">
       <div style="font-size:12px;color:var(--tx3);margin-bottom:8px;line-height:1.5">Already know your macros? Enter them directly. Leave carbs/fat blank if you only track calories + protein.</div>
@@ -3030,7 +3049,7 @@ input:focus,textarea:focus,select:focus{
          so Log stays clean; tap to plan your Mon–Sun split and build/assign routines. -->
     <details id="pt-weekly-split-details" style="margin-bottom:12px">
       <summary style="cursor:pointer;list-style:none;padding:12px 14px;background:var(--bg3);border:1px solid var(--bd);border-radius:11px;font-size:13px;color:var(--tx2);display:flex;justify-content:space-between;align-items:center">
-        <span>📅 Weekly split &amp; routines</span><span style="color:var(--tx3);font-size:11px">plan ›</span>
+        <span>📅 Weekly split &amp; routines</span>
       </summary>
       <div style="padding-top:12px">
         <div class="card" style="margin-bottom:14px">
@@ -3671,9 +3690,12 @@ input:focus,textarea:focus,select:focus{
   </div>
   </div>
   
-  <!-- Photo collage of past check-ins -->
+  <!-- Photo collage of past check-ins. The heading may NOT be "Progress photos": the card 75 lines
+       above (:3601) is already called that, and once a person has added a photo BOTH render inside one
+       414x896 viewport showing the same two photos — two cards, one name, no way to tell them apart.
+       This card's only unique job is the shareable side-by-side, so it is named for that. -->
   <div class="card" id="body-collage-card" style="margin-bottom:12px;display:none">
-    <div class="card-hd" style="margin-bottom:10px">Progress photos</div>
+    <div class="card-hd" style="margin-bottom:10px">Share your progress</div>
     <div id="body-collage" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px"></div>
     <button class="btn" onclick="exportBodyCollage()" style="margin-top:10px">&#128206; Share collage</button>
   </div>
@@ -5416,7 +5438,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v594';
+const APP_VERSION = 'v595';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -21440,10 +21462,20 @@ function renderScoreboard(){
   const e=id=>document.getElementById(id);
   // The hero is how long they have been in this, not how many urges they beat — see the note in the
   // markup. Someone with a long fight and no clean day has still been fighting for that long.
-  // ELAPSED here, ordinal on the card. The card says "Day 301 of the fight" and this says "300 days
-  // in the fight" — the same relationship as an age and a birthday: you have lived 30 years and you
-  // are in your 31st. Each number is phrased to match what it counts, rather than one number wearing
-  // two labels.
+  //
+  // IT IS THE ORDINAL, and the "elapsed here, ordinal on the card / an age and a birthday" rule that
+  // used to sit here is withdrawn. That rule only holds while the two numbers wear DIFFERENT labels,
+  // and they do not: 40-identity-seasons.js:304 renames the .streak-card.sober tile to the exact words
+  // this hero uses, "Days in the fight", explicitly so "the two surfaces agree about what is being
+  // counted" — and that rename never reached here. Measured on v594, day one: the tile printed 1 and
+  // this hero printed 0 under the identical label. One quantity, one label, two answers.
+  // What a person met on the day they decided was an 80px green ZERO — the largest glyph in the tab,
+  // in the app's success colour — directly above "Every number here is a moment you chose who you're
+  // becoming." 31-nextstep.js:222 already records this app judging that exact shape a defect ("'0 days
+  // clean', sixty seconds after naming your first fight"). Day one is where everybody starts and where
+  // anybody who slips returns; it may not read zero.
+  // _fightMax stays ELAPSED because line 66 needs it: that comparison asks "has this person never
+  // slipped", a question about their history, not about which glyph is on screen.
   const _fightMax = (vices||[]).reduce((a,v) => {
     const since = (typeof viceFightingSince === 'function') ? viceFightingSince(v) : null;
     const elapsed = (since && typeof _calDaysSince === 'function') ? _calDaysSince(since) : 0;
@@ -21451,8 +21483,10 @@ function renderScoreboard(){
   }, 0);
   const _cameBack = (vices||[]).reduce((a,v) =>
     a + (typeof viceCameBack === 'function' ? viceCameBack(v) : 0), 0);
-  if(e('sc-total'))e('sc-total').textContent=_fightMax;
-  if(e('sc-total-lbl'))e('sc-total-lbl').textContent = _fightMax === 1 ? 'Day in the fight' : 'Days in the fight';
+  // No vices named at all means there is no fight to be on day one of — 0 is the honest answer there.
+  const _fightDay = (vices||[]).length ? _fightMax + 1 : 0;
+  if(e('sc-total'))e('sc-total').textContent=_fightDay;
+  if(e('sc-total-lbl'))e('sc-total-lbl').textContent = _fightDay === 1 ? 'Day in the fight' : 'Days in the fight';
   if(e('sc-rate'))e('sc-rate').textContent=_cameBack;      // came back, not a win rate
   if(e('sc-fought'))e('sc-fought').textContent=tw;         // urges actually met and turned away
   // For someone who has never slipped, the clean streak IS the length of the fight, so this tile
@@ -29498,14 +29532,21 @@ function renderNutritionLog(){
       const everLogged = Object.keys(log).some(k => (log[k]||[]).length) || (ls('totry_recent_foods')||[]).length;
       const hasGoals = !!(ls('totry_nut_goals')||{}).cal;
       if(!everLogged && !hasGoals){
-        // TRUE first-run only: no targets AND nothing ever logged. If targets already exist (even with
-        // nothing logged yet) we must NOT say "no targets to figure out" — the dashboard above shows them.
+        // TRUE first-run only: no targets AND nothing ever logged.
+        // THE GUARD IS NOT ENOUGH, AND THE ORIGINAL NOTE BELOW SHOWS SOMEONE ALREADY SENSED IT.
+        // `!hasGoals` means "no SAVED goals" — it does not mean "no numbers on screen". The hero above
+        // paints a generic 2100 cal ring and three goal bars for exactly this person, and the nudge at
+        // :5419 then calls that target "a generic starting point". Measured on v594 at 414x896: the ring
+        // (y186-521) and this card are on ONE screen together, so "no targets to figure out yet" denied
+        // something 344px above it. The copy now agrees with the ring instead of contradicting it.
+        // Original note, still true as far as it goes: if targets already exist (even with nothing
+        // logged yet) we must NOT say "no targets to figure out" — the dashboard above shows them.
         // First-ever use: don't confront them with a setup wall or a feature list. One warm,
         // low-pressure step. Goals can derive from real intake later — just log one thing.
         list.innerHTML='<div style="text-align:center;padding:22px 14px;line-height:1.6">'+
           '<div style="font-size:26px;margin-bottom:10px">🍽️</div>'+
           '<div style="font-size:15px;color:var(--tx);margin-bottom:6px">Let\'s start simple.</div>'+
-          '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">No setup, no targets to figure out yet. Just log one thing you ate today — we\'ll learn your rhythm from there.</div>'+
+          '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">Nothing to set up — the target above is only a starting point. Log one thing you ate today and we\'ll learn your rhythm from there.</div>'+
           '<button class="btn" style="width:auto;padding:10px 20px;font-size:13px" onclick="document.getElementById(&apos;nut-search-in&apos;)?.focus()">Log one thing</button>'+
           '</div>';
         _nutTailRenders(totals, goalCal);
@@ -50976,7 +51017,16 @@ function renderDualStreaks(){
   // 11 under a header saying day 43 and the two looked like a contradiction. The number is the
   // longest FIGHT. Name that, in the same words the vice card uses ("Day N of the fight"), so the
   // two surfaces agree about what is being counted.
-  try{ const ss=document.querySelector('.streak-card.sober .streak-sub'); if(ss) ss.textContent='Days in the fight'; }catch(_){}
+  // Singular on day one. This label was hardcoded plural, so the tile read "1 / Days in the fight" on
+  // the one day everybody starts — the "1 days clean" shape this project names as the sentence it says
+  // most. Read the number the tile is actually showing rather than recomputing it, so the two can
+  // never drift apart again.
+  try{
+    const ss=document.querySelector('.streak-card.sober .streak-sub');
+    const sn=document.querySelector('.streak-card.sober .streak-num');
+    const _n=sn?parseInt((sn.textContent||'').trim(),10):NaN;
+    if(ss) ss.textContent = (_n===1) ? 'Day in the fight' : 'Days in the fight';
+  }catch(_){}
 }
 
 // The number this explains is called "Days in the fight" on every screen — the header chip, the

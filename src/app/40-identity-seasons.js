@@ -301,7 +301,16 @@ function renderDualStreaks(){
   // 11 under a header saying day 43 and the two looked like a contradiction. The number is the
   // longest FIGHT. Name that, in the same words the vice card uses ("Day N of the fight"), so the
   // two surfaces agree about what is being counted.
-  try{ const ss=document.querySelector('.streak-card.sober .streak-sub'); if(ss) ss.textContent='Days in the fight'; }catch(_){}
+  // Singular on day one. This label was hardcoded plural, so the tile read "1 / Days in the fight" on
+  // the one day everybody starts — the "1 days clean" shape this project names as the sentence it says
+  // most. Read the number the tile is actually showing rather than recomputing it, so the two can
+  // never drift apart again.
+  try{
+    const ss=document.querySelector('.streak-card.sober .streak-sub');
+    const sn=document.querySelector('.streak-card.sober .streak-num');
+    const _n=sn?parseInt((sn.textContent||'').trim(),10):NaN;
+    if(ss) ss.textContent = (_n===1) ? 'Day in the fight' : 'Days in the fight';
+  }catch(_){}
 }
 
 // The number this explains is called "Days in the fight" on every screen — the header chip, the

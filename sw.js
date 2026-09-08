@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v594-buttons-never-inherit-the-font'
+const CACHE = 'totry-v595-day-one-may-not-read-zero'
 
 const CORE = [
   './',
