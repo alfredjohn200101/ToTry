@@ -44,7 +44,31 @@ Verified in the actual shipping bundle, not just the repo:
 
 ---
 
-## ✅ BUILD 6 ARCHIVED — 8 Sep 2026 — **v593, and this is the one to upload**
+## ⛔ BUILD 6 IS NOW STALE — DO NOT UPLOAD IT. RE-ARCHIVE AS BUILD 7 AT v596.
+
+Build 6 archived cleanly and everything in the table below is still true OF THAT ARCHIVE — it is
+simply three releases behind now. It holds **v593**, and v594/v595/v596 each fixed something a
+person meets:
+
+- **v594** — Settings → Height was DEAD (no handler compiled; 180cm saved nothing, and BMI reads
+  that value) and printed its own JavaScript on screen; 103 of 402 controls rendered in Arial;
+  the light theme painted every progress track near-black; the coach's purple failed AA in BOTH
+  themes; a person mid-urge could be told to "Check Supabase secrets (GEMINI_API_KEY…)".
+- **v595** — Fight → Score showed an 80px green "0" on the day somebody decides, above "Every
+  number here is a moment you chose who you're becoming"; a fold hiding twelve controls had no
+  affordance at all; Nourish denied its own on-screen targets; two cards shared one name.
+- **v596** — SOS phase 4 told a person mid-urge "Your coach is here" twice, the second time as a
+  loading state inside an empty box.
+
+Shipping build 6 ships all of those. To re-archive: set `CURRENT_PROJECT_VERSION = 7` in
+`ios/App/App.xcodeproj/project.pbxproj` (App Store Connect rejects a build number it has seen —
+it already holds 4, 5 and now 6), run `npm run preflight` until it says *ready to archive*, then
+archive. Verify the new archive the same way the table below was verified: read the web bundle
+out of the .app and check it says v596, rather than trusting the project settings.
+
+<details><summary>The build 6 record, kept because its verification method is the one to repeat</summary>
+
+### BUILD 6 ARCHIVED — 8 Sep 2026 — v593
 
 `~/Library/Developer/Xcode/Archives/2026-09-08/ToTry-v593.xcarchive`, version 1.0, **build 6**,
 signed *Apple Distribution: Alfred John (L4BD53PLVF)*. Archived with `xcodebuild archive
@@ -60,6 +84,8 @@ binary rather than the project settings:
 | architecture | `arm64` only, no simulator slice |
 | `ITSAppUsesNonExemptEncryption` | `false` — the export-compliance question is not asked |
 | launches | verified: built for the simulator from the same source, boots in ~2.8s, Home renders, navigation works |
+
+</details>
 
 ### ⚠️ DO NOT SUBMIT OR PROMOTE BUILD 5
 
