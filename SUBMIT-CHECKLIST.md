@@ -44,7 +44,44 @@ Verified in the actual shipping bundle, not just the repo:
 
 ---
 
-## ⛔ BUILD 6 IS NOW STALE — DO NOT UPLOAD IT. RE-ARCHIVE AS BUILD 7 AT v596.
+## ✅ BUILD 7 ARCHIVED — 9 Sep 2026 — **v596, this is the one to upload**
+
+`~/Library/Developer/Xcode/Archives/2026-09-09/ToTry-v596.xcarchive`, version 1.0, **build 7**.
+Verified from the BINARY, not the project settings — that is the check that caught build 6 being
+three releases stale, so repeat it on every archive:
+
+| check | result |
+|---|---|
+| web bundle inside `ToTry.app` | **v596**, sha256 `99a4de4e84a5` — byte-identical to `www/index.html` |
+| version / build | 1.0 / **7** (App Store Connect holds 4, 5, 6) |
+| `PrivacyInfo.xcprivacy` | present inside the .app |
+| usage descriptions | 7 |
+| architecture | `arm64` only, no simulator slice |
+| `ITSAppUsesNonExemptEncryption` | `false` — the export-compliance question is not asked |
+| signing | **`Apple Development: Alfred John (UU43JTL72J)`, team L4BD53PLVF** |
+
+⚠️ **The signing differs from build 6**, which was `Apple Distribution`. `-allowProvisioningUpdates`
+fetched a development profile this time. This does NOT block TestFlight — Organizer's
+*Distribute App → App Store Connect* re-signs with the distribution certificate — but if that step
+complains about signing, that is why, and the fix is to pick the distribution profile in the
+Organizer sheet rather than to re-archive.
+
+**The path to a phone, in order:**
+1. Xcode → Window → Organizer → select `ToTry-v596` → **Distribute App** → App Store Connect →
+   Upload. (`altool` cannot do this from the CLI here — the issuer ID is not on this machine.)
+2. App Store Connect → TestFlight → wait for processing → add yourself as an internal tester.
+3. Install TestFlight on the iPhone and accept the invite.
+4. **The four things only real hardware can answer**: barcode scanning, Face ID, haptics,
+   notifications. Everything else has been verified in the browser gate.
+
+Faster alternative if you only want it on your own phone TODAY, skipping App Store Connect:
+plug the iPhone in, open `ios/App/App.xcodeproj`, pick the device in the toolbar, Product ▸ Run,
+and click **Register** when Xcode offers to add the device. That installs the same v596 build
+directly. It needs your hands — device registration cannot be scripted from here.
+
+<details><summary>Build 6 (v593) — superseded, DO NOT UPLOAD</summary>
+
+### ⛔ BUILD 6 IS STALE — v593, three releases behind
 
 Build 6 archived cleanly and everything in the table below is still true OF THAT ARCHIVE — it is
 simply three releases behind now. It holds **v593**, and v594/v595/v596 each fixed something a
@@ -66,9 +103,6 @@ it already holds 4, 5 and now 6), run `npm run preflight` until it says *ready t
 archive. Verify the new archive the same way the table below was verified: read the web bundle
 out of the .app and check it says v596, rather than trusting the project settings.
 
-<details><summary>The build 6 record, kept because its verification method is the one to repeat</summary>
-
-### BUILD 6 ARCHIVED — 8 Sep 2026 — v593
 
 `~/Library/Developer/Xcode/Archives/2026-09-08/ToTry-v593.xcarchive`, version 1.0, **build 6**,
 signed *Apple Distribution: Alfred John (L4BD53PLVF)*. Archived with `xcodebuild archive
