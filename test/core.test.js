@@ -5940,6 +5940,31 @@ H.section('a label says what its number is');
     H.ok(/\(str === _fightMax\)/.test(hab),
       'the clean-streak tile still hides on elapsed — that test asks whether they ever slipped');
   }
+
+  // A WAITING STATE MAY NOT CLAIM THE THING IT IS WAITING FOR — and may not repeat the heading above
+  // it. SOS phase 4 is the live-urge screen. Its heading reads "Your coach is here"; goSosCoach()
+  // then filled the box below with "Your coach is here..." in a pulsing, EMPTY box, so a person in
+  // the middle of a compulsion read the same sentence twice, 29px apart, the second time telling them
+  // the help had arrived while nothing had — for the whole round trip on a good connection and up to
+  // api()'s 30s ceiling on a bad one, with "Close" and "I gave in" 75px below. The static markup
+  // already carried the right line in the app's designed loading voice ("Getting your coach…",
+  // Cormorant italic); the overwrite threw it away one line in, so nobody ever saw it. The overwrite
+  // stays — it resets the box on re-entry — but its sentence may never echo the label.
+  {
+    const code = H.code(html);
+    const m = code.match(/goSosCoach[\s\S]{0,900}?sos-coach-box[\s\S]{0,400}?innerHTML\s*=\s*'([^']*)'/);
+    H.ok(!!m, 'goSosCoach still writes the SOS coach box (if this fails the check has lost its subject)');
+    if (m) {
+      const waiting = m[1].replace(/<[^>]*>/g, '').trim();
+      const label = (code.match(/class="sos-phase-lbl">Your coach is here</) ? 'Your coach is here' : null);
+      H.ok(label !== null, 'the SOS phase-4 heading is still "Your coach is here"');
+      const norm = t => t.toLowerCase().replace(/[^a-z]/g, '');
+      H.ok(label === null || norm(waiting) !== norm(label),
+        `the SOS coach waiting line does not repeat the heading above it (reads "${waiting}")`);
+      H.ok(/Cormorant/.test(m[1]),
+        'and it waits in the app’s own loading voice, not the body face');
+    }
+  }
   H.ok(!/textContent='Days since day 0'/.test(html), 'not for days since day 0, which is a different number');
 }
 

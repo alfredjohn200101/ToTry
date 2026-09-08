@@ -2046,7 +2046,16 @@ async function goSosCoach(){
   loadV();
   const v=vices[curVice]||{};
   const box=document.getElementById('sos-coach-box');
-  if(box)box.innerHTML='<span class="pulsing" style="font-style:italic;color:var(--tx3)">Your coach is here...</span>';
+  // THE HEADING 29px ABOVE THIS ALREADY SAYS "Your coach is here" (shell-head.html:4781), so the old
+  // line here made a person in the middle of an urge read the same sentence twice — the second time
+  // inside an EMPTY pulsing box, telling them the help had arrived while nothing had. That is on
+  // screen for the whole round trip on a healthy connection, and up to api()'s 30s ceiling on a bad
+  // one, with "Close" and "I gave in" 75px below. The static markup at :4782 already carried the
+  // right line, in the app's designed loading voice (Cormorant italic, the same treatment every other
+  // wait uses) — this overwrite threw it away one line in, so no real person ever saw it. The
+  // overwrite itself has to stay: it resets the box when someone re-enters phase 4 after a previous
+  // answer. Only the sentence and the typeface were wrong.
+  if(box)box.innerHTML='<div class="pulsing" style="font-family:Cormorant Garamond,serif;font-size:16px;font-style:italic;color:var(--tx3)">Getting your coach...</div>';
   
   const cleanDays=viceCleanDays(v);
   const why=ls('totry_why')||'';
