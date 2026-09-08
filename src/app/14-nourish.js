@@ -1428,7 +1428,7 @@ function _renderPhotoMeal(){
           '<input id="pm-e-fat" type="number" inputmode="numeric" value="'+R(it.fat*m)+'" placeholder="F" style="flex:1;min-width:0;padding:9px;font-size:16px">'+
         '</div>'+
         '<div style="display:flex;gap:6px">'+
-          '<button onclick="_pmSaveEdit('+i+')" class="btn primary" style="flex:1;padding:9px;font-size:12px;margin:0">Save</button>'+
+          '<button onclick="_pmSaveEdit('+i+')" class="btn primary" style="flex:1;padding:9px;font-size:12px;margin:0">Save item</button>'+
           '<button onclick="_pmCancelEdit()" class="btn" style="flex:1;padding:9px;font-size:12px;margin:0;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Cancel</button>'+
         '</div>'+
       '</div>';
@@ -5356,7 +5356,7 @@ function showLowCalorieCare(){
   m.innerHTML = '<div class="modal">' +
     '<div class="modal-handle"></div>' +
     '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:10px;line-height:1.3">A gentle word, friend.</div>' +
-    '<p style="font-size:14px;color:var(--tx2);line-height:1.7;margin-bottom:12px">That goal is quite low — lower than what most bodies need to function and recover well. You know yourself best, and this stays your choice. But this app exists to help you become more, not less, and I\'d be failing you if I didn\'t say that out loud.</p>' +
+    '<p style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:12px">That goal is quite low — lower than what most bodies need to function and recover well. You know yourself best, and this stays your choice. But this app exists to help you become more, not less, and I\'d be failing you if I didn\'t say that out loud.</p>' +
     '<p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">If food or your body feels like a hard place right now, you don\'t have to carry that alone. Talking to a doctor or a trained, caring person can change everything — that\'s strength, not weakness.</p>' +
     '<button class="btn primary" onclick="closeModal(this)" style="margin-bottom:8px">I hear you</button>' +
     '<button class="btn" onclick="showEDSupport()" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Find support</button>' +
@@ -5374,7 +5374,7 @@ function showEDSupport(){
     '<p style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">You reaching out is a real act of courage. These people are trained to help with food, body image, and eating struggles — with kindness, not judgment.</p>' +
     '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:10px">' +
       '<div style="font-size:14px;color:var(--tx);margin-bottom:4px">Butterfly Foundation (Australia)</div>' +
-      '<div style="font-size:13px"><a href="tel:1800334673" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">1800 33 4673</a></div>' +
+      '<div style="font-size:18px;margin-top:2px"><a href="tel:1800334673" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">1800 33 4673</a></div>' +
       '<div style="font-size:11px;color:var(--tx3);margin-top:4px">National ED helpline · phone, chat, email</div>' +
     '</div>' +
     '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:10px">' +
@@ -5383,7 +5383,7 @@ function showEDSupport(){
     '</div>' +
     '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px">' +
       '<div style="font-size:14px;color:var(--tx);margin-bottom:4px">Lifeline (if in crisis)</div>' +
-      '<div style="font-size:13px"><a href="tel:131114" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">13 11 14</a></div>' +
+      '<div style="font-size:18px;margin-top:2px"><a href="tel:131114" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">13 11 14</a></div>' +
       '<div style="font-size:11px;color:var(--tx3);margin-top:4px">24/7 crisis support</div>' +
     '</div>' +
     '<button class="btn primary" onclick="closeModal(this)">Close</button>' +

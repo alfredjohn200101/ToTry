@@ -192,6 +192,7 @@ button[onclick^="deleteTransaction("],button[onclick^="deleteSubscription("],but
 .met .mv{font-family:'Outfit',sans-serif;font-size:22px;font-weight:500;color:var(--tx);line-height:1;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;letter-spacing:-0.01em}
 .met .mv.g{color:var(--gr)}.met .mv.r{color:var(--re)}.met .mv.au{color:var(--go)}.met .mv.bl{color:var(--bl)}
 .divider{height:1px;background:var(--bd);margin:12px 0}
+button{font-family:'Outfit',sans-serif}  /* A <button> does NOT inherit font-family from body: the UA stylesheet sets its own, so every button whose class did not name a family rendered in Arial while the app around it was Outfit. Measured 6 Sep 2026 across the five tabs and all 101 sheet openers: 103 of 402 visible controls were Arial, including "Still clean" — the most-pressed button in the Fight — the mood buttons, the fuel chips and every control in the Companion. Element specificity (0,0,1), so every class that already names a family (.btn, .qb, .vchip, .nb, .vice-btn, .meal-chip, .sos-loc-btn) and every `font-family:inherit` rule still wins; this only catches the ones that named nothing. Do not delete it because "body already says Outfit" — body does, and buttons do not listen. */
 input,textarea,select{font-family:'Outfit',sans-serif;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);color:var(--tx);font-size:16px;padding:10px 12px;width:100%;outline:none;transition:border-color 0.2s}  /* 16px, NOT 13px: any text field under 16px makes iOS auto-zoom the page on focus. This sat at 13px and was harmless only because an identical-specificity rule 845 lines later (:1002) re-set it to 16px. Move, reorder or delete that rule and every input in the app silently starts zooming — the exact class of latent bug that hid .set-input at 12px until v426. One source of truth instead of a landmine. */
 input:focus,textarea:focus{border-color:var(--go-bd)}
 input::placeholder,textarea::placeholder{color:var(--tx3)}
@@ -877,7 +878,11 @@ body.sheet-open .milestone-toast{bottom:auto;top:calc(var(--st) + 12px)}
 .settings-group[open] .card:first-of-type{margin-top:0;border-top-left-radius:0;border-top-right-radius:0;border-top:none}
 .crisis-title{font-size:14px;font-weight:600;color:var(--re);margin-bottom:8px}
 .crisis-line{font-size:13px;color:var(--tx);margin-bottom:4px;line-height:1.5}
-.crisis-line a{color:var(--bl);text-decoration:none}
+.crisis-line a{color:var(--go);text-decoration:none}  /* GOLD, like the other 16. The app's most
+   important element was two colours depending on where you met it: every tel: link in the app
+   names var(--go) inline (16 of them, including the pre-sign-in gate and the ED support sheet),
+   and only the safety-net card inherited this rule's blue. Same numbers, same purpose, two inks.
+   Gold is the app's "reach for this" accent and it is the majority; the minority moved. */
 /* ── DEBT STRATEGY ── */
 .strategy-card{border-radius:var(--rs);padding:12px 14px;margin-bottom:8px;cursor:pointer;border:2px solid var(--bd)}
 .strategy-card.active{border-color:var(--go-bd);background:var(--go-bg)}
@@ -996,11 +1001,11 @@ body.sheet-open .milestone-toast{bottom:auto;top:calc(var(--st) + 12px)}
 .app.sabbath-mode .met .mv{opacity:0.7}
 .sabbath-prayer-card{display:none;background:linear-gradient(135deg,rgba(140,107,182,0.1),rgba(200,169,110,0.05));border:1px solid rgba(140,107,182,0.3);border-radius:var(--r);padding:16px;margin-bottom:14px;text-align:center}
 .app.sabbath-mode .sabbath-prayer-card{display:block}
-.sabbath-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:400;color:#8C6BB6;margin-bottom:8px}
+.sabbath-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:400;color:var(--pu);margin-bottom:8px}
 .sabbath-text{font-family:'Cormorant Garamond',serif;font-size:14px;font-style:italic;color:var(--tx2);line-height:1.7}
 
 .see-prompt{background:var(--bg3);border:1px solid rgba(140,107,182,0.3);border-radius:var(--rs);padding:12px 14px;margin-bottom:10px}
-.see-q{font-size:12px;color:#8C6BB6;font-style:italic;line-height:1.5;margin-bottom:8px}
+.see-q{font-size:12px;color:var(--pu);font-style:italic;line-height:1.5;margin-bottom:8px}
 
 
 /* Modal centering — single canonical rule.
@@ -1097,20 +1102,31 @@ a[href^="tel:"]{display:inline-block;padding:5px 6px;margin:1px -2px;min-height:
 /* ── PASS 4: THE PREMIUM LAYER ── */
 /* Staggered card entrance — when a tab opens, its cards rise in sequence rather than
    all snapping in at once. This is the single biggest "feels like a real app" cue. */
+/* MEASURED 8 Sep 2026: this fired on 3 of the 25 top-level children across the five tabs — none at
+   all on Today, Fight or Money. The selector only ever reached a card that is a DIRECT child of the
+   tab, and the app grew a wrapper element layer underneath it years ago, so the "single biggest cue"
+   above was, on most of the app, doing nothing. One level of nesting added. `both` holds the first
+   frame, so anything matched here starts at opacity 0 — every matched card is re-measured at rest
+   in `npm run panels` ("the entrance"), because a selector that matches something which never
+   animates leaves that thing INVISIBLE, which is far worse than no animation at all. */
 .tab.active > .card,
 .tab.active > .lbl,
 .tab.active > .hub-grid,
-.tab.active > [class*="card"]{
+.tab.active > [class*="card"],
+.tab.active > div > .card,
+.tab.active > div > .lbl,
+.tab.active > div > .hub-grid,
+.tab.active > div > [class*="card"]{
   animation:cardRise 0.42s cubic-bezier(0.22,1,0.36,1) both;
 }
 @keyframes cardRise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-.tab.active > *:nth-child(1){animation-delay:0.02s}
-.tab.active > *:nth-child(2){animation-delay:0.06s}
-.tab.active > *:nth-child(3){animation-delay:0.10s}
-.tab.active > *:nth-child(4){animation-delay:0.14s}
-.tab.active > *:nth-child(5){animation-delay:0.18s}
-.tab.active > *:nth-child(6){animation-delay:0.22s}
-.tab.active > *:nth-child(n+7){animation-delay:0.24s}
+.tab.active > *:nth-child(1),.tab.active > div > *:nth-child(1){animation-delay:0.02s}
+.tab.active > *:nth-child(2),.tab.active > div > *:nth-child(2){animation-delay:0.06s}
+.tab.active > *:nth-child(3),.tab.active > div > *:nth-child(3){animation-delay:0.10s}
+.tab.active > *:nth-child(4),.tab.active > div > *:nth-child(4){animation-delay:0.14s}
+.tab.active > *:nth-child(5),.tab.active > div > *:nth-child(5){animation-delay:0.18s}
+.tab.active > *:nth-child(6),.tab.active > div > *:nth-child(6){animation-delay:0.22s}
+.tab.active > *:nth-child(n+7),.tab.active > div > *:nth-child(n+7){animation-delay:0.24s}
 
 /* Tappable surfaces feel responsive — gentle press on any card/button/hub */
 .hub-card,.food-result,.setting-row button,.btn{transition:transform 0.12s cubic-bezier(0.34,1.56,0.64,1),opacity 0.15s ease,border-color 0.2s ease,background 0.2s ease}
@@ -1154,7 +1170,7 @@ a[href^="sms:"], .crisis-line a, .crisis-card a, .crisis-links a{
 body{position:fixed;inset:0;width:100%}
 .tab{scroll-padding-bottom:220px}
 .tab{overscroll-behavior:contain}
-.tab.active > *:nth-child(n+6){animation:none !important}
+.tab.active > *:nth-child(n+6),.tab.active > div > *:nth-child(n+6){animation:none !important}
 .hdr{padding-top:max(10px, env(safe-area-inset-top))}
 
 /* Honour reduced-motion preference — accessibility */
@@ -1527,7 +1543,7 @@ input:focus,textarea:focus,select:focus{
   <!-- WHAT IT IS — instant "I get it" for a brand-new user, before asking anything -->
   <div class="ob-step" id="ob-what">
     <div class="ob-title" style="margin-bottom:6px">One life, to tend well.</div>
-    <div class="ob-desc" style="margin-bottom:20px">You've been given a whole life to look after — not one corner of it. ToTry holds all of it in one place, with a coach who sees how it connects. These are the parts you'll tend:</div>
+    <div class="ob-desc" style="margin-bottom:20px">You’ve been given a whole life to look after — not one corner of it. ToTry holds all of it in one place, with a coach who sees how it connects. These are the parts you’ll tend:</div>
     <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px">
       <div style="display:flex;gap:12px;align-items:flex-start">
         <div style="font-size:20px;flex-shrink:0;width:28px;text-align:center">🛡️</div>
@@ -1539,7 +1555,7 @@ input:focus,textarea:focus,select:focus{
       </div>
       <div style="display:flex;gap:12px;align-items:flex-start">
         <div style="font-size:20px;flex-shrink:0;width:28px;text-align:center">💰</div>
-        <div><div style="font-size:14px;color:var(--tx);font-weight:500">Your money</div><div style="font-size:12px;color:var(--tx3);line-height:1.5">Steward what you've been given — debt, and what your discipline reclaims.</div></div>
+        <div><div style="font-size:14px;color:var(--tx);font-weight:500">Your money</div><div style="font-size:12px;color:var(--tx3);line-height:1.5">Steward what you’ve been given — debt, and what your discipline reclaims.</div></div>
       </div>
       <div style="display:flex;gap:12px;align-items:flex-start">
         <div style="font-size:20px;flex-shrink:0;width:28px;text-align:center">🙏</div>
@@ -1550,10 +1566,10 @@ input:focus,textarea:focus,select:focus{
         <div><div style="font-size:14px;color:var(--tx);font-weight:500">One coach who sees all of it</div><div style="font-size:12px;color:var(--tx3);line-height:1.5">Not five apps — one that remembers your whole story and speaks to it.</div></div>
       </div>
     </div>
-    <button class="btn primary" onclick="obNextToApps()">I'm in &#8594;</button>
+    <button class="btn primary" onclick="obNextToApps()">I’m in &#8594;</button>
   </div>
   <div class="ob-step" id="ob2">
-    <div class="ob-title">What's your name?</div>
+    <div class="ob-title">What’s your name?</div>
     <div class="ob-desc">This app speaks to you personally, not generically.</div>
     <input type="text" id="ob-name" placeholder="Your first name..." style="margin-bottom:20px;font-size:18px;text-align:center;padding:14px" autocomplete="given-name">
     <button class="btn primary" onclick="obNextToMoment()">Continue &#8594;</button>
@@ -1634,33 +1650,33 @@ input:focus,textarea:focus,select:focus{
   <div class="ob-step" id="ob3">
     <div class="ob-title">I am becoming a person who...</div>
     <div class="ob-desc">Complete this sentence. This is your identity. It guides every choice from now on. You can change it anytime.</div>
-    <textarea id="ob-identity" placeholder="...keeps their promises&#10;...isn't ruled by what tempts them&#10;...loves without needing to be loved back&#10;...shows up even when it's hard" style="height:100px;resize:none;margin-bottom:10px;font-size:16px;line-height:1.6"></textarea>
-    <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Don't know yet? Tap to use:</div>
+    <textarea id="ob-identity" placeholder="...keeps their promises&#10;...isn’t ruled by what tempts them&#10;...loves without needing to be loved back&#10;...shows up even when it’s hard" style="height:100px;resize:none;margin-bottom:10px;font-size:16px;line-height:1.6"></textarea>
+    <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Don’t know yet? Tap to use:</div>
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
       <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillIdentity('keeps their promises, even to themselves')">Keeps their promises, even to themselves</button>
       <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillIdentity('is not ruled by what tempts them')">Is not ruled by what tempts them</button>
-      <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillIdentity('shows up even when it\\'s hard')">Shows up even when it's hard</button>
+      <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillIdentity('shows up even when it\\'s hard')">Shows up even when it’s hard</button>
       <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillIdentity('lives with discipline and love')">Lives with discipline and love</button>
       <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillIdentity('walks with God and gets things done')">Walks with God and gets things done</button>
       <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillIdentity('is becoming who they were meant to be')">Is becoming who they were meant to be</button>
     </div>
     <button class="btn primary" onclick="obNextToWhy()">Continue &#8594;</button>
-    <button class="btn" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:4px" onclick="obQuickFinish()">I'll do this later</button>
+    <button class="btn" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:4px" onclick="obQuickFinish()">I’ll do this later</button>
   </div>
   <!-- WHY STEP - emotional anchor -->
   <div class="ob-step" id="ob-why">
     <div class="ob-title">Why does this matter?</div>
-    <div class="ob-desc">When it gets hard &mdash; and it will &mdash; this is what you'll come back to. Who are you doing this for?</div>
-    <textarea id="ob-why-text" placeholder="For my future family...&#10;For the person I know I can be...&#10;Because I'm tired of letting myself down...&#10;For something bigger than myself..." style="height:110px;resize:none;margin-bottom:10px;font-size:16px;line-height:1.6"></textarea>
+    <div class="ob-desc">When it gets hard &mdash; and it will &mdash; this is what you’ll come back to. Who are you doing this for?</div>
+    <textarea id="ob-why-text" placeholder="For my future family...&#10;For the person I know I can be...&#10;Because I’m tired of letting myself down...&#10;For something bigger than myself..." style="height:110px;resize:none;margin-bottom:10px;font-size:16px;line-height:1.6"></textarea>
     <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Or tap one to start:</div>
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
       <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillWhy('For the people I love, who deserve the best version of me')">For the people I love</button>
-      <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillWhy('Because I am tired of letting myself down')">I'm tired of letting myself down</button>
+      <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillWhy('Because I am tired of letting myself down')">I’m tired of letting myself down</button>
       <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillWhy('To live up to what I believe in')">To live up to what I believe in</button>
       <button class="btn" style="text-align:left;padding:10px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="fillWhy('For my future self, who is counting on me right now')">For my future self</button>
     </div>
     <button class="btn primary" onclick="finishWhyStep()">Continue &#8594;</button>
-    <button class="btn" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:4px" onclick="obQuickFinish()">I'll do this later</button>
+    <button class="btn" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:4px" onclick="obQuickFinish()">I’ll do this later</button>
   </div>
   <div class="ob-step" id="ob-faith">
     <div class="ob-title">What&rsquo;s your path?</div>
@@ -1675,7 +1691,7 @@ input:focus,textarea:focus,select:focus{
   </div>
   <div class="ob-step" id="ob4">
     <div class="ob-title">What season are you in?</div>
-    <div class="ob-desc">Life isn't linear. The app speaks to you differently depending on where you actually are.</div>
+    <div class="ob-desc">Life isn’t linear. The app speaks to you differently depending on where you actually are.</div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
       <div class="season-chip on" data-season="Fighting" onclick="selectObSeason(this)">
         <div class="sc-name">&#x2694;&#xfe0f; Fighting</div>
@@ -1695,7 +1711,7 @@ input:focus,textarea:focus,select:focus{
       </div>
       <div class="season-chip" data-season="Grieving" onclick="selectObSeason(this)">
         <div class="sc-name">&#x1f494; Grieving</div>
-        <div class="sc-desc">Loss, heartbreak, or pain you're carrying. Survival mode is okay.</div>
+        <div class="sc-desc">Loss, heartbreak, or pain you’re carrying. Survival mode is okay.</div>
       </div>
       <div class="season-chip" data-season="Resting" onclick="selectObSeason(this)">
         <div class="sc-name">&#x1f338; Resting</div>
@@ -1703,11 +1719,11 @@ input:focus,textarea:focus,select:focus{
       </div>
     </div>
     <button class="btn primary" onclick="obNext(5)">Continue &#8594;</button>
-    <button class="btn" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:4px" onclick="obQuickFinish()">I'll do this later</button>
+    <button class="btn" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:4px" onclick="obQuickFinish()">I’ll do this later</button>
   </div>
   <div class="ob-step" id="ob5">
     <div class="ob-title">What are you fighting?</div>
-    <div class="ob-desc">Select everything that applies. No judgement. The app helps you become who you said you're becoming — free from these.</div>
+    <div class="ob-desc">Select everything that applies. No judgement. The app helps you become who you said you’re becoming — free from these.</div>
     <div role="checkbox" tabindex="0" aria-checked="false" class="vchips" id="vchip-wrap">
       <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleChip(this,'Lust / PMO')">Lust / PMO</div>
       <div role="checkbox" tabindex="0" aria-checked="false" class="vchip" onclick="toggleChip(this,'Weed')">Weed</div>
@@ -1724,7 +1740,7 @@ input:focus,textarea:focus,select:focus{
     </div>
     <input type="text" id="ob-custom" placeholder="Add your own..." style="margin-bottom:14px">
     <div style="border-top:1px solid var(--bd);padding-top:14px;margin-bottom:16px">
-      <div style="font-size:14px;font-weight:500;color:var(--tx);margin-bottom:4px">Is there someone you're doing this for?</div>
+      <div style="font-size:14px;font-weight:500;color:var(--tx);margin-bottom:4px">Is there someone you’re doing this for?</div>
       <div style="font-size:13px;color:var(--tx2);margin-bottom:10px;line-height:1.5">A partner, a parent, a friend — anyone you want to stay close to. Your evening can nudge you to reach out to them.</div>
       <div style="display:flex;gap:8px">
         <button class="btn" id="pyes" onclick="setHasPartner(true)" style="flex:1">Yes</button>
@@ -1732,12 +1748,12 @@ input:focus,textarea:focus,select:focus{
       </div>
     </div>
     <button class="btn primary" onclick="obNext(6)">Continue &#8594;</button>
-    <button class="btn" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:4px" onclick="obQuickFinish()">I'll do this later</button>
+    <button class="btn" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:4px" onclick="obQuickFinish()">I’ll do this later</button>
   </div>
   <div class="ob-step" id="ob6">
-    <div class="ob-quote">"I'm not here because I made it.<br>I'm here because I'm trying.<br>That's all any of us can do."</div>
+    <div class="ob-quote">"I’m not here because I made it.<br>I’m here because I’m trying.<br>That’s all any of us can do."</div>
     <div class="ob-attr">&#8212; Alfred John, Day 1</div>
-    <div class="ob-title" id="ob-ready-title">You're ready.</div>
+    <div class="ob-title" id="ob-ready-title">You’re ready.</div>
     <div class="ob-desc" id="ob-ready-desc">Your space is set up. Every day you open this is a day you chose to try.</div>
     <div style="text-align:left;border-top:1px solid var(--bd);padding-top:16px;margin:18px 0 4px">
       <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px">How a day feels here</div>
@@ -1748,7 +1764,7 @@ input:focus,textarea:focus,select:focus{
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start">
           <div style="font-size:18px;flex-shrink:0;width:24px;text-align:center">🌀</div>
-          <div style="font-size:13px;color:var(--tx2);line-height:1.5"><b style="color:var(--tx)">The moment it pulls</b> — tap the circle, bottom-right. I'm there before you cross the line, not after.</div>
+          <div style="font-size:13px;color:var(--tx2);line-height:1.5"><b style="color:var(--tx)">The moment it pulls</b> — tap the circle, bottom-right. I’m there before you cross the line, not after.</div>
         </div>
         <div style="display:flex;gap:12px;align-items:flex-start">
           <div style="font-size:18px;flex-shrink:0;width:24px;text-align:center">🌙</div>
@@ -1823,7 +1839,7 @@ input:focus,textarea:focus,select:focus{
 <div id="tab-soul" class="tab">
   <div style="margin-bottom:8px">
     <h2 style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.2;margin-bottom:2px">Soul</h2>
-    <p id="soul-intro" style="font-size:12.5px;color:var(--tx3);line-height:1.6">The root beneath everything else. The body, the money, the fight — they all grow from here, or they don't last. This is where the app points past itself: to Christ, to the sacraments, to the people who love you. Stay grounded here, and the rest holds.</p>
+    <p id="soul-intro" style="font-size:12.5px;color:var(--tx3);line-height:1.6">The root beneath everything else. The body, the money, the fight — they all grow from here, or they don’t last. This is where the app points past itself: to Christ, to the sacraments, to the people who love you. Stay grounded here, and the rest holds.</p>
   </div>
   <!-- SOUL-ARCHITECTURE, SOUL: "make Soul feel like the still center, not a tab of religious
        features." It opened as four labelled grids — a menu. The still centre goes first: one line for
@@ -1855,7 +1871,7 @@ input:focus,textarea:focus,select:focus{
     <div class="hub-card wide" id="soul-book-card" onclick="openScripture()">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
       <div class="hc-title" id="soul-book-title">Bible</div>
-      <div class="hc-desc" id="soul-book-desc">A verse for whatever you're facing, a full reader, and verses saved for the road.</div>
+      <div class="hc-desc" id="soul-book-desc">A verse for whatever you’re facing, a full reader, and verses saved for the road.</div>
     </div>
     <div class="hub-card wide" id="soul-plans-card" onclick="openPlans()">
       <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
@@ -1870,7 +1886,7 @@ input:focus,textarea:focus,select:focus{
     <div class="hub-card wide" id="soul-practice-card" onclick="openPractice()">
       <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="4" r="1.6"/><circle cx="12" cy="20" r="1.6"/><circle cx="4" cy="12" r="1.6"/><circle cx="20" cy="12" r="1.6"/><circle cx="6.3" cy="6.3" r="1.3"/><circle cx="17.7" cy="6.3" r="1.3"/><circle cx="6.3" cy="17.7" r="1.3"/><circle cx="17.7" cy="17.7" r="1.3"/><path d="M12 12l0 3.5"/></svg>
       <div class="hc-title" id="soul-practice-title">The Rosary</div>
-      <div class="hc-desc" id="soul-practice-desc">Pray it guided, bead by bead — today's mysteries chosen for you, every prayer at hand.</div>
+      <div class="hc-desc" id="soul-practice-desc">Pray it guided, bead by bead — today’s mysteries chosen for you, every prayer at hand.</div>
     </div>
     <div class="hub-card wide" onclick="openBreathMenu()">
       <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg>
@@ -1915,7 +1931,7 @@ input:focus,textarea:focus,select:focus{
     <div class="hub-card wide" onclick="go('why')">
       <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
       <div class="hc-title">Your Why</div>
-      <div class="hc-desc">The reason you started, letters to your future self, and the promises you're keeping. All in one place.</div>
+      <div class="hc-desc">The reason you started, letters to your future self, and the promises you’re keeping. All in one place.</div>
     </div>
   </div>
 </div>
@@ -1980,7 +1996,7 @@ input:focus,textarea:focus,select:focus{
     <p style="font-size:12px;color:var(--tx3);line-height:1.5" id="liturgy-date">The readings and the saint for today.</p>
   </div>
   <div id="liturgy-content">
-    <div style="text-align:center;padding:30px 16px;color:var(--tx3);font-size:13px">Loading today's readings…</div>
+    <div style="text-align:center;padding:30px 16px;color:var(--tx3);font-size:13px">Loading today’s readings…</div>
   </div>
 </div>
 
@@ -1997,9 +2013,9 @@ input:focus,textarea:focus,select:focus{
   <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.04));border-color:var(--go-bd)">
     <div class="card-hd" style="margin-bottom:8px">The reason I started</div>
     <div id="why-display" style="font-family:'Cormorant Garamond',serif;font-size:17px;color:var(--tx);font-style:italic;line-height:1.55;white-space:pre-wrap;margin-bottom:10px"></div>
-    <textarea id="why-edit" placeholder="For my future family...&#10;For the person I know I can be...&#10;Because I'm tired of letting myself down...&#10;For something bigger than myself..." style="height:120px;resize:none;margin-bottom:8px;font-size:16px;line-height:1.6;display:none"></textarea>
+    <textarea id="why-edit" placeholder="For my future family...&#10;For the person I know I can be...&#10;Because I’m tired of letting myself down...&#10;For something bigger than myself..." style="height:120px;resize:none;margin-bottom:8px;font-size:16px;line-height:1.6;display:none"></textarea>
     <button class="btn" id="why-edit-btn" onclick="toggleWhyEdit()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px">Edit my why</button>
-    <button class="btn primary" id="why-save-btn" onclick="saveWhyEdit()" style="font-size:13px;display:none">Save</button>
+    <button class="btn primary" id="why-save-btn" onclick="saveWhyEdit()" style="font-size:13px;display:none">Save your why</button>
   </div>
 
   <!-- What matters — the values card sort (ACT/MI). A mirror the counsel argues from, never a score. -->
@@ -2009,7 +2025,7 @@ input:focus,textarea:focus,select:focus{
   </div>
   <!-- Identity + season (moved from Settings — they define the journey, like the why) -->
   <div class="card" style="margin-bottom:14px">
-    <div class="card-hd" style="margin-bottom:8px">Who I'm becoming</div>
+    <div class="card-hd" style="margin-bottom:8px">Who I’m becoming</div>
     <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Complete the sentence. The app holds you to this.</p>
     <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--go);margin-bottom:6px">I am becoming a person who...</div>
     <textarea id="settings-identity" placeholder="...keeps their promises" style="height:80px;resize:none;margin-bottom:10px;font-size:16px"></textarea>
@@ -2017,8 +2033,8 @@ input:focus,textarea:focus,select:focus{
   </div>
 
   <div class="card" style="margin-bottom:14px">
-    <div class="card-hd" style="margin-bottom:8px">The season I'm in</div>
-    <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Life isn't linear. The app speaks to you differently based on your season. Change anytime.</p>
+    <div class="card-hd" style="margin-bottom:8px">The season I’m in</div>
+    <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Life isn’t linear. The app speaks to you differently based on your season. Change anytime.</p>
     <div id="settings-seasons"></div>
   </div>
 
@@ -2035,8 +2051,8 @@ input:focus,textarea:focus,select:focus{
 
   <!-- Promises (moved from Reflect) -->
   <div class="card" style="margin-bottom:14px">
-    <div class="card-hd" style="margin-bottom:8px">Promises I'm keeping</div>
-    <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Promises kept build identity. Log them, honour them, or be honest when you don't.</p>
+    <div class="card-hd" style="margin-bottom:8px">Promises I’m keeping</div>
+    <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Promises kept build identity. Log them, honour them, or be honest when you don’t.</p>
     <input type="text" id="why-new-promise" placeholder="e.g. I will call my dad this week" style="margin-bottom:8px">
     <div class="row">
       <select id="why-promise-when" style="flex:1">
@@ -2046,7 +2062,7 @@ input:focus,textarea:focus,select:focus{
         <option value="60">Check in 60 days</option>
         <option value="90">Check in 90 days</option>
       </select>
-      <button class="btn primary" style="width:auto;white-space:nowrap;padding:10px 14px" onclick="addPromiseFromWhy()">Log it</button>
+      <button class="btn primary" style="width:auto;white-space:nowrap;padding:10px 14px" onclick="addPromiseFromWhy()">Add promise</button>
     </div>
     <div id="why-promises-due" style="margin-top:12px"></div>
     <div id="why-promises-list" style="margin-top:6px"></div>
@@ -2054,8 +2070,8 @@ input:focus,textarea:focus,select:focus{
 
   <!-- People who matter (moved from Settings — they're part of your why) -->
   <div class="card" style="margin-bottom:14px">
-    <div class="card-hd" style="margin-bottom:8px">The people I'm doing this for</div>
-    <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Your why isn't only about you. Add the people you carry with you. The app gently nudges you to reach out when too long passes.</p>
+    <div class="card-hd" style="margin-bottom:8px">The people I’m doing this for</div>
+    <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Your why isn’t only about you. Add the people you carry with you. The app gently nudges you to reach out when too long passes.</p>
     <div id="relationships-list" style="margin-bottom:10px"></div>
     <div class="row">
       <input type="text" id="rel-name" placeholder="Name (e.g. Mum, Sarah, James)">
@@ -2122,7 +2138,7 @@ input:focus,textarea:focus,select:focus{
       </div>
 
       <div class="verse-pill hero-verse" onclick="nextVerse()">
-        <p id="hdr-verse">Loading today&#39;s word...</p>
+        <p id="hdr-verse">Loading today&#8217;s word...</p>
         <div class="vr" id="hdr-ref"></div>
                 <button class="vshare" id="vshare-btn" aria-label="Make a card from this verse" onclick="event.stopPropagation();shareVerseFrom('hdr-verse','hdr-ref')">&#10548;</button>
 <button class="vsave" id="vsave-btn" aria-label="Save this verse" onclick="event.stopPropagation();saveHdrVerse()">&#9825;</button>
@@ -2136,7 +2152,7 @@ input:focus,textarea:focus,select:focus{
   <!-- Tester setup card — shows once for allowlisted Strava testers who haven't connected yet. -->
   <div id="tester-setup-card" style="display:none;background:linear-gradient(135deg,rgba(252,76,2,0.12),rgba(200,169,110,0.05));border:1px solid rgba(252,76,2,0.35);border-radius:var(--r);padding:16px;margin-bottom:14px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px">
-      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#FC4C02;text-transform:uppercase;letter-spacing:0.14em">You're a Strava tester</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#FC4C02;text-transform:uppercase;letter-spacing:0.14em">You’re a Strava tester</div>
       <button onclick="dismissTesterCard()" style="background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:13px 17px;margin:-13px -17px;line-height:1" aria-label="Dismiss">×</button>
     </div>
     <div style="font-family:'Cormorant Garamond',serif;font-size:19px;color:var(--tx);font-style:italic;margin-bottom:8px">Thanks for testing this. Two taps to connect Strava:</div>
@@ -2146,11 +2162,11 @@ input:focus,textarea:focus,select:focus{
 
   <!-- Post-relapse compassion — shows for 72h after a slip, leads with grace not "0 days" -->
   <div id="postrelapse-card" style="display:none;background:linear-gradient(135deg,rgba(140,107,182,0.12),rgba(200,169,110,0.05));border:1px solid rgba(140,107,182,0.35);border-radius:var(--r);padding:16px;margin-bottom:14px">
-    <div style="font-family:'DM Mono',monospace;font-size:9px;color:#8C6BB6;text-transform:uppercase;letter-spacing:0.14em;margin-bottom:6px">You're still here</div>
+    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--pu);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:6px">You’re still here</div>
     <div id="postrelapse-text" style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--tx);font-style:italic;line-height:1.45;margin-bottom:8px"></div>
     <div id="postrelapse-sub" style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:12px"></div>
     <button class="btn primary" onclick="ackRelapseAndTalk()" style="padding:10px 16px;font-size:13px;margin-bottom:8px">Talk it through with your Coach</button>
-    <button class="btn" onclick="dismissRelapseCard()" style="padding:9px 16px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)">I'm okay for now</button>
+    <button class="btn" onclick="dismissRelapseCard()" style="padding:9px 16px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)">I’m okay for now</button>
   </div>
 
   <!-- "Today, for you" — the adaptive daily presence. Meets the man where he is:
@@ -2173,7 +2189,7 @@ input:focus,textarea:focus,select:focus{
   <!-- First-run guidance — only for brand-new users, dismisses as steps complete -->
   <div id="firstrun-card" style="display:none;background:linear-gradient(135deg,rgba(200,169,110,0.1),rgba(140,107,182,0.06));border:1px solid var(--go-bd);border-radius:var(--r);padding:16px;margin-bottom:14px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:4px">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--tx);font-style:italic">Welcome. Let's set the foundation.</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--tx);font-style:italic">Welcome. Let’s set the foundation.</div>
       <button onclick="dismissFirstRun()" style="background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:13px 17px;margin:-13px -17px;line-height:1" aria-label="Dismiss">×</button>
     </div>
     <p style="font-size:12px;color:var(--tx3);line-height:1.5;margin-bottom:12px">This app comes alive as you use it. Four quick things to start — tap any to do it now.</p>
@@ -2185,8 +2201,8 @@ input:focus,textarea:focus,select:focus{
   <div id="newuser-preview-banner" style="display:none;background:linear-gradient(135deg, rgba(140,107,182,0.12), rgba(200,169,110,0.08));border:1px solid rgba(140,107,182,0.35);border-radius:var(--r);padding:14px 16px;margin-bottom:14px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px">
       <div style="flex:1">
-        <div style="font-family:'DM Mono',monospace;font-size:9px;color:#8C6BB6;text-transform:uppercase;letter-spacing:0.14em;margin-bottom:4px">New here</div>
-        <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--tx);font-style:italic;line-height:1.4">This app comes alive with data. Here's what it looks like after 60 days.</div>
+        <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--pu);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:4px">New here</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--tx);font-style:italic;line-height:1.4">This app comes alive with data. Here’s what it looks like after 60 days.</div>
       </div>
       <button onclick="dismissPreviewBanner()" style="background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:0 4px;line-height:1">×</button>
     </div>
@@ -2195,7 +2211,7 @@ input:focus,textarea:focus,select:focus{
 
   <!-- AI Morning Sentence — peer of identity strip, only when active -->
   <div class="ai-morning-card" id="ai-morning-card" style="display:none;background:linear-gradient(135deg, rgba(140,107,182,0.15), rgba(200,169,110,0.1));border:1px solid rgba(140,107,182,0.4);border-radius:var(--r);padding:14px 16px;margin-bottom:14px;cursor:pointer" onclick="refreshAIMorning()">
-    <div style="font-family:'DM Mono',monospace;font-size:9px;color:#8C6BB6;text-transform:uppercase;letter-spacing:0.14em;margin-bottom:6px">Your coach says</div>
+    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--pu);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:6px">Your coach says</div>
     <div id="ai-morning-text" style="font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--tx);line-height:1.55;font-style:italic">Loading...</div>
     <div style="font-family:'DM Mono',monospace;font-size:8px;color:var(--tx3);text-align:right;margin-top:6px;letter-spacing:0.08em">Tap to refresh</div>
   </div>
@@ -2204,7 +2220,7 @@ input:focus,textarea:focus,select:focus{
   <div class="identity-strip" id="identity-strip" onclick="go('settings')">
     <div class="id-label">Who you are becoming</div>
     <div class="id-text" id="identity-text">
-      <span class="id-empty">Name the person you're becoming &mdash; I'll hold you to it, gently</span>
+      <span class="id-empty">Name the person you’re becoming &mdash; I’ll hold you to it, gently</span>
     </div>
     <div id="identity-evidence" style="display:none;font-family:'DM Mono',monospace;font-size:10px;color:var(--go);margin-top:8px;padding-top:8px;border-top:1px solid var(--go-bd);letter-spacing:0.02em"></div>
   </div>
@@ -2245,7 +2261,7 @@ input:focus,textarea:focus,select:focus{
          band, but in it a tap meant for the resilience tile opened the habit editor. Clearance
          here, rather than a smaller target there. -->
   <div class="lbl" style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:22px">
-    <span>Today&#39;s habits</span>
+    <span>Today&#8217;s habits</span>
     <button onclick="openManageHabits()" aria-label="Add or edit your habits" style="background:none;border:none;padding:17px 12px;margin:-17px -12px -17px -12px;margin-right:0;padding-right:0;font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:0.1em;text-transform:uppercase;cursor:pointer">+ add / edit</button>
   </div>
   <div class="card" style="margin-bottom:12px">
@@ -2264,7 +2280,7 @@ input:focus,textarea:focus,select:focus{
   <div id="home-depth-body" style="display:none">
   <!-- Calendar quick-entry — today's schedule at a glance, links to the smart calendar -->
   <div id="home-calendar-card" onclick="go('calendar')" style="display:none;cursor:pointer">
-    <div class="lbl">Today's schedule</div>
+    <div class="lbl">Today’s schedule</div>
     <div class="card" style="margin-bottom:12px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
         <div id="home-calendar-summary" style="font-size:13px;color:var(--tx2);line-height:1.5;flex:1"></div>
@@ -2278,8 +2294,8 @@ input:focus,textarea:focus,select:focus{
     <div class="lbl">Feeling something right now?</div>
     <div class="card" style="margin-bottom:12px">
       <button onclick="openFeelingNow()" style="width:100%;padding:16px;border-radius:12px;background:linear-gradient(135deg,rgba(200,169,110,0.14),rgba(140,107,182,0.10));border:1px solid var(--go-bd);color:var(--tx);text-align:left;cursor:pointer">
-        <div style="font-size:15px;font-weight:600;margin-bottom:3px">I'm feeling it right now</div>
-        <div style="font-size:12px;color:var(--tx3);line-height:1.45;font-weight:400">An urge, a craving, a heaviness — whatever it is. Tap and I'll help you get through it, before you act on it.</div>
+        <div style="font-size:15px;font-weight:600;margin-bottom:3px">I’m feeling it right now</div>
+        <div style="font-size:12px;color:var(--tx3);line-height:1.45;font-weight:400">An urge, a craving, a heaviness — whatever it is. Tap and I’ll help you get through it, before you act on it.</div>
       </button>
       <div id="home-quickwin-list" style="margin-top:12px"></div>
     </div>
@@ -2298,7 +2314,7 @@ input:focus,textarea:focus,select:focus{
 
   <!-- Today's training mission — only when there's a real plan, populated by renderHome() -->
   <div id="home-today-mission-wrap" style="display:none">
-    <div class="lbl">Today's mission</div>
+    <div class="lbl">Today’s mission</div>
     <div class="card" style="margin-bottom:12px">
       <div class="card-hd" id="today-focus">Loading...</div>
       <div id="today-detail" style="font-size:12px;color:var(--tx2);line-height:1.65;margin-top:5px"></div>
@@ -2308,7 +2324,7 @@ input:focus,textarea:focus,select:focus{
   <!-- Sabbath prayer (only Sundays — render shown/hidden via JS) -->
   <div class="sabbath-prayer-card" id="sabbath-card" style="display:none">
     <div class="sabbath-title">Sabbath day &#x1f54a;&#xfe0f;</div>
-    <div class="sabbath-text" id="sabbath-text">Rest is also discipline.<br>You don't have to perform today.<br>God designed you to need this.</div>
+    <div class="sabbath-text" id="sabbath-text">Rest is also discipline.<br>You don’t have to perform today.<br>God designed you to need this.</div>
   </div>
 
   <!-- Share Day X (moved to bottom — celebratory, not primary) -->
@@ -2328,10 +2344,10 @@ input:focus,textarea:focus,select:focus{
     <div class="ritual-hero-inner">
       <div class="ritual-eyebrow" id="morning-eyebrow">A new day</div>
       <div class="ritual-title" id="morning-greeting">Set your intention</div>
-      <div class="ritual-line">Before the world starts pulling, choose who you'll be in it.</div>
+      <div class="ritual-line">Before the world starts pulling, choose who you’ll be in it.</div>
     </div>
   </div>
-  <p style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px" id="morning-intro-desc">A few quiet minutes to set the day: receive a word, name your gratitude and intention, then pray. Take it at your own pace — there's no wrong way.</p>
+  <p style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px" id="morning-intro-desc">A few quiet minutes to set the day: receive a word, name your gratitude and intention, then pray. Take it at your own pace — there’s no wrong way.</p>
   <!-- Begin with a breath — the daily opening work; grounds the morning before words. Faith-aware. -->
   <div class="card" style="margin-bottom:12px;display:flex;align-items:center;gap:12px;cursor:pointer" onclick="openBreath((typeof _breathFaithOn==='function'&&_breathFaithOn())?'prayer':'settle')">
     <div style="width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 40% 35%,rgba(200,169,110,0.9),rgba(200,169,110,0.22));flex-shrink:0"></div>
@@ -2401,7 +2417,7 @@ input:focus,textarea:focus,select:focus{
   </div>
   <!-- Daily verse -->
   <div class="ritual-verse">
-    <div class="rv-text" id="morning-verse-text">Loading today's word...</div>
+    <div class="rv-text" id="morning-verse-text">Loading today’s word...</div>
     <div class="rv-ref" id="morning-verse-ref"></div>
     <div class="verse-tools">
       <button class="btn" data-speak="morning-verse-text|morning-verse-ref" onclick="Speak.toggleFrom(this)" aria-pressed="false">&#9654; Listen</button>
@@ -2522,7 +2538,7 @@ input:focus,textarea:focus,select:focus{
          It sits before the per-vice list on purpose — the first thing after the number should be
          the evidence, not a scoreboard reading WIN RATE 0%. -->
     <div id="fight-evidence" style="display:none"></div>
-    <p id="fight-tap-hint" style="display:none;font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">When an urge hits &#8212; tap it. No typing needed while you're fighting.</p>
+    <p id="fight-tap-hint" style="display:none;font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">When an urge hits &#8212; tap it. No typing needed while you’re fighting.</p>
     <div id="feeling-wins-momentum" style="display:none"></div>
     <div id="cycle-fight-note"></div>          <!-- D: Fight, after feeling-wins-momentum -->
     <div id="vices-list"></div>
@@ -2592,7 +2608,7 @@ input:focus,textarea:focus,select:focus{
            measure, however long they have been fighting. The hero is the fight itself. -->
       <div class="score-big" id="sc-total">0</div>
       <div class="score-lbl" id="sc-total-lbl">Days in the fight</div>
-      <div class="score-sub" id="sc-sub">Every number here is a moment you chose who you're becoming.</div>
+      <div class="score-sub" id="sc-sub">Every number here is a moment you chose who you’re becoming.</div>
     </div>
     <div class="sc-grid">
       <div class="sc-met"><div class="sc-ml">Came back</div><div class="sc-mv g" id="sc-rate">0</div></div>
@@ -2968,7 +2984,7 @@ input:focus,textarea:focus,select:focus{
 <div id="tab-train" class="tab">
   <div style="margin-bottom:12px">
     <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.2;margin-bottom:2px">Train</div>
-    <div style="font-size:12.5px;color:var(--tx3);margin-top:3px;line-height:1.55">The forge. Every rep is a vote for the person you're becoming. Show up even when it's heavy — especially then.</div>
+    <div style="font-size:12.5px;color:var(--tx3);margin-top:3px;line-height:1.55">The forge. Every rep is a vote for the person you’re becoming. Show up even when it’s heavy — especially then.</div>
   </div>
   <div class="bible-tab-row" style="margin-bottom:14px">
     <button class="btab active" id="pt-sub-log" onclick="setPTTab('log')">Log</button>
@@ -3109,7 +3125,7 @@ input:focus,textarea:focus,select:focus{
           <button class="btn" onclick="setCalApp('CalAI','&#x1F916;','calai://','https://apps.apple.com/app/calai-calorie-counter-ai/id6447167650')">CalAI</button>
           <button class="btn" onclick="setCalApp('Cronometer','&#x1F4CA;','cronometer://','https://apps.apple.com/app/cronometer/id1145935738')">Cronometer</button>
         </div>
-        <button class="btn" onclick="useToTryTracker()" style="margin-top:8px;background:none;border:1px solid var(--go-bd);color:var(--go);font-size:12px">Use ToTry's built-in tracker</button>
+        <button class="btn" onclick="useToTryTracker()" style="margin-top:8px;background:none;border:1px solid var(--go-bd);color:var(--go);font-size:12px">Use ToTry’s built-in tracker</button>
       </div>
     </div>
   </div>
@@ -3117,7 +3133,7 @@ input:focus,textarea:focus,select:focus{
   <!-- ROUTINES PANEL -->
   <div id="pt-panel-routines" style="display:none">
     <div class="lbl">Build a routine</div>
-    <p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:12px">Build a routine, save it, and it'll appear in Log to start anytime. Your weekly split is in the Log tab.</p>
+    <p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:12px">Build a routine, save it, and it’ll appear in Log to start anytime. Your weekly split is in the Log tab.</p>
     
     <!-- Saved routines -->
     <div class="card" style="margin-bottom:14px">
@@ -3180,7 +3196,7 @@ input:focus,textarea:focus,select:focus{
     <!-- Muscle group volume + frequency -->
     <div class="card" style="margin-bottom:14px">
       <div class="card-hd" style="margin-bottom:6px">💪 Weekly muscle volume</div>
-      <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Last 7 days. Spot which muscles you're hitting hard and which you're skipping.</p>
+      <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Last 7 days. Spot which muscles you’re hitting hard and which you’re skipping.</p>
       <div id="pt-muscle-card"></div>
       <div id="pt-heatmap"></div>
       <div id="pt-load-card"></div>
@@ -3189,7 +3205,7 @@ input:focus,textarea:focus,select:focus{
     <!-- Per-exercise progress over time (Hevy-style strength curve) -->
     <div class="card" style="margin-bottom:12px">
       <div class="card-hd" style="margin-bottom:6px">📈 Strength over time</div>
-      <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Pick a lift to see your estimated 1RM climb. This is the proof you're getting stronger.</p>
+      <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Pick a lift to see your estimated 1RM climb. This is the proof you’re getting stronger.</p>
       <select id="pt-exercise-select" onchange="renderExerciseProgressChart(this.value)" style="margin-bottom:12px">
         <option value="">Select an exercise...</option>
       </select>
@@ -3201,12 +3217,12 @@ input:focus,textarea:focus,select:focus{
   <!-- MOBILITY PANEL (WS5) -->
   <div id="pt-panel-mobility" style="display:none">
     <div class="lbl">Mobility &amp; warm-ups</div>
-    <p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">Mobility is part of training, not an afterthought. Warm up the muscles you're about to work, and keep your joints moving well over time.</p>
+    <p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">Mobility is part of training, not an afterthought. Warm up the muscles you’re about to work, and keep your joints moving well over time.</p>
     <div id="pt-mobility-body"></div>
     <!-- Form-check via photo (WS-I) — NOT medical/coaching certainty; "things to look at" only. -->
     <div class="card" style="margin-top:14px">
       <div class="card-hd" style="margin-bottom:6px">📷 Form check</div>
-      <div style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Snap a photo at a key position (e.g. bottom of a squat, top of a deadlift) and I'll point out things to look at. This is general guidance from a single still — <span style="color:var(--tx2)">not a substitute for a coach or medical advice</span>, and it can't see your full movement.</div>
+      <div style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Snap a photo at a key position (e.g. bottom of a squat, top of a deadlift) and I’ll point out things to look at. This is general guidance from a single still — <span style="color:var(--tx2)">not a substitute for a coach or medical advice</span>, and it can’t see your full movement.</div>
       <input type="file" id="formcheck-input" accept="image/*" capture="environment" style="display:none" onchange="runFormCheck(event)">
       <button class="btn" onclick="document.getElementById('formcheck-input').click()" style="background:var(--bg3);border:1px solid var(--bd)">Take / choose a photo</button>
       <div id="formcheck-out" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"></div>
@@ -3217,8 +3233,8 @@ input:focus,textarea:focus,select:focus{
   <div id="pt-panel-ptcoach" style="display:none">
     <div class="lbl">Ask your PT</div>
     <div class="qbtns">
-      <button class="qb" onclick="goPTCoach('Give me today\'s full session based on my split. Exact exercises, sets, reps, rest.')">Today's session</button>
-      <button class="qb" onclick="goPTCoach('Full day of meals — exact food, calories, protein. 2000-2200 cal target.')">Today's meals</button>
+      <button class="qb" onclick="goPTCoach('Give me today’s full session based on my split. Exact exercises, sets, reps, rest.')">Today’s session</button>
+      <button class="qb" onclick="goPTCoach('Full day of meals — exact food, calories, protein. 2000-2200 cal target.')">Today’s meals</button>
       <button class="qb" onclick="goPTCoach('Knee is hurting. What can I train and what must I avoid?')">Knee hurts</button>
       <button class="qb" onclick="goPTCoach('Only 25 minutes. Best possible session.')">25 mins only</button>
       <button class="qb" onclick="goPTCoach('How do I progressively overload this week?')">Progressive overload</button>
@@ -3239,7 +3255,7 @@ input:focus,textarea:focus,select:focus{
 <div id="tab-bible" class="tab">
   <div style="margin-bottom:12px">
     <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.2;margin-bottom:2px">The Word</div>
-    <div style="font-size:12.5px;color:var(--tx3);margin-top:3px;line-height:1.55">Living water for whatever you're facing. Bring what's heavy — there's a verse for it. This is the ground the whole thing stands on.</div>
+    <div style="font-size:12.5px;color:var(--tx3);margin-top:3px;line-height:1.55">Living water for whatever you’re facing. Bring what’s heavy — there’s a verse for it. This is the ground the whole thing stands on.</div>
   </div>
   <div class="bible-sub-tabs">
     <button class="bst active" id="bst-find" onclick="setBibleTab('find')">Find a Verse</button>
@@ -3251,7 +3267,7 @@ input:focus,textarea:focus,select:focus{
 
   <!-- FIND PANEL -->
   <div id="bible-find-panel">
-    <p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:12px">Type what you're feeling right now. The AI will find the verse that meets you exactly where you are.</p>
+    <p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:12px">Type what you’re feeling right now. The AI will find the verse that meets you exactly where you are.</p>
     <div style="display:flex;gap:8px;margin-bottom:12px">
       <input type="text" id="bible-in" placeholder="What are you feeling right now..." onkeydown="if(event.key==='Enter')findVerse(this.value)">
       <button class="btn primary" style="width:auto;white-space:nowrap;padding:10px 14px" onclick="findVerse(document.getElementById('bible-in').value)">Find</button>
@@ -3269,11 +3285,11 @@ input:focus,textarea:focus,select:focus{
       <button class="ftag" onclick="findVerse('drowning in financial stress and debt')">Financial stress</button>
       <button class="ftag" onclick="findVerse('need forgiveness for sins I keep repeating')">Need forgiveness</button>
       <button class="ftag" onclick="findVerse('want to give up on everything')">Want to give up</button>
-      <button class="ftag" onclick="findVerse('grieving a relationship I hurt through my choices')">Grief &amp; loss</button>
+      <button class="ftag" onclick="findVerse('grieving a relationship I hurt through my choices')">A relationship I broke</button>
       <button class="ftag" onclick="findVerse('afraid of what people think of me')">Fear of judgement</button>
       <button class="ftag" onclick="findVerse('need courage to take the next step')">Need courage</button>
       <button class="ftag" onclick="findVerse('jealous and bitter of others')">Jealousy</button>
-      <button class="ftag" onclick="findVerse('grieving the loss of someone I love')">Grief</button>
+      <button class="ftag" onclick="findVerse('grieving the loss of someone I love')">Grief &amp; loss</button>
       <button class="ftag" onclick="findVerse('right on the edge of temptation')">Temptation</button>
       <button class="ftag" onclick="findVerse('tired of waiting, needing patience')">Patience</button>
       <button class="ftag" onclick="findVerse('want a grateful heart today')">Gratitude</button>
@@ -3341,7 +3357,7 @@ input:focus,textarea:focus,select:focus{
   
   <!-- PRAYER JOURNAL PANEL -->
   <div id="bible-prayer-panel" style="display:none">
-    <p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">Write down what you're praying for. Mark answered prayers as they come — it builds your faith to look back.</p>
+    <p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">Write down what you’re praying for. Mark answered prayers as they come — it builds your faith to look back.</p>
 
     <!-- Unified prayer composer (WS-H): one box, choose to write your own or have the AI help. -->
     <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">
@@ -3356,8 +3372,8 @@ input:focus,textarea:focus,select:focus{
         <button class="btn primary" onclick="addPrayer()">Add to prayer list</button>
       </div>
       <div id="prayer-mode-ai-body" style="display:none">
-        <div style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Tell me what's on your heart — a worry, a person, a temptation, a thanksgiving — and I'll write a prayer you can pray now or save.</div>
-        <textarea id="ai-prayer-intention" placeholder="e.g. my mum's surgery tomorrow / staying clean this weekend / gratitude for a good day..." style="min-height:64px;margin-bottom:8px"></textarea>
+        <div style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Tell me what’s on your heart — a worry, a person, a temptation, a thanksgiving — and I’ll write a prayer you can pray now or save.</div>
+        <textarea id="ai-prayer-intention" placeholder="e.g. my mum’s surgery tomorrow / staying clean this weekend / gratitude for a good day..." style="min-height:64px;margin-bottom:8px"></textarea>
         <button class="btn primary" id="ai-prayer-btn" onclick="generateIntentionPrayer()">Write my prayer</button>
         <div id="ai-prayer-out" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"></div>
       </div>
@@ -3398,7 +3414,7 @@ input:focus,textarea:focus,select:focus{
 
   <!-- SACRAMENTS PANEL -->
   <div id="bible-sacraments-panel" style="display:none">
-    <p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:16px">The sacraments are grace you can return to. Keeping track isn't about scorekeeping — it's about staying close, and noticing when it's been a while.</p>
+    <p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:16px">The sacraments are grace you can return to. Keeping track isn’t about scorekeeping — it’s about staying close, and noticing when it’s been a while.</p>
 
     <!-- Confession / Reconciliation -->
     <div class="card" style="margin-bottom:14px">
@@ -3447,7 +3463,7 @@ input:focus,textarea:focus,select:focus{
     <div style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;color:var(--tx)">Your coach</div>
     <button onclick="clearCoachHistory()" style="background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:4px 8px;font-family:DM Mono,monospace;letter-spacing:0.05em">Clear history</button>
   </div>
-  <p style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:12px" id="coach-intro-desc">He's read your whole story — your training, your fight, your money, your faith, what weighs on you. Not a search bar. Someone who knows you, and points you toward who you're becoming. Ask him anything.</p>
+  <p style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:12px" id="coach-intro-desc">He’s read your whole story — your training, your fight, your money, your faith, what weighs on you. Not a search bar. Someone who knows you, and points you toward who you’re becoming. Ask him anything.</p>
   <div class="qbtns" id="coach-quick-replies">
     <!-- Adaptive quick-replies render here based on user state -->
   </div>
@@ -3464,7 +3480,7 @@ input:focus,textarea:focus,select:focus{
 <div id="tab-track" class="tab">
   <div style="margin-bottom:12px">
     <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.2;margin-bottom:2px">Track</div>
-    <div style="font-size:12.5px;color:var(--tx3);margin-top:3px;line-height:1.55">The result you can see. You trained, you fuelled — this is where the body answers back. Weight, photos, measures, sleep: the honest proof it's working.</div>
+    <div style="font-size:12.5px;color:var(--tx3);margin-top:3px;line-height:1.55">The result you can see. You trained, you fuelled — this is where the body answers back. Weight, photos, measures, sleep: the honest proof it’s working.</div>
   </div>
   <!-- Apple Health (native only): folds real steps + active energy in automatically, no manual logging. -->
   <div id="health-connect-card" style="display:none;margin-bottom:14px" class="card">
@@ -3647,7 +3663,7 @@ input:focus,textarea:focus,select:focus{
     <div style="font-size:11px;color:var(--tx3);font-style:italic;text-align:center;margin-bottom:4px;line-height:1.5">Your reflection saves with the button below &mdash; add this week&rsquo;s weight too, then tap <b style="color:var(--go)">Log this week</b>.</div>
     
     <!-- WEEK SNAPSHOT — just weight here; full body measurements live in the Measurements card -->
-    <div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;margin-top:14px">This week's weight (optional)</div>
+    <div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;margin-top:14px">This week’s weight (optional)</div>
     <div class="row"><input type="number" id="bod-weight" placeholder="Weight (kg)" step="0.1"></div>
     <input type="text" id="bod-note" placeholder="Anything else worth noting..." style="margin-bottom:8px">
     <div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:10px;padding:8px 10px;background:var(--bg3);border-radius:8px">📏 Tracking waist, chest, arms, or an Evolt scan? Use the <span class="tlink" onclick="openMeasurementLogger()">Measurements card</span> above — no need to enter those twice.</div>
@@ -3777,7 +3793,7 @@ input:focus,textarea:focus,select:focus{
       <div class="card-hd" style="margin-bottom:0">🔁 Subscriptions</div>
       <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd)" onclick="openSubscriptionLogger()" aria-label="Add a subscription">+ Add</button>
     </div>
-    <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Track recurring expenses. Cancel what doesn't serve you.</p>
+    <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Track recurring expenses. Cancel what doesn’t serve you.</p>
   <div id="sub-detect" style="display:none"></div>
     <div id="subscriptions-list"></div>
     <div id="subscriptions-total" style="font-family:DM Mono,monospace;font-size:12px;color:var(--tx3);text-align:center;margin-top:10px"></div>
@@ -3789,7 +3805,7 @@ input:focus,textarea:focus,select:focus{
       <div class="card-hd" style="margin-bottom:0">📅 Upcoming bills</div>
       <button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:transparent;border:1px solid var(--bd)" onclick="openBillLogger()" aria-label="Add a bill">+ Add</button>
     </div>
-    <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">One-off or annual bills with a due date. We'll surface the closest first.</p>
+    <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">One-off or annual bills with a due date. We’ll surface the closest first.</p>
     <div id="bills-list"></div>
   </div>
   
@@ -3865,7 +3881,7 @@ input:focus,textarea:focus,select:focus{
       <div class="ritual-hero-inner">
         <div class="ritual-eyebrow" id="evening-eyebrow">The day winds down</div>
         <div class="ritual-title" id="evening-greeting">Close the day with grace</div>
-        <div class="ritual-line">However it went, you showed up. Let's lay it down honestly and rest.</div>
+        <div class="ritual-line">However it went, you showed up. Let’s lay it down honestly and rest.</div>
       </div>
     </div>
     <!-- The thread closes: reflect this morning's intention back, so the day is one arc — set it at
@@ -3873,14 +3889,14 @@ input:focus,textarea:focus,select:focus{
     <div id="evening-intention-recall" style="display:none;background:rgba(200,169,110,0.06);border:1px solid var(--go-bd);border-radius:14px;padding:14px 16px;margin-bottom:14px">
       <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">This morning you set</div>
       <div id="evening-intention-text" style="font-family:'Cormorant Garamond',serif;font-size:16px;font-style:italic;color:var(--tx);line-height:1.5;margin-bottom:6px"></div>
-      <div style="font-size:12px;color:var(--tx3);line-height:1.5">Did you live it? No score — just honesty. Carry what's true into tomorrow.</div>
+      <div style="font-size:12px;color:var(--tx3);line-height:1.5">Did you live it? No score — just honesty. Carry what’s true into tomorrow.</div>
     </div>
     <!-- The winning man sees his evidence: the day he ACTUALLY lived, drawn from the whole-life data,
          so looking back is grounded in what he really did — not a blank recall. Grace over shame:
          especially for the man who FEELS the day failed but actually showed up. Only a whole-life home
          can do this. -->
     <div id="evening-day-evidence" style="display:none;background:rgba(140,107,182,0.06);border:1px solid rgba(140,107,182,0.28);border-radius:14px;padding:14px 16px;margin-bottom:14px">
-      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#8C6BB6;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">The day you actually lived</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--pu);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">The day you actually lived</div>
       <div id="evening-day-evidence-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>
       <div style="font-size:12px;color:var(--tx3);line-height:1.5;margin-top:9px">However it felt, this is real. You showed up.</div>
     </div>
@@ -3897,19 +3913,19 @@ input:focus,textarea:focus,select:focus{
     <div class="lbl">One thing to release</div>
     <textarea id="evening-release" placeholder="What do you need to let go of before you sleep?" style="height:70px;resize:none;margin-bottom:12px"></textarea>
     <div class="see-prompt">
-      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#8C6BB6;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">The honest question</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--pu);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">The honest question</div>
       <div class="see-q">If the people you love watched today on replay &#8212; your partner, your mum, your future kids &#8212; what would they see?</div>
       <textarea id="evening-see" placeholder="Be honest with yourself..." style="height:70px;resize:none;margin-bottom:0"></textarea>
     </div>
     <details id="evening-numbers" style="margin-bottom:14px">
-      <summary style="cursor:pointer;list-style:none;padding:11px 13px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;font-family:'DM Mono',monospace;font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.1em">+ Add today's numbers <span style="color:var(--tx3);text-transform:none;letter-spacing:0">(steps, watch rings — optional)</span></summary>
+      <summary style="cursor:pointer;list-style:none;padding:11px 13px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;font-family:'DM Mono',monospace;font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.1em">+ Add today’s numbers <span style="color:var(--tx3);text-transform:none;letter-spacing:0">(steps, watch rings — optional)</span></summary>
     <div style="padding-top:14px">
-    <div class="lbl">Today's steps</div>
-    <div style="font-size:11px;color:var(--tx3);margin-bottom:8px;line-height:1.5">Check your watch or phone and enter the day's total.</div>
+    <div class="lbl">Today’s steps</div>
+    <div style="font-size:11px;color:var(--tx3);margin-bottom:8px;line-height:1.5">Check your watch or phone and enter the day’s total.</div>
     <input type="number" id="evening-steps" inputmode="numeric" placeholder="e.g. 8500" style="margin-bottom:14px">
 
     <div class="lbl">Your Watch today <span style="font-weight:400;color:var(--tx3);font-size:11px">(optional)</span></div>
-    <div style="font-size:11px;color:var(--tx3);margin-bottom:8px;line-height:1.5">A glance at your rings. Move counts toward today's burned calories. Leave blank what you don't have.</div>
+    <div style="font-size:11px;color:var(--tx3);margin-bottom:8px;line-height:1.5">A glance at your rings. Move counts toward today’s burned calories. Leave blank what you don’t have.</div>
     <div style="display:flex;gap:8px;margin-bottom:14px">
       <div style="flex:1"><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Move (cal)</div><input type="number" id="evening-move" inputmode="numeric" placeholder="e.g. 540" style="text-align:center;padding:10px"></div>
       <div style="flex:1"><div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Exercise (min)</div><input type="number" id="evening-exercise" inputmode="numeric" placeholder="e.g. 45" style="text-align:center;padding:10px"></div>
@@ -3921,11 +3937,11 @@ input:focus,textarea:focus,select:focus{
     </div>
     </details>
 
-    <div class="lbl">Tick today's habits</div>
+    <div class="lbl">Tick today’s habits</div>
     <div style="font-size:11px;color:var(--tx3);margin-bottom:8px;line-height:1.5">What you actually did today. Auto-ticked when activity is logged.</div>
     <div id="evening-habit-tick-list" style="margin-bottom:14px"></div>
     
-    <div class="lbl" id="evening-tomorrow-lbl">Tomorrow's 3 priorities</div>
+    <div class="lbl" id="evening-tomorrow-lbl">Tomorrow’s 3 priorities</div>
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
       <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--go);min-width:16px">1.</span><input type="text" id="eve-task1" placeholder="Most important thing tomorrow..."></div>
       <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'DM Mono',monospace;font-size:11px;color:var(--go);min-width:16px">2.</span><input type="text" id="eve-task2" placeholder="Second priority..."></div>
@@ -3933,13 +3949,13 @@ input:focus,textarea:focus,select:focus{
     </div>
     <div class="lbl" id="eve-prayer-label">Evening prayer</div>
     <div class="prayer-box" style="margin-bottom:14px"><div class="prayer-text" id="eve-prayer-text">Lord, thank You for this day.
-For the moments I got it right, and for Your grace when I didn't.
+For the moments I got it right, and for Your grace when I didn’t.
 I give You what I carried today &#8212; the wins, the failures, the urges I fought.
 Forgive me where I fell short. Strengthen me for tomorrow.
 Not perfect. Just better.
 Amen.</div></div>
     <div id="partner-section" style="display:none">
-      <div class="lbl">Tonight's call</div>
+      <div class="lbl">Tonight’s call</div>
       <div class="card" style="margin-bottom:12px">
         <div class="card-hd" style="margin-bottom:6px">Before you call</div>
         <div id="call-prompt" style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:12px"></div>
@@ -3979,7 +3995,7 @@ Amen.</div></div>
     <button class="btn primary" onclick="completeEvening()">Complete evening check-in</button>
     <div id="evening-done" style="display:none;text-align:center;padding:24px 16px;margin-top:8px">
       <div style="font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--go);margin-bottom:8px">Day complete. Rest well.</div>
-      <div style="font-size:13px;color:var(--tx2);line-height:1.6">You showed up today — and that means more than you think. The least any of us can do, every single day, is at least <em style="color:var(--go)">ToTry</em>. Tomorrow's a fresh one.</div>
+      <div style="font-size:13px;color:var(--tx2);line-height:1.6">You showed up today — and that means more than you think. The least any of us can do, every single day, is at least <em style="color:var(--go)">ToTry</em>. Tomorrow’s a fresh one.</div>
     <button class="btn primary" onclick="go('home')" style="margin-top:16px;max-width:220px;margin-left:auto;margin-right:auto">Back to home &rarr;</button>
     </div>
   </div>
@@ -4032,15 +4048,15 @@ Amen.</div></div>
     
     <div class="card" style="background:var(--bg3);margin-bottom:12px">
       <div class="card-hd" style="margin-bottom:6px">On pace check</div>
-      <div id="goals-pace" style="font-size:12px;color:var(--tx2);line-height:1.6">Fill in your goals to see if you\'re on pace.</div>
+      <div id="goals-pace" style="font-size:12px;color:var(--tx2);line-height:1.6">Fill in your goals to see if you’re on pace.</div>
     </div>
 
     <!-- Wins (merged in from former Wins tab) -->
     <div class="lbl" style="margin-top:20px">Win log</div>
-    <p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:12px">Every win, big or small. A record of who you're becoming.</p>
+    <p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:12px">Every win, big or small. A record of who you’re becoming.</p>
     <div style="display:flex;gap:8px;margin-bottom:12px">
       <input type="text" id="quick-win-input" placeholder="Record a win right now..." onkeydown="if(event.key==='Enter')logQuickWin()">
-      <button class="btn success" style="width:auto;white-space:nowrap;padding:10px 12px" onclick="logQuickWin()">Log it</button>
+      <button class="btn success" style="width:auto;white-space:nowrap;padding:10px 12px" onclick="logQuickWin()">Log the win</button>
     </div>
     <div id="wins-log-list" style="margin-bottom:8px"></div>
 
@@ -4066,7 +4082,7 @@ Amen.</div></div>
     <div class="lbl" id="wk-conscience-label">Examination of conscience</div>
     
   <div class="card" style="margin-bottom:12px">
-      <div class="conscience-q">Did I give in to any vice I wish I hadn't?</div>
+      <div class="conscience-q">Did I give in to any vice I wish I hadn’t?</div>
       <div class="conscience-q">Was I honest with myself and others?</div>
       <div class="conscience-q">Did I treat the people around me with patience and respect?</div>
       <div class="conscience-q" id="wk-conscience-faith">Did I honour God in how I spent my time?</div>
@@ -4079,7 +4095,7 @@ You saw all of it &#8212; what I did well and what I failed at.
 Thank You for not giving up on me when I gave up on myself.
 As I begin a new week, give me the strength to be better than the last.
 Amen.</div></div>
-    <button class="btn primary" onclick="saveWeeklyReview()" style="margin-bottom:14px">Complete this week's review</button>
+    <button class="btn primary" onclick="saveWeeklyReview()" style="margin-bottom:14px">Complete this week’s review</button>
     <div id="review-history"></div>
   </div>
 </div>
@@ -4089,7 +4105,7 @@ Amen.</div></div>
 <!-- ═══════════════════════════════════════════════════ -->
 <div id="tab-calendar" class="tab">
   <h2 style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.2;margin-bottom:2px">Your week</h2>
-  <p style="font-size:13px;color:var(--tx3);margin-bottom:16px">Work, classes, gym, commitments — in one place. Paste a roster or type what's on.</p>
+  <p style="font-size:13px;color:var(--tx3);margin-bottom:16px">Work, classes, gym, commitments — in one place. Paste a roster or type what’s on.</p>
 
   <!-- AI paste box -->
   <div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">
@@ -4127,7 +4143,7 @@ Amen.</div></div>
 <div id="tab-settings" class="tab">
   <div style="margin-bottom:12px">
     <div style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.2;margin-bottom:2px">Settings</div>
-    <div style="font-size:12.5px;color:var(--tx3);margin-top:3px;line-height:1.5">The quiet controls. And the most important one of all is here too: the person you're becoming.</div>
+    <div style="font-size:12.5px;color:var(--tx3);margin-top:3px;line-height:1.5">The quiet controls. And the most important one of all is here too: the person you’re becoming.</div>
   </div>
   <div class="card" id="push-settings-card" style="margin-bottom:14px"></div>
   <!-- Crisis resources always first, always visible -->
@@ -4154,8 +4170,8 @@ Amen.</div></div>
 
   <!-- Honest beta framing — shown on web/PWA only; hidden inside the native app (see initSettingsTab). -->
   <div id="beta-web-note" class="card" style="display:none;margin-bottom:14px;border:1px solid var(--go-bd);background:var(--go-bg)">
-    <div class="card-hd" style="margin-bottom:6px">You're on the ToTry beta</div>
-    <div style="font-size:12px;color:var(--tx2);line-height:1.6">This is the web version — everything here is real and saved to your account. A couple of things need the phone itself: <strong style="color:var(--tx)">Apple Health sync</strong> and <strong style="color:var(--tx)">reminders that reach you first</strong>. Those arrive with the ToTry app on the App Store. When it lands you'll get a link, sign in with this same email, and pick up exactly where you are — nothing lost.</div>
+    <div class="card-hd" style="margin-bottom:6px">You’re on the ToTry beta</div>
+    <div style="font-size:12px;color:var(--tx2);line-height:1.6">This is the web version — everything here is real and saved to your account. A couple of things need the phone itself: <strong style="color:var(--tx)">Apple Health sync</strong> and <strong style="color:var(--tx)">reminders that reach you first</strong>. Those arrive with the ToTry app on the App Store. When it lands you’ll get a link, sign in with this same email, and pick up exactly where you are — nothing lost.</div>
   </div>
 
   <!-- ═══ GROUP 2: PREFERENCES (collapsed — set once, rarely changed) ═══ -->
@@ -4229,7 +4245,7 @@ Amen.</div></div>
              device's own clock via toLocaleDateString('en-AU'), which is what a person actually wants —
              so the honest thing is to say the device decides, rather than imply a setting that does
              nothing. Same call as the currency and weight-unit settings above. -->
-        <div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">Your days follow this device's clock. Kept for a future export option.</div>
+        <div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">Your days follow this device’s clock. Kept for a future export option.</div>
         <select id="settings-timezone" onchange="savePref('totry_timezone',this.value);showToast('Noted','Your days still follow this device\u2019s clock.')">
           <option value="auto">Auto-detect from device</option>
           <option value="Australia/Melbourne">Melbourne (AEDT/AEST)</option>
@@ -4265,7 +4281,7 @@ Amen.</div></div>
       </div>
       <div class="setting-row">
         <div><div class="sr-label">Height (for BMI)</div><div class="sr-desc">Used in body tracking</div></div>
-        <input type="number" id="settings-height" placeholder="cm" aria-label="Your height in centimetres" min="80" max="250" style="width:70px;flex:none;padding:6px 8px;font-size:16px" onchange="(function(el){ const v=parseInt(el.value,10); if(!el.value){ ls('totry_height',0); return; } if(!isFinite(v)||v<80||v><span style="font-size:12px;color:var(--tx3);margin-left:6px;align-self:center">cm</span>250){ if(typeof showToast==='function') showToast('Check that height', 'A height in centimetres, somewhere between 80 and 250. Nothing saved.'); el.value = ls('totry_height')||''; return; } ls('totry_height',v); if(typeof renderBody==='function') renderBody(); })(this)">
+        <input type="number" id="settings-height" placeholder="cm" aria-label="Your height in centimetres" min="80" max="250" style="width:70px;flex:none;padding:6px 8px;font-size:16px" onchange="(function(el){ const v=parseInt(el.value,10); if(!el.value){ ls('totry_height',0); return; } if(!isFinite(v)||v<80||v>250){ if(typeof showToast==='function') showToast('Check that height', 'A height in centimetres, somewhere between 80 and 250. Nothing saved.'); el.value = ls('totry_height')||''; return; } ls('totry_height',v); if(typeof renderBody==='function') renderBody(); })(this)"><span style="font-size:12px;color:var(--tx3);margin-left:6px;align-self:center">cm</span>
       </div>
       <div class="setting-row" style="border-bottom:none">
         <div><div class="sr-label">Someone you love</div><div class="sr-desc">Evening nudge to reach out to a person you love</div></div>
@@ -4381,7 +4397,7 @@ Amen.</div></div>
     
     <div class="card">
       <div class="card-hd" style="margin-bottom:8px">🔍 Search your history</div>
-      <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Find anything you've written — journal entries, wins, saved verses, <span id="examen-noun-search">examens</span>, prayers. One bar searches all of it.</p>
+      <p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Find anything you’ve written — journal entries, wins, saved verses, <span id="examen-noun-search">examens</span>, prayers. One bar searches all of it.</p>
       <button class="btn primary" onclick="openUniversalSearch()">Open search</button>
     </div>
     
@@ -4537,7 +4553,7 @@ Amen.</div></div>
   <!-- HELP IMPROVE — always visible, this is the QA channel -->
   <div class="card" style="background:linear-gradient(135deg,rgba(140,107,182,0.08),rgba(200,169,110,0.05));border-color:var(--go-bd)">
     <div class="card-hd" style="margin-bottom:6px">💡 Help improve ToTry</div>
-    <p style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:12px">Found a bug? Got an idea? Something feel off? Tell me directly — this app gets better because real people say what's wrong. Every message is read.</p>
+    <p style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:12px">Found a bug? Got an idea? Something feel off? Tell me directly — this app gets better because real people say what’s wrong. Every message is read.</p>
     <button class="btn primary" onclick="openFeedback()">Send feedback or report a bug</button>
   </div>
 
@@ -4547,7 +4563,7 @@ Amen.</div></div>
     
     <div class="card">
       <div class="card-hd" style="margin-bottom:6px">About</div>
-      <p style="font-size:11px;color:var(--tx3);line-height:1.6;margin-bottom:8px">Anonymous, aggregate usage stats (opens, installs, feature milestones) help improve the app. Never collected: your vices, prayers, journals, food, or weight — that data is yours alone. No cross-site tracking and no ads. Your personal data isn't sold, and that won't change.</p>
+      <p style="font-size:11px;color:var(--tx3);line-height:1.6;margin-bottom:8px">Anonymous, aggregate usage stats (opens, installs, feature milestones) help improve the app. Never collected: your vices, prayers, journals, food, or weight — that data is yours alone. No cross-site tracking and no ads. Your personal data isn’t sold, and that won’t change.</p>
       <div style="font-size:13px;color:var(--tx2);line-height:1.7">
         <p style="margin-bottom:6px">Built by <strong style="color:var(--tx)">Alfred John</strong>. For anyone trying to be better at anything.</p>
         <p>&#64;totry_aj on Instagram</p>
@@ -4594,7 +4610,7 @@ Amen.</div></div>
 <div class="feel-door" id="feel-door" role="dialog" aria-modal="true" aria-labelledby="feel-greeting" tabindex="-1">
   <div class="feel-grab"></div>
   <div class="feel-greeting" id="feel-greeting">What are you feeling?</div>
-  <div class="feel-sub" id="feel-sub">No wrong answer. Just name it — I'll take it from there.</div>
+  <div class="feel-sub" id="feel-sub">No wrong answer. Just name it — I’ll take it from there.</div>
   <div class="feel-grid" id="feel-grid">
     <!-- Built by renderFeelingDoor() so it can adapt to time of day and what's going on. -->
   </div>
@@ -4607,13 +4623,13 @@ Amen.</div></div>
   <div class="comp-phase active" id="comp-checkin">
     <button class="comp-dismiss" id="comp-dismiss-x" onclick="dismissCompanion()" aria-label="Close">&#215;</button>
     <div class="comp-greeting" id="comp-greeting">How are you, really?</div>
-    <div class="comp-sub" id="comp-sub">No wrong answer. I'm just here.</div>
+    <div class="comp-sub" id="comp-sub">No wrong answer. I’m just here.</div>
     <div class="comp-choices" id="comp-choices">
       <button class="comp-choice comp-choice-good" onclick="companionOkay()">
-        <span class="comp-choice-emoji">&#128591;</span><span>I'm okay today</span>
+        <span class="comp-choice-emoji">&#128591;</span><span>I’m okay today</span>
       </button>
       <button class="comp-choice comp-choice-pull" onclick="companionStruggling()">
-        <span class="comp-choice-emoji">&#127754;</span><span>Something's pulling at me</span>
+        <span class="comp-choice-emoji">&#127754;</span><span>Something’s pulling at me</span>
       </button>
     </div>
     <button class="comp-skip" onclick="dismissCompanion()">Just let me in &rarr;</button>
@@ -4626,18 +4642,18 @@ Amen.</div></div>
   <!-- Phase 1: name what it is (their words, or a known vice) -->
   <div class="comp-phase" id="comp-name">
     <button class="comp-dismiss" onclick="closeCompanion()" aria-label="Close">&#215;</button>
-    <div class="comp-greeting" style="font-size:24px">What's pulling at you?</div>
-    <div class="comp-sub">Tap one, or tell me in your own words. Whatever it is, I'm not here to judge it.</div>
+    <div class="comp-greeting" style="font-size:24px">What’s pulling at you?</div>
+    <div class="comp-sub">Tap one, or tell me in your own words. Whatever it is, I’m not here to judge it.</div>
     <div id="comp-known-vices" class="comp-vice-chips"></div>
     <input type="text" id="comp-freetext" class="comp-input" placeholder="or say it in your own words..." onkeydown="if(event.key==='Enter')companionFreeText()">
-    <button class="btn primary" onclick="companionFreeText()" style="margin-top:10px">I'm ready &rarr;</button>
-    <button class="comp-skip" onclick="closeCompanion()">Actually, I'm alright</button>
+    <button class="btn primary" onclick="companionFreeText()" style="margin-top:10px">I’m ready &rarr;</button>
+    <button class="comp-skip" onclick="closeCompanion()">Actually, I’m alright</button>
   </div>
 
   <!-- Phase 2: the companion meets them (AI, grounded in the mechanism) -->
   <div class="comp-phase" id="comp-meet">
     <div class="comp-meet-head">
-      <div class="comp-meet-title" id="comp-meet-title">I'm with you</div>
+      <div class="comp-meet-title" id="comp-meet-title">I’m with you</div>
       <div class="comp-meet-mech" id="comp-meet-mech"></div>
     </div>
     <div class="comp-conversation" id="comp-conversation"></div>
@@ -4653,7 +4669,7 @@ Amen.</div></div>
          doing it again unprompted. This is a second door onto the menu that was already built. -->
     <button onclick="openDEADS()" style="width:100%;margin-top:4px;padding:10px 0;background:none;border:none;color:var(--tx3);font-size:11.5px;cursor:pointer;font-family:'DM Mono',monospace;letter-spacing:0.04em">or pick your own way through &rarr;</button>
     <div class="comp-meet-actions">
-      <button class="btn success" onclick="companionWon()" style="flex:1">I'm through it &#127793;</button>
+      <button class="btn success" onclick="companionWon()" style="flex:1">I’m through it &#127793;</button>
       <button class="btn" onclick="closeCompanion()" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Step away</button>
     </div>
     <button onclick="bridgeToRealHelp('heavy')" style="width:100%;margin-top:4px;padding:10px 0;background:none;border:none;color:var(--tx3);font-size:11.5px;cursor:pointer;font-family:'DM Mono',monospace;letter-spacing:0.03em">🤝 this feels bigger — help me reach a real person</button>
@@ -4662,7 +4678,7 @@ Amen.</div></div>
 
 <div class="sos-overlay" id="sos-overlay">
   <div class="sos-phase active" id="sos-p0">
-    <div class="sos-phase-lbl">Hold on. We've got you.</div>
+    <div class="sos-phase-lbl">Hold on. We’ve got you.</div>
     <div class="sos-vice-name" id="sos-vice-name"></div>
       <div id="sos-why-reminder" style="display:none;text-align:center;padding:14px;margin:0 0 8px;background:var(--bg3);border-radius:10px"></div>
     <div class="sos-phase-q">Where are you right now?</div>
@@ -4716,7 +4732,7 @@ Amen.</div></div>
       <div class="eyebrow" style="color:var(--bl);margin-bottom:6px">Why this works</div>
       <div id="sos-science-note" style="font-size:13px;color:var(--tx2);line-height:1.6"></div>
     </div>
-    <button class="btn primary" style="margin-top:20px" onclick="goSosP3()">I've read it &#8594;</button>
+    <button class="btn primary" style="margin-top:20px" onclick="goSosP3()">I’ve read it &#8594;</button>
     <button class="btn" style="margin-top:10px;font-size:12px;opacity:0.6;background:transparent;border:none;color:var(--tx3)" onclick="closeSos()">I’m okay — close this</button>
   </div>
   <div class="sos-phase" id="sos-p3">
@@ -4781,7 +4797,7 @@ Amen.</div></div>
 <div class="modal-bg" id="journal-modal">
   <div class="modal">
     <div class="modal-handle"></div>
-    <h3>Today's entry</h3>
+    <h3>Today’s entry</h3>
     <div class="prompt-block"><div class="prompt-q" id="journal-prompt"></div></div>
     <div class="mood-row">
       <button class="mood-btn" onclick="setMood(this,'&#128548;')">&#128548;</button>
@@ -4831,7 +4847,7 @@ Amen.</div></div>
          the label in your hand, and every future scan uses YOUR numbers. -->
     <button type="button" id="sm-fix-open" onclick="openFoodFix()" style="background:none;border:none;color:var(--tx3);font-size:11.5px;font-family:'DM Mono',monospace;cursor:pointer;padding:9px 0;margin:-4px 0 14px;text-decoration:underline;text-underline-offset:3px">Numbers look wrong? Correct them &rarr;</button>
     <div id="sm-fix-panel" style="display:none;background:var(--bg3);border:1px solid var(--go-bd);border-radius:10px;padding:12px;margin-bottom:14px">
-      <div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-bottom:10px">Type what the label says for <b id="sm-fix-serving" style="color:var(--go)">this serving</b>. Leave anything you don't know blank. Saved for every future scan.</div>
+      <div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-bottom:10px">Type what the label says for <b id="sm-fix-serving" style="color:var(--go)">this serving</b>. Leave anything you don’t know blank. Saved for every future scan.</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
         <label style="font-size:11px;color:var(--tx3)">Calories<input type="number" id="fix-cal" step="0.1" min="0" style="width:100%;margin-top:3px"></label>
         <label style="font-size:11px;color:var(--tx3)">Protein (g)<input type="number" id="fix-pro" step="0.1" min="0" style="width:100%;margin-top:3px"></label>
@@ -4852,7 +4868,7 @@ Amen.</div></div>
       <button type="button" class="meal-chip" data-meal="dinner" onclick="selectMealChip('dinner')">🌙 Dinner</button>
       <button type="button" class="meal-chip" data-meal="snack" onclick="selectMealChip('snack')">🍎 Snack</button>
     </div>
-    <button class="btn primary" onclick="addFoodToLog()" style="margin-bottom:8px">Add to today's log</button>
+    <button class="btn primary" onclick="addFoodToLog()" style="margin-bottom:8px">Add to today’s log</button>
     <button class="btn" onclick="document.getElementById('serving-modal').classList.remove('open')">Cancel</button>
   </div>
 </div>

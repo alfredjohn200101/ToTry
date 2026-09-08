@@ -733,7 +733,7 @@ function openGoalWeight(){
       'it any time.</p>' +
     '<input type="number" id="gw-input" inputmode="decimal" step="0.1" value="' + shown + '" ' +
       'placeholder="Goal weight (' + u + ')" style="width:100%;box-sizing:border-box;margin-bottom:12px">' +
-    '<button class="btn primary" onclick="saveGoalWeight()" style="margin-bottom:8px">Save</button>' +
+    '<button class="btn primary" onclick="saveGoalWeight()" style="margin-bottom:8px">Save goal weight</button>' +
     (cur ? '<button class="btn" onclick="clearGoalWeight()" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Remove the goal</button>'
          : '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>') +
   '</div>';
@@ -1172,7 +1172,7 @@ function openQuickWeightLog(){
     '</div>' +
     (todayEntry && todayEntry.weight > 0 ? '<p style="font-size:11px;color:var(--go);margin-bottom:10px;text-align:center">Already logged today: ' + wFmt(todayEntry.weight) + ' — this will replace it.</p>' : '') +
     '<div style="display:flex;gap:8px">' +
-      '<button class="btn primary" style="flex:1" onclick="saveQuickWeight()">Save</button>' +
+      '<button class="btn primary" style="flex:1" onclick="saveQuickWeight()">Save weight</button>' +
       '<button class="btn" style="flex:1" onclick="closeModal(this)">Cancel</button>' +
     '</div>' +
   '</div>';

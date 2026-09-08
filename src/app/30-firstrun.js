@@ -267,7 +267,7 @@ function showAppPreview(){
   
   // Build a "Day 60 in the life of a user" preview — all illustrative, never saved
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:#8C6BB6;text-transform:uppercase;letter-spacing:0.15em;margin-bottom:6px">Preview · sample data · not yours</div>' +
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--pu);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:6px">Preview · sample data · not yours</div>' +
     '<h3 style="margin-bottom:6px">What Day 60 looks like</h3>' +
     '<p style="font-size:12px;color:var(--tx3);margin-bottom:16px;line-height:1.6">This is a sample of what your app will look like once you\'ve been logging for 2 months. None of this is real — it\'s just so you can see what you\'re building toward.</p>' +
     '<div style="max-height:62vh;overflow-y:auto;padding-right:4px">' +
@@ -284,7 +284,7 @@ function showAppPreview(){
     
       // Coach line
       '<div style="background:linear-gradient(135deg,rgba(140,107,182,0.1),rgba(200,169,110,0.06));border:1px solid rgba(140,107,182,0.3);border-radius:10px;padding:12px;margin-bottom:10px">' +
-        '<div style="font-family:DM Mono,monospace;font-size:8px;color:#8C6BB6;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px">Your coach says</div>' +
+        '<div style="font-family:DM Mono,monospace;font-size:8px;color:var(--pu);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px">Your coach says</div>' +
         '<div style="font-family:Cormorant Garamond,serif;font-size:14px;color:var(--tx);font-style:italic;line-height:1.5">"Yesterday you trained legs hard and journaled about feeling tired. Today: lighter session, double protein, sleep 8h. Phil 4:13."</div>' +
       '</div>' +
     

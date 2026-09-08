@@ -397,7 +397,7 @@ function openSubscriptionLogger(){
     '</div>' +
     '<div class="eyebrow">Note (optional)</div>' +
     '<input type="text" id="sub-note" placeholder="Why you have it" style="margin-bottom:14px">' +
-    '<button class="btn primary" onclick="saveSubscription()" style="margin-bottom:8px">Save</button>' +
+    '<button class="btn primary" onclick="saveSubscription()" style="margin-bottom:8px">Save subscription</button>' +
     '<button class="btn" onclick="closeModal(this)">Cancel</button>' +
   '</div>';
   document.body.appendChild(m);

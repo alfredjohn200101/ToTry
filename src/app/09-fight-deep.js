@@ -540,7 +540,7 @@ function postUrgeReflection(viceName){
     '<input type="text" id="pur-trigger" placeholder="stress, boredom, a person, late night..." style="margin-bottom:12px">'+
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">What got you through?</div>'+
     '<input type="text" id="pur-helped" placeholder="prayer, walked away, called someone, breathed..." style="margin-bottom:14px">'+
-    '<button class="btn primary" onclick="savePostUrge(\''+viceName.replace(/'/g,"\\'")+'\')" style="margin-bottom:8px">Save</button>'+
+    '<button class="btn primary" onclick="savePostUrge(\''+viceName.replace(/'/g,"\\'")+'\')" style="margin-bottom:8px">Save what happened</button>'+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Skip</button>'+
     '</div>';
   document.body.appendChild(m);
@@ -965,7 +965,7 @@ function renderVices(){
       totalInsight +
       // One quiet "manage" door instead of six loose links. Backdating lives in "I used" (it takes any
       // date), so the old "log a past slip / add several" buttons are gone — they did the same thing.
-      '<button onclick="openViceManage(' + i + ')" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:14px 6px;min-height:44px;letter-spacing:0.03em">Manage &middot; start date, cost, mode, remove</button>';
+      '<button onclick="openViceManage(' + i + ')" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:11.5px;cursor:pointer;padding:14px 6px;min-height:44px">Manage &middot; start date, cost, mode, remove</button>';
     list.appendChild(c);
   });
   
@@ -2670,7 +2670,7 @@ function editViceCost(i){
     '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Still owe anyone for it? ('+curSym()+')</div>'+
     '<input type="number" inputmode="decimal" id="vc-owed" value="'+(v.owed||'')+'" placeholder="e.g. 200 — leave blank if none" style="margin-bottom:6px;font-size:16px;padding:12px">'+
     '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:14px">Being clean doesn’t put you ahead until what you owe is cleared. I’ll count that first, honestly.</div>'+
-    '<button class="btn primary" onclick="saveViceCost('+i+')" style="margin-bottom:8px">Save</button>'+
+    '<button class="btn primary" onclick="saveViceCost('+i+')" style="margin-bottom:8px">Save what it costs</button>'+
     (v.costAmount?'<button class="btn" onclick="clearViceCost('+i+')" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;margin-bottom:8px">Remove cost tracking</button>':'')+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Cancel</button>'+
     '</div>';

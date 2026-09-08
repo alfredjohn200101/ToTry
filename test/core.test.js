@@ -4341,6 +4341,71 @@ function fnBodyOf(code, name){
     H.eq(unrestored, [], 'every token the light theme sets is removed again when switching back to dark');
   }
 
+  // ...AND THE OTHER DIRECTION, which is the one that shipped broken. The check above only asks
+  // whether what light SETS gets removed; nothing asked whether light sets everything it needs to.
+  // --bg4 was the answer: the one colour token applyTheme never touched, so in light mode it stayed
+  // #222228 — the unfilled half of every progress bar (.bar-wrap, .goal-bar-wrap, .vice-bar-wrap,
+  // .sos-q-bar-wrap, .vsr-bar-wrap), the check-in slider groove, the sheet grab handle, the
+  // onboarding dots and the SVG ring, all near-BLACK on a cream page. A goal bar read as 20% green
+  // then 80% black, which a person reads as nearly full. Measured on a real light-theme page: the
+  // grab handle came back rgb(34,34,40) on rgb(255,255,255) — 15.82:1, a hard rule where a soft
+  // handle belongs. Every colour token in :root must be answered for; geometry and safe-area are not
+  // colours and are named here so the list stays honest rather than the regex staying loose.
+  {
+    const head = fs.readFileSync(path.join(root, 'src/shell-head.html'), 'utf8');
+    const rootBlock = head.slice(head.indexOf(':root{'), head.indexOf('}', head.indexOf(':root{')));
+    const colourTokens = [...rootBlock.matchAll(/--([\w-]+)\s*:\s*(#[0-9a-fA-F]{3,8}|rgba?\([^)]*\))/g)]
+      .map(m => m[1]);
+    const src = fs.readFileSync(path.join(root, 'src/app/27-settings.js'), 'utf8');
+    const li = src.indexOf("if(theme === 'light')");
+    const lb = src.slice(li, src.indexOf('} else {', li));
+    const setInLight = new Set([...lb.matchAll(/setProperty\('--([\w-]+)'/g)].map(m => m[1]));
+    if (/\['go','gr','re','bl','pu'\]/.test(lb))
+      ['go','gr','re','bl','pu'].forEach(n => [n, n+'-bg', n+'-bd'].forEach(t => setInLight.add(t)));
+    H.ok(colourTokens.length >= 20,
+      `the :root colour scan found ${colourTokens.length} token(s) — under 20 means the scan broke, not the app`);
+    const forgotten = colourTokens.filter(t => !setInLight.has(t));
+    H.eq(forgotten, [], 'every colour token declared in :root is given a light-theme value');
+  }
+
+  // AND NO NEW HARDCODED INK. The check above covers tokens; the coach's purple was not a token —
+  // `color:#8C6BB6` was written out 9 times (.sabbath-title, .see-q and seven DM Mono eyebrows) while
+  // --pu sat at #9B7EC0 unused. Because it was a literal it never followed the light theme, and it
+  // turned out to fail AA in BOTH: 3.38:1 on a light input, and 4.04:1 on an ordinary DARK card —
+  // the coach voice had been under the floor on dark cards the whole time, which the token-only
+  // contrast matrix below could not see. All nine now use var(--pu), which clears 4.52-5.73:1
+  // everywhere. The nine literals left are ink sitting on a KNOWN coloured fill (dark text on gold,
+  // Strava's own orange on Strava's chip, the boot splash which has no theme) — a contrast check
+  // reading source cannot know their background, so each is named here instead of guessed at.
+  // Adding a tenth is the regression this catches: use a token, or add it here and say why.
+  {
+    const INK_ON_A_KNOWN_FILL = {
+      '#1A1505': 'near-black on the gold primary button and log bar',
+      '#1A1205': 'near-black on the morning ritual’s gold',
+      '#231803': 'near-black on the fuel plan’s gold chip',
+      '#0C0C0E': 'the app’s own black, on gold hero actions',
+      '#FC4C02': 'Strava’s brand orange, on Strava’s own chip',
+      '#6A6A72': 'boot splash — painted before any theme exists',
+      '#C8A96E': 'boot splash spinner — same, on the fixed dark splash',
+      '#7A2E2E': 'dark red on a red-tinted fill',
+      '#A8D8B9': 'pale green on a dark fill',
+    };
+    const files = ['src/shell-head.html', 'src/shell-tail.html']
+      .concat(fs.readdirSync(path.join(root, 'src/app')).filter(f => f.endsWith('.js')).map(f => 'src/app/' + f));
+    const found = new Map();
+    for (const rel of files) {
+      const txt = fs.readFileSync(path.join(root, rel), 'utf8');
+      txt.split('\n').forEach((line, i) => {
+        if (line.trimStart().startsWith('//')) return;
+        for (const m of line.matchAll(/color\s*:\s*(#[0-9a-fA-F]{6})\b/g))
+          if (!found.has(m[1].toUpperCase())) found.set(m[1].toUpperCase(), `${rel}:${i + 1}`);
+      });
+    }
+    H.ok(found.size >= 5, `the ink scan found ${found.size} literal(s) — under 5 means the scan broke, not the app`);
+    const unexplained = [...found].filter(([hex]) => !INK_ON_A_KNOWN_FILL[hex]).map(([hex, at]) => `${hex} at ${at}`);
+    H.eq(unexplained, [], 'every hardcoded text colour is ink on a known fill — anything else uses a token');
+  }
+
   let checked = 0;
   for (const [themeName, t] of [['dark', dark], ['light', light]]) {
     for (const fg of ['tx', 'tx2', 'tx3', 'go', 'gr', 're']) {

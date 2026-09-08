@@ -1520,7 +1520,7 @@ function openServiceExit(){
     '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:8px">'+a[2]+'</div>'+
     '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:18px">An urge points you inward, at yourself. The quickest way out is not to think harder about it \u2014 it is to turn and do one small thing for someone else.</div>'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);theRelease({did:\'You turned outward instead of inward \u2014 and did something real for someone else.\'})">I\u2019m doing it</button>'+
-    '<button class="btn" onclick="closeModal(this);openServiceExit()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px;margin-bottom:8px">Give me another</button>'+
+    '<button class="btn" onclick="closeModal(this);openServiceExit()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px;margin-bottom:8px">Give me another</button>'+
     '<button class="btn" onclick="closeModal(this);openDEADS()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin-bottom:8px;font-size:13px">\u{1F5FA} Five ways through \u2014 pick one</button>'+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
   '</div>';

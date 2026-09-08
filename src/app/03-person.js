@@ -151,7 +151,7 @@ function openCycleLog(){
       CYCLE_SYMPTOMS.map(s=>'<button type="button" class="qb" data-s="'+_escFew(s)+'" onclick="_cycPick(this,0)">'+_escFew(s)+'</button>').join('')+
     '</div>'+
     '<div id="cyc-err" style="display:none;color:var(--re);font-size:12px;margin-bottom:10px"></div>'+
-    '<button class="btn primary" onclick="saveCycleLog(this)" style="margin-bottom:8px">Save</button>'+
+    '<button class="btn primary" onclick="saveCycleLog(this)" style="margin-bottom:8px">Save cycle log</button>'+
     '<button class="btn" onclick="closeModal(this)">Cancel</button>'+
     '<div style="font-size:10.5px;color:var(--tx3);line-height:1.5;margin-top:12px;text-align:center">Stays on this device unless you switch backup on yourself.</div>'+
   '</div>';
@@ -1429,6 +1429,15 @@ function aiUnavailableHtml(local){
     '</div>';
 }
 
+// WHAT A PERSON READS WHEN THE AI CANNOT ANSWER. Five user-facing surfaces render this — the coach,
+// the PT, the body screen, the fuel plan and the moment — not a diagnostics panel. It used to hand
+// them the stack: "Check Supabase secrets (GEMINI_API_KEY, GROQ_API_KEY, …)", "your phone can't
+// reach Supabase", "Supabase edge function down", and the names of the providers behind the chain.
+// Someone who opens the companion mid-urge and is told to check an env var has been handed a build
+// error instead of a presence — and it named this app's infrastructure to anyone who saw it. The
+// DISTINCTIONS are kept, because they are the useful part (out for today / try in a minute / you
+// are offline / it is my fault); only the vendor names left. Raw attempts still live next door in
+// the diagnostic, which is where a developer should be reading them.
 function getAIErrorMessage(){
   const err = window.__lastAIError;
   if(!err) return null;
@@ -1446,28 +1455,28 @@ function getAIErrorMessage(){
       const e = (a.error || '').toLowerCase();
       return e.includes('credit') || e.includes('quota') || e.includes('billing') || e.includes('insufficient');
     });
-    if(allQuota) return 'AI quota reached on all providers — usually resets within 24h. (Gemini/Groq free tiers refill daily; Anthropic monthly.)';
+    if(allQuota) return 'I have hit my limit for today — it comes back within a day. Everything else in the app still works, and I am still here tomorrow.';
     
     // If all 429
     const allRate = attempted.length > 0 && attempted.every(a => a.status === 429 || (a.error||'').toLowerCase().includes('rate'));
-    if(allRate) return 'All providers rate-limited. Try again in 30-60 seconds.';
+    if(allRate) return 'Too many at once — give me a minute and ask me again.';
     
     // If a specific provider failed for specific reason, surface it
     const real = attempted[0];
     if(real?.error){
       const e = (real.error || '').toLowerCase();
       if(e.includes('api key') || e.includes('unauthorized') || e.includes('forbidden')) {
-        return 'AI keys invalid or missing. Check Supabase secrets (GEMINI_API_KEY, GROQ_API_KEY, OPENROUTER_API_KEY, ANTHROPIC_API_KEY).';
+        return 'Something my end is misconfigured — that is on me, not you. It needs a fix before I can answer.';
       }
-      if(e.includes('timeout')) return 'AI providers timed out. Try a shorter message.';
+      if(e.includes('timeout')) return 'That took too long to come back. Try saying it shorter and I will have another go.';
     }
   }
   
   // Edge function failed entirely (not just providers within it)
   if(err.error){
     const e = (err.error || '').toLowerCase();
-    if(e.includes('failed to fetch') || e.includes('network')) return 'Network issue — your phone can\'t reach Supabase. Check Wi-Fi/data.';
-    if(e.includes('500') || e.includes('502') || e.includes('503')) return 'Supabase edge function down. Usually back within minutes.';
+    if(e.includes('failed to fetch') || e.includes('network')) return 'Your phone is not online right now. Check Wi-Fi or data — everything you have written is safe here.';
+    if(e.includes('500') || e.includes('502') || e.includes('503')) return 'My end is down for a moment. Usually back within minutes — try me again shortly.';
   }
   
   return 'AI is temporarily unavailable. Try again in a moment.';
@@ -3983,7 +3992,7 @@ function _paintPractice(){
   const sub=document.getElementById('practice-sub'); if(sub) sub.textContent=cfg.sub;
   let chooser='';
   if(st.kind==='japa'){ const mi=_mantraIdx(); chooser='<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px">'+JAPA_MANTRAS.map((m,i)=>'<button onclick="_selectMantra('+i+')" style="cursor:pointer;font-size:12px;padding:6px 11px;border-radius:20px;border:1px solid '+(i===mi?'var(--go)':'var(--bd)')+';background:'+(i===mi?'rgba(200,169,110,0.12)':'var(--bg3)')+';color:'+(i===mi?'var(--go)':'var(--tx2)')+'">'+m.name+'</button>').join('')+'</div>'; }
-  const roundInfo=phases.length>1?('<div style="font-size:11px;color:var(--tx3);margin-top:4px">Part '+(st.phase+1)+' of '+phases.length+'</div>'):'';
+  const roundInfo=phases.length>1?('<div class="eyebrow" style="margin:6px 0 0">Part '+(st.phase+1)+' of '+phases.length+'</div>'  /* the app's own label device, not a body line one pixel smaller than the body line above it */):'';
   const namesBtn=st.kind==='dhikr'?'<button class="btn" onclick="_openAsma()" style="width:100%;margin-top:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px">✦ The 99 Names of Allah ›</button>':'';
   el.innerHTML=chooser+'<div class="card" style="text-align:center;padding:24px 18px"><div style="font-family:Cormorant Garamond,serif;font-size:'+(st.kind==='japa'?'34':'26')+'px;color:var(--tx);margin-bottom:2px">'+ph.name+'</div><div style="font-size:12px;color:var(--tx3);font-style:italic">'+ph.sub+'</div>'+roundInfo+'<div onclick="_practiceTap()" style="cursor:pointer;user-select:none;width:180px;height:180px;margin:22px auto;border-radius:50%;border:2px solid var(--go-bd);background:radial-gradient(circle at 50% 40%,rgba(200,169,110,0.12),rgba(140,107,182,0.05));display:flex;flex-direction:column;align-items:center;justify-content:center"><div id="practice-count" style="font-family:DM Mono,monospace;font-size:42px;color:var(--go)">'+st.count+'</div><div style="font-size:11px;color:var(--tx3);letter-spacing:0.1em">of '+ph.n+'</div></div><div style="font-size:12px;color:var(--tx3);margin-bottom:14px">Tap the circle for each repetition</div><button class="btn" onclick="_practiceReset()" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;padding:7px 14px">Reset</button></div>'+namesBtn;
   // The intention composer lives under the practice, so this tab is a HOME and not one exercise.

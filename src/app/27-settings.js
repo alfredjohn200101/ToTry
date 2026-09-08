@@ -610,6 +610,12 @@ function applyTheme(theme){
     root.style.setProperty('--bg', '#F5F1E8');
     root.style.setProperty('--bg2', '#FFFFFF');
     root.style.setProperty('--bg3', '#EBE4D2');
+    // --bg4 is the RECESS: the unfilled half of every progress bar (.bar-wrap, .goal-bar-wrap,
+    // .vice-bar-wrap, .sos-q-bar-wrap, .vsr-bar-wrap), the check-in slider groove, the sheet's grab
+    // handle, the onboarding dots and the SVG ring. It was the ONE colour token this function did
+    // not re-set, so in light mode it stayed #222228: a sheet handle at 15.82:1 on a white card, and
+    // a goal bar that showed 20% green then 80% BLACK — which reads as nearly full, not nearly empty.
+    root.style.setProperty('--bg4', '#DED6C3');
     root.style.setProperty('--tx', '#1A1A1F');
     root.style.setProperty('--tx2', '#3D3D45');
     root.style.setProperty('--tx3', '#65656C');   // 4.56:1 on the worst light bg — see the note
@@ -639,6 +645,7 @@ function applyTheme(theme){
     root.style.removeProperty('--bg');
     root.style.removeProperty('--bg2');
     root.style.removeProperty('--bg3');
+    root.style.removeProperty('--bg4');
     root.style.removeProperty('--tx');
     root.style.removeProperty('--tx2');
     root.style.removeProperty('--tx3');

@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v593-no-prompt-gives-two-orders'
+const CACHE = 'totry-v594-buttons-never-inherit-the-font'
 
 const CORE = [
   './',

@@ -4679,6 +4679,164 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
   }
 
 
+  // ── ONE WALK, THREE QUESTIONS ABOUT WHAT THE APP ACTUALLY RENDERS ───────────────────────────
+  // These three checks were written as three separate blocks, each opening its own browser and
+  // walking all 101 sheet openers. Together with the sheet-name walk that already did, the gate went
+  // from ~25 minutes to over an hour and then died — the fourth browser was killed under memory
+  // pressure and node sat at 0% CPU waiting on a page that no longer existed, which reads exactly
+  // like a slow test and is not one. One context, one walk, three measurements:
+  //
+  //   TYPEFACE — a <button> does not inherit font-family from body, and there was no button{} rule,
+  //   so 103 of 402 visible controls rendered in ARIAL: "Still clean", the mood buttons, the fuel
+  //   chips, every control in the Companion. "Arial" appears nowhere in src/, so no grep finds it.
+  //
+  //   SOURCE ON SCREEN — Settings → Height had a <span>cm</span> spliced INTO its own onchange, mid
+  //   `v>250`. No handler compiled, so the field was dead and BMI read nothing; the rest of the
+  //   handler rendered as 16px body text; the leftover CSS became an ATTRIBUTE NAME. The file
+  //   parses, the bundle builds, every id exists — only the rendered page shows it.
+  //
+  //   NEAR-DUPLICATE TYPE — the app renders 27 font sizes and almost none of that is visible, because
+  //   they sit on different screens. What a person DOES see is two neighbours, same tag, same ink,
+  //   same weight, one pixel apart. Seven existed, including two stacked links in one vice card at
+  //   11.5px and 11px. This counts only that, never the 45 declared sizes: a count is a smell, and a
+  //   smell is not worth failing a build over.
+  //
+  // Each calibrates before it reports. The typeface control is deliberately NOT a bare button — the
+  // first draft used one, which is the very thing the rule under test fixes, so removing the rule
+  // made the check blame the instrument instead of the app. A control has to hold whether the thing
+  // under test passes or fails.
+  {
+    const ctx=await browser.newContext({viewport:{width:414,height:896},hasTouch:true,isMobile:true});
+    const page=await ctx.newPage();
+    await page.addInitScript(()=>{
+      localStorage.setItem('totry_onboarded', JSON.stringify(true));
+      localStorage.setItem('totry_start', JSON.stringify(new Date(Date.now()-30*864e5).toISOString()));
+      localStorage.setItem('totry_v', JSON.stringify([{n:'Lust / PMO',type:'porn',mode:'quit',
+        startDate:new Date(Date.now()-9*864e5).toISOString(),w:5,total:6}]));
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`,{waitUntil:'domcontentloaded'});
+    await page.addStyleTag({content:':root{--st:59px;--sb:34px}'});
+    await page.waitForTimeout(2600);
+    const r=await page.evaluate(async()=>{
+      const wait=ms=>new Promise(r=>setTimeout(r,ms));
+      const BRAND=/Outfit|DM Mono|Cormorant/;
+      const CODE=/(function\s*\(|typeof\s|=>|localStorage|document\.)/;
+      const BRACE=/\)\s*\{|;\s*\}|\}\s*\)\s*\(/;
+      const looksLikeSource=t => t.length>=40 && CODE.test(t) && BRACE.test(t);
+      const sel=el=>el.tagName+(el.id?'#'+el.id:'')+(el.className&&typeof el.className==='string'&&el.className.trim()
+        ?'.'+el.className.trim().split(/\s+/).slice(0,2).join('.'):'');
+
+      // ── CALIBRATION, all three, on controls that do not depend on the rules under test ──
+      const cal=document.createElement('div');
+      cal.innerHTML='<div id="__cg" style="font-family:Outfit,sans-serif">x</div>'
+                   +'<button id="__cb" style="font-family:Arial">x</button>'
+                   +'<p id="__p1" style="font-size:13px">calibration line one, long enough to be real</p>'
+                   +'<p id="__p2" style="font-size:12.5px">calibration line two, long enough to be real</p>';
+      document.body.appendChild(cal);
+      const calFontGood=BRAND.test(getComputedStyle(document.getElementById('__cg')).fontFamily);
+      const calFontBad =BRAND.test(getComputedStyle(document.getElementById('__cb')).fontFamily);
+      const calSrcPos=looksLikeSource("(function(el){ const v=parseInt(el.value,10); if(typeof showToast==='function') return; })");
+      const calSrcNeg=looksLikeSource("You don’t have to carry this alone. Reach out to someone who knows you, today.");
+      const pairsIn=(root)=>{
+        const hits=[];
+        // INCLUDE THE ROOT. querySelectorAll('*') returns descendants only, so passing an opened
+        // sheet as root skipped that sheet's own children — every direct child of every one of the
+        // 101 sheets. The planted-pair calibration is what caught it: it could not see a 0.5px gap
+        // it had built itself, because the element holding the pair was the root.
+        [root].concat([...root.querySelectorAll('*')]).forEach(parent=>{
+          const kids=[...parent.children].filter(el=>{
+            const rc=el.getBoundingClientRect(); return rc.width>4 && rc.height>4; });
+          for(let i=0;i<kids.length-1;i++){
+            const x=kids[i], y=kids[i+1];
+            if(x.tagName!==y.tagName) continue;
+            const X=getComputedStyle(x), Y=getComputedStyle(y);
+            if(X.color!==Y.color || X.fontWeight!==Y.fontWeight) continue;
+            if(X.fontFamily!==Y.fontFamily || X.borderTopStyle!==Y.borderTopStyle) continue;
+            const gap=Math.abs(parseFloat(X.fontSize)-parseFloat(Y.fontSize));
+            if(!(gap>0 && gap<=1)) continue;
+            const tx=(x.textContent||'').trim(), ty=(y.textContent||'').trim();
+            if(!tx||!ty) continue;
+            hits.push(x.tagName+' '+X.fontSize+' "'+tx.slice(0,24)+'" vs '+Y.fontSize+' "'+ty.slice(0,24)+'"');
+          }
+        });
+        return hits;
+      };
+      const calPairs=pairsIn(cal).length===1;
+      cal.remove();
+
+      // ── ONE WALK ──
+      const badFont={}, leaks=[], stray=[], near=new Set();
+      let controls=0, textNodes=0, screens=0;
+      const scanControls=root=>root.querySelectorAll('button,[role="button"],a,.btn,.hub-card,.qb,.vchip,.nb').forEach(el=>{
+        const rc=el.getBoundingClientRect(); if(rc.width<1||rc.height<1) return;
+        const cs=getComputedStyle(el); if(cs.visibility==='hidden') return;
+        if(!(el.textContent||'').trim()) return;
+        controls++; if(!BRAND.test(cs.fontFamily)) badFont[sel(el)]=cs.fontFamily;
+      });
+      const scanText=(root)=>{
+        const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT); let n;
+        while(n=w.nextNode()){
+          const tx=(n.textContent||'').trim(); if(!tx) continue; textNodes++;
+          if(!looksLikeSource(tx)) continue;
+          const el=n.parentElement; if(!el || el.closest('script,style')) continue;
+          const rc=el.getBoundingClientRect(); if(rc.width<2||rc.height<2) continue;
+          leaks.push((el.id?'#'+el.id:el.tagName)+' :: '+tx.slice(0,60));
+        }
+        root.querySelectorAll('*').forEach(el=>{
+          for(const a of el.attributes) if(/[:;{}()]/.test(a.name))
+            stray.push((el.id?'#'+el.id:el.tagName)+' attr "'+a.name.slice(0,44)+'"');
+        });
+      };
+      // Scoped to the root, not the whole document: the opener loop runs 101 times and a full-tree
+      // walk each time is what turned a 25-minute gate into an hour and then an OOM kill.
+      const sweep=(root)=>{ screens++; scanControls(root); scanText(root); pairsIn(root).forEach(h=>near.add(h)); };
+
+      for(const t of ['home','grow','fight','money','soul','nourish','reflect','track','settings']){
+        try{ if(typeof go==='function') go(t); }catch(e){}
+        await wait(500); sweep(document.body);
+      }
+      document.querySelectorAll('details').forEach(d=>{ d.open=true; });   // settings hides most rows in <details>
+      await wait(400); sweep(document);
+      const openers=Object.keys(window).filter(k=>/^(open|show)[A-Z]/.test(k)
+        && typeof window[k]==='function' && window[k].length===0);
+      for(const fn of openers){
+        try{ window[fn](); }catch(e){ continue; }
+        await wait(55);
+        const opened=document.querySelectorAll('.modal-bg.open, .companion-overlay.open, .feel-door.open');
+        if(opened.length) opened.forEach(m=>sweep(m)); else screens++;
+        document.querySelectorAll('.modal-bg.open').forEach(m=>{
+          m.classList.remove('open'); if(m.parentNode && !m.id) m.remove(); });
+      }
+      return {calFontGood, calFontBad, calSrcPos, calSrcNeg, calPairs,
+              controls, textNodes, screens, openers:openers.length,
+              badFont:Object.entries(badFont).map(([k,v])=>k+' ['+v+']'),
+              leaks:[...new Set(leaks)], stray:[...new Set(stray)], near:[...near]};
+    });
+    await ctx.close();
+
+    // TYPEFACE
+    if(!r.calFontGood || r.calFontBad)
+      findings.push(`typeface: the instrument is wrong, not the app (explicit-Outfit reads brand=${r.calFontGood}, explicit-Arial reads brand=${r.calFontBad})`);
+    else if(r.controls < 150) findings.push(`typeface: only ${r.controls} controls reached — the scan is not walking the app`);
+    else if(r.badFont.length) findings.push(`typeface: ${r.badFont.length} kind(s) of control render outside the app's three fonts — ${r.badFont.slice(0,5).join(', ')}`);
+    else console.log(`typeface: all ${r.controls} visible controls render in Outfit, DM Mono or Cormorant`);
+
+    // SOURCE ON SCREEN
+    if(!r.calSrcPos || r.calSrcNeg)
+      findings.push(`source on screen: the instrument is wrong, not the app (source trips=${r.calSrcPos}, prose trips=${r.calSrcNeg})`);
+    else if(r.textNodes < 300) findings.push(`source on screen: only ${r.textNodes} text nodes reached — the scan is not walking the app`);
+    else if(r.leaks.length) findings.push(`source on screen: ${r.leaks.length} place(s) print JavaScript at the person — ${r.leaks.slice(0,3).join(' ; ')}`);
+    else if(r.stray.length) findings.push(`broken tag: ${r.stray.length} element(s) carry an attribute whose NAME is code — ${r.stray.slice(0,3).join(' ; ')}`);
+    else console.log(`source on screen: none of ${r.textNodes} text runs is JavaScript, and no tag broke open`);
+
+    // NEAR-DUPLICATE TYPE
+    if(!r.calPairs)
+      findings.push('near-duplicate type: the detector cannot see a 0.5px gap it planted itself — the instrument is wrong');
+    else if(r.screens < 40) findings.push(`near-duplicate type: only ${r.screens} screens swept — the scan is not walking the app`);
+    else if(r.near.length) findings.push(`near-duplicate type: ${r.near.length} pair(s) of neighbours differ by <=1px — ${r.near.slice(0,3).join(' ; ')}`);
+    else console.log(`near-duplicate type: across ${r.screens} screens, no two neighbours differ by an amount nobody can see`);
+  }
+
   // ── THE WAY OUT IS NEVER THE DIMMEST THING ─────────────────────────────────────────────────
   // Measured from RENDERED PIXELS, not computed styles. A computed-style version of this walks
   // parent backgrounds, misses gradients and mishandles opacity chains — it read 1:1 for ordinary

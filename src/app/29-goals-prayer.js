@@ -79,7 +79,7 @@ function editGoal(level){
     '<h3 style="margin-bottom:6px">Edit goals for ' + labels[level] + '</h3>' +
     '<p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.6">' + prompts[level] + '</p>' +
     '<textarea id="goal-input" style="min-height:140px;font-size:16px;line-height:1.6">' + current + '</textarea>' +
-    '<button class="btn primary" onclick="saveGoalEdit(\'' + level + '\')" style="margin-top:14px;margin-bottom:8px">Save</button>' +
+    '<button class="btn primary" onclick="saveGoalEdit(\'' + level + '\')" style="margin-top:14px;margin-bottom:8px">Save goal</button>' +
     '<button class="btn" onclick="closeModal(this)">Cancel</button>' +
   '</div>';
   document.body.appendChild(m);
@@ -216,7 +216,7 @@ function _promptSacramentDate(kind){
       (kind==='confession'
         ? 'closeModal(this);logConfession(iso);'
         : 'var e=document.getElementById(\'sacrament-euch-input\');var euchEl=document.getElementById(\'mass-received-eucharist\');if(euchEl&&e)euchEl.checked=e.checked;closeModal(this);logMass(iso);')+
-      '}).call(this)" style="margin-bottom:8px">Log it</button>'+
+      '}).call(this)" style="margin-bottom:8px">Save '+(kind==='confession'?'confession':'Mass')+'</button>'+
     '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Cancel</button>'+
     '</div>';
   document.body.appendChild(m);

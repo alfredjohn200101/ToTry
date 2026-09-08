@@ -42,7 +42,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
-- `APP_VERSION` in `src/app/00-boot.js` — currently **v589**. Bump it AND `CACHE` in sw.js together, always.
+- `APP_VERSION` in `src/app/00-boot.js` — currently **v594**. Bump it AND `CACHE` in sw.js together, always.
 
 ## The nervous system (key functions — grep these)
 - `getLifeState()` — returns the whole person {training, nutrition, body, soul, fight, readiness,
@@ -65,7 +65,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    reported 1032 PASSED, because the harness extracts functions by name and never parsed the whole
    script. A suite that stays green while the app cannot boot is worse than no suite.
 2. **Run the whole gate before you ship**, not just `npm test`:
-   - `npm test` — 1838 assertions over the real bundle (core math, dead code, privacy promises,
+   - `npm test` — 1860 assertions over the real bundle (core math, dead code, privacy promises,
      the voice gates, the parse check). Four classes were added on 6 Sep 2026 after an audit of the
      PREVIOUS round's own fixes, each of which had been fixed only where it was reported:
      **(a) a person's own typing as live HTML** — the v579 sweep found five doors by looking for typed
@@ -86,6 +86,20 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
      **(d) every button calls a function that exists** — the id sweep asked this of elements; nothing
      asked it of behaviour. Strip string literals from the handler body first (and unescape `&apos;`),
      or "Suscipe (Take Lord, Receive)" reports a missing `Suscipe()` and the check gets ignored.
+     Two more were added 8 Sep 2026, both out of ONE bug: `--bg4` was the only colour token
+     `applyTheme()` never re-set, so in the light theme the unfilled half of every progress bar, the
+     check-in slider groove, the sheet grab handle and the onboarding dots stayed **#222228** — a goal
+     bar reading 20% green then 80% BLACK, which a person reads as nearly full.
+     **(e) every colour token declared in `:root` gets a light-theme value.** The check that existed
+     asked only the other direction — that what light SETS is removed again on the way back — and it
+     passed the whole time.
+     **(f) no new hardcoded ink.** The coach's purple was `color:#8C6BB6` written out nine times while
+     `--pu` sat unused; being a literal it never followed the theme, and it turned out to fail AA in
+     BOTH — 3.38:1 on a light input and **4.04:1 on an ordinary dark card** — which the contrast
+     matrix could not see because it only ever looked at tokens. The nine literals that remain are ink
+     on a KNOWN coloured fill (dark text on gold, Strava's orange on Strava's chip, the boot splash,
+     which is painted before a theme exists); source cannot know their background, so each is named in
+     an allowlist with its reason rather than guessed at. A tenth fails the build.
    - `npm run crisis` — types the worst sentence into all TWENTY free-text doors and asserts a
      helpline is on screen and TAPPABLE (geometry, not DOM presence — the bug it was written for
      had the text in the document and off the screen). Fourteen checks in all: the eleven doors, the
@@ -113,7 +127,17 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    - `npm run personas` — 551 assertions, 10 people incl. one built entirely from data that has
      really broken this app (apostrophes, GBP, a completed goal ahead of the live one)
    - `npm run panels` — the widest net in the gate, and the one that finds what code-reading cannot.
-     **It now takes well over ten minutes.** Run it in the background and wait on the output rather
+     **It takes well over ten minutes, and much longer on a machine that is swapping.** The three
+     checks added 8 Sep 2026 share ONE browser context and ONE walk — 17s for all three; written as
+     three separate blocks they each opened a context and walked all 101 openers, roughly tripling
+     their cost for nothing. Two lessons came out of chasing that. One: `pairsIn(root)` used
+     `root.querySelectorAll('*')`, which returns DESCENDANTS only, so passing an opened sheet as the
+     root silently skipped that sheet's own children — the planted-pair calibration caught it, and
+     fixing it took the Arial detection from 17 kinds to 28. Two: when the run seemed stalled I ran
+     `ps aux | grep -c "[C]hromium"`, got 0, concluded the browser had been OOM-killed, and killed a
+     run that was working. The grep was CASE-SENSITIVE; `grep -ci "[c]hrom"` returned 31. Before
+     declaring a hang, check swap (`sysctl vm.swapusage`) and match the process name case-insensitively.
+     Run it in the background and wait on the output rather
      than in a foreground call, or it will be killed mid-run and you will read a truncated pass:
      `(npm run panels > /tmp/panels.out 2>&1; echo DONE >> /tmp/panels.out) &` then poll for DONE.
      It covers, in one browser each: 19 sub-panels x 3 people; a 24pt tap-target floor; the
@@ -125,7 +149,30 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
      "Storage full" instead of "Saved"; the companion still helping with every AI provider throwing;
      all five traditions running their own reading plan; the morning and evening rituals stepped,
      completed, and RE-ENTERED; the companion's dismiss gesture (handle dismisses, conversation
-     scrolls); and one person walked through a whole day in a single session.
+     scrolls); one person walked through a whole day in a single session; and **one app, one
+     typeface** — added 8 Sep 2026 after a survey of RENDERED text found 103 of 402 visible
+     controls in **Arial**, including "Still clean", the mood buttons, the fuel chips and every
+     control in the Companion. The word "Arial" appears nowhere in `src/`: a `<button>` does not
+     inherit `font-family` from `body`, and there was no `button{}` base rule, so every button
+     whose class named no family fell to the UA stylesheet. **No grep finds a defect the browser
+     supplies** — that check asks the page what it RESOLVED. Its calibration is two controls that
+     name their own font, deliberately NOT a bare button: the first draft used one, and removing
+     the app's rule then made the calibration fail, so the check blamed the instrument instead of
+     the app. A control has to hold whether the thing under test passes or fails.
+     Two more landed with it. **THE APP NEVER PRINTS ITS OWN SOURCE**: Settings → Height had a
+     `<span>cm</span>` spliced INTO its own `onchange`, in the middle of `v>250`. The browser ended
+     the attribute at the span's first quote, so **no handler compiled and the height field was
+     completely dead** — 180cm saved nothing, and BMI reads that value; the rest of the handler became
+     TEXT and rendered at full-bright 16px beside the field; and the leftover CSS landed on the input
+     as an ATTRIBUTE NAME. Nothing caught it because nothing was broken in a way source-reading can
+     see — the file parses, the bundle builds, every id exists. So it asks the rendered page two
+     questions a broken tag cannot survive: is any visible text actually JavaScript, and does any
+     element carry an attribute whose NAME is code. **NO TWO NEIGHBOURS DISAGREE BY AN AMOUNT NOBODY
+     CAN SEE**: the app renders 27 font sizes and that is mostly hierarchy nobody notices, because the
+     sizes sit on different screens. The shape a person DOES see is two elements side by side, same
+     tag, same ink, same weight, one pixel apart — seven existed, including two stacked quiet links in
+     the same vice card at 11.5px and 11px. It counts only that, never the 45 declared sizes: a count
+     is a smell, and a smell is not worth failing a build over.
      **Four checks added 7 Sep 2026, each for a defect nothing static could see.** (a) THE MONTH GRID
      IN FIVE TIMEZONES \u2014 no test had ever opened that view, and no test in this repo had ever set a
      `timezoneId`, so the whole gate ran in the host's own zone and could not contrast two. The grid

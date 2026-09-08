@@ -304,15 +304,22 @@ function renderDualStreaks(){
   try{ const ss=document.querySelector('.streak-card.sober .streak-sub'); if(ss) ss.textContent='Days in the fight'; }catch(_){}
 }
 
+// The number this explains is called "Days in the fight" on every screen — the header chip, the
+// tile, the woven row and the Fight card. This modal still called it "Sober streak", a name the
+// tile was deliberately renamed AWAY from (see the note at shell-head.html:2230) and which now
+// appears nowhere else in the app: a person tapped the tile and read about something they had
+// never seen. It also said "relapse" three times, against this app's own words for a fall — "a
+// lapse is feedback, not a verdict" (03-person.js) — and against the instruction it gives its own
+// model. If the tile is ever renamed again, rename it HERE in the same commit.
 function showResilienceInfo(){
   const m=document.createElement('div');
   m.className='modal-bg open';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-size:16px;font-weight:500;color:var(--bl);margin-bottom:10px">What is resilience streak?</div>'+
+    '<div style="font-size:16px;font-weight:500;color:var(--bl);margin-bottom:10px">What is the resilience streak?</div>'+
     '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">'+
-    '<strong style="color:var(--tx)">Sober streak</strong> resets to zero if you relapse. That is honest.<br><br>'+
+    '<strong style="color:var(--tx)">Days in the fight</strong> starts again at day one after a lapse. That is honest.<br><br>'+
     '<strong style="color:var(--bl)">Resilience streak</strong> counts the days you showed up and tried, regardless of outcome — and it is built with grace: <strong>one missed day won’t break it</strong>. Miss two in a row and it starts again. One off day is being human, not failing.<br><br>'+
-    'Both matter. The first measures sobriety. The second measures the person you are becoming. Relapse breaks the first. Giving up breaks the second.<br><br>'+
+    'Both matter. The first measures the clean stretch. The second measures the person you are becoming. A lapse starts the first again. Only giving up breaks the second.<br><br>'+
     'Being straight with you: because one off day is forgiven, this number isn’t a claim that you were perfect every single day — it’s the length of the stretch you’ve kept coming back in. (Sobriety stays strictly honest: a relapse does reset the sober count — but never your resilience, and never the total days you’ve been trying.) And real habits take about <strong>66 days</strong> to form, not 21 — so this is a long game, and you’re in it.<br><br>'+
     '<em style="color:var(--go);font-family:Cormorant Garamond,serif;font-size:15px">"I am not here because I made it. I am here because I am trying."</em>'+
     '</div>'+
