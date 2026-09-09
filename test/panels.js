@@ -4837,6 +4837,29 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     else console.log(`near-duplicate type: across ${r.screens} screens, no two neighbours differ by an amount nobody can see`);
   }
 
+  // ── THE LIGHT THEME STILL HAS NO CONTRAST SWEEP, AND THAT IS DELIBERATE ─────────────────────
+  // 9 Sep 2026. Driving the light theme by hand found three real defects (see v597), so a sweep is
+  // clearly worth having — but the version written for this slot was removed rather than shipped,
+  // because it could not measure "the surface this text is painted on" reliably in this app. Four
+  // rounds of correction, each revealing another case:
+  //   1. it walked ANCESTORS, and the hero's dark comes from .hero-aurora, an absolutely-positioned
+  //      SIBLING with inset:0 — so it called the hero's correct white ink 1:1;
+  //   2. it read that overlay before the element's OWN fill, so .hero-action (dark ink on its gold
+  //      gradient, plainly legible) came back 1.02:1;
+  //   3. it accepted overlays the element sits ON TOP of, so a modal's white card read as the
+  //      50%-black backdrop beneath it;
+  //   4. for any gradient it took the LAST colour stop as "the" surface, so text over the gold end of
+  //      a gold-to-purple strip was measured against the purple, and gradients containing
+  //      rgba(0,0,0,0.x) were read as opaque black.
+  // Its calibration passed throughout, because the three known pairs were all flat solid backgrounds —
+  // it proved the easy case and never the hard one. That is the exact failure this file warns about
+  // two checks below, and the reason the earlier pixel-based probe was thrown away too.
+  // WHAT WOULD ACTUALLY WORK: sample the rendered PIXELS around each glyph and take the extremes
+  // (not a percentile — text is a minority of a box's pixels), refuse to report when the capture is
+  // uniform or covered, and calibrate on a gradient-under-overlay case, not just flat swatches.
+  // Until then the light theme is guarded only by the two source-level checks in core.test.js: every
+  // colour token gets a light value, and no light ink is hardcoded onto a themeable surface.
+
   // ── THE WAY OUT IS NEVER THE DIMMEST THING ─────────────────────────────────────────────────
   // Measured from RENDERED PIXELS, not computed styles. A computed-style version of this walks
   // parent backgrounds, misses gradients and mishandles opacity chains — it read 1:1 for ordinary
