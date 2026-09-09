@@ -44,7 +44,28 @@ Verified in the actual shipping bundle, not just the repo:
 
 ---
 
-## ✅ BUILD 8 ARCHIVED AND EXPORTED — 9 Sep 2026 — **v597, this is the one to upload**
+## ✅ BUILD 8 UPLOADED — 9 Sep 2026 — **v597, in App Store Connect**
+
+Uploaded via Xcode Organizer → Distribute App → App Store Connect. App Store Connect now holds
+builds 4, 5, 6 and **8** (7 was archived at v596 and never uploaded).
+
+**⚠️ Of those, only build 8 is safe to promote.** 4, 5 and 6 predate the whole v594-v597 run:
+they carry a dead Settings Height field, 103 controls in Arial, near-black progress bars in the
+light theme, a coach colour under AA in both themes, Supabase env-var names shown to users, an
+80px "0" on the day somebody decides, a fold hiding twelve controls with no affordance, and a
+Feeling Door with no heading in the light theme.
+
+**Next, in order:**
+1. Wait for processing (usually a few minutes; ASC emails you if it fails export compliance or
+   finds a missing icon).
+2. TestFlight → Internal Testing → add yourself → accept the invite on the phone.
+3. **The four things only real hardware can answer** — everything else is verified:
+   **barcode scanning · Face ID matching · haptics · notification delivery.**
+4. Before SUBMITTING for review (not needed for TestFlight): the age rating and the App Privacy
+   form, both described further down this file — those sections are still accurate because they
+   describe behaviour, which has not changed.
+
+### The artifacts, verified from their binaries
 
 Archive: `~/Library/Developer/Xcode/Archives/2026-09-09/ToTry-v597.xcarchive`
 IPA:     `~/Library/Developer/Xcode/Archives/2026-09-09/ToTry-v597-build8.ipa` (2.2 MB)
