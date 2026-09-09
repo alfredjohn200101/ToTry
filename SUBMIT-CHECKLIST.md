@@ -66,6 +66,26 @@ fetched a development profile this time. This does NOT block TestFlight — Orga
 complains about signing, that is why, and the fix is to pick the distribution profile in the
 Organizer sheet rather than to re-archive.
 
+### ✅ v596 DRIVEN ON THE NATIVE WRAPPER — 9 Sep 2026, iPhone 17 Pro Max simulator
+
+Built from the same source as the archive (`Release`, bundle inside `ToTry.app` reads v596,
+sha `99a4de4e84a5`, identical to `www/index.html`) and driven by tapping, not by asserting.
+This is the wrapper, not the browser — so it covers the Capacitor layer the gate cannot.
+
+| checked on the device | result |
+|---|---|
+| **the crisis gate, offline, with iOS's OWN smart apostrophe** | **fires.** Typed `don't` into the Feeling Door's free-text; iOS Smart Punctuation converted it to `don’t` as it does for a real person; submitting returned "I hear you — and this is more than I should hold alone" with Lifeline 13 11 14, Beyond Blue 1300 22 4636 and Suicide Call Back Service 1300 659 467. This is the exact glyph that made the gate fail OPEN once before, and the network was down, so nothing about it depended on the AI. |
+| Settings → Height (the v594 fix) | reads `Height (for BMI) [180] cm`. No source on screen, the `cm` label sits after the input where the spliced span belonged, and it holds a value — so the handler compiles and saves. |
+| Fight → Score (the v595 fix) | hero **58** under "DAYS IN THE FIGHT", vice row "Day 58 of the fight" — one label, one number. Before v595 the hero said 57 under that same label. |
+| every `<details>` fold (v595) | all six settings groups show the app's own ▾ |
+| helpline colour (v594) | gold on the Settings crisis card, matching every other tel: link |
+| buttons (v594) | "Check in with me", "Still clean" and the rest render in Outfit, not Arial |
+| the two vice-card links (v594) | "What this is earning you" and "Manage · …" now the same size |
+| boot | launches, Home renders, offline banner behaves, navigation works |
+
+NOT covered by the simulator, and still the reason to get it onto real hardware: **barcode
+scanning, Face ID, haptics, notification delivery.** Nothing else is outstanding.
+
 ### The IPA is built, signed for distribution, and waiting
 
 `~/Library/Developer/Xcode/Archives/2026-09-09/ToTry-v596-build7.ipa` (2.2 MB). Exported from the
