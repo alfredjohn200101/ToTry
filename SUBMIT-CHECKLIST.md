@@ -44,27 +44,36 @@ Verified in the actual shipping bundle, not just the repo:
 
 ---
 
-## ✅ BUILD 7 ARCHIVED — 9 Sep 2026 — **v596, this is the one to upload**
+## ✅ BUILD 8 ARCHIVED AND EXPORTED — 9 Sep 2026 — **v597, this is the one to upload**
 
-`~/Library/Developer/Xcode/Archives/2026-09-09/ToTry-v596.xcarchive`, version 1.0, **build 7**.
-Verified from the BINARY, not the project settings — that is the check that caught build 6 being
-three releases stale, so repeat it on every archive:
+Archive: `~/Library/Developer/Xcode/Archives/2026-09-09/ToTry-v597.xcarchive`
+IPA:     `~/Library/Developer/Xcode/Archives/2026-09-09/ToTry-v597-build8.ipa` (2.2 MB)
 
-| check | result |
-|---|---|
-| web bundle inside `ToTry.app` | **v596**, sha256 `99a4de4e84a5` — byte-identical to `www/index.html` |
-| version / build | 1.0 / **7** (App Store Connect holds 4, 5, 6) |
-| `PrivacyInfo.xcprivacy` | present inside the .app |
-| usage descriptions | 7 |
-| architecture | `arm64` only, no simulator slice |
-| `ITSAppUsesNonExemptEncryption` | `false` — the export-compliance question is not asked |
-| signing | **`Apple Development: Alfred John (UU43JTL72J)`, team L4BD53PLVF** |
+Both verified by reading the files OUT OF the bundle, never from the build log — that is the
+check that caught build 6 shipping v593 while its log said success. Repeat it on every archive.
 
-⚠️ **The signing differs from build 6**, which was `Apple Distribution`. `-allowProvisioningUpdates`
-fetched a development profile this time. This does NOT block TestFlight — Organizer's
-*Distribute App → App Store Connect* re-signs with the distribution certificate — but if that step
-complains about signing, that is why, and the fix is to pick the distribution profile in the
-Organizer sheet rather than to re-archive.
+| check | archive | ipa |
+|---|---|---|
+| web bundle inside `ToTry.app` | **v597** sha `03024dcae96e` | **v597** sha `03024dcae96e` |
+| identical to `www/index.html` | yes | yes |
+| version / build | 1.0 / **8** | 1.0 / **8** |
+| architecture | arm64, no simulator slice | — |
+| `PrivacyInfo.xcprivacy` | present | — |
+| usage descriptions | 7 | — |
+| `ITSAppUsesNonExemptEncryption` | `false` | — |
+| signature | Apple Development (archive) | **Apple Distribution: Alfred John (L4BD53PLVF)** |
+
+The export re-signs Development → Distribution, which is expected and means nothing about
+signing is outstanding. Spot-checked that v597's two light-theme fixes are actually INSIDE the
+IPA (`hero-verse p{color`, and `.feel-greeting` using `var(--tx)`), not merely in the source.
+
+**Build numbers so far:** App Store Connect holds 4, 5, 6. Build 7 was archived at v596 and
+never uploaded — v597 took 8 so that one build number means exactly one bundle. Superseded
+artifacts (`ToTry-v596.xcarchive`, `ToTry-v596-build7.ipa`) are still on disk; do not upload them.
+
+**To upload:** Xcode → Window → Organizer → `ToTry-v597` → Distribute App → App Store Connect →
+Upload. Signs in with your Apple ID, so no issuer ID needed. The CLI route needs the App Store
+Connect issuer UUID, which is not on this machine — see below.
 
 ### ✅ v596 DRIVEN ON THE NATIVE WRAPPER — 9 Sep 2026, iPhone 17 Pro Max simulator
 
@@ -86,7 +95,7 @@ This is the wrapper, not the browser — so it covers the Capacitor layer the ga
 NOT covered by the simulator, and still the reason to get it onto real hardware: **barcode
 scanning, Face ID, haptics, notification delivery.** Nothing else is outstanding.
 
-### The IPA is built, signed for distribution, and waiting
+### The v596 IPA (superseded — kept only for the upload instructions below)
 
 `~/Library/Developer/Xcode/Archives/2026-09-09/ToTry-v596-build7.ipa` (2.2 MB). Exported from the
 archive with `-exportArchive`, method `app-store-connect`. Verified by unzipping it and reading
@@ -196,6 +205,28 @@ Run**, and click **Register** when prompted (needs your Apple ID in Xcode ▸ Se
 TestFlight is the better path anyway: it tests the exact binary you are submitting.
 
 ---
+
+## ⛔ BUILD 7 (v596) — SUPERSEDED BY BUILD 8, DO NOT UPLOAD
+
+`~/Library/Developer/Xcode/Archives/2026-09-09/ToTry-v596.xcarchive`, version 1.0, **build 7**.
+Verified from the BINARY, not the project settings — that is the check that caught build 6 being
+three releases stale, so repeat it on every archive:
+
+| check | result |
+|---|---|
+| web bundle inside `ToTry.app` | **v596**, sha256 `99a4de4e84a5` — byte-identical to `www/index.html` |
+| version / build | 1.0 / **7** (App Store Connect holds 4, 5, 6) |
+| `PrivacyInfo.xcprivacy` | present inside the .app |
+| usage descriptions | 7 |
+| architecture | `arm64` only, no simulator slice |
+| `ITSAppUsesNonExemptEncryption` | `false` — the export-compliance question is not asked |
+| signing | **`Apple Development: Alfred John (UU43JTL72J)`, team L4BD53PLVF** |
+
+⚠️ **The signing differs from build 6**, which was `Apple Distribution`. `-allowProvisioningUpdates`
+fetched a development profile this time. This does NOT block TestFlight — Organizer's
+*Distribute App → App Store Connect* re-signs with the distribution certificate — but if that step
+complains about signing, that is why, and the fix is to pick the distribution profile in the
+Organizer sheet rather than to re-archive.
 
 ## ✅ BUILD 5 ARCHIVED AND UPLOADED — 4 Sep 2026
 
