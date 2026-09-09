@@ -4402,6 +4402,45 @@ function fnBodyOf(code, name){
       });
     }
     H.ok(found.size >= 5, `the ink scan found ${found.size} literal(s) — under 5 means the scan broke, not the app`);
+
+    // AND 3-DIGIT HEX AND rgba(), WHICH THE 6-DIGIT SCAN ABOVE NEVER SAW. That hole let a real defect
+    // reach a device: `.feel-greeting{color:#fff}` on the Feeling Door — the orb's primary action and
+    // this app's entry point through emotion — sat on a THEMED sheet
+    // (linear-gradient(var(--bg2), var(--bg))), so in the light theme it rendered white on white at
+    // 1.00:1. Literally invisible. Found by driving the light theme on an iPhone 17 Pro Max, which no
+    // gate had ever done. `.feel-sub` was the same, as rgba(242,239,232,0.6).
+    // THE RULE, and it cuts both ways: FIXED ink belongs only on a surface that is hardcoded dark in
+    // EVERY theme — .hero-aurora (shell-head :296) and .ritual-hero-glow (:413) are the only two — and
+    // everything on a themed surface must use tokens. The same walk found the other direction:
+    // `.verse-pill p` uses var(--tx2), correct on a card, but inside the always-dark hero it turned
+    // #3D3D45 on near-black, 1.74:1 against 6.26:1 in dark, so the day's verse was a smudge.
+    // These two lists are the allowlist for each direction. Anything else must be justified here.
+    {
+      const ON_ALWAYS_DARK = /(hero-greeting|hero-sub|hero-dayl|hero-dayn|hero-identity-text|hero-ns-text|hero-ns-sub|hero-verse|ritual-title|ritual-line|ritual-eyebrow|sos-|comp-greeting|feel-chip)/;
+      const strays = [];
+      for (const rel of files) {
+        const txt = fs.readFileSync(path.join(root, rel), 'utf8')
+          .replace(/<!--[\s\S]*?-->/g, ' ').replace(/\/\*[\s\S]*?\*\//g, ' ');
+        txt.split('\n').forEach((line, i) => {
+          if (line.trimStart().startsWith('//')) return;
+          for (const m of line.matchAll(/color\s*:\s*(#[0-9a-fA-F]{3}\b|rgba?\([^)]*\))/g)) {
+            const val = m[1];
+            // only light inks can be invisible on a light theme; dark ink on gold is covered above
+            const light = /#fff|#eee|#f\w\w\b/i.test(val) || /rgba?\(\s*2[0-5]\d\s*,\s*2[0-4]\d/.test(val);
+            if (!light) continue;
+            if (ON_ALWAYS_DARK.test(line)) return;      // sitting on a hardcoded-dark surface
+            // ...or painting its own fill. `background:var(--re);color:#fff` is white on the red vice
+            // button and `background:#7a2e2e;color:#fff` is the demo banner: both carry their own dark
+            // ground, so the theme cannot pull it out from under them. Only ink that inherits the
+            // surface it sits on can be turned invisible by a theme switch.
+            if (/background(-color)?\s*:/.test(line)) return;
+            strays.push(`${rel}:${i + 1} ${val}`);
+          }
+        });
+      }
+      H.eq(strays, [], 'no light ink is hardcoded onto a surface the theme can turn light');
+    }
+
     const unexplained = [...found].filter(([hex]) => !INK_ON_A_KNOWN_FILL[hex]).map(([hex, at]) => `${hex} at ${at}`);
     H.eq(unexplained, [], 'every hardcoded text colour is ink on a known fill — anything else uses a token');
   }
