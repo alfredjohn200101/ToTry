@@ -25,6 +25,18 @@ const ASSETS = [
   // If this ever stops being copied, the native build boots to bootWithoutCloud() instead of the
   // real app, so the MISSING-asset failure below is the alarm that matters most.
   'vendor/supabase-js.js',
+  // The brand fonts, bundled 12 Sep 2026. They came from fonts.googleapis.com and nothing was
+  // cached, so with no network the whole app rendered in the system serif and sans — measured, and
+  // reported from a real phone as the lock screen not looking like the app's own logo. Same class
+  // of dependency as the Supabase SDK above, and missed for the same reason. If these stop being
+  // copied the app still WORKS, which is precisely why it would go unnoticed: it just stops
+  // looking like itself.
+  'fonts/cormorant-garamond-italic.woff2',
+  'fonts/cormorant-garamond.woff2',
+  'fonts/dm-mono-300.woff2',
+  'fonts/dm-mono-400.woff2',
+  'fonts/dm-mono-500.woff2',
+  'fonts/outfit.woff2',
 ];
 
 fs.rmSync(WWW, { recursive: true, force: true });

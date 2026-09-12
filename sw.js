@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v598-the-saved-heart-kept-its-colour'
+const CACHE = 'totry-v599-the-fonts-were-never-ours'
 
 const CORE = [
   './',
@@ -13,6 +13,15 @@ const CORE = [
   // The Supabase SDK. Vendored now (it was fetched from jsdelivr), and precached because the app
   // cannot open without it — see the boot note in index.html.
   './vendor/supabase-js.js',
+  // The brand fonts. Precached for the same reason as the SDK: without them the app opens and
+  // works, but in the system serif — and the lock screen's wordmark, the only branding on that
+  // screen, stops looking like the logo.
+  './fonts/cormorant-garamond-italic.woff2',
+  './fonts/cormorant-garamond.woff2',
+  './fonts/dm-mono-300.woff2',
+  './fonts/dm-mono-400.woff2',
+  './fonts/dm-mono-500.woff2',
+  './fonts/outfit.woff2',
 ];
 
 // ── INSTALL — cache all core files immediately ──

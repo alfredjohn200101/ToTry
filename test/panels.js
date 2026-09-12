@@ -4735,6 +4735,23 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
       document.body.appendChild(cal);
       const calFontGood=BRAND.test(getComputedStyle(document.getElementById('__cg')).fontFamily);
       const calFontBad =BRAND.test(getComputedStyle(document.getElementById('__cb')).fontFamily);
+      // DECLARED IS NOT RENDERED. getComputedStyle().fontFamily hands back whatever the stylesheet
+      // asked for whether or not the face ever loaded, and document.fonts.check() returns true for a
+      // font that was never fetched — so this check passed for months while all three brand faces came
+      // from fonts.googleapis.com and, with no network, the whole app rendered in the system serif and
+      // sans. A person on a real phone reported it as the lock screen not looking like the logo.
+      // The only honest test is to MEASURE: set a string in the brand face and in a generic fallback
+      // and compare widths. If they match, the face is not rendering, whatever the declaration says.
+      const wid=(fam)=>{ const sp=document.createElement('span');
+        sp.style.cssText='position:absolute;left:-9999px;font-size:64px;white-space:nowrap;font-family:'+fam;
+        sp.textContent='ToTry Handgloves 123'; document.body.appendChild(sp);
+        const w=Math.round(sp.getBoundingClientRect().width); sp.remove(); return w; };
+      const serifW=wid('serif'), sansW=wid('sans-serif');
+      const rendering={};
+      for(const f of ['Cormorant Garamond','DM Mono','Outfit']){
+        const w=wid('"'+f+'", serif');
+        rendering[f] = (w!==serifW && w!==sansW);
+      }
       const calSrcPos=looksLikeSource("(function(el){ const v=parseInt(el.value,10); if(typeof showToast==='function') return; })");
       const calSrcNeg=looksLikeSource("You don’t have to carry this alone. Reach out to someone who knows you, today.");
       const pairsIn=(root)=>{
@@ -4807,7 +4824,7 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
         document.querySelectorAll('.modal-bg.open').forEach(m=>{
           m.classList.remove('open'); if(m.parentNode && !m.id) m.remove(); });
       }
-      return {calFontGood, calFontBad, calSrcPos, calSrcNeg, calPairs,
+      return {calFontGood, calFontBad, calSrcPos, calSrcNeg, calPairs, rendering,
               controls, textNodes, screens, openers:openers.length,
               badFont:Object.entries(badFont).map(([k,v])=>k+' ['+v+']'),
               leaks:[...new Set(leaks)], stray:[...new Set(stray)], near:[...near]};
@@ -4817,9 +4834,11 @@ const AWKWARD = { totry_guest:true, totry_onboarded:true, totry_name:"Aisha O'Br
     // TYPEFACE
     if(!r.calFontGood || r.calFontBad)
       findings.push(`typeface: the instrument is wrong, not the app (explicit-Outfit reads brand=${r.calFontGood}, explicit-Arial reads brand=${r.calFontBad})`);
+    else if(Object.values(r.rendering||{}).some(v=>!v))
+      findings.push(`typeface: a brand face is DECLARED but not RENDERING — ${Object.entries(r.rendering).filter(([,v])=>!v).map(([k])=>k).join(', ')} measured the same width as a generic fallback, so the app is in system fonts however the stylesheet reads`);
     else if(r.controls < 150) findings.push(`typeface: only ${r.controls} controls reached — the scan is not walking the app`);
     else if(r.badFont.length) findings.push(`typeface: ${r.badFont.length} kind(s) of control render outside the app's three fonts — ${r.badFont.slice(0,5).join(', ')}`);
-    else console.log(`typeface: all ${r.controls} visible controls render in Outfit, DM Mono or Cormorant`);
+    else console.log(`typeface: all three brand faces are really rendering (bundled, no network needed), and all ${r.controls} visible controls use one of them`);
 
     // SOURCE ON SCREEN
     if(!r.calSrcPos || r.calSrcNeg)

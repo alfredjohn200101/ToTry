@@ -13,8 +13,6 @@
 <meta name="apple-mobile-web-app-title" content="ToTry">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0C0C0E">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -22,8 +20,35 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
 <title>ToTry &#8212; by Alfred John</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" media="print" onload="this.media='all'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap"></noscript>
+<style>
+/* THE BRAND FONTS ARE BUNDLED, NOT FETCHED. All three came from fonts.googleapis.com until 12 Sep
+   2026, and nothing was cached locally — so with no network document.fonts held ZERO faces and the
+   entire app rendered in the system serif and sans. Measured: the same string that is 551px wide in
+   Cormorant, 768px in DM Mono and 611px in Outfit came back at 591px for all three, which is generic
+   serif. The lock screen paints at launch, before any of that could arrive, so its wordmark — the
+   only branding on that screen — came up in Times and did not look like the app's own logo. That is
+   what a person reported from a real phone.
+   This app is for 2am, a plane, a dead zone. The same lesson is already written twenty lines into
+   scripts/build-www.js about the Supabase SDK: it was vendored because fetching it 'made the whole
+   app unopenable with no connection'. Fonts are the same class of dependency and were missed.
+   148KB for twelve latin faces, six files. It also stops every launch pinging Google, which an app
+   that promises this much privacy should not be doing.
+   NOTE: `document.fonts.check()` returns TRUE for a font that never loaded, and
+   getComputedStyle().fontFamily returns the DECLARED family either way — neither can tell you a
+   face is actually rendering. Measure a string's WIDTH against a generic fallback instead. */
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:300;font-display:swap;src:url('fonts/cormorant-garamond-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:italic;font-weight:400;font-display:swap;src:url('fonts/cormorant-garamond-italic.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:300;font-display:swap;src:url('fonts/cormorant-garamond.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/cormorant-garamond.woff2') format('woff2')}
+@font-face{font-family:'Cormorant Garamond';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/cormorant-garamond.woff2') format('woff2')}
+@font-face{font-family:'DM Mono';font-style:normal;font-weight:300;font-display:swap;src:url('fonts/dm-mono-300.woff2') format('woff2')}
+@font-face{font-family:'DM Mono';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/dm-mono-400.woff2') format('woff2')}
+@font-face{font-family:'DM Mono';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/dm-mono-500.woff2') format('woff2')}
+@font-face{font-family:'Outfit';font-style:normal;font-weight:300;font-display:swap;src:url('fonts/outfit.woff2') format('woff2')}
+@font-face{font-family:'Outfit';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/outfit.woff2') format('woff2')}
+@font-face{font-family:'Outfit';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/outfit.woff2') format('woff2')}
+@font-face{font-family:'Outfit';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/outfit.woff2') format('woff2')}
+</style>
 <style>
 
 
@@ -5460,7 +5485,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v598';
+const APP_VERSION = 'v599';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
