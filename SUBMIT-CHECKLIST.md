@@ -58,13 +58,26 @@ Connect already holds 8, and it rejects a build number it has seen.
 | "nothing has changed" (after the launch screen was fixed once) | It had not. `launchAutoHide:false` means the SplashScreen plugin paints `Splash.imageset` over the storyboard within a frame — and that asset was a flat #0a0a0f fill. The launch screen a person saw was BLACK, whatever the storyboard drew. | Storyboard and plugin now draw the SAME artwork, full-bleed. `scripts/make-splash.js` generates it from the running app, so it inherits the real webfont and the kerning above and cannot drift from the web layer again. |
 | "haptics can be better for breathwork" | Every phase fired the same `haptic('light')` at its boundary and nothing in between — inhale, hold and exhale felt identical, and a 7-count hold was left entirely to the head, in the one posture the screen exists to ask for. | The kind is derived from the orb scale the protocols already declare (all nine read correctly), so in/hold/out feel different; and one soft `selectionChanged` tick a second paces the middle. Driven and measured on 4-7-8: **4 cues in, 7 in the hold, 8 out** — the count you feel is the count you hold. Nothing leaks after close. New Settings → Preferences → **Feel** switch, because a repeating cue must be refusable; absent means ON. |
 
+**The camera, both halves (v600.1).** Asked which camera he meant, he said both.
+*Snapping a meal* opened the iOS chooser and never a viewfinder — the input deliberately has no
+`capture=` so an existing photo can be logged, which is a good reason and the wrong outcome. Two
+inputs now: `snapMeal()` → camera, `chooseMealPhoto()` → library, both into the same handler, with
+"Photo from your library" as its own entry in More ways to log.
+*One "Don't Allow" killed every camera surface, silently* — iOS asks once, and after a refusal the
+live-scan button was simply absent, while a `capture=` input fires and does nothing. The cause was
+flattening two different answers into one boolean: "no camera on this device" and "you refused
+months ago" both read as false, and only the first deserves silence. `CameraAccess.state()` returns
+`ok | denied | none | web`, and `BarcodeScannerPlugin` gained `openSettings()` — the only route back.
+Denied now shows the button, says *"Camera is off — turn it on"*, opens Settings, and still offers
+the photo and the typed number.
+
 **Also in build 9:** `@capacitor/barcode-scanner` was installed during the previous session on a
 false premise and has been removed. `BarcodeScannerPlugin.swift` is an app-target plugin — compiled
 in and registered by instance, so it never appears in `package.json`, which is what I mistook for
 "not installed". Confirmed in the built dylib: 111 symbols, `jsName = "BarcodeScanner"` present. The
 third-party SPM dependency is gone from the binary.
 
-Gate: `npm test` 1904 ✓ · `test:edge` 34 ✓ · `verify:index` identical ✓ · `preflight` ready ✓
+Gate: `npm test` 1924 ✓ · `test:edge` 34 ✓ · `verify:index` identical ✓ · `preflight` ready ✓
 (crisis / personas / panels below).
 
 **To upload:** Xcode → Product ▸ Archive → Window ▸ Organizer → Distribute App → App Store Connect.
