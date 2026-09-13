@@ -20,7 +20,8 @@ public class BarcodeScannerPlugin: CAPPlugin, CAPBridgedPlugin {
     public let jsName = "BarcodeScanner"
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "isAvailable", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "scan", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "scan", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "openSettings", returnType: CAPPluginReturnPromise)
     ]
 
     /// Reports whether a live scan is even possible, so the JS can choose the photo path instead of
@@ -41,6 +42,24 @@ public class BarcodeScannerPlugin: CAPPlugin, CAPBridgedPlugin {
                 }
             }()
         ])
+    }
+
+    /// Opens this app's own page in iOS Settings, which is the ONLY way back from a denied camera.
+    ///
+    /// WHY: iOS asks for the camera exactly once. Tap "Don't Allow" — at any prompt, including the one
+    /// the meal photo raises — and every camera surface in the app is dead from then on, with nothing
+    /// on screen to say why or what to do. The live-scan button was simply hidden, which is a sound
+    /// default for "this device has no camera" and a trap for "you said no once in March". A feature
+    /// that fails CLOSED still has to fail VISIBLY. Reported from a real phone as "the camera doesn't
+    /// work", and this is the likeliest reason it stopped.
+    @objc func openSettings(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            guard let url = URL(string: UIApplication.openSettingsURLString),
+                  UIApplication.shared.canOpenURL(url) else {
+                call.resolve(["opened": false]); return
+            }
+            UIApplication.shared.open(url, options: [:]) { ok in call.resolve(["opened": ok]) }
+        }
     }
 
     /// scan() → { code } on a read, { cancelled: true } if they backed out, { available: false } if there

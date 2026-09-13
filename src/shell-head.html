@@ -2796,7 +2796,7 @@ input:focus,textarea:focus,select:focus{
            oninput="nutSearchTypeahead(this.value)"
            onkeydown="if(event.key==='Enter')searchFood(this.value)">
     <button class="logbar-ic" aria-label="Snap a photo of your meal"
-            onclick="document.getElementById('meal-photo-input').click()">📷</button>
+            onclick="snapMeal()">📷</button>
     <button class="logbar-ic" aria-label="Quick add calories" onclick="openQuickAdd()">+</button>
     <button class="logbar-go" onclick="searchFood(document.getElementById('nut-search-in').value)">Search</button>
   </div>
@@ -2808,8 +2808,14 @@ input:focus,textarea:focus,select:focus{
        bar: logging food first is a decided thing and npm run panels asserts it. Here it is one line, in
        the first screenful, and the 170px of settings stay where they were moved to. -->
   <div id="nut-setup-nudge"></div>
-  <!-- No capture=: on iOS that FORCES the camera and removes Photo Library, so a plate you already
-       photographed could not be logged. Without it the OS offers Take Photo / Photo Library / Files. -->
+  <!-- TWO INPUTS, ON PURPOSE. capture="environment" opens the rear camera straight away and removes
+       Photo Library entirely; leaving it off gives the OS chooser (Take Photo / Photo Library / Files)
+       and can never open a viewfinder. Neither one alone is right, and for a long time only the second
+       existed: "Snap a meal" put up a menu, which is precisely what a person meant by the camera not
+       working like MyFitnessPal and Cal AI, both of which open a viewfinder on the first tap.
+       snapMeal() routes to the camera, chooseMealPhoto() to the library, and both land in the same
+       handleMealPhoto(). Do not merge them back into one. -->
+  <input type="file" id="meal-camera-input" accept="image/*" capture="environment" style="display:none" onchange="handleMealPhoto(event)">
   <input type="file" id="meal-photo-input" accept="image/*" style="display:none" onchange="handleMealPhoto(event)">
   <input type="file" id="food-csv-input" accept=".csv" style="display:none" onchange="importFoodCSV(event)">
   <div id="nut-search-results" style="margin-bottom:12px"></div>

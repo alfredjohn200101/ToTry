@@ -1389,8 +1389,12 @@ H.section('live barcode scanning — the native path must be real and registered
   // Fails closed on the web: the button starts hidden and is only revealed by the async check.
   const btn = (H.html.match(/<button[^>]*id="barcode-live-btn"[^>]*>/) || [''])[0];
   H.ok(/display:none/.test(btn), 'the live-scan button is hidden until proven available');
-  H.ok(/LiveScan\.available\(\)\.then/.test(H.html), 'and revealed only when a live scan can really happen');
-  H.ok(/permission !== 'denied'/.test(H.html), 'a denied camera permission counts as unavailable');
+  // The reveal moved to CameraAccess.state(), which keeps "refused" and "no camera" apart instead of
+  // flattening both to false — see 'a camera that is switched off says so'. The intent is unchanged:
+  // the button is never shown by default, only by a check that actually asked.
+  H.ok(/CameraAccess\.state\(\)\.then/.test(H.html), 'and revealed only when a live scan can really happen');
+  H.ok(/permission === 'denied' \|\| r\.permission === 'restricted'/.test(H.html),
+    'a denied camera permission counts as unavailable');
 
   // The claim that started it: BarcodeDetector never existed in WebKit.
   const code = H.html.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
@@ -6483,6 +6487,64 @@ H.section('a breath you can follow with your eyes shut');
   // The pacing cue must be the SOFTEST thing iOS has. impact(LIGHT) once a second is a buzz.
   H.ok(/pattern==='tick'[\s\S]{0,120}selectionChanged/.test(H.code(hp)),
     'a tick is the selection detent, not a repeated impact');
+}
+
+H.section('a camera that is switched off says so, instead of going quiet');
+{
+  // Reported from a real phone: "the camera doesn't work like MyFitnessPal and Cal AI". Two separate
+  // things were true. (1) "Snap a meal" opened the iOS CHOOSER, never a viewfinder, because the file
+  // input deliberately carries no capture= so a plate you already photographed can still be logged.
+  // (2) iOS asks for the camera ONCE — one "Don't Allow", at any prompt, and the live-scan button was
+  // hidden for ever with nothing on screen to say why. Hiding is right for "no camera on this device";
+  // for "you said no in March" it is a trap. Failing closed is correct, failing silently is not.
+
+  // TWO INPUTS. Exactly one opens a viewfinder; exactly one can reach the library. Merging them back
+  // into one is how either half gets lost again.
+  const cam = (H.html.match(/<input[^>]*id="meal-camera-input"[^>]*>/) || [''])[0];
+  const lib = (H.html.match(/<input[^>]*id="meal-photo-input"[^>]*>/) || [''])[0];
+  H.ok(cam, 'a camera input exists');
+  H.ok(/capture="environment"/.test(cam), 'and it opens the rear camera on the first tap');
+  H.ok(lib, 'the library input still exists');
+  H.ok(!/capture=/.test(lib), 'and carries no capture=, so Photo Library is still reachable');
+  H.ok(/onchange="handleMealPhoto\(event\)"/.test(cam) && /onchange="handleMealPhoto\(event\)"/.test(lib),
+    'both land in the same handler, so a photo behaves the same whichever door it came through');
+
+  // ONE RULE, ONE PLACE. Six call sites used to click the library input by id; a rule applied at six
+  // call sites is a rule that will be right at five of them.
+  const direct = [...H.html.matchAll(/getElementById\('meal-photo-input'\)/g)].length;
+  H.ok(direct <= 3, 'nothing clicks the library input by id except the router itself (' + direct + ' references)');
+  H.ok(/onclick="snapMeal\(\)"/.test(H.html), 'the camera button routes through snapMeal()');
+
+  // THE ROUTING, AND THE FALLBACK. Denied must not be a dead end: a capture= input fires and does
+  // NOTHING when access is off, which looks exactly like a broken button.
+  const sm = H.extractFn('snapMeal');
+  H.ok(/CameraAccess\.state\(\)/.test(sm), 'snapMeal asks whether the camera can actually be used');
+  H.ok(/'denied'/.test(sm) && /explainDenied/.test(sm), 'and says so when it cannot');
+  H.ok(/chooseMealPhoto\(\)/.test(sm), 'and still opens the library, so the meal can be logged anyway');
+  H.ok(/st === 'ok'/.test(H.code(sm)) && /meal-camera-input/.test(sm),
+    'only a usable camera goes straight to the viewfinder');
+  H.ok(/meal-photo-input/.test(sm), 'and the web, where the OS cannot be asked, keeps the chooser it had');
+
+  // DENIED IS NOT ABSENT. The barcode sheet must tell these two apart — one deserves a button, the
+  // other genuinely cannot have one.
+  const obs = H.extractFn('openBarcodeScanner');
+  H.ok(/st === 'ok'/.test(H.code(obs)), 'the sheet reveals the scanner only when the camera works');
+  H.ok(/st === 'denied'/.test(H.code(obs)), 'and handles a refused camera as its own case');
+  H.ok(/Camera is off/.test(obs), 'saying what is wrong rather than showing nothing');
+  H.ok(H.code(obs).indexOf("st === 'denied'") > H.code(obs).indexOf("st === 'ok'"),
+    'with the working case first, so a usable camera is never described as off');
+
+  // THE WAY BACK. Settings is the only route out of a denied camera, and it needs a native method.
+  const swift = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'ios/App/App/BarcodeScannerPlugin.swift'), 'utf8');
+  H.ok(/CAPPluginMethod\(name: "openSettings"/.test(swift), 'the plugin DECLARES openSettings');
+  // Anchored on the paren: /@objc func openSettings/ alone also matches openSettingsAnything,
+  // so renaming the implementation out from under the declaration slipped straight past it.
+  H.ok(/@objc func openSettings\(_ call: CAPPluginCall\)/.test(swift), 'and implements it, under that exact name');
+  H.ok(/UIApplication\.openSettingsURLString/.test(swift), 'opening this app’s own page in Settings');
+  // A declared-but-unimplemented method, or an implemented-but-undeclared one, is the v408 bug again:
+  // a silent no-op. Both halves or neither.
+  H.ok(/openSettings/.test(H.html), 'and the app actually calls it');
 }
 
 H.report();

@@ -2796,7 +2796,7 @@ input:focus,textarea:focus,select:focus{
            oninput="nutSearchTypeahead(this.value)"
            onkeydown="if(event.key==='Enter')searchFood(this.value)">
     <button class="logbar-ic" aria-label="Snap a photo of your meal"
-            onclick="document.getElementById('meal-photo-input').click()">📷</button>
+            onclick="snapMeal()">📷</button>
     <button class="logbar-ic" aria-label="Quick add calories" onclick="openQuickAdd()">+</button>
     <button class="logbar-go" onclick="searchFood(document.getElementById('nut-search-in').value)">Search</button>
   </div>
@@ -2808,8 +2808,14 @@ input:focus,textarea:focus,select:focus{
        bar: logging food first is a decided thing and npm run panels asserts it. Here it is one line, in
        the first screenful, and the 170px of settings stay where they were moved to. -->
   <div id="nut-setup-nudge"></div>
-  <!-- No capture=: on iOS that FORCES the camera and removes Photo Library, so a plate you already
-       photographed could not be logged. Without it the OS offers Take Photo / Photo Library / Files. -->
+  <!-- TWO INPUTS, ON PURPOSE. capture="environment" opens the rear camera straight away and removes
+       Photo Library entirely; leaving it off gives the OS chooser (Take Photo / Photo Library / Files)
+       and can never open a viewfinder. Neither one alone is right, and for a long time only the second
+       existed: "Snap a meal" put up a menu, which is precisely what a person meant by the camera not
+       working like MyFitnessPal and Cal AI, both of which open a viewfinder on the first tap.
+       snapMeal() routes to the camera, chooseMealPhoto() to the library, and both land in the same
+       handleMealPhoto(). Do not merge them back into one. -->
+  <input type="file" id="meal-camera-input" accept="image/*" capture="environment" style="display:none" onchange="handleMealPhoto(event)">
   <input type="file" id="meal-photo-input" accept="image/*" style="display:none" onchange="handleMealPhoto(event)">
   <input type="file" id="food-csv-input" accept=".csv" style="display:none" onchange="importFoodCSV(event)">
   <div id="nut-search-results" style="margin-bottom:12px"></div>
@@ -26024,7 +26030,8 @@ function nutMicroKeys(){
 
 function openMoreWaysToLog(){
   const ways = [
-    ['\u{1F4F7}','Snap a meal','A photo of the plate','document.getElementById(\'meal-photo-input\').click()'],
+    ['\u{1F4F7}','Snap a meal','Opens the camera','snapMeal()'],
+    ['\u{1F5BC}','Photo from your library','A plate you already shot','chooseMealPhoto()'],
     ['\u{1F4C7}','Scan a barcode','Packaged food, straight off the label','openBarcodeScanner()'],
     ['\u{1F5E3}','Say it','Speak the meal — fastest one-handed','startVoiceLog()'],
     ['\u{1F4D2}','My recipes','Something you make often','openRecipeBuilder()'],
@@ -26667,7 +26674,7 @@ async function handleMealPhoto(event){
   }catch(e){
           foodFailed(res, 'The photo did not get through.',
         'The connection dropped it. Try again, or add the meal yourself \u2014 it still counts.',
-        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()',
+        'snapMeal()',
         'foodTypeItInstead()', 'Type what it was');
     return;
   }
@@ -26691,7 +26698,7 @@ async function handleMealPhoto(event){
       if(error || !data?.text){
               foodFailed(res, 'The photo did not get through.',
         'The connection dropped it. Try again, or add the meal yourself \u2014 it still counts.',
-        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()',
+        'snapMeal()',
         'foodTypeItInstead()', 'Type what it was');
         return;
       }
@@ -26700,7 +26707,7 @@ async function handleMealPhoto(event){
       if(!parsed || parsed.error){
       foodFailed(res, 'That did not look like food to me.',
         'Try again with the plate filling more of the frame, or add it yourself.',
-        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()',
+        'snapMeal()',
         'foodTypeItInstead()', 'Type what it was');
         return;
       }
@@ -26719,7 +26726,7 @@ async function handleMealPhoto(event){
         .map(_groundItemInTable);
             if(!_items.length){ foodFailed(res, 'I could not make out the food in that photo.',
         'A clearer, closer shot usually does it \u2014 or add the meal yourself.',
-        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()',
+        'snapMeal()',
         'foodTypeItInstead()', 'Type what it was'); return; }
       _photoMeal = { name: parsed.meal||parsed.name||'Your meal', items:_items, assumptions:parsed.assumptions||'',
         confidence:parsed.confidence||'', meal:(typeof currentMealSlot==='function'?currentMealSlot():null),
@@ -26736,7 +26743,7 @@ async function handleMealPhoto(event){
       console.error('meal photo failed', err);
             foodFailed(res, 'The photo did not get through.',
         'The connection dropped it. Try again, or add the meal yourself \u2014 it still counts.',
-        'document.getElementById(\'meal-photo-input\')&&document.getElementById(\'meal-photo-input\').click()',
+        'snapMeal()',
         'foodTypeItInstead()', 'Type what it was');
     }
 }
@@ -27558,13 +27565,12 @@ function logEstimatedMeal(){
 // Barcode scanning is the interaction people judge a food tracker by, so it should feel instant.
 const LiveScan = {
   _p(){ try{ const P=(window.Capacitor&&window.Capacitor.Plugins)||{}; return P.BarcodeScanner || P.BarcodeScannerPlugin || null; }catch(_){ return null; } },
+  // ONE ANSWER TO "CAN THE CAMERA BE USED", not two. This used to ask the plugin itself and reduce
+  // the reply to a boolean — which is exactly what hid the scanner for ever from anyone who had said
+  // "Don't Allow" once, because "refused" and "this device has no camera" both came back as false.
+  // CameraAccess keeps the distinction; a caller that only wants a yes/no still gets one here.
   async available(){
-    const p=this._p(); if(!p) return false;
-    try{
-      const r = await p.isAvailable();
-      // A denied permission is a dead end — offer the photo path instead of a black screen.
-      return !!(r && r.available && r.permission !== 'denied' && r.permission !== 'restricted');
-    }catch(_){ return false; }
+    try{ return (await CameraAccess.state()) === 'ok'; }catch(_){ return false; }
   },
   // Digits on a successful read; null if they cancelled or it cannot run (the caller stays put).
   async scan(){
@@ -27579,6 +27585,77 @@ const LiveScan = {
     }catch(e){ console.warn('[LiveScan] scan failed', e); return null; }
   }
 };
+
+// ── THE CAMERA, HONESTLY ─────────────────────────────────────────────────────────────────────────
+// iOS asks for the camera ONCE. Say "Don't Allow" at any prompt — including the one a meal photo
+// raises — and from then on every camera surface in this app is dead, with nothing on screen saying
+// why or what to do: the live-scan button was simply hidden, and a `capture=` file input does
+// literally nothing when it fires. Hiding is the right default for "this device has no camera"; it
+// is a trap for "you said no once, months ago". Reported from a real phone as the camera not working
+// like MyFitnessPal and Cal AI do, and this is the likeliest reason it stopped working at all.
+//
+// Failing CLOSED is correct. Failing SILENTLY is not. One place answers "can the camera be used",
+// and one place offers the only way back.
+const CameraAccess = {
+  // 'ok' — a camera exists and is not refused (prompt or granted; the OS asks when we actually open it)
+  // 'denied' — refused or restricted; nothing will happen until they change it in Settings
+  // 'none' — no camera on this device (the Simulator)
+  // 'web' — not the native shell, so we cannot know; the file input handles it
+  async state(){
+    try{
+      const p = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BarcodeScanner) || null;
+      if(!p || typeof isNativeApp!=='function' || !isNativeApp()) return 'web';
+      const r = await p.isAvailable();
+      if(!r || !r.available) return 'none';
+      if(r.permission === 'denied' || r.permission === 'restricted') return 'denied';
+      return 'ok';
+    }catch(_){ return 'web'; }
+  },
+  canOpenSettings(){
+    try{
+      const p = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BarcodeScanner) || null;
+      return !!(p && typeof p.openSettings === 'function' && typeof isNativeApp==='function' && isNativeApp());
+    }catch(_){ return false; }
+  },
+  async openSettings(){
+    try{
+      const p = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BarcodeScanner) || null;
+      if(p && typeof p.openSettings==='function'){ await p.openSettings(); return true; }
+    }catch(_){}
+    return false;
+  },
+  // The one sentence a person needs when the camera is refused, plus the way back. Never a dead end:
+  // typing the meal and choosing an existing photo both still work, and both are named.
+  explainDenied(alsoOffer){
+    const s = 'Camera access is off for To Try. ' + (alsoOffer || 'You can still choose a photo you already took, or type it.');
+    if(typeof showToast==='function') showToast('Camera is switched off', s);
+    if(this.canOpenSettings()) this.openSettings();
+  }
+};
+
+// ONE TAP TO A VIEWFINDER. This is the thing Cal AI and MyFitnessPal do that this did not: they open
+// a camera, this opened a MENU. The library is not lost — it moved to chooseMealPhoto(), which is
+// offered in "More ways to log" and again whenever the camera cannot be used.
+async function snapMeal(){
+  let st = 'web';
+  try{ st = await CameraAccess.state(); }catch(_){}
+  if(st === 'denied'){
+    // Not a dead end, and not silent: a `capture=` input fires and does NOTHING when access is off,
+    // which is indistinguishable from a broken button. Say it, offer Settings, and still let them log.
+    CameraAccess.explainDenied('Opening your photo library instead.');
+    return chooseMealPhoto();
+  }
+  // Native with a working camera goes straight to the viewfinder. On the web we cannot ask the OS
+  // anything, so the chooser stays — that is the behaviour the PWA already had, and it is right there.
+  const id = (st === 'ok') ? 'meal-camera-input' : 'meal-photo-input';
+  const el = document.getElementById(id) || document.getElementById('meal-photo-input');
+  if(el) el.click();
+}
+// A plate you already photographed — the reason the plain input exists at all.
+function chooseMealPhoto(){
+  const el = document.getElementById('meal-photo-input');
+  if(el) el.click();
+}
 
 async function startLiveBarcodeScan(){
   const code = await LiveScan.scan();
@@ -27614,11 +27691,28 @@ async function openBarcodeScanner(){
   // Async, after the modal exists: reveal the live scanner and step the photo button down to secondary,
   // since photo-plus-AI is the fallback once a real scanner is available.
   try{
-    LiveScan.available().then(function(ok){
-      if(!ok) return;
-      const b = document.getElementById('barcode-live-btn'); if(b) b.style.display='';
+    CameraAccess.state().then(function(st){
+      const b = document.getElementById('barcode-live-btn');
       const ph = document.getElementById('barcode-photo-btn');
-      if(ph){ ph.className='btn'; ph.style.background='var(--bg3)'; ph.style.border='1px solid var(--bd)'; }
+      if(st === 'ok'){
+        if(b) b.style.display='';
+        if(ph){ ph.className='btn'; ph.style.background='var(--bg3)'; ph.style.border='1px solid var(--bd)'; }
+        return;
+      }
+      // DENIED IS NOT THE SAME AS ABSENT, and it used to be treated as absent. A person who tapped
+      // "Don't Allow" once got a sheet with no scanner in it and no way to learn why — the feature
+      // did not look broken, it looked like it had never existed. The button stays, says what is
+      // actually wrong, and goes to the one place that can fix it.
+      if(st === 'denied' && b){
+        b.style.display='';
+        b.className='btn';
+        b.style.background='var(--bg3)'; b.style.border='1px solid var(--bd)'; b.style.color='var(--tx2)';
+        b.textContent='Camera is off \u2014 turn it on';
+        b.setAttribute('aria-label','Camera access is off for To Try. Opens Settings.');
+        b.onclick=function(){ CameraAccess.explainDenied('The photo and the number below both still work.'); };
+      }
+      // 'none' (no camera) and 'web' (cannot know) keep the old behaviour: stay hidden rather than
+      // offer a button that genuinely cannot do anything.
     });
   }catch(_){}
 }
