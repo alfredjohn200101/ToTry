@@ -5164,6 +5164,21 @@ function restoreKeys(data){
           if(typeof tombstoneRevoke === 'function' && typeof syncIdOf === 'function' && Array.isArray(parsed)){
             tombstoneRevoke.apply(null, [k].concat(parsed.map(syncIdOf)));
           }
+          // AND THE TWO STORES THAT ARE NOT KEYED BY syncIdOf. A deleted vice is tombstoned by its
+          // NAME (09-fight-deep.js) and a deleted debt by its name inside totry_f, which is an object
+          // and not an array — so neither was reachable by the line above, and restoring a backup to
+          // get a vice back said "Restored" and let the very next cloud pull delete it again. That is
+          // the harm the comment above this block describes, arriving through the two doors it does
+          // not cover: the person does the one thing the app told them to do to recover, is told it
+          // worked, and loses it a second time without being told anything at all.
+          if(typeof tombstoneRevoke === 'function'){
+            if(k === 'totry_v' && Array.isArray(parsed)){
+              tombstoneRevoke.apply(null, ['totry_v'].concat(parsed.map(function(v){ return String((v && v.n) || '').toLowerCase(); })));
+            }
+            if(k === 'totry_f' && parsed && Array.isArray(parsed.d)){
+              tombstoneRevoke.apply(null, ['totry_f'].concat(parsed.d.map(function(d){ return String((d && d.n) || '').toLowerCase(); })));
+            }
+          }
         }catch(_){ }
         try{ syncToCloud(k, parsed); }catch(_){ }             // a cloud hiccup must not un-count a local write
       }
@@ -5677,7 +5692,10 @@ async function proceedAfterAuth(user){
     // !currentUser`, and by this point a session exists. isSetUpPerson() is the helper written for
     // exactly this question, and its own comment says it exists so these gates cannot drift apart —
     // this was a third gate that never used it.
-    if(restored || (typeof isSetUpPerson==='function' && isSetUpPerson())){
+    // Same correction as the offline gate: isSetUpPerson() is true on totry_name alone, which
+    // onboarding writes partway through, so this swallowed anyone who quit mid-setup and made the
+    // resume branch below unreachable. The guest term is the only one this needed.
+    if(restored || ls('totry_guest') || (ls('totry_onboarded') && ls('totry_name'))){
       document.getElementById('onboard').classList.remove('active');
       document.getElementById('onboard').style.display = 'none';
       document.querySelector('.app').classList.add('app-ready');
@@ -6591,6 +6609,13 @@ async function pullFromCloud(){
       if(TEST_MODE){ if(typeof rawK!=='string' || rawK.indexOf(TEST_PREFIX)!==0) return; }
       else { if(typeof rawK==='string' && rawK.indexOf(TEST_PREFIX)===0) return; }
       const k = _unCloudKey(rawK), cv = row.data_value;
+      // A KEY THIS BUILD NO LONGER PUSHES MUST NOT BE PULLED EITHER. Taking totry_health_write out of
+      // SYNC_KEYS stopped it going UP and did nothing about the row already in the cloud, which every
+      // pull kept applying — so a fresh phone was still told it was allowed to write into Apple Health
+      // before it had ever asked, which is the whole reason that key was made device-local. The same
+      // holds for anything ever removed from the list in future: the push side and the pull side have
+      // to agree, or removing a key only half-works and silently keeps working the old way.
+      if(typeof SYNC_KEYS !== 'undefined' && SYNC_KEYS.indexOf(k) === -1) return;
       if(cv === null || cv === undefined) return;
       // A DEVICE THAT JUST RAN OUT OF ROOM MUST NOT BE REFILLED IMMEDIATELY.
       // _lsEmergencyPrune trims the expendable stores and deliberately writes LOCALLY, so the account
@@ -7995,9 +8020,13 @@ async function checkAuthAndStart(){
       const hasName = ls('totry_name');
       const isOnboarded = !!ls('totry_onboarded');
 
-      // Same three-way test as isSetUpPerson() above, which this file defines: a guest has
-      // deliberately come in and used the app, and writes neither totry_onboarded nor an identity.
-      if(isOnboarded || (typeof isSetUpPerson==='function' && isSetUpPerson()) || (hasIdentity && hasName)){
+      // NOT isSetUpPerson(). That helper is true on totry_name ALONE, and onboarding writes the name
+      // partway through — so anyone who quit between naming themselves and finishing setup was
+      // treated as a returning person on the next launch, and the else branch below, which exists
+      // to RESUME where they stopped, became unreachable. v600.5 reached for the widest test it
+      // could find when all it needed was the guest term. This is the same three-way shape the
+      // sibling gates in this file already use: onboarded, OR a guest, OR a finished identity.
+      if(isOnboarded || ls('totry_guest') || (hasIdentity && hasName)){
         // Returning user
         document.getElementById('onboard').classList.remove('active');
         document.getElementById('onboard').style.display = 'none';
@@ -24466,6 +24495,23 @@ async function logBody(){
     const merged = Object.assign({}, prev, newEntry);
     if(!(newEntry.weight > 0) && prev.weight > 0) merged.weight = prev.weight;   // never lose a weight
     if(!newEntry.photo && prev.photo) merged.photo = prev.photo;
+    // AND NEVER LOSE AN ANSWER EITHER. The weight and the photo were guarded and the six weekly
+    // scores, the win, the struggle, the focus and the note were not — so a second check-in the same
+    // day (to add a weight they had remembered, which is the ordinary reason) overwrote everything the
+    // first one recorded. It has always done that; what changed in v600.4 is that an untouched slider
+    // now reads null instead of a fabricated 5, so the destruction is visible rather than disguised.
+    // Merge per field: a value they gave this time wins, anything they left blank keeps what was there.
+    if(prev.scores){
+      const _ps = prev.scores, _ns = newEntry.scores || {}, _ms = {};
+      ['train','nutrition','sleep','stress','energy','faith'].forEach(function(f){
+        _ms[f] = (_ns[f] != null) ? _ns[f] : (_ps[f] != null ? _ps[f] : null);
+      });
+      merged.scores = _ms;
+    }
+    ['win','struggle','focus','note'].forEach(function(f){
+      const _n = newEntry[f];
+      if((_n == null || _n === '') && prev[f]) merged[f] = prev[f];
+    });
     merged.date = prev.date;                                   // keep the day's existing identity
     entries[_iToday] = merged;
   } else {
@@ -24716,12 +24762,21 @@ async function generateWeeklyCoachResponse(entry){
   context += `\nThis week\'s check-in:`;
   if(entry.weight) context += `\n- Weight: ${wFmt(entry.weight)}`;
   if(entry.scores){
-    context += `\n- Training adherence: ${entry.scores.train}/10`;
-    context += `\n- Nutrition adherence: ${entry.scores.nutrition}/10`;
-    context += `\n- Sleep: ${entry.scores.sleep}/10`;
-    context += `\n- Stress: ${entry.scores.stress}/10`;
-    context += `\n- Energy: ${entry.scores.energy}/10`;
-    context += `\n- Faith: ${entry.scores.faith}/10`;
+    // NAME ONLY WHAT THEY ANSWERED. A slider nobody moved reads null — that is the whole point of the
+    // touched flag — and these six lines interpolated it regardless, so the weekly read was told
+    // "Nutrition adherence: null/10" and the model either invented a meaning for it or repeated it
+    // back. The same fix was made to the coach's check-in context at 03-person.js and not here, which
+    // is this codebase's most repeated shape; clearing dataset.touched on reset made it more common,
+    // not less. Saying which questions they left is more useful to the model than a fake number.
+    const _asked = [['Training adherence', entry.scores.train], ['Nutrition adherence', entry.scores.nutrition],
+                    ['Sleep', entry.scores.sleep], ['Stress', entry.scores.stress],
+                    ['Energy', entry.scores.energy], ['Faith', entry.scores.faith]];
+    const _blank = [];
+    _asked.forEach(function(pair){
+      if(pair[1] == null || pair[1] === '') { _blank.push(pair[0]); return; }
+      context += `\n- ${pair[0]}: ${pair[1]}/10`;
+    });
+    if(_blank.length) context += `\n- They left ${_blank.join(', ')} blank — do not assume a value for those.`;
   }
   if(entry.win) context += `\n- Biggest win: ${entry.win}`;
   if(entry.struggle) context += `\n- Biggest struggle: ${entry.struggle}`;
@@ -28913,7 +28968,7 @@ function updateServingPreview(){
     const _gramServing = !!(ge && (s && (s.__gram || /^\s*100\s*(g|ml)\b/i.test(String(s.name||'')))));
     const microMult = (ge && (currentFood.per100 || _gramServing)) ? (ge * qty / 100) : qty;
     const micros = [];
-    if(currentFood.fiber > 0) micros.push('Fiber ' + (Math.round(currentFood.fiber * microMult * 10) / 10) + 'g');
+    if(currentFood.fiber > 0) micros.push('Fibre ' + (Math.round(currentFood.fiber * microMult * 10) / 10) + 'g');
     if(currentFood.sugar > 0) micros.push('Sugar ' + (Math.round(currentFood.sugar * microMult * 10) / 10) + 'g');
     if(currentFood.sodium > 0) micros.push('Sodium ' + Math.round(currentFood.sodium * microMult) + 'mg');
     if(currentFood.iron > 0) micros.push('Iron ' + (Math.round(currentFood.iron * microMult * 10) / 10) + 'mg');

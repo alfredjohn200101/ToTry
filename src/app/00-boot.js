@@ -149,6 +149,21 @@ function restoreKeys(data){
           if(typeof tombstoneRevoke === 'function' && typeof syncIdOf === 'function' && Array.isArray(parsed)){
             tombstoneRevoke.apply(null, [k].concat(parsed.map(syncIdOf)));
           }
+          // AND THE TWO STORES THAT ARE NOT KEYED BY syncIdOf. A deleted vice is tombstoned by its
+          // NAME (09-fight-deep.js) and a deleted debt by its name inside totry_f, which is an object
+          // and not an array — so neither was reachable by the line above, and restoring a backup to
+          // get a vice back said "Restored" and let the very next cloud pull delete it again. That is
+          // the harm the comment above this block describes, arriving through the two doors it does
+          // not cover: the person does the one thing the app told them to do to recover, is told it
+          // worked, and loses it a second time without being told anything at all.
+          if(typeof tombstoneRevoke === 'function'){
+            if(k === 'totry_v' && Array.isArray(parsed)){
+              tombstoneRevoke.apply(null, ['totry_v'].concat(parsed.map(function(v){ return String((v && v.n) || '').toLowerCase(); })));
+            }
+            if(k === 'totry_f' && parsed && Array.isArray(parsed.d)){
+              tombstoneRevoke.apply(null, ['totry_f'].concat(parsed.d.map(function(d){ return String((d && d.n) || '').toLowerCase(); })));
+            }
+          }
         }catch(_){ }
         try{ syncToCloud(k, parsed); }catch(_){ }             // a cloud hiccup must not un-count a local write
       }
@@ -662,7 +677,10 @@ async function proceedAfterAuth(user){
     // !currentUser`, and by this point a session exists. isSetUpPerson() is the helper written for
     // exactly this question, and its own comment says it exists so these gates cannot drift apart —
     // this was a third gate that never used it.
-    if(restored || (typeof isSetUpPerson==='function' && isSetUpPerson())){
+    // Same correction as the offline gate: isSetUpPerson() is true on totry_name alone, which
+    // onboarding writes partway through, so this swallowed anyone who quit mid-setup and made the
+    // resume branch below unreachable. The guest term is the only one this needed.
+    if(restored || ls('totry_guest') || (ls('totry_onboarded') && ls('totry_name'))){
       document.getElementById('onboard').classList.remove('active');
       document.getElementById('onboard').style.display = 'none';
       document.querySelector('.app').classList.add('app-ready');

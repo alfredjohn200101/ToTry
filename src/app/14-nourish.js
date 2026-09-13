@@ -3073,7 +3073,7 @@ function updateServingPreview(){
     const _gramServing = !!(ge && (s && (s.__gram || /^\s*100\s*(g|ml)\b/i.test(String(s.name||'')))));
     const microMult = (ge && (currentFood.per100 || _gramServing)) ? (ge * qty / 100) : qty;
     const micros = [];
-    if(currentFood.fiber > 0) micros.push('Fiber ' + (Math.round(currentFood.fiber * microMult * 10) / 10) + 'g');
+    if(currentFood.fiber > 0) micros.push('Fibre ' + (Math.round(currentFood.fiber * microMult * 10) / 10) + 'g');
     if(currentFood.sugar > 0) micros.push('Sugar ' + (Math.round(currentFood.sugar * microMult * 10) / 10) + 'g');
     if(currentFood.sodium > 0) micros.push('Sodium ' + Math.round(currentFood.sodium * microMult) + 'mg');
     if(currentFood.iron > 0) micros.push('Iron ' + (Math.round(currentFood.iron * microMult * 10) / 10) + 'mg');

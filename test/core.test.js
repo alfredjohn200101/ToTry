@@ -6975,12 +6975,19 @@ H.section('a grief is not a streak, and a guest is not a stranger');
   // comment says it was made so these gates cannot drift — then a third gate did not use it, so
   // someone who came in through the guest door, used the Feeling Door and made an account on the way
   // out was walked back through all twelve onboarding screens and re-asked their name, that night.
-  H.ok(/restored \|\| \(typeof isSetUpPerson==='function' && isSetUpPerson\(\)\)/.test(code),
-    'boot opens the app for someone this phone already knows');
-  // Matched to end of LINE, not to the first ')': the condition contains parentheses of its own, so
-  // [^)]* stopped at `isSetUpPerson(` and the assertion failed on correct code.
+  // BOTH HALVES, because the first fix only got one. The gate must let a GUEST straight in — that was
+  // the point — and must NOT swallow someone who is mid-onboarding, or the else branch below it, which
+  // exists to resume where they stopped, becomes unreachable. isSetUpPerson() is true on totry_name
+  // ALONE, and onboarding writes the name partway through, so reaching for it took the guest fix and
+  // broke the resume with it. The correct shape is the one the sibling gates already use.
+  const bootGate = code.split('\n').find(l => /if\(restored \|\|/.test(l)) || '';
+  H.ok(/totry_guest/.test(bootGate), 'boot opens the app for a guest');
+  H.ok(!/isSetUpPerson/.test(bootGate), 'and does not use the name-alone test, which swallows a half-finished setup');
+  H.ok(/totry_onboarded/.test(bootGate), 'a finished setup is what counts as returning');
   const ns = code.split('\n').find(l => /if\(isOnboarded \|\|/.test(l)) || '';
-  H.ok(/isSetUpPerson/.test(ns), 'and so does the offline floor');
+  H.ok(/totry_guest/.test(ns), 'and so does the offline floor');
+  H.ok(!/isSetUpPerson/.test(ns), 'without swallowing a half-finished setup either');
+  H.ok(/hasIdentity && hasName/.test(ns), 'it wants an identity AND a name, not a name on its own');
 
   // AND SETTINGS TELLS A GUEST THE TRUTH. It said "everything here is real and saved to your account"
   // to someone who has no account — the one screen that could warn them, reassuring them instead.
@@ -7154,6 +7161,47 @@ H.section('every letter knows the day it was written');
   H.ok(raw === 0, 'no display site prints the raw field' + (raw ? ' (' + raw + ' left)' : ''));
   H.ok(/letterDay\(l\)/.test(code) && /letterDay\(letter\)/.test(code),
     'all of them go through the accessor (calibration: both call shapes exist)');
+}
+
+H.section('a second check-in adds to the day, and a restore is not undone by the next pull');
+{
+  const code = H.code(H.html);
+
+  // TWO CHECK-INS ON ONE DAY. The merge guarded the weight and the photo and nothing else, so adding
+  // a weight they had remembered — the ordinary reason anyone opens it twice — overwrote the six
+  // scores, the win, the struggle and the focus the first one recorded. It has always done that;
+  // v600.4 only made it visible, because an untouched slider now reads null instead of a fabricated 5.
+  // No guessed function anchor: extractFn throws on a name that does not exist and takes the file
+  // down with it. The window below is anchored on a comment that is unique in the bundle.
+  // Anchored on CODE, not on a comment: the first version sliced around the phrase "never lose a
+  // weight", which lives in a // comment that H.code() strips — so indexOf returned -1 and the window
+  // was nonsense. Its own calibration assertion is what caught that.
+  const mAt = code.indexOf('if(!(newEntry.weight > 0) && prev.weight > 0)');
+  H.ok(mAt > 0, 'the same-day merge was located');
+  const merge = code.slice(mAt, mAt + 1400);
+  H.ok(/merged\.weight = prev\.weight/.test(merge), 'the weight guard that was already there survives (calibration)');
+  H.ok(/merged\.scores = _ms/.test(merge), 'a score they did not answer this time keeps the one they gave');
+  H.ok(/\['win','struggle','focus','note'\]/.test(merge), 'and so do the four things they wrote');
+
+  // A RESTORE MUST OUTRANK AN OLD DELETION — including for the two stores not keyed by syncIdOf. A
+  // deleted vice is tombstoned by its NAME and a deleted debt by its name inside totry_f, which is an
+  // object and not an array, so neither was reachable by the syncIdOf revoke: restoring a backup to
+  // get a vice back said "Restored" and the next cloud pull deleted it again.
+  const rk = code.slice(code.indexOf('tombstoneRevoke.apply'), code.indexOf('tombstoneRevoke.apply') + 1600);
+  H.ok(/k === 'totry_v'/.test(rk), 'a restored vice revokes its own tombstone');
+  H.ok(/k === 'totry_f'/.test(rk), 'and so does a restored debt');
+  H.ok(/\.toLowerCase\(\)/.test(rk), 'keyed the way the deletion keyed it — by lowercased name');
+
+  // AND WHAT THIS BUILD NO LONGER PUSHES, IT NO LONGER PULLS. Taking a key out of SYNC_KEYS stopped
+  // it going up and left every pull still applying the row already in the cloud — so a fresh phone
+  // was told it could write into Apple Health before it had ever asked.
+  H.ok(/SYNC_KEYS\.indexOf\(k\) === -1\) return;/.test(code),
+    'a key absent from SYNC_KEYS is not applied from the cloud either');
+
+  // THE WEEKLY READ NAMES ONLY WHAT SHE ANSWERED. Six unconditional interpolations sent the model
+  // "Nutrition adherence: null/10"; the coach's own check-in context was fixed for this and this was not.
+  H.ok(!/Nutrition adherence: \$\{entry\.scores\.nutrition\}/.test(code), 'no score is interpolated unconditionally');
+  H.ok(/do not assume a value for those/.test(code), 'and the model is told which questions were left blank');
 }
 
 H.report();

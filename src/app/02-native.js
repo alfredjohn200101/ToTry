@@ -1220,9 +1220,13 @@ async function checkAuthAndStart(){
       const hasName = ls('totry_name');
       const isOnboarded = !!ls('totry_onboarded');
 
-      // Same three-way test as isSetUpPerson() above, which this file defines: a guest has
-      // deliberately come in and used the app, and writes neither totry_onboarded nor an identity.
-      if(isOnboarded || (typeof isSetUpPerson==='function' && isSetUpPerson()) || (hasIdentity && hasName)){
+      // NOT isSetUpPerson(). That helper is true on totry_name ALONE, and onboarding writes the name
+      // partway through — so anyone who quit between naming themselves and finishing setup was
+      // treated as a returning person on the next launch, and the else branch below, which exists
+      // to RESUME where they stopped, became unreachable. v600.5 reached for the widest test it
+      // could find when all it needed was the guest term. This is the same three-way shape the
+      // sibling gates in this file already use: onboarded, OR a guest, OR a finished identity.
+      if(isOnboarded || ls('totry_guest') || (hasIdentity && hasName)){
         // Returning user
         document.getElementById('onboard').classList.remove('active');
         document.getElementById('onboard').style.display = 'none';

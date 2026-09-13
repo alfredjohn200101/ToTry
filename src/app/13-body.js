@@ -227,6 +227,23 @@ async function logBody(){
     const merged = Object.assign({}, prev, newEntry);
     if(!(newEntry.weight > 0) && prev.weight > 0) merged.weight = prev.weight;   // never lose a weight
     if(!newEntry.photo && prev.photo) merged.photo = prev.photo;
+    // AND NEVER LOSE AN ANSWER EITHER. The weight and the photo were guarded and the six weekly
+    // scores, the win, the struggle, the focus and the note were not — so a second check-in the same
+    // day (to add a weight they had remembered, which is the ordinary reason) overwrote everything the
+    // first one recorded. It has always done that; what changed in v600.4 is that an untouched slider
+    // now reads null instead of a fabricated 5, so the destruction is visible rather than disguised.
+    // Merge per field: a value they gave this time wins, anything they left blank keeps what was there.
+    if(prev.scores){
+      const _ps = prev.scores, _ns = newEntry.scores || {}, _ms = {};
+      ['train','nutrition','sleep','stress','energy','faith'].forEach(function(f){
+        _ms[f] = (_ns[f] != null) ? _ns[f] : (_ps[f] != null ? _ps[f] : null);
+      });
+      merged.scores = _ms;
+    }
+    ['win','struggle','focus','note'].forEach(function(f){
+      const _n = newEntry[f];
+      if((_n == null || _n === '') && prev[f]) merged[f] = prev[f];
+    });
     merged.date = prev.date;                                   // keep the day's existing identity
     entries[_iToday] = merged;
   } else {
@@ -477,12 +494,21 @@ async function generateWeeklyCoachResponse(entry){
   context += `\nThis week\'s check-in:`;
   if(entry.weight) context += `\n- Weight: ${wFmt(entry.weight)}`;
   if(entry.scores){
-    context += `\n- Training adherence: ${entry.scores.train}/10`;
-    context += `\n- Nutrition adherence: ${entry.scores.nutrition}/10`;
-    context += `\n- Sleep: ${entry.scores.sleep}/10`;
-    context += `\n- Stress: ${entry.scores.stress}/10`;
-    context += `\n- Energy: ${entry.scores.energy}/10`;
-    context += `\n- Faith: ${entry.scores.faith}/10`;
+    // NAME ONLY WHAT THEY ANSWERED. A slider nobody moved reads null — that is the whole point of the
+    // touched flag — and these six lines interpolated it regardless, so the weekly read was told
+    // "Nutrition adherence: null/10" and the model either invented a meaning for it or repeated it
+    // back. The same fix was made to the coach's check-in context at 03-person.js and not here, which
+    // is this codebase's most repeated shape; clearing dataset.touched on reset made it more common,
+    // not less. Saying which questions they left is more useful to the model than a fake number.
+    const _asked = [['Training adherence', entry.scores.train], ['Nutrition adherence', entry.scores.nutrition],
+                    ['Sleep', entry.scores.sleep], ['Stress', entry.scores.stress],
+                    ['Energy', entry.scores.energy], ['Faith', entry.scores.faith]];
+    const _blank = [];
+    _asked.forEach(function(pair){
+      if(pair[1] == null || pair[1] === '') { _blank.push(pair[0]); return; }
+      context += `\n- ${pair[0]}: ${pair[1]}/10`;
+    });
+    if(_blank.length) context += `\n- They left ${_blank.join(', ')} blank — do not assume a value for those.`;
   }
   if(entry.win) context += `\n- Biggest win: ${entry.win}`;
   if(entry.struggle) context += `\n- Biggest struggle: ${entry.struggle}`;

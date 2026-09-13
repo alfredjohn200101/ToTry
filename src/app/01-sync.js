@@ -538,6 +538,13 @@ async function pullFromCloud(){
       if(TEST_MODE){ if(typeof rawK!=='string' || rawK.indexOf(TEST_PREFIX)!==0) return; }
       else { if(typeof rawK==='string' && rawK.indexOf(TEST_PREFIX)===0) return; }
       const k = _unCloudKey(rawK), cv = row.data_value;
+      // A KEY THIS BUILD NO LONGER PUSHES MUST NOT BE PULLED EITHER. Taking totry_health_write out of
+      // SYNC_KEYS stopped it going UP and did nothing about the row already in the cloud, which every
+      // pull kept applying — so a fresh phone was still told it was allowed to write into Apple Health
+      // before it had ever asked, which is the whole reason that key was made device-local. The same
+      // holds for anything ever removed from the list in future: the push side and the pull side have
+      // to agree, or removing a key only half-works and silently keeps working the old way.
+      if(typeof SYNC_KEYS !== 'undefined' && SYNC_KEYS.indexOf(k) === -1) return;
       if(cv === null || cv === undefined) return;
       // A DEVICE THAT JUST RAN OUT OF ROOM MUST NOT BE REFILLED IMMEDIATELY.
       // _lsEmergencyPrune trims the expendable stores and deliberately writes LOCALLY, so the account
