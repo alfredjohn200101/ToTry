@@ -1,57 +1,54 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  The launch screen a person actually sees while the WebView loads.
+  THIS STORYBOARD AND THE CAPACITOR SPLASH ARE THE SAME PICTURE ON PURPOSE.
 
-  It used to be the stock Capacitor placeholder: a WHITE background with the Capacitor logo, on a
-  systemBackgroundColor that goes white in light mode. In practice the app showed roughly seven seconds
-  of pure black on launch — long enough to read as a hang, and long enough for an App Store reviewer to
-  treat it as one. The blank time is real (the single-file build has ~2.4MB of inline script to compile
-  before the body paints), so the honest fix is to make those seconds look like the app instead of like
-  a crash: the same #0a0a0f background the WebView hands over to, and the wordmark, so the handoff is
-  seamless rather than a jump.
+  Until 12 Sep 2026 this drew the name as TEXT: text="To Try" — with a space — in Georgia 44pt, both
+  words gold. The brand is "ToTry", joined, in Cormorant Garamond, "To" cream and an italic gold
+  "Try". That was reported from a real phone and fixed here by swapping in the icon artwork — and
+  the report came back "nothing has changed", because it had not: capacitor.config.json sets
+  launchAutoHide:false, so the SplashScreen plugin paints its own Splash.imageset over this
+  storyboard within a frame and holds it until JS calls hide(). Captured on the simulator, the
+  launch screen a person actually saw was FLAT BLACK — the plugin's old splash asset. Whatever this
+  file drew was never on screen long enough to see. Fixing a layer nothing looks at is not a fix.
 
-  Constraints of a launch storyboard: it is static (no spinner — the in-page boot splash has that once
-  the WebView paints), no custom classes, and no custom fonts, because nothing in the app bundle has
-  loaded yet. Georgia is on every iOS device and is the closest always-available serif to Cormorant
-  Garamond, so it degrades to nothing.
+  So both layers now draw Splash.imageset, full-screen, scaleAspectFill. The storyboard hands over
+  to the plugin with no cut, and the web #boot-splash behind it uses the same .logo-main markup, so
+  launch → splash → app is one continuous image instead of three wordmarks in a row.
+
+  Splash.imageset is GENERATED from the running app (scripts/make-splash — it loads index.html, so
+  it inherits the real @font-face rules and the real .logo-main kerning). Do not hand-draw a
+  replacement: text in a storyboard cannot use the app's webfont, which is how this drifted the
+  first time. Regenerate it instead, and it cannot drift again.
 -->
 <document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="22154" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="01J-lp-oVM">
-    <device id="retina6_12" orientation="portrait" appearance="dark"/>
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
     <dependencies>
-        <deployment identifier="iOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="22131"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="System colors in document resources" minToolsVersion="11.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
-        <!--View Controller-->
         <scene sceneID="EHf-IW-A2E">
             <objects>
                 <viewController id="01J-lp-oVM" sceneMemberID="viewController">
-                    <view key="view" contentMode="scaleToFill" id="Ic4-ZR-tYk">
+                    <view key="view" contentMode="scaleToFill" id="Ze5-6b-2t3">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="To Try" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="wm1-To-Try">
-                                <rect key="frame" x="141.5" y="392" width="110" height="53"/>
-                                <fontDescription key="fontDescription" name="Georgia" family="Georgia" pointSize="44"/>
-                                <color key="textColor" red="0.78431372549019607" green="0.66274509803921566" blue="0.43137254901960786" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                <nil key="highlightedColor"/>
-                            </label>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="BY ALFRED JOHN" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="wm2-By-Aj">
-                                <rect key="frame" x="132" y="453" width="129" height="13"/>
-                                <fontDescription key="fontDescription" type="system" weight="light" pointSize="11"/>
-                                <color key="textColor" red="0.41568627450980394" green="0.41568627450980394" blue="0.44705882352941179" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                <nil key="highlightedColor"/>
-                            </label>
+                            <!-- Pinned to the VIEW, not the safe area: a launch image that stopped at the
+                                 Dynamic Island would show the black bar the plugin's copy does not. -->
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Splash" translatesAutoresizingMaskIntoConstraints="NO" id="SPL-01-img">
+                                <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                            </imageView>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="Bcu-3y-fUS"/>
                         <color key="backgroundColor" red="0.039215686274509803" green="0.039215686274509803" blue="0.058823529411764705" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                         <constraints>
-                            <constraint firstItem="wm1-To-Try" firstAttribute="centerX" secondItem="Ic4-ZR-tYk" secondAttribute="centerX" id="c01-cx-wm1"/>
-                            <constraint firstItem="wm1-To-Try" firstAttribute="centerY" secondItem="Ic4-ZR-tYk" secondAttribute="centerY" id="c02-cy-wm1"/>
-                            <constraint firstItem="wm2-By-Aj" firstAttribute="centerX" secondItem="Ic4-ZR-tYk" secondAttribute="centerX" id="c03-cx-wm2"/>
-                            <constraint firstItem="wm2-By-Aj" firstAttribute="top" secondItem="wm1-To-Try" secondAttribute="bottom" constant="8" id="c04-tp-wm2"/>
+                            <constraint firstItem="SPL-01-img" firstAttribute="top" secondItem="Ze5-6b-2t3" secondAttribute="top" id="SPL-tp-001"/>
+                            <constraint firstItem="SPL-01-img" firstAttribute="leading" secondItem="Ze5-6b-2t3" secondAttribute="leading" id="SPL-ld-001"/>
+                            <constraint firstAttribute="trailing" secondItem="SPL-01-img" secondAttribute="trailing" id="SPL-tr-001"/>
+                            <constraint firstAttribute="bottom" secondItem="SPL-01-img" secondAttribute="bottom" id="SPL-bt-001"/>
                         </constraints>
                     </view>
                 </viewController>
@@ -60,4 +57,7 @@
             <point key="canvasLocation" x="53" y="375"/>
         </scene>
     </scenes>
+    <resources>
+        <image name="Splash" width="2732" height="2732"/>
+    </resources>
 </document>

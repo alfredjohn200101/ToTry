@@ -1,6 +1,24 @@
 // ── SETTINGS ──────────────────────────────────────────────────
+// Absent means ON — the switch exists to turn something OFF, so a person who has never opened this
+// screen keeps the haptics the app has always had.
+function hapticsOn(){ try{ return ls('totry_haptics') !== 'off'; }catch(_){ return true; } }
+function toggleHaptics(){
+  const on = !hapticsOn();
+  ls('totry_haptics', on ? 'on' : 'off');
+  renderHapticsRow();
+  // Fire one AFTER saving so the confirmation is the thing itself: switching it on is felt, and
+  // switching it off is silent, which is the honest demonstration of what the switch does.
+  if(on && typeof haptic==='function') haptic('tap');
+  if(typeof showToast==='function') showToast(on ? 'Haptics on' : 'Haptics off',
+    on ? 'You will feel the breath counted out.' : 'Nothing in the app will buzz.');
+}
+function renderHapticsRow(){
+  try{ const b=document.getElementById('haptics-btn'); if(b) b.textContent = hapticsOn() ? 'On \u2713' : 'Off'; }catch(_){}
+}
+
 function initSettingsTab(){
   try{ if(typeof renderLockRow==='function') renderLockRow(); }catch(_){}
+  try{ renderHapticsRow(); }catch(_){}
   // One source of truth for this copy — see RAFFLE_ACTIVE.
   try{ const _rl=document.getElementById('feedback-raffle-line'); if(_rl && typeof _raffleCopy==='function') _rl.textContent=_raffleCopy('card'); }catch(_){}
   // Honest beta framing on web only — inside the native app it's not a beta, so hide it.

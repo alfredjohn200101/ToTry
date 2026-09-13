@@ -1439,6 +1439,17 @@ function _protoFor(id){
   return Object.assign({}, base, { name:f.name, why:f.why,
     phases:[ {l:f.in, s:5, scale:1.55}, {l:f.out, s:6, scale:1.0} ] });
 }
+// Which way a phase goes, read off the orb scale the protocol already declares. Wraps at the start of
+// a cycle (phase 0's predecessor is the last phase), so the first inhale of every round reads as one.
+function _breathKind(phases, i){
+  try{
+    const cur=phases[i], prev=phases[(i-1+phases.length)%phases.length];
+    if(!cur || !prev || typeof cur.scale!=='number' || typeof prev.scale!=='number') return 'in';
+    if(cur.scale > prev.scale) return 'in';
+    if(cur.scale < prev.scale) return 'out';
+    return 'hold';
+  }catch(_){ return 'in'; }
+}
 function _breathScale(el, v, dur){ if(!el) return; el.style.transitionDuration=dur+'s'; el.style.transform='scale('+v+')'; }
 function _breathLog(entry){ try{ const log=ls('totry_breath_log')||[]; log.unshift(Object.assign({ts:Date.now()},entry)); ls('totry_breath_log', log.slice(0,200)); }catch(_){} }
 function _breathSafetyGate(cb){
@@ -1513,8 +1524,8 @@ function openBreath(id, opts){
   document.body.appendChild(ov);
   try{ ov.focus({preventScroll:true}); }catch(_){}
   const q=(s)=>ov.querySelector(s);
-  const state={alive:true, timer:null, pulse:null, cycle:0, pi:0, before:null, after:null};
-  function cleanup(){ state.alive=false; if(state.timer){clearTimeout(state.timer);state.timer=null;} if(state.pulse){clearInterval(state.pulse);state.pulse=null;} }
+  const state={alive:true, timer:null, pulse:null, tick:null, cycle:0, pi:0, before:null, after:null};
+  function cleanup(){ state.alive=false; if(state.timer){clearTimeout(state.timer);state.timer=null;} if(state.pulse){clearInterval(state.pulse);state.pulse=null;} if(state.tick){clearInterval(state.tick);state.tick=null;} }
   function close(){ cleanup(); ov.remove(); if(opts && typeof opts.onClose==='function'){ const cb=opts.onClose; opts.onClose=null; try{ cb(); }catch(_){} } }
   q('.b-x').onclick=close;
   q('.b-change').onclick=()=>{ cleanup(); ov.remove(); openBreathMenu(); };
@@ -1549,19 +1560,48 @@ function openBreath(id, opts){
       if(!state.alive) return;
       const ph=p.phases[state.pi];
       phaseEl.textContent=ph.l; countEl.textContent='Round '+(state.cycle+1)+' of '+p.cycles;
+      if(state.tick){ clearInterval(state.tick); state.tick=null; }
       if(ph.pulse){
         let up=true; _breathScale(orb,1.5,0.5);
         state.pulse=setInterval(()=>{ if(!state.alive) return; up=!up; _breathScale(orb, up?1.5:1.1, 0.5); if(typeof haptic==='function') haptic('light'); }, 650);
         state.timer=setTimeout(()=>{ if(state.pulse){clearInterval(state.pulse);state.pulse=null;} advance(); }, ph.s*1000);
       } else {
-        _breathScale(orb, ph.scale, ph.s); if(typeof haptic==='function') haptic('light');
+        _breathScale(orb, ph.scale, ph.s);
+        // ONE CUE FOR EVERY PHASE IS NO GUIDE AT ALL. Every phase used to fire the same haptic('light')
+        // at its boundary: breathe in, hold and breathe out felt identical, and nothing at all happened
+        // in between. So the haptics told you only that SOMETHING had changed, never what to do — which
+        // is useless in the one posture this whole screen is asking for, eyes shut. A person watching the
+        // orb did not need them; a person doing it properly could not use them.
+        //
+        // The kind is derived, not declared: the protocols already encode direction in `scale` — it
+        // rises on an inhale, falls on an exhale and holds level through a hold. All nine read correctly
+        // that way, including the sigh's second sip (1.4 -> 1.62 is another in) and "Rest on empty"
+        // (level, so a hold). Deriving it means a new protocol gets the right feel for free, and nobody
+        // has to remember to tag one.
+        if(typeof haptic==='function') haptic(_breathKind(p.phases, state.pi)==='in' ? 'tap' : _breathKind(p.phases, state.pi)==='out' ? 'light' : 'tick');
+        // PACE THE MIDDLE, NOT ONLY THE EDGE. The hard part of 4-7-8 is the 7, and a cue that fires
+        // once at each end leaves the whole count to be held in the head — which is the thing the
+        // person came here unable to do. One soft tick a second IS that count, in the hand. It starts
+        // at 1s (the onset cue already marks 0) and stops before the phase ends, so the next onset
+        // lands clean; phases under 2s get none, since there is no middle to pace.
+        if(ph.s >= 2){
+          let elapsed=0;
+          state.tick=setInterval(()=>{
+            if(!state.alive){ clearInterval(state.tick); state.tick=null; return; }
+            elapsed++;
+            if(elapsed >= ph.s - 0.25){ clearInterval(state.tick); state.tick=null; return; }
+            if(typeof haptic==='function') haptic('tick');
+          }, 1000);
+        }
         state.timer=setTimeout(advance, ph.s*1000);
       }
     }
     function advance(){ if(!state.alive) return; state.pi++; if(state.pi>=p.phases.length){ state.pi=0; state.cycle++; if(state.cycle>=p.cycles){ finish(); return; } } runPhase(); }
     phaseEl.textContent='Get comfortable…'; countEl.textContent='';
     state.timer=setTimeout(()=>{ if(state.alive) runPhase(); }, 1200);
-    if(typeof haptic==='function') haptic('tap');
+    // No tap here. openBreath() already fired one when the screen appeared, and on the path with no
+    // distress scale both landed in the same millisecond — two identical cues for one action, which
+    // reads as a stutter rather than a confirmation. Driving it is what showed it: tap@0.0s twice.
   }
   if(reason){
     show('.b-pre');

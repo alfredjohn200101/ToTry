@@ -44,6 +44,34 @@ Verified in the actual shipping bundle, not just the repo:
 
 ---
 
+## ▶ BUILD 9 — v600 — READY TO ARCHIVE, NOT YET UPLOADED
+
+`npm run preflight` is green: source, `www/`, the iOS bundle **and** the Android bundle are all
+byte-identical at v600 (sha `7330a6c8b2d7`), and `CURRENT_PROJECT_VERSION` is **9** — App Store
+Connect already holds 8, and it rejects a build number it has seen.
+
+**What build 9 carries that build 8 does not — all three came off a real phone:**
+
+| Reported | What was actually wrong | Fixed |
+|---|---|---|
+| "the logo on the face id screen" | The lock overlay, the boot splash and the sign-in screen all render `To<em>Try</em>`, and Cormorant's italic T has a left side bearing the roman o does not — so the mark PAINTED as two words. Measured on the pixels at 52px against two known answers in the same font: all-roman "ToTry" leaves a 0px ink gap, a literal space leaves 15px, this join left 5px. | `margin-left:-0.095em` on `.ob-logo em` and `.logo-main em` — closes it to 0 at every size the mark is used, and −0.115em is where the glyphs collide, so it is not near the edge. |
+| "nothing has changed" (after the launch screen was fixed once) | It had not. `launchAutoHide:false` means the SplashScreen plugin paints `Splash.imageset` over the storyboard within a frame — and that asset was a flat #0a0a0f fill. The launch screen a person saw was BLACK, whatever the storyboard drew. | Storyboard and plugin now draw the SAME artwork, full-bleed. `scripts/make-splash.js` generates it from the running app, so it inherits the real webfont and the kerning above and cannot drift from the web layer again. |
+| "haptics can be better for breathwork" | Every phase fired the same `haptic('light')` at its boundary and nothing in between — inhale, hold and exhale felt identical, and a 7-count hold was left entirely to the head, in the one posture the screen exists to ask for. | The kind is derived from the orb scale the protocols already declare (all nine read correctly), so in/hold/out feel different; and one soft `selectionChanged` tick a second paces the middle. Driven and measured on 4-7-8: **4 cues in, 7 in the hold, 8 out** — the count you feel is the count you hold. Nothing leaks after close. New Settings → Preferences → **Feel** switch, because a repeating cue must be refusable; absent means ON. |
+
+**Also in build 9:** `@capacitor/barcode-scanner` was installed during the previous session on a
+false premise and has been removed. `BarcodeScannerPlugin.swift` is an app-target plugin — compiled
+in and registered by instance, so it never appears in `package.json`, which is what I mistook for
+"not installed". Confirmed in the built dylib: 111 symbols, `jsName = "BarcodeScanner"` present. The
+third-party SPM dependency is gone from the binary.
+
+Gate: `npm test` 1904 ✓ · `test:edge` 34 ✓ · `verify:index` identical ✓ · `preflight` ready ✓
+(crisis / personas / panels below).
+
+**To upload:** Xcode → Product ▸ Archive → Window ▸ Organizer → Distribute App → App Store Connect.
+Still yours to do, and deliberately so — it publishes under your developer account.
+
+---
+
 ## ✅ BUILD 8 UPLOADED — 9 Sep 2026 — **v597, in App Store Connect**
 
 Uploaded via Xcode Organizer → Distribute App → App Store Connect. App Store Connect now holds

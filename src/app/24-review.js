@@ -3,7 +3,16 @@
 // PASS 3: HAPTIC FEEDBACK + POLISH HELPERS
 // ═══════════════════════════════════════════════════
 function haptic(pattern){
-  // pattern can be: 'tap', 'success', 'warning', 'celebrate', 'light'
+  // pattern can be: 'tap', 'success', 'warning', 'celebrate', 'light', 'tick', 'alert'
+  //
+  // AND IT CAN BE TURNED OFF. Until v600 there was no switch anywhere in the app, which was
+  // survivable while every haptic was a single tap on a deliberate action. The breath now paces a
+  // phase with a tick a second, and a repeating cue is exactly the kind of thing that has to be
+  // refusable: this app's own rule is quiet by default and never overbearing, and some people
+  // cannot have a phone buzzing against them while they are trying to settle. Settings ->
+  // Preferences -> Feel. Absent means ON, so nobody has to go and switch it on to get what they
+  // already had.
+  try{ if(typeof ls==='function' && ls('totry_haptics')==='off') return; }catch(_){}
   //
   // EVERY HAPTIC IN THIS APP WAS DEAD ON IPHONE. The only path was navigator.vibrate — the Vibration
   // API, which WebKit has never implemented and Apple has never shipped. So `if(!navigator.vibrate)
@@ -22,7 +31,11 @@ function haptic(pattern){
       // 'alert' = the end-of-set buzz: "rest is over, go". Two firm taps, matching the
       // buzz-pause-buzz rhythm the web path has always had. Deliberately NOT notification(WARNING) --
       // on iOS that reads as "something went wrong", and a finished rest timer is a go signal.
-      if(pattern==='alert'){ H.impact({ style:'HEAVY' }); setTimeout(function(){ try{ H.impact({ style:'HEAVY' }); }catch(_){ } }, 140); }
+      // 'tick' = the pacing cue, the softest thing iOS has — the picker-wheel detent, not a buzz.
+      // A phase's onset gets an impact; the seconds inside it get these, so a count can be FELT
+      // with your eyes shut. impact(LIGHT) was too heavy to repeat once a second.
+      if(pattern==='tick'){ if(typeof H.selectionChanged==='function') H.selectionChanged(); else H.impact({ style:'LIGHT' }); }
+      else if(pattern==='alert'){ H.impact({ style:'HEAVY' }); setTimeout(function(){ try{ H.impact({ style:'HEAVY' }); }catch(_){ } }, 140); }
       else if(pattern==='success' || pattern==='celebrate'){ H.notification({ type:'SUCCESS' }); }
       else if(pattern==='warning'){ H.notification({ type:'WARNING' }); }
       else if(pattern==='light'){ H.impact({ style:'LIGHT' }); }
@@ -37,7 +50,8 @@ function haptic(pattern){
     warning: [60],
     celebrate: [40, 80, 40, 80, 80],
     alert: [200, 100, 200],
-    light: [5]
+    light: [5],
+    tick: [3]
   };
   navigator.vibrate(patterns[pattern]||[10]);
 }

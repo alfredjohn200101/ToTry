@@ -120,7 +120,15 @@ button:focus:not(:focus-visible){outline:none}
 .ob-step{width:100%;display:none}
 .ob-step.active{display:block}
 .ob-logo{font-family:'Cormorant Garamond',serif;font-size:52px;font-weight:300;text-align:center;line-height:1;margin-bottom:4px}
-.ob-logo em{font-style:italic;color:var(--go)}
+/* THE NAME IS ONE WORD. The literal space was removed long ago (see #boot-splash's own
+   comment), but the mark still RENDERED as two: Cormorant's italic T carries a left side
+   bearing the roman o does not, so the join opened a real ink gap. Measured on the painted
+   pixels at 52px, calibrated against two known answers in the same font — an all-roman
+   "ToTry" leaves 0px, a literal space leaves 15px, and this join left 5px. A third of a word
+   space is enough to read as one: the app switcher showed "To Try" and that is what a person
+   met at the lock screen. −0.095em closes it to 0 at every size the mark is used (28/34/36/52);
+   −0.115em is where the glyphs start to collide, so this is not near the edge. */
+.ob-logo em{font-style:italic;color:var(--go);margin-left:-0.095em}
 .ob-by{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:0.2em;text-transform:uppercase;text-align:center;margin-bottom:32px}
 .ob-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;color:var(--tx);margin-bottom:10px;line-height:1.25}
 .ob-desc{font-size:14px;color:var(--tx2);line-height:1.75;margin-bottom:28px}
@@ -137,7 +145,7 @@ button:focus:not(:focus-visible){outline:none}
 .hdr::before{content:'';position:absolute;top:-80px;right:-60px;width:260px;height:260px;background:radial-gradient(circle,rgba(200,169,110,0.05) 0%,transparent 70%);pointer-events:none}
 .hdr-row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:12px}
 .logo-main{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;line-height:1}
-.logo-main em{font-style:italic;color:var(--go)}
+.logo-main em{font-style:italic;color:var(--go);margin-left:-0.095em}
 .logo-sub{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:0.18em;text-transform:uppercase;margin-top:3px}
 .day-chip{text-align:right;cursor:pointer}
 .day-n{font-family:'Cormorant Garamond',serif;font-size:27px;font-weight:400;color:var(--go);line-height:1}
@@ -4336,6 +4344,18 @@ Amen.</div></div>
     </div>
 
     <div class="card">
+      <div class="card-hd" style="margin-bottom:10px">Feel</div>
+      <!-- The breath paces a phase with a tick a second now, and a repeating cue must be refusable:
+           the soul note says quiet by default and never overbearing, and for some people a phone
+           buzzing against them is the opposite of settling. Absent means ON, so nobody has to come
+           here to get back what they already had. -->
+      <div class="setting-row" style="border-bottom:none">
+        <div><div class="sr-label">Haptics</div><div class="sr-desc">The taps you feel &mdash; a tick a second through a breath so you can count it with your eyes shut, and a nudge when something lands.</div></div>
+        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:12px" id="haptics-btn" onclick="toggleHaptics()">On</button>
+      </div>
+    </div>
+
+    <div class="card">
       <div class="card-hd" style="margin-bottom:10px">Profile</div>
       <div class="setting-row">
         <div><div class="sr-label">Your name</div><div class="sr-desc" id="settings-name-display">Loading...</div></div>
@@ -5485,7 +5505,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v599';
+const APP_VERSION = 'v600';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -17255,6 +17275,17 @@ function _protoFor(id){
   return Object.assign({}, base, { name:f.name, why:f.why,
     phases:[ {l:f.in, s:5, scale:1.55}, {l:f.out, s:6, scale:1.0} ] });
 }
+// Which way a phase goes, read off the orb scale the protocol already declares. Wraps at the start of
+// a cycle (phase 0's predecessor is the last phase), so the first inhale of every round reads as one.
+function _breathKind(phases, i){
+  try{
+    const cur=phases[i], prev=phases[(i-1+phases.length)%phases.length];
+    if(!cur || !prev || typeof cur.scale!=='number' || typeof prev.scale!=='number') return 'in';
+    if(cur.scale > prev.scale) return 'in';
+    if(cur.scale < prev.scale) return 'out';
+    return 'hold';
+  }catch(_){ return 'in'; }
+}
 function _breathScale(el, v, dur){ if(!el) return; el.style.transitionDuration=dur+'s'; el.style.transform='scale('+v+')'; }
 function _breathLog(entry){ try{ const log=ls('totry_breath_log')||[]; log.unshift(Object.assign({ts:Date.now()},entry)); ls('totry_breath_log', log.slice(0,200)); }catch(_){} }
 function _breathSafetyGate(cb){
@@ -17329,8 +17360,8 @@ function openBreath(id, opts){
   document.body.appendChild(ov);
   try{ ov.focus({preventScroll:true}); }catch(_){}
   const q=(s)=>ov.querySelector(s);
-  const state={alive:true, timer:null, pulse:null, cycle:0, pi:0, before:null, after:null};
-  function cleanup(){ state.alive=false; if(state.timer){clearTimeout(state.timer);state.timer=null;} if(state.pulse){clearInterval(state.pulse);state.pulse=null;} }
+  const state={alive:true, timer:null, pulse:null, tick:null, cycle:0, pi:0, before:null, after:null};
+  function cleanup(){ state.alive=false; if(state.timer){clearTimeout(state.timer);state.timer=null;} if(state.pulse){clearInterval(state.pulse);state.pulse=null;} if(state.tick){clearInterval(state.tick);state.tick=null;} }
   function close(){ cleanup(); ov.remove(); if(opts && typeof opts.onClose==='function'){ const cb=opts.onClose; opts.onClose=null; try{ cb(); }catch(_){} } }
   q('.b-x').onclick=close;
   q('.b-change').onclick=()=>{ cleanup(); ov.remove(); openBreathMenu(); };
@@ -17365,19 +17396,48 @@ function openBreath(id, opts){
       if(!state.alive) return;
       const ph=p.phases[state.pi];
       phaseEl.textContent=ph.l; countEl.textContent='Round '+(state.cycle+1)+' of '+p.cycles;
+      if(state.tick){ clearInterval(state.tick); state.tick=null; }
       if(ph.pulse){
         let up=true; _breathScale(orb,1.5,0.5);
         state.pulse=setInterval(()=>{ if(!state.alive) return; up=!up; _breathScale(orb, up?1.5:1.1, 0.5); if(typeof haptic==='function') haptic('light'); }, 650);
         state.timer=setTimeout(()=>{ if(state.pulse){clearInterval(state.pulse);state.pulse=null;} advance(); }, ph.s*1000);
       } else {
-        _breathScale(orb, ph.scale, ph.s); if(typeof haptic==='function') haptic('light');
+        _breathScale(orb, ph.scale, ph.s);
+        // ONE CUE FOR EVERY PHASE IS NO GUIDE AT ALL. Every phase used to fire the same haptic('light')
+        // at its boundary: breathe in, hold and breathe out felt identical, and nothing at all happened
+        // in between. So the haptics told you only that SOMETHING had changed, never what to do — which
+        // is useless in the one posture this whole screen is asking for, eyes shut. A person watching the
+        // orb did not need them; a person doing it properly could not use them.
+        //
+        // The kind is derived, not declared: the protocols already encode direction in `scale` — it
+        // rises on an inhale, falls on an exhale and holds level through a hold. All nine read correctly
+        // that way, including the sigh's second sip (1.4 -> 1.62 is another in) and "Rest on empty"
+        // (level, so a hold). Deriving it means a new protocol gets the right feel for free, and nobody
+        // has to remember to tag one.
+        if(typeof haptic==='function') haptic(_breathKind(p.phases, state.pi)==='in' ? 'tap' : _breathKind(p.phases, state.pi)==='out' ? 'light' : 'tick');
+        // PACE THE MIDDLE, NOT ONLY THE EDGE. The hard part of 4-7-8 is the 7, and a cue that fires
+        // once at each end leaves the whole count to be held in the head — which is the thing the
+        // person came here unable to do. One soft tick a second IS that count, in the hand. It starts
+        // at 1s (the onset cue already marks 0) and stops before the phase ends, so the next onset
+        // lands clean; phases under 2s get none, since there is no middle to pace.
+        if(ph.s >= 2){
+          let elapsed=0;
+          state.tick=setInterval(()=>{
+            if(!state.alive){ clearInterval(state.tick); state.tick=null; return; }
+            elapsed++;
+            if(elapsed >= ph.s - 0.25){ clearInterval(state.tick); state.tick=null; return; }
+            if(typeof haptic==='function') haptic('tick');
+          }, 1000);
+        }
         state.timer=setTimeout(advance, ph.s*1000);
       }
     }
     function advance(){ if(!state.alive) return; state.pi++; if(state.pi>=p.phases.length){ state.pi=0; state.cycle++; if(state.cycle>=p.cycles){ finish(); return; } } runPhase(); }
     phaseEl.textContent='Get comfortable…'; countEl.textContent='';
     state.timer=setTimeout(()=>{ if(state.alive) runPhase(); }, 1200);
-    if(typeof haptic==='function') haptic('tap');
+    // No tap here. openBreath() already fired one when the screen appeared, and on the path with no
+    // distress scale both landed in the same millisecond — two identical cues for one action, which
+    // reads as a stutter rather than a confirmation. Driving it is what showed it: tap@0.0s twice.
   }
   if(reason){
     show('.b-pre');
@@ -41568,7 +41628,16 @@ function checkMilestones(){
 // PASS 3: HAPTIC FEEDBACK + POLISH HELPERS
 // ═══════════════════════════════════════════════════
 function haptic(pattern){
-  // pattern can be: 'tap', 'success', 'warning', 'celebrate', 'light'
+  // pattern can be: 'tap', 'success', 'warning', 'celebrate', 'light', 'tick', 'alert'
+  //
+  // AND IT CAN BE TURNED OFF. Until v600 there was no switch anywhere in the app, which was
+  // survivable while every haptic was a single tap on a deliberate action. The breath now paces a
+  // phase with a tick a second, and a repeating cue is exactly the kind of thing that has to be
+  // refusable: this app's own rule is quiet by default and never overbearing, and some people
+  // cannot have a phone buzzing against them while they are trying to settle. Settings ->
+  // Preferences -> Feel. Absent means ON, so nobody has to go and switch it on to get what they
+  // already had.
+  try{ if(typeof ls==='function' && ls('totry_haptics')==='off') return; }catch(_){}
   //
   // EVERY HAPTIC IN THIS APP WAS DEAD ON IPHONE. The only path was navigator.vibrate — the Vibration
   // API, which WebKit has never implemented and Apple has never shipped. So `if(!navigator.vibrate)
@@ -41587,7 +41656,11 @@ function haptic(pattern){
       // 'alert' = the end-of-set buzz: "rest is over, go". Two firm taps, matching the
       // buzz-pause-buzz rhythm the web path has always had. Deliberately NOT notification(WARNING) --
       // on iOS that reads as "something went wrong", and a finished rest timer is a go signal.
-      if(pattern==='alert'){ H.impact({ style:'HEAVY' }); setTimeout(function(){ try{ H.impact({ style:'HEAVY' }); }catch(_){ } }, 140); }
+      // 'tick' = the pacing cue, the softest thing iOS has — the picker-wheel detent, not a buzz.
+      // A phase's onset gets an impact; the seconds inside it get these, so a count can be FELT
+      // with your eyes shut. impact(LIGHT) was too heavy to repeat once a second.
+      if(pattern==='tick'){ if(typeof H.selectionChanged==='function') H.selectionChanged(); else H.impact({ style:'LIGHT' }); }
+      else if(pattern==='alert'){ H.impact({ style:'HEAVY' }); setTimeout(function(){ try{ H.impact({ style:'HEAVY' }); }catch(_){ } }, 140); }
       else if(pattern==='success' || pattern==='celebrate'){ H.notification({ type:'SUCCESS' }); }
       else if(pattern==='warning'){ H.notification({ type:'WARNING' }); }
       else if(pattern==='light'){ H.impact({ style:'LIGHT' }); }
@@ -41602,7 +41675,8 @@ function haptic(pattern){
     warning: [60],
     celebrate: [40, 80, 40, 80, 80],
     alert: [200, 100, 200],
-    light: [5]
+    light: [5],
+    tick: [3]
   };
   navigator.vibrate(patterns[pattern]||[10]);
 }
@@ -44273,8 +44347,26 @@ async function submitFeedback(){
 }
 
 // ── SETTINGS ──────────────────────────────────────────────────
+// Absent means ON — the switch exists to turn something OFF, so a person who has never opened this
+// screen keeps the haptics the app has always had.
+function hapticsOn(){ try{ return ls('totry_haptics') !== 'off'; }catch(_){ return true; } }
+function toggleHaptics(){
+  const on = !hapticsOn();
+  ls('totry_haptics', on ? 'on' : 'off');
+  renderHapticsRow();
+  // Fire one AFTER saving so the confirmation is the thing itself: switching it on is felt, and
+  // switching it off is silent, which is the honest demonstration of what the switch does.
+  if(on && typeof haptic==='function') haptic('tap');
+  if(typeof showToast==='function') showToast(on ? 'Haptics on' : 'Haptics off',
+    on ? 'You will feel the breath counted out.' : 'Nothing in the app will buzz.');
+}
+function renderHapticsRow(){
+  try{ const b=document.getElementById('haptics-btn'); if(b) b.textContent = hapticsOn() ? 'On \u2713' : 'Off'; }catch(_){}
+}
+
 function initSettingsTab(){
   try{ if(typeof renderLockRow==='function') renderLockRow(); }catch(_){}
+  try{ renderHapticsRow(); }catch(_){}
   // One source of truth for this copy — see RAFFLE_ACTIVE.
   try{ const _rl=document.getElementById('feedback-raffle-line'); if(_rl && typeof _raffleCopy==='function') _rl.textContent=_raffleCopy('card'); }catch(_){}
   // Honest beta framing on web only — inside the native app it's not a beta, so hide it.

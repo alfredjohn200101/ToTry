@@ -120,7 +120,15 @@ button:focus:not(:focus-visible){outline:none}
 .ob-step{width:100%;display:none}
 .ob-step.active{display:block}
 .ob-logo{font-family:'Cormorant Garamond',serif;font-size:52px;font-weight:300;text-align:center;line-height:1;margin-bottom:4px}
-.ob-logo em{font-style:italic;color:var(--go)}
+/* THE NAME IS ONE WORD. The literal space was removed long ago (see #boot-splash's own
+   comment), but the mark still RENDERED as two: Cormorant's italic T carries a left side
+   bearing the roman o does not, so the join opened a real ink gap. Measured on the painted
+   pixels at 52px, calibrated against two known answers in the same font — an all-roman
+   "ToTry" leaves 0px, a literal space leaves 15px, and this join left 5px. A third of a word
+   space is enough to read as one: the app switcher showed "To Try" and that is what a person
+   met at the lock screen. −0.095em closes it to 0 at every size the mark is used (28/34/36/52);
+   −0.115em is where the glyphs start to collide, so this is not near the edge. */
+.ob-logo em{font-style:italic;color:var(--go);margin-left:-0.095em}
 .ob-by{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:0.2em;text-transform:uppercase;text-align:center;margin-bottom:32px}
 .ob-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;color:var(--tx);margin-bottom:10px;line-height:1.25}
 .ob-desc{font-size:14px;color:var(--tx2);line-height:1.75;margin-bottom:28px}
@@ -137,7 +145,7 @@ button:focus:not(:focus-visible){outline:none}
 .hdr::before{content:'';position:absolute;top:-80px;right:-60px;width:260px;height:260px;background:radial-gradient(circle,rgba(200,169,110,0.05) 0%,transparent 70%);pointer-events:none}
 .hdr-row{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:12px}
 .logo-main{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;line-height:1}
-.logo-main em{font-style:italic;color:var(--go)}
+.logo-main em{font-style:italic;color:var(--go);margin-left:-0.095em}
 .logo-sub{font-family:'DM Mono',monospace;font-size:9px;color:var(--tx3);letter-spacing:0.18em;text-transform:uppercase;margin-top:3px}
 .day-chip{text-align:right;cursor:pointer}
 .day-n{font-family:'Cormorant Garamond',serif;font-size:27px;font-weight:400;color:var(--go);line-height:1}
@@ -4332,6 +4340,18 @@ Amen.</div></div>
           <option value="Asia/Dubai">Dubai</option>
           <option value="Pacific/Auckland">Auckland</option>
         </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd" style="margin-bottom:10px">Feel</div>
+      <!-- The breath paces a phase with a tick a second now, and a repeating cue must be refusable:
+           the soul note says quiet by default and never overbearing, and for some people a phone
+           buzzing against them is the opposite of settling. Absent means ON, so nobody has to come
+           here to get back what they already had. -->
+      <div class="setting-row" style="border-bottom:none">
+        <div><div class="sr-label">Haptics</div><div class="sr-desc">The taps you feel &mdash; a tick a second through a breath so you can count it with your eyes shut, and a nudge when something lands.</div></div>
+        <button class="btn sr-action" style="width:auto;padding:7px 12px;font-size:12px" id="haptics-btn" onclick="toggleHaptics()">On</button>
       </div>
     </div>
 

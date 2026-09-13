@@ -6356,4 +6356,133 @@ H.section('a prompt never gives the model two orders it cannot both obey');
     'and the plan renderer still hides its own figures under gentle mode');
 }
 
+H.section('the name is one word everywhere the app says it, including the native launch screen');
+{
+  // WHAT WENT WRONG. The literal space in "To Try" was removed from the web layer long ago, and
+  // #boot-splash carries a comment saying so. The mark still RENDERED as two words: Cormorant's
+  // italic T has a left side bearing the roman o does not, so the roman→italic join opened a real
+  // ink gap. Measured on the painted pixels at 52px and calibrated in the same font against two
+  // answers we already know — an all-roman "ToTry" leaves 0px, a literal space leaves 15px — the
+  // untouched join left 5px. A third of a word space is enough: the app switcher showed "To Try"
+  // and that is what a person met behind the Face ID prompt. Reported from a real phone twice.
+  //
+  // Stripping CSS block comments matters here: the note explaining the fix names the very numbers
+  // these assertions look for, and H.code() only strips // comments. Two tests in this file have
+  // already passed by matching their own explanation.
+  const css = H.html.replace(/\/\*[\s\S]*?\*\//g, '');
+
+  // EVERY surface, not only the reported one. This defect survived for months because each layer
+  // was fixed where somebody noticed it — the web splash was corrected while the native launch
+  // screen still said "To Try" in Georgia.
+  const marks = [...H.html.matchAll(/<div class="([a-z-]+)"[^>]*>To<em>Try<\/em>/g)].map(m => m[1]);
+  H.ok(marks.length >= 5, 'the app paints the wordmark in several places (found ' + marks.length + ')');
+  const CLOSED = ['logo-main', 'ob-logo'];
+  const stray = [...new Set(marks)].filter(c => !CLOSED.includes(c));
+  H.ok(stray.length === 0,
+    'and every one of them uses a class that closes the join' + (stray.length ? ' — stray: ' + stray.join(', ') : ''));
+
+  // The join is closed, and by an amount inside the band that was actually measured: the gap
+  // reaches 0 at -0.096em and the glyphs begin to collide at -0.115em. An assertion on the exact
+  // string would pass on a value that overlaps the letters; this one fails on both failure modes.
+  for (const cls of CLOSED) {
+    const rule = css.match(new RegExp('\\.' + cls + ' em\\{([^}]*)\\}'));
+    H.ok(rule, '.' + cls + ' em has a rule at all');
+    const mm = rule && rule[1].match(/margin-left:(-?[0-9.]+)em/);
+    H.ok(mm, '.' + cls + ' em pulls the italic back');
+    const v = mm ? parseFloat(mm[1]) : 0;
+    H.ok(v <= -0.05 && v > -0.115,
+      '.' + cls + ' em pulls back ' + v + 'em — inside the measured band (still open above -0.05, glyphs collide at -0.115)');
+  }
+
+  // THE NATIVE LAUNCH SCREEN. A storyboard label cannot use the app's webfont, so any text here
+  // drifts from the brand by construction — which is exactly how it ended up in Georgia. It must
+  // draw the generated artwork instead. And it must draw the SAME asset the Capacitor plugin does:
+  // launchAutoHide is false, so the plugin paints Splash.imageset over this storyboard within a
+  // frame and holds it. A storyboard showing anything else is a screen nobody ever sees.
+  const sb = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'ios/App/App/en.lproj/LaunchScreen.storyboard'), 'utf8');
+  const sbCode = sb.replace(/<!--[\s\S]*?-->/g, '');
+  H.ok(!/\btext="/.test(sbCode), 'the launch storyboard draws no text of its own');
+  H.ok(/image="Splash"/.test(sbCode), 'it draws the Splash artwork');
+  H.ok(/contentMode="scaleAspectFill"/.test(sbCode), 'full-bleed, so it hands over to the plugin with no cut');
+  // And the artwork it names is really there, and really the square the imageset declares.
+  const png = require('path').join(__dirname, '..', 'ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732.png');
+  H.ok(require('fs').existsSync(png), 'and that artwork exists on disk');
+  if (require('fs').existsSync(png)) {
+    const b = require('fs').readFileSync(png);
+    // PNG IHDR: width and height are big-endian uint32 at bytes 16 and 20.
+    H.ok(b.readUInt32BE(16) === 2732 && b.readUInt32BE(20) === 2732,
+      'at the 2732x2732 the storyboard and the imageset both declare');
+    // A flat fill is what shipped before — 26KB of solid black that read as "no splash at all".
+    H.ok(b.length > 40000, 'and it carries a mark rather than being a flat fill (' + b.length.toLocaleString() + ' bytes)');
+  }
+}
+
+H.section('a breath you can follow with your eyes shut');
+{
+  // Every phase used to fire the same haptic('light') at its boundary and nothing in between, so
+  // "breathe in", "hold" and "breathe out" felt identical and a 7-count hold was left entirely to
+  // the head — in the one posture this screen exists to ask for. Reported from a real phone as
+  // "haptics can be better for breathwork".
+
+  // THE DERIVATION, EXECUTED. The kind is read off the orb scale the protocols already declare
+  // rather than a new field, so a protocol added later gets the right feel without anyone
+  // remembering to tag it. A test that merely grepped for the call would pass on a backwards
+  // comparison; this runs it.
+  const { _breathKind } = H.load(['_breathKind']);
+  const settle = [{scale:1.55},{scale:1.0}];
+  H.eq(_breathKind(settle, 0), 'in',  'a rising scale is an inhale');
+  H.eq(_breathKind(settle, 1), 'out', 'a falling scale is an exhale');
+  const box = [{scale:1.55},{scale:1.55},{scale:1.0},{scale:1.0}];
+  H.eq(_breathKind(box, 1), 'hold', 'a level scale after an inhale is a hold');
+  H.eq(_breathKind(box, 3), 'hold', 'and so is a level scale after an exhale');
+  // The wrap is the case that is easy to get wrong: phase 0's predecessor is the LAST phase, or the
+  // first inhale of every round after the first reads as a hold.
+  H.eq(_breathKind(box, 0), 'in', 'phase 0 compares against the last phase, so each round opens on an inhale');
+  const sigh = [{scale:1.4},{scale:1.62},{scale:1.0}];
+  H.eq(_breathKind(sigh, 1), 'in', 'the physiological sigh’s second sip is another inhale, not a hold');
+  const surf = [{scale:1.55},{scale:1.0},{scale:1.0}];
+  H.eq(_breathKind(surf, 2), 'hold', '"rest on empty" is a hold, not a second exhale');
+  H.eq(_breathKind([{scale:1}], 0), 'hold', 'a one-phase protocol does not throw');
+  H.eq(_breathKind([{},{}], 1), 'in', 'and a protocol with no scale falls back rather than breaking the breath');
+
+  // Every shipped protocol must actually carry the numbers the derivation reads.
+  const protos = H.html.slice(H.html.indexOf('const BREATH_PROTOCOLS'), H.html.indexOf('const BREATH_PROTOCOLS') + 2600);
+  const phaseDefs = [...protos.matchAll(/\{l:'[^']*',\s*s:[0-9.]+,\s*scale:([0-9.]+)/g)];
+  H.ok(phaseDefs.length >= 20, 'the protocols declare their phases with a scale (' + phaseDefs.length + ' phases)');
+
+  // THE CUE IS DIFFERENTIATED. One literal for all three kinds is the bug this replaced.
+  const ob = H.extractFn('openBreath');
+  H.ok(/_breathKind\(p\.phases, state\.pi\)/.test(ob), 'the phase cue is chosen by kind');
+  H.ok(/'tap'/.test(ob) && /'light'/.test(ob) && /'tick'/.test(ob),
+    'and the three kinds map to three different cues');
+
+  // PACING, AND THE INTERVAL THAT MUST NOT OUTLIVE THE SCREEN. A repeating haptic left running after
+  // the overlay is removed buzzes a person who has already walked away.
+  H.ok(/state\.tick=setInterval/.test(H.code(ob)), 'the phase is paced by an interval, not only marked at its edge');
+  const cleanup = ob.slice(ob.indexOf('function cleanup('), ob.indexOf('function cleanup(') + 320);
+  H.ok(/state\.tick/.test(cleanup) && /clearInterval\(state\.tick\)/.test(cleanup),
+    'and cleanup() clears it, so closing the breath stops it');
+  H.ok(/ph\.s >= 2/.test(H.code(ob)), 'a phase too short to have a middle is not paced');
+
+  // THE SWITCH, AND WHERE IT IS GATED. A repeating cue has to be refusable — and the check has to
+  // sit ahead of the plugin call, not inside one branch of it, or turning haptics off would still
+  // buzz on every path that does not go through that branch.
+  const hp = H.extractFn('haptic');
+  H.ok(/ls\('totry_haptics'\)\s*===\s*'off'/.test(hp), 'haptic() reads the off switch');
+  H.ok(hp.indexOf("totry_haptics") < hp.indexOf('Capacitor'),
+    'and it returns BEFORE reaching the native plugin, so every pattern is covered');
+  H.ok(hp.indexOf("totry_haptics") < hp.indexOf('navigator.vibrate'),
+    'and before the web fallback too');
+  // Absent must mean ON: a switch that defaults off silently removes what everyone already had.
+  const { hapticsOn } = H.load(['hapticsOn'], { ls: (k) => undefined });
+  H.eq(hapticsOn(), true, 'with nothing stored, haptics are on');
+  const on2 = H.load(['hapticsOn'], { ls: () => 'off' }).hapticsOn();
+  H.eq(on2, false, 'and stored "off" turns them off');
+
+  // The pacing cue must be the SOFTEST thing iOS has. impact(LIGHT) once a second is a buzz.
+  H.ok(/pattern==='tick'[\s\S]{0,120}selectionChanged/.test(H.code(hp)),
+    'a tick is the selection detent, not a repeated impact');
+}
+
 H.report();
