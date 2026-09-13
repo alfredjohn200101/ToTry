@@ -1095,6 +1095,12 @@ function downscaleImage(file, maxDim, quality){
 // Snap a photo of your plate; Claude identifies the foods and estimates macros for the whole meal.
 async function handleMealPhoto(event){
   const file = event.target.files?.[0];
+  // WHICH DOOR THIS CAME THROUGH. Every "Try again" below used to reopen the library input by id;
+  // routing them all through snapMeal() fixed the camera and broke the other half — a photo chosen
+  // from the library failed, and "Try again" put a viewfinder in front of someone who was trying to
+  // re-send a picture they already had. Retry the door they used.
+  const _from = (event.target && event.target.id === 'meal-camera-input') ? 'camera' : 'library';
+  try{ window.__mealPhotoFrom = _from; }catch(_){}
   event.target.value = '';
   if(!file) return;
   if(!file.type.startsWith('image/')){ showToast('Wrong file','Please choose a photo of your meal.'); return; }
@@ -1106,7 +1112,7 @@ async function handleMealPhoto(event){
   }catch(e){
           foodFailed(res, 'The photo did not get through.',
         'The connection dropped it. Try again, or add the meal yourself \u2014 it still counts.',
-        'snapMeal()',
+        'retryMealPhoto()',
         'foodTypeItInstead()', 'Type what it was');
     return;
   }
@@ -1130,7 +1136,7 @@ async function handleMealPhoto(event){
       if(error || !data?.text){
               foodFailed(res, 'The photo did not get through.',
         'The connection dropped it. Try again, or add the meal yourself \u2014 it still counts.',
-        'snapMeal()',
+        'retryMealPhoto()',
         'foodTypeItInstead()', 'Type what it was');
         return;
       }
@@ -1139,7 +1145,7 @@ async function handleMealPhoto(event){
       if(!parsed || parsed.error){
       foodFailed(res, 'That did not look like food to me.',
         'Try again with the plate filling more of the frame, or add it yourself.',
-        'snapMeal()',
+        'retryMealPhoto()',
         'foodTypeItInstead()', 'Type what it was');
         return;
       }
@@ -1158,7 +1164,7 @@ async function handleMealPhoto(event){
         .map(_groundItemInTable);
             if(!_items.length){ foodFailed(res, 'I could not make out the food in that photo.',
         'A clearer, closer shot usually does it \u2014 or add the meal yourself.',
-        'snapMeal()',
+        'retryMealPhoto()',
         'foodTypeItInstead()', 'Type what it was'); return; }
       _photoMeal = { name: parsed.meal||parsed.name||'Your meal', items:_items, assumptions:parsed.assumptions||'',
         confidence:parsed.confidence||'', meal:(typeof currentMealSlot==='function'?currentMealSlot():null),
@@ -1175,7 +1181,7 @@ async function handleMealPhoto(event){
       console.error('meal photo failed', err);
             foodFailed(res, 'The photo did not get through.',
         'The connection dropped it. Try again, or add the meal yourself \u2014 it still counts.',
-        'snapMeal()',
+        'retryMealPhoto()',
         'foodTypeItInstead()', 'Type what it was');
     }
 }
@@ -1997,13 +2003,14 @@ function logEstimatedMeal(){
 // Barcode scanning is the interaction people judge a food tracker by, so it should feel instant.
 const LiveScan = {
   _p(){ try{ const P=(window.Capacitor&&window.Capacitor.Plugins)||{}; return P.BarcodeScanner || P.BarcodeScannerPlugin || null; }catch(_){ return null; } },
-  // ONE ANSWER TO "CAN THE CAMERA BE USED", not two. This used to ask the plugin itself and reduce
-  // the reply to a boolean — which is exactly what hid the scanner for ever from anyone who had said
-  // "Don't Allow" once, because "refused" and "this device has no camera" both came back as false.
-  // CameraAccess keeps the distinction; a caller that only wants a yes/no still gets one here.
-  async available(){
-    try{ return (await CameraAccess.state()) === 'ok'; }catch(_){ return false; }
-  },
+  // available() used to live here. It asked the plugin and reduced the reply to a boolean, which is
+  // what hid the scanner for ever from anyone who had refused the camera once: "refused" and "this
+  // device has no camera" both came back false, and only the second deserves silence. CameraAccess
+  // .state() keeps them apart and is now the only thing that asks. When that change landed this was
+  // rewritten to delegate rather than deleted, with a comment claiming that stopped it being dead
+  // code — it did not. Delegating to the thing that replaced you is not a caller, and it left a
+  // second public answer to "can the camera be used" that nothing consulted and nothing would have
+  // kept in step. One answer, in one place.
   // Digits on a successful read; null if they cancelled or it cannot run (the caller stays put).
   async scan(){
     const p=this._p(); if(!p) return null;
@@ -2029,6 +2036,15 @@ const LiveScan = {
 // Failing CLOSED is correct. Failing SILENTLY is not. One place answers "can the camera be used",
 // and one place offers the only way back.
 const CameraAccess = {
+  // THE ANSWER IS CACHED, AND THAT IS NOT AN OPTIMISATION. Opening a file input has to happen in the
+  // same turn as the tap that asked for it — a WKWebView will not raise a picker for a click that
+  // arrives after an await, and asking the plugin is a round trip across the native bridge. So
+  // snapMeal() reads stateSync() and clicks immediately; warm() is what fills it in, off the tap path.
+  // A cold cache is not a failure, it just means the first tap gets the chooser instead of the
+  // viewfinder, which is exactly what the app did before any of this existed.
+  _state: null,
+  stateSync(){ return this._state; },
+  warm(){ try{ const r = this.state(); if(r && r.catch) r.catch(function(){}); }catch(_){} },
   // 'ok' — a camera exists and is not refused (prompt or granted; the OS asks when we actually open it)
   // 'denied' — refused or restricted; nothing will happen until they change it in Settings
   // 'none' — no camera on this device (the Simulator)
@@ -2036,12 +2052,14 @@ const CameraAccess = {
   async state(){
     try{
       const p = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BarcodeScanner) || null;
-      if(!p || typeof isNativeApp!=='function' || !isNativeApp()) return 'web';
+      if(!p || typeof isNativeApp!=='function' || !isNativeApp()){ this._state = 'web'; return 'web'; }
       const r = await p.isAvailable();
-      if(!r || !r.available) return 'none';
-      if(r.permission === 'denied' || r.permission === 'restricted') return 'denied';
-      return 'ok';
-    }catch(_){ return 'web'; }
+      let v = 'ok';
+      if(!r || !r.available) v = 'none';
+      else if(r.permission === 'denied' || r.permission === 'restricted') v = 'denied';
+      this._state = v;
+      return v;
+    }catch(_){ this._state = 'web'; return 'web'; }
   },
   canOpenSettings(){
     try{
@@ -2058,30 +2076,53 @@ const CameraAccess = {
   },
   // The one sentence a person needs when the camera is refused, plus the way back. Never a dead end:
   // typing the meal and choosing an existing photo both still work, and both are named.
+  //
+  // OFFERED, NOT FORCED. This used to call openSettings() unconditionally on the same line, so
+  // tapping "Snap a meal" with the camera off did not explain anything — it CLOSED THE APP and
+  // dropped the person in iOS Settings, mid-meal, without being asked. That is a worse outcome than
+  // the dead button it was written to fix. showToast's third argument is a tap handler, so the way
+  // back is one tap away and nobody is taken anywhere they did not choose to go.
   explainDenied(alsoOffer){
-    const s = 'Camera access is off for To Try. ' + (alsoOffer || 'You can still choose a photo you already took, or type it.');
-    if(typeof showToast==='function') showToast('Camera is switched off', s);
-    if(this.canOpenSettings()) this.openSettings();
+    const body = 'Camera access is off for To Try. ' + (alsoOffer || 'You can still choose a photo you already took, or type it.');
+    const can = this.canOpenSettings();
+    if(typeof showToast==='function'){
+      showToast('Camera is switched off', body + (can ? ' Tap here to open Settings.' : ''),
+        can ? (function(self){ return function(){ self.openSettings(); }; })(this) : undefined);
+    }
   }
 };
 
 // ONE TAP TO A VIEWFINDER. This is the thing Cal AI and MyFitnessPal do that this did not: they open
 // a camera, this opened a MENU. The library is not lost — it moved to chooseMealPhoto(), which is
 // offered in "More ways to log" and again whenever the camera cannot be used.
-async function snapMeal(){
-  let st = 'web';
-  try{ st = await CameraAccess.state(); }catch(_){}
+// NOT async, deliberately. The first version awaited CameraAccess.state() — a round trip across the
+// native bridge — and only then clicked the file input. A WKWebView will not open a picker for a
+// click that arrives after the tap's turn has ended, so on the device this could have opened nothing
+// at all: the exact interaction the change existed to fix. Chromium happened to allow it, which is
+// why it looked fine in the browser; WebKit is stricter about file inputs and this is the headline
+// tap in the food log. Read the cached answer and click in the same turn.
+function snapMeal(){
+  const st = CameraAccess.stateSync();
   if(st === 'denied'){
-    // Not a dead end, and not silent: a `capture=` input fires and does NOTHING when access is off,
-    // which is indistinguishable from a broken button. Say it, offer Settings, and still let them log.
+    // Open the library FIRST, while the tap is still live, so the meal can still be logged — then
+    // explain. Reversed, the toast would be fine and the picker would never appear.
+    chooseMealPhoto();
     CameraAccess.explainDenied('Opening your photo library instead.');
-    return chooseMealPhoto();
+    return;
   }
-  // Native with a working camera goes straight to the viewfinder. On the web we cannot ask the OS
-  // anything, so the chooser stays — that is the behaviour the PWA already had, and it is right there.
+  // 'ok' goes straight to the viewfinder. 'web', 'none' and a cold cache all take the chooser, which
+  // is what the app did before any of this and always works.
   const id = (st === 'ok') ? 'meal-camera-input' : 'meal-photo-input';
   const el = document.getElementById(id) || document.getElementById('meal-photo-input');
   if(el) el.click();
+  if(st === null) CameraAccess.warm();   // cold: answer it now so the next tap opens the camera
+}
+// Re-open whichever door the failed photo came through, so a retry is a retry and not a different
+// interaction. Defaults to the camera only when we never recorded a source.
+function retryMealPhoto(){
+  let from = 'camera';
+  try{ from = window.__mealPhotoFrom || 'camera'; }catch(_){}
+  return (from === 'library') ? chooseMealPhoto() : snapMeal();
 }
 // A plate you already photographed — the reason the plain input exists at all.
 function chooseMealPhoto(){

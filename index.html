@@ -4349,7 +4349,7 @@ Amen.</div></div>
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="haptics-card">
       <div class="card-hd" style="margin-bottom:10px">Feel</div>
       <!-- The breath paces a phase with a tick a second now, and a repeating cue must be refusable:
            the soul note says quiet by default and never overbearing, and for some people a phone
@@ -5916,7 +5916,18 @@ const SYNC_KEYS = [
   // Apps & personalisation
   'totry_apps_used','totry_affirms','totry_honest_q',
   // Preferences (v29)
+  // totry_haptics joined them at v600.1. It was added as a preference and not wired like a single one
+  // of its siblings — currency, both units, theme and timezone all follow a person to a new phone, and
+  // so does totry_nut_gentle, whose note says outright that a preference this personal syncs like
+  // everything else. Somebody who turns the buzzing off because they cannot stand it against their
+  // skin would have had it switched back on by their next handset. Not a per-device capability like
+  // totry_push_prefs (permission, deliberately local): this is a statement about the person.
+  // totry_city is the same shape and predates it. It is TYPED BY HAND (_seasonSetCity), and it is the
+  // only input suhoor and iftar times are computed from — while totry_fast_season, set two lines away
+  // in the same feature, has always synced. So a Muslim keeping Ramadan changed phone, found the
+  // season still there, and found the times it depends on gone.
   'totry_currency','totry_weight_unit','totry_distance_unit','totry_theme','totry_timezone',
+  'totry_haptics','totry_city',
   'totry_tombstones',   // deletions, so a union cannot resurrect what someone removed
   // Late additions — real state that should survive a reinstall
   'totry_notif_enabled','totry_user_email','totry_last_synthesis','totry_usage_log','totry_reminder_times','totry_reminder_morning','totry_reminder_evening',// v30: conversation memory + share preferences + reading position
@@ -9206,7 +9217,9 @@ function buildCtx(){
   // Readiness (WS6) — recovery-aware signal so the coach can tell them to push or back off today.
   try{
     if(typeof computeReadiness==='function'){
-      const rd = computeReadiness();
+      // readinessForAI, not computeReadiness: this string is sent to a third-party model, and the raw
+      // object names her cycle phase in reasons AND in advice. See readinessForAI() in 19-workout.js.
+      const rd = (typeof readinessForAI==='function') ? readinessForAI(computeReadiness()) : computeReadiness();
       if(rd) checkinCtx += '\nREADINESS TODAY: ' + rd.score + '/100 (' + rd.level + ')' + (rd.reasons.length?' \u2014 '+rd.reasons.join(', '):'') + '. ' + rd.advice;
     }
     // Mobility profile — so the coach knows tight areas worth addressing.
@@ -12858,7 +12871,10 @@ function go(name){
   if(name==='coach'){ if(typeof applyCoachVoiceCopy==='function') applyCoachVoiceCopy(); }
   if(name==='reflect'){initEveningTab();initReviewTab();if(typeof renderEveningFlow==='function')setTimeout(renderEveningFlow,60);}
   
-  if(name==='nourish'){renderNutritionLog();if(typeof prefillNutGoals==='function')prefillNutGoals();if(typeof renderFuelPlanCard==='function')renderFuelPlanCard();}
+  // Ask the camera what it can do BEFORE the person taps the shutter. snapMeal() has to click the
+  // file input in the same turn as the tap or a WKWebView will not open the picker, so it can only
+  // read a cached answer — this is where the cache gets filled, off the tap path.
+  if(name==='nourish'){renderNutritionLog();if(typeof prefillNutGoals==='function')prefillNutGoals();if(typeof renderFuelPlanCard==='function')renderFuelPlanCard();if(typeof CameraAccess!=='undefined')CameraAccess.warm();}
   if(name==='train'){initPTTab();
     // The brother glances at your readiness as you arrive to train. If you're wrecked, he says it
     // straight — once — before you load up. Quiet otherwise.
@@ -17367,7 +17383,11 @@ function openBreath(id, opts){
   try{ ov.focus({preventScroll:true}); }catch(_){}
   const q=(s)=>ov.querySelector(s);
   const state={alive:true, timer:null, pulse:null, tick:null, cycle:0, pi:0, before:null, after:null};
-  function cleanup(){ state.alive=false; if(state.timer){clearTimeout(state.timer);state.timer=null;} if(state.pulse){clearInterval(state.pulse);state.pulse=null;} if(state.tick){clearInterval(state.tick);state.tick=null;} }
+  function cleanup(){ state.alive=false; if(state.timer){clearTimeout(state.timer);state.timer=null;} if(state.pulse){clearInterval(state.pulse);state.pulse=null;} if(state.tick){clearInterval(state.tick);state.tick=null;}
+    // Release the selection generator. Priming it keeps the Taptic Engine warm, which is what makes a
+    // once-a-second cue land on the beat instead of a moment late — but holding it for the life of the
+    // app after the person has walked away is a battery cost for nothing.
+    try{ if(typeof haptic==='function') haptic('tickEnd'); }catch(_){} }
   function close(){ cleanup(); ov.remove(); if(opts && typeof opts.onClose==='function'){ const cb=opts.onClose; opts.onClose=null; try{ cb(); }catch(_){} } }
   q('.b-x').onclick=close;
   q('.b-change').onclick=()=>{ cleanup(); ov.remove(); openBreathMenu(); };
@@ -17375,6 +17395,10 @@ function openBreath(id, opts){
   function buildScale(container, cb){ if(!container) return; container.innerHTML=''; for(let n=0;n<=10;n++){ const b=document.createElement('button'); b.textContent=n; b.style.cssText='width:26px;height:34px;border-radius:8px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);font-size:13px;cursor:pointer'; b.onclick=()=>cb(n); container.appendChild(b); } }
   function startBreathing(){
     show('.b-run');
+    // Prime the selection generator ONCE for the whole exercise. Without this every tick below is a
+    // silent no-op on iOS (the plugin's selectionChanged is guarded on a generator that selectionStart
+    // creates), and priming per-tick would throw away the warm-up that keeps the cue on the beat.
+    try{ if(typeof haptic==='function') haptic('tickStart'); }catch(_){}
     const orb=q('.b-orb'), phaseEl=q('.b-phase'), countEl=q('.b-count');
     q('.b-name').textContent=p.name;
     state.cycle=0; state.pi=0;
@@ -26663,6 +26687,12 @@ function downscaleImage(file, maxDim, quality){
 // Snap a photo of your plate; Claude identifies the foods and estimates macros for the whole meal.
 async function handleMealPhoto(event){
   const file = event.target.files?.[0];
+  // WHICH DOOR THIS CAME THROUGH. Every "Try again" below used to reopen the library input by id;
+  // routing them all through snapMeal() fixed the camera and broke the other half — a photo chosen
+  // from the library failed, and "Try again" put a viewfinder in front of someone who was trying to
+  // re-send a picture they already had. Retry the door they used.
+  const _from = (event.target && event.target.id === 'meal-camera-input') ? 'camera' : 'library';
+  try{ window.__mealPhotoFrom = _from; }catch(_){}
   event.target.value = '';
   if(!file) return;
   if(!file.type.startsWith('image/')){ showToast('Wrong file','Please choose a photo of your meal.'); return; }
@@ -26674,7 +26704,7 @@ async function handleMealPhoto(event){
   }catch(e){
           foodFailed(res, 'The photo did not get through.',
         'The connection dropped it. Try again, or add the meal yourself \u2014 it still counts.',
-        'snapMeal()',
+        'retryMealPhoto()',
         'foodTypeItInstead()', 'Type what it was');
     return;
   }
@@ -26698,7 +26728,7 @@ async function handleMealPhoto(event){
       if(error || !data?.text){
               foodFailed(res, 'The photo did not get through.',
         'The connection dropped it. Try again, or add the meal yourself \u2014 it still counts.',
-        'snapMeal()',
+        'retryMealPhoto()',
         'foodTypeItInstead()', 'Type what it was');
         return;
       }
@@ -26707,7 +26737,7 @@ async function handleMealPhoto(event){
       if(!parsed || parsed.error){
       foodFailed(res, 'That did not look like food to me.',
         'Try again with the plate filling more of the frame, or add it yourself.',
-        'snapMeal()',
+        'retryMealPhoto()',
         'foodTypeItInstead()', 'Type what it was');
         return;
       }
@@ -26726,7 +26756,7 @@ async function handleMealPhoto(event){
         .map(_groundItemInTable);
             if(!_items.length){ foodFailed(res, 'I could not make out the food in that photo.',
         'A clearer, closer shot usually does it \u2014 or add the meal yourself.',
-        'snapMeal()',
+        'retryMealPhoto()',
         'foodTypeItInstead()', 'Type what it was'); return; }
       _photoMeal = { name: parsed.meal||parsed.name||'Your meal', items:_items, assumptions:parsed.assumptions||'',
         confidence:parsed.confidence||'', meal:(typeof currentMealSlot==='function'?currentMealSlot():null),
@@ -26743,7 +26773,7 @@ async function handleMealPhoto(event){
       console.error('meal photo failed', err);
             foodFailed(res, 'The photo did not get through.',
         'The connection dropped it. Try again, or add the meal yourself \u2014 it still counts.',
-        'snapMeal()',
+        'retryMealPhoto()',
         'foodTypeItInstead()', 'Type what it was');
     }
 }
@@ -27565,13 +27595,14 @@ function logEstimatedMeal(){
 // Barcode scanning is the interaction people judge a food tracker by, so it should feel instant.
 const LiveScan = {
   _p(){ try{ const P=(window.Capacitor&&window.Capacitor.Plugins)||{}; return P.BarcodeScanner || P.BarcodeScannerPlugin || null; }catch(_){ return null; } },
-  // ONE ANSWER TO "CAN THE CAMERA BE USED", not two. This used to ask the plugin itself and reduce
-  // the reply to a boolean — which is exactly what hid the scanner for ever from anyone who had said
-  // "Don't Allow" once, because "refused" and "this device has no camera" both came back as false.
-  // CameraAccess keeps the distinction; a caller that only wants a yes/no still gets one here.
-  async available(){
-    try{ return (await CameraAccess.state()) === 'ok'; }catch(_){ return false; }
-  },
+  // available() used to live here. It asked the plugin and reduced the reply to a boolean, which is
+  // what hid the scanner for ever from anyone who had refused the camera once: "refused" and "this
+  // device has no camera" both came back false, and only the second deserves silence. CameraAccess
+  // .state() keeps them apart and is now the only thing that asks. When that change landed this was
+  // rewritten to delegate rather than deleted, with a comment claiming that stopped it being dead
+  // code — it did not. Delegating to the thing that replaced you is not a caller, and it left a
+  // second public answer to "can the camera be used" that nothing consulted and nothing would have
+  // kept in step. One answer, in one place.
   // Digits on a successful read; null if they cancelled or it cannot run (the caller stays put).
   async scan(){
     const p=this._p(); if(!p) return null;
@@ -27597,6 +27628,15 @@ const LiveScan = {
 // Failing CLOSED is correct. Failing SILENTLY is not. One place answers "can the camera be used",
 // and one place offers the only way back.
 const CameraAccess = {
+  // THE ANSWER IS CACHED, AND THAT IS NOT AN OPTIMISATION. Opening a file input has to happen in the
+  // same turn as the tap that asked for it — a WKWebView will not raise a picker for a click that
+  // arrives after an await, and asking the plugin is a round trip across the native bridge. So
+  // snapMeal() reads stateSync() and clicks immediately; warm() is what fills it in, off the tap path.
+  // A cold cache is not a failure, it just means the first tap gets the chooser instead of the
+  // viewfinder, which is exactly what the app did before any of this existed.
+  _state: null,
+  stateSync(){ return this._state; },
+  warm(){ try{ const r = this.state(); if(r && r.catch) r.catch(function(){}); }catch(_){} },
   // 'ok' — a camera exists and is not refused (prompt or granted; the OS asks when we actually open it)
   // 'denied' — refused or restricted; nothing will happen until they change it in Settings
   // 'none' — no camera on this device (the Simulator)
@@ -27604,12 +27644,14 @@ const CameraAccess = {
   async state(){
     try{
       const p = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BarcodeScanner) || null;
-      if(!p || typeof isNativeApp!=='function' || !isNativeApp()) return 'web';
+      if(!p || typeof isNativeApp!=='function' || !isNativeApp()){ this._state = 'web'; return 'web'; }
       const r = await p.isAvailable();
-      if(!r || !r.available) return 'none';
-      if(r.permission === 'denied' || r.permission === 'restricted') return 'denied';
-      return 'ok';
-    }catch(_){ return 'web'; }
+      let v = 'ok';
+      if(!r || !r.available) v = 'none';
+      else if(r.permission === 'denied' || r.permission === 'restricted') v = 'denied';
+      this._state = v;
+      return v;
+    }catch(_){ this._state = 'web'; return 'web'; }
   },
   canOpenSettings(){
     try{
@@ -27626,30 +27668,53 @@ const CameraAccess = {
   },
   // The one sentence a person needs when the camera is refused, plus the way back. Never a dead end:
   // typing the meal and choosing an existing photo both still work, and both are named.
+  //
+  // OFFERED, NOT FORCED. This used to call openSettings() unconditionally on the same line, so
+  // tapping "Snap a meal" with the camera off did not explain anything — it CLOSED THE APP and
+  // dropped the person in iOS Settings, mid-meal, without being asked. That is a worse outcome than
+  // the dead button it was written to fix. showToast's third argument is a tap handler, so the way
+  // back is one tap away and nobody is taken anywhere they did not choose to go.
   explainDenied(alsoOffer){
-    const s = 'Camera access is off for To Try. ' + (alsoOffer || 'You can still choose a photo you already took, or type it.');
-    if(typeof showToast==='function') showToast('Camera is switched off', s);
-    if(this.canOpenSettings()) this.openSettings();
+    const body = 'Camera access is off for To Try. ' + (alsoOffer || 'You can still choose a photo you already took, or type it.');
+    const can = this.canOpenSettings();
+    if(typeof showToast==='function'){
+      showToast('Camera is switched off', body + (can ? ' Tap here to open Settings.' : ''),
+        can ? (function(self){ return function(){ self.openSettings(); }; })(this) : undefined);
+    }
   }
 };
 
 // ONE TAP TO A VIEWFINDER. This is the thing Cal AI and MyFitnessPal do that this did not: they open
 // a camera, this opened a MENU. The library is not lost — it moved to chooseMealPhoto(), which is
 // offered in "More ways to log" and again whenever the camera cannot be used.
-async function snapMeal(){
-  let st = 'web';
-  try{ st = await CameraAccess.state(); }catch(_){}
+// NOT async, deliberately. The first version awaited CameraAccess.state() — a round trip across the
+// native bridge — and only then clicked the file input. A WKWebView will not open a picker for a
+// click that arrives after the tap's turn has ended, so on the device this could have opened nothing
+// at all: the exact interaction the change existed to fix. Chromium happened to allow it, which is
+// why it looked fine in the browser; WebKit is stricter about file inputs and this is the headline
+// tap in the food log. Read the cached answer and click in the same turn.
+function snapMeal(){
+  const st = CameraAccess.stateSync();
   if(st === 'denied'){
-    // Not a dead end, and not silent: a `capture=` input fires and does NOTHING when access is off,
-    // which is indistinguishable from a broken button. Say it, offer Settings, and still let them log.
+    // Open the library FIRST, while the tap is still live, so the meal can still be logged — then
+    // explain. Reversed, the toast would be fine and the picker would never appear.
+    chooseMealPhoto();
     CameraAccess.explainDenied('Opening your photo library instead.');
-    return chooseMealPhoto();
+    return;
   }
-  // Native with a working camera goes straight to the viewfinder. On the web we cannot ask the OS
-  // anything, so the chooser stays — that is the behaviour the PWA already had, and it is right there.
+  // 'ok' goes straight to the viewfinder. 'web', 'none' and a cold cache all take the chooser, which
+  // is what the app did before any of this and always works.
   const id = (st === 'ok') ? 'meal-camera-input' : 'meal-photo-input';
   const el = document.getElementById(id) || document.getElementById('meal-photo-input');
   if(el) el.click();
+  if(st === null) CameraAccess.warm();   // cold: answer it now so the next tap opens the camera
+}
+// Re-open whichever door the failed photo came through, so a retry is a retry and not a different
+// interaction. Defaults to the camera only when we never recorded a source.
+function retryMealPhoto(){
+  let from = 'camera';
+  try{ from = window.__mealPhotoFrom || 'camera'; }catch(_){}
+  return (from === 'library') ? chooseMealPhoto() : snapMeal();
 }
 // A plate you already photographed — the reason the plain input exists at all.
 function chooseMealPhoto(){
@@ -35896,6 +35961,7 @@ function computeReadiness(){
   // exactly why the number moved, and never claims a mechanism. Her own experience outranks the estimate,
   // and the text says so. It only runs at all when she has explicitly opted in (cycleOn()).
   let cycle = null;
+  const cycleReasons = [];
   try{
     if(typeof cyclePhase==='function'){
       const cp = cyclePhase();
@@ -35903,8 +35969,14 @@ function computeReadiness(){
         cycle = cp;
         // Asymmetric on purpose: the cost of telling a depleted person to max out is higher than the
         // cost of holding someone back a little on a day she felt fine.
-        if(cp.key === 'menstrual'){ score -= 8; reasons.push('period week'); }
-        else if(cp.key === 'luteal' && cp.daysToNext != null && cp.daysToNext <= 5){ score -= 6; reasons.push('late luteal'); }
+        // Recorded in BOTH lists on purpose. These words are hers to see on her own screen — that is
+        // the whole feature — but they are also the one thing the privacy copy promises never leaves
+        // the device unless she says so, and they were reaching the AI inside reasons, advice and
+        // cyclePhase all at once. Keeping a parallel list means readinessForAI() can remove exactly
+        // these and nothing else, and anyone adding a phase reason has to add it here twice, on
+        // adjacent lines, rather than remember a filter in another file.
+        if(cp.key === 'menstrual'){ score -= 8; reasons.push('period week'); cycleReasons.push('period week'); }
+        else if(cp.key === 'luteal' && cp.daysToNext != null && cp.daysToNext <= 5){ score -= 6; reasons.push('late luteal'); cycleReasons.push('late luteal'); }
       }
     }
   }catch(_){ }
@@ -35915,13 +35987,43 @@ function computeReadiness(){
   else if(level === 'moderate') advice = 'You\u2019re moderately recovered. Train, but keep it controlled \u2014 quality over maxing out.';
   else advice = 'Your body\u2019s asking for recovery. Consider mobility, an easy walk, or rest today \u2014 it\u2019s part of the work.';
   // Never a verdict on her body — a reason, held loosely, that she can overrule.
+  // adviceBase is the same sentence WITHOUT the phase, captured before it is appended rather than
+  // cut back out afterwards: readinessForAI() needs a version that never named her cycle, and
+  // splitting the finished string on its own copy would break the first time the wording changed.
+  const adviceBase = advice;
   if(cycle && (cycle.key === 'menstrual' || (cycle.key === 'luteal' && cycle.daysToNext != null && cycle.daysToNext <= 5))){
     advice += cycle.key === 'menstrual'
       ? ' You\u2019re in your period week too \u2014 dropping the load today is a choice, not a concession. This varies a lot between women; if you feel strong, trust that over my estimate.'
       : ' You\u2019re in the back half of your luteal phase \u2014 effort often reads higher there. Keep the movement, skip the max. If today feels good, go by that instead.';
   }
-  return { score, level, reasons, advice, sleep, stress, energy, asOf: readinessTs,
+  return { score, level, reasons, advice, adviceBase, cycleReasons, sleep, stress, energy, asOf: readinessTs,
            cyclePhase: cycle ? cycle.key : null };
+}
+
+// WHAT THE COACH MAY BE TOLD ABOUT HER RECOVERY. The score and the level are physiology-neutral and
+// always fine to send. The phase is not, and Settings -> Your cycle -> "Let the coach see my phase"
+// is off by default — the privacy copy states in as many words that with it off, nothing about her
+// cycle ever leaves the device.
+//
+// It was leaving anyway, by three carriers on one object: reasons contained 'period week', advice
+// had a sentence beginning "You're in your period week", and cyclePhase carried the raw key. Two
+// prompts sent them — the morning readiness explainer, and the check-in context that goes to the
+// coach — so a woman who had deliberately left that switch OFF had her cycle posted to a third-party
+// AI provider the first time she asked why her readiness was low. The switch worked everywhere it
+// was checked; nothing checked it here.
+//
+// Screens keep the full object: seeing "period week" on her own phone is the point of the feature.
+function readinessForAI(rd){
+  if(!rd) return rd;
+  let shareOK = false;
+  try{ const c = (typeof cycleGet === 'function') ? cycleGet() : null; shareOK = !!(c && c.aiOK); }catch(_){ shareOK = false; }
+  if(shareOK) return rd;
+  const drop = rd.cycleReasons || [];
+  return Object.assign({}, rd, {
+    reasons: (rd.reasons || []).filter(function(r){ return drop.indexOf(r) === -1; }),
+    advice: rd.adviceBase || rd.advice,
+    cyclePhase: null
+  });
 }
 // ── ONE THING AT A TIME ──
 // SOUL-ARCHITECTURE, MORNING: "rebuild so it FEELS like morning — dawn skin, one thing at a time,
@@ -36454,7 +36556,11 @@ async function explainReadiness(){
   if(!r){ if(body) body.innerHTML = 'Log a check-in (sleep, stress, energy) and a workout or two, and I\u2019ll be able to read your recovery.'; return; }
   try{
     const sys = brotherSys() + 'RIGHT NOW you\u2019re explaining their readiness score to them in plain, encouraging words \u2014 what\u2019s driving it and what would move it. 3-4 sentences. No medical claims.';
-    const prompt = 'Readiness today is ' + r.score + '/100 (' + r.level + '). Inputs: ' + (r.sleep!=null?'sleep '+r.sleep+'/10, ':'') + (r.stress!=null?'stress '+r.stress+'/10, ':'') + (r.energy!=null?'energy '+r.energy+'/10, ':'') + 'reasons: ' + (r.reasons.join(', ')||'recent days') + '. Explain why it\u2019s here and 2 things that would raise it.';
+    // The screen above may show her "period week"; this prompt may not, unless she switched that on.
+    // See readinessForAI() in 19-workout.js — asking "why is my readiness low?" was posting her cycle
+    // to an AI provider with the sharing toggle off.
+    const _rAI = (typeof readinessForAI==='function') ? readinessForAI(r) : r;
+    const prompt = 'Readiness today is ' + _rAI.score + '/100 (' + _rAI.level + '). Inputs: ' + (_rAI.sleep!=null?'sleep '+_rAI.sleep+'/10, ':'') + (_rAI.stress!=null?'stress '+_rAI.stress+'/10, ':'') + (_rAI.energy!=null?'energy '+_rAI.energy+'/10, ':'') + 'reasons: ' + (_rAI.reasons.join(', ')||'recent days') + '. Explain why it\u2019s here and 2 things that would raise it.';
     const resp = await api(sys, [], prompt, 400);
     if(body) body.innerHTML = '<div style="white-space:pre-wrap">'+(resp||r.advice).replace(/</g,'&lt;')+'</div>';
   }catch(e){ if(body) body.innerHTML = r.advice + '<div style="font-size:11px;color:var(--tx3);margin-top:8px">(Detailed explanation unavailable right now.)</div>'; }
@@ -41753,7 +41859,33 @@ function haptic(pattern){
       // 'tick' = the pacing cue, the softest thing iOS has — the picker-wheel detent, not a buzz.
       // A phase's onset gets an impact; the seconds inside it get these, so a count can be FELT
       // with your eyes shut. impact(LIGHT) was too heavy to repeat once a second.
-      if(pattern==='tick'){ if(typeof H.selectionChanged==='function') H.selectionChanged(); else H.impact({ style:'LIGHT' }); }
+      //
+      // AND IT MUST BE PRIMED FIRST, OR IT DOES NOTHING AT ALL. The plugin's own selectionChanged
+      // is guarded by "if let generator = self.selectionFeedbackGenerator" — see
+      // node_modules/@capacitor/haptics/ios/Sources/HapticsPlugin/Haptics.swift, and note that the
+      // braces are described rather than quoted here because test/harness.js extracts a function by
+      // naive brace matching and does not skip comments; quoting that line broke every test in the
+      // file with "unbalanced braces extracting: haptic".
+      // selectionFeedbackGenerator is nil until selectionStart() has created it, so an unprimed
+      // selectionChanged() is a silent no-op. v600 shipped exactly that: every pacing tick in the
+      // breath, and the onset cue of every HOLD phase, called straight into nothing on a real
+      // iPhone — the whole point of the work, dead on the only platform that has a Taptic Engine.
+      // The fallback below could never save it either, because the method EXISTS; it just does not
+      // fire. And the test that was supposed to guard this asserted that we CALL selectionChanged,
+      // which was true the entire time. Assert the effect, not the call.
+      //
+      // 'tickStart'/'tickEnd' are the generator's real lifecycle. A caller that ticks repeatedly
+      // (the breath) brackets its run with them, so the engine is primed and kept warm for the
+      // whole phase and released afterwards rather than held for the life of the app. A one-off
+      // tick from anywhere else still works: it primes lazily and leaves the generator in place.
+      if(pattern==='tickStart'){ if(typeof H.selectionStart==='function'){ H.selectionStart(); haptic._sel = true; } }
+      else if(pattern==='tickEnd'){ if(typeof H.selectionEnd==='function'){ H.selectionEnd(); haptic._sel = false; } }
+      else if(pattern==='tick'){
+        if(typeof H.selectionChanged==='function'){
+          if(!haptic._sel && typeof H.selectionStart==='function'){ H.selectionStart(); haptic._sel = true; }
+          H.selectionChanged();
+        } else H.impact({ style:'LIGHT' });
+      }
       else if(pattern==='alert'){ H.impact({ style:'HEAVY' }); setTimeout(function(){ try{ H.impact({ style:'HEAVY' }); }catch(_){ } }, 140); }
       else if(pattern==='success' || pattern==='celebrate'){ H.notification({ type:'SUCCESS' }); }
       else if(pattern==='warning'){ H.notification({ type:'WARNING' }); }
@@ -41770,7 +41902,9 @@ function haptic(pattern){
     celebrate: [40, 80, 40, 80, 80],
     alert: [200, 100, 200],
     light: [5],
-    tick: [3]
+    tick: [3],
+    tickStart: [],                 // the web has no generator to prime — these are native-only
+    tickEnd: []
   };
   navigator.vibrate(patterns[pattern]||[10]);
 }
@@ -44454,8 +44588,24 @@ function toggleHaptics(){
   if(typeof showToast==='function') showToast(on ? 'Haptics on' : 'Haptics off',
     on ? 'You will feel the breath counted out.' : 'Nothing in the app will buzz.');
 }
+// Can this device produce a haptic AT ALL? Native gets the Taptic Engine; a browser only has the
+// Vibration API, which Android Chrome has and WebKit has never shipped. So on an iPhone running the
+// PWA there is no haptic of any kind — and the switch was rendered there anyway, offering to turn
+// off something that could never happen and promising, in its own toast, that they would feel the
+// breath counted out. A control for a capability the device does not have is a lie with a button on it.
+function hapticsPossible(){
+  try{
+    if(typeof isNativeApp==='function' && isNativeApp()) return true;
+    return typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
+  }catch(_){ return false; }
+}
 function renderHapticsRow(){
-  try{ const b=document.getElementById('haptics-btn'); if(b) b.textContent = hapticsOn() ? 'On \u2713' : 'Off'; }catch(_){}
+  try{
+    const b=document.getElementById('haptics-btn');
+    if(b) b.textContent = hapticsOn() ? 'On \u2713' : 'Off';
+    const card=document.getElementById('haptics-card');
+    if(card) card.style.display = hapticsPossible() ? '' : 'none';
+  }catch(_){}
 }
 
 function initSettingsTab(){

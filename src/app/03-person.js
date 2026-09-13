@@ -1178,7 +1178,9 @@ function buildCtx(){
   // Readiness (WS6) — recovery-aware signal so the coach can tell them to push or back off today.
   try{
     if(typeof computeReadiness==='function'){
-      const rd = computeReadiness();
+      // readinessForAI, not computeReadiness: this string is sent to a third-party model, and the raw
+      // object names her cycle phase in reasons AND in advice. See readinessForAI() in 19-workout.js.
+      const rd = (typeof readinessForAI==='function') ? readinessForAI(computeReadiness()) : computeReadiness();
       if(rd) checkinCtx += '\nREADINESS TODAY: ' + rd.score + '/100 (' + rd.level + ')' + (rd.reasons.length?' \u2014 '+rd.reasons.join(', '):'') + '. ' + rd.advice;
     }
     // Mobility profile — so the coach knows tight areas worth addressing.
@@ -4830,7 +4832,10 @@ function go(name){
   if(name==='coach'){ if(typeof applyCoachVoiceCopy==='function') applyCoachVoiceCopy(); }
   if(name==='reflect'){initEveningTab();initReviewTab();if(typeof renderEveningFlow==='function')setTimeout(renderEveningFlow,60);}
   
-  if(name==='nourish'){renderNutritionLog();if(typeof prefillNutGoals==='function')prefillNutGoals();if(typeof renderFuelPlanCard==='function')renderFuelPlanCard();}
+  // Ask the camera what it can do BEFORE the person taps the shutter. snapMeal() has to click the
+  // file input in the same turn as the tap or a WKWebView will not open the picker, so it can only
+  // read a cached answer — this is where the cache gets filled, off the tap path.
+  if(name==='nourish'){renderNutritionLog();if(typeof prefillNutGoals==='function')prefillNutGoals();if(typeof renderFuelPlanCard==='function')renderFuelPlanCard();if(typeof CameraAccess!=='undefined')CameraAccess.warm();}
   if(name==='train'){initPTTab();
     // The brother glances at your readiness as you arrive to train. If you're wrecked, he says it
     // straight — once — before you load up. Quiet otherwise.

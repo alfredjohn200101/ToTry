@@ -529,7 +529,11 @@ async function explainReadiness(){
   if(!r){ if(body) body.innerHTML = 'Log a check-in (sleep, stress, energy) and a workout or two, and I\u2019ll be able to read your recovery.'; return; }
   try{
     const sys = brotherSys() + 'RIGHT NOW you\u2019re explaining their readiness score to them in plain, encouraging words \u2014 what\u2019s driving it and what would move it. 3-4 sentences. No medical claims.';
-    const prompt = 'Readiness today is ' + r.score + '/100 (' + r.level + '). Inputs: ' + (r.sleep!=null?'sleep '+r.sleep+'/10, ':'') + (r.stress!=null?'stress '+r.stress+'/10, ':'') + (r.energy!=null?'energy '+r.energy+'/10, ':'') + 'reasons: ' + (r.reasons.join(', ')||'recent days') + '. Explain why it\u2019s here and 2 things that would raise it.';
+    // The screen above may show her "period week"; this prompt may not, unless she switched that on.
+    // See readinessForAI() in 19-workout.js — asking "why is my readiness low?" was posting her cycle
+    // to an AI provider with the sharing toggle off.
+    const _rAI = (typeof readinessForAI==='function') ? readinessForAI(r) : r;
+    const prompt = 'Readiness today is ' + _rAI.score + '/100 (' + _rAI.level + '). Inputs: ' + (_rAI.sleep!=null?'sleep '+_rAI.sleep+'/10, ':'') + (_rAI.stress!=null?'stress '+_rAI.stress+'/10, ':'') + (_rAI.energy!=null?'energy '+_rAI.energy+'/10, ':'') + 'reasons: ' + (_rAI.reasons.join(', ')||'recent days') + '. Explain why it\u2019s here and 2 things that would raise it.';
     const resp = await api(sys, [], prompt, 400);
     if(body) body.innerHTML = '<div style="white-space:pre-wrap">'+(resp||r.advice).replace(/</g,'&lt;')+'</div>';
   }catch(e){ if(body) body.innerHTML = r.advice + '<div style="font-size:11px;color:var(--tx3);margin-top:8px">(Detailed explanation unavailable right now.)</div>'; }

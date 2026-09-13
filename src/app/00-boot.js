@@ -914,7 +914,18 @@ const SYNC_KEYS = [
   // Apps & personalisation
   'totry_apps_used','totry_affirms','totry_honest_q',
   // Preferences (v29)
+  // totry_haptics joined them at v600.1. It was added as a preference and not wired like a single one
+  // of its siblings — currency, both units, theme and timezone all follow a person to a new phone, and
+  // so does totry_nut_gentle, whose note says outright that a preference this personal syncs like
+  // everything else. Somebody who turns the buzzing off because they cannot stand it against their
+  // skin would have had it switched back on by their next handset. Not a per-device capability like
+  // totry_push_prefs (permission, deliberately local): this is a statement about the person.
+  // totry_city is the same shape and predates it. It is TYPED BY HAND (_seasonSetCity), and it is the
+  // only input suhoor and iftar times are computed from — while totry_fast_season, set two lines away
+  // in the same feature, has always synced. So a Muslim keeping Ramadan changed phone, found the
+  // season still there, and found the times it depends on gone.
   'totry_currency','totry_weight_unit','totry_distance_unit','totry_theme','totry_timezone',
+  'totry_haptics','totry_city',
   'totry_tombstones',   // deletions, so a union cannot resurrect what someone removed
   // Late additions — real state that should survive a reinstall
   'totry_notif_enabled','totry_user_email','totry_last_synthesis','totry_usage_log','totry_reminder_times','totry_reminder_morning','totry_reminder_evening',// v30: conversation memory + share preferences + reading position

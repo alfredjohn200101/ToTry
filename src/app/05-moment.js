@@ -1525,7 +1525,11 @@ function openBreath(id, opts){
   try{ ov.focus({preventScroll:true}); }catch(_){}
   const q=(s)=>ov.querySelector(s);
   const state={alive:true, timer:null, pulse:null, tick:null, cycle:0, pi:0, before:null, after:null};
-  function cleanup(){ state.alive=false; if(state.timer){clearTimeout(state.timer);state.timer=null;} if(state.pulse){clearInterval(state.pulse);state.pulse=null;} if(state.tick){clearInterval(state.tick);state.tick=null;} }
+  function cleanup(){ state.alive=false; if(state.timer){clearTimeout(state.timer);state.timer=null;} if(state.pulse){clearInterval(state.pulse);state.pulse=null;} if(state.tick){clearInterval(state.tick);state.tick=null;}
+    // Release the selection generator. Priming it keeps the Taptic Engine warm, which is what makes a
+    // once-a-second cue land on the beat instead of a moment late — but holding it for the life of the
+    // app after the person has walked away is a battery cost for nothing.
+    try{ if(typeof haptic==='function') haptic('tickEnd'); }catch(_){} }
   function close(){ cleanup(); ov.remove(); if(opts && typeof opts.onClose==='function'){ const cb=opts.onClose; opts.onClose=null; try{ cb(); }catch(_){} } }
   q('.b-x').onclick=close;
   q('.b-change').onclick=()=>{ cleanup(); ov.remove(); openBreathMenu(); };
@@ -1533,6 +1537,10 @@ function openBreath(id, opts){
   function buildScale(container, cb){ if(!container) return; container.innerHTML=''; for(let n=0;n<=10;n++){ const b=document.createElement('button'); b.textContent=n; b.style.cssText='width:26px;height:34px;border-radius:8px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);font-size:13px;cursor:pointer'; b.onclick=()=>cb(n); container.appendChild(b); } }
   function startBreathing(){
     show('.b-run');
+    // Prime the selection generator ONCE for the whole exercise. Without this every tick below is a
+    // silent no-op on iOS (the plugin's selectionChanged is guarded on a generator that selectionStart
+    // creates), and priming per-tick would throw away the warm-up that keeps the cue on the beat.
+    try{ if(typeof haptic==='function') haptic('tickStart'); }catch(_){}
     const orb=q('.b-orb'), phaseEl=q('.b-phase'), countEl=q('.b-count');
     q('.b-name').textContent=p.name;
     state.cycle=0; state.pi=0;

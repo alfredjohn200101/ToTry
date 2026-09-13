@@ -12,8 +12,24 @@ function toggleHaptics(){
   if(typeof showToast==='function') showToast(on ? 'Haptics on' : 'Haptics off',
     on ? 'You will feel the breath counted out.' : 'Nothing in the app will buzz.');
 }
+// Can this device produce a haptic AT ALL? Native gets the Taptic Engine; a browser only has the
+// Vibration API, which Android Chrome has and WebKit has never shipped. So on an iPhone running the
+// PWA there is no haptic of any kind — and the switch was rendered there anyway, offering to turn
+// off something that could never happen and promising, in its own toast, that they would feel the
+// breath counted out. A control for a capability the device does not have is a lie with a button on it.
+function hapticsPossible(){
+  try{
+    if(typeof isNativeApp==='function' && isNativeApp()) return true;
+    return typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
+  }catch(_){ return false; }
+}
 function renderHapticsRow(){
-  try{ const b=document.getElementById('haptics-btn'); if(b) b.textContent = hapticsOn() ? 'On \u2713' : 'Off'; }catch(_){}
+  try{
+    const b=document.getElementById('haptics-btn');
+    if(b) b.textContent = hapticsOn() ? 'On \u2713' : 'Off';
+    const card=document.getElementById('haptics-card');
+    if(card) card.style.display = hapticsPossible() ? '' : 'none';
+  }catch(_){}
 }
 
 function initSettingsTab(){

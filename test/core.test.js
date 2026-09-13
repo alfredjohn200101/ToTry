@@ -6485,8 +6485,35 @@ H.section('a breath you can follow with your eyes shut');
   H.eq(on2, false, 'and stored "off" turns them off');
 
   // The pacing cue must be the SOFTEST thing iOS has. impact(LIGHT) once a second is a buzz.
-  H.ok(/pattern==='tick'[\s\S]{0,120}selectionChanged/.test(H.code(hp)),
+  H.ok(/pattern==='tick'[\s\S]{0,400}selectionChanged/.test(H.code(hp)),
     'a tick is the selection detent, not a repeated impact');
+
+  // AND IT HAS TO ACTUALLY FIRE. This is the assertion that was missing, and its absence is exactly
+  // why v600 shipped a breath whose haptics did nothing on an iPhone. The plugin's selectionChanged
+  // is guarded on a generator that only selectionStart() creates, so calling it unprimed is a silent
+  // no-op — and the old assertion above ("we call selectionChanged") was true the whole time. The
+  // JS-level fallback cannot rescue it either: the method EXISTS, it just does nothing. Assert the
+  // effect, never the call.
+  // SCOPED TO THE TICK BRANCH. The first version of these assertions searched the whole function and
+  // passed on a deliberately re-broken tick, because the word selectionStart also appears in the
+  // 'tickStart' branch above — so deleting the lazy prime, and even moving it AFTER the fire, both
+  // went green. A guard has to look at the code that actually runs for the case under test.
+  const hpc = H.code(hp);
+  const tickBranch = hpc.slice(hpc.indexOf("pattern==='tick'"), hpc.indexOf("pattern==='alert'") > hpc.indexOf("pattern==='tick'")
+    ? hpc.indexOf("pattern==='alert'") : hpc.length);
+  H.ok(tickBranch.length > 40 && tickBranch.length < 900, 'the tick branch was isolated (' + tickBranch.length + ' chars)');
+  H.ok(/selectionStart/.test(tickBranch), 'the tick branch primes the selection generator');
+  H.ok(tickBranch.indexOf('selectionStart') < tickBranch.indexOf('H.selectionChanged()'),
+    'and primes it BEFORE it fires, not after');
+  H.ok(/haptic\._sel/.test(tickBranch), 'remembering whether it is already live rather than re-creating it every tick');
+  // The lifecycle the repeating caller uses. Priming per tick would discard the warm-up that keeps a
+  // once-a-second cue on the beat; never releasing it holds the Taptic Engine for the life of the app.
+  H.ok(/pattern==='tickStart'/.test(H.code(hp)) && /pattern==='tickEnd'/.test(H.code(hp)),
+    'and exposes a start/end lifecycle for a caller that ticks repeatedly');
+  const obh = H.extractFn('openBreath');
+  H.ok(/haptic\('tickStart'\)/.test(obh), 'the breath primes the generator when it starts');
+  const cl = obh.slice(obh.indexOf('function cleanup('), obh.indexOf('function cleanup(') + 700);
+  H.ok(/haptic\('tickEnd'\)/.test(cl), 'and releases it in cleanup, so closing the breath frees the engine');
 }
 
 H.section('a camera that is switched off says so, instead of going quiet');
@@ -6518,7 +6545,24 @@ H.section('a camera that is switched off says so, instead of going quiet');
   // THE ROUTING, AND THE FALLBACK. Denied must not be a dead end: a capture= input fires and does
   // NOTHING when access is off, which looks exactly like a broken button.
   const sm = H.extractFn('snapMeal');
-  H.ok(/CameraAccess\.state\(\)/.test(sm), 'snapMeal asks whether the camera can actually be used');
+  H.ok(/CameraAccess\.stateSync\(\)/.test(sm), 'snapMeal asks whether the camera can actually be used');
+  // AND IT ASKS WITHOUT WAITING. Opening a file input has to happen in the same turn as the tap:
+  // WebKit will not raise a picker for a click that arrives after an await, and the first version of
+  // this awaited a round trip across the native bridge before clicking — so the headline tap in the
+  // food log could have opened nothing at all on the device. Chromium allowed it, which is exactly
+  // why the browser test went green. The cached answer is what makes the synchronous click possible.
+  H.ok(!/\bawait\b/.test(H.code(sm)), 'and does not await anything before clicking — the tap would be spent');
+  H.ok(!/async function snapMeal/.test(H.code(H.html)), 'snapMeal is not async');
+  H.ok(/CameraAccess\.warm\(\)/.test(H.code(H.html)), 'something fills the cache off the tap path');
+  // The retry must reopen the door the photo came through, or a failed LIBRARY photo answers with a
+  // viewfinder — which is what routing every retry through snapMeal() did.
+  const rm = H.extractFn('retryMealPhoto');
+  H.ok(/chooseMealPhoto\(\)/.test(rm) && /snapMeal\(\)/.test(rm), 'a retry can reopen either door');
+  H.ok(/__mealPhotoFrom/.test(H.code(H.html)), 'and the source of each photo is recorded');
+  // Label vs action: "Snap a meal" must call the camera, not the retry helper. A global find-replace
+  // while wiring the retries pointed it at retryMealPhoto() and nothing but reading it caught that.
+  const ways = H.html.slice(H.html.indexOf("'Snap a meal'"), H.html.indexOf("'Snap a meal'") + 120);
+  H.ok(/snapMeal\(\)/.test(ways) && !/retryMealPhoto/.test(ways), '"Snap a meal" calls snapMeal()');
   H.ok(/'denied'/.test(sm) && /explainDenied/.test(sm), 'and says so when it cannot');
   H.ok(/chooseMealPhoto\(\)/.test(sm), 'and still opens the library, so the meal can be logged anyway');
   H.ok(/st === 'ok'/.test(H.code(sm)) && /meal-camera-input/.test(sm),
@@ -6545,6 +6589,96 @@ H.section('a camera that is switched off says so, instead of going quiet');
   // A declared-but-unimplemented method, or an implemented-but-undeclared one, is the v408 bug again:
   // a silent no-op. Both halves or neither.
   H.ok(/openSettings/.test(H.html), 'and the app actually calls it');
+}
+
+H.section('a preference about the PERSON follows them to the next phone');
+{
+  // Two keys were found outside SYNC_KEYS that had no business being outside it, and both were the
+  // same mistake: a preference added without wiring it like its siblings.
+  //   totry_haptics (v600) — currency, both units, theme, timezone and totry_nut_gentle all sync, and
+  //     nut_gentle's own note says a preference this personal syncs like everything else. Somebody who
+  //     switched the buzzing off because they cannot stand it would meet it again on their next phone.
+  //   totry_city — TYPED BY HAND in _seasonSetCity, and the only input suhoor and iftar times are
+  //     computed from, while totry_fast_season two lines away in the same feature always synced. A
+  //     Muslim keeping Ramadan changed handset, kept the season, and lost the times it depends on.
+  // The distinction that matters is not "is it a setting" but "is it about the PERSON or the DEVICE".
+  const boot = H.html.slice(H.html.indexOf('const SYNC_KEYS = ['));
+  const arr = boot.slice(0, boot.indexOf('];'));
+  // Strip // comments: this array is more comment than code, and several of the keys below are NAMED
+  // in those comments explaining why they are absent — matching one would invert the whole test.
+  const members = new Set((arr.replace(/\/\/[^\n]*/g, '').match(/'([a-z0-9_]+)'/g) || []).map(x => x.slice(1, -1)));
+  H.ok(members.size > 150, 'the SYNC_KEYS array parsed (' + members.size + ' members)');
+
+  // A statement about the person. These travel.
+  const PERSONAL = ['totry_currency','totry_weight_unit','totry_distance_unit','totry_theme','totry_timezone',
+                    'totry_faith_level','totry_faith_tradition','totry_sex','totry_nut_gentle',
+                    'totry_haptics','totry_city'];
+  for(const k of PERSONAL) H.ok(members.has(k), k + ' follows the person to a new phone');
+
+  // CALIBRATION, and the other half of the rule. These are statements about the DEVICE, each already
+  // carrying its own comment explaining why it must stay put: notification permission is granted per
+  // handset, the app lock is bound to that phone's biometry, and the photos are promised in two
+  // privacy policies never to leave the device. If this test cannot tell these from the list above it
+  // is not testing anything — it would pass just as well on "sync absolutely everything".
+  const DEVICE_ONLY = ['totry_push_prefs','totry_lock_on','totry_progress_photos'];
+  for(const k of DEVICE_ONLY) H.ok(!members.has(k), k + ' deliberately stays on the device it was set on');
+}
+
+H.section('with "let the coach see my phase" off, her cycle does not leave the device');
+{
+  // THE PROMISE, VERBATIM, from the app's own privacy copy: "Leave it off and nothing about your
+  // cycle ever leaves the device." It was not true. computeReadiness() returned her phase by THREE
+  // carriers on one object — 'period week' inside reasons, a sentence beginning "You’re in your
+  // period week" appended to advice, and the raw key in cyclePhase — and two prompts sent them: the
+  // check-in context that goes to the coach, and the morning readiness explainer. So a woman who had
+  // deliberately left that switch OFF had her cycle posted to a third-party AI provider the first
+  // time she asked why her readiness was low. The switch was honoured everywhere it was checked;
+  // nothing checked it here.
+  const { computeReadiness, readinessForAI } = H.load(['computeReadiness', 'readinessForAI'], {
+    ls: (k) => k === 'totry_checkins'
+      ? [{ date: new Date().toISOString(), sleep: 6, stress: 5, energy: 5 }]
+      : (k === 'totry_body' ? [] : null),
+    cyclePhase: () => ({ key: 'menstrual', daysToNext: 20 }),
+    cycleGet: () => ({ aiOK: H.__shareOK }),
+    localStorage: { getItem: () => null, setItem: () => {} },
+  });
+
+  const leaks = (o) => /period week|luteal|menstrual/i.test(
+    (o.reasons || []).join(' ') + ' ' + (o.advice || '') + ' ' + (o.cyclePhase || ''));
+
+  // CALIBRATION. With sharing ON everything must come through — otherwise a green result below would
+  // only mean this probe cannot see a leak at all, which is exactly how a privacy test passes while
+  // the data still flows.
+  H.__shareOK = true;
+  const onRaw = computeReadiness();
+  H.ok(onRaw && onRaw.score > 0, 'readiness computed (' + (onRaw && onRaw.score) + '/100)');
+  H.ok(leaks(onRaw), 'calibration — her phase IS in the raw object');
+  H.ok(leaks(readinessForAI(onRaw)), 'and with sharing ON it reaches the coach, as she chose');
+
+  // THE SUBJECT.
+  H.__shareOK = false;
+  const offRaw = computeReadiness();
+  const offAI = readinessForAI(offRaw);
+  H.ok(leaks(offRaw), 'her own screen still names the phase — that is the feature, not the bug');
+  H.ok(!leaks(offAI), 'but nothing the coach is told mentions her cycle');
+  H.eq(offAI.cyclePhase, null, 'the raw phase key is stripped too, not only the words');
+  H.ok((offAI.reasons || []).indexOf('period week') === -1, 'reasons no longer carries it');
+  H.ok(!/period week/i.test(offAI.advice || ''), 'and neither does the advice sentence');
+  // The score itself is physiology-neutral and must survive — stripping the phase must not silently
+  // remove the recovery signal the coach needs to answer at all.
+  H.eq(offAI.score, offRaw.score, 'the score is unchanged — only the phase is withheld');
+  H.eq(offAI.level, offRaw.level, 'and so is the level');
+
+  // BOTH CALL SITES go through the gate. Either one left raw re-opens the whole leak.
+  H.ok(/readinessForAI\(computeReadiness\(\)\)/.test(H.code(H.html)),
+    'the coach check-in context is gated');
+  const mp = H.code(H.extractFn('explainReadiness'));
+  H.ok(/readinessForAI/.test(mp), 'and so is the morning readiness explainer');
+  // The prompt must be built from the GATED object, not merely have the gate sitting nearby unused —
+  // a variable assigned and then not threaded through is this codebase's single most repeated defect.
+  H.ok(/'Readiness today is ' \+ _rAI\.score/.test(mp),
+    'and the prompt is built from the gated object, not the raw one');
+  H.ok(!/\+ r\.reasons\.join/.test(mp), 'with no raw reasons left anywhere in it');
 }
 
 H.report();

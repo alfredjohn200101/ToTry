@@ -34,7 +34,33 @@ function haptic(pattern){
       // 'tick' = the pacing cue, the softest thing iOS has — the picker-wheel detent, not a buzz.
       // A phase's onset gets an impact; the seconds inside it get these, so a count can be FELT
       // with your eyes shut. impact(LIGHT) was too heavy to repeat once a second.
-      if(pattern==='tick'){ if(typeof H.selectionChanged==='function') H.selectionChanged(); else H.impact({ style:'LIGHT' }); }
+      //
+      // AND IT MUST BE PRIMED FIRST, OR IT DOES NOTHING AT ALL. The plugin's own selectionChanged
+      // is guarded by "if let generator = self.selectionFeedbackGenerator" — see
+      // node_modules/@capacitor/haptics/ios/Sources/HapticsPlugin/Haptics.swift, and note that the
+      // braces are described rather than quoted here because test/harness.js extracts a function by
+      // naive brace matching and does not skip comments; quoting that line broke every test in the
+      // file with "unbalanced braces extracting: haptic".
+      // selectionFeedbackGenerator is nil until selectionStart() has created it, so an unprimed
+      // selectionChanged() is a silent no-op. v600 shipped exactly that: every pacing tick in the
+      // breath, and the onset cue of every HOLD phase, called straight into nothing on a real
+      // iPhone — the whole point of the work, dead on the only platform that has a Taptic Engine.
+      // The fallback below could never save it either, because the method EXISTS; it just does not
+      // fire. And the test that was supposed to guard this asserted that we CALL selectionChanged,
+      // which was true the entire time. Assert the effect, not the call.
+      //
+      // 'tickStart'/'tickEnd' are the generator's real lifecycle. A caller that ticks repeatedly
+      // (the breath) brackets its run with them, so the engine is primed and kept warm for the
+      // whole phase and released afterwards rather than held for the life of the app. A one-off
+      // tick from anywhere else still works: it primes lazily and leaves the generator in place.
+      if(pattern==='tickStart'){ if(typeof H.selectionStart==='function'){ H.selectionStart(); haptic._sel = true; } }
+      else if(pattern==='tickEnd'){ if(typeof H.selectionEnd==='function'){ H.selectionEnd(); haptic._sel = false; } }
+      else if(pattern==='tick'){
+        if(typeof H.selectionChanged==='function'){
+          if(!haptic._sel && typeof H.selectionStart==='function'){ H.selectionStart(); haptic._sel = true; }
+          H.selectionChanged();
+        } else H.impact({ style:'LIGHT' });
+      }
       else if(pattern==='alert'){ H.impact({ style:'HEAVY' }); setTimeout(function(){ try{ H.impact({ style:'HEAVY' }); }catch(_){ } }, 140); }
       else if(pattern==='success' || pattern==='celebrate'){ H.notification({ type:'SUCCESS' }); }
       else if(pattern==='warning'){ H.notification({ type:'WARNING' }); }
@@ -51,7 +77,9 @@ function haptic(pattern){
     celebrate: [40, 80, 40, 80, 80],
     alert: [200, 100, 200],
     light: [5],
-    tick: [3]
+    tick: [3],
+    tickStart: [],                 // the web has no generator to prime — these are native-only
+    tickEnd: []
   };
   navigator.vibrate(patterns[pattern]||[10]);
 }

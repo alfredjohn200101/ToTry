@@ -787,6 +787,7 @@ function computeReadiness(){
   // exactly why the number moved, and never claims a mechanism. Her own experience outranks the estimate,
   // and the text says so. It only runs at all when she has explicitly opted in (cycleOn()).
   let cycle = null;
+  const cycleReasons = [];
   try{
     if(typeof cyclePhase==='function'){
       const cp = cyclePhase();
@@ -794,8 +795,14 @@ function computeReadiness(){
         cycle = cp;
         // Asymmetric on purpose: the cost of telling a depleted person to max out is higher than the
         // cost of holding someone back a little on a day she felt fine.
-        if(cp.key === 'menstrual'){ score -= 8; reasons.push('period week'); }
-        else if(cp.key === 'luteal' && cp.daysToNext != null && cp.daysToNext <= 5){ score -= 6; reasons.push('late luteal'); }
+        // Recorded in BOTH lists on purpose. These words are hers to see on her own screen — that is
+        // the whole feature — but they are also the one thing the privacy copy promises never leaves
+        // the device unless she says so, and they were reaching the AI inside reasons, advice and
+        // cyclePhase all at once. Keeping a parallel list means readinessForAI() can remove exactly
+        // these and nothing else, and anyone adding a phase reason has to add it here twice, on
+        // adjacent lines, rather than remember a filter in another file.
+        if(cp.key === 'menstrual'){ score -= 8; reasons.push('period week'); cycleReasons.push('period week'); }
+        else if(cp.key === 'luteal' && cp.daysToNext != null && cp.daysToNext <= 5){ score -= 6; reasons.push('late luteal'); cycleReasons.push('late luteal'); }
       }
     }
   }catch(_){ }
@@ -806,11 +813,41 @@ function computeReadiness(){
   else if(level === 'moderate') advice = 'You\u2019re moderately recovered. Train, but keep it controlled \u2014 quality over maxing out.';
   else advice = 'Your body\u2019s asking for recovery. Consider mobility, an easy walk, or rest today \u2014 it\u2019s part of the work.';
   // Never a verdict on her body — a reason, held loosely, that she can overrule.
+  // adviceBase is the same sentence WITHOUT the phase, captured before it is appended rather than
+  // cut back out afterwards: readinessForAI() needs a version that never named her cycle, and
+  // splitting the finished string on its own copy would break the first time the wording changed.
+  const adviceBase = advice;
   if(cycle && (cycle.key === 'menstrual' || (cycle.key === 'luteal' && cycle.daysToNext != null && cycle.daysToNext <= 5))){
     advice += cycle.key === 'menstrual'
       ? ' You\u2019re in your period week too \u2014 dropping the load today is a choice, not a concession. This varies a lot between women; if you feel strong, trust that over my estimate.'
       : ' You\u2019re in the back half of your luteal phase \u2014 effort often reads higher there. Keep the movement, skip the max. If today feels good, go by that instead.';
   }
-  return { score, level, reasons, advice, sleep, stress, energy, asOf: readinessTs,
+  return { score, level, reasons, advice, adviceBase, cycleReasons, sleep, stress, energy, asOf: readinessTs,
            cyclePhase: cycle ? cycle.key : null };
+}
+
+// WHAT THE COACH MAY BE TOLD ABOUT HER RECOVERY. The score and the level are physiology-neutral and
+// always fine to send. The phase is not, and Settings -> Your cycle -> "Let the coach see my phase"
+// is off by default — the privacy copy states in as many words that with it off, nothing about her
+// cycle ever leaves the device.
+//
+// It was leaving anyway, by three carriers on one object: reasons contained 'period week', advice
+// had a sentence beginning "You're in your period week", and cyclePhase carried the raw key. Two
+// prompts sent them — the morning readiness explainer, and the check-in context that goes to the
+// coach — so a woman who had deliberately left that switch OFF had her cycle posted to a third-party
+// AI provider the first time she asked why her readiness was low. The switch worked everywhere it
+// was checked; nothing checked it here.
+//
+// Screens keep the full object: seeing "period week" on her own phone is the point of the feature.
+function readinessForAI(rd){
+  if(!rd) return rd;
+  let shareOK = false;
+  try{ const c = (typeof cycleGet === 'function') ? cycleGet() : null; shareOK = !!(c && c.aiOK); }catch(_){ shareOK = false; }
+  if(shareOK) return rd;
+  const drop = rd.cycleReasons || [];
+  return Object.assign({}, rd, {
+    reasons: (rd.reasons || []).filter(function(r){ return drop.indexOf(r) === -1; }),
+    advice: rd.adviceBase || rd.advice,
+    cyclePhase: null
+  });
 }
