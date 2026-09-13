@@ -797,7 +797,17 @@ function lifeStateBrief(s){
   if(f.vices && f.vices.length){
     f.vices.forEach(v => {
       const bits = [];
-      if(v.mode === 'watch'){
+      // LETTING GO IS NOT A CLEAN STREAK. buildPTCtx has said so since the letting-go kind was added —
+      // "a healing goal, NOT a clean-streak; going back is part of it" — and this builder, which feeds
+      // every other AI surface in the app, never learned it. So a grief or an attachment someone named
+      // in the Feeling Door fell through to the else below and was handed to the model as "14 days
+      // clean", with the relapse vocabulary that comes with it. getLifeState already computes
+      // letGoDays for exactly this. The same rule, in both places, so the two cannot drift again.
+      if(v.kind === 'letgo'){
+        bits.push((v.letGoDays ? ('day ' + v.letGoDays + ' of letting this go') : 'letting this go') +
+          ' — a grief or attachment they are RELEASING: a healing goal, NOT a clean streak. Going back to it is part of letting go');
+        bits.push('never say "days clean", "relapse", "slip" or "streak" about this one, and never congratulate a count');
+      } else if(v.mode === 'watch'){
         bits.push('JUST WATCHING this — they have NOT set a goal for it and have not committed to quitting or to a limit');
         bits.push(v.uses7+' logged this week'+(v.daysSinceUse!=null?(', last '+v.daysSinceUse+'d ago'):''));
         bits.push('do NOT congratulate a streak, do NOT call anything a relapse, and do NOT push them to quit — reflect what they logged and let them draw the conclusion');
@@ -5461,8 +5471,16 @@ function renderAdaptiveMorning(){
     const _rd = Math.max(0, Math.round((new Date().setHours(0,0,0,0) - new Date(v.startDate).setHours(0,0,0,0)) / 86400000));
     const _rwhen = _rd <= 0 ? 'today' : (_rd === 1 ? 'yesterday' : _rd + ' days ago');
     tagText = (_rd <= 0 ? 'Today' : 'Yesterday') + ' — grace';
-    headlineText = '"The righteous fall seven times and rise again." — Proverbs 24:16';
-    bodyText = 'You restarted ' + v.n + ' ' + _rwhen + '. That\'s not the end — it\'s the next attempt. Today, the same fight. Same Lord. Same grace. You\'re back at it. That\'s what counts.';
+    // The same pattern its own sibling branches use six lines away. This one was hardcoded Christian
+    // scripture on a card shown to every tradition — and it fires for anyone who named a vice and
+    // logged a slip within 48 hours, which is an ordinary first week, not an edge case.
+    { const _rv = activeVerses()[_dailyIndex(activeVerses().length)]; headlineText = '\u201C' + _rv.t + '\u201D \u2014 ' + _rv.r; }
+    // "Same Lord. Same grace." is the right sentence for a Christian and a foreign one for everyone
+    // else on a card every tradition sees. Gated on the registry's own `divine` field, which is null
+    // for secular and Buddhism — the same gate the evening card already uses.
+    bodyText = 'You restarted ' + v.n + ' ' + _rwhen + '. That\'s not the end — it\'s the next attempt. Today, the same fight.' +
+      (((typeof curFaith==='function') && curFaith().divine) ? ' Same Lord. Same grace.' : '') +
+      ' You\'re back at it. That\'s what counts.';
   }
   else if(_yKnown && yEvening && yRating >= 4 && yHabitsDone === yHabitsTotal && yHabitsTotal > 0){
     // Perfect day yesterday — challenge them
@@ -5510,13 +5528,25 @@ function renderAdaptiveMorning(){
 }
 
 // ── AFFIRMATIONS ──────────────────────────────────────────────
-const DEFAULT_AFFIRMS=[
-  "I am becoming who God made me to be.",
+// FOUR THAT SERVE ANYONE, AND ONE THAT NAMES THE DIVINE. The list used to be flat, with "I am
+// becoming who God made me to be." as its first entry, handed to everybody — so a secular person, in
+// the tradition whose own voice rule in the registry reads "Never mention God, scripture, or prayer",
+// met it on roughly one day in five. And anyone arriving by a fast route is secular by DEFAULT: the
+// guest door, "Take me in →", and every "I'll do this later" skip the faith step entirely.
+// Built from the registry rather than merely withheld, so a Muslim reads Allah and not God.
+const DEFAULT_AFFIRMS_ANY=[
   "I am not my past. I am my choices today.",
   "Every day I try is a day I grow.",
   "I am stronger than this urge.",
   "Progress, not perfection.",
 ];
+function defaultAffirms(){
+  let divine = null;
+  try{ divine = (typeof curFaith==='function') ? curFaith().divine : 'God'; }catch(_){ divine = null; }
+  return divine
+    ? ['I am becoming who ' + divine + ' made me to be.'].concat(DEFAULT_AFFIRMS_ANY)
+    : DEFAULT_AFFIRMS_ANY;
+}
 // TWO STORES, ONE MEANING. The "Your why" page writes what a person types into `totry_affirmations`;
 // an older editor writes `totry_affirms`, and every surface that SPEAKS them back read only the latter.
 // So somebody wrote the sentence they most needed to hear, and the app never said it to them once.
@@ -5526,8 +5556,8 @@ function getAffirmations(){
   try{
     const own = [].concat(ls('totry_affirmations') || [], ls('totry_affirms') || [])
                   .filter(x => typeof x === 'string' && x.trim());
-    return own.length ? own : DEFAULT_AFFIRMS;
-  }catch(_){ return DEFAULT_AFFIRMS; }
+    return own.length ? own : defaultAffirms();
+  }catch(_){ return DEFAULT_AFFIRMS_ANY; }
 }
 function showMorningAffirm(){
   const affirms=getAffirmations();if(!affirms.length)return;

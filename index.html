@@ -5656,7 +5656,15 @@ async function proceedAfterAuth(user){
   }catch(_){ }
   if(typeof renderTemplates === 'function') renderTemplates();
     document.getElementById('auth-container').style.display='none';
-    if(restored){
+    // isSetUpPerson(), not `restored` alone. `restored` is true only when a cloud pull returned rows —
+    // so someone who came in through the guest door, used the Feeling Door, reached The Release and
+    // tapped "Keep this →" to make an account was walked back through all twelve onboarding screens,
+    // re-asked their name and what they are fighting, on the night they came in because something was
+    // pulling at them. The guest branch could never catch them either: isGuest() is `totry_guest &&
+    // !currentUser`, and by this point a session exists. isSetUpPerson() is the helper written for
+    // exactly this question, and its own comment says it exists so these gates cannot drift apart —
+    // this was a third gate that never used it.
+    if(restored || (typeof isSetUpPerson==='function' && isSetUpPerson())){
       document.getElementById('onboard').classList.remove('active');
       document.getElementById('onboard').style.display = 'none';
       document.querySelector('.app').classList.add('app-ready');
@@ -7974,7 +7982,9 @@ async function checkAuthAndStart(){
       const hasName = ls('totry_name');
       const isOnboarded = !!ls('totry_onboarded');
 
-      if(isOnboarded || (hasIdentity && hasName)){
+      // Same three-way test as isSetUpPerson() above, which this file defines: a guest has
+      // deliberately come in and used the app, and writes neither totry_onboarded nor an identity.
+      if(isOnboarded || (typeof isSetUpPerson==='function' && isSetUpPerson()) || (hasIdentity && hasName)){
         // Returning user
         document.getElementById('onboard').classList.remove('active');
         document.getElementById('onboard').style.display = 'none';
@@ -8929,7 +8939,17 @@ function lifeStateBrief(s){
   if(f.vices && f.vices.length){
     f.vices.forEach(v => {
       const bits = [];
-      if(v.mode === 'watch'){
+      // LETTING GO IS NOT A CLEAN STREAK. buildPTCtx has said so since the letting-go kind was added —
+      // "a healing goal, NOT a clean-streak; going back is part of it" — and this builder, which feeds
+      // every other AI surface in the app, never learned it. So a grief or an attachment someone named
+      // in the Feeling Door fell through to the else below and was handed to the model as "14 days
+      // clean", with the relapse vocabulary that comes with it. getLifeState already computes
+      // letGoDays for exactly this. The same rule, in both places, so the two cannot drift again.
+      if(v.kind === 'letgo'){
+        bits.push((v.letGoDays ? ('day ' + v.letGoDays + ' of letting this go') : 'letting this go') +
+          ' — a grief or attachment they are RELEASING: a healing goal, NOT a clean streak. Going back to it is part of letting go');
+        bits.push('never say "days clean", "relapse", "slip" or "streak" about this one, and never congratulate a count');
+      } else if(v.mode === 'watch'){
         bits.push('JUST WATCHING this — they have NOT set a goal for it and have not committed to quitting or to a limit');
         bits.push(v.uses7+' logged this week'+(v.daysSinceUse!=null?(', last '+v.daysSinceUse+'d ago'):''));
         bits.push('do NOT congratulate a streak, do NOT call anything a relapse, and do NOT push them to quit — reflect what they logged and let them draw the conclusion');
@@ -13593,8 +13613,16 @@ function renderAdaptiveMorning(){
     const _rd = Math.max(0, Math.round((new Date().setHours(0,0,0,0) - new Date(v.startDate).setHours(0,0,0,0)) / 86400000));
     const _rwhen = _rd <= 0 ? 'today' : (_rd === 1 ? 'yesterday' : _rd + ' days ago');
     tagText = (_rd <= 0 ? 'Today' : 'Yesterday') + ' — grace';
-    headlineText = '"The righteous fall seven times and rise again." — Proverbs 24:16';
-    bodyText = 'You restarted ' + v.n + ' ' + _rwhen + '. That\'s not the end — it\'s the next attempt. Today, the same fight. Same Lord. Same grace. You\'re back at it. That\'s what counts.';
+    // The same pattern its own sibling branches use six lines away. This one was hardcoded Christian
+    // scripture on a card shown to every tradition — and it fires for anyone who named a vice and
+    // logged a slip within 48 hours, which is an ordinary first week, not an edge case.
+    { const _rv = activeVerses()[_dailyIndex(activeVerses().length)]; headlineText = '\u201C' + _rv.t + '\u201D \u2014 ' + _rv.r; }
+    // "Same Lord. Same grace." is the right sentence for a Christian and a foreign one for everyone
+    // else on a card every tradition sees. Gated on the registry's own `divine` field, which is null
+    // for secular and Buddhism — the same gate the evening card already uses.
+    bodyText = 'You restarted ' + v.n + ' ' + _rwhen + '. That\'s not the end — it\'s the next attempt. Today, the same fight.' +
+      (((typeof curFaith==='function') && curFaith().divine) ? ' Same Lord. Same grace.' : '') +
+      ' You\'re back at it. That\'s what counts.';
   }
   else if(_yKnown && yEvening && yRating >= 4 && yHabitsDone === yHabitsTotal && yHabitsTotal > 0){
     // Perfect day yesterday — challenge them
@@ -13642,13 +13670,25 @@ function renderAdaptiveMorning(){
 }
 
 // ── AFFIRMATIONS ──────────────────────────────────────────────
-const DEFAULT_AFFIRMS=[
-  "I am becoming who God made me to be.",
+// FOUR THAT SERVE ANYONE, AND ONE THAT NAMES THE DIVINE. The list used to be flat, with "I am
+// becoming who God made me to be." as its first entry, handed to everybody — so a secular person, in
+// the tradition whose own voice rule in the registry reads "Never mention God, scripture, or prayer",
+// met it on roughly one day in five. And anyone arriving by a fast route is secular by DEFAULT: the
+// guest door, "Take me in →", and every "I'll do this later" skip the faith step entirely.
+// Built from the registry rather than merely withheld, so a Muslim reads Allah and not God.
+const DEFAULT_AFFIRMS_ANY=[
   "I am not my past. I am my choices today.",
   "Every day I try is a day I grow.",
   "I am stronger than this urge.",
   "Progress, not perfection.",
 ];
+function defaultAffirms(){
+  let divine = null;
+  try{ divine = (typeof curFaith==='function') ? curFaith().divine : 'God'; }catch(_){ divine = null; }
+  return divine
+    ? ['I am becoming who ' + divine + ' made me to be.'].concat(DEFAULT_AFFIRMS_ANY)
+    : DEFAULT_AFFIRMS_ANY;
+}
 // TWO STORES, ONE MEANING. The "Your why" page writes what a person types into `totry_affirmations`;
 // an older editor writes `totry_affirms`, and every surface that SPEAKS them back read only the latter.
 // So somebody wrote the sentence they most needed to hear, and the app never said it to them once.
@@ -13658,8 +13698,8 @@ function getAffirmations(){
   try{
     const own = [].concat(ls('totry_affirmations') || [], ls('totry_affirms') || [])
                   .filter(x => typeof x === 'string' && x.trim());
-    return own.length ? own : DEFAULT_AFFIRMS;
-  }catch(_){ return DEFAULT_AFFIRMS; }
+    return own.length ? own : defaultAffirms();
+  }catch(_){ return DEFAULT_AFFIRMS_ANY; }
 }
 function showMorningAffirm(){
   const affirms=getAffirmations();if(!affirms.length)return;
@@ -18861,7 +18901,15 @@ async function _companionSay(userText, opening){
         // THE HONEST STATE FIRST — the app must never congratulate a streak that isn't real. If they've
         // logged real use this week, the Brother meets them exactly where they are, in grace, not on a
         // pedestal they'd feel like a fraud standing on.
-        if(watching){
+        // LETTING GO FIRST, before anything that counts days. buildPTCtx and lifeStateBrief both carry
+        // this rule; the Companion — the surface a person actually reaches at 11pm, in the feeling —
+        // never had it. So a grief someone named in the Feeling Door arrived here as "Right now they
+        // are 14 days clean on this", and the closing line promised to meet them with grace "if they
+        // do slip". There is no slipping in grief. The same words as the other two builders.
+        const letgo = (v.kind === 'letgo') || ((typeof viceMode==='function') && viceMode(v)==='letgo');
+        if(letgo){
+          out+="IMPORTANT: this is a grief or attachment they are RELEASING, not a habit they are quitting. It is a healing goal, NOT a clean streak — going back to it is part of letting go. Never say \"days clean\", \"relapse\", \"slip\" or \"streak\" about this, never congratulate a count, and never treat returning to it as a failure. Meet the feeling underneath it. ";
+        } else if(watching){
           out+="IMPORTANT: they have NOT set a goal for this — they are just watching it honestly ("+uses7+" logged this week). Do NOT congratulate a streak, do NOT use the words relapse or slip, and do NOT push them toward quitting or a limit. Reflect back what they have noticed and let them reach their own conclusion; that is what actually moves someone who is still deciding. ";
         } else if(uses7>0 && !moderate){
           out+="HONEST STATE — be careful here: although the day-count may show "+days+", they have TRUTHFULLY logged using this "+uses7+" time"+(uses7===1?'':'s')+" in the last 7 days. So they are NOT cleanly abstinent right now, and they KNOW it — do NOT congratulate a clean streak or it will feel false and push them away. Honour that they keep telling the truth (that honesty IS the progress), meet them exactly where they actually are, with grace and zero shame, and help them with THIS moment. ";
@@ -18872,7 +18920,10 @@ async function _companionSay(userText, opening){
         }
         else if(money>0){ out+="Staying clean on this has already reclaimed about "+curSym()+money.toLocaleString()+" — real freedom, if it helps to name it gently. "; }
         if(turned7>0){ out+="Worth knowing: they've come here and turned away from this "+turned7+" time"+(turned7===1?'':'s')+" in the last week — real strength they may not be crediting themselves for. "; }
-        out+="And if they do slip, meet them with grace: a streak is a story, not a verdict, and every single moment is a fresh try. ";
+        // Not for a letting-go goal, and not for someone who is just watching: both branches above have
+        // already said, in as many words, not to use that vocabulary — and then this line used it two
+        // sentences later, in the same prompt. A model given both does whichever it read last.
+        if(!letgo && !watching) out+="And if they do slip, meet them with grace: a streak is a story, not a verdict, and every single moment is a fresh try. ";
         return out;
       }catch(_){ return ''; } })()
     + "THE EVIDENCE-BASED APPROACH that fits this, which you apply NATURALLY in your own warm words (never name-drop the technique like a textbook): "+spine+" "
@@ -44849,7 +44900,18 @@ function initSettingsTab(){
   // Same gate, same reason as the support card below: what is fine on the web is a 3.1.1 problem in
   // the App Store build.
   try{ const sc=document.getElementById('support-card'); if(sc) sc.style.display = (typeof isNativeApp==='function' && isNativeApp()) ? 'none' : ''; }catch(_){}
-  try{ const bn=document.getElementById('beta-web-note'); if(bn) bn.style.display = (typeof Notify!=='undefined' && Notify.isNative()) ? 'none' : 'block'; }catch(_){}
+  // A GUEST IS NOT IN AN ACCOUNT. This note says everything is "real and saved to your account" —
+  // true for a signed-in web user, and the exact opposite of a guest's situation: their work lives
+  // in this browser and clearing it loses the lot. Settings is the one screen that could warn them
+  // and it was reassuring them instead. Swapped rather than hidden, because the warning is the
+  // useful half — and it carries the way out.
+  try{ const bn=document.getElementById('beta-web-note');
+    if(bn){
+      const _native = (typeof Notify!=='undefined' && Notify.isNative());
+      const _guest = (typeof isGuest==='function') && isGuest();
+      bn.style.display = _native ? 'none' : 'block';
+      if(_guest) bn.innerHTML = '<strong style="color:var(--tx)">You are here as a guest.</strong> Everything you have done is real and it is saved \u2014 but only in this browser, on this device. Clearing your browser data, or picking up another phone, loses it. Making an account keeps it and carries it with you.';
+    } }catch(_){}
   // Reflect the CURRENT faith level when Settings opens — it was only highlighted on click, so on
   // open neither option looked selected (that's the "faith level looks messed up"). Now it's clear.
   try{ const fl=(typeof faithLevel==='function')?faithLevel():'full'; document.querySelectorAll('.faith-opt').forEach(b=>{ const on=b.dataset.faith===fl; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'rgba(200,169,110,0.10)':'var(--bg3)'; }); }catch(_){}

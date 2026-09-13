@@ -101,7 +101,15 @@ async function _companionSay(userText, opening){
         // THE HONEST STATE FIRST — the app must never congratulate a streak that isn't real. If they've
         // logged real use this week, the Brother meets them exactly where they are, in grace, not on a
         // pedestal they'd feel like a fraud standing on.
-        if(watching){
+        // LETTING GO FIRST, before anything that counts days. buildPTCtx and lifeStateBrief both carry
+        // this rule; the Companion — the surface a person actually reaches at 11pm, in the feeling —
+        // never had it. So a grief someone named in the Feeling Door arrived here as "Right now they
+        // are 14 days clean on this", and the closing line promised to meet them with grace "if they
+        // do slip". There is no slipping in grief. The same words as the other two builders.
+        const letgo = (v.kind === 'letgo') || ((typeof viceMode==='function') && viceMode(v)==='letgo');
+        if(letgo){
+          out+="IMPORTANT: this is a grief or attachment they are RELEASING, not a habit they are quitting. It is a healing goal, NOT a clean streak — going back to it is part of letting go. Never say \"days clean\", \"relapse\", \"slip\" or \"streak\" about this, never congratulate a count, and never treat returning to it as a failure. Meet the feeling underneath it. ";
+        } else if(watching){
           out+="IMPORTANT: they have NOT set a goal for this — they are just watching it honestly ("+uses7+" logged this week). Do NOT congratulate a streak, do NOT use the words relapse or slip, and do NOT push them toward quitting or a limit. Reflect back what they have noticed and let them reach their own conclusion; that is what actually moves someone who is still deciding. ";
         } else if(uses7>0 && !moderate){
           out+="HONEST STATE — be careful here: although the day-count may show "+days+", they have TRUTHFULLY logged using this "+uses7+" time"+(uses7===1?'':'s')+" in the last 7 days. So they are NOT cleanly abstinent right now, and they KNOW it — do NOT congratulate a clean streak or it will feel false and push them away. Honour that they keep telling the truth (that honesty IS the progress), meet them exactly where they actually are, with grace and zero shame, and help them with THIS moment. ";
@@ -112,7 +120,10 @@ async function _companionSay(userText, opening){
         }
         else if(money>0){ out+="Staying clean on this has already reclaimed about "+curSym()+money.toLocaleString()+" — real freedom, if it helps to name it gently. "; }
         if(turned7>0){ out+="Worth knowing: they've come here and turned away from this "+turned7+" time"+(turned7===1?'':'s')+" in the last week — real strength they may not be crediting themselves for. "; }
-        out+="And if they do slip, meet them with grace: a streak is a story, not a verdict, and every single moment is a fresh try. ";
+        // Not for a letting-go goal, and not for someone who is just watching: both branches above have
+        // already said, in as many words, not to use that vocabulary — and then this line used it two
+        // sentences later, in the same prompt. A model given both does whichever it read last.
+        if(!letgo && !watching) out+="And if they do slip, meet them with grace: a streak is a story, not a verdict, and every single moment is a fresh try. ";
         return out;
       }catch(_){ return ''; } })()
     + "THE EVIDENCE-BASED APPROACH that fits this, which you apply NATURALLY in your own warm words (never name-drop the technique like a textbook): "+spine+" "

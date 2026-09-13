@@ -6905,4 +6905,58 @@ H.section('a quick button does not invent a target, and a cached permission does
   H.ok(/fiber:/.test(code), 'while the identifiers are untouched (calibration: they still exist)');
 }
 
+H.section('a grief is not a streak, and a guest is not a stranger');
+{
+  const code = H.code(H.html);
+
+  // LETTING GO IS A HEALING KIND, NOT A CLEAN-DAY COUNTER. buildPTCtx has carried that rule since the
+  // kind was added — "a healing goal, NOT a clean-streak; going back is part of it" — and the other
+  // two prompt builders never learned it. lifeStateBrief, which feeds every AI surface in the app,
+  // let a grief fall through to its else branch and handed the model "14 days clean". The Companion —
+  // the surface a person actually reaches at 11pm, inside the feeling — did the same, and then closed
+  // with "if they do slip, meet them with grace", two sentences after a branch that had just said not
+  // to use that word. A model given both instructions follows whichever it read last.
+  const lsb = H.code(H.extractFn('lifeStateBrief'));
+  H.ok(/v\.kind === 'letgo'/.test(lsb), 'the whole-person brief recognises a letting-go goal');
+  H.ok(/NOT a clean streak/.test(lsb), 'and says it is not a streak');
+  H.ok(lsb.indexOf("v.kind === 'letgo'") < lsb.indexOf("v.mode === 'watch'"),
+    'and checks it FIRST, before anything that counts days');
+  const cs = H.code(H.extractFn('_companionSay'));
+  H.ok(/letgo/.test(cs), 'the Companion recognises it too');
+  H.ok(/RELEASING/.test(cs), 'and names what it actually is');
+  H.ok(/if\(!letgo && !watching\) out\+="And if they do slip/.test(cs),
+    'and stops promising grace "if they do slip" to someone who is grieving or only watching');
+
+  // A GUEST HAS ALREADY BEEN HERE. isSetUpPerson() exists precisely to answer that, and its own
+  // comment says it was made so these gates cannot drift — then a third gate did not use it, so
+  // someone who came in through the guest door, used the Feeling Door and made an account on the way
+  // out was walked back through all twelve onboarding screens and re-asked their name, that night.
+  H.ok(/restored \|\| \(typeof isSetUpPerson==='function' && isSetUpPerson\(\)\)/.test(code),
+    'boot opens the app for someone this phone already knows');
+  // Matched to end of LINE, not to the first ')': the condition contains parentheses of its own, so
+  // [^)]* stopped at `isSetUpPerson(` and the assertion failed on correct code.
+  const ns = code.split('\n').find(l => /if\(isOnboarded \|\|/.test(l)) || '';
+  H.ok(/isSetUpPerson/.test(ns), 'and so does the offline floor');
+
+  // AND SETTINGS TELLS A GUEST THE TRUTH. It said "everything here is real and saved to your account"
+  // to someone who has no account — the one screen that could warn them, reassuring them instead.
+  const ist = H.code(H.extractFn('initSettingsTab'));
+  H.ok(/isGuest\(\)/.test(ist), 'Settings knows whether this person has an account');
+  H.ok(/only in this browser, on this device/.test(ist), 'and says where a guest’s work actually lives');
+
+  // THE DEFAULTS THE APP PUTS IN A PERSON'S MOUTH. "I am becoming who God made me to be." was the
+  // first of five affirmations shown to everyone — including the tradition whose registry entry says
+  // "Never mention God, scripture, or prayer", and anyone arriving by a fast route is secular by
+  // default. Built from the registry rather than merely withheld, so a Muslim reads Allah.
+  H.ok(!/"I am becoming who God made me to be\."/.test(code), 'no affirmation hardcodes one tradition’s name for God');
+  const da = H.code(H.extractFn('defaultAffirms'));
+  H.ok(/curFaith\(\)\.divine/.test(da), 'the divine one is gated on the registry');
+  H.ok(/I am becoming who ' \+ divine/.test(da), 'and uses that tradition’s own word');
+  H.ok(/DEFAULT_AFFIRMS_ANY/.test(da), 'while four that serve anyone are always there');
+
+  // The morning card's two hardcoded Christian lines, on a card every tradition sees.
+  H.ok(!/The righteous fall seven times and rise again/.test(code), 'the restart headline is not hardcoded scripture');
+  H.ok(/curFaith\(\)\.divine\) \? ' Same Lord\. Same grace\.'/.test(code), '"Same Lord. Same grace." is gated too');
+}
+
 H.report();

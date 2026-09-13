@@ -1220,7 +1220,9 @@ async function checkAuthAndStart(){
       const hasName = ls('totry_name');
       const isOnboarded = !!ls('totry_onboarded');
 
-      if(isOnboarded || (hasIdentity && hasName)){
+      // Same three-way test as isSetUpPerson() above, which this file defines: a guest has
+      // deliberately come in and used the app, and writes neither totry_onboarded nor an identity.
+      if(isOnboarded || (typeof isSetUpPerson==='function' && isSetUpPerson()) || (hasIdentity && hasName)){
         // Returning user
         document.getElementById('onboard').classList.remove('active');
         document.getElementById('onboard').style.display = 'none';

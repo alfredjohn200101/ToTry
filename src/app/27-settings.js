@@ -41,7 +41,18 @@ function initSettingsTab(){
   // Same gate, same reason as the support card below: what is fine on the web is a 3.1.1 problem in
   // the App Store build.
   try{ const sc=document.getElementById('support-card'); if(sc) sc.style.display = (typeof isNativeApp==='function' && isNativeApp()) ? 'none' : ''; }catch(_){}
-  try{ const bn=document.getElementById('beta-web-note'); if(bn) bn.style.display = (typeof Notify!=='undefined' && Notify.isNative()) ? 'none' : 'block'; }catch(_){}
+  // A GUEST IS NOT IN AN ACCOUNT. This note says everything is "real and saved to your account" —
+  // true for a signed-in web user, and the exact opposite of a guest's situation: their work lives
+  // in this browser and clearing it loses the lot. Settings is the one screen that could warn them
+  // and it was reassuring them instead. Swapped rather than hidden, because the warning is the
+  // useful half — and it carries the way out.
+  try{ const bn=document.getElementById('beta-web-note');
+    if(bn){
+      const _native = (typeof Notify!=='undefined' && Notify.isNative());
+      const _guest = (typeof isGuest==='function') && isGuest();
+      bn.style.display = _native ? 'none' : 'block';
+      if(_guest) bn.innerHTML = '<strong style="color:var(--tx)">You are here as a guest.</strong> Everything you have done is real and it is saved \u2014 but only in this browser, on this device. Clearing your browser data, or picking up another phone, loses it. Making an account keeps it and carries it with you.';
+    } }catch(_){}
   // Reflect the CURRENT faith level when Settings opens — it was only highlighted on click, so on
   // open neither option looked selected (that's the "faith level looks messed up"). Now it's clear.
   try{ const fl=(typeof faithLevel==='function')?faithLevel():'full'; document.querySelectorAll('.faith-opt').forEach(b=>{ const on=b.dataset.faith===fl; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'rgba(200,169,110,0.10)':'var(--bg3)'; }); }catch(_){}

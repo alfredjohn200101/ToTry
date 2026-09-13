@@ -654,7 +654,15 @@ async function proceedAfterAuth(user){
   }catch(_){ }
   if(typeof renderTemplates === 'function') renderTemplates();
     document.getElementById('auth-container').style.display='none';
-    if(restored){
+    // isSetUpPerson(), not `restored` alone. `restored` is true only when a cloud pull returned rows —
+    // so someone who came in through the guest door, used the Feeling Door, reached The Release and
+    // tapped "Keep this →" to make an account was walked back through all twelve onboarding screens,
+    // re-asked their name and what they are fighting, on the night they came in because something was
+    // pulling at them. The guest branch could never catch them either: isGuest() is `totry_guest &&
+    // !currentUser`, and by this point a session exists. isSetUpPerson() is the helper written for
+    // exactly this question, and its own comment says it exists so these gates cannot drift apart —
+    // this was a third gate that never used it.
+    if(restored || (typeof isSetUpPerson==='function' && isSetUpPerson())){
       document.getElementById('onboard').classList.remove('active');
       document.getElementById('onboard').style.display = 'none';
       document.querySelector('.app').classList.add('app-ready');
