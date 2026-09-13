@@ -1863,7 +1863,7 @@ function _feelingNowWon(){
       '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-style:italic;color:var(--tx);margin-bottom:10px">You just chose yourself.</div>'+
       '<div style="font-size:14px;color:var(--tx2);line-height:1.7;margin-bottom:18px">That\u2019s the whole thing, right there. Not forever \u2014 just now, this once. And you did it. The version of you they all see? That was you.</div>'+
     '</div>'+
-    '<button class="btn primary" style="padding:15px" onclick="document.getElementById(\'feelingnow-modal\')?.remove();theRelease({did:\'You chose yourself — not forever, just now, this once. And you did it.\'})">Amen</button>';
+    '<button class="btn primary" style="padding:15px" onclick="document.getElementById(\'feelingnow-modal\')?.remove();theRelease({did:\'You chose yourself — not forever, just now, this once. And you did it.\'})">'+((typeof faithAssent==='function')?faithAssent():'Amen')+'</button>';
   haptic('celebrate');
   if(typeof showVerseToast==='function') setTimeout(()=>showVerseToast('win','A word for your win'),700);
 }

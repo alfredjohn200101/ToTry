@@ -4194,8 +4194,15 @@ function fnBodyOf(code, name){
   // number we get to reinterpret. So it was an outbound request on every cold start telling a third
   // party when this person opens the app, for a value with no consumer. This assertion now keeps it
   // gone, which is the only useful thing left to say about a dead endpoint.
-  H.ok(!/frankfurter/.test(H.code(H.html)), 'no third-party currency call on launch — the rates had no reader');
-  H.ok(!/totry_currency_rates/.test(H.code(H.html)), 'and its cache key is gone with it');
+  // NOT !/frankfurter/.test(H.code(...)) — that assertion could never fail. H.code() strips from `//`
+  // to end of line, and every URL contains `//`, so the host name was deleted before the regex ever
+  // ran. A guard that cannot fail is a claim of coverage with nothing behind it. These two patterns
+  // are code-shaped and appear in no comment: the call site, and the fetch itself.
+  H.ok(!/fetchCurrencyRates\(getUserCurrency\(\)\)/.test(H.html), 'nothing fetches currency rates at launch');
+  H.ok(!/_fetchT\('https:\/\/api\.frankfurter/.test(H.html), 'and the request itself is gone');
+  H.ok(!/ls\(CURRENCY_CACHE_KEY/.test(H.html), 'and nothing writes its cache');
+  // CALIBRATION: prove these patterns can match at all, on a call this app really does make.
+  H.ok(/_fetchT\('https:\/\//.test(H.html), 'calibration — the _fetchT URL pattern matches a real call');
   H.ok(!/api\.frankfurter\.dev\/v2/.test(H.html), 'and the 404 path is gone');
   H.ok(/'eng_asv'/.test(H.html) && /'ENGWEBP'/.test(H.html), "helloao's real translation ids are used");
   const hb = H.extractFn('_helloaoBook');
@@ -7063,12 +7070,17 @@ H.section('a number a person typed is a number the app shows them');
   // because the labels map that BOTH the summary line and the history rows iterate stopped at the
   // eight tape-measure fields. The numbers existed only in a backup export.
   const rm = H.code(H.extractFn('renderMeasurements'));
+  // SCOPED TO THE LABELS OBJECT. Searching the whole function for "smm:" also matched the `units`
+  // map two lines below it, so deleting every one of the six labels failed only TWO assertions —
+  // and I watched that injection print two failures and moved on without asking why it was not six.
+  const labelsDecl = (rm.match(/const labels = \{[\s\S]*?\};/) || [''])[0];
+  H.ok(labelsDecl.length > 60, 'the labels object was isolated (' + labelsDecl.length + ' chars)');
   for(const k of ['smm','fatMass','visceral','tbw','bmr','evoltPts']){
-    H.ok(new RegExp(k + ':').test(rm), 'the scan field ' + k + ' has a label, so it renders');
+    H.ok(new RegExp(k + ':').test(labelsDecl), 'the scan field ' + k + ' has a label, so it renders');
   }
   // CALIBRATION: the fields that always worked are still there — a labels map that lost them would
   // pass every assertion above.
-  for(const k of ['waist','bf']) H.ok(new RegExp(k + ':').test(rm), k + ' still renders (calibration)');
+  for(const k of ['waist','bf']) H.ok(new RegExp(k + ':').test(labelsDecl), k + ' still renders (calibration)');
   // Units, because these are not centimetres and the tape-measure fields never needed one — a bare
   // "BMR 1840" beside "Waist 84" reads as another centimetre.
   H.ok(/const units = \{/.test(rm), 'the non-cm fields carry a unit');

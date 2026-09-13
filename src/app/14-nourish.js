@@ -4670,7 +4670,7 @@ function macrosForCalories(cal, opts){
 // silently erased, and the adaptive-TDEE card then offered to ADD around 500 cal/day and called it
 // reality. That is the precise harm the comment directly above this function was written about, and
 // it came back through a different door. This normaliser also un-breaks devices that already have
-// 'manual' on disk; the fact that they typed it themselves now lives in totry_goal_source.
+// 'manual' on disk. The fact that they typed it themselves is not recorded anywhere — see saveNutGoals().
 // THE PROMPT FOR "TODAY'S MEALS" — built from the person's real targets, and silent about numbers
 // when they have them turned off. The button used to carry a literal "2000-2200 cal target" in its
 // onclick, which was wrong twice over: it ignored whatever this person's target actually is (the
@@ -4691,7 +4691,12 @@ function todaysNutGoals(){
 }
 function todaysMealsPrompt(){
   let cal = 0, pro = 0;
-  try{ const g = ls('totry_nut_goals') || {}; cal = Math.round(g.cal || 0); pro = Math.round(g.pro || 0); }catch(_){}
+  // todaysNutGoals(), which is defined THREE LINES ABOVE THIS, and was written in this same round
+  // with the comment "one accessor, so a reader cannot forget to ask". This function read the raw key
+  // anyway, so the coach was handed the flat base while the diary quoted the cycled target — the very
+  // disagreement the accessor exists to prevent, reintroduced in the function next to it.
+  try{ const g = (typeof todaysNutGoals==='function') ? todaysNutGoals() : (ls('totry_nut_goals') || {});
+       cal = Math.round(g.cal || 0); pro = Math.round(g.pro || 0); }catch(_){}
   const gentle = (typeof nutGentle === 'function') && nutGentle();
   const target = cal > 0
     ? ('Their target is about ' + cal + ' cal' + (pro > 0 ? ' and ' + pro + 'g protein' : '') + ' today.')
@@ -5521,8 +5526,13 @@ function saveNutGoals(){
   }
   goals._ts = Date.now();
   ls('totry_nut_goals',goals);
-  // NOT totry_calorie_goal_type — that key is a direction, and 'manual' is not one. See _goalDirRaw().
-  ls('totry_goal_source','manual');
+  // NOTHING IS WRITTEN HERE. The 'manual' stamp used to go into totry_calorie_goal_type, which holds
+  // a DIRECTION, and broke all four of its readers. Moving it to its own key fixed that and created a
+  // smaller version of the same fault: totry_goal_source had one writer and zero readers, in a round
+  // whose whole subject was removing exactly that. The fact worth recording — that this target was
+  // typed by hand rather than calculated — has no consumer yet. When one exists (calcTDEE asking
+  // before it overwrites a hand-set target would be the obvious one), write the key THEN, with the
+  // reader in the same commit.
   renderNutritionLog();
   prefillNutGoals();
   let msg='Cal: '+cal+' \u00b7 Protein: '+pro+'g';
