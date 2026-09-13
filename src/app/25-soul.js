@@ -49,7 +49,9 @@ function renderSoulStill(){
     else if(typeof _faithLine === 'function') line = _faithLine('') || '';
   }catch(_){ }
 
-  const F = (typeof activeFaith === 'function') ? activeFaith() : null;
+  // activeFaith() has never existed, and F was never read even once — the whole line was a no-op
+  // assigning null to an unused constant. If this card should vary by tradition, faithTradition()
+  // is the function that answers that, and using it is a change worth making deliberately.
   const eyebrow = line ? 'A word for today' : 'Before anything else';
   const body = line
     ? _escFew(line)

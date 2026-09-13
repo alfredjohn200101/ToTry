@@ -351,7 +351,14 @@ const Health = {
           const n = await this.syncWorkouts(14);
           try{ await this.syncSleep(14); }catch(_){}
           if(n>0){
-            try{ if(typeof renderPTHistory==='function') renderPTHistory(); }catch(_){}
+            // renderWorkoutHistory, not renderPTHistory — the latter has never existed anywhere in
+            // this codebase. Because the call was guarded by typeof it never threw, so the import
+            // said "3 sessions brought in from Apple Health" in a toast and the list behind it did
+            // not change: the person went to look for the sessions the toast had just promised and
+            // found yesterday's screen. A typeof guard is the right way to call something optional
+            // and the perfect way to hide something misspelt — nothing is optional about refreshing
+            // the list you have just told someone you filled.
+            try{ if(typeof renderWorkoutHistory==='function') renderWorkoutHistory(); }catch(_){}
             try{ if(typeof showToast==='function') showToast('Training synced', n+' session'+(n===1?'':'s')+' brought in from Apple Health.'); }catch(_){}
           }
         }

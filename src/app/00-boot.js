@@ -693,13 +693,31 @@ async function authSendOtp(){
   }
   
   try {
-    const { error } = await sb.auth.signInWithOtp({
-      email: email,
-      options: {
-        shouldCreateUser: true,
-        emailRedirectTo: window.location.origin + window.location.pathname
-      }
-    });
+    // BOUNDED, BECAUSE A STALL IS NOT AN ERROR AND NOTHING ELSE CATCHES IT. supabase-js never times
+    // out: on hotel wifi or one bar this promise simply does not settle, so the catch below never
+    // runs, authShowError is never reached, and the person sits on #auth-loading — which is a pulsing
+    // line with no button on it. The email step underneath carries the guest door and four crisis
+    // numbers, and the error step carries them too, under a comment saying in as many words that
+    // they must survive a failure. Neither is reachable from the loading step. So the one state this
+    // app promises can never hide the helplines was the one state nobody had put a floor under, and
+    // force-quitting comes back to it. Fifteen seconds, then the error step, which has the doors.
+    const _AUTH_TIMEOUT_MS = 15000;
+    const _sent = await Promise.race([
+      sb.auth.signInWithOtp({
+        email: email,
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: window.location.origin + window.location.pathname
+        }
+      }),
+      new Promise(function(res){ setTimeout(function(){ res({ __timedOut: true }); }, _AUTH_TIMEOUT_MS); })
+    ]);
+    if(_sent && _sent.__timedOut){
+      // The same words authShowError already writes for a dead network, and it names the guest door.
+      authShowError('Failed to fetch');
+      return;
+    }
+    const { error } = _sent;
     
     if(error){
       console.error('OTP send error:', error);
@@ -736,11 +754,13 @@ async function authVerifyOtp(){
   document.getElementById('auth-loading-msg').textContent = 'Verifying...';
   
   try {
-    const { data, error } = await sb.auth.verifyOtp({
-      email: email,
-      token: code,
-      type: 'email'
-    });
+    // Same floor on the verify step: it shows 'Verifying...' on the same buttonless screen.
+    const _ver = await Promise.race([
+      sb.auth.verifyOtp({ email: email, token: code, type: 'email' }),
+      new Promise(function(res){ setTimeout(function(){ res({ __timedOut: true }); }, 15000); })
+    ]);
+    if(_ver && _ver.__timedOut){ authShowError('Failed to fetch'); return; }
+    const { data, error } = _ver;
     
     if(error){
       console.error('OTP verify error:', error);

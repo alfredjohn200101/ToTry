@@ -6681,4 +6681,107 @@ H.section('with "let the coach see my phase" off, her cycle does not leave the d
   H.ok(!/\+ r\.reasons\.join/.test(mp), 'with no raw reasons left anywhere in it');
 }
 
+H.section('a typeof guard may not hide a function that does not exist');
+{
+  // `if(typeof f==='function') f()` is the right way to call something optional, and the perfect way
+  // to hide something misspelt: it never throws, so the call silently does nothing for ever. Five
+  // were found in one sweep. The worst told the truth in a toast and then lied by omission —
+  // syncWorkouts() imported sessions from Apple Health, said "3 sessions brought in", and called
+  // renderPTHistory() to refresh the list. No such function has ever existed anywhere in this
+  // codebase; the real one is renderWorkoutHistory(). So the person read the toast, went to look for
+  // the sessions it promised, and found yesterday's screen. The other four — renderMoney,
+  // renderCalAppPref, renderHevyRoutines, activeFaith — were no-ops whose real work already happened
+  // on an adjacent line, or in activeFaith's case a whole line assigning null to an unread constant.
+  const code = H.code(H.html);
+  const defined = new Set([...code.matchAll(/function\s+([A-Za-z_$][\w$]*)\s*\(/g)].map(m => m[1]));
+
+  // CALIBRATION, both directions. Without this, a broken extraction would report an empty set and
+  // every name below would look defined — the failure mode of this check is a clean pass.
+  H.ok(defined.has('renderWorkoutHistory'), 'calibration — a function we know exists was found');
+  H.ok(!defined.has('zzzDefinitelyNotAFunction'), 'calibration — an invented name is not found');
+  H.ok(defined.size > 500, 'calibration — the whole bundle was scanned (' + defined.size + ' functions)');
+
+  // Browser globals and local variables/parameters are legitimately absent from that set: `cb`, `fn`
+  // and `onTap` are arguments, `_originalSetItem` is an assigned reference, and MutationObserver is
+  // the platform's. Anything NOT in this list must be a real function in the bundle.
+  const NOT_OURS = new Set(['MutationObserver','_originalSetItem','cb','fn','onRestore','onTap',
+    'showToast','structuredClone','requestIdleCallback','IntersectionObserver','ResizeObserver',
+    'BarcodeDetector','webkitSpeechRecognition','SpeechRecognition','ClipboardItem']);
+  const guarded = [...new Set([...code.matchAll(/typeof\s+([A-Za-z_$][\w$]*)\s*===\s*'function'/g)].map(m => m[1]))];
+  H.ok(guarded.length > 100, 'the guarded-call census ran (' + guarded.length + ' distinct names)');
+  const phantoms = guarded.filter(n => !defined.has(n) && !NOT_OURS.has(n));
+  H.ok(phantoms.length === 0,
+    'every typeof-guarded name resolves to a real function' + (phantoms.length ? ' — phantoms: ' + phantoms.join(', ') : ''));
+
+  // And the one that mattered is wired to the right name now.
+  // Searched in COMMENT-STRIPPED source. The first version used H.html and matched the comment in
+  // 02-native.js that explains this very fix — which quotes the toast verbatim and sits above the
+  // real one — so the assertion failed on correct code. Third time this file has been bitten by it.
+  const swAt = code.indexOf('brought in from Apple Health');
+  H.ok(swAt > 0, 'the Apple Health import toast was located in code, not in a comment');
+  H.ok(/renderWorkoutHistory\(\)/.test(code.slice(Math.max(0, swAt - 900), swAt)),
+    'the Apple Health import refreshes the list it just filled');
+  H.ok(!/renderPTHistory/.test(code), 'and the phantom name is gone from the bundle');
+}
+
+H.section('the app\u2019s own nudges speak the tradition the person chose');
+{
+  // "Faith is full but never forced; a person of any belief or none is fully served." The screens
+  // BUILT multi-faith honour that. The ones that predate the turnaround never did, so five of the
+  // app's most prominent surfaces spoke one tradition at everybody: Home's next-step hero told a
+  // secular person to "take a moment to pray", the low-energy card's button sent a Muslim into the
+  // Christian Bible tab, "Amen" was the ONLY control on two Home nudges, and the Coach's always-on
+  // chip offered "Verse for what I'm feeling" to someone who chose Secular / None.
+  const code = H.code(H.html);
+
+  // The vocabulary comes from the registry, never a hardcoded list of three — that is exactly how
+  // Buddhism and Secular lost a button once before.
+  for(const fn of ['faithPrayVerb','faithWordPhrase','faithAssent','openMyBook']){
+    H.ok(new RegExp('function ' + fn + '\\(').test(code), fn + '() exists');
+  }
+  H.ok(/curFaith\(\)\.prayWord/.test(H.code(H.extractFn('faithPrayVerb'))), 'the verb comes from the registry');
+  H.ok(/curFaith\(\)\.wordWord/.test(H.code(H.extractFn('faithWordPhrase'))), 'and so does the noun');
+  // wordWord is the field that carries its own article in all five traditions; scriptureWord does
+  // not ("scripture" vs "a reflection"), so a sentence built from it cannot be right twice.
+  H.ok(!/faithWordPhrase[\s\S]{0,120}scriptureWord/.test(code), 'the sentence noun is not scriptureWord');
+
+  // HOME'S HERO.
+  // H.extractFn THROWS on a missing name rather than returning falsy, so the function has to be the
+  // real one: getNextStep, not a guessed nextStepThing.
+  const ns = H.code(H.extractFn('getNextStep'));
+  H.ok(!/'Take a moment to pray'/.test(ns), 'the hero no longer hardcodes one tradition’s verb');
+  H.ok(/Take a moment to ' \+ _pv/.test(ns), 'and builds it from the person’s own');
+  H.ok(/faithPrayVerb\(\)/.test(ns) && /faithWordPhrase\(\)/.test(ns), 'reading both from the registry');
+
+  // THE READER BUTTON. openMyBook() routes every tradition; openReader() already serves the Qur’an,
+  // the Gita, the Dhammapada and Meditations.
+  H.ok(!/onclick="go\(&apos;bible&apos;\)"[^<]*Read one verse/.test(code),
+    'the low-energy card no longer sends every tradition to the Bible tab');
+  H.ok(/onclick="openMyBook\(\)"/.test(code), 'it opens the book the person actually chose');
+  const omb = H.code(H.extractFn('openMyBook'));
+  H.ok(/openReader\(/.test(omb) && /go\('bible'\)/.test(omb),
+    'and openMyBook handles both the reader traditions and Christianity');
+
+  // THE DISMISS LABEL. "Amen" is not a neutral word, and it was the only control on those cards.
+  H.ok(!/label:'Amen'/.test(code), 'no nudge hardcodes "Amen" as its only way out');
+  H.ok(/faithAssent\(\)/.test(code), 'the assent follows the tradition');
+  const fa = H.code(H.extractFn('faithAssent'));
+  H.ok(/'Ameen'/.test(fa) && /'Noted'/.test(fa), 'with a real word for each, not one word for all');
+
+  // THE COACH CHIP — the one AI surface that had no faith gate at all.
+  const cq = H.code(H.extractFn('renderCoachQuickReplies'));
+  H.ok(/faithTradition\(\)/.test(cq), 'the always-on chip knows the tradition');
+  H.ok(/_tr === 'secular'/.test(cq), 'and a secular person is not offered scripture');
+  H.ok(!/'I need a verse and a word for what I am going through right now\.'/.test(code),
+    'nor does the prompt ask the model for a verse regardless');
+
+  // THE VOICE IS UNIVERSAL. Only the founder's own story is "big brother"; a canned prayer served to
+  // Christian WOMEN asked them to meet the day "as the man You’re making me".
+  // Matched loosely across the apostrophe: these prayers are JS single-quoted strings, so the
+  // bundle carries an ESCAPED straight quote (You\'re), not the typographic one the rest of the
+  // copy uses. Asserting either literal form fails on correct code.
+  H.ok(!/as the man You.{0,2}re making me/.test(code), 'no canned prayer assumes the reader is a man');
+  H.ok(/as the person You.{0,2}re making me/.test(code), 'it is written for whoever is praying it');
+}
+
 H.report();

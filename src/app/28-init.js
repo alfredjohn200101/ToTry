@@ -129,6 +129,8 @@ async function disablePushReminders(){
       if(Notify.cancel){
         Notify.cancel('reminder_morning'); Notify.cancel('reminder_evening');
         _cancelReachOuts();
+        // Bills and debts are reminders too, and were the only ones this never took down.
+        try{ if(typeof _cancelBillReminders==='function') _cancelBillReminders(); }catch(_){}
       }
     }catch(_){}
     showToast('Reminders off','Your mornings are your own. Re-enable anytime.');

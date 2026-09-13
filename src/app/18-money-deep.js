@@ -881,6 +881,21 @@ function renderSubscriptions(){
 // Web browsers cannot fire a background notification, so on web this schedules nothing and says so
 // rather than queueing a phantom (the same trap _sendReachOuts documents at 02-native.js:681).
 function _billNotifId(b){ return 'bill_' + String(b && b.id); }
+// ONE construction, used by both the schedule and the cancel. Written out twice, a cancel that does
+// not reproduce the id byte-for-byte silently cancels nothing, and the notification fires anyway.
+function _debtNotifId(d, i){ return 'debt_due_' + String((d && d.n) || i).toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,24) + '_' + i; }
+// Everything money schedules, taken back down. disablePushReminders() cancelled reminder_morning,
+// reminder_evening and the reach-out windows and nothing else — so someone who entered their rent
+// and car rego, decided the app buzzed too much and switched reminders OFF, still had their phone
+// go off at 9am with "Rent is due today — $1,850" while the Settings card said reminders were off.
+// The only way to stop it was to delete the bill.
+function _cancelBillReminders(){
+  try{
+    if(typeof Notify==='undefined' || !Notify.cancel) return;
+    (ls('totry_bills') || []).forEach(function(b){ if(b) try{ Notify.cancel(_billNotifId(b)); }catch(_){} });
+    ((ls('totry_f') || {}).d || []).forEach(function(d, i){ if(d) try{ Notify.cancel(_debtNotifId(d, i)); }catch(_){} });
+  }catch(_){}
+}
 // A due date is a DAY, not an instant. `new Date('2026-08-19')` parses as UTC midnight, and east of
 // Greenwich that reads as the next local day — so "Due today" arrived the day after it was due, which
 // for a bill is the one day the reminder had to be right. This was written out inline in renderBills
@@ -923,6 +938,9 @@ function scheduleBillReminders(){
   try{
     if(typeof Notify==='undefined' || !Notify.schedule) return 0;
     if(!(Notify.isNative && Notify.isNative())) return 0;   // web cannot background-fire
+    // THE MASTER SWITCH GOVERNS THESE TOO. Adding a bill re-armed its reminder no matter what
+    // Settings said, so even cancelling on the way out would have been undone by the next edit.
+    try{ if(typeof _pushPrefs==='function' && !_pushPrefs().enabled){ _cancelBillReminders(); return 0; } }catch(_){}
     const list = ls('totry_bills') || [];
     let n = 0;
     list.forEach(function(b){
@@ -948,7 +966,7 @@ function scheduleBillReminders(){
     const f = ls('totry_f') || {};
     (f.d || []).forEach(function(d, i){
       if(!d || !d.due) return;
-      const id = 'debt_due_' + String(d.n || i).toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,24) + '_' + i;
+      const id = _debtNotifId(d, i);
       Notify.cancel(id);
       const outstanding = (Number(d.t)||0) - (Number(d.p)||0);
       if(outstanding <= 0.005) return;                     // cleared — a nudge would be noise

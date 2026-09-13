@@ -582,7 +582,12 @@ function _resolveHold(ts, bought){
   } else {
     try{ showToast('Fair enough','You looked at it properly and chose it. That’s the difference that matters.'); }catch(_){}
   }
-  try{ if(typeof renderMoney==='function') renderMoney(); }catch(_){}
+  // renderMoney() has never existed. It was meant to refresh the Money tab after an impulse hold
+  // resolves — but nothing on that tab reads totry_impulse_holds at all, so even a real call would
+  // have refreshed nothing. Removed rather than pointed at renderFinance(): a call that does nothing
+  // is worse than no call, because it reads as though the wiring is there. (The money a person did
+  // NOT spend by waiting a day genuinely belongs on the balance sheet — that is a feature to build,
+  // not a line to quietly repair.)
 }
 
 // ════ THE TOOLKIT — learn the tool BEFORE the moment ═══════════════════════════════════════════

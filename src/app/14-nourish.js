@@ -4031,7 +4031,7 @@ function renderNutritionLog(){
       const gi = ls('totry_goal_intent'); // 'cut' / 'maintain' / 'build'
       if(tdeeData && tdeeData.goal){ goalDir = tdeeData.goal === 'lose' ? 'cut' : tdeeData.goal === 'gain' ? 'build' : 'maintain'; }
       else if(gi){ goalDir = gi; }
-      else { const pref = ls('totry_calorie_goal_type'); if(pref==='lose') goalDir='cut'; else if(pref==='gain') goalDir='build'; }
+      else { const pref = _goalDirRaw(); if(pref==='lose') goalDir='cut'; else if(pref==='gain') goalDir='build'; }
       // Prefer TOTAL calories burned (active + BMR) for a true deficit; fall back to the burn number.
       const ev = ritualLog('totry_evenings').find(x => x.ts && new Date(x.ts).toLocaleDateString('en-AU') === today);
       const totalBurned = (ev && ev.rings && ev.rings.total) ? ev.rings.total : null;
@@ -4646,8 +4646,22 @@ function macrosForCalories(cal, opts){
 // as the target directly (what this used to do) silently erased a cutter's deficit — the flagship
 // number quietly stopped their fat loss. This closes the loop the way MacroFactor does: learn real
 // maintenance from data, THEN apply the goal to get the target the person actually eats to.
+// totry_calorie_goal_type holds a DIRECTION: 'lose' | 'gain' | 'maintain'. saveNutGoals() used to
+// stamp it 'manual' to record that the person had typed their own number — but 'manual' is not a
+// direction, and not one of the four readers understands it, so every one of them fell through to
+// maintain. Somebody cutting who adjusted their own calorie target by hand had their deficit
+// silently erased, and the adaptive-TDEE card then offered to ADD around 500 cal/day and called it
+// reality. That is the precise harm the comment directly above this function was written about, and
+// it came back through a different door. This normaliser also un-breaks devices that already have
+// 'manual' on disk; the fact that they typed it themselves now lives in totry_goal_source.
+function _goalDirRaw(){
+  try{
+    const v = String(ls('totry_calorie_goal_type') || '').toLowerCase();
+    return (v && v !== 'manual') ? v : '';
+  }catch(_){ return ''; }
+}
 function _goalDir(){
-  return String(ls('totry_calorie_goal_type') || (ls('totry_tdee_data')||{}).goal || ls('totry_goal_intent') || 'maintain').toLowerCase();
+  return String(_goalDirRaw() || (ls('totry_tdee_data')||{}).goal || ls('totry_goal_intent') || 'maintain').toLowerCase();
 }
 // THE ED-SAFE FLOOR, in one place. It existed only inside goalAdjustedTarget(), and calcTDEE() — the
 // primary, most-discoverable path, the "Calculate my targets" button — rolled its own targets table with
@@ -5460,7 +5474,8 @@ function saveNutGoals(){
   }
   goals._ts = Date.now();
   ls('totry_nut_goals',goals);
-  ls('totry_calorie_goal_type','manual');
+  // NOT totry_calorie_goal_type — that key is a direction, and 'manual' is not one. See _goalDirRaw().
+  ls('totry_goal_source','manual');
   renderNutritionLog();
   prefillNutGoals();
   let msg='Cal: '+cal+' \u00b7 Protein: '+pro+'g';

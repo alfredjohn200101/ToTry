@@ -121,7 +121,19 @@ function renderCoachQuickReplies(){
   }
   
   // PRIORITY 4 — always-on fallbacks
-  chips.push({p: 2, label: '📖 Verse for what I\'m feeling', prompt: 'I need a verse and a word for what I am going through right now.'});
+  // The one AI surface with no faith gate on it. "Verse for what I'm feeling" was an always-on chip,
+  // so a person who chose Secular / None was offered Christian scripture every time they opened the
+  // Coach — and the prompt asked the model for a verse regardless of the voice rule the registry sets.
+  {
+    const _tr = (typeof faithTradition==='function') ? faithTradition() : 'christianity';
+    const _wp = (typeof faithWordPhrase==='function') ? faithWordPhrase() : 'a word';
+    if(_tr === 'secular'){
+      chips.push({p: 2, label: '\ud83e\udded Something to steady me', prompt: 'Give me something grounded and practical to steady me for what I am going through right now. No religious language.'});
+    } else {
+      const _cap = _wp.charAt(0).toUpperCase() + _wp.slice(1);
+      chips.push({p: 2, label: '\ud83d\udcd6 ' + _cap + ' for what I\'m feeling', prompt: 'I need ' + _wp + ' for what I am going through right now.'});
+    }
+  }
   chips.push({p: 2, label: '🎯 Full check-in', prompt: 'Give me a full check-in. What should I prioritise this week across everything you know about me?'});
   chips.push({p: 1, label: '💭 Who am I becoming?', prompt: 'I want to talk about who I am becoming and why I keep falling into old patterns.'});
   

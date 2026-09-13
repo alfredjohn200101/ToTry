@@ -5695,13 +5695,31 @@ async function authSendOtp(){
   }
   
   try {
-    const { error } = await sb.auth.signInWithOtp({
-      email: email,
-      options: {
-        shouldCreateUser: true,
-        emailRedirectTo: window.location.origin + window.location.pathname
-      }
-    });
+    // BOUNDED, BECAUSE A STALL IS NOT AN ERROR AND NOTHING ELSE CATCHES IT. supabase-js never times
+    // out: on hotel wifi or one bar this promise simply does not settle, so the catch below never
+    // runs, authShowError is never reached, and the person sits on #auth-loading — which is a pulsing
+    // line with no button on it. The email step underneath carries the guest door and four crisis
+    // numbers, and the error step carries them too, under a comment saying in as many words that
+    // they must survive a failure. Neither is reachable from the loading step. So the one state this
+    // app promises can never hide the helplines was the one state nobody had put a floor under, and
+    // force-quitting comes back to it. Fifteen seconds, then the error step, which has the doors.
+    const _AUTH_TIMEOUT_MS = 15000;
+    const _sent = await Promise.race([
+      sb.auth.signInWithOtp({
+        email: email,
+        options: {
+          shouldCreateUser: true,
+          emailRedirectTo: window.location.origin + window.location.pathname
+        }
+      }),
+      new Promise(function(res){ setTimeout(function(){ res({ __timedOut: true }); }, _AUTH_TIMEOUT_MS); })
+    ]);
+    if(_sent && _sent.__timedOut){
+      // The same words authShowError already writes for a dead network, and it names the guest door.
+      authShowError('Failed to fetch');
+      return;
+    }
+    const { error } = _sent;
     
     if(error){
       console.error('OTP send error:', error);
@@ -5738,11 +5756,13 @@ async function authVerifyOtp(){
   document.getElementById('auth-loading-msg').textContent = 'Verifying...';
   
   try {
-    const { data, error } = await sb.auth.verifyOtp({
-      email: email,
-      token: code,
-      type: 'email'
-    });
+    // Same floor on the verify step: it shows 'Verifying...' on the same buttonless screen.
+    const _ver = await Promise.race([
+      sb.auth.verifyOtp({ email: email, token: code, type: 'email' }),
+      new Promise(function(res){ setTimeout(function(){ res({ __timedOut: true }); }, 15000); })
+    ]);
+    if(_ver && _ver.__timedOut){ authShowError('Failed to fetch'); return; }
+    const { data, error } = _ver;
     
     if(error){
       console.error('OTP verify error:', error);
@@ -7058,7 +7078,14 @@ const Health = {
           const n = await this.syncWorkouts(14);
           try{ await this.syncSleep(14); }catch(_){}
           if(n>0){
-            try{ if(typeof renderPTHistory==='function') renderPTHistory(); }catch(_){}
+            // renderWorkoutHistory, not renderPTHistory — the latter has never existed anywhere in
+            // this codebase. Because the call was guarded by typeof it never threw, so the import
+            // said "3 sessions brought in from Apple Health" in a toast and the list behind it did
+            // not change: the person went to look for the sessions the toast had just promised and
+            // found yesterday's screen. A typeof guard is the right way to call something optional
+            // and the perfect way to hide something misspelt — nothing is optional about refreshing
+            // the list you have just told someone you filled.
+            try{ if(typeof renderWorkoutHistory==='function') renderWorkoutHistory(); }catch(_){}
             try{ if(typeof showToast==='function') showToast('Training synced', n+' session'+(n===1?'':'s')+' brought in from Apple Health.'); }catch(_){}
           }
         }
@@ -11042,6 +11069,42 @@ const FAITHS = {
 // once, plainly, in the Soul tab. Anyone who HAS chosen a path is unaffected.
 function faithTradition(){ try{ return ls('totry_faith_tradition') || 'secular'; }catch(_){ return 'secular'; } }
 function curFaith(){ return FAITHS[faithTradition()] || FAITHS.secular; }
+
+// ── THE VOCABULARY OF A NUDGE ───────────────────────────────────────────────────────────────────
+// The registry has carried per-tradition words since the multi-faith turnaround, and the screens
+// that were BUILT multi-faith use them. The ones that predate it never did, so the app's own nudges
+// still spoke one tradition at everybody: a secular person was told to "take a moment to pray",
+// offered "a verse for what I'm feeling", sent into the Christian Bible tab by "Read one verse", and
+// given "Amen" as the only way to dismiss a card. Faith is meant to be full and never forced, and a
+// person of any belief or none is meant to be fully served; five separate surfaces were doing the
+// opposite. Derived from the registry, never a hardcoded list of three — that is how Buddhism and
+// Secular were dropped from a button once before.
+//
+// wordWord is the field safe to drop into a sentence: it carries its own article in every tradition
+// ("a word", "an ayah", "a verse", "a teaching", "a reflection"). scriptureWord does NOT — it is
+// "scripture" for one and "a reflection" for another — so it cannot be used the same way twice.
+function faithPrayVerb(){ try{ return curFaith().prayWord || 'pray'; }catch(_){ return 'pray'; } }
+function faithWordPhrase(){ try{ return curFaith().wordWord || 'a word'; }catch(_){ return 'a word'; } }
+function faithPrayTo(){ try{ return curFaith().prayTo || null; }catch(_){ return null; } }
+// The assent a person of this tradition would actually say. "Amen" on a dismiss button is not a
+// neutral word, and it was the ONLY control on two Home cards.
+function faithAssent(){
+  try{
+    const t = faithTradition();
+    if(t === 'christianity') return 'Amen';
+    if(t === 'islam') return 'Ameen';
+  }catch(_){}
+  return 'Noted';
+}
+// Their own book, not the Bible tab. openReader() already serves the Qur'an, the Gita, the
+// Dhammapada and Meditations; Christianity's reader is the Bible tab itself.
+function openMyBook(){
+  try{
+    const t = faithTradition();
+    if(t !== 'christianity' && typeof openReader === 'function'){ openReader(t); return; }
+  }catch(_){}
+  if(typeof go === 'function') go('bible');
+}
 // The fallback text when a generated reflection fails or comes back empty.
 //
 // showAdaptivePrayer() is built for all five traditions — its title reads "A <noun> for right now" for
@@ -13011,7 +13074,7 @@ function renderDayCounter(){
 const PRAYER_POOLS={
   quick:[
     'Lord, good morning.\n\nThank You for another day \u2014 another chance to be better than yesterday.\n\nGive me strength to face my battles. Discipline to honour my commitments. Humility to ask for help.\n\nI\'m trying. That\'s enough.\n\nAmen.',
-    'Father, before the day takes me \u2014 I come to You.\n\nSteady my hands. Quiet my mind. Keep my eyes on what matters.\n\nWhatever comes today, let me meet it as the man You\'re making me.\n\nAmen.',
+    'Father, before the day takes me \u2014 I come to You.\n\nSteady my hands. Quiet my mind. Keep my eyes on what matters.\n\nWhatever comes today, let me meet it as the person You\'re making me.\n\nAmen.',
     'God, thank You for breath in my lungs and another sunrise.\n\nI don\'t want to drift through today. I want to live it on purpose.\n\nWalk with me. Catch me if I slip. Keep me honest.\n\nAmen.',
     'Lord, I\'m not asking for an easy day.\n\nI\'m asking for the strength to do the right thing in a hard one.\n\nGo before me. I\'ll follow.\n\nAmen.'
   ],
@@ -16440,7 +16503,12 @@ function _resolveHold(ts, bought){
   } else {
     try{ showToast('Fair enough','You looked at it properly and chose it. That’s the difference that matters.'); }catch(_){}
   }
-  try{ if(typeof renderMoney==='function') renderMoney(); }catch(_){}
+  // renderMoney() has never existed. It was meant to refresh the Money tab after an impulse hold
+  // resolves — but nothing on that tab reads totry_impulse_holds at all, so even a real call would
+  // have refreshed nothing. Removed rather than pointed at renderFinance(): a call that does nothing
+  // is worse than no call, because it reads as though the wiring is there. (The money a person did
+  // NOT spend by waiting a day genuinely belongs on the balance sheet — that is a feature to build,
+  // not a line to quietly repair.)
 }
 
 // ════ THE TOOLKIT — learn the tool BEFORE the moment ═══════════════════════════════════════════
@@ -24342,7 +24410,9 @@ function adjustCaloriesFromWeightTrend(){
     userGoal = tdeeData.goal; // 'lose', 'maintain', or 'gain'
   } else if(goals.cal){
     // Fallback: check if there's a stored goal preference
-    const pref = ls('totry_calorie_goal_type');
+    // _goalDirRaw(), not the raw key: a stored 'manual' is not a direction and would make the
+    // weight-change bands below match nothing. See _goalDirRaw() in 14-nourish.js.
+    const pref = (typeof _goalDirRaw==='function') ? _goalDirRaw() : ls('totry_calorie_goal_type');
     if(pref) userGoal = pref;
   }
   
@@ -25529,6 +25599,15 @@ function adjustTracker(type,delta){
   const trackers=ls('totry_trackers')||{};
   if(!trackers[today])trackers[today]={water:0,sleep:0,steps:0};
   trackers[today][type]=Math.max(0,Math.round((trackers[today][type]+delta)*10)/10);
+  // THIS NIGHT IS THEIRS NOW. Health.syncSleep refuses to overwrite a figure the person typed — but
+  // it recognises one only by the ABSENCE of _sleepSrc, and it stamps _sleepSrc:'health' on every day
+  // it writes. So the guard protects a hand-typed value exactly until the watch writes that day once,
+  // and from then on it is permanent: someone who slept eight hours but whose watch logged six and a
+  // half because they read in bed could tap + here three times, and by lunchtime it read 6.5 again,
+  // every day, for ever. Sleep feeds readiness and the coach, so the app then argued with them about
+  // a night they were actually there for. Clearing the stamp makes their correction outrank the watch
+  // from that point, which is what the guard's own comment already says it intends.
+  if(type==='sleep'){ try{ delete trackers[today]._sleepSrc; }catch(_){} }
   ls('totry_trackers',trackers);
   // Sleep is shared with the readiness model (via totry_checkins). Mirror precise hours into today's
   // sleep check-in so readiness uses what you logged here, and Morning/Track never disagree.
@@ -29623,7 +29702,7 @@ function renderNutritionLog(){
       const gi = ls('totry_goal_intent'); // 'cut' / 'maintain' / 'build'
       if(tdeeData && tdeeData.goal){ goalDir = tdeeData.goal === 'lose' ? 'cut' : tdeeData.goal === 'gain' ? 'build' : 'maintain'; }
       else if(gi){ goalDir = gi; }
-      else { const pref = ls('totry_calorie_goal_type'); if(pref==='lose') goalDir='cut'; else if(pref==='gain') goalDir='build'; }
+      else { const pref = _goalDirRaw(); if(pref==='lose') goalDir='cut'; else if(pref==='gain') goalDir='build'; }
       // Prefer TOTAL calories burned (active + BMR) for a true deficit; fall back to the burn number.
       const ev = ritualLog('totry_evenings').find(x => x.ts && new Date(x.ts).toLocaleDateString('en-AU') === today);
       const totalBurned = (ev && ev.rings && ev.rings.total) ? ev.rings.total : null;
@@ -30238,8 +30317,22 @@ function macrosForCalories(cal, opts){
 // as the target directly (what this used to do) silently erased a cutter's deficit — the flagship
 // number quietly stopped their fat loss. This closes the loop the way MacroFactor does: learn real
 // maintenance from data, THEN apply the goal to get the target the person actually eats to.
+// totry_calorie_goal_type holds a DIRECTION: 'lose' | 'gain' | 'maintain'. saveNutGoals() used to
+// stamp it 'manual' to record that the person had typed their own number — but 'manual' is not a
+// direction, and not one of the four readers understands it, so every one of them fell through to
+// maintain. Somebody cutting who adjusted their own calorie target by hand had their deficit
+// silently erased, and the adaptive-TDEE card then offered to ADD around 500 cal/day and called it
+// reality. That is the precise harm the comment directly above this function was written about, and
+// it came back through a different door. This normaliser also un-breaks devices that already have
+// 'manual' on disk; the fact that they typed it themselves now lives in totry_goal_source.
+function _goalDirRaw(){
+  try{
+    const v = String(ls('totry_calorie_goal_type') || '').toLowerCase();
+    return (v && v !== 'manual') ? v : '';
+  }catch(_){ return ''; }
+}
 function _goalDir(){
-  return String(ls('totry_calorie_goal_type') || (ls('totry_tdee_data')||{}).goal || ls('totry_goal_intent') || 'maintain').toLowerCase();
+  return String(_goalDirRaw() || (ls('totry_tdee_data')||{}).goal || ls('totry_goal_intent') || 'maintain').toLowerCase();
 }
 // THE ED-SAFE FLOOR, in one place. It existed only inside goalAdjustedTarget(), and calcTDEE() — the
 // primary, most-discoverable path, the "Calculate my targets" button — rolled its own targets table with
@@ -31052,7 +31145,8 @@ function saveNutGoals(){
   }
   goals._ts = Date.now();
   ls('totry_nut_goals',goals);
-  ls('totry_calorie_goal_type','manual');
+  // NOT totry_calorie_goal_type — that key is a direction, and 'manual' is not one. See _goalDirRaw().
+  ls('totry_goal_source','manual');
   renderNutritionLog();
   prefillNutGoals();
   let msg='Cal: '+cal+' \u00b7 Protein: '+pro+'g';
@@ -34550,6 +34644,21 @@ function renderSubscriptions(){
 // Web browsers cannot fire a background notification, so on web this schedules nothing and says so
 // rather than queueing a phantom (the same trap _sendReachOuts documents at 02-native.js:681).
 function _billNotifId(b){ return 'bill_' + String(b && b.id); }
+// ONE construction, used by both the schedule and the cancel. Written out twice, a cancel that does
+// not reproduce the id byte-for-byte silently cancels nothing, and the notification fires anyway.
+function _debtNotifId(d, i){ return 'debt_due_' + String((d && d.n) || i).toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,24) + '_' + i; }
+// Everything money schedules, taken back down. disablePushReminders() cancelled reminder_morning,
+// reminder_evening and the reach-out windows and nothing else — so someone who entered their rent
+// and car rego, decided the app buzzed too much and switched reminders OFF, still had their phone
+// go off at 9am with "Rent is due today — $1,850" while the Settings card said reminders were off.
+// The only way to stop it was to delete the bill.
+function _cancelBillReminders(){
+  try{
+    if(typeof Notify==='undefined' || !Notify.cancel) return;
+    (ls('totry_bills') || []).forEach(function(b){ if(b) try{ Notify.cancel(_billNotifId(b)); }catch(_){} });
+    ((ls('totry_f') || {}).d || []).forEach(function(d, i){ if(d) try{ Notify.cancel(_debtNotifId(d, i)); }catch(_){} });
+  }catch(_){}
+}
 // A due date is a DAY, not an instant. `new Date('2026-08-19')` parses as UTC midnight, and east of
 // Greenwich that reads as the next local day — so "Due today" arrived the day after it was due, which
 // for a bill is the one day the reminder had to be right. This was written out inline in renderBills
@@ -34592,6 +34701,9 @@ function scheduleBillReminders(){
   try{
     if(typeof Notify==='undefined' || !Notify.schedule) return 0;
     if(!(Notify.isNative && Notify.isNative())) return 0;   // web cannot background-fire
+    // THE MASTER SWITCH GOVERNS THESE TOO. Adding a bill re-armed its reminder no matter what
+    // Settings said, so even cancelling on the way out would have been undone by the next edit.
+    try{ if(typeof _pushPrefs==='function' && !_pushPrefs().enabled){ _cancelBillReminders(); return 0; } }catch(_){}
     const list = ls('totry_bills') || [];
     let n = 0;
     list.forEach(function(b){
@@ -34617,7 +34729,7 @@ function scheduleBillReminders(){
     const f = ls('totry_f') || {};
     (f.d || []).forEach(function(d, i){
       if(!d || !d.due) return;
-      const id = 'debt_due_' + String(d.n || i).toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,24) + '_' + i;
+      const id = _debtNotifId(d, i);
       Notify.cancel(id);
       const outstanding = (Number(d.t)||0) - (Number(d.p)||0);
       if(outstanding <= 0.005) return;                     // cleared — a nudge would be noise
@@ -35420,7 +35532,8 @@ function adaptiveNutritionSuggestion(){
   if(body.length < 2) return null;
   const goals = ls('totry_nut_goals');
   if(!goals || !goals.cal) return null;
-  const intent = (ls('totry_calorie_goal_type') || ls('totry_goal_intent') || 'maintain').toLowerCase();
+  // _goalDirRaw() filters the 'manual' sentinel, which otherwise reads as neither lose nor gain.
+  const intent = (((typeof _goalDirRaw==='function') ? _goalDirRaw() : ls('totry_calorie_goal_type')) || ls('totry_goal_intent') || 'maintain').toLowerCase();
   // body is newest-first with a ts. Take entries within the last ~21 days.
   const withTs = body.filter(b => b && b.weight && (b.ts || b.date)).map(b => ({
     w: parseFloat(b.weight),
@@ -40444,7 +40557,8 @@ function useToTryTracker(){
   const ci=document.getElementById('cal-icon'); if(ci)ci.innerHTML='&#x1F34E;';
   const cs=document.getElementById('cal-sub'); if(cs)cs.textContent='Calorie tracker · in-app';
   const cp=document.getElementById('cal-picker'); if(cp)cp.style.display='none';
-  if(typeof renderCalAppPref==='function') renderCalAppPref();
+  // renderCalAppPref() has never existed. The five lines directly above already set cal-name,
+  // cal-icon, cal-sub and cal-picker by hand, which is the whole of what it would have done.
   showToast('Using ToTry','Food & weight tracking, all in one place.');
   // Go straight to Nourish, the same way picking an external app would open that app.
   if(typeof go==='function') go('nourish');
@@ -42720,7 +42834,9 @@ function renderSoulStill(){
     else if(typeof _faithLine === 'function') line = _faithLine('') || '';
   }catch(_){ }
 
-  const F = (typeof activeFaith === 'function') ? activeFaith() : null;
+  // activeFaith() has never existed, and F was never read even once — the whole line was a no-op
+  // assigning null to an unused constant. If this card should vary by tradition, faithTradition()
+  // is the function that answers that, and using it is a change worth making deliberately.
   const eyebrow = line ? 'A word for today' : 'Before anything else';
   const body = line
     ? _escFew(line)
@@ -45987,6 +46103,8 @@ async function disablePushReminders(){
       if(Notify.cancel){
         Notify.cancel('reminder_morning'); Notify.cancel('reminder_evening');
         _cancelReachOuts();
+        // Bills and debts are reminders too, and were the only ones this never took down.
+        try{ if(typeof _cancelBillReminders==='function') _cancelBillReminders(); }catch(_){}
       }
     }catch(_){}
     showToast('Reminders off','Your mornings are your own. Re-enable anytime.');
@@ -47641,7 +47759,15 @@ function getNextStep(){
     }catch(_){ return false; }
   })();
   if(!prayedToday && hour < 17){
-    return { text:'Take a moment to pray', sub:'A short scripture and prayer for today.', action:'soul' };
+    // Was hardcoded Christian and shown to every tradition, secular included — the single most
+    // prominent line on Home, telling someone who chose "Secular / None" to pray.
+    const _pv = (typeof faithPrayVerb==='function') ? faithPrayVerb() : 'pray';
+    const _wp = (typeof faithWordPhrase==='function') ? faithWordPhrase() : 'a word';
+    const _pt = (typeof faithPrayTo==='function') ? faithPrayTo() : null;
+    const _cap = _wp.charAt(0).toUpperCase() + _wp.slice(1);
+    return { text:'Take a moment to ' + _pv,
+             sub:_cap + ' for today' + (_pt ? ', and a moment with ' + _pt : '') + '.',
+             action:'soul' };
   }
   // 5. Everything core is done — unless a habit is still open, which the card further down the
   //    same screen says out loud. The hero read "You've done today's work" at 325px while
@@ -48372,7 +48498,7 @@ function computeProactiveNudge(){
     return { id:'twofights'+dayKey(now), tone:'win',
       eyebrow:'What I\u2019m noticing',
       text: hi + 'this week you trained your body ' + wo7 + ' times and won ' + wins7 + ' fights against the urge. These aren\u2019t two separate disciplines \u2014 they\u2019re one person learning to govern themselves. The strength you build under the bar is the same strength that holds in the hard moment. Keep stewarding both.',
-      actions: [{label:'Amen', ghost:true, onclick:'dismissNudge(\'twofights'+dayKey(now)+'\')'}] };
+      actions: [{label:(typeof faithAssent==='function'?faithAssent():'Noted'), ghost:true, onclick:'dismissNudge(\'twofights'+dayKey(now)+'\')'}] };
   }
 
   // RULE 5 — MOMENTUM WORTH NAMING. Strong fight-win week → encouragement (celebration, lowest priority).
@@ -48380,7 +48506,7 @@ function computeProactiveNudge(){
     return { id:'momentum'+dayKey(now), tone:'win',
       eyebrow:'Worth saying out loud',
       text: hi + 'you\u2019ve won ' + wins7 + ' fights this week. Each one was a real choice in a hard moment. That\u2019s not nothing \u2014 that\u2019s who you\u2019re becoming.',
-      actions: [{label:'Amen', ghost:true, onclick:'dismissNudge(\'momentum'+dayKey(now)+'\')'}] };
+      actions: [{label:(typeof faithAssent==='function'?faithAssent():'Noted'), ghost:true, onclick:'dismissNudge(\'momentum'+dayKey(now)+'\')'}] };
   }
 
   return null;
@@ -48540,7 +48666,10 @@ function renderTodayForYou(){
     if(actEl){
       actEl.innerHTML =
         '<button class="btn primary" onclick="go(&apos;coach&apos;)" style="margin-bottom:8px">Just talk to your Coach</button>' +
-        '<button class="btn" onclick="go(&apos;bible&apos;)" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Read one verse</button>';
+        // openMyBook(), not the Bible tab: this sent a Muslim, a Buddhist and a secular person into
+        // Christian scripture from a card offered to all of them. The label follows the registry too.
+        '<button class="btn" onclick="openMyBook()" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Read ' +
+        ((typeof faithWordPhrase==='function') ? faithWordPhrase() : 'a word') + '</button>';
     }
     return;
   }
@@ -48875,7 +49004,19 @@ function renderCoachQuickReplies(){
   }
   
   // PRIORITY 4 — always-on fallbacks
-  chips.push({p: 2, label: '📖 Verse for what I\'m feeling', prompt: 'I need a verse and a word for what I am going through right now.'});
+  // The one AI surface with no faith gate on it. "Verse for what I'm feeling" was an always-on chip,
+  // so a person who chose Secular / None was offered Christian scripture every time they opened the
+  // Coach — and the prompt asked the model for a verse regardless of the voice rule the registry sets.
+  {
+    const _tr = (typeof faithTradition==='function') ? faithTradition() : 'christianity';
+    const _wp = (typeof faithWordPhrase==='function') ? faithWordPhrase() : 'a word';
+    if(_tr === 'secular'){
+      chips.push({p: 2, label: '\ud83e\udded Something to steady me', prompt: 'Give me something grounded and practical to steady me for what I am going through right now. No religious language.'});
+    } else {
+      const _cap = _wp.charAt(0).toUpperCase() + _wp.slice(1);
+      chips.push({p: 2, label: '\ud83d\udcd6 ' + _cap + ' for what I\'m feeling', prompt: 'I need ' + _wp + ' for what I am going through right now.'});
+    }
+  }
   chips.push({p: 2, label: '🎯 Full check-in', prompt: 'Give me a full check-in. What should I prioritise this week across everything you know about me?'});
   chips.push({p: 1, label: '💭 Who am I becoming?', prompt: 'I want to talk about who I am becoming and why I keep falling into old patterns.'});
   
@@ -50217,7 +50358,7 @@ function getTodayHevyRoutine(){
 function setTodayHevyRoutine(hevyId){
   ls('totry_hevy_today_pick', { date: new Date().toLocaleDateString('en-AU'), hevyId });
   if(typeof loadTodaySplitCard==='function') loadTodaySplitCard();
-  if(typeof renderHevyRoutines==='function') renderHevyRoutines();
+  // renderHevyRoutines() has never existed; loadTodaySplitCard() on the line above is the refresh.
   haptic('success');
 }
 // Modal to change today's Hevy routine.

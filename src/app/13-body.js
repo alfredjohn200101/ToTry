@@ -314,7 +314,9 @@ function adjustCaloriesFromWeightTrend(){
     userGoal = tdeeData.goal; // 'lose', 'maintain', or 'gain'
   } else if(goals.cal){
     // Fallback: check if there's a stored goal preference
-    const pref = ls('totry_calorie_goal_type');
+    // _goalDirRaw(), not the raw key: a stored 'manual' is not a direction and would make the
+    // weight-change bands below match nothing. See _goalDirRaw() in 14-nourish.js.
+    const pref = (typeof _goalDirRaw==='function') ? _goalDirRaw() : ls('totry_calorie_goal_type');
     if(pref) userGoal = pref;
   }
   
@@ -1501,6 +1503,15 @@ function adjustTracker(type,delta){
   const trackers=ls('totry_trackers')||{};
   if(!trackers[today])trackers[today]={water:0,sleep:0,steps:0};
   trackers[today][type]=Math.max(0,Math.round((trackers[today][type]+delta)*10)/10);
+  // THIS NIGHT IS THEIRS NOW. Health.syncSleep refuses to overwrite a figure the person typed — but
+  // it recognises one only by the ABSENCE of _sleepSrc, and it stamps _sleepSrc:'health' on every day
+  // it writes. So the guard protects a hand-typed value exactly until the watch writes that day once,
+  // and from then on it is permanent: someone who slept eight hours but whose watch logged six and a
+  // half because they read in bed could tap + here three times, and by lunchtime it read 6.5 again,
+  // every day, for ever. Sleep feeds readiness and the coach, so the app then argued with them about
+  // a night they were actually there for. Clearing the stamp makes their correction outrank the watch
+  // from that point, which is what the guard's own comment already says it intends.
+  if(type==='sleep'){ try{ delete trackers[today]._sleepSrc; }catch(_){} }
   ls('totry_trackers',trackers);
   // Sleep is shared with the readiness model (via totry_checkins). Mirror precise hours into today's
   // sleep check-in so readiness uses what you logged here, and Morning/Track never disagree.

@@ -427,7 +427,7 @@ function getTodayHevyRoutine(){
 function setTodayHevyRoutine(hevyId){
   ls('totry_hevy_today_pick', { date: new Date().toLocaleDateString('en-AU'), hevyId });
   if(typeof loadTodaySplitCard==='function') loadTodaySplitCard();
-  if(typeof renderHevyRoutines==='function') renderHevyRoutines();
+  // renderHevyRoutines() has never existed; loadTodaySplitCard() on the line above is the refresh.
   haptic('success');
 }
 // Modal to change today's Hevy routine.

@@ -108,7 +108,15 @@ function getNextStep(){
     }catch(_){ return false; }
   })();
   if(!prayedToday && hour < 17){
-    return { text:'Take a moment to pray', sub:'A short scripture and prayer for today.', action:'soul' };
+    // Was hardcoded Christian and shown to every tradition, secular included — the single most
+    // prominent line on Home, telling someone who chose "Secular / None" to pray.
+    const _pv = (typeof faithPrayVerb==='function') ? faithPrayVerb() : 'pray';
+    const _wp = (typeof faithWordPhrase==='function') ? faithWordPhrase() : 'a word';
+    const _pt = (typeof faithPrayTo==='function') ? faithPrayTo() : null;
+    const _cap = _wp.charAt(0).toUpperCase() + _wp.slice(1);
+    return { text:'Take a moment to ' + _pv,
+             sub:_cap + ' for today' + (_pt ? ', and a moment with ' + _pt : '') + '.',
+             action:'soul' };
   }
   // 5. Everything core is done — unless a habit is still open, which the card further down the
   //    same screen says out loud. The hero read "You've done today's work" at 325px while

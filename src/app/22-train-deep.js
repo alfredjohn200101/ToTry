@@ -3042,7 +3042,8 @@ function useToTryTracker(){
   const ci=document.getElementById('cal-icon'); if(ci)ci.innerHTML='&#x1F34E;';
   const cs=document.getElementById('cal-sub'); if(cs)cs.textContent='Calorie tracker · in-app';
   const cp=document.getElementById('cal-picker'); if(cp)cp.style.display='none';
-  if(typeof renderCalAppPref==='function') renderCalAppPref();
+  // renderCalAppPref() has never existed. The five lines directly above already set cal-name,
+  // cal-icon, cal-sub and cal-picker by hand, which is the whole of what it would have done.
   showToast('Using ToTry','Food & weight tracking, all in one place.');
   // Go straight to Nourish, the same way picking an external app would open that app.
   if(typeof go==='function') go('nourish');

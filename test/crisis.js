@@ -360,6 +360,54 @@ const PROBE = `(() => {
     else console.log(`  ✓ ${'breath ending (still heavy)'.padEnd(34)} reaches a real helpline`);
   }
 
+  // ── a sign-in that never answers ──────────────────────────────────────────────────────────────
+  // Not a free-text door either, and the one state this app promises can never hide the helplines was
+  // the one nobody had put a floor under. supabase-js has no timeout: on one bar of signal the OTP
+  // request simply does not settle, so the catch never runs, authShowError is never reached, and the
+  // person sits on #auth-loading — a pulsing line with NO button on it. The email step underneath
+  // carries the guest door and four numbers, and the error step carries them too under a comment
+  // saying they must survive a failure. Neither is reachable while it hangs, and force-quitting comes
+  // back to the same screen. First contact, worst connection, no way out.
+  //
+  // The hang is applied at the NETWORK layer, not by stubbing `sb` — `sb` is a module-scope `let`, so
+  // assigning window.sb is a different binding entirely and the first version of this check silently
+  // drove the real client. Aborting instead of hanging would only re-test the error path, which
+  // always worked.
+  {
+    const ctx = await browser.newContext({ viewport:{ width:414, height:896 } });
+    const page = await ctx.newPage();
+    await ctx.route('**', (route) => {
+      if (route.request().url().startsWith(`http://127.0.0.1:${PORT}`)) return route.continue();
+      /* held open for ever: neither continue nor abort */
+    });
+    await page.goto(`http://127.0.0.1:${PORT}/`, { waitUntil:'domcontentloaded' });
+    await page.waitForTimeout(2500);
+    const reachable = () => page.evaluate(() => {
+      const tels = [...document.querySelectorAll('a[href^="tel:"]')].filter(a => {
+        const b = a.getBoundingClientRect();
+        return b.width > 0 && b.height > 0 && b.top < innerHeight && b.bottom > 0;
+      });
+      const guest = [...document.querySelectorAll('button,a')].some(e =>
+        /pulling at me|without an account/i.test(e.textContent || '') && e.offsetParent !== null);
+      return { tels: tels.length, number: tels[0] ? tels[0].textContent.trim() : null, guest };
+    });
+    await page.evaluate(() => {
+      const c = document.getElementById('auth-container'); if (c) c.style.display = 'flex';
+      const i = document.getElementById('auth-email-input'); if (i) i.value = 'stall-test@example.invalid';
+      if (typeof authSendOtp === 'function') authSendOtp();
+    });
+    await page.waitForTimeout(2000);
+    const during = await reachable();       // calibration: it really is stranded while it hangs
+    await page.waitForTimeout(15000);       // the floor is 15s
+    const after = await reachable();
+    checks++;
+    if (during.tels > 0) findings.push('the stalled sign-in: calibration failed — a helpline was already reachable mid-stall, so this check proves nothing');
+    else if (!after.tels) findings.push('a stalled sign-in strands the person with no reachable helpline');
+    else if (!after.guest) findings.push('a stalled sign-in reaches a helpline but not the guest door');
+    else console.log(`  \u2713 ${'stalled sign-in (no answer)'.padEnd(34)} ${after.number} + guest door`);
+    await ctx.close();
+  }
+
   await browser.close(); server.close();
   console.log('');
   if (findings.length) { findings.forEach(f => console.log('  ✗ ' + f)); console.log(`\n✗ ${findings.length} finding(s)\n`); process.exit(1); }

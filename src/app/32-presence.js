@@ -238,7 +238,7 @@ function computeProactiveNudge(){
     return { id:'twofights'+dayKey(now), tone:'win',
       eyebrow:'What I\u2019m noticing',
       text: hi + 'this week you trained your body ' + wo7 + ' times and won ' + wins7 + ' fights against the urge. These aren\u2019t two separate disciplines \u2014 they\u2019re one person learning to govern themselves. The strength you build under the bar is the same strength that holds in the hard moment. Keep stewarding both.',
-      actions: [{label:'Amen', ghost:true, onclick:'dismissNudge(\'twofights'+dayKey(now)+'\')'}] };
+      actions: [{label:(typeof faithAssent==='function'?faithAssent():'Noted'), ghost:true, onclick:'dismissNudge(\'twofights'+dayKey(now)+'\')'}] };
   }
 
   // RULE 5 — MOMENTUM WORTH NAMING. Strong fight-win week → encouragement (celebration, lowest priority).
@@ -246,7 +246,7 @@ function computeProactiveNudge(){
     return { id:'momentum'+dayKey(now), tone:'win',
       eyebrow:'Worth saying out loud',
       text: hi + 'you\u2019ve won ' + wins7 + ' fights this week. Each one was a real choice in a hard moment. That\u2019s not nothing \u2014 that\u2019s who you\u2019re becoming.',
-      actions: [{label:'Amen', ghost:true, onclick:'dismissNudge(\'momentum'+dayKey(now)+'\')'}] };
+      actions: [{label:(typeof faithAssent==='function'?faithAssent():'Noted'), ghost:true, onclick:'dismissNudge(\'momentum'+dayKey(now)+'\')'}] };
   }
 
   return null;
@@ -406,7 +406,10 @@ function renderTodayForYou(){
     if(actEl){
       actEl.innerHTML =
         '<button class="btn primary" onclick="go(&apos;coach&apos;)" style="margin-bottom:8px">Just talk to your Coach</button>' +
-        '<button class="btn" onclick="go(&apos;bible&apos;)" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Read one verse</button>';
+        // openMyBook(), not the Bible tab: this sent a Muslim, a Buddhist and a secular person into
+        // Christian scripture from a card offered to all of them. The label follows the registry too.
+        '<button class="btn" onclick="openMyBook()" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Read ' +
+        ((typeof faithWordPhrase==='function') ? faithWordPhrase() : 'a word') + '</button>';
     }
     return;
   }

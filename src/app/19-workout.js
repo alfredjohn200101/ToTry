@@ -246,7 +246,8 @@ function adaptiveNutritionSuggestion(){
   if(body.length < 2) return null;
   const goals = ls('totry_nut_goals');
   if(!goals || !goals.cal) return null;
-  const intent = (ls('totry_calorie_goal_type') || ls('totry_goal_intent') || 'maintain').toLowerCase();
+  // _goalDirRaw() filters the 'manual' sentinel, which otherwise reads as neither lose nor gain.
+  const intent = (((typeof _goalDirRaw==='function') ? _goalDirRaw() : ls('totry_calorie_goal_type')) || ls('totry_goal_intent') || 'maintain').toLowerCase();
   // body is newest-first with a ts. Take entries within the last ~21 days.
   const withTs = body.filter(b => b && b.weight && (b.ts || b.date)).map(b => ({
     w: parseFloat(b.weight),

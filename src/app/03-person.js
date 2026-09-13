@@ -3003,6 +3003,42 @@ const FAITHS = {
 // once, plainly, in the Soul tab. Anyone who HAS chosen a path is unaffected.
 function faithTradition(){ try{ return ls('totry_faith_tradition') || 'secular'; }catch(_){ return 'secular'; } }
 function curFaith(){ return FAITHS[faithTradition()] || FAITHS.secular; }
+
+// ── THE VOCABULARY OF A NUDGE ───────────────────────────────────────────────────────────────────
+// The registry has carried per-tradition words since the multi-faith turnaround, and the screens
+// that were BUILT multi-faith use them. The ones that predate it never did, so the app's own nudges
+// still spoke one tradition at everybody: a secular person was told to "take a moment to pray",
+// offered "a verse for what I'm feeling", sent into the Christian Bible tab by "Read one verse", and
+// given "Amen" as the only way to dismiss a card. Faith is meant to be full and never forced, and a
+// person of any belief or none is meant to be fully served; five separate surfaces were doing the
+// opposite. Derived from the registry, never a hardcoded list of three — that is how Buddhism and
+// Secular were dropped from a button once before.
+//
+// wordWord is the field safe to drop into a sentence: it carries its own article in every tradition
+// ("a word", "an ayah", "a verse", "a teaching", "a reflection"). scriptureWord does NOT — it is
+// "scripture" for one and "a reflection" for another — so it cannot be used the same way twice.
+function faithPrayVerb(){ try{ return curFaith().prayWord || 'pray'; }catch(_){ return 'pray'; } }
+function faithWordPhrase(){ try{ return curFaith().wordWord || 'a word'; }catch(_){ return 'a word'; } }
+function faithPrayTo(){ try{ return curFaith().prayTo || null; }catch(_){ return null; } }
+// The assent a person of this tradition would actually say. "Amen" on a dismiss button is not a
+// neutral word, and it was the ONLY control on two Home cards.
+function faithAssent(){
+  try{
+    const t = faithTradition();
+    if(t === 'christianity') return 'Amen';
+    if(t === 'islam') return 'Ameen';
+  }catch(_){}
+  return 'Noted';
+}
+// Their own book, not the Bible tab. openReader() already serves the Qur'an, the Gita, the
+// Dhammapada and Meditations; Christianity's reader is the Bible tab itself.
+function openMyBook(){
+  try{
+    const t = faithTradition();
+    if(t !== 'christianity' && typeof openReader === 'function'){ openReader(t); return; }
+  }catch(_){}
+  if(typeof go === 'function') go('bible');
+}
 // The fallback text when a generated reflection fails or comes back empty.
 //
 // showAdaptivePrayer() is built for all five traditions — its title reads "A <noun> for right now" for
@@ -4972,7 +5008,7 @@ function renderDayCounter(){
 const PRAYER_POOLS={
   quick:[
     'Lord, good morning.\n\nThank You for another day \u2014 another chance to be better than yesterday.\n\nGive me strength to face my battles. Discipline to honour my commitments. Humility to ask for help.\n\nI\'m trying. That\'s enough.\n\nAmen.',
-    'Father, before the day takes me \u2014 I come to You.\n\nSteady my hands. Quiet my mind. Keep my eyes on what matters.\n\nWhatever comes today, let me meet it as the man You\'re making me.\n\nAmen.',
+    'Father, before the day takes me \u2014 I come to You.\n\nSteady my hands. Quiet my mind. Keep my eyes on what matters.\n\nWhatever comes today, let me meet it as the person You\'re making me.\n\nAmen.',
     'God, thank You for breath in my lungs and another sunrise.\n\nI don\'t want to drift through today. I want to live it on purpose.\n\nWalk with me. Catch me if I slip. Keep me honest.\n\nAmen.',
     'Lord, I\'m not asking for an easy day.\n\nI\'m asking for the strength to do the right thing in a hard one.\n\nGo before me. I\'ll follow.\n\nAmen.'
   ],
