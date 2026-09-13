@@ -8142,7 +8142,17 @@ function _ptIntel(){
       if(parts.length>1) out += '\nTraining mix this week: ' + parts.join(', ');
     }
     if(typeof interferenceNote==='function'){ const i=interferenceNote(); if(i) out += '\nInterference: ' + i; }
-    if(typeof computeReadiness==='function'){ const rd=computeReadiness(); if(rd) out += '\nReadiness today: ' + rd.score + '/100 (' + rd.level + '). ' + rd.advice; }
+    // readinessForAI(), not computeReadiness(). This string is a PROMPT — _ptIntel() is spliced into
+    // buildPTCtx (03-person.js:933), the morning (20-morning.js:421) and the weekly read
+    // (21-content-engine.js:67) — and rd.advice carries the sentence "You're in your period week
+    // too …" verbatim. v600.2 gated the two sites that were reported and missed this one, which
+    // feeds three more surfaces: the exact way a fix fails by covering only the case it was handed.
+    // Every other computeReadiness() caller in the app uses .score or .level, which are neutral.
+    if(typeof computeReadiness==='function'){
+      const _raw = computeReadiness();
+      const rd = (typeof readinessForAI==='function') ? readinessForAI(_raw) : _raw;
+      if(rd) out += '\nReadiness today: ' + rd.score + '/100 (' + rd.level + '). ' + rd.advice;
+    }
     if(typeof getMobilityProfile==='function'){ const mp=getMobilityProfile(); if(mp){ const tight=Object.keys(mp).filter(k=>k!=='_ts'&&mp[k]<=2); if(tight.length) out += '\nTight mobility areas: ' + tight.join(', '); } }
     if(typeof detectPlateau==='function'){ const pl=detectPlateau(); if(pl) out += '\nPlateau detected: ' + pl.detail; }
   }catch(e){}

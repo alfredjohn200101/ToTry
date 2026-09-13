@@ -6684,6 +6684,43 @@ H.section('with "let the coach see my phase" off, her cycle does not leave the d
   H.eq(offAI.score, offRaw.score, 'the score is unchanged — only the phase is withheld');
   H.eq(offAI.level, offRaw.level, 'and so is the level');
 
+  // EVERY CALL SITE, BY CENSUS — not the two that were reported. The first fix covered the check-in
+  // context and the morning explainer and missed _ptIntel(), which appends rd.advice (the sentence
+  // "You're in your period week too …") and is spliced into THREE more prompts: buildPTCtx, the
+  // morning, and the weekly read. Covering only the reported case is the first of the four ways a
+  // fix fails, and it happened on the privacy promise, twice in two rounds.
+  //
+  // The rule: any caller that touches .advice or .reasons is building something a model will read,
+  // and must go through readinessForAI(). A caller using only .score or .level is neutral and fine —
+  // that is every other one of the fourteen.
+  {
+    // Comment-stripped, because this file's comments quote the very calls being censused.
+    const lines = H.code(H.html).split('\n');
+    const offenders = [];
+    lines.forEach((ln, i) => {
+      if(!/computeReadiness\(\)/.test(ln)) return;
+      if(/function computeReadiness/.test(ln)) return;
+      const win = lines.slice(i, i + 8).join(' ');
+      const usesProse = /\.advice|\.reasons/.test(win);
+      if(!usesProse) return;
+      if(/readinessForAI/.test(win)) return;
+      // A SCREEN IS NOT A PROMPT. Showing her "period week" on her own phone is the feature — the
+      // switch governs what leaves the device, not what she can see. This window builds a DOM node
+      // and shows it to her, so the prose is hers by right. Recognised by the DOM construction rather
+      // than allowlisted by line number, which would rot the moment anything above it moved.
+      const isScreen = /document\.createElement|\.innerHTML|\.textContent|style\.cssText/.test(win);
+      const isPrompt = /prompt|out \+=|ctx \+=|api\(|sys \+/.test(win);
+      if(isScreen && !isPrompt) return;
+      offenders.push('line ' + (i + 1) + ': ' + ln.trim().slice(0, 70));
+    });
+    H.ok(offenders.length === 0,
+      'no prompt reads readiness prose without the cycle gate' + (offenders.length ? ' — ' + offenders.join(' | ') : ''));
+    // CALIBRATION: the census must actually be finding call sites, or an empty offender list means
+    // only that the scan is broken.
+    const seen = lines.filter(ln => /computeReadiness\(\)/.test(ln) && !/function computeReadiness/.test(ln)).length;
+    H.ok(seen >= 10, 'the census saw the call sites (' + seen + ' found)');
+  }
+
   // BOTH CALL SITES go through the gate. Either one left raw re-opens the whole leak.
   H.ok(/readinessForAI\(computeReadiness\(\)\)/.test(H.code(H.html)),
     'the coach check-in context is gated');
