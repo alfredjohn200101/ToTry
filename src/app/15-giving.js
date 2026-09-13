@@ -63,7 +63,12 @@ function fastSeasonNow(){
       const st = cfg.start ? new Date(cfg.start+'T00:00:00') : today;
       if(isNaN(st.getTime())) return null;
       const len = parseInt(cfg.days!=null?cfg.days:p.days,10) || 0;
-      const dayN = Math.floor((today - st)/D) + 1;
+      // Math.round, not Math.floor. Both sides of this subtraction are LOCAL midnights, and across a
+      // spring-forward there are only 23 hours between two of them — so the division lands on 45.96
+      // and floor takes it to 45. From the DST switch to Easter, Lent ran a day behind, and a
+      // hand-set season spanning the same date can end a day EARLY. getDayCount() already uses
+      // round for exactly this reason.
+      const dayN = Math.round((today - st)/D) + 1;
       if(dayN < 1 || (len > 0 && dayN > len)) return null;
       return Object.assign({}, p, {name:(cfg.name||p.name), dayN:dayN, total:(len||null), left:(len?len-dayN:null), src:'chosen'});
     }
@@ -74,7 +79,12 @@ function fastSeasonNow(){
     } else if(t === 'christianity'){
       const e = easterDate(today.getFullYear());
       const ash = new Date(e); ash.setDate(e.getDate()-46); ash.setHours(0,0,0,0);
-      const dayN = Math.floor((today - ash)/D) + 1 - shift;
+      // Math.round, not Math.floor. Both sides of this subtraction are LOCAL midnights, and across a
+      // spring-forward there are only 23 hours between two of them — so the division lands on 45.96
+      // and floor takes it to 45. From the DST switch to Easter, Lent ran a day behind, and a
+      // hand-set season spanning the same date can end a day EARLY. getDayCount() already uses
+      // round for exactly this reason.
+      const dayN = Math.round((today - ash)/D) + 1 - shift;
       if(dayN >= 1 && dayN <= 46) return Object.assign({}, FAST_SEASONS.lent, {dayN:dayN, total:46, left:46-dayN, src:'auto'});
     } else if(t === 'buddhism'){
       const S = 29.530588853, a = _moonAge(new Date(today.getTime() + 43200000 - shift*D));

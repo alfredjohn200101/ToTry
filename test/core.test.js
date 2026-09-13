@@ -6576,7 +6576,10 @@ H.section('a camera that is switched off says so, instead of going quiet');
   H.ok(/__mealPhotoFrom/.test(H.code(H.html)), 'and the source of each photo is recorded');
   // Label vs action: "Snap a meal" must call the camera, not the retry helper. A global find-replace
   // while wiring the retries pointed it at retryMealPhoto() and nothing but reading it caught that.
-  const ways = H.html.slice(H.html.indexOf("'Snap a meal'"), H.html.indexOf("'Snap a meal'") + 120);
+  // 260, not 120: the subtitle became an expression (it says "Opens the camera" only where a camera
+  // can be opened) and grew past the old window, so the assertion failed on correct code. A fixed
+  // slice around something that can grow is a guard with an expiry date.
+  const ways = H.html.slice(H.html.indexOf("'Snap a meal'"), H.html.indexOf("'Snap a meal'") + 260);
   H.ok(/snapMeal\(\)/.test(ways) && !/retryMealPhoto/.test(ways), '"Snap a meal" calls snapMeal()');
   H.ok(/'denied'/.test(sm) && /_mealCameraOff\(\)/.test(sm), 'and hands a refused camera to its own path');
   // That path has to be READABLE. The first version opened the photo library and fired a toast behind
@@ -7202,6 +7205,100 @@ H.section('a second check-in adds to the day, and a restore is not undone by the
   // "Nutrition adherence: null/10"; the coach's own check-in context was fixed for this and this was not.
   H.ok(!/Nutrition adherence: \$\{entry\.scores\.nutrition\}/.test(code), 'no score is interpolated unconditionally');
   H.ok(/do not assume a value for those/.test(code), 'and the model is told which questions were left blank');
+}
+
+H.section('the privacy policy names every host the app contacts, and no host it does not');
+{
+  // TWO COPIES, ONE TRUTH: privacy.html is what a reviewer and the App Store link reads, and
+  // showPrivacyPolicy() is what the person in the app reads. They drifted in both directions at once —
+  // ExerciseDB and Wger were disclosed by both and contacted by neither, the frankfurter call was
+  // removed from the code and the in-app copy and left standing in the hosted one, and two hosts that
+  // ARE fetched appeared in neither: en.wikisource.org, and cpbjr.github.io, which is requested
+  // automatically whenever a Christian opens the Morning tab — no tap, no choice.
+  const fs = require('fs'), path = require('path');
+  const hosted = fs.readFileSync(path.join(__dirname, '..', 'privacy.html'), 'utf8');
+  const inApp = H.html;
+
+  // Comments are stripped WITHOUT eating the // in a scheme — the first version of this census used
+  // /\/\/[^\n]*/ and returned zero hosts, because every URL starts with two slashes.
+  const codeOnly = inApp.replace(/(?<!:)\/\/[^\n]*/g, '');
+  const contacted = new Set([...codeOnly.matchAll(/https?:\/\/([a-zA-Z0-9._-]+)/g)].map(m => m[1]));
+  H.ok(contacted.has('api.aladhan.com'), 'calibration — the host census found a host we know is fetched');
+  H.ok(contacted.size > 15, 'and found the rest of them (' + contacted.size + ')');
+
+  // NOTHING DISCLOSED THAT IS NOT CONTACTED. A policy naming a host the app never calls is the same
+  // kind of untruth as hiding one it does.
+  for(const dead of ['frankfurter', 'exercisedb', 'wger']){
+    H.ok(!new RegExp(dead, 'i').test(hosted), 'the hosted policy does not name ' + dead);
+    H.ok(!new RegExp(dead, 'i').test(H.code(inApp)), 'and neither does the in-app one');
+    H.ok(![...contacted].some(h => new RegExp(dead, 'i').test(h)), dead + ' really is uncontacted (calibration)');
+  }
+
+  // NOTHING CONTACTED THAT IS NOT DISCLOSED — for the fetches, which is where it matters. A link a
+  // person taps is their own choice and is not in this set.
+  for(const host of ['suttacentral.net', 'en.wikisource.org', 'cpbjr.github.io', 'api.alquran.cloud', 'vedicscriptures.github.io']){
+    H.ok(contacted.has(host), host + ' is fetched (calibration)');
+    H.ok(hosted.includes(host), 'and the hosted policy names it');
+    H.ok(inApp.includes(host), 'and so does the in-app policy');
+  }
+}
+
+H.section('a control is as big as it looks reachable, and a label does not promise what the tap cannot do');
+{
+  const code = H.code(H.html);
+
+  // THE SLIDERS. Matching input[type="range"] fixed the styling and broke the thumb: height:5px on
+  // the element itself produced a 22px box — under the 24px floor this project enforces — on the six
+  // 1-10 sliders of the Sunday check-in, which before the rule matched them at all were 38px. The tap
+  // target is the ELEMENT; the 5px line a person sees is the runnable track inside it.
+  H.ok(/input\[type="range"\]\{[^}]*height:28px/.test(code), 'a range input is 28px of reachable height');
+  H.ok(/::-webkit-slider-runnable-track\{height:5px/.test(code), 'and the thin line is the track, not the control');
+  H.ok(/::-moz-range-track\{height:5px/.test(code), 'on both engines');
+  H.ok(!/input\[type="range"\]\{[^}]*height:5px/.test(code), 'the element itself is never 5px tall');
+
+  // THE PROSE A PERSON MOST WANTS TO COPY. Widening the escape hatch by inline style caught prose
+  // built inline and missed the two surfaces styled by a CLASS — everything the coach says, and
+  // everything the Companion says.
+  const sel = code.slice(code.indexOf('-webkit-user-select:text') - 700, code.indexOf('-webkit-user-select:text') + 100);
+  H.ok(/\.msg,\.comp-msg-them/.test(sel), 'the coach and the Companion can be selected');
+  H.ok(/\[style\*="white-space:pre-wrap"\]/.test(sel), 'and so can prose styled inline (calibration)');
+
+  // A LABEL MAY NOT PROMISE WHAT THE TAP CANNOT DO. "Snap a meal · Opens the camera" opened a file
+  // chooser on every web and PWA install, by design — snapMeal takes the chooser there.
+  H.ok(!/'Snap a meal','Opens the camera'/.test(code), 'the subtitle is not an unconditional promise');
+  H.ok(/CameraAccess\.stateSync\(\)==='ok'\) \? 'Opens the camera'/.test(code),
+    'it says so only where a camera can actually be opened');
+
+  // AND CANCEL MEANS WHAT IT SAYS. With Settings unavailable the cancel button reads "Not now" and
+  // opened the photo picker anyway — a button doing the very thing it offers to skip.
+  const mco = H.code(H.extractFn('_mealCameraOff'));
+  H.ok(/if\(can\) chooseMealPhoto\(\);/.test(mco), '"Not now" does nothing, which is what it offers');
+  H.ok(/if\(can\)\{ CameraAccess\.openSettings\(\); return; \}/.test(mco), 'and confirm still opens Settings where it can');
+}
+
+H.section('the privacy manifest declares what the binary actually handles');
+{
+  // App Review reads PrivacyInfo.xcprivacy against what the app plainly does. It declared ten data
+  // types and not Photos — while Info.plist carries two NSPhotoLibrary usage strings, the app has
+  // seven image inputs, and three of those flows (a meal photo, a barcode photo, a form-check photo)
+  // are sent to the AI proxy to be read. Progress photos are NOT sent, which both privacy policies
+  // state, but three that do leave the phone are enough to owe a declaration.
+  const fs = require('fs'), path = require('path');
+  const man = fs.readFileSync(path.join(__dirname, '..', 'ios/App/App/PrivacyInfo.xcprivacy'), 'utf8');
+  const plist = fs.readFileSync(path.join(__dirname, '..', 'ios/App/App/Info.plist'), 'utf8');
+
+  // CALIBRATION both ways, so a broken read cannot pass this quietly.
+  H.ok(/NSPrivacyCollectedDataTypeHealthAndFitness/.test(man), 'calibration — a type we know is declared');
+  H.ok(!/NSPrivacyCollectedDataTypeContacts/.test(man), 'calibration — one we know is not');
+
+  // If the app asks for photos, the manifest must say so.
+  const asksForPhotos = /NSPhotoLibrary/.test(plist);
+  H.ok(asksForPhotos, 'the app asks for photo access (calibration)');
+  H.ok(/NSPrivacyCollectedDataTypePhotosorVideos/.test(man), 'and the manifest declares Photos');
+  // Not linked to the account: a photo is read and answered, not stored against a person.
+  const photoBlock = man.slice(man.indexOf('PhotosorVideos'), man.indexOf('PhotosorVideos') + 420);
+  H.ok(/NSPrivacyCollectedDataTypeLinked<\/key>\s*<false\/>/.test(photoBlock), 'unlinked');
+  H.ok(/PurposeAppFunctionality/.test(photoBlock), 'for app functionality');
 }
 
 H.report();

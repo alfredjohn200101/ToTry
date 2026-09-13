@@ -883,7 +883,14 @@ function renderSubscriptions(){
 function _billNotifId(b){ return 'bill_' + String(b && b.id); }
 // ONE construction, used by both the schedule and the cancel. Written out twice, a cancel that does
 // not reproduce the id byte-for-byte silently cancels nothing, and the notification fires anyway.
-function _debtNotifId(d, i){ return 'debt_due_' + String((d && d.n) || i).toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,24) + '_' + i; }
+// NO INDEX IN THE ID. Every other part of the app identifies a debt by its lowercased NAME — the
+// cloud merge (_dKey in 01-sync.js) and the deletion tombstone both do — and this was the only place
+// that used the array position. A splice shifts every later index, so deleting one debt orphaned its
+// own 9am reminder for ever (nothing can name it to cancel it, not even the master switch) and gave
+// every debt after it a second, differently-keyed notification: the same bill buzzing twice, one of
+// them for a debt that no longer exists. A cloud reorder does the same without anyone deleting
+// anything. The index parameter is kept only as a last-resort label for a debt with no name at all.
+function _debtNotifId(d, i){ return 'debt_due_' + String((d && d.n) || i).toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,24); }
 // Everything money schedules, taken back down. disablePushReminders() cancelled reminder_morning,
 // reminder_evening and the reach-out windows and nothing else — so someone who entered their rent
 // and car rego, decided the app buzzed too much and switched reminders OFF, still had their phone
@@ -1355,6 +1362,8 @@ async function editDebt(idx){
         if(!(await askConfirm('Remove '+(d.n||'this debt')+'? Payments you already logged against it stay in your history.'))) return;
         loadF();
         const _gone = debts[Number(idx)];
+        // Take its reminder down BEFORE the splice, while we still have the object to name it by.
+        try{ if(_gone && typeof Notify!=='undefined' && Notify.cancel) Notify.cancel(_debtNotifId(_gone, Number(idx))); }catch(_){ }
         debts.splice(Number(idx),1);
         // Tell every other device it was removed on purpose, or the cloud union brings it back.
         try{ if(_gone && _gone.n && typeof _tombAdd === 'function') _tombAdd('totry_f', String(_gone.n).toLowerCase()); }catch(_){ }

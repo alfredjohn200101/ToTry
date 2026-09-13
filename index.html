@@ -1041,8 +1041,15 @@ details[open]>summary::after{transform:rotate(180deg)}
    sliders and then never put on one of them — all seven range inputs in the app fell through to the
    generic `input` rule instead and rendered as a native slider sitting inside a bordered, padded
    text-field box. The six 1-10 sliders on the Sunday check-in are the most-used control in Track. */
-.ci-slider,input[type="range"]{flex:1;-webkit-appearance:none;appearance:none;height:5px;background:var(--bg4);border-radius:3px;outline:none}
-.ci-slider::-webkit-slider-thumb,input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--go);cursor:pointer;border:2px solid var(--bg2);box-shadow:0 1px 3px rgba(0,0,0,0.3)}
+/* THE TAP TARGET IS THE ELEMENT; THE TRACK IS DRAWN INSIDE IT. Matching by type fixed the styling
+   and broke the thumb: height:5px on the input itself gave a 22px box, under the 24px floor this
+   project enforces, on the six 1-10 sliders of the Sunday check-in — the most-used control in Track.
+   Before the rule matched them at all they fell to the generic input rule and were 38px. So the
+   element is 28px of reachable height and the 5px line a person sees is the RUNNABLE TRACK. */
+.ci-slider,input[type="range"]{flex:1;-webkit-appearance:none;appearance:none;height:28px;background:transparent;outline:none}
+.ci-slider::-webkit-slider-runnable-track,input[type="range"]::-webkit-slider-runnable-track{height:5px;background:var(--bg4);border-radius:3px}
+.ci-slider::-moz-range-track,input[type="range"]::-moz-range-track{height:5px;background:var(--bg4);border-radius:3px}
+.ci-slider::-webkit-slider-thumb,input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--go);cursor:pointer;border:2px solid var(--bg2);box-shadow:0 1px 3px rgba(0,0,0,0.3);margin-top:-6.5px}
 .ci-slider::-moz-range-thumb,input[type="range"]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--go);cursor:pointer;border:2px solid var(--bg2)}
 .ci-val{font-family:'DM Mono',monospace;font-size:11px;color:var(--go);width:22px;text-align:right;flex-shrink:0}
 .ci-save{margin-top:10px;padding:8px;font-size:12px}
@@ -1394,6 +1401,11 @@ body{ -webkit-user-select:none; user-select:none; }
    prose and on essentially nothing else, so it identifies the text far more reliably than a class
    somebody has to remember; the attribute-selector idiom is the one used for scroll areas below. */
 input,textarea,[contenteditable],.selectable,.prayer-text,.journal-entry-text,.ai-output,
+/* .msg and .comp-msg-them declare white-space:pre-wrap in a CLASS, not inline, so the attribute
+   selector below could not see them — which left the two surfaces a person most wants to copy from
+   still unselectable: everything the coach says, and everything the Companion says. Matching by
+   style catches prose built inline; these two catch prose styled by rule. */
+.msg,.comp-msg-them,
 [style*="white-space:pre-wrap"],[style*="white-space: pre-wrap"]{
   -webkit-user-select:text; user-select:text; -webkit-touch-callout:default;
 }
@@ -26357,7 +26369,9 @@ function nutMicroKeys(){
 
 function openMoreWaysToLog(){
   const ways = [
-    ['\u{1F4F7}','Snap a meal','Opens the camera','snapMeal()'],
+    // "Opens the camera" is only true where a camera can be opened. On the web and in the PWA
+    // snapMeal() takes the chooser, by design, so the subtitle promised something the tap cannot do.
+    ['\u{1F4F7}','Snap a meal',((typeof CameraAccess!=='undefined' && CameraAccess.stateSync()==='ok') ? 'Opens the camera' : 'Take one, or choose one'),'snapMeal()'],
     ['\u{1F5BC}','Photo from your library','A plate you already shot','chooseMealPhoto()'],
     ['\u{1F4C7}','Scan a barcode','Packaged food, straight off the label','openBarcodeScanner()'],
     ['\u{1F5E3}','Say it','Speak the meal — fastest one-handed','startVoiceLog()'],
@@ -28035,8 +28049,14 @@ async function _mealCameraOff(){
       '. Choosing a photo you already took, and typing the meal, both still work.',
       { confirmLabel: can ? 'Open Settings' : 'Choose a photo', cancelLabel: can ? 'Choose a photo instead' : 'Not now', danger: false });
   }catch(_){ go = false; }
-  if(go && can){ CameraAccess.openSettings(); return; }
-  chooseMealPhoto();
+  if(go){
+    // confirm means Settings where that is possible, and the library where it is not.
+    if(can){ CameraAccess.openSettings(); return; }
+    chooseMealPhoto(); return;
+  }
+  // AND CANCEL MEANS WHAT IT SAYS. When Settings cannot be opened the cancel button reads "Not now",
+  // and it opened the photo picker anyway — a button that does the thing it offers to skip.
+  if(can) chooseMealPhoto();
 }
 // A plate you already photographed — the reason the plain input exists at all.
 function chooseMealPhoto(){
@@ -31915,7 +31935,12 @@ function fastSeasonNow(){
       const st = cfg.start ? new Date(cfg.start+'T00:00:00') : today;
       if(isNaN(st.getTime())) return null;
       const len = parseInt(cfg.days!=null?cfg.days:p.days,10) || 0;
-      const dayN = Math.floor((today - st)/D) + 1;
+      // Math.round, not Math.floor. Both sides of this subtraction are LOCAL midnights, and across a
+      // spring-forward there are only 23 hours between two of them — so the division lands on 45.96
+      // and floor takes it to 45. From the DST switch to Easter, Lent ran a day behind, and a
+      // hand-set season spanning the same date can end a day EARLY. getDayCount() already uses
+      // round for exactly this reason.
+      const dayN = Math.round((today - st)/D) + 1;
       if(dayN < 1 || (len > 0 && dayN > len)) return null;
       return Object.assign({}, p, {name:(cfg.name||p.name), dayN:dayN, total:(len||null), left:(len?len-dayN:null), src:'chosen'});
     }
@@ -31926,7 +31951,12 @@ function fastSeasonNow(){
     } else if(t === 'christianity'){
       const e = easterDate(today.getFullYear());
       const ash = new Date(e); ash.setDate(e.getDate()-46); ash.setHours(0,0,0,0);
-      const dayN = Math.floor((today - ash)/D) + 1 - shift;
+      // Math.round, not Math.floor. Both sides of this subtraction are LOCAL midnights, and across a
+      // spring-forward there are only 23 hours between two of them — so the division lands on 45.96
+      // and floor takes it to 45. From the DST switch to Easter, Lent ran a day behind, and a
+      // hand-set season spanning the same date can end a day EARLY. getDayCount() already uses
+      // round for exactly this reason.
+      const dayN = Math.round((today - ash)/D) + 1 - shift;
       if(dayN >= 1 && dayN <= 46) return Object.assign({}, FAST_SEASONS.lent, {dayN:dayN, total:46, left:46-dayN, src:'auto'});
     } else if(t === 'buddhism'){
       const S = 29.530588853, a = _moonAge(new Date(today.getTime() + 43200000 - shift*D));
@@ -34930,7 +34960,14 @@ function renderSubscriptions(){
 function _billNotifId(b){ return 'bill_' + String(b && b.id); }
 // ONE construction, used by both the schedule and the cancel. Written out twice, a cancel that does
 // not reproduce the id byte-for-byte silently cancels nothing, and the notification fires anyway.
-function _debtNotifId(d, i){ return 'debt_due_' + String((d && d.n) || i).toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,24) + '_' + i; }
+// NO INDEX IN THE ID. Every other part of the app identifies a debt by its lowercased NAME — the
+// cloud merge (_dKey in 01-sync.js) and the deletion tombstone both do — and this was the only place
+// that used the array position. A splice shifts every later index, so deleting one debt orphaned its
+// own 9am reminder for ever (nothing can name it to cancel it, not even the master switch) and gave
+// every debt after it a second, differently-keyed notification: the same bill buzzing twice, one of
+// them for a debt that no longer exists. A cloud reorder does the same without anyone deleting
+// anything. The index parameter is kept only as a last-resort label for a debt with no name at all.
+function _debtNotifId(d, i){ return 'debt_due_' + String((d && d.n) || i).toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,24); }
 // Everything money schedules, taken back down. disablePushReminders() cancelled reminder_morning,
 // reminder_evening and the reach-out windows and nothing else — so someone who entered their rent
 // and car rego, decided the app buzzed too much and switched reminders OFF, still had their phone
@@ -35402,6 +35439,8 @@ async function editDebt(idx){
         if(!(await askConfirm('Remove '+(d.n||'this debt')+'? Payments you already logged against it stay in your history.'))) return;
         loadF();
         const _gone = debts[Number(idx)];
+        // Take its reminder down BEFORE the splice, while we still have the object to name it by.
+        try{ if(_gone && typeof Notify!=='undefined' && Notify.cancel) Notify.cancel(_debtNotifId(_gone, Number(idx))); }catch(_){ }
         debts.splice(Number(idx),1);
         // Tell every other device it was removed on purpose, or the cloud union brings it back.
         try{ if(_gone && _gone.n && typeof _tombAdd === 'function') _tombAdd('totry_f', String(_gone.n).toLowerCase()); }catch(_){ }
@@ -36280,6 +36319,13 @@ function computeReadiness(){
   let sleep=null, stress=null, energy=null, when=0, readinessTs=null;
   const considerScores = (s, ts) => {
     if(!s) return;
+    // A ROW WITH NO SIGNAL MUST NOT CLAIM `when`. The daily 3-dot check-in on Home writes a check-in
+    // carrying a mood and nothing else — no sleep, no stress, no energy — and because it is the
+    // NEWEST row it won the `t < when` race below, shut out the real Sunday scores, and left readiness
+    // at a flat 50/100 for up to three days. Tapping a mood is not a statement about recovery, and a
+    // check-in that says nothing about it should not be the one that answers the question. This also
+    // covers the all-null scores object a second same-day check-in can write.
+    if(s.sleep == null && s.stress == null && s.energy == null) return;
     const t = ts ? new Date(ts).getTime() : NaN;
     if(!isFinite(t)) return;                       // unparseable date: ignore rather than poison `when`
     if(nowMs - t > READINESS_MAX_AGE_MS) return;   // too old to be called today
@@ -45047,7 +45093,14 @@ function initSettingsTab(){
       const _native = (typeof Notify!=='undefined' && Notify.isNative());
       const _guest = (typeof isGuest==='function') && isGuest();
       bn.style.display = _native ? 'none' : 'block';
-      if(_guest) bn.innerHTML = '<strong style="color:var(--tx)">You are here as a guest.</strong> Everything you have done is real and it is saved \u2014 but only in this browser, on this device. Clearing your browser data, or picking up another phone, loses it. Making an account keeps it and carries it with you.';
+      // BOTH WAYS. The guest copy was assigned with no else, and the signed-in wording lives only in
+      // static markup this assignment has already destroyed — so the person the guest-to-account flow
+      // was built for (guest door, Feeling Door, "Keep this →", account made) opened Settings and was
+      // told their new account does not exist. proceedAfterAuth does not reload the page, so the stale
+      // copy is re-asserted on every Settings open for the rest of the session.
+      bn.innerHTML = _guest
+        ? '<strong style="color:var(--tx)">You are here as a guest.</strong> Everything you have done is real and it is saved \u2014 but only in this browser, on this device. Clearing your browser data, or picking up another phone, loses it. Making an account keeps it and carries it with you.'
+        : '<div class="card-hd" style="margin-bottom:6px">You\u2019re on the ToTry beta</div><div style="font-size:12px;color:var(--tx2);line-height:1.6">This is the web version \u2014 everything here is real and saved to your account.</div>';
     } }catch(_){}
   // Reflect the CURRENT faith level when Settings opens — it was only highlighted on click, so on
   // open neither option looked selected (that's the "faith level looks messed up"). Now it's clear.
@@ -45839,8 +45892,15 @@ function showPrivacyPolicy(){
         '<li><strong style="color:var(--tx)">USDA food search</strong> — the search query is sent to api.nal.usda.gov.</li>' +
         '<li><strong style="color:var(--tx)">Apple Health</strong> — on iPhone, only if you grant it. Your steps, sleep and imported workout summaries (type, duration, distance, calories, average heart rate) are saved to your account so they follow you between devices, and your sleep and recent training form part of the context sent to the AI when you ask for coaching. Never sold, never advertising, never shared with anyone else. Turn it off any time in Settings, and revoke it in iOS Settings &#8594; Health.</li>' +
         '<li><strong style="color:var(--tx)">Prayer times</strong> — if you use them, your location is rounded to about a kilometre and sent to api.aladhan.com to work out the times where you are. The rounded figure is not stored on my server and is not linked to your account. You can skip location entirely and type your city instead.</li>' +
-        '<li><strong style="color:var(--tx)">Exercise GIFs</strong> — exercise name is sent to ExerciseDB / Wger.</li>' +
-        '<li><strong style="color:var(--tx)">Scripture you read</strong> \u2014 the passage you open is fetched live, so the service sees which one: the Qur\u2019an from api.alquran.cloud, the Bhagavad Gita from vedicscriptures.github.io, and the Dhammapada from suttacentral.net. The Bible is fetched the same way: the ESV goes through my own server when it is available, but the public translations (ASV, KJV, WEB) and the study notes come straight from bible.helloao.org, bible-api.com and cdn.jsdelivr.net, so those services see the passage \u2014 and an ESV request falls back to them if my server is down. Nothing about you is attached to any of them.</li>' +
+        // Exercise GIFs were listed here and no longer happen: a census of every https:// in src/
+        // finds ZERO requests to exercisedb or wger (calibrated against api.aladhan.com, which
+        // returns five). Disclosing a host the app does not contact is the same kind of untruth as
+        // hiding one it does — this list is the one place a person is told exactly who hears from them.
+        // cpbjr.github.io was named in NEITHER policy and is fetched automatically whenever a Christian
+        // opens the Morning tab — no tap, no choice. An undisclosed automatic request is the worst
+        // shape of this defect, so it gets its own bullet rather than a clause on someone else's.
+        '<li><strong style="color:var(--tx)">The day\u2019s readings</strong> \u2014 if your tradition is Christian, the Mass readings for today are fetched from cpbjr.github.io when you open Morning. It sees the date, nothing about you.</li>' +
+        '<li><strong style="color:var(--tx)">Scripture you read</strong> \u2014 the passage you open is fetched live, so the service sees which one: the Qur\u2019an from api.alquran.cloud, the Bhagavad Gita from vedicscriptures.github.io, and the Dhammapada from suttacentral.net; the Stoic readings come from en.wikisource.org. The Bible is fetched the same way: the ESV goes through my own server when it is available, but the public translations (ASV, KJV, WEB) and the study notes come straight from bible.helloao.org, bible-api.com and cdn.jsdelivr.net, so those services see the passage \u2014 and an ESV request falls back to them if my server is down. Nothing about you is attached to any of them.</li>' +
         // Currency rates were listed here and no longer happen: fetchCurrencyRates() was removed at
         // v600.4 because nothing had ever read the rates it cached. A privacy page that claims a
         // request the app does not make is wrong in the direction that matters least, and still

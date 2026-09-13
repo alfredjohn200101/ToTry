@@ -51,7 +51,14 @@ function initSettingsTab(){
       const _native = (typeof Notify!=='undefined' && Notify.isNative());
       const _guest = (typeof isGuest==='function') && isGuest();
       bn.style.display = _native ? 'none' : 'block';
-      if(_guest) bn.innerHTML = '<strong style="color:var(--tx)">You are here as a guest.</strong> Everything you have done is real and it is saved \u2014 but only in this browser, on this device. Clearing your browser data, or picking up another phone, loses it. Making an account keeps it and carries it with you.';
+      // BOTH WAYS. The guest copy was assigned with no else, and the signed-in wording lives only in
+      // static markup this assignment has already destroyed — so the person the guest-to-account flow
+      // was built for (guest door, Feeling Door, "Keep this →", account made) opened Settings and was
+      // told their new account does not exist. proceedAfterAuth does not reload the page, so the stale
+      // copy is re-asserted on every Settings open for the rest of the session.
+      bn.innerHTML = _guest
+        ? '<strong style="color:var(--tx)">You are here as a guest.</strong> Everything you have done is real and it is saved \u2014 but only in this browser, on this device. Clearing your browser data, or picking up another phone, loses it. Making an account keeps it and carries it with you.'
+        : '<div class="card-hd" style="margin-bottom:6px">You\u2019re on the ToTry beta</div><div style="font-size:12px;color:var(--tx2);line-height:1.6">This is the web version \u2014 everything here is real and saved to your account.</div>';
     } }catch(_){}
   // Reflect the CURRENT faith level when Settings opens — it was only highlighted on click, so on
   // open neither option looked selected (that's the "faith level looks messed up"). Now it's clear.
@@ -843,8 +850,15 @@ function showPrivacyPolicy(){
         '<li><strong style="color:var(--tx)">USDA food search</strong> — the search query is sent to api.nal.usda.gov.</li>' +
         '<li><strong style="color:var(--tx)">Apple Health</strong> — on iPhone, only if you grant it. Your steps, sleep and imported workout summaries (type, duration, distance, calories, average heart rate) are saved to your account so they follow you between devices, and your sleep and recent training form part of the context sent to the AI when you ask for coaching. Never sold, never advertising, never shared with anyone else. Turn it off any time in Settings, and revoke it in iOS Settings &#8594; Health.</li>' +
         '<li><strong style="color:var(--tx)">Prayer times</strong> — if you use them, your location is rounded to about a kilometre and sent to api.aladhan.com to work out the times where you are. The rounded figure is not stored on my server and is not linked to your account. You can skip location entirely and type your city instead.</li>' +
-        '<li><strong style="color:var(--tx)">Exercise GIFs</strong> — exercise name is sent to ExerciseDB / Wger.</li>' +
-        '<li><strong style="color:var(--tx)">Scripture you read</strong> \u2014 the passage you open is fetched live, so the service sees which one: the Qur\u2019an from api.alquran.cloud, the Bhagavad Gita from vedicscriptures.github.io, and the Dhammapada from suttacentral.net. The Bible is fetched the same way: the ESV goes through my own server when it is available, but the public translations (ASV, KJV, WEB) and the study notes come straight from bible.helloao.org, bible-api.com and cdn.jsdelivr.net, so those services see the passage \u2014 and an ESV request falls back to them if my server is down. Nothing about you is attached to any of them.</li>' +
+        // Exercise GIFs were listed here and no longer happen: a census of every https:// in src/
+        // finds ZERO requests to exercisedb or wger (calibrated against api.aladhan.com, which
+        // returns five). Disclosing a host the app does not contact is the same kind of untruth as
+        // hiding one it does — this list is the one place a person is told exactly who hears from them.
+        // cpbjr.github.io was named in NEITHER policy and is fetched automatically whenever a Christian
+        // opens the Morning tab — no tap, no choice. An undisclosed automatic request is the worst
+        // shape of this defect, so it gets its own bullet rather than a clause on someone else's.
+        '<li><strong style="color:var(--tx)">The day\u2019s readings</strong> \u2014 if your tradition is Christian, the Mass readings for today are fetched from cpbjr.github.io when you open Morning. It sees the date, nothing about you.</li>' +
+        '<li><strong style="color:var(--tx)">Scripture you read</strong> \u2014 the passage you open is fetched live, so the service sees which one: the Qur\u2019an from api.alquran.cloud, the Bhagavad Gita from vedicscriptures.github.io, and the Dhammapada from suttacentral.net; the Stoic readings come from en.wikisource.org. The Bible is fetched the same way: the ESV goes through my own server when it is available, but the public translations (ASV, KJV, WEB) and the study notes come straight from bible.helloao.org, bible-api.com and cdn.jsdelivr.net, so those services see the passage \u2014 and an ESV request falls back to them if my server is down. Nothing about you is attached to any of them.</li>' +
         // Currency rates were listed here and no longer happen: fetchCurrencyRates() was removed at
         // v600.4 because nothing had ever read the rates it cached. A privacy page that claims a
         // request the app does not make is wrong in the direction that matters least, and still

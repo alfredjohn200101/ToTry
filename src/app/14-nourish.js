@@ -462,7 +462,9 @@ function nutMicroKeys(){
 
 function openMoreWaysToLog(){
   const ways = [
-    ['\u{1F4F7}','Snap a meal','Opens the camera','snapMeal()'],
+    // "Opens the camera" is only true where a camera can be opened. On the web and in the PWA
+    // snapMeal() takes the chooser, by design, so the subtitle promised something the tap cannot do.
+    ['\u{1F4F7}','Snap a meal',((typeof CameraAccess!=='undefined' && CameraAccess.stateSync()==='ok') ? 'Opens the camera' : 'Take one, or choose one'),'snapMeal()'],
     ['\u{1F5BC}','Photo from your library','A plate you already shot','chooseMealPhoto()'],
     ['\u{1F4C7}','Scan a barcode','Packaged food, straight off the label','openBarcodeScanner()'],
     ['\u{1F5E3}','Say it','Speak the meal — fastest one-handed','startVoiceLog()'],
@@ -2140,8 +2142,14 @@ async function _mealCameraOff(){
       '. Choosing a photo you already took, and typing the meal, both still work.',
       { confirmLabel: can ? 'Open Settings' : 'Choose a photo', cancelLabel: can ? 'Choose a photo instead' : 'Not now', danger: false });
   }catch(_){ go = false; }
-  if(go && can){ CameraAccess.openSettings(); return; }
-  chooseMealPhoto();
+  if(go){
+    // confirm means Settings where that is possible, and the library where it is not.
+    if(can){ CameraAccess.openSettings(); return; }
+    chooseMealPhoto(); return;
+  }
+  // AND CANCEL MEANS WHAT IT SAYS. When Settings cannot be opened the cancel button reads "Not now",
+  // and it opened the photo picker anyway — a button that does the thing it offers to skip.
+  if(can) chooseMealPhoto();
 }
 // A plate you already photographed — the reason the plain input exists at all.
 function chooseMealPhoto(){

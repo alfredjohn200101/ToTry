@@ -710,6 +710,13 @@ function computeReadiness(){
   let sleep=null, stress=null, energy=null, when=0, readinessTs=null;
   const considerScores = (s, ts) => {
     if(!s) return;
+    // A ROW WITH NO SIGNAL MUST NOT CLAIM `when`. The daily 3-dot check-in on Home writes a check-in
+    // carrying a mood and nothing else — no sleep, no stress, no energy — and because it is the
+    // NEWEST row it won the `t < when` race below, shut out the real Sunday scores, and left readiness
+    // at a flat 50/100 for up to three days. Tapping a mood is not a statement about recovery, and a
+    // check-in that says nothing about it should not be the one that answers the question. This also
+    // covers the all-null scores object a second same-day check-in can write.
+    if(s.sleep == null && s.stress == null && s.energy == null) return;
     const t = ts ? new Date(ts).getTime() : NaN;
     if(!isFinite(t)) return;                       // unparseable date: ignore rather than poison `when`
     if(nowMs - t > READINESS_MAX_AGE_MS) return;   // too old to be called today

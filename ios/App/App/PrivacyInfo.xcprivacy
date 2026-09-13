@@ -87,6 +87,24 @@
 				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
 			</array>
 		</dict>
+		<!-- Photos. A meal photo, a barcode photo and a form-check photo are sent to the AI proxy to be
+		     read; progress photos are NOT — they stay on the device, which both privacy policies state.
+		     Declared because three of those flows do leave the phone, and a manifest that omits a data
+		     type the binary plainly handles (two NSPhotoLibrary usage strings, seven image inputs) is the
+		     kind of gap App Review asks about. Linked false: a photo is read and answered, not stored
+		     against the account. -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePhotosorVideos</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
 		<!-- Journals, prayers, reflections, letters, goals, coach conversations, feedback messages. -->
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
