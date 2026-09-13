@@ -4187,7 +4187,15 @@ function fnBodyOf(code, name){
 
   // Endpoints that were quietly 404ing behind a fallback.
   H.section('endpoints that rotted');
-  H.ok(/api\.frankfurter\.dev\/v1\/latest/.test(H.html), 'currency uses the path that exists (/v1, not /v2)');
+  // The frankfurter endpoint is GONE, not corrected. fetchCurrencyRates() hit it on every launch and
+  // on every currency change, cached rates under totry_currency_rates, and nothing had ever read them
+  // — 0 readers, calibrated against totry_nut_goals' 25. The currency setting changes the SYMBOL only;
+  // the app states outright that stored amounts are never converted, because a person's debt is not a
+  // number we get to reinterpret. So it was an outbound request on every cold start telling a third
+  // party when this person opens the app, for a value with no consumer. This assertion now keeps it
+  // gone, which is the only useful thing left to say about a dead endpoint.
+  H.ok(!/frankfurter/.test(H.code(H.html)), 'no third-party currency call on launch — the rates had no reader');
+  H.ok(!/totry_currency_rates/.test(H.code(H.html)), 'and its cache key is gone with it');
   H.ok(!/api\.frankfurter\.dev\/v2/.test(H.html), 'and the 404 path is gone');
   H.ok(/'eng_asv'/.test(H.html) && /'ENGWEBP'/.test(H.html), "helloao's real translation ids are used");
   const hb = H.extractFn('_helloaoBook');
@@ -6563,8 +6571,15 @@ H.section('a camera that is switched off says so, instead of going quiet');
   // while wiring the retries pointed it at retryMealPhoto() and nothing but reading it caught that.
   const ways = H.html.slice(H.html.indexOf("'Snap a meal'"), H.html.indexOf("'Snap a meal'") + 120);
   H.ok(/snapMeal\(\)/.test(ways) && !/retryMealPhoto/.test(ways), '"Snap a meal" calls snapMeal()');
-  H.ok(/'denied'/.test(sm) && /explainDenied/.test(sm), 'and says so when it cannot');
-  H.ok(/chooseMealPhoto\(\)/.test(sm), 'and still opens the library, so the meal can be logged anyway');
+  H.ok(/'denied'/.test(sm) && /_mealCameraOff\(\)/.test(sm), 'and hands a refused camera to its own path');
+  // That path has to be READABLE. The first version opened the photo library and fired a toast behind
+  // the iOS picker it had just raised, so the only sentence explaining why the camera did not open was
+  // on a screen nobody was looking at. A sheet, with both of the things they might want.
+  const mco = H.code(H.extractFn('_mealCameraOff'));
+  H.ok(/askConfirm\(/.test(mco), 'and says so in something that survives the picker');
+  H.ok(/openSettings\(\)/.test(mco), 'offering the one route that can actually fix it');
+  H.ok(/chooseMealPhoto\(\)/.test(mco), 'and still opens the library, so the meal can be logged anyway');
+  H.ok(!/showToast/.test(mco), 'not a toast, which the picker would cover');
   H.ok(/st === 'ok'/.test(H.code(sm)) && /meal-camera-input/.test(sm),
     'only a usable camera goes straight to the viewfinder');
   H.ok(/meal-photo-input/.test(sm), 'and the web, where the OS cannot be asked, keeps the chooser it had');
@@ -6620,7 +6635,7 @@ H.section('a preference about the PERSON follows them to the next phone');
   // handset, the app lock is bound to that phone's biometry, and the photos are promised in two
   // privacy policies never to leave the device. If this test cannot tell these from the list above it
   // is not testing anything — it would pass just as well on "sync absolutely everything".
-  const DEVICE_ONLY = ['totry_push_prefs','totry_lock_on','totry_progress_photos'];
+  const DEVICE_ONLY = ['totry_push_prefs','totry_lock_on','totry_progress_photos','totry_health_write'];
   for(const k of DEVICE_ONLY) H.ok(!members.has(k), k + ' deliberately stays on the device it was set on');
 }
 
@@ -6782,6 +6797,112 @@ H.section('the app\u2019s own nudges speak the tradition the person chose');
   // copy uses. Asserting either literal form fails on correct code.
   H.ok(!/as the man You.{0,2}re making me/.test(code), 'no canned prayer assumes the reader is a man');
   H.ok(/as the person You.{0,2}re making me/.test(code), 'it is written for whoever is praying it');
+}
+
+H.section('nothing waits for ever, and no screen says a number its neighbour contradicts');
+{
+  const code = H.code(H.html);
+
+  // EVERY SUPABASE CALL IS BOUNDED. supabase-js has no timeout, so a request that is accepted and
+  // never answered leaves its await pending for ever — the catch never runs, so every offline
+  // fallback behind it is unreachable. That shape has shipped here before (21 fetches, once). Three
+  // more were found: the OTP send and verify (which strand a person on a buttonless loading screen
+  // with the guest door and four helplines hidden behind it — see the crisis suite's 21st door), and
+  // the sync drain, where one stalled write left Settings on "Syncing…" and silently queued every
+  // write for the rest of the session while the app kept saying "Saved".
+  const bounded = [...code.matchAll(/Promise\.race\(\[/g)].length;
+  H.ok(bounded >= 4, 'the racing pattern is used for the calls that can hang (' + bounded + ')');
+  for(const [fn, what] of [['authSendOtp','the OTP send'], ['authVerifyOtp','the OTP verify']]){
+    const src = H.code(H.extractFn(fn));
+    H.ok(/Promise\.race\(\[/.test(src), what + ' is bounded');
+    H.ok(/__timedOut/.test(src) && /authShowError/.test(src),
+      'and a timeout lands on the step that carries the guest door and the helplines');
+  }
+  const drain = code.slice(code.indexOf('_cloudKey(key)') - 1400, code.indexOf('_cloudKey(key)') + 400);
+  H.ok(/Promise\.race\(\[/.test(drain), 'the sync upsert is bounded');
+  H.ok(/Timed out/.test(drain), 'and reports a timeout as an error the existing branch can handle');
+
+  // THE VOICE CONVERTS TOO — and it must not claim more than is true. _unitsNote told the model every
+  // figure was in the person's units, while the same prompt carries lifted load in kilograms by
+  // design, so the model was under instruction to read "Bench 100kg" back as pounds.
+  const un = H.code(H.extractFn('_unitsNote'));
+  H.ok(/ONE exception/.test(un), '_unitsNote names the figures that are NOT converted');
+  H.ok(/kilograms/.test(un) && /quoted back in kg/.test(un), 'and says which units they are in');
+
+  // SVG TEXT IS INK TOO. A fill= is an attribute, not a CSS declaration, so the no-hardcoded-ink
+  // check never saw these: the weight chart's point labels were rgba(242,239,232,0.4) — measured at
+  // 1.04:1 on the light theme's own card colour, which is invisible, not merely low-contrast.
+  // ALLOWLISTED, WITH ITS REASON — the same discipline the CSS ink scan already uses for its nine
+  // literals. The muscle map is built entirely from white-on-dark alphas (untouched muscles are
+  // rgba(255,255,255,0.05)) and its own caption says "Dark = untouched", so on the light theme the
+  // whole figure went invisible on cream and the sentence explaining it described nothing. Converting
+  // the labels alone would have left that caption lying, so the figure was given its own dark panel
+  // instead — which makes fixed ink correct there rather than merely overlooked. Source cannot see
+  // what a glyph is painted on, so the panel is asserted separately below.
+  const SVG_INK_OK = new Set(['rgba(255,255,255,0.35)']);   // FRONT / BACK on the muscle map's dark panel
+  const svgInk = [...code.matchAll(/<text[^>]*fill="(#[0-9a-fA-F]{3,6}|rgba?\([^)]*\))"/g)]
+    .map(m => m[1]).filter(v => !SVG_INK_OK.has(v));
+  H.ok(svgInk.length === 0,
+    'no chart text carries a hardcoded fill' + (svgInk.length ? ' — found: ' + svgInk.join(', ') : ''));
+  // The allowlist is only honest while that panel is really there.
+  H.ok(/background:#14141a;[^"]*border-radius:10px[^"]*"'\+front\+back/.test(code.replace(/\s+/g,' ')) ||
+       /background:#14141a/.test(code),
+    'and the muscle map really does draw on its own dark ground');
+  H.ok(/<text[^>]*fill="var\(--tx3\)"/.test(code), 'chart text uses a theme token (calibration: they exist)');
+
+  // ONE FACT, ONE NUMBER. Home's tile said "Day 12 · Days in the fight" to someone who has named no
+  // vice, while the row directly above said "no fight named yet" and the Fight hero said 0.
+  const ds = H.code(H.extractFn('renderDualStreaks'));
+  H.ok(/if\(!\(vices\|\|\[\]\)\.length\) return 0;/.test(ds),
+    'the fight tile answers 0 when there is no fight, exactly as the Fight hero does');
+  H.ok(/getSoberStreak\(\)/.test(ds), 'and the real fallback survives for vices that predate fightingSince');
+
+  // A PERMISSION iOS ASKS ONCE NEEDS A ROUTE BACK. "You can enable reminders anytime in Settings"
+  // named the screen the person was already standing on, and requestPermission() can never return
+  // true again after a Don't Allow.
+  H.ok(/function openAppSettings\(/.test(code), 'there is one route into the app’s own iOS Settings page');
+  const ep = H.code(H.extractFn('enablePushReminders'));
+  H.ok(!/You can enable reminders anytime in Settings/.test(ep), 'the denied toast no longer points at itself');
+  H.ok(/openAppSettings\(\)/.test(ep), 'it offers the door that can actually fix it');
+  H.ok(/only asks once/.test(ep), 'and says why it cannot be done from here');
+}
+
+H.section('a quick button does not invent a target, and a cached permission does not outlive the answer');
+{
+  const code = H.code(H.html);
+
+  // "Today's meals" carried a literal "2000-2200 cal target" in its onclick. Wrong twice: it ignored
+  // whatever this person's target actually is — the entire point of the TDEE work — and it instructed
+  // the model to talk in calories to someone who had switched calories OFF, which is the one promise
+  // the Nourish tab keeps everywhere else.
+  H.ok(!/2000-2200 cal target/.test(code), 'no hardcoded calorie target in a prompt');
+  const tm = H.code(H.extractFn('todaysMealsPrompt'));
+  H.ok(/totry_nut_goals/.test(tm), 'the meals prompt reads the real target');
+  H.ok(/nutGentle\(\)/.test(tm), 'and knows whether numbers are off');
+  // Same shape the fuel planner already uses and is already tested for: the figure SIZES the plan,
+  // and the model is forbidden from writing one in anything it returns. Both halves, or neither works.
+  H.ok(/Size the day to the target above/.test(tm), 'it still sizes the day by the number');
+  H.ok(/do NOT write any calorie or macro figure/.test(tm), 'while forbidding a figure in the text it returns');
+  H.ok(/not set a calorie target/.test(tm), 'and says so rather than guessing when there is no target');
+
+  // A CACHED PERMISSION MUST NOT OUTLIVE THE ANSWER. The cache is what lets snapMeal() click in the
+  // same turn as the tap — but the reason we send someone to Settings is so they can CHANGE it, and
+  // coming back to an app still holding the old answer is the dead end again with extra steps.
+  H.ok(/forget\(\)\{ this\._state = null; \}/.test(H.code(H.html)), 'the camera answer can be forgotten');
+  H.ok(/CameraAccess\.forget\(\)/.test(code), 'and something forgets it');
+  // Anchored on the FUNCTION, not a window around the first 'visibilitychange' in the bundle — there
+  // are several, and the first one is the health sync's.
+  const ias = H.code(H.extractFn('_initHealthAutoSync'));
+  H.ok(/visibilitychange/.test(ias) && /CameraAccess\.forget\(\)/.test(ias),
+    'on the one event where it can have changed — coming back to the app');
+  H.ok(/CameraAccess\.warm\(\)/.test(ias), 'and it is re-asked straight away, off the tap path');
+
+  // ONE SPELLING PER SCREEN. The Nourish tile said "Fiber" and the edit sheet beside it "Fibre (g)".
+  // Only the word a person READS changed: 25 of the 47 occurrences are identifiers, JSON keys and
+  // data-table columns, and a blanket replace would have renamed them.
+  H.ok(!/>Fiber</.test(code), 'the visible nutrient label is spelt one way');
+  H.ok(/>Fibre</.test(code), 'and it is the spelling the rest of the app uses');
+  H.ok(/fiber:/.test(code), 'while the identifiers are untouched (calibration: they still exist)');
 }
 
 H.report();

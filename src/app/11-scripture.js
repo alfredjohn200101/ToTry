@@ -225,29 +225,14 @@ function readVerseContext(refEncoded){
 }
 
 // ── THEMATIC VERSE LIBRARY (offline fallback, 25 themes) ─────
-// ── CURRENCY CONVERSION (Frankfurter API — free, no key, 200+ currencies) ──
-const CURRENCY_CACHE_KEY = 'totry_currency_rates';
-async function fetchCurrencyRates(base){
-  base = base || 'AUD';
-  const cache = ls(CURRENCY_CACHE_KEY);
-  // Cache for 6 hours
-  if(cache && cache.base === base && cache.fetched && Date.now() - cache.fetched < 6 * 3600000){
-    return cache.rates;
-  }
-  try{
-    const r = await _fetchT('https://api.frankfurter.dev/v1/latest?base=' + base, 8000);
-    if(!r.ok) throw new Error('HTTP ' + r.status);
-    const d = await r.json();
-    if(d && d.rates){
-      const rates = {...d.rates, [base]: 1};
-      ls(CURRENCY_CACHE_KEY, {base, rates, fetched: Date.now()});
-      return rates;
-    }
-  }catch(e){
-    console.warn('[currency] fetch failed, using cache if any:', e);
-  }
-  return cache?.rates || {[base]: 1};
-}
+// CURRENCY CONVERSION was removed at v600.4. fetchCurrencyRates() fetched api.frankfurter.dev on
+// every launch and on every currency change, cached the result under totry_currency_rates, and
+// nothing has ever read it — calibrated against totry_nut_goals, which has 25 readers. The
+// currency setting changes the SYMBOL only; the app states plainly that stored amounts are never
+// converted, because a person's debt is not a number we get to reinterpret. So this was an
+// outbound request on every cold start, handing a third party a record of when this person opens
+// the app, for a value with no consumer. If real conversion is ever wanted, it needs a decision
+// about what happens to already-entered amounts, not just a rates table.
 
 function getUserCurrency(){ return ls('totry_currency') || 'AUD'; }
 

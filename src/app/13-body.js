@@ -184,7 +184,13 @@ async function logBody(){
     date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'}),
     ts:new Date().toISOString(),
     weight:w,
-    bf:parseFloat(document.getElementById('bod-bf')?.value || '0') || 0,
+    // NO bf KEY AT ALL. This read #bod-bf, which has never existed in the markup (bod-weight and
+    // bod-note beside it both do), so it was always 0 — and the same-day merge below is an
+    // Object.assign that guards weight and photo but not this. Someone who photographed their
+    // smart-scale screen, let the app read 18.4% into today's entry, then did their Sunday
+    // check-in the same day watched the body-fat line vanish and the stored value become 0.
+    // Omitting the key lets the merge keep prev.bf, and the `e.bf>0` readers handle undefined.
+    // Body fat has a real home in the Measurements card (#meas-bf), where this card's copy points.
     note:document.getElementById('bod-note')?.value.trim()||'',
     photo:_pendingBodyPhoto,
     // New PT-coach dimensions
@@ -229,11 +235,17 @@ async function logBody(){
   ls('totry_body',entries.slice(0,1000));
   
   // Reset form
-  ['bod-weight','bod-bf','bod-note','wk-win','wk-struggle','wk-focus'].forEach(id=>{
+  ['bod-weight','bod-note','wk-win','wk-struggle','wk-focus'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   ['wk-train','wk-nut','wk-sleep','wk-stress','wk-energy','wk-faith'].forEach(id=>{
-    const el=document.getElementById(id);if(el)el.value=5;
+    // CLEAR THE FLAG WITH THE VALUE. "A slider nobody moved is not a 5" was fixed at the READ
+    // (_score returns null unless dataset.touched) and never at the reset, so the flag survived
+    // the first check-in of a session: doing a second one ten minutes later, to add a weight they
+    // had remembered, recorded six scores of 5 they never gave — which then fed readiness and
+    // the weekly read. The label already shows a dash for unanswered; this makes the data agree.
+    const el=document.getElementById(id);
+    if(el){ el.value=5; try{ delete el.dataset.touched; }catch(_){} }
     const valEl=document.getElementById(id+'-val');if(valEl)valEl.textContent='—';
   });
   
@@ -1026,7 +1038,11 @@ function renderBody(){
     const y=w=>H-pad-((w-mn)/range)*(H-2*pad);
     const pathD=pts.map((p,i)=>(i===0?'M':'L')+x(i).toFixed(1)+','+y(p.weight).toFixed(1)).join(' ');
     const svg=document.getElementById('weight-chart');
-    if(svg)svg.innerHTML='<defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5BB97D" stop-opacity="0.25"/><stop offset="100%" stop-color="#5BB97D" stop-opacity="0"/></linearGradient></defs><path d="'+pathD+' L'+x(pts.length-1).toFixed(1)+','+H+' L'+x(0).toFixed(1)+','+H+' Z" fill="url(#wg)"/><path d="'+pathD+'" stroke="#5BB97D" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+pts.map((p,i)=>'<circle cx="'+x(i).toFixed(1)+'" cy="'+y(p.weight).toFixed(1)+'" r="3.5" fill="#5BB97D"/><text x="'+x(i).toFixed(1)+'" y="'+(y(p.weight)-8).toFixed(1)+'" text-anchor="middle" fill="rgba(242,239,232,0.4)" font-size="8" font-family="DM Mono,monospace">'+((typeof wFmt==='function')?wFmt(p.weight,{bare:true}):p.weight)+'</text>').join('');
+    // The point labels were fill="rgba(242,239,232,0.4)" — near-white at 40%, which is right on the
+    // dark theme and completely invisible on the light one, where --bg3 is #EBE4D2. Every number on
+    // the weight chart simply was not there. An SVG fill= is an attribute, not a CSS declaration, so
+    // the no-hardcoded-ink check never looked at it and the whole light-theme sweep walked past.
+    if(svg)svg.innerHTML='<defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5BB97D" stop-opacity="0.25"/><stop offset="100%" stop-color="#5BB97D" stop-opacity="0"/></linearGradient></defs><path d="'+pathD+' L'+x(pts.length-1).toFixed(1)+','+H+' L'+x(0).toFixed(1)+','+H+' Z" fill="url(#wg)"/><path d="'+pathD+'" stroke="#5BB97D" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+pts.map((p,i)=>'<circle cx="'+x(i).toFixed(1)+'" cy="'+y(p.weight).toFixed(1)+'" r="3.5" fill="#5BB97D"/><text x="'+x(i).toFixed(1)+'" y="'+(y(p.weight)-8).toFixed(1)+'" text-anchor="middle" fill="var(--tx3)" font-size="8" font-family="DM Mono,monospace">'+((typeof wFmt==='function')?wFmt(p.weight,{bare:true}):p.weight)+'</text>').join('');
   } else {
     // Same for the trend line, and note the threshold is >= 2: one weigh-in is not a trend, so a chart
     // left over from when there were two is a line the person's data no longer supports.

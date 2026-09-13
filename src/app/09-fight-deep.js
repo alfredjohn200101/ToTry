@@ -1210,7 +1210,15 @@ function addVice(){
   loadV();
   const n=document.getElementById('v-name').value.trim();
   const t=document.getElementById('v-trigger').value.trim();
-  if(!n)return;
+  if(!n){
+    // Was a bare `return`. The first-run checklist sends a brand-new person straight here to "name
+    // what you're fighting"; they fill the four fields BELOW the name box, tap Add this, and nothing
+    // happens at all — no toast, no border, no focus. Nothing on screen says which field is missing,
+    // and the one they missed is the first one. addDebt already answers this properly.
+    if(typeof showToast==='function') showToast('What are you fighting?','Name it first \u2014 one word is enough.');
+    try{ const _el=document.getElementById('v-name'); if(_el) _el.focus(); }catch(_){}
+    return;
+  }
   // Optional backdated start
   const startInput=document.getElementById('v-start');
   let startDate=new Date().toISOString();

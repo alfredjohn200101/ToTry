@@ -167,12 +167,24 @@ async function flushOutbox(){
         const entry = o[key];
         if(!entry) continue;
         try{
-          const { error } = await sb.from('user_data').upsert({
-            user_id: currentUser.id,
-            data_key: _cloudKey(key),
-            data_value: entry.value,
-            updated_at: new Date(entry.ts).toISOString()
-          }, { onConflict: 'user_id,data_key' });
+          // BOUNDED. supabase-js has no timeout, so a request that is accepted and never answered —
+          // a train, a basement gym, one bar — leaves this await pending for ever. The drain loop
+          // never returns, the lock is never released, Settings sits on "Syncing…" and every write
+          // for the rest of the session queues into the outbox and goes nowhere. The app keeps saying
+          // "Saved", correctly, because local storage is fine; the person is just told their data is
+          // going up when it is not. Ten seconds, then the existing error branch does the right thing
+          // — state 'error', break the drain, release the lock — and the outbox is durable, so the
+          // writes go up on the next attempt. Nothing is lost, and the truth is on screen.
+          const _SYNC_TIMEOUT_MS = 10000;
+          const { error } = await Promise.race([
+            sb.from('user_data').upsert({
+              user_id: currentUser.id,
+              data_key: _cloudKey(key),
+              data_value: entry.value,
+              updated_at: new Date(entry.ts).toISOString()
+            }, { onConflict: 'user_id,data_key' }),
+            new Promise(function(res){ setTimeout(function(){ res({ error:{ message:'Timed out — no answer from the server.' } }); }, _SYNC_TIMEOUT_MS); })
+          ]);
           if(error){
             hadError = true;
             _setSyncState({ status:'error', error: error.message });
@@ -421,8 +433,13 @@ async function pullFromCloud(){
   if(typeof inDemoMode==='function' && inDemoMode()) return false;
   _setSyncState({ status:'syncing', error:null });
   try{
-    let { data, error } = await sb.from('user_data')
-      .select('data_key,data_value,updated_at').eq('user_id', currentUser.id);
+    // Bounded for the same reason as the upsert above: an unanswered pull leaves this pending for
+    // ever, and a pull is what proceedAfterAuth waits on — so a stalled one holds a returning person
+    // on the loading screen rather than merely failing to fetch.
+    let { data, error } = await Promise.race([
+      sb.from('user_data').select('data_key,data_value,updated_at').eq('user_id', currentUser.id),
+      new Promise(function(res){ setTimeout(function(){ res({ data:null, error:{ message:'Timed out — no answer from the server.' } }); }, 10000); })
+    ]);
     if(error){ _setSyncState({ status:'error', error:error.message }); return false; }
     // data.length===0, NOT just !data. PostgREST resolves a .select() with no matching rows to an
     // EMPTY ARRAY, which is truthy — so a brand-new account fell straight through this guard to the

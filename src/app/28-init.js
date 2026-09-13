@@ -70,7 +70,20 @@ async function enablePushReminders(){
   if(typeof Notify!=='undefined' && Notify.isNative && Notify.isNative()){
     try{
       const granted = await Notify.requestPermission();
-      if(!granted){ showToast('No problem','You can enable reminders anytime in Settings.'); renderPushSettings(); return; }
+      if(!granted){
+        // "You can enable reminders anytime in Settings" was neither true nor useful: iOS asks ONCE,
+        // so after a Don't Allow this permission can never be granted from inside the app again —
+        // requestPermission() returns false for ever — and the Settings it names is the screen the
+        // person is already standing on. So the whole reach-out feature became permanently
+        // unreachable and the app blamed a screen that could not fix it. Say what is actually true,
+        // and offer the one door that works.
+        const _can = (typeof canOpenAppSettings==='function') && canOpenAppSettings();
+        showToast('Notifications are switched off',
+          'iOS only asks once, so this has to be turned back on in your phone\u2019s Settings \u2014 To Try \u2192 Notifications.' +
+          (_can ? ' Tap here to go there.' : ''),
+          _can ? function(){ openAppSettings(); } : undefined);
+        renderPushSettings(); return;
+      }
       const prefs = _pushPrefs(); prefs.enabled = true; ls('totry_push_prefs', prefs);
       _scheduleNativeReminders(prefs);
       if(typeof scheduleReachOut==='function') scheduleReachOut();
@@ -85,7 +98,13 @@ async function enablePushReminders(){
     if(!sb || !currentUser){ showToast('Sign in first','Reminders need an account so they can reach this device.'); return; }
     if(!('Notification' in window) || !('PushManager' in window)){ showToast('Not supported here','This browser cannot receive push notifications.'); renderPushSettings(); return; }
     const perm = await Notification.requestPermission();
-    if(perm !== 'granted'){ showToast('No problem','You can enable reminders anytime in Settings.'); renderPushSettings(); return; }
+    if(perm !== 'granted'){
+      // The web copy of the same dead end: a browser asks once too, and "in Settings" meant the app's
+      // Settings screen, which cannot grant it. Name the place that can.
+      showToast('Notifications are blocked',
+        'Your browser is blocking notifications for To Try. Turn them back on in the site settings for this page — the padlock beside the address.');
+      renderPushSettings(); return;
+    }
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
     if(!sub){ sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:_b64uToU8(PUSH_VAPID_PUBLIC) }); }
@@ -511,7 +530,11 @@ async function initApp(){
   // this shipped has nothing in the native mirror, so its very first backgrounding would be uncovered.
   try{ if(typeof Lock==='object' && Lock._mirrorToNative) Lock._mirrorToNative(Lock.enabled()); }catch(_){}
   // Background: refresh currency rates if user has set a preference different from base
-  if(typeof fetchCurrencyRates === 'function') fetchCurrencyRates(getUserCurrency());
+  // NOT fetchCurrencyRates(). It called api.frankfurter.dev on EVERY launch and cached rates that
+  // nothing in this app has ever read — the currency setting changes the SYMBOL only, and the code
+  // says so in as many words: "stored amounts are never multiplied by an exchange rate, because a
+  // person's debt is not a number we get to reinterpret." So it was a third-party request on every
+  // cold start, telling that host how often this person opens the app, for a result with no reader.
   // Personalise coach
   const cw=document.getElementById('coach-welcome');
   if(cw)cw.textContent='Hey '+userName+'. Day '+getDayCount()+'. Your coach is here \u2014 vices, faith, habits, finances, training. What do you need right now?';

@@ -2905,7 +2905,7 @@ input:focus,textarea:focus,select:focus{
     
     <!-- Fiber / Sugar / Sodium / Sat fat extended macros -->
     <div id="nut-extended" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
-      <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Fiber</div><div id="nut-fiber" style="font-family:DM Mono,monospace;font-size:14px;color:var(--gr)">0g</div></div>
+      <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Fibre</div><div id="nut-fiber" style="font-family:DM Mono,monospace;font-size:14px;color:var(--gr)">0g</div></div>
       <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Sugar</div><div id="nut-sugar" style="font-family:DM Mono,monospace;font-size:14px;color:var(--go)">0g</div></div>
       <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Sodium</div><div id="nut-sodium" style="font-family:DM Mono,monospace;font-size:14px;color:var(--bl)">0mg</div></div>
       <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Sat fat</div><div id="nut-satfat" style="font-family:DM Mono,monospace;font-size:14px;color:var(--tx2)">0g</div></div>
@@ -3314,7 +3314,7 @@ input:focus,textarea:focus,select:focus{
     <div class="lbl">Ask your PT</div>
     <div class="qbtns">
       <button class="qb" onclick="goPTCoach('Give me today’s full session based on my split. Exact exercises, sets, reps, rest.')">Today’s session</button>
-      <button class="qb" onclick="goPTCoach('Full day of meals — exact food, calories, protein. 2000-2200 cal target.')">Today’s meals</button>
+      <button class="qb" onclick="goPTCoach(todaysMealsPrompt())">Today’s meals</button>
       <button class="qb" onclick="goPTCoach('Knee is hurting. What can I train and what must I avoid?')">Knee hurts</button>
       <button class="qb" onclick="goPTCoach('Only 25 minutes. Best possible session.')">25 mins only</button>
       <button class="qb" onclick="goPTCoach('How do I progressively overload this week?')">Progressive overload</button>
@@ -3639,7 +3639,7 @@ input:focus,textarea:focus,select:focus{
          [data-weight-unit] in step with the setting. -->
     <div class="lbl" style="margin-bottom:8px">Weight trend (<span data-weight-unit>kg</span>)</div>
     <svg aria-hidden="true" id="weight-chart" viewBox="0 0 340 100" style="width:100%;height:120px" preserveAspectRatio="none">
-      <text x="170" y="58" text-anchor="middle" fill="rgba(255,255,255,0.12)" font-family="Cormorant Garamond,serif" font-size="13" font-style="italic">Log your first check-in below</text>
+      <text x="170" y="58" text-anchor="middle" fill="var(--tx3)" font-family="Cormorant Garamond,serif" font-size="13" font-style="italic">Log your first check-in below</text>
     </svg>
   </div>
   <!-- Where this is going. Money has projected a debt-free date since v445; this projected nothing,
@@ -4273,7 +4273,7 @@ Amen.</div></div>
                  changes the SYMBOL only — stored amounts are never multiplied by an exchange rate,
                  because a person's debt is not a number we get to reinterpret. -->
             <div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">Changes the symbol shown throughout. Your saved amounts are never converted.</div>
-          <select id="settings-currency" onchange="savePref('totry_currency',this.value);if(typeof fetchCurrencyRates==='function')fetchCurrencyRates(this.value);if(typeof applyCurrencySymbols==='function')applyCurrencySymbols();if(typeof renderFinance==='function')try{renderFinance()}catch(_){};showToast('Saved', this.value + ' \u2014 amounts now show that symbol. Your saved figures are never converted.')">
+          <select id="settings-currency" onchange="savePref('totry_currency',this.value);if(typeof applyCurrencySymbols==='function')applyCurrencySymbols();if(typeof renderFinance==='function')try{renderFinance()}catch(_){};showToast('Saved', this.value + ' \u2014 amounts now show that symbol. Your saved figures are never converted.')">
             <option value="AUD">AUD — Australian Dollar</option>
             <option value="USD">USD — US Dollar</option>
             <option value="GBP">GBP — British Pound</option>

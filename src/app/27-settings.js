@@ -834,7 +834,10 @@ function showPrivacyPolicy(){
         '<li><strong style="color:var(--tx)">Prayer times</strong> — if you use them, your location is rounded to about a kilometre and sent to api.aladhan.com to work out the times where you are. The rounded figure is not stored on my server and is not linked to your account. You can skip location entirely and type your city instead.</li>' +
         '<li><strong style="color:var(--tx)">Exercise GIFs</strong> — exercise name is sent to ExerciseDB / Wger.</li>' +
         '<li><strong style="color:var(--tx)">Scripture you read</strong> \u2014 the passage you open is fetched live, so the service sees which one: the Qur\u2019an from api.alquran.cloud, the Bhagavad Gita from vedicscriptures.github.io, and the Dhammapada from suttacentral.net. The Bible is fetched the same way: the ESV goes through my own server when it is available, but the public translations (ASV, KJV, WEB) and the study notes come straight from bible.helloao.org, bible-api.com and cdn.jsdelivr.net, so those services see the passage \u2014 and an ESV request falls back to them if my server is down. Nothing about you is attached to any of them.</li>' +
-        '<li><strong style="color:var(--tx)">Currency rates</strong> — your selected currency is sent to api.frankfurter.dev.</li>' +
+        // Currency rates were listed here and no longer happen: fetchCurrencyRates() was removed at
+        // v600.4 because nothing had ever read the rates it cached. A privacy page that claims a
+        // request the app does not make is wrong in the direction that matters least, and still
+        // wrong — this list is the one place a person is told exactly who hears from them.
         '<li><strong style="color:var(--tx)">Strava</strong> — if you connect it, Strava sees your access tokens and serves your activities. You explicitly authorise this via OAuth.</li>' +
         '<li><strong style="color:var(--tx)">Hevy</strong> — if you enter an API key, Hevy sees your sync requests. You explicitly authorise this.</li>' +
         '<li><strong style="color:var(--tx)">Bible verse lookups</strong> — verse references go to api.esv.org.</li>' +

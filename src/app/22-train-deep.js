@@ -2492,7 +2492,14 @@ function renderMuscleHeatmap(){
     '<text x="60" y="232" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.35)" font-family="DM Mono,monospace">BACK</text></svg>';
   box.innerHTML = '<div class="card" style="margin-top:8px"><div class="card-hd" style="margin-bottom:4px">Muscle map &middot; last 7 days</div>'+
     '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Brighter gold = more sets this week. Dark = untouched.</div>'+
-    '<div style="display:flex;justify-content:center;gap:14px">'+front+back+'</div>'+
+    // AN ALWAYS-DARK PANEL, the way .breath-overlay already does it. This diagram is built entirely
+    // out of white-on-dark alphas — untouched muscles are rgba(255,255,255,0.05) and the card's own
+    // caption says "Dark = untouched" — so on the light theme the whole body went invisible on cream
+    // and the sentence explaining it described shapes nobody could see. Converting just the labels to
+    // a token would have left that caption lying. Giving the figure its own ground makes the fixed
+    // ink correct rather than merely overlooked, which is the rule this codebase already states:
+    // fixed ink only on always-dark surfaces, tokens on themed ones.
+    '<div style="display:flex;justify-content:center;gap:14px;background:#14141a;border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px 6px">'+front+back+'</div>'+
     _renderSetsPerMuscle() + '</div>';
 }
 // WS3: weekly sets per muscle vs the 10–20 sets/week growth target + balance warnings.
@@ -2958,12 +2965,12 @@ function showExerciseProgress(exName){
   });
   
   const svg = '<svg aria-hidden="true" viewBox="0 0 ' + w + ' ' + h + '" style="width:100%;height:auto;background:var(--bg3);border-radius:8px">' +
-    '<text x="4" y="14" font-family="DM Mono, monospace" font-size="9" fill="#888">' + maxOrm + 'kg</text>' +
-    '<text x="4" y="' + (h - 26) + '" font-family="DM Mono, monospace" font-size="9" fill="#888">' + minOrm + 'kg</text>' +
+    '<text x="4" y="14" font-family="DM Mono, monospace" font-size="9" fill="var(--tx3)">' + maxOrm + 'kg</text>' +
+    '<text x="4" y="' + (h - 26) + '" font-family="DM Mono, monospace" font-size="9" fill="var(--tx3)">' + minOrm + 'kg</text>' +
     '<path d="' + pathData + '" stroke="var(--go)" stroke-width="2" fill="none"/>' +
     points +
-    '<text x="' + padL + '" y="' + (h - 6) + '" font-family="DM Mono, monospace" font-size="9" fill="#666">' + dataPoints[0].date.replace(/^.+?, /, '') + '</text>' +
-    '<text x="' + (w - padR - 50) + '" y="' + (h - 6) + '" font-family="DM Mono, monospace" font-size="9" fill="#666">' + dataPoints[dataPoints.length-1].date.replace(/^.+?, /, '') + '</text>' +
+    '<text x="' + padL + '" y="' + (h - 6) + '" font-family="DM Mono, monospace" font-size="9" fill="var(--tx3)">' + dataPoints[0].date.replace(/^.+?, /, '') + '</text>' +
+    '<text x="' + (w - padR - 50) + '" y="' + (h - 6) + '" font-family="DM Mono, monospace" font-size="9" fill="var(--tx3)">' + dataPoints[dataPoints.length-1].date.replace(/^.+?, /, '') + '</text>' +
   '</svg>';
   
   // Last 5 sessions table

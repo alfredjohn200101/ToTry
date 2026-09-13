@@ -174,13 +174,18 @@ const Health = {
       const gotSomething = !!(synced && Object.keys(synced).some(k => {
         const v = synced[k]; return typeof v === 'number' ? v > 0 : (v != null && v !== false);
       }));
-      try{ ls('totry_health_connected', gotSomething); }catch(_){}
-      if(!gotSomething){
+      // ASK FOR EVERYTHING BEFORE DECIDING IT REFUSED. These two ran only AFTER the check below, so
+      // "no steps yet today" was reported as a permission failure — which is the normal state of a
+      // clean device at 7am, and of every reviewer's. Someone with a week of workouts and sleep in
+      // Health, who simply had not walked yet, was told Apple Health had shared nothing.
+      try{ synced && (synced.workouts = await this.syncWorkouts(30)); }catch(_){}   // 30 days on first connect
+      try{ synced && (synced.sleepNights = await this.syncSleep(30)); }catch(_){}
+      const _any = gotSomething || ((synced && synced.workouts) > 0) || ((synced && synced.sleepNights) > 0);
+      try{ ls('totry_health_connected', _any); }catch(_){}
+      if(!_any){
         return { ok:false, reason:'no-permission',
                  message:'Apple Health did not share anything. If you tapped "Don\u2019t Allow", open Settings \u2192 Health \u2192 Data Access & Devices \u2192 ToTry and turn on what you want me to see.' };
       }
-      try{ synced && (synced.workouts = await this.syncWorkouts(30)); }catch(_){}   // 30 days on first connect
-      try{ synced && (synced.sleepNights = await this.syncSleep(30)); }catch(_){}
       return { ok:true, synced };
     }catch(e){ return { ok:false, reason:String(e && e.message || e) }; }
   },
@@ -376,6 +381,25 @@ const Health = {
 // on a slow tick while it is open. Their steps, active energy and mindful minutes are already being
 // recorded by the phone all day — the whole point of being a native app is that we fold that in without
 // asking them to do anything.
+// THIS APP'S OWN PAGE IN IOS SETTINGS — the only way back from any permission iOS asks once and
+// remembers for ever. It lives on BarcodeScannerPlugin because that is where the native method is,
+// but it is not about the camera: notifications need exactly the same door.
+function openAppSettings(){
+  try{
+    const p = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BarcodeScanner) || null;
+    if(p && typeof p.openSettings === 'function' && typeof isNativeApp === 'function' && isNativeApp()){
+      p.openSettings(); return true;
+    }
+  }catch(_){}
+  return false;
+}
+function canOpenAppSettings(){
+  try{
+    const p = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BarcodeScanner) || null;
+    return !!(p && typeof p.openSettings === 'function' && typeof isNativeApp === 'function' && isNativeApp());
+  }catch(_){ return false; }
+}
+
 function _initHealthAutoSync(){
   try{
     if(window.__healthAutoWired) return;
@@ -386,11 +410,19 @@ function _initHealthAutoSync(){
       if(document.visibilityState === 'visible') wake('resume');
     });
     window.addEventListener('focus', function(){ wake('resume'); });
-    // Native: Capacitor's own foreground event, which fires where visibilitychange can be unreliable.
-    try{
-      const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
-      if(App && App.addListener) App.addListener('appStateChange', function(st){ if(st && st.isActive) wake('resume'); });
-    }catch(_){}
+    // Coming back is also the only moment a permission can have changed underneath us — the person
+    // has just been in iOS Settings because we sent them there. Drop the cached camera answer so the
+    // next tap asks again, instead of insisting the camera is still off after they turned it on.
+    document.addEventListener('visibilitychange', function(){
+      if(document.visibilityState === 'visible'){ try{ if(typeof CameraAccess!=='undefined'){ CameraAccess.forget(); CameraAccess.warm(); } }catch(_){} }
+    });
+    // NO Capacitor App listener here. There used to be one, with a comment claiming it was the safety
+    // net for where visibilitychange is unreliable — but @capacitor/app has never been a dependency of
+    // this project, and Capacitor's Plugins object is a Proxy that hands back a callable wrapper for
+    // ANY name, so `App && App.addListener` was true and the registration went nowhere. The net was
+    // the comment. visibilitychange and focus above are real and both fire in a WKWebView; a
+    // dependency added on the eve of submission to back up a listener that has never once run is the
+    // wrong trade. If it is ever genuinely needed, install the plugin and register it properly.
     // And a slow tick so a long session still keeps up with the day.
     setInterval(function(){ if(document.visibilityState==='visible') wake('tick'); }, 10*60000);
   }catch(_){}
@@ -404,7 +436,14 @@ async function connectAppleHealth(){
     if(r && r.ok){
       const s=r.synced||{}; const bits=[]; if(s.steps) bits.push(s.steps.toLocaleString()+' steps'); if(s.active) bits.push(s.active+' active cal');
       if(typeof showToast==='function') showToast('Apple Health connected', bits.length?('Pulled '+bits.join(' · ')+' today.'):'Your activity will sync automatically.');
-    } else if(typeof showToast==='function'){ showToast('Couldn’t connect', (r&&r.reason)||'Apple Health permission was declined.'); }
+    } else if(typeof showToast==='function'){
+      // r.message, not r.reason. reason is an internal code — 'no-permission' — and that is literally
+      // what was shown: a person who tapped Connect on a clean device (every App Store reviewer, and
+      // anyone setting the app up in bed before they have any steps) read the words "no-permission"
+      // as the explanation. Meanwhile the sentence written for exactly that moment, which names the
+      // Settings path, sat in r.message and was never read by anything.
+      showToast('Couldn’t connect', (r && (r.message || r.reason)) || 'Apple Health permission was declined.');
+    }
   }catch(e){ if(typeof showToast==='function') showToast('Couldn’t connect', String(e&&e.message||e)); }
   renderHealthCard();
 }

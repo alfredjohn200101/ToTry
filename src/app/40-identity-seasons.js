@@ -270,6 +270,14 @@ function renderDualStreaks(){
   const sober=(function(){
     try{
       loadV();
+      // NO FIGHT NAMED = 0, not the journey day count. `d || getSoberStreak()` meant someone who has
+      // never named a vice saw "Day 12 · Days in the fight" while the woven row directly above said
+      // "no fight named yet" and the Fight tab's own hero said 0 — three numbers for one fact, on one
+      // scroll. This is the same fix v599 made to the Score hero, reaching the surface it missed;
+      // a rename or a recalculation landing on one screen and not its neighbour is the defect this
+      // codebase repeats most. The fallback stays for the real case it was written for: vices exist
+      // but predate fightingSince having a value.
+      if(!(vices||[]).length) return 0;
       let d=0;
       (vices||[]).forEach(v=>{ const n=(typeof viceFightDays==='function')?viceFightDays(v):0; if(n>d) d=n; });
       return d || getSoberStreak();

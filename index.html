@@ -2905,7 +2905,7 @@ input:focus,textarea:focus,select:focus{
     
     <!-- Fiber / Sugar / Sodium / Sat fat extended macros -->
     <div id="nut-extended" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)">
-      <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Fiber</div><div id="nut-fiber" style="font-family:DM Mono,monospace;font-size:14px;color:var(--gr)">0g</div></div>
+      <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Fibre</div><div id="nut-fiber" style="font-family:DM Mono,monospace;font-size:14px;color:var(--gr)">0g</div></div>
       <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Sugar</div><div id="nut-sugar" style="font-family:DM Mono,monospace;font-size:14px;color:var(--go)">0g</div></div>
       <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Sodium</div><div id="nut-sodium" style="font-family:DM Mono,monospace;font-size:14px;color:var(--bl)">0mg</div></div>
       <div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Sat fat</div><div id="nut-satfat" style="font-family:DM Mono,monospace;font-size:14px;color:var(--tx2)">0g</div></div>
@@ -3314,7 +3314,7 @@ input:focus,textarea:focus,select:focus{
     <div class="lbl">Ask your PT</div>
     <div class="qbtns">
       <button class="qb" onclick="goPTCoach('Give me today’s full session based on my split. Exact exercises, sets, reps, rest.')">Today’s session</button>
-      <button class="qb" onclick="goPTCoach('Full day of meals — exact food, calories, protein. 2000-2200 cal target.')">Today’s meals</button>
+      <button class="qb" onclick="goPTCoach(todaysMealsPrompt())">Today’s meals</button>
       <button class="qb" onclick="goPTCoach('Knee is hurting. What can I train and what must I avoid?')">Knee hurts</button>
       <button class="qb" onclick="goPTCoach('Only 25 minutes. Best possible session.')">25 mins only</button>
       <button class="qb" onclick="goPTCoach('How do I progressively overload this week?')">Progressive overload</button>
@@ -3639,7 +3639,7 @@ input:focus,textarea:focus,select:focus{
          [data-weight-unit] in step with the setting. -->
     <div class="lbl" style="margin-bottom:8px">Weight trend (<span data-weight-unit>kg</span>)</div>
     <svg aria-hidden="true" id="weight-chart" viewBox="0 0 340 100" style="width:100%;height:120px" preserveAspectRatio="none">
-      <text x="170" y="58" text-anchor="middle" fill="rgba(255,255,255,0.12)" font-family="Cormorant Garamond,serif" font-size="13" font-style="italic">Log your first check-in below</text>
+      <text x="170" y="58" text-anchor="middle" fill="var(--tx3)" font-family="Cormorant Garamond,serif" font-size="13" font-style="italic">Log your first check-in below</text>
     </svg>
   </div>
   <!-- Where this is going. Money has projected a debt-free date since v445; this projected nothing,
@@ -4273,7 +4273,7 @@ Amen.</div></div>
                  changes the SYMBOL only — stored amounts are never multiplied by an exchange rate,
                  because a person's debt is not a number we get to reinterpret. -->
             <div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">Changes the symbol shown throughout. Your saved amounts are never converted.</div>
-          <select id="settings-currency" onchange="savePref('totry_currency',this.value);if(typeof fetchCurrencyRates==='function')fetchCurrencyRates(this.value);if(typeof applyCurrencySymbols==='function')applyCurrencySymbols();if(typeof renderFinance==='function')try{renderFinance()}catch(_){};showToast('Saved', this.value + ' \u2014 amounts now show that symbol. Your saved figures are never converted.')">
+          <select id="settings-currency" onchange="savePref('totry_currency',this.value);if(typeof applyCurrencySymbols==='function')applyCurrencySymbols();if(typeof renderFinance==='function')try{renderFinance()}catch(_){};showToast('Saved', this.value + ' \u2014 amounts now show that symbol. Your saved figures are never converted.')">
             <option value="AUD">AUD — Australian Dollar</option>
             <option value="USD">USD — US Dollar</option>
             <option value="GBP">GBP — British Pound</option>
@@ -5437,7 +5437,13 @@ function _unitsNote(){
     // these are already theirs, use them as they are, and answer in the same units.
     return '\nUNITS: every figure here is ALREADY in this person\u2019s own units \u2014 weight in ' + wu +
            ', distance in ' + du + '. Do NOT convert them. Quote them back exactly as given, and use ' +
-           wu + ' and ' + du + ' for anything you work out yourself. Never say kg or km to them.';
+           wu + ' and ' + du + ' for anything you work out yourself. Never say kg or km to them.' +
+           // THE ONE EXCEPTION, NAMED. Lifted load and session volume are deliberately still kg (see
+           // the units note in CLAUDE.md), so "every figure here is in lb" was simply false — the very
+           // same prompt carries "Bench 100kg" a few lines down, and the model was under instruction
+           // to quote it back as pounds. That is the whole lesson of the last units round arriving one
+           // layer up: the screens were converted for fifty versions and nobody told the VOICE.
+           ' The ONE exception is barbell and dumbbell load and session volume, which this person tracks in kilograms: those figures are already kg, are labelled kg, and must be quoted back in kg.';
   }catch(_){ return ''; }
 }
 function _todayLocalISO(d){
@@ -5893,7 +5899,11 @@ const SYNC_KEYS = [
   // stung most: it is the anti-engagement metric the app SHOWS — the count of times someone came,
   // regulated, and left — and switching phones silently reset it to zero. train_goal/train_days are
   // the answers that generated totry_split, which already synced without them.
-  'totry_health_write',   // opted in to mirroring logs into Apple Health — see HealthWrite
+  // totry_health_write is NOT here, for the same reason totry_push_prefs is not: HealthKit write
+  // authorisation is granted per installation, so a synced 'on' told a fresh phone it was allowed
+  // to write into Apple Health before that device had ever asked — every write then failing
+  // silently while the Settings row said it was on. Re-opt in per device, which needs that
+  // device's permission anyway.
   'totry_cba',   // the person's own cost-benefit reasons, per vice — see openCBA()
   'totry_releases','totry_feelings','totry_hunger_log','totry_breath_log',
   'totry_meal_plan','totry_meal_prefs','totry_train_goal','totry_train_days',
@@ -6189,12 +6199,24 @@ async function flushOutbox(){
         const entry = o[key];
         if(!entry) continue;
         try{
-          const { error } = await sb.from('user_data').upsert({
-            user_id: currentUser.id,
-            data_key: _cloudKey(key),
-            data_value: entry.value,
-            updated_at: new Date(entry.ts).toISOString()
-          }, { onConflict: 'user_id,data_key' });
+          // BOUNDED. supabase-js has no timeout, so a request that is accepted and never answered —
+          // a train, a basement gym, one bar — leaves this await pending for ever. The drain loop
+          // never returns, the lock is never released, Settings sits on "Syncing…" and every write
+          // for the rest of the session queues into the outbox and goes nowhere. The app keeps saying
+          // "Saved", correctly, because local storage is fine; the person is just told their data is
+          // going up when it is not. Ten seconds, then the existing error branch does the right thing
+          // — state 'error', break the drain, release the lock — and the outbox is durable, so the
+          // writes go up on the next attempt. Nothing is lost, and the truth is on screen.
+          const _SYNC_TIMEOUT_MS = 10000;
+          const { error } = await Promise.race([
+            sb.from('user_data').upsert({
+              user_id: currentUser.id,
+              data_key: _cloudKey(key),
+              data_value: entry.value,
+              updated_at: new Date(entry.ts).toISOString()
+            }, { onConflict: 'user_id,data_key' }),
+            new Promise(function(res){ setTimeout(function(){ res({ error:{ message:'Timed out — no answer from the server.' } }); }, _SYNC_TIMEOUT_MS); })
+          ]);
           if(error){
             hadError = true;
             _setSyncState({ status:'error', error: error.message });
@@ -6443,8 +6465,13 @@ async function pullFromCloud(){
   if(typeof inDemoMode==='function' && inDemoMode()) return false;
   _setSyncState({ status:'syncing', error:null });
   try{
-    let { data, error } = await sb.from('user_data')
-      .select('data_key,data_value,updated_at').eq('user_id', currentUser.id);
+    // Bounded for the same reason as the upsert above: an unanswered pull leaves this pending for
+    // ever, and a pull is what proceedAfterAuth waits on — so a stalled one holds a returning person
+    // on the loading screen rather than merely failing to fetch.
+    let { data, error } = await Promise.race([
+      sb.from('user_data').select('data_key,data_value,updated_at').eq('user_id', currentUser.id),
+      new Promise(function(res){ setTimeout(function(){ res({ data:null, error:{ message:'Timed out — no answer from the server.' } }); }, 10000); })
+    ]);
     if(error){ _setSyncState({ status:'error', error:error.message }); return false; }
     // data.length===0, NOT just !data. PostgREST resolves a .select() with no matching rows to an
     // EMPTY ARRAY, which is truthy — so a brand-new account fell straight through this guard to the
@@ -6901,13 +6928,18 @@ const Health = {
       const gotSomething = !!(synced && Object.keys(synced).some(k => {
         const v = synced[k]; return typeof v === 'number' ? v > 0 : (v != null && v !== false);
       }));
-      try{ ls('totry_health_connected', gotSomething); }catch(_){}
-      if(!gotSomething){
+      // ASK FOR EVERYTHING BEFORE DECIDING IT REFUSED. These two ran only AFTER the check below, so
+      // "no steps yet today" was reported as a permission failure — which is the normal state of a
+      // clean device at 7am, and of every reviewer's. Someone with a week of workouts and sleep in
+      // Health, who simply had not walked yet, was told Apple Health had shared nothing.
+      try{ synced && (synced.workouts = await this.syncWorkouts(30)); }catch(_){}   // 30 days on first connect
+      try{ synced && (synced.sleepNights = await this.syncSleep(30)); }catch(_){}
+      const _any = gotSomething || ((synced && synced.workouts) > 0) || ((synced && synced.sleepNights) > 0);
+      try{ ls('totry_health_connected', _any); }catch(_){}
+      if(!_any){
         return { ok:false, reason:'no-permission',
                  message:'Apple Health did not share anything. If you tapped "Don\u2019t Allow", open Settings \u2192 Health \u2192 Data Access & Devices \u2192 ToTry and turn on what you want me to see.' };
       }
-      try{ synced && (synced.workouts = await this.syncWorkouts(30)); }catch(_){}   // 30 days on first connect
-      try{ synced && (synced.sleepNights = await this.syncSleep(30)); }catch(_){}
       return { ok:true, synced };
     }catch(e){ return { ok:false, reason:String(e && e.message || e) }; }
   },
@@ -7103,6 +7135,25 @@ const Health = {
 // on a slow tick while it is open. Their steps, active energy and mindful minutes are already being
 // recorded by the phone all day — the whole point of being a native app is that we fold that in without
 // asking them to do anything.
+// THIS APP'S OWN PAGE IN IOS SETTINGS — the only way back from any permission iOS asks once and
+// remembers for ever. It lives on BarcodeScannerPlugin because that is where the native method is,
+// but it is not about the camera: notifications need exactly the same door.
+function openAppSettings(){
+  try{
+    const p = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BarcodeScanner) || null;
+    if(p && typeof p.openSettings === 'function' && typeof isNativeApp === 'function' && isNativeApp()){
+      p.openSettings(); return true;
+    }
+  }catch(_){}
+  return false;
+}
+function canOpenAppSettings(){
+  try{
+    const p = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.BarcodeScanner) || null;
+    return !!(p && typeof p.openSettings === 'function' && typeof isNativeApp === 'function' && isNativeApp());
+  }catch(_){ return false; }
+}
+
 function _initHealthAutoSync(){
   try{
     if(window.__healthAutoWired) return;
@@ -7113,11 +7164,19 @@ function _initHealthAutoSync(){
       if(document.visibilityState === 'visible') wake('resume');
     });
     window.addEventListener('focus', function(){ wake('resume'); });
-    // Native: Capacitor's own foreground event, which fires where visibilitychange can be unreliable.
-    try{
-      const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
-      if(App && App.addListener) App.addListener('appStateChange', function(st){ if(st && st.isActive) wake('resume'); });
-    }catch(_){}
+    // Coming back is also the only moment a permission can have changed underneath us — the person
+    // has just been in iOS Settings because we sent them there. Drop the cached camera answer so the
+    // next tap asks again, instead of insisting the camera is still off after they turned it on.
+    document.addEventListener('visibilitychange', function(){
+      if(document.visibilityState === 'visible'){ try{ if(typeof CameraAccess!=='undefined'){ CameraAccess.forget(); CameraAccess.warm(); } }catch(_){} }
+    });
+    // NO Capacitor App listener here. There used to be one, with a comment claiming it was the safety
+    // net for where visibilitychange is unreliable — but @capacitor/app has never been a dependency of
+    // this project, and Capacitor's Plugins object is a Proxy that hands back a callable wrapper for
+    // ANY name, so `App && App.addListener` was true and the registration went nowhere. The net was
+    // the comment. visibilitychange and focus above are real and both fire in a WKWebView; a
+    // dependency added on the eve of submission to back up a listener that has never once run is the
+    // wrong trade. If it is ever genuinely needed, install the plugin and register it properly.
     // And a slow tick so a long session still keeps up with the day.
     setInterval(function(){ if(document.visibilityState==='visible') wake('tick'); }, 10*60000);
   }catch(_){}
@@ -7131,7 +7190,14 @@ async function connectAppleHealth(){
     if(r && r.ok){
       const s=r.synced||{}; const bits=[]; if(s.steps) bits.push(s.steps.toLocaleString()+' steps'); if(s.active) bits.push(s.active+' active cal');
       if(typeof showToast==='function') showToast('Apple Health connected', bits.length?('Pulled '+bits.join(' · ')+' today.'):'Your activity will sync automatically.');
-    } else if(typeof showToast==='function'){ showToast('Couldn’t connect', (r&&r.reason)||'Apple Health permission was declined.'); }
+    } else if(typeof showToast==='function'){
+      // r.message, not r.reason. reason is an internal code — 'no-permission' — and that is literally
+      // what was shown: a person who tapped Connect on a clean device (every App Store reviewer, and
+      // anyone setting the app up in bed before they have any steps) read the words "no-permission"
+      // as the explanation. Meanwhile the sentence written for exactly that moment, which names the
+      // Settings path, sat in r.message and was never read by anything.
+      showToast('Couldn’t connect', (r && (r.message || r.reason)) || 'Apple Health permission was declined.');
+    }
   }catch(e){ if(typeof showToast==='function') showToast('Couldn’t connect', String(e&&e.message||e)); }
   renderHealthCard();
 }
@@ -20129,7 +20195,15 @@ function addVice(){
   loadV();
   const n=document.getElementById('v-name').value.trim();
   const t=document.getElementById('v-trigger').value.trim();
-  if(!n)return;
+  if(!n){
+    // Was a bare `return`. The first-run checklist sends a brand-new person straight here to "name
+    // what you're fighting"; they fill the four fields BELOW the name box, tap Add this, and nothing
+    // happens at all — no toast, no border, no focus. Nothing on screen says which field is missing,
+    // and the one they missed is the first one. addDebt already answers this properly.
+    if(typeof showToast==='function') showToast('What are you fighting?','Name it first \u2014 one word is enough.');
+    try{ const _el=document.getElementById('v-name'); if(_el) _el.focus(); }catch(_){}
+    return;
+  }
   // Optional backdated start
   const startInput=document.getElementById('v-start');
   let startDate=new Date().toISOString();
@@ -22501,29 +22575,14 @@ function readVerseContext(refEncoded){
 }
 
 // ── THEMATIC VERSE LIBRARY (offline fallback, 25 themes) ─────
-// ── CURRENCY CONVERSION (Frankfurter API — free, no key, 200+ currencies) ──
-const CURRENCY_CACHE_KEY = 'totry_currency_rates';
-async function fetchCurrencyRates(base){
-  base = base || 'AUD';
-  const cache = ls(CURRENCY_CACHE_KEY);
-  // Cache for 6 hours
-  if(cache && cache.base === base && cache.fetched && Date.now() - cache.fetched < 6 * 3600000){
-    return cache.rates;
-  }
-  try{
-    const r = await _fetchT('https://api.frankfurter.dev/v1/latest?base=' + base, 8000);
-    if(!r.ok) throw new Error('HTTP ' + r.status);
-    const d = await r.json();
-    if(d && d.rates){
-      const rates = {...d.rates, [base]: 1};
-      ls(CURRENCY_CACHE_KEY, {base, rates, fetched: Date.now()});
-      return rates;
-    }
-  }catch(e){
-    console.warn('[currency] fetch failed, using cache if any:', e);
-  }
-  return cache?.rates || {[base]: 1};
-}
+// CURRENCY CONVERSION was removed at v600.4. fetchCurrencyRates() fetched api.frankfurter.dev on
+// every launch and on every currency change, cached the result under totry_currency_rates, and
+// nothing has ever read it — calibrated against totry_nut_goals, which has 25 readers. The
+// currency setting changes the SYMBOL only; the app states plainly that stored amounts are never
+// converted, because a person's debt is not a number we get to reinterpret. So this was an
+// outbound request on every cold start, handing a third party a record of when this person opens
+// the app, for a value with no consumer. If real conversion is ever wanted, it needs a decision
+// about what happens to already-entered amounts, not just a rates table.
 
 function getUserCurrency(){ return ls('totry_currency') || 'AUD'; }
 
@@ -24280,7 +24339,13 @@ async function logBody(){
     date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'}),
     ts:new Date().toISOString(),
     weight:w,
-    bf:parseFloat(document.getElementById('bod-bf')?.value || '0') || 0,
+    // NO bf KEY AT ALL. This read #bod-bf, which has never existed in the markup (bod-weight and
+    // bod-note beside it both do), so it was always 0 — and the same-day merge below is an
+    // Object.assign that guards weight and photo but not this. Someone who photographed their
+    // smart-scale screen, let the app read 18.4% into today's entry, then did their Sunday
+    // check-in the same day watched the body-fat line vanish and the stored value become 0.
+    // Omitting the key lets the merge keep prev.bf, and the `e.bf>0` readers handle undefined.
+    // Body fat has a real home in the Measurements card (#meas-bf), where this card's copy points.
     note:document.getElementById('bod-note')?.value.trim()||'',
     photo:_pendingBodyPhoto,
     // New PT-coach dimensions
@@ -24325,11 +24390,17 @@ async function logBody(){
   ls('totry_body',entries.slice(0,1000));
   
   // Reset form
-  ['bod-weight','bod-bf','bod-note','wk-win','wk-struggle','wk-focus'].forEach(id=>{
+  ['bod-weight','bod-note','wk-win','wk-struggle','wk-focus'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   ['wk-train','wk-nut','wk-sleep','wk-stress','wk-energy','wk-faith'].forEach(id=>{
-    const el=document.getElementById(id);if(el)el.value=5;
+    // CLEAR THE FLAG WITH THE VALUE. "A slider nobody moved is not a 5" was fixed at the READ
+    // (_score returns null unless dataset.touched) and never at the reset, so the flag survived
+    // the first check-in of a session: doing a second one ten minutes later, to add a weight they
+    // had remembered, recorded six scores of 5 they never gave — which then fed readiness and
+    // the weekly read. The label already shows a dash for unanswered; this makes the data agree.
+    const el=document.getElementById(id);
+    if(el){ el.value=5; try{ delete el.dataset.touched; }catch(_){} }
     const valEl=document.getElementById(id+'-val');if(valEl)valEl.textContent='—';
   });
   
@@ -25122,7 +25193,11 @@ function renderBody(){
     const y=w=>H-pad-((w-mn)/range)*(H-2*pad);
     const pathD=pts.map((p,i)=>(i===0?'M':'L')+x(i).toFixed(1)+','+y(p.weight).toFixed(1)).join(' ');
     const svg=document.getElementById('weight-chart');
-    if(svg)svg.innerHTML='<defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5BB97D" stop-opacity="0.25"/><stop offset="100%" stop-color="#5BB97D" stop-opacity="0"/></linearGradient></defs><path d="'+pathD+' L'+x(pts.length-1).toFixed(1)+','+H+' L'+x(0).toFixed(1)+','+H+' Z" fill="url(#wg)"/><path d="'+pathD+'" stroke="#5BB97D" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+pts.map((p,i)=>'<circle cx="'+x(i).toFixed(1)+'" cy="'+y(p.weight).toFixed(1)+'" r="3.5" fill="#5BB97D"/><text x="'+x(i).toFixed(1)+'" y="'+(y(p.weight)-8).toFixed(1)+'" text-anchor="middle" fill="rgba(242,239,232,0.4)" font-size="8" font-family="DM Mono,monospace">'+((typeof wFmt==='function')?wFmt(p.weight,{bare:true}):p.weight)+'</text>').join('');
+    // The point labels were fill="rgba(242,239,232,0.4)" — near-white at 40%, which is right on the
+    // dark theme and completely invisible on the light one, where --bg3 is #EBE4D2. Every number on
+    // the weight chart simply was not there. An SVG fill= is an attribute, not a CSS declaration, so
+    // the no-hardcoded-ink check never looked at it and the whole light-theme sweep walked past.
+    if(svg)svg.innerHTML='<defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#5BB97D" stop-opacity="0.25"/><stop offset="100%" stop-color="#5BB97D" stop-opacity="0"/></linearGradient></defs><path d="'+pathD+' L'+x(pts.length-1).toFixed(1)+','+H+' L'+x(0).toFixed(1)+','+H+' Z" fill="url(#wg)"/><path d="'+pathD+'" stroke="#5BB97D" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>'+pts.map((p,i)=>'<circle cx="'+x(i).toFixed(1)+'" cy="'+y(p.weight).toFixed(1)+'" r="3.5" fill="#5BB97D"/><text x="'+x(i).toFixed(1)+'" y="'+(y(p.weight)-8).toFixed(1)+'" text-anchor="middle" fill="var(--tx3)" font-size="8" font-family="DM Mono,monospace">'+((typeof wFmt==='function')?wFmt(p.weight,{bare:true}):p.weight)+'</text>').join('');
   } else {
     // Same for the trend line, and note the threshold is >= 2: one weigh-in is not a trend, so a chart
     // left over from when there were two is a line the person's data no longer supports.
@@ -27716,6 +27791,11 @@ const CameraAccess = {
   _state: null,
   stateSync(){ return this._state; },
   warm(){ try{ const r = this.state(); if(r && r.catch) r.catch(function(){}); }catch(_){} },
+  // AND IT HAS TO GO STALE. The cache is what lets snapMeal() click in the same turn as the tap, but
+  // the whole point of offering Settings is that the person goes and CHANGES the answer — and coming
+  // back to an app that still believes the old one is the dead end again with extra steps. The only
+  // moment it can change is while we are in the background, so that is exactly when to forget it.
+  forget(){ this._state = null; },
   // 'ok' — a camera exists and is not refused (prompt or granted; the OS asks when we actually open it)
   // 'denied' — refused or restricted; nothing will happen until they change it in Settings
   // 'none' — no camera on this device (the Simulator)
@@ -27774,13 +27854,7 @@ const CameraAccess = {
 // tap in the food log. Read the cached answer and click in the same turn.
 function snapMeal(){
   const st = CameraAccess.stateSync();
-  if(st === 'denied'){
-    // Open the library FIRST, while the tap is still live, so the meal can still be logged — then
-    // explain. Reversed, the toast would be fine and the picker would never appear.
-    chooseMealPhoto();
-    CameraAccess.explainDenied('Opening your photo library instead.');
-    return;
-  }
+  if(st === 'denied'){ _mealCameraOff(); return; }
   // 'ok' goes straight to the viewfinder. 'web', 'none' and a cold cache all take the chooser, which
   // is what the app did before any of this and always works.
   const id = (st === 'ok') ? 'meal-camera-input' : 'meal-photo-input';
@@ -27794,6 +27868,24 @@ function retryMealPhoto(){
   let from = 'camera';
   try{ from = window.__mealPhotoFrom || 'camera'; }catch(_){}
   return (from === 'library') ? chooseMealPhoto() : snapMeal();
+}
+// THE EXPLANATION HAS TO BE READABLE. The first version of this opened the photo library and then
+// fired a toast — behind the iOS picker it had just raised, so the only sentence telling the person
+// why the camera did not open was on a screen nobody was looking at, and gone by the time they came
+// back. A sheet instead, with the two things they might actually want. askConfirm resolves in a
+// MICROTASK, which is the same task as the button tap, so the file input below still has its user
+// gesture; that is the difference between this and awaiting the native bridge.
+async function _mealCameraOff(){
+  const can = (typeof CameraAccess !== 'undefined') && CameraAccess.canOpenSettings();
+  let go = false;
+  try{
+    go = await askConfirm('Camera access is off',
+      'To Try can\u2019t open the camera until you turn it back on' + (can ? ' in Settings' : '') +
+      '. Choosing a photo you already took, and typing the meal, both still work.',
+      { confirmLabel: can ? 'Open Settings' : 'Choose a photo', cancelLabel: can ? 'Choose a photo instead' : 'Not now', danger: false });
+  }catch(_){ go = false; }
+  if(go && can){ CameraAccess.openSettings(); return; }
+  chooseMealPhoto();
 }
 // A plate you already photographed — the reason the plain input exists at all.
 function chooseMealPhoto(){
@@ -30325,6 +30417,23 @@ function macrosForCalories(cal, opts){
 // reality. That is the precise harm the comment directly above this function was written about, and
 // it came back through a different door. This normaliser also un-breaks devices that already have
 // 'manual' on disk; the fact that they typed it themselves now lives in totry_goal_source.
+// THE PROMPT FOR "TODAY'S MEALS" — built from the person's real targets, and silent about numbers
+// when they have them turned off. The button used to carry a literal "2000-2200 cal target" in its
+// onclick, which was wrong twice over: it ignored whatever this person's target actually is (the
+// whole point of the TDEE work), and it instructed the model to talk in calories to someone who had
+// switched calories OFF — the one promise the Nourish tab makes and keeps everywhere else.
+function todaysMealsPrompt(){
+  let cal = 0, pro = 0;
+  try{ const g = ls('totry_nut_goals') || {}; cal = Math.round(g.cal || 0); pro = Math.round(g.pro || 0); }catch(_){}
+  const gentle = (typeof nutGentle === 'function') && nutGentle();
+  const target = cal > 0
+    ? ('Their target is about ' + cal + ' cal' + (pro > 0 ? ' and ' + pro + 'g protein' : '') + ' today.')
+    : 'They have not set a calorie target, so size it sensibly for them rather than guessing a number at them.';
+  const rule = gentle
+    ? ' IMPORTANT: this person has numbers turned OFF and must never read one. Size the day to the target above, but do NOT write any calorie or macro figure in ANY text you return — describe portions in food terms (a palm of chicken, a fist of rice).'
+    : '';
+  return 'Full day of meals — exact food' + (gentle ? '' : ', calories, protein') + '. ' + target + rule;
+}
 function _goalDirRaw(){
   try{
     const v = String(ls('totry_calorie_goal_type') || '').toLowerCase();
@@ -40007,7 +40116,14 @@ function renderMuscleHeatmap(){
     '<text x="60" y="232" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.35)" font-family="DM Mono,monospace">BACK</text></svg>';
   box.innerHTML = '<div class="card" style="margin-top:8px"><div class="card-hd" style="margin-bottom:4px">Muscle map &middot; last 7 days</div>'+
     '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Brighter gold = more sets this week. Dark = untouched.</div>'+
-    '<div style="display:flex;justify-content:center;gap:14px">'+front+back+'</div>'+
+    // AN ALWAYS-DARK PANEL, the way .breath-overlay already does it. This diagram is built entirely
+    // out of white-on-dark alphas — untouched muscles are rgba(255,255,255,0.05) and the card's own
+    // caption says "Dark = untouched" — so on the light theme the whole body went invisible on cream
+    // and the sentence explaining it described shapes nobody could see. Converting just the labels to
+    // a token would have left that caption lying. Giving the figure its own ground makes the fixed
+    // ink correct rather than merely overlooked, which is the rule this codebase already states:
+    // fixed ink only on always-dark surfaces, tokens on themed ones.
+    '<div style="display:flex;justify-content:center;gap:14px;background:#14141a;border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px 6px">'+front+back+'</div>'+
     _renderSetsPerMuscle() + '</div>';
 }
 // WS3: weekly sets per muscle vs the 10–20 sets/week growth target + balance warnings.
@@ -40473,12 +40589,12 @@ function showExerciseProgress(exName){
   });
   
   const svg = '<svg aria-hidden="true" viewBox="0 0 ' + w + ' ' + h + '" style="width:100%;height:auto;background:var(--bg3);border-radius:8px">' +
-    '<text x="4" y="14" font-family="DM Mono, monospace" font-size="9" fill="#888">' + maxOrm + 'kg</text>' +
-    '<text x="4" y="' + (h - 26) + '" font-family="DM Mono, monospace" font-size="9" fill="#888">' + minOrm + 'kg</text>' +
+    '<text x="4" y="14" font-family="DM Mono, monospace" font-size="9" fill="var(--tx3)">' + maxOrm + 'kg</text>' +
+    '<text x="4" y="' + (h - 26) + '" font-family="DM Mono, monospace" font-size="9" fill="var(--tx3)">' + minOrm + 'kg</text>' +
     '<path d="' + pathData + '" stroke="var(--go)" stroke-width="2" fill="none"/>' +
     points +
-    '<text x="' + padL + '" y="' + (h - 6) + '" font-family="DM Mono, monospace" font-size="9" fill="#666">' + dataPoints[0].date.replace(/^.+?, /, '') + '</text>' +
-    '<text x="' + (w - padR - 50) + '" y="' + (h - 6) + '" font-family="DM Mono, monospace" font-size="9" fill="#666">' + dataPoints[dataPoints.length-1].date.replace(/^.+?, /, '') + '</text>' +
+    '<text x="' + padL + '" y="' + (h - 6) + '" font-family="DM Mono, monospace" font-size="9" fill="var(--tx3)">' + dataPoints[0].date.replace(/^.+?, /, '') + '</text>' +
+    '<text x="' + (w - padR - 50) + '" y="' + (h - 6) + '" font-family="DM Mono, monospace" font-size="9" fill="var(--tx3)">' + dataPoints[dataPoints.length-1].date.replace(/^.+?, /, '') + '</text>' +
   '</svg>';
   
   // Last 5 sessions table
@@ -45526,7 +45642,10 @@ function showPrivacyPolicy(){
         '<li><strong style="color:var(--tx)">Prayer times</strong> — if you use them, your location is rounded to about a kilometre and sent to api.aladhan.com to work out the times where you are. The rounded figure is not stored on my server and is not linked to your account. You can skip location entirely and type your city instead.</li>' +
         '<li><strong style="color:var(--tx)">Exercise GIFs</strong> — exercise name is sent to ExerciseDB / Wger.</li>' +
         '<li><strong style="color:var(--tx)">Scripture you read</strong> \u2014 the passage you open is fetched live, so the service sees which one: the Qur\u2019an from api.alquran.cloud, the Bhagavad Gita from vedicscriptures.github.io, and the Dhammapada from suttacentral.net. The Bible is fetched the same way: the ESV goes through my own server when it is available, but the public translations (ASV, KJV, WEB) and the study notes come straight from bible.helloao.org, bible-api.com and cdn.jsdelivr.net, so those services see the passage \u2014 and an ESV request falls back to them if my server is down. Nothing about you is attached to any of them.</li>' +
-        '<li><strong style="color:var(--tx)">Currency rates</strong> — your selected currency is sent to api.frankfurter.dev.</li>' +
+        // Currency rates were listed here and no longer happen: fetchCurrencyRates() was removed at
+        // v600.4 because nothing had ever read the rates it cached. A privacy page that claims a
+        // request the app does not make is wrong in the direction that matters least, and still
+        // wrong — this list is the one place a person is told exactly who hears from them.
         '<li><strong style="color:var(--tx)">Strava</strong> — if you connect it, Strava sees your access tokens and serves your activities. You explicitly authorise this via OAuth.</li>' +
         '<li><strong style="color:var(--tx)">Hevy</strong> — if you enter an API key, Hevy sees your sync requests. You explicitly authorise this.</li>' +
         '<li><strong style="color:var(--tx)">Bible verse lookups</strong> — verse references go to api.esv.org.</li>' +
@@ -46044,7 +46163,20 @@ async function enablePushReminders(){
   if(typeof Notify!=='undefined' && Notify.isNative && Notify.isNative()){
     try{
       const granted = await Notify.requestPermission();
-      if(!granted){ showToast('No problem','You can enable reminders anytime in Settings.'); renderPushSettings(); return; }
+      if(!granted){
+        // "You can enable reminders anytime in Settings" was neither true nor useful: iOS asks ONCE,
+        // so after a Don't Allow this permission can never be granted from inside the app again —
+        // requestPermission() returns false for ever — and the Settings it names is the screen the
+        // person is already standing on. So the whole reach-out feature became permanently
+        // unreachable and the app blamed a screen that could not fix it. Say what is actually true,
+        // and offer the one door that works.
+        const _can = (typeof canOpenAppSettings==='function') && canOpenAppSettings();
+        showToast('Notifications are switched off',
+          'iOS only asks once, so this has to be turned back on in your phone\u2019s Settings \u2014 To Try \u2192 Notifications.' +
+          (_can ? ' Tap here to go there.' : ''),
+          _can ? function(){ openAppSettings(); } : undefined);
+        renderPushSettings(); return;
+      }
       const prefs = _pushPrefs(); prefs.enabled = true; ls('totry_push_prefs', prefs);
       _scheduleNativeReminders(prefs);
       if(typeof scheduleReachOut==='function') scheduleReachOut();
@@ -46059,7 +46191,13 @@ async function enablePushReminders(){
     if(!sb || !currentUser){ showToast('Sign in first','Reminders need an account so they can reach this device.'); return; }
     if(!('Notification' in window) || !('PushManager' in window)){ showToast('Not supported here','This browser cannot receive push notifications.'); renderPushSettings(); return; }
     const perm = await Notification.requestPermission();
-    if(perm !== 'granted'){ showToast('No problem','You can enable reminders anytime in Settings.'); renderPushSettings(); return; }
+    if(perm !== 'granted'){
+      // The web copy of the same dead end: a browser asks once too, and "in Settings" meant the app's
+      // Settings screen, which cannot grant it. Name the place that can.
+      showToast('Notifications are blocked',
+        'Your browser is blocking notifications for To Try. Turn them back on in the site settings for this page — the padlock beside the address.');
+      renderPushSettings(); return;
+    }
     const reg = await navigator.serviceWorker.ready;
     let sub = await reg.pushManager.getSubscription();
     if(!sub){ sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:_b64uToU8(PUSH_VAPID_PUBLIC) }); }
@@ -46485,7 +46623,11 @@ async function initApp(){
   // this shipped has nothing in the native mirror, so its very first backgrounding would be uncovered.
   try{ if(typeof Lock==='object' && Lock._mirrorToNative) Lock._mirrorToNative(Lock.enabled()); }catch(_){}
   // Background: refresh currency rates if user has set a preference different from base
-  if(typeof fetchCurrencyRates === 'function') fetchCurrencyRates(getUserCurrency());
+  // NOT fetchCurrencyRates(). It called api.frankfurter.dev on EVERY launch and cached rates that
+  // nothing in this app has ever read — the currency setting changes the SYMBOL only, and the code
+  // says so in as many words: "stored amounts are never multiplied by an exchange rate, because a
+  // person's debt is not a number we get to reinterpret." So it was a third-party request on every
+  // cold start, telling that host how often this person opens the app, for a result with no reader.
   // Personalise coach
   const cw=document.getElementById('coach-welcome');
   if(cw)cw.textContent='Hey '+userName+'. Day '+getDayCount()+'. Your coach is here \u2014 vices, faith, habits, finances, training. What do you need right now?';
@@ -51519,6 +51661,14 @@ function renderDualStreaks(){
   const sober=(function(){
     try{
       loadV();
+      // NO FIGHT NAMED = 0, not the journey day count. `d || getSoberStreak()` meant someone who has
+      // never named a vice saw "Day 12 · Days in the fight" while the woven row directly above said
+      // "no fight named yet" and the Fight tab's own hero said 0 — three numbers for one fact, on one
+      // scroll. This is the same fix v599 made to the Score hero, reaching the surface it missed;
+      // a rename or a recalculation landing on one screen and not its neighbour is the defect this
+      // codebase repeats most. The fallback stays for the real case it was written for: vices exist
+      // but predate fightingSince having a value.
+      if(!(vices||[]).length) return 0;
       let d=0;
       (vices||[]).forEach(v=>{ const n=(typeof viceFightDays==='function')?viceFightDays(v):0; if(n>d) d=n; });
       return d || getSoberStreak();

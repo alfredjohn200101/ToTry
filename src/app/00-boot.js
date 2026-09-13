@@ -435,7 +435,13 @@ function _unitsNote(){
     // these are already theirs, use them as they are, and answer in the same units.
     return '\nUNITS: every figure here is ALREADY in this person\u2019s own units \u2014 weight in ' + wu +
            ', distance in ' + du + '. Do NOT convert them. Quote them back exactly as given, and use ' +
-           wu + ' and ' + du + ' for anything you work out yourself. Never say kg or km to them.';
+           wu + ' and ' + du + ' for anything you work out yourself. Never say kg or km to them.' +
+           // THE ONE EXCEPTION, NAMED. Lifted load and session volume are deliberately still kg (see
+           // the units note in CLAUDE.md), so "every figure here is in lb" was simply false — the very
+           // same prompt carries "Bench 100kg" a few lines down, and the model was under instruction
+           // to quote it back as pounds. That is the whole lesson of the last units round arriving one
+           // layer up: the screens were converted for fifty versions and nobody told the VOICE.
+           ' The ONE exception is barbell and dumbbell load and session volume, which this person tracks in kilograms: those figures are already kg, are labelled kg, and must be quoted back in kg.';
   }catch(_){ return ''; }
 }
 function _todayLocalISO(d){
@@ -891,7 +897,11 @@ const SYNC_KEYS = [
   // stung most: it is the anti-engagement metric the app SHOWS — the count of times someone came,
   // regulated, and left — and switching phones silently reset it to zero. train_goal/train_days are
   // the answers that generated totry_split, which already synced without them.
-  'totry_health_write',   // opted in to mirroring logs into Apple Health — see HealthWrite
+  // totry_health_write is NOT here, for the same reason totry_push_prefs is not: HealthKit write
+  // authorisation is granted per installation, so a synced 'on' told a fresh phone it was allowed
+  // to write into Apple Health before that device had ever asked — every write then failing
+  // silently while the Settings row said it was on. Re-opt in per device, which needs that
+  // device's permission anyway.
   'totry_cba',   // the person's own cost-benefit reasons, per vice — see openCBA()
   'totry_releases','totry_feelings','totry_hunger_log','totry_breath_log',
   'totry_meal_plan','totry_meal_prefs','totry_train_goal','totry_train_days',

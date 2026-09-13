@@ -2045,6 +2045,11 @@ const CameraAccess = {
   _state: null,
   stateSync(){ return this._state; },
   warm(){ try{ const r = this.state(); if(r && r.catch) r.catch(function(){}); }catch(_){} },
+  // AND IT HAS TO GO STALE. The cache is what lets snapMeal() click in the same turn as the tap, but
+  // the whole point of offering Settings is that the person goes and CHANGES the answer — and coming
+  // back to an app that still believes the old one is the dead end again with extra steps. The only
+  // moment it can change is while we are in the background, so that is exactly when to forget it.
+  forget(){ this._state = null; },
   // 'ok' — a camera exists and is not refused (prompt or granted; the OS asks when we actually open it)
   // 'denied' — refused or restricted; nothing will happen until they change it in Settings
   // 'none' — no camera on this device (the Simulator)
@@ -2103,13 +2108,7 @@ const CameraAccess = {
 // tap in the food log. Read the cached answer and click in the same turn.
 function snapMeal(){
   const st = CameraAccess.stateSync();
-  if(st === 'denied'){
-    // Open the library FIRST, while the tap is still live, so the meal can still be logged — then
-    // explain. Reversed, the toast would be fine and the picker would never appear.
-    chooseMealPhoto();
-    CameraAccess.explainDenied('Opening your photo library instead.');
-    return;
-  }
+  if(st === 'denied'){ _mealCameraOff(); return; }
   // 'ok' goes straight to the viewfinder. 'web', 'none' and a cold cache all take the chooser, which
   // is what the app did before any of this and always works.
   const id = (st === 'ok') ? 'meal-camera-input' : 'meal-photo-input';
@@ -2123,6 +2122,24 @@ function retryMealPhoto(){
   let from = 'camera';
   try{ from = window.__mealPhotoFrom || 'camera'; }catch(_){}
   return (from === 'library') ? chooseMealPhoto() : snapMeal();
+}
+// THE EXPLANATION HAS TO BE READABLE. The first version of this opened the photo library and then
+// fired a toast — behind the iOS picker it had just raised, so the only sentence telling the person
+// why the camera did not open was on a screen nobody was looking at, and gone by the time they came
+// back. A sheet instead, with the two things they might actually want. askConfirm resolves in a
+// MICROTASK, which is the same task as the button tap, so the file input below still has its user
+// gesture; that is the difference between this and awaiting the native bridge.
+async function _mealCameraOff(){
+  const can = (typeof CameraAccess !== 'undefined') && CameraAccess.canOpenSettings();
+  let go = false;
+  try{
+    go = await askConfirm('Camera access is off',
+      'To Try can\u2019t open the camera until you turn it back on' + (can ? ' in Settings' : '') +
+      '. Choosing a photo you already took, and typing the meal, both still work.',
+      { confirmLabel: can ? 'Open Settings' : 'Choose a photo', cancelLabel: can ? 'Choose a photo instead' : 'Not now', danger: false });
+  }catch(_){ go = false; }
+  if(go && can){ CameraAccess.openSettings(); return; }
+  chooseMealPhoto();
 }
 // A plate you already photographed — the reason the plain input exists at all.
 function chooseMealPhoto(){
@@ -4654,6 +4671,23 @@ function macrosForCalories(cal, opts){
 // reality. That is the precise harm the comment directly above this function was written about, and
 // it came back through a different door. This normaliser also un-breaks devices that already have
 // 'manual' on disk; the fact that they typed it themselves now lives in totry_goal_source.
+// THE PROMPT FOR "TODAY'S MEALS" — built from the person's real targets, and silent about numbers
+// when they have them turned off. The button used to carry a literal "2000-2200 cal target" in its
+// onclick, which was wrong twice over: it ignored whatever this person's target actually is (the
+// whole point of the TDEE work), and it instructed the model to talk in calories to someone who had
+// switched calories OFF — the one promise the Nourish tab makes and keeps everywhere else.
+function todaysMealsPrompt(){
+  let cal = 0, pro = 0;
+  try{ const g = ls('totry_nut_goals') || {}; cal = Math.round(g.cal || 0); pro = Math.round(g.pro || 0); }catch(_){}
+  const gentle = (typeof nutGentle === 'function') && nutGentle();
+  const target = cal > 0
+    ? ('Their target is about ' + cal + ' cal' + (pro > 0 ? ' and ' + pro + 'g protein' : '') + ' today.')
+    : 'They have not set a calorie target, so size it sensibly for them rather than guessing a number at them.';
+  const rule = gentle
+    ? ' IMPORTANT: this person has numbers turned OFF and must never read one. Size the day to the target above, but do NOT write any calorie or macro figure in ANY text you return — describe portions in food terms (a palm of chicken, a fist of rice).'
+    : '';
+  return 'Full day of meals — exact food' + (gentle ? '' : ', calories, protein') + '. ' + target + rule;
+}
 function _goalDirRaw(){
   try{
     const v = String(ls('totry_calorie_goal_type') || '').toLowerCase();
