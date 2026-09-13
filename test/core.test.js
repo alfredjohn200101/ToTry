@@ -6959,4 +6959,63 @@ H.section('a grief is not a streak, and a guest is not a stranger');
   H.ok(/curFaith\(\)\.divine\) \? ' Same Lord\. Same grace\.'/.test(code), '"Same Lord. Same grace." is gated too');
 }
 
+H.section('one target for today, quoted the same by every screen and by the coach');
+{
+  const code = H.code(H.html);
+  // cycledTarget() had exactly ONE caller — the Nourish diary — so switching calorie cycling on moved
+  // the diary's number and nothing else. Home's next step, the fuel plan and the whole-person brief
+  // all kept quoting the flat base. Measured on a training day with cycling on: 2752 vs 2400, so
+  // three screens and the coach were 352 cal apart on the one number the tab exists to state.
+  const acc = H.code(H.extractFn('todaysNutGoals'));
+  H.ok(/cycledTarget\(/.test(acc), 'there is one accessor, and it asks about cycling');
+  H.ok(/return c \|\| base/.test(acc), 'falling back to the base when cycling is off or cannot apply');
+
+  // Every reader of the day's target goes through it. A reader that still reads the raw key is a
+  // screen that will disagree with the diary the moment cycling is switched on.
+  const readers = ['getLifeState', 'lifeStateBrief', 'buildPTCtx', 'getNextStep'];
+  for(const fn of readers){
+    const src = H.code(H.extractFn(fn));
+    if(!/totry_nut_goals/.test(src)) continue;      // this one does not quote the target at all
+    H.ok(/todaysNutGoals\(\)/.test(src), fn + ' quotes today’s target, not the flat base');
+  }
+  // And the fuel planner, which sizes a whole day.
+  H.ok(/todaysNutGoals\(\)/.test(code.slice(code.indexOf('_fuelDietStr') - 3000, code.indexOf('_fuelDietStr'))) ||
+       /const goals = \(typeof todaysNutGoals/.test(code),
+    'the fuel plan sizes the day to today’s target');
+}
+
+H.section('a person can copy the words the app wrote them, and the app owns its own controls');
+{
+  const code = H.code(H.html);
+
+  // THE SELECTION ESCAPE HATCH NAMED CLASSES NOBODY APPLIED. body{user-select:none} is deliberate —
+  // UI should not feel like a webpage — but the exemption for "content the user authored" listed four
+  // classes and only one of them (.prayer-text, at four sites) was ever used. So on iOS, where long
+  // press is the whole of copy, a person could not select their own journal entry, a weekly read, or
+  // a prayer the app wrote them for their mum's surgery to text it to her.
+  const sel = code.slice(code.indexOf('-webkit-user-select:none') - 200, code.indexOf('-webkit-user-select:text') + 200);
+  H.ok(/\[style\*="white-space:pre-wrap"\]/.test(code),
+    'the exemption matches authored prose by its style, not only by a class someone must remember');
+  H.ok(/class="selectable"/.test(code), 'and the class is actually applied somewhere (calibration)');
+
+  // THE APP'S OWN SLIDER STYLE WAS APPLIED TO ZERO ELEMENTS. All seven range inputs fell through to
+  // the generic `input` rule and rendered as a native slider inside a bordered text-field box —
+  // including the six on the Sunday check-in, the most-used control in Track.
+  H.ok(/\.ci-slider,input\[type="range"\]\{/.test(code), 'range inputs get the app’s slider style by type');
+  H.ok(/input\[type="range"\]::-webkit-slider-thumb/.test(code), 'and its thumb');
+
+  // ONE FIGURE FOR MONEY RECLAIMED. reclaimedFigure() is documented as the single source of truth and
+  // knows both models; getLifeState used totalReclaimed(), which knows only the per-vice one — so a
+  // person who used "Calculate money saved" saw a real number on Money, "not tracked yet" on Home,
+  // and the coach was never told it existed.
+  const gls = H.code(H.extractFn('getLifeState'));
+  H.ok(/reclaimedFigure\(\)/.test(gls), 'the whole-person state reads the source of truth for reclaimed money');
+  H.ok(/totalReclaimed\(\)/.test(gls), 'with the per-vice figure still there as the fallback');
+
+  // DECLARED AND NEVER WIRED, removed rather than left one line from being seen: a seven-day plan
+  // carrying one person's own rehab program and a faith day, for whichever tradition installed the app.
+  H.ok(!/DEFAULT_SPLIT/.test(code), 'the unreferenced default training split is gone');
+  H.ok(/getUserSplit/.test(code), 'and the function that actually answers that question remains (calibration)');
+}
+
 H.report();

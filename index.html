@@ -1037,9 +1037,13 @@ details[open]>summary::after{transform:rotate(180deg)}
 .ci-row:last-child{margin-bottom:0}
 .ci-icon{font-size:18px;width:24px;flex-shrink:0;text-align:center}
 .ci-label{font-size:12px;color:var(--tx2);width:80px;flex-shrink:0}
-.ci-slider{flex:1;-webkit-appearance:none;appearance:none;height:5px;background:var(--bg4);border-radius:3px;outline:none}
-.ci-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--go);cursor:pointer;border:2px solid var(--bg2);box-shadow:0 1px 3px rgba(0,0,0,0.3)}
-.ci-slider::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--go);cursor:pointer;border:2px solid var(--bg2)}
+/* MATCH BY TYPE, not only by a class nobody applied. .ci-slider was written for the check-in
+   sliders and then never put on one of them — all seven range inputs in the app fell through to the
+   generic `input` rule instead and rendered as a native slider sitting inside a bordered, padded
+   text-field box. The six 1-10 sliders on the Sunday check-in are the most-used control in Track. */
+.ci-slider,input[type="range"]{flex:1;-webkit-appearance:none;appearance:none;height:5px;background:var(--bg4);border-radius:3px;outline:none}
+.ci-slider::-webkit-slider-thumb,input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--go);cursor:pointer;border:2px solid var(--bg2);box-shadow:0 1px 3px rgba(0,0,0,0.3)}
+.ci-slider::-moz-range-thumb,input[type="range"]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--go);cursor:pointer;border:2px solid var(--bg2)}
 .ci-val{font-family:'DM Mono',monospace;font-size:11px;color:var(--go);width:22px;text-align:right;flex-shrink:0}
 .ci-save{margin-top:10px;padding:8px;font-size:12px}
 
@@ -1381,7 +1385,16 @@ html, body, .app{
 *{ -webkit-touch-callout:none; }
 body{ -webkit-user-select:none; user-select:none; }
 /* ...but DO allow selecting/typing in real text fields and content the user authored. */
-input,textarea,[contenteditable],.selectable,.prayer-text,.journal-entry-text,.ai-output{
+/* MATCHED BY STYLE, not only by class. Three of the four classes named here — .selectable,
+   .journal-entry-text and .ai-output — were applied to NOTHING (only .prayer-text was ever used, at
+   four sites), so the escape hatch for "content the user authored" let almost none of it through:
+   a person could not select or copy their own journal entry, a prayer the app wrote them for their
+   mum's surgery, a weekly read, or anything the coach said. On iOS that is the whole of copy — long
+   press does nothing. white-space:pre-wrap is what this codebase puts on multi-line authored and AI
+   prose and on essentially nothing else, so it identifies the text far more reliably than a class
+   somebody has to remember; the attribute-selector idiom is the one used for scroll areas below. */
+input,textarea,[contenteditable],.selectable,.prayer-text,.journal-entry-text,.ai-output,
+[style*="white-space:pre-wrap"],[style*="white-space: pre-wrap"]{
   -webkit-user-select:text; user-select:text; -webkit-touch-callout:default;
 }
 /* Smooth momentum scrolling inside every scroll area (the #1 "this is native" cue on iOS). */
@@ -5517,7 +5530,7 @@ function applyCurrencySymbols(){
 // Bump APP_VERSION each release. The "what's new" card ONLY shows when the current
 // version is flagged major:true — routine updates ship silently. New users instead get
 // a one-time intro, not a changelog. (That intro was removed at v519 — see app.js.)
-const APP_VERSION = 'v600';
+const APP_VERSION = 'v601';
 const CHANGELOG = {
   // Example of a major release entry (set major:true to surface the modal):
   // 'v50': { major:true, title:'Big update', items:['...'] }
@@ -8796,7 +8809,9 @@ function getLifeState(){
       avgPro7: nutDays7 ? Math.round(nutPro7/nutDays7) : null,
       daysLogged7: nutDays7,
       // The target, so the brief can describe WHERE they are without quoting a number (gentle mode).
-      goalCal: (function(){ try{ const g=ls('totry_nut_goals')||{}; return g.cal||null; }catch(_){ return null; } })()
+      // todaysNutGoals(), so the brief quotes the target this person is actually eating to today —
+      // calorie cycling moved the diary's number and left every other surface on the flat base.
+      goalCal: (function(){ try{ const g=(typeof todaysNutGoals==='function')?todaysNutGoals():(ls('totry_nut_goals')||{}); return g.cal||null; }catch(_){ return null; } })()
     },
     body: { currentWeight: curWeight, recomp },
     soul: {
@@ -8832,7 +8847,12 @@ function getLifeState(){
                  quality: qual, qualityWord: qualWord };
       }catch(_){ return { lastNight:null, avg7:null, nights7:0, goal:8, debt7:null, short:false, quality:null, qualityWord:null }; }
     })(),
-    money: (function(){ try{ const f=ls('totry_f')||{}; const debts=f.d||[]; const totalDebt=debts.reduce((s,d)=>s+Math.max(0,(d.t||0)-(d.p||0)),0); const reclaimed=(typeof totalReclaimed==='function')?totalReclaimed():0; return { totalDebt:Math.round(totalDebt), reclaimed, hasDebt: totalDebt>0 }; }catch(_){ return { totalDebt:0, reclaimed:0, hasDebt:false }; } })(),
+    money: (function(){ try{ const f=ls('totry_f')||{}; const debts=f.d||[]; const totalDebt=debts.reduce((s,d)=>s+Math.max(0,(d.t||0)-(d.p||0)),0); // reclaimedFigure(), not totalReclaimed(). reclaimedFigure is documented in 16-money.js as "the
+    // single source of truth" and it knows BOTH models — the per-vice cost, and the legacy flat
+    // estimate a person types into "Calculate money saved". totalReclaimed only knows the first, so
+    // anyone who used that form had the Money tab's biggest green number showing a real figure while
+    // Home said money was not tracked yet and the coach was never told any of it existed.
+    const reclaimed=(function(){ try{ if(typeof reclaimedFigure==='function'){ const _r=reclaimedFigure(); if(_r && _r.amount!=null) return Math.round(_r.amount)||0; } }catch(_){ } return (typeof totalReclaimed==='function')?totalReclaimed():0; })(); return { totalDebt:Math.round(totalDebt), reclaimed, hasDebt: totalDebt>0 }; }catch(_){ return { totalDebt:0, reclaimed:0, hasDebt:false }; } })(),
     // Her cycle, if she chose to track it. Present ONLY when she opted in — the whole-life brain
     // must never quietly hold something she didn't hand it.
     // Her cycle reaches the AI ONLY on a separate, explicit opt-in (cycleGet().aiOK). Tracking it is
@@ -8994,7 +9014,7 @@ function buildPTCtx(){
   const split = (typeof getUserSplit==='function') ? getUserSplit() : [];
   const ti = (typeof tIdx==='function') ? tIdx() : 0;
   const todayFocus = split[ti] && split[ti].focus ? split[ti].focus : 'Rest';
-  const nutGoals = ls('totry_nut_goals') || defaultNutGoals();
+  const nutGoals = (typeof todaysNutGoals==='function') ? todaysNutGoals() : (ls('totry_nut_goals') || defaultNutGoals());
   const bodyEntries = ls('totry_body') || [];
   const currentWeight = bodyEntries[0] && bodyEntries[0].weight ? bodyEntries[0].weight : null;
   const goalWeight = ls('totry_goal_weight') || null;
@@ -9086,7 +9106,7 @@ function buildCtx(){
   const split=getUserSplit();
   const ti=tIdx();
   const todayFocus=split[ti]?.focus||'Rest';
-  const nutGoals=ls('totry_nut_goals')||defaultNutGoals();
+  const nutGoals=(typeof todaysNutGoals==='function')?todaysNutGoals():(ls('totry_nut_goals')||defaultNutGoals());
   const bodyEntries=ls('totry_body')||[];
   const currentWeight=bodyEntries[0]?.weight||null;
   // Flagged entries are excluded permanently. Gating at write time is not enough on its own: this line
@@ -24183,7 +24203,7 @@ function renderJournal(){
       const lTag=e.urges>0?'<span class="je-tag l">'+plural(e.urges,'battle')+'</span>':'';
       const dTag=e.day?'<span class="je-tag">Day '+e.day+'</span>':'';
       item.innerHTML='<div class="je-date">'+_escFew(e.date||'')+'</div><div class="je-mood">'+_escFew(e.mood||'')+'</div><div class="je-prev">'+_escFew(String(e.text||'').slice(0,240))+'</div><div class="je-tags">'+dTag+wTag+lTag+'</div>';
-      item.onclick=()=>{const m=document.createElement('div');m.className='modal-bg open';m.innerHTML='<div class="modal"><div class="modal-handle"></div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);margin-bottom:8px;letter-spacing:0.1em">'+e.date+(e.day?' \u2014 Day '+e.day:'')+'</div><div style="font-size:28px;margin-bottom:12px">'+_escFew(e.mood||'')+'</div><div style="font-size:14px;line-height:1.75;color:var(--tx);white-space:pre-wrap;margin-bottom:16px">'+_escFew(e.text||'')+'</div><button class="btn" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx3);margin-bottom:8px" onclick="this.closest(\'.modal-bg\').remove();deleteJournalEntry(\''+String(e.ts||'').replace(/[\\'"\\\\]/g,'')+'\')">Delete this entry</button><button class="btn" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div>';document.body.appendChild(m);};
+      item.onclick=()=>{const m=document.createElement('div');m.className='modal-bg open';m.innerHTML='<div class="modal"><div class="modal-handle"></div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);margin-bottom:8px;letter-spacing:0.1em">'+e.date+(e.day?' \u2014 Day '+e.day:'')+'</div><div style="font-size:28px;margin-bottom:12px">'+_escFew(e.mood||'')+'</div><div class="selectable" style="font-size:14px;line-height:1.75;color:var(--tx);white-space:pre-wrap;margin-bottom:16px">'+_escFew(e.text||'')+'</div><button class="btn" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx3);margin-bottom:8px" onclick="this.closest(\'.modal-bg\').remove();deleteJournalEntry(\''+String(e.ts||'').replace(/[\\'"\\\\]/g,'')+'\')">Delete this entry</button><button class="btn" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div>';document.body.appendChild(m);};
     } else if(rec.kind==='morning'){
       const parts=[]; if(e.gratitude)parts.push('Grateful: '+_escFew(e.gratitude)); if(e.intention)parts.push('Intention: '+_escFew(e.intention));
       const hasContent = e.gratitude || e.intention;
@@ -30473,6 +30493,19 @@ function macrosForCalories(cal, opts){
 // onclick, which was wrong twice over: it ignored whatever this person's target actually is (the
 // whole point of the TDEE work), and it instructed the model to talk in calories to someone who had
 // switched calories OFF — the one promise the Nourish tab makes and keeps everywhere else.
+// TODAY'S TARGET, WHEREVER IT IS ASKED FOR. cycledTarget() had exactly ONE caller — the Nourish
+// diary — so switching calorie cycling on moved the diary's number and nothing else: Home's next
+// step, the fuel plan and the whole-person brief all kept quoting the flat base, up to a few hundred
+// calories away on any given day. Three screens and the coach disagreeing about one number, because
+// the feature was wired at the surface that introduced it and nowhere else. One accessor, so a
+// reader cannot forget to ask.
+function todaysNutGoals(){
+  let base;
+  try{ base = ls('totry_nut_goals') || (typeof defaultNutGoals==='function' ? defaultNutGoals() : {cal:2100, pro:170}); }
+  catch(_){ base = {cal:2100, pro:170}; }
+  try{ const c = (typeof cycledTarget==='function') ? cycledTarget(base) : null; return c || base; }
+  catch(_){ return base; }
+}
 function todaysMealsPrompt(){
   let cal = 0, pro = 0;
   try{ const g = ls('totry_nut_goals') || {}; cal = Math.round(g.cal || 0); pro = Math.round(g.pro || 0); }catch(_){}
@@ -32615,7 +32648,8 @@ function _saveCalEvents(list){ ls('totry_cal_events', list.slice(0,300)); if(typ
 // training, goal and budget. Reuses getLifeState/goals/userSex — never re-asks what we know.
 function _fuelCtx(){
   const sex = (typeof userSex==='function' && userSex()) || 'male';
-  const goals = ls('totry_nut_goals') || (typeof defaultNutGoals==='function' ? defaultNutGoals() : {cal:2100, pro:170});
+  // The fuel plan sizes a whole day, so it has to size it to TODAY's target, not the flat base.
+  const goals = (typeof todaysNutGoals==='function') ? todaysNutGoals() : (ls('totry_nut_goals') || (typeof defaultNutGoals==='function' ? defaultNutGoals() : {cal:2100, pro:170}));
   const tdee = ls('totry_tdee_data') || {};
   let goalDir = 'maintain', goalLabel = 'maintaining';
   if(tdee.goal === 'lose'){ goalDir='cut'; goalLabel='leaning down'; }
@@ -35499,15 +35533,12 @@ document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState==='visible' && currentSession.length>0) requestWakeLock();
 });
 
-const DEFAULT_SPLIT=[
-  {focus:'Legs \u2014 Rehab',detail:'Leg press (light), RDL, seated leg curl, step-ups, tibialis raises, calf raises.'},
-  {focus:'Push',detail:'Bench press, incline DB press, OHP, lateral raises, tricep dips.'},
-  {focus:'Pull',detail:'Cable rows, lat pulldown, face pulls, DB rows, bicep curls.'},
-  {focus:'Legs \u2014 Strength',detail:'Progressive overload on leg press. Heavier RDL. Romanian curl.'},
-  {focus:'Push / Pull Hybrid',detail:'High volume. Superset-friendly. Mix chest and back.'},
-  {focus:'Cardio + Core',detail:'25-30 min incline walk or bike. Core circuit. Full stretch.'},
-  {focus:'Rest + God',detail:'No gym. Prayer, Scripture, journalling, plan the week.'},
-];
+// DEFAULT_SPLIT was removed at v600.6. A seven-day plan carrying the founder's own rehab program
+// and a 'Rest + God' day, declared and referenced NOWHERE — 1 occurrence in the whole bundle, its
+// own declaration, against getUserSplit()'s 15. It is the shape this codebase names as its
+// signature defect: it parses, it ships, it does nothing, and it sits one line away from being
+// somebody's default week — one person's rehab prescribed to a stranger, and a faith day handed
+// to whichever tradition happened to install the app. getUserSplit() below never depended on it.
 function getUserSplit(){
   // Only return a real split if the user has actually set one up.
   // Otherwise return empty days so the home screen doesn't promise a "Push/Pull Hybrid" plan
@@ -48071,7 +48102,7 @@ function renderLifeWoven(){
   // BODY — trained + fuel today
   const t=s.training||{}, n=s.nutrition||{}; const bodyBits=[];
   if(t.sessions7>0) bodyBits.push(t.sessions7+' session'+(t.sessions7===1?'':'s')+' this wk');
-  const goalCal=(ls('totry_nut_goals')||{}).cal;
+  const goalCal=((typeof todaysNutGoals==='function')?todaysNutGoals():(ls('totry_nut_goals')||{})).cal;
   // Gentle mode is someone saying "do not show me calorie numbers" — often because counting them is
   // part of what is hurting them. The Nourish tab honours it; Home did not, so the first thing they
   // saw on opening the app was "1,247 cal left". Same words the diary uses, so the two agree.

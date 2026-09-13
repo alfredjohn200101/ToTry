@@ -4676,6 +4676,19 @@ function macrosForCalories(cal, opts){
 // onclick, which was wrong twice over: it ignored whatever this person's target actually is (the
 // whole point of the TDEE work), and it instructed the model to talk in calories to someone who had
 // switched calories OFF — the one promise the Nourish tab makes and keeps everywhere else.
+// TODAY'S TARGET, WHEREVER IT IS ASKED FOR. cycledTarget() had exactly ONE caller — the Nourish
+// diary — so switching calorie cycling on moved the diary's number and nothing else: Home's next
+// step, the fuel plan and the whole-person brief all kept quoting the flat base, up to a few hundred
+// calories away on any given day. Three screens and the coach disagreeing about one number, because
+// the feature was wired at the surface that introduced it and nowhere else. One accessor, so a
+// reader cannot forget to ask.
+function todaysNutGoals(){
+  let base;
+  try{ base = ls('totry_nut_goals') || (typeof defaultNutGoals==='function' ? defaultNutGoals() : {cal:2100, pro:170}); }
+  catch(_){ base = {cal:2100, pro:170}; }
+  try{ const c = (typeof cycledTarget==='function') ? cycledTarget(base) : null; return c || base; }
+  catch(_){ return base; }
+}
 function todaysMealsPrompt(){
   let cal = 0, pro = 0;
   try{ const g = ls('totry_nut_goals') || {}; cal = Math.round(g.cal || 0); pro = Math.round(g.pro || 0); }catch(_){}

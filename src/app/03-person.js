@@ -654,7 +654,9 @@ function getLifeState(){
       avgPro7: nutDays7 ? Math.round(nutPro7/nutDays7) : null,
       daysLogged7: nutDays7,
       // The target, so the brief can describe WHERE they are without quoting a number (gentle mode).
-      goalCal: (function(){ try{ const g=ls('totry_nut_goals')||{}; return g.cal||null; }catch(_){ return null; } })()
+      // todaysNutGoals(), so the brief quotes the target this person is actually eating to today —
+      // calorie cycling moved the diary's number and left every other surface on the flat base.
+      goalCal: (function(){ try{ const g=(typeof todaysNutGoals==='function')?todaysNutGoals():(ls('totry_nut_goals')||{}); return g.cal||null; }catch(_){ return null; } })()
     },
     body: { currentWeight: curWeight, recomp },
     soul: {
@@ -690,7 +692,12 @@ function getLifeState(){
                  quality: qual, qualityWord: qualWord };
       }catch(_){ return { lastNight:null, avg7:null, nights7:0, goal:8, debt7:null, short:false, quality:null, qualityWord:null }; }
     })(),
-    money: (function(){ try{ const f=ls('totry_f')||{}; const debts=f.d||[]; const totalDebt=debts.reduce((s,d)=>s+Math.max(0,(d.t||0)-(d.p||0)),0); const reclaimed=(typeof totalReclaimed==='function')?totalReclaimed():0; return { totalDebt:Math.round(totalDebt), reclaimed, hasDebt: totalDebt>0 }; }catch(_){ return { totalDebt:0, reclaimed:0, hasDebt:false }; } })(),
+    money: (function(){ try{ const f=ls('totry_f')||{}; const debts=f.d||[]; const totalDebt=debts.reduce((s,d)=>s+Math.max(0,(d.t||0)-(d.p||0)),0); // reclaimedFigure(), not totalReclaimed(). reclaimedFigure is documented in 16-money.js as "the
+    // single source of truth" and it knows BOTH models — the per-vice cost, and the legacy flat
+    // estimate a person types into "Calculate money saved". totalReclaimed only knows the first, so
+    // anyone who used that form had the Money tab's biggest green number showing a real figure while
+    // Home said money was not tracked yet and the coach was never told any of it existed.
+    const reclaimed=(function(){ try{ if(typeof reclaimedFigure==='function'){ const _r=reclaimedFigure(); if(_r && _r.amount!=null) return Math.round(_r.amount)||0; } }catch(_){ } return (typeof totalReclaimed==='function')?totalReclaimed():0; })(); return { totalDebt:Math.round(totalDebt), reclaimed, hasDebt: totalDebt>0 }; }catch(_){ return { totalDebt:0, reclaimed:0, hasDebt:false }; } })(),
     // Her cycle, if she chose to track it. Present ONLY when she opted in — the whole-life brain
     // must never quietly hold something she didn't hand it.
     // Her cycle reaches the AI ONLY on a separate, explicit opt-in (cycleGet().aiOK). Tracking it is
@@ -852,7 +859,7 @@ function buildPTCtx(){
   const split = (typeof getUserSplit==='function') ? getUserSplit() : [];
   const ti = (typeof tIdx==='function') ? tIdx() : 0;
   const todayFocus = split[ti] && split[ti].focus ? split[ti].focus : 'Rest';
-  const nutGoals = ls('totry_nut_goals') || defaultNutGoals();
+  const nutGoals = (typeof todaysNutGoals==='function') ? todaysNutGoals() : (ls('totry_nut_goals') || defaultNutGoals());
   const bodyEntries = ls('totry_body') || [];
   const currentWeight = bodyEntries[0] && bodyEntries[0].weight ? bodyEntries[0].weight : null;
   const goalWeight = ls('totry_goal_weight') || null;
@@ -944,7 +951,7 @@ function buildCtx(){
   const split=getUserSplit();
   const ti=tIdx();
   const todayFocus=split[ti]?.focus||'Rest';
-  const nutGoals=ls('totry_nut_goals')||defaultNutGoals();
+  const nutGoals=(typeof todaysNutGoals==='function')?todaysNutGoals():(ls('totry_nut_goals')||defaultNutGoals());
   const bodyEntries=ls('totry_body')||[];
   const currentWeight=bodyEntries[0]?.weight||null;
   // Flagged entries are excluded permanently. Gating at write time is not enough on its own: this line

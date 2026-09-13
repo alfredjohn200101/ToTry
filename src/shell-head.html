@@ -1037,9 +1037,13 @@ details[open]>summary::after{transform:rotate(180deg)}
 .ci-row:last-child{margin-bottom:0}
 .ci-icon{font-size:18px;width:24px;flex-shrink:0;text-align:center}
 .ci-label{font-size:12px;color:var(--tx2);width:80px;flex-shrink:0}
-.ci-slider{flex:1;-webkit-appearance:none;appearance:none;height:5px;background:var(--bg4);border-radius:3px;outline:none}
-.ci-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--go);cursor:pointer;border:2px solid var(--bg2);box-shadow:0 1px 3px rgba(0,0,0,0.3)}
-.ci-slider::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--go);cursor:pointer;border:2px solid var(--bg2)}
+/* MATCH BY TYPE, not only by a class nobody applied. .ci-slider was written for the check-in
+   sliders and then never put on one of them — all seven range inputs in the app fell through to the
+   generic `input` rule instead and rendered as a native slider sitting inside a bordered, padded
+   text-field box. The six 1-10 sliders on the Sunday check-in are the most-used control in Track. */
+.ci-slider,input[type="range"]{flex:1;-webkit-appearance:none;appearance:none;height:5px;background:var(--bg4);border-radius:3px;outline:none}
+.ci-slider::-webkit-slider-thumb,input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--go);cursor:pointer;border:2px solid var(--bg2);box-shadow:0 1px 3px rgba(0,0,0,0.3)}
+.ci-slider::-moz-range-thumb,input[type="range"]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--go);cursor:pointer;border:2px solid var(--bg2)}
 .ci-val{font-family:'DM Mono',monospace;font-size:11px;color:var(--go);width:22px;text-align:right;flex-shrink:0}
 .ci-save{margin-top:10px;padding:8px;font-size:12px}
 
@@ -1381,7 +1385,16 @@ html, body, .app{
 *{ -webkit-touch-callout:none; }
 body{ -webkit-user-select:none; user-select:none; }
 /* ...but DO allow selecting/typing in real text fields and content the user authored. */
-input,textarea,[contenteditable],.selectable,.prayer-text,.journal-entry-text,.ai-output{
+/* MATCHED BY STYLE, not only by class. Three of the four classes named here — .selectable,
+   .journal-entry-text and .ai-output — were applied to NOTHING (only .prayer-text was ever used, at
+   four sites), so the escape hatch for "content the user authored" let almost none of it through:
+   a person could not select or copy their own journal entry, a prayer the app wrote them for their
+   mum's surgery, a weekly read, or anything the coach said. On iOS that is the whole of copy — long
+   press does nothing. white-space:pre-wrap is what this codebase puts on multi-line authored and AI
+   prose and on essentially nothing else, so it identifies the text far more reliably than a class
+   somebody has to remember; the attribute-selector idiom is the one used for scroll areas below. */
+input,textarea,[contenteditable],.selectable,.prayer-text,.journal-entry-text,.ai-output,
+[style*="white-space:pre-wrap"],[style*="white-space: pre-wrap"]{
   -webkit-user-select:text; user-select:text; -webkit-touch-callout:default;
 }
 /* Smooth momentum scrolling inside every scroll area (the #1 "this is native" cue on iOS). */

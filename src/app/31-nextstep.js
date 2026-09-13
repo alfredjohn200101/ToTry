@@ -216,7 +216,7 @@ function renderLifeWoven(){
   // BODY — trained + fuel today
   const t=s.training||{}, n=s.nutrition||{}; const bodyBits=[];
   if(t.sessions7>0) bodyBits.push(t.sessions7+' session'+(t.sessions7===1?'':'s')+' this wk');
-  const goalCal=(ls('totry_nut_goals')||{}).cal;
+  const goalCal=((typeof todaysNutGoals==='function')?todaysNutGoals():(ls('totry_nut_goals')||{})).cal;
   // Gentle mode is someone saying "do not show me calorie numbers" — often because counting them is
   // part of what is hurting them. The Nourish tab honours it; Home did not, so the first thing they
   // saw on opening the app was "1,247 cal left". Same words the diary uses, so the two agree.

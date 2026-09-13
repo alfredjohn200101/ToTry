@@ -53,15 +53,12 @@ document.addEventListener('visibilitychange', ()=>{
   if(document.visibilityState==='visible' && currentSession.length>0) requestWakeLock();
 });
 
-const DEFAULT_SPLIT=[
-  {focus:'Legs \u2014 Rehab',detail:'Leg press (light), RDL, seated leg curl, step-ups, tibialis raises, calf raises.'},
-  {focus:'Push',detail:'Bench press, incline DB press, OHP, lateral raises, tricep dips.'},
-  {focus:'Pull',detail:'Cable rows, lat pulldown, face pulls, DB rows, bicep curls.'},
-  {focus:'Legs \u2014 Strength',detail:'Progressive overload on leg press. Heavier RDL. Romanian curl.'},
-  {focus:'Push / Pull Hybrid',detail:'High volume. Superset-friendly. Mix chest and back.'},
-  {focus:'Cardio + Core',detail:'25-30 min incline walk or bike. Core circuit. Full stretch.'},
-  {focus:'Rest + God',detail:'No gym. Prayer, Scripture, journalling, plan the week.'},
-];
+// DEFAULT_SPLIT was removed at v600.6. A seven-day plan carrying the founder's own rehab program
+// and a 'Rest + God' day, declared and referenced NOWHERE — 1 occurrence in the whole bundle, its
+// own declaration, against getUserSplit()'s 15. It is the shape this codebase names as its
+// signature defect: it parses, it ships, it does nothing, and it sits one line away from being
+// somebody's default week — one person's rehab prescribed to a stranger, and a faith day handed
+// to whichever tradition happened to install the app. getUserSplit() below never depended on it.
 function getUserSplit(){
   // Only return a real split if the user has actually set one up.
   // Otherwise return empty days so the home screen doesn't promise a "Push/Pull Hybrid" plan

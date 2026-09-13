@@ -3,7 +3,8 @@
 // training, goal and budget. Reuses getLifeState/goals/userSex — never re-asks what we know.
 function _fuelCtx(){
   const sex = (typeof userSex==='function' && userSex()) || 'male';
-  const goals = ls('totry_nut_goals') || (typeof defaultNutGoals==='function' ? defaultNutGoals() : {cal:2100, pro:170});
+  // The fuel plan sizes a whole day, so it has to size it to TODAY's target, not the flat base.
+  const goals = (typeof todaysNutGoals==='function') ? todaysNutGoals() : (ls('totry_nut_goals') || (typeof defaultNutGoals==='function' ? defaultNutGoals() : {cal:2100, pro:170}));
   const tdee = ls('totry_tdee_data') || {};
   let goalDir = 'maintain', goalLabel = 'maintaining';
   if(tdee.goal === 'lose'){ goalDir='cut'; goalLabel='leaning down'; }
