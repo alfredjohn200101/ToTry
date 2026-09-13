@@ -1320,12 +1320,22 @@ function renderMeasurements(){
   const first = list[list.length - 1];
   
   // Summary line: which dimensions changed and by how much
-  const labels = {waist:'Waist', chest:'Chest', armL:'L arm', armR:'R arm', thighL:'L thigh', thighR:'R thigh', neck:'Neck', bf:'BF%'};
+  // EVERY FIELD THE FORM COLLECTS. "Add Evolt 360 scan data" asks for six more numbers — skeletal
+  // muscle, fat mass, visceral level, body water, BMR and the Evolt score — validates each against
+  // its own band, stores them, and answers "Measurement snapshot logged". None of them appeared
+  // anywhere, because this map, which both the summary and the history rows iterate, stopped at the
+  // eight tape-measure fields. Someone paid for a body scan, typed six numbers off the printout, and
+  // the app kept them somewhere only a backup export would ever show them.
+  const labels = {waist:'Waist', chest:'Chest', armL:'L arm', armR:'R arm', thighL:'L thigh', thighR:'R thigh', neck:'Neck', bf:'BF%',
+                  smm:'Muscle', fatMass:'Fat mass', visceral:'Visceral', tbw:'Water', bmr:'BMR', evoltPts:'Evolt'};
+  // The tape-measure fields are all cm and have never needed one; these are not, and a bare
+  // "BMR 1840" beside "Waist 84" reads as another centimetre.
+  const units = {smm:'kg', fatMass:'kg', tbw:'%', bmr:'kcal'};
   const changes = [];
   Object.keys(labels).forEach(k => {
     if(cur[k] !== undefined && first[k] !== undefined && list.length > 1){
       const d = Math.round((cur[k] - first[k]) * 10) / 10;
-      if(d !== 0) changes.push(labels[k] + ': ' + (d > 0 ? '+' : '') + d);
+      if(d !== 0) changes.push(labels[k] + ': ' + (d > 0 ? '+' : '') + d + (units[k] || ''));
     }
   });
   
@@ -1340,7 +1350,7 @@ function renderMeasurements(){
     row.style.cssText = 'padding:8px 0;border-top:1px solid var(--bd);font-size:11px';
     const parts = [];
     Object.keys(labels).forEach(k => {
-      if(e[k] !== undefined) parts.push(labels[k] + ' ' + e[k]);
+      if(e[k] !== undefined) parts.push(labels[k] + ' ' + e[k] + (units[k] || ''));
     });
     row.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
       '<div style="flex:1"><div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">' + e.date + '</div>' +

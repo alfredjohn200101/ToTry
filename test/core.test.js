@@ -7018,4 +7018,26 @@ H.section('a person can copy the words the app wrote them, and the app owns its 
   H.ok(/getUserSplit/.test(code), 'and the function that actually answers that question remains (calibration)');
 }
 
+H.section('a number a person typed is a number the app shows them');
+{
+  // "Add Evolt 360 scan data" collects six figures off a paid body-scan printout — skeletal muscle,
+  // fat mass, visceral level, body water, BMR and the Evolt score — validates each against its own
+  // band, stores it, and answers "Measurement snapshot logged". None of them was displayed anywhere,
+  // because the labels map that BOTH the summary line and the history rows iterate stopped at the
+  // eight tape-measure fields. The numbers existed only in a backup export.
+  const rm = H.code(H.extractFn('renderMeasurements'));
+  for(const k of ['smm','fatMass','visceral','tbw','bmr','evoltPts']){
+    H.ok(new RegExp(k + ':').test(rm), 'the scan field ' + k + ' has a label, so it renders');
+  }
+  // CALIBRATION: the fields that always worked are still there — a labels map that lost them would
+  // pass every assertion above.
+  for(const k of ['waist','bf']) H.ok(new RegExp(k + ':').test(rm), k + ' still renders (calibration)');
+  // Units, because these are not centimetres and the tape-measure fields never needed one — a bare
+  // "BMR 1840" beside "Waist 84" reads as another centimetre.
+  H.ok(/const units = \{/.test(rm), 'the non-cm fields carry a unit');
+  H.ok(/units\[k\] \|\| ''/.test(rm), 'applied where the values are printed');
+  const usesUnits = (rm.match(/units\[k\]/g) || []).length;
+  H.ok(usesUnits >= 2, 'in the history rows AND the change-since-baseline line (' + usesUnits + ' sites)');
+}
+
 H.report();
