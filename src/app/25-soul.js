@@ -397,13 +397,27 @@ function addPromiseFromWhy(){
   inp.value=''; renderWhyPromises(); if(typeof renderPromises==='function') renderPromises();
   haptic('success'); showToast('Promise logged', 'Now honour it.');
 }
+// The day a letter was written, for the three places that show it. Letters already sealed have no
+// writtenDay — derived from the timestamp they DO have rather than left as "undefined", because the
+// people most affected are the ones who wrote one months ago and are about to receive it.
+function letterDay(l){
+  try{
+    if(l && l.writtenDay != null) return l.writtenDay;
+    if(l && l.written && typeof getDayCountForDate === 'function') return getDayCountForDate(new Date(l.written));
+  }catch(_){}
+  return null;
+}
 function saveLetterFromWhy(){
   const text = document.getElementById('why-letter-text')?.value.trim();
   const days = parseInt(document.getElementById('why-letter-when')?.value||30);
   if(!text){ showToast('Empty','Write something to your future self first.'); return; }
   const deliverAt = new Date(); deliverAt.setDate(deliverAt.getDate()+days);
   const letters = ls('totry_letters')||[];
-  letters.push({ id:Date.now(), text, written:new Date().toISOString(), deliverAt:deliverAt.toISOString(), delivered:false });
+  // writtenDay, because THREE places print it — the sealed list, the read list, and the moment it
+  // arrives — and nothing has ever set it. This is the only function that creates a letter, so every
+  // letter anyone has ever written says "Letter from Day undefined", including on the day it is
+  // delivered, which is the whole emotional payload of the feature.
+  letters.push({ id:Date.now(), text, written:new Date().toISOString(), writtenDay:(typeof getDayCount==='function'?getDayCount():null), deliverAt:deliverAt.toISOString(), delivered:false });
   ls('totry_letters', letters);
   const ta = document.getElementById('why-letter-text'); if(ta) ta.value='';
   renderWhyLetters(); if(typeof renderLetters==='function') renderLetters();
@@ -486,7 +500,7 @@ function renderLetters(){
     pending.forEach(l=>{
       const deliverDate=new Date(l.deliverAt).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
       html+='<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">'+
-        '<div><div style="font-size:12px;color:var(--tx)">Letter from Day '+l.writtenDay+'</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">Opens '+deliverDate+'</div></div>'+
+        '<div><div style="font-size:12px;color:var(--tx)">'+(letterDay(l)!=null?('Letter from Day '+letterDay(l)):'A letter you sealed')+'</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">Opens '+deliverDate+'</div></div>'+
         '<button class="btn" style="width:auto;padding:4px 8px;font-size:10px;background:none;border:none;color:var(--tx3)" onclick="deleteLetter('+l.id+')" aria-label="Delete this letter">&#215;</button>'+
       '</div>';
     });
@@ -495,7 +509,7 @@ function renderLetters(){
     html+='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;margin-top:10px">Opened</div>';
     delivered.slice(0,5).forEach(l=>{
       html+='<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer" onclick="deliverLetter('+l.id+')">'+
-        '<div style="font-size:12px;color:var(--tx)">Letter from Day '+l.writtenDay+' · read</div>'+
+        '<div style="font-size:12px;color:var(--tx)">'+(letterDay(l)!=null?('Letter from Day '+letterDay(l)):'A letter you sealed')+' · read</div>'+
         '<div style="font-size:11px;color:var(--tx3);margin-top:2px;font-style:italic">'+_escFew(String(l&&l.text||'').slice(0,100))+'...</div>'+
       '</div>';
     });

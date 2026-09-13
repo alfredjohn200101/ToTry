@@ -754,9 +754,9 @@ function deliverLetter(id){
   m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="max-width:90vw">'+
     '<div class="modal-handle"></div>'+
-    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;text-align:center;margin-bottom:6px">Letter from '+writtenDate+' · Day '+letter.writtenDay+'</div>'+
+    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;text-align:center;margin-bottom:6px">Letter from '+writtenDate+' · Day '+((typeof letterDay==='function'?letterDay(letter):letter.writtenDay) ?? '?')+'</div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:18px;color:var(--tx);text-align:center;margin-bottom:18px;font-style:italic">A message from past you.</div>'+
-    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:16px;font-family:Cormorant Garamond,serif;font-size:16px;color:var(--tx);line-height:1.7;white-space:pre-wrap;margin-bottom:14px">'+letter.text+'</div>'+
+    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:16px;font-family:Cormorant Garamond,serif;font-size:16px;color:var(--tx);line-height:1.7;white-space:pre-wrap;margin-bottom:14px">'+_escFew(letter.text)+'</div>'+
     '<button class="btn primary" onclick="closeModal(this)">Close</button>'+
   '</div>';
   document.body.appendChild(m);

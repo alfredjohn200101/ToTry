@@ -142,8 +142,12 @@ function renderCoachQuickReplies(){
   const top = chips.slice(0, 7);
   
   box.innerHTML = top.map(c => {
-    const safe = c.prompt.replace(/'/g, "&apos;").replace(/"/g, '&quot;');
-    return '<button class="qb" onclick="sendCoachPrompt(\'' + safe.replace(/'/g, "\\'") + '\')">' + c.label + '</button>';
+    // An inline handler is parsed TWICE — entities first, then compiled as JavaScript. Escaping the
+    // apostrophes to &apos; and then backslashing them meant the parser handed the JS engine a bare
+    // quote in the middle of a string literal, so any chip whose prompt contains an apostrophe threw
+    // a SyntaxError on tap and did nothing at all. _jsCode + JSON.stringify is the house pattern for
+    // exactly this (see 14-nourish.js:517); the label is escaped as text, which it is.
+    return '<button class="qb" onclick="' + _jsCode('sendCoachPrompt(' + JSON.stringify(c.prompt) + ')') + '">' + _escFew(c.label) + '</button>';
   }).join('');
 }
 

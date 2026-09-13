@@ -267,7 +267,9 @@ async function showExerciseForm(name){
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:88vh"><div class="modal-handle"></div>' +
-    '<h3 style="margin-bottom:4px">' + name + '</h3>' +
+    // _escFew: this name comes from wger, from a Hevy import, or from a custom exercise somebody
+    // typed — the same three sources the search row names in its own comment when it escapes it.
+    '<h3 style="margin-bottom:4px">' + _escFew(name) + '</h3>' +
     '<p id="ex-form-status" style="font-size:11px;color:var(--tx3);margin-bottom:14px">Looking up form &amp; instructions\u2026</p>' +
     '<div id="ex-form-body" style="text-align:center;padding:20px"><p class="pulsing" style="font-style:italic;color:var(--tx3)">Looking up...</p></div>' +
     '<button class="btn" onclick="closeModal(this)" style="margin-top:14px">Close</button>' +
@@ -2894,7 +2896,7 @@ function renderPersonalRecords(){
     card.className='pr-card';
     card.style.cursor = 'pointer';
     card.title = 'Tap to see progress chart';
-    card.innerHTML='<div><div class="pr-ex">'+name+'</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);margin-top:2px">📈 Tap to chart</div></div><div style="text-align:right"><div class="pr-val">'+pr.weight+'kg \u00d7 '+pr.reps+'</div><div class="pr-date">est. 1RM: '+pr.orm+'kg \u00b7 '+pr.date+'</div></div>';
+    card.innerHTML='<div><div class="pr-ex">'+_escFew(name)+'</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);margin-top:2px">📈 Tap to chart</div></div><div style="text-align:right"><div class="pr-val">'+pr.weight+'kg \u00d7 '+pr.reps+'</div><div class="pr-date">est. 1RM: '+pr.orm+'kg \u00b7 '+pr.date+'</div></div>';
     card.onclick = () => showExerciseProgress(name);
     container.appendChild(card);
   });
@@ -2939,7 +2941,7 @@ function showExerciseProgress(exName){
   
   if(!dataPoints.length){
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
-      '<h3 style="margin-bottom:8px">' + exName + '</h3>' +
+      '<h3 style="margin-bottom:8px">' + _escFew(exName) + '</h3>' +
       '<p class="empty-note">No logged sessions for this exercise yet.</p>' +
       '<button class="btn" onclick="closeModal(this)">Close</button>' +
     '</div>';
@@ -2996,7 +2998,7 @@ function showExerciseProgress(exName){
     '</div>' : '';
   
   m.innerHTML = '<div class="modal" style="max-height:90vh"><div class="modal-handle"></div>' +
-    '<h3 style="margin-bottom:4px">' + exName + '</h3>' +
+    '<h3 style="margin-bottom:4px">' + _escFew(exName) + '</h3>' +
     '<p style="font-size:11px;color:var(--tx3);margin-bottom:12px">Estimated 1RM (Epley formula) over time</p>' +
     progressLine +
     svg +

@@ -13877,7 +13877,10 @@ function renderSplitOverview(){
     const d0 = day || {};
     const focusText=d0.focus||(d0.routine?d0.routine:'Rest day');
     row.innerHTML='<div style="font-family:DM Mono,monospace;font-size:11px;color:'+(isToday?'var(--go)':'var(--tx3)')+';width:40px;text-transform:uppercase;letter-spacing:0.1em">'+DAYS[i]+'</div>'+
-      '<div style="flex:1;font-size:13px;color:var(--tx)">'+focusText+'</div>'+
+      // Escaped here too. Line 146 of this same concatenation already escapes the identical value for
+      // the aria-label — one element, one string, one value, escaped for the screen reader and raw
+      // for the eye.
+      '<div style="flex:1;font-size:13px;color:var(--tx)">'+_escFew(focusText)+'</div>'+
       // Seven buttons on this screen all read just "Edit", so a screen reader announced "Edit, Edit,
       // Edit..." seven times with nothing to tell them apart. The visible label stays short (the day is
       // right there in the row); the accessible name says which day and what is on it.
@@ -27672,7 +27675,9 @@ async function estimateMealMacros(description){
           '<span style="color:var(--tx2)">'+(it.food||'item')+' <span style="color:var(--tx3)">'+(it.amount||'')+'</span>'+(it.estimated?' <span style="color:var(--go);font-size:9px">~est</span>':'')+'</span>'+
           '<span style="color:var(--tx3);font-family:DM Mono,monospace;font-size:10px;white-space:nowrap">'+Math.round(it.cal||0)+' cal</span>'+
         '</div>').join('');
-      card.innerHTML='<div class="fr-name" style="margin-bottom:6px">'+(meal.name||description)+'</div>'+
+      // _escFew on BOTH: meal.name is a MODEL'S REPLY, and `description` is what the person typed —
+      // which is also what was put in the prompt. CLAUDE.md names this exact pair as one class.
+      card.innerHTML='<div class="fr-name" style="margin-bottom:6px">'+_escFew(meal.name||description)+'</div>'+
         (itemsHtml?'<div style="margin:8px 0">'+itemsHtml+'</div>':'')+
         // Same promise, same shape — see the note on the saved-meals shelf.
         (( typeof nutGentle==='function' && nutGentle() ) ? '' :
@@ -38003,7 +38008,9 @@ async function showExerciseForm(name){
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:88vh"><div class="modal-handle"></div>' +
-    '<h3 style="margin-bottom:4px">' + name + '</h3>' +
+    // _escFew: this name comes from wger, from a Hevy import, or from a custom exercise somebody
+    // typed — the same three sources the search row names in its own comment when it escapes it.
+    '<h3 style="margin-bottom:4px">' + _escFew(name) + '</h3>' +
     '<p id="ex-form-status" style="font-size:11px;color:var(--tx3);margin-bottom:14px">Looking up form &amp; instructions\u2026</p>' +
     '<div id="ex-form-body" style="text-align:center;padding:20px"><p class="pulsing" style="font-style:italic;color:var(--tx3)">Looking up...</p></div>' +
     '<button class="btn" onclick="closeModal(this)" style="margin-top:14px">Close</button>' +
@@ -40630,7 +40637,7 @@ function renderPersonalRecords(){
     card.className='pr-card';
     card.style.cursor = 'pointer';
     card.title = 'Tap to see progress chart';
-    card.innerHTML='<div><div class="pr-ex">'+name+'</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);margin-top:2px">📈 Tap to chart</div></div><div style="text-align:right"><div class="pr-val">'+pr.weight+'kg \u00d7 '+pr.reps+'</div><div class="pr-date">est. 1RM: '+pr.orm+'kg \u00b7 '+pr.date+'</div></div>';
+    card.innerHTML='<div><div class="pr-ex">'+_escFew(name)+'</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);margin-top:2px">📈 Tap to chart</div></div><div style="text-align:right"><div class="pr-val">'+pr.weight+'kg \u00d7 '+pr.reps+'</div><div class="pr-date">est. 1RM: '+pr.orm+'kg \u00b7 '+pr.date+'</div></div>';
     card.onclick = () => showExerciseProgress(name);
     container.appendChild(card);
   });
@@ -40675,7 +40682,7 @@ function showExerciseProgress(exName){
   
   if(!dataPoints.length){
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
-      '<h3 style="margin-bottom:8px">' + exName + '</h3>' +
+      '<h3 style="margin-bottom:8px">' + _escFew(exName) + '</h3>' +
       '<p class="empty-note">No logged sessions for this exercise yet.</p>' +
       '<button class="btn" onclick="closeModal(this)">Close</button>' +
     '</div>';
@@ -40732,7 +40739,7 @@ function showExerciseProgress(exName){
     '</div>' : '';
   
   m.innerHTML = '<div class="modal" style="max-height:90vh"><div class="modal-handle"></div>' +
-    '<h3 style="margin-bottom:4px">' + exName + '</h3>' +
+    '<h3 style="margin-bottom:4px">' + _escFew(exName) + '</h3>' +
     '<p style="font-size:11px;color:var(--tx3);margin-bottom:12px">Estimated 1RM (Epley formula) over time</p>' +
     progressLine +
     svg +
@@ -42921,9 +42928,9 @@ function deliverLetter(id){
   m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="max-width:90vw">'+
     '<div class="modal-handle"></div>'+
-    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;text-align:center;margin-bottom:6px">Letter from '+writtenDate+' · Day '+letter.writtenDay+'</div>'+
+    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;text-align:center;margin-bottom:6px">Letter from '+writtenDate+' · Day '+((typeof letterDay==='function'?letterDay(letter):letter.writtenDay) ?? '?')+'</div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:18px;color:var(--tx);text-align:center;margin-bottom:18px;font-style:italic">A message from past you.</div>'+
-    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:16px;font-family:Cormorant Garamond,serif;font-size:16px;color:var(--tx);line-height:1.7;white-space:pre-wrap;margin-bottom:14px">'+letter.text+'</div>'+
+    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:16px;font-family:Cormorant Garamond,serif;font-size:16px;color:var(--tx);line-height:1.7;white-space:pre-wrap;margin-bottom:14px">'+_escFew(letter.text)+'</div>'+
     '<button class="btn primary" onclick="closeModal(this)">Close</button>'+
   '</div>';
   document.body.appendChild(m);
@@ -43410,13 +43417,27 @@ function addPromiseFromWhy(){
   inp.value=''; renderWhyPromises(); if(typeof renderPromises==='function') renderPromises();
   haptic('success'); showToast('Promise logged', 'Now honour it.');
 }
+// The day a letter was written, for the three places that show it. Letters already sealed have no
+// writtenDay — derived from the timestamp they DO have rather than left as "undefined", because the
+// people most affected are the ones who wrote one months ago and are about to receive it.
+function letterDay(l){
+  try{
+    if(l && l.writtenDay != null) return l.writtenDay;
+    if(l && l.written && typeof getDayCountForDate === 'function') return getDayCountForDate(new Date(l.written));
+  }catch(_){}
+  return null;
+}
 function saveLetterFromWhy(){
   const text = document.getElementById('why-letter-text')?.value.trim();
   const days = parseInt(document.getElementById('why-letter-when')?.value||30);
   if(!text){ showToast('Empty','Write something to your future self first.'); return; }
   const deliverAt = new Date(); deliverAt.setDate(deliverAt.getDate()+days);
   const letters = ls('totry_letters')||[];
-  letters.push({ id:Date.now(), text, written:new Date().toISOString(), deliverAt:deliverAt.toISOString(), delivered:false });
+  // writtenDay, because THREE places print it — the sealed list, the read list, and the moment it
+  // arrives — and nothing has ever set it. This is the only function that creates a letter, so every
+  // letter anyone has ever written says "Letter from Day undefined", including on the day it is
+  // delivered, which is the whole emotional payload of the feature.
+  letters.push({ id:Date.now(), text, written:new Date().toISOString(), writtenDay:(typeof getDayCount==='function'?getDayCount():null), deliverAt:deliverAt.toISOString(), delivered:false });
   ls('totry_letters', letters);
   const ta = document.getElementById('why-letter-text'); if(ta) ta.value='';
   renderWhyLetters(); if(typeof renderLetters==='function') renderLetters();
@@ -43499,7 +43520,7 @@ function renderLetters(){
     pending.forEach(l=>{
       const deliverDate=new Date(l.deliverAt).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
       html+='<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">'+
-        '<div><div style="font-size:12px;color:var(--tx)">Letter from Day '+l.writtenDay+'</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">Opens '+deliverDate+'</div></div>'+
+        '<div><div style="font-size:12px;color:var(--tx)">'+(letterDay(l)!=null?('Letter from Day '+letterDay(l)):'A letter you sealed')+'</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">Opens '+deliverDate+'</div></div>'+
         '<button class="btn" style="width:auto;padding:4px 8px;font-size:10px;background:none;border:none;color:var(--tx3)" onclick="deleteLetter('+l.id+')" aria-label="Delete this letter">&#215;</button>'+
       '</div>';
     });
@@ -43508,7 +43529,7 @@ function renderLetters(){
     html+='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;margin-top:10px">Opened</div>';
     delivered.slice(0,5).forEach(l=>{
       html+='<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer" onclick="deliverLetter('+l.id+')">'+
-        '<div style="font-size:12px;color:var(--tx)">Letter from Day '+l.writtenDay+' · read</div>'+
+        '<div style="font-size:12px;color:var(--tx)">'+(letterDay(l)!=null?('Letter from Day '+letterDay(l)):'A letter you sealed')+' · read</div>'+
         '<div style="font-size:11px;color:var(--tx3);margin-top:2px;font-style:italic">'+_escFew(String(l&&l.text||'').slice(0,100))+'...</div>'+
       '</div>';
     });
@@ -49290,8 +49311,12 @@ function renderCoachQuickReplies(){
   const top = chips.slice(0, 7);
   
   box.innerHTML = top.map(c => {
-    const safe = c.prompt.replace(/'/g, "&apos;").replace(/"/g, '&quot;');
-    return '<button class="qb" onclick="sendCoachPrompt(\'' + safe.replace(/'/g, "\\'") + '\')">' + c.label + '</button>';
+    // An inline handler is parsed TWICE — entities first, then compiled as JavaScript. Escaping the
+    // apostrophes to &apos; and then backslashing them meant the parser handed the JS engine a bare
+    // quote in the middle of a string literal, so any chip whose prompt contains an apostrophe threw
+    // a SyntaxError on tap and did nothing at all. _jsCode + JSON.stringify is the house pattern for
+    // exactly this (see 14-nourish.js:517); the label is escaped as text, which it is.
+    return '<button class="qb" onclick="' + _jsCode('sendCoachPrompt(' + JSON.stringify(c.prompt) + ')') + '">' + _escFew(c.label) + '</button>';
   }).join('');
 }
 

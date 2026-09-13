@@ -139,7 +139,10 @@ function renderSplitOverview(){
     const d0 = day || {};
     const focusText=d0.focus||(d0.routine?d0.routine:'Rest day');
     row.innerHTML='<div style="font-family:DM Mono,monospace;font-size:11px;color:'+(isToday?'var(--go)':'var(--tx3)')+';width:40px;text-transform:uppercase;letter-spacing:0.1em">'+DAYS[i]+'</div>'+
-      '<div style="flex:1;font-size:13px;color:var(--tx)">'+focusText+'</div>'+
+      // Escaped here too. Line 146 of this same concatenation already escapes the identical value for
+      // the aria-label — one element, one string, one value, escaped for the screen reader and raw
+      // for the eye.
+      '<div style="flex:1;font-size:13px;color:var(--tx)">'+_escFew(focusText)+'</div>'+
       // Seven buttons on this screen all read just "Edit", so a screen reader announced "Edit, Edit,
       // Edit..." seven times with nothing to tell them apart. The visible label stays short (the day is
       // right there in the row); the accessible name says which day and what is on it.

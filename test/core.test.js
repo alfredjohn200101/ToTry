@@ -7089,4 +7089,71 @@ H.section('a number a person typed is a number the app shows them');
   H.ok(usesUnits >= 2, 'in the history rows AND the change-since-baseline line (' + usesUnits + ' sites)');
 }
 
+H.section('what a person types, and what a model answers, reach the page as text');
+{
+  // CLAUDE.md names this class first, and names the trap: a shared-sink scan walks past a field that
+  // reaches innerHTML directly, and "a model's reply is the same class" because the prompt carried
+  // the person's own words. Five more sites, all confirmed by re-derivation and then driven with a
+  // live payload — the value reached the screen, arrived as the literal characters, created no
+  // element, and executed nothing.
+  const code = H.code(H.html);
+
+  // 1. EXERCISE NAMES — wger, a Hevy import, or a custom exercise somebody typed. The search row
+  //    escapes it under a comment naming all three sources; four other renders did not.
+  // H.extractFn THROWS on a name that does not exist rather than returning falsy, so guessing one
+  // takes the whole file down. The census below needs no function anchor anyway.
+  const rawName = [...code.matchAll(/<h3[^>]*>' \+ (name|exName) \+ '<\/h3>/g)].length;
+  H.ok(rawName === 0, 'no exercise name is rendered unescaped into a heading (' + rawName + ' raw)');
+  H.ok(/_escFew\(exName\)/.test(code) && /_escFew\(name\)/.test(code),
+    'they go through _escFew (calibration: the escaped forms exist)');
+
+  // 2. THE AI MEAL ESTIMATE — meal.name is the MODEL'S reply and `description` is what the person
+  //    typed, which is also what went into the prompt. Both into one innerHTML, neither escaped.
+  H.ok(!/fr-name[^']*'\+\(meal\.name\|\|description\)/.test(code),
+    'the meal estimate does not print the model’s reply as markup');
+  H.ok(/_escFew\(meal\.name\|\|description\)/.test(code), 'it escapes both the reply and the typed meal');
+
+  // 3. THE SPLIT DAY — escaped for the aria-label and raw for the eye, in the SAME concatenation.
+  const rs = H.code(H.extractFn('renderSplitOverview'));
+  H.ok(!/color:var\(--tx\)">'\+focusText\+'/.test(rs), 'the split day is not rendered raw');
+  H.ok(/_escFew\(focusText\)/.test(rs), 'and the visible text is escaped like its own aria-label');
+
+  // 4. THE COACH CHIP — this one was not an injection, it was a DEAD BUTTON. An inline handler is
+  //    parsed twice, entities first then JavaScript, so escaping the apostrophes to &apos; and then
+  //    backslashing them handed the engine a bare quote inside a string literal: any chip whose
+  //    prompt contained an apostrophe threw a SyntaxError on tap and did nothing.
+  const cq = H.code(H.extractFn('renderCoachQuickReplies'));
+  H.ok(!/&apos;/.test(cq), 'no entity is escaped into a JavaScript string literal');
+  H.ok(/_jsCode\(/.test(cq) && /JSON\.stringify\(c\.prompt\)/.test(cq),
+    'the handler is built with the house pattern, which survives both parses');
+  H.ok(/_escFew\(c\.label\)/.test(cq), 'and the label is escaped as the text it is');
+
+  // 5. THE LETTER a person wrote to their future self — printed raw on delivery, while the 100-char
+  //    preview one function away escaped it.
+  const dl = H.code(H.extractFn('deliverLetter'));
+  H.ok(!/'\+letter\.text\+'/.test(dl), 'the delivered letter is not printed raw');
+  H.ok(/_escFew\(letter\.text\)/.test(dl), 'it is escaped, like its own preview');
+}
+
+H.section('every letter knows the day it was written');
+{
+  // Three places print it — the sealed list, the read list, and the moment it is delivered — and the
+  // ONE function that creates a letter never set it. So every letter anyone has ever written said
+  // "Letter from Day undefined", including on the day it arrives, which is the whole emotional
+  // payload of the feature. This is the same shape as the "Day undefined" that reached a person's own
+  // export once before.
+  const save = H.code(H.extractFn('saveLetterFromWhy'));
+  H.ok(/writtenDay:/.test(save), 'a letter records the day it was written');
+  H.ok(/getDayCount\(\)/.test(save), 'from the app’s own day counter');
+  // And the letters already sealed by an older build, which is who this matters most to — someone who
+  // wrote one months ago and is about to receive it.
+  const ld = H.code(H.extractFn('letterDay'));
+  H.ok(/getDayCountForDate/.test(ld), 'a letter with no writtenDay is derived from the timestamp it does have');
+  const code = H.code(H.html);
+  const raw = [...code.matchAll(/Day '\+\s*(l|letter)\.writtenDay/g)].length;
+  H.ok(raw === 0, 'no display site prints the raw field' + (raw ? ' (' + raw + ' left)' : ''));
+  H.ok(/letterDay\(l\)/.test(code) && /letterDay\(letter\)/.test(code),
+    'all of them go through the accessor (calibration: both call shapes exist)');
+}
+
 H.report();

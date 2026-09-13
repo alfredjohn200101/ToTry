@@ -1835,7 +1835,9 @@ async function estimateMealMacros(description){
           '<span style="color:var(--tx2)">'+(it.food||'item')+' <span style="color:var(--tx3)">'+(it.amount||'')+'</span>'+(it.estimated?' <span style="color:var(--go);font-size:9px">~est</span>':'')+'</span>'+
           '<span style="color:var(--tx3);font-family:DM Mono,monospace;font-size:10px;white-space:nowrap">'+Math.round(it.cal||0)+' cal</span>'+
         '</div>').join('');
-      card.innerHTML='<div class="fr-name" style="margin-bottom:6px">'+(meal.name||description)+'</div>'+
+      // _escFew on BOTH: meal.name is a MODEL'S REPLY, and `description` is what the person typed —
+      // which is also what was put in the prompt. CLAUDE.md names this exact pair as one class.
+      card.innerHTML='<div class="fr-name" style="margin-bottom:6px">'+_escFew(meal.name||description)+'</div>'+
         (itemsHtml?'<div style="margin:8px 0">'+itemsHtml+'</div>':'')+
         // Same promise, same shape — see the note on the saved-meals shelf.
         (( typeof nutGentle==='function' && nutGentle() ) ? '' :
