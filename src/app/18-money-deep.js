@@ -1313,6 +1313,17 @@ function addDebt(){loadF();const n=document.getElementById('dn').value.trim(),t=
   if(p > t){ if(typeof showToast==='function') showToast('Paid is more than the total','Check the two numbers \u2014 you cannot have paid off more than the debt.'); return; }
   // Same as vices: the tombstone written when a debt is removed is keyed on the lowercased name,
   // so adding that name back has to revoke it or the next pull deletes it again.
+  // AND THE NAME HAS TO BE UNIQUE, because the storage cannot hold two. The cloud merge builds a Map
+  // keyed on the lowercased name (01-sync.js: `const _dKey = d => String(d.n).toLowerCase()` feeding
+  // `debts.set(key, …)`), so a second debt called "Card" does not collide at some later date — it is
+  // silently dropped, with its payments, on the very next pull. The tombstone two lines below is keyed
+  // the same way, which is the app already telling us the name IS the identity. Two credit cards is
+  // not an exotic case; refusing at the door is far kinder than losing one a week later.
+  if(debts.some(function(d){ return d && String(d.n||'').toLowerCase() === String(n).toLowerCase(); })){
+    if(typeof showToast==='function') showToast('You already have a debt called that',
+      'Give them names you can tell apart \u2014 "Visa" and "Mastercard" rather than two of the same.');
+    return;
+  }
   try{ if(typeof tombstoneRevoke==='function') tombstoneRevoke('totry_f', String(n).toLowerCase()); }catch(_){ }
   debts.push({n,t,p,due,interest});['dn','dt','dp','dd','di'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});saveF();renderFinance();}
 // A debt could be created and paid down but never CORRECTED. A typo in the name, a total entered as

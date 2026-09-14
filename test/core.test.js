@@ -7301,4 +7301,30 @@ H.section('the privacy manifest declares what the binary actually handles');
   H.ok(/PurposeAppFunctionality/.test(photoBlock), 'for app functionality');
 }
 
+H.section('two things cannot share a name the storage uses as their identity');
+{
+  // The cloud merge keys BOTH vices and debts by the lowercased name — 01-sync.js says so outright
+  // ("Identity in this branch is the NAME, so that is what the tombstone holds") and builds a Map
+  // from it. So the storage model cannot hold two of either with the same name, and nothing at the
+  // add door stopped a person creating them. Two credit cards both called "Card" is not an exotic
+  // case: the debt merge does `debts.set(key, …)`, so the second silently overwrites the first — with
+  // its payments — on the very next pull, and the person is told nothing at any point. Refusing at the
+  // door is far kinder than losing one a week later.
+  const code = H.code(H.html);
+  H.ok(/const _dKey = d => String\(d\.n\)\.toLowerCase\(\)/.test(code), 'debts really are keyed by name (calibration)');
+  H.ok(/const key = String\(v\.n\)\.toLowerCase\(\)/.test(code), 'and so are vices (calibration)');
+
+  const ad = H.code(H.extractFn('addDebt'));
+  H.ok(/debts\.some\(/.test(ad), 'addDebt checks for an existing debt of that name');
+  H.ok(/toLowerCase\(\) === String\(n\)\.toLowerCase\(\)/.test(ad), 'case-insensitively, the way the merge keys it');
+  H.ok(/already have a debt called that/.test(ad), 'and says so rather than failing silently');
+
+  const av = H.code(H.extractFn('addVice'));
+  H.ok(/\(vices\|\|\[\]\)\.some\(/.test(av), 'addVice checks too');
+  H.ok(/already fighting that/.test(av), 'and says so');
+  // The guard must not block a genuinely different name — driven separately, but assert the shape:
+  // it compares against the EXISTING list, not a constant.
+  H.ok(/String\(v\.n\|\|''\)\.toLowerCase\(\)/.test(av), 'comparing against what is already there');
+}
+
 H.report();

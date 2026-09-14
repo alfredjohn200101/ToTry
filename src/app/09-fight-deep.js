@@ -1219,6 +1219,17 @@ function addVice(){
     try{ const _el=document.getElementById('v-name'); if(_el) _el.focus(); }catch(_){}
     return;
   }
+  // ONE NAME, ONE FIGHT. The cloud merge keys vices by the lowercased name — 01-sync.js says so in
+  // its own comment, "Identity in this branch is the NAME, so that is what the tombstone holds" — so
+  // two vices called the same thing are folded into one on the next pull, and the second one's mode,
+  // plan and start date are gone. The merge is kinder than the debt one (it unions rather than
+  // overwrites) but the outcome a person sees is the same: they named two things and have one.
+  if((vices||[]).some(function(v){ return v && String(v.n||'').toLowerCase() === String(n).toLowerCase(); })){
+    if(typeof showToast==='function') showToast('You are already fighting that',
+      'It is already on your list \u2014 open it to change how you are handling it.');
+    try{ const _el=document.getElementById('v-name'); if(_el) _el.focus(); }catch(_){}
+    return;
+  }
   // Optional backdated start
   const startInput=document.getElementById('v-start');
   let startDate=new Date().toISOString();
