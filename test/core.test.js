@@ -7327,4 +7327,62 @@ H.section('two things cannot share a name the storage uses as their identity');
   H.ok(/String\(v\.n\|\|''\)\.toLowerCase\(\)/.test(av), 'comparing against what is already there');
 }
 
+H.section('there is more than one thing a person means by "reset", and more than one fight to reset');
+{
+  // Every reset in this app was one vice at a time, reached through that vice's own menu, and there
+  // was exactly ONE depth: "start again from today", which keeps the fight day, the banked clean days,
+  // the restart count and the money. That is the right default and it is not what everybody means.
+  // Somebody who set a vice up wrong, or is clearing months belonging to a version of themselves they
+  // are done with, had only "delete it entirely" — destroying the setup to clear the history. And
+  // somebody fighting four things who wanted to begin again opened four menus and confirmed four
+  // times; a bad night that touched three of them was confessed three separate times.
+  const code = H.code(H.html);
+
+  // TWO DEPTHS, and the difference between them is exactly the fight.
+  const shallow = H.code(H.extractFn('restartVice'));
+  H.ok(/if\(!v\.fightingSince\) v\.fightingSince = prevStart/.test(shallow),
+    '"start again" leaves the fight where it is');
+  const deep = H.code(H.extractFn('resetViceCompletely'));
+  H.ok(/_viceResetDeep\(/.test(deep), 'the deep reset exists');
+  const rd = H.code(H.extractFn('_viceResetDeep'));
+  H.ok(/v\.fightingSince = now/.test(rd), 'and the deep one restarts the fight too — that IS the difference');
+  // The setup must survive, or "reset" has quietly become "delete and rebuild".
+  const fields = H.code(H.extractFn('_viceHistoryFields'));
+  for(const keep of ['mode','kind','costAmount','trackPatterns','limit'])
+    H.ok(!new RegExp("'" + keep + "'").test(fields), keep + ' is setup, not history — it survives');
+  for(const clear of ['cleanDaysTotal','relapseCount','relapseHistory','urgelog'])
+    H.ok(new RegExp("'" + clear + "'").test(fields), clear + ' is history — it goes');
+
+  // THE COUNTERS THAT LIVE OUTSIDE THE VICE. Without these the app says "day one" and "used 4 times
+  // this week" in the same breath — the two-surfaces-disagreeing shape this codebase keeps fixing.
+  const ext = H.code(H.extractFn('_viceExternalRows'));
+  for(const k of ['totry_vice_uses','totry_moments_won','totry_fight_log','totry_vice_savings_log'])
+    H.ok(new RegExp(k).test(ext), k + ' is cleared with it');
+  H.ok(/toLowerCase\(\) === key/.test(ext), 'matched the way those rows are keyed — by name');
+
+  // UNDOABLE, both depths and the bulk one. A destructive act with no way back is not grace.
+  for(const [fn, what] of [['resetViceCompletely','the deep reset'], ['resetAllVices','the bulk reset'], ['confirmMultiSlip','the multi-slip']]){
+    H.ok(/showUndo\(/.test(H.code(H.extractFn(fn))), what + ' can be undone');
+  }
+  H.ok(/_viceResetUndo/.test(code), 'and the undo restores the external rows too, not just the vice');
+
+  // LETTING GO IS NOT A STREAK, so it is in none of this — the row menu already withholds the three
+  // confession actions from it for the same reason.
+  const rv = H.code(H.extractFn('_resettableVices'));
+  H.ok(/!== 'letgo'/.test(rv), 'a letting-go goal is excluded from every bulk action');
+
+  // QUIET, AND ONLY WHEN IT MEANS SOMETHING. With one vice, "start everything again" is its own menu
+  // item said louder, and a night that touched "more than one" cannot have.
+  const bulk = H.code(H.extractFn('_renderVicesBulk'));
+  H.ok(/n < 2/.test(bulk), 'the bulk links are hidden below two things');
+  H.ok(/openMultiSlip\(\)/.test(bulk) && /openResetAll\(\)/.test(bulk), 'and offer both when there are');
+  // Not buttons: this is not something the app should invite anyone to do.
+  H.ok(/var\(--tx3\)/.test(bulk), 'rendered quietly');
+
+  // THE BULK RESET ASKS WHICH DEPTH rather than guessing.
+  const ora = H.code(H.extractFn('openResetAll'));
+  H.ok(/resetAllVices\(false\)/.test(ora) && /resetAllVices\(true\)/.test(ora), 'the chooser offers both depths');
+  H.ok(/Day one again/.test(ora) && /Clear the history too/.test(ora), 'named by what they do');
+}
+
 H.report();

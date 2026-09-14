@@ -2637,6 +2637,13 @@ input:focus,textarea:focus,select:focus{
     <div id="feeling-wins-momentum" style="display:none"></div>
     <div id="cycle-fight-note"></div>          <!-- D: Fight, after feeling-wins-momentum -->
     <div id="vices-list"></div>
+    <!-- Quiet, and only once there is more than one thing to act across. Every reset in this app was
+         one vice at a time, reached through that vice's own menu: somebody fighting four things who
+         wanted to begin again opened four menus and confirmed four times, and a bad night that
+         touched three of them had to be confessed three separate times. Both are chores handed to a
+         person at the worst possible moment to be handed one. Text links rather than buttons,
+         because this is not something the app should be inviting anybody to do. -->
+    <div id="vices-bulk" style="display:none;text-align:center;margin-top:10px"></div>
     <div id="urge-insights" style="display:none;margin-top:8px"></div>
     <!-- Vice-pattern insight (WS-D) — OPT-IN only, compassionate, never auto-popped. Shows only
          when enough slips logged to see a pattern; the user chooses to look. -->
@@ -20124,7 +20131,25 @@ function renderVices(){
   
   // Render trigger pattern card if there's enough data
   renderTriggerPatternCard();
+  _renderVicesBulk();
   _orderFightEmptyState();
+}
+// The two things that only make sense across more than one fight. Hidden entirely below two, because
+// with one vice "start everything again" is just its own menu item said louder, and a night that
+// touched "more than one" cannot have.
+function _renderVicesBulk(){
+  try{
+    const box = document.getElementById('vices-bulk');
+    if(!box) return;
+    const n = (typeof _resettableVices === 'function') ? _resettableVices().length : 0;
+    if(n < 2){ box.style.display = 'none'; box.innerHTML = ''; return; }
+    box.style.display = 'block';
+    const link = 'background:none;border:none;color:var(--tx3);font-size:12px;padding:8px 10px;min-height:32px;cursor:pointer;text-decoration:underline;text-underline-offset:3px';
+    box.innerHTML =
+      '<button style="' + link + '" onclick="openMultiSlip()">A night that touched more than one</button>' +
+      '<span style="color:var(--bd);font-size:11px">&middot;</span>' +
+      '<button style="' + link + '" onclick="openResetAll()">Start everything again</button>';
+  }catch(_){ }
 }
 
 // ── TRIGGER PATTERN ANALYSIS ────────────────────────────────────
@@ -20798,6 +20823,240 @@ function fightStayedInLine(){
 // A deliberate restart. NOT logged as a relapse: nothing is added to relapseHistory, no slip goes
 // into the fight log, and the honest counters are untouched. It resets the streak because that is
 // what the person asked for, and it leaves the fight itself alone — you do not stop having fought.
+// ── EVERYTHING AT ONCE ───────────────────────────────────────────────────────────────────────────
+// Every reset in this app was one vice at a time, reached through that vice's own menu. Somebody with
+// four things they are fighting who wants to begin again had to open four menus and confirm four
+// times — and a person who has just decided to start over is the last person to make walk through a
+// four-step chore. Same two depths as the single one, chosen once and applied to all of them, with a
+// single undo that puts every one of them back.
+function _resettableVices(){
+  loadV();
+  return (vices||[]).map(function(v,i){ return {v:v,i:i}; }).filter(function(x){
+    // Letting go is not a streak and has nothing to confess or restart — the row menu already
+    // withholds all three of these from it, for the same reason.
+    const mode = (typeof viceMode==='function') ? viceMode(x.v) : x.v.kind;
+    return mode !== 'letgo';
+  });
+}
+async function resetAllVices(deep){
+  const list = _resettableVices();
+  if(!list.length){
+    if(typeof showToast==='function') showToast('Nothing to reset','You have not named anything you are fighting yet.');
+    return;
+  }
+  const names = list.map(function(x){ return x.v.n; });
+  const shown = names.length > 3 ? (names.slice(0,3).join(', ') + ' and ' + (names.length-3) + ' more') : names.join(', ');
+  if(typeof askConfirm === 'function'){
+    const ok = await askConfirm(
+      deep ? ('Clear everything for all ' + names.length + '?') : ('Start all ' + names.length + ' again from today?'),
+      shown + '. ' + (deep
+        ? 'Every count, every urge logged, every restart and the money reclaimed \u2014 gone for all of them. The things themselves stay, set up as they are.'
+        : 'Each clean count goes back to zero. The day you have been fighting each one stays exactly where it is \u2014 you have not stopped fighting them.'),
+      { confirmLabel: deep ? 'Clear them all' : 'Start them all again', cancelLabel:'Not now' });
+    if(!ok) return;
+  }
+  loadV();
+  const undos = [];
+  list.forEach(function(x){
+    const v = vices[x.i];
+    if(!v) return;
+    if(deep){ undos.push({ i:x.i, before:_viceResetDeep(v) }); }
+    else {
+      const prevStart = v.startDate;
+      v.startDate = new Date().toISOString();
+      if(!v.fightingSince) v.fightingSince = prevStart;
+      undos.push({ i:x.i, shallow:prevStart });
+    }
+  });
+  saveV();
+  try{ renderVices(); renderScoreboard(); renderDayCounter(); }catch(_){ }
+  if(typeof haptic === 'function') haptic('tap');
+  if(typeof showUndo === 'function'){
+    showUndo(deep ? 'All cleared. Day one, from nothing.' : 'Day one. All of them.', function(){
+      loadV();
+      undos.forEach(function(u){
+        if(u.before) { _viceResetUndo(u.i, u.before); return; }
+        const vv = (vices||[])[u.i]; if(vv) vv.startDate = u.shallow;
+      });
+      saveV();
+      try{ renderVices(); renderScoreboard(); renderDayCounter(); }catch(_){ }
+    });
+  }
+}
+// The chooser, so "reset everything" is never one ambiguous button.
+function openResetAll(){
+  const list = _resettableVices();
+  if(!list.length){
+    if(typeof showToast==='function') showToast('Nothing to reset','You have not named anything you are fighting yet.');
+    return;
+  }
+  const m = document.createElement('div');
+  m.className = 'modal-bg open'; m.style.alignItems = 'center';
+  m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:6px">Start again</div>' +
+    '<div style="text-align:center;font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">' + list.length + ' things you are fighting. Two ways to begin, and they are different.</div>' +
+    '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);setTimeout(function(){resetAllVices(false)},220)">Day one again</button>' +
+    '<div style="font-size:11.5px;color:var(--tx3);line-height:1.55;margin-bottom:14px;text-align:center">Each clean count goes to zero. Everything you have been through stays \u2014 the day of the fight does not move.</div>' +
+    '<button class="btn" style="margin-bottom:8px;background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re)" onclick="closeModal(this);setTimeout(function(){resetAllVices(true)},220)">Clear the history too</button>' +
+    '<div style="font-size:11.5px;color:var(--tx3);line-height:1.55;margin-bottom:16px;text-align:center">Erases the counts, the urges logged, the restarts and the money reclaimed. Keeps each thing set up as it is.</div>' +
+    '<button class="btn" style="background:transparent;border:none;color:var(--tx3);font-size:12px" onclick="closeModal(this)">Not now</button>' +
+  '</div>';
+  document.body.appendChild(m);
+}
+
+// ── ONE NIGHT, MORE THAN ONE THING ───────────────────────────────────────────────────────────────
+// logLoss has always been single-vice, reached from one vice's card. A bad night rarely stays in its
+// lane, and confessing it four times over — the same date, the same feeling, four separate flows — is
+// the app making somebody relive it once per vice. Tick the ones it touched, confess once.
+function openMultiSlip(){
+  const list = _resettableVices();
+  if(list.length < 2){
+    // With one vice there is nothing multi about it; send them down the path that already exists.
+    if(list.length === 1 && typeof curVice !== 'undefined'){ curVice = list[0].i; if(typeof promptLossDate==='function') return promptLossDate(); }
+    if(typeof showToast==='function') showToast('Only one thing named','Log it from its own card \u2014 this is for a night that touched more than one.');
+    return;
+  }
+  const m = document.createElement('div');
+  m.className = 'modal-bg open'; m.style.alignItems = 'center';
+  m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:6px">What did tonight touch?</div>' +
+    '<div style="text-align:center;font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:14px">Tick what it reached. Once is enough \u2014 you do not have to tell me four times.</div>' +
+    list.map(function(x){
+      return '<label style="display:flex;align-items:center;gap:10px;padding:11px 12px;margin-bottom:8px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px;font-size:14px;color:var(--tx);cursor:pointer">' +
+        '<input type="checkbox" class="ms-v" value="' + x.i + '" style="width:20px;height:20px;flex:none;margin:0">' +
+        '<span>' + _escFew(x.v.n) + '</span></label>';
+    }).join('') +
+    '<button class="btn primary" style="margin-top:6px;margin-bottom:8px" onclick="confirmMultiSlip(this)">That is what happened</button>' +
+    '<button class="btn" style="background:transparent;border:none;color:var(--tx3);font-size:12px" onclick="closeModal(this)">Not now</button>' +
+  '</div>';
+  document.body.appendChild(m);
+}
+function confirmMultiSlip(btn){
+  const sheet = btn.closest('.modal-bg');
+  const picked = [].slice.call(sheet.querySelectorAll('.ms-v:checked')).map(function(c){ return parseInt(c.value,10); });
+  if(!picked.length){
+    if(typeof showToast==='function') showToast('Nothing ticked','Choose what it touched, or close this \u2014 either is fine.');
+    return;
+  }
+  closeModal(btn);
+  loadV();
+  const when = new Date().toISOString();
+  const undos = [];
+  picked.forEach(function(i){
+    const v = vices[i]; if(!v) return;
+    undos.push({ i:i, before: JSON.parse(JSON.stringify(v)) });
+    // The same bookkeeping logLoss does for one: bank the streak, count the restart, keep the fight.
+    const had = (typeof viceCleanDays==='function') ? viceCleanDays(v) : 0;
+    v.total = (v.total||0) + 1;
+    v.cleanDaysTotal = (v.cleanDaysTotal||0) + had;
+    v.relapseCount = (v.relapseCount||0) + 1;
+    if(!v.relapseHistory) v.relapseHistory = [];
+    v.relapseHistory.push({ date: when, streakLength: had });
+    if(!v.fightingSince) v.fightingSince = v.startDate;    // the fight predates this, as in logLoss
+    v.lastLoss = when;
+    v.startDate = when;
+  });
+  saveV();
+  try{ renderVices(); renderScoreboard(); renderDayCounter(); }catch(_){ }
+  if(typeof haptic === 'function') haptic('tap');
+  // ONE surface, not two. A toast fired in the same tick lands on top of the undo snack and hides the
+  // only way back — core.test.js guards exactly this, and caught it here. The undo carries the
+  // sentence instead: grace, not a tally, said once and about coming back rather than about falling.
+  if(typeof showUndo === 'function') showUndo(plural(picked.length,'thing') + ' back to day one. What you have been through is still yours.', function(){
+    loadV();
+    undos.forEach(function(u){ if(vices[u.i]) vices[u.i] = u.before; });
+    saveV();
+    try{ renderVices(); renderScoreboard(); renderDayCounter(); }catch(_){ }
+  });
+}
+
+// ── RESETTING, PROPERLY ──────────────────────────────────────────────────────────────────────────
+// There was exactly one way to move a streak that was not a confession — restartVice, "start again
+// from today" — and it deliberately keeps everything else: the fight day count, the total clean days
+// banked, the relapse history, the money reclaimed. That is the right default and it is NOT what
+// somebody always means by "reset". Sometimes the record itself is the thing they want gone: a vice
+// they set up wrong, a name they were testing, months of data from a version of themselves they are
+// not in conversation with any more. Refusing that and offering only "delete it entirely" makes them
+// destroy the setup to clear the history.
+//
+// So there are two depths now, named by what they DO rather than by how hard they sound, and the
+// person picks at the moment. Neither is a shame-clock: the app's rule is that a lapse is feedback,
+// not failure, and a reset is not a punishment either — it is a person deciding where to start.
+
+// Everything a vice accumulates as it is lived. The SETUP — its name, mode, kind, plan, cost config,
+// limit, verse, whether it tracks patterns — is deliberately NOT in here: reset is not reconfigure,
+// and someone clearing their history should not have to set the thing up again.
+function _viceHistoryFields(){
+  return ['cleanDaysTotal','relapseCount','relapseHistory','total','lastLoss','lastWin','lastConfirm',
+          'lastPurchase','urgelog','modLog','modWithin','modOver','lastModCheck','stage','stageAt',
+          'goalOffered','pledge','pledgeDays','owed'];
+}
+// The rows OUTSIDE the vice that are keyed to its name. Without these the counters resurrect: the app
+// would say "day one" and "used 4 times this week" in the same breath, which is exactly the kind of
+// two-surfaces-disagreeing defect this codebase keeps having to fix.
+function _viceExternalRows(name){
+  const key = String(name||'').toLowerCase();
+  return [
+    { k:'totry_vice_uses',        match:r => r && String(r.v||'').toLowerCase() === key },
+    { k:'totry_moments_won',      match:r => r && String(r.v||'').toLowerCase() === key },
+    { k:'totry_fight_log',        match:r => r && String(r.v||r.vice||'').toLowerCase() === key },
+    { k:'totry_vice_savings_log', match:r => r && String(r.v||r.n||'').toLowerCase() === key },
+  ];
+}
+// Deep-reset one vice IN MEMORY and return everything needed to put it back exactly as it was.
+function _viceResetDeep(v){
+  const before = { vice: JSON.parse(JSON.stringify(v)), rows: {} };
+  _viceHistoryFields().forEach(function(f){ delete v[f]; });
+  const now = new Date().toISOString();
+  v.startDate = now;
+  v.fightingSince = now;                      // a complete reset restarts the fight too — that is the difference
+  _viceExternalRows(v.n).forEach(function(spec){
+    try{
+      const all = ls(spec.k);
+      if(!Array.isArray(all)) return;
+      const kept = all.filter(function(r){ return !spec.match(r); });
+      if(kept.length !== all.length){ before.rows[spec.k] = all; ls(spec.k, kept); }
+    }catch(_){ }
+  });
+  return before;
+}
+function _viceResetUndo(i, before){
+  loadV();
+  if(!vices[i] || !before) return;
+  vices[i] = before.vice;
+  Object.keys(before.rows || {}).forEach(function(k){ try{ ls(k, before.rows[k]); }catch(_){ } });
+  saveV();
+  try{ renderVices(); renderScoreboard(); renderDayCounter(); }catch(_){ }
+}
+
+// "Clear its history" — the deep one, for a single vice.
+async function resetViceCompletely(i){
+  loadV();
+  const v = vices[i];
+  if(!v) return;
+  const days = viceFightDays(v);
+  const rel  = v.relapseCount || 0;
+  const banked = v.cleanDaysTotal || 0;
+  if(typeof askConfirm === 'function'){
+    const bits = [];
+    if(days) bits.push('day ' + days + ' of the fight');
+    if(banked) bits.push(plural(banked, 'day') + ' banked clean');
+    if(rel) bits.push(plural(rel, 'restart'));
+    const ok = await askConfirm('Clear everything for ' + v.n + '?',
+      (bits.length ? ('This erases ' + bits.join(', ') + ', every urge you logged against it and the money it had reclaimed. ')
+                   : 'This erases everything recorded against it. ') +
+      'It keeps the thing itself \u2014 the name, how you are handling it, your plan \u2014 so you are not setting it up again. ' +
+      'You can undo this for a few seconds afterwards.',
+      { confirmLabel:'Clear it', cancelLabel:'Keep my history' });
+    if(!ok) return;
+  }
+  const before = _viceResetDeep(v);
+  saveV();
+  try{ renderVices(); renderScoreboard(); renderDayCounter(); }catch(_){ }
+  if(typeof haptic === 'function') haptic('tap');
+  if(typeof showUndo === 'function') showUndo('Cleared. Day one, from nothing.', function(){ _viceResetUndo(i, before); });
+}
+
 async function restartVice(i){
   loadV();
   const v = vices[i];
@@ -21151,7 +21410,11 @@ function openViceManage(i){
     ((typeof viceMode==='function' ? viceMode(v) : v.kind) === 'letgo' ? '' :
       row('Start again from today', 'curVice='+i+';restartVice('+i+')')+
       row('It happened earlier — set the real day', 'curVice='+i+';promptLossDate()')+
-      row('Log slips from before I started here', 'curVice='+i+';promptMassAddLosses()'))+
+      row('Log slips from before I started here', 'curVice='+i+';promptMassAddLosses()')+
+      // The deeper one, last and phrased by what it does. "Start again" keeps everything you have
+      // been through, which is the right default; this is for when the record itself is what you
+      // want gone. Both exist because neither is what everybody means by "reset".
+      row('Clear its history and start from nothing', 'curVice='+i+';resetViceCompletely('+i+')'))+
     // MONEY IS NOT THE STAKE FOR EVERY FIGHT. _viceStakeKind already knows this — the in-the-moment
     // card has always refused to price a porn or masturbation win in dollars — but the settings sheet
     // still offered "Track the money it costs" for every vice, which asks a person what their lust
