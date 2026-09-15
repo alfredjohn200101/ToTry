@@ -324,14 +324,14 @@ function renderReadinessCard(){
       '<div style="display:flex;align-items:center;gap:14px">'+
         '<div style="position:relative;width:52px;height:52px;flex-shrink:0">'+
           '<svg viewBox="0 0 36 36" style="width:52px;height:52px;transform:rotate(-90deg)"><circle cx="18" cy="18" r="16" fill="none" stroke="var(--bg3)" stroke-width="3"/><circle cx="18" cy="18" r="16" fill="none" stroke="'+col+'" stroke-width="3" stroke-dasharray="'+(r.score*1.005)+' 100" stroke-linecap="round"/></svg>'+
-          '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--tx);font-family:DM Mono,monospace">'+r.score+'</div>'+
+          '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:var(--t-base);color:var(--tx);font-family:var(--font-text)">'+r.score+'</div>'+
         '</div>'+
-        '<div style="flex:1"><div style="font-size:14px;color:'+col+';font-weight:500">'+icon+' '+label+'</div>'+
-        '<div style="font-size:11px;color:var(--tx3);margin-top:2px">'+reasonTxt+'</div></div>'+
-        '<div style="color:var(--tx3);font-size:16px;flex-shrink:0">›</div>'+
+        '<div style="flex:1"><div style="font-size:var(--t-base);color:'+col+';font-weight:500">'+icon+' '+label+'</div>'+
+        '<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:2px">'+reasonTxt+'</div></div>'+
+        '<div style="color:var(--tx3);font-size:var(--t-base);flex-shrink:0">›</div>'+
       '</div>'+
-      '<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-top:10px">'+r.advice+'</div>'+
-      '<div style="font-size:10px;color:var(--tx3);margin-top:8px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.08em">'+_sourceLine+' · tap for the full picture</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.5;margin-top:10px">'+r.advice+'</div>'+
+      '<div style="font-size:var(--t-mini);color:var(--tx3);margin-top:8px;font-family:var(--font-text);text-transform:uppercase;letter-spacing:0.01em">'+_sourceLine+' · tap for the full picture</div>'+
     '</div>';
 }
 
@@ -351,10 +351,10 @@ function renderWeeklyReflectionCard(){
   if(!show){ card.style.display='none'; return; }
   card.style.display='block';
   card.innerHTML = '<div class="lbl">Your week</div>'+
-    '<div class="card" style="background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">'+
-      '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:12px">Take a moment to see your week honestly \u2014 body, discipline, and spirit, woven together.</div>'+
-      '<button class="btn primary" id="weekly-reflection-btn" onclick="generateWeeklyReflection()" style="font-size:13px">Reflect on my week</button>'+
-      '<button class="btn" id="weekly-content-btn" onclick="generateWeeklyContent()" style="font-size:13px;margin-top:8px;background:none;border:1px solid var(--go-bd);color:var(--go)">'+svgIcon("film",14)+' Make this week\u2019s content</button>'+
+    '<div class="card" style="background:var(--go-bg);border-color:var(--go-bd)">'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:12px">Take a moment to see your week honestly \u2014 body, discipline, and spirit, woven together.</div>'+
+      '<button class="btn primary" id="weekly-reflection-btn" onclick="generateWeeklyReflection()" style="font-size:var(--t-base)">Reflect on my week</button>'+
+      '<button class="btn" id="weekly-content-btn" onclick="generateWeeklyContent()" style="font-size:var(--t-base);margin-top:8px;background:none;color:var(--go);background:var(--fill2)">'+svgIcon("film",14)+' Make this week\u2019s content</button>'+
       '<div id="weekly-content-out" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"></div>'+
       '<div id="weekly-reflection-out" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"></div>'+
     '</div>';
@@ -415,7 +415,7 @@ async function explainPlateau(){
   const box = document.getElementById('plateau-explain-out');
   const btn = document.getElementById('plateau-explain-btn');
   const p = detectPlateau();
-  if(!p){ if(box){ box.style.display='block'; box.innerHTML = '<div style="font-size:13px;color:var(--tx2);line-height:1.6">No plateau detected right now \u2014 your numbers are moving. Keep going.</div>'; } return; }
+  if(!p){ if(box){ box.style.display='block'; box.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">No plateau detected right now \u2014 your numbers are moving. Keep going.</div>'; } return; }
   if(btn){ btn.textContent='Thinking...'; btn.disabled=true; }
   try{
     const ctx = (typeof _ptIntel==='function') ? _ptIntel() : '';
@@ -425,10 +425,10 @@ async function explainPlateau(){
     if(box){
       box.style.display='block';
       box.innerHTML = (resp && resp.trim())
-        ? '<div style="font-size:13px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">'+resp.replace(/</g,'&lt;')+'</div>'
+        ? '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;white-space:pre-wrap">'+resp.replace(/</g,'&lt;')+'</div>'
         : aiUnavailableHtml(p.detail || '');
     }
-  }catch(e){ if(box){ box.style.display='block'; box.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t reach the coach right now. Try again shortly.</div>'; } }
+  }catch(e){ if(box){ box.style.display='block'; box.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Couldn\u2019t reach the coach right now. Try again shortly.</div>'; } }
   finally{ if(btn){ btn.textContent='Why am I stuck?'; btn.disabled=false; } }
 }
 // Shows the plateau card ONLY when a genuine stall is detected (pull-based, never nags).
@@ -439,10 +439,10 @@ function renderPlateauCard(){
   if(!p){ card.style.display='none'; return; }
   card.style.display='block';
   card.className='card';
-  card.style.cssText='display:block;margin-bottom:14px;background:linear-gradient(135deg,rgba(140,107,182,0.08),rgba(200,169,110,0.04));border:1px solid var(--go-bd)';
-  card.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">'+svgIcon("mountain")+' Plateau spotted</div>'+
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:12px">'+p.detail+'</div>'+
-    '<button class="btn primary" id="plateau-explain-btn" onclick="explainPlateau()" style="font-size:13px">Why am I stuck?</button>'+
+  card.style.cssText='display:block;margin-bottom:14px;background:var(--go-bg);border:1px solid var(--go-bd)';
+  card.innerHTML = '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">'+svgIcon("mountain")+' Plateau spotted</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:12px">'+p.detail+'</div>'+
+    '<button class="btn primary" id="plateau-explain-btn" onclick="explainPlateau()" style="font-size:var(--t-base)">Why am I stuck?</button>'+
     '<div id="plateau-explain-out" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"></div>';
 }
 
@@ -480,7 +480,7 @@ async function explainVicePatterns(){
   const p = detectVicePatterns();
   if(btn){ btn.textContent='Thinking...'; btn.disabled=true; }
   try{
-    if(!p){ if(box){ box.style.display='block'; box.innerHTML='<div style="font-size:13px;color:var(--tx2);line-height:1.6">There\u2019s no clear pattern in your slips yet \u2014 and that\u2019s okay. Keep logging honestly; if a pattern emerges, I\u2019ll help you see it gently.</div>'; } return; }
+    if(!p){ if(box){ box.style.display='block'; box.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">There\u2019s no clear pattern in your slips yet \u2014 and that\u2019s okay. Keep logging honestly; if a pattern emerges, I\u2019ll help you see it gently.</div>'; } return; }
     const sys = brotherSys() + 'RIGHT NOW you’re helping them look honestly at the PATTERN in their fight — the times, the triggers. Acknowledge the courage it takes to look at all. Read what you see and offer 2-3 gentle, practical, hopeful moves tied to it. Brief and warm — never shame, only grace and growth.';
     const prompt = 'A person fighting a vice has these patterns in when they slip: ' + p.patterns.join(' ') + ' (' + p.count + ' slips logged). Compassionately reflect this back and suggest 2-3 specific, doable strategies for those high-risk moments. Hopeful, never shaming.';
     const resp = await api(sys, [], prompt, 600);
@@ -489,10 +489,10 @@ async function explainVicePatterns(){
       // detectVicePatterns() already found these on this device, before the model was asked. If the
       // model is down, say so AND still show them — the person came here to understand themselves.
       box.innerHTML = (resp && resp.trim())
-        ? '<div style="font-size:13px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">'+resp.replace(/</g,'&lt;')+'</div>'
+        ? '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;white-space:pre-wrap">'+resp.replace(/</g,'&lt;')+'</div>'
         : aiUnavailableHtml('What your own log shows: ' + p.patterns.join(' ') + ' (' + p.count + ' logged).');
     }
-  }catch(e){ if(box){ box.style.display='block'; box.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t reach the coach right now.</div>'; } }
+  }catch(e){ if(box){ box.style.display='block'; box.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Couldn\u2019t reach the coach right now.</div>'; } }
   finally{ if(btn){ btn.textContent='Show me my patterns'; btn.disabled=false; } }
 }
 // Renders the OPT-IN vice-pattern entry point. Shows ONLY when there's enough slip data to find a
@@ -513,8 +513,8 @@ function renderVicePatternCard(){
   card.style.display='block';
   card.className='card';
   card.style.cssText='display:block;margin-top:8px;background:var(--bg2);border:1px solid var(--bd)';
-  card.innerHTML = '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:10px">When you\u2019re ready, I can gently show you the patterns in when slips tend to happen \u2014 no judgment, just to help you prepare for the hard moments.</div>'+
-    '<button class="btn" id="vice-pattern-btn" onclick="explainVicePatterns()" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Show me my patterns</button>'+
+  card.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:10px">When you\u2019re ready, I can gently show you the patterns in when slips tend to happen \u2014 no judgment, just to help you prepare for the hard moments.</div>'+
+    '<button class="btn" id="vice-pattern-btn" onclick="explainVicePatterns()" style="background:var(--bg3);font-size:var(--t-base)">Show me my patterns</button>'+
     '<div id="vice-pattern-out" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"></div>';
 }
 
@@ -523,7 +523,7 @@ async function explainReadiness(){
   const r = (typeof computeReadiness==='function') ? computeReadiness() : null;
   const m = document.createElement('div');
   m.className = 'modal-bg open';
-  m.innerHTML = '<div class="modal"><div class="modal-handle"></div><div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:10px">Your readiness</div><div id="readiness-explain-body" style="font-size:13px;color:var(--tx2);line-height:1.7">Thinking...</div><div style="font-size:11px;color:var(--tx3);line-height:1.55;margin-top:12px;padding-top:10px;border-top:1px solid var(--bd)">This reads your own check-ins — sleep, stress, energy — plus your recent training load. An honest daily gauge, not a wearable\'s HRV. Connect Apple Health / Health Connect and it sharpens.</div><button class="btn" onclick="this.closest(\'.modal-bg\').remove()" style="margin-top:14px">Close</button></div>';
+  m.innerHTML = '<div class="modal"><div class="modal-handle"></div><div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);margin-bottom:10px">Your readiness</div><div id="readiness-explain-body" style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7">Thinking...</div><div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.55;margin-top:12px;padding-top:10px;border-top:1px solid var(--bd)">This reads your own check-ins — sleep, stress, energy — plus your recent training load. An honest daily gauge, not a wearable\'s HRV. Connect Apple Health / Health Connect and it sharpens.</div><button class="btn" onclick="this.closest(\'.modal-bg\').remove()" style="margin-top:14px">Close</button></div>';
   document.body.appendChild(m);
   const body = document.getElementById('readiness-explain-body');
   if(!r){ if(body) body.innerHTML = 'Log a check-in (sleep, stress, energy) and a workout or two, and I\u2019ll be able to read your recovery.'; return; }
@@ -536,7 +536,7 @@ async function explainReadiness(){
     const prompt = 'Readiness today is ' + _rAI.score + '/100 (' + _rAI.level + '). Inputs: ' + (_rAI.sleep!=null?'sleep '+_rAI.sleep+'/10, ':'') + (_rAI.stress!=null?'stress '+_rAI.stress+'/10, ':'') + (_rAI.energy!=null?'energy '+_rAI.energy+'/10, ':'') + 'reasons: ' + (_rAI.reasons.join(', ')||'recent days') + '. Explain why it\u2019s here and 2 things that would raise it.';
     const resp = await api(sys, [], prompt, 400);
     if(body) body.innerHTML = '<div style="white-space:pre-wrap">'+(resp||r.advice).replace(/</g,'&lt;')+'</div>';
-  }catch(e){ if(body) body.innerHTML = r.advice + '<div style="font-size:11px;color:var(--tx3);margin-top:8px">(Detailed explanation unavailable right now.)</div>'; }
+  }catch(e){ if(body) body.innerHTML = r.advice + '<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:8px">(Detailed explanation unavailable right now.)</div>'; }
 }
 
 // ── WS-A: WEEKLY NARRATIVE REFLECTION (pull-based, once weekly) ──

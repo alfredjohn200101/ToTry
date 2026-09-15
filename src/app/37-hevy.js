@@ -131,11 +131,11 @@ async function openPushRoutineToHevy(){
   m.style.alignItems = 'center';
   m.innerHTML = '<div class="modal" style="max-height:80vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:6px">Push a routine to Hevy</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">Send a routine you built here into your Hevy account, so you can run it in the Hevy app too.</p>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px;line-height:1.5">Send a routine you built here into your Hevy account, so you can run it in the Hevy app too.</p>' +
     pushable.map((r, i) =>
-      '<button class="btn" onclick="pushRoutineToHevy(' + routines.indexOf(r) + ')" style="margin-bottom:8px;background:var(--bg3);border:1px solid var(--bd);text-align:left;display:flex;justify-content:space-between;align-items:center">' +
+      '<button class="btn" onclick="pushRoutineToHevy(' + routines.indexOf(r) + ')" style="margin-bottom:8px;background:var(--bg3);text-align:left;display:flex;justify-content:space-between;align-items:center">' +
         '<span>' + (r.name || 'Routine').replace(/</g,'&lt;') + '</span>' +
-        '<span style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3)">' + (r.exercises||[]).length + ' ex →</span>' +
+        '<span style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)">' + (r.exercises||[]).length + ' ex →</span>' +
       '</button>'
     ).join('') +
     '<button class="btn quiet" onclick="closeModal(this)" style="margin-top:4px">Cancel</button>' +
@@ -437,9 +437,9 @@ function openHevyTodayPicker(){
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:12px">Today\u2019s routine</div>'+
+    '<div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);margin-bottom:12px">Today\u2019s routine</div>'+
     '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">'+
-    routines.map(r => '<button class="btn stack" style="background:var(--bg3);border:1px solid var(--bd);text-align:left;padding:12px" onclick="setTodayHevyRoutine(\'' + r.hevyId + '\');this.closest(\'.modal-bg\').remove()"><div style="color:var(--tx);font-size:14px">' + r.title + '</div><div style="color:var(--tx3);font-size:11px;margin-top:2px">' + (r.exercises||[]).length + ' exercises</div></button>').join('')+
+    routines.map(r => '<button class="btn stack" style="background:var(--bg3);text-align:left;padding:12px" onclick="setTodayHevyRoutine(\'' + r.hevyId + '\');this.closest(\'.modal-bg\').remove()"><div style="color:var(--tx);font-size:var(--t-base)">' + r.title + '</div><div style="color:var(--tx3);font-size:var(--t-cap);margin-top:2px">' + (r.exercises||[]).length + ' exercises</div></button>').join('')+
     '</div>'+
     '<button class="btn quiet" onclick="this.closest(\'.modal-bg\').remove()">Cancel</button></div>';
   document.body.appendChild(m);

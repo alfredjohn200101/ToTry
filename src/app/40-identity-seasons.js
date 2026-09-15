@@ -295,7 +295,7 @@ function renderDualStreaks(){
       const n=(ls('totry_moments_won')||[]).length;
       if(n>0){
         el.style.display='block';
-        el.innerHTML='<span style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);letter-spacing:0.05em">'+
+        el.innerHTML='<span style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);letter-spacing:0.01em">'+
           '<b style="color:var(--go)">'+n+'</b> urge'+(n===1?'':'s')+' ridden out, all time — that’s skill, and nothing resets it</span>';
       } else { el.style.display='none'; el.innerHTML=''; }
     }
@@ -332,13 +332,13 @@ function showResilienceInfo(){
   const m=document.createElement('div');
   m.className='modal-bg open';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-size:16px;font-weight:500;color:var(--bl);margin-bottom:10px">What is the resilience streak?</div>'+
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">'+
+    '<div style="font-size:var(--t-base);font-weight:500;color:var(--bl);margin-bottom:10px">What is the resilience streak?</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:14px">'+
     '<strong style="color:var(--tx)">Days in the fight</strong> starts again at day one after a lapse. That is honest.<br><br>'+
     '<strong style="color:var(--bl)">Resilience streak</strong> counts the days you showed up and tried, regardless of outcome — and it is built with grace: <strong>one missed day won’t break it</strong>. Miss two in a row and it starts again. One off day is being human, not failing.<br><br>'+
     'Both matter. The first measures the clean stretch. The second measures the person you are becoming. A lapse starts the first again. Only giving up breaks the second.<br><br>'+
     'Being straight with you: because one off day is forgiven, this number isn’t a claim that you were perfect every single day — it’s the length of the stretch you’ve kept coming back in. (Sobriety stays strictly honest: a relapse does reset the sober count — but never your resilience, and never the total days you’ve been trying.) And real habits take about <strong>66 days</strong> to form, not 21 — so this is a long game, and you’re in it.<br><br>'+
-    '<em style="color:var(--go);font-family:Cormorant Garamond,serif;font-size:15px">"I am not here because I made it. I am here because I am trying."</em>'+
+    '<em style="color:var(--go);font-family:var(--font-display);font-weight:700;font-size:var(--t-base)">"I am not here because I made it. I am here because I am trying."</em>'+
     '</div>'+
     '<button class="btn primary" onclick="this.closest(\'.modal-bg\').remove()">Got it</button></div>';
   document.body.appendChild(m);
@@ -519,6 +519,7 @@ window.addEventListener('popstate', (e) => {
   const navIdx = TABS.indexOf(navName);
   if(navIdx>=0){const _nb=document.querySelectorAll('.nb')[navIdx]; if(_nb){_nb.classList.add('active'); _nb.setAttribute('aria-current','page');}}
   if(typeof updateHubBackBar==='function') updateHubBackBar(target);
+  if(typeof iosNavSync==='function') iosNavSync(target);
 });
 
 // Set initial history state to home

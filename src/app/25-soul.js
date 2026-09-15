@@ -5,24 +5,24 @@
     const showBio = !_liturgyCelebrationMismatch(c);
     const q = showBio ? c.quote : null;
     const desc = showBio ? c.description : null;
-    html += '<div class="card" style="background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.04));border-color:var(--go-bd)">'+
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Today the Church remembers</div>'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:'+(q||desc?'10px':'0')+'">'+(c.name||'').replace(/</g,'&lt;')+'</div>'+
-      (q?'<div style="font-size:14px;color:var(--go);font-style:italic;line-height:1.6;margin-bottom:'+(desc?'10px':'0')+'">\u201c'+q.replace(/</g,'&lt;')+'\u201d</div>':'')+
-      (desc?'<div style="font-size:12px;color:var(--tx3);line-height:1.6">'+desc.replace(/</g,'&lt;')+'</div>':'')+
+    html += '<div class="card" style="background:var(--go-bg);border-color:var(--go-bd)">'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Today the Church remembers</div>'+
+      '<div style="font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;margin-bottom:'+(q||desc?'10px':'0')+'">'+(c.name||'').replace(/</g,'&lt;')+'</div>'+
+      (q?'<div style="font-size:var(--t-base);color:var(--go);font-style:italic;line-height:1.6;margin-bottom:'+(desc?'10px':'0')+'">\u201c'+q.replace(/</g,'&lt;')+'\u201d</div>':'')+
+      (desc?'<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6">'+desc.replace(/</g,'&lt;')+'</div>':'')+
       '</div>';
   }
   if(d.readings){
     const r = d.readings;
-    const row = (label, val) => val ? '<div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--bd)"><span style="font-size:12px;color:var(--tx3);flex-shrink:0">'+label+'</span><span style="font-size:13px;color:var(--tx);text-align:right">'+val.replace(/</g,'&lt;')+'</span></div>' : '';
+    const row = (label, val) => val ? '<div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--bd)"><span style="font-size:var(--t-sm);color:var(--tx3);flex-shrink:0">'+label+'</span><span style="font-size:var(--t-base);color:var(--tx);text-align:right">'+val.replace(/</g,'&lt;')+'</span></div>' : '';
     html += '<div class="card"><div class="card-hd" style="margin-bottom:6px">Today\u2019s Mass readings</div>'+
       row('First Reading', r.firstReading)+
       row('Psalm', r.psalm)+
       row('Second Reading', r.secondReading)+
-      '<div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0"><span style="font-size:12px;color:var(--tx3);flex-shrink:0">Gospel</span><span style="font-size:13px;color:var(--go);text-align:right">'+(r.gospel||'').replace(/</g,'&lt;')+'</span></div>';
-    html += '<button class="btn" onclick="readTodaysGospel()" style="margin-top:12px;background:var(--bg2);border:1px solid var(--go-bd);color:var(--go);font-size:13px;width:100%">Read today\u2019s Gospel</button>';
+      '<div style="display:flex;justify-content:space-between;gap:12px;padding:9px 0"><span style="font-size:var(--t-sm);color:var(--tx3);flex-shrink:0">Gospel</span><span style="font-size:var(--t-base);color:var(--go);text-align:right">'+(r.gospel||'').replace(/</g,'&lt;')+'</span></div>';
+    html += '<button class="btn" onclick="readTodaysGospel()" style="margin-top:12px;background:var(--bg2);color:var(--go);font-size:var(--t-base);width:100%">Read today\u2019s Gospel</button>';
     html += '<div id="liturgy-gospel-text" style="margin-top:12px"></div>';
-    if(d.usccb){ html += '<a href="'+d.usccb+'" target="_blank" rel="noopener" style="display:block;margin-top:10px;font-size:12px;color:var(--bl);text-align:center">Full readings at USCCB \u2192</a>'; }
+    if(d.usccb){ html += '<a href="'+d.usccb+'" target="_blank" rel="noopener" style="display:block;margin-top:10px;font-size:var(--t-sm);color:var(--bl);text-align:center">Full readings at USCCB \u2192</a>'; }
     html += '</div>';
     window.__todayGospelRef = d.readings.gospel || null;
   }
@@ -59,12 +59,12 @@ function renderSoulStill(){
 
   el.style.display = 'block';
   el.innerHTML =
-    '<div style="border:1px solid var(--bd);border-radius:var(--r);padding:20px 18px;margin-bottom:18px;' +
+    '<div style="border-radius:var(--r);padding:20px 18px;margin-bottom:18px;' +
       'background:var(--bg2)">' +
       '<div class="eyebrow" style="color:var(--go);margin-bottom:9px">' + _escFew(eyebrow) + '</div>' +
-      '<div style="font-family:Cormorant Garamond,serif;font-size:' + (line ? '21px' : '19px') + ';' +
+      '<div style="font-family:var(--font-display);font-weight:700;font-size:' + (line ? '21px' : '19px') + ';' +
         'color:var(--tx);line-height:1.45;margin-bottom:' + (ref ? '8px' : '16px') + '">' + body + '</div>' +
-      (ref ? '<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:0.08em;' +
+      (ref ? '<div style="font-family:var(--font-text);font-size:var(--t-micro);letter-spacing:0.01em;' +
              'color:var(--tx3);margin-bottom:16px">' + _escFew(ref) + '</div>' : '') +
       '<button class="btn" onclick="soulBeStill()" style="width:100%;background:var(--bg3);' +
         'border:1px solid var(--go-bd);color:var(--go)">Be still for a minute</button>' +
@@ -84,7 +84,7 @@ async function readTodaysGospel(){
   const box = document.getElementById('liturgy-gospel-text');
   const ref = window.__todayGospelRef;
   if(!box || !ref) return;
-  box.innerHTML = '<div style="font-size:13px;color:var(--tx3);font-style:italic;padding:6px">Loading the Gospel…</div>';
+  box.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx3);font-style:italic;padding:6px">Loading the Gospel…</div>';
   // A LECTIONARY READING IS OFTEN MORE THAN ONE RANGE. The old pattern captured the FIRST range and
   // stopped, so "Matthew 1:1-16, 18-23" rendered verses 1-16 and silently dropped 18-23 — the half
   // that carries the annunciation — with no note that anything was missing. Two such readings fell in
@@ -100,7 +100,7 @@ async function readTodaysGospel(){
   // narrows a verse this reader shows whole, so dropping the letter loses nothing a person would see.
   const _refMain = String(ref).split(/\s+or\s+/i)[0].replace(/(\d)[a-z]\b/g, '$1').trim();
   const m = _refMain.match(/^([\d]?\s?[A-Za-z ]+?)\s+(\d+):([\d,\s\u2013\u2014-]+)$/);
-  if(!m){ box.innerHTML = '<div style="font-size:12px;color:var(--tx2);padding:6px">See the full Gospel at the USCCB link below.</div>'; return; }
+  if(!m){ box.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx2);padding:6px">See the full Gospel at the USCCB link below.</div>'; return; }
   const bookName = m[1].trim();
   const chapter = m[2];
   const ranges = m[3].split(',').map(function(part){
@@ -110,7 +110,7 @@ async function readTodaysGospel(){
     const one = t.match(/^(\d+)$/);
     return one ? { a:+one[1], b:+one[1] } : null;
   }).filter(Boolean);
-  if(!ranges.length){ box.innerHTML = '<div style="font-size:12px;color:var(--tx2);padding:6px">See the full Gospel at the USCCB link below.</div>'; return; }
+  if(!ranges.length){ box.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx2);padding:6px">See the full Gospel at the USCCB link below.</div>'; return; }
   const inRanges = n => ranges.some(function(r){ return n >= r.a && n <= r.b; });
   const usfm = (typeof bibleBookToUSFM==='function') ? bibleBookToUSFM(bookName) : bookName.toUpperCase().slice(0,3);
   let verses = null;
@@ -121,20 +121,20 @@ async function readTodaysGospel(){
                   .map(v => ({ num:v.number, text: (Array.isArray(v.content)?v.content.map(c=>typeof c==='string'?c:(c.text||'')).join(' '):v.content||'') })); }
   }catch(_){ }
   if(!verses || !verses.length){
-    box.innerHTML = '<div style="font-size:12px;color:var(--tx2);line-height:1.6;padding:6px">Couldn\u2019t load the passage inline right now \u2014 tap the USCCB link below for the full reading.</div>';
+    box.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;padding:6px">Couldn\u2019t load the passage inline right now \u2014 tap the USCCB link below for the full reading.</div>';
     return;
   }
-  let html = '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rm);padding:14px;margin-top:4px">'+
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px">'+ref.replace(/</g,'&lt;')+'</div>';
+  let html = '<div style="background:var(--bg2);border-radius:var(--rm);padding:14px;margin-top:4px">'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:10px">'+ref.replace(/</g,'&lt;')+'</div>';
   // The lectionary SKIPS the verses between two ranges; running them together would present the
   // reading as continuous when it is not. Mark the join so the omission is visible.
   let _prevNum = null;
   verses.forEach(v => {
     if(_prevNum != null && v.num > _prevNum + 1)
-      html += '<p style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);text-align:center;margin:2px 0 8px">\u22ef</p>';
+      html += '<p style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3);text-align:center;margin:2px 0 8px">\u22ef</p>';
     _prevNum = v.num;
-    if(v.text) html += '<p style="font-size:15px;line-height:1.7;color:var(--tx);margin-bottom:8px"><span style="font-size:10px;color:var(--go);vertical-align:super;margin-right:3px">'+v.num+'</span>'+v.text.replace(/</g,'&lt;')+'</p>'; });
-  html += '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:6px">Berean Standard Bible (public domain)</div></div>';
+    if(v.text) html += '<p style="font-size:var(--t-base);line-height:1.7;color:var(--tx);margin-bottom:8px"><span style="font-size:var(--t-mini);color:var(--go);vertical-align:super;margin-right:3px">'+v.num+'</span>'+v.text.replace(/</g,'&lt;')+'</p>'; });
+  html += '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:6px">Berean Standard Bible (public domain)</div></div>';
   box.innerHTML = html;
   haptic('tap');
 }
@@ -220,7 +220,7 @@ function openRosary(){
   }catch(_){}
   let ov = document.getElementById('rosary-overlay');
   if(!ov){ ov = document.createElement('div'); ov.id='rosary-overlay'; document.body.appendChild(ov); }
-  ov.style.cssText='position:fixed;inset:0;z-index:9000;background:radial-gradient(120% 90% at 50% 0%, #16121f 0%, #0a0a0f 70%);display:flex;flex-direction:column;overflow:hidden';
+  ov.style.cssText='position:fixed;inset:0;z-index:9000;background:radial-gradient(120% 90% at 50% 0%, #16121f 0%, var(--bg) 70%);display:flex;flex-direction:column;overflow:hidden';
   _renderRosaryStep();
   if(typeof haptic==='function') haptic('light');
 }
@@ -252,29 +252,29 @@ function _renderRosaryStep(){
   if(s.announce){
     const m=s.announce;
     bodyHtml=
-      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:14px">'+esc(s.name)+'</div>'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:30px;font-style:italic;color:var(--tx);line-height:1.2;margin-bottom:12px">'+esc(m.title)+'</div>'+
-      '<div style="font-family:DM Mono,monospace;font-size:12px;color:var(--tx3);margin-bottom:18px">'+esc(m.ref)+'</div>'+
-      '<div style="font-size:13px;color:var(--go);line-height:1.6">Fruit of the mystery: <span style="color:var(--tx2)">'+esc(m.fruit)+'</span></div>'+
-      '<div style="font-size:12px;color:var(--tx3);line-height:1.7;margin-top:16px;font-style:italic">Picture the scene. Sit with it a moment before you pray.</div>';
+      '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);letter-spacing:0.01em;text-transform:uppercase;margin-bottom:14px">'+esc(s.name)+'</div>'+
+      '<div style="font-family:var(--font-serif);font-size:var(--t-2xl);font-style:italic;color:var(--tx);line-height:1.2;margin-bottom:12px">'+esc(m.title)+'</div>'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-sm);color:var(--tx3);margin-bottom:18px">'+esc(m.ref)+'</div>'+
+      '<div style="font-size:var(--t-base);color:var(--go);line-height:1.6">Fruit of the mystery: <span style="color:var(--tx2)">'+esc(m.fruit)+'</span></div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.7;margin-top:16px;font-style:italic">Picture the scene. Sit with it a moment before you pray.</div>';
   } else {
     bodyHtml=
-      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:4px">'+esc(s.name)+'</div>'+
-      (s.sub?'<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);margin-bottom:18px">'+esc(s.sub)+'</div>':'<div style="height:14px"></div>')+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:'+(s.text&&s.text.length>240?'19px':'23px')+';color:var(--tx);line-height:1.5;font-style:italic">'+esc(s.text)+'</div>';
+      '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);letter-spacing:0.01em;text-transform:uppercase;margin-bottom:4px">'+esc(s.name)+'</div>'+
+      (s.sub?'<div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3);margin-bottom:18px">'+esc(s.sub)+'</div>':'<div style="height:14px"></div>')+
+      '<div style="font-family:var(--font-serif);font-size:'+(s.text&&s.text.length>240?'19px':'23px')+';color:var(--tx);line-height:1.5;font-style:italic">'+esc(s.text)+'</div>';
   }
   ov.innerHTML=
     '<div style="padding:calc(env(safe-area-inset-top,0px) + 16px) 20px 10px;display:flex;align-items:center;justify-content:space-between;gap:12px">'+
-      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);letter-spacing:0.1em;text-transform:uppercase;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.sec)+'</div>'+
-      '<button onclick="closeRosary()" aria-label="Close" style="background:none;border:none;color:var(--tx3);font-size:22px;cursor:pointer;line-height:1;flex:none;min-width:44px;min-height:44px;margin:-11px">×</button>'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);letter-spacing:0.01em;text-transform:uppercase;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(s.sec)+'</div>'+
+      '<button onclick="closeRosary()" aria-label="Close" style="background:none;border:none;color:var(--tx3);font-size:var(--t-xl);cursor:pointer;line-height:1;flex:none;min-width:44px;min-height:44px;margin:-11px">×</button>'+
     '</div>'+
     '<div style="height:3px;background:rgba(255,255,255,0.06);margin:0 20px;border-radius:2px"><div style="height:100%;width:'+pct+'%;background:var(--go);border-radius:2px;transition:width .25s"></div></div>'+
     '<div onclick="_rosaryGo(1)" style="flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;padding:24px 26px;overflow-y:auto;cursor:pointer">'+
       '<div style="max-width:34ch;margin:0 auto">'+bodyHtml+'</div>'+
     '</div>'+
     '<div style="padding:14px 20px calc(env(safe-area-inset-bottom,0px) + 20px);display:flex;align-items:center;gap:12px">'+
-      (_rosary.i>0?'<button onclick="_rosaryGo(-1)" style="flex:none;width:52px;height:52px;border-radius:50%;background:none;border:1px solid var(--bd);color:var(--tx2);font-size:20px;cursor:pointer">‹</button>':'')+
-      '<button onclick="_rosaryGo(1)" class="btn primary" style="flex:1;margin:0;padding:16px;font-size:15px">'+(s.last?'Finish · Amen':(s.announce?'Begin the decade':'Next'))+'</button>'+
+      (_rosary.i>0?'<button onclick="_rosaryGo(-1)" style="flex:none;width:52px;height:52px;border-radius:50%;background:none;color:var(--tx2);font-size:var(--t-xl);cursor:pointer;background:var(--fill2)">‹</button>':'')+
+      '<button onclick="_rosaryGo(1)" class="btn primary" style="flex:1;margin:0;padding:16px;font-size:var(--t-base)">'+(s.last?'Finish · Amen':(s.announce?'Begin the decade':'Next'))+'</button>'+
     '</div>';
 }
 let _rosaryDone = false;      // set on completion so closeRosary() cannot re-arm the resume pointer
@@ -293,9 +293,9 @@ function _finishRosary(){
   const ov=document.getElementById('rosary-overlay'); if(!ov) return;
   const n=list.length;
   ov.innerHTML='<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px">'+
-    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.16em;text-transform:uppercase;margin-bottom:14px">Rosary complete</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:26px;font-style:italic;color:var(--tx);line-height:1.35;margin-bottom:16px;max-width:22ch">“Pray for us, O holy Mother of God.”</div>'+
-    '<div style="font-size:13px;color:var(--tx3);line-height:1.6;margin-bottom:26px;max-width:30ch">You prayed the '+(_rosary?_rosary.set.name:'')+' Mysteries. That’s '+n+' '+(n===1?'rosary':'rosaries')+' walked with Our Lady.</div>'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);letter-spacing:0.01em;text-transform:uppercase;margin-bottom:14px">Rosary complete</div>'+
+    '<div style="font-family:var(--font-serif);font-size:var(--t-title1);font-style:italic;color:var(--tx);line-height:1.35;margin-bottom:16px;max-width:22ch">“Pray for us, O holy Mother of God.”</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:26px;max-width:30ch">You prayed the '+(_rosary?_rosary.set.name:'')+' Mysteries. That’s '+n+' '+(n===1?'rosary':'rosaries')+' walked with Our Lady.</div>'+
     '<button onclick="closeRosary()" class="btn primary" style="width:auto;padding:14px 30px">Rest in the peace of it</button>'+
   '</div>';
 }
@@ -312,10 +312,10 @@ async function renderMorningLiturgy(){
   if(d.celebration && d.celebration.name) line = 'Today: ' + d.celebration.name;
   else if(d.readings && d.readings.gospel) line = 'Gospel today: ' + d.readings.gospel;
   if(!line){ box.style.display='none'; return; }
-  box.innerHTML = '<div onclick="go(\'liturgy\')" style="cursor:pointer;background:var(--bg3);border:1px solid var(--go-bd);border-radius:var(--rm);padding:11px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px">'+
-    '<div><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:3px">In the Church today</div>'+
-    '<div style="font-size:12px;color:var(--tx2)">'+line.replace(/</g,'&lt;')+'</div></div>'+
-    '<span style="color:var(--tx3);font-size:18px">\u203a</span></div>';
+  box.innerHTML = '<div onclick="go(\'liturgy\')" style="cursor:pointer;background:var(--bg3);border-radius:var(--rm);padding:11px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px">'+
+    '<div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">In the Church today</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx2)">'+line.replace(/</g,'&lt;')+'</div></div>'+
+    '<span style="color:var(--tx3);font-size:var(--t-hd)">\u203a</span></div>';
   box.style.display = 'block';
 }
 
@@ -356,11 +356,11 @@ function saveWhyEdit(){
 function renderWhyAffirmations(){
   const box = document.getElementById('affirmations-list'); if(!box) return;
   const list = ls('totry_affirmations') || [];
-  if(!list.length){ box.innerHTML = '<p style="font-size:12px;color:var(--tx3);font-style:italic;padding:4px 0">No affirmations yet.</p>'; return; }
+  if(!list.length){ box.innerHTML = '<p style="font-size:var(--t-sm);color:var(--tx3);font-style:italic;padding:4px 0">No affirmations yet.</p>'; return; }
   box.innerHTML = list.map((a,i) =>
-    '<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);margin-bottom:6px">'+
-    '<span style="flex:1;font-size:13px;color:var(--tx);font-style:italic">\u201c'+a.replace(/</g,'&lt;')+'\u201d</span>'+
-    '<button onclick="removeWhyAffirmation('+i+')" style="background:none;border:none;color:var(--tx3);font-size:16px;flex-shrink:0">\u00d7</button></div>'
+    '<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--bg3);border-radius:var(--rs);margin-bottom:6px">'+
+    '<span style="flex:1;font-size:var(--t-base);color:var(--tx);font-style:italic">\u201c'+a.replace(/</g,'&lt;')+'\u201d</span>'+
+    '<button onclick="removeWhyAffirmation('+i+')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-base);flex-shrink:0">\u00d7</button></div>'
   ).join('');
 }
 function addWhyAffirmation(){
@@ -431,18 +431,18 @@ function renderWhyPromises(){
   if(due){
     const dueNow = promises.filter(p => p.status==='open' && new Date(p.due).getTime() <= now);
     due.innerHTML = dueNow.map(p =>
-      '<div style="padding:12px;background:var(--bg3);border:1px solid var(--go-bd);border-radius:var(--rs);margin-bottom:8px">'+
-      '<div style="font-size:13px;color:var(--tx);margin-bottom:8px">'+p.text.replace(/</g,'&lt;')+'</div>'+
-      '<div style="display:flex;gap:8px"><button class="btn success" style="flex:1;padding:7px;font-size:12px" onclick="resolveWhyPromise('+p.id+',true)">Kept it</button>'+
-      '<button class="btn" style="flex:1;padding:7px;font-size:12px;background:var(--bg2);border:1px solid var(--bd)" onclick="resolveWhyPromise('+p.id+',false)">Didn\u2019t</button></div></div>'
+      '<div style="padding:12px;background:var(--bg3);border-radius:var(--rs);margin-bottom:8px">'+
+      '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:8px">'+p.text.replace(/</g,'&lt;')+'</div>'+
+      '<div style="display:flex;gap:8px"><button class="btn success" style="flex:1;padding:7px;font-size:var(--t-sm)" onclick="resolveWhyPromise('+p.id+',true)">Kept it</button>'+
+      '<button class="btn" style="flex:1;padding:7px;font-size:var(--t-sm);background:var(--bg2)" onclick="resolveWhyPromise('+p.id+',false)">Didn\u2019t</button></div></div>'
     ).join('');
   }
   if(list){
     const open = promises.filter(p => p.status==='open' && new Date(p.due).getTime() > now);
     const done = promises.filter(p => p.status!=='open');
     list.innerHTML =
-      open.map(p => '<div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--bg3);border-radius:var(--rs);margin-bottom:6px;font-size:12px"><span style="color:var(--tx2)">'+p.text.replace(/</g,'&lt;')+'</span><span style="color:var(--tx3);font-family:DM Mono,monospace;font-size:10px">'+Math.ceil((new Date(p.due).getTime()-now)/86400000)+'d</span></div>').join('')+
-      done.slice(0,10).map(p => '<div style="display:flex;justify-content:space-between;padding:8px 12px;border-radius:var(--rs);margin-bottom:6px;font-size:12px;opacity:0.6"><span style="color:var(--tx3);text-decoration:'+(p.status==='kept'?'none':'line-through')+'">'+p.text.replace(/</g,'&lt;')+'</span><span style="font-size:13px">'+(p.status==='kept'?'\u2713':'\u2014')+'</span></div>').join('');
+      open.map(p => '<div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--bg3);border-radius:var(--rs);margin-bottom:6px;font-size:var(--t-sm)"><span style="color:var(--tx2)">'+p.text.replace(/</g,'&lt;')+'</span><span style="color:var(--tx3);font-family:var(--font-text);font-size:var(--t-mini)">'+Math.ceil((new Date(p.due).getTime()-now)/86400000)+'d</span></div>').join('')+
+      done.slice(0,10).map(p => '<div style="display:flex;justify-content:space-between;padding:8px 12px;border-radius:var(--rs);margin-bottom:6px;font-size:var(--t-sm);opacity:0.6"><span style="color:var(--tx3);text-decoration:'+(p.status==='kept'?'none':'line-through')+'">'+p.text.replace(/</g,'&lt;')+'</span><span style="font-size:var(--t-base)">'+(p.status==='kept'?'\u2713':'\u2014')+'</span></div>').join('');
   }
 }
 function resolveWhyPromise(id, kept){
@@ -459,15 +459,15 @@ function renderWhyLetters(){
   if(dueBox){
     const ready = letters.filter(l => !l.delivered && new Date(l.deliverAt).getTime() <= now);
     dueBox.innerHTML = ready.map(l =>
-      '<div style="padding:14px;background:linear-gradient(135deg,rgba(200,169,110,0.1),rgba(140,107,182,0.05));border:1px solid var(--go-bd);border-radius:var(--rm);margin-bottom:8px">'+
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">A letter from your past self has arrived</div>'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:15px;color:var(--tx);font-style:italic;line-height:1.6;white-space:pre-wrap">'+l.text.replace(/</g,'&lt;')+'</div>'+
-      '<button class="btn" style="margin-top:10px;padding:6px 12px;font-size:11px;background:var(--bg3);border:1px solid var(--bd)" onclick="markWhyLetterRead('+l.id+')">I\u2019ve read it</button></div>'
+      '<div style="padding:14px;background:var(--go-bg);border-radius:var(--rm);margin-bottom:8px">'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">A letter from your past self has arrived</div>'+
+      '<div style="font-family:var(--font-serif);font-size:var(--t-base);color:var(--tx);font-style:italic;line-height:1.6;white-space:pre-wrap">'+l.text.replace(/</g,'&lt;')+'</div>'+
+      '<button class="btn" style="margin-top:10px;padding:6px 12px;font-size:var(--t-cap);background:var(--bg3)" onclick="markWhyLetterRead('+l.id+')">I\u2019ve read it</button></div>'
     ).join('');
   }
   if(listBox){
     const pending = letters.filter(l => !l.delivered && new Date(l.deliverAt).getTime() > now);
-    listBox.innerHTML = pending.length ? '<div style="font-size:11px;color:var(--tx3);margin-top:4px">'+pending.length+' letter'+(pending.length>1?'s':'')+' sealed, waiting for delivery.</div>' : '';
+    listBox.innerHTML = pending.length ? '<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:4px">'+pending.length+' letter'+(pending.length>1?'s':'')+' sealed, waiting for delivery.</div>' : '';
   }
 }
 function markWhyLetterRead(id){
@@ -488,7 +488,7 @@ function renderLetters(){
   
   if(dueList){
     if(dueNow.length){
-      dueList.innerHTML='<div style="background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rs);padding:10px 12px;margin-bottom:8px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">'+dueNow.length+' letter'+(dueNow.length>1?'s':'')+' ready to open</div>'+dueNow.map(l=>'<button class="btn primary" style="margin-top:6px" onclick="deliverLetter('+l.id+')">Open letter from '+new Date(l.written).toLocaleDateString('en-AU',{day:'numeric',month:'short'})+'</button>').join('')+'</div>';
+      dueList.innerHTML='<div style="background:var(--go-bg);border-radius:var(--rs);padding:10px 12px;margin-bottom:8px"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">'+dueNow.length+' letter'+(dueNow.length>1?'s':'')+' ready to open</div>'+dueNow.map(l=>'<button class="btn primary" style="margin-top:6px" onclick="deliverLetter('+l.id+')">Open letter from '+new Date(l.written).toLocaleDateString('en-AU',{day:'numeric',month:'short'})+'</button>').join('')+'</div>';
     }else{
       dueList.innerHTML='';
     }
@@ -496,21 +496,21 @@ function renderLetters(){
   
   let html='';
   if(pending.length){
-    html+='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;margin-top:8px">Sealed letters</div>';
+    html+='<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px;margin-top:8px">Sealed letters</div>';
     pending.forEach(l=>{
       const deliverDate=new Date(l.deliverAt).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
-      html+='<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">'+
-        '<div><div style="font-size:12px;color:var(--tx)">'+(letterDay(l)!=null?('Letter from Day '+letterDay(l)):'A letter you sealed')+'</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">Opens '+deliverDate+'</div></div>'+
-        '<button class="btn" style="width:auto;padding:4px 8px;font-size:10px;background:none;border:none;color:var(--tx3)" onclick="deleteLetter('+l.id+')" aria-label="Delete this letter">&#215;</button>'+
+      html+='<div style="background:var(--bg3);border-radius:var(--rs);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">'+
+        '<div><div style="font-size:var(--t-sm);color:var(--tx)">'+(letterDay(l)!=null?('Letter from Day '+letterDay(l)):'A letter you sealed')+'</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px">Opens '+deliverDate+'</div></div>'+
+        '<button class="btn" style="width:auto;padding:4px 8px;font-size:var(--t-mini);background:none;border:none;color:var(--tx3)" onclick="deleteLetter('+l.id+')" aria-label="Delete this letter">&#215;</button>'+
       '</div>';
     });
   }
   if(delivered.length){
-    html+='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;margin-top:10px">Opened</div>';
+    html+='<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px;margin-top:10px">Opened</div>';
     delivered.slice(0,5).forEach(l=>{
-      html+='<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 12px;margin-bottom:6px;cursor:pointer" onclick="deliverLetter('+l.id+')">'+
-        '<div style="font-size:12px;color:var(--tx)">'+(letterDay(l)!=null?('Letter from Day '+letterDay(l)):'A letter you sealed')+' · read</div>'+
-        '<div style="font-size:11px;color:var(--tx3);margin-top:2px;font-style:italic">'+_escFew(String(l&&l.text||'').slice(0,100))+'...</div>'+
+      html+='<div style="background:var(--bg3);border-radius:var(--rs);padding:10px 12px;margin-bottom:6px;cursor:pointer" onclick="deliverLetter('+l.id+')">'+
+        '<div style="font-size:var(--t-sm);color:var(--tx)">'+(letterDay(l)!=null?('Letter from Day '+letterDay(l)):'A letter you sealed')+' · read</div>'+
+        '<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:2px;font-style:italic">'+_escFew(String(l&&l.text||'').slice(0,100))+'...</div>'+
       '</div>';
     });
   }
@@ -694,17 +694,17 @@ function openShareCustomizer(){
   m.style.alignItems = 'center';
   
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:4px">Customize · what goes public</div>' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">Customize · what goes public</div>' +
     '<h3 style="margin-bottom:6px">Pick what to share</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:14px">Tap to toggle. Only what\'s ticked appears on the share card. Your private data stays private.</p>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:14px">Tap to toggle. Only what\'s ticked appears on the share card. Your private data stays private.</p>' +
     '<div id="share-customizer-fields" style="margin-bottom:14px">' +
       fields.map((f, i) => 
-        '<label class="share-field-row" data-key="' + f.key + '" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);margin-bottom:6px;cursor:pointer;' + (prefs[f.key] ? 'border-color:var(--go);background:linear-gradient(135deg,rgba(200,169,110,0.05),transparent)' : '') + '">' +
+        '<label class="share-field-row" data-key="' + f.key + '" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs);margin-bottom:6px;cursor:pointer;' + (prefs[f.key] ? 'border-color:var(--go);background:linear-gradient(135deg,var(--go-bg),transparent)' : '') + '">' +
           '<input type="checkbox" data-field="' + f.key + '" ' + (prefs[f.key] ? 'checked' : '') + ' style="width:18px;height:18px;cursor:pointer">' +
           '<div style="line-height:1;color:var(--go)">' + svgIcon(f.icon,19) + '</div>' +
           '<div style="flex:1;min-width:0">' +
-            '<div style="font-size:13px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + f.label + '</div>' +
-            '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + f.desc + '</div>' +
+            '<div style="font-size:var(--t-base);color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + f.label + '</div>' +
+            '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px">' + f.desc + '</div>' +
           '</div>' +
         '</label>'
       ).join('') +
@@ -721,7 +721,7 @@ function openShareCustomizer(){
         const row = e.target.closest('.share-field-row');
         if(e.target.checked){
           row.style.borderColor = 'var(--go)';
-          row.style.background = 'linear-gradient(135deg,rgba(200,169,110,0.05),transparent)';
+          row.style.background = 'linear-gradient(135deg,var(--go-bg),transparent)';
         } else {
           row.style.borderColor = 'var(--bd)';
           row.style.background = 'var(--bg3)';
@@ -783,7 +783,7 @@ function renderCustomShareCard(prefs){
   ctx.fillStyle = bgGrad; ctx.fillRect(0, 0, 1080, 1080);
   
   const goldGlow = ctx.createRadialGradient(820, 220, 60, 820, 220, 700);
-  goldGlow.addColorStop(0, 'rgba(200,169,110,0.18)'); goldGlow.addColorStop(0.4, 'rgba(200,169,110,0.06)'); goldGlow.addColorStop(1, 'rgba(200,169,110,0)');
+  goldGlow.addColorStop(0, 'var(--go-bg)'); goldGlow.addColorStop(0.4, 'var(--go-bg)'); goldGlow.addColorStop(1, 'var(--go-bg)');
   ctx.fillStyle = goldGlow; ctx.fillRect(0, 0, 1080, 1080);
   
   const purpleGlow = ctx.createRadialGradient(220, 880, 60, 220, 880, 600);
@@ -797,10 +797,10 @@ function renderCustomShareCard(prefs){
   }
   
   // Border + corners
-  ctx.strokeStyle = 'rgba(200,169,110,0.22)'; ctx.lineWidth = 1;
+  ctx.strokeStyle = 'var(--go-bd)'; ctx.lineWidth = 1;
   ctx.strokeRect(48, 48, 984, 984);
   if(false){
-  ctx.strokeStyle = 'rgba(200,169,110,0.5)'; ctx.lineWidth = 2;
+  ctx.strokeStyle = 'var(--go-bd)'; ctx.lineWidth = 2;
   const cornerSize = 20;
   [[60,60],[1020,60],[60,1020],[1020,1020]].forEach(([x,y]) => {
     ctx.beginPath();
@@ -813,7 +813,7 @@ function renderCustomShareCard(prefs){
   }
   
   // Wordmark
-  ctx.textAlign = 'center'; ctx.fillStyle = '#C8A96E';
+  ctx.textAlign = 'center'; ctx.fillStyle = 'var(--go)';
   ctx.font = '300 56px "Cormorant Garamond", Georgia, serif';
   const toW = ctx.measureText('To').width;
   ctx.font = 'italic 300 56px "Cormorant Garamond", Georgia, serif';
@@ -826,11 +826,11 @@ function renderCustomShareCard(prefs){
   ctx.fillText('Try', 540 - totalW/2 + toW + wordmarkGap, 130);
   
   ctx.textAlign = 'center';
-  ctx.strokeStyle = 'rgba(200,169,110,0.3)'; ctx.lineWidth = 1;
+  ctx.strokeStyle = 'var(--go-bd)'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(380, 180); ctx.lineTo(440, 180);
   ctx.moveTo(640, 180); ctx.lineTo(700, 180); ctx.stroke();
   
-  ctx.fillStyle = 'rgba(200,169,110,0.7)';
+  ctx.fillStyle = 'var(--go)';
   ctx.font = '500 14px "DM Mono", monospace';
   const dateStr = new Date().toLocaleDateString('en-AU',{weekday:'long', day:'numeric', month:'long', year:'numeric'}).toUpperCase();
   ctx.fillText(dateStr, 540, 185);
@@ -847,7 +847,7 @@ function renderCustomShareCard(prefs){
     ctx.fillText('· DAY OF TRYING ·', 540, y);
     y += 30;
     
-    ctx.shadowColor = 'rgba(200,169,110,0.4)'; ctx.shadowBlur = 50;
+    ctx.shadowColor = 'var(--go-bd)'; ctx.shadowBlur = 50;
     ctx.fillStyle = '#E8D4A0';
     ctx.font = '200 220px "Cormorant Garamond", Georgia, serif';
     ctx.fillText(dayCount.toString(), 540, y + 160);
@@ -872,7 +872,7 @@ function renderCustomShareCard(prefs){
       const x = startX + i * (chipW + 20);
       // Pill background
       ctx.fillStyle = 'rgba(255,255,255,0.04)';
-      ctx.strokeStyle = 'rgba(200,169,110,0.3)'; ctx.lineWidth = 1;
+      ctx.strokeStyle = 'var(--go-bd)'; ctx.lineWidth = 1;
       const pillY = y - 10;
       ctx.beginPath();
       const r = 14;
@@ -892,7 +892,7 @@ function renderCustomShareCard(prefs){
       ctx.font = '400 30px "Cormorant Garamond", Georgia, serif';
       ctx.fillText(s.big, x, pillY + 36);
       // Label
-      ctx.fillStyle = 'rgba(200,169,110,0.7)';
+      ctx.fillStyle = 'var(--go)';
       ctx.font = '500 10px "DM Mono", monospace';
       ctx.fillText(s.label, x, pillY + 60);
     });
@@ -902,7 +902,7 @@ function renderCustomShareCard(prefs){
   // Identity / workout / quote area
   if(prefs.showIdentity && identity){
     y += 16;
-    ctx.fillStyle = 'rgba(200,169,110,0.7)';
+    ctx.fillStyle = 'var(--go)';
     ctx.font = '500 11px "DM Mono", monospace';
     ctx.fillText('I AM BECOMING', 540, y);
     y += 28;
@@ -925,7 +925,7 @@ function renderCustomShareCard(prefs){
   
   if(prefs.showWorkout && todayWorkout){
     y += 12;
-    ctx.fillStyle = 'rgba(200,169,110,0.7)';
+    ctx.fillStyle = 'var(--go)';
     ctx.font = '500 11px "DM Mono", monospace';
     ctx.fillText('TRAINED TODAY', 540, y);
     y += 24;
@@ -959,10 +959,10 @@ function renderCustomShareCard(prefs){
   if(prefs.showCatchphrase){
     ctx.fillStyle = 'rgba(255,255,255,0.025)';
     ctx.fillRect(120, 880, 840, 130);
-    ctx.strokeStyle = 'rgba(200,169,110,0.2)'; ctx.lineWidth = 0.8;
+    ctx.strokeStyle = 'var(--go-bg)'; ctx.lineWidth = 0.8;
     ctx.strokeRect(120, 880, 840, 130);
     
-    ctx.fillStyle = 'rgba(200,169,110,0.15)';
+    ctx.fillStyle = 'var(--go-bg)';
     ctx.font = '400 80px "Cormorant Garamond", Georgia, serif';
     ctx.textAlign = 'left'; ctx.fillText('"', 145, 935);
     ctx.textAlign = 'right'; ctx.fillText('"', 945, 980);
@@ -971,13 +971,13 @@ function renderCustomShareCard(prefs){
     ctx.fillStyle = '#F5EBD2';
     ctx.font = 'italic 300 32px "Cormorant Garamond", Georgia, serif';
     ctx.fillText('The least we can do everyday,', 540, 932);
-    ctx.fillStyle = '#C8A96E';
+    ctx.fillStyle = 'var(--go)';
     ctx.font = 'italic 400 34px "Cormorant Garamond", Georgia, serif';
     ctx.fillText('is to try.', 540, 978);
   }
   
   // Signature
-  ctx.fillStyle = 'rgba(200,169,110,0.55)';
+  ctx.fillStyle = 'var(--go-bd)';
   ctx.font = '500 10px "DM Mono", monospace';
   ctx.fillText('TO · TRY · BY · ALFRED · JOHN', 540, 1055);
   
@@ -1027,9 +1027,9 @@ function _shareThemeColors(theme){
   }
   return {
     bgTop:'#0E0E11', bgMid:'#16161B', bgBot:'#0A0A0D',
-    glowGold:'rgba(200,169,110,0.16)', glowPurple:'rgba(140,107,182,0.10)',
+    glowGold:'var(--go-bg)', glowPurple:'rgba(140,107,182,0.10)',
     ink:'#F2EEE6', ink2:'rgba(255,255,255,0.72)', ink3:'rgba(255,255,255,0.42)',
-    gold:'#D9C18C', goldSoft:'rgba(200,169,110,0.5)', line:'rgba(255,255,255,0.16)',
+    gold:'#D9C18C', goldSoft:'var(--go-bd)', line:'rgba(255,255,255,0.16)',
   };
 }
 

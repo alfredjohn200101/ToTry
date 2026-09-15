@@ -44,7 +44,7 @@ function renderDebtTruth(){
   }
   if(!bits.length) return;
   const el=document.createElement('div'); el.id='debt-truth';
-  el.style.cssText='margin-top:10px;font-size:12px;color:var(--tx3);line-height:1.6';
+  el.style.cssText='margin-top:10px;font-size:var(--t-sm);color:var(--tx3);line-height:1.6';
   el.innerHTML=bits.join(' ');
   dl.after(el);
 }
@@ -95,7 +95,7 @@ function renderReclaimedBuysFreedom(){
   } else { return; }
   const el=document.createElement('div');
   el.id='reclaim-buys-freedom';
-  el.style.cssText='margin-top:10px;padding-top:10px;border-top:1px solid var(--go-bd);font-size:13px;color:var(--tx2);line-height:1.6';
+  el.style.cssText='margin-top:10px;padding-top:10px;border-top:1px solid var(--go-bd);font-size:var(--t-sm);color:var(--tx2);line-height:1.6';
   el.innerHTML=line;
   host.after(el);
 }
@@ -231,8 +231,8 @@ function renderMoneyGate(){
   if(empty){
     readCard.innerHTML = '';
     gate.innerHTML = '<div class="card">'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:21px;font-style:italic;color:var(--tx);margin-bottom:8px">I don’t know anything about your money yet.</div>'+
-      '<div style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">Most people can’t say where theirs actually goes — that’s not a failing, it’s just never been shown to them. Export a statement from your banking app and I’ll read it back to you: what comes in, where it leaves, and the one place worth locking in. It’s parsed on your phone and goes nowhere.</div>'+
+      '<div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);margin-bottom:8px">I don’t know anything about your money yet.</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-bottom:14px">Most people can’t say where theirs actually goes — that’s not a failing, it’s just never been shown to them. Export a statement from your banking app and I’ll read it back to you: what comes in, where it leaves, and the one place worth locking in. It’s parsed on your phone and goes nowhere.</div>'+
       '<button class="btn primary" onclick="openCSVImport()" style="margin-bottom:8px">Import a bank statement</button>'+
       '<button class="btn" onclick="openTransactionLogger()">I’ll add it manually</button>'+
     '</div>';
@@ -258,17 +258,17 @@ function renderMoneyGate(){
   readCard.innerHTML = '<div class="card">'+
     '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">'+
       '<div class="card-hd" style="margin-bottom:0">Your money, honestly</div>'+
-      '<span style="font-family:DM Mono,monospace;font-size:15px;color:'+(_negNow?'var(--re)':'var(--gr)')+'">'+(_negNow?'−':'+')+money(_net)+(_thin?'':'/mo')+'</span>'+
+      '<span style="font-family:var(--font-text);font-size:var(--t-base);color:'+(_negNow?'var(--re)':'var(--gr)')+'">'+(_negNow?'−':'+')+money(_net)+(_thin?'':'/mo')+'</span>'+
     '</div>'+
-    (_thin ? '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:10px">That is '+_spanLbl+' — not a month yet. I will not turn a few days into a monthly figure and call it honest.</div>' : '')+
+    (_thin ? '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-bottom:10px">That is '+_spanLbl+' — not a month yet. I will not turn a few days into a monthly figure and call it honest.</div>' : '')+
     // The "biggest movable cost" is a per-MONTH number too, so it waits for the same evidence.
-    (r.lockIn && !_thin ? '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:10px">Biggest movable cost: <b style="color:var(--tx)">'+r.lockIn.name+'</b>, '+money(r.lockIn.perMonth)+' a month.</div>' : '')+
+    (r.lockIn && !_thin ? '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:10px">Biggest movable cost: <b style="color:var(--tx)">'+r.lockIn.name+'</b>, '+money(r.lockIn.perMonth)+' a month.</div>' : '')+
     (staleDays > 9
-      ? '<div style="font-size:11px;color:var(--go);line-height:1.5;margin-bottom:10px">Your last statement stops '+staleDays+' days ago. A balance sheet nobody feeds stops being true — import the latest when you get a minute.</div>'
-      : '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Up to date as of '+r.to.toLocaleDateString('en-AU')+'.</div>')+
+      ? '<div style="font-size:var(--t-cap);color:var(--go);line-height:1.5;margin-bottom:10px">Your last statement stops '+staleDays+' days ago. A balance sheet nobody feeds stops being true — import the latest when you get a minute.</div>'
+      : '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px">Up to date as of '+r.to.toLocaleDateString('en-AU')+'.</div>')+
     '<div style="display:flex;gap:8px">'+
-      '<button class="btn" style="flex:1;width:auto;padding:9px;font-size:12px" onclick="openSpendingRead()">See the full read</button>'+
-      '<button class="btn" style="flex:1;width:auto;padding:9px;font-size:12px;background:transparent;border:1px solid var(--bd)" onclick="openCSVImport()">Update</button>'+
+      '<button class="btn" style="flex:1;width:auto;padding:9px;font-size:var(--t-sm)" onclick="openSpendingRead()">See the full read</button>'+
+      '<button class="btn" style="flex:1;width:auto;padding:9px;font-size:var(--t-sm);background:transparent;background:var(--fill2)" onclick="openCSVImport()">Update</button>'+
     '</div>'+
   '</div>';
 }
@@ -300,7 +300,7 @@ function renderFinance(){
     item.innerHTML='<div class="dr-top"><span class="dr-name">'+_escFew(d.n)+(si===starIdx?' <span style="color:var(--go)">'+svgIcon("target",13)+'</span>':'')+(cleared?' \u2713':'')+' </span><span class="dr-amt">'+(cleared?'Paid off':curSym()+Math.round(rem).toLocaleString())+'</span></div>'+
       (d.due&&!cleared?'<span class="dr-date" style="color:'+_dueColor(d.due)+'">'+_escFew(_dueLabel(d.due)||('Due: '+d.due))+'</span>':'')+
       '<div class="bar-wrap"><div class="bar" style="width:'+Math.min(100,pct)+'%"></div></div>'+
-      '<div class="dr-meta"><span class="dr-paid">'+curSym()+Math.round(d.p).toLocaleString()+' paid ('+pct+'%)</span><span>'+(cleared?'Cleared \u2014 tap to edit':'Tap to log payment')+'</span><button class="dr-edit" aria-label="Edit '+_jsAttr(d.n)+'" onclick="event.stopPropagation();editDebt('+d.idx+')" style="background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:14px 12px;margin:-12px -12px;min-height:40px;text-decoration:underline">Edit</button></div>';
+      '<div class="dr-meta"><span class="dr-paid">'+curSym()+Math.round(d.p).toLocaleString()+' paid ('+pct+'%)</span><span>'+(cleared?'Cleared \u2014 tap to edit':'Tap to log payment')+'</span><button class="dr-edit" aria-label="Edit '+_jsAttr(d.n)+'" onclick="event.stopPropagation();editDebt('+d.idx+')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-cap);cursor:pointer;padding:14px 12px;margin:-12px -12px;min-height:40px;text-decoration:underline">Edit</button></div>';
     item.onclick=()=>{ if(cleared){ editDebt(d.idx); return; } openFormModal('Log a payment','Payment toward '+d.n+'.',[{id:'amt',label:'Amount',type:'number',prefix:curSym(),placeholder:'e.g. 200'}],'Log payment',(vals)=>{const a=parseFloat(vals.amt);if(isNaN(a)||a<=0)return 'Enter an amount greater than 0.';loadF();debts[d.idx].p=Math.min(debts[d.idx].p+a,debts[d.idx].t);saveF();const payments=ls('totry_payments')||[];payments.push({amt:a,ts:new Date().toISOString(),date:new Date().toISOString(),debt:d.n});ls('totry_payments',payments.slice(-200));if(typeof syncToCloud==='function')syncToCloud();renderFinance();calcDebtFreeDate();checkMilestones();return true;});};
     dl.appendChild(item);
   });
@@ -349,7 +349,7 @@ function renderFinance(){
       if(owedTotal>0 && sd){
         const left=Math.max(0, owedTotal-avoidedTotal);
         const n=document.createElement('div'); n.id='reclaim-owed-note';
-        n.style.cssText='margin-top:8px;font-size:12px;color:var(--tx3);line-height:1.55';
+        n.style.cssText='margin-top:8px;font-size:var(--t-sm);color:var(--tx3);line-height:1.55';
         // "That's after clearing it" was a claim the figure above could not support. totalReclaimed()
         // nets owed PER VICE and floors each at zero, so a debt on one vice never reduces the savings
         // from another — yet this compared the POOLED totals and, whenever avoided won, announced the
@@ -387,7 +387,7 @@ const INCOME_CATEGORIES = ['Salary','Side income','Gift','Refund','Other'];
 // ── SMART CALENDAR ────────────────────────────────────────────
 // Events: { id, title, type, day(0-6 Mon-Sun), start('HH:MM'), end('HH:MM'), recurring(bool), date(ISO if one-off) }
 const CAL_DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-const CAL_TYPE_COLORS = { work:'#C8A96E', class:'#8C6BB6', gym:'#5BA88A', personal:'#6B8CB6', other:'rgba(255,255,255,0.4)' };
+const CAL_TYPE_COLORS = { work:'var(--go)', class:'var(--pu)', gym:'#5BA88A', personal:'#6B8CB6', other:'rgba(255,255,255,0.4)' };
 // Keep the nutrition log from growing forever (it's a {date:[entries]} map that otherwise
 // accumulates a key per day indefinitely and re-syncs the whole thing on every meal). 120 days
 // of history is plenty for trends; older days are dropped. Mutates the passed object in place.

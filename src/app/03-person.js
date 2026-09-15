@@ -140,8 +140,8 @@ function openCycleLog(){
   const today=_cycDayKey();
   const m=document.createElement('div'); m.className='modal-bg open';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:4px">Log a period start</div>'+
-    '<div style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px">Day one \u2014 the first day of real bleeding. That is all I need. Everything else is optional.</div>'+
+    '<div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);margin-bottom:4px">Log a period start</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.55;margin-bottom:14px">Day one \u2014 the first day of real bleeding. That is all I need. Everything else is optional.</div>'+
     '<div class="lbl">Start date</div>'+
     '<input type="date" id="cyc-date" value="'+today+'" max="'+today+'" style="margin-bottom:14px">'+
     '<div class="lbl">Flow (optional)</div><div class="qbtns" id="cyc-flow">'+
@@ -150,10 +150,10 @@ function openCycleLog(){
     '<div class="lbl">How it is landing (optional)</div><div class="qbtns" id="cyc-sym">'+
       CYCLE_SYMPTOMS.map(s=>'<button type="button" class="qb" data-s="'+_escFew(s)+'" onclick="_cycPick(this,0)">'+_escFew(s)+'</button>').join('')+
     '</div>'+
-    '<div id="cyc-err" style="display:none;color:var(--re);font-size:12px;margin-bottom:10px"></div>'+
+    '<div id="cyc-err" style="display:none;color:var(--re);font-size:var(--t-sm);margin-bottom:10px"></div>'+
     '<button class="btn primary" onclick="saveCycleLog(this)" style="margin-bottom:8px">Save cycle log</button>'+
     '<button class="btn" onclick="closeModal(this)">Cancel</button>'+
-    '<div style="font-size:10px;color:var(--tx3);line-height:1.5;margin-top:12px;text-align:center">Stays on this device unless you switch backup on yourself.</div>'+
+    '<div style="font-size:var(--t-mini);color:var(--tx3);line-height:1.5;margin-top:12px;text-align:center">Stays on this device unless you switch backup on yourself.</div>'+
   '</div>';
   document.body.appendChild(m); haptic('tap');
 }
@@ -299,11 +299,11 @@ function _renderCycleNote(elId,pillar){
   const txt=(CYCLE_COUNSEL[p.key]||{})[pillar]||'';
   if(!txt){ el.innerHTML=''; return; }
   const ph=CYCLE_PHASES[p.key];
-  el.innerHTML='<div style="display:flex;gap:10px;align-items:flex-start;background:var(--bg2);border:1px solid var(--bd);border-left:2px solid '+ph.tone+';border-radius:var(--rm);padding:11px 13px;margin-bottom:14px">'+
-    '<span style="font-size:15px;line-height:1.2">'+ph.icon+'</span>'+
+  el.innerHTML='<div style="display:flex;gap:10px;align-items:flex-start;background:var(--bg2);border-left:2px solid '+ph.tone+';border-radius:var(--rm);padding:11px 13px;margin-bottom:14px">'+
+    '<span style="font-size:var(--t-base);line-height:1.2">'+ph.icon+'</span>'+
     '<div style="flex:1;min-width:0">'+
-      '<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:0.13em;text-transform:uppercase;color:'+ph.tone+';margin-bottom:3px">Day '+p.day+' \u00b7 est. '+ph.name+'</div>'+
-      '<div style="font-size:13px;color:var(--tx2);line-height:1.6">'+txt+'</div>'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);letter-spacing:0.01em;text-transform:uppercase;color:'+ph.tone+';margin-bottom:3px">Day '+p.day+' \u00b7 est. '+ph.name+'</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">'+txt+'</div>'+
     '</div></div>';
 }
 function renderCycleCard(){
@@ -314,8 +314,8 @@ function renderCycleCard(){
     if(c.declined){ el.innerHTML=''; return; }             // she said no once; that answer stands
     el.innerHTML='<div class="card" style="border-color:var(--go-bd)">'+
       '<div class="card-hd" style="margin-bottom:6px">'+svgIcon("moon")+' Track your cycle?</div>'+
-      '<p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:10px">Log the day your period starts and I stop reading your month as one flat line. A luteal craving stops looking like a broken week and starts looking like what it is. Your food, your training, your fight and your sleep all get the context.</p>'+
-      '<p style="font-size:11px;color:var(--tx3);line-height:1.6;margin-bottom:12px">This stays <strong style="color:var(--tx2)">on this device</strong>. It is not sent to my server unless you switch that on yourself, never sold or shared, and you can erase it in one tap. It is an estimate, never a certainty \u2014 and never fertility or contraception guidance.</p>'+
+      '<p style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-bottom:10px">Log the day your period starts and I stop reading your month as one flat line. A luteal craving stops looking like a broken week and starts looking like what it is. Your food, your training, your fight and your sleep all get the context.</p>'+
+      '<p style="font-size:var(--t-cap);color:var(--tx3);line-height:1.6;margin-bottom:12px">This stays <strong style="color:var(--tx2)">on this device</strong>. It is not sent to my server unless you switch that on yourself, never sold or shared, and you can erase it in one tap. It is an estimate, never a certainty \u2014 and never fertility or contraception guidance.</p>'+
       '<button class="btn primary" onclick="cycleOptIn()" style="margin-bottom:8px">Yes, track my cycle</button>'+
       '<button class="btn" onclick="cycleDecline()">Not for me</button></div>';
     return;
@@ -323,14 +323,14 @@ function renderCycleCard(){
   const p=cyclePhase();
   if(!p){
     el.innerHTML='<div class="card"><div class="card-hd" style="margin-bottom:6px">'+svgIcon("moon")+' Your cycle</div>'+
-      '<p style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:12px">Log the first day of your next period and I\u2019ll start reading the month with you. Nothing to set up.</p>'+
+      '<p style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:12px">Log the first day of your next period and I\u2019ll start reading the month with you. Nothing to set up.</p>'+
       '<button class="btn primary" onclick="openCycleLog()">Log a period start</button></div>';
     return;
   }
   if(p.key==='unknown'){
     el.innerHTML='<div class="card"><div class="card-hd" style="margin-bottom:6px">'+svgIcon("cloud")+' I\u2019ve lost the thread</div>'+
-      '<p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:6px">It\u2019s been '+p.day+' days since the start you logged on '+_escFew(p.lastStart)+' \u2014 longer than your usual, so I won\u2019t pretend to know where you are. Log your next start and I\u2019ll pick it back up.</p>'+
-      '<p style="font-size:11px;color:var(--tx3);line-height:1.6;margin-bottom:12px">A late or missed period has many ordinary causes \u2014 stress, travel, training load, illness, contraception and more. If it keeps happening or something feels wrong, that\u2019s a conversation for a doctor, not an app.</p>'+
+      '<p style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-bottom:6px">It\u2019s been '+p.day+' days since the start you logged on '+_escFew(p.lastStart)+' \u2014 longer than your usual, so I won\u2019t pretend to know where you are. Log your next start and I\u2019ll pick it back up.</p>'+
+      '<p style="font-size:var(--t-cap);color:var(--tx3);line-height:1.6;margin-bottom:12px">A late or missed period has many ordinary causes \u2014 stress, travel, training load, illness, contraception and more. If it keeps happening or something feels wrong, that\u2019s a conversation for a doctor, not an app.</p>'+
       '<button class="btn primary" onclick="openCycleLog()">Log a period start</button></div>';
     return;
   }
@@ -341,25 +341,25 @@ function renderCycleCard(){
   const faith=_cycleFaithLine(p.key);
   const rows=[['Nourish','nourish'],['Train','train'],['The fight','fight'],['Sleep','sleep']]
     .map(r=>co[r[1]]?('<div style="padding:9px 0;border-bottom:1px solid var(--bd)">'+
-      '<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:0.13em;text-transform:uppercase;color:var(--tx3);margin-bottom:3px">'+r[0]+'</div>'+
-      '<div style="font-size:13px;color:var(--tx2);line-height:1.6">'+co[r[1]]+'</div></div>'):'').join('');
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:3px">'+r[0]+'</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">'+co[r[1]]+'</div></div>'):'').join('');
   const recent=c.log.slice(0,3).map(e=>_escFew(e.d+(e.flow?' \u00b7 '+e.flow:'')+(e.sym&&e.sym.length?' \u00b7 '+e.sym.join(', '):''))).join('<br>');
   el.innerHTML='<div class="card" style="border-color:var(--bd)">'+
     '<div style="display:flex;align-items:center;gap:11px;margin-bottom:10px">'+
-      '<span style="font-size:24px">'+ph.icon+'</span><div style="flex:1;min-width:0">'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.2">Day '+p.day+' \u00b7 '+ph.name+'</div>'+
-      '<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:0.12em;text-transform:uppercase;color:'+ph.tone+';margin-top:3px">Estimated \u00b7 ~'+p.daysToNext+' days to your next</div>'+
+      '<span style="font-size:var(--t-title1)">'+ph.icon+'</span><div style="flex:1;min-width:0">'+
+      '<div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);line-height:1.2">Day '+p.day+' \u00b7 '+ph.name+'</div>'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);letter-spacing:0.01em;text-transform:uppercase;color:'+ph.tone+';margin-top:3px">Estimated \u00b7 ~'+p.daysToNext+' days to your next</div>'+
     '</div></div>'+
-    '<div style="font-size:13px;color:var(--tx);line-height:1.55;margin-bottom:4px">'+co.head+'</div>'+
-    '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+co.body+'</div>'+
+    '<div style="font-size:var(--t-base);color:var(--tx);line-height:1.55;margin-bottom:4px">'+co.head+'</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:10px">'+co.body+'</div>'+
     rows+
-    (faith?'<div style="font-family:Cormorant Garamond,serif;font-size:15px;color:var(--tx2);line-height:1.65;padding:12px 0 2px">'+faith+'</div>':'')+
-    (recent?'<div class="lbl" style="margin-top:12px">Your log</div><div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);line-height:1.7">'+recent+'</div>':'')+
-    '<div style="font-size:10px;color:var(--tx3);line-height:1.55;margin-top:12px;padding-top:10px;border-top:1px solid var(--bd)">This is an estimate from '+basis+'. Bodies don\u2019t run to a calendar \u2014 stress, travel, illness, training load, contraception and much else move it. It is <strong style="color:var(--tx2)">not fertility or contraception guidance</strong>, and it is not medical advice. If something is painful, heavy, absent or just wrong, see a doctor \u2014 I\u2019m not one.</div>'+
+    (faith?'<div style="font-family:var(--font-display);font-weight:700;font-size:var(--t-base);color:var(--tx2);line-height:1.65;padding:12px 0 2px">'+faith+'</div>':'')+
+    (recent?'<div class="lbl" style="margin-top:12px">Your log</div><div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);line-height:1.7">'+recent+'</div>':'')+
+    '<div style="font-size:var(--t-mini);color:var(--tx3);line-height:1.55;margin-top:12px;padding-top:10px;border-top:1px solid var(--bd)">This is an estimate from '+basis+'. Bodies don\u2019t run to a calendar \u2014 stress, travel, illness, training load, contraception and much else move it. It is <strong style="color:var(--tx2)">not fertility or contraception guidance</strong>, and it is not medical advice. If something is painful, heavy, absent or just wrong, see a doctor \u2014 I\u2019m not one.</div>'+
     '<div style="display:flex;gap:8px;margin-top:12px">'+
       '<button class="btn primary" style="flex:1;margin:0" onclick="openCycleLog()">Log a start</button>'+
       '<button class="btn" style="flex:1;margin:0" onclick="go(\'settings\')">Privacy &amp; delete</button></div>'+
-    '<button class="btn" style="margin-top:8px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)" onclick="cycleUndoLast()">Remove my last entry</button>'+
+    '<button class="btn" style="margin-top:8px;font-size:var(--t-cap);background:transparent;color:var(--tx3);background:var(--fill2)" onclick="cycleUndoLast()">Remove my last entry</button>'+
   '</div>';
 }
 // Sensible default nutrition targets when the user hasn't run the TDEE calc yet — sex-aware so a
@@ -434,9 +434,9 @@ function brotherSpeaks(moment){
     const m = document.createElement('div');
     m.className = 'modal-bg open'; m.style.alignItems='center';
     m.innerHTML = '<div class="modal" style="text-align:center">'+
-      '<div style="font-size:26px;margin-bottom:8px">'+svgIcon("message",24)+'</div>'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:10px">'+title+'</div>'+
-      '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:20px">'+body+'</div>'+
+      '<div style="font-size:var(--t-title1);margin-bottom:8px">'+svgIcon("message",24)+'</div>'+
+      '<div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:10px">'+title+'</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:20px">'+body+'</div>'+
       '<button class="btn primary" onclick="closeModal(this)" style="margin-bottom:'+(secondary?'8px':'0')+'">'+primary+'</button>'+
       (secondary ? '<button class="btn subtle" onclick="closeModal(this);'+(secondaryAct==='companion'?'openCompanionForUrge()':'')+'">'+secondary+'</button>' : '')+
       '</div>';
@@ -470,10 +470,10 @@ function brotherGuidance(){
     const m = document.createElement('div');
     m.className = 'modal-bg open'; m.style.alignItems='center';
     m.innerHTML = '<div class="modal" style="text-align:center">'+
-      '<div style="font-size:26px;margin-bottom:8px">'+svgIcon("message",24)+'</div>'+
-      '<div style="font-size:13px;color:var(--tx3);line-height:1.6;margin-bottom:14px">'+(read || ('Here\u2019s what I\u2019d point you to'+(name?', '+name:'')+'.'))+'</div>'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.25;margin-bottom:8px">'+String(headline).replace(/</g,'&lt;')+'</div>'+
-      '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:20px">'+String(sub).replace(/</g,'&lt;')+'</div>'+
+      '<div style="font-size:var(--t-title1);margin-bottom:8px">'+svgIcon("message",24)+'</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:14px">'+(read || ('Here\u2019s what I\u2019d point you to'+(name?', '+name:'')+'.'))+'</div>'+
+      '<div style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);line-height:1.25;margin-bottom:8px">'+String(headline).replace(/</g,'&lt;')+'</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:20px">'+String(sub).replace(/</g,'&lt;')+'</div>'+
       (act ? '<button class="btn primary" id="bg-do-it" style="margin-bottom:8px">Let\u2019s do it</button>' : '')+
       '<button class="btn subtle" onclick="closeModal(this)">Not now</button>'+
       '</div>';
@@ -1442,8 +1442,8 @@ function aiUnavailableHtml(local){
   const why = (typeof getAIErrorMessage === 'function' && getAIErrorMessage()) ||
               'I could not reach the coach just now.';
   const esc = t => String(t == null ? '' : t).replace(/</g, '&lt;');
-  return (local ? '<div style="font-size:13px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">' + esc(local) + '</div>' : '') +
-    '<div style="font-size:12px;color:var(--tx3);line-height:1.6' + (local ? ';margin-top:10px' : '') + '">' +
+  return (local ? '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;white-space:pre-wrap">' + esc(local) + '</div>' : '') +
+    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6' + (local ? ';margin-top:10px' : '') + '">' +
       esc(why) + (local ? ' The reading above is from your own logged data, not the coach.' : ' Nothing is lost — try again in a moment.') +
     '</div>';
 }
@@ -1620,10 +1620,10 @@ function fmtErr(e){
 function renderDiag(out, ok, lines, rawObj){
   if(!out) return;
   let html = '<div style="color:' + (ok?'var(--gr)':'var(--re)') + ';font-weight:600;margin-bottom:6px">' + (ok?'✓ AI is working':'✗ AI is not working') + '</div>';
-  html += '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx2);white-space:pre-wrap;line-height:1.6">' + lines.map(l=>l.replace(/</g,'&lt;')).join('\n') + '</div>';
+  html += '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx2);white-space:pre-wrap;line-height:1.6">' + lines.map(l=>l.replace(/</g,'&lt;')).join('\n') + '</div>';
   if(rawObj){
-    html += '<details style="margin-top:8px"><summary style="font-size:10px;color:var(--tx3);cursor:pointer">Raw response</summary>' +
-      '<pre style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);white-space:pre-wrap;word-break:break-all;margin-top:6px;background:var(--bg3);padding:8px;border-radius:var(--rs)">' +
+    html += '<details style="margin-top:8px"><summary style="font-size:var(--t-mini);color:var(--tx3);cursor:pointer">Raw response</summary>' +
+      '<pre style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);white-space:pre-wrap;word-break:break-all;margin-top:6px;background:var(--bg3);padding:8px;border-radius:var(--rs)">' +
       JSON.stringify(rawObj,null,2).replace(/</g,'&lt;').slice(0,1500) + '</pre></details>';
   }
   out.innerHTML = html;
@@ -1741,7 +1741,7 @@ async function sendCoach(){
     if(msgs){
       const btn = document.createElement('button');
       btn.className = 'btn'; btn.textContent = 'Write it in my journal';
-      btn.style.cssText = 'margin:8px 0;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px';
+      btn.style.cssText = 'margin:8px 0;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:var(--t-sm)';
       btn.onclick = () => { if(typeof go==='function') go('reflect');
         setTimeout(()=>{ try{ if(typeof setReflectTab==='function') setReflectTab('journal');
                               if(typeof openJournal==='function') openJournal();
@@ -1952,25 +1952,25 @@ function showCrisisResponse(containerId, type){
     return raw;
   };
   const resHtml = resources.map(r =>
-    '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 12px;margin-bottom:6px">' +
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:3px">' + r.region + '</div>' +
-      '<div style="font-size:13px;font-weight:500;color:var(--tx);margin-bottom:2px">' + r.name + '</div>' +
-      '<div style="font-size:13px;color:var(--tx2);font-family:DM Mono,monospace">' + _crisisContact(r.contact) + '</div>' +
-      '<div style="font-size:11px;color:var(--tx3);margin-top:2px">' + r.detail + '</div>' +
+    '<div style="background:var(--bg2);border-radius:var(--rs);padding:10px 12px;margin-bottom:6px">' +
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">' + r.region + '</div>' +
+      '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:2px">' + r.name + '</div>' +
+      '<div style="font-size:var(--t-sm);color:var(--tx2);font-family:var(--font-text)">' + _crisisContact(r.contact) + '</div>' +
+      '<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:2px">' + r.detail + '</div>' +
     '</div>'
   ).join('');
   
   const msg = document.createElement('div');
   msg.className = 'msg coach';
-  msg.style.background = 'linear-gradient(135deg, rgba(216,93,75,0.08), rgba(200,169,110,0.04))';
+  msg.style.background = 'linear-gradient(135deg, rgba(216,93,75,0.08), var(--go-bg))';
   msg.style.border = '1px solid var(--re-bd, rgba(216,93,75,0.3))';
   msg.style.borderLeft = '3px solid var(--re)';
   msg.innerHTML =
-    '<h2 style="font-family:Cormorant Garamond,serif;font-size:17px;font-weight:400;font-style:italic;color:var(--tx);line-height:1.5;margin-bottom:10px">' + title + '</h2>' +
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">' + body + '</div>' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">Real people, right now</div>' +
+    '<h2 style="font-family:var(--font-serif);font-size:var(--t-base);font-weight:400;font-style:italic;color:var(--tx);line-height:1.5;margin-bottom:10px">' + title + '</h2>' +
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:14px">' + body + '</div>' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Real people, right now</div>' +
     resHtml +
-    '<div style="font-size:11px;color:var(--tx3);margin-top:10px;line-height:1.5;font-style:italic">I will not give AI advice on this. You deserve a real person.</div>';
+    '<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:10px;line-height:1.5;font-style:italic">I will not give AI advice on this. You deserve a real person.</div>';
   // ANNOUNCED, NOT JUST DRAWN. This is the one surface in the app that must reach a person who cannot
   // see the screen: it was appended silently — no live region, no role, no heading, no focus move — so
   // for a VoiceOver user mid-crisis the helpline numbers simply were not there. They would have had to
@@ -2098,27 +2098,27 @@ function renderUsageStats(){
   container.innerHTML =
     '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px">' +
       '<div style="background:var(--bg3);border-radius:var(--rs);padding:10px;text-align:center">' +
-        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px">Today</div>' +
-        '<div style="font-family:DM Mono,monospace;font-size:18px;color:var(--go)">' + today + '</div>' +
-        '<div style="font-size:10px;color:var(--tx3)">AI calls</div>' +
+        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:2px">Today</div>' +
+        '<div style="font-family:var(--font-text);font-size:var(--t-hd);color:var(--go)">' + today + '</div>' +
+        '<div style="font-size:var(--t-mini);color:var(--tx3)">AI calls</div>' +
       '</div>' +
       '<div style="background:var(--bg3);border-radius:var(--rs);padding:10px;text-align:center">' +
-        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px">Last 7d</div>' +
-        '<div style="font-family:DM Mono,monospace;font-size:18px;color:var(--go)">' + last7 + '</div>' +
-        '<div style="font-size:10px;color:var(--tx3)">AI calls</div>' +
+        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:2px">Last 7d</div>' +
+        '<div style="font-family:var(--font-text);font-size:var(--t-hd);color:var(--go)">' + last7 + '</div>' +
+        '<div style="font-size:var(--t-mini);color:var(--tx3)">AI calls</div>' +
       '</div>' +
       '<div style="background:var(--bg3);border-radius:var(--rs);padding:10px;text-align:center">' +
-        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px">Last 30d</div>' +
-        '<div style="font-family:DM Mono,monospace;font-size:18px;color:var(--go)">' + totalCalls + '</div>' +
-        '<div style="font-size:10px;color:var(--tx3)">AI calls</div>' +
+        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:2px">Last 30d</div>' +
+        '<div style="font-family:var(--font-text);font-size:var(--t-hd);color:var(--go)">' + totalCalls + '</div>' +
+        '<div style="font-size:var(--t-mini);color:var(--tx3)">AI calls</div>' +
       '</div>' +
     '</div>' +
-    '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);line-height:1.7;padding:10px;background:var(--bg3);border-radius:var(--rs);margin-bottom:10px">' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3);line-height:1.7;padding:10px;background:var(--bg3);border-radius:var(--rs);margin-bottom:10px">' +
       '~' + (totalTokens/1000).toFixed(1) + 'k tokens · est. ceiling $' + costEstimateUSD + ' USD<br>' +
-      '<span style="color:var(--tx3);font-size:10px">Real cost likely 50-80% lower (Gemini/Groq free tiers absorb most calls)</span>' +
+      '<span style="color:var(--tx3);font-size:var(--t-mini)">Real cost likely 50-80% lower (Gemini/Groq free tiers absorb most calls)</span>' +
     '</div>' +
-    '<button class="btn" onclick="runAIDiagnostic()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx);font-size:12px;margin-bottom:8px">'+svgIcon("stethoscope")+' Test AI connection</button>' +
-    '<div id="ai-diag-out" style="font-size:12px;padding:8px;border-radius:var(--rs);background:var(--bg3);min-height:32px"></div>';
+    '<button class="btn" onclick="runAIDiagnostic()" style="background:var(--bg3);color:var(--tx);font-size:var(--t-sm);margin-bottom:8px">'+svgIcon("stethoscope")+' Test AI connection</button>' +
+    '<div id="ai-diag-out" style="font-size:var(--t-sm);padding:8px;border-radius:var(--rs);background:var(--bg3);min-height:32px"></div>';
 }
 
 // Allow user to clear coach history
@@ -2326,22 +2326,22 @@ function editJourneyStart(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:10px">Your journey</h3>' +
-    ((total>1) ? '<div class="card" style="text-align:center;padding:18px;margin-bottom:16px;background:linear-gradient(135deg,rgba(200,169,110,0.08),rgba(140,107,182,0.04));border-color:var(--go-bd)">' +
-        '<div style="font-family:DM Mono,monospace;font-size:36px;color:var(--go);line-height:1">'+total+'</div>' +
-        '<div style="font-size:12px;color:var(--tx2);letter-spacing:0.05em;margin-top:2px">days trying, in all</div>' +
-        (rc>0 ? '<div style="font-size:12px;color:var(--tx3);margin-top:8px">'+rc+' fresh start'+(rc===1?'':'s')+' · still here</div>' : '') +
+    ((total>1) ? '<div class="card" style="text-align:center;padding:18px;margin-bottom:16px;background:var(--go-bg);border-color:var(--go-bd)">' +
+        '<div style="font-family:var(--font-rounded);font-variant-numeric:tabular-nums;font-size:36px;color:var(--go);line-height:1">'+total+'</div>' +
+        '<div style="font-size:var(--t-sm);color:var(--tx2);letter-spacing:0.05em;margin-top:2px">days trying, in all</div>' +
+        (rc>0 ? '<div style="font-size:var(--t-sm);color:var(--tx3);margin-top:8px">'+rc+' fresh start'+(rc===1?'':'s')+' · still here</div>' : '') +
       '</div>' : '') +
     '<div class="lbl">When did it begin?</div>' +
-    '<p style="font-size:12px;color:var(--tx3);margin:6px 0 12px;line-height:1.6">If you started before you found this app — the day you actually decided to change — set that here. Your "days in" counter reflects the real start.</p>' +
-    '<input type="date" id="journey-start-in" value="'+currentDate+'" max="'+today+'" style="width:100%;padding:12px;font-size:16px;margin-bottom:14px">' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin:6px 0 12px;line-height:1.6">If you started before you found this app — the day you actually decided to change — set that here. Your "days in" counter reflects the real start.</p>' +
+    '<input type="date" id="journey-start-in" value="'+currentDate+'" max="'+today+'" style="width:100%;padding:12px;font-size:var(--t-base);margin-bottom:14px">' +
     '<div style="display:flex;gap:8px">' +
       '<button class="btn primary" style="flex:1" onclick="saveJourneyStart()">Save date</button>' +
       '<button class="btn" style="flex:1" onclick="closeModal(this)">Cancel</button>' +
     '</div>' +
     '<div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--bd)">' +
       '<div class="lbl">Start a new chapter</div>' +
-      '<p style="font-size:12px;color:var(--tx3);margin:6px 0 12px;line-height:1.6">Fell hard, or want a clean slate to begin again? Reset your day-count to <b style="color:var(--tx2)">Day 1</b> — and keep every day you’ve already put in. The falling isn’t erased; it’s the proof you kept going.</p>' +
-      '<button class="btn" style="width:100%;background:var(--bg3);border:1px solid var(--go-bd);color:var(--go)" onclick="askConfirm(\'Start a new chapter at Day 1?\', \'Your total days trying is kept and shown.\', {confirmLabel:\'Start a new chapter\', danger:false}).then(function(ok){ if(ok) restartJourney(); })">Begin again — Day 1</button>' +
+      '<p style="font-size:var(--t-sm);color:var(--tx3);margin:6px 0 12px;line-height:1.6">Fell hard, or want a clean slate to begin again? Reset your day-count to <b style="color:var(--tx2)">Day 1</b> — and keep every day you’ve already put in. The falling isn’t erased; it’s the proof you kept going.</p>' +
+      '<button class="btn" style="width:100%;background:var(--bg3);color:var(--go)" onclick="askConfirm(\'Start a new chapter at Day 1?\', \'Your total days trying is kept and shown.\', {confirmLabel:\'Start a new chapter\', danger:false}).then(function(ok){ if(ok) restartJourney(); })">Begin again — Day 1</button>' +
     '</div>' +
     (ls('totry_journey_start') ? '<button class="btn quiet" style="width:100%;margin-top:10px" onclick="resetJourneyStart()">Reset to account creation date</button>' : '') +
   '</div>';
@@ -2554,7 +2554,7 @@ function obNextToMoment(){
         msg = document.createElement('div');
         msg.id = 'ob-name-err';
         msg.setAttribute('role','alert');
-        msg.style.cssText = 'font-size:12px;color:var(--re);margin-top:6px;line-height:1.5';
+        msg.style.cssText = 'font-size:var(--t-sm);color:var(--re);margin-top:6px;line-height:1.5';
         el.insertAdjacentElement('afterend', msg);
       }
       msg.textContent = 'What should I call you? First name is plenty.';
@@ -3096,12 +3096,12 @@ function renderFaithDoor(){
     if(faithChosen() || dismissed || day < 7){ el.style.display='none'; el.innerHTML=''; return; }
     el.style.display='block';
     el.innerHTML =
-      '<div style="border:1px solid var(--bd);border-radius:var(--rm);padding:14px;margin-bottom:14px;background:var(--bg3)">'+
-        '<div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:7px">One thing worth saying</div>'+
-        '<div style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:12px">Everything here works without any faith at all, and it will stay that way unless you say otherwise. But it was built by someone with one, and if you ever want it to speak from a tradition — Christian, Muslim, Hindu or Buddhist — that is a single tap, and you can undo it just as easily.</div>'+
+      '<div style="border-radius:var(--rm);padding:14px;margin-bottom:14px;background:var(--bg3)">'+
+        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:7px">One thing worth saying</div>'+
+        '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-bottom:12px">Everything here works without any faith at all, and it will stay that way unless you say otherwise. But it was built by someone with one, and if you ever want it to speak from a tradition — Christian, Muslim, Hindu or Buddhist — that is a single tap, and you can undo it just as easily.</div>'+
         '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-          '<button class="btn" style="width:auto;margin:0;padding:8px 14px;font-size:12px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go)" onclick="_faithDoorOpen()">Show me the options</button>'+
-          '<button class="btn" style="width:auto;margin:0;padding:8px 14px;font-size:12px;background:transparent;border:1px solid var(--bd);color:var(--tx3)" onclick="_faithDoorNo()">No thanks</button>'+
+          '<button class="btn" style="width:auto;margin:0;padding:8px 14px;font-size:var(--t-sm);background:var(--go-bg);color:var(--go)" onclick="_faithDoorOpen()">Show me the options</button>'+
+          '<button class="btn" style="width:auto;margin:0;padding:8px 14px;font-size:var(--t-sm);background:transparent;color:var(--tx3);background:var(--fill2)" onclick="_faithDoorNo()">No thanks</button>'+
         '</div>'+
       '</div>';
   }catch(_){}
@@ -3550,8 +3550,8 @@ function _fetchT(u, ms, init){
     return r;
   }, function(e){ clearTimeout(t); throw e; });
 }
-function _readLoading(){ return '<div style="text-align:center;padding:26px;color:var(--tx3);font-size:13px">Loading…</div>'; }
-function _readErr(msg){ return '<div class="card" style="text-align:center;color:var(--tx3);font-size:13px;padding:18px">'+(msg||'Couldn’t load right now. Check your connection and try again.')+'</div>'; }
+function _readLoading(){ return '<div style="text-align:center;padding:26px;color:var(--tx3);font-size:var(--t-sm)">Loading…</div>'; }
+function _readErr(msg){ return '<div class="card" style="text-align:center;color:var(--tx3);font-size:var(--t-sm);padding:18px">'+(msg||'Couldn’t load right now. Check your connection and try again.')+'</div>'; }
 function _selStyle(){ return 'background:var(--bg3);border:1px solid var(--bd);color:var(--tx);border-radius:var(--rs);padding:9px 11px;font-size:13px;max-width:100%'; }
 function _readBtnStyle(){ return 'background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:14px;padding:8px 13px'; }
 function openReader(t){
@@ -3622,7 +3622,7 @@ function _readBundled(sel,content,bank){
   // a designed fallback.
   const _hasPicker = !!(sel && sel.querySelector && sel.querySelector('select'));
   // Third-party scripture API text. Not app-authored, not ours to trust as markup.
-  content.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-align:center;margin-bottom:10px">Kept on your phone — the live text did not answer.'+(_hasPicker?' Pick a book above to try again.':'')+'</div>'+'<div class="card">'+bank.map(v=>'<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--bd)"><div style="font-size:15px;line-height:1.75;color:var(--tx)">“'+_escFew(v.t)+'”</div><div style="font-size:12px;color:var(--tx3);margin-top:6px">— '+_escFew(v.r)+'</div></div>').join('')+'</div>';
+  content.innerHTML='<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-align:center;margin-bottom:10px">Kept on your phone — the live text did not answer.'+(_hasPicker?' Pick a book above to try again.':'')+'</div>'+'<div class="card">'+bank.map(v=>'<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--bd)"><div style="font-size:var(--t-base);line-height:1.75;color:var(--tx)">“'+_escFew(v.t)+'”</div><div style="font-size:var(--t-sm);color:var(--tx3);margin-top:6px">— '+_escFew(v.r)+'</div></div>').join('')+'</div>';
 }
 // Qur'an — Al-Quran Cloud (free, no key): surah picker + Arabic + English.
 async function _readQuranInit(sel,content){
@@ -3642,7 +3642,7 @@ async function _readQuranLoad(n){
     if(!en){ const r2=await _fetchT('https://api.alquran.cloud/v1/surah/'+n+'/en.sahih'); const j2=await r2.json(); en=j2.data.ayahs; }
     const _svItems=en.map(a=>({ text:String(a.text||'').trim(), ref:'Qur\u2019an '+n+':'+a.numberInSurah }));
     // Third-party scripture API text. Not app-authored, not ours to trust as markup.
-    content.innerHTML='<div class="card">'+en.map((a,i)=>'<div class="rd-v" data-sv-i="'+i+'" style="margin-bottom:15px">'+(ar&&ar[i]?'<div dir="rtl" style="font-size:21px;line-height:2.1;color:var(--tx);text-align:right;margin-bottom:5px">'+ar[i].text+'</div>':'')+'<div style="font-size:13px;color:var(--tx2);line-height:1.65">'+_escFew(a.text)+' <span style="color:var(--tx3);font-size:11px">('+n+':'+a.numberInSurah+')</span></div></div>').join('')+'</div>';
+    content.innerHTML='<div class="card">'+en.map((a,i)=>'<div class="rd-v" data-sv-i="'+i+'" style="margin-bottom:15px">'+(ar&&ar[i]?'<div dir="rtl" style="font-size:var(--t-xl);line-height:2.1;color:var(--tx);text-align:right;margin-bottom:5px">'+ar[i].text+'</div>':'')+'<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65">'+_escFew(a.text)+' <span style="color:var(--tx3);font-size:var(--t-cap)">('+n+':'+a.numberInSurah+')</span></div></div>').join('')+'</div>';
     _readMakeSavable(_svItems);
   }catch(e){
     // Offline: the bundled pool, not an error box. The Dhammapada and Meditations readers added later
@@ -3701,7 +3701,7 @@ async function _readStoicLoad(book){
     if(!paras.length) throw new Error('empty');
     const _svItems=[];
     content.innerHTML='<div class="card">'+
-      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:12px">Meditations &middot; Book '+_escFew(book)+'</div>'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:12px">Meditations &middot; Book '+_escFew(book)+'</div>'+
       paras.map(function(t,n){
         // The text carries its own section numbers from section 2 on ("2. Whatever this is that I am"),
         // so adding an index as well would print "1" above "2.". Use the number the translation gives
@@ -3716,11 +3716,11 @@ async function _readStoicLoad(book){
         const bodyText=m?m[2]:t;
         _svItems.push({ text:bodyText, ref:'Meditations '+book+(label?'.'+label:'') });
         return '<div class="rd-v" data-sv-i="'+(_svItems.length-1)+'" style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)">'+
-          (label?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-bottom:5px">'+_escFew(label)+'</div>':'')+
-          '<div style="font-size:15px;line-height:1.85;color:var(--tx)">'+_escFew(bodyText)+'</div>'+
+          (label?'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-bottom:5px">'+_escFew(label)+'</div>':'')+
+          '<div style="font-size:var(--t-base);line-height:1.85;color:var(--tx)">'+_escFew(bodyText)+'</div>'+
         '</div>';
       }).join('')+
-      '<div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-align:center;margin-top:6px;letter-spacing:0.08em">MARCUS AURELIUS &middot; TRANS. GEORGE LONG 1862 &middot; VIA WIKISOURCE &middot; PUBLIC DOMAIN</div>'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-align:center;margin-top:6px;letter-spacing:0.01em">MARCUS AURELIUS &middot; TRANS. GEORGE LONG 1862 &middot; VIA WIKISOURCE &middot; PUBLIC DOMAIN</div>'+
     '</div>';
     _readMakeSavable(_svItems);
   }catch(e){
@@ -3790,17 +3790,17 @@ async function _readDhammapadaLoad(uid){
     const title=(DHP_CHAPTERS.find(function(c){ return c[0]===uid; })||['',''])[1];
     const _svItems=[];
     content.innerHTML='<div class="card">'+
-      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:12px">Dhammapada &middot; '+_escFew(title)+'</div>'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:12px">Dhammapada &middot; '+_escFew(title)+'</div>'+
       seen.map(function(n){
         const v=verses[n];
         _svItems.push({ text:v.en.join(' ').trim(), ref:'Dhammapada '+n });
         return '<div class="rd-v" data-sv-i="'+(_svItems.length-1)+'" style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)">'+
-          '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-bottom:5px">'+n+'</div>'+
-          (v.pli.length?'<div style="font-family:Cormorant Garamond,serif;font-size:14px;font-style:italic;color:var(--tx3);line-height:1.75;margin-bottom:7px">'+_escFew(v.pli.join(' '))+'</div>':'')+
-          '<div style="font-size:15px;line-height:1.85;color:var(--tx)">'+_escFew(v.en.join(' '))+'</div>'+
+          '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-bottom:5px">'+n+'</div>'+
+          (v.pli.length?'<div style="font-family:var(--font-serif);font-size:var(--t-sm);font-style:italic;color:var(--tx3);line-height:1.75;margin-bottom:7px">'+_escFew(v.pli.join(' '))+'</div>':'')+
+          '<div style="font-size:var(--t-base);line-height:1.85;color:var(--tx)">'+_escFew(v.en.join(' '))+'</div>'+
         '</div>';
       }).join('')+
-      '<div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-align:center;margin-top:6px;letter-spacing:0.08em">TRANSLATED BY BHIKKHU SUJATO &middot; SUTTACENTRAL &middot; PUBLIC DOMAIN</div>'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-align:center;margin-top:6px;letter-spacing:0.01em">TRANSLATED BY BHIKKHU SUJATO &middot; SUTTACENTRAL &middot; PUBLIC DOMAIN</div>'+
     '</div>';
     _readMakeSavable(_svItems);
   }catch(e){
@@ -3818,7 +3818,7 @@ const GITA_COUNTS=[47,72,43,42,29,47,30,28,34,42,55,20,35,27,20,24,28,78]; // ve
 function _gitaCount(ch){ return GITA_COUNTS[ch-1] || 40; }
 async function _readGitaInit(sel,content){
   if(!window.__gita){ let ch=1; try{ if(typeof getDayCount==='function') ch=(getDayCount()%18)+1; }catch(_){ } window.__gita={ch:ch,v:1}; }
-  if(sel){ sel.innerHTML='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label style="font-size:12px;color:var(--tx3)">Chapter</label><select id="gita-ch" onchange="window.__gita.ch=+this.value;window.__gita.v=1;_readGitaLoad()" style="'+_selStyle()+'">'+Array.from({length:18},(_,i)=>'<option value="'+(i+1)+'">'+(i+1)+'</option>').join('')+'</select><button class="btn" onclick="_gitaNav(-1)" style="'+_readBtnStyle()+'">‹</button><button class="btn" onclick="_gitaNav(1)" style="'+_readBtnStyle()+'">›</button></div>'; }
+  if(sel){ sel.innerHTML='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><label style="font-size:var(--t-sm);color:var(--tx3)">Chapter</label><select id="gita-ch" onchange="window.__gita.ch=+this.value;window.__gita.v=1;_readGitaLoad()" style="'+_selStyle()+'">'+Array.from({length:18},(_,i)=>'<option value="'+(i+1)+'">'+(i+1)+'</option>').join('')+'</select><button class="btn" onclick="_gitaNav(-1)" style="'+_readBtnStyle()+'">‹</button><button class="btn" onclick="_gitaNav(1)" style="'+_readBtnStyle()+'">›</button></div>'; }
   const chSel=document.getElementById('gita-ch'); if(chSel) chSel.value=String(window.__gita.ch);
   _readGitaLoad();
 }
@@ -3857,14 +3857,14 @@ async function _readGitaLoad(){
     // when context is stacked on top of the thing someone came to see.
     const _esc = t => String(t==null?'':t).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
     const chName = meta && (meta.translation || meta.name)
-      ? '<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px">Chapter '+g.ch+' · '+_esc(meta.translation||meta.name)+
+      ? '<div style="font-family:var(--font-text);font-size:var(--t-micro);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px">Chapter '+g.ch+' · '+_esc(meta.translation||meta.name)+
         (meta.meaning && meta.meaning.en ? ' — '+_esc(meta.meaning.en) : '')+'</div>'
       : '';
     const chSummary = meta && meta.summary && meta.summary.en
-      ? '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">About this chapter</div><div style="font-size:13px;color:var(--tx3);line-height:1.7">'+_esc(meta.summary.en)+'</div></div>'
+      ? '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--bd)"><div style="font-family:var(--font-text);font-size:var(--t-micro);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">About this chapter</div><div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.7">'+_esc(meta.summary.en)+'</div></div>'
       : '';
     // Third-party scripture API text. Not app-authored, not ours to trust as markup.
-    content.innerHTML='<div class="card">'+chName+'<div class="rd-v" data-sv-i="0"><div style="font-size:12px;color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+_escFew(g.ch)+'.'+_escFew(g.v)+' <span style="color:var(--tx3);letter-spacing:0">· verse '+_escFew(g.v)+' of '+_gitaCount(g.ch)+'</span></div>'+(j.slok?'<div style="font-size:16px;line-height:1.95;color:var(--tx);margin-bottom:8px">'+_escFew(j.slok)+'</div>':'')+(j.transliteration?'<div style="font-size:12px;font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+_escFew(String(j.transliteration).trim())+'</div>':'')+'<div style="font-size:14px;color:var(--tx2);line-height:1.75">'+_escFew(en)+'</div></div>'+chSummary+'</div>';
+    content.innerHTML='<div class="card">'+chName+'<div class="rd-v" data-sv-i="0"><div style="font-size:var(--t-sm);color:var(--go);margin-bottom:8px;letter-spacing:0.05em">BHAGAVAD GITA '+_escFew(g.ch)+'.'+_escFew(g.v)+' <span style="color:var(--tx3);letter-spacing:0">· verse '+_escFew(g.v)+' of '+_gitaCount(g.ch)+'</span></div>'+(j.slok?'<div style="font-size:var(--t-base);line-height:1.95;color:var(--tx);margin-bottom:8px">'+_escFew(j.slok)+'</div>':'')+(j.transliteration?'<div style="font-size:var(--t-sm);font-style:italic;color:var(--tx3);line-height:1.6;margin-bottom:10px">'+_escFew(String(j.transliteration).trim())+'</div>':'')+'<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.75">'+_escFew(en)+'</div></div>'+chSummary+'</div>';
     _readMakeSavable([{ text:String(en||'').replace(/<[^>]*>/g,'').trim(), ref:'Bhagavad Gita '+g.ch+'.'+g.v }]);
   }catch(e){
     const c2=document.getElementById('read-content');
@@ -3896,13 +3896,13 @@ function _renderDailyPassage(el,t){
   const bank=(t==='hinduism')?VS_HINDU:(t==='buddhism')?VS_BUDDHIST:VS_SECULAR;
   const v=bank[_dailyIndex(bank.length)];
   const kind=(t==='hinduism')?'Today’s verse':(t==='buddhism')?'Today’s teaching':'Today’s reflection';
-  el.innerHTML='<div class="card" style="text-align:center;padding:28px 20px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:16px">'+kind+'</div><div id="daily-passage-text" style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;line-height:1.65;color:var(--tx);margin-bottom:14px">“'+_escFew(v.t)+'”</div><div id="daily-passage-ref" style="font-size:12px;color:var(--go)">— '+_escFew(v.r)+'</div>'+((typeof _verseToolsHTML==='function')?_verseToolsHTML('daily-passage-text','daily-passage-ref'):'')+'</div><div style="display:flex;gap:8px;margin-top:12px"><button class=\'btn\' onclick=\'openBreathMenu()\' style=\'flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12px\'>Sit with it \u2014 a minute</button><button class=\'btn\' onclick=\'openJournal()\' style=\'flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12px\'>Write what it stirs</button></div>';
+  el.innerHTML='<div class="card" style="text-align:center;padding:28px 20px"><div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:16px">'+kind+'</div><div id="daily-passage-text" style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;line-height:1.65;color:var(--tx);margin-bottom:14px">“'+_escFew(v.t)+'”</div><div id="daily-passage-ref" style="font-size:var(--t-sm);color:var(--go)">— '+_escFew(v.r)+'</div>'+((typeof _verseToolsHTML==='function')?_verseToolsHTML('daily-passage-text','daily-passage-ref'):'')+'</div><div style="display:flex;gap:8px;margin-top:12px"><button class=\'btn\' onclick=\'openBreathMenu()\' style=\'flex:1;background:var(--bg3);font-size:var(--t-sm)\'>Sit with it \u2014 a minute</button><button class=\'btn\' onclick=\'openJournal()\' style=\'flex:1;background:var(--bg3);font-size:var(--t-sm)\'>Write what it stirs</button></div>';
 }
 // Islam — prayer times (Aladhan, free) + Hijri + a daily ayah. Geolocation, with a city fallback.
 function _renderIslamToday(el){
   const a=VS_ISLAM[_dailyIndex(VS_ISLAM.length)];
   // Third-party scripture API text. Not app-authored, not ours to trust as markup.
-  el.innerHTML='<div class="card" style="text-align:center;padding:22px 18px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Ayah for today</div><div style="font-family:Cormorant Garamond,serif;font-size:20px;font-style:italic;line-height:1.6;color:var(--tx);margin-bottom:10px">“'+_escFew(a.t)+'”</div><div style="font-size:12px;color:var(--go)">— '+_escFew(a.r)+'</div></div><div id="salah-box">'+_readLoading()+'</div>';
+  el.innerHTML='<div class="card" style="text-align:center;padding:22px 18px"><div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Ayah for today</div><div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;line-height:1.6;color:var(--tx);margin-bottom:10px">“'+_escFew(a.t)+'”</div><div style="font-size:var(--t-sm);color:var(--go)">— '+_escFew(a.r)+'</div></div><div id="salah-box">'+_readLoading()+'</div>';
   _loadSalah();
 }
 // THE CARD NAMED A METHOD THE APP DOES NOT ASK FOR. Every prayer-time request sends Aladhan's
@@ -3949,7 +3949,7 @@ async function _loadSalah(){
   if(!coords){
     try{ const _c = ls('totry_city'); if(_c){ return _loadSalahByCity(_c); } }catch(_){}
   }
-  if(!coords){ box.innerHTML='<div class="card" style="text-align:center;font-size:13px;color:var(--tx3);padding:18px;line-height:1.6">Allow location to see today’s prayer times.<br><button class="btn subtle" onclick="_promptCity()" style="margin-top:10px;display:inline-block;padding:7px 14px">Or enter your city</button></div>'; return; }
+  if(!coords){ box.innerHTML='<div class="card" style="text-align:center;font-size:var(--t-sm);color:var(--tx3);padding:18px;line-height:1.6">Allow location to see today’s prayer times.<br><button class="btn subtle" onclick="_promptCity()" style="margin-top:10px;display:inline-block;padding:7px 14px">Or enter your city</button></div>'; return; }
   try{
     const r=await _fetchT('https://api.aladhan.com/v1/timings/'+_salahDateStr()+'?latitude='+coords.lat+'&longitude='+coords.lng+'&method='+SALAH_METHOD+'');
     const j=await r.json(); if(j.code!==200||!j.data) throw new Error('n'); box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri);
@@ -3968,7 +3968,7 @@ async function _loadSalahByCity(city){
   // NB: the city is saved further down, only after the API confirms it resolved — so a typo is never
   // persisted and then silently reused. The bug was never the write; it was that _loadSalah() did not
   // READ it, so the saved city sat there unused and people retyped it every visit.
-  try{ const r=await _fetchT('https://api.aladhan.com/v1/timingsByCity/'+_salahDateStr()+'?city='+encodeURIComponent(city)+'&country=&method='+SALAH_METHOD+''); const j=await r.json(); if(j.code!==200||!j.data) throw new Error('c'); try{ ls('totry_city',city); }catch(_){} if(box) box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri)+'<div style="text-align:center;margin-top:8px"><button class="btn" onclick="_promptCity()" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">Change city</button></div>'; }
+  try{ const r=await _fetchT('https://api.aladhan.com/v1/timingsByCity/'+_salahDateStr()+'?city='+encodeURIComponent(city)+'&country=&method='+SALAH_METHOD+''); const j=await r.json(); if(j.code!==200||!j.data) throw new Error('c'); try{ ls('totry_city',city); }catch(_){} if(box) box.innerHTML=_salahCard(j.data.timings,j.data.date.hijri)+'<div style="text-align:center;margin-top:8px"><button class="btn" onclick="_promptCity()" style="padding:5px 10px;font-size:var(--t-cap);background:transparent;color:var(--tx3);background:var(--fill2)">Change city</button></div>'; }
   // A STALL IS NOT A TYPO. v567's 9s abort throws into this same catch, so a real city on a slow line
   // was answered with "Couldn't find that city" — the app blaming the person's typing for the network.
   // And _readErr renders a card with no controls at all ("Change city" exists only on the success path),
@@ -3985,8 +3985,8 @@ async function _loadSalahByCity(city){
         // btn.onclick was null, and a real tap fired nothing. It was inert for EVERY city, not just
         // awkward ones. Escaped for a single-quoted JS string inside a double-quoted attribute, so an
         // apostrophe city ("St John's") survives too.
-        '<button class="btn" onclick="_loadSalahByCity(\'' + _salahCityArg(city) + '\')" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">Try again</button> ' +
-        '<button class="btn" onclick="_promptCity()" style="padding:5px 10px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">Change city</button>' +
+        '<button class="btn" onclick="_loadSalahByCity(\'' + _salahCityArg(city) + '\')" style="padding:5px 10px;font-size:var(--t-cap);background:transparent;color:var(--tx3);background:var(--fill2)">Try again</button> ' +
+        '<button class="btn" onclick="_promptCity()" style="padding:5px 10px;font-size:var(--t-cap);background:transparent;color:var(--tx3);background:var(--fill2)">Change city</button>' +
       '</div>';
   }
 }
@@ -3999,9 +3999,9 @@ function _salahCard(t,h){
   if(nextIdx<0){ nextIdx=0; mins=(24*60-nowM)+toM(prayers[0][1]); } else { mins=toM(prayers[nextIdx][1])-nowM; }
   const nextName=prayers[nextIdx][0];
   const hh=Math.floor(mins/60), mm=mins%60; const cd=(hh>0?hh+'h ':'')+mm+'m';
-  const rows=order.map(o=>{ const isNext=(o[0]===nextName); const dim=(o[0]==='Sunrise'); return '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 4px;border-bottom:1px solid var(--bd)"><span style="font-size:14px;color:'+(isNext?'var(--go)':dim?'var(--tx3)':'var(--tx2)')+';'+(isNext?'font-weight:600':'')+'">'+o[0]+(isNext?' · next':'')+'</span><span style="font-family:DM Mono,monospace;font-size:14px;color:'+(isNext?'var(--go)':'var(--tx2)')+'">'+o[1]+'</span></div>'; }).join('');
-  const header='<div style="text-align:center;padding:2px 0 14px;margin-bottom:8px;border-bottom:1px solid var(--bd)"><div style="font-size:11px;letter-spacing:0.05em;color:var(--tx3);margin-bottom:2px">NEXT PRAYER</div><div style="font-family:Cormorant Garamond,serif;font-size:25px;color:var(--go);line-height:1.1">'+nextName+'</div><div style="font-family:DM Mono,monospace;font-size:12px;color:var(--tx2);margin-top:2px">in '+cd+'</div></div>';
-  return '<div class="card"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Today · '+h.day+' '+h.month.en+' '+h.year+' AH</div>'+header+rows+'<div style="font-size:11px;color:var(--tx3);margin-top:10px;text-align:center">Times for your location · '+SALAH_METHOD_NAME+'</div></div>';
+  const rows=order.map(o=>{ const isNext=(o[0]===nextName); const dim=(o[0]==='Sunrise'); return '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 4px;border-bottom:1px solid var(--bd)"><span style="font-size:var(--t-sm);color:'+(isNext?'var(--go)':dim?'var(--tx3)':'var(--tx2)')+';'+(isNext?'font-weight:600':'')+'">'+o[0]+(isNext?' · next':'')+'</span><span style="font-family:var(--font-text);font-size:var(--t-sm);color:'+(isNext?'var(--go)':'var(--tx2)')+'">'+o[1]+'</span></div>'; }).join('');
+  const header='<div style="text-align:center;padding:2px 0 14px;margin-bottom:8px;border-bottom:1px solid var(--bd)"><div style="font-size:var(--t-cap);letter-spacing:0.05em;color:var(--tx3);margin-bottom:2px">NEXT PRAYER</div><div style="font-family:var(--font-display);font-weight:700;font-size:var(--t-title1);color:var(--go);line-height:1.1">'+nextName+'</div><div style="font-family:var(--font-text);font-size:var(--t-sm);color:var(--tx2);margin-top:2px">in '+cd+'</div></div>';
+  return '<div class="card"><div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Today · '+h.day+' '+h.month.en+' '+h.year+' AH</div>'+header+rows+'<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:10px;text-align:center">Times for your location · '+SALAH_METHOD_NAME+'</div></div>';
 }
 
 // ── PRACTICE (Dhikr / Japa bead counters + the 99 Names) ───────────────────────
@@ -4052,10 +4052,10 @@ function _paintPractice(){
   const ttl=document.getElementById('practice-title'); if(ttl) ttl.textContent=cfg.title;
   const sub=document.getElementById('practice-sub'); if(sub) sub.textContent=cfg.sub;
   let chooser='';
-  if(st.kind==='japa'){ const mi=_mantraIdx(); chooser='<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px">'+JAPA_MANTRAS.map((m,i)=>'<button onclick="_selectMantra('+i+')" style="cursor:pointer;font-size:12px;padding:6px 11px;border-radius:20px;border:1px solid '+(i===mi?'var(--go)':'var(--bd)')+';background:'+(i===mi?'rgba(200,169,110,0.12)':'var(--bg3)')+';color:'+(i===mi?'var(--go)':'var(--tx2)')+'">'+m.name+'</button>').join('')+'</div>'; }
+  if(st.kind==='japa'){ const mi=_mantraIdx(); chooser='<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px">'+JAPA_MANTRAS.map((m,i)=>'<button onclick="_selectMantra('+i+')" style="cursor:pointer;font-size:var(--t-sm);padding:6px 11px;border-radius:20px;border:1px solid '+(i===mi?'var(--go)':'var(--bd)')+';background:'+(i===mi?'var(--go-bg)':'var(--bg3)')+';color:'+(i===mi?'var(--go)':'var(--tx2)')+'">'+m.name+'</button>').join('')+'</div>'; }
   const roundInfo=phases.length>1?('<div class="eyebrow" style="margin:6px 0 0">Part '+(st.phase+1)+' of '+phases.length+'</div>'  /* the app's own label device, not a body line one pixel smaller than the body line above it */):'';
   const namesBtn=st.kind==='dhikr'?'<button class="btn subtle" onclick="_openAsma()" style="width:100%;margin-top:12px">✦ The 99 Names of Allah ›</button>':'';
-  el.innerHTML=chooser+'<div class="card" style="text-align:center;padding:24px 18px"><div style="font-family:Cormorant Garamond,serif;font-size:'+(st.kind==='japa'?'34':'26')+'px;color:var(--tx);margin-bottom:2px">'+ph.name+'</div><div style="font-size:12px;color:var(--tx3);font-style:italic">'+ph.sub+'</div>'+roundInfo+'<div onclick="_practiceTap()" style="cursor:pointer;user-select:none;width:180px;height:180px;margin:22px auto;border-radius:50%;border:2px solid var(--go-bd);background:radial-gradient(circle at 50% 40%,rgba(200,169,110,0.12),rgba(140,107,182,0.05));display:flex;flex-direction:column;align-items:center;justify-content:center"><div id="practice-count" style="font-family:DM Mono,monospace;font-size:42px;color:var(--go)">'+st.count+'</div><div style="font-size:11px;color:var(--tx3);letter-spacing:0.1em">of '+ph.n+'</div></div><div style="font-size:12px;color:var(--tx3);margin-bottom:14px">Tap the circle for each repetition</div><button class="btn" onclick="_practiceReset()" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;padding:7px 14px">Reset</button></div>'+namesBtn;
+  el.innerHTML=chooser+'<div class="card" style="text-align:center;padding:24px 18px"><div style="font-family:var(--font-display);font-weight:700;font-size:'+(st.kind==='japa'?'34':'26')+'px;color:var(--tx);margin-bottom:2px">'+ph.name+'</div><div style="font-size:var(--t-sm);color:var(--tx3);font-style:italic">'+ph.sub+'</div>'+roundInfo+'<div onclick="_practiceTap()" style="cursor:pointer;user-select:none;width:180px;height:180px;margin:22px auto;border-radius:50%;border:2px solid var(--go-bd);background:radial-gradient(circle at 50% 40%,var(--go-bg),rgba(140,107,182,0.05));display:flex;flex-direction:column;align-items:center;justify-content:center"><div id="practice-count" style="font-family:var(--font-rounded);font-variant-numeric:tabular-nums;font-size:42px;color:var(--go)">'+st.count+'</div><div style="font-size:var(--t-cap);color:var(--tx3);letter-spacing:0.1em">of '+ph.n+'</div></div><div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px">Tap the circle for each repetition</div><button class="btn" onclick="_practiceReset()" style="background:transparent;color:var(--tx3);font-size:var(--t-sm);padding:7px 14px;background:var(--fill2)">Reset</button></div>'+namesBtn;
   // The intention composer lives under the practice, so this tab is a HOME and not one exercise.
   try{ if(typeof faithHomeHTML === 'function') el.innerHTML += faithHomeHTML(); }catch(_){ }
 }
@@ -4116,8 +4116,8 @@ function faithHomeHTML(){
     : 'e.g. my mother’s health / staying clean this weekend / gratitude for today';
   return '<div class="card" style="margin-top:14px">' +
       '<div class="card-hd" style="margin-bottom:6px">' + _escFew(heading) + '</div>' +
-      '<p style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:10px">' + _escFew(hint) + '</p>' +
-      '<textarea id="fh-prayer-intention" placeholder="' + _escFew(ph) + '" style="min-height:70px;font-size:16px;line-height:1.5;margin-bottom:10px"></textarea>' +
+      '<p style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:10px">' + _escFew(hint) + '</p>' +
+      '<textarea id="fh-prayer-intention" placeholder="' + _escFew(ph) + '" style="min-height:70px;font-size:var(--t-base);line-height:1.5;margin-bottom:10px"></textarea>' +
       '<button class="btn primary" id="fh-prayer-btn" onclick="generateIntentionPrayer(\'fh-prayer\')">' +
         _escFew(secular ? 'Write my reflection' : ('Write my ' + noun)) + '</button>' +
       '<div id="fh-prayer-out" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"></div>' +
@@ -4150,9 +4150,9 @@ function _practiceTap(){
         if(typeof logEvent==='function') logEvent('practice_complete');
         if(typeof syncToCloud==='function') syncToCloud();
       }catch(_){ }
-      const _kept = _n ? '<div style="font-size:12px;color:var(--go);margin-bottom:16px">That’s '+_n+' kept.</div>' : '';
+      const _kept = _n ? '<div style="font-size:var(--t-sm);color:var(--go);margin-bottom:16px">That’s '+_n+' kept.</div>' : '';
       const el=document.getElementById('practice-content');
-      if(el) el.innerHTML='<div class="card" style="text-align:center;padding:32px 20px"><div style="font-size:34px;margin-bottom:10px">✓</div><div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:8px">'+cfg.done+'</div><div style="font-size:13px;color:var(--tx3);margin-bottom:18px">'+cfg.doneSub+'</div>'+_kept+'<button class="btn primary" onclick="_renderPractice(\''+st.kind+'\')" style="max-width:200px;margin:0 auto">Again</button></div>';
+      if(el) el.innerHTML='<div class="card" style="text-align:center;padding:32px 20px"><div style="font-size:var(--t-2xl);margin-bottom:10px">✓</div><div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);margin-bottom:8px">'+cfg.done+'</div><div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:18px">'+cfg.doneSub+'</div>'+_kept+'<button class="btn primary" onclick="_renderPractice(\''+st.kind+'\')" style="max-width:200px;margin:0 auto">Again</button></div>';
     }
   } else {
     const c=document.getElementById('practice-count'); if(c) c.textContent=st.count; else _paintPractice();
@@ -4166,8 +4166,8 @@ async function _openAsma(){
   if(!names){ try{ const r=await _fetchT('https://api.aladhan.com/v1/asmaAlHusna'); const j=await r.json(); names=(j&&j.code===200)?j.data:null; window.__asma=names; }catch(e){ names=null; } }
   const back='<div style="margin-bottom:10px"><button class="btn subtle" onclick="_renderPractice(\'dhikr\')" style="padding:7px 12px">‹ Tasbih counter</button></div>';
   if(!names){ el.innerHTML=back+_readErr('Couldn’t load the names right now.'); return; }
-  const rows=names.map((n,i)=>'<div style="display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--bd)"><div style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);min-width:22px">'+(i+1)+'</div><div style="flex:1"><div style="font-size:14px;color:var(--tx)">'+n.transliteration+'</div><div style="font-size:12px;color:var(--tx3)">'+n.en.meaning+'</div></div><div dir="rtl" style="font-size:22px;color:var(--go)">'+n.name+'</div></div>').join('');
-  el.innerHTML=back+'<div style="text-align:center;font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Asma ul-Husna · the 99 Names</div><div class="card">'+rows+'</div>';
+  const rows=names.map((n,i)=>'<div style="display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--bd)"><div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3);min-width:22px">'+(i+1)+'</div><div style="flex:1"><div style="font-size:var(--t-base);color:var(--tx)">'+n.transliteration+'</div><div style="font-size:var(--t-sm);color:var(--tx3)">'+n.en.meaning+'</div></div><div dir="rtl" style="font-size:var(--t-xl);color:var(--go)">'+n.name+'</div></div>').join('');
+  el.innerHTML=back+'<div style="text-align:center;font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:12px">Asma ul-Husna · the 99 Names</div><div class="card">'+rows+'</div>';
 }
 
 // ── SHARED THREADS ─────────────────────────────────────────────────────────────
@@ -4365,20 +4365,20 @@ function openPlans(){ if(typeof go==='function') go('plans'); renderPlans(); }
 function renderPlans(){
   const el=document.getElementById('plans-content'); if(!el) return;
   const f=curFaith(), t=faithTradition(), st=_plans();
-  let h='<div style="text-align:center;margin-bottom:16px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--tx3)">Guided reading</div>'+
-    '<h2 style="font-family:Cormorant Garamond,serif;font-size:27px;font-weight:300;color:var(--tx);margin:6px 0 8px">Short plans</h2>'+
-    '<p style="font-size:12px;color:var(--tx3);line-height:1.65;max-width:330px;margin:0 auto">Five to seven days on one thing you’re actually carrying. Finishable \u2014 not a year-long debt. Miss a week and nothing is lost; you pick up where you left off.</p></div>';
+  let h='<div style="text-align:center;margin-bottom:16px"><div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3)">Guided reading</div>'+
+    '<h2 style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);margin:6px 0 8px">Short plans</h2>'+
+    '<p style="font-size:var(--t-sm);color:var(--tx3);line-height:1.65;max-width:330px;margin:0 auto">Five to seven days on one thing you’re actually carrying. Finishable \u2014 not a year-long debt. Miss a week and nothing is lost; you pick up where you left off.</p></div>';
   READING_PLANS.forEach(function(p){
     const days=_planDays(p), n=days.length; if(!n) return;
     const s=st[p.id]||null, d=s&&typeof s.d==='number'?_planClamp(s.d,n):0;
     const line=(s&&s.done)?'Finished \u00B7 read it again any time':(d>0?'Day '+(d+1)+' of '+n+' \u00B7 whenever you’re ready':n+' days');
     h+='<div class="card" onclick="openPlan(\''+p.id+'\')" style="cursor:pointer">'+
-      '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--go);margin-bottom:7px">'+line+'</div>'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.25;margin-bottom:5px">'+p.title+'</div>'+
-      '<div style="font-size:12px;color:var(--tx3);line-height:1.6">'+p.sub+'</div>'+
-      '<div style="font-size:12px;color:var(--go);margin-top:10px">'+((s&&!s.done&&d>0)?'Continue':'Begin')+' \u203A</div></div>';
+      '<div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--go);margin-bottom:7px">'+line+'</div>'+
+      '<div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);line-height:1.25;margin-bottom:5px">'+p.title+'</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6">'+p.sub+'</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--go);margin-top:10px">'+((s&&!s.done&&d>0)?'Continue':'Begin')+' \u203A</div></div>';
   });
-  h+='<p style="font-size:11px;color:var(--tx3);font-style:italic;line-height:1.65;text-align:center;margin:16px 8px 4px">Written for your path \u2014 '+f.label+' \u2014 not translated from someone else’s. Every passage is here even with no signal'+((t==='islam'||t==='hinduism')?', and you can open the full '+f.bookShort+' from any day':'')+'. No streaks, no percentage: a plan is a door, not a scoreboard.</p>';
+  h+='<p style="font-size:var(--t-cap);color:var(--tx3);font-style:italic;line-height:1.65;text-align:center;margin:16px 8px 4px">Written for your path \u2014 '+f.label+' \u2014 not translated from someone else’s. Every passage is here even with no signal'+((t==='islam'||t==='hinduism')?', and you can open the full '+f.bookShort+' from any day':'')+'. No streaks, no percentage: a plan is a door, not a scoreboard.</p>';
   el.innerHTML=h;
 }
 function openPlan(id){
@@ -4400,18 +4400,18 @@ function renderPlanDay(id,i){
   const readLbl = (function(){ try{ const bn=(FAITHS[t]||curFaith()).bookName; return bn?('Open it in '+bn):''; }catch(_){ return ''; } })();
   let h='<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px">'+
     '<button class="btn subtle" onclick="renderPlans()" style="width:auto;padding:7px 11px">\u2039 Plans</button>'+
-    '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3)">Day '+(i+1)+' of '+days.length+'</div></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.25;margin-bottom:12px">'+p.title+'</div>'+
-    '<div class="card" style="border-color:var(--go-bd);background:linear-gradient(135deg,rgba(200,169,110,0.08),rgba(140,107,182,0.04));padding:22px 18px">'+
-      '<div id="plan-day-text" style="font-family:Cormorant Garamond,serif;font-size:19px;font-style:italic;line-height:1.7;color:var(--tx)">\u201C'+day.t+'\u201D</div>'+
-      '<div id="plan-day-ref" style="font-size:12px;color:var(--go);margin-top:11px">\u2014 '+day.r+'</div>'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3)">Day '+(i+1)+' of '+days.length+'</div></div>'+
+    '<div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);line-height:1.25;margin-bottom:12px">'+p.title+'</div>'+
+    '<div class="card" style="border-color:var(--go-bd);background:var(--go-bg);padding:22px 18px">'+
+      '<div id="plan-day-text" style="font-family:var(--font-serif);font-size:var(--t-hd);font-style:italic;line-height:1.7;color:var(--tx)">\u201C'+day.t+'\u201D</div>'+
+      '<div id="plan-day-ref" style="font-size:var(--t-sm);color:var(--go);margin-top:11px">\u2014 '+day.r+'</div>'+
       // Hallow's whole reason to exist is that you can LISTEN to it, and this was the one surface
       // in Soul with a passage on it and no way to hear it — or to send it to anyone. The component
       // that puts both on the morning verse works here unchanged.
       ((typeof _verseToolsHTML==='function')?_verseToolsHTML('plan-day-text','plan-day-ref'):'')+'</div>'+
-    '<div class="card"><div style="font-size:14px;line-height:1.8;color:var(--tx2)">'+day.w+'</div></div>'+
-    '<div class="card"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:9px">One question</div>'+
-      '<div style="font-size:15px;line-height:1.7;color:var(--tx);margin-bottom:13px">'+day.q+'</div>'+
+    '<div class="card"><div style="font-size:var(--t-sm);line-height:1.8;color:var(--tx2)">'+day.w+'</div></div>'+
+    '<div class="card"><div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:9px">One question</div>'+
+      '<div style="font-size:var(--t-base);line-height:1.7;color:var(--tx);margin-bottom:13px">'+day.q+'</div>'+
       '<button class="btn subtle" onclick="_planAnswer(\''+id+'\','+i+')">Write your answer</button></div>'+
     '<button class="btn primary" onclick="_planDone(\''+id+'\','+i+')" style="margin-bottom:8px">That’s today</button>'+
     '<div style="display:flex;gap:8px;margin-bottom:8px">'+
@@ -4419,11 +4419,11 @@ function renderPlanDay(id,i){
       '<button class="btn subtle" onclick="_planCarry(\''+id+'\','+i+')" style="flex:1">Carry this passage</button></div>';
   const seen=Math.max(typeof s.d==='number'?s.d:0, i);
   let nav='';
-  if(i>0) nav+='<button class="btn" onclick="renderPlanDay(\''+id+'\','+(i-1)+')" style="flex:1;background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px">\u2039 Day '+i+'</button>';
-  if(i<days.length-1 && i<seen) nav+='<button class="btn" onclick="renderPlanDay(\''+id+'\','+(i+1)+')" style="flex:1;background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px">Day '+(i+2)+' \u203A</button>';
-  if(s.done) nav+='<button class="btn" onclick="_planRestart(\''+id+'\')" style="flex:1;background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px">Read it again</button>';
+  if(i>0) nav+='<button class="btn" onclick="renderPlanDay(\''+id+'\','+(i-1)+')" style="flex:1;background:transparent;color:var(--tx3);font-size:var(--t-sm);background:var(--fill2)">\u2039 Day '+i+'</button>';
+  if(i<days.length-1 && i<seen) nav+='<button class="btn" onclick="renderPlanDay(\''+id+'\','+(i+1)+')" style="flex:1;background:transparent;color:var(--tx3);font-size:var(--t-sm);background:var(--fill2)">Day '+(i+2)+' \u203A</button>';
+  if(s.done) nav+='<button class="btn" onclick="_planRestart(\''+id+'\')" style="flex:1;background:transparent;color:var(--tx3);font-size:var(--t-sm);background:var(--fill2)">Read it again</button>';
   if(nav) h+='<div style="display:flex;gap:8px;margin-top:4px">'+nav+'</div>';
-  h+='<p style="font-size:11px;color:var(--tx3);font-style:italic;line-height:1.65;text-align:center;margin:16px 10px 4px">One day at a time is the whole design. Come back tomorrow, or in a fortnight \u2014 day '+(i+1)+' will still be here.</p>';
+  h+='<p style="font-size:var(--t-cap);color:var(--tx3);font-style:italic;line-height:1.65;text-align:center;margin:16px 10px 4px">One day at a time is the whole design. Come back tomorrow, or in a fortnight \u2014 day '+(i+1)+' will still be here.</p>';
   el.innerHTML=h;
   try{ const tab=document.getElementById('tab-plans'); if(tab) tab.scrollTop=0; }catch(_){}
 }
@@ -4445,14 +4445,14 @@ function _planClose(id,i,finished){
   const beyond={christianity:'a priest, or one person who’ll pray it with you',islam:'your imam, or one person who’ll make du’a with you',hinduism:'a teacher, or one person who’ll sit with you',buddhism:'a teacher, or a sangha \u2014 someone further down the path',secular:'one person who’ll actually hear it \u2014 a friend, or a counsellor'}[t]||'one person who’ll actually hear it';
   let h='<div style="text-align:center;padding:14px 4px 0">';
   if(finished){
-    h+='<div style="font-size:26px;margin-bottom:12px">\u{1F54A}\uFE0F</div>'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:26px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:12px">You finished it.</div>'+
-      '<div style="font-size:14px;color:var(--tx2);line-height:1.75;max-width:330px;margin:0 auto 16px">'+days.length+' days on '+p.short+'. No badge for this, and no streak \u2014 you simply sat with '+f.wordWord+' on '+days.length+' days and let it work on you. That’s a different kind of thing.</div>'+
-      '<div class="card" style="text-align:left"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Now take it past the app</div>'+
-      '<div style="font-size:13px;color:var(--tx2);line-height:1.75">The reading did part of the work. The rest happens with '+beyond+'. Say one thing out loud this week that you only wrote down in here.</div></div>';
+    h+='<div style="font-size:var(--t-title1);margin-bottom:12px">\u{1F54A}\uFE0F</div>'+
+      '<div style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:12px">You finished it.</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.75;max-width:330px;margin:0 auto 16px">'+days.length+' days on '+p.short+'. No badge for this, and no streak \u2014 you simply sat with '+f.wordWord+' on '+days.length+' days and let it work on you. That’s a different kind of thing.</div>'+
+      '<div class="card" style="text-align:left"><div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:8px">Now take it past the app</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.75">The reading did part of the work. The rest happens with '+beyond+'. Say one thing out loud this week that you only wrote down in here.</div></div>';
   } else {
-    h+='<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:12px">That’s today.</div>'+
-      '<div style="font-size:14px;color:var(--tx2);line-height:1.75;max-width:330px;margin:0 auto 18px">Day '+(i+2)+' of '+days.length+' is there whenever you’re ready \u2014 tomorrow, or next week. Nothing resets, and nothing is lost if you leave it a while.</div>';
+    h+='<div style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:12px">That’s today.</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.75;max-width:330px;margin:0 auto 18px">Day '+(i+2)+' of '+days.length+' is there whenever you’re ready \u2014 tomorrow, or next week. Nothing resets, and nothing is lost if you leave it a while.</div>';
   }
   h+='<button class="btn primary" onclick="theRelease({did:\'You sat with the reading and answered it honestly. That was the work.\'})" style="margin-bottom:8px">Put it down and carry it</button>'+
     '<button class="btn subtle" onclick="renderPlans()">Back to the plans</button></div>';
@@ -4469,10 +4469,10 @@ function _planAnswer(id,i){
   i=_planClamp(i,days.length); const day=days[i];
   const m=document.createElement('div'); m.className='modal-bg open';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--tx3);margin-bottom:9px">'+p.title+' \u00B7 day '+(i+1)+'</div>'+
-    '<div style="font-size:16px;color:var(--tx);line-height:1.65;margin-bottom:5px">'+day.q+'</div>'+
-    '<div style="font-size:11px;color:var(--tx3);margin-bottom:13px">'+day.r+'</div>'+
-    '<textarea id="plan-answer" placeholder="However it comes out. Nobody reads this but you." style="height:130px;resize:none;font-size:16px;line-height:1.6;margin-bottom:12px"></textarea>'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx3);margin-bottom:9px">'+p.title+' \u00B7 day '+(i+1)+'</div>'+
+    '<div style="font-size:var(--t-base);color:var(--tx);line-height:1.65;margin-bottom:5px">'+day.q+'</div>'+
+    '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:13px">'+day.r+'</div>'+
+    '<textarea id="plan-answer" placeholder="However it comes out. Nobody reads this but you." style="height:130px;resize:none;font-size:var(--t-base);line-height:1.6;margin-bottom:12px"></textarea>'+
     '<button class="btn primary" onclick="_planAnswerSave(\''+id+'\','+i+',this)" style="margin-bottom:8px">Keep it in my journal</button>'+
     '<button class="btn" onclick="closeModal(this)">Not now</button></div>';
   document.body.appendChild(m);
@@ -4551,15 +4551,15 @@ function renderThread(){
   const idx=(((window.__threadIdx||0))%SHARED_THREADS.length+SHARED_THREADS.length)%SHARED_THREADS.length;
   const th=SHARED_THREADS[idx]; const mine=faithTradition();
   const order=[mine].concat(['christianity','islam','hinduism','buddhism','secular'].filter(x=>x!==mine));
-  let html='<div style="text-align:center;margin-bottom:2px"><div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.15em;color:var(--tx3);text-transform:uppercase">Shared thread '+(idx+1)+' / '+SHARED_THREADS.length+'</div></div>';
-  html+='<h2 style="font-family:Cormorant Garamond,serif;font-size:27px;font-weight:300;color:var(--tx);text-align:center;margin-bottom:16px">'+th.theme+'</h2>';
+  let html='<div style="text-align:center;margin-bottom:2px"><div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;color:var(--tx3);text-transform:uppercase">Shared thread '+(idx+1)+' / '+SHARED_THREADS.length+'</div></div>';
+  html+='<h2 style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);text-align:center;margin-bottom:16px">'+th.theme+'</h2>';
   order.forEach(function(k){ const L=th.lines[k]; if(!L) return; const isMine=(k===mine);
-    html+='<div class="card" style="'+(isMine?'border-color:var(--go-bd);background:linear-gradient(135deg,rgba(200,169,110,0.08),rgba(140,107,182,0.04))':'')+'">'+
-      '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:'+(isMine?'var(--go)':'var(--tx3)')+';margin-bottom:6px">'+_THREAD_LABELS[k]+(isMine?' · your path':'')+'</div>'+
-      '<div style="font-size:15px;line-height:1.7;color:var(--tx)">“'+L.t+'”</div>'+
-      '<div style="font-size:12px;color:var(--tx3);margin-top:5px">— '+L.r+'</div></div>';
+    html+='<div class="card" style="'+(isMine?'border-color:var(--go-bd);background:var(--go-bg)':'')+'">'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:'+(isMine?'var(--go)':'var(--tx3)')+';margin-bottom:6px">'+_THREAD_LABELS[k]+(isMine?' · your path':'')+'</div>'+
+      '<div style="font-size:var(--t-base);line-height:1.7;color:var(--tx)">“'+L.t+'”</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx3);margin-top:5px">— '+L.r+'</div></div>';
   });
-  html+='<p style="font-size:12px;color:var(--tx3);font-style:italic;text-align:center;line-height:1.6;margin:14px 6px 10px">The same human struggle, held across traditions — echoes, not sameness. Each speaks in its own voice.</p>';
+  html+='<p style="font-size:var(--t-sm);color:var(--tx3);font-style:italic;text-align:center;line-height:1.6;margin:14px 6px 10px">The same human struggle, held across traditions — echoes, not sameness. Each speaks in its own voice.</p>';
   html+='<div style="display:flex;gap:8px"><button class="btn subtle" onclick="_threadNav(-1)" style="flex:1">‹ Previous</button><button class="btn subtle" onclick="_threadNav(1)" style="flex:1">Next ›</button></div>';
   el.innerHTML=html;
 }
@@ -4751,36 +4751,51 @@ const TAB_PARENT={
 
 // Inserts/updates a small "‹ Back to {Hub}" bar at the top of any sub-page that
 // lives under a hub, so the 5-tab nav still feels navigable. Removed on hub/top pages.
-const HUB_LABELS={grow:'Grow', soul:'Soul', home:'Home'};
+const HUB_LABELS={grow:'Grow', soul:'Soul', home:'Today'};
+// The title in the navigation bar. On iOS a screen opens with a LARGE title in its content, and the
+// small centred title only fades into the bar once that large one has scrolled up underneath it — at
+// which point the bar also takes its translucent material and hairline. Before that the bar is clear.
+const IOS_TAB_TITLES={home:'Today', fight:'Fight', grow:'Grow', money:'Money', soul:'Soul', coach:'Coach'};
+function iosNavSync(name){
+  try{
+    const hdr=document.querySelector('.hdr'), slot=document.getElementById('ios-nav-title');
+    const tab=document.getElementById('tab-'+name);
+    if(!hdr || !slot || !tab) return;
+    const large=tab.querySelector('.page-title, .ios-large-title');
+    slot.textContent=(large && large.textContent.trim()) || IOS_TAB_TITLES[name] || '';
+    const sync=()=>{
+      if(!tab.classList.contains('active')) return;
+      const edge = large ? (large.offsetTop + large.offsetHeight - 6) : 12;
+      hdr.classList.toggle('ios-scrolled', tab.scrollTop > edge);
+    };
+    if(!tab.__iosNav){ tab.__iosNav = true; tab.addEventListener('scroll', sync, { passive:true }); }
+    sync();
+  }catch(_){ }
+}
 function updateHubBackBar(name){
+  // APPLE-NATIVE: the way back lives in the navigation bar's leading slot, as a tint chevron and the
+  // parent's name — not as a grey text link inside the scrolling content, which scrolled away with it.
+  // It keeps id="hub-back-bar": the morning ritual's layout skips it by id, and the gate asserts it
+  // stays on screen through every ritual step.
   const existing=document.getElementById('hub-back-bar');
   if(existing) existing.remove();
+  const lead=document.getElementById('ios-nav-lead');
+  let target=null, label=null;
   const parent=TAB_PARENT[name];
-  if(!parent){
-    // Coach is parentless (floating button). Give it a clear way back to where you were.
-    if(name === 'coach'){
-      const tab=document.getElementById('tab-coach');
-      if(tab){
-        const bar=document.createElement('div');
-        bar.id='hub-back-bar';
-        bar.style.cssText='display:flex;align-items:center;gap:6px;min-height:34px;padding:6px 2px;margin-bottom:8px;cursor:pointer;color:var(--tx3);font-size:13px;user-select:none';
-        const back = window.__prevTab && window.__prevTab !== 'coach' ? window.__prevTab : 'home';
-        const lbl = HUB_LABELS[back] || ({home:'Home',grow:'Grow',soul:'Soul',track:'Track',money:'Money',settings:'Settings'}[back]) || 'Back';
-        bar.innerHTML='<span style="font-size:18px;line-height:1">\u2039</span><span>'+lbl+'</span>';
-        bar.onclick=()=>go(back);
-        tab.insertBefore(bar, tab.firstChild);
-      }
-    }
-    return; // not a hub sub-page
+  if(parent){ target=parent; label=HUB_LABELS[parent]||'Back'; }
+  else if(name === 'coach'){
+    // Coach is parentless (floating button): back to wherever the person came from.
+    target = window.__prevTab && window.__prevTab !== 'coach' ? window.__prevTab : 'home';
+    label = HUB_LABELS[target] || ({home:'Today',grow:'Grow',soul:'Soul',track:'Track',money:'Money',settings:'Settings',fight:'Fight'}[target]) || 'Back';
   }
-  const tab=document.getElementById('tab-'+name);
-  if(!tab) return;
-  const bar=document.createElement('div');
+  if(!target || !lead) return;
+  const bar=document.createElement('button');
   bar.id='hub-back-bar';
-  bar.style.cssText='display:flex;align-items:center;gap:6px;min-height:34px;padding:6px 2px;margin-bottom:8px;cursor:pointer;color:var(--tx3);font-size:13px;user-select:none';
-  bar.innerHTML='<span style="font-size:18px;line-height:1">‹</span><span>'+(HUB_LABELS[parent]||'Back')+'</span>';
-  bar.onclick=()=>go(parent);
-  tab.insertBefore(bar, tab.firstChild);
+  bar.type='button';
+  bar.setAttribute('aria-label','Back to '+label);
+  bar.innerHTML=svgIcon('chevronleft',24)+'<span>'+label+'</span>';
+  bar.onclick=()=>go(target);
+  lead.appendChild(bar);
 }
 
 // Gently nudges the time-appropriate ritual in the Soul hub: Morning before noon, Reflect
@@ -4800,7 +4815,7 @@ function highlightSoulByTime(){
     const badge = document.createElement('div');
     badge.className = 'soul-now-badge';
     badge.textContent = hr < 12 ? 'now' : 'now';
-    badge.style.cssText = 'position:absolute;top:10px;right:10px;font-family:"DM Mono",monospace;font-size:8px;text-transform:uppercase;letter-spacing:0.1em;color:#1a1505;background:var(--go);padding:2px 7px;border-radius:100px';
+    badge.style.cssText = 'position:absolute;top:10px;right:10px;font-family:var(--font-text);font-size:var(--t-micro);text-transform:uppercase;letter-spacing:0.01em;color:var(--on-tint);background:var(--go);padding:2px 7px;border-radius:100px';
     card.style.position = 'relative';
     card.appendChild(badge);
   }
@@ -4878,6 +4893,7 @@ function go(name){
   if(navIdx>=0){const _nb=document.querySelectorAll('.nb')[navIdx]; if(_nb){_nb.classList.add('active'); _nb.setAttribute('aria-current','page');}}
   // Show a "back to hub" bar on sub-pages so users can climb back up easily
   updateHubBackBar(name);
+  iosNavSync(name);
   try{ if(typeof renderCycleSurfaces==='function') renderCycleSurfaces(); }catch(_){}
   if(name==='fight'){renderVices();renderScoreboard();if(typeof renderFightEvidence==='function')renderFightEvidence();}
   if(name==='track'){renderBody();if(typeof renderBodyGoalCard==='function')renderBodyGoalCard();if(typeof syncWeeklyCheckin==='function')syncWeeklyCheckin();renderBodyCollage();updateTrackerDisplay();if(typeof renderHealthCard==='function')renderHealthCard();if(typeof Health!=='undefined'&&Health.connected()&&Health.isNative())Health.syncToday();}
@@ -4930,8 +4946,8 @@ function go(name){
     // Settings page (which is what was happening). Failures are logged, the rest still render.
     const safe = (fn, label) => { try{ if(typeof fn==='function') fn(); }catch(e){ console.warn('[settings] '+label+' failed:', e); } };
     safe(initSettingsTab, 'initSettingsTab');
-    safe(()=>{ const lv=faithLevel(); document.querySelectorAll('.faith-opt').forEach(b=>{ const on=b.dataset.faith===lv; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'rgba(200,169,110,0.10)':'var(--bg3)'; }); }, 'faithLevelReflect');
-    safe(()=>{ const sx=userSex(); if(sx) document.querySelectorAll('.sex-opt').forEach(b=>{ const on=b.dataset.sex===sx; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'rgba(200,169,110,0.10)':'var(--bg3)'; }); }, 'sexReflect');
+    safe(()=>{ const lv=faithLevel(); document.querySelectorAll('.faith-opt').forEach(b=>{ const on=b.dataset.faith===lv; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'var(--go-bg)':'var(--bg3)'; }); }, 'faithLevelReflect');
+    safe(()=>{ const sx=userSex(); if(sx) document.querySelectorAll('.sex-opt').forEach(b=>{ const on=b.dataset.sex===sx; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'var(--go-bg)':'var(--bg3)'; }); }, 'sexReflect');
     safe(renderSyncStatus, 'renderSyncStatus');
     try{ const vs=document.getElementById('app-version-stamp'); if(vs) vs.textContent = (typeof APP_VERSION!=='undefined'?APP_VERSION:'?') + ' · refined'; }catch(_){ }
     safe(updatePartnerBtn, 'updatePartnerBtn');
@@ -5068,8 +5084,8 @@ function setPrayerMode(mode){
   const w=document.getElementById('prayer-mode-write-body'), a=document.getElementById('prayer-mode-ai-body');
   const wb=document.getElementById('prayer-mode-write'), ab=document.getElementById('prayer-mode-ai');
   const on='background:var(--bg);border:1px solid var(--bd);color:var(--tx)', off='background:transparent;border:1px solid transparent;color:var(--tx3)';
-  if(mode==='ai'){ if(w)w.style.display='none'; if(a)a.style.display='block'; if(ab)ab.style.cssText='flex:1;padding:8px;font-size:12px;'+on; if(wb)wb.style.cssText='flex:1;padding:8px;font-size:12px;'+off; }
-  else{ if(w)w.style.display='block'; if(a)a.style.display='none'; if(wb)wb.style.cssText='flex:1;padding:8px;font-size:12px;'+on; if(ab)ab.style.cssText='flex:1;padding:8px;font-size:12px;'+off; }
+  if(mode==='ai'){ if(w)w.style.display='none'; if(a)a.style.display='block'; if(ab)ab.style.cssText='flex:1;padding:8px;font-size:var(--t-sm);'+on; if(wb)wb.style.cssText='flex:1;padding:8px;font-size:var(--t-sm);'+off; }
+  else{ if(w)w.style.display='block'; if(a)a.style.display='none'; if(wb)wb.style.cssText='flex:1;padding:8px;font-size:var(--t-sm);'+on; if(ab)ab.style.cssText='flex:1;padding:8px;font-size:var(--t-sm);'+off; }
 }
 // Lowkey, honest "this was AI-generated" label that names the model that actually answered (the
 // proxy reports it; the model can vary per call due to provider fallback). Used wherever the app
@@ -5094,7 +5110,7 @@ function _friendlyModel(){
   return 'AI';
 }
 function aiTag(){
-  return '<div style="font-size:9px;color:var(--tx3);margin-top:8px;font-family:DM Mono,monospace;letter-spacing:0.04em;opacity:0.7">'+svgIcon("sparkle")+' Written by '+_friendlyModel()+' · may not be perfect</div>';
+  return '<div style="font-size:var(--t-micro);color:var(--tx3);margin-top:8px;font-family:var(--font-text);letter-spacing:0.01em;opacity:0.7">'+svgIcon("sparkle")+' Written by '+_friendlyModel()+' · may not be perfect</div>';
 }
 // "Today" in Soul — weaves the practical day (schedule) with the inner day (streaks, this morning's
 // mood/intention, prayer) so you can feel how the whole day is going in one place.
@@ -5121,11 +5137,11 @@ function openSoulToday(){
   const events = (typeof _calEvents==='function'?_calEvents():[]).filter(e=>e&&e.day===todayDow).sort((a,b)=>String(a.start||'').localeCompare(String(b.start||'')));
   let schedHtml;
   if(!events.length){
-    schedHtml = '<div style="font-size:13px;color:var(--tx3);font-style:italic">Nothing scheduled today. <span class="tlink" onclick="document.getElementById(\'soul-today-modal\')?.remove();go(\'calendar\')">Add your week \u2192</span></div>';
+    schedHtml = '<div style="font-size:var(--t-sm);color:var(--tx3);font-style:italic">Nothing scheduled today. <span class="tlink" onclick="document.getElementById(\'soul-today-modal\')?.remove();go(\'calendar\')">Add your week \u2192</span></div>';
   } else {
     schedHtml = events.map(e=>{
       const col = (typeof CAL_TYPE_COLORS!=='undefined' && CAL_TYPE_COLORS[e.type]) || 'var(--go)';
-      return '<div style="display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--bd)"><div style="font-family:DM Mono,monospace;font-size:11px;color:'+col+';min-width:42px">'+(e.start||'')+'</div><div style="font-size:13px;color:var(--tx)">'+(e.title||'')+'</div></div>';
+      return '<div style="display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--bd)"><div style="font-family:var(--font-text);font-size:var(--t-cap);color:'+col+';min-width:42px">'+(e.start||'')+'</div><div style="font-size:var(--t-base);color:var(--tx)">'+(e.title||'')+'</div></div>';
     }).join('');
   }
 
@@ -5136,7 +5152,7 @@ function openSoulToday(){
   if(vlist.length){
     streakHtml = vlist.slice(0,4).map(v=>{
       const days = (typeof viceCleanDays==='function') ? viceCleanDays(v) : 0;
-      return '<div style="flex:1;min-width:70px;text-align:center;padding:8px;background:var(--bg3);border-radius:var(--rs)"><div style="font-size:20px;font-family:Cormorant Garamond,serif;color:var(--go)">'+days+'</div><div style="font-size:10px;color:var(--tx3);margin-top:2px">'+(v.n||'')+'</div></div>';
+      return '<div style="flex:1;min-width:70px;text-align:center;padding:8px;background:var(--bg3);border-radius:var(--rs)"><div style="font-size:var(--t-xl);font-family:var(--font-display);font-weight:700;color:var(--go)">'+days+'</div><div style="font-size:var(--t-mini);color:var(--tx3);margin-top:2px">'+(v.n||'')+'</div></div>';
     }).join('');
   }
 
@@ -5152,8 +5168,8 @@ function openSoulToday(){
   const tm = mornings.find(m => m && m.ts && new Date(m.ts).toLocaleDateString('en-AU') === todayKey);
   let moodHtml = '';
   if(tm){
-    if(tm.mood) moodHtml += '<div style="font-size:13px;color:var(--tx2);margin-bottom:4px">This morning you felt <span style="color:var(--tx)">'+tm.mood+'</span></div>';
-    if(tm.intention) moodHtml += '<div style="font-size:13px;color:var(--tx2);font-style:italic">\u201c'+String(tm.intention).slice(0,140)+'\u201d</div>';
+    if(tm.mood) moodHtml += '<div style="font-size:var(--t-sm);color:var(--tx2);margin-bottom:4px">This morning you felt <span style="color:var(--tx)">'+tm.mood+'</span></div>';
+    if(tm.intention) moodHtml += '<div style="font-size:var(--t-sm);color:var(--tx2);font-style:italic">\u201c'+String(tm.intention).slice(0,140)+'\u201d</div>';
   }
   const didMorning = !!tm;
   const evenings = (typeof ritualLog === 'function') ? ritualLog('totry_evenings') : (ls('totry_evenings')||[]);
@@ -5162,8 +5178,8 @@ function openSoulToday(){
   const m = document.createElement('div');
   m.className='modal-bg open'; m.id='soul-today-modal';
   m.innerHTML = '<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="font-family:DM Mono,monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.14em;color:var(--go);margin-bottom:4px">'+dateLabel+'</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-style:italic;color:var(--tx);margin-bottom:18px">How your day is going</div>'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-mini);text-transform:uppercase;letter-spacing:0.01em;color:var(--go);margin-bottom:4px">'+dateLabel+'</div>'+
+    '<div style="font-family:var(--font-serif);font-size:var(--t-title1);font-style:italic;color:var(--tx);margin-bottom:18px">How your day is going</div>'+
 
     // Soul state first — the inner day
     (streakHtml?('<div class="lbl">Holding the line</div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">'+streakHtml+'</div>'):'')+
@@ -5172,8 +5188,8 @@ function openSoulToday(){
     // The two daily anchors
     '<div class="lbl">The day\u2019s rhythm</div>'+
     '<div style="display:flex;gap:8px;margin-bottom:16px">'+
-      '<div onclick="document.getElementById(\'soul-today-modal\')?.remove();go(\'morning\')" style="flex:1;padding:12px;background:var(--bg3);border-radius:var(--rm);cursor:pointer;text-align:center"><div style="font-size:18px;margin-bottom:2px;color:'+(didMorning?'var(--gr)':'var(--go)')+'">'+(didMorning?svgIcon("check",20):svgIcon("sun",20))+'</div><div style="font-size:12px;color:var(--tx2)">Morning</div></div>'+
-      '<div onclick="document.getElementById(\'soul-today-modal\')?.remove();go(\'reflect\')" style="flex:1;padding:12px;background:var(--bg3);border-radius:var(--rm);cursor:pointer;text-align:center"><div style="font-size:18px;margin-bottom:2px;color:'+(didEvening?'var(--gr)':'var(--go)')+'">'+(didEvening?svgIcon("check",20):svgIcon("moon",20))+'</div><div style="font-size:12px;color:var(--tx2)">Evening</div></div>'+
+      '<div onclick="document.getElementById(\'soul-today-modal\')?.remove();go(\'morning\')" style="flex:1;padding:12px;background:var(--bg3);border-radius:var(--rm);cursor:pointer;text-align:center"><div style="font-size:var(--t-hd);margin-bottom:2px;color:'+(didMorning?'var(--gr)':'var(--go)')+'">'+(didMorning?svgIcon("check",20):svgIcon("sun",20))+'</div><div style="font-size:var(--t-sm);color:var(--tx2)">Morning</div></div>'+
+      '<div onclick="document.getElementById(\'soul-today-modal\')?.remove();go(\'reflect\')" style="flex:1;padding:12px;background:var(--bg3);border-radius:var(--rm);cursor:pointer;text-align:center"><div style="font-size:var(--t-hd);margin-bottom:2px;color:'+(didEvening?'var(--gr)':'var(--go)')+'">'+(didEvening?svgIcon("check",20):svgIcon("moon",20))+'</div><div style="font-size:var(--t-sm);color:var(--tx2)">Evening</div></div>'+
     '</div>'+
 
     // The practical day — schedule
@@ -5182,7 +5198,7 @@ function openSoulToday(){
 
     // Prayer still one tap away (just not its own hub card)
     '<button class="btn primary" style="padding:14px;margin-bottom:8px" onclick="document.getElementById(\'soul-today-modal\')?.remove();openPrayerSection()">'+_escFew(_soulTodayCta())+' \u2192</button>'+
-    '<button class="btn" onclick="document.getElementById(\'soul-today-modal\')?.remove()" style="background:none;border:none;color:var(--tx3);font-size:13px">Close</button>'+
+    '<button class="btn" onclick="document.getElementById(\'soul-today-modal\')?.remove()" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm)">Close</button>'+
   '</div>';
   document.body.appendChild(m);
   m.addEventListener('click', e=>{ if(e.target===m) m.remove(); });
@@ -5338,7 +5354,7 @@ function completeMorning(){
       _m.style.alignItems = 'center';
       _m.innerHTML = '<div class="modal" style="max-width:92vw"><div class="modal-handle"></div>' +
         '<div id="morning-crisis-slot"></div>' +
-        '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;margin-top:10px">Close</button></div>';
+        '<button class="btn" onclick="closeModal(this)" style="background:transparent;color:var(--tx3);font-size:var(--t-sm);margin-top:10px;background:var(--fill2)">Close</button></div>';
       document.body.appendChild(_m);
       if(typeof showCrisisResponse === 'function') showCrisisResponse('morning-crisis-slot', _mCrisis);
     }catch(_){ }

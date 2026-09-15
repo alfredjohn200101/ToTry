@@ -346,13 +346,13 @@ function foodWorking(res, line){
   if(!res) return;
   _foodWaitStop();
   res.innerHTML =
-    '<div style="padding:16px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r)">' +
-      '<div class="pulsing" style="font-family:\'Cormorant Garamond\',serif;font-size:16px;font-style:italic;' +
+    '<div style="padding:16px;background:var(--bg3);border-radius:var(--r)">' +
+      '<div class="pulsing" style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;' +
         'color:var(--tx);line-height:1.45;margin-bottom:10px">' + _escFew(line) + '</div>' +
-      '<div id="food-wait-el" style="font-size:11px;color:var(--tx3);letter-spacing:.04em;margin-bottom:14px;' +
+      '<div id="food-wait-el" style="font-size:var(--t-cap);color:var(--tx3);letter-spacing:.04em;margin-bottom:14px;' +
         'font-variant-numeric:tabular-nums">just a moment</div>' +
       '<button class="btn" onclick="_foodWaitStop();openQuickAdd()" style="width:100%;background:var(--bg2);' +
-        'border:1px solid var(--bd);font-size:13px">Add it myself instead</button>' +
+        'border:1px solid var(--bd);font-size:var(--t-base)">Add it myself instead</button>' +
     '</div>';
   const t0 = Date.now();
   _foodWaitTimer = setInterval(function(){
@@ -383,13 +383,13 @@ function foodFailed(res, headline, sub, retryJs, primaryJs, primaryLbl){
   _foodWaitStop();
   if(!res) return;
   res.innerHTML =
-    '<div style="padding:16px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r)">' +
-      '<div style="font-size:14px;color:var(--tx);line-height:1.5;margin-bottom:5px">' + _escFew(headline) + '</div>' +
-      '<div style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px">' + _escFew(sub) + '</div>' +
+    '<div style="padding:16px;background:var(--bg3);border-radius:var(--r)">' +
+      '<div style="font-size:var(--t-base);color:var(--tx);line-height:1.5;margin-bottom:5px">' + _escFew(headline) + '</div>' +
+      '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.55;margin-bottom:14px">' + _escFew(sub) + '</div>' +
       (retryJs ? '<button class="btn" onclick="' + _jsCode(retryJs) + '" style="width:100%;margin-bottom:8px;' +
-        'background:var(--bg2);border:1px solid var(--bd);font-size:13px">Try again</button>' : '') +
+        'background:var(--bg2);font-size:var(--t-base)">Try again</button>' : '') +
       '<button class="btn primary" onclick="' + _jsCode(primaryJs || 'openQuickAdd()') + '" ' +
-        'style="width:100%;font-size:13px">' + _escFew(primaryLbl || 'Add it myself') + '</button>' +
+        'style="width:100%;font-size:var(--t-base)">' + _escFew(primaryLbl || 'Add it myself') + '</button>' +
     '</div>';
   _foodReveal(res);
 }
@@ -476,7 +476,7 @@ function openMoreWaysToLog(){
   const m = document.createElement('div'); m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:4px">More ways to log</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px;line-height:1.5">' +
       'Whatever gets the meal down. None of them is better than the others.</p>' +
     '<div style="display:flex;flex-direction:column;gap:2px;margin-bottom:10px">' +
     ways.map(w => '<button class="mw-row" onclick="closeModal(this);setTimeout(function(){' + _jsCode(w[3]) + '},220)">' +
@@ -527,9 +527,9 @@ function openQuickAdd(){
   const m=document.createElement('div'); m.className='modal-bg open';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
     '<h3 style="margin-bottom:4px">Quick add</h3>'+
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">Just the numbers — when you know roughly what you ate but don’t want to search. Calories required; macros optional.</p>'+
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px;line-height:1.5">Just the numbers — when you know roughly what you ate but don’t want to search. Calories required; macros optional.</p>'+
     '<div class="lbl" style="margin-bottom:6px">Which meal?</div>'+
-    '<div id="qa-meals" style="display:flex;gap:6px;margin-bottom:14px">'+meals.map(x=>'<button class="qa-meal" data-meal="'+x[0]+'" aria-label="'+x[0].charAt(0).toUpperCase()+x[0].slice(1)+'" onclick="_qaMeal(\''+x[0]+'\')" style="flex:1;padding:9px 4px;border-radius:var(--rs);border:1px solid '+(x[0]===meal?'var(--go)':'var(--bd)')+';background:'+(x[0]===meal?'rgba(200,169,110,0.12)':'var(--bg3)')+';color:var(--go);font-size:15px;cursor:pointer">'+svgIcon(x[1],18)+'</button>').join('')+'</div>'+
+    '<div id="qa-meals" style="display:flex;gap:6px;margin-bottom:14px">'+meals.map(x=>'<button class="qa-meal" data-meal="'+x[0]+'" aria-label="'+x[0].charAt(0).toUpperCase()+x[0].slice(1)+'" onclick="_qaMeal(\''+x[0]+'\')" style="flex:1;padding:9px 4px;border-radius:var(--rs);border:1px solid '+(x[0]===meal?'var(--go)':'var(--bd)')+';background:'+(x[0]===meal?'var(--go-bg)':'var(--bg3)')+';color:var(--go);font-size:var(--t-base);cursor:pointer">'+svgIcon(x[1],18)+'</button>').join('')+'</div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">'+
       '<div><div class="lbl" style="margin-bottom:4px">Calories</div><input type="number" id="qa-cal" inputmode="numeric" placeholder="e.g. 350" style="width:100%"></div>'+
       '<div><div class="lbl" style="margin-bottom:4px">Protein (g)</div><input type="number" id="qa-pro" inputmode="numeric" placeholder="opt." style="width:100%"></div>'+
@@ -542,7 +542,7 @@ function openQuickAdd(){
   document.body.appendChild(m);
   setTimeout(()=>document.getElementById('qa-cal')?.focus(),80);
 }
-function _qaMeal(m){ window.__qaMeal=m; document.querySelectorAll('#qa-meals .qa-meal').forEach(b=>{ const on=b.dataset.meal===m; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'rgba(200,169,110,0.12)':'var(--bg3)'; }); }
+function _qaMeal(m){ window.__qaMeal=m; document.querySelectorAll('#qa-meals .qa-meal').forEach(b=>{ const on=b.dataset.meal===m; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'var(--go-bg)':'var(--bg3)'; }); }
 function quickAddLog(){
   const cal=parseFloat(document.getElementById('qa-cal')?.value)||0;
   if(cal<=0){ if(typeof showToast==='function') showToast('Add calories','Enter at least the calories.'); return; }
@@ -738,7 +738,7 @@ function _makeFoodResultRow(food){
   // gutter reads as deliberate spacing rather than as a gap.
   const plus=document.createElement('button');
   plus.title='Log instantly';
-  plus.style.cssText='background:var(--go);border:none;color:#1a1505;font-size:18px;font-weight:700;width:34px;height:34px;border-radius:var(--rs);cursor:pointer;flex-shrink:0;line-height:1;margin-right:40px';
+  plus.style.cssText='background:var(--go);border:none;color:var(--on-tint);font-size:var(--t-hd);font-weight:700;width:34px;height:34px;border-radius:var(--rs);cursor:pointer;flex-shrink:0;line-height:1;margin-right:40px';
   plus.textContent='+';
   plus.onclick=(ev)=>{ ev.stopPropagation(); quickLogSearchFood(food); };
   el.appendChild(plus);
@@ -762,7 +762,7 @@ function nutSearchTypeahead(q){
         res.innerHTML='';
         local.forEach(f=>res.appendChild(_makeFoodResultRow(f)));
         const m=document.createElement('div'); m.className='pulsing';
-        m.style.cssText='font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-align:center;padding:8px';
+        m.style.cssText='font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-align:center;padding:8px';
         m.textContent='finding more…';
         res.appendChild(m);
       }
@@ -798,7 +798,7 @@ async function searchFood(query){
     localMatches.forEach(f=>res.appendChild(_makeFoodResultRow(f)));
     const more=document.createElement('div');
     more.className='pulsing';
-    more.style.cssText='font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-align:center;padding:10px';
+    more.style.cssText='font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-align:center;padding:10px';
     more.textContent='finding more options…';
     res.appendChild(more);
   }
@@ -1003,7 +1003,7 @@ async function searchFood(query){
   // Always offer custom food creation at the end — for foods in no database (homemade, regional, supplements)
   const customBtn=document.createElement('button');
   customBtn.className='btn';
-  customBtn.style.cssText='margin-top:8px;background:transparent;border:1px dashed var(--bd2);color:var(--tx2);font-size:12px';
+  customBtn.style.cssText='margin-top:8px;background:transparent;border:1px dashed var(--bd2);color:var(--tx2);font-size:var(--t-sm)';
   customBtn.textContent='+ Create a custom food';
   customBtn.onclick=()=>openCustomFoodCreator(query);
   res.appendChild(customBtn);
@@ -1018,7 +1018,7 @@ function openCustomFoodCreator(prefillName){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:90vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:6px">Create a custom food</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">Enter the nutrition per serving. It saves to your foods so you can log it again anytime.</p>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px;line-height:1.5">Enter the nutrition per serving. It saves to your foods so you can log it again anytime.</p>' +
     '<div class="eyebrow">Name</div>' +
     '<input type="text" id="cf-name" placeholder="e.g. Mum\'s chicken curry" value="' + (prefillName ? prefillName.replace(/"/g,'&quot;') : '') + '" style="margin-bottom:12px">' +
     '<div class="eyebrow">Serving description</div>' +
@@ -1029,11 +1029,11 @@ function openCustomFoodCreator(prefillName){
       '<div><div class="eyebrow">Carbs (g)</div><input type="number" id="cf-carb" inputmode="decimal" placeholder="0"></div>' +
       '<div><div class="eyebrow">Fat (g)</div><input type="number" id="cf-fat" inputmode="decimal" placeholder="0"></div>' +
     '</div>' +
-    '<label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;min-height:32px;font-size:12px;color:var(--tx3);cursor:pointer">' +
+    '<label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;min-height:32px;font-size:var(--t-sm);color:var(--tx3);cursor:pointer">' +
       '<input type="checkbox" id="cf-save-library" checked style="width:auto;margin:0"> Save to my foods for next time' +
     '</label>' +
     '<button class="btn primary" onclick="saveCustomFood()" style="margin-bottom:8px">Add to today</button>' +
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd)">Cancel</button>' +
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;background:var(--fill2)">Cancel</button>' +
   '</div>';
   document.body.appendChild(m);
   setTimeout(()=>document.getElementById(prefillName?'cf-serving':'cf-name')?.focus(),80);
@@ -1401,14 +1401,14 @@ function _renderPhotoMeal(){
       return ''+
       '<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--bd)">'+
         '<div style="flex:1;min-width:0">'+
-          '<div style="font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(it.food||'Item')+'</div>'+
-          (_pmG ? '' : '<div style="font-family:DM Mono,monospace;font-size:10px;color:'+(it.__weighed?'var(--gr)':'var(--tx3)')+'">'+R(it.cal*m)+' cal'+(it.__weighed?' · weighed':'')+'</div>')+
+          '<div style="font-size:var(--t-base);color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(it.food||'Item')+'</div>'+
+          (_pmG ? '' : '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:'+(it.__weighed?'var(--gr)':'var(--tx3)')+'">'+R(it.cal*m)+' cal'+(it.__weighed?' · weighed':'')+'</div>')+
         '</div>'+
         '<input id="pm-w-'+i+'" type="number" inputmode="decimal" value="'+(it.grams>0?R(it.grams*m):'')+'" placeholder="g" '+
           'onchange="_pmWeighSet('+i+')" onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}" '+
           'aria-label="Weight in grams of '+_escFew(it.food||'item')+'" '+
-          'style="width:86px;flex-shrink:0;padding:9px;font-size:16px;text-align:right">'+
-        '<div style="font-size:12px;color:var(--tx3);flex-shrink:0">g</div>'+
+          'style="width:86px;flex-shrink:0;padding:9px;font-size:var(--t-base);text-align:right">'+
+        '<div style="font-size:var(--t-sm);color:var(--tx3);flex-shrink:0">g</div>'+
       '</div>';
     }
     if(pm._editing===i){
@@ -1421,23 +1421,23 @@ function _renderPhotoMeal(){
         // the name as stray attributes. Silent, no undo, and only the name is destroyed. Raising the
         // vision budget to 4000 makes fuller item names — with inches and quotes in them — more likely.
         // _escFew is what every other value="…" in the app uses.
-        '<input id="pm-e-name" value="'+_escFew(it.food)+'" placeholder="What is it?" autocomplete="off" style="width:100%;box-sizing:border-box;margin-bottom:6px;font-size:16px;padding:9px">'+
+        '<input id="pm-e-name" value="'+_escFew(it.food)+'" placeholder="What is it?" autocomplete="off" style="width:100%;box-sizing:border-box;margin-bottom:6px;font-size:var(--t-base);padding:9px">'+
         // A SCALE BEATS EVERY MODEL, so the person who has one should be able to just say so. Typing
         // grams rescales that item from the density already established for it — by the food table, by
         // their own saved correction, or by the estimate itself — which is one honest number instead of
         // four guessed ones. Nobody has to weigh anything; the box is simply there for whoever can.
         '<div style="display:flex;gap:6px;margin-bottom:6px;align-items:center">'+
-          '<input id="pm-e-grams" type="number" inputmode="decimal" value="'+(it.grams>0?R(it.grams*m):'')+'" placeholder="grams" style="flex:1;min-width:0;padding:9px;font-size:16px">'+
-          '<div style="font-size:11px;color:var(--tx3);line-height:1.35;flex:1.6">weighed it? type the grams and I\'ll do the rest</div>'+
+          '<input id="pm-e-grams" type="number" inputmode="decimal" value="'+(it.grams>0?R(it.grams*m):'')+'" placeholder="grams" style="flex:1;min-width:0;padding:9px;font-size:var(--t-base)">'+
+          '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.35;flex:1.6">weighed it? type the grams and I\'ll do the rest</div>'+
         '</div>'+
         '<div style="display:flex;gap:6px;margin-bottom:6px">'+
-          '<input id="pm-e-cal" type="number" inputmode="numeric" value="'+R(it.cal*m)+'" placeholder="cal" style="flex:1.3;min-width:0;padding:9px;font-size:16px">'+
-          '<input id="pm-e-pro" type="number" inputmode="numeric" value="'+R(it.pro*m)+'" placeholder="P" style="flex:1;min-width:0;padding:9px;font-size:16px">'+
-          '<input id="pm-e-carb" type="number" inputmode="numeric" value="'+R(it.carb*m)+'" placeholder="C" style="flex:1;min-width:0;padding:9px;font-size:16px">'+
-          '<input id="pm-e-fat" type="number" inputmode="numeric" value="'+R(it.fat*m)+'" placeholder="F" style="flex:1;min-width:0;padding:9px;font-size:16px">'+
+          '<input id="pm-e-cal" type="number" inputmode="numeric" value="'+R(it.cal*m)+'" placeholder="cal" style="flex:1.3;min-width:0;padding:9px;font-size:var(--t-base)">'+
+          '<input id="pm-e-pro" type="number" inputmode="numeric" value="'+R(it.pro*m)+'" placeholder="P" style="flex:1;min-width:0;padding:9px;font-size:var(--t-base)">'+
+          '<input id="pm-e-carb" type="number" inputmode="numeric" value="'+R(it.carb*m)+'" placeholder="C" style="flex:1;min-width:0;padding:9px;font-size:var(--t-base)">'+
+          '<input id="pm-e-fat" type="number" inputmode="numeric" value="'+R(it.fat*m)+'" placeholder="F" style="flex:1;min-width:0;padding:9px;font-size:var(--t-base)">'+
         '</div>'+
         '<div style="display:flex;gap:6px">'+
-          '<button onclick="_pmSaveEdit('+i+')" class="btn primary" style="flex:1;padding:9px;font-size:12px;margin:0">Save item</button>'+
+          '<button onclick="_pmSaveEdit('+i+')" class="btn primary" style="flex:1;padding:9px;font-size:var(--t-sm);margin:0">Save item</button>'+
           '<button onclick="_pmCancelEdit()" class="btn subtle" style="flex:1;padding:9px;margin:0">Cancel</button>'+
         '</div>'+
       '</div>';
@@ -1445,26 +1445,26 @@ function _renderPhotoMeal(){
     return ''+
     '<div style="display:flex;align-items:center;gap:5px;padding:9px 0;border-top:1px solid var(--bd)">'+
       '<div style="flex:1;min-width:0;cursor:pointer" onclick="_pmEdit('+i+')">'+
-        '<div style="font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(it.food||'Tap to name')+'</div>'+
-        '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+
+        '<div style="font-size:var(--t-base);color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(it.food||'Tap to name')+'</div>'+
+        '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">'+
           (_pmG ? (it.portion ? esc(it.portion) : 'logged') + (m!==1?' ×'+m:'')
                 : R(it.cal*m)+' cal · P'+R(it.pro*m)+' C'+R(it.carb*m)+' F'+R(it.fat*m)+(it.portion?' · '+esc(it.portion):'')+(m!==1?' ×'+m:''))+
         '</div>'+
       '</div>'+
-      '<button onclick="_pmEdit('+i+')" aria-label="edit" title="Fix what it is / the numbers" style="width:30px;height:30px;border-radius:var(--rs);background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px;cursor:pointer;flex-shrink:0">'+svgIcon("edit")+'</button>'+
-      '<button onclick="_pmAdj('+i+',-0.25)" aria-label="less" style="width:30px;height:30px;border-radius:var(--rs);background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:17px;cursor:pointer;flex-shrink:0">−</button>'+
-      '<button onclick="_pmAdj('+i+',0.25)" aria-label="more" style="width:30px;height:30px;border-radius:var(--rs);background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:17px;cursor:pointer;flex-shrink:0">+</button>'+
-      '<button onclick="_pmRemove('+i+')" aria-label="remove" style="width:28px;height:30px;border-radius:var(--rs);background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer;flex-shrink:0">×</button>'+
+      '<button onclick="_pmEdit('+i+')" aria-label="edit" title="Fix what it is / the numbers" style="width:30px;height:30px;border-radius:var(--rs);background:var(--bg3);color:var(--tx2);font-size:var(--t-sm);cursor:pointer;flex-shrink:0">'+svgIcon("edit")+'</button>'+
+      '<button onclick="_pmAdj('+i+',-0.25)" aria-label="less" style="width:30px;height:30px;border-radius:var(--rs);background:var(--bg3);color:var(--tx2);font-size:var(--t-base);cursor:pointer;flex-shrink:0">−</button>'+
+      '<button onclick="_pmAdj('+i+',0.25)" aria-label="more" style="width:30px;height:30px;border-radius:var(--rs);background:var(--bg3);color:var(--tx2);font-size:var(--t-base);cursor:pointer;flex-shrink:0">+</button>'+
+      '<button onclick="_pmRemove('+i+')" aria-label="remove" style="width:28px;height:30px;border-radius:var(--rs);background:none;border:none;color:var(--tx3);font-size:var(--t-base);cursor:pointer;flex-shrink:0">×</button>'+
     '</div>'; }).join('');
   const meals=[['breakfast','sunrise','Breakfast'],['lunch','sun','Lunch'],['dinner','moon','Dinner'],['snack','apple','Snack']];
   _foodWaitStop();
   res.innerHTML =
-    '<div style="border:1px solid var(--go-bd);border-radius:var(--r);padding:14px;background:var(--bg2)">'+
+    '<div style="border-radius:var(--r);padding:14px;background:var(--bg2)">'+
       '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:2px">'+
-        '<div style="font-family:Cormorant Garamond,serif;font-size:19px;color:var(--tx);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+svgIcon("camera")+' '+esc(pm.name)+'</div>'+
-        (pm.confidence?'<div style="font-family:DM Mono,monospace;font-size:9px;color:'+confCol+';text-transform:uppercase;letter-spacing:0.08em;flex-shrink:0">'+esc(pm.confidence)+' confidence</div>':'')+
+        '<div style="font-family:var(--font-display);font-weight:700;font-size:var(--t-hd);color:var(--tx);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+svgIcon("camera")+' '+esc(pm.name)+'</div>'+
+        (pm.confidence?'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:'+confCol+';text-transform:uppercase;letter-spacing:0.01em;flex-shrink:0">'+esc(pm.confidence)+' confidence</div>':'')+
       '</div>'+
-      (pm.assumptions?'<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:6px">'+esc(pm.assumptions)+'</div>':'')+
+      (pm.assumptions?'<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-bottom:6px">'+esc(pm.assumptions)+'</div>':'')+
       rows+
       // Add a missed item + the hidden-fat one-tap. Photo AI runs ~30% low mainly because cooking oil,
       // butter and dressings are invisible in a 2D image — one tap puts that back. Nobody else does this.
@@ -1474,50 +1474,50 @@ function _renderPhotoMeal(){
       // half a model is actually good at. "Look it up" then reaches the free web-grounded text path for
       // a named dish from a real place.
       '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)">'+
-        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">You can see it — I can\'t</div>'+
-        '<input id="pm-describe" value="'+_escFew(pm.describe||'')+'" placeholder="e.g. open plate gyros, large, mixed meat" autocomplete="off" style="width:100%;box-sizing:border-box;font-size:16px;padding:9px;margin-bottom:6px">'+
+        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">You can see it — I can\'t</div>'+
+        '<input id="pm-describe" value="'+_escFew(pm.describe||'')+'" placeholder="e.g. open plate gyros, large, mixed meat" autocomplete="off" style="width:100%;box-sizing:border-box;font-size:var(--t-base);padding:9px;margin-bottom:6px">'+
         '<div style="display:flex;gap:6px">'+
-          '<button onclick="_pmDescribe()" style="flex:1;padding:8px;border-radius:var(--rs);background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:11px;cursor:pointer">Use my words</button>'+
-          '<button onclick="_pmWebLookup()" title="Search the web for this dish as it is actually served" style="flex:1;padding:8px;border-radius:var(--rs);background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:11px;cursor:pointer">'+svgIcon("search")+' Look it up</button>'+
+          '<button onclick="_pmDescribe()" style="flex:1;padding:8px;border-radius:var(--rs);background:var(--go-bg);color:var(--go);font-size:var(--t-cap);cursor:pointer">Use my words</button>'+
+          '<button onclick="_pmWebLookup()" title="Search the web for this dish as it is actually served" style="flex:1;padding:8px;border-radius:var(--rs);background:var(--bg3);color:var(--tx2);font-size:var(--t-cap);cursor:pointer">'+svgIcon("search")+' Look it up</button>'+
         '</div>'+
       '</div>'+
       // A SCALE IS THE MOST ACCURATE READING THERE IS, and the photo has already done the hard half by
       // naming what is on the plate. This is the override: keep what it saw, replace how much.
       (pm._weighing
         ? '<button onclick="_pmWeighMode(false)" class="btn primary" style="margin-top:10px">Done weighing</button>'
-        : '<button onclick="_pmWeighMode(true)" style="width:100%;margin-top:8px;padding:9px;border-radius:var(--rs);background:var(--bg3);border:1px dashed var(--bd);color:var(--tx2);font-size:11px;cursor:pointer">'+svgIcon("scale")+' I weighed it \u00b7 set the grams</button>')+
+        : '<button onclick="_pmWeighMode(true)" style="width:100%;margin-top:8px;padding:9px;border-radius:var(--rs);background:var(--bg3);border:1px dashed var(--bd);color:var(--tx2);font-size:var(--t-cap);cursor:pointer">'+svgIcon("scale")+' I weighed it \u00b7 set the grams</button>')+
       '<div style="display:flex;gap:6px;margin-top:8px">'+
-        '<button onclick="_pmAddItem()" style="flex:1;padding:8px;border-radius:var(--rs);background:var(--bg3);border:1px dashed var(--bd);color:var(--tx2);font-size:11px;cursor:pointer">＋ Add an item</button>'+
-        '<button onclick="_pmAddFat()" title="Cooking oil, butter and dressings don\'t show in a photo — this is why AI apps read low" style="flex:1;padding:8px;border-radius:var(--rs);background:var(--bg3);border:1px dashed var(--bd);color:var(--tx2);font-size:11px;cursor:pointer">＋ Hidden fat</button>'+
+        '<button onclick="_pmAddItem()" style="flex:1;padding:8px;border-radius:var(--rs);background:var(--bg3);border:1px dashed var(--bd);color:var(--tx2);font-size:var(--t-cap);cursor:pointer">＋ Add an item</button>'+
+        '<button onclick="_pmAddFat()" title="Cooking oil, butter and dressings don\'t show in a photo — this is why AI apps read low" style="flex:1;padding:8px;border-radius:var(--rs);background:var(--bg3);border:1px dashed var(--bd);color:var(--tx2);font-size:var(--t-cap);cursor:pointer">＋ Hidden fat</button>'+
       '</div>'+
       '<div style="display:flex;justify-content:space-between;align-items:center;border-top:2px solid var(--bd);margin-top:10px;padding-top:10px">'+
-        '<div style="font-size:13px;color:var(--tx);font-weight:600">'+(_pmG?'On the plate':'Total')+'</div>'+
-        '<div style="font-family:DM Mono,monospace;font-size:13px;color:var(--go)">'+
+        '<div style="font-size:var(--t-base);color:var(--tx);font-weight:600">'+(_pmG?'On the plate':'Total')+'</div>'+
+        '<div style="font-family:var(--font-text);font-size:var(--t-base);color:var(--go)">'+
           (_pmG ? (pm.items||[]).length + ' item' + ((pm.items||[]).length===1?'':'s')
                 : R(tot.cal)+' cal · P'+R(tot.pro)+' C'+R(tot.carb)+' F'+R(tot.fat))+
         '</div>'+
       '</div>'+
       ((!_pmG && (pm.low>0 || pm.high>0) && pm.high>pm.low)
-        ? '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-align:right;margin-top:4px">likely '+R(pm.low)+'\u2013'+R(pm.high)+' cal'+(pm.__web?' \u00b7 from the web':'')+'</div>'
+        ? '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-align:right;margin-top:4px">likely '+R(pm.low)+'\u2013'+R(pm.high)+' cal'+(pm.__web?' \u00b7 from the web':'')+'</div>'
         : '')+
       // A LOW-CONFIDENCE ESTIMATE SHOULD SAY SO AND OFFER THE WAY OUT, not commit to a number quietly.
       // This is v570's rule — the app stops saying what it cannot know — applied to the one screen that
       // guesses hardest.
       ((pm.confidence==='low')
-        ? '<div style="margin-top:10px;padding:10px;border-radius:var(--rm);background:var(--bg3);border:1px solid var(--bd)">'+
-            '<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-bottom:8px">I am not confident about this one. If you know what it was, telling me beats me guessing.</div>'+
-            '<button onclick="document.getElementById(\'pm-describe\')&&document.getElementById(\'pm-describe\').focus()" style="width:100%;padding:9px;border-radius:var(--rs);background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:12px;cursor:pointer">Tell me what it was</button>'+
+        ? '<div style="margin-top:10px;padding:10px;border-radius:var(--rm);background:var(--bg3)">'+
+            '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.5;margin-bottom:8px">I am not confident about this one. If you know what it was, telling me beats me guessing.</div>'+
+            '<button onclick="document.getElementById(\'pm-describe\')&&document.getElementById(\'pm-describe\').focus()" style="width:100%;padding:9px;border-radius:var(--rs);background:var(--go-bg);color:var(--go);font-size:var(--t-sm);cursor:pointer">Tell me what it was</button>'+
           '</div>'
         : '')+
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin:12px 0 6px">Add to</div>'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin:12px 0 6px">Add to</div>'+
       '<div style="display:flex;gap:6px;margin-bottom:10px">'+
-        meals.map(mm=>'<button onclick="_pmMeal(\''+mm[0]+'\')" style="flex:1;padding:8px 2px;border-radius:var(--rs);border:1px solid '+(sel===mm[0]?'var(--go)':'var(--bd)')+';background:'+(sel===mm[0]?'var(--go)':'var(--bg3)')+';color:'+(sel===mm[0]?'#1a1505':'var(--tx2)')+';font-size:11px;cursor:pointer">'+svgIcon(mm[1],13)+' '+mm[2]+'</button>').join('')+
+        meals.map(mm=>'<button onclick="_pmMeal(\''+mm[0]+'\')" style="flex:1;padding:8px 2px;border-radius:var(--rs);border:1px solid '+(sel===mm[0]?'var(--go)':'var(--bd)')+';background:'+(sel===mm[0]?'var(--go)':'var(--bg3)')+';color:'+(sel===mm[0]?'var(--on-tint)':'var(--tx2)')+';font-size:var(--t-cap);cursor:pointer">'+svgIcon(mm[1],13)+' '+mm[2]+'</button>').join('')+
       '</div>'+
       '<button class="btn primary" onclick="_pmLog()">Add '+pm.items.length+' item'+(pm.items.length===1?'':'s')+' to log</button>'+
       // Save the CORRECTED meal so re-logging is identical forever — the consistency Cal AI can\'t give
       // you (it re-scans to a different number every time). Fix it once; it sticks.
       '<button class="btn subtle" onclick="_pmSave()" style="margin-top:6px">'+svgIcon("save")+' Save this meal · re-log it identically</button>'+
-      '<div style="font-size:11px;color:var(--tx3);text-align:center;padding:8px 0 0;line-height:1.5">Tap any item to fix <b style="color:var(--tx2)">what it is</b> or its numbers. Heads up — photo estimates tend to read <b style="color:var(--tx2)">low</b> on hidden fats, so round up if in doubt.</div>'+
+      '<div style="font-size:var(--t-cap);color:var(--tx3);text-align:center;padding:8px 0 0;line-height:1.5">Tap any item to fix <b style="color:var(--tx2)">what it is</b> or its numbers. Heads up — photo estimates tend to read <b style="color:var(--tx2)">low</b> on hidden fats, so round up if in doubt.</div>'+
     '</div>';
 }
 function _pmAdj(i,d){ if(!_photoMeal||!_photoMeal.items[i])return; const it=_photoMeal.items[i]; it.mult=Math.max(0.25, Math.round(((it.mult||1)+d)*4)/4); _renderPhotoMeal(); }
@@ -1718,11 +1718,11 @@ function renderHungerNudge(){
   if(_hungerCheckedToday()) return;                 // already checked in today
   if(ls('totry_hunger_nudge_day')===today) return;  // once per day, and remembers a dismiss
   el.style.display='block';
-  el.innerHTML='<div style="display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--go-bd);border-radius:var(--rm);padding:11px 13px;margin-bottom:12px">'+
-    '<div style="font-size:20px;flex-shrink:0">'+svgIcon("moon",18)+'</div>'+
-    '<div style="flex:1;font-size:13px;color:var(--tx2);line-height:1.5">Late-snack hour. Before you reach for it — hungry, or something else?</div>'+
-    '<button onclick="_hungerNudgeGo()" style="flex-shrink:0;background:var(--go);border:none;color:#1a1505;border-radius:var(--rs);padding:7px 11px;font-size:12px;font-weight:600;cursor:pointer">Check in</button>'+
-    '<button onclick="_hungerNudgeDismiss()" aria-label="dismiss" style="flex-shrink:0;background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer;padding:2px;line-height:1">×</button>'+
+  el.innerHTML='<div style="display:flex;align-items:center;gap:10px;background:var(--bg3);border-radius:var(--rm);padding:11px 13px;margin-bottom:12px">'+
+    '<div style="font-size:var(--t-xl);flex-shrink:0">'+svgIcon("moon",18)+'</div>'+
+    '<div style="flex:1;font-size:var(--t-sm);color:var(--tx2);line-height:1.5">Late-snack hour. Before you reach for it — hungry, or something else?</div>'+
+    '<button onclick="_hungerNudgeGo()" style="flex-shrink:0;background:var(--go);border:none;color:var(--on-tint);border-radius:var(--rs);padding:7px 11px;font-size:var(--t-sm);font-weight:600;cursor:pointer">Check in</button>'+
+    '<button onclick="_hungerNudgeDismiss()" aria-label="dismiss" style="flex-shrink:0;background:none;border:none;color:var(--tx3);font-size:var(--t-base);cursor:pointer;padding:2px;line-height:1">×</button>'+
   '</div>';
 }
 function openHungerCheck(){
@@ -1730,10 +1730,10 @@ function openHungerCheck(){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center;max-height:90vh;overflow-y:auto">'+
     '<div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.25;margin-bottom:6px">Hungry — or something else?</div>'+
-    '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px">No wrong answer, no judgement. One honest second before you eat — the thing a calorie count can never tell you.</div>'+
+    '<div style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);line-height:1.25;margin-bottom:6px">Hungry — or something else?</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:16px">No wrong answer, no judgement. One honest second before you eat — the thing a calorie count can never tell you.</div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
-      _HUNGER_REASONS.map(r=>'<button onclick="_hungerPick(\''+r.id+'\')" style="display:flex;align-items:center;gap:9px;padding:13px;border-radius:var(--rm);background:var(--bg3);border:1px solid var(--bd);color:var(--tx);font-size:13px;cursor:pointer;text-align:left"><span style="font-size:19px;flex-shrink:0">'+r.emoji+'</span><span>'+r.label+'</span></button>').join('')+
+      _HUNGER_REASONS.map(r=>'<button onclick="_hungerPick(\''+r.id+'\')" style="display:flex;align-items:center;gap:9px;padding:13px;border-radius:var(--rm);background:var(--bg3);color:var(--tx);font-size:var(--t-base);cursor:pointer;text-align:left"><span style="font-size:var(--t-hd);flex-shrink:0">'+r.emoji+'</span><span>'+r.label+'</span></button>').join('')+
     '</div>'+
     '<button class="btn quiet" onclick="closeModal(this)" style="margin-top:12px">Skip</button>'+
   '</div>';
@@ -1755,7 +1755,7 @@ function _hungerPick(id){
   };
   const r=R[id]||R.habit;
   const n=_hungerCount7(id);
-  const patternLine = n>=3 ? '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.04em;margin-top:14px;line-height:1.5">That’s '+(n+1)+' times this week you’ve eaten for this, not hunger. Worth knowing — gently.</div>' : '';
+  const patternLine = n>=3 ? '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);letter-spacing:0.01em;margin-top:14px;line-height:1.5">That’s '+(n+1)+' times this week you’ve eaten for this, not hunger. Worth knowing — gently.</div>' : '';
   let moveBtn='';
   if(r.move==='feel') moveBtn='<button class="btn primary" onclick="closeModal(this);openFeelingDoor()" style="margin-bottom:8px">Sit with it first</button>';
   else if(r.move==='breath') moveBtn='<button class="btn primary" onclick="closeModal(this);openBreath(\'settle\',{reason:\'eating\'})" style="margin-bottom:8px">One slow breath first</button>';
@@ -1763,8 +1763,8 @@ function _hungerPick(id){
   const mm=document.createElement('div'); mm.className='modal-bg open'; mm.style.alignItems='center';
   mm.innerHTML='<div class="modal" style="text-align:center">'+
     '<div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.25;margin-bottom:10px">'+r.t+'</div>'+
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:18px">'+r.b+'</div>'+
+    '<div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);line-height:1.25;margin-bottom:10px">'+r.t+'</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:18px">'+r.b+'</div>'+
     moveBtn+
     '<button class="btn subtle" onclick="closeModal(this)">Eat anyway — no shame</button>'+
     patternLine+
@@ -1833,9 +1833,9 @@ async function estimateMealMacros(description){
       card.className='food-result';
       card.style.cssText='border:1px solid var(--go-bd);cursor:default';
       const itemsHtml=(meal.items||[]).map(it=>
-        '<div style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;font-size:12px;border-bottom:1px solid var(--bd)">'+
-          '<span style="color:var(--tx2)">'+(it.food||'item')+' <span style="color:var(--tx3)">'+(it.amount||'')+'</span>'+(it.estimated?' <span style="color:var(--go);font-size:9px">~est</span>':'')+'</span>'+
-          '<span style="color:var(--tx3);font-family:DM Mono,monospace;font-size:10px;white-space:nowrap">'+Math.round(it.cal||0)+' cal</span>'+
+        '<div style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;font-size:var(--t-sm);border-bottom:1px solid var(--bd)">'+
+          '<span style="color:var(--tx2)">'+(it.food||'item')+' <span style="color:var(--tx3)">'+(it.amount||'')+'</span>'+(it.estimated?' <span style="color:var(--go);font-size:var(--t-micro)">~est</span>':'')+'</span>'+
+          '<span style="color:var(--tx3);font-family:var(--font-text);font-size:var(--t-mini);white-space:nowrap">'+Math.round(it.cal||0)+' cal</span>'+
         '</div>').join('');
       // _escFew on BOTH: meal.name is a MODEL'S REPLY, and `description` is what the person typed —
       // which is also what was put in the prompt. CLAUDE.md names this exact pair as one class.
@@ -1852,7 +1852,7 @@ async function estimateMealMacros(description){
       const isVague = meal.vague === true || itemsAllEstimated;
       if(isVague){
         const vagueNote=document.createElement('div');
-        vagueNote.style.cssText='margin-top:10px;padding:10px 12px;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rs);font-size:12px;color:var(--tx2);line-height:1.5';
+        vagueNote.style.cssText='margin-top:10px;padding:10px 12px;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rs);font-size:var(--t-sm);color:var(--tx2);line-height:1.5';
         vagueNote.innerHTML='<span style="color:var(--go)">'+svgIcon("sparkle",14)+'</span> This was a little vague, so these are estimates. For a more accurate entry, add amounts \u2014 e.g. <span style="color:var(--tx)">\u201c200g chicken, 1 cup rice\u201d</span> \u2014 and search again. Or log the estimate as-is.';
         res.appendChild(vagueNote);
         const refineBtn=document.createElement('button');
@@ -1869,7 +1869,7 @@ async function estimateMealMacros(description){
       logBtn.onclick=()=>logEstimatedMeal();
       res.appendChild(logBtn);
       const note=document.createElement('p');
-      note.style.cssText='font-size:11px;color:var(--tx3);text-align:center;padding:10px;line-height:1.5';
+      note.style.cssText='font-size:var(--t-cap);color:var(--tx3);text-align:center;padding:10px;line-height:1.5';
       note.textContent='Logs as one combined entry. Items you gave amounts for are used as-is; vague items use normal servings.';
       res.appendChild(note);
       return;
@@ -1919,7 +1919,7 @@ async function searchFoodOnline(query){
   // watching exactly that happen on 17% battery.
   if(res){
     if(typeof foodWorking === 'function') foodWorking(res, 'Looking up ' + query + ' on the web\u2026');
-    else res.innerHTML = '<p class="pulsing" style="font-family:\'Cormorant Garamond\',serif;font-size:15px;font-style:italic;color:var(--tx3);text-align:center;padding:14px">Searching the web\u2026</p>';
+    else res.innerHTML = '<p class="pulsing" style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;color:var(--tx3);text-align:center;padding:14px">Searching the web\u2026</p>';
   }
   const prompt='Find the real nutrition facts for this specific food/product by searching the web: "'+query+'".\n'+
     'Prioritise AUSTRALIAN sources and products first (the user base is in Australia): the brand\u2019s AU site, Woolworths/Coles, FSANZ/AUSNUT, then broaden to other regions only if needed.\n'+
@@ -2171,7 +2171,7 @@ async function openBarcodeScanner(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:8px">Scan a barcode</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">The barcode itself \u2014 the striped lines and digits, not the meal. Take a photo or pick one from your library, and we\'ll read the number and look it up.</p>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px;line-height:1.5">The barcode itself \u2014 the striped lines and digits, not the meal. Take a photo or pick one from your library, and we\'ll read the number and look it up.</p>' +
     // NO capture= HERE, DELIBERATELY. capture="environment" does not "hint" the rear camera on iOS — it
     // FORCES it, removing Photo Library from the picker entirely, while the sheet copy promised a
     // library option that could never appear. Without it iOS offers Photo Library / Take Photo /
@@ -2181,10 +2181,10 @@ async function openBarcodeScanner(){
     '<button class="btn primary" id="barcode-live-btn" style="display:none;margin-bottom:8px" onclick="startLiveBarcodeScan()">'+svgIcon("barcode")+' Scan with camera</button>' +
     '<input type="file" id="barcode-photo-input" accept="image/*" style="display:none" onchange="readBarcodePhoto(event)">' +
     '<button class="btn primary" id="barcode-photo-btn" onclick="document.getElementById(\'barcode-photo-input\').click()" style="margin-bottom:8px">'+svgIcon("camera")+' Barcode photo \u2014 take or choose</button>' +
-    '<div id="barcode-photo-status" style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);text-align:center;margin:6px 0;min-height:16px"></div>' +
-    '<div style="display:flex;align-items:center;gap:8px;margin:10px 0"><div style="flex:1;height:1px;background:var(--bd)"></div><span style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">or type it</span><div style="flex:1;height:1px;background:var(--bd)"></div></div>' +
-    '<input type="text" id="barcode-manual" placeholder="e.g. 5060337504331" inputmode="numeric" style="font-family:DM Mono,monospace;margin-bottom:10px">' +
-    '<button class="btn" onclick="lookupBarcode(document.getElementById(\'barcode-manual\').value)" style="margin-bottom:8px;background:var(--bg3);border:1px solid var(--bd)">Look up number</button>' +
+    '<div id="barcode-photo-status" style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3);text-align:center;margin:6px 0;min-height:16px"></div>' +
+    '<div style="display:flex;align-items:center;gap:8px;margin:10px 0"><div style="flex:1;height:1px;background:var(--bd)"></div><span style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">or type it</span><div style="flex:1;height:1px;background:var(--bd)"></div></div>' +
+    '<input type="text" id="barcode-manual" placeholder="e.g. 5060337504331" inputmode="numeric" style="font-family:var(--font-text);margin-bottom:10px">' +
+    '<button class="btn" onclick="lookupBarcode(document.getElementById(\'barcode-manual\').value)" style="margin-bottom:8px;background:var(--bg3)">Look up number</button>' +
     '<button class="btn quiet" onclick="closeBarcodeScanner()">Cancel</button>' +
   '</div>';
   document.body.appendChild(m);
@@ -2370,7 +2370,7 @@ async function lookupBarcode(barcode){
     }
     
     if(!d || d.status !== 1 || !d.product){
-      if(res) res.innerHTML = '<div style="padding:14px;background:var(--bg3);border-radius:var(--rm);font-size:13px;color:var(--tx2);line-height:1.5;text-align:center">Barcode <strong>' + barcode + '</strong> isn\'t in the food database. Try searching the product by name above, or tap "+ Create a custom food" to add it yourself.</div>';
+      if(res) res.innerHTML = '<div style="padding:14px;background:var(--bg3);border-radius:var(--rm);font-size:var(--t-sm);color:var(--tx2);line-height:1.5;text-align:center">Barcode <strong>' + barcode + '</strong> isn\'t in the food database. Try searching the product by name above, or tap "+ Create a custom food" to add it yourself.</div>';
       return;
     }
     
@@ -2450,9 +2450,9 @@ async function lookupBarcode(barcode){
           '<div class="fr-name">' + _escFew(food.name) + '</div>' +
           (food.brand ? '<div class="fr-brand">' + _escFew(food.brand) + '</div>' : '') +
           '<div class="fr-macros"><span class="fr-cal">' + food.cal + ' cal/100g</span><span>P: ' + food.pro + 'g</span><span>C: ' + food.carb + 'g</span><span>F: ' + food.fat + 'g</span><span style="color:var(--go)">Barcode</span></div>' +
-          '<div style="font-size:11px;color:var(--go);margin-top:4px">Tap to choose serving &amp; add →</div>' +
+          '<div style="font-size:var(--t-cap);color:var(--go);margin-top:4px">Tap to choose serving &amp; add →</div>' +
         '</div>' +
-        '<button onclick="document.getElementById(&apos;nut-search-results&apos;).innerHTML=&apos;&apos;" title="Wrong product? Clear it" style="background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;flex-shrink:0;line-height:1">&times;</button>' +
+        '<button onclick="document.getElementById(&apos;nut-search-results&apos;).innerHTML=&apos;&apos;" title="Wrong product? Clear it" style="background:none;border:none;color:var(--tx3);font-size:var(--t-hd);cursor:pointer;flex-shrink:0;line-height:1">&times;</button>' +
       '</div>';
     const tapZone = el.querySelector('#barcode-result-tap');
     if(tapZone) tapZone.onclick = () => openServingModal(food);
@@ -2460,7 +2460,7 @@ async function lookupBarcode(barcode){
     showToast('Found', food.name);
   }catch(e){
     console.error('[barcode] lookup error:', e);
-    if(res) res.innerHTML = '<div style="padding:14px;background:var(--re-bg);border:1px solid var(--re-bd);border-radius:var(--rm);font-size:13px;color:var(--re)">Lookup failed. Check your connection and try again.</div>';
+    if(res) res.innerHTML = '<div style="padding:14px;background:var(--re-bg);border-radius:var(--rm);font-size:var(--t-base);color:var(--re)">Lookup failed. Check your connection and try again.</div>';
   }
 }
 
@@ -2473,18 +2473,18 @@ function openRecipeBuilder(){
   
   let listHtml = '';
   if(recipes.length){
-    listHtml = '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;margin-top:14px">Your saved recipes</div>';
+    listHtml = '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px;margin-top:14px">Your saved recipes</div>';
     recipes.forEach((r, i) => {
       const totalCal = r.ingredients.reduce((a, ing) => a + (ing.cal || 0), 0);
       const totalPro = r.ingredients.reduce((a, ing) => a + (ing.pro || 0), 0);
       const perServing = r.servings && r.servings > 1 ? ' · ' + Math.round(totalCal/r.servings) + ' cal/serving' : '';
-      listHtml += '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:12px;margin-bottom:8px;cursor:pointer" onclick="logRecipeAsMeal(' + i + ')">' +
-        '<div style="font-size:14px;color:var(--tx);margin-bottom:3px">' + _escFew(r.name) + '</div>' +
-        '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">' + Math.round(totalCal) + ' cal total · ' + Math.round(totalPro) + 'g protein · ' + r.ingredients.length + ' ingredients' + perServing + '</div>' +
+      listHtml += '<div style="background:var(--bg3);border-radius:var(--rm);padding:12px;margin-bottom:8px;cursor:pointer" onclick="logRecipeAsMeal(' + i + ')">' +
+        '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:3px">' + _escFew(r.name) + '</div>' +
+        '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">' + Math.round(totalCal) + ' cal total · ' + Math.round(totalPro) + 'g protein · ' + r.ingredients.length + ' ingredients' + perServing + '</div>' +
         '<div style="display:flex;gap:6px;margin-top:8px">' +
-          '<button class="btn" style="flex:1;padding:6px 8px;font-size:11px" onclick="event.stopPropagation();logRecipeAsMeal(' + i + ')">Log this</button>' +
-          '<button class="btn" style="flex:1;padding:6px 8px;font-size:11px" onclick="event.stopPropagation();editRecipe(' + i + ')">Edit</button>' +
-          '<button class="btn danger" style="width:auto;padding:6px 8px;font-size:11px" onclick="event.stopPropagation();deleteRecipe(' + i + ')">×</button>' +
+          '<button class="btn" style="flex:1;padding:6px 8px;font-size:var(--t-cap)" onclick="event.stopPropagation();logRecipeAsMeal(' + i + ')">Log this</button>' +
+          '<button class="btn" style="flex:1;padding:6px 8px;font-size:var(--t-cap)" onclick="event.stopPropagation();editRecipe(' + i + ')">Edit</button>' +
+          '<button class="btn danger" style="width:auto;padding:6px 8px;font-size:var(--t-cap)" onclick="event.stopPropagation();deleteRecipe(' + i + ')">×</button>' +
         '</div>' +
       '</div>';
     });
@@ -2494,11 +2494,11 @@ function openRecipeBuilder(){
   
   m.innerHTML = '<div class="modal" style="max-height:88vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:8px">My recipes</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:6px">Build meals once, log them in one tap.</p>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:6px">Build meals once, log them in one tap.</p>' +
     listHtml +
     '<div style="display:flex;gap:8px;margin-top:10px;margin-bottom:8px">' +
       '<button class="btn primary" onclick="openPasteRecipe()" style="flex:1">'+svgIcon("file")+' Paste a recipe</button>' +
-      '<button class="btn" onclick="newRecipe()" style="flex:1;background:var(--bg3);border:1px solid var(--bd)">+ Build manually</button>' +
+      '<button class="btn" onclick="newRecipe()" style="flex:1;background:var(--bg3)">+ Build manually</button>' +
     '</div>' +
     '<button class="btn" onclick="closeModal(this)">Done</button>' +
   '</div>';
@@ -2519,8 +2519,8 @@ function openPasteRecipe(){
   const m=document.createElement('div'); m.className='modal-bg open';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
     '<h3 style="margin-bottom:6px">Paste a recipe</h3>'+
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Paste the ingredients from anywhere — a website, a note, a message. I’ll turn them into a recipe with macros you can edit. Add how many servings it makes if you know.</p>'+
-    '<textarea id="paste-recipe-text" placeholder="500g chicken breast\n2 cups basmati rice\n1 tbsp olive oil\n1 onion\n\nMakes 4 servings" style="min-height:150px;font-size:16px;line-height:1.5;margin-bottom:12px"></textarea>'+
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Paste the ingredients from anywhere — a website, a note, a message. I’ll turn them into a recipe with macros you can edit. Add how many servings it makes if you know.</p>'+
+    '<textarea id="paste-recipe-text" placeholder="500g chicken breast\n2 cups basmati rice\n1 tbsp olive oil\n1 onion\n\nMakes 4 servings" style="min-height:150px;font-size:var(--t-base);line-height:1.5;margin-bottom:12px"></textarea>'+
     '<button class="btn primary" onclick="parsePastedRecipe()" style="margin-bottom:8px">Build the recipe</button>'+
     '<button class="btn" onclick="closeModal(this)">Cancel</button>'+
   '</div>';
@@ -2569,8 +2569,8 @@ function editRecipe(idx, prefill){
     '<input type="text" id="recipe-name" value="' + (recipe.name || '').replace(/"/g, '&quot;') + '" placeholder="e.g. Chicken & rice bowl" style="margin-bottom:10px">' +
     '<div class="eyebrow">Servings (how many meals does this make?)</div>' +
     '<input type="number" id="recipe-servings" value="' + (recipe.servings || 1) + '" min="1" style="margin-bottom:14px">' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Ingredients</div>' +
-    '<button class="btn" style="margin-bottom:10px;background:var(--bg3);border:1px solid var(--bd);font-size:12px" onclick="window.__recipeScan=true;openBarcodeScanner()">'+svgIcon("camera")+' Scan an ingredient</button>' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Ingredients</div>' +
+    '<button class="btn" style="margin-bottom:10px;background:var(--bg3);font-size:var(--t-sm)" onclick="window.__recipeScan=true;openBarcodeScanner()">'+svgIcon("camera")+' Scan an ingredient</button>' +
     '<div id="recipe-ingredients" style="margin-bottom:10px"></div>' +
     '<div style="display:flex;gap:6px;margin-bottom:14px">' +
       '<input type="text" id="recipe-add-name" placeholder="Ingredient (e.g. 100g chicken)" style="flex:2">' +
@@ -2582,7 +2582,7 @@ function editRecipe(idx, prefill){
       '<input type="number" id="recipe-add-fat" placeholder="F (g)" style="flex:1">' +
       '<button class="btn primary" style="width:auto;padding:8px 12px" onclick="addRecipeIngredient()">+</button>' +
     '</div>' +
-    '<div id="recipe-totals" style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:10px;margin-bottom:14px;font-family:DM Mono,monospace;font-size:11px;color:var(--tx2);text-align:center"></div>' +
+    '<div id="recipe-totals" style="background:var(--bg3);border-radius:var(--rs);padding:10px;margin-bottom:14px;font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx2);text-align:center"></div>' +
     '<button class="btn primary" onclick="saveCurrentRecipe()" style="margin-bottom:8px">Save recipe</button>' +
     '<button class="btn" onclick="closeModal(this)">Cancel</button>' +
   '</div>';
@@ -2602,13 +2602,13 @@ function renderRecipeIngredients(){
     box.innerHTML = '';
     r.ingredients.forEach((ing, i) => {
       const row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid var(--bd);font-size:12px';
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px;border-bottom:1px solid var(--bd);font-size:var(--t-sm)';
       // addRecipeIngredient() reads a free-text <input> and pushes it straight in, so this is the
       // person's own typing going out as live HTML. The static scan that found the other injection
       // doors missed this one because the value never passes through a shared sink.
       row.innerHTML = '<div style="flex:1;color:var(--tx)">' + _escFew(ing.name) + '</div>' +
-        '<div style="font-family:DM Mono,monospace;color:var(--tx3);font-size:10px">' + Math.round(ing.cal||0) + 'kcal · P' + Math.round(ing.pro||0) + ' C' + Math.round(ing.carb||0) + ' F' + Math.round(ing.fat||0) + '</div>' +
-        '<button onclick="removeRecipeIngredient(' + i + ')" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer;padding:0 4px">×</button>';
+        '<div style="font-family:var(--font-text);color:var(--tx3);font-size:var(--t-mini)">' + Math.round(ing.cal||0) + 'kcal · P' + Math.round(ing.pro||0) + ' C' + Math.round(ing.carb||0) + ' F' + Math.round(ing.fat||0) + '</div>' +
+        '<button onclick="removeRecipeIngredient(' + i + ')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-base);cursor:pointer;padding:0 4px">×</button>';
       box.appendChild(row);
     });
   }
@@ -2743,13 +2743,13 @@ function openRepeatDay(){
   const row=(label, count, act)=>{
     const dead = !count;
     return '<button '+(dead?'disabled':'onclick="closeModal(this);'+act+'"')+
-      ' style="width:100%;text-align:left;padding:13px 14px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);margin-bottom:8px;color:'+(dead?'var(--tx3)':'var(--tx)')+';font-size:14px;cursor:'+(dead?'default':'pointer')+';opacity:'+(dead?'0.45':'1')+'">'+
-      label+'<span style="display:block;font-size:11px;color:var(--tx3);margin-top:2px">'+(count?(count+' item'+(count>1?'s':'')+' to copy'):'nothing logged')+'</span></button>';
+      ' style="width:100%;text-align:left;padding:13px 14px;background:var(--bg3);border-radius:var(--rm);margin-bottom:8px;color:'+(dead?'var(--tx3)':'var(--tx)')+';font-size:var(--t-sm);cursor:'+(dead?'default':'pointer')+';opacity:'+(dead?'0.45':'1')+'">'+
+      label+'<span style="display:block;font-size:var(--t-cap);color:var(--tx3);margin-top:2px">'+(count?(count+' item'+(count>1?'s':'')+' to copy'):'nothing logged')+'</span></button>';
   };
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:6px">Repeat a day</div>'+
-    '<div style="text-align:center;font-size:12px;color:var(--tx3);margin-bottom:14px">Copy a previous day&rsquo;s meals into today</div>'+
+    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);margin-bottom:6px">Repeat a day</div>'+
+    '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px">Copy a previous day&rsquo;s meals into today</div>'+
     row('Yesterday', yCount, 'repeatYesterdayMeals()')+
     row('This '+lwDow+', last week', lwCount, 'repeatLastWeekday()')+
     '<button class="btn quiet" onclick="closeModal(this)" style="margin-top:4px">Cancel</button>'+
@@ -2801,13 +2801,13 @@ function repeatMealsFrom(daysAgo, label){
   srcMeals.forEach((e, i) => {
     itemsHtml += '<label style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid var(--bd);cursor:pointer">' +
       '<input type="checkbox" data-idx="' + i + '" checked style="width:auto">' +
-      '<div style="flex:1"><div style="font-size:13px;color:var(--tx)">' + _escFew(e.name) + '</div>' +
-      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">' + e.serving + ' · ' + e.cal + ' cal</div></div>' +
+      '<div style="flex:1"><div style="font-size:var(--t-base);color:var(--tx)">' + _escFew(e.name) + '</div>' +
+      '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">' + e.serving + ' · ' + e.cal + ' cal</div></div>' +
     '</label>';
   });
   m.innerHTML = '<div class="modal" style="max-height:88vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:8px">Repeat ' + (label||('the day before ' + ((typeof nutDayWord==='function')?nutDayWord():'today'))) + '</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:10px">Pick which meals to log '+((typeof nutIsToday==='function' && !nutIsToday() && typeof nutDayLabel==='function') ? ('on '+nutDayLabel()) : 'today')+'.</p>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px">Pick which meals to log '+((typeof nutIsToday==='function' && !nutIsToday() && typeof nutDayLabel==='function') ? ('on '+nutDayLabel()) : 'today')+'.</p>' +
     '<div id="repeat-yesterday-list">' + itemsHtml + '</div>' +
     '<button class="btn primary" onclick="confirmRepeatYesterday()" style="margin-top:10px;margin-bottom:8px">Log selected</button>' +
     '<button class="btn" onclick="closeModal(this)">Cancel</button>' +
@@ -2964,9 +2964,9 @@ function openPortionGuide(){
   ];
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:4px">Estimate by hand</div>'+
+    '<div style="text-align:center;font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);margin-bottom:4px">Estimate by hand</div>'+
     '<div class="empty-note">No scale? Your hand is always with you. A rough log beats no log.</div>'+
-    rows.map(r=>'<div style="display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-top:1px solid var(--bd)"><div style="font-size:26px;flex-shrink:0;width:34px;text-align:center">'+r[0]+'</div><div><div style="font-size:14px;color:var(--tx);font-weight:500">'+r[1]+'</div><div style="font-size:12px;color:var(--tx3);line-height:1.5">'+r[2]+'</div></div></div>').join('')+
+    rows.map(r=>'<div style="display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-top:1px solid var(--bd)"><div style="font-size:var(--t-title1);flex-shrink:0;width:34px;text-align:center">'+r[0]+'</div><div><div style="font-size:var(--t-base);color:var(--tx);font-weight:500">'+r[1]+'</div><div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5">'+r[2]+'</div></div></div>').join('')+
     '<button class="btn subtle" onclick="closeModal(this)" style="margin-top:14px">Got it</button>'+
   '</div>';
   document.body.appendChild(m); if(typeof haptic==='function') haptic('tap');
@@ -3089,7 +3089,7 @@ function updateServingPreview(){
     if(currentFood.vit_c > 0) micros.push('Vit C ' + (Math.round(currentFood.vit_c * microMult * 10) / 10) + 'mg');
     
     if(micros.length){
-      microPreview.innerHTML = '<div style="color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px;font-size:9px">Micros (selected)</div>' + micros.join(' · ');
+      microPreview.innerHTML = '<div style="color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px;font-size:var(--t-micro)">Micros (selected)</div>' + micros.join(' · ');
       microPreview.style.display = 'block';
     } else {
       microPreview.style.display = 'none';
@@ -3345,7 +3345,7 @@ function renderSavedMeals(){
           ? ('<div class="fr-macros"><span style="color:var(--tx3)">' + m.items.length + ' item' + (m.items.length>1?'s':'') + '</span></div></div>')
           : ('<div class="fr-macros"><span class="fr-cal">' + totCal + ' cal</span><span style="color:var(--tx3)">' + m.items.length + ' item' + (m.items.length>1?'s':'') + '</span></div></div>')) +
         '<button class="fli-del" onclick="deleteSavedMeal('+m.id+')" title="Delete this saved meal">&times;</button>' +
-        '<button onclick="logSavedMeal('+m.id+')" title="Log this meal" style="background:var(--go);border:none;color:#1a1505;font-size:18px;font-weight:700;width:34px;height:34px;border-radius:var(--rs);cursor:pointer;flex-shrink:0;line-height:1">+</button>' +
+        '<button onclick="logSavedMeal('+m.id+')" title="Log this meal" style="background:var(--go);border:none;color:var(--on-tint);font-size:var(--t-hd);font-weight:700;width:34px;height:34px;border-radius:var(--rs);cursor:pointer;flex-shrink:0;line-height:1">+</button>' +
       '</div>';
     }).join('');
 }
@@ -3502,8 +3502,8 @@ function renderRecentFoods(){
                '<span style="color:var(--tx3)">' + _escFew(String(_qs.label || '')) + '</span>' +
                (f.count>1?'<span style="color:var(--tx3)">×'+f.count+'</span>':'') + '</div>')) +
         '</div>' +
-        '<button onclick="toggleFavFood(&apos;' + safe + '&apos;)" style="background:none;border:none;color:' + starColor + ';font-size:18px;cursor:pointer;padding:4px;flex-shrink:0">' + star + '</button>' +
-        '<button onclick="quickLogRecent(&apos;' + safe + '&apos;)" title="Log instantly" style="background:var(--go);border:none;color:#1a1505;font-size:18px;font-weight:700;width:34px;height:34px;border-radius:var(--rs);cursor:pointer;flex-shrink:0;line-height:1">+</button>' +
+        '<button onclick="toggleFavFood(&apos;' + safe + '&apos;)" style="background:none;border:none;color:' + starColor + ';font-size:var(--t-hd);cursor:pointer;padding:4px;flex-shrink:0">' + star + '</button>' +
+        '<button onclick="quickLogRecent(&apos;' + safe + '&apos;)" title="Log instantly" style="background:var(--go);border:none;color:var(--on-tint);font-size:var(--t-hd);font-weight:700;width:34px;height:34px;border-radius:var(--rs);cursor:pointer;flex-shrink:0;line-height:1">+</button>' +
       '</div>';
     }).join('');
 }
@@ -3580,8 +3580,8 @@ function renderFoodGroups(){
   const order = ['Protein','Veg','Fruit','Grains','Dairy','Treats'];
   box.innerHTML = '<div class="card"><div class="card-hd" style="margin-bottom:6px">Food groups \u00b7 last 7 days</div>'+
     '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">'+
-    order.map(g => '<span style="font-family:DM Mono,monospace;font-size:10px;padding:4px 9px;border-radius:20px;background:var(--bg3);border:1px solid var(--bd);color:'+(counts[g]>0?'var(--tx2)':'var(--tx3)')+'">'+g+' '+counts[g]+'</span>').join('')+
-    '</div><div style="font-size:12px;color:var(--tx3);line-height:1.5">'+nudge+' <span style="opacity:0.7">(rough read from food names)</span></div></div>';
+    order.map(g => '<span style="font-family:var(--font-text);font-size:var(--t-mini);padding:4px 9px;border-radius:20px;background:var(--bg3);color:'+(counts[g]>0?'var(--tx2)':'var(--tx3)')+'">'+g+' '+counts[g]+'</span>').join('')+
+    '</div><div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5">'+nudge+' <span style="opacity:0.7">(rough read from food names)</span></div></div>';
 }
 
 // ── NOURISHMENT SCORE ──────────────────────────────────────────────────────────────────────────
@@ -3698,17 +3698,17 @@ function renderNourishmentScore(totals, goals){
             '<circle cx="27" cy="27" r="22" fill="none" stroke="var(--bg4)" stroke-width="5"/>'+
             '<circle cx="27" cy="27" r="22" fill="none" stroke="'+r.col+'" stroke-width="5" stroke-linecap="round" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+(C*(1-r.score/100)).toFixed(1)+'"/>'+
           '</svg>'+
-          '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:DM Mono,monospace;font-size:16px;color:var(--tx)">'+r.score+'</div>'+
+          '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-text);font-size:var(--t-base);color:var(--tx)">'+r.score+'</div>'+
         '</div>'+
         '<div style="flex:1;min-width:0">'+
-          '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em">Nourishment · ' + ((typeof nutDayLabel==='function') ? nutDayLabel().toLowerCase() : 'today') + '</div>'+
-          '<div style="font-size:15px;color:'+r.col+';font-weight:600">'+r.tier+'</div>'+
-          '<div style="font-size:11px;color:var(--tx3);line-height:1.4;margin-top:2px">'+r.tip+'</div>'+
-      (r.basis ? '<div style="font-size:10px;color:var(--tx3);opacity:.75;line-height:1.4;margin-top:5px">'+
+          '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">Nourishment · ' + ((typeof nutDayLabel==='function') ? nutDayLabel().toLowerCase() : 'today') + '</div>'+
+          '<div style="font-size:var(--t-base);color:'+r.col+';font-weight:600">'+r.tier+'</div>'+
+          '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.4;margin-top:2px">'+r.tip+'</div>'+
+      (r.basis ? '<div style="font-size:var(--t-mini);color:var(--tx3);opacity:.75;line-height:1.4;margin-top:5px">'+
         _escFew(r.basis)+'</div>' : '')+
         '</div>'+
       '</div>'+
-      (r.microsHit>0?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">'+r.microsHit+' of '+r.microsTotal+' vitamins &amp; minerals covered today</div>':'')+
+      (r.microsHit>0?'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">'+r.microsHit+' of '+r.microsTotal+' vitamins &amp; minerals covered today</div>':'')+
     '</div>';
 }
 // ── GENTLE MODE — numbers off, nourishment still counted ─────────────────────────────────────────
@@ -3807,14 +3807,14 @@ function _renderNourishCare(){
   if(!c || shown===weekKey){ el.style.display='none'; el.innerHTML=''; return; }
   el.style.display='block';
   el.innerHTML =
-    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:13px 15px;text-align:left">'+
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px">Just checking in</div>'+
-      '<div style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:10px">A few days this week came in low on what you logged. That might just be an unfinished diary — I can’t see what I don’t get told. But if counting has started to feel like something you can’t put down, that’s worth being honest about. You can keep logging with the numbers hidden, and talking to a real person about it is strength, not weakness.</div>'+
+    '<div style="background:var(--bg3);border-radius:var(--rm);padding:13px 15px;text-align:left">'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);letter-spacing:0.01em;text-transform:uppercase;margin-bottom:6px">Just checking in</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-bottom:10px">A few days this week came in low on what you logged. That might just be an unfinished diary — I can’t see what I don’t get told. But if counting has started to feel like something you can’t put down, that’s worth being honest about. You can keep logging with the numbers hidden, and talking to a real person about it is strength, not weakness.</div>'+
       '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-        '<button class="btn" style="width:auto;padding:7px 12px;font-size:12px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go)" onclick="if(!nutGentle())toggleNutGentle();_dismissNourishCare()">Turn the numbers off</button>'+
+        '<button class="btn" style="width:auto;padding:7px 12px;font-size:var(--t-sm);background:var(--go-bg);color:var(--go)" onclick="if(!nutGentle())toggleNutGentle();_dismissNourishCare()">Turn the numbers off</button>'+
         // Route to the FOOD-specific support that already exists (Butterfly Foundation, GP, Lifeline)
         // — the generic bridge names a priest and a mentor and never mentions eating at all.
-        '<button class="btn" style="width:auto;padding:7px 12px;font-size:12px" onclick="_dismissNourishCare();if(typeof showEDSupport===\'function\')showEDSupport();else if(typeof bridgeToRealHelp===\'function\')bridgeToRealHelp(\'heavy\')">Talk to someone</button>'+
+        '<button class="btn" style="width:auto;padding:7px 12px;font-size:var(--t-sm)" onclick="_dismissNourishCare();if(typeof showEDSupport===\'function\')showEDSupport();else if(typeof bridgeToRealHelp===\'function\')bridgeToRealHelp(\'heavy\')">Talk to someone</button>'+
         '<button class="btn quiet" style="width:auto;padding:7px 10px" onclick="_dismissNourishCare()">I’m okay</button>'+
       '</div>'+
     '</div>';
@@ -3847,10 +3847,10 @@ function applyNutGentle(eaten, goalCal){
     if(num){ num.textContent=w.w; num.style.color='var(--go)'; num.style.fontSize=(w.w.length>8?'12px':(w.w.length>6?'14px':'18px')); num.style.lineHeight='1.15'; num.style.maxWidth='74px'; num.style.textAlign='center'; num.style.whiteSpace='normal'; }
     if(lbl) lbl.textContent=w.s;
     ['nut-pro-goal-lbl','nut-carb-goal-lbl','nut-fat-goal-lbl'].forEach(function(id){ const el=g(id); if(el) el.textContent=''; });
-    if(line){ line.style.display='block'; line.innerHTML='<div style="font-size:12px;color:var(--tx2);line-height:1.55;padding:9px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm)">'+_escFew(_gentleCounsel(eaten, goalCal))+'</div>'; }
+    if(line){ line.style.display='block'; line.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55;padding:9px 12px;background:var(--bg3);border-radius:var(--rm)">'+_escFew(_gentleCounsel(eaten, goalCal))+'</div>'; }
   } else {
     Object.keys(RESTORE).forEach(function(id){ const el=g(id); if(el && el.style.display==='none') el.style.display=RESTORE[id]; });
-    const num=g('nut-cal'); if(num){ num.style.fontSize='26px'; num.style.maxWidth=''; num.style.lineHeight=''; num.style.whiteSpace=''; }
+    const num=g('nut-cal'); if(num){ num.style.fontSize='var(--t-title1)'; num.style.maxWidth=''; num.style.lineHeight=''; num.style.whiteSpace=''; }
     if(line){ line.style.display='none'; line.innerHTML=''; }
   }
   try{ _renderNourishCare(); }catch(_){}
@@ -3951,11 +3951,11 @@ function renderNutDayNav(){
   const n=((ls('totry_nutlog')||{})[nutDayKey()]||[]).length;
   const ago=Math.abs(_nutDayOff);
   ban.style.display='block';
-  ban.innerHTML='<div style="display:flex;align-items:center;gap:10px;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rm);padding:10px 12px;margin-bottom:12px">'+
-    '<div style="font-size:16px;flex-shrink:0">'+svgIcon("calendar")+'</div>'+
-    '<div style="flex:1;min-width:0;font-size:13px;color:var(--tx2);line-height:1.55">You’re on <span style="color:var(--go)">'+_escFew(name)+'</span> · '+ago+' day'+(ago===1?'':'s')+' back. Anything you log lands on that day.'+
+  ban.innerHTML='<div style="display:flex;align-items:center;gap:10px;background:var(--go-bg);border-radius:var(--rm);padding:10px 12px;margin-bottom:12px">'+
+    '<div style="font-size:var(--t-base);flex-shrink:0">'+svgIcon("calendar")+'</div>'+
+    '<div style="flex:1;min-width:0;font-size:var(--t-sm);color:var(--tx2);line-height:1.55">You’re on <span style="color:var(--go)">'+_escFew(name)+'</span> · '+ago+' day'+(ago===1?'':'s')+' back. Anything you log lands on that day.'+
       (n?'':' Nothing logged then — a gap isn’t a failure, it’s just a gap. Fill it in if you remember.')+'</div>'+
-    '<button onclick="nutGoToday()" style="flex-shrink:0;background:var(--go);border:none;color:#1a1505;border-radius:var(--rs);padding:7px 11px;font-size:12px;font-weight:600;cursor:pointer">Today</button>'+
+    '<button onclick="nutGoToday()" style="flex-shrink:0;background:var(--go);border:none;color:var(--on-tint);border-radius:var(--rs);padding:7px 11px;font-size:var(--t-sm);font-weight:600;cursor:pointer">Today</button>'+
   '</div>';
 }
 
@@ -3973,7 +3973,7 @@ function renderNutritionLog(){
     const st = computeNutStreak();
     dateEl.textContent = today;
     if(st.n >= 2){
-      dateEl.innerHTML = today + ' <span style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);margin-left:6px">'+svgIcon("flame")+' ' + st.n + '-day streak' + (st.todayLogged ? '' : ' \u00b7 log today to keep it') + '</span>';
+      dateEl.innerHTML = today + ' <span style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);margin-left:6px">'+svgIcon("flame")+' ' + st.n + '-day streak' + (st.todayLogged ? '' : ' \u00b7 log today to keep it') + '</span>';
       if(st.todayLogged) celebrateNutMilestone(st.n);
     }
   }
@@ -4029,7 +4029,7 @@ function renderNutritionLog(){
   }, {cal:0, pro:0, carb:0, fat:0});
   try{ if(typeof renderNourishmentScore==='function') renderNourishmentScore(totals, goals); }catch(_){}
   try{ if(typeof renderHungerNudge==='function') renderHungerNudge(); }catch(_){}
-  try{ const _nEl=document.getElementById('nut-nudge'); if(_nEl){ const _nd=(typeof _nutrientNudge==='function')?_nutrientNudge(totals,goals,entries):''; if(_nd&&_nd.text){ const _c=_nd.tone==='over'?'var(--re)':_nd.tone==='good'?'var(--gr)':'var(--go)'; _nEl.style.display='block'; _nEl.innerHTML='<div style="font-size:12px;color:'+_c+';line-height:1.55;padding:9px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);margin-top:10px">'+_nd.text+'</div>'; } else { _nEl.style.display='none'; _nEl.innerHTML=''; } } }catch(_){}
+  try{ const _nEl=document.getElementById('nut-nudge'); if(_nEl){ const _nd=(typeof _nutrientNudge==='function')?_nutrientNudge(totals,goals,entries):''; if(_nd&&_nd.text){ const _c=_nd.tone==='over'?'var(--re)':_nd.tone==='good'?'var(--gr)':'var(--go)'; _nEl.style.display='block'; _nEl.innerHTML='<div style="font-size:var(--t-sm);color:'+_c+';line-height:1.55;padding:9px 12px;background:var(--bg3);border-radius:var(--rm);margin-top:10px">'+_nd.text+'</div>'; } else { _nEl.style.display='none'; _nEl.innerHTML=''; } } }catch(_){}
   
   // Net calories: consumed − burned (from workouts, screenshots, Strava)
   const burns = ls('totry_calorie_burns') || {};
@@ -4093,13 +4093,13 @@ function renderNutritionLog(){
     const ev = ritualLog('totry_evenings').find(e => e.ts && new Date(e.ts).toLocaleDateString('en-AU') === today);
     const r = ev && ev.rings;
     if(r && (r.move||r.exercise||r.stand)){
-      const cell = (label,val,unit) => '<div style="flex:1;text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:2px">'+label+'</div><div style="font-size:15px;color:var(--tx);font-weight:500">'+(val!=null?val:'\u2014')+(val!=null?'<span style=\"font-size:10px;color:var(--tx3)\"> '+unit+'</span>':'')+'</div></div>';
+      const cell = (label,val,unit) => '<div style="flex:1;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:2px">'+label+'</div><div style="font-size:var(--t-base);color:var(--tx);font-weight:500">'+(val!=null?val:'\u2014')+(val!=null?'<span style=\"font-size:var(--t-mini);color:var(--tx3)\"> '+unit+'</span>':'')+'</div></div>';
       ringsEl.innerHTML = '<div style="display:flex;gap:8px;padding:10px;background:var(--bg3);border-radius:var(--rs)">'+
-        '<div style="display:flex;align-items:center;font-size:11px;color:var(--go);padding-right:6px">'+svgIcon("clock")+' Rings</div>'+
+        '<div style="display:flex;align-items:center;font-size:var(--t-cap);color:var(--go);padding-right:6px">'+svgIcon("clock")+' Rings</div>'+
         cell('Move', r.move, 'cal') + cell('Exercise', r.exercise, 'min') + cell('Stand', r.stand, 'hr') + '</div>';
       ringsEl.style.display = 'block';
     } else {
-      ringsEl.innerHTML = '<button onclick="go(&apos;reflect&apos;);setTimeout(function(){_stepToEveningField(&apos;evening-move&apos;)},320)" style="width:100%;background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;text-align:left;padding:14px 0;margin:-10px 0">'+svgIcon("clock")+' <span style="color:var(--go)">Add today\u2019s Watch rings</span> \u00b7 Move, Exercise, Stand</button>';
+      ringsEl.innerHTML = '<button onclick="go(&apos;reflect&apos;);setTimeout(function(){_stepToEveningField(&apos;evening-move&apos;)},320)" style="width:100%;background:none;border:none;color:var(--tx3);font-size:var(--t-sm);cursor:pointer;text-align:left;padding:14px 0;margin:-10px 0">'+svgIcon("clock")+' <span style="color:var(--go)">Add today\u2019s Watch rings</span> \u00b7 Move, Exercise, Stand</button>';
       ringsEl.style.display = 'block';
     }
   }
@@ -4112,11 +4112,11 @@ function renderNutritionLog(){
     if(todays.length){
       const names = todays.map(t => (t.title || 'Workout')).join(', ');
       trainEl.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">'+
-        '<div style="font-size:12px;color:var(--tx2);min-width:0;flex:1"><span style="color:var(--go)">'+svgIcon("dumbbell")+' Trained today:</span> '+names.replace(/</g,'&lt;')+'</div>'+
-        '<button onclick="go(&apos;train&apos;)" style="background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;flex-shrink:0;padding:16px 8px;margin:-16px -8px">View ›</button></div>';
+        '<div style="font-size:var(--t-sm);color:var(--tx2);min-width:0;flex:1"><span style="color:var(--go)">'+svgIcon("dumbbell")+' Trained today:</span> '+names.replace(/</g,'&lt;')+'</div>'+
+        '<button onclick="go(&apos;train&apos;)" style="background:none;border:none;color:var(--tx3);font-size:var(--t-cap);cursor:pointer;flex-shrink:0;padding:16px 8px;margin:-16px -8px">View ›</button></div>';
       trainEl.style.display = 'block';
     } else {
-      trainEl.innerHTML = '<button onclick="logCardioManually()" style="width:100%;background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;text-align:left;padding:14px 0;margin:-10px 0">'+svgIcon("dumbbell")+' No training logged today \u00b7 <span style="color:var(--go)">log a workout</span></button>';
+      trainEl.innerHTML = '<button onclick="logCardioManually()" style="width:100%;background:none;border:none;color:var(--tx3);font-size:var(--t-sm);cursor:pointer;text-align:left;padding:14px 0;margin:-10px 0">'+svgIcon("dumbbell")+' No training logged today \u00b7 <span style="color:var(--go)">log a workout</span></button>';
       trainEl.style.display = 'block';
     }
   }
@@ -4216,7 +4216,7 @@ function renderNutritionLog(){
     if(show){
       glanceEl.innerHTML =
         '<div style="display:flex;align-items:flex-start;gap:8px">'+
-          '<div style="flex:1;font-size:12px;color:var(--tx2);line-height:1.6">You\'ve got about <span style="color:var(--gr)">'+proLeft+'g protein</span> still to get today. If you\'re home: eggs, Greek yoghurt, chicken, or a quick shake. Out and about: a tin of tuna, jerky, a protein bar, or milk all travel well.</div>'+
+          '<div style="flex:1;font-size:var(--t-sm);color:var(--tx2);line-height:1.6">You\'ve got about <span style="color:var(--gr)">'+proLeft+'g protein</span> still to get today. If you\'re home: eggs, Greek yoghurt, chicken, or a quick shake. Out and about: a tin of tuna, jerky, a protein bar, or milk all travel well.</div>'+
           '<button onclick="ls(&apos;totry_glance_dismissed&apos;,new Date().toLocaleDateString(&apos;en-AU&apos;));document.getElementById(&apos;nut-macro-glance&apos;).style.display=&apos;none&apos;" class="fli-del" style="flex-shrink:0" aria-label="Dismiss this note">×</button>'+
         '</div>';
       glanceEl.style.display = 'block';
@@ -4254,16 +4254,16 @@ function renderNutritionLog(){
         // First-ever use: don't confront them with a setup wall or a feature list. One warm,
         // low-pressure step. Goals can derive from real intake later — just log one thing.
         list.innerHTML='<div style="text-align:center;padding:22px 14px;line-height:1.6">'+
-          '<div style="font-size:26px;margin-bottom:10px">'+svgIcon("utensils",24)+'</div>'+
-          '<div style="font-size:15px;color:var(--tx);margin-bottom:6px">Let\'s start simple.</div>'+
-          '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">Nothing to set up — the target above is only a starting point. Log one thing you ate today and we\'ll learn your rhythm from there.</div>'+
-          '<button class="btn" style="width:auto;padding:10px 20px;font-size:13px" onclick="document.getElementById(&apos;nut-search-in&apos;)?.focus()">Log one thing</button>'+
+          '<div style="font-size:var(--t-title1);margin-bottom:10px">'+svgIcon("utensils",24)+'</div>'+
+          '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:6px">Let\'s start simple.</div>'+
+          '<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px">Nothing to set up — the target above is only a starting point. Log one thing you ate today and we\'ll learn your rhythm from there.</div>'+
+          '<button class="btn" style="width:auto;padding:10px 20px;font-size:var(--t-base)" onclick="document.getElementById(&apos;nut-search-in&apos;)?.focus()">Log one thing</button>'+
           '</div>';
         _nutTailRenders(totals, goalCal);
         return;
       }
-      list.innerHTML='<div style="text-align:center;padding:18px 12px;font-size:13px;color:var(--tx3);line-height:1.6"><div style="font-size:24px;margin-bottom:8px">'+svgIcon("utensils",22)+'</div><div style="margin-bottom:4px;color:var(--tx2)">'+((typeof nutIsToday==='function'&&!nutIsToday())?(_escFew(nutDayLabel())+'\'s plate is empty.'):'Today\'s plate is empty.')+'</div><div style="font-size:11px">Search a food, scan a barcode, or describe a whole meal — the AI will estimate macros.</div>' +
-        (hadYesterday ? '<button class="btn" style="margin-top:12px;background:var(--bg3);border:1px solid var(--bd);font-size:12px;width:auto;padding:8px 14px" onclick="repeatYesterdayMeals()">↻ Copy ' + ((typeof nutIsToday==='function'&&!nutIsToday()) ? 'the day before' : 'yesterday\'s') + ' ' + log[yKey].length + ' items</button>' : '') +
+      list.innerHTML='<div style="text-align:center;padding:18px 12px;font-size:var(--t-sm);color:var(--tx3);line-height:1.6"><div style="font-size:var(--t-title1);margin-bottom:8px">'+svgIcon("utensils",22)+'</div><div style="margin-bottom:4px;color:var(--tx2)">'+((typeof nutIsToday==='function'&&!nutIsToday())?(_escFew(nutDayLabel())+'\'s plate is empty.'):'Today\'s plate is empty.')+'</div><div style="font-size:var(--t-cap)">Search a food, scan a barcode, or describe a whole meal — the AI will estimate macros.</div>' +
+        (hadYesterday ? '<button class="btn" style="margin-top:12px;background:var(--bg3);font-size:var(--t-sm);width:auto;padding:8px 14px" onclick="repeatYesterdayMeals()">↻ Copy ' + ((typeof nutIsToday==='function'&&!nutIsToday()) ? 'the day before' : 'yesterday\'s') + ' ' + log[yKey].length + ' items</button>' : '') +
         '</div>';
       _nutTailRenders(totals, goalCal);
       return;
@@ -4288,18 +4288,18 @@ function renderNutritionLog(){
       
       const header = document.createElement('div');
       header.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:8px 4px 4px 4px;margin-top:10px;border-bottom:1px solid var(--bd)';
-      header.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.1em">' + mealLabels[meal] + '</div>' +
+      header.innerHTML = '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx2);text-transform:uppercase;letter-spacing:0.01em">' + mealLabels[meal] + '</div>' +
         '<div style="display:flex;align-items:center;gap:8px">' +
-          (has ? '<button onclick="saveMealGroup(\''+meal+'\')" title="Save these foods as a reusable meal" style="background:none;border:none;color:var(--go);font-family:DM Mono,monospace;font-size:9px;cursor:pointer;min-height:34px;padding:0 8px;margin:-11px -8px;letter-spacing:0.05em">save meal</button>' : '') +
+          (has ? '<button onclick="saveMealGroup(\''+meal+'\')" title="Save these foods as a reusable meal" style="background:none;border:none;color:var(--go);font-family:var(--font-text);font-size:var(--t-micro);cursor:pointer;min-height:34px;padding:0 8px;margin:-11px -8px;letter-spacing:0.01em">save meal</button>' : '') +
           // Numbers off → the meal still lists what you ate, just not what it "cost".
-          ((has && !_gentleOn) ? '<span style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">' + mealCals + ' cal · ' + mealPro + 'g P</span>' : '') +
+          ((has && !_gentleOn) ? '<span style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">' + mealCals + ' cal · ' + mealPro + 'g P</span>' : '') +
         '</div>';
       list.appendChild(header);
       
       mealEntries.forEach(en => {
         const row=document.createElement('div');
         row.className='food-log-item';
-        row.innerHTML='<div style="min-width:0;flex:1"><div class="fli-name">'+_escFew(en.name)+'</div>'+((en.serving||en.qty)?'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3)">'+_escFew(en.serving||'serving')+(en.qty?(' \u00d7 '+en.qty):'')+'</div>':'')+'<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--tx3);margin-top:2px">P '+(Math.round((en.pro||0)*10)/10)+'g \u00b7 C '+(Math.round((en.carb||0)*10)/10)+'g \u00b7 F '+(Math.round((en.fat||0)*10)/10)+'g</div></div><div style="display:flex;align-items:center;gap:6px"><span class="fli-cal">'+en.cal+' cal</span><button class="fli-del" style="font-size:14px;color:var(--tx3)" onclick="editFoodEntry(\''+today+'\','+_jsCode(JSON.stringify(en.id))+')" title="Edit">'+svgIcon("edit")+'</button><button class="fli-del" onclick="deleteFoodEntry(\''+today+'\','+_jsCode(JSON.stringify(en.id))+')" aria-label="Delete '+_escFew(en.name)+'">&#215;</button></div>';
+        row.innerHTML='<div style="min-width:0;flex:1"><div class="fli-name">'+_escFew(en.name)+'</div>'+((en.serving||en.qty)?'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)">'+_escFew(en.serving||'serving')+(en.qty?(' \u00d7 '+en.qty):'')+'</div>':'')+'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px">P '+(Math.round((en.pro||0)*10)/10)+'g \u00b7 C '+(Math.round((en.carb||0)*10)/10)+'g \u00b7 F '+(Math.round((en.fat||0)*10)/10)+'g</div></div><div style="display:flex;align-items:center;gap:6px"><span class="fli-cal">'+en.cal+' cal</span><button class="fli-del" style="font-size:var(--t-sm);color:var(--tx3)" onclick="editFoodEntry(\''+today+'\','+_jsCode(JSON.stringify(en.id))+')" title="Edit">'+svgIcon("edit")+'</button><button class="fli-del" onclick="deleteFoodEntry(\''+today+'\','+_jsCode(JSON.stringify(en.id))+')" aria-label="Delete '+_escFew(en.name)+'">&#215;</button></div>';
         // NUMBERS OFF — strip the calorie figure and the macro breakdown from the row. What you ate
         // still shows (that IS the log, and the whole-life counsel still uses it); what it "cost" doesn't.
         if(_gentleOn){
@@ -4313,7 +4313,7 @@ function renderNutritionLog(){
       // "Add food" under every meal — MFP's core interaction, one tap from each meal to the search.
       const add=document.createElement('div');
       add.style.cssText='padding:'+(has?'8px':'9px')+' 4px 2px 4px';
-      add.innerHTML='<button onclick="selectMealChip(\''+meal+'\');var s=document.getElementById(\'nut-search-in\');if(s){s.scrollIntoView({behavior:\'smooth\',block:\'center\'});setTimeout(function(){s.focus();},300);}" style="background:none;border:none;color:'+(has?'var(--go)':'var(--tx3)')+';font-family:\'Outfit\',sans-serif;font-size:12px;cursor:pointer;padding:14px 10px;margin:-14px -10px;min-height:44px">+ Add food</button>';
+      add.innerHTML='<button onclick="selectMealChip(\''+meal+'\');var s=document.getElementById(\'nut-search-in\');if(s){s.scrollIntoView({behavior:\'smooth\',block:\'center\'});setTimeout(function(){s.focus();},300);}" style="background:none;border:none;color:'+(has?'var(--go)':'var(--tx3)')+';font-family:var(--font-text);font-size:var(--t-sm);cursor:pointer;padding:14px 10px;margin:-14px -10px;min-height:44px">+ Add food</button>';
       list.appendChild(add);
     });
   }
@@ -4424,18 +4424,18 @@ function renderNutWeeklyDigest(){
     const dir = Math.abs(trendDelta) < 75 ? 'steady' : (trendDelta > 0 ? 'up' : 'down');
     const dirColor = dir==='steady' ? 'var(--gr)' : 'var(--go)';
     const dirWord = dir==='steady' ? 'holding steady' : (dir==='up' ? 'trending up '+Math.abs(trendDelta)+' cal' : 'trending down '+Math.abs(trendDelta)+' cal');
-    trendLine = '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);font-size:12px;color:var(--tx2);line-height:1.6">Your 7-day average is <span style="color:'+dirColor+'">'+dirWord+'</span> vs the week before. The average is what matters — one big day or one light day barely moves it.</div>';
+    trendLine = '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);font-size:var(--t-sm);color:var(--tx2);line-height:1.6">Your 7-day average is <span style="color:'+dirColor+'">'+dirWord+'</span> vs the week before. The average is what matters — one big day or one light day barely moves it.</div>';
   }
   box.innerHTML =
     '<div class="card-hd" style="margin-bottom:8px">'+svgIcon("calendar")+' This week</div>' +
     '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px">' +
-      '<div style="background:var(--bg3);border-radius:var(--rs);padding:10px;text-align:center"><div style="font-family:DM Mono,monospace;font-size:18px;color:var(--tx)">'+avgCal.toLocaleString()+'</div><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em">avg cal/day</div></div>' +
-      '<div style="background:var(--bg3);border-radius:var(--rs);padding:10px;text-align:center"><div style="font-family:DM Mono,monospace;font-size:18px;color:var(--gr)">'+avgPro+'g</div><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em">avg protein</div></div>' +
-      '<div style="background:var(--bg3);border-radius:var(--rs);padding:10px;text-align:center"><div style="font-family:DM Mono,monospace;font-size:18px;color:var(--go)">'+daysLogged+'</div><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em">days logged</div></div>' +
+      '<div style="background:var(--bg3);border-radius:var(--rs);padding:10px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-hd);color:var(--tx)">'+avgCal.toLocaleString()+'</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">avg cal/day</div></div>' +
+      '<div style="background:var(--bg3);border-radius:var(--rs);padding:10px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-hd);color:var(--gr)">'+avgPro+'g</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">avg protein</div></div>' +
+      '<div style="background:var(--bg3);border-radius:var(--rs);padding:10px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-hd);color:var(--go)">'+daysLogged+'</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">days logged</div></div>' +
     '</div>' +
-    '<div style="font-size:12px;color:var(--tx2);line-height:1.6">You averaged <span style="color:'+(Math.abs(diff)<=150?'var(--gr)':'var(--go)')+'">'+avgCal.toLocaleString()+' cal</span> — '+(Math.abs(diff)<=150?'right around your '+goalCal.toLocaleString()+' goal.':(diff>0?Math.abs(diff)+' over your goal on average.':Math.abs(diff)+' under your goal on average.'))+'</div>' +
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">You averaged <span style="color:'+(Math.abs(diff)<=150?'var(--gr)':'var(--go)')+'">'+avgCal.toLocaleString()+' cal</span> — '+(Math.abs(diff)<=150?'right around your '+goalCal.toLocaleString()+' goal.':(diff>0?Math.abs(diff)+' over your goal on average.':Math.abs(diff)+' under your goal on average.'))+'</div>' +
     trendLine +
-    (topFoods.length ? '<div style="margin-top:8px;font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">Most logged: '+topFoods.map(f=>f[0].replace(/</g,'&lt;')+' ×'+f[1]).join(' · ')+'</div>' : '');
+    (topFoods.length ? '<div style="margin-top:8px;font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">Most logged: '+topFoods.map(f=>f[0].replace(/</g,'&lt;')+' ×'+f[1]).join(' · ')+'</div>' : '');
 }
 
 // Calorie-by-meal split bar (MFP's glanceable nutrition insight).
@@ -4468,7 +4468,7 @@ function renderMealSplit(){
   // the room of a real one. It arrives when there are actually two meals to compare.
   if(order.filter(m => meals[m] > 0).length < 2){ wrap.style.display='none'; return; }
   wrap.style.display='block';
-  const colors = {breakfast:'#E0A458', lunch:'var(--go)', dinner:'#9B7EC0', snack:'#6B97D6'};
+  const colors = {breakfast:'#E0A458', lunch:'var(--go)', dinner:'var(--pu)', snack:'#6B97D6'};
   const labels = {breakfast:'Breakfast', lunch:'Lunch', dinner:'Dinner', snack:'Snacks'};
   bar.innerHTML = order.filter(m=>meals[m]>0).map(m =>
     '<div style="width:' + ((meals[m]/total)*100).toFixed(1) + '%;background:' + colors[m] + '"></div>'
@@ -4576,9 +4576,9 @@ function renderAdaptiveTDEE(){
       box.innerHTML =
         '<div class="card" style="background:var(--bg2)">'+
           '<div style="display:flex;align-items:flex-start;gap:11px">'+
-            '<span style="font-size:17px;flex-shrink:0">'+svgIcon("chart")+'</span>'+
-            '<div style="flex:1"><div style="font-size:13px;color:var(--tx);font-weight:600">Your target adapts as you go</div>'+
-            '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">This isn’t a one-time number. Keep logging your food and weight — I learn your real burn from how your weight actually moves, and adjust your target on its own so it never goes stale.</div></div>'+
+            '<span style="font-size:var(--t-base);flex-shrink:0">'+svgIcon("chart")+'</span>'+
+            '<div style="flex:1"><div style="font-size:var(--t-base);color:var(--tx);font-weight:600">Your target adapts as you go</div>'+
+            '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-top:2px">This isn’t a one-time number. Keep logging your food and weight — I learn your real burn from how your weight actually moves, and adjust your target on its own so it never goes stale.</div></div>'+
           '</div>'+
         '</div>';
     } else { box.style.display='none'; }
@@ -4596,7 +4596,7 @@ function renderAdaptiveTDEE(){
     // positives, so a woman losing weight read "If this trend holds: ~+76.8kg in 4 weeks", which
     // says she will gain 76.8kg. An earlier round's unit sweep converted this line and reached for
     // the wrong one of the two formatters; converting a number correctly is only half the job.
-    forecastLine = '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:4px">If this trend holds: ~' + wFmt(in4w) + ' in 4 weeks.</div>';
+    forecastLine = '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);margin-top:4px">If this trend holds: ~' + wFmt(in4w) + ' in 4 weeks.</div>';
   }
   // THE LOOP CLOSER: if real burn differs meaningfully from the set goal, offer (never force)
   // a one-tap goal update. Consent-based, like everything in this app.
@@ -4610,19 +4610,19 @@ function renderAdaptiveTDEE(){
     : 'Your goal is set to <span style="color:var(--tx)">' + (goals.cal||2100).toLocaleString() + '</span> but your real maintenance is ~<span style="color:var(--go)">' + r.tdee.toLocaleString() + '</span>.';
   const goalSuggest = Math.abs(goalDiff) >= 150
     ? '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)">'+
-      '<div style="font-size:12px;color:var(--tx2);line-height:1.6">' + reflectLine + ' Want your goal to reflect reality?</div>'+
-      '<button class="btn" onclick="setCalGoalFromTDEE(' + r.tdee + ')" style="margin-top:8px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:12px">Set my target to ' + adjTarget.cal.toLocaleString() + ' cal</button>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">' + reflectLine + ' Want your goal to reflect reality?</div>'+
+      '<button class="btn" onclick="setCalGoalFromTDEE(' + r.tdee + ')" style="margin-top:8px;background:var(--go-bg);color:var(--go);font-size:var(--t-sm)">Set my target to ' + adjTarget.cal.toLocaleString() + ' cal</button>'+
       '</div>'
     : '';
   box.innerHTML =
     '<div class="eyebrow" style="color:var(--go);margin-bottom:6px">Your real burn · adaptive</div>' +
     '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px">' +
-      '<div style="font-family:Cormorant Garamond,serif;font-size:34px;color:var(--go);line-height:1">' + r.tdee.toLocaleString() + '</div>' +
-      '<div style="font-size:12px;color:var(--tx3)">cal/day maintenance</div>' +
+      '<div style="font-family:var(--font-display);font-weight:700;font-size:var(--t-2xl);color:var(--go);line-height:1">' + r.tdee.toLocaleString() + '</div>' +
+      '<div style="font-size:var(--t-sm);color:var(--tx3)">cal/day maintenance</div>' +
     '</div>' +
-    '<div style="font-size:12px;color:var(--tx2);line-height:1.6">Calculated from your real intake and weight trend over ' + r.days + ' days — not a formula. ' +
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">Calculated from your real intake and weight trend over ' + r.days + ' days — not a formula. ' +
       'You\'re <span style="color:' + dirColor + '">' + dir + '</span>' + (dir!=='maintaining' ? ' (' + wDelta(r.weightChangeKg) + ')' : '') + ' on about ' + r.avgIntake.toLocaleString() + ' cal/day.</div>' +
-    (r.trendWeight ? '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:6px;padding-top:6px;border-top:1px solid var(--bd)">Trend weight: ' + wFmt(r.trendWeight) + ' (smoothed, ignores daily water swings)</div>' : '') +
+    (r.trendWeight ? '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);margin-top:6px;padding-top:6px;border-top:1px solid var(--bd)">Trend weight: ' + wFmt(r.trendWeight) + ' (smoothed, ignores daily water swings)</div>' : '') +
     forecastLine +
     goalSuggest;
 }
@@ -4832,19 +4832,19 @@ function renderCyclingSetup(){
   const canCycle = T>0 && R>0;
   let body;
   if(!canCycle && !on){
-    body='<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:8px">Set your <span class="tlink" onclick="go(\'train\')">weekly training split</span> and I can shift carbs onto your training days automatically.</div>';
+    body='<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-top:8px">Set your <span class="tlink" onclick="go(\'train\')">weekly training split</span> and I can shift carbs onto your training days automatically.</div>';
   } else {
-    const modeBtn=(m,lbl,sub)=>'<button onclick="setCalCycling(true,\''+m+'\')" style="flex:1;text-align:left;padding:9px 11px;border-radius:var(--rs);border:1px solid '+((on&&mode===m)?'var(--go-bd)':'var(--bd)')+';background:'+((on&&mode===m)?'var(--go-bg)':'transparent')+';color:'+((on&&mode===m)?'var(--go)':'var(--tx2)')+';cursor:pointer;font-family:Outfit,sans-serif"><div style="font-size:12px;font-weight:600">'+lbl+'</div><div style="font-size:10px;color:var(--tx3);margin-top:1px">'+sub+'</div></button>';
-    body='<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin:8px 0 10px">'+(canCycle?('Using your split: <b style="color:var(--tx2)">'+T+' training</b> · <b style="color:var(--tx2)">'+R+' rest</b> days. Same weekly total, redistributed.'):'Set a training split so I know your days.')+'</div>'+
+    const modeBtn=(m,lbl,sub)=>'<button onclick="setCalCycling(true,\''+m+'\')" style="flex:1;text-align:left;padding:9px 11px;border-radius:var(--rs);border:1px solid '+((on&&mode===m)?'var(--go-bd)':'var(--bd)')+';background:'+((on&&mode===m)?'var(--go-bg)':'transparent')+';color:'+((on&&mode===m)?'var(--go)':'var(--tx2)')+';cursor:pointer;font-family:var(--font-text)"><div style="font-size:var(--t-sm);font-weight:600">'+lbl+'</div><div style="font-size:var(--t-mini);color:var(--tx3);margin-top:1px">'+sub+'</div></button>';
+    body='<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin:8px 0 10px">'+(canCycle?('Using your split: <b style="color:var(--tx2)">'+T+' training</b> · <b style="color:var(--tx2)">'+R+' rest</b> days. Same weekly total, redistributed.'):'Set a training split so I know your days.')+'</div>'+
       (canCycle?('<div style="display:flex;gap:8px;margin-bottom:8px">'+modeBtn('moderate','Moderate','±20% carbs')+modeBtn('aggressive','Aggressive','±35% carbs')+'</div>'):'')+
-      (on?'<button onclick="setCalCycling(false)" style="width:100%;background:none;border:1px solid var(--bd);color:var(--tx3);border-radius:var(--rs);padding:8px;font-size:11px;cursor:pointer">Turn cycling off</button>':'');
+      (on?'<button onclick="setCalCycling(false)" style="width:100%;background:none;color:var(--tx3);border-radius:var(--rs);padding:8px;font-size:var(--t-cap);cursor:pointer;background:var(--fill2)">Turn cycling off</button>':'');
   }
   box.innerHTML=
     '<div class="card" style="background:var(--bg2)">'+
       '<div style="display:flex;justify-content:space-between;align-items:center">'+
-        '<div><div class="card-hd" style="margin-bottom:2px">'+svgIcon("repeat",14)+' Calorie cycling'+(on?' <span style="font-family:DM Mono,monospace;font-size:9px;color:var(--go)">ON</span>':'')+'</div>'+
-          '<div style="font-size:11px;color:var(--tx3)">More carbs on training days, fewer on rest</div></div>'+
-        (on?'':'<button class="btn" style="width:auto;padding:7px 13px;font-size:12px;background:var(--go);color:#1a1505;border:none" onclick="'+(canCycle?'setCalCycling(true,\'moderate\')':'go(\'train\')')+'">'+(canCycle?'Turn on':'Set split')+'</button>')+
+        '<div><div class="card-hd" style="margin-bottom:2px">'+svgIcon("repeat",14)+' Calorie cycling'+(on?' <span style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go)">ON</span>':'')+'</div>'+
+          '<div style="font-size:var(--t-cap);color:var(--tx3)">More carbs on training days, fewer on rest</div></div>'+
+        (on?'':'<button class="btn" style="width:auto;padding:7px 13px;font-size:var(--t-sm);background:var(--go);color:var(--on-tint);border:none" onclick="'+(canCycle?'setCalCycling(true,\'moderate\')':'go(\'train\')')+'">'+(canCycle?'Turn on':'Set split')+'</button>')+
       '</div>'+
       body+
     '</div>';
@@ -4863,8 +4863,8 @@ function renderCycleBadge(cyc){
     '<div style="display:flex;align-items:center;gap:10px;background:'+bg+';border:1px solid '+bd+';border-radius:var(--rm);padding:11px 14px;margin-bottom:14px">'+
       '<span style="color:'+col+';display:flex;align-items:center">'+(training?svgIcon("flame",18):svgIcon("moon",18))+'</span>'+
       '<div style="flex:1;min-width:0">'+
-        '<div style="font-size:13px;color:var(--tx);font-weight:600">'+(training?'Training day':'Rest day')+' <span style="font-family:DM Mono,monospace;font-size:11px;color:'+col+';font-weight:400">· '+deltaTxt+'</span></div>'+
-        '<div style="font-size:11px;color:var(--tx3);line-height:1.4;margin-top:1px">Carbs shifted to match your day — protein held, weekly total unchanged.</div>'+
+        '<div style="font-size:var(--t-base);color:var(--tx);font-weight:600">'+(training?'Training day':'Rest day')+' <span style="font-family:var(--font-text);font-size:var(--t-cap);color:'+col+';font-weight:400">· '+deltaTxt+'</span></div>'+
+        '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.4;margin-top:1px">Carbs shifted to match your day — protein held, weekly total unchanged.</div>'+
       '</div>'+
     '</div>';
 }
@@ -4907,11 +4907,11 @@ async function openWarmupCalc(){
   m.style.alignItems='center';
   m.innerHTML='<div class="modal">'+
     '<div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:21px;color:var(--tx);font-style:italic;margin-bottom:4px">Warmup ramp → '+w+'kg</div>'+
-    '<div style="text-align:center;font-size:12px;color:var(--tx3);margin-bottom:14px">Rest ~45–60s between warmup sets.</div>'+
+    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;margin-bottom:4px">Warmup ramp → '+w+'kg</div>'+
+    '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px">Rest ~45–60s between warmup sets.</div>'+
     ramp.map(s=>'<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 4px;border-bottom:1px solid var(--bd)">'+
-      '<span style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3)">'+s.pct+'</span>'+
-      '<span style="font-size:15px;color:var(--tx)">'+wFmt(s.wt)+' <span style="color:var(--tx3);font-size:12px">'+s.reps+'</span></span>'+
+      '<span style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3)">'+s.pct+'</span>'+
+      '<span style="font-size:var(--t-base);color:var(--tx)">'+wFmt(s.wt)+' <span style="color:var(--tx3);font-size:var(--t-sm)">'+s.reps+'</span></span>'+
     '</div>').join('')+
     '<button class="btn primary" onclick="closeModal(this)" style="margin-top:14px">Got it</button>'+
     '</div>';
@@ -5087,7 +5087,7 @@ function renderBodySystemReport(){
   const containers = ['body-system-report-grow'].map(id=>document.getElementById(id)).filter(Boolean);
   if(!containers.length) return;
   const now = Date.now(), W = 7*86400000;
-  const stat = (val,lbl,color)=>'<div style="background:var(--bg3);border-radius:var(--rs);padding:10px;text-align:center"><div style="font-family:DM Mono,monospace;font-size:16px;color:'+(color||'var(--tx)')+'">'+val+'</div><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px">'+lbl+'</div></div>';
+  const stat = (val,lbl,color)=>'<div style="background:var(--bg3);border-radius:var(--rs);padding:10px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-base);color:'+(color||'var(--tx)')+'">'+val+'</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-top:2px">'+lbl+'</div></div>';
   const arrow = (cur,prev)=> (prev==null||cur==null||prev===0) ? '' : (cur>prev*1.03?' <span style="color:var(--gr)">\u2191</span>':cur<prev*0.97?' <span style="color:var(--re)">\u2193</span>':' <span style="color:var(--tx3)">\u2192</span>');
   const inWin=(t,a,b)=>{const x=new Date(t).getTime();return x>now-a&&x<=now-b;};
 
@@ -5159,7 +5159,7 @@ function renderBodySystemReport(){
   const domains=(wCount>0?1:0)+(daysLogged>=2?1:0)+(body.length>=2?1:0);
   if(domains<2){
     const preview='<div class="eyebrow" style="color:var(--go);margin-bottom:8px">Your body, one system</div>'+
-      '<div style="font-size:12px;color:var(--tx2);line-height:1.65">Train, Nourish and Track feed one loop. Log a workout, a couple of days of food, and a weigh-in \u2014 this becomes your weekly verdict: is it working, and the one thing to change.</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65">Train, Nourish and Track feed one loop. Log a workout, a couple of days of food, and a weigh-in \u2014 this becomes your weekly verdict: is it working, and the one thing to change.</div>'+
       // The three buttons that were here — "Log a workout", "Log a meal", "Log a weigh-in" —
       // went to exactly the same places as the three hub cards sitting directly above this card.
       // Six ways into three destinations, stacked. The card's job is to explain that they are one
@@ -5173,11 +5173,11 @@ function renderBodySystemReport(){
   const goal=ls('totry_body_goal');
   let goalRow='';
   if(!goal){
-    goalRow='<div style="font-size:12px;color:var(--tx2);margin-bottom:8px">What are you aiming for? One tap \u2014 the loop will judge itself against it.</div>'+
+    goalRow='<div style="font-size:var(--t-sm);color:var(--tx2);margin-bottom:8px">What are you aiming for? One tap \u2014 the loop will judge itself against it.</div>'+
       '<div style="display:flex;gap:6px;margin-bottom:10px">'+
-      '<button class="btn" style="flex:1;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="setBodyGoal(\'cut\')">Cut \u2212'+wFmt(0.5,{bare:true})+wUnit()+'/wk</button>'+
-      '<button class="btn" style="flex:1;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="setBodyGoal(\'maintain\')">Maintain</button>'+
-      '<button class="btn" style="flex:1;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="setBodyGoal(\'build\')">Build +'+wFmt(0.25,{bare:true})+wUnit()+'/wk</button>'+
+      '<button class="btn" style="flex:1;font-size:var(--t-sm);background:var(--bg3)" onclick="setBodyGoal(\'cut\')">Cut \u2212'+wFmt(0.5,{bare:true})+wUnit()+'/wk</button>'+
+      '<button class="btn" style="flex:1;font-size:var(--t-sm);background:var(--bg3)" onclick="setBodyGoal(\'maintain\')">Maintain</button>'+
+      '<button class="btn" style="flex:1;font-size:var(--t-sm);background:var(--bg3)" onclick="setBodyGoal(\'build\')">Build +'+wFmt(0.25,{bare:true})+wUnit()+'/wk</button>'+
       '</div>';
   }
 
@@ -5245,12 +5245,12 @@ function renderBodySystemReport(){
       : stat((avgCal!=null?avgCal.toLocaleString():'\u2014')+arrow(avgCal,pAvgCal),'avg cal/day'))+
     stat(trend!=null?wFmt(trend):'\u2014',weekChange!=null?(wDelta(weekChange)+' wk'):'trend',weekChange!=null?(weekChange<0?'var(--gr)':'var(--go)'):'var(--tx)')+
     '</div>'+
-    '<div style="font-size:12px;color:var(--tx2);line-height:1.65">'+
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65">'+
     (wVol?wVol.toLocaleString()+'kg lifted'+arrow(wVol,pVol):'No volume logged')+
     (gkg!=null?' \u00b7 protein '+gkg+'g/kg'+(gkg>=1.6?' <span style="color:var(--gr)">\u2713</span>':''):'')+
     (daysLogged?' \u00b7 '+daysLogged+'/7 days logged':'')+'</div>'+
-    '<div style="font-size:12px;color:var(--tx2);line-height:1.65;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">'+verdict+'</div>'+
-    '<div style="font-size:12px;line-height:1.6;margin-top:8px;padding:10px;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rs);color:var(--tx)"><span style="font-family:DM Mono,monospace;font-size:8px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:4px">This week\'s one adjustment</span>'+adjust+'</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">'+verdict+'</div>'+
+    '<div style="font-size:var(--t-sm);line-height:1.6;margin-top:8px;padding:10px;background:var(--go-bg);border-radius:var(--rs);color:var(--tx)"><span style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;display:block;margin-bottom:4px">This week\'s one adjustment</span>'+adjust+'</div>'+
     '<button class="btn subtle" onclick="askCoachWeekRead()" style="margin-top:10px">Deeper read from Coach</button>';
   containers.forEach(b=>{b.style.display='block';b.innerHTML=html;});
   window.__weekReadCtx={wCount,wVol,avgCal,avgPro,daysLogged,trend,weekChange,goal:goal||null,gkg,tdee:tdeeR?tdeeR.tdee:null};
@@ -5324,7 +5324,7 @@ function renderNutTrend(){
     if(d.cal>0){
       const bh=(H-padB)-y(d.cal);
       const over=d.cal>goal*1.1;
-      const color=over?'var(--re)':(d.cal>=goal*0.85?'var(--gr)':'rgba(200,169,110,0.6)');
+      const color=over?'var(--re)':(d.cal>=goal*0.85?'var(--gr)':'var(--go)');
       svg+='<rect x="'+x.toFixed(1)+'" y="'+y(d.cal).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0,bh).toFixed(1)+'" rx="2" fill="'+color+'"/>';
     } else {
       svg+='<rect x="'+x.toFixed(1)+'" y="'+(H-padB-2)+'" width="'+bw.toFixed(1)+'" height="2" rx="1" fill="rgba(255,255,255,0.06)"/>';
@@ -5338,7 +5338,7 @@ function renderNutTrend(){
   // Average of days with data
   const avg=Math.round(days.filter(d=>d.cal>0).reduce((a,d)=>a+d.cal,0)/daysWithData);
   box.innerHTML=svg+
-    '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:10px;border-top:1px solid var(--bd);font-family:DM Mono,monospace;font-size:10px">'+
+    '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:10px;border-top:1px solid var(--bd);font-family:var(--font-text);font-size:var(--t-mini)">'+
       '<span style="color:var(--tx3)">14-day avg: <span style="color:var(--tx)">'+avg+' cal</span></span>'+
       '<span style="color:var(--tx3)">Goal: <span style="color:var(--go)">'+goal+'</span></span>'+
     '</div>';
@@ -5415,21 +5415,21 @@ function renderMicroPanel(totals){
       color = pct >= 100 ? 'var(--gr)' : pct >= 50 ? 'var(--go)' : 'var(--tx2)';
     }
     const barWidth = Math.min(100, pct);
-    return '<div style="display:flex;align-items:center;gap:10px;padding:5px 0;font-size:11px">' +
+    return '<div style="display:flex;align-items:center;gap:10px;padding:5px 0;font-size:var(--t-cap)">' +
       '<div style="min-width:100px;color:var(--tx2)">' + def.label + '</div>' +
       '<div style="flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden">' +
         '<div style="height:100%;background:' + color + ';width:' + barWidth + '%;transition:width 0.3s"></div>' +
       '</div>' +
-      '<div style="min-width:78px;text-align:right;font-family:DM Mono,monospace;color:' + color + '">' + (Math.round(val * 10) / 10) + def.unit + ' · ' + pct + '%</div>' +
+      '<div style="min-width:78px;text-align:right;font-family:var(--font-text);color:' + color + '">' + (Math.round(val * 10) / 10) + def.unit + ' · ' + pct + '%</div>' +
     '</div>';
   };
   
   panel.innerHTML =
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">Vitamins</div>' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Vitamins</div>' +
     vits.map(rowHtml).join('') +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin:14px 0 8px">Minerals</div>' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin:14px 0 8px">Minerals</div>' +
     mins.map(rowHtml).join('') +
-    '<div style="font-family:Cormorant Garamond,serif;font-size:11px;font-style:italic;color:var(--tx3);text-align:center;margin-top:14px;line-height:1.5">RDA = standard adult reference. % is approximate guidance, not prescription. Only USDA-sourced foods contribute micros — branded foods and AI-estimated meals may not.</div>';
+    '<div style="font-family:var(--font-serif);font-size:var(--t-cap);font-style:italic;color:var(--tx3);text-align:center;margin-top:14px;line-height:1.5">RDA = standard adult reference. % is approximate guidance, not prescription. Only USDA-sourced foods contribute micros — branded foods and AI-estimated meals may not.</div>';
 }
 
 // MFP rip: tap \u270e on a diary row \u2192 serving modal prefilled \u2192 saving REPLACES the entry.
@@ -5574,11 +5574,11 @@ function showLowCalorieCare(){
   m.style.alignItems = 'center';
   m.innerHTML = '<div class="modal">' +
     '<div class="modal-handle"></div>' +
-    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:10px;line-height:1.3">A gentle word, friend.</div>' +
-    '<p style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:12px">That goal is quite low — lower than what most bodies need to function and recover well. You know yourself best, and this stays your choice. But this app exists to help you become more, not less, and I\'d be failing you if I didn\'t say that out loud.</p>' +
-    '<p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">If food or your body feels like a hard place right now, you don\'t have to carry that alone. Talking to a doctor or a trained, caring person can change everything — that\'s strength, not weakness.</p>' +
+    '<div style="font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;margin-bottom:10px;line-height:1.3">A gentle word, friend.</div>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:12px">That goal is quite low — lower than what most bodies need to function and recover well. You know yourself best, and this stays your choice. But this app exists to help you become more, not less, and I\'d be failing you if I didn\'t say that out loud.</p>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-bottom:14px">If food or your body feels like a hard place right now, you don\'t have to carry that alone. Talking to a doctor or a trained, caring person can change everything — that\'s strength, not weakness.</p>' +
     '<button class="btn primary" onclick="closeModal(this)" style="margin-bottom:8px">I hear you</button>' +
-    '<button class="btn" onclick="showEDSupport()" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Find support</button>' +
+    '<button class="btn" onclick="showEDSupport()" style="background:var(--bg3);font-size:var(--t-base)">Find support</button>' +
   '</div>';
   document.body.appendChild(m);
 }
@@ -5590,20 +5590,20 @@ function showEDSupport(){
   m.innerHTML = '<div class="modal">' +
     '<div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:10px">Support that cares</h3>' +
-    '<p style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">You reaching out is a real act of courage. These people are trained to help with food, body image, and eating struggles — with kindness, not judgment.</p>' +
-    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:14px;margin-bottom:10px">' +
-      '<div style="font-size:14px;color:var(--tx);margin-bottom:4px">Butterfly Foundation (Australia)</div>' +
-      '<div style="font-size:18px;margin-top:2px"><a href="tel:1800334673" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">1800 33 4673</a></div>' +
-      '<div style="font-size:11px;color:var(--tx3);margin-top:4px">National ED helpline · phone, chat, email</div>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:14px">You reaching out is a real act of courage. These people are trained to help with food, body image, and eating struggles — with kindness, not judgment.</p>' +
+    '<div style="background:var(--bg3);border-radius:var(--rm);padding:14px;margin-bottom:10px">' +
+      '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:4px">Butterfly Foundation (Australia)</div>' +
+      '<div style="font-size:var(--t-hd);margin-top:2px"><a href="tel:1800334673" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">1800 33 4673</a></div>' +
+      '<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:4px">National ED helpline · phone, chat, email</div>' +
     '</div>' +
-    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:14px;margin-bottom:10px">' +
-      '<div style="font-size:14px;color:var(--tx);margin-bottom:4px">Your GP / doctor</div>' +
-      '<div style="font-size:12px;color:var(--tx2);line-height:1.5">A trusted first step — they can refer you to the right care privately.</div>' +
+    '<div style="background:var(--bg3);border-radius:var(--rm);padding:14px;margin-bottom:10px">' +
+      '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:4px">Your GP / doctor</div>' +
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.5">A trusted first step — they can refer you to the right care privately.</div>' +
     '</div>' +
-    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:14px;margin-bottom:14px">' +
-      '<div style="font-size:14px;color:var(--tx);margin-bottom:4px">Lifeline (if in crisis)</div>' +
-      '<div style="font-size:18px;margin-top:2px"><a href="tel:131114" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">13 11 14</a></div>' +
-      '<div style="font-size:11px;color:var(--tx3);margin-top:4px">24/7 crisis support</div>' +
+    '<div style="background:var(--bg3);border-radius:var(--rm);padding:14px;margin-bottom:14px">' +
+      '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:4px">Lifeline (if in crisis)</div>' +
+      '<div style="font-size:var(--t-hd);margin-top:2px"><a href="tel:131114" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">13 11 14</a></div>' +
+      '<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:4px">24/7 crisis support</div>' +
     '</div>' +
     '<button class="btn" onclick="closeModal(this)">Close</button>' +
   '</div>';
@@ -5891,7 +5891,7 @@ function renderFastingRhythm(){
   el.innerHTML =
     '<div style="display:flex;align-items:flex-start;gap:8px">'+
       '<div style="flex:1"><span style="color:var(--go)">✝ '+f.kind+'.</span> '+f.note+'</div>'+
-      '<button onclick="ls(&apos;totry_fast_rhythm_dismissed&apos;,new Date().toLocaleDateString(&apos;en-AU&apos;));document.getElementById(&apos;fasting-rhythm&apos;).style.display=&apos;none&apos;" style="background:none;border:none;color:var(--tx3);font-size:15px;cursor:pointer;padding:0;flex-shrink:0;line-height:1;min-width:28px;min-height:28px;display:inline-flex;align-items:center;justify-content:center">×</button>'+
+      '<button onclick="ls(&apos;totry_fast_rhythm_dismissed&apos;,new Date().toLocaleDateString(&apos;en-AU&apos;));document.getElementById(&apos;fasting-rhythm&apos;).style.display=&apos;none&apos;" style="background:none;border:none;color:var(--tx3);font-size:var(--t-base);cursor:pointer;padding:0;flex-shrink:0;line-height:1;min-width:28px;min-height:28px;display:inline-flex;align-items:center;justify-content:center">×</button>'+
     '</div>';
   el.style.display = 'block';
 }

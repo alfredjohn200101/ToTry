@@ -58,12 +58,12 @@ function initSettingsTab(){
       // copy is re-asserted on every Settings open for the rest of the session.
       bn.innerHTML = _guest
         ? '<strong style="color:var(--tx)">You are here as a guest.</strong> Everything you have done is real and it is saved \u2014 but only in this browser, on this device. Clearing your browser data, or picking up another phone, loses it. Making an account keeps it and carries it with you.'
-        : '<div class="card-hd" style="margin-bottom:6px">You\u2019re on the ToTry beta</div><div style="font-size:12px;color:var(--tx2);line-height:1.6">This is the web version \u2014 everything here is real and saved to your account.</div>';
+        : '<div class="card-hd" style="margin-bottom:6px">You\u2019re on the ToTry beta</div><div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">This is the web version \u2014 everything here is real and saved to your account.</div>';
     } }catch(_){}
   // Reflect the CURRENT faith level when Settings opens — it was only highlighted on click, so on
   // open neither option looked selected (that's the "faith level looks messed up"). Now it's clear.
-  try{ const fl=(typeof faithLevel==='function')?faithLevel():'full'; document.querySelectorAll('.faith-opt').forEach(b=>{ const on=b.dataset.faith===fl; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'rgba(200,169,110,0.10)':'var(--bg3)'; }); }catch(_){}
-  try{ const tr=(typeof faithTradition==='function')?faithTradition():'secular'; document.querySelectorAll('.faithtr-opt').forEach(b=>{ const on=b.dataset.tr===tr; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'rgba(200,169,110,0.10)':'var(--bg3)'; }); }catch(_){}
+  try{ const fl=(typeof faithLevel==='function')?faithLevel():'full'; document.querySelectorAll('.faith-opt').forEach(b=>{ const on=b.dataset.faith===fl; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'var(--go-bg)':'var(--bg3)'; }); }catch(_){}
+  try{ const tr=(typeof faithTradition==='function')?faithTradition():'secular'; document.querySelectorAll('.faithtr-opt').forEach(b=>{ const on=b.dataset.tr===tr; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'var(--go-bg)':'var(--bg3)'; }); }catch(_){}
   const n=document.getElementById('settings-name-display');if(n)n.textContent=ls('totry_name')||'Not set';
   // Signed-in email — was stuck on "Loading..." because nothing populated it.
   const emailEl=document.getElementById('settings-email-display');
@@ -97,7 +97,7 @@ function initSettingsTab(){
   const duSel = document.getElementById('settings-distance-unit');
   if(duSel) duSel.value = ls('totry_distance_unit') || 'km';
   const themeSel = document.getElementById('settings-theme');
-  if(themeSel) themeSel.value = ls('totry_theme') || 'dark';
+  if(themeSel) themeSel.value = ls('totry_theme') || 'system';
   const tzSel = document.getElementById('settings-timezone');
   if(tzSel) tzSel.value = ls('totry_timezone') || 'auto';
   
@@ -122,7 +122,7 @@ function initSettingsTab(){
   // silently did nothing; the harm was the false trail it left about where a person's times are kept.
   
   // Apply theme on load
-  applyTheme(ls('totry_theme') || 'dark');
+  applyTheme(ls('totry_theme') || 'system');
   if(typeof updateSynthesisCount === 'function') updateSynthesisCount();
   if(typeof renderActivityHeatmap === 'function') renderActivityHeatmap();
   
@@ -219,7 +219,7 @@ function _demoBanner(){
         'padding:6px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 2px 14px rgba(0,0,0,.4)';
       b.innerHTML='<span>'+svgIcon("film")+' Demo data \u00b7 sync off</span>'+
         '<button onclick="exitDemoMode()" style="background:#fff;color:#7a2e2e;border:none;border-radius:100px;'+
-        'padding:4px 10px;font-family:inherit;font-size:9px;text-transform:uppercase;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">Restore</button>';
+        'padding:4px 10px;font-family:inherit;font-size:var(--t-micro);text-transform:uppercase;letter-spacing:0.01em;cursor:pointer;white-space:nowrap">Restore</button>';
       document.body.appendChild(b);
       // Give the header enough top padding to clear the banner, so it never clips the wordmark or the
       // day counter — both in shot on almost every tutorial. It has to be the HEADER and not the body:
@@ -544,18 +544,18 @@ function renderTourPrompt(){
     // cathedral before they've touched anything. Land them on the home (hero + the one next step),
     // and OFFER the tour gently. One clear thing first; the guided walk is one tap away if they want it.
     card.style.display='block';
-    card.innerHTML='<div style="font-family:Cormorant Garamond,serif;font-size:18px;color:var(--tx);margin-bottom:4px">Welcome in.</div>'+
-      '<div style="font-size:13px;color:var(--tx2);line-height:1.55;margin-bottom:12px">Start wherever you feel something. Or, if you’d rather, take a 60-second look at how it all fits together.</div>'+
-      '<div style="display:flex;gap:8px"><button class="btn" style="flex:1;font-size:13px" onclick="acceptTourPrompt()">Show me around</button>'+
-      '<button class="btn" style="flex:1;font-size:13px;background:var(--bg3);border:1px solid var(--bd)" onclick="dismissTourPrompt()">I’ll explore</button></div>';
+    card.innerHTML='<div style="font-family:var(--font-display);font-weight:700;font-size:var(--t-hd);color:var(--tx);margin-bottom:4px">Welcome in.</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55;margin-bottom:12px">Start wherever you feel something. Or, if you’d rather, take a 60-second look at how it all fits together.</div>'+
+      '<div style="display:flex;gap:8px"><button class="btn" style="flex:1;font-size:var(--t-base)" onclick="acceptTourPrompt()">Show me around</button>'+
+      '<button class="btn" style="flex:1;font-size:var(--t-base);background:var(--bg3)" onclick="dismissTourPrompt()">I’ll explore</button></div>';
     return;
   }
   // Returning user: gentle one-time offer.
   card.style.display='block';
-  card.innerHTML='<div style="font-family:Cormorant Garamond,serif;font-size:18px;color:var(--tx);margin-bottom:4px">A quick look around?</div>'+
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.55;margin-bottom:12px">There\u2019s a lot new in here. Want a 60-second tour of how it all fits together?</div>'+
-    '<div style="display:flex;gap:8px"><button class="btn" style="flex:1;font-size:13px" onclick="acceptTourPrompt()">Show me</button>'+
-    '<button class="btn" style="flex:1;font-size:13px;background:var(--bg3);border:1px solid var(--bd)" onclick="dismissTourPrompt()">No thanks</button></div>';
+  card.innerHTML='<div style="font-family:var(--font-display);font-weight:700;font-size:var(--t-hd);color:var(--tx);margin-bottom:4px">A quick look around?</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55;margin-bottom:12px">There\u2019s a lot new in here. Want a 60-second tour of how it all fits together?</div>'+
+    '<div style="display:flex;gap:8px"><button class="btn" style="flex:1;font-size:var(--t-base)" onclick="acceptTourPrompt()">Show me</button>'+
+    '<button class="btn" style="flex:1;font-size:var(--t-base);background:var(--bg3)" onclick="dismissTourPrompt()">No thanks</button></div>';
 }
 function acceptTourPrompt(){ ls('totry_tour_offered', true); const c=document.getElementById('home-tour-prompt'); if(c)c.style.display='none'; if(typeof startFeatureTour==='function') startFeatureTour(); }
 function dismissTourPrompt(){ ls('totry_tour_offered', true); const c=document.getElementById('home-tour-prompt'); if(c)c.style.display='none'; }
@@ -569,7 +569,7 @@ function startFeatureTour(){
     ov.style.cssText = 'position:fixed;inset:0;z-index:9999;pointer-events:none';
     ov.innerHTML =
       '<div id="tour-spot" style="position:absolute;border-radius:var(--r);box-shadow:0 0 0 9999px rgba(0,0,0,0.78);transition:all 0.3s cubic-bezier(.4,0,.2,1);pointer-events:none;border:2px solid var(--go)"></div>'+
-      '<div id="tour-card" style="position:absolute;left:16px;right:16px;background:var(--bg2);border:1px solid var(--go-bd);border-radius:var(--r);padding:16px;box-shadow:0 12px 40px rgba(0,0,0,0.6);pointer-events:auto;transition:top 0.3s,bottom 0.3s"></div>';
+      '<div id="tour-card" style="position:absolute;left:16px;right:16px;background:var(--bg2);border-radius:var(--r);padding:16px;box-shadow:0 12px 40px rgba(0,0,0,0.6);pointer-events:auto;transition:top 0.3s,bottom 0.3s"></div>';
     document.body.appendChild(ov);
   }
   ov.style.display = 'block';
@@ -624,15 +624,15 @@ function renderTourStep(){
       }
       if(!rect){ card.style.transform='translateY(-50%)'; } else { card.style.transform='none'; }
       card.innerHTML =
-        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:6px">Tour \u00b7 '+(_tourIdx+1)+' of '+TOUR_STEPS.length+'</div>'+
-        '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:6px">'+step.title+'</div>'+
-        '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:14px">'+step.caption+'</div>'+
+        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Tour \u00b7 '+(_tourIdx+1)+' of '+TOUR_STEPS.length+'</div>'+
+        '<div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);margin-bottom:6px">'+step.title+'</div>'+
+        '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:14px">'+step.caption+'</div>'+
         '<div style="display:flex;gap:8px;align-items:center">'+
           (_tourIdx>0?'<button class="btn subtle" onclick="tourPrev()" style="flex:1">Back</button>':'')+
           (_tourIdx<TOUR_STEPS.length-1
-            ? '<button class="btn primary" onclick="tourNext()" style="flex:2;font-size:13px">Next \u2192</button>'
-            : '<button class="btn primary" onclick="endFeatureTour()" style="flex:2;font-size:13px">Got it</button>')+
-          '<button class="btn" onclick="endFeatureTour()" style="flex:0 0 auto;padding:10px 12px;background:none;border:none;color:var(--tx3);font-size:12px">Skip</button>'+
+            ? '<button class="btn primary" onclick="tourNext()" style="flex:2;font-size:var(--t-base)">Next \u2192</button>'
+            : '<button class="btn primary" onclick="endFeatureTour()" style="flex:2;font-size:var(--t-base)">Got it</button>')+
+          '<button class="btn" onclick="endFeatureTour()" style="flex:0 0 auto;padding:10px 12px;background:none;border:none;color:var(--tx3);font-size:var(--t-sm)">Skip</button>'+
         '</div>';
     }
   }, step.tab ? 220 : 0);
@@ -649,68 +649,37 @@ function savePref(key, value){
 
 // Apply theme — light mode swaps CSS variables for warm-on-cream palette
 function applyTheme(theme){
+  // APPLE-NATIVE APPEARANCE. The colours are CSS now — :root holds dark, and two blocks hold light (the
+  // phone's own appearance, and an explicit choice). This function only says WHICH: it sets
+  // data-theme="light" / "dark", or removes the attribute for "system" so prefers-color-scheme decides.
+  // It used to paint twenty-odd tokens inline with setProperty, which is how --bg4 was forgotten for
+  // years; a token that lives in one stylesheet block cannot be half-applied by a function.
   const root = document.documentElement;
+  const t = (theme === 'light' || theme === 'dark') ? theme : 'system';
+  // Clear anything an older build painted inline during this session, or it would outrank the CSS.
+  ['bg','bg2','bg3','bg4','tx','tx2','tx3','bd','bd2'].forEach(function(n){ root.style.removeProperty('--'+n); });
+  ['go','gr','re','bl','pu'].forEach(function(n){ ['','-bg','-bd'].forEach(function(x){ root.style.removeProperty('--'+n+x); }); });
+  if(t === 'system') root.removeAttribute('data-theme'); else root.setAttribute('data-theme', t);
+  // The status bar and the browser chrome follow the RESOLVED appearance, not the setting.
+  const dark = t === 'dark' || (t === 'system' && !(window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches));
+  try{ const m = document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute('content', dark ? '#000000' : '#F2F2F7'); }catch(_){ }
   // Mirror the choice where the native side can see it. ViewController.preferredStatusBarStyle reads
-  // CapacitorStorage.totry_theme — without this the iOS status bar follows the DEVICE's light/dark
-  // setting instead of the app's, and drew black-on-black for anyone whose phone is in Light Mode.
-  // Same route the Face ID lock already uses (07-platform.js:82).
+  // CapacitorStorage.totry_theme: "light" draws dark content, "dark" draws light content, and "system"
+  // hands the decision back to the device — which is what a first-party app does.
   try{
     const P = (window.Capacitor && window.Capacitor.Plugins) || {};
-    if(P.Preferences && P.Preferences.set) P.Preferences.set({ key:'totry_theme', value: (theme==='light' ? 'light' : 'dark') });
+    if(P.Preferences && P.Preferences.set) P.Preferences.set({ key:'totry_theme', value: t });
   }catch(_){ }
-  if(theme === 'light'){
-    root.style.setProperty('--bg', '#F5F1E8');
-    root.style.setProperty('--bg2', '#FFFFFF');
-    root.style.setProperty('--bg3', '#EBE4D2');
-    // --bg4 is the RECESS: the unfilled half of every progress bar (.bar-wrap, .goal-bar-wrap,
-    // .vice-bar-wrap, .sos-q-bar-wrap, .vsr-bar-wrap), the check-in slider groove, the sheet's grab
-    // handle, the onboarding dots and the SVG ring. It was the ONE colour token this function did
-    // not re-set, so in light mode it stayed #222228: a sheet handle at 15.82:1 on a white card, and
-    // a goal bar that showed 20% green then 80% BLACK — which reads as nearly full, not nearly empty.
-    root.style.setProperty('--bg4', '#DED6C3');
-    root.style.setProperty('--tx', '#1A1A1F');
-    root.style.setProperty('--tx2', '#3D3D45');
-    root.style.setProperty('--tx3', '#65656C');   // 4.56:1 on the worst light bg — see the note
-    // ACCENTS TOO. Keeping the dark-mode accents on a cream background put gold at 1.77:1 and green at
-    // 1.91:1 — see the note above. These are the same hues taken down until each clears 4.5:1 against
-    // all three light backgrounds, with the tint/border derivatives moved to match so an accent stays
-    // one colour. Dark mode is untouched.
-    root.style.setProperty('--go', '#766441');
-    root.style.setProperty('--go-bg', 'rgba(118,100,65,0.10)');
-    root.style.setProperty('--go-bd', 'rgba(118,100,65,0.32)');
-    root.style.setProperty('--gr', '#38714C');
-    root.style.setProperty('--gr-bg', 'rgba(56,113,76,0.10)');
-    root.style.setProperty('--gr-bd', 'rgba(56,113,76,0.32)');
-    root.style.setProperty('--re', '#A44A40');
-    root.style.setProperty('--re-bg', 'rgba(164,74,64,0.10)');
-    root.style.setProperty('--re-bd', 'rgba(164,74,64,0.32)');
-    root.style.setProperty('--bl', '#496793');
-    root.style.setProperty('--bl-bg', 'rgba(73,103,147,0.10)');
-    root.style.setProperty('--bl-bd', 'rgba(73,103,147,0.32)');
-    root.style.setProperty('--pu', '#725D8D');
-    root.style.setProperty('--pu-bg', 'rgba(114,93,141,0.10)');
-    root.style.setProperty('--pu-bd', 'rgba(114,93,141,0.32)');
-    root.style.setProperty('--bd', '#D9D2BE');
-    root.style.setProperty('--bd2', '#C4BBA0');
-  } else {
-    // Restore dark (default)
-    root.style.removeProperty('--bg');
-    root.style.removeProperty('--bg2');
-    root.style.removeProperty('--bg3');
-    root.style.removeProperty('--bg4');
-    root.style.removeProperty('--tx');
-    root.style.removeProperty('--tx2');
-    root.style.removeProperty('--tx3');
-    root.style.removeProperty('--bd');
-    root.style.removeProperty('--bd2');
-    // The accents too — see the light branch. Anything set there must be removed here or a person who
-    // tries the light theme and switches back is left with muted accents on a dark ground.
-    ['go','gr','re','bl','pu'].forEach(function(n){
-      root.style.removeProperty('--'+n);
-      root.style.removeProperty('--'+n+'-bg');
-      root.style.removeProperty('--'+n+'-bd');
-    });
-  }
+  // Following the system means following it LIVE: a phone that switches to dark at sunset should take
+  // the meta colour with it. The CSS already moves on its own.
+  try{
+    if(window.matchMedia && !applyTheme._listening){
+      applyTheme._listening = true;
+      window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', function(){
+        if(!document.documentElement.hasAttribute('data-theme')) applyTheme('system');
+      });
+    }
+  }catch(_){ }
 }
 
 // ── ACCOUNT DELETION ─────────────────────────────────────────
@@ -830,8 +799,8 @@ function showPrivacyPolicy(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:6px">Privacy policy</h3>' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px">ToTry by Alfred John · Last updated June 2026 · Plain English</div>' +
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;overflow-y:auto;max-height:60vh;padding-right:6px">' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:14px">ToTry by Alfred John · Last updated June 2026 · Plain English</div>' +
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;overflow-y:auto;max-height:60vh;padding-right:6px">' +
     
       '<p style="margin-bottom:12px">This is a one-person project, not a corporation. I (Alfred) built this and I run it. I will not pretend the app does more privacy work than it does. Here is exactly what happens to your data.</p>' +
     
@@ -902,8 +871,8 @@ function showTermsOfUse(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:6px">Terms of use</h3>' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px">ToTry by Alfred John · Last updated June 2026</div>' +
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;overflow-y:auto;max-height:60vh;padding-right:6px">' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:14px">ToTry by Alfred John · Last updated June 2026</div>' +
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;overflow-y:auto;max-height:60vh;padding-right:6px">' +
     
       '<p style="margin-bottom:12px">By using ToTry, you agree to these terms. They are written in plain English so you can actually read them.</p>' +
     
@@ -962,7 +931,7 @@ function logQuickWin(){
 }
 function renderWinsLog(){
   const wins=ls('totry_wins')||[];const list=document.getElementById('wins-log-list');if(!list)return;
-  if(!wins.length){list.innerHTML='<p class="empty-note">No wins logged yet.<br><span style="font-size:12px">Type one above — even getting out of bed counts on a hard day.</span></p>';return;}
+  if(!wins.length){list.innerHTML='<p class="empty-note">No wins logged yet.<br><span style="font-size:var(--t-sm)">Type one above — even getting out of bed counts on a hard day.</span></p>';return;}
   list.innerHTML='';
   wins.slice(0,20).forEach(w=>{
     const el=document.createElement('div');el.className='win-item';
@@ -986,8 +955,8 @@ function openUniversalSearch(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:6px">Search your history</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.55">Across journal, wins, saved verses, examens, prayers. Type 2+ characters.</p>' +
-    '<input type="text" id="search-input" placeholder="Try a word, a name, a feeling..." style="margin-bottom:14px;font-size:16px" oninput="runUniversalSearch(this.value)" autofocus>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:12px;line-height:1.55">Across journal, wins, saved verses, examens, prayers. Type 2+ characters.</p>' +
+    '<input type="text" id="search-input" placeholder="Try a word, a name, a feeling..." style="margin-bottom:14px;font-size:var(--t-base)" oninput="runUniversalSearch(this.value)" autofocus>' +
     '<div id="search-results" style="max-height:55vh;overflow-y:auto;padding-right:4px"></div>' +
     '<button class="btn" onclick="closeModal(this)" style="margin-top:12px">Close</button>' +
   '</div>';
@@ -1004,7 +973,7 @@ function runUniversalSearch(query){
   
   const q = (query || '').trim().toLowerCase();
   if(q.length < 2){
-    box.innerHTML = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:30px 12px;font-style:italic">Start typing to search across your journal entries, wins, saved verses, examens, and prayers.</p>';
+    box.innerHTML = '<p style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:30px 12px;font-style:italic">Start typing to search across your journal entries, wins, saved verses, examens, and prayers.</p>';
     return;
   }
   
@@ -1042,7 +1011,7 @@ function runUniversalSearch(query){
     if((v.verse && v.verse.toLowerCase().includes(q)) || (v.reference && v.reference.toLowerCase().includes(q))){
       results.push({
         source: 'Verse',
-        sourceColor: '#C8A96E',
+        sourceColor: 'var(--go)',
         date: v.reference || '',
         body: v.verse,
         verse: true,
@@ -1058,7 +1027,7 @@ function runUniversalSearch(query){
       const preview = [e.gratitude, e.review, e.repent, e.renewal].filter(Boolean).find(t => t.toLowerCase().includes(q)) || '';
       results.push({
         source: 'Examen',
-        sourceColor: '#8C6BB6',
+        sourceColor: 'var(--pu)',
         date: e.date + (e.day ? ' · Day ' + e.day : ''),
         body: preview,
         onclick: 'document.querySelector(\'.modal-bg.open\')?.remove();showExamenDetail(' + i + ')'
@@ -1095,7 +1064,7 @@ function runUniversalSearch(query){
     if(!text) return '';
     const safe = text.replace(/</g, '&lt;');
     const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
-    return safe.replace(re, '<mark style="background:rgba(200,169,110,0.25);color:var(--tx);padding:0 2px;border-radius:2px">$1</mark>');
+    return safe.replace(re, '<mark style="background:var(--go-bd);color:var(--tx);padding:0 2px;border-radius:2px">$1</mark>');
   };
   
   // Take 1-line preview around the match
@@ -1111,12 +1080,12 @@ function runUniversalSearch(query){
   box.innerHTML = '<div class="eyebrow" style="margin-bottom:8px">' + results.length + ' result' + (results.length===1?'':'s') + '</div>' +
     results.slice(0, 60).map(r => {
       const preview = previewText(r.body, q);
-      return '<div onclick="' + r.onclick + '" style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rm);padding:10px 12px;margin-bottom:6px;cursor:pointer">' +
+      return '<div onclick="' + r.onclick + '" style="background:var(--bg2);border-radius:var(--rm);padding:10px 12px;margin-bottom:6px;cursor:pointer">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px">' +
-          '<div style="font-family:DM Mono,monospace;font-size:9px;color:' + r.sourceColor + ';text-transform:uppercase;letter-spacing:0.1em">' + r.source + '</div>' +
-          '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3)">' + r.date + '</div>' +
+          '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:' + r.sourceColor + ';text-transform:uppercase;letter-spacing:0.01em">' + r.source + '</div>' +
+          '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)">' + r.date + '</div>' +
         '</div>' +
-        '<div style="font-size:12px;color:var(--tx2);line-height:1.55' + (r.verse ? ';font-family:Cormorant Garamond,serif;font-style:italic;font-size:13px' : '') + '">' + highlight(preview, q) + '</div>' +
+        '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55' + (r.verse ? ';font-family:var(--font-serif);font-style:italic;font-size:var(--t-sm)' : '') + '">' + highlight(preview, q) + '</div>' +
       '</div>';
     }).join('');
 }
@@ -1183,10 +1152,10 @@ function restoreFullBackup(event){
       m.style.alignItems = 'center';
       m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
         '<h3 style="margin-bottom:6px">Restore this backup?</h3>' +
-        '<p style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:8px">From <strong>' + (backup.exportedAt ? new Date(backup.exportedAt).toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'}) : 'unknown date') + '</strong> · ' + keys.length + ' data sets.</p>' +
-        '<p style="font-size:12px;color:var(--re);line-height:1.5;margin-bottom:14px">This replaces your current data on this device with the backup. Your cloud will then sync to match.</p>' +
+        '<p style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:8px">From <strong>' + (backup.exportedAt ? new Date(backup.exportedAt).toLocaleDateString('en-AU',{day:'numeric',month:'long',year:'numeric'}) : 'unknown date') + '</strong> · ' + keys.length + ' data sets.</p>' +
+        '<p style="font-size:var(--t-sm);color:var(--re);line-height:1.5;margin-bottom:14px">This replaces your current data on this device with the backup. Your cloud will then sync to match.</p>' +
         '<button class="btn primary" onclick="confirmRestore()" style="margin-bottom:8px">Yes, restore it</button>' +
-        '<button class="btn" onclick="closeModal(this);window.__pendingRestore=null" style="background:transparent;border:1px solid var(--bd)">Cancel</button>' +
+        '<button class="btn" onclick="closeModal(this);window.__pendingRestore=null" style="background:transparent;background:var(--fill2)">Cancel</button>' +
       '</div>';
       document.body.appendChild(m);
       window.__pendingRestore = backup.data;

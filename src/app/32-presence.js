@@ -45,12 +45,12 @@ function renderWeeklyCheckin(){
   else if(proDays >= 3 && proAvg < goals.pro * 0.85) focus = 'Protein ran ' + (goals.pro - proAvg) + 'g/day under target. One extra serve at lunch closes it.';
   else if(wDelta != null && Math.abs(wDelta) > 1.2) focus = 'Weight moved ' + _wkStr + ' in a week \u2014 faster than intended. Worth a look.';
   else focus = 'No weak link stands out. Hold the line and let the weeks stack.';
-  box.innerHTML = '<div style="background:var(--bg2);border:1px solid var(--go-bd);border-radius:var(--r);padding:16px;position:relative">'+
-    '<button onclick="ls(\'totry_weekcheck\',\''+wk+'\');renderWeeklyCheckin()" aria-label="Dismiss this weekly check-in" style="position:absolute;top:2px;right:4px;background:none;border:none;color:var(--tx3);font-size:16px;padding:10px 12px;line-height:1;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center">\u00d7</button>'+
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">Weekly check-in</div>'+
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:6px">Trained <b style="color:var(--tx)">'+trained+'\u00d7</b>'+(proDays?' \u00b7 protein <b style="color:var(--tx)">'+proAvg+'g/day</b>':'')+(wDelta!=null?' \u00b7 weight <b style="color:var(--tx)">'+_wkStr+'</b>':'')+'</div>'+
-    '<div style="font-size:13px;color:var(--tx);line-height:1.6;margin-bottom:12px">'+focus+'</div>'+
-    '<button class="btn" onclick="ls(\'totry_weekcheck\',\''+wk+'\');go(\'grow\')" style="font-size:13px;padding:10px;background:var(--bg3);border:1px solid var(--bd)">Read the full week \u2192</button></div>';
+  box.innerHTML = '<div style="background:var(--bg2);border-radius:var(--r);padding:16px;position:relative">'+
+    '<button onclick="ls(\'totry_weekcheck\',\''+wk+'\');renderWeeklyCheckin()" aria-label="Dismiss this weekly check-in" style="position:absolute;top:2px;right:4px;background:none;border:none;color:var(--tx3);font-size:var(--t-base);padding:10px 12px;line-height:1;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center">\u00d7</button>'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Weekly check-in</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:6px">Trained <b style="color:var(--tx)">'+trained+'\u00d7</b>'+(proDays?' \u00b7 protein <b style="color:var(--tx)">'+proAvg+'g/day</b>':'')+(wDelta!=null?' \u00b7 weight <b style="color:var(--tx)">'+_wkStr+'</b>':'')+'</div>'+
+    '<div style="font-size:var(--t-base);color:var(--tx);line-height:1.6;margin-bottom:12px">'+focus+'</div>'+
+    '<button class="btn" onclick="ls(\'totry_weekcheck\',\''+wk+'\');go(\'grow\')" style="font-size:var(--t-base);padding:10px;background:var(--bg3)">Read the full week \u2192</button></div>';
   box.style.display = 'block';
 }
 
@@ -269,17 +269,17 @@ function renderProactiveNudge(){
   if(dismissed[n.id] && (Date.now() - dismissed[n.id]) < 20*3600000){ box.style.display='none'; return false; }
   const accent = 'var(--go)';
   const bg = n.tone==='care'
-    ? 'linear-gradient(135deg,rgba(200,169,110,0.10),rgba(140,107,182,0.04))'
+    ? 'var(--go-bg)'
     : 'var(--bg2)';
   const btns = (n.actions||[]).map(a =>
     a.ghost
-      ? '<button class="btn" style="flex:1;font-size:13px;background:var(--bg3);border:1px solid var(--bd)" onclick="'+a.onclick+'">'+a.label+'</button>'
-      : '<button class="btn primary" style="flex:1;font-size:13px" onclick="'+a.onclick+'">'+a.label+'</button>'
+      ? '<button class="btn" style="flex:1;font-size:var(--t-base);background:var(--bg3)" onclick="'+a.onclick+'">'+a.label+'</button>'
+      : '<button class="btn primary" style="flex:1;font-size:var(--t-base)" onclick="'+a.onclick+'">'+a.label+'</button>'
   ).join('');
   box.innerHTML =
-    '<div style="background:'+bg+';border:1px solid var(--go-bd);border-radius:var(--r);padding:15px 16px">'+
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:'+accent+';text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">'+n.eyebrow+'</div>'+
-      '<div style="font-size:14px;color:var(--tx2);line-height:1.6;margin-bottom:'+(btns?'12px':'0')+'">'+n.text+'</div>'+
+    '<div style="background:'+bg+';border-radius:var(--r);padding:15px 16px">'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:'+accent+';text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">'+n.eyebrow+'</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:'+(btns?'12px':'0')+'">'+n.text+'</div>'+
       (btns ? '<div style="display:flex;gap:8px">'+btns+'</div>' : '')+
     '</div>';
   box.style.display = 'block';
@@ -344,8 +344,8 @@ function renderHomeInsight(){
   if(!insights.length){ box.style.display = 'none'; return; }
   // Rotate which insight shows by day so it doesn't feel static.
   const pick = insights[getDayCount() % insights.length];
-  box.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">What I\u2019m noticing</div>' +
-    '<div style="font-size:14px;color:var(--tx2);line-height:1.6">' + pick + '</div>';
+  box.innerHTML = '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">What I\u2019m noticing</div>' +
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">' + pick + '</div>';
   box.style.display = 'block';
 }
 
@@ -408,7 +408,7 @@ function renderTodayForYou(){
         '<button class="btn primary" onclick="go(&apos;coach&apos;)" style="margin-bottom:8px">Just talk to your Coach</button>' +
         // openMyBook(), not the Bible tab: this sent a Muslim, a Buddhist and a secular person into
         // Christian scripture from a card offered to all of them. The label follows the registry too.
-        '<button class="btn" onclick="openMyBook()" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Read ' +
+        '<button class="btn" onclick="openMyBook()" style="background:var(--bg3);font-size:var(--t-base)">Read ' +
         ((typeof faithWordPhrase==='function') ? faithWordPhrase() : 'a word') + '</button>';
     }
     return;
@@ -436,7 +436,7 @@ function renderTodayForYou(){
       if(actEl){
         actEl.innerHTML =
           '<button class="btn primary" onclick="go(&apos;coach&apos;)" style="margin-bottom:8px">Pick up where we left off</button>' +
-          '<button class="btn" onclick="go(&apos;reflect&apos;)" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Just close today</button>';
+          '<button class="btn" onclick="go(&apos;reflect&apos;)" style="background:var(--bg3);font-size:var(--t-base)">Just close today</button>';
       }
       card.__easedReturn = true;
     }
@@ -467,7 +467,7 @@ function renderTodayForYou(){
       // while dropping the person into the Grow training tab, which is not where one thing gets named.
       if(msgEl) msgEl.textContent = 'Not up to the full morning? Name one thing that would make today count.';
       if(actEl) actEl.innerHTML =
-        '<button class="btn" onclick="go(&apos;morning&apos;)" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Just the one thing</button>';
+        '<button class="btn" onclick="go(&apos;morning&apos;)" style="background:var(--bg3);font-size:var(--t-base)">Just the one thing</button>';
       return;
     }
     if(eyebrowEl) eyebrowEl.textContent = 'This morning';
@@ -475,7 +475,7 @@ function renderTodayForYou(){
     if(actEl){
       actEl.innerHTML =
         '<button class="btn primary" onclick="go(&apos;morning&apos;)" style="margin-bottom:8px">Begin your morning →</button>' +
-        '<button class="btn" onclick="go(&apos;grow&apos;)" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Skip to the day</button>';
+        '<button class="btn" onclick="go(&apos;grow&apos;)" style="background:var(--bg3);font-size:var(--t-base)">Skip to the day</button>';
     }
     return;
   }
@@ -488,7 +488,7 @@ function renderTodayForYou(){
       if(eyebrowEl) eyebrowEl.textContent = 'A gentle check';
       if(msgEl) msgEl.textContent = 'The morning got away from you — that\u2019s alright. It can still be set.';
       if(actEl) actEl.innerHTML =
-        '<button class="btn" onclick="go(&apos;morning&apos;)" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Set my intention</button>';
+        '<button class="btn" onclick="go(&apos;morning&apos;)" style="background:var(--bg3);font-size:var(--t-base)">Set my intention</button>';
       return;
     }
     if(eyebrowEl) eyebrowEl.textContent = 'A gentle check';
@@ -496,7 +496,7 @@ function renderTodayForYou(){
     if(actEl){
       actEl.innerHTML =
         '<button class="btn primary" onclick="go(&apos;morning&apos;)" style="margin-bottom:8px">Set my intention →</button>' +
-        '<button class="btn" onclick="go(&apos;grow&apos;)" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Just carry on</button>';
+        '<button class="btn" onclick="go(&apos;grow&apos;)" style="background:var(--bg3);font-size:var(--t-base)">Just carry on</button>';
     }
     return;
   }
@@ -505,7 +505,7 @@ function renderTodayForYou(){
       if(eyebrowEl) eyebrowEl.textContent = 'This evening';
       if(msgEl) msgEl.textContent = 'Not up to writing it out? We can just talk it through instead.';
       if(actEl) actEl.innerHTML =
-        '<button class="btn" onclick="go(&apos;coach&apos;)" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Talk it out with Coach</button>';
+        '<button class="btn" onclick="go(&apos;coach&apos;)" style="background:var(--bg3);font-size:var(--t-base)">Talk it out with Coach</button>';
       return;
     }
     if(eyebrowEl) eyebrowEl.textContent = 'This evening';
@@ -513,7 +513,7 @@ function renderTodayForYou(){
     if(actEl){
       actEl.innerHTML =
         '<button class="btn primary" onclick="go(&apos;reflect&apos;)" style="margin-bottom:8px">Reflect on today →</button>' +
-        '<button class="btn" onclick="go(&apos;coach&apos;)" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Talk it out with Coach</button>';
+        '<button class="btn" onclick="go(&apos;coach&apos;)" style="background:var(--bg3);font-size:var(--t-base)">Talk it out with Coach</button>';
     }
     return;
   }
@@ -542,7 +542,7 @@ function renderTodayForYou(){
       // No "Stay in the fight" button here — the "Fighting an urge right now?" section below
       // already gives a direct, in-place way to go through an urge. This just nudges habits.
       actEl.innerHTML =
-        (untickedHabits.length ? '<div style="font-size:11px;color:var(--tx3);text-align:center;font-family:DM Mono,monospace">' + untickedHabits.length + ' habit' + (untickedHabits.length>1?'s':'') + ' still open today \u00b7 they tick as you log</div>' : '<div style="font-size:11px;color:var(--tx3);text-align:center;font-family:DM Mono,monospace">If an urge hits, the section below is right there.</div>');
+        (untickedHabits.length ? '<div style="font-size:var(--t-cap);color:var(--tx3);text-align:center;font-family:var(--font-text)">' + untickedHabits.length + ' habit' + (untickedHabits.length>1?'s':'') + ' still open today \u00b7 they tick as you log</div>' : '<div style="font-size:var(--t-cap);color:var(--tx3);text-align:center;font-family:var(--font-text)">If an urge hits, the section below is right there.</div>');
     }
     return;
   }
@@ -555,8 +555,8 @@ function renderTodayForYou(){
       // the 42 cells in that grid has onclick === null, by design: ticking by hand lives in the evening
       // check-in, and habits otherwise tick themselves from what you log. The card was instructing a
       // tap that does nothing, on the app's first screen.
-      actEl.innerHTML = '<div style="font-size:12px;color:var(--tx3);line-height:1.5;margin-bottom:8px">It ticks itself when you log it \u2014 or tick it by hand tonight.</div>' +
-        '<button class="btn" onclick="go(\'reflect\')" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Tick it in tonight\u2019s check-in</button>';
+      actEl.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5;margin-bottom:8px">It ticks itself when you log it \u2014 or tick it by hand tonight.</div>' +
+        '<button class="btn" onclick="go(\'reflect\')" style="background:var(--bg3);font-size:var(--t-base)">Tick it in tonight\u2019s check-in</button>';
     }
     return;
   }
@@ -569,7 +569,7 @@ function renderTodayForYou(){
   }
   if(eyebrowEl) eyebrowEl.textContent = 'Today · well done';
   if(msgEl) msgEl.textContent = (first ? first + ', you\'ve' : 'You\'ve') + ' done today\'s work. This is who you\'re becoming.';
-  if(actEl) actEl.innerHTML = '<button class="btn" onclick="go(&apos;reflect&apos;)" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Reflect on today</button>';
+  if(actEl) actEl.innerHTML = '<button class="btn" onclick="go(&apos;reflect&apos;)" style="background:var(--bg3);font-size:var(--t-base)">Reflect on today</button>';
 }
 
 function renderHomeQuickWins(){
@@ -584,8 +584,8 @@ function renderHomeQuickWins(){
       // A letting-go struggle: healing stat + the grief door, never "clean days" / the substance flow.
       const lgDays = v.startDate ? Math.floor((Date.now()-new Date(v.startDate).getTime())/86400000) : 0;
       return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0' + (i>0?';border-top:1px solid var(--bd)':'') + '">' +
-        '<div style="min-width:0;flex:1"><div style="font-size:14px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + v.n.replace(/</g,'&lt;') + '</div>' +
-        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">day ' + lgDays + ' of letting go</div></div>' +
+        '<div style="min-width:0;flex:1"><div style="font-size:var(--t-base);color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + v.n.replace(/</g,'&lt;') + '</div>' +
+        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px">day ' + lgDays + ' of letting go</div></div>' +
         '<button class="btn subtle" onclick="openLettingGo()" style="width:auto;padding:8px 14px;flex-shrink:0">Feeling the pull?</button>' +
       '</div>';
     }
@@ -613,10 +613,10 @@ function renderHomeQuickWins(){
       stat = bits.join(' · ');
     }
     return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0' + (i>0?';border-top:1px solid var(--bd)':'') + '">' +
-      '<div style="min-width:0;flex:1"><div style="font-size:14px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + v.n.replace(/</g,'&lt;') + '</div>' +
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + stat + '</div></div>' +
+      '<div style="min-width:0;flex:1"><div style="font-size:var(--t-base);color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + v.n.replace(/</g,'&lt;') + '</div>' +
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px">' + stat + '</div></div>' +
       // Primary: open the real urge-support flow (the whole point — you're going THROUGH it now)
-      '<button class="btn" onclick="fightVice(' + i + ')" style="width:auto;padding:8px 14px;font-size:12px;background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re);flex-shrink:0">I\'m feeling it</button>' +
+      '<button class="btn" onclick="fightVice(' + i + ')" style="width:auto;padding:8px 14px;font-size:var(--t-sm);background:var(--re-bg);color:var(--re);flex-shrink:0">I\'m feeling it</button>' +
     '</div>';
   }).join('');
 }

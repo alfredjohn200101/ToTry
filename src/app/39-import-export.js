@@ -180,21 +180,21 @@ async function importScaleScreenshot(event){
 function confirmScaleScreenshotEntry(weight, p){
   const today = _todayLocalISO();
   const row = (label, val, unit) => (val!=null && !isNaN(val))
-    ? '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--tx2);padding:4px 0"><span style="color:var(--tx3)">'+label+'</span><span>'+val+(unit?' '+unit:'')+'</span></div>' : '';
+    ? '<div style="display:flex;justify-content:space-between;font-size:var(--t-sm);color:var(--tx2);padding:4px 0"><span style="color:var(--tx3)">'+label+'</span><span>'+val+(unit?' '+unit:'')+'</span></div>' : '';
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.style.alignItems = 'center';
   m.innerHTML = '<div class="modal" style="max-height:90vh;overflow-y:auto">'+
     '<div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:21px;color:var(--tx);font-style:italic;margin-bottom:4px">I read your scale</div>'+
-    '<div style="text-align:center;font-size:12px;color:var(--tx3);margin-bottom:14px">Check the weight and correct it if I misread, then save.</div>'+
+    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;margin-bottom:4px">I read your scale</div>'+
+    '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px">Check the weight and correct it if I misread, then save.</div>'+
     '<div style="display:flex;gap:8px;margin-bottom:12px;align-items:center">'+
-      '<div style="flex:1"><label style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:4px">Weight (kg)</label>'+
-      '<input type="number" id="shot-weight" step="0.1" value="'+weight+'" style="width:100%;font-size:22px;text-align:center;padding:10px;font-family:DM Mono,monospace"></div>'+
-      '<div style="width:140px"><label style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:4px">Date</label>'+
-      '<input type="date" id="shot-date" max="'+today+'" value="'+today+'" style="width:100%;font-size:16px;padding:11px;color-scheme:dark"></div>'+
+      '<div style="flex:1"><label style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;display:block;margin-bottom:4px">Weight (kg)</label>'+
+      '<input type="number" id="shot-weight" step="0.1" value="'+weight+'" style="width:100%;font-size:var(--t-xl);text-align:center;padding:10px;font-family:var(--font-text)"></div>'+
+      '<div style="width:140px"><label style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;display:block;margin-bottom:4px">Date</label>'+
+      '<input type="date" id="shot-date" max="'+today+'" value="'+today+'" style="width:100%;font-size:var(--t-base);padding:11px;color-scheme:dark"></div>'+
     '</div>'+
-    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:10px 12px;margin-bottom:14px">'+
+    '<div style="background:var(--bg3);border-radius:var(--rm);padding:10px 12px;margin-bottom:14px">'+
       row('Body fat', p.bf, '%')+row('Muscle mass', p.musclePct, '%')+row('Muscle mass', p.muscleKg, 'kg')+
       row('Body fat mass', p.fatMassKg, 'kg')+row('Lean body mass', p.leanKg, 'kg')+row('BMI', p.bmi, '')+
       row('Water', p.water, '%')+row('Visceral fat', p.visceral, '')+row('BMR', p.bmr, 'kcal')+

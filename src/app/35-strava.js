@@ -51,15 +51,15 @@ function _showStravaModal(){
     m.innerHTML = '<div class="modal">' +
       '<div class="modal-handle"></div>' +
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
-        '<div style="width:40px;height:40px;border-radius:var(--rs);background:#FC4C02;display:flex;align-items:center;justify-content:center;font-size:18px">\u{1F6B4}</div>' +
-        '<div><div style="font-size:16px;font-weight:500;color:var(--tx)">Strava — limited access</div><div style="font-size:11px;color:var(--tx3)">Currently invite-only</div></div>' +
+        '<div style="width:40px;height:40px;border-radius:var(--rs);background:#FC4C02;display:flex;align-items:center;justify-content:center;font-size:var(--t-hd)">\u{1F6B4}</div>' +
+        '<div><div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">Strava — limited access</div><div style="font-size:var(--t-cap);color:var(--tx3)">Currently invite-only</div></div>' +
       '</div>' +
-      '<p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">Strava integration is live but limited to a small number of connected athletes right now. As the app grows and broader API access is approved, this opens up to everyone.</p>' +
-      '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.6;font-style:italic">In the meantime, you can manually log cardio in the Train tab \u2014 same outcome, just one extra tap.</p>' +
+      '<p style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-bottom:14px">Strava integration is live but limited to a small number of connected athletes right now. As the app grows and broader API access is approved, this opens up to everyone.</p>' +
+      '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px;line-height:1.6;font-style:italic">In the meantime, you can manually log cardio in the Train tab \u2014 same outcome, just one extra tap.</p>' +
       '<button class="btn" onclick="closeModal(this)">Got it</button>' +
     '</div>';
     document.body.appendChild(m);
-    try{ const st = ls('totry_strava_last'); if(st){ const f = document.createElement('div'); f.style.cssText='font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-align:center;margin-top:10px'; f.textContent='Last sync: ' + new Date(st.ts).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}) + ' \u00b7 ' + st.count + ' pulled \u00b7 one-way (Strava \u2192 ToTry)'; const mm = m.querySelector('.modal'); if(mm) mm.appendChild(f); } }catch(_){}
+    try{ const st = ls('totry_strava_last'); if(st){ const f = document.createElement('div'); f.style.cssText='font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-align:center;margin-top:10px'; f.textContent='Last sync: ' + new Date(st.ts).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}) + ' \u00b7 ' + st.count + ' pulled \u00b7 one-way (Strava \u2192 ToTry)'; const mm = m.querySelector('.modal'); if(mm) mm.appendChild(f); } }catch(_){}
     return;
   }
   
@@ -75,11 +75,11 @@ function _showStravaModal(){
     m.innerHTML = '<div class="modal">' +
       '<div class="modal-handle"></div>' +
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
-        '<div style="width:40px;height:40px;border-radius:var(--rs);background:#FC4C02;display:flex;align-items:center;justify-content:center;font-size:18px">\u{1F6B4}</div>' +
-        '<div><div style="font-size:16px;font-weight:500;color:var(--tx)">Connect Strava on the web</div><div style="font-size:11px;color:var(--tx3)">Once — then it syncs here on its own</div></div>' +
+        '<div style="width:40px;height:40px;border-radius:var(--rs);background:#FC4C02;display:flex;align-items:center;justify-content:center;font-size:var(--t-hd)">\u{1F6B4}</div>' +
+        '<div><div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">Connect Strava on the web</div><div style="font-size:var(--t-cap);color:var(--tx3)">Once — then it syncs here on its own</div></div>' +
       '</div>' +
-      '<p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:12px">Strava’s sign-in can’t hand you back into the app on iOS, so you connect it once in your browser instead.</p>' +
-      '<p style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">Open ToTry on the web, sign in with <b>this same account</b>, then Settings → Connected apps → Strava. Your runs and rides start syncing into this app by themselves — nothing else to do here.</p>' +
+      '<p style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-bottom:12px">Strava’s sign-in can’t hand you back into the app on iOS, so you connect it once in your browser instead.</p>' +
+      '<p style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-bottom:14px">Open ToTry on the web, sign in with <b>this same account</b>, then Settings → Connected apps → Strava. Your runs and rides start syncing into this app by themselves — nothing else to do here.</p>' +
       '<button class="btn primary" onclick="openStravaOnWeb()" style="margin-bottom:8px">Open ToTry on the web</button>' +
       '<button class="btn quiet" onclick="closeModal(this)">Not now</button>' +
     '</div>';
@@ -91,15 +91,15 @@ function _showStravaModal(){
   m.innerHTML = '<div class="modal">' +
     '<div class="modal-handle"></div>' +
     '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
-      '<div style="width:40px;height:40px;border-radius:var(--rs);background:#FC4C02;display:flex;align-items:center;justify-content:center;font-size:18px">\u{1F6B4}</div>' +
-      '<div><div style="font-size:16px;font-weight:500;color:var(--tx)">Connect Strava</div><div style="font-size:11px;color:var(--tx3)">Auto-sync your runs, rides, workouts</div></div>' +
+      '<div style="width:40px;height:40px;border-radius:var(--rs);background:#FC4C02;display:flex;align-items:center;justify-content:center;font-size:var(--t-hd)">\u{1F6B4}</div>' +
+      '<div><div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">Connect Strava</div><div style="font-size:var(--t-cap);color:var(--tx3)">Auto-sync your runs, rides, workouts</div></div>' +
     '</div>' +
-    '<p style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:14px">Once connected, your Strava activities sync into ToTry automatically &mdash; counting toward your gym habit and training adherence.</p>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:14px">Once connected, your Strava activities sync into ToTry automatically &mdash; counting toward your gym habit and training adherence.</p>' +
     '<button class="btn primary" onclick="startStravaOAuth()" style="margin-bottom:8px">Connect with Strava</button>' +
     '<button class="btn quiet" onclick="closeModal(this)">Cancel</button>' +
     '</div>';
   document.body.appendChild(m);
-    try{ const st = ls('totry_strava_last'); if(st){ const f = document.createElement('div'); f.style.cssText='font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-align:center;margin-top:10px'; f.textContent='Last sync: ' + new Date(st.ts).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}) + ' \u00b7 ' + st.count + ' pulled \u00b7 one-way (Strava \u2192 ToTry)'; const mm = m.querySelector('.modal'); if(mm) mm.appendChild(f); } }catch(_){}
+    try{ const st = ls('totry_strava_last'); if(st){ const f = document.createElement('div'); f.style.cssText='font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-align:center;margin-top:10px'; f.textContent='Last sync: ' + new Date(st.ts).toLocaleString('en-AU',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}) + ' \u00b7 ' + st.count + ' pulled \u00b7 one-way (Strava \u2192 ToTry)'; const mm = m.querySelector('.modal'); if(mm) mm.appendChild(f); } }catch(_){}
 }
 
 // Opens the web build so a native user can complete the Strava OAuth round trip in a real browser.

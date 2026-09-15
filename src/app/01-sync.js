@@ -91,8 +91,8 @@ function renderSyncStatus(){
   const ago = (t) => { if(!t) return ''; const m = Math.round((Date.now()-t)/60000); return m<1?'just now':(m<60?(m+' min ago'):(Math.round(m/60)+'h ago')); };
   if(typeof currentUser==='undefined' || !currentUser){ el.innerHTML = '<span style="color:var(--tx3)">Sign in to sync</span>'; return; }
   if(s.status==='syncing'){ el.innerHTML = '<span style="color:var(--go)">Syncing\u2026</span>'; return; }
-  if(s.status==='error'){ el.innerHTML = '<span style="color:var(--re)">Not fully synced</span> <span style="color:var(--tx3);font-size:11px">\u00b7 '+(s.pending||0)+' change'+((s.pending===1)?'':'s')+' waiting, will retry</span>'; return; }
-  if(s.status==='synced' || s.lastSyncAt){ el.innerHTML = '<span style="color:var(--gr)">\u2713 Saved to cloud</span> <span style="color:var(--tx3);font-size:11px">'+(s.lastSyncAt?('\u00b7 '+ago(s.lastSyncAt)):'')+'</span>'; return; }
+  if(s.status==='error'){ el.innerHTML = '<span style="color:var(--re)">Not fully synced</span> <span style="color:var(--tx3);font-size:var(--t-cap)">\u00b7 '+(s.pending||0)+' change'+((s.pending===1)?'':'s')+' waiting, will retry</span>'; return; }
+  if(s.status==='synced' || s.lastSyncAt){ el.innerHTML = '<span style="color:var(--gr)">\u2713 Saved to cloud</span> <span style="color:var(--tx3);font-size:var(--t-cap)">'+(s.lastSyncAt?('\u00b7 '+ago(s.lastSyncAt)):'')+'</span>'; return; }
   el.innerHTML = '<span style="color:var(--tx3)">Up to date</span>';
 }
 function _setSyncState(patch){
@@ -361,15 +361,15 @@ async function contributeToSharedLibrary(kind, name, data){
 async function loadPendingSubmissions(){
   const body = document.getElementById('moderation-body');
   if(!body) return;
-  if(!sb || !currentUser){ body.innerHTML = '<div style="font-size:12px;color:var(--tx3);text-align:center;padding:14px">Sign in to review submissions.</div>'; return; }
-  body.innerHTML = '<div style="font-size:12px;color:var(--tx3);text-align:center;padding:14px">Loading…</div>';
+  if(!sb || !currentUser){ body.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:14px">Sign in to review submissions.</div>'; return; }
+  body.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:14px">Loading…</div>';
   try{
     const { data, error } = await sb.from('shared_library')
       .select('id,kind,name,data,verified,created_at')
       .eq('approved', false).eq('flagged', false)
       .order('created_at', { ascending:false })
       .limit(100);
-    if(error){ body.innerHTML = '<div style="font-size:12px;color:var(--re);padding:8px">Couldn\u2019t load: '+(error.message||'error')+'</div>'; return; }
+    if(error){ body.innerHTML = '<div style="font-size:var(--t-sm);color:var(--re);padding:8px">Couldn\u2019t load: '+(error.message||'error')+'</div>'; return; }
     if(!data || !data.length){ body.innerHTML = '<div class="empty-note">Nothing pending. \u2713</div>'; return; }
     body.innerHTML = data.map(row => {
       let d = row.data; if(typeof d === 'string'){ try{ d = JSON.parse(d); }catch(_){ d = {}; } }
@@ -379,16 +379,16 @@ async function loadPendingSubmissions(){
         ? [d.bodyPart, d.equipment, d.tracking].filter(Boolean).map(_escFew).join(' \u00b7 ')
         : [d.brand, d.serving, (d.cal!=null?d.cal+' cal':''), (d.pro!=null?d.pro+'g P':'')].filter(Boolean).map(_escFew).join(' \u00b7 ');
       const vTag = row.verified ? '<span class="src-tag" style="color:var(--gr);margin-left:6px">VERIFIED</span>' : '';
-      return '<div style="border:1px solid var(--bd);border-radius:var(--rm);padding:11px 12px;margin-bottom:8px">'+
-        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><span style="font-size:8px;color:var(--tx3);font-family:DM Mono,monospace;text-transform:uppercase">'+row.kind+'</span>'+vTag+'</div>'+
-        '<div style="font-size:14px;color:var(--tx);margin-bottom:2px">'+_escFew(row.name||'')+'</div>'+
-        '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">'+(meta||'\u2014')+'</div>'+
+      return '<div style="border-radius:var(--rm);padding:11px 12px;margin-bottom:8px;background:var(--fill2)">'+
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><span style="font-size:var(--t-micro);color:var(--tx3);font-family:var(--font-text);text-transform:uppercase">'+row.kind+'</span>'+vTag+'</div>'+
+        '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:2px">'+_escFew(row.name||'')+'</div>'+
+        '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px">'+(meta||'\u2014')+'</div>'+
         '<div style="display:flex;gap:8px">'+
-          '<button class="btn primary" style="flex:1;font-size:12px;padding:8px" onclick="approveSubmission('+row.id+')">Approve</button>'+
-          '<button class="btn" style="flex:1;font-size:12px;padding:8px;background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re)" onclick="rejectSubmission('+row.id+')">Reject</button>'+
+          '<button class="btn primary" style="flex:1;font-size:var(--t-sm);padding:8px" onclick="approveSubmission('+row.id+')">Approve</button>'+
+          '<button class="btn" style="flex:1;font-size:var(--t-sm);padding:8px;background:var(--re-bg);color:var(--re)" onclick="rejectSubmission('+row.id+')">Reject</button>'+
         '</div></div>';
     }).join('');
-  }catch(e){ body.innerHTML = '<div style="font-size:12px;color:var(--re);padding:8px">Error loading submissions.</div>'; }
+  }catch(e){ body.innerHTML = '<div style="font-size:var(--t-sm);color:var(--re);padding:8px">Error loading submissions.</div>'; }
 }
 async function approveSubmission(id){
   if(!sb || !id) return;

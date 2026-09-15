@@ -96,7 +96,7 @@ function renderFirstRun(){
   if(stepsEl){
     stepsEl.innerHTML = steps.map(s => {
       const check = s.done
-        ? '<div style="width:22px;height:22px;border-radius:50%;background:var(--gr);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#000;font-size:13px;font-weight:700">✓</div>'
+        ? '<div style="width:22px;height:22px;border-radius:50%;background:var(--gr);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#000;font-size:var(--t-base);font-weight:700">✓</div>'
         : '<div style="width:22px;height:22px;border-radius:50%;border:2px solid var(--bd2);flex-shrink:0"></div>';
       const textStyle = s.done ? 'color:var(--tx3);text-decoration:line-through' : 'color:var(--tx)';
       // A DIV WITH AN ONCLICK IS NOT A BUTTON. These four rows are the app's own "four quick things
@@ -110,10 +110,10 @@ function renderFirstRun(){
       return '<div' + tap + ' style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)' + (s.done ? '' : ';cursor:pointer') + '">' +
         check +
         '<div style="flex:1">' +
-          '<div style="font-size:13px;font-weight:500;' + textStyle + '">' + s.label + '</div>' +
-          (s.done ? '' : '<div style="font-size:11px;color:var(--tx3);margin-top:1px">' + s.desc + '</div>') +
+          '<div style="font-size:var(--t-base);font-weight:500;' + textStyle + '">' + s.label + '</div>' +
+          (s.done ? '' : '<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:1px">' + s.desc + '</div>') +
         '</div>' +
-        (s.done ? '' : '<span style="color:var(--go);font-size:16px">›</span>') +
+        (s.done ? '' : '<span style="color:var(--go);font-size:var(--t-base)">›</span>') +
       '</div>';
     }).join('');
   }
@@ -141,13 +141,13 @@ function checkChangelog(){
   m.style.alignItems = 'center';
   m.innerHTML = '<div class="modal">' +
     '<div class="modal-handle"></div>' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:6px">' + APP_VERSION + ' · just updated</div>' +
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);font-style:italic;margin-bottom:14px">' + entry.title + '</div>' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">' + APP_VERSION + ' · just updated</div>' +
+    '<div style="font-family:var(--font-serif);font-size:var(--t-title1);color:var(--tx);font-style:italic;margin-bottom:14px">' + entry.title + '</div>' +
     '<div style="margin-bottom:16px">' +
       entry.items.map(it =>
         '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd)">' +
           '<span style="color:var(--go);flex-shrink:0">›</span>' +
-          '<span style="font-size:13px;color:var(--tx2);line-height:1.5">' + it + '</span>' +
+          '<span style="font-size:var(--t-sm);color:var(--tx2);line-height:1.5">' + it + '</span>' +
         '</div>'
       ).join('') +
     '</div>' +
@@ -267,30 +267,30 @@ function showAppPreview(){
   
   // Build a "Day 60 in the life of a user" preview — all illustrative, never saved
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--pu);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:6px">Preview · sample data · not yours</div>' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--pu);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Preview · sample data · not yours</div>' +
     '<h3 style="margin-bottom:6px">What Day 60 looks like</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:16px;line-height:1.6">This is a sample of what your app will look like once you\'ve been logging for 2 months. None of this is real — it\'s just so you can see what you\'re building toward.</p>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:16px;line-height:1.6">This is a sample of what your app will look like once you\'ve been logging for 2 months. None of this is real — it\'s just so you can see what you\'re building toward.</p>' +
     '<div style="max-height:62vh;overflow-y:auto;padding-right:4px">' +
     
       // Identity + day count
-      '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-        '<div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:3px">Who you are becoming</div>' +
-        '<div style="font-family:Cormorant Garamond,serif;font-size:16px;color:var(--tx);font-style:italic;margin-bottom:8px">Disciplined · present · faithful · strong</div>' +
+      '<div style="background:var(--bg2);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
+        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Who you are becoming</div>' +
+        '<div style="font-family:var(--font-serif);font-size:var(--t-base);color:var(--tx);font-style:italic;margin-bottom:8px">Disciplined · present · faithful · strong</div>' +
         '<div style="display:flex;justify-content:space-between;align-items:center">' +
-          '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--go)">Day 60</div>' +
-          '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">38d clean from weed</div>' +
+          '<div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go)">Day 60</div>' +
+          '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">38d clean from weed</div>' +
         '</div>' +
       '</div>' +
     
       // Coach line
-      '<div style="background:linear-gradient(135deg,rgba(140,107,182,0.1),rgba(200,169,110,0.06));border:1px solid rgba(140,107,182,0.3);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-        '<div style="font-family:DM Mono,monospace;font-size:8px;color:var(--pu);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px">Your coach says</div>' +
-        '<div style="font-family:Cormorant Garamond,serif;font-size:14px;color:var(--tx);font-style:italic;line-height:1.5">"Yesterday you trained legs hard and journaled about feeling tired. Today: lighter session, double protein, sleep 8h. Phil 4:13."</div>' +
+      '<div style="background:var(--go-bg);border:1px solid rgba(140,107,182,0.3);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
+        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--pu);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">Your coach says</div>' +
+        '<div style="font-family:var(--font-serif);font-size:var(--t-base);color:var(--tx);font-style:italic;line-height:1.5">"Yesterday you trained legs hard and journaled about feeling tired. Today: lighter session, double protein, sleep 8h. Phil 4:13."</div>' +
       '</div>' +
     
       // Heatmap mock
-      '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">Show-up heatmap · 87% rate</div>' +
+      '<div style="background:var(--bg2);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
+        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Show-up heatmap · 87% rate</div>' +
         '<div style="display:grid;grid-template-columns:repeat(13,1fr);gap:2px">' +
           Array.from({length:13*7}, (_,i) => {
             const intensity = [0.08, 0.25, 0.5, 0.75, 1][Math.floor(Math.random()*5)];
@@ -300,46 +300,46 @@ function showAppPreview(){
       '</div>' +
     
       // Training summary mock
-      '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">Weekly muscle volume</div>' +
+      '<div style="background:var(--bg2);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
+        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Weekly muscle volume</div>' +
         ['Chest 18.4k kg · 2d ago','Back 22.1k kg · today','Legs 31.8k kg · 1d ago','Shoulders 8.2k kg · 3d ago'].map(r =>
-          '<div style="display:flex;justify-content:space-between;font-family:DM Mono,monospace;font-size:11px;color:var(--tx2);padding:3px 0">' +
+          '<div style="display:flex;justify-content:space-between;font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx2);padding:3px 0">' +
             '<span>' + r.split(' · ')[0] + '</span><span style="color:var(--tx3)">' + r.split(' · ')[1] + '</span>' +
           '</div>'
         ).join('') +
       '</div>' +
     
       // Nutrition card mock
-      '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">Today\'s nutrition</div>' +
+      '<div style="background:var(--bg2);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
+        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Today\'s nutrition</div>' +
         '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px">' +
-          '<div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3)">CAL</div><div style="font-family:DM Mono,monospace;font-size:14px;color:var(--go)">2104</div></div>' +
-          '<div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3)">PRO</div><div style="font-family:DM Mono,monospace;font-size:14px;color:#A8D8B9">178g</div></div>' +
-          '<div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3)">FIBER</div><div style="font-family:DM Mono,monospace;font-size:14px;color:var(--gr)">31g</div></div>' +
-          '<div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3)">VIT C</div><div style="font-family:DM Mono,monospace;font-size:14px;color:var(--tx2)">93%</div></div>' +
+          '<div style="text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)">CAL</div><div style="font-family:var(--font-text);font-size:var(--t-base);color:var(--go)">2104</div></div>' +
+          '<div style="text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)">PRO</div><div style="font-family:var(--font-text);font-size:var(--t-base);color:#A8D8B9">178g</div></div>' +
+          '<div style="text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)">FIBER</div><div style="font-family:var(--font-text);font-size:var(--t-base);color:var(--gr)">31g</div></div>' +
+          '<div style="text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3)">VIT C</div><div style="font-family:var(--font-text);font-size:var(--t-sm);color:var(--tx2)">93%</div></div>' +
         '</div>' +
       '</div>' +
     
       // Vice pattern mock
-      '<div style="background:linear-gradient(135deg,rgba(140,107,182,0.08),rgba(200,169,110,0.05));border:1px solid var(--bd);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Patterns from your fights</div>' +
-        '<div style="font-size:11px;color:var(--tx2);line-height:1.6">'+svgIcon("target")+' Top trigger: "boredom" — 6 times · 67% win rate<br>'+svgIcon("calendar")+' Hardest day: Fridays — 8 fights · 50% won<br>'+svgIcon("clock")+' Peak: late night — 9 fights · 78% won</div>' +
+      '<div style="background:var(--go-bg);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
+        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Patterns from your fights</div>' +
+        '<div style="font-size:var(--t-cap);color:var(--tx2);line-height:1.6">'+svgIcon("target")+' Top trigger: "boredom" — 6 times · 67% win rate<br>'+svgIcon("calendar")+' Hardest day: Fridays — 8 fights · 50% won<br>'+svgIcon("clock")+' Peak: late night — 9 fights · 78% won</div>' +
       '</div>' +
     
       // Money mock
-      '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Money</div>' +
-        '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);padding:3px 0"><span>Debt remaining</span><span style="font-family:DM Mono,monospace;color:var(--re)">'+curSym()+'6,840</span></div>' +
-        '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);padding:3px 0"><span>Saved from vices</span><span style="font-family:DM Mono,monospace;color:var(--gr)">+'+curSym()+'432</span></div>' +
-        '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);padding:3px 0"><span>USA trip fund</span><span style="font-family:DM Mono,monospace;color:var(--go)">'+curSym()+'1,840 / '+curSym()+'8,000</span></div>' +
+      '<div style="background:var(--bg2);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
+        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Money</div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:var(--t-sm);color:var(--tx2);padding:3px 0"><span>Debt remaining</span><span style="font-family:var(--font-text);color:var(--re)">'+curSym()+'6,840</span></div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:var(--t-sm);color:var(--tx2);padding:3px 0"><span>Saved from vices</span><span style="font-family:var(--font-text);color:var(--gr)">+'+curSym()+'432</span></div>' +
+        '<div style="display:flex;justify-content:space-between;font-size:var(--t-sm);color:var(--tx2);padding:3px 0"><span>USA trip fund</span><span style="font-family:var(--font-text);color:var(--go)">'+curSym()+'1,840 / '+curSym()+'8,000</span></div>' +
       '</div>' +
     
       // Closing line
-      '<div style="text-align:center;padding:16px 8px;font-family:Cormorant Garamond,serif;font-size:15px;color:var(--tx2);font-style:italic;line-height:1.6">Your version of this fills in one log at a time. Start with one thing today.</div>' +
+      '<div style="text-align:center;padding:16px 8px;font-family:var(--font-serif);font-size:var(--t-base);color:var(--tx2);font-style:italic;line-height:1.6">Your version of this fills in one log at a time. Start with one thing today.</div>' +
     
     '</div>' +
     '<button class="btn primary" onclick="dismissPreviewBanner();closeModal(this)" style="margin-top:14px">Start my Day 1</button>' +
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd);font-size:12px">Close preview</button>' +
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;font-size:var(--t-sm);background:var(--fill2)">Close preview</button>' +
   '</div>';
   document.body.appendChild(m);
 }

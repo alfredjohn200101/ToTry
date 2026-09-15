@@ -43,18 +43,18 @@ async function generateWeeklyContent(){
     if(box){
       box.style.display='block';
       if(data && (data.storyboard || data.caption)){
-        const board = (data.storyboard||[]).map((line,i)=>'<div style="display:flex;gap:8px;margin-bottom:7px"><div style="flex-shrink:0;width:20px;height:20px;border-radius:5px;background:var(--go);color:#1a1205;font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:600">'+(i+1)+'</div><div style="flex:1;font-size:13px;color:var(--tx2);line-height:1.5">'+String(line).replace(/^shot\s*\d+\s*:?\s*/i,'').replace(/</g,'&lt;')+'</div></div>').join('');
+        const board = (data.storyboard||[]).map((line,i)=>'<div style="display:flex;gap:8px;margin-bottom:7px"><div style="flex-shrink:0;width:20px;height:20px;border-radius:5px;background:var(--go);color:#1a1205;font-size:var(--t-cap);display:flex;align-items:center;justify-content:center;font-weight:600">'+(i+1)+'</div><div style="flex:1;font-size:var(--t-sm);color:var(--tx2);line-height:1.5">'+String(line).replace(/^shot\s*\d+\s*:?\s*/i,'').replace(/</g,'&lt;')+'</div></div>').join('');
         const cap = (data.caption||'').replace(/</g,'&lt;');
-        box.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px">Your storyboard \u00b7 '+clips.length+' clip'+(clips.length===1?'':'s')+' ready</div>'+
+        box.innerHTML = '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:10px">Your storyboard \u00b7 '+clips.length+' clip'+(clips.length===1?'':'s')+' ready</div>'+
           board +
-          '<div style="margin-top:14px;padding:12px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm)"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Caption</div><div id="weekly-caption-text" style="font-size:13px;color:var(--tx);line-height:1.6">'+cap+'</div><button class="btn" onclick="(function(){var t=document.getElementById(&quot;weekly-caption-text&quot;);if(t&&navigator.clipboard){navigator.clipboard.writeText(t.textContent).then(function(){showToast(&quot;Copied&quot;,&quot;Caption copied \u2014 paste it in your editor.&quot;);});}})()" style="margin-top:10px;width:auto;padding:8px 14px;font-size:12px;background:none;border:1px solid var(--go-bd);color:var(--go)">Copy caption</button></div>'+
-          (clips.length ? '<div style="margin-top:12px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Your clips (open these in your editor)</div><div style="display:flex;flex-wrap:wrap;gap:8px">'+clips.map(c=>c.thumb?'<img src="'+c.thumb+'" style="width:48px;height:48px;object-fit:cover;border-radius:var(--rs)">':'<div style="padding:8px 10px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);font-size:11px;color:var(--tx2)"><span style="color:var(--go)">'+svgIcon("film",14)+'</span> '+_escFew((c.name||'clip').slice(0,14))+'</div>').join('')+'</div></div>' : '<div style="margin-top:12px;font-size:11px;color:var(--tx3);line-height:1.5">No clips attached this week. Add proof to your sessions (in any workout) and they\u2019ll appear here for next week\u2019s package.</div>')+
-          '<div style="margin-top:12px;font-size:11px;color:var(--tx3);line-height:1.5">ToTry produces \u2014 you finish it in CapCut, Reels, or TikTok. Your videos stay in your camera roll.</div>';
+          '<div style="margin-top:14px;padding:12px;background:var(--bg3);border-radius:var(--rm)"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Caption</div><div id="weekly-caption-text" style="font-size:var(--t-base);color:var(--tx);line-height:1.6">'+cap+'</div><button class="btn" onclick="(function(){var t=document.getElementById(&quot;weekly-caption-text&quot;);if(t&&navigator.clipboard){navigator.clipboard.writeText(t.textContent).then(function(){showToast(&quot;Copied&quot;,&quot;Caption copied \u2014 paste it in your editor.&quot;);});}})()" style="margin-top:10px;width:auto;padding:8px 14px;font-size:var(--t-sm);background:none;color:var(--go);background:var(--fill2)">Copy caption</button></div>'+
+          (clips.length ? '<div style="margin-top:12px"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Your clips (open these in your editor)</div><div style="display:flex;flex-wrap:wrap;gap:8px">'+clips.map(c=>c.thumb?'<img src="'+c.thumb+'" style="width:48px;height:48px;object-fit:cover;border-radius:var(--rs)">':'<div style="padding:8px 10px;background:var(--bg3);border-radius:var(--rs);font-size:var(--t-cap);color:var(--tx2)"><span style="color:var(--go)">'+svgIcon("film",14)+'</span> '+_escFew((c.name||'clip').slice(0,14))+'</div>').join('')+'</div></div>' : '<div style="margin-top:12px;font-size:var(--t-cap);color:var(--tx3);line-height:1.5">No clips attached this week. Add proof to your sessions (in any workout) and they\u2019ll appear here for next week\u2019s package.</div>')+
+          '<div style="margin-top:12px;font-size:var(--t-cap);color:var(--tx3);line-height:1.5">ToTry produces \u2014 you finish it in CapCut, Reels, or TikTok. Your videos stay in your camera roll.</div>';
       } else {
-        box.innerHTML = '<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t assemble it right now \u2014 try again shortly.</div>';
+        box.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx3)">Couldn\u2019t assemble it right now \u2014 try again shortly.</div>';
       }
     }
-  }catch(e){ if(box){ box.style.display='block'; box.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t reach the producer right now. Try again shortly.</div>'; } }
+  }catch(e){ if(box){ box.style.display='block'; box.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Couldn\u2019t reach the producer right now. Try again shortly.</div>'; } }
   finally{ if(btn){ btn.innerHTML=svgIcon("film",14)+' Make this week\u2019s content'; btn.disabled=false; } }
 }
 
@@ -78,11 +78,11 @@ async function generateWeeklyReflection(){
       const qMatch = raw.match(/\bQ:\s*(.+)$/s);
       const reflection = qMatch ? raw.slice(0, qMatch.index).trim() : raw.trim();
       const question = qMatch ? qMatch[1].trim() : '';
-      box.innerHTML = '<div style="font-family:Cormorant Garamond,serif;font-size:15px;font-style:italic;color:var(--tx);line-height:1.8;white-space:pre-wrap">'+reflection.replace(/</g,'&lt;')+'</div>'+
-        (question ? '<div style="margin-top:14px;padding:13px 15px;background:var(--bg3);border:1px solid var(--go-bd);border-radius:var(--rm)"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">One honest question</div><div style="font-size:14px;color:var(--tx);line-height:1.6;margin-bottom:10px">'+question.replace(/</g,'&lt;')+'</div><button class="btn" onclick="(function(){var q='+JSON.stringify(question).replace(/"/g,'&quot;')+';try{goCoach? goCoach(q):go(\'coach\');}catch(e){go(\'coach\')}})()" style="width:auto;padding:8px 14px;font-size:12px;background:none;border:1px solid var(--go-bd);color:var(--go)">Answer with my coach</button></div>' : '');
+      box.innerHTML = '<div style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;color:var(--tx);line-height:1.8;white-space:pre-wrap">'+reflection.replace(/</g,'&lt;')+'</div>'+
+        (question ? '<div style="margin-top:14px;padding:13px 15px;background:var(--bg3);border-radius:var(--rm)"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">One honest question</div><div style="font-size:var(--t-base);color:var(--tx);line-height:1.6;margin-bottom:10px">'+question.replace(/</g,'&lt;')+'</div><button class="btn" onclick="(function(){var q='+JSON.stringify(question).replace(/"/g,'&quot;')+';try{goCoach? goCoach(q):go(\'coach\');}catch(e){go(\'coach\')}})()" style="width:auto;padding:8px 14px;font-size:var(--t-sm);background:none;color:var(--go);background:var(--fill2)">Answer with my coach</button></div>' : '');
     }
     ls('totry_weekly_reflection_at', Date.now());
-  }catch(e){ if(box){ box.style.display='block'; box.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t reach the coach right now. Try again shortly.</div>'; } }
+  }catch(e){ if(box){ box.style.display='block'; box.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Couldn\u2019t reach the coach right now. Try again shortly.</div>'; } }
   finally{ if(btn){ btn.textContent='Reflect on my week'; btn.disabled=false; } }
 }
 
@@ -276,15 +276,15 @@ function renderUnifiedTraining(){
       if(hasHevy) connected.push('Hevy');
       let body;
       if(connected.length){
-        body = '<div style="font-size:14px;color:var(--tx);margin-bottom:8px">'+connected.join(' &amp; ')+' connected \u2713</div>'+
-          '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">No workouts have come through yet — that\u2019s normal before your first session. Record a workout in '+connected.join(' or ')+', then tap Refresh below and it\u2019ll appear here with your stats.</div>'+
-          (hasStrava ? '<button class="btn primary" onclick="syncStravaActivities();showToast(\'Syncing\',\'Checking Strava\u2026\')" style="width:auto;padding:10px 18px;font-size:13px">Refresh now</button>' : '');
+        body = '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:8px">'+connected.join(' &amp; ')+' connected \u2713</div>'+
+          '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:14px">No workouts have come through yet — that\u2019s normal before your first session. Record a workout in '+connected.join(' or ')+', then tap Refresh below and it\u2019ll appear here with your stats.</div>'+
+          (hasStrava ? '<button class="btn primary" onclick="syncStravaActivities();showToast(\'Syncing\',\'Checking Strava\u2026\')" style="width:auto;padding:10px 18px;font-size:var(--t-base)">Refresh now</button>' : '');
       } else {
-        body = '<div style="font-size:14px;color:var(--tx);margin-bottom:8px">Let’s get you training</div>'+
-          '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">Already have a plan, or use Hevy / Strava? Link it and the coach works around it. Starting from nothing? I’ll build you a plan and tell you today’s session — no guesswork.</div>'+
-          '<button class="btn primary" onclick="setupTraining()" style="width:auto;padding:10px 18px;font-size:13px">Set up my training</button>';
+        body = '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:8px">Let’s get you training</div>'+
+          '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:14px">Already have a plan, or use Hevy / Strava? Link it and the coach works around it. Starting from nothing? I’ll build you a plan and tell you today’s session — no guesswork.</div>'+
+          '<button class="btn primary" onclick="setupTraining()" style="width:auto;padding:10px 18px;font-size:var(--t-base)">Set up my training</button>';
       }
-      emptyBox.innerHTML = '<div class="card" style="text-align:center;padding:24px 18px"><div style="font-size:30px;margin-bottom:10px">'+svgIcon("dumbbell",28)+'</div>'+body+'</div>';
+      emptyBox.innerHTML = '<div class="card" style="text-align:center;padding:24px 18px"><div style="font-size:var(--t-2xl);margin-bottom:10px">'+svgIcon("dumbbell",28)+'</div>'+body+'</div>';
       emptyBox.style.display = 'block';
     }
     card.style.display = 'none';
@@ -330,9 +330,9 @@ function renderUnifiedTraining(){
     const when = t.ts ? new Date(t.ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : '';
     return '<div class="strava-activity" onclick="openEditTraining(&quot;'+t.id+'&quot;)" style="display:flex;align-items:center;gap:10px;cursor:pointer">'+
       '<span style="flex-shrink:0;display:flex;align-items:center;color:var(--go)">'+svgIcon(typeEmoji(t),18)+'</span>'+
-      '<div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(t.title||'Session').replace(/</g,'&lt;')+'</span>'+srcDot(t.source)+'</div>'+
-      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:2px">'+fmtMeta(t)+'</div></div>'+
-      '<span style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);flex-shrink:0">'+when+' ›</span></div>';
+      '<div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:var(--t-base);color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(t.title||'Session').replace(/</g,'&lt;')+'</span>'+srcDot(t.source)+'</div>'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);margin-top:2px">'+fmtMeta(t)+'</div></div>'+
+      '<span style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);flex-shrink:0">'+when+' ›</span></div>';
   }).join('');
   // Weekly summary strip
   const summaryBits = [];
@@ -342,16 +342,16 @@ function renderUnifiedTraining(){
   if(w.totalMinutes) detailBits.push(w.totalMinutes + ' min');
   if(w.totalVolumeKg) detailBits.push(w.totalVolumeKg.toLocaleString() + 'kg lifted');
   if(w.totalDistanceKm) detailBits.push(w.totalDistanceM != null ? dFmt(w.totalDistanceM) : (w.totalDistanceKm + 'km'));
-  const refreshBtn = hasStrava ? '<button class="btn" onclick="syncStravaActivities();showToast(\'Syncing\',\'Pulling latest\u2026\')" style="width:auto;padding:5px 10px;font-size:11px;background:var(--bg3);border:1px solid var(--bd)">Refresh</button>' : '';
+  const refreshBtn = hasStrava ? '<button class="btn" onclick="syncStravaActivities();showToast(\'Syncing\',\'Pulling latest\u2026\')" style="width:auto;padding:5px 10px;font-size:var(--t-cap);background:var(--bg3)">Refresh</button>' : '';
   card.innerHTML = '<div class="card">'+
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'+
       '<div class="card-hd" style="margin-bottom:0">All training</div>'+ refreshBtn +
     '</div>'+
-    (summaryBits.length ? '<div style="font-size:12px;color:var(--go);margin-bottom:2px">This week: '+summaryBits.join(' \u00b7 ')+'</div>' : '')+
-    (detailBits.length ? '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-bottom:12px">'+detailBits.join(' \u00b7 ')+'</div>' : '<div style="margin-bottom:10px"></div>')+
-    (function(){ const tr = (typeof getTrainingTrend==='function') ? getTrainingTrend() : ''; return tr ? '<div style="font-size:11px;color:var(--bl);background:var(--bg3);border-radius:var(--rs);padding:9px 11px;margin-bottom:12px;line-height:1.5">'+svgIcon("chart")+' '+tr+'</div>' : ''; })()+
+    (summaryBits.length ? '<div style="font-size:var(--t-sm);color:var(--go);margin-bottom:2px">This week: '+summaryBits.join(' \u00b7 ')+'</div>' : '')+
+    (detailBits.length ? '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);margin-bottom:12px">'+detailBits.join(' \u00b7 ')+'</div>' : '<div style="margin-bottom:10px"></div>')+
+    (function(){ const tr = (typeof getTrainingTrend==='function') ? getTrainingTrend() : ''; return tr ? '<div style="font-size:var(--t-cap);color:var(--bl);background:var(--bg3);border-radius:var(--rs);padding:9px 11px;margin-bottom:12px;line-height:1.5">'+svgIcon("chart")+' '+tr+'</div>' : ''; })()+
     rows +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-align:center;margin-top:10px">' + (function(){
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-align:center;margin-top:10px">' + (function(){
       const srcs = new Set(all.map(t=>t.source));
       const names = []; if(srcs.has('hevy')) names.push('Hevy'); if(srcs.has('strava')) names.push('Strava'); if(srcs.has('screenshot')) names.push('screenshots'); if(srcs.has('manual')||srcs.has(undefined)) names.push('logged');
       if(names.length>1) return names.join(' + ') + ', merged \u00b7 duplicates removed';
@@ -378,9 +378,9 @@ function loadTodaySplitCard(){
         const last = (typeof getLastWeightForExercise === 'function') ? getLastWeightForExercise(ex.name, ex.templateId) : null;
         const lastTxt = last ? ' \u00b7 last ' + last.weight + 'kg\u00d7' + last.reps : '';
         const tgt = ex.targetSets ? ex.targetSets + '\u00d7' + (ex.targetReps || '') : '';
-        return '<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;font-size:12px"><span style="color:var(--tx2)">' + ex.name + '</span><span style="color:var(--tx3);font-family:DM Mono,monospace;font-size:10px;white-space:nowrap">' + tgt + lastTxt + '</span></div>';
+        return '<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;font-size:var(--t-sm)"><span style="color:var(--tx2)">' + ex.name + '</span><span style="color:var(--tx3);font-family:var(--font-text);font-size:var(--t-mini);white-space:nowrap">' + tgt + lastTxt + '</span></div>';
       }).join('');
-      if(detailEl) detailEl.innerHTML = exLines + '<div style="margin-top:8px;font-size:11px;color:var(--tx3);cursor:pointer" onclick="openHevyTodayPicker()">Change today\u2019s routine</div>';
+      if(detailEl) detailEl.innerHTML = exLines + '<div style="margin-top:8px;font-size:var(--t-cap);color:var(--tx3);cursor:pointer" onclick="openHevyTodayPicker()">Change today\u2019s routine</div>';
       if(hf) hf.textContent = todayR.title;
       if(hd) hd.innerHTML = (todayR.exercises||[]).length + ' exercises from your Hevy routine';
       if(wrap) wrap.style.display = 'block';
@@ -388,7 +388,7 @@ function loadTodaySplitCard(){
       if(nameEl) nameEl.textContent = 'Pick today\u2019s routine';
       const pickHtml = 'Choose which of your <b>' + routines.length + '</b> Hevy routine' + (routines.length===1?'':'s') + ' you\u2019re training today:' +
         '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px">' +
-        routines.slice(0, 8).map(r => '<button class="btn" style="width:auto;padding:7px 12px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="setTodayHevyRoutine(\'' + r.hevyId + '\')">' + r.title + '</button>').join('') +
+        routines.slice(0, 8).map(r => '<button class="btn" style="width:auto;padding:7px 12px;font-size:var(--t-sm);background:var(--bg3)" onclick="setTodayHevyRoutine(\'' + r.hevyId + '\')">' + r.title + '</button>').join('') +
         '</div>';
       if(detailEl) detailEl.innerHTML = pickHtml;
       // Mirror onto the HOME mission so it never shows a stale app-split day for Hevy users.

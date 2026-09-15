@@ -103,7 +103,7 @@ function renderScoreboard(){
     ].filter(Boolean).join(' \u00b7 ');
     const row=document.createElement('div');row.className='vsr';
     row.innerHTML='<div class="vsr-top"><span class="vsr-name">'+_escFew(v.n)+'</span>'+
-      '<div style="text-align:right"><div class="vsr-pct" style="font-size:15px;color:'+headCol+'">'+head+'</div></div></div>'+
+      '<div style="text-align:right"><div class="vsr-pct" style="font-size:var(--t-base);color:'+headCol+'">'+head+'</div></div></div>'+
       '<div class="vsr-meta"><span>'+meta+'</span><span>'+(v.lastWin?'Last win: '+new Date(v.lastWin).toLocaleDateString('en-AU',{day:'numeric',month:'short'}):'')+'</span></div>';
     bv.appendChild(row);
   });
@@ -130,7 +130,7 @@ function renderScoreboard(){
   const ael=e('achievements');
   if(ael){ael.innerHTML='';let earned=0;
     ACHS.forEach(a=>{if(_achHas(a)){earned++;const el=document.createElement('div');el.className='ach';el.innerHTML='<div class="ach-icon" style="color:var(--go);line-height:1">'+(svgIcon(a.icon,22)||a.icon)+'</div><div><div class="ach-title">'+a.title+'</div><div class="ach-desc">'+a.desc+'</div></div>';ael.appendChild(el);}});
-    if(!earned)ael.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:16px">Fight your first urge to unlock achievements.</p>';
+    if(!earned)ael.innerHTML='<p style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:16px">Fight your first urge to unlock achievements.</p>';
   }
 }
 
@@ -507,16 +507,16 @@ function openHabitAnchor(hi){
   }).join('');
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:8px">Anchor it to something you already do</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:6px">After I\u2026 I will '+_escFew(h.n).toLowerCase()+'.</div>'+
-    '<div style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px">A habit with no cue waits on motivation, and motivation doesn\u2019t show up daily. Tied to something already in your day, it just happens. Same move as the plans you lock in at the Feeling Door \u2014 decide it now, while you\u2019re clear.</div>'+
-    '<input type="text" id="hab-anchor" maxlength="70" placeholder="e.g. I make my coffee" value="'+_escFew(cur)+'" style="font-size:16px;padding:12px;margin-bottom:10px">'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Anchor it to something you already do</div>'+
+    '<div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:6px">After I\u2026 I will '+_escFew(h.n).toLowerCase()+'.</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.55;margin-bottom:14px">A habit with no cue waits on motivation, and motivation doesn\u2019t show up daily. Tied to something already in your day, it just happens. Same move as the plans you lock in at the Feeling Door \u2014 decide it now, while you\u2019re clear.</div>'+
+    '<input type="text" id="hab-anchor" maxlength="70" placeholder="e.g. I make my coffee" value="'+_escFew(cur)+'" style="font-size:var(--t-base);padding:12px;margin-bottom:10px">'+
     // The target was write-once at creation. Someone who typed it wrong, or left it blank and then
     // found their week being measured against days that merely passed, had no way back to it short of
     // deleting the habit and its ticks. This row is the habit's own editor, opened from the very line
     // that reads "3 of 3 this week", so it is where the target belongs.
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:6px">Days a week you are aiming for</div>'+
-    '<input type="number" id="hab-pw" min="1" max="7" placeholder="blank for most days" value="'+((h.pw>=1&&h.pw<=7)?h.pw:'')+'" style="font-size:16px;padding:12px;margin-bottom:14px">'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Days a week you are aiming for</div>'+
+    '<input type="number" id="hab-pw" min="1" max="7" placeholder="blank for most days" value="'+((h.pw>=1&&h.pw<=7)?h.pw:'')+'" style="font-size:var(--t-base);padding:12px;margin-bottom:14px">'+
     '<div style="display:flex;flex-wrap:wrap;justify-content:center;margin-bottom:14px">'+chips+'</div>'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="saveHabitAnchor('+hi+')">Lock in my anchor</button>'+
     (cur?'<button class="btn quiet" onclick="clearHabitAnchor('+hi+')" style="margin-bottom:4px">Remove the anchor</button>':'')+
@@ -626,14 +626,14 @@ function openManageHabits(){
   const rows = habits.length
     ? habits.map(function(h,i){
         return '<div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--bd)">'+
-          '<div style="flex:1;font-size:14px;color:var(--tx)">'+_escFew(h.n)+'</div>'+
-          '<button onclick="closeModal(this);deleteHabit('+i+')" style="background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;padding:6px 8px">Remove</button>'+
+          '<div style="flex:1;font-size:var(--t-base);color:var(--tx)">'+_escFew(h.n)+'</div>'+
+          '<button onclick="closeModal(this);deleteHabit('+i+')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);cursor:pointer;padding:6px 8px">Remove</button>'+
         '</div>';
       }).join('')
     : '<div class="empty-note">Nothing on your list yet.</div>';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
     '<h3 style="margin-bottom:4px">Your habits</h3>'+
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.55">Small and few beats long and forgotten. Removing one is a choice, not a failure.</p>'+
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:12px;line-height:1.55">Small and few beats long and forgotten. Removing one is a choice, not a failure.</p>'+
     rows+
     '<button class="btn primary" style="margin-top:14px;margin-bottom:8px" onclick="closeModal(this);openAddHabit()">+ Add a habit</button>'+
     '<button class="btn" onclick="closeModal(this)">Done</button></div>';

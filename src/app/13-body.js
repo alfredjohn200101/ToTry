@@ -121,7 +121,7 @@ function _wkCrisisRespond(c){
       m.innerHTML = '<div class="modal" style="max-width:92vw">' +
         '<div class="modal-handle"></div>' +
         '<div id="wk-crisis-slot"></div>' +
-        '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;margin-top:10px">Close</button>' +
+        '<button class="btn" onclick="closeModal(this)" style="background:transparent;color:var(--tx3);font-size:var(--t-sm);margin-top:10px;background:var(--fill2)">Close</button>' +
       '</div>';
       document.body.appendChild(m);
       showCrisisResponse('wk-crisis-slot', c);
@@ -451,14 +451,14 @@ function adjustCaloriesFromWeightTrend(){
         m.style.alignItems = 'center';
         m.innerHTML = '<div class="modal" style="max-width:90vw">' +
           '<div class="modal-handle"></div>' +
-          '<div style="text-align:center;font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:6px">Coach update</div>' +
-          '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:14px">Your targets shifted.</div>' +
-          '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:14px;margin-bottom:14px">' +
+          '<div style="text-align:center;font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Coach update</div>' +
+          '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;margin-bottom:14px">Your targets shifted.</div>' +
+          '<div style="background:var(--bg3);border-radius:var(--rm);padding:14px;margin-bottom:14px">' +
             '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
-              '<div style="font-size:12px;color:var(--tx3)">Daily calories</div>' +
-              '<div style="font-family:DM Mono,monospace;font-size:13px"><span style="color:var(--tx3);text-decoration:line-through">' + oldCal + '</span> <span style="color:var(--go);font-weight:700;margin-left:8px">' + newCal + '</span></div>' +
+              '<div style="font-size:var(--t-sm);color:var(--tx3)">Daily calories</div>' +
+              '<div style="font-family:var(--font-text);font-size:var(--t-base)"><span style="color:var(--tx3);text-decoration:line-through">' + oldCal + '</span> <span style="color:var(--go);font-weight:700;margin-left:8px">' + newCal + '</span></div>' +
             '</div>' +
-            '<div style="font-size:13px;color:var(--tx2);line-height:1.6">' + reason + '</div>' +
+            '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">' + reason + '</div>' +
           '</div>' +
           '<button class="btn primary" onclick="closeModal(this);go(\'nourish\')" style="margin-bottom:6px">Got it &mdash; show me</button>' +
           '<button class="btn" onclick="closeModal(this)">Dismiss</button>' +
@@ -548,9 +548,9 @@ async function generateWeeklyCoachResponse(entry){
       m.style.alignItems = 'center';
       m.innerHTML = '<div class="modal">'+
         '<div class="modal-handle"></div>'+
-        '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;text-align:center;margin-bottom:8px">Your coach response</div>'+
-        '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;text-align:center;margin-bottom:16px">For this week.</div>'+
-        '<div style="font-size:14px;line-height:1.75;color:var(--tx2);white-space:pre-wrap;margin-bottom:18px">'+_escFew(response.trim())+'</div>'+
+        '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;text-align:center;margin-bottom:8px">Your coach response</div>'+
+        '<div style="font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;text-align:center;margin-bottom:16px">For this week.</div>'+
+        '<div style="font-size:var(--t-sm);line-height:1.75;color:var(--tx2);white-space:pre-wrap;margin-bottom:18px">'+_escFew(response.trim())+'</div>'+
         '<button class="btn primary" onclick="closeModal(this)">Got it</button>'+
         '</div>';
       document.body.appendChild(m);
@@ -593,14 +593,14 @@ function renderWeightHistory(){
       const _opts = (_d && _d.getFullYear() !== _thisYear)
         ? {day:'numeric',month:'short',year:'numeric'} : {day:'numeric',month:'short'};
       const when = _d ? _d.toLocaleDateString('en-AU',_opts) : (e.date||'');
-      return '<div class="body-entry"><span style="font-size:14px;color:var(--tx)">'+wFmt(e.weight)+'</span>'+
-        '<span style="display:flex;align-items:center;gap:10px"><span style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+when+'</span>'+
+      return '<div class="body-entry"><span style="font-size:var(--t-base);color:var(--tx)">'+wFmt(e.weight)+'</span>'+
+        '<span style="display:flex;align-items:center;gap:10px"><span style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">'+when+'</span>'+
         '<button class="fli-del" onclick="deleteWeightEntry(&quot;'+(e.ts||e.date)+'&quot;)" aria-label="Delete this weigh-in">\u00d7</button></span></div>';
     }).join('') +
     // The way back to the rest of them. Without this the list simply stopped at eight with no
     // sign there were more, which is why nobody noticed the older ones were unreachable.
     (entries.length > 8
-      ? '<button onclick="toggleWeighShowAll()" style="width:100%;min-height:34px;margin-top:6px;background:none;border:none;color:var(--tx3);font-size:11px;font-family:\'DM Mono\',monospace;cursor:pointer">'
+      ? '<button onclick="toggleWeighShowAll()" style="width:100%;min-height:34px;margin-top:6px;background:none;border:none;color:var(--tx3);font-size:var(--t-cap);font-family:var(--font-text);cursor:pointer">'
         + (_weighShowAll ? 'Show fewer' : 'Show all ' + entries.length + ' weigh-ins') + '</button>'
       : '');
 }
@@ -686,10 +686,10 @@ function renderBodyGoalCard(){
     if(n < 3){ box.style.display = 'none'; return; }
     box.style.display = '';
     box.innerHTML = '<div class="card" style="padding:14px">' +
-      '<div style="font-size:13px;color:var(--tx2);line-height:1.55;margin-bottom:10px">' +
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55;margin-bottom:10px">' +
         'Want me to tell you where this is heading? Give me a weight to aim at and I will work out ' +
         'when you get there — from your own trend, not a formula.</div>' +
-      '<button class="btn" onclick="openGoalWeight()" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px">Set a goal weight</button>' +
+      '<button class="btn" onclick="openGoalWeight()" style="background:var(--bg3);font-size:var(--t-base)">Set a goal weight</button>' +
     '</div>';
     return;
   }
@@ -698,7 +698,7 @@ function renderBodyGoalCard(){
     box.style.display = '';
     box.innerHTML = '<div class="card" style="padding:14px">' +
       '<div class="lbl" style="margin-bottom:6px">Goal ' + _escFew(wf(goal)) + '</div>' +
-      '<div style="font-size:12px;color:var(--tx3);line-height:1.55">Three weeks of weigh-ins and I can tell you when. ' +
+      '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.55">Three weeks of weigh-ins and I can tell you when. ' +
         'Until then a date would be a guess dressed up as a fact.</div>' +
       '<button class="btn quiet" onclick="openGoalWeight()" style="margin-top:10px;padding:6px 0">Change it</button>' +
     '</div>';
@@ -752,9 +752,9 @@ function renderBodyGoalCard(){
   box.style.display = '';
   box.innerHTML = '<div class="card" style="padding:14px">' +
     '<div class="lbl" style="margin-bottom:6px">Goal ' + _escFew(wf(p.goal)) + '</div>' +
-    '<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:' + col + ';line-height:1.3;margin-bottom:6px">' +
+    '<div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:' + col + ';line-height:1.3;margin-bottom:6px">' +
       _escFew(head) + '</div>' +
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.6">' + _escFew(body) + '</div>' +
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">' + _escFew(body) + '</div>' +
     '<button class="btn quiet" onclick="openGoalWeight()" style="margin-top:10px;padding:6px 0">Change the goal</button>' +
   '</div>';
 }
@@ -768,7 +768,7 @@ function openGoalWeight(){
   const m = document.createElement('div'); m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:4px">A weight to aim at</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.55">' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px;line-height:1.55">' +
       'Only so I can tell you when you get there. Nothing here counts down at you, and you can clear ' +
       'it any time.</p>' +
     '<input type="number" id="gw-input" inputmode="decimal" step="0.1" value="' + shown + '" ' +
@@ -946,12 +946,12 @@ function renderRecompInsight(){
   if(!r){ box.style.display='none'; return; }
   const col=r.tone==='warn'?'var(--go)':'var(--gr)';
   box.style.display='block';
-  box.style.background=r.tone==='warn'?'linear-gradient(135deg,rgba(200,169,110,0.10),rgba(200,169,110,0.02))':'linear-gradient(135deg,rgba(91,185,125,0.10),rgba(91,185,125,0.02))';
+  box.style.background=r.tone==='warn'?'var(--go-bg)':'linear-gradient(135deg,rgba(91,185,125,0.10),rgba(91,185,125,0.02))';
   box.style.borderColor=r.tone==='warn'?'var(--go-bd)':'var(--gr-bd)';
   box.innerHTML=
     '<div class="eyebrow" style="color:'+col+';margin-bottom:6px">Weight × strength · what the scale can’t see</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:18px;font-style:italic;color:var(--tx);line-height:1.3;margin-bottom:6px">'+r.head+'</div>'+
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.6">'+r.body+'</div>';
+    '<div style="font-family:var(--font-serif);font-size:var(--t-hd);font-style:italic;color:var(--tx);line-height:1.3;margin-bottom:6px">'+r.head+'</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">'+r.body+'</div>';
 }
 function renderBody(){
   const entries=ls('totry_body')||[];
@@ -1111,22 +1111,22 @@ function renderBody(){
       const card=document.createElement('div');
       card.style.cssText='background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:12px;margin-bottom:8px';
       let html='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:'+((scoreLine||e.win||e.struggle||e.focus||e.note)?'8px':'0')+'">'+
-        '<span style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3)">'+(e.date || (e.ts ? new Date(e.ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : ''))+'</span>'+
-        (e.weight>0?'<span style="font-size:15px;color:var(--tx)">'+wFmt(e.weight)+' <span style="font-size:11px;color:'+(cls==='down'?'var(--gr)':cls==='up'?'var(--re)':'var(--tx3)')+'">'+cs+'</span></span>':'')+
+        '<span style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3)">'+(e.date || (e.ts ? new Date(e.ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : ''))+'</span>'+
+        (e.weight>0?'<span style="font-size:var(--t-base);color:var(--tx)">'+wFmt(e.weight)+' <span style="font-size:var(--t-cap);color:'+(cls==='down'?'var(--gr)':cls==='up'?'var(--re)':'var(--tx3)')+'">'+cs+'</span></span>':'')+
         '</div>';
-      if(e.bf>0) html+='<div style="font-size:11px;color:var(--tx3);margin-bottom:6px">Body fat: '+e.bf+'%</div>';
-      if(scoreLine) html+='<div style="font-size:11px;color:var(--tx2);margin-bottom:6px">'+scoreLine+'</div>';
-      if(e.win) html+='<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-bottom:4px"><span style="color:var(--gr)">Win:</span> '+e.win.replace(/</g,'&lt;')+'</div>';
-      if(e.struggle) html+='<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-bottom:4px"><span style="color:var(--go)">Struggle:</span> '+e.struggle.replace(/</g,'&lt;')+'</div>';
-      if(e.focus) html+='<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-bottom:4px"><span style="color:var(--tx3)">Next:</span> '+e.focus.replace(/</g,'&lt;')+'</div>';
-      if(e.note) html+='<div style="font-size:12px;color:var(--tx3);line-height:1.5;font-style:italic">'+e.note.replace(/</g,'&lt;')+'</div>';
+      if(e.bf>0) html+='<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:6px">Body fat: '+e.bf+'%</div>';
+      if(scoreLine) html+='<div style="font-size:var(--t-cap);color:var(--tx2);margin-bottom:6px">'+scoreLine+'</div>';
+      if(e.win) html+='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.5;margin-bottom:4px"><span style="color:var(--gr)">Win:</span> '+e.win.replace(/</g,'&lt;')+'</div>';
+      if(e.struggle) html+='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.5;margin-bottom:4px"><span style="color:var(--go)">Struggle:</span> '+e.struggle.replace(/</g,'&lt;')+'</div>';
+      if(e.focus) html+='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.5;margin-bottom:4px"><span style="color:var(--tx3)">Next:</span> '+e.focus.replace(/</g,'&lt;')+'</div>';
+      if(e.note) html+='<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5;font-style:italic">'+e.note.replace(/</g,'&lt;')+'</div>';
       card.innerHTML=html;
       hist.appendChild(card);
     });
     if(entries.length > 12){
       const more=document.createElement('button');
       more.className='btn';
-      more.style.cssText='width:100%;margin-top:10px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px;min-height:34px';
+      more.style.cssText='width:100%;margin-top:10px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:var(--t-sm);min-height:34px';
       more.textContent = _bodyHistShowAll ? 'Show fewer' : ('Show all ' + entries.length + ' check-ins');
       more.onclick = toggleBodyHistShowAll;
       hist.appendChild(more);
@@ -1170,11 +1170,11 @@ function renderBodyCompInsight(){
     const dMuscle = (recent.comp.muscleKg!=null && earlier.comp.muscleKg!=null) ? Math.round((recent.comp.muscleKg - earlier.comp.muscleKg)*10)/10 : null;
     // Recomp win: weight roughly flat (or up) but fat down — the scale lies, the body's improving.
     if(dFat!=null && dFat < -0.3 && Math.abs(dWeight) <= 1.5){
-      html += '<div style="font-size:13px;color:var(--tx2);line-height:1.6"><span style="color:var(--gr)">Recomposition.</span> Your weight barely moved ('+wDelta(dWeight)+'), but you\'ve lost '+wFmt(Math.abs(dFat))+' of fat'+(dMuscle!=null && dMuscle>0?' and gained '+wFmt(dMuscle)+' of muscle':'')+'. The scale hides this. Your body is changing — keep going.</div>';
+      html += '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6"><span style="color:var(--gr)">Recomposition.</span> Your weight barely moved ('+wDelta(dWeight)+'), but you\'ve lost '+wFmt(Math.abs(dFat))+' of fat'+(dMuscle!=null && dMuscle>0?' and gained '+wFmt(dMuscle)+' of muscle':'')+'. The scale hides this. Your body is changing — keep going.</div>';
     } else if(dFat!=null && dMuscle!=null && dFat < 0 && dMuscle > 0){
-      html += '<div style="font-size:13px;color:var(--tx2);line-height:1.6"><span style="color:var(--gr)">Fat down, muscle up.</span> Down '+wFmt(Math.abs(dFat))+' fat, up '+wFmt(dMuscle)+' muscle. That\'s exactly the direction that matters.</div>';
+      html += '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6"><span style="color:var(--gr)">Fat down, muscle up.</span> Down '+wFmt(Math.abs(dFat))+' fat, up '+wFmt(dMuscle)+' muscle. That\'s exactly the direction that matters.</div>';
     } else if(dMuscle!=null && dMuscle > 0.3){
-      html += '<div style="font-size:13px;color:var(--tx2);line-height:1.6"><span style="color:var(--gr)">Building.</span> You\'ve added '+wFmt(dMuscle)+' of muscle. The work is showing.</div>';
+      html += '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6"><span style="color:var(--gr)">Building.</span> You\'ve added '+wFmt(dMuscle)+' of muscle. The work is showing.</div>';
     }
     // Protein ↔ muscle context (item 10): pair the muscle trend with recent protein intake.
     if(dMuscle!=null){
@@ -1182,7 +1182,7 @@ function renderBodyCompInsight(){
       Object.keys(log).forEach(k=>{const en=log[k]||[];if(!en.length)return;const ts=en[0].ts?new Date(en[0].ts).getTime():null;if(!ts||now-ts>14*86400000)return;const p=en.reduce((a,e)=>a+(e.pro||0),0);if(p>0){pT+=p;pD++;}});
       if(pD>=3){
         const avgPro=Math.round(pT/pD);
-        html += '<div style="margin-top:8px;font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">Muscle '+wDelta(dMuscle)+' · avg protein '+avgPro+'g/day over 2 weeks</div>';
+        html += '<div style="margin-top:8px;font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">Muscle '+wDelta(dMuscle)+' · avg protein '+avgPro+'g/day over 2 weeks</div>';
       }
     }
   }
@@ -1204,17 +1204,17 @@ function openQuickWeightLog(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:6px">Log today\'s weight</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Just the number. The deeper check-in is for Sundays.</p>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px">Just the number. The deeper check-in is for Sundays.</p>' +
     '<div style="margin-bottom:14px">' +
       // The placeholder beneath this label is already converted (wFmt), and saveQuickWeight already
       // reads the field as the person's own unit (dispToKg). Only the two DISPLAY strings were left
       // hardcoded — so a lb user opened this modal to a label reading "Weight (kg)" above a pounds
       // placeholder of 189.6, and an "already logged" line quoting the raw kilograms. Three units in
       // one small box, on the screen where a person is asked to trust a number about their own body.
-      '<label style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;display:block">Weight (' + wUnit() + ')</label>' +
-      '<input type="number" id="quick-weight-in" step="0.1" inputmode="decimal" placeholder="' + (last?.weight != null ? wFmt(last.weight, {bare:true}) : wFmt(75, {bare:true})) + '" style="width:100%;font-size:24px;text-align:center;padding:14px;font-family:DM Mono,monospace" autofocus>' +
+      '<label style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px;display:block">Weight (' + wUnit() + ')</label>' +
+      '<input type="number" id="quick-weight-in" step="0.1" inputmode="decimal" placeholder="' + (last?.weight != null ? wFmt(last.weight, {bare:true}) : wFmt(75, {bare:true})) + '" style="width:100%;font-size:var(--t-title1);text-align:center;padding:14px;font-family:var(--font-text)" autofocus>' +
     '</div>' +
-    (todayEntry && todayEntry.weight > 0 ? '<p style="font-size:11px;color:var(--go);margin-bottom:10px;text-align:center">Already logged today: ' + wFmt(todayEntry.weight) + ' — this will replace it.</p>' : '') +
+    (todayEntry && todayEntry.weight > 0 ? '<p style="font-size:var(--t-cap);color:var(--go);margin-bottom:10px;text-align:center">Already logged today: ' + wFmt(todayEntry.weight) + ' — this will replace it.</p>' : '') +
     '<div style="display:flex;gap:8px">' +
       '<button class="btn primary" style="flex:1" onclick="saveQuickWeight()">Save weight</button>' +
       '<button class="btn" style="flex:1" onclick="closeModal(this)">Cancel</button>' +
@@ -1267,7 +1267,7 @@ function openMeasurementLogger(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:90vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:6px">Log measurements</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Same tape, same time of day, every time. Decimal places ok (e.g. 87.5).</p>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px">Same tape, same time of day, every time. Decimal places ok (e.g. 87.5).</p>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
       '<div><div class="eyebrow">Waist (cm)</div><input type="number" id="meas-waist" step="0.5" placeholder="' + (last.waist || '') + '"></div>' +
       '<div><div class="eyebrow">Chest (cm)</div><input type="number" id="meas-chest" step="0.5" placeholder="' + (last.chest || '') + '"></div>' +
@@ -1280,9 +1280,9 @@ function openMeasurementLogger(){
     '</div>' +
     // Evolt 360 body scan section — for Revo gym users with access to the scanner
     '<details style="margin-bottom:14px">' +
-      '<summary style="cursor:pointer;padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);font-family:DM Mono,monospace;font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.1em;list-style:none">'+svgIcon("search")+' Add Evolt 360 scan data</summary>' +
+      '<summary style="cursor:pointer;padding:10px 12px;background:var(--bg3);border-radius:var(--rs);font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx2);text-transform:uppercase;letter-spacing:0.01em;list-style:none">'+svgIcon("search")+' Add Evolt 360 scan data</summary>' +
       '<div style="padding:12px 2px 0">' +
-        '<p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Got a body scan at the gym (Evolt 360 / InBody)? Enter the key numbers from your printout to track composition over time.</p>' +
+        '<p style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px;line-height:1.5">Got a body scan at the gym (Evolt 360 / InBody)? Enter the key numbers from your printout to track composition over time.</p>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
           '<div><div class="eyebrow">Skeletal muscle (kg)</div><input type="number" id="meas-smm" step="0.1" placeholder="' + (last.smm || '') + '"></div>' +
           '<div><div class="eyebrow">Body fat mass (kg)</div><input type="number" id="meas-fatmass" step="0.1" placeholder="' + (last.fatMass || '') + '"></div>' +
@@ -1366,20 +1366,20 @@ function renderMeasurements(){
   });
   
   summary.innerHTML = list.length === 1 ?
-    '<span style="font-family:DM Mono,monospace">First snapshot logged ' + cur.date + ' — baseline set.</span>' :
-    '<span style="font-family:DM Mono,monospace;color:var(--tx2)">' + list.length + ' snapshots · Change since baseline: ' + (changes.join(' · ') || 'no change yet') + '</span>';
+    '<span style="font-family:var(--font-text)">First snapshot logged ' + cur.date + ' — baseline set.</span>' :
+    '<span style="font-family:var(--font-text);color:var(--tx2)">' + list.length + ' snapshots · Change since baseline: ' + (changes.join(' · ') || 'no change yet') + '</span>';
   
   // Show last 5
   history.innerHTML = '';
   list.slice(0, 5).forEach((e, i) => {
     const row = document.createElement('div');
-    row.style.cssText = 'padding:8px 0;border-top:1px solid var(--bd);font-size:11px';
+    row.style.cssText = 'padding:8px 0;border-top:1px solid var(--bd);font-size:var(--t-cap)';
     const parts = [];
     Object.keys(labels).forEach(k => {
       if(e[k] !== undefined) parts.push(labels[k] + ' ' + e[k] + (units[k] || ''));
     });
     row.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
-      '<div style="flex:1"><div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">' + e.date + '</div>' +
+      '<div style="flex:1"><div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">' + e.date + '</div>' +
       '<div style="color:var(--tx2);margin-top:2px;line-height:1.5">' + parts.join(' · ') + '</div></div>' +
       '<button class="fli-del" onclick="deleteMeasurement(' + i + ')" aria-label="Delete this snapshot" style="min-width:32px;min-height:32px">\u00d7</button>' +
     '</div>';
@@ -1493,7 +1493,7 @@ function renderProgressPhotos(){
       '</div>'
     ).join('');
     return '<div style="margin-bottom:14px">' +
-      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">' + date + ' · ' + byDate[date].length + (byDate[date].length === 1 ? ' photo' : ' photos') + '</div>' +
+      '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">' + date + ' · ' + byDate[date].length + (byDate[date].length === 1 ? ' photo' : ' photos') + '</div>' +
       '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">' + tiles + '</div>' +
     '</div>';
   }).join('');
@@ -1506,7 +1506,7 @@ function openProgressPhotoViewer(id){
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">' + p.date + '</div>' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">' + p.date + '</div>' +
     '<img loading="lazy" decoding="async" src="' + p.dataUrl + '" style="width:100%;border-radius:var(--rm);background:#000;margin-bottom:12px">' +
     '<button class="btn danger" onclick="deleteProgressPhoto(' + p.id + ')" style="margin-bottom:8px">Delete this photo</button>' +
     '<button class="btn" onclick="closeModal(this)">Close</button>' +

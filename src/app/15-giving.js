@@ -128,11 +128,11 @@ function openSeasonPicker(){
   const order = [SEASON_AUTO[t], 'ramadan','lent','navratri','uposatha','window','own'].filter((x,i,a)=>x&&a.indexOf(x)===i);
   const m = document.createElement('div'); m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:4px">A season of fasting</div>'+
-    '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:14px">Tell me what you’re keeping and the whole app moves with it — how your food is timed, how hard you train, what the day’s word is. No weight talk, no streak, no guilt if you break it.</div>'+
+    '<div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);margin-bottom:4px">A season of fasting</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:14px">Tell me what you’re keeping and the whole app moves with it — how your food is timed, how hard you train, what the day’s word is. No weight talk, no streak, no guilt if you break it.</div>'+
     order.map(id => { const p = FAST_SEASONS[id]; return '<button class="btn stack" onclick="pickSeason(\''+id+'\')" style="text-align:left;margin-bottom:8px;padding:12px;background:var(--bg3);border:1px solid '+(cur.choice===id?'var(--go-bd)':'var(--bd)')+'">'+
-      '<div style="font-size:14px;color:var(--tx)">'+p.icon+'&nbsp;&nbsp;'+p.name+'</div>'+
-      '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:3px">'+p.how+'</div></button>'; }).join('')+
+      '<div style="font-size:var(--t-base);color:var(--tx)">'+p.icon+'&nbsp;&nbsp;'+p.name+'</div>'+
+      '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-top:3px">'+p.how+'</div></button>'; }).join('')+
     (SEASON_AUTO[t] ? '<button class="btn outline" onclick="pickSeason(\'auto\')" style="margin-bottom:8px">Let it find '+FAST_SEASONS[SEASON_AUTO[t]].name+' on its own</button>' : '')+
     '<button class="btn quiet" onclick="endSeason();closeModal(this)">Not keeping one</button>'+
     '<button class="btn quiet" onclick="closeModal(this)">Close</button></div>';
@@ -161,30 +161,30 @@ function renderFastSeason(){
   const el = document.getElementById('fast-season'); if(!el) return;
   const s = fastSeasonNow();
   if(!s){
-    el.innerHTML = '<div style="text-align:center;padding:0 0 12px"><button class="btn" onclick="openSeasonPicker()" style="width:auto;display:inline-block;padding:8px 14px;font-size:11px;background:transparent;border:1px solid var(--bd);color:var(--tx3)">'+svgIcon("moon")+' Keeping a season of fasting? Set it →</button></div>';
+    el.innerHTML = '<div style="text-align:center;padding:0 0 12px"><button class="btn" onclick="openSeasonPicker()" style="width:auto;display:inline-block;padding:8px 14px;font-size:var(--t-cap);background:transparent;color:var(--tx3);background:var(--fill2)">'+svgIcon("moon")+' Keeping a season of fasting? Set it →</button></div>';
     return;
   }
   const row = (icon,label,text) => '<div style="display:flex;gap:9px;padding:9px 0;border-top:1px solid var(--bd)">'+
     // `icon` is either one of the app's own icon names or a tradition's own mark (the crescent for
     // Ramadan, the cross for Lent). svgIcon() returns '' for anything it does not know, so the mark
     // falls through and is printed as itself — which is the right answer: those are not ours to redraw.
-    '<div style="font-size:13px;width:16px;flex-shrink:0;text-align:center;color:var(--go);line-height:1">'+(svgIcon(icon,15)||icon)+'</div>'+
-    '<div style="flex:1"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px">'+label+'</div>'+
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.6">'+text+'</div></div></div>';
+    '<div style="font-size:var(--t-base);width:16px;flex-shrink:0;text-align:center;color:var(--go);line-height:1">'+(svgIcon(icon,15)||icon)+'</div>'+
+    '<div style="flex:1"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:2px">'+label+'</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">'+text+'</div></div></div>';
   let nourish = s.nourish;
   const g = ls('totry_nut_goals') || (typeof defaultNutGoals==='function' ? defaultNutGoals() : {});
   if(g.pro) nourish += ' Today that’s still about ' + g.pro + 'g of protein and ' + (waterGoalMl()/1000).toFixed(1) + ' L of water — the same numbers, a different door.';
-  let win = '<div id="season-window" style="font-size:12px;color:var(--tx3);text-align:center;padding:8px 0"></div>';
-  if(s.timeMode === 'noon') win = '<div style="font-size:12px;color:var(--go);text-align:center;padding:8px 0;line-height:1.6">Solid food before midday. After that, liquids.</div>';
-  else if(s.timeMode === 'clock'){ const f = getFastingState(); win = '<div style="font-size:12px;color:var(--tx3);text-align:center;padding:8px 0;line-height:1.6">Your window: '+(24-(f.protocol||16))+'h of eating, '+(f.protocol||16)+'h closed. The timer below runs it.</div>'; }
+  let win = '<div id="season-window" style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:8px 0"></div>';
+  if(s.timeMode === 'noon') win = '<div style="font-size:var(--t-sm);color:var(--go);text-align:center;padding:8px 0;line-height:1.6">Solid food before midday. After that, liquids.</div>';
+  else if(s.timeMode === 'clock'){ const f = getFastingState(); win = '<div style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:8px 0;line-height:1.6">Your window: '+(24-(f.protocol||16))+'h of eating, '+(f.protocol||16)+'h closed. The timer below runs it.</div>'; }
   else if(s.timeMode === 'none') win = '';
   const rd = (typeof computeReadiness==='function') ? computeReadiness() : null;
   const trainText = s.train + ((rd && rd.score != null && rd.score < 45) ? ' Your readiness is '+rd.score+'/100 today — take that seriously before you load up.' : '');
-  el.innerHTML = '<div class="card" style="border:1px solid var(--go-bd)">'+
+  el.innerHTML = '<div class="card" style="background:var(--fill2)">'+
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">'+
-      '<div><div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.2">'+s.icon+' '+_escFew(s.name)+'</div>'+
-      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.1em;margin-top:2px">DAY '+s.dayN+(s.total?(' OF '+s.total):'')+(s.left>0?(' · '+s.left+' TO GO'):'')+'</div></div>'+
-      '<button onclick="openSeasonPicker()" style="background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:2px 0">Change</button>'+
+      '<div><div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);line-height:1.2">'+s.icon+' '+_escFew(s.name)+'</div>'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);letter-spacing:0.01em;margin-top:2px">DAY '+s.dayN+(s.total?(' OF '+s.total):'')+(s.left>0?(' · '+s.left+' TO GO'):'')+'</div></div>'+
+      '<button onclick="openSeasonPicker()" style="background:none;border:none;color:var(--tx3);font-size:var(--t-cap);cursor:pointer;padding:2px 0">Change</button>'+
     '</div>'+
     win+
     row('utensils','Nourish', nourish)+
@@ -193,8 +193,8 @@ function renderFastSeason(){
     row('shield','The fight', s.fight)+
     '<div style="border-top:1px solid var(--bd);margin-top:6px;padding-top:10px">'+
       '<button class="btn subtle" onclick="openSolidarity()" style="padding:10px">'+svgIcon("utensils")+' Give what a meal costs</button>'+
-      '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:8px">'+_escFew(s.how)+
-      (s.src==='auto' ? ' <button onclick="shiftSeason(-1)" style="background:none;border:none;color:var(--go);cursor:pointer;font-size:11px">−1 day</button> · <button onclick="shiftSeason(1)" style="background:none;border:none;color:var(--go);cursor:pointer;font-size:11px">+1 day</button>' : '')+
+      '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-top:8px">'+_escFew(s.how)+
+      (s.src==='auto' ? ' <button onclick="shiftSeason(-1)" style="background:none;border:none;color:var(--go);cursor:pointer;font-size:var(--t-cap)">−1 day</button> · <button onclick="shiftSeason(1)" style="background:none;border:none;color:var(--go);cursor:pointer;font-size:var(--t-cap)">+1 day</button>' : '')+
       '</div>'+
     '</div></div>';
   if(s.timeMode === 'salah'){
@@ -202,10 +202,10 @@ function renderFastSeason(){
     box.textContent = 'Working out suhoor and iftar…';
     _seasonTimes().then(t => {
       const b = document.getElementById('season-window'); if(!b) return;
-      if(!t){ b.innerHTML = '<button class="btn" onclick="_seasonSetCity()" style="width:auto;display:inline-block;padding:7px 12px;font-size:11px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Set your city for suhoor &amp; iftar</button>'; return; }
+      if(!t){ b.innerHTML = '<button class="btn" onclick="_seasonSetCity()" style="width:auto;display:inline-block;padding:7px 12px;font-size:var(--t-cap);background:var(--bg3);color:var(--tx2)">Set your city for suhoor &amp; iftar</button>'; return; }
       b.innerHTML = '<div style="display:flex;justify-content:center;gap:18px;padding:6px 0">'+
-        '<div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.1em">SUHOOR ENDS</div><div style="font-family:DM Mono,monospace;font-size:17px;color:var(--go)">'+_escFew(t.fajr)+'</div></div>'+
-        '<div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.1em">IFTAR</div><div style="font-family:DM Mono,monospace;font-size:17px;color:var(--go)">'+_escFew(t.maghrib)+'</div></div></div>';
+        '<div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em">SUHOOR ENDS</div><div style="font-family:var(--font-text);font-size:var(--t-base);color:var(--go)">'+_escFew(t.fajr)+'</div></div>'+
+        '<div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em">IFTAR</div><div style="font-family:var(--font-text);font-size:var(--t-base);color:var(--go)">'+_escFew(t.maghrib)+'</div></div></div>';
     });
   }
 }
@@ -344,8 +344,8 @@ function _hawlLine(z){
   const h = hijriParts(new Date(doneAt));
   const when = h ? (h.d+'/'+h.m+'/'+h.y+' AH') : new Date(doneAt).toLocaleDateString('en-AU');
   return left > 0
-    ? '<div style="font-size:11px;color:var(--tx3);margin-top:5px">Your lunar year completes around '+when+' — about '+left+' days. <button onclick="resetHawl()" style="background:none;border:none;color:var(--go);cursor:pointer;font-size:11px">Reset</button></div>'
-    : '<div style="font-size:11px;color:var(--go);margin-top:5px">Your lunar year has completed. Whenever you’ve paid it, reset the year. <button onclick="resetHawl()" style="background:none;border:none;color:var(--go);cursor:pointer;font-size:11px">Reset</button></div>';
+    ? '<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:5px">Your lunar year completes around '+when+' — about '+left+' days. <button onclick="resetHawl()" style="background:none;border:none;color:var(--go);cursor:pointer;font-size:var(--t-cap)">Reset</button></div>'
+    : '<div style="font-size:var(--t-cap);color:var(--go);margin-top:5px">Your lunar year has completed. Whenever you’ve paid it, reset the year. <button onclick="resetHawl()" style="background:none;border:none;color:var(--go);cursor:pointer;font-size:var(--t-cap)">Reset</button></div>';
 }
 // A helper the form and the reset both use, so the two can never drift.
 function _todayISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -389,37 +389,37 @@ function renderGiving(){
   if(cg.mode === 'tithe'){
     const sug = Math.round(inc * 0.10);
     strip = inc > 0
-      ? '<div style="font-size:14px;color:var(--tx)">'+curSym()+sug.toLocaleString()+'<span style="font-size:11px;color:var(--tx3)"> — a tenth of the '+curSym()+Math.round(inc).toLocaleString()+' that came in this month.</span></div><div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:4px">A suggestion, not a debt. Give more, less, or nothing this month — nothing here holds it against you.</div>'
-      : '<div style="font-size:11px;color:var(--tx3);line-height:1.6">Log your income in the money tab above and I can suggest a figure from what actually came in — rather than a number from nowhere.</div>';
+      ? '<div style="font-size:var(--t-base);color:var(--tx)">'+curSym()+sug.toLocaleString()+'<span style="font-size:var(--t-cap);color:var(--tx3)"> — a tenth of the '+curSym()+Math.round(inc).toLocaleString()+' that came in this month.</span></div><div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-top:4px">A suggestion, not a debt. Give more, less, or nothing this month — nothing here holds it against you.</div>'
+      : '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.6">Log your income in the money tab above and I can suggest a figure from what actually came in — rather than a number from nowhere.</div>';
   } else if(cg.mode === 'zakat'){
     const z = zakatState();
     strip = (z.last
-      ? '<div style="font-size:14px;color:var(--tx)">'+curSym()+z.last.due.toLocaleString()+'<span style="font-size:11px;color:var(--tx3)"> — 2.5% of '+curSym()+z.last.net.toLocaleString()+', nisab '+curSym()+z.last.nisab.toLocaleString()+'.</span></div>'+_hawlLine(z)
-      : '<div style="font-size:11px;color:var(--tx3);line-height:1.6">Work out your zakat from what you’ve already tracked — savings, assets and debts are filled in for you, and every line is yours to correct.</div>')+
+      ? '<div style="font-size:var(--t-base);color:var(--tx)">'+curSym()+z.last.due.toLocaleString()+'<span style="font-size:var(--t-cap);color:var(--tx3)"> — 2.5% of '+curSym()+z.last.net.toLocaleString()+', nisab '+curSym()+z.last.nisab.toLocaleString()+'.</span></div>'+_hawlLine(z)
+      : '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.6">Work out your zakat from what you’ve already tracked — savings, assets and debts are filled in for you, and every line is yours to correct.</div>')+
       '<button class="btn subtle" onclick="openZakat()" style="margin-top:9px;padding:9px">'+(z.last?'Work it out again':'Calculate zakat')+'</button>'+
-      (z.last && z.last.due > 0 ? '<button class="btn" onclick="openGivingLog(\'zakat\')" style="margin-top:7px;background:transparent;border:1px solid var(--go-bd);color:var(--go);font-size:12px;padding:9px">Log zakat paid</button>' : '');
+      (z.last && z.last.due > 0 ? '<button class="btn" onclick="openGivingLog(\'zakat\')" style="margin-top:7px;background:transparent;color:var(--go);font-size:var(--t-sm);padding:9px;background:var(--fill2)">Log zakat paid</button>' : '');
   } else {
     const sug = p.mode === 'percent' ? Math.round(inc * (p.percent/100)) : (p.mode === 'amount' ? p.amount : 0);
     strip = (p.mode === 'off'
-      ? '<div style="font-size:11px;color:var(--tx3);line-height:1.6">'+(cg.mode==='pledge'?'Set your own share — a percent of what comes in, or a flat amount. Entirely optional.':'Set your own measure if it helps. Dāna has no fixed percentage, and nothing here will invent one.')+'</div>'
-      : '<div style="font-size:14px;color:var(--tx)">'+curSym()+sug.toLocaleString()+'<span style="font-size:11px;color:var(--tx3)"> — '+(p.mode==='percent'?(p.percent+'% of the '+curSym()+Math.round(inc).toLocaleString()+' in this month'):'your monthly measure')+'. '+curSym()+Math.round(t.month).toLocaleString()+' given so far.</span></div>')+
+      ? '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.6">'+(cg.mode==='pledge'?'Set your own share — a percent of what comes in, or a flat amount. Entirely optional.':'Set your own measure if it helps. Dāna has no fixed percentage, and nothing here will invent one.')+'</div>'
+      : '<div style="font-size:var(--t-base);color:var(--tx)">'+curSym()+sug.toLocaleString()+'<span style="font-size:var(--t-cap);color:var(--tx3)"> — '+(p.mode==='percent'?(p.percent+'% of the '+curSym()+Math.round(inc).toLocaleString()+' in this month'):'your monthly measure')+'. '+curSym()+Math.round(t.month).toLocaleString()+' given so far.</span></div>')+
       '<button class="btn subtle" onclick="openPledge()" style="margin-top:9px;padding:9px">'+(p.mode==='off'?'Set a measure':'Change it')+'</button>';
   }
   const list = givingLog();
   let body;
   if(!list.length) body = '<p class="empty-note">Nothing logged yet.</p>';
-  else if(p.quiet) body = '<p style="font-size:12px;color:var(--tx3);text-align:center;padding:12px 0">'+list.length+' kept quietly. Amounts hidden.</p>';
+  else if(p.quiet) body = '<p style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:12px 0">'+list.length+' kept quietly. Amounts hidden.</p>';
   else body = list.slice(0,10).map(x => '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)">'+
-      '<div><div style="font-size:14px;color:var(--tx)">'+curSym()+x.amount.toLocaleString()+'</div>'+
-      (x.to ? '<div style="font-size:11px;color:var(--tx3)">'+_escFew(x.to)+'</div>' : '')+'</div>'+
-      '<div style="display:flex;align-items:center;gap:10px"><span style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+new Date(x.ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'})+'</span>'+
-      '<button onclick="deleteGiving('+x.id+')" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer">×</button></div></div>').join('')+
-      '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);text-align:center;margin-top:10px">'+curSym()+Math.round(t.year).toLocaleString()+' this year · '+curSym()+Math.round(t.all).toLocaleString()+' all time</div>';
-  el.innerHTML = '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:10px">'+cg.sub+'</div>'+
-    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:12px;margin-bottom:12px">'+strip+'</div>'+
+      '<div><div style="font-size:var(--t-base);color:var(--tx)">'+curSym()+x.amount.toLocaleString()+'</div>'+
+      (x.to ? '<div style="font-size:var(--t-cap);color:var(--tx3)">'+_escFew(x.to)+'</div>' : '')+'</div>'+
+      '<div style="display:flex;align-items:center;gap:10px"><span style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">'+new Date(x.ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'})+'</span>'+
+      '<button onclick="deleteGiving('+x.id+')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-base);cursor:pointer">×</button></div></div>').join('')+
+      '<div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3);text-align:center;margin-top:10px">'+curSym()+Math.round(t.year).toLocaleString()+' this year · '+curSym()+Math.round(t.all).toLocaleString()+' all time</div>';
+  el.innerHTML = '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-bottom:10px">'+cg.sub+'</div>'+
+    '<div style="background:var(--bg3);border-radius:var(--rm);padding:12px;margin-bottom:12px">'+strip+'</div>'+
     body+
-    '<div style="border-top:1px solid var(--bd);margin-top:12px;padding-top:10px;font-size:11px;color:var(--tx3);line-height:1.6">'+
-      cg.quiet+' <button onclick="toggleGivingQuiet()" style="background:none;border:none;color:var(--go);cursor:pointer;font-size:11px;padding:16px 0;margin:-16px 0;position:relative">'+(p.quiet?'Show amounts':'Hide amounts')+'</button><br>'+
+    '<div style="border-top:1px solid var(--bd);margin-top:12px;padding-top:10px;font-size:var(--t-cap);color:var(--tx3);line-height:1.6">'+
+      cg.quiet+' <button onclick="toggleGivingQuiet()" style="background:none;border:none;color:var(--go);cursor:pointer;font-size:var(--t-cap);padding:16px 0;margin:-16px 0;position:relative">'+(p.quiet?'Show amounts':'Hide amounts')+'</button><br>'+
       'Spending on others tends to lift mood a little more than spending on yourself — real, but modest, and strongest when it’s your own choice and you can see who it reaches (Dunn, Aknin &amp; Norton). That’s the whole claim. Giving isn’t a mood technique, and there’s no score here: nothing is shared, ranked or counted against you.'+
     '</div>';
 }

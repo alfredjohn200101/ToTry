@@ -222,7 +222,7 @@ function showToast(title,msg,onTap){
   t.setAttribute('aria-atomic', 'true');
   // Both halves are escaped: this is a shared sink for 519 callers and several pass free text the
   // person typed. A routine named `<img src=x onerror=...>` used to execute here on save.
-  t.innerHTML='<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-weight:500;margin-bottom:4px">'+_escFew(title)+'</div><div style="font-size:13px;line-height:1.5;opacity:0.85">'+_escFew(msg)+'</div>';
+  t.innerHTML='<div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:500;margin-bottom:4px">'+_escFew(title)+'</div><div style="font-size:var(--t-base);line-height:1.5;opacity:0.85">'+_escFew(msg)+'</div>';
   const _fire=()=>{ if(typeof onTap==='function'){ try{ onTap(); }catch(_){} } t.remove(); };
   t.onclick=_fire;
   if(onTap){
@@ -267,11 +267,11 @@ function askConfirm(title, body, opts){
     const danger = opts.danger !== false;         // destructive unless told otherwise
     m.innerHTML =
       '<div class="modal" style="text-align:left;max-width:340px">'+
-        '<div id="_ac-title" style="font-family:Cormorant Garamond,serif;font-size:21px;color:var(--tx);line-height:1.3;white-space:pre-wrap;margin-bottom:'+(body?'8px':'16px')+'">'+_escFew(title)+'</div>'+
-        (body ? '<div id="_ac-body" style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:16px;white-space:pre-wrap">'+_escFew(body)+'</div>' : '')+
+        '<div id="_ac-title" style="font-family:var(--font-display);font-weight:700;font-size:var(--t-xl);color:var(--tx);line-height:1.3;white-space:pre-wrap;margin-bottom:'+(body?'8px':'16px')+'">'+_escFew(title)+'</div>'+
+        (body ? '<div id="_ac-body" style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-bottom:16px;white-space:pre-wrap">'+_escFew(body)+'</div>' : '')+
         '<button class="btn" id="_ac-yes" style="margin-bottom:8px;'+(danger
-          ? 'background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re)'
-          : 'background:var(--go);border:none;color:#1a1505')+'">'+_escFew(opts.confirmLabel || 'Yes, do it')+'</button>'+
+          ? 'background:var(--re-bg);color:var(--re)'
+          : 'background:var(--go);border:none;color:var(--on-tint)')+'">'+_escFew(opts.confirmLabel || 'Yes, do it')+'</button>'+
         (opts.cancelLabel === null ? '' :
           '<button class="btn outline" id="_ac-no">'+_escFew(opts.cancelLabel || 'Cancel')+'</button>')+
       '</div>';
@@ -324,12 +324,12 @@ function askText(title, body, opts){
     const numeric = opts.type === 'number';
     m.innerHTML =
       '<div class="modal" style="text-align:left;max-width:340px">'+
-        '<label for="_at-in" id="_at-title" style="display:block;font-family:Cormorant Garamond,serif;font-size:21px;color:var(--tx);line-height:1.3;margin-bottom:'+(body?'6px':'14px')+'">'+_escFew(title)+'</label>'+
-        (body ? '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:14px;white-space:pre-wrap">'+_escFew(body)+'</div>' : '')+
+        '<label for="_at-in" id="_at-title" style="display:block;font-family:var(--font-display);font-weight:700;font-size:var(--t-xl);color:var(--tx);line-height:1.3;margin-bottom:'+(body?'6px':'14px')+'">'+_escFew(title)+'</label>'+
+        (body ? '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:14px;white-space:pre-wrap">'+_escFew(body)+'</div>' : '')+
         '<input id="_at-in" type="'+(numeric?'text':'text')+'"'+(numeric?' inputmode="decimal"':'')+
           ' value="'+String(opts.value == null ? '' : opts.value).replace(/"/g,'&quot;')+'"'+
           ' placeholder="'+String(opts.placeholder || '').replace(/"/g,'&quot;')+'"'+
-          ' style="width:100%;font-size:16px;padding:12px;margin-bottom:14px">'+
+          ' style="width:100%;font-size:var(--t-base);padding:12px;margin-bottom:14px">'+
         '<button class="btn primary" id="_at-ok" style="margin-bottom:8px">'+_escFew(opts.confirmLabel || 'Save')+'</button>'+
         '<button class="btn outline" id="_at-no">'+_escFew(opts.cancelLabel || 'Cancel')+'</button>'+
       '</div>';
@@ -543,19 +543,19 @@ function openFeedback(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:90vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:6px">Help improve ToTry</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.55">Honest and specific helps most. What happened, what you expected, what you\'d want instead.</p>' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Type</div>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px;line-height:1.55">Honest and specific helps most. What happened, what you expected, what you\'d want instead.</p>' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Type</div>' +
     '<div style="display:flex;gap:6px;margin-bottom:14px">' +
       '<button class="meal-chip selected" id="fb-type-bug" onclick="setFeedbackType(\'bug\')" style="flex:1">'+svgIcon("tool")+' Bug</button>' +
       '<button class="meal-chip" id="fb-type-idea" onclick="setFeedbackType(\'idea\')" style="flex:1">'+svgIcon("bulb")+' Idea</button>' +
       '<button class="meal-chip" id="fb-type-other" onclick="setFeedbackType(\'other\')" style="flex:1">'+svgIcon("message")+' Other</button>' +
     '</div>' +
-    '<textarea id="fb-text" placeholder="Tell me what\'s on your mind..." style="height:120px;resize:none;margin-bottom:10px;font-size:16px;line-height:1.6"></textarea>' +
-    '<label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;min-height:32px;font-size:12px;color:var(--tx3);cursor:pointer">' +
+    '<textarea id="fb-text" placeholder="Tell me what\'s on your mind..." style="height:120px;resize:none;margin-bottom:10px;font-size:var(--t-base);line-height:1.6"></textarea>' +
+    '<label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;min-height:32px;font-size:var(--t-sm);color:var(--tx3);cursor:pointer">' +
       '<input type="checkbox" id="fb-include-state" checked style="width:auto;margin:0"> Include basic app info (helps me debug)' +
     '</label>' +
     '<button class="btn primary" onclick="submitFeedback()" style="margin-bottom:8px">Send</button>' +
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd)">Cancel</button>' +
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;background:var(--fill2)">Cancel</button>' +
   '</div>';
   document.body.appendChild(m);
   setTimeout(() => document.getElementById('fb-text')?.focus(), 80);
@@ -659,9 +659,9 @@ async function submitFeedback(){
     m.className = 'modal-bg open';
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
       '<h3 style="margin-bottom:6px">Send via email instead?</h3>' +
-      '<p style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:14px">Couldn\'t reach the server right now, but your feedback is saved. Tap below to send it by email so it reaches me directly.</p>' +
+      '<p style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:14px">Couldn\'t reach the server right now, but your feedback is saved. Tap below to send it by email so it reaches me directly.</p>' +
       '<a href="' + mailto + '" class="btn primary" style="display:block;text-align:center;text-decoration:none;margin-bottom:8px" onclick="closeModal(this)">Open email</a>' +
-      '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd)">Not now</button>' +
+      '<button class="btn" onclick="closeModal(this)" style="background:transparent;background:var(--fill2)">Not now</button>' +
     '</div>';
     document.body.appendChild(m);
   }

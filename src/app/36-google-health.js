@@ -10,10 +10,10 @@ function offerGoogleHealthConnect(){
   m.innerHTML = '<div class="modal">' +
     '<div class="modal-handle"></div>' +
     '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
-      '<div style="width:40px;height:40px;border-radius:var(--rs);background:#34A853;display:flex;align-items:center;justify-content:center;font-size:18px">\u2764\uFE0F</div>' +
-      '<div><div style="font-size:16px;font-weight:500;color:var(--tx)">Connect Google Health</div><div style="font-size:11px;color:var(--tx3)">Steps, activity & Fitbit data</div></div>' +
+      '<div style="width:40px;height:40px;border-radius:var(--rs);background:#34A853;display:flex;align-items:center;justify-content:center;font-size:var(--t-hd)">\u2764\uFE0F</div>' +
+      '<div><div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">Connect Google Health</div><div style="font-size:var(--t-cap);color:var(--tx3)">Steps, activity & Fitbit data</div></div>' +
     '</div>' +
-    '<p style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:14px">Syncs your daily steps and workouts from Google Fit and Fitbit devices. Counts toward your movement habits automatically.</p>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:14px">Syncs your daily steps and workouts from Google Fit and Fitbit devices. Counts toward your movement habits automatically.</p>' +
     '<button class="btn primary" onclick="startGoogleHealthOAuth()" style="margin-bottom:8px">Connect with Google</button>' +
     '<button class="btn quiet" onclick="closeModal(this)">Cancel</button>' +
     '</div>';
@@ -160,16 +160,16 @@ function offerHevyConnect(){
   m.innerHTML = '<div class="modal">' +
     '<div class="modal-handle"></div>' +
     '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
-      '<div style="width:40px;height:40px;border-radius:var(--rs);background:#1C1C3A;display:flex;align-items:center;justify-content:center;font-size:18px">\u{1F4AA}</div>' +
-      '<div><div style="font-size:16px;font-weight:500;color:var(--tx)">Connect Hevy</div><div style="font-size:11px;color:var(--tx3)">Import your workouts automatically</div></div>' +
+      '<div style="width:40px;height:40px;border-radius:var(--rs);background:#1C1C3A;display:flex;align-items:center;justify-content:center;font-size:var(--t-hd)">\u{1F4AA}</div>' +
+      '<div><div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">Connect Hevy</div><div style="font-size:var(--t-cap);color:var(--tx3)">Import your workouts automatically</div></div>' +
     '</div>' +
-    '<p style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:14px">Hevy API access requires <strong style="color:var(--go)">Hevy Pro</strong>. Get your API key at <span style="color:var(--go)">hevy.com/settings?developer</span> and paste it below.</p>' +
-    '<input type="text" id="hevy-key-input" placeholder="Paste your Hevy API key..." style="margin-bottom:10px;font-family:DM Mono,monospace;font-size:16px">' +
+    '<p style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:14px">Hevy API access requires <strong style="color:var(--go)">Hevy Pro</strong>. Get your API key at <span style="color:var(--go)">hevy.com/settings?developer</span> and paste it below.</p>' +
+    '<input type="text" id="hevy-key-input" placeholder="Paste your Hevy API key..." style="margin-bottom:10px;font-family:var(--font-text);font-size:var(--t-base)">' +
     '<button class="btn primary" onclick="saveHevyKey()" style="margin-bottom:8px">Save and connect</button>' +
-    '<div style="display:flex;align-items:center;gap:8px;margin:12px 0"><div style="flex:1;height:1px;background:var(--bd)"></div><span style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">or</span><div style="flex:1;height:1px;background:var(--bd)"></div></div>' +
-    '<p style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:8px">No Pro? Import your full history from a Hevy CSV export instead (Hevy app → Settings → Export Data).</p>' +
+    '<div style="display:flex;align-items:center;gap:8px;margin:12px 0"><div style="flex:1;height:1px;background:var(--bd)"></div><span style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">or</span><div style="flex:1;height:1px;background:var(--bd)"></div></div>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);line-height:1.55;margin-bottom:8px">No Pro? Import your full history from a Hevy CSV export instead (Hevy app → Settings → Export Data).</p>' +
     '<input type="file" id="hevy-csv-input" accept=".csv,text/csv" style="display:none" onchange="importHevyCSV(event)">' +
-    '<button class="btn" onclick="document.getElementById(\'hevy-csv-input\').click()" style="margin-bottom:8px;background:var(--bg3);border:1px solid var(--bd)">'+svgIcon("file")+' Import Hevy CSV</button>' +
+    '<button class="btn" onclick="document.getElementById(\'hevy-csv-input\').click()" style="margin-bottom:8px;background:var(--bg3)">'+svgIcon("file")+' Import Hevy CSV</button>' +
     '<button class="btn" onclick="closeModal(this);openLinkedAppDirect(\'hevy\')" style="margin-bottom:8px">Just open Hevy</button>' +
     '<button class="btn quiet" onclick="closeModal(this)">Cancel</button>' +
     '</div>';
@@ -221,14 +221,14 @@ function showAddAppPicker(){
   });
   
   let modalHtml = '<div class="modal-handle"></div>';
-  modalHtml += '<div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:14px">Add an app to link</div>';
+  modalHtml += '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:14px">Add an app to link</div>';
   
   Object.entries(byCategory).forEach(([cat, apps]) => {
-    modalHtml += '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;margin-top:10px">'+cat+'</div>';
+    modalHtml += '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px;margin-top:10px">'+cat+'</div>';
     apps.forEach(([id, app]) => {
       modalHtml += '<button class="btn" style="text-align:left;margin-bottom:6px;padding:10px 12px;display:flex;align-items:center;gap:10px" onclick="addLinkedApp(\''+id+'\')">'+
-        '<div style="width:32px;height:32px;border-radius:var(--rs);background:'+app.color+';display:flex;align-items:center;justify-content:center;font-size:16px">'+app.icon+'</div>'+
-        '<div style="font-size:13px">'+app.name+'</div>'+
+        '<div style="width:32px;height:32px;border-radius:var(--rs);background:'+app.color+';display:flex;align-items:center;justify-content:center;font-size:var(--t-base)">'+app.icon+'</div>'+
+        '<div style="font-size:var(--t-base)">'+app.name+'</div>'+
         '</button>';
     });
   });
@@ -274,12 +274,12 @@ function manageStravaConnection(){
   m.style.alignItems = 'center';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
     '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
-      '<div style="width:40px;height:40px;border-radius:var(--rs);background:#FC4C02;display:flex;align-items:center;justify-content:center;font-size:18px">\u{1F6B4}</div>' +
-      '<div><div style="font-size:16px;font-weight:500;color:var(--tx)">Strava connected</div><div style="font-size:11px;color:var(--gr)">✓ syncing your activities</div></div>' +
+      '<div style="width:40px;height:40px;border-radius:var(--rs);background:#FC4C02;display:flex;align-items:center;justify-content:center;font-size:var(--t-hd)">\u{1F6B4}</div>' +
+      '<div><div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">Strava connected</div><div style="font-size:var(--t-cap);color:var(--gr)">✓ syncing your activities</div></div>' +
     '</div>' +
     '<button class="btn primary" onclick="document.querySelector(&apos;.modal-bg.open&apos;)?.remove();if(typeof syncStravaActivities===&apos;function&apos;){showToast(&apos;Syncing&apos;,&apos;Pulling recent activities...&apos;);syncStravaActivities();}" style="margin-bottom:8px">↻ Sync now</button>' +
-    '<button class="btn" onclick="window.open(&apos;https://www.strava.com&apos;,&apos;_blank&apos;)" style="margin-bottom:8px;background:var(--bg3);border:1px solid var(--bd)">Open Strava app</button>' +
-    '<button class="btn" onclick="disconnectStrava()" style="margin-bottom:8px;background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re)">Disconnect Strava</button>' +
+    '<button class="btn" onclick="window.open(&apos;https://www.strava.com&apos;,&apos;_blank&apos;)" style="margin-bottom:8px;background:var(--bg3)">Open Strava app</button>' +
+    '<button class="btn" onclick="disconnectStrava()" style="margin-bottom:8px;background:var(--re-bg);color:var(--re)">Disconnect Strava</button>' +
     '<button class="btn quiet" onclick="closeModal(this)">Close</button>' +
   '</div>';
   document.body.appendChild(m);
@@ -302,18 +302,18 @@ function manageHevyConnection(){
   m.innerHTML = '<div class="modal">' +
     '<div class="modal-handle"></div>' +
     '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
-      '<div style="width:40px;height:40px;border-radius:var(--rs);background:#1C1C3A;display:flex;align-items:center;justify-content:center;font-size:18px">\u{1F4AA}</div>' +
-      '<div><div style="font-size:16px;font-weight:500;color:var(--tx)">Hevy connected</div><div style="font-size:11px;color:var(--gr)">✓ ' + workouts.length + ' workout' + (workouts.length===1?'':'s') + ' imported</div></div>' +
+      '<div style="width:40px;height:40px;border-radius:var(--rs);background:#1C1C3A;display:flex;align-items:center;justify-content:center;font-size:var(--t-hd)">\u{1F4AA}</div>' +
+      '<div><div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">Hevy connected</div><div style="font-size:var(--t-cap);color:var(--gr)">✓ ' + workouts.length + ' workout' + (workouts.length===1?'':'s') + ' imported</div></div>' +
     '</div>' +
     '<button class="btn primary" onclick="document.querySelector(&apos;.modal-bg.open&apos;)?.remove();showToast(&apos;Syncing&apos;,&apos;Pulling your latest Hevy workouts...&apos;);setTimeout(()=>syncHevyWorkouts(),300)" style="margin-bottom:8px">↻ Sync workouts now</button>' +
-    '<button class="btn" onclick="importHevyRoutines()" style="margin-bottom:8px;background:var(--bg3);border:1px solid var(--bd)">'+svgIcon("save")+' Import my Hevy routines</button>' +
+    '<button class="btn" onclick="importHevyRoutines()" style="margin-bottom:8px;background:var(--bg3)">'+svgIcon("save")+' Import my Hevy routines</button>' +
     '<button class="btn" onclick="document.querySelector(&apos;.modal-bg.open&apos;)?.remove();showToast(&apos;Loading&apos;,&apos;Pulling your Hevy routines...&apos;);setTimeout(()=>fetchHevyRoutines(),300)" style="margin-bottom:8px;background:var(--bg3);border:1px solid var(--bd)">'+svgIcon("save")+' Load my Hevy routines</button>' +
-    '<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:8px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);cursor:pointer"><input type="checkbox" id="hevy-bw-toggle" ' + (ls('totry_bw_volume')?'checked':'') + ' onchange="ls(&apos;totry_bw_volume&apos;,this.checked); showToast(&apos;Saved&apos;, this.checked?&apos;Bodyweight now counts in volume (matches Hevy).&apos;:&apos;Volume counts external load only.&apos;); if(typeof renderUnifiedTraining===&apos;function&apos;)renderUnifiedTraining();" style="width:18px;height:18px;flex-shrink:0"><span style="font-size:12px;color:var(--tx2);line-height:1.4">Count bodyweight in volume for pull-ups, dips, etc. <span style="color:var(--tx3)">(matches how Hevy totals volume)</span></span></label>' +
-    '<button class="btn" onclick="openPushRoutineToHevy()" style="margin-bottom:8px;background:var(--bg3);border:1px solid var(--bd)">'+svgIcon("upload")+' Push a routine to Hevy</button>' +
-    '<button class="btn" onclick="pushLastWorkoutToHevy()" style="margin-bottom:8px;background:var(--bg3);border:1px solid var(--bd)">'+svgIcon("upload")+' Log my last ToTry workout to Hevy</button>' +
+    '<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:8px;background:var(--bg3);border-radius:var(--r);cursor:pointer"><input type="checkbox" id="hevy-bw-toggle" ' + (ls('totry_bw_volume')?'checked':'') + ' onchange="ls(&apos;totry_bw_volume&apos;,this.checked); showToast(&apos;Saved&apos;, this.checked?&apos;Bodyweight now counts in volume (matches Hevy).&apos;:&apos;Volume counts external load only.&apos;); if(typeof renderUnifiedTraining===&apos;function&apos;)renderUnifiedTraining();" style="width:18px;height:18px;flex-shrink:0"><span style="font-size:var(--t-sm);color:var(--tx2);line-height:1.4">Count bodyweight in volume for pull-ups, dips, etc. <span style="color:var(--tx3)">(matches how Hevy totals volume)</span></span></label>' +
+    '<button class="btn" onclick="openPushRoutineToHevy()" style="margin-bottom:8px;background:var(--bg3)">'+svgIcon("upload")+' Push a routine to Hevy</button>' +
+    '<button class="btn" onclick="pushLastWorkoutToHevy()" style="margin-bottom:8px;background:var(--bg3)">'+svgIcon("upload")+' Log my last ToTry workout to Hevy</button>' +
     '<div style="height:1px;background:var(--bd);margin:6px 0"></div>' +
-    '<button class="btn" onclick="changeHevyKey()" style="margin-bottom:8px;background:var(--bg3);border:1px solid var(--bd)">Change API key</button>' +
-    '<button class="btn" onclick="disconnectHevy()" style="margin-bottom:8px;background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re)">Disconnect Hevy</button>' +
+    '<button class="btn" onclick="changeHevyKey()" style="margin-bottom:8px;background:var(--bg3)">Change API key</button>' +
+    '<button class="btn" onclick="disconnectHevy()" style="margin-bottom:8px;background:var(--re-bg);color:var(--re)">Disconnect Hevy</button>' +
     '<button class="btn quiet" onclick="closeModal(this)">Close</button>' +
   '</div>';
   document.body.appendChild(m);

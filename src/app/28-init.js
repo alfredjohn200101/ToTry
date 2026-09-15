@@ -222,7 +222,7 @@ async function _verifyNativeNotifPermission(){
     if(!box || box.querySelector('.notif-perm-warn')) return;
     const warn = document.createElement('div');
     warn.className = 'notif-perm-warn';
-    warn.style.cssText = 'margin-top:10px;padding:10px 12px;border:1px solid var(--go-bd);background:var(--go-bg);border-radius:var(--rs);font-size:12px;color:var(--go);line-height:1.55';
+    warn.style.cssText = 'margin-top:10px;padding:10px 12px;border:1px solid var(--go-bd);background:var(--go-bg);border-radius:var(--rs);font-size:var(--t-sm);color:var(--go);line-height:1.55';
     warn.textContent = 'Reminders are switched on in here, but iOS is not allowing notifications — so nothing can actually reach you. Turn them on in iOS Settings \u2192 Notifications \u2192 ToTry.';
     box.appendChild(warn);
   }catch(_){}
@@ -241,20 +241,20 @@ function renderPushSettings(){
   if(typeof Notify!=='undefined' && Notify.isNative && Notify.isNative()){
     if(prefs.enabled){
       box.innerHTML = head +
-        '<div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:10px">A nudge for your morning ritual and your evening reflection — the rhythm of the day, kept. These reach you even when the app is closed.</div>' +
+        '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:10px">A nudge for your morning ritual and your evening reflection — the rhythm of the day, kept. These reach you even when the app is closed.</div>' +
         '<div style="display:flex;gap:8px;margin-bottom:10px">' +
-          '<div style="flex:1;min-width:0"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Morning</div><input type="time" id="push-time-morning" value="'+prefs.morning+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
-          '<div style="flex:1;min-width:0"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Evening</div><input type="time" id="push-time-evening" value="'+prefs.evening+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
+          '<div style="flex:1;min-width:0"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Morning</div><input type="time" id="push-time-morning" value="'+prefs.morning+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
+          '<div style="flex:1;min-width:0"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Evening</div><input type="time" id="push-time-evening" value="'+prefs.evening+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
         '</div>' +
-        '<button class="btn" onclick="savePushTimes()" style="background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:12px;margin-bottom:8px">Save times</button>' +
+        '<button class="btn" onclick="savePushTimes()" style="background:var(--go-bg);color:var(--go);font-size:var(--t-sm);margin-bottom:8px">Save times</button>' +
         // The receptivity gate's real row — toggle AND quiet hours AND why nothing is scheduled.
         // A stripped hand-rolled copy used to live here, which meant quiet hours could never be set
         // (quietHours() was permanently the 22:00–07:00 default) and a stand-down was invisible.
         _reachOutRowHTML() +
-        '<button class="btn" onclick="disablePushReminders()" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px">Turn reminders off</button>';
+        '<button class="btn" onclick="disablePushReminders()" style="background:transparent;color:var(--tx3);font-size:var(--t-sm);background:var(--fill2)">Turn reminders off</button>';
     } else {
       box.innerHTML = head +
-        '<div style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:10px">Two gentle nudges a day — one to begin your morning, one to close the day — and, if you want it, a quiet check-in at your hardest hour. They reach you even when the app is closed. Nothing else, ever.</div>' +
+        '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-bottom:10px">Two gentle nudges a day — one to begin your morning, one to close the day — and, if you want it, a quiet check-in at your hardest hour. They reach you even when the app is closed. Nothing else, ever.</div>' +
         '<button class="btn primary" onclick="enablePushReminders()">Enable reminders</button>';
     }
     // Then ask the SYSTEM whether any of that is actually true (see below).
@@ -262,32 +262,32 @@ function renderPushSettings(){
     return;
   }
   if(!('Notification' in window) || !('PushManager' in window)){
-    box.innerHTML = head + '<div style="font-size:12px;color:var(--tx3);line-height:1.6">This browser cannot receive notifications. On iPhone: open in Safari and add ToTry to your Home Screen first.</div>';
+    box.innerHTML = head + '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6">This browser cannot receive notifications. On iPhone: open in Safari and add ToTry to your Home Screen first.</div>';
     return;
   }
   if(ios && !_isStandalone()){
     box.innerHTML = head +
-      '<div style="font-size:13px;color:var(--tx2);line-height:1.65">To get morning and evening reminders on iPhone, ToTry needs to live on your Home Screen first:</div>' +
-      '<div style="font-size:12px;color:var(--tx3);line-height:1.7;margin-top:8px">1. Tap the <b>Share</b> button in Safari<br>2. Choose <b>Add to Home Screen</b><br>3. Open ToTry from your Home Screen and come back here</div>';
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65">To get morning and evening reminders on iPhone, ToTry needs to live on your Home Screen first:</div>' +
+      '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.7;margin-top:8px">1. Tap the <b>Share</b> button in Safari<br>2. Choose <b>Add to Home Screen</b><br>3. Open ToTry from your Home Screen and come back here</div>';
     return;
   }
   if(prefs.enabled && Notification.permission==='granted'){
     box.innerHTML = head +
-      '<div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:10px">A nudge for your morning ritual and your evening reflection — the rhythm of the day, kept.</div>' +
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:10px">A nudge for your morning ritual and your evening reflection — the rhythm of the day, kept.</div>' +
       '<div style="display:flex;gap:8px;margin-bottom:10px">' +
-        '<div style="flex:1;min-width:0"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Morning</div><input type="time" id="push-time-morning" value="'+prefs.morning+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
-        '<div style="flex:1;min-width:0"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Evening</div><input type="time" id="push-time-evening" value="'+prefs.evening+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
+        '<div style="flex:1;min-width:0"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Morning</div><input type="time" id="push-time-morning" value="'+prefs.morning+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
+        '<div style="flex:1;min-width:0"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Evening</div><input type="time" id="push-time-evening" value="'+prefs.evening+'" style="width:100%;padding:9px;color-scheme:dark"></div>' +
       '</div>' +
-      '<button class="btn" onclick="savePushTimes()" style="background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:12px;margin-bottom:8px">Save times</button>' +
+      '<button class="btn" onclick="savePushTimes()" style="background:var(--go-bg);color:var(--go);font-size:var(--t-sm);margin-bottom:8px">Save times</button>' +
       // Reach-out-first — the one thing a web PWA could never do; real once wrapped natively. The
       // row is shown here because quiet hours are worth setting either way (they gate the in-app
       // presence too), but it says plainly that the buzz itself waits for the installed app rather
       // than implying a background nudge the browser cannot deliver.
       _reachOutRowHTML() +
-      '<button class="btn" onclick="disablePushReminders()" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px">Turn reminders off</button>';
+      '<button class="btn" onclick="disablePushReminders()" style="background:transparent;color:var(--tx3);font-size:var(--t-sm);background:var(--fill2)">Turn reminders off</button>';
   } else {
     box.innerHTML = head +
-      '<div style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:10px">Two gentle nudges a day — one to begin your morning, one to close the day. Nothing else, ever. You choose the times.</div>' +
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-bottom:10px">Two gentle nudges a day — one to begin your morning, one to close the day. Nothing else, ever. You choose the times.</div>' +
       '<button class="btn primary" onclick="enablePushReminders()">Enable reminders</button>';
   }
 }
@@ -514,7 +514,7 @@ async function initApp(){
   if(typeof flushFeedbackOutbox === 'function') setTimeout(flushFeedbackOutbox, 4000);
   if(typeof repairJourneyStart === 'function') repairJourneyStart();
   // Apply saved theme immediately to avoid FOUC
-  if(typeof applyTheme === 'function') applyTheme(ls('totry_theme') || 'dark');
+  if(typeof applyTheme === 'function') applyTheme(ls('totry_theme') || 'system');
   userName=ls('totry_name')||'Friend';
   if(!ls('totry_start'))ls('totry_start',new Date().toISOString());
   // Set the day
@@ -626,9 +626,9 @@ async function initApp(){
         bar=document.createElement('div');
         bar.id='update-ready-bar';
         bar.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(var(--sb,0px) + 150px);z-index:200;background:var(--bg2);border:1px solid var(--go-bd);border-radius:var(--rm);padding:12px 14px;box-shadow:0 8px 30px rgba(0,0,0,0.5);display:flex;align-items:center;gap:10px';
-        bar.innerHTML='<div style="flex:1;font-size:13px;color:var(--tx);line-height:1.4">A new version is ready.</div>'+
-          '<button class="btn primary" style="width:auto;padding:8px 14px;font-size:12px;margin:0" onclick="(function(){var b=document.getElementById(\'update-ready-bar\');if(b)b.remove();window.__doUpdate&&window.__doUpdate();})()">Refresh</button>'+
-          '<button class="btn" style="width:auto;padding:8px 10px;font-size:12px;margin:0;background:none;border:none;color:var(--tx3)" onclick="(function(){var b=document.getElementById(\'update-ready-bar\');if(b)b.remove();})()">Later</button>';
+        bar.innerHTML='<div style="flex:1;font-size:var(--t-base);color:var(--tx);line-height:1.4">A new version is ready.</div>'+
+          '<button class="btn primary" style="width:auto;padding:8px 14px;font-size:var(--t-sm);margin:0" onclick="(function(){var b=document.getElementById(\'update-ready-bar\');if(b)b.remove();window.__doUpdate&&window.__doUpdate();})()">Refresh</button>'+
+          '<button class="btn" style="width:auto;padding:8px 10px;font-size:var(--t-sm);margin:0;background:none;border:none;color:var(--tx3)" onclick="(function(){var b=document.getElementById(\'update-ready-bar\');if(b)b.remove();})()">Later</button>';
         document.body.appendChild(bar);
       }
       window.__doUpdate=function(){ activateWaiting(reg); };
@@ -731,10 +731,10 @@ function showUnderageFuelNote(){
     const m = document.createElement('div');
     m.className = 'modal-bg open'; m.style.alignItems = 'center';
     m.innerHTML = '<div class="modal" style="text-align:center">'+
-      '<div style="font-size:28px;margin-bottom:8px">'+svgIcon("users",26)+'</div>'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:12px">This one is not mine to set.</div>'+
-      '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:16px">The equation behind this calculator was built on adults, and a body that is still growing needs more than it does \u2014 not less. A weight-loss target at your age belongs with your GP or a dietitian, who can look at the whole picture. That is not me brushing you off; it is the one honest answer I have.</div>'+
-      '<div style="font-size:12px;color:var(--tx3);line-height:1.65;margin-bottom:18px">Everything else here still works. Log your food, train, sleep, and let the rest look after itself for now \u2014 that is what actually builds a body at your age anyway.</div>'+
+      '<div style="font-size:var(--t-2xl);margin-bottom:8px">'+svgIcon("users",26)+'</div>'+
+      '<div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:12px">This one is not mine to set.</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:16px">The equation behind this calculator was built on adults, and a body that is still growing needs more than it does \u2014 not less. A weight-loss target at your age belongs with your GP or a dietitian, who can look at the whole picture. That is not me brushing you off; it is the one honest answer I have.</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.65;margin-bottom:18px">Everything else here still works. Log your food, train, sleep, and let the rest look after itself for now \u2014 that is what actually builds a body at your age anyway.</div>'+
       '<button class="btn primary" onclick="closeModal(this)">Understood</button>'+
     '</div>';
     document.body.appendChild(m);
@@ -823,12 +823,12 @@ function calcTDEE(){
     // does not have to look at them, which is the whole promise.
     if(typeof nutGentle === 'function' && nutGentle()){
       res.innerHTML =
-        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">Your targets are set</div>' +
-        '<div style="font-size:13px;color:var(--tx2);line-height:1.7">Worked out from what you told me and saved. You have numbers turned off, so I will keep them to myself \u2014 the app will use them quietly to tell you whether a day was light, steady or full.</div>' +
-        '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-top:10px;font-style:italic">You can see them any time in Settings if you ever want to.</div>';
+        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Your targets are set</div>' +
+        '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7">Worked out from what you told me and saved. You have numbers turned off, so I will keep them to myself \u2014 the app will use them quietly to tell you whether a day was light, steady or full.</div>' +
+        '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-top:10px;font-style:italic">You can see them any time in Settings if you ever want to.</div>';
       return;
     }
-    res.innerHTML='<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">'+t.label+'</div>'+
+    res.innerHTML='<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">'+t.label+'</div>'+
       '<div class="macro-grid" style="margin-bottom:10px">'+
       '<div class="macro-met"><div class="mm-l">Calories</div><div class="mm-v cal">'+t.cal+'</div></div>'+
       '<div class="macro-met"><div class="mm-l">Protein</div><div class="mm-v pro">'+t.pro+'g</div></div>'+
@@ -840,15 +840,15 @@ function calcTDEE(){
         const verb = goal === 'lose' ? 'fat loss' : 'building muscle';
         const dir = goal === 'lose' ? 'deficit' : 'surplus';
         const amt = goal === 'lose' ? '500' : '300';
-        let h = '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:14px;margin-bottom:8px;text-align:left">';
-        h += '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">What ' + verb + ' actually asks of you</div>';
-        h += '<div style="font-size:13px;color:var(--tx2);line-height:1.65">Your target sits at a <b>' + amt + '-calorie ' + dir + '</b> each day. In real terms: ';
+        let h = '<div style="background:var(--bg3);border-radius:var(--rm);padding:14px;margin-bottom:8px;text-align:left">';
+        h += '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">What ' + verb + ' actually asks of you</div>';
+        h += '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65">Your target sits at a <b>' + amt + '-calorie ' + dir + '</b> each day. In real terms: ';
         if(goal === 'lose'){ h += 'hitting your protein (' + t.pro + 'g) keeps muscle while the fat comes off, and the deficit is small on purpose \u2014 sustainable beats fast. Progress shows over weeks, not days, and the scale will bounce around from water and food. What matters is the <b>direction over a month</b>, not any single morning.'; }
         else { h += 'the surplus is deliberately small so most of what you gain is muscle, not fat. You\u2019ll need to <b>train hard and progress the weights</b> for it to go where you want, and hit your protein (' + t.pro + 'g) consistently. Gaining is slow \u2014 a little each month \u2014 and the scale moving up is part of the deal.'; }
-        h += '</div><div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-top:10px;font-style:italic">This is the work, not a promise. Life happens \u2014 weeks you fall short aren\u2019t failure, they\u2019re part of it. Keep coming back. The least you can do is try.</div></div>';
+        h += '</div><div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-top:10px;font-style:italic">This is the work, not a promise. Life happens \u2014 weeks you fall short aren\u2019t failure, they\u2019re part of it. Keep coming back. The least you can do is try.</div></div>';
         return h;
       })()+
-      "<div style=\"background:var(--gr-bg);border:1px solid var(--gr-bd);border-radius:var(--rs);padding:10px;font-size:12px;color:var(--gr);text-align:center;margin-bottom:8px\">&#10003; Saved as your daily targets</div>" + 
+      "<div style=\"background:var(--gr-bg);border-radius:var(--rs);padding:10px;font-size:var(--t-sm);color:var(--gr);text-align:center;margin-bottom:8px\">&#10003; Saved as your daily targets</div>" + 
       (function(){
         // Apple Watch goal helper. Their Watch "Move" ring tracks ACTIVE calories (on top of the
         // calories the body burns at rest). We derive a sensible active-calorie target from the
@@ -861,12 +861,12 @@ function calcTDEE(){
           if(goal === 'gain') activeTarget = Math.round(activeTarget * 0.9);  // a touch lower so the surplus isn't eaten by cardio
           activeTarget = Math.round(activeTarget/10)*10;
           const exerciseMin = goal === 'lose' ? 45 : 30;
-          return "<div style=\"background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:12px;margin-bottom:8px\">"+
-            "<div style=\"font-family:'DM Mono',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px\">"+svgIcon('clock',13)+" Apple Watch goals to set</div>"+
-            "<div style=\"display:flex;justify-content:space-between;font-size:13px;color:var(--tx);margin-bottom:5px\"><span>Move (active calories)</span><b>"+activeTarget+" cal</b></div>"+
-            "<div style=\"display:flex;justify-content:space-between;font-size:13px;color:var(--tx);margin-bottom:5px\"><span>Exercise</span><b>"+exerciseMin+" min</b></div>"+
-            "<div style=\"display:flex;justify-content:space-between;font-size:13px;color:var(--tx);margin-bottom:10px\"><span>Stand</span><b>12 hrs</b></div>"+
-            "<div style=\"font-size:11px;color:var(--tx3);line-height:1.55\">On your iPhone: <b>Fitness app &rarr; your profile &rarr; Change Goals</b>. \u201CMove\u201D is the active calories you burn above resting \u2014 it does <i>not</i> include the ~"+restBurn+" cal your body uses at rest. So a full day \u2248 "+restBurn+" resting + "+activeTarget+" active &asymp; "+(restBurn+activeTarget)+" total burned, which lines up with your "+tdee+"-cal maintenance.</div>"+
+          return "<div style=\"background:var(--bg3);border-radius:var(--rs);padding:12px;margin-bottom:8px\">"+
+            "<div style=\"font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px\">"+svgIcon('clock',13)+" Apple Watch goals to set</div>"+
+            "<div style=\"display:flex;justify-content:space-between;font-size:var(--t-base);color:var(--tx);margin-bottom:5px\"><span>Move (active calories)</span><b>"+activeTarget+" cal</b></div>"+
+            "<div style=\"display:flex;justify-content:space-between;font-size:var(--t-base);color:var(--tx);margin-bottom:5px\"><span>Exercise</span><b>"+exerciseMin+" min</b></div>"+
+            "<div style=\"display:flex;justify-content:space-between;font-size:var(--t-base);color:var(--tx);margin-bottom:10px\"><span>Stand</span><b>12 hrs</b></div>"+
+            "<div style=\"font-size:var(--t-cap);color:var(--tx3);line-height:1.55\">On your iPhone: <b>Fitness app &rarr; your profile &rarr; Change Goals</b>. \u201CMove\u201D is the active calories you burn above resting \u2014 it does <i>not</i> include the ~"+restBurn+" cal your body uses at rest. So a full day \u2248 "+restBurn+" resting + "+activeTarget+" active &asymp; "+(restBurn+activeTarget)+" total burned, which lines up with your "+tdee+"-cal maintenance.</div>"+
           "</div>";
         }catch(e){ return ''; }
       })() +

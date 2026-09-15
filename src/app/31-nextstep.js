@@ -299,16 +299,16 @@ function renderLifeWoven(){
     ['wallet','Money',moneyTxt,"go('money')"]
   ];
   box.innerHTML='<div class="card" style="padding:4px 2px">'+
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.14em;text-transform:uppercase;padding:8px 12px 2px">Your life, woven</div>'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em;text-transform:uppercase;padding:8px 12px 2px">Your life, woven</div>'+
     rows.map(r=>'<button onclick="'+r[3]+'" style="width:100%;display:flex;align-items:center;gap:11px;background:none;border:none;border-top:1px solid var(--bd);padding:11px 12px;cursor:pointer;text-align:left">'+
       '<span style="flex-shrink:0;width:20px;text-align:center;color:var(--go);line-height:1">'+svgIcon(r[0],17)+'</span>'+
-      '<span style="font-size:13px;color:var(--tx);flex-shrink:0;width:66px">'+r[1]+'</span>'+
-      '<span style="flex:1;font-size:12px;color:var(--tx3);text-align:right">'+r[2]+'</span>'+
-      '<span style="color:var(--tx3);font-size:14px;flex-shrink:0;margin-left:6px">›</span>'+
+      '<span style="font-size:var(--t-base);color:var(--tx);flex-shrink:0;width:66px">'+r[1]+'</span>'+
+      '<span style="flex:1;font-size:var(--t-sm);color:var(--tx3);text-align:right">'+r[2]+'</span>'+
+      '<span style="color:var(--tx3);font-size:var(--t-sm);flex-shrink:0;margin-left:6px">›</span>'+
     '</button>').join('')+
     // The one number this app is proud of: not time spent here, but times you left better. Earned (≥3),
     // never shown at zero — the anti-engagement metric made quietly visible. (totry_releases)
-    (function(){ const rc=(typeof releaseCount==='function')?releaseCount():0; return rc>=3 ? '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.05em;line-height:1.5;border-top:1px solid var(--bd);padding:9px 12px 8px;text-align:center">🕊️ '+rc+' times, you came here and walked back into your life</div>' : ''; })()+
+    (function(){ const rc=(typeof releaseCount==='function')?releaseCount():0; return rc>=3 ? '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em;line-height:1.5;border-top:1px solid var(--bd);padding:9px 12px 8px;text-align:center">🕊️ '+rc+' times, you came here and walked back into your life</div>' : ''; })()+
   '</div>';
 }
 function renderHomeGreeting(){
@@ -440,8 +440,8 @@ function renderHomeHabits(){
     // Used to read "Add them in Settings" — there is no habit UI in Settings, so this sent every new
     // user looking for something that does not exist. Now it offers the thing directly.
     list.innerHTML = '<div style="text-align:center;padding:16px 8px 6px">'+
-      '<div style="font-size:13px;color:var(--tx3);line-height:1.6;margin-bottom:12px">No habits yet. Pick one small thing you want to be true of you most days.</div>'+
-      '<button class="btn primary" style="width:auto;padding:9px 18px;font-size:13px" onclick="openAddHabit()">Add your first habit</button>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:12px">No habits yet. Pick one small thing you want to be true of you most days.</div>'+
+      '<button class="btn primary" style="width:auto;padding:9px 18px;font-size:var(--t-base)" onclick="openAddHabit()">Add your first habit</button>'+
     '</div>';
     return;
   }
@@ -518,7 +518,7 @@ function renderHomeHabits(){
   summary.innerHTML = 
     '<div>' +
       '<div class="eyebrow">' + (knowable ? 'This week so far' : 'This week') + '</div>' +
-      '<div class="stat-num" style="font-size:18px;color:var(--tx)">' +
+      '<div class="stat-num" style="font-size:var(--t-hd);color:var(--tx)">' +
         (knowable
           ? (_weeklyOnly ? (_wkHits + ' of ' + _wkTarget + ' this week' + (_wkHits >= _wkTarget ? ' \u2713' : ''))
                          : (pastPerfect + '/' + elapsed + ' perfect'))
@@ -526,7 +526,7 @@ function renderHomeHabits(){
     '</div>' +
     '<div style="text-align:right;cursor:pointer;min-height:34px" id="home-habit-today">' +
       '<div class="eyebrow">Today so far</div>' +
-      '<div class="stat-num" style="font-size:18px;color:var(--tx2);border-bottom:1px dotted var(--bd);display:inline-block">' + todayDone + '/' + todayTotal + '</div>' +
+      '<div class="stat-num" style="font-size:var(--t-hd);color:var(--tx2);border-bottom:1px dotted var(--bd);display:inline-block">' + todayDone + '/' + todayTotal + '</div>' +
     '</div>';
   list.appendChild(summary);
   // This card counted the day and offered no way to move it. The grid is deliberately read-only
@@ -558,7 +558,7 @@ function renderHomeHabits(){
   // cells only ever hold a tick or a dot, so they are clamped small and the name takes what is left.
   headerRow.style.cssText = 'display:grid;grid-template-columns:minmax(84px,1.4fr) repeat(7,minmax(18px,24px));gap:4px;align-items:center;margin-bottom:6px;padding:0 4px;max-width:100%';
   headerRow.innerHTML = '<div></div>' + dayLabels.map(d => 
-    '<div style="font-family:DM Mono,monospace;font-size:9px;text-align:center;color:' + (d.isToday ? 'var(--go)' : 'var(--tx3)') + '">' + d.letter + '</div>'
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);text-align:center;color:' + (d.isToday ? 'var(--go)' : 'var(--tx3)') + '">' + d.letter + '</div>'
   ).join('');
   list.appendChild(headerRow);
   
@@ -587,11 +587,11 @@ function renderHomeHabits(){
     // not ticking, so it doesn't break the "ticking lives in the evening" rule.
     nameCell.style.cursor = 'pointer';
     nameCell.innerHTML =
-      '<div style="font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:1px dotted var(--bd);display:inline-block;max-width:100%">' + _escFew(h.n) + '</div>' +
+      '<div style="font-size:var(--t-base);color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-bottom:1px dotted var(--bd);display:inline-block;max-width:100%">' + _escFew(h.n) + '</div>' +
       (_anc
-        ? '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">after ' + _escFew(_anc) + '</div>'
-        : (!window.__anchorHintShown ? (window.__anchorHintShown = true, '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">\uFF0B anchor it to a cue</div>') : '')) +
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:' + pastColor + ';margin-top:2px">' + (knowable ? ((_pw ? (_weekHits + ' of ' + _pw + (_weekHits >= _pw ? ' \u2713' : '')) : (pastHits + '/' + elapsed)) + ' this week') : 'day one') + '</div>';
+        ? '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">after ' + _escFew(_anc) + '</div>'
+        : (!window.__anchorHintShown ? (window.__anchorHintShown = true, '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px">\uFF0B anchor it to a cue</div>') : '')) +
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:' + pastColor + ';margin-top:2px">' + (knowable ? ((_pw ? (_weekHits + ' of ' + _pw + (_weekHits >= _pw ? ' \u2713' : '')) : (pastHits + '/' + elapsed)) + ' this week') : 'day one') + '</div>';
     nameCell.onclick = function(){ if(typeof openHabitAnchor==='function') openHabitAnchor(hi); };
     row.appendChild(nameCell);
     
@@ -647,7 +647,7 @@ function renderHomeHabits(){
   });
   
   const footer = document.createElement('div');
-  footer.style.cssText = 'margin-top:14px;padding-top:10px;border-top:1px solid var(--bd);font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-align:center;letter-spacing:0.05em;line-height:1.5';
+  footer.style.cssText = 'margin-top:14px;padding-top:10px;border-top:1px solid var(--bd);font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-align:center;letter-spacing:0.01em;line-height:1.5';
 footer.innerHTML = 'Tap a name to anchor it to something you already do \u00b7 tap today\'s score to tick them off \u00b7 past 6 days on the left';
   list.appendChild(footer);
 }

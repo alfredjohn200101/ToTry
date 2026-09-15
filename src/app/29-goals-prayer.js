@@ -77,8 +77,8 @@ function editGoal(level){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:88vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:6px">Edit goals for ' + labels[level] + '</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.6">' + prompts[level] + '</p>' +
-    '<textarea id="goal-input" style="min-height:140px;font-size:16px;line-height:1.6">' + current + '</textarea>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:12px;line-height:1.6">' + prompts[level] + '</p>' +
+    '<textarea id="goal-input" style="min-height:140px;font-size:var(--t-base);line-height:1.6">' + current + '</textarea>' +
     '<button class="btn primary" onclick="saveGoalEdit(\'' + level + '\')" style="margin-top:14px;margin-bottom:8px">Save goal</button>' +
     '<button class="btn" onclick="closeModal(this)">Cancel</button>' +
   '</div>';
@@ -102,7 +102,7 @@ function renderGoals(){
   if(qEl) qEl.textContent = 'Q' + (Math.floor(now.getMonth() / 3) + 1);
   if(mEl) mEl.textContent = now.toLocaleDateString('en-US', {month: 'long'});
   
-  const empty = '<span style="color:var(--tx3);font-style:italic;font-size:13px;font-family:Outfit,sans-serif">Tap Edit to set this</span>';
+  const empty = '<span style="color:var(--tx3);font-style:italic;font-size:var(--t-sm);font-family:var(--font-text)">Tap Edit to set this</span>';
   ['yearly','quarterly','monthly','weekly'].forEach(level => {
     const el = document.getElementById('goals-' + level + '-content');
     if(!el) return;
@@ -134,13 +134,13 @@ function renderGoals(){
   const paceEl = document.getElementById('goals-pace');
   if(paceEl){
     paceEl.innerHTML =
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:DM Mono,monospace;font-size:11px">' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:var(--font-text);font-size:var(--t-cap)">' +
         '<div>Year: ' + yearPct + '% through</div>' +
         '<div>Quarter: ' + qPct + '%</div>' +
         '<div>Month: ' + mPct + '%</div>' +
         '<div>Week: ' + wPct + '%</div>' +
       '</div>' +
-      '<div style="font-family:Cormorant Garamond,serif;font-size:13px;font-style:italic;color:var(--tx3);margin-top:8px;line-height:1.5">Look at your goals. Look at where you are. Are you on pace? Adjust this week.</div>';
+      '<div style="font-family:var(--font-serif);font-size:var(--t-sm);font-style:italic;color:var(--tx3);margin-top:8px;line-height:1.5">Look at your goals. Look at where you are. Are you on pace? Adjust this week.</div>';
   }
 }
 
@@ -209,9 +209,9 @@ function _promptSacramentDate(kind){
   m.style.alignItems='center';
   m.innerHTML='<div class="modal">'+
     '<div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:21px;color:var(--tx);font-style:italic;margin-bottom:6px">When was this '+label+'?</div>'+
-    '<input type="date" id="sacrament-date-input" max="'+todayStr+'" value="'+todayStr+'" style="margin-bottom:12px;font-size:16px;padding:11px;color-scheme:dark;width:100%">'+
-    (kind==='mass' ? '<label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:13px;color:var(--tx2);cursor:pointer"><input type="checkbox" id="sacrament-euch-input" checked style="width:18px;height:18px;accent-color:var(--go)">I received the Eucharist</label>' : '')+
+    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;margin-bottom:6px">When was this '+label+'?</div>'+
+    '<input type="date" id="sacrament-date-input" max="'+todayStr+'" value="'+todayStr+'" style="margin-bottom:12px;font-size:var(--t-base);padding:11px;color-scheme:dark;width:100%">'+
+    (kind==='mass' ? '<label style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:var(--t-sm);color:var(--tx2);cursor:pointer"><input type="checkbox" id="sacrament-euch-input" checked style="width:18px;height:18px;accent-color:var(--go)">I received the Eucharist</label>' : '')+
     '<button class="btn primary" onclick="(function(){var d=document.getElementById(\'sacrament-date-input\').value;var iso=d?new Date(d+\'T12:00:00\').toISOString():null;'+
       (kind==='confession'
         ? 'closeModal(this);logConfession(iso);'
@@ -289,11 +289,11 @@ function renderSacraments(){
         const dateStr = new Date(item.date).toLocaleDateString('en-AU', {weekday:'short', day:'numeric', month:'short'});
         return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid var(--bd)">' +
           '<div style="display:flex;align-items:center;gap:10px">' +
-            '<span style="font-size:15px">' + icon + '</span>' +
-            '<div><div style="font-size:13px;color:var(--tx)">' + label + '</div>' +
-            '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">' + dateStr + '</div></div>' +
+            '<span style="font-size:var(--t-base)">' + icon + '</span>' +
+            '<div><div style="font-size:var(--t-base);color:var(--tx)">' + label + '</div>' +
+            '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">' + dateStr + '</div></div>' +
           '</div>' +
-          '<button onclick="deleteSacrament(\'' + item.kind + '\',' + item.id + ')" style="background:none;border:none;color:var(--tx3);font-size:16px;cursor:pointer;padding:4px">&times;</button>' +
+          '<button onclick="deleteSacrament(\'' + item.kind + '\',' + item.id + ')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-base);cursor:pointer;padding:4px">&times;</button>' +
         '</div>';
       }).join('');
   }
@@ -390,7 +390,7 @@ function renderPrayers(){
       _prayerFilter === 'open' ?
       'No active prayers. Add one above to start.' :
       'Your prayer journal is empty. Add your first one above.';
-    list.innerHTML = '<p style="font-size:13px;color:var(--tx3);text-align:center;padding:20px;font-style:italic">' + empty + '</p>';
+    list.innerHTML = '<p style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:20px;font-style:italic">' + empty + '</p>';
   } else {
     list.innerHTML = '';
     filtered.forEach(p => {
@@ -403,21 +403,21 @@ function renderPrayers(){
       
       let html = '';
       if(p.category){
-        html += '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px">' + p.category + '</div>';
+        html += '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">' + p.category + '</div>';
       }
-      html += '<div style="font-size:13px;color:var(--tx);line-height:1.55;margin-bottom:6px">' + p.text.replace(/</g, '&lt;') + '</div>';
-      html += '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-bottom:8px">Started ' + agoLabel + '</div>';
+      html += '<div style="font-size:var(--t-base);color:var(--tx);line-height:1.55;margin-bottom:6px">' + p.text.replace(/</g, '&lt;') + '</div>';
+      html += '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-bottom:8px">Started ' + agoLabel + '</div>';
       
       if(p.status === 'answered'){
         const ansAgo = Math.floor((Date.now() - new Date(p.answeredAt).getTime()) / 86400000);
         const ansLabel = ansAgo === 0 ? 'today' : ansAgo === 1 ? 'yesterday' : ansAgo + ' days ago';
-        html += '<div style="background:var(--gr-bg);border:1px solid var(--gr-bd);border-radius:var(--rs);padding:8px 10px;margin-bottom:8px">' +
-          '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--gr);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:3px">Answered ' + ansLabel + '</div>' +
-          (p.answerNote ? '<div style="font-size:12px;color:var(--tx);line-height:1.5">' + p.answerNote.replace(/</g, '&lt;') + '</div>' : '<div style="font-size:11px;color:var(--tx3);font-style:italic">No note added</div>') +
+        html += '<div style="background:var(--gr-bg);border-radius:var(--rs);padding:8px 10px;margin-bottom:8px">' +
+          '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--gr);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Answered ' + ansLabel + '</div>' +
+          (p.answerNote ? '<div style="font-size:var(--t-sm);color:var(--tx);line-height:1.5">' + p.answerNote.replace(/</g, '&lt;') + '</div>' : '<div style="font-size:var(--t-cap);color:var(--tx3);font-style:italic">No note added</div>') +
         '</div>';
-        html += '<div style="display:flex;gap:8px"><button class="btn" style="flex:1;padding:6px;font-size:11px;background:transparent;border:1px solid var(--bd)" onclick="unanswerPrayer(' + p.id + ')">Reopen</button><button class="btn danger" style="width:auto;padding:6px 10px;font-size:11px" onclick="deletePrayer(' + p.id + ')">Delete</button></div>';
+        html += '<div style="display:flex;gap:8px"><button class="btn" style="flex:1;padding:6px;font-size:var(--t-cap);background:transparent;background:var(--fill2)" onclick="unanswerPrayer(' + p.id + ')">Reopen</button><button class="btn danger" style="width:auto;padding:6px 10px;font-size:var(--t-cap)" onclick="deletePrayer(' + p.id + ')">Delete</button></div>';
       } else {
-        html += '<div style="display:flex;gap:8px"><button class="btn" style="flex:1;padding:8px;font-size:12px;background:var(--gr);color:#000;border:none" onclick="markPrayerAnswered(' + p.id + ')">✓ God answered this</button><button class="btn" style="width:auto;padding:8px 10px;font-size:11px;background:transparent;border:1px solid var(--bd)" onclick="deletePrayer(' + p.id + ')">×</button></div>';
+        html += '<div style="display:flex;gap:8px"><button class="btn" style="flex:1;padding:8px;font-size:var(--t-sm);background:var(--gr);color:#000;border:none" onclick="markPrayerAnswered(' + p.id + ')">✓ God answered this</button><button class="btn" style="width:auto;padding:8px 10px;font-size:var(--t-cap);background:transparent;background:var(--fill2)" onclick="deletePrayer(' + p.id + ')">×</button></div>';
       }
       
       card.innerHTML = html;

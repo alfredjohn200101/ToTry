@@ -782,11 +782,11 @@ function _reachOutRowHTML(){
   else status='Nothing scheduled right now.';
   return '<div style="border-top:1px solid var(--bd);margin:6px 0 10px;padding-top:12px">'+
     '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">'+
-      '<div style="flex:1"><div style="font-size:13px;color:var(--tx);font-weight:500">Reach out to me first</div>'+
-      '<div style="font-size:11px;color:var(--tx3);line-height:1.45">A quiet check-in before your hardest hour — learned from your own patterns. At most '+REACHOUT_MAX_PER_WEEK+' a week, never in your quiet hours, never when you’ve just been here.</div></div>'+
-      '<button type="button" onclick="toggleReachOut()" style="padding:7px 14px;border-radius:100px;border:1px solid '+(on?'var(--go-bd)':'var(--bd)')+';background:'+(on?'var(--go-bg)':'transparent')+';color:'+(on?'var(--go)':'var(--tx2)')+';font-size:12px;white-space:nowrap">'+(on?'On':'Off')+'</button>'+
+      '<div style="flex:1"><div style="font-size:var(--t-base);color:var(--tx);font-weight:500">Reach out to me first</div>'+
+      '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.45">A quiet check-in before your hardest hour — learned from your own patterns. At most '+REACHOUT_MAX_PER_WEEK+' a week, never in your quiet hours, never when you’ve just been here.</div></div>'+
+      '<button type="button" onclick="toggleReachOut()" style="padding:7px 14px;border-radius:100px;border:1px solid '+(on?'var(--go-bd)':'var(--bd)')+';background:'+(on?'var(--go-bg)':'transparent')+';color:'+(on?'var(--go)':'var(--tx2)')+';font-size:var(--t-sm);white-space:nowrap">'+(on?'On':'Off')+'</button>'+
     '</div>'+
-    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);line-height:1.6;margin-top:8px">'+_escFew(status)+'</div>'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);line-height:1.6;margin-top:8px">'+_escFew(status)+'</div>'+
     // Two time fields on their own row, then a full-width Save beneath — the same shape as the
     // morning/evening row above, which is why that one has always looked right.
     // On a 402pt iPhone this row used to overflow and clip Save off the right edge. Two causes, and I
@@ -796,15 +796,15 @@ function _reachOutRowHTML(){
     // With the inputs finally able to shrink, they collapsed to nothing and the labels collided.
     // Found by running the real build; a desktop browser never showed any of it.
     '<div style="display:flex;gap:8px;align-items:flex-end;margin-top:10px">'+
-      '<div style="flex:1;min-width:0"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Quiet from</div><input type="time" id="quiet-start" value="'+q.start+'" style="width:100%;padding:9px;color-scheme:dark"></div>'+
-      '<div style="flex:1;min-width:0"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">Until</div><input type="time" id="quiet-end" value="'+q.end+'" style="width:100%;padding:9px;color-scheme:dark"></div>'+
+      '<div style="flex:1;min-width:0"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Quiet from</div><input type="time" id="quiet-start" value="'+q.start+'" style="width:100%;padding:9px;color-scheme:dark"></div>'+
+      '<div style="flex:1;min-width:0"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Until</div><input type="time" id="quiet-end" value="'+q.end+'" style="width:100%;padding:9px;color-scheme:dark"></div>'+
     '</div>'+
-      '<button class="btn" onclick="saveQuietHours()" style="margin-top:8px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:12px;padding:9px 12px">Save quiet hours</button>'+
-    '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:6px">Nothing reaches you between these hours. If your hard hour falls inside them I come to the nearer edge instead — and the message says why.</div>'+
+      '<button class="btn" onclick="saveQuietHours()" style="margin-top:8px;background:var(--go-bg);color:var(--go);font-size:var(--t-sm);padding:9px 12px">Save quiet hours</button>'+
+    '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-top:6px">Nothing reaches you between these hours. If your hard hour falls inside them I come to the nearer edge instead — and the message says why.</div>'+
     // Say the limit out loud. A browser cannot wake itself, so on the web this works out your hard
     // hour and holds it — nothing buzzes. Claiming otherwise would be the exact promise this app
     // is built not to make.
-    (_native ? '' : '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);line-height:1.6;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">In the browser I can work out your hard hour but I can’t buzz you — a web page can’t wake itself. The check-in starts once ToTry is installed as an app; what you set here is kept and waiting. Quiet hours only ever silence what I send you — if you open me at 3am I’ll still meet you properly.</div>')+
+    (_native ? '' : '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);line-height:1.6;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">In the browser I can work out your hard hour but I can’t buzz you — a web page can’t wake itself. The check-in starts once ToTry is installed as an app; what you set here is kept and waiting. Quiet hours only ever silence what I send you — if you open me at 3am I’ll still meet you properly.</div>')+
   '</div>';
 }
 function saveQuietHours(){

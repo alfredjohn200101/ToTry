@@ -903,7 +903,12 @@ H.section('navigation — one way back, not two');
     H.ok(new RegExp('\\b' + t + '\\s*:').test(parentMap[1]),
       t + ' is registered in TAB_PARENT, so it still gets a back bar');
   });
-  H.ok(/insertBefore\(bar, tab\.firstChild\)/.test(H.html), 'the bar is inserted at the top of the sub-page');
+  // Apple-native: the way back lives in the navigation bar's leading slot, so it cannot scroll away
+  // with the content (it used to be inserted at the top of the sub-page and did exactly that).
+  const hbb = H.code(H.extractFn('updateHubBackBar'));
+  H.ok(/getElementById\('ios-nav-lead'\)/.test(hbb) && /lead\.appendChild\(bar\)/.test(hbb),
+       'the back button is placed in the navigation bar, where it stays while the page scrolls');
+  H.ok(/bar\.id='hub-back-bar'/.test(hbb), 'and keeps its id, which the ritual layout and the gate look up');
 }
 
 H.section('no external payment links in the App Store build');
@@ -4319,17 +4324,32 @@ function fnBodyOf(code, name){
   const head = fs.readFileSync(path.join(root, 'src/shell-head.html'), 'utf8');
   const rootBlock = (head.match(/:root\{([^}]*)\}/) || [])[1] || '';
   const tok = n => { const m = rootBlock.match(new RegExp('--' + n + ':\\s*([^;]+)')); return m ? m[1].trim() : null; };
-  const settings = fs.readFileSync(path.join(root, 'src/app/27-settings.js'), 'utf8');
-  const lightBlock = settings.slice(settings.indexOf("if(theme === 'light')"),
-                                    settings.indexOf('} else {', settings.indexOf("if(theme === 'light')")));
+  // Light is CSS since the Apple-native redesign: the explicit `:root[data-theme="light"]` block (the
+  // prefers-color-scheme block carries the same values, and a separate check holds them equal).
+  const lightStart = head.indexOf(':root[data-theme="light"]{');
+  const lightBlock = lightStart < 0 ? '' : head.slice(lightStart, head.indexOf('}', lightStart));
   const light = {};
-  for (const m of lightBlock.matchAll(/setProperty\('--(\w+)',\s*'(#[0-9A-Fa-f]{3,8})'\)/g)) light[m[1]] = m[2];
+  for (const m of lightBlock.matchAll(/--(\w+)\s*:\s*(#[0-9A-Fa-f]{3,8}|rgba?\([^)]*\))/g)) light[m[1]] = m[2];
 
-  const rgb = h => { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join('');
-                     return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); };
-  const lum = c => { const [r, g, b] = rgb(c).map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
-                     return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
-  const ratio = (a, b) => { const L1 = lum(a), L2 = lum(b); return (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05); };
+  // Colours may be hex OR rgba. Secondary and tertiary labels are translucent on iOS, so an ink is
+  // COMPOSITED over the background it is measured on — and the loop below now refuses to skip a pair
+  // it cannot parse. It used to skip any non-hex token silently, which would have left every
+  // translucent label unmeasured behind a green check.
+  const parse = c => { c = String(c).trim();
+    let m = c.match(/^#([0-9a-f]{3,8})$/i);
+    if (m) { let h = m[1]; if (h.length === 3) h = h.split('').map(x => x + x).join('');
+             return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)).concat([1]); }
+    m = c.match(/^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)$/);
+    if (m) return [+m[1], +m[2], +m[3], m[4] === undefined ? 1 : +m[4]];
+    return null; };
+  const over = (fg, bg) => { const F = parse(fg), B = parse(bg); if (!F || !B) return null;
+    return [0, 1, 2].map(i => F[i] * F[3] + B[i] * (1 - F[3])); };
+  const lumRGB = c => { const [r, g, b] = c.map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+                        return 0.2126 * r + 0.7152 * g + 0.0722 * b; };
+  const rgb = h => parse(h).slice(0, 3);
+  const lum = c => lumRGB(rgb(c));
+  const ratio = (fg, bg) => { const F = over(fg, bg), B = parse(bg); if (!F || !B) return NaN;
+    const L1 = lumRGB(F), L2 = lumRGB(B.slice(0, 3)); return (Math.max(L1, L2) + 0.05) / (Math.min(L1, L2) + 0.05); };
 
   const dark = {};
   for (const n of ['bg', 'bg2', 'bg3', 'tx', 'tx2', 'tx3', 'go', 'gr', 're', 'bl', 'pu']) dark[n] = tok(n);
@@ -4341,23 +4361,19 @@ function fnBodyOf(code, name){
     if (!light[n]) light[n] = dark[n];
   }
   H.ok(dark.tx && dark.bg && light.tx3 && light.bg, 'both palettes were found and parsed');
-  H.ok(light.go && light.go !== dark.go, 'the light theme re-tunes the gold accent, not just the greys');
+  H.ok(light.go && light.go !== dark.go, 'the light theme re-tunes the tint accent, not just the greys');
   H.ok(light.gr !== dark.gr && light.bl !== dark.bl && light.pu !== dark.pu,
     'and green, blue and purple — all five accents, or they inherit dark values onto cream');
 
   // Every light token must be restored when switching back, or the muted accents stay on the dark bg.
   {
-    const src = fs.readFileSync(path.join(root, 'src/app/27-settings.js'), 'utf8');
-    const li = src.indexOf("if(theme === 'light')");
-    const lb = src.slice(li, src.indexOf('} else {', li));
-    const db = src.slice(src.indexOf('} else {', li), src.indexOf('\n}', src.indexOf('Restore dark')));
-    const sets = [...lb.matchAll(/setProperty\('--([\w-]+)'/g)].map(m => m[1]);
-    let rem = [...db.matchAll(/removeProperty\('--([\w-]+)'/g)].map(m => m[1]);
-    if (/\['go','gr','re','bl','pu'\]/.test(db)) {
-      rem = rem.concat(['go', 'gr', 're', 'bl', 'pu'].flatMap(n => [n, n + '-bg', n + '-bd']));
-    }
-    const unrestored = sets.filter(t => !rem.includes(t));
-    H.eq(unrestored, [], 'every token the light theme sets is removed again when switching back to dark');
+    // applyTheme no longer paints tokens inline at all — the palettes are CSS — so the old failure
+    // (light values left stuck on a dark ground) cannot happen by construction. Hold THAT: it may clear
+    // inline tokens a previous build left behind, but it may not set one.
+    const at = H.code(H.extractFn('applyTheme'));
+    H.ok(!/setProperty\(\s*'--/.test(at), 'applyTheme sets no colour token inline — appearance is the stylesheet\u2019s job');
+    H.ok(/removeAttribute\('data-theme'\)/.test(at) && /setAttribute\('data-theme'/.test(at),
+      'it chooses between the phone\u2019s appearance and an explicit Light or Dark by the attribute alone');
   }
 
   // ...AND THE OTHER DIRECTION, which is the one that shipped broken. The check above only asks
@@ -4375,12 +4391,24 @@ function fnBodyOf(code, name){
     const rootBlock = head.slice(head.indexOf(':root{'), head.indexOf('}', head.indexOf(':root{')));
     const colourTokens = [...rootBlock.matchAll(/--([\w-]+)\s*:\s*(#[0-9a-fA-F]{3,8}|rgba?\([^)]*\))/g)]
       .map(m => m[1]);
-    const src = fs.readFileSync(path.join(root, 'src/app/27-settings.js'), 'utf8');
-    const li = src.indexOf("if(theme === 'light')");
-    const lb = src.slice(li, src.indexOf('} else {', li));
-    const setInLight = new Set([...lb.matchAll(/setProperty\('--([\w-]+)'/g)].map(m => m[1]));
-    if (/\['go','gr','re','bl','pu'\]/.test(lb))
-      ['go','gr','re','bl','pu'].forEach(n => [n, n+'-bg', n+'-bd'].forEach(t => setInLight.add(t)));
+    // Since the Apple-native redesign the light values are CSS, in two blocks: the phone's own
+    // appearance (prefers-color-scheme) and an explicit Settings choice (data-theme="light"). BOTH
+    // must answer for every token — a value missing from one route is the --bg4 bug again, only on
+    // half the phones.
+    const blockAfter = (needle) => { const i = head.indexOf(needle); if (i < 0) return '';
+      const o = head.indexOf('{', i + needle.length - 1); let d = 0, j = o;
+      for (; j < head.length; j++) { if (head[j] === '{') d++; else if (head[j] === '}') { d--; if (d === 0) break; } }
+      return head.slice(o, j); };
+    const tokensIn = (blk) => new Set([...blk.matchAll(/--([\w-]+)\s*:/g)].map(m => m[1]));
+    const viaSystem = tokensIn(blockAfter(':root:not([data-theme="dark"]){'));
+    const viaChoice = tokensIn(blockAfter(':root[data-theme="light"]{'));
+    const setInLight = new Set([...viaChoice].filter(t => viaSystem.has(t)));
+    H.ok(viaSystem.size >= 20 && viaChoice.size >= 20,
+      'both light routes were found (' + viaSystem.size + ' / ' + viaChoice.size + ' tokens)');
+    const valuesIn = (blk) => Object.fromEntries([...blk.matchAll(/--([\w-]+)\s*:\s*([^;]+);/g)].map(m => [m[1], m[2].trim()]));
+    const sysV = valuesIn(blockAfter(':root:not([data-theme="dark"]){')), choV = valuesIn(blockAfter(':root[data-theme="light"]{'));
+    const drift = Object.keys(choV).filter(k => sysV[k] !== choV[k]).concat(Object.keys(sysV).filter(k => !(k in choV)));
+    H.eq(drift, [], 'the phone\u2019s light appearance and an explicit Light choice paint identical values');
     H.ok(colourTokens.length >= 20,
       `the :root colour scan found ${colourTokens.length} token(s) — under 20 means the scan broke, not the app`);
     const forgotten = colourTokens.filter(t => !setInLight.has(t));
@@ -4468,14 +4496,14 @@ function fnBodyOf(code, name){
   for (const [themeName, t] of [['dark', dark], ['light', light]]) {
     for (const fg of ['tx', 'tx2', 'tx3', 'go', 'gr', 're']) {
       for (const bg of ['bg', 'bg2', 'bg3']) {
-        if (!t[fg] || !t[bg] || !/^#/.test(t[fg]) || !/^#/.test(t[bg])) continue;
         const r = ratio(t[fg], t[bg]);
+        if (!(r > 0)) { H.ok(false, `${themeName}: --${fg} on --${bg} could not be measured (${t[fg]} on ${t[bg]}) — the instrument, not the app`); continue; }
         checked++;
         H.ok(r >= 4.5, `${themeName}: --${fg} on --${bg} is ${r.toFixed(2)}:1 (needs 4.5:1) — ${t[fg]} on ${t[bg]}`);
       }
     }
   }
-  H.ok(checked >= 20, `and enough pairs were actually measured (${checked})`);
+  H.ok(checked === 36, `and every one of the 36 pairs was actually measured (${checked})`);
 }
 
 // ── a debt you corrected stays corrected, and one you removed stays removed ───────────────────
@@ -6019,8 +6047,8 @@ H.section('a label says what its number is');
       const norm = t => t.toLowerCase().replace(/[^a-z]/g, '');
       H.ok(label === null || norm(waiting) !== norm(label),
         `the SOS coach waiting line does not repeat the heading above it (reads "${waiting}")`);
-      H.ok(/Cormorant/.test(m[1]),
-        'and it waits in the app’s own loading voice, not the body face');
+      H.ok(/--font-serif|Cormorant/.test(m[1]),
+        'and it waits in the app’s own loading voice (the serif), not the body face');
     }
   }
   H.ok(!/textContent='Days since day 0'/.test(html), 'not for days since day 0, which is a different number');
@@ -6394,7 +6422,9 @@ H.section('the name is one word everywhere the app says it, including the native
   // was fixed where somebody noticed it — the web splash was corrected while the native launch
   // screen still said "To Try" in Georgia.
   const marks = [...H.html.matchAll(/<div class="([a-z-]+)"[^>]*>To<em>Try<\/em>/g)].map(m => m[1]);
-  H.ok(marks.length >= 5, 'the app paints the wordmark in several places (found ' + marks.length + ')');
+  // The nav bar stopped printing the wordmark in the Apple-native redesign — first-party apps do not
+  // name themselves above every screen — so the count dropped by exactly that one. The rest remain.
+  H.ok(marks.length >= 4, 'the app paints the wordmark in several places (found ' + marks.length + ')');
   const CLOSED = ['logo-main', 'ob-logo'];
   const stray = [...new Set(marks)].filter(c => !CLOSED.includes(c));
   H.ok(stray.length === 0,
@@ -7385,21 +7415,20 @@ H.section('there is more than one thing a person means by "reset", and more than
   H.ok(/Day one again/.test(ora) && /Clear the history too/.test(ora), 'named by what they do');
 }
 
-H.section('"you are here" is one colour, and it is not the one that means danger');
+H.section('"you are here" is one treatment, and it is not the one that means danger');
 {
-  // Four tab strips in this app. Three said gold for the selected tab and the fourth — the Fight
-  // tab's own Fight/Score header — said var(--re): the DANGER colour, the one that paints
-  // .btn.danger, the SOS vice name and the "loss" journal tag. So the screen a person opens when
-  // they are fighting something greeted them with alarm before they had done anything wrong, and the
-  // app had two different answers to "which one am I on". This is the shape of thing that makes an
-  // app read as assembled rather than designed.
+  // Four tab strips. Before the Apple-native redesign three said gold for the selected tab and the
+  // Fight tab's own Fight/Score header said var(--re) — the DANGER colour — so the screen a person opens
+  // when fighting something greeted them with alarm. Since the redesign the strips are iOS segmented
+  // controls: the selected segment is a raised pill in the label colour, not a tint. The invariant is
+  // unchanged: one answer to "which one am I on", and never the colour that means something is wrong.
   const code = H.code(H.html);
-  const strips = [...code.matchAll(/\.(nb|bst|rst|fst)\.active\{([^}]*)\}/g)].map(m => ({ k:m[1], css:m[2] }));
-  H.ok(strips.length === 4, 'all four tab strips were found (' + strips.length + ')');
-  const odd = strips.filter(s => !/var\(--go\)/.test(s.css));
-  H.ok(odd.length === 0, 'every strip marks the selected tab in gold' + (odd.length ? ' — stray: ' + odd.map(s => '.' + s.k).join(', ') : ''));
-  // CALIBRATION: --re must still mean danger somewhere, or this assertion is only proving the token
-  // was deleted.
+  const ios = code.slice(code.indexOf('APPLE-NATIVE COMPONENTS'));
+  const shared = ios.match(/\.fst\.active,\.bst\.active,\.rst\.active\{([^}]*)\}/);
+  H.ok(!!shared, 'all three sub-tab strips share ONE selected-segment rule');
+  H.ok(shared && !/var\(--re\)/.test(shared[1]), 'and that selected state is never the danger colour');
+  H.ok(/\.nb\.active\{[^}]*color:var\(--go\)/.test(ios), 'the tab bar marks the current tab in the tint');
+  // CALIBRATION: --re must still mean danger somewhere, or this is only proving the token was deleted.
   H.ok(/\.btn\.danger\{[^}]*var\(--re\)/.test(code), 'and --re still means danger (calibration)');
 }
 
@@ -7453,7 +7482,7 @@ H.section('one icon language — the app draws its own icons, and only once');
   // a stroke:currentColor icon does not. Seven visible buttons computed to rgb(0,0,0), six holding
   // an icon — Train's Strength and Cardio cards drew a black icon on a translucent gold fill.
   H.ok(/button\{color:inherit\}/.test(code), 'button{color:inherit} — buttons inherit ink like everything else');
-  H.ok(/button\{font-family:'Outfit'/.test(code), 'and the font-family rule it pairs with is still there (calibration)');
+  H.ok(/button\{font-family:var\(--font-text\)/.test(code), 'and the font-family rule it pairs with is still there (calibration)');
 
   // 5. The sweep must not rot back. No emoji may LEAD an element's text anywhere in the shell —
   // that is the chrome position, the one that reads as a sticker pasted onto the design.

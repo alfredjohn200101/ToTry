@@ -134,20 +134,20 @@ function logModerateOver(){
     m.innerHTML='<div class="modal">'+
       '<div class="modal-handle"></div>'+
       '<div class="eyebrow" style="color:var(--go);text-align:center">A check-in you asked for</div>'+
-      '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin:8px 0 12px">Is this still serving you?</div>'+
-      '<div style="text-align:center;font-size:14px;color:var(--tx2);line-height:1.7;margin-bottom:16px">When you set this up, you asked me to gently check in if you went over your limit a few times. You\'ve now gone over '+recentOver+' times in the last two weeks. No judgment — only you know what that means. So, honestly: is keeping this "in check" still working, or is part of you wondering if quitting would be freer?</div>'+
+      '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;margin:8px 0 12px">Is this still serving you?</div>'+
+      '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:16px">When you set this up, you asked me to gently check in if you went over your limit a few times. You\'ve now gone over '+recentOver+' times in the last two weeks. No judgment — only you know what that means. So, honestly: is keeping this "in check" still working, or is part of you wondering if quitting would be freer?</div>'+
       '<button class="btn primary" onclick="closeModal(this)" style="margin-bottom:8px">It\'s working — keep tracking it</button>'+
-      '<button class="btn" onclick="switchViceToQuit('+curVice+');closeModal(this)" style="background:var(--bg3);border:1px solid var(--bd);margin-bottom:8px">I want to try quitting it instead</button>'+
+      '<button class="btn" onclick="switchViceToQuit('+curVice+');closeModal(this)" style="background:var(--bg3);margin-bottom:8px">I want to try quitting it instead</button>'+
       '<button class="btn" onclick="closeModal(this);go(\'coach\');setTimeout(()=>{if(typeof sendCoachPrompt===\'function\')sendCoachPrompt(\'I asked the app to check in on something I\\\'m moderating, and I\\\'ve gone over my limit a few times. Help me think honestly about whether moderation is working for me or whether I should quit.\');},400)" style="background:var(--bg3);border:1px solid var(--bd)">Talk it through with my Coach</button>'+
       '</div>';
   } else {
     // Honest, not catastrophic. No streak reset, no "relapse" language.
     m.innerHTML='<div class="modal">'+
       '<div class="modal-handle"></div>'+
-      '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);font-style:italic;margin-bottom:10px">Noticed honestly.</div>'+
-      '<div style="text-align:center;font-size:14px;color:var(--tx2);line-height:1.7;margin-bottom:16px">You went past your limit this time — and you\'re honest enough to mark it. That awareness is exactly how moderation is learned. No streak lost, no shame. Just notice the pattern and adjust next time.</div>'+
+      '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;margin-bottom:10px">Noticed honestly.</div>'+
+      '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:16px">You went past your limit this time — and you\'re honest enough to mark it. That awareness is exactly how moderation is learned. No streak lost, no shame. Just notice the pattern and adjust next time.</div>'+
       (function(){ const _l=_faithLine('So, whether you eat or drink... do all to the glory of God.');
-        return _l ? '<div style="text-align:center;font-style:italic;font-family:Cormorant Garamond,serif;font-size:15px;color:var(--tx3);margin-bottom:16px">\u201c'+_escFew(_l)+'\u201d</div>' : ''; })()+
+        return _l ? '<div style="text-align:center;font-style:italic;font-family:var(--font-serif);font-size:var(--t-base);color:var(--tx3);margin-bottom:16px">\u201c'+_escFew(_l)+'\u201d</div>' : ''; })()+
       '<button class="btn primary" onclick="closeModal(this)" style="margin-bottom:8px">Got it</button>'+
       '<button class="btn" onclick="closeModal(this);go(\'coach\');setTimeout(()=>{if(typeof sendCoachPrompt===\'function\')sendCoachPrompt(\'I went over my limit on something I\\\'m trying to moderate. Help me think about why and how to stay within it next time.\');},400)" style="background:var(--bg3);border:1px solid var(--bd)">Talk it through</button>'+
       '</div>';
@@ -179,11 +179,11 @@ function promptLossDate(){
   m.style.alignItems='center';
   m.innerHTML='<div class="modal">'+
     '<div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:21px;color:var(--tx);font-style:italic;margin-bottom:6px">When did it happen?</div>'+
-    '<div style="text-align:center;font-size:13px;color:var(--tx3);line-height:1.6;margin-bottom:14px">Be honest with yourself. Set the real day and time — your clock will count correctly from that exact moment.</div>'+
+    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;margin-bottom:6px">When did it happen?</div>'+
+    '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:14px">Be honest with yourself. Set the real day and time — your clock will count correctly from that exact moment.</div>'+
     '<div style="display:flex;gap:8px;margin-bottom:12px">'+
-      '<input type="date" id="loss-date-input" max="'+todayStr+'" value="'+todayStr+'" style="flex:1;font-size:16px;padding:11px;color-scheme:dark">'+
-      '<input type="time" id="loss-time-input" value="'+hh+':'+mm+'" style="width:110px;font-size:16px;padding:11px;color-scheme:dark">'+
+      '<input type="date" id="loss-date-input" max="'+todayStr+'" value="'+todayStr+'" style="flex:1;font-size:var(--t-base);padding:11px;color-scheme:dark">'+
+      '<input type="time" id="loss-time-input" value="'+hh+':'+mm+'" style="width:110px;font-size:var(--t-base);padding:11px;color-scheme:dark">'+
     '</div>'+
     '<button class="btn primary" onclick="(function(){var d=document.getElementById(\'loss-date-input\').value;var t=document.getElementById(\'loss-time-input\').value||\'12:00\';closeModal(this);logLoss(d?new Date(d+\'T\'+t+\':00\').toISOString():null);}).call(this)" style="margin-bottom:8px">Log it honestly</button>'+
     '<button class="btn quiet" onclick="closeModal(this)">Cancel</button>'+
@@ -208,10 +208,10 @@ function promptMassAddLosses(){
   m.style.alignItems = 'center';
   m.innerHTML = '<div class="modal">'+
     '<div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:21px;color:var(--tx);font-style:italic;margin-bottom:6px">Add past slips honestly.</div>'+
-    '<div style="text-align:center;font-size:13px;color:var(--tx3);line-height:1.6;margin-bottom:14px">For '+(v.n||'this habit')+'. Add each day it really happened — no more, no less. Your streak and totals will be rebuilt to match the true timeline.</div>'+
+    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;margin-bottom:6px">Add past slips honestly.</div>'+
+    '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:14px">For '+(v.n||'this habit')+'. Add each day it really happened — no more, no less. Your streak and totals will be rebuilt to match the true timeline.</div>'+
     '<div id="mal-rows" style="margin-bottom:10px"></div>'+
-    '<button class="btn" onclick="addMassLossRow()" style="background:var(--bg3);border:1px solid var(--bd);font-size:13px;margin-bottom:14px">+ Add another day</button>'+
+    '<button class="btn" onclick="addMassLossRow()" style="background:var(--bg3);font-size:var(--t-base);margin-bottom:14px">+ Add another day</button>'+
     '<button class="btn primary" onclick="commitMassAddLosses()" style="margin-bottom:8px">Log these honestly</button>'+
     '<button class="btn quiet" onclick="closeModal(this)">Cancel</button>'+
     '</div>';
@@ -227,9 +227,9 @@ function addMassLossRow(){
   row.className = 'mal-row';
   row.style.cssText = 'display:flex;gap:8px;margin-bottom:8px;align-items:center';
   row.innerHTML =
-    '<input type="date" class="mal-date" max="'+today+'" value="'+today+'" style="flex:1;font-size:16px;padding:10px;color-scheme:dark">'+
-    '<input type="time" class="mal-time" value="12:00" style="width:96px;font-size:16px;padding:10px;color-scheme:dark">'+
-    '<button class="btn" onclick="this.parentElement.remove()" style="width:40px;padding:10px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx3)">\u2715</button>';
+    '<input type="date" class="mal-date" max="'+today+'" value="'+today+'" style="flex:1;font-size:var(--t-base);padding:10px;color-scheme:dark">'+
+    '<input type="time" class="mal-time" value="12:00" style="width:96px;font-size:var(--t-base);padding:10px;color-scheme:dark">'+
+    '<button class="btn" onclick="this.parentElement.remove()" style="width:40px;padding:10px;background:var(--bg3);color:var(--tx3)">\u2715</button>';
   box.appendChild(row);
 }
 function commitMassAddLosses(){
@@ -381,15 +381,15 @@ function logLoss(whenISO){
     m.style.alignItems='center';
     m.innerHTML='<div class="modal">'+
       '<div class="modal-handle"></div>'+
-      '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);font-style:italic;margin-bottom:10px">This isn\'t the end.</div>'+
-      '<div style="text-align:center;font-size:14px;color:var(--tx2);line-height:1.7;margin-bottom:16px">You showed up and told the truth. That takes more strength than pretending.</div>'+
-      (cleanBeforeReset>0?'<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:14px;margin-bottom:16px;text-align:center">'+
-        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px">You did not lose your progress</div>'+
-        '<div style="font-size:16px;color:var(--gr)">'+total+' total clean days still yours</div>'+
-        '<div style="font-size:12px;color:var(--tx3);margin-top:4px">That '+cleanBeforeReset+'-day streak was real. It still counts.</div>'+
+      '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-title1);color:var(--tx);font-style:italic;margin-bottom:10px">This isn\'t the end.</div>'+
+      '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:16px">You showed up and told the truth. That takes more strength than pretending.</div>'+
+      (cleanBeforeReset>0?'<div style="background:var(--bg3);border-radius:var(--rm);padding:14px;margin-bottom:16px;text-align:center">'+
+        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">You did not lose your progress</div>'+
+        '<div style="font-size:var(--t-base);color:var(--gr)">'+total+' total clean days still yours</div>'+
+        '<div style="font-size:var(--t-sm);color:var(--tx3);margin-top:4px">That '+cleanBeforeReset+'-day streak was real. It still counts.</div>'+
       '</div>':'')+
       (function(){ const _l=_faithLine('The righteous falls seven times and rises again.');
-        return _l ? '<div style="text-align:center;font-style:italic;font-family:Cormorant Garamond,serif;font-size:15px;color:var(--tx3);margin-bottom:16px">\u201c'+_escFew(_l)+'\u201d</div>' : ''; })()+
+        return _l ? '<div style="text-align:center;font-style:italic;font-family:var(--font-serif);font-size:var(--t-base);color:var(--tx3);margin-bottom:16px">\u201c'+_escFew(_l)+'\u201d</div>' : ''; })()+
       '<button class="btn primary" onclick="closeModal(this)" style="margin-bottom:8px">Begin again from today</button>'+
       '<button class="btn" onclick="closeModal(this);go(\'coach\');setTimeout(()=>{if(typeof sendCoachPrompt===\'function\')sendCoachPrompt(\'I just had a relapse and I want to understand what led to it.\');},400)" style="background:var(--bg3);border:1px solid var(--bd)">Talk to my coach about it</button>'+
       '</div>';
@@ -534,11 +534,11 @@ function postUrgeReflection(viceName){
   m.style.alignItems = 'center';
   m.innerHTML = '<div class="modal">'+
     '<div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--go);font-style:italic;margin-bottom:6px">You beat it. What helped?</div>'+
-    '<div style="text-align:center;font-size:12px;color:var(--tx3);margin-bottom:16px">10 seconds now makes the next fight easier. Optional.</div>'+
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">What set it off?</div>'+
+    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);color:var(--go);font-style:italic;margin-bottom:6px">You beat it. What helped?</div>'+
+    '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx3);margin-bottom:16px">10 seconds now makes the next fight easier. Optional.</div>'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">What set it off?</div>'+
     '<input type="text" id="pur-trigger" placeholder="stress, boredom, a person, late night..." style="margin-bottom:12px">'+
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">What got you through?</div>'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">What got you through?</div>'+
     '<input type="text" id="pur-helped" placeholder="prayer, walked away, called someone, breathed..." style="margin-bottom:14px">'+
     '<button class="btn primary" onclick="savePostUrge(\''+viceName.replace(/'/g,"\\'")+'\')" style="margin-bottom:8px">Save what happened</button>'+
     '<button class="btn quiet" onclick="closeModal(this)">Skip</button>'+
@@ -667,11 +667,11 @@ function renderVices(){
         try{ if(typeof haptic === 'function') haptic('tap'); }catch(_){ } };
       row.innerHTML =
         '<div style="flex:1;min-width:0;text-align:left">' +
-          '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--tx2)">' + _escFew(v.n) + '</div>' +
-          '<div style="font-size:12px;color:' + col + ';margin-top:3px">' + _escFew(sub) + '</div>' +
+          '<div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;text-transform:uppercase;color:var(--tx2)">' + _escFew(v.n) + '</div>' +
+          '<div style="font-size:var(--t-sm);color:' + col + ';margin-top:3px">' + _escFew(sub) + '</div>' +
         '</div>' +
-        '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);white-space:nowrap">Day ' + viceFightDays(v) + '</div>' +
-        '<div style="color:var(--tx3);font-size:14px;margin-left:8px">\u203a</div>';
+        '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);white-space:nowrap">Day ' + viceFightDays(v) + '</div>' +
+        '<div style="color:var(--tx3);font-size:var(--t-sm);margin-left:8px">\u203a</div>';
       list.appendChild(row);
       return;
     }
@@ -696,7 +696,7 @@ function renderVices(){
     let totalInsight='';
     if(v.relapseCount&&v.relapseCount>0){
       const total=(v.cleanDaysTotal||0)+cleanDays;
-      totalInsight='<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--bl);margin-top:6px;padding-top:6px;border-top:1px solid var(--bd)">' + total + ' total clean days &middot; ' + v.relapseCount + ' reset' + (v.relapseCount===1?'':'s') + ' &middot; you keep going</div>';
+      totalInsight='<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--bl);margin-top:6px;padding-top:6px;border-top:1px solid var(--bd)">' + total + ' total clean days &middot; ' + v.relapseCount + ' reset' + (v.relapseCount===1?'':'s') + ' &middot; you keep going</div>';
     }
     
     // Live HH:MM:SS clock for hours-precision when day < 7
@@ -735,14 +735,14 @@ function renderVices(){
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">'+
           '<div style="flex:1">'+
             '<div class="eyebrow">'+String(v.n).replace(/</g,'&lt;')+'</div>'+
-            '<div style="font-family:DM Mono,monospace;font-size:24px;font-weight:500;color:var(--go)">'+lgDays+' <span style="font-size:11px;color:var(--tx3)">day'+(lgDays===1?'':'s')+' of choosing yourself</span></div>'+
+            '<div style="font-family:var(--font-text);font-size:var(--t-title1);font-weight:500;color:var(--go)">'+lgDays+' <span style="font-size:var(--t-cap);color:var(--tx3)">day'+(lgDays===1?'':'s')+' of choosing yourself</span></div>'+
           '</div>'+
-          '<div style="font-size:20px">🕊️</div>'+
+          '<div style="font-size:var(--t-xl)">🕊️</div>'+
         '</div>'+
-        '<div style="font-size:11px;color:var(--tx3);margin-bottom:12px;line-height:1.55">Grief isn’t linear — going back is part of letting go, not a failure. Nothing resets here.</div>'+
-        '<button class="vice-btn" onclick="openLettingGo()" style="width:100%;background:var(--go);color:#1a1505;border:none;border-radius:var(--rm);padding:11px;font-size:13px;font-weight:600;cursor:pointer">Feeling the pull? Come here first</button>'+
-        '<button onclick="_letGoWentBack('+i+')" style="width:100%;margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:var(--rm);padding:9px;font-size:12px;cursor:pointer">I reached out / looked them up</button>'+
-        '<button onclick="openViceManage('+i+')" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:6px">Manage &middot; rename, remove</button>';
+        '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:12px;line-height:1.55">Grief isn’t linear — going back is part of letting go, not a failure. Nothing resets here.</div>'+
+        '<button class="vice-btn" onclick="openLettingGo()" style="width:100%;background:var(--go);color:var(--on-tint);border:none;border-radius:var(--rm);padding:11px;font-size:var(--t-base);font-weight:600;cursor:pointer">Feeling the pull? Come here first</button>'+
+        '<button onclick="_letGoWentBack('+i+')" style="width:100%;margin-top:8px;background:none;color:var(--tx2);border-radius:var(--rm);padding:9px;font-size:var(--t-sm);cursor:pointer;background:var(--fill2)">I reached out / looked them up</button>'+
+        '<button onclick="openViceManage('+i+')" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:var(--t-cap);cursor:pointer;padding:6px">Manage &middot; rename, remove</button>';
       list.appendChild(c);
       return;
     }
@@ -765,29 +765,29 @@ function renderVices(){
       // never again once they have answered it. An offer that repeats is a nag.
       const _enough = _uses.length >= 6 && _days30 >= 3;
       const _offer = (_enough && !v.goalOffered)
-        ? '<div style="margin-top:12px;padding:11px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm)">'+
-            '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:9px">You have been watching this a while now. Want to name what you actually want with it \u2014 or keep just watching? Either is a real answer.</div>'+
+        ? '<div style="margin-top:12px;padding:11px 12px;background:var(--bg3);border-radius:var(--rm)">'+
+            '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:9px">You have been watching this a while now. Want to name what you actually want with it \u2014 or keep just watching? Either is a real answer.</div>'+
             '<div style="display:flex;gap:8px">'+
-              '<button onclick="_watchSetGoal('+i+')" style="flex:1;background:var(--bg2);border:1px solid var(--go-bd);color:var(--go);border-radius:var(--rs);padding:9px;font-size:12px;cursor:pointer">Set a goal</button>'+
-              '<button onclick="_watchKeepWatching('+i+')" style="flex:1;background:none;border:1px solid var(--bd);color:var(--tx3);border-radius:var(--rs);padding:9px;font-size:12px;cursor:pointer">Keep watching</button>'+
+              '<button onclick="_watchSetGoal('+i+')" style="flex:1;background:var(--bg2);color:var(--go);border-radius:var(--rs);padding:9px;font-size:var(--t-sm);cursor:pointer">Set a goal</button>'+
+              '<button onclick="_watchKeepWatching('+i+')" style="flex:1;background:none;color:var(--tx3);border-radius:var(--rs);padding:9px;font-size:var(--t-sm);cursor:pointer;background:var(--fill2)">Keep watching</button>'+
             '</div></div>'
         : '';
       c.innerHTML =
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">'+
           '<div style="flex:1">'+
             '<div class="eyebrow">'+_escFew(v.n)+' &middot; just watching</div>'+
-            '<div style="font-family:DM Mono,monospace;font-size:24px;font-weight:500;color:var(--tx2)">'+_n30+' <span style="font-size:11px;color:var(--tx3)">in the last 30 days'+(_days30?(' \u00b7 '+_days30+' day'+(_days30===1?'':'s')):'')+'</span></div>'+
+            '<div style="font-family:var(--font-text);font-size:var(--t-title1);font-weight:500;color:var(--tx2)">'+_n30+' <span style="font-size:var(--t-cap);color:var(--tx3)">in the last 30 days'+(_days30?(' \u00b7 '+_days30+' day'+(_days30===1?'':'s')):'')+'</span></div>'+
           '</div>'+
-          '<div style="font-size:20px">'+svgIcon("eye")+'</div>'+
+          '<div style="font-size:var(--t-xl)">'+svgIcon("eye")+'</div>'+
         '</div>'+
-        '<div style="font-size:11px;color:var(--tx3);margin-bottom:12px;line-height:1.55">'+
+        '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:12px;line-height:1.55">'+
           (_uses.length
             ? ('This week: '+_n7+'.'+(_since!=null?(' Last: '+(_since===0?'today':_since===1?'yesterday':_since+' days ago')+'.'):'')+' No goal set \u2014 nothing here to keep or break. I am just holding the mirror.')
             : 'Nothing logged yet. Log it honestly when it happens and I will show you the shape of it \u2014 no target, no streak, no verdict.')+
         '</div>'+
-        '<button class="vice-btn" onclick="openLogUse('+i+')" style="width:100%;background:var(--bg3);border:1px solid var(--bd);color:var(--tx);border-radius:var(--rm);padding:11px;font-size:13px;cursor:pointer">Log honestly</button>'+
+        '<button class="vice-btn" onclick="openLogUse('+i+')" style="width:100%;background:var(--bg3);color:var(--tx);border-radius:var(--rm);padding:11px;font-size:var(--t-base);cursor:pointer">Log honestly</button>'+
         _offer+
-        '<button onclick="openViceManage('+i+')" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:4px">Manage</button>';
+        '<button onclick="openViceManage('+i+')" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:var(--t-cap);cursor:pointer;padding:4px">Manage</button>';
       list.appendChild(c);
       return;
     }
@@ -803,20 +803,20 @@ function renderVices(){
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">' +
           '<div style="flex:1">' +
             '<div class="eyebrow">' + String(v.n||'').replace(/</g,'&lt;') + ' &middot; keeping in check</div>' +
-            '<div style="font-family:DM Mono,monospace;font-size:24px;font-weight:500;color:var(--go)">' + within + ' <span style="font-size:11px;color:var(--tx3)">time' + (within===1?'':'s') + ' within limit</span></div>' +
-            (v.limit ? '<div style="font-size:11px;color:var(--tx2);margin-top:3px">Your limit: ' + String(v.limit).replace(/</g,'&lt;') + '</div>' : '') +
+            '<div style="font-family:var(--font-text);font-size:var(--t-title1);font-weight:500;color:var(--go)">' + within + ' <span style="font-size:var(--t-cap);color:var(--tx3)">time' + (within===1?'':'s') + ' within limit</span></div>' +
+            (v.limit ? '<div style="font-size:var(--t-cap);color:var(--tx2);margin-top:3px">Your limit: ' + String(v.limit).replace(/</g,'&lt;') + '</div>' : '') +
           '</div>' +
           (holdRate !== null ? '<div style="text-align:right">' +
-            '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em">Held it</div>' +
-            '<div style="font-family:DM Mono,monospace;font-size:14px;color:' + (holdRate >= 70 ? 'var(--gr)' : holdRate >= 40 ? 'var(--go)' : 'var(--tx2)') + ';margin-top:2px">' + holdRate + '%</div>' +
-            '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + within + '/' + totalChecks + '</div>' +
+            '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">Held it</div>' +
+            '<div style="font-family:var(--font-text);font-size:var(--t-sm);color:' + (holdRate >= 70 ? 'var(--gr)' : holdRate >= 40 ? 'var(--go)' : 'var(--tx2)') + ';margin-top:2px">' + holdRate + '%</div>' +
+            '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px">' + within + '/' + totalChecks + '</div>' +
           '</div>' : '') +
         '</div>' +
         // Same rule as the quit card: say nothing rather than 'various times', which is the app
         // admitting it has no pattern while formatted as though it found one. This is the moderate
         // card's own render — v546 fixed the quit one and left this untouched.
         ((v.t || insight)
-          ? '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">' +
+          ? '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px">' +
               // Same leading-middot bug as the quit card 95 lines below, which I fixed and this one
               // did not get: insight carries its own ' · ', so with no known time the line began
               // "· Peaks late night" — a separator joined to nothing.
@@ -835,40 +835,40 @@ function renderVices(){
               : count < thr ? ('Within your line of ' + thr + '. ' + (thr-count) + ' to go.')
               : count === thr ? ('At your limit of ' + thr + '. Be intentional from here.' + ((v.plan&&v.plan.move)?(' Your move: '+v.plan.move+'.'):''))
               : ('Past your line of ' + thr + ' \u2014 noticed, not judged.' + ((v.plan&&v.plan.move)?(' Your move: '+v.plan.move+'.'):''));
-            return '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:14px;margin-bottom:8px">'+
+            return '<div style="background:var(--bg3);border-radius:var(--rm);padding:14px;margin-bottom:8px">'+
               '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">'+
-                '<button onclick="modCountDown('+i+')" aria-label="minus" style="width:40px;height:40px;border-radius:50%;background:var(--bg);border:1px solid var(--bd);color:var(--tx2);font-size:20px;cursor:pointer">\u2212</button>'+
-                '<div style="text-align:center;flex:1"><div style="font-family:DM Mono,monospace;font-size:34px;font-weight:600;color:'+col+';line-height:1">'+count+'</div><div style="font-size:10px;color:var(--tx3);margin-top:2px">'+unit+' so far</div></div>'+
-                '<button onclick="modCountUp('+i+')" aria-label="plus" style="width:40px;height:40px;border-radius:50%;background:var(--go);border:none;color:#1a1505;font-size:22px;font-weight:600;cursor:pointer">+</button>'+
+                '<button onclick="modCountDown('+i+')" aria-label="minus" style="width:40px;height:40px;border-radius:50%;background:var(--bg);color:var(--tx2);font-size:var(--t-xl);cursor:pointer">\u2212</button>'+
+                '<div style="text-align:center;flex:1"><div style="font-family:var(--font-rounded);font-variant-numeric:tabular-nums;font-size:var(--t-2xl);font-weight:600;color:'+col+';line-height:1">'+count+'</div><div style="font-size:var(--t-mini);color:var(--tx3);margin-top:2px">'+unit+' so far</div></div>'+
+                '<button onclick="modCountUp('+i+')" aria-label="plus" style="width:40px;height:40px;border-radius:50%;background:var(--go);border:none;color:var(--on-tint);font-size:var(--t-xl);font-weight:600;cursor:pointer">+</button>'+
               '</div>'+
-              '<div style="font-size:11px;color:var(--tx3);text-align:center;margin-top:10px;line-height:1.5">'+statusLine+'</div>'+
-              (s ? '<button onclick="modEndSession('+i+')" style="width:100%;margin-top:10px;background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:var(--rs);padding:8px;font-size:11px;cursor:pointer">Close this session \u00b7 log it</button>' : '')+
+              '<div style="font-size:var(--t-cap);color:var(--tx3);text-align:center;margin-top:10px;line-height:1.5">'+statusLine+'</div>'+
+              (s ? '<button onclick="modEndSession('+i+')" style="width:100%;margin-top:10px;background:none;color:var(--tx2);border-radius:var(--rs);padding:8px;font-size:var(--t-cap);cursor:pointer;background:var(--fill2)">Close this session \u00b7 log it</button>' : '')+
             '</div>'+
             (function(){
               // The counter above is tonight. This is the truth of the week — the number that
               // actually tells you whether "limiting it" is happening or just being said.
               const wk = viceUsesInWeek(v.n); if(!wk) return '';
               const spend = viceSpendInWeek(v.n);
-              return '<div style="font-size:11px;color:var(--tx3);text-align:center;margin-bottom:8px;line-height:1.5">'+
+              return '<div style="font-size:var(--t-cap);color:var(--tx3);text-align:center;margin-bottom:8px;line-height:1.5">'+
                 wk+' '+unit+' logged in the last 7 days'+(spend>0?' · '+curSym()+Math.round(spend)+' spent':'')+'</div>';
             })()+
-            '<button class="vice-btn" onclick="openMomentStakes(' + i + ')" style="width:100%;background:none;border:1px solid var(--go-bd);color:var(--go);border-radius:var(--rm);padding:9px;font-size:12px;cursor:pointer;margin-bottom:6px">Feeling the pull? Come here first</button>'+
+            '<button class="vice-btn" onclick="openMomentStakes(' + i + ')" style="width:100%;background:none;color:var(--go);border-radius:var(--rm);padding:9px;font-size:var(--t-sm);cursor:pointer;margin-bottom:6px;background:var(--fill2)">Feeling the pull? Come here first</button>'+
             // TIER 1.4 — HALT lived only behind the mid-craving door, which is the worst moment to
             // learn a tool. Most urges are a body asking for food, rest, or a person; naming that
             // BEFORE the pull starts is the cheap version of the same skill. Same openHALT(), one tap
             // from the card they already look at.
-            '<button onclick="openHALT()" style="width:100%;background:none;border:1px dashed var(--bd);color:var(--tx3);border-radius:var(--rm);padding:8px;font-size:11px;cursor:pointer;margin-bottom:6px">'+svgIcon("utensils")+' What\u2019s underneath it right now?</button>'+
-            '<button onclick="openLogUse(' + i + ')" style="width:100%;background:none;border:1px solid var(--bd);color:var(--tx3);border-radius:var(--rm);padding:8px;font-size:11px;cursor:pointer;margin-bottom:6px">Log a day I missed</button>';
+            '<button onclick="openHALT()" style="width:100%;background:none;border:1px dashed var(--bd);color:var(--tx3);border-radius:var(--rm);padding:8px;font-size:var(--t-cap);cursor:pointer;margin-bottom:6px">'+svgIcon("utensils")+' What\u2019s underneath it right now?</button>'+
+            '<button onclick="openLogUse(' + i + ')" style="width:100%;background:none;color:var(--tx3);border-radius:var(--rm);padding:8px;font-size:var(--t-cap);cursor:pointer;margin-bottom:6px;background:var(--fill2)">Log a day I missed</button>';
           }
-          return '<button class="vice-btn" onclick="fightVice(' + i + ')" style="width:100%;background:var(--go);color:#1a1505;border:none;border-radius:var(--rm);padding:11px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">I\'m in a situation now</button>'+
+          return '<button class="vice-btn" onclick="fightVice(' + i + ')" style="width:100%;background:var(--go);color:var(--on-tint);border:none;border-radius:var(--rm);padding:11px;font-size:var(--t-base);font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">I\'m in a situation now</button>'+
             '<div style="display:flex;gap:8px;margin-top:8px">'+
-              '<button onclick="curVice=' + i + ';logModerateWithin()" style="flex:1;background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);border-radius:var(--rs);padding:8px;font-size:11px;cursor:pointer">Stayed within \u2713</button>'+
-              '<button onclick="curVice=' + i + ';logModerateOver()" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);border-radius:var(--rs);padding:8px;font-size:11px;cursor:pointer">Went over</button>'+
+              '<button onclick="curVice=' + i + ';logModerateWithin()" style="flex:1;background:var(--gr-bg);color:var(--gr);border-radius:var(--rs);padding:8px;font-size:var(--t-cap);cursor:pointer">Stayed within \u2713</button>'+
+              '<button onclick="curVice=' + i + ';logModerateOver()" style="flex:1;background:var(--bg3);color:var(--tx2);border-radius:var(--rs);padding:8px;font-size:var(--t-cap);cursor:pointer">Went over</button>'+
             '</div>';
         })() +
-        '<div style="display:flex;gap:10px;margin-top:8px;font-size:10px;align-items:center">' +
+        '<div style="display:flex;gap:10px;margin-top:8px;font-size:var(--t-mini);align-items:center">' +
           '<button onclick="openRecoveryTimeline(' + i + ')" style="background:none;border:none;color:var(--gr);cursor:pointer;padding:4px 0">'+svgIcon("leaf")+' What moderation is earning you</button>' +
-          '<button onclick="openViceManage(' + i + ')" style="background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;padding:10px 8px;min-height:34px;margin-left:auto">Manage</button>' +
+          '<button onclick="openViceManage(' + i + ')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);cursor:pointer;padding:10px 8px;min-height:34px;margin-left:auto">Manage</button>' +
         '</div>';
       list.appendChild(c);
       return;
@@ -883,8 +883,8 @@ function renderVices(){
           // at this for months but falls often read as a permanent zero, and the only way to tell the
           // truth was to wipe everything. Day N of the fight never resets. The streak is still here,
           // said plainly, and "came back N times" counts the returning rather than the falling.
-          '<div style="font-family:DM Mono,monospace;font-size:24px;font-weight:500;color:var(--tx)">Day ' + viceFightDays(v) +
-            ' <span style="font-size:11px;color:var(--tx3)">of the fight</span></div>' +
+          '<div style="font-family:var(--font-text);font-size:var(--t-title1);font-weight:500;color:var(--tx)">Day ' + viceFightDays(v) +
+            ' <span style="font-size:var(--t-cap);color:var(--tx3)">of the fight</span></div>' +
           (function(){
             const back = viceCameBack(v);
             const streak = '<span style="color:' + (cleanDays >= 7 ? 'var(--gr)' : cleanDays >= 1 ? 'var(--go)' : 'var(--tx3)') + '">' +
@@ -892,9 +892,9 @@ function renderVices(){
             const came = back > 0
               ? ' &middot; came back ' + back + (back === 1 ? ' time' : ' times')
               : '';
-            return '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:3px">' + streak + came + '</div>';
+            return '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);margin-top:3px">' + streak + came + '</div>';
           })() +
-          (liveClock ? '<div class="vice-live-clock" style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:2px">' + liveClock.replace(' &middot; ', '') + '</div>' : '') +
+          (liveClock ? '<div class="vice-live-clock" style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);margin-top:2px">' + liveClock.replace(' &middot; ', '') + '</div>' : '') +
         '</div>' +
         // NOT a win rate. See viceFrequencyRead: a percentage of wins over battles told a person who
         // had been honest fifteen days running that they had won 0%. This says the two things that
@@ -912,16 +912,16 @@ function renderVices(){
                     : fr.direction === 'level'? 'same as last week'
                     : 'honestly';
           return '<div style="text-align:right">' +
-            '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em">How often</div>' +
-            '<div style="font-family:DM Mono,monospace;font-size:14px;color:' + col + ';margin-top:2px">' + head + '</div>' +
-            '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + sub + '</div>' +
+            '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">How often</div>' +
+            '<div style="font-family:var(--font-text);font-size:var(--t-base);color:' + col + ';margin-top:2px">' + head + '</div>' +
+            '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px">' + sub + '</div>' +
           '</div>';
         })() +
       '</div>' +
       // "Usually hits: various times" is filler — it is what the app says when it does not know,
       // dressed as if it does. Say nothing until there is a real pattern to report.
       ((v.t || insight)
-        ? '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">' +
+        ? '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px">' +
             // insight carried its own leading ' · ', so with no v.t the line began with a middle dot
             // joined to nothing: "· Peaks late night". Join the halves here, where both are in hand.
             [(v.t ? 'Usually hits: ' + _escFew(v.t) : ''), String(insight || '').replace(/^\s*\u00b7\s*/, '')]
@@ -929,11 +929,11 @@ function renderVices(){
         : '') +
       (_asking ? '' : _stageStripHTML(i) + _pledgeRowHTML(i)) +
       (viceNeedsCheckIn(v) ?
-        '<div style="background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
-          '<div style="font-size:12px;color:var(--tx2);line-height:1.55;margin-bottom:10px">It\'s been a week since you last said anything here, and the count kept climbing on its own. I\'d rather it be true than tidy — are you still clean?</div>' +
+        '<div style="background:var(--go-bg);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
+          '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55;margin-bottom:10px">It\'s been a week since you last said anything here, and the count kept climbing on its own. I\'d rather it be true than tidy — are you still clean?</div>' +
           '<div style="display:flex;gap:8px">' +
-            '<button onclick="confirmViceClean(' + i + ')" style="flex:1;background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);border-radius:var(--rs);padding:9px;font-size:12px;cursor:pointer">Still clean</button>' +
-            '<button onclick="openLogUse(' + i + ')" style="flex:1;background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:var(--rs);padding:9px;font-size:12px;cursor:pointer">No — I\'ve used</button>' +
+            '<button onclick="confirmViceClean(' + i + ')" style="flex:1;background:var(--gr-bg);color:var(--gr);border-radius:var(--rs);padding:9px;font-size:var(--t-sm);cursor:pointer">Still clean</button>' +
+            '<button onclick="openLogUse(' + i + ')" style="flex:1;background:none;color:var(--tx2);border-radius:var(--rs);padding:9px;font-size:var(--t-sm);cursor:pointer;background:var(--fill2)">No — I\'ve used</button>' +
           '</div>' +
         '</div>' : '') +
       // v552 gave the check-in question the card to itself, so that one question is asked at a time.
@@ -955,17 +955,17 @@ function renderVices(){
         // The wins for NOT acting, counted back to him. This is the one number most recovery apps
         // never show, because they only track the fall.
         const tw=momentsWonInWeek(v.n); if(!tw) return '';
-        return '<div style="text-align:center;font-size:11px;color:var(--gr);margin-top:8px;line-height:1.5">You came here and turned away '+tw+' time'+(tw===1?'':'s')+' this week. That’s the fight, won.</div>';
+        return '<div style="text-align:center;font-size:var(--t-cap);color:var(--gr);margin-top:8px;line-height:1.5">You came here and turned away '+tw+' time'+(tw===1?'':'s')+' this week. That’s the fight, won.</div>';
       })() +
       (_asking ? '' :
-      '<button onclick="openLogUse(' + i + ')" style="width:100%;margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx2);border-radius:var(--rm);padding:9px;font-size:12px;cursor:pointer">I used — log it honestly</button>') +
+      '<button onclick="openLogUse(' + i + ')" style="width:100%;margin-top:8px;background:none;color:var(--tx2);border-radius:var(--rm);padding:9px;font-size:var(--t-sm);cursor:pointer;background:var(--fill2)">I used — log it honestly</button>') +
       // The recovery timeline stays — SOUL-ARCHITECTURE names it as what the 11pm man is owed — but
       // as a quiet line, not a third full-width button arguing with the door that matters.
-      '<button onclick="openRecoveryTimeline(' + i + ')" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:8px 6px;min-height:44px">What this is earning you</button>' +
+      '<button onclick="openRecoveryTimeline(' + i + ')" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:var(--t-cap);cursor:pointer;padding:8px 6px;min-height:44px">What this is earning you</button>' +
       totalInsight +
       // One quiet "manage" door instead of six loose links. Backdating lives in "I used" (it takes any
       // date), so the old "log a past slip / add several" buttons are gone — they did the same thing.
-      '<button onclick="openViceManage(' + i + ')" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:14px 6px;min-height:44px">Manage &middot; start date, cost, mode, remove</button>';
+      '<button onclick="openViceManage(' + i + ')" style="width:100%;margin-top:10px;background:none;border:none;color:var(--tx3);font-size:var(--t-cap);cursor:pointer;padding:14px 6px;min-height:44px">Manage &middot; start date, cost, mode, remove</button>';
     list.appendChild(c);
   });
   
@@ -1030,7 +1030,7 @@ function _renderVicesBulk(){
     const link = 'background:none;border:none;color:var(--tx3);font-size:12px;padding:8px 10px;min-height:32px;cursor:pointer;text-decoration:underline;text-underline-offset:3px';
     box.innerHTML =
       '<button style="' + link + '" onclick="openMultiSlip()">A night that touched more than one</button>' +
-      '<span style="color:var(--bd);font-size:11px">&middot;</span>' +
+      '<span style="color:var(--bd);font-size:var(--t-cap)">&middot;</span>' +
       '<button style="' + link + '" onclick="openResetAll()">Start everything again</button>';
   }catch(_){ }
 }
@@ -1171,21 +1171,21 @@ function renderTriggerPatternCard(){
   // Build the card
   const card = document.createElement('div');
   card.id = 'trigger-pattern-card';
-  card.style.cssText = 'background:linear-gradient(135deg,rgba(140,107,182,0.06),rgba(200,169,110,0.04));border:1px solid var(--go-bd);border-radius:var(--r);padding:14px;margin-top:12px;margin-bottom:10px';
+  card.style.cssText = 'background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--r);padding:14px;margin-top:12px;margin-bottom:10px';
   
   card.innerHTML =
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px">Patterns from your fights</div>' +
-    '<div style="font-family:Cormorant Garamond,serif;font-size:16px;color:var(--tx);font-style:italic;margin-bottom:12px">What the data is showing</div>' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">Patterns from your fights</div>' +
+    '<div style="font-family:var(--font-serif);font-size:var(--t-base);color:var(--tx);font-style:italic;margin-bottom:12px">What the data is showing</div>' +
     insights.map(ins =>
-      '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd);font-size:12px">' +
+      '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--bd);font-size:var(--t-sm)">' +
         '<div style="line-height:1;color:var(--go)">' + svgIcon(ins.icon,17) + '</div>' +
         '<div style="flex:1">' +
-          '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px">' + ins.title + '</div>' +
+          '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:2px">' + ins.title + '</div>' +
           '<div style="color:var(--tx2);line-height:1.5">' + ins.body.replace(/</g, '&lt;') + '</div>' +
         '</div>' +
       '</div>'
     ).join('') +
-    '<div style="font-size:11px;color:var(--tx3);margin-top:10px;line-height:1.5;font-style:italic">Based on your last ' + log.length + ' fights. The more you log, the clearer the picture.</div>';
+    '<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:10px;line-height:1.5;font-style:italic">Based on your last ' + log.length + ' fights. The more you log, the clearer the picture.</div>';
   
   container.appendChild(card);
 }
@@ -1368,9 +1368,9 @@ async function openRecoveryTimeline(i){
   m.className='modal-bg open'; m.id='recovery-timeline-modal';
   m.innerHTML = '<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
     '<div class="src-tag" style="color:var(--gr);margin-bottom:4px">'+(_moderate?'WHAT HOLDING YOUR LINE IS WORTH':'WHAT YOU\u2019RE EARNING')+'</div>'+
-    '<div style="font-size:20px;font-weight:500;color:var(--tx);margin-bottom:2px">'+String(v.n||'Your streak').replace(/</g,'&lt;')+'</div>'+
-    '<div style="font-size:13px;color:var(--go);font-family:DM Mono,monospace;margin-bottom:16px">'+(_moderate ? ((function(){ let _d=0; try{ _d=(typeof _calDaysSince==='function' && v.startDate)?_calDaysSince(v.startDate)+1:0; }catch(_){ } return _d>0 ? ('day '+_d+' of keeping it in check') : 'keeping it in check'; })()) : (days+' day'+(days===1?'':'s')+' clean'))+(viceMoneySaved(v)>0?(' \u00b7 '+curSym()+viceMoneySaved(v).toLocaleString()+' reclaimed'):'')+'</div>'+
-    '<div id="recovery-timeline-body"><div style="font-size:13px;color:var(--tx3);text-align:center;padding:20px">Loading what your body and soul are gaining\u2026</div></div>'+
+    '<div style="font-size:var(--t-xl);font-weight:500;color:var(--tx);margin-bottom:2px">'+String(v.n||'Your streak').replace(/</g,'&lt;')+'</div>'+
+    '<div style="font-size:var(--t-base);color:var(--go);font-family:var(--font-text);margin-bottom:16px">'+(_moderate ? ((function(){ let _d=0; try{ _d=(typeof _calDaysSince==='function' && v.startDate)?_calDaysSince(v.startDate)+1:0; }catch(_){ } return _d>0 ? ('day '+_d+' of keeping it in check') : 'keeping it in check'; })()) : (days+' day'+(days===1?'':'s')+' clean'))+(viceMoneySaved(v)>0?(' \u00b7 '+curSym()+viceMoneySaved(v).toLocaleString()+' reclaimed'):'')+'</div>'+
+    '<div id="recovery-timeline-body"><div style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:20px">Loading what your body and soul are gaining\u2026</div></div>'+
     '<button class="btn" onclick="closeModal(this)" style="margin-top:14px">Close</button></div>';
   document.body.appendChild(m);
   let _timelineWasResearched = false;
@@ -1393,40 +1393,40 @@ async function openRecoveryTimeline(i){
     const _sessions = _within + _over;
     const _rate = _sessions > 0 ? Math.round((_within / _sessions) * 100) : null;
     body.innerHTML =
-      '<div style="font-size:13px;color:var(--tx2);line-height:1.75">' +
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.75">' +
         'You are not counting clean days here \u2014 you are counting whether you stayed inside your own line, ' +
         'which is a different and harder kind of honest.' +
       '</div>' +
       (_rate != null
-        ? '<div style="margin-top:14px;font-family:DM Mono,monospace;font-size:13px;color:var(--go)">' +
+        ? '<div style="margin-top:14px;font-family:var(--font-text);font-size:var(--t-base);color:var(--go)">' +
             'You held it ' + _within + ' of ' + _sessions + ' times \u00b7 ' + _rate + '%</div>'
-        : '<div style="margin-top:14px;font-size:12px;color:var(--tx3)">Log a few sessions and I will show you your hold rate here.</div>') +
-      '<div style="margin-top:14px;font-size:12px;color:var(--tx3);line-height:1.7">' +
+        : '<div style="margin-top:14px;font-size:var(--t-sm);color:var(--tx3)">Log a few sessions and I will show you your hold rate here.</div>') +
+      '<div style="margin-top:14px;font-size:var(--t-sm);color:var(--tx3);line-height:1.7">' +
         'The body milestones below belong to stopping altogether. They are real, and they are not yours yet \u2014 ' +
         'if you ever want them, switching this to "quit" in Manage is how they start counting.' +
       '</div>';
     return;
   }
   if(!timeline || !timeline.length){
-    body.innerHTML = '<div style="font-size:13px;color:var(--tx2);line-height:1.7">Every clean day is rebuilding you \u2014 your focus, your steadiness, your self-respect. Keep going; the body and mind heal in ways you\u2019ll feel before you can measure.</div>';
+    body.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7">Every clean day is rebuilding you \u2014 your focus, your steadiness, your self-respect. Keep going; the body and mind heal in ways you\u2019ll feel before you can measure.</div>';
     return;
   }
   body.innerHTML = timeline.map(ms => {
     const reached = days >= ms.d;
     const label = ms.d===1?'Day 1':ms.d<30?('Day '+ms.d):ms.d<365?(Math.round(ms.d/30)+' month'+(ms.d>=60?'s':'')):'1 year';
     return '<div style="display:flex;gap:12px;margin-bottom:14px;opacity:'+(reached?'1':'0.5')+'">'+
-      '<div style="flex-shrink:0;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;'+(reached?'background:var(--gr);color:#0C0C0E':'background:var(--bg3);border:1px solid var(--bd);color:var(--tx3)')+'">'+(reached?'\u2713':'')+'</div>'+
-      '<div style="flex:1"><div style="font-family:DM Mono,monospace;font-size:9px;color:'+(reached?'var(--gr)':'var(--tx3)')+';text-transform:uppercase;letter-spacing:0.1em;margin-bottom:3px">'+label+(reached?' \u00b7 reached':'')+'</div>'+
-      '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:3px">'+ms.body+'</div>'+
-      '<div style="font-size:13px;color:var(--tx);line-height:1.6;font-style:italic">'+ms.soul+'</div></div></div>';
+      '<div style="flex-shrink:0;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:var(--t-sm);'+(reached?'background:var(--gr);color:var(--bg)':'background:var(--bg3);color:var(--tx3)')+'">'+(reached?'\u2713':'')+'</div>'+
+      '<div style="flex:1"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:'+(reached?'var(--gr)':'var(--tx3)')+';text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">'+label+(reached?' \u00b7 reached':'')+'</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:3px">'+ms.body+'</div>'+
+      '<div style="font-size:var(--t-base);color:var(--tx);line-height:1.6;font-style:italic">'+ms.soul+'</div></div></div>';
   }).join('');
   // WHERE THIS CAME FROM. The built-in timelines for nicotine, alcohol and porn are checked
   // physiology. Anything else is a model's best guess, generated live and cached — and it was
   // rendered in the same card, same voice, same authority, making day-by-day claims about a person's
   // body that nobody verified. An honest source line costs one sentence.
   if(_timelineWasResearched){
-    body.innerHTML += '<div style="margin-top:14px;padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);' +
-      'border-radius:var(--rs);font-size:11px;color:var(--tx3);line-height:1.6">' +
+    body.innerHTML += '<div style="margin-top:14px;padding:10px 12px;background:var(--bg3);' +
+      'border-radius:var(--rs);font-size:var(--t-cap);color:var(--tx3);line-height:1.6">' +
       'These milestones were researched for this struggle rather than drawn from the checked timelines ' +
       'I keep for nicotine, alcohol and porn. Treat them as a reasonable guide, not as measurements of ' +
       'you \u2014 and take anything medical to someone qualified.</div>';
@@ -1609,11 +1609,11 @@ function renderFightEvidence(){
   el.style.display = 'block';
   el.innerHTML =
     (stayed
-      ? '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;line-height:1.35;color:var(--tx);' +
+      ? '<div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;line-height:1.35;color:var(--tx);' +
         'text-align:center;margin-bottom:' + (bits.length ? '8px' : '14px') + '">' + _escFew(stayed) + '</div>'
       : '') +
     (bits.length
-      ? '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.08em;' +
+      ? '<div style="font-family:var(--font-text);font-size:var(--t-mini);letter-spacing:0.01em;' +
         'text-transform:uppercase;color:var(--go);margin-bottom:12px;line-height:1.7;text-align:center">' +
         bits.map(b => _escFew(b)).join(' &middot; ') + '</div>'
       : '');
@@ -1776,12 +1776,12 @@ function openResetAll(){
   const m = document.createElement('div');
   m.className = 'modal-bg open'; m.style.alignItems = 'center';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:6px">Start again.</div>' +
-    '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px">' + list.length + ' things you are fighting. Two ways to begin, and they are different.</div>' +
+    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);margin-bottom:6px">Start again.</div>' +
+    '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:16px">' + list.length + ' things you are fighting. Two ways to begin, and they are different.</div>' +
     '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);setTimeout(function(){resetAllVices(false)},220)">Day one again</button>' +
-    '<div style="font-size:11px;color:var(--tx3);line-height:1.55;margin-bottom:14px;text-align:center">Each clean count goes to zero. Everything you have been through stays \u2014 the day of the fight does not move.</div>' +
-    '<button class="btn" style="margin-bottom:8px;background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re)" onclick="closeModal(this);setTimeout(function(){resetAllVices(true)},220)">Clear the history too</button>' +
-    '<div style="font-size:11px;color:var(--tx3);line-height:1.55;margin-bottom:16px;text-align:center">Erases the counts, the urges logged, the restarts and the money reclaimed. Keeps each thing set up as it is.</div>' +
+    '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.55;margin-bottom:14px;text-align:center">Each clean count goes to zero. Everything you have been through stays \u2014 the day of the fight does not move.</div>' +
+    '<button class="btn" style="margin-bottom:8px;background:var(--re-bg);color:var(--re)" onclick="closeModal(this);setTimeout(function(){resetAllVices(true)},220)">Clear the history too</button>' +
+    '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.55;margin-bottom:16px;text-align:center">Erases the counts, the urges logged, the restarts and the money reclaimed. Keeps each thing set up as it is.</div>' +
     '<button class="btn quiet" onclick="closeModal(this)">Not now</button>' +
   '</div>';
   document.body.appendChild(m);
@@ -1802,10 +1802,10 @@ function openMultiSlip(){
   const m = document.createElement('div');
   m.className = 'modal-bg open'; m.style.alignItems = 'center';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:6px">What did tonight touch?</div>' +
-    '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:14px">Tick what it reached. Once is enough \u2014 you do not have to tell me four times.</div>' +
+    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);margin-bottom:6px">What did tonight touch?</div>' +
+    '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:14px">Tick what it reached. Once is enough \u2014 you do not have to tell me four times.</div>' +
     list.map(function(x){
-      return '<label style="display:flex;align-items:center;gap:10px;padding:11px 12px;margin-bottom:8px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);font-size:14px;color:var(--tx);cursor:pointer">' +
+      return '<label style="display:flex;align-items:center;gap:10px;padding:11px 12px;margin-bottom:8px;background:var(--bg3);border-radius:var(--rm);font-size:var(--t-base);color:var(--tx);cursor:pointer">' +
         '<input type="checkbox" class="ms-v" value="' + x.i + '" style="width:20px;height:20px;flex:none;margin:0">' +
         '<span>' + _escFew(x.v.n) + '</span></label>';
     }).join('') +
@@ -2179,13 +2179,13 @@ function changeViceMode(i){
     const on = cur === mode;
     return '<button '+(on?'disabled':'onclick="_pickViceMode('+i+',\''+mode+'\')"')+
       ' style="width:100%;text-align:left;padding:12px 14px;margin-bottom:8px;border-radius:var(--rm);border:1px solid '+(on?'var(--go-bd)':'var(--bd)')+
-      ';background:'+(on?'var(--go-bg)':'var(--bg3)')+';color:'+(on?'var(--go)':'var(--tx)')+';font-size:13px;cursor:'+(on?'default':'pointer')+'">'+
-      title+(on?' <span style="font-size:11px;opacity:0.8">\u00b7 current</span>':'')+
-      '<span style="display:block;font-size:11px;color:var(--tx3);line-height:1.5;margin-top:3px">'+sub+'</span></button>';
+      ';background:'+(on?'var(--go-bg)':'var(--bg3)')+';color:'+(on?'var(--go)':'var(--tx)')+';font-size:var(--t-base);cursor:'+(on?'default':'pointer')+'">'+
+      title+(on?' <span style="font-size:var(--t-cap);opacity:0.8">\u00b7 current</span>':'')+
+      '<span style="display:block;font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-top:3px">'+sub+'</span></button>';
   };
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:6px">'+_escFew(v.n)+'</div>'+
-    '<div style="text-align:center;font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:16px">What do you actually want with this right now? You can change it whenever the truth changes.</div>'+
+    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;margin-bottom:6px">'+_escFew(v.n)+'</div>'+
+    '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:16px">What do you actually want with this right now? You can change it whenever the truth changes.</div>'+
     opt('watch','Just watching','No goal, no streak, no line. I log it and show you the shape of it. Nothing to keep or break.')+
     opt('moderate','Keeping it in check','A limit you set for yourself, and how often you stay within it.')+
     opt('quit','Quitting','Aiming for zero, with a clean-day streak from the day you start.')+
@@ -2200,9 +2200,9 @@ function _pickViceMode(i, mode){
   loadV(); const v = vices[i]; if(!v) return;
   const box = document.getElementById('change-mode-extra');
   if(!box){ applyViceMode(i, 'moderate'); return; }
-  box.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin:6px 0 6px">Weekly limit</div>'+
-    '<div style="position:relative;margin-bottom:10px"><input type="number" id="change-mode-limit" inputmode="numeric" placeholder="e.g. 3" value="'+(v.modLimit||'')+'" style="font-size:16px;padding:11px;width:100%"></div>'+
-    '<p style="font-size:11px;color:var(--tx3);line-height:1.6;margin-bottom:12px">How many times a week is within your limit? You\u2019ll track how often you stay within it.</p>'+
+  box.innerHTML = '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin:6px 0 6px">Weekly limit</div>'+
+    '<div style="position:relative;margin-bottom:10px"><input type="number" id="change-mode-limit" inputmode="numeric" placeholder="e.g. 3" value="'+(v.modLimit||'')+'" style="font-size:var(--t-base);padding:11px;width:100%"></div>'+
+    '<p style="font-size:var(--t-cap);color:var(--tx3);line-height:1.6;margin-bottom:12px">How many times a week is within your limit? You\u2019ll track how often you stay within it.</p>'+
     '<button class="btn primary" onclick="applyViceMode('+i+',\'moderate\')" style="margin-bottom:4px">Switch to moderation</button>';
   try{ document.getElementById('change-mode-limit').focus(); }catch(_){ }
 }
@@ -2272,10 +2272,10 @@ function _watchKeepWatching(i){
 }
 function openViceManage(i){
   loadV(); const v=vices[i]; if(!v) return;
-  const row=(label, act, danger)=>'<button onclick="closeModal(this);'+act+'" style="width:100%;text-align:left;padding:13px 14px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);margin-bottom:8px;color:'+(danger?'var(--re)':'var(--tx)')+';font-size:14px;cursor:pointer">'+label+'</button>';
+  const row=(label, act, danger)=>'<button onclick="closeModal(this);'+act+'" style="width:100%;text-align:left;padding:13px 14px;background:var(--bg3);border-radius:var(--rm);margin-bottom:8px;color:'+(danger?'var(--re)':'var(--tx)')+';font-size:var(--t-base);cursor:pointer">'+label+'</button>';
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:14px">'+String(v.n).replace(/</g,'&lt;')+'</div>'+
+    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);margin-bottom:14px">'+String(v.n).replace(/</g,'&lt;')+'</div>'+
     row('Your plan — how you want to handle this', 'openVicePlan('+i+')')+
     row('Edit the start date', 'editViceStart('+i+')')+
     // The truth of the timeline. logLoss() has always accepted a backdate and promptLossDate() has
@@ -2328,11 +2328,11 @@ function editViceStart(i){
   m.style.alignItems = 'center';
   m.innerHTML = '<div class="modal">' +
     '<div class="modal-handle"></div>' +
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:6px">' + v.n + '</div>' +
-    '<div style="text-align:center;font-size:12px;color:var(--tx3);margin-bottom:16px">When did your current streak actually start?</div>' +
-    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Streak start date</div>' +
-    '<input type="date" id="edit-vice-start" value="' + currentStart + '" max="' + today + '" style="margin-bottom:14px;font-size:16px;padding:12px">' +
-    '<p style="font-size:11px;color:var(--tx3);line-height:1.6;margin-bottom:14px">If you quit before installing ToTry, set the real date so your day count matches your life.</p>' +
+    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;margin-bottom:6px">' + v.n + '</div>' +
+    '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx3);margin-bottom:16px">When did your current streak actually start?</div>' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Streak start date</div>' +
+    '<input type="date" id="edit-vice-start" value="' + currentStart + '" max="' + today + '" style="margin-bottom:14px;font-size:var(--t-base);padding:12px">' +
+    '<p style="font-size:var(--t-cap);color:var(--tx3);line-height:1.6;margin-bottom:14px">If you quit before installing ToTry, set the real date so your day count matches your life.</p>' +
     '<button class="btn primary" onclick="saveViceStart(' + i + ')" style="margin-bottom:8px">Save start date</button>' +
     '<button class="btn quiet" onclick="closeModal(this)">Cancel</button>' +
     '</div>';
@@ -2376,15 +2376,15 @@ function openLogUse(i){
   const today=_todayLocalISO();
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:4px">'+String(v.n).replace(/</g,'&lt;')+'</div>'+
-    '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:16px">Just the truth — no scolding. Knowing where you actually are is the only way I’m any use to you.</div>'+
+    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);margin-bottom:4px">'+String(v.n).replace(/</g,'&lt;')+'</div>'+
+    '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx3);line-height:1.55;margin-bottom:16px">Just the truth — no scolding. Knowing where you actually are is the only way I’m any use to you.</div>'+
     '<div class="lbl">When</div>'+
-    '<input type="date" id="lu-date" value="'+today+'" max="'+today+'" style="margin-bottom:12px;font-size:16px;padding:12px;color-scheme:dark">'+
+    '<input type="date" id="lu-date" value="'+today+'" max="'+today+'" style="margin-bottom:12px;font-size:var(--t-base);padding:12px;color-scheme:dark">'+
     '<div class="lbl">How many times</div>'+
-    '<input type="number" inputmode="numeric" id="lu-qty" value="1" min="1" style="margin-bottom:12px;font-size:16px;padding:12px">'+
+    '<input type="number" inputmode="numeric" id="lu-qty" value="1" min="1" style="margin-bottom:12px;font-size:var(--t-base);padding:12px">'+
     '<div class="lbl">Did you buy? (optional)</div>'+
-    '<input type="number" inputmode="decimal" id="lu-cost" placeholder="What it cost '+curSym()+'" style="margin-bottom:8px;font-size:16px;padding:12px">'+
-    '<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tx2);margin-bottom:14px"><input type="checkbox" id="lu-credit" style="width:auto;flex:none"> Put it on credit — I still owe this</label>'+
+    '<input type="number" inputmode="decimal" id="lu-cost" placeholder="What it cost '+curSym()+'" style="margin-bottom:8px;font-size:var(--t-base);padding:12px">'+
+    '<label style="display:flex;align-items:center;gap:8px;font-size:var(--t-sm);color:var(--tx2);margin-bottom:14px"><input type="checkbox" id="lu-credit" style="width:auto;flex:none"> Put it on credit — I still owe this</label>'+
     '<button class="btn primary" onclick="saveViceUse('+i+')" style="margin-bottom:8px">Log it honestly</button>'+
     '<button class="btn quiet" onclick="closeModal(this)">Cancel</button>'+
     '</div>';
@@ -2646,8 +2646,8 @@ function _wholeLifeReframe(){
 }
 function _reframeHTML(){
   const r=_wholeLifeReframe(); if(!r.length) return '';
-  return '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:12px 14px;margin-bottom:14px">'+
-    r.map(s=>'<div style="display:flex;gap:10px;align-items:flex-start;padding:5px 0"><span style="flex:none;color:var(--go);line-height:1">'+svgIcon(s.icon,16)+'</span><span style="font-size:13px;color:var(--tx2);line-height:1.6">'+s.text+'</span></div>').join('')+
+  return '<div style="background:var(--bg3);border-radius:var(--rm);padding:12px 14px;margin-bottom:14px">'+
+    r.map(s=>'<div style="display:flex;gap:10px;align-items:flex-start;padding:5px 0"><span style="flex:none;color:var(--go);line-height:1">'+svgIcon(s.icon,16)+'</span><span style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">'+s.text+'</span></div>').join('')+
   '</div>';
 }
 
@@ -2663,18 +2663,18 @@ function openGambleMoment(i){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto">'+
     '<div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:24px;font-style:italic;color:var(--tx);margin-bottom:6px">Before you put it on</div>'+
-    '<div style="text-align:center;font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:16px">You came here first. That’s the whole game, right there — you already did the hard part.</div>'+
+    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-title1);font-style:italic;color:var(--tx);margin-bottom:6px">Before you put it on</div>'+
+    '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-bottom:16px">You came here first. That’s the whole game, right there — you already did the hard part.</div>'+
     _reframeHTML()+
     (lost
-      ? '<div style="background:var(--re-bg);border:1px solid var(--re-bd);border-radius:var(--rm);padding:14px;margin-bottom:14px;text-align:center">'+
-          '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);letter-spacing:0.1em;margin-bottom:4px">THE BANK’S RECORD, NOT A GUESS</div>'+
-          '<div style="font-family:DM Mono,monospace;font-size:30px;color:var(--re);line-height:1">−'+curSym()+Math.round(lost).toLocaleString()+'</div>'+
-          '<div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-top:8px">That’s what it has already taken from you. Not a story — '+bank.count+' transactions it can’t erase. You have never once walked away up. Neither has anyone.</div>'+
+      ? '<div style="background:var(--re-bg);border-radius:var(--rm);padding:14px;margin-bottom:14px;text-align:center">'+
+          '<div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3);letter-spacing:0.01em;margin-bottom:4px">THE BANK’S RECORD, NOT A GUESS</div>'+
+          '<div style="font-family:var(--font-rounded);font-variant-numeric:tabular-nums;font-size:var(--t-2xl);color:var(--re);line-height:1">−'+curSym()+Math.round(lost).toLocaleString()+'</div>'+
+          '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-top:8px">That’s what it has already taken from you. Not a story — '+bank.count+' transactions it can’t erase. You have never once walked away up. Neither has anyone.</div>'+
         '</div>'
-      : '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:14px;margin-bottom:14px;font-size:13px;color:var(--tx2);line-height:1.65">The house is built to win over time — that’s not bad luck, it’s the maths it’s made of. Import a statement sometime and I’ll show you your real number. For now, let’s deal with right now.</div>')+
-    '<div style="font-size:13px;color:var(--tx);line-height:1.6;margin-bottom:8px;text-align:center">Be straight with me — how much have you actually got on you right now?</div>'+
-    '<input type="number" inputmode="decimal" id="gm-cash" placeholder="'+curSym()+' on hand" style="font-size:18px;padding:14px;text-align:center;margin-bottom:12px">'+
+      : '<div style="background:var(--bg3);border-radius:var(--rm);padding:14px;margin-bottom:14px;font-size:var(--t-sm);color:var(--tx2);line-height:1.65">The house is built to win over time — that’s not bad luck, it’s the maths it’s made of. Import a statement sometime and I’ll show you your real number. For now, let’s deal with right now.</div>')+
+    '<div style="font-size:var(--t-base);color:var(--tx);line-height:1.6;margin-bottom:8px;text-align:center">Be straight with me — how much have you actually got on you right now?</div>'+
+    '<input type="number" inputmode="decimal" id="gm-cash" placeholder="'+curSym()+' on hand" style="font-size:var(--t-hd);padding:14px;text-align:center;margin-bottom:12px">'+
     '<button class="btn" onclick="_gambleStakes('+i+')" style="margin-bottom:8px">Show me the truth about this money</button>'+
     '<button class="btn subtle" onclick="closeModal(this);openCompanionForUrge()" style="margin-bottom:8px">I just need to talk it out</button>'+
     '<button class="btn quiet" onclick="closeModal(this)">Not now</button>'+
@@ -2692,20 +2692,20 @@ function _gambleStakes(i){
   const stakes=stakesForAmount(cash);
   const debt=_priorityDebt(); const goal=_priorityGoal();
   let stakesHTML = stakes.length
-    ? stakes.map(s=>'<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--bd)"><span style="flex:none;color:var(--go);line-height:1">'+svgIcon(s.icon,16)+'</span><span style="font-size:13px;color:var(--tx2);line-height:1.55">'+s.text+'</span></div>').join('')
-    : '<div style="font-size:13px;color:var(--tx2);line-height:1.6">'+money(cash)+' kept is '+money(cash)+' you still have at breakfast. Gambled, it’s almost certainly gone — that’s not pessimism, it’s the maths. Keeping it is the only move that’s ever up.</div>';
+    ? stakes.map(s=>'<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--bd)"><span style="flex:none;color:var(--go);line-height:1">'+svgIcon(s.icon,16)+'</span><span style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55">'+s.text+'</span></div>').join('')
+    : '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">'+money(cash)+' kept is '+money(cash)+' you still have at breakfast. Gambled, it’s almost certainly gone — that’s not pessimism, it’s the maths. Keeping it is the only move that’s ever up.</div>';
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   let actionBtns='';
   if(debt){ actionBtns+='<button class="btn primary" onclick="_bookRedirect('+i+','+cash+',\'debt\')" style="margin-bottom:8px">I’ll put it at '+String(debt.n).replace(/'/g,'').replace(/</g,'&lt;').slice(0,24)+' instead</button>'; }
-  if(goal){ actionBtns+='<button class="btn'+(debt?'':' primary')+'" onclick="_bookRedirect('+i+','+cash+',\'goal\')" style="margin-bottom:8px'+(debt?';background:var(--bg3);border:1px solid var(--bd);color:var(--tx)':'')+'">Into '+String(goal.name).replace(/'/g,'').replace(/</g,'&lt;').slice(0,24)+' instead</button>'; }
+  if(goal){ actionBtns+='<button class="btn'+(debt?'':' primary')+'" onclick="_bookRedirect('+i+','+cash+',\'goal\')" style="margin-bottom:8px'+(debt?';background:var(--bg3);color:var(--tx)':'')+'">Into '+String(goal.name).replace(/'/g,'').replace(/</g,'&lt;').slice(0,24)+' instead</button>'; }
   if(!debt && !goal){ actionBtns+='<button class="btn primary" onclick="closeModal(this);go(\'money\')" style="margin-bottom:8px">Start a fund with it</button>'; }
   m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto">'+
     '<div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;color:var(--tx);margin-bottom:4px">'+money(cash)+' — here’s what it really is</div>'+
-    '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px">Same money. One of these you keep. The other, the house keeps.</div>'+
+    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);margin-bottom:4px">'+money(cash)+' — here’s what it really is</div>'+
+    '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx3);line-height:1.55;margin-bottom:14px">Same money. One of these you keep. The other, the house keeps.</div>'+
     '<div style="margin-bottom:16px">'+stakesHTML+'</div>'+
     actionBtns+
-    '<button class="btn" onclick="_gambleWin('+i+','+cash+')" style="background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);margin-bottom:8px;font-size:13px">I’m keeping it in my pocket — done</button>'+
+    '<button class="btn" onclick="_gambleWin('+i+','+cash+')" style="background:var(--gr-bg);color:var(--gr);margin-bottom:8px;font-size:var(--t-base)">I’m keeping it in my pocket — done</button>'+
     '<button class="btn quiet" onclick="closeModal(this);openCompanionForUrge()">Still shaky — talk to me</button>'+
     '</div>';
   document.body.appendChild(m);
@@ -2738,10 +2738,10 @@ function _bookRedirect(i, cash, target){
   const where = target==='debt' ? (_priorityDebt()||{}).n : (_priorityGoal()||{}).name;
   m.innerHTML='<div class="modal" style="text-align:center">'+
     '<div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;color:var(--tx);margin-bottom:10px">Do it now, while you’re here.</div>'+
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:18px">Move the '+money(cash)+' to '+String(where||'it').replace(/</g,'&lt;')+' in your banking app — right now, before the moment cools. Then tell me it’s done and I’ll move your freedom date to match. I won’t log money you didn’t actually move.</div>'+
+    '<div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);margin-bottom:10px">Do it now, while you’re here.</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:18px">Move the '+money(cash)+' to '+String(where||'it').replace(/</g,'&lt;')+' in your banking app — right now, before the moment cools. Then tell me it’s done and I’ll move your freedom date to match. I won’t log money you didn’t actually move.</div>'+
     '<button class="btn primary" onclick="_confirmRedirect('+i+','+cash+',\''+target+'\')" style="margin-bottom:8px">Done — I moved it</button>'+
-    '<button class="btn" onclick="_gambleWin('+i+','+cash+')" style="background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);margin-bottom:8px;font-size:13px">Couldn’t right now, but I’m not gambling it</button>'+
+    '<button class="btn" onclick="_gambleWin('+i+','+cash+')" style="background:var(--gr-bg);color:var(--gr);margin-bottom:8px;font-size:var(--t-base)">Couldn’t right now, but I’m not gambling it</button>'+
     '<button class="btn quiet" onclick="closeModal(this)">Back</button>'+
     '</div>';
   document.body.appendChild(m);
@@ -2794,7 +2794,7 @@ function openMomentStakes(i){
     if(saved>0) bits.push({icon:'wallet', text:curSym()+Math.round(saved).toLocaleString()+' already reclaimed by not buying. Falling now spends the streak AND restarts the meter.'});
     if(nextBuy!=null) bits.push({icon:'clock', text:'You don’t need to buy for another '+nextBuy+' day'+(nextBuy===1?'':'s')+'. This urge is trying to move that up. It’s lying about how much you need it.'});
     bits.push({icon:'bulb', text:'What’s this really about right now — tired, bored, stressed, alone? The urge is usually managing something else. Name that, and it loosens.'});
-    extra=bits.map(s=>'<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--bd)"><span style="flex:none;color:var(--go);line-height:1">'+svgIcon(s.icon,16)+'</span><span style="font-size:13px;color:var(--tx2);line-height:1.55">'+s.text+'</span></div>').join('');
+    extra=bits.map(s=>'<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--bd)"><span style="flex:none;color:var(--go);line-height:1">'+svgIcon(s.icon,16)+'</span><span style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55">'+s.text+'</span></div>').join('');
   } else {
     // Behaviour: never money. Time, clarity, self-respect, and what the urge is managing.
     body='This is a wave, not a command. It rises and it passes — 15, 20 minutes — and it passes faster when you don’t argue with it. You’re not fighting forever. Just this one.';
@@ -2803,13 +2803,13 @@ function openMomentStakes(i){
       {icon:'shield', text:'What you’re protecting here doesn’t show up on any balance sheet — the clear head tomorrow, the self-respect, being able to look people in the eye. That’s the real reward, and it’s only earned in moments exactly like this one.'},
       {icon:'bulb', text:'What’s underneath it — lonely, understimulated, avoiding something? This is almost never about the thing itself. Name what it’s managing and it loses its grip.'},
     ];
-    extra=bits.map(s=>'<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--bd)"><span style="flex:none;color:var(--go);line-height:1">'+svgIcon(s.icon,16)+'</span><span style="font-size:13px;color:var(--tx2);line-height:1.55">'+s.text+'</span></div>').join('');
+    extra=bits.map(s=>'<div style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--bd)"><span style="flex:none;color:var(--go);line-height:1">'+svgIcon(s.icon,16)+'</span><span style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55">'+s.text+'</span></div>').join('');
   }
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto">'+
     '<div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:24px;font-style:italic;color:var(--tx);margin-bottom:6px">You came here first</div>'+
-    '<div style="text-align:center;font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:16px">'+body+'</div>'+
+    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-title1);font-style:italic;color:var(--tx);margin-bottom:6px">You came here first</div>'+
+    '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-bottom:16px">'+body+'</div>'+
     _planCardHTML(i)+
     _reframeHTML()+
     '<div style="margin-bottom:16px">'+extra+'</div>'+
@@ -2877,10 +2877,10 @@ function _maybeRiskWindowGreeting(){
     const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
     m.innerHTML='<div class="modal" style="text-align:center">'+
       '<div class="modal-handle"></div>'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-style:italic;color:var(--tx);line-height:1.3;margin-bottom:10px">I’m here.</div>'+
-      '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:18px">'+hi+'this is usually the hardest stretch for you with '+String(hit.v.n).replace(/</g,'&lt;')+'.'+trig+' Nothing has to be happening — I just wanted to be here before it does. How are you, honestly?</div>'+
+      '<div style="font-family:var(--font-serif);font-size:var(--t-title1);font-style:italic;color:var(--tx);line-height:1.3;margin-bottom:10px">I’m here.</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:18px">'+hi+'this is usually the hardest stretch for you with '+String(hit.v.n).replace(/</g,'&lt;')+'.'+trig+' Nothing has to be happening — I just wanted to be here before it does. How are you, honestly?</div>'+
       '<button class="btn primary" onclick="closeModal(this);'+_hitAct+'" style="margin-bottom:8px">The pull’s here — walk me through it</button>'+
-      '<button class="btn" onclick="_riskGreetSteady('+hit.idx+')" style="background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);margin-bottom:8px;font-size:13px">I’m steady '+_steadyWhen()+'</button>'+
+      '<button class="btn" onclick="_riskGreetSteady('+hit.idx+')" style="background:var(--gr-bg);color:var(--gr);margin-bottom:8px;font-size:var(--t-base)">I’m steady '+_steadyWhen()+'</button>'+
       '<button class="btn quiet" onclick="closeModal(this)">Just checking in — I’m fine</button>'+
       '</div>';
     document.body.appendChild(m);
@@ -2918,35 +2918,35 @@ function editViceCost(i){
   const m = document.createElement('div');
   m.className = 'modal-bg open'; m.style.alignItems='center';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:6px">'+String(v.n).replace(/</g,'&lt;')+'</div>'+
-    '<div style="text-align:center;font-size:12px;color:var(--tx3);margin-bottom:16px">What did this cost you when it was active? Every clean day turns that into reclaimed money.</div>'+
-    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Amount ('+curSym()+')</div>'+
-    '<input type="number" inputmode="decimal" id="vc-amount" value="'+(v.costAmount||'')+'" placeholder="e.g. 25" style="margin-bottom:12px;font-size:16px;padding:12px">'+
-    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Per</div>'+
-    '<select id="vc-per" style="margin-bottom:14px;font-size:16px;padding:12px">'+
+    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;margin-bottom:6px">'+String(v.n).replace(/</g,'&lt;')+'</div>'+
+    '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx3);margin-bottom:16px">What did this cost you when it was active? Every clean day turns that into reclaimed money.</div>'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Amount ('+curSym()+')</div>'+
+    '<input type="number" inputmode="decimal" id="vc-amount" value="'+(v.costAmount||'')+'" placeholder="e.g. 25" style="margin-bottom:12px;font-size:var(--t-base);padding:12px">'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Per</div>'+
+    '<select id="vc-per" style="margin-bottom:14px;font-size:var(--t-base);padding:12px">'+
       '<option value="purchase"'+(v.costPer==='purchase'?' selected':'')+'>each time I buy (a pack, a bag — lasts a while)</option>'+
       '<option value="day"'+(v.costPer==='day'?' selected':'')+'>day</option>'+
       '<option value="week"'+(!v.costPer||v.costPer==='week'?' selected':'')+'>week</option>'+
       '<option value="use"'+(v.costPer==='use'?' selected':'')+'>each time I use it (set uses/week below)</option>'+
     '</select>'+
     '<div id="vc-uses-wrap" style="display:'+(v.costPer==='use'?'block':'none')+'">'+
-      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Times per week</div>'+
-      '<input type="number" inputmode="numeric" id="vc-uses" value="'+(v.costUses||'')+'" placeholder="e.g. 7" style="margin-bottom:14px;font-size:16px;padding:12px">'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Times per week</div>'+
+      '<input type="number" inputmode="numeric" id="vc-uses" value="'+(v.costUses||'')+'" placeholder="e.g. 7" style="margin-bottom:14px;font-size:var(--t-base);padding:12px">'+
     '</div>'+
     // Lumpy buying, told honestly: one buy lasts a while, and that supply was already paid for.
     '<div id="vc-buy-wrap" style="display:'+(v.costPer==='purchase'?'block':'none')+'">'+
-      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">One buy lasts (days)</div>'+
-      '<input type="number" inputmode="numeric" id="vc-lasts" value="'+(v.lastsDays||'')+'" placeholder="e.g. 30" style="margin-bottom:12px;font-size:16px;padding:12px">'+
-      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">When did you last buy?</div>'+
-      '<input type="date" id="vc-lastbuy" value="'+(v.lastPurchase?String(v.lastPurchase).slice(0,10):'')+'" style="margin-bottom:6px;font-size:16px;padding:12px;color-scheme:dark">'+
-      '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:14px">You already paid for what you have. Saving starts at the buy you don’t make.</div>'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">One buy lasts (days)</div>'+
+      '<input type="number" inputmode="numeric" id="vc-lasts" value="'+(v.lastsDays||'')+'" placeholder="e.g. 30" style="margin-bottom:12px;font-size:var(--t-base);padding:12px">'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">When did you last buy?</div>'+
+      '<input type="date" id="vc-lastbuy" value="'+(v.lastPurchase?String(v.lastPurchase).slice(0,10):'')+'" style="margin-bottom:6px;font-size:var(--t-base);padding:12px;color-scheme:dark">'+
+      '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-bottom:14px">You already paid for what you have. Saving starts at the buy you don’t make.</div>'+
     '</div>'+
     // Money owed for past use — you're not ahead until this is cleared.
-    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Still owe anyone for it? ('+curSym()+')</div>'+
-    '<input type="number" inputmode="decimal" id="vc-owed" value="'+(v.owed||'')+'" placeholder="e.g. 200 — leave blank if none" style="margin-bottom:6px;font-size:16px;padding:12px">'+
-    '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:14px">Being clean doesn’t put you ahead until what you owe is cleared. I’ll count that first, honestly.</div>'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Still owe anyone for it? ('+curSym()+')</div>'+
+    '<input type="number" inputmode="decimal" id="vc-owed" value="'+(v.owed||'')+'" placeholder="e.g. 200 — leave blank if none" style="margin-bottom:6px;font-size:var(--t-base);padding:12px">'+
+    '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-bottom:14px">Being clean doesn’t put you ahead until what you owe is cleared. I’ll count that first, honestly.</div>'+
     '<button class="btn primary" onclick="saveViceCost('+i+')" style="margin-bottom:8px">Save what it costs</button>'+
-    (v.costAmount?'<button class="btn" onclick="clearViceCost('+i+')" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;margin-bottom:8px">Remove cost tracking</button>':'')+
+    (v.costAmount?'<button class="btn" onclick="clearViceCost('+i+')" style="background:transparent;color:var(--tx3);font-size:var(--t-sm);margin-bottom:8px;background:var(--fill2)">Remove cost tracking</button>':'')+
     '<button class="btn quiet" onclick="closeModal(this)">Cancel</button>'+
     '</div>';
   document.body.appendChild(m);

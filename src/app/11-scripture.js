@@ -70,7 +70,7 @@ Return ONLY a raw JSON array. No markdown.
     if(card)card.style.display='block';
   } else if(card){
     card.style.display='block';
-    card.innerHTML='<div style="text-align:center;padding:20px;font-family:Cormorant Garamond,serif;font-size:15px;font-style:italic;color:var(--tx3)">Could not find verses right now. Check your connection and try again.</div>';
+    card.innerHTML='<div style="text-align:center;padding:20px;font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;color:var(--tx3)">Could not find verses right now. Check your connection and try again.</div>';
   }
 }
 function saveCurrentVerse(){
@@ -104,7 +104,7 @@ function renderSavedVerses(containerId){
         '<div class="sv-r">' + _escFew(v.reference || '') + '</div>' +
         '<div class="sv-d">' + _escFew(v.date || '') + '</div>' +
       '</div>' +
-      '<button onclick="deleteSavedVerse(' + i + ')" aria-label="Remove verse" style="background:none;border:none;color:var(--tx3);min-width:28px;min-height:28px;font-size:18px;cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0">\u00D7</button>' +
+      '<button onclick="deleteSavedVerse(' + i + ')" aria-label="Remove verse" style="background:none;border:none;color:var(--tx3);min-width:28px;min-height:28px;font-size:var(--t-hd);cursor:pointer;padding:0 4px;line-height:1;flex-shrink:0">\u00D7</button>' +
     '</div>';
     list.appendChild(el);
   });
@@ -165,7 +165,7 @@ function renderVerseResults(verses,feeling){
   if(!card)return;
   card.innerHTML='';
   const hdr=document.createElement('div');
-  hdr.style.cssText='font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:14px';
+  hdr.style.cssText='font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:14px';
   hdr.textContent=plural(verses.length,'verse')+' for: '+feeling.slice(0,50)+(feeling.length>50?'...':'');
   card.appendChild(hdr);
   verses.forEach((v,i)=>{
@@ -174,12 +174,12 @@ function renderVerseResults(verses,feeling){
     // Same as the search block above: these fields are the MODEL'S, and the model was handed
     // this person's own free text. Not app-authored content, so not app-trusted markup.
     block.innerHTML=
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.08em;margin-bottom:8px">'+_escFew(v.reference)+'</div>'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:16px;color:var(--tx);line-height:1.65;font-style:italic;margin-bottom:10px">&#8220;'+_escFew(v.verse)+'&#8221;</div>'+
-      '<div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-bottom:10px">'+_escFew(v.reflection)+'</div>'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);letter-spacing:0.01em;margin-bottom:8px">'+_escFew(v.reference)+'</div>'+
+      '<div style="font-family:var(--font-serif);font-size:var(--t-base);color:var(--tx);line-height:1.65;font-style:italic;margin-bottom:10px">&#8220;'+_escFew(v.verse)+'&#8221;</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:10px">'+_escFew(v.reflection)+'</div>'+
       '<div style="display:flex;gap:6px">'+
-        '<button class="btn" style="flex:1;padding:7px;font-size:11px" onclick="saveVerseResult('+i+')">Save &#9825;</button>'+
-        '<button class="btn" style="flex:1;padding:7px;font-size:11px" onclick="readVerseContext(\''+encodeURIComponent(v.reference)+'\')">Read in Bible &#8599;</button>'+
+        '<button class="btn" style="flex:1;padding:7px;font-size:var(--t-cap)" onclick="saveVerseResult('+i+')">Save &#9825;</button>'+
+        '<button class="btn" style="flex:1;padding:7px;font-size:var(--t-cap)" onclick="readVerseContext(\''+encodeURIComponent(v.reference)+'\')">Read in Bible &#8599;</button>'+
       '</div>';
     card.appendChild(block);
   });
@@ -442,9 +442,9 @@ function showVerseToast(context, customTitle){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:88vh"><div class="modal-handle"></div>' +
     '<div style="text-align:center;padding:10px 0">' +
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:10px">' + (customTitle || 'A word for this moment') + '</div>' +
-      '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;line-height:1.5;margin-bottom:14px">"' + v.text + '"</div>' +
-      '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--go);letter-spacing:0.1em">' + v.ref + '</div>' +
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:10px">' + (customTitle || 'A word for this moment') + '</div>' +
+      '<div style="font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;line-height:1.5;margin-bottom:14px">"' + v.text + '"</div>' +
+      '<div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);letter-spacing:0.01em">' + v.ref + '</div>' +
     '</div>' +
     '<button class="btn primary" onclick="saveContextualVerse(\'' + String(v.ref||'').replace(/'/g, "\\'") + '\',\'' + String(v.text||'').replace(/'/g, "\\'") + '\');closeModal(this)" style="margin-top:14px;margin-bottom:8px">Save this verse</button>' +
     '<button class="btn" onclick="closeModal(this)">Close</button>' +
@@ -1080,7 +1080,7 @@ async function loadBibleChapter(){
       notesWrap.style.cssText = 'margin-top:18px';
       container.parentNode.appendChild(notesWrap);
     }
-    notesWrap.innerHTML = '<button class="btn" onclick="loadStudyNotes()" style="background:var(--bg3);border:1px solid var(--go-bd);color:var(--go);font-size:13px;width:100%">Show study notes for this chapter</button><div id="br-notes-body" style="margin-top:12px"></div>';
+    notesWrap.innerHTML = '<button class="btn" onclick="loadStudyNotes()" style="background:var(--bg3);color:var(--go);font-size:var(--t-base);width:100%">Show study notes for this chapter</button><div id="br-notes-body" style="margin-top:12px"></div>';
     window.__currentChapterRef = { bookId: bookId, bookName: book.name, chapter: chapter };
   }else{
     document.getElementById('br-chapter-display').style.display='block';
@@ -1096,7 +1096,7 @@ async function loadBibleChapter(){
     const _off = (typeof navigator !== 'undefined' && navigator.onLine === false);
     const _why = _off ? 'You are offline \u2014 the chapter text lives online.'
                       : (lastError ? _escFew(lastError) : '');
-    let _html = '<p style="font-size:13px;color:var(--tx3);padding:8px;line-height:1.6">Could not load ' +
+    let _html = '<p style="font-size:var(--t-sm);color:var(--tx3);padding:8px;line-height:1.6">Could not load ' +
       _escFew(book.name + ' ' + chapter) + '. ' + _why + '</p>';
     try{
       const _pool = [].concat.apply([], Object.keys(CONTEXTUAL_VERSES || {}).map(function(k){ return CONTEXTUAL_VERSES[k] || []; }));
@@ -1104,9 +1104,9 @@ async function loadBibleChapter(){
         // Deterministic pick, so re-opening offline does not shuffle scripture at a person.
         const _pick = _pool[(String(bookId).length + Number(chapter||1)) % _pool.length];
         _html += '<div style="padding:10px 8px;border-top:1px solid var(--bd);margin-top:6px">' +
-          '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.1em;margin-bottom:6px">ON THIS PHONE, WHILE YOU WAIT</div>' +
-          '<div style="font-family:Cormorant Garamond,serif;font-size:16px;line-height:1.7;color:var(--tx);font-style:italic">\u201C' + _escFew(_pick.text) + '\u201D</div>' +
-          '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:6px">' + _escFew(_pick.ref) + '</div>' +
+          '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);letter-spacing:0.01em;margin-bottom:6px">ON THIS PHONE, WHILE YOU WAIT</div>' +
+          '<div style="font-family:var(--font-serif);font-size:var(--t-base);line-height:1.7;color:var(--tx);font-style:italic">\u201C' + _escFew(_pick.text) + '\u201D</div>' +
+          '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);margin-top:6px">' + _escFew(_pick.ref) + '</div>' +
           '</div>';
       }
     }catch(_){ }
@@ -1119,7 +1119,7 @@ async function loadStudyNotes(){
   const body = document.getElementById('br-notes-body');
   const ref = window.__currentChapterRef;
   if(!body || !ref) return;
-  body.innerHTML = '<div style="font-size:13px;color:var(--tx3);padding:8px;font-style:italic">Loading study notes…</div>';
+  body.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx3);padding:8px;font-style:italic">Loading study notes…</div>';
   // helloao commentary endpoint uses USFM-style book IDs (e.g. GEN, JHN). Map common names.
   const bookCode = bibleBookToUSFM(ref.bookName);
   let notes = null;
@@ -1128,18 +1128,18 @@ async function loadStudyNotes(){
     if(r.ok){ const d = await r.json(); notes = (d.chapter && d.chapter.content) || d.content || null; }
   }catch(_){ }
   if(!notes || !notes.length){
-    body.innerHTML = '<div style="font-size:13px;color:var(--tx2);line-height:1.6;padding:8px;background:var(--bg3);border-radius:var(--rs)">No study notes are available for this chapter. Not every chapter has them yet — the Gospels and major books have the most.</div>';
+    body.innerHTML = '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;padding:8px;background:var(--bg3);border-radius:var(--rs)">No study notes are available for this chapter. Not every chapter has them yet — the Gospels and major books have the most.</div>';
     return;
   }
   // Render notes — each item may be {type, verseNumber, content[]}
-  let html = '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px">Tyndale Open Study Notes</div>';
+  let html = '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:10px">Tyndale Open Study Notes</div>';
   notes.forEach(n => {
     const txt = Array.isArray(n.content) ? n.content.map(c => typeof c==='string'?c:(c.text||'')).join(' ') : (n.content || n.text || '');
     if(!txt) return;
     const label = n.verseNumber ? ('v'+n.verseNumber) : (n.reference || '');
     html += '<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--bd)">'+
-      (label?'<span style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);margin-right:6px">'+label+'</span>':'')+
-      '<span style="font-size:13px;color:var(--tx2);line-height:1.65">'+txt.replace(/</g,'&lt;')+'</span></div>';
+      (label?'<span style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);margin-right:6px">'+label+'</span>':'')+
+      '<span style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65">'+txt.replace(/</g,'&lt;')+'</span></div>';
   });
   body.innerHTML = html;
 }
@@ -1195,7 +1195,7 @@ async function searchBible(query){
   if(!query)return;
   const res=document.getElementById('br-search-results');
   if(!res) return;   // never throw on a missing container — the crisis gate above has already run
-  res.innerHTML='<p class="pulsing" style="font-family:\'Cormorant Garamond\',serif;font-size:15px;font-style:italic;color:var(--tx3);text-align:center;padding:16px">Listening to what you wrote...</p>';
+  res.innerHTML='<p class="pulsing" style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;color:var(--tx3);text-align:center;padding:16px">Listening to what you wrote...</p>';
   
   // Direct reference lookup (e.g. "John 3:16", "Romans 8:28-30")
   const refMatch=query.match(/^(\d?\s?[A-Za-z]+)\s+(\d+):(\d+)(-\d+)?$/);
@@ -1256,7 +1256,7 @@ async function searchBible(query){
         res.innerHTML='';
         if(data.reading){
           const reading=document.createElement('div');
-          reading.style.cssText='padding:14px 16px;margin-bottom:14px;background:linear-gradient(135deg,rgba(200,169,110,0.08),rgba(140,107,182,0.06));border:1px solid var(--go-bd);border-radius:var(--rm);font-family:\'Cormorant Garamond\',serif;font-size:16px;font-style:italic;line-height:1.6;color:var(--tx)';
+          reading.style.cssText='padding:14px 16px;margin-bottom:14px;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rm);font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;line-height:1.6;color:var(--tx)';
           reading.textContent=data.reading;
           res.appendChild(reading);
         }
@@ -1266,7 +1266,7 @@ async function searchBible(query){
           // These three fields are the MODEL'S output, and the model was handed the person's own
           // free text. A crafted query can make it emit markup, so it is not app-authored content.
           // data.reading above already goes through textContent; these went out as live HTML.
-          el.innerHTML='<div class="bsr-ref">'+_escFew(v.reference)+'</div><div class="bsr-text">'+_escFew(v.text)+'</div>'+(v.relevance?'<div style="font-size:12px;color:var(--bl);margin-top:6px;line-height:1.5">'+_escFew(v.relevance)+'</div>':'');
+          el.innerHTML='<div class="bsr-ref">'+_escFew(v.reference)+'</div><div class="bsr-text">'+_escFew(v.text)+'</div>'+(v.relevance?'<div style="font-size:var(--t-sm);color:var(--bl);margin-top:6px;line-height:1.5">'+_escFew(v.relevance)+'</div>':'');
           el.onclick=()=>saveVerseFromReader(v.text,v.reference);
           res.appendChild(el);
           if(!shown.includes(v.reference))shown.push(v.reference);
@@ -1275,13 +1275,13 @@ async function searchBible(query){
         const actions=document.createElement('div');
         actions.style.cssText='display:flex;gap:8px;margin-top:12px';
         const more=document.createElement('button');
-        more.className='btn';more.style.cssText='flex:1;font-size:12px';
+        more.className='btn';more.style.cssText='flex:1;font-size:var(--t-sm)';
         more.textContent='Show me more';
         more.onclick=()=>searchBible(query);
         actions.appendChild(more);
         const pray=document.createElement('button');
         pray.className='btn';
-        pray.style.cssText='flex:1;font-size:12px;background:var(--go-bg);border-color:var(--go-bd);color:var(--go)';
+        pray.style.cssText='flex:1;font-size:var(--t-sm);background:var(--go-bg);border-color:var(--go-bd);color:var(--go)';
         pray.textContent='Pray with this';
         pray.onclick=()=>generatePrayerFor(query, verses[0]);
         actions.appendChild(pray);
@@ -1292,9 +1292,9 @@ async function searchBible(query){
   }catch(e){console.error('Bible search failed:',e);}
   
   if(!navigator.onLine){
-    res.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:16px">You\'re offline. Scripture search needs a connection.</p>';
+    res.innerHTML='<p style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:16px">You\'re offline. Scripture search needs a connection.</p>';
   } else {
-    res.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:16px">Couldn\'t reach scripture right now. Try again in a moment.</p>';
+    res.innerHTML='<p style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:16px">Couldn\'t reach scripture right now. Try again in a moment.</p>';
   }
 }
 
@@ -1368,11 +1368,11 @@ async function generateIntentionPrayer(pfx){
     if(out && prayer && prayer.trim()){
       window.__lastAIPrayer = prayer.trim();
       out.style.display='block';
-      out.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">A '+_prayerNoun()+' for this</div>'+
-        '<div style="font-family:Cormorant Garamond,serif;font-size:16px;font-style:italic;line-height:1.75;color:var(--tx);margin-bottom:12px">'+prayer.trim().replace(/</g,'&lt;')+'</div>'+
-        '<div style="display:flex;gap:8px"><button class="btn primary" style="flex:1;font-size:12px" onclick="savePrayerToList(window.__lastAIPrayer, &apos;'+(intention.trim().slice(0,30).replace(/'/g,"")).replace(/"/g,'')+'&apos;)">Save to my '+_prayerNoun()+'s</button><button class="btn" style="flex:1;font-size:12px;background:var(--bg3);border:1px solid var(--bd)" onclick="generateIntentionPrayer(\''+pfx+'\')">Write another</button></div>'+aiTag();
-    } else if(out){ out.style.display='block'; out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t write that just now. Try again in a moment.</div>'; }
-  }catch(e){ if(out){ out.style.display='block'; out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t reach the coach right now.</div>'; } }
+      out.innerHTML = '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">A '+_prayerNoun()+' for this</div>'+
+        '<div style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;line-height:1.75;color:var(--tx);margin-bottom:12px">'+prayer.trim().replace(/</g,'&lt;')+'</div>'+
+        '<div style="display:flex;gap:8px"><button class="btn primary" style="flex:1;font-size:var(--t-sm)" onclick="savePrayerToList(window.__lastAIPrayer, &apos;'+(intention.trim().slice(0,30).replace(/'/g,"")).replace(/"/g,'')+'&apos;)">Save to my '+_prayerNoun()+'s</button><button class="btn" style="flex:1;font-size:var(--t-sm);background:var(--bg3)" onclick="generateIntentionPrayer(\''+pfx+'\')">Write another</button></div>'+aiTag();
+    } else if(out){ out.style.display='block'; out.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Couldn\u2019t write that just now. Try again in a moment.</div>'; }
+  }catch(e){ if(out){ out.style.display='block'; out.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Couldn\u2019t reach the coach right now.</div>'; } }
   // THE BUTTON RENAMED ITSELF AFTER ONE USE. The surface builds its label from _prayerNoun() — "Write
   // my reflection" for a secular person, "Write my du'a" for a Muslim — and this finally block put
   // 'Write my prayer' back regardless, on success AND on failure. So the composer was correct until you
@@ -1384,18 +1384,18 @@ async function showSaintPrayer(saint, title){
   const out = document.getElementById('saint-prayer-out');
   if(!out) return;
   out.style.display='block';
-  out.innerHTML='<p class="pulsing" style="font-family:Cormorant Garamond,serif;font-style:italic;color:var(--tx3);text-align:center;padding:8px">Bringing '+saint+'\u2019s words...</p>';
+  out.innerHTML='<p class="pulsing" style="font-family:var(--font-serif);font-style:italic;color:var(--tx3);text-align:center;padding:8px">Bringing '+saint+'\u2019s words...</p>';
   try{
     const sys='You provide the authentic, traditional text of well-known Catholic prayers exactly as commonly prayed. Return only the prayer text, no commentary or title.';
     const prompt='Give the traditional English text of the prayer "'+title+'" attributed to '+saint+'. Just the prayer itself, line breaks preserved.';
     const text=await api(sys,[],prompt,600);
     if(text && text.trim()){
       window.__lastSaintPrayer = text.trim();
-      out.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">'+saint+' \u00b7 '+title+'</div>'+
-        '<div style="font-family:Cormorant Garamond,serif;font-size:16px;font-style:italic;line-height:1.8;color:var(--tx);white-space:pre-wrap;margin-bottom:12px">'+text.trim().replace(/</g,'&lt;')+'</div>'+
-        '<button class="btn" style="background:var(--bg3);border:1px solid var(--bd);font-size:12px" onclick="savePrayerToList(window.__lastSaintPrayer, &apos;'+saint.replace(/'/g,'')+'&apos;)">Save to my '+_prayerNoun()+'s</button>'+aiTag();
-    } else { out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t load that prayer right now.</div>'; }
-  }catch(e){ out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t reach the library right now.</div>'; }
+      out.innerHTML='<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">'+saint+' \u00b7 '+title+'</div>'+
+        '<div style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;line-height:1.8;color:var(--tx);white-space:pre-wrap;margin-bottom:12px">'+text.trim().replace(/</g,'&lt;')+'</div>'+
+        '<button class="btn" style="background:var(--bg3);font-size:var(--t-sm)" onclick="savePrayerToList(window.__lastSaintPrayer, &apos;'+saint.replace(/'/g,'')+'&apos;)">Save to my '+_prayerNoun()+'s</button>'+aiTag();
+    } else { out.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Couldn\u2019t load that prayer right now.</div>'; }
+  }catch(e){ out.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Couldn\u2019t reach the library right now.</div>'; }
 }
 
 async function generatePrayerFor(situation, verse){
@@ -1403,7 +1403,7 @@ async function generatePrayerFor(situation, verse){
   const existing=res.innerHTML;
   const prayerBox=document.createElement('div');
   prayerBox.style.cssText='padding:16px;margin-top:12px;background:var(--bg3);border:1px solid var(--go-bd);border-radius:var(--rm)';
-  prayerBox.innerHTML='<p class="pulsing" style="font-family:\'Cormorant Garamond\',serif;font-style:italic;color:var(--tx3);text-align:center">Writing a prayer...</p>';
+  prayerBox.innerHTML='<p class="pulsing" style="font-family:var(--font-serif);font-style:italic;color:var(--tx3);text-align:center">Writing a prayer...</p>';
   res.appendChild(prayerBox);
   
   const name=ls('totry_name')||'';
@@ -1411,8 +1411,8 @@ async function generatePrayerFor(situation, verse){
   try{
     const prayer=await api((typeof faithVoiceNote==='function'?faithVoiceNote():'')+(typeof sexNote==='function'?sexNote():'')+'You write intimate, honest prayers in THEIR tradition that sound deeply human — never rushed or generic. A real prayer someone can sit with.',[],prompt,900);
     if(prayer&&prayer.trim()){
-      prayerBox.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">A '+_prayerNoun()+' for this moment</div>'+
-        '<div style="font-family:\'Cormorant Garamond\',serif;font-size:16px;font-style:italic;line-height:1.7;color:var(--tx)">'+prayer.trim()+'</div>';
+      prayerBox.innerHTML='<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">A '+_prayerNoun()+' for this moment</div>'+
+        '<div style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;line-height:1.7;color:var(--tx)">'+prayer.trim()+'</div>';
     } else {
       prayerBox.remove();
     }

@@ -44,8 +44,16 @@ class ViewController: CAPBridgeViewController {
     // as "CapacitorStorage.totry_theme". Dark — the default and the value when nothing is set yet —
     // gets light content; the opt-in light theme gets dark content.
     override var preferredStatusBarStyle: UIStatusBarStyle {
+        // "light" and "dark" are explicit choices in Settings. "system" — the default since the
+        // Apple-native redesign, and the value when nothing is stored yet — hands the decision back to
+        // the device, which is exactly what a first-party app does: .default follows the trait
+        // collection, so the clock turns dark on a light phone and light on a dark one.
         let theme = UserDefaults.standard.string(forKey: "CapacitorStorage.totry_theme")
-        return theme == "light" ? .darkContent : .lightContent
+        switch theme {
+        case "light": return .darkContent
+        case "dark":  return .lightContent
+        default:      return .default
+        }
     }
 
     override func viewDidLoad() {

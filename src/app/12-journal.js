@@ -38,17 +38,17 @@ function openQuickJournal(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:80vh"><div class="modal-handle"></div>' +
     '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">' +
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em">Quick journal · Day ' + getDayCount() + '</div>' +
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em">Quick journal · Day ' + getDayCount() + '</div>' +
     '</div>' +
     '<h3 style="margin-bottom:6px">Get it out</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.55">Drop a thought, a feeling, what just happened. Saves straight to your journal.</p>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:12px;line-height:1.55">Drop a thought, a feeling, what just happened. Saves straight to your journal.</p>' +
     
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">How am I right now</div>' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">How am I right now</div>' +
     '<div id="qj-mood-grid" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">' +
-      moods.map((mo, i) => '<button type="button" class="qj-mood-btn' + (i === 1 ? ' on' : '') + '" data-mood="' + mo + '" onclick="setQuickMood(this)" style="font-size:24px;width:44px;height:44px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s">' + mo + '</button>').join('') +
+      moods.map((mo, i) => '<button type="button" class="qj-mood-btn' + (i === 1 ? ' on' : '') + '" data-mood="' + mo + '" onclick="setQuickMood(this)" style="font-size:var(--t-title1);width:44px;height:44px;background:var(--bg3);border-radius:var(--rm);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s">' + mo + '</button>').join('') +
     '</div>' +
     
-    '<textarea id="qj-text" placeholder="What\'s going on..." style="min-height:120px;font-size:16px;line-height:1.6;margin-bottom:14px" autofocus></textarea>' +
+    '<textarea id="qj-text" placeholder="What\'s going on..." style="min-height:120px;font-size:var(--t-base);line-height:1.6;margin-bottom:14px" autofocus></textarea>' +
     '<button class="btn primary" onclick="saveQuickJournal()" style="margin-bottom:8px">Save entry</button>' +
     '<button class="btn" onclick="closeModal(this)">Cancel</button>' +
   '</div>';
@@ -216,7 +216,7 @@ function journalMeetCrisis(kind){
     m.style.alignItems = 'center';
     m.innerHTML = '<div class="modal" style="max-width:92vw"><div class="modal-handle"></div>' +
       '<div id="jgate-crisis-slot"></div>' +
-      '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;margin-top:10px">Close</button></div>';
+      '<button class="btn" onclick="closeModal(this)" style="background:transparent;color:var(--tx3);font-size:var(--t-sm);margin-top:10px;background:var(--fill2)">Close</button></div>';
     document.body.appendChild(m);
     if(typeof showCrisisResponse === 'function') showCrisisResponse('jgate-crisis-slot', kind);
   }catch(_){ }
@@ -260,7 +260,7 @@ function saveEntry(){
       m.style.alignItems = 'center';
       m.innerHTML = '<div class="modal" style="max-width:92vw"><div class="modal-handle"></div>' +
         '<div id="journal-crisis-slot"></div>' +
-        '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;margin-top:10px">Close</button></div>';
+        '<button class="btn" onclick="closeModal(this)" style="background:transparent;color:var(--tx3);font-size:var(--t-sm);margin-top:10px;background:var(--fill2)">Close</button></div>';
       document.body.appendChild(m);
       if(typeof showCrisisResponse === 'function') showCrisisResponse('journal-crisis-slot', _jCrisis);
     }catch(_){ }
@@ -281,7 +281,7 @@ function renderJournal(){
   const mornings=ritualLog('totry_mornings').map(m=>({kind:'morning', ts:m.ts, e:m}));
   const evenings=ritualLog('totry_evenings').map(v=>({kind:'evening', ts:v.ts, e:v}));
   const all=[...journal,...mornings,...evenings].sort((a,b)=>new Date(b.ts||0)-new Date(a.ts||0));
-  if(!all.length){list.innerHTML='<div style="text-align:center;padding:40px 16px"><div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:var(--tx3);margin-bottom:8px">Your journal is empty.</div><div style="font-size:13px;color:var(--tx3);line-height:1.6">Tap + New entry, or complete a morning or evening reflection \u2014 they all gather here.<br>Nobody else reads your journal. It is backed up to your account so a lost phone can\u2019t take it, and the coach sees a short excerpt so it can speak to what you\u2019re actually carrying. Settings \u2192 Your data says exactly what goes where.</div></div>';return;}
+  if(!all.length){list.innerHTML='<div style="text-align:center;padding:40px 16px"><div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx3);margin-bottom:8px">Your journal is empty.</div><div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6">Tap + New entry, or complete a morning or evening reflection \u2014 they all gather here.<br>Nobody else reads your journal. It is backed up to your account so a lost phone can\u2019t take it, and the coach sees a short excerpt so it can speak to what you\u2019re actually carrying. Settings \u2192 Your data says exactly what goes where.</div></div>';return;}
   list.innerHTML='';
   all.forEach(rec=>{
     const e=rec.e;
@@ -291,7 +291,7 @@ function renderJournal(){
       const lTag=e.urges>0?'<span class="je-tag l">'+plural(e.urges,'battle')+'</span>':'';
       const dTag=e.day?'<span class="je-tag">Day '+e.day+'</span>':'';
       item.innerHTML='<div class="je-date">'+_escFew(e.date||'')+'</div><div class="je-mood">'+_escFew(e.mood||'')+'</div><div class="je-prev">'+_escFew(String(e.text||'').slice(0,240))+'</div><div class="je-tags">'+dTag+wTag+lTag+'</div>';
-      item.onclick=()=>{const m=document.createElement('div');m.className='modal-bg open';m.innerHTML='<div class="modal"><div class="modal-handle"></div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);margin-bottom:8px;letter-spacing:0.1em">'+e.date+(e.day?' \u2014 Day '+e.day:'')+'</div><div style="font-size:28px;margin-bottom:12px">'+_escFew(e.mood||'')+'</div><div class="selectable" style="font-size:14px;line-height:1.75;color:var(--tx);white-space:pre-wrap;margin-bottom:16px">'+_escFew(e.text||'')+'</div><button class="btn" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx3);margin-bottom:8px" onclick="this.closest(\'.modal-bg\').remove();deleteJournalEntry(\''+String(e.ts||'').replace(/[\\'"\\\\]/g,'')+'\')">Delete this entry</button><button class="btn" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div>';document.body.appendChild(m);};
+      item.onclick=()=>{const m=document.createElement('div');m.className='modal-bg open';m.innerHTML='<div class="modal"><div class="modal-handle"></div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);margin-bottom:8px;letter-spacing:0.1em">'+e.date+(e.day?' \u2014 Day '+e.day:'')+'</div><div style="font-size:var(--t-2xl);margin-bottom:12px">'+_escFew(e.mood||'')+'</div><div class="selectable" style="font-size:var(--t-base);line-height:1.75;color:var(--tx);white-space:pre-wrap;margin-bottom:16px">'+_escFew(e.text||'')+'</div><button class="btn" style="background:var(--bg3);color:var(--tx3);margin-bottom:8px" onclick="this.closest(\'.modal-bg\').remove();deleteJournalEntry(\''+String(e.ts||'').replace(/[\\'"\\\\]/g,'')+'\')">Delete this entry</button><button class="btn" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div>';document.body.appendChild(m);};
     } else if(rec.kind==='morning'){
       const parts=[]; if(e.gratitude)parts.push('Grateful: '+_escFew(e.gratitude)); if(e.intention)parts.push('Intention: '+_escFew(e.intention));
       const hasContent = e.gratitude || e.intention;
@@ -299,14 +299,14 @@ function renderJournal(){
       item.innerHTML='<div class="je-date">'+(e.date||'')+'</div><div class="je-mood">'+svgIcon("sunrise")+'</div><div class="je-prev">'+preview+'</div><div class="je-tags"><span class="je-tag">Morning'+(e.day?' \u2014 Day '+e.day:'')+'</span></div>';
       item.onclick=()=>{const m=document.createElement('div');m.className='modal-bg open';
         const bodyHtml = hasContent
-          ? ((e.gratitude?'<div style="font-size:13px;color:var(--tx3);margin-bottom:4px">One thing I was grateful for</div><div style="font-size:14px;line-height:1.7;color:var(--tx);margin-bottom:12px;white-space:pre-wrap">'+e.gratitude.replace(/</g,"&lt;")+'</div>':'')+(e.intention?'<div style="font-size:13px;color:var(--tx3);margin-bottom:4px">My intention</div><div style="font-size:14px;line-height:1.7;color:var(--tx);margin-bottom:16px;white-space:pre-wrap">'+e.intention.replace(/</g,"&lt;")+'</div>':''))
-          : '<div style="font-size:14px;line-height:1.7;color:var(--tx3);font-style:italic;margin-bottom:16px">You completed your morning ritual this day, but didn\u2019t write a gratitude or intention. That\u2019s okay \u2014 showing up is what counts.</div>';
-        m.innerHTML='<div class="modal"><div class="modal-handle"></div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);margin-bottom:8px;letter-spacing:0.1em">'+(e.date||'')+' \u2014 Morning'+(e.day?', Day '+e.day:'')+'</div><div style="font-size:28px;margin-bottom:12px">'+svgIcon("sunrise",26)+'</div>'+bodyHtml+'<button class="btn" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div>';document.body.appendChild(m);};
+          ? ((e.gratitude?'<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:4px">One thing I was grateful for</div><div style="font-size:var(--t-base);line-height:1.7;color:var(--tx);margin-bottom:12px;white-space:pre-wrap">'+e.gratitude.replace(/</g,"&lt;")+'</div>':'')+(e.intention?'<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:4px">My intention</div><div style="font-size:var(--t-base);line-height:1.7;color:var(--tx);margin-bottom:16px;white-space:pre-wrap">'+e.intention.replace(/</g,"&lt;")+'</div>':''))
+          : '<div style="font-size:var(--t-sm);line-height:1.7;color:var(--tx3);font-style:italic;margin-bottom:16px">You completed your morning ritual this day, but didn\u2019t write a gratitude or intention. That\u2019s okay \u2014 showing up is what counts.</div>';
+        m.innerHTML='<div class="modal"><div class="modal-handle"></div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);margin-bottom:8px;letter-spacing:0.1em">'+(e.date||'')+' \u2014 Morning'+(e.day?', Day '+e.day:'')+'</div><div style="font-size:var(--t-2xl);margin-bottom:12px">'+svgIcon("sunrise",26)+'</div>'+bodyHtml+'<button class="btn" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div>';document.body.appendChild(m);};
     } else {
       const RAT=['','Rough','Hard','Okay','Good','Strong'];
       const parts=[]; if(e.win)parts.push('Win: '+_escFew(e.win)); if(e.release)parts.push('Released: '+_escFew(e.release)); if(e.see)parts.push('Honest: '+_escFew(e.see));
       item.innerHTML='<div class="je-date">'+(e.date||'')+'</div><div class="je-mood">'+svgIcon("moon")+'</div><div class="je-prev">'+(parts.join(' \u00b7 ')||'Evening reflection')+'</div><div class="je-tags"><span class="je-tag">Evening'+(e.rating?' \u2014 '+RAT[e.rating]:'')+'</span>'+(e.steps?'<span class="je-tag">'+e.steps+' steps</span>':'')+'</div>';
-      item.onclick=()=>{const m=document.createElement('div');m.className='modal-bg open';m.innerHTML='<div class="modal"><div class="modal-handle"></div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);margin-bottom:8px;letter-spacing:0.1em">'+(e.date||'')+' \u2014 Evening'+(e.rating?', '+RAT[e.rating]:'')+'</div><div style="font-size:28px;margin-bottom:12px">'+svgIcon("moon",26)+'</div>'+(e.win?'<div style="font-size:13px;color:var(--tx3);margin-bottom:4px">One win</div><div style="font-size:14px;line-height:1.7;color:var(--tx);margin-bottom:12px;white-space:pre-wrap">'+e.win.replace(/</g,"&lt;")+'</div>':'')+(e.release?'<div style="font-size:13px;color:var(--tx3);margin-bottom:4px">Released</div><div style="font-size:14px;line-height:1.7;color:var(--tx);margin-bottom:12px;white-space:pre-wrap">'+e.release.replace(/</g,"&lt;")+'</div>':'')+(e.see?'<div style="font-size:13px;color:var(--tx3);margin-bottom:4px">If the people they love had watched today</div><div style="font-size:14px;line-height:1.7;color:var(--tx);margin-bottom:12px;white-space:pre-wrap;font-style:italic">'+e.see.replace(/</g,"&lt;")+'</div>':'')+(e.goalsHit?'<div style="font-size:13px;color:var(--tx3)">Goals hit: '+e.goalsHit+'</div>':'')+'<button class="btn" style="margin-top:12px" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div>';document.body.appendChild(m);};
+      item.onclick=()=>{const m=document.createElement('div');m.className='modal-bg open';m.innerHTML='<div class="modal"><div class="modal-handle"></div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);margin-bottom:8px;letter-spacing:0.1em">'+(e.date||'')+' \u2014 Evening'+(e.rating?', '+RAT[e.rating]:'')+'</div><div style="font-size:var(--t-2xl);margin-bottom:12px">'+svgIcon("moon",26)+'</div>'+(e.win?'<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:4px">One win</div><div style="font-size:var(--t-base);line-height:1.7;color:var(--tx);margin-bottom:12px;white-space:pre-wrap">'+e.win.replace(/</g,"&lt;")+'</div>':'')+(e.release?'<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:4px">Released</div><div style="font-size:var(--t-base);line-height:1.7;color:var(--tx);margin-bottom:12px;white-space:pre-wrap">'+e.release.replace(/</g,"&lt;")+'</div>':'')+(e.see?'<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:4px">If the people they love had watched today</div><div style="font-size:var(--t-base);line-height:1.7;color:var(--tx);margin-bottom:12px;white-space:pre-wrap;font-style:italic">'+e.see.replace(/</g,"&lt;")+'</div>':'')+(e.goalsHit?'<div style="font-size:var(--t-sm);color:var(--tx3)">Goals hit: '+e.goalsHit+'</div>':'')+'<button class="btn" style="margin-top:12px" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div>';document.body.appendChild(m);};
     }
     list.appendChild(item);
   });

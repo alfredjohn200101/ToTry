@@ -61,20 +61,20 @@ function renderFinanceGoals(){
     card.style.cssText='margin-bottom:8px;padding:12px 14px;background:var(--bg3);cursor:pointer';
     card.innerHTML=
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
-        '<div style="font-size:13px;font-weight:500;color:var(--tx)">'+(idx===0?'<span style="color:var(--go);font-family:DM Mono,monospace;font-size:9px;margin-right:6px">PRIORITY</span>':'')+g.name+'</div>'+
-        '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+pct.toFixed(0)+'%</div>'+
+        '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">'+(idx===0?'<span style="color:var(--go);font-family:var(--font-text);font-size:var(--t-micro);margin-right:6px">PRIORITY</span>':'')+g.name+'</div>'+
+        '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">'+pct.toFixed(0)+'%</div>'+
       '</div>'+
       '<div style="background:var(--bg4);height:5px;border-radius:3px;overflow:hidden;margin-bottom:6px">'+
         '<div style="background:var(--gr);height:100%;width:'+pct+'%;transition:width 0.3s"></div>'+
       '</div>'+
-      '<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--tx2)">'+
+      '<div style="display:flex;justify-content:space-between;font-size:var(--t-cap);color:var(--tx2)">'+
         '<span>'+curSym()+Math.round(g.current).toLocaleString()+' / '+curSym()+Math.round(g.target).toLocaleString()+'</span>'+
         '<span>'+curSym()+Math.round(g.target-g.current).toLocaleString()+' to go</span>'+
       '</div>'+
       '<div style="display:flex;gap:6px;margin-top:8px">'+
-        '<input type="number" placeholder="Add '+curSym()+'" id="goal-add-'+g.id+'" style="flex:1;padding:6px;font-size:16px">'+
-        '<button class="btn" style="width:auto;padding:6px 10px;font-size:11px" onclick="addToGoal('+g.id+')">+ Add</button>'+
-        '<button class="btn" style="width:auto;padding:6px 10px;font-size:11px;background:var(--re-bg);border-color:var(--re-bd);color:var(--re)" onclick="deleteFinanceGoal('+g.id+')" aria-label="Delete this savings goal">&#215;</button>'+
+        '<input type="number" placeholder="Add '+curSym()+'" id="goal-add-'+g.id+'" style="flex:1;padding:6px;font-size:var(--t-base)">'+
+        '<button class="btn" style="width:auto;padding:6px 10px;font-size:var(--t-cap)" onclick="addToGoal('+g.id+')">+ Add</button>'+
+        '<button class="btn" style="width:auto;padding:6px 10px;font-size:var(--t-cap);background:var(--re-bg);border-color:var(--re-bd);color:var(--re)" onclick="deleteFinanceGoal('+g.id+')" aria-label="Delete this savings goal">&#215;</button>'+
       '</div>';
     container.appendChild(card);
   });
@@ -138,15 +138,15 @@ function renderSplitOverview(){
     // safe and true.
     const d0 = day || {};
     const focusText=d0.focus||(d0.routine?d0.routine:'Rest day');
-    row.innerHTML='<div style="font-family:DM Mono,monospace;font-size:11px;color:'+(isToday?'var(--go)':'var(--tx3)')+';width:40px;text-transform:uppercase;letter-spacing:0.1em">'+DAYS[i]+'</div>'+
+    row.innerHTML='<div style="font-family:var(--font-text);font-size:var(--t-cap);color:'+(isToday?'var(--go)':'var(--tx3)')+';width:40px;text-transform:uppercase;letter-spacing:0.01em">'+DAYS[i]+'</div>'+
       // Escaped here too. Line 146 of this same concatenation already escapes the identical value for
       // the aria-label — one element, one string, one value, escaped for the screen reader and raw
       // for the eye.
-      '<div style="flex:1;font-size:13px;color:var(--tx)">'+_escFew(focusText)+'</div>'+
+      '<div style="flex:1;font-size:var(--t-base);color:var(--tx)">'+_escFew(focusText)+'</div>'+
       // Seven buttons on this screen all read just "Edit", so a screen reader announced "Edit, Edit,
       // Edit..." seven times with nothing to tell them apart. The visible label stays short (the day is
       // right there in the row); the accessible name says which day and what is on it.
-      '<button class="btn" style="width:auto;padding:5px 10px;font-size:11px" aria-label="Edit '+_escFew(DAYS_FULL[i]||DAYS[i])+' \u2014 currently '+_escFew(focusText)+'" onclick="editSplitDay('+i+')">Edit</button>';
+      '<button class="btn" style="width:auto;padding:5px 10px;font-size:var(--t-cap)" aria-label="Edit '+_escFew(DAYS_FULL[i]||DAYS[i])+' \u2014 currently '+_escFew(focusText)+'" onclick="editSplitDay('+i+')">Edit</button>';
     overview.appendChild(row);
   });
 }
@@ -162,10 +162,10 @@ function editSplitDay(dayIdx){
   const m=document.createElement('div');
   m.className='modal-bg open';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:10px">'+DAYS[dayIdx]+'</div>'+
-    '<div style="font-size:12px;color:var(--tx3);margin-bottom:6px">Focus (or leave blank for rest day)</div>'+
+    '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:10px">'+DAYS[dayIdx]+'</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:6px">Focus (or leave blank for rest day)</div>'+
     '<input type="text" id="split-edit-focus" value="'+(day.focus||'')+'" placeholder="e.g. Push, Pull, Legs, Rest..." style="margin-bottom:10px">'+
-    '<div style="font-size:12px;color:var(--tx3);margin-bottom:6px">Assign a saved routine (optional)</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:6px">Assign a saved routine (optional)</div>'+
     '<select id="split-edit-routine" style="margin-bottom:12px">'+
       '<option value="">— No routine —</option>'+
       // A routine name is whatever the person typed when they built it (22-train-deep.js:1678 pushes
@@ -205,16 +205,16 @@ async function showRoutineRecommender(){
   const m=document.createElement('div');
   m.className='modal-bg open';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:14px">Recommend a split for me</div>'+
-    '<div style="font-size:12px;color:var(--tx3);margin-bottom:6px">Days per week you can train</div>'+
+    '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:14px">Recommend a split for me</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:6px">Days per week you can train</div>'+
     '<select id="rec-days" style="margin-bottom:12px">'+
       '<option value="3">3 days</option><option value="4">4 days</option><option value="5" selected>5 days</option><option value="6">6 days</option>'+
     '</select>'+
-    '<div style="font-size:12px;color:var(--tx3);margin-bottom:6px">Main goal</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:6px">Main goal</div>'+
     '<select id="rec-goal" style="margin-bottom:12px">'+
       '<option value="muscle">Build muscle</option><option value="strength">Get stronger</option><option value="lose">Fat loss</option><option value="athletic">Athletic / general fitness</option>'+
     '</select>'+
-    '<div style="font-size:12px;color:var(--tx3);margin-bottom:6px">Experience</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:6px">Experience</div>'+
     '<select id="rec-exp" style="margin-bottom:14px">'+
       '<option value="beginner">Beginner (under 1 year)</option><option value="intermediate" selected>Intermediate (1-3 years)</option><option value="advanced">Advanced (3+ years)</option>'+
     '</select>'+
@@ -230,7 +230,7 @@ async function generateRecommendation(){
   if(!days||!goal||!exp)return;
   
   const m=document.querySelector('.modal-bg.open .modal');
-  if(m)m.innerHTML='<div class="modal-handle"></div><div style="text-align:center;padding:30px"><div class="pulsing" style="font-family:Cormorant Garamond,serif;font-size:18px;font-style:italic;color:var(--go)">Designing your split...</div></div>';
+  if(m)m.innerHTML='<div class="modal-handle"></div><div style="text-align:center;padding:30px"><div class="pulsing" style="font-family:var(--font-serif);font-size:var(--t-hd);font-style:italic;color:var(--go)">Designing your split...</div></div>';
   
   try{
     const prompt='Design a '+days+'-day training split for '+exp+' lifter whose main goal is '+goal+'. Return ONLY a JSON array of 7 objects (Mon-Sun). Each: {"day":"Mon","focus":"e.g. Push, Pull, Legs, Upper, Lower, Rest","exercises":["exercise 1","exercise 2","exercise 3","exercise 4","exercise 5"]}. Rest days have focus:"Rest" and exercises:[]. Be specific with exercise names. ONLY the JSON array, no markdown.';
@@ -244,12 +244,12 @@ async function generateRecommendation(){
     // Display the recommendation with "Apply" button
     const modal=document.querySelector('.modal-bg.open .modal');
     let html='<div class="modal-handle"></div>'+
-      '<div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:14px">Your recommended split</div>';
+      '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:14px">Your recommended split</div>';
     recSplit.forEach(d=>{
-      html+='<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 12px;margin-bottom:6px">'+
-        '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><div style="font-family:DM Mono,monospace;font-size:11px;color:var(--go);text-transform:uppercase">'+d.day+'</div><div style="font-size:13px;font-weight:500;color:var(--tx)">'+d.focus+'</div></div>';
+      html+='<div style="background:var(--bg3);border-radius:var(--rs);padding:10px 12px;margin-bottom:6px">'+
+        '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);text-transform:uppercase">'+d.day+'</div><div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">'+d.focus+'</div></div>';
       if(d.exercises&&d.exercises.length){
-        html+='<div style="font-size:11px;color:var(--tx3);line-height:1.6">'+d.exercises.join(', ')+'</div>';
+        html+='<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.6">'+d.exercises.join(', ')+'</div>';
       }
       html+='</div>';
     });
@@ -262,7 +262,7 @@ async function generateRecommendation(){
   }catch(e){
     console.error('Recommendation failed:',e);
     const modal=document.querySelector('.modal-bg.open .modal');
-    if(modal)modal.innerHTML='<div class="modal-handle"></div><p style="font-size:13px;color:var(--re);text-align:center;padding:14px">Could not generate recommendation. Check your connection.</p><button class="btn" onclick="closeModal(this)">Close</button>';
+    if(modal)modal.innerHTML='<div class="modal-handle"></div><p style="font-size:var(--t-base);color:var(--re);text-align:center;padding:14px">Could not generate recommendation. Check your connection.</p><button class="btn" onclick="closeModal(this)">Close</button>';
   }
 }
 
@@ -314,7 +314,7 @@ function renderBodyCollage(){
     div.style.cssText = 'position:relative;border-radius:var(--rs);overflow:hidden;border:1px solid var(--bd);cursor:pointer';
     // A stored/restored photo string lands inside a quoted src= attribute; escape so it cannot close it.
     div.innerHTML = '<img loading="lazy" decoding="async" src="'+_escFew(e.photo)+'" style="width:100%;height:120px;object-fit:cover;display:block">'+
-      '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.85),transparent);padding:4px 6px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-align:center">'+e.date+'</div><div style="font-size:11px;color:var(--tx);text-align:center;font-weight:500">'+(e.weight!=null&&e.weight!==''?((typeof wFmt==='function')?wFmt(e.weight):(e.weight+'kg')):'')+'</div></div>';
+      '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.85),transparent);padding:4px 6px"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-align:center">'+e.date+'</div><div style="font-size:var(--t-cap);color:var(--tx);text-align:center;font-weight:500">'+(e.weight!=null&&e.weight!==''?((typeof wFmt==='function')?wFmt(e.weight):(e.weight+'kg')):'')+'</div></div>';
     div.onclick = () => viewBodyPhoto(i);
     container.appendChild(div);
   });
@@ -330,9 +330,9 @@ function viewBodyPhoto(idx){
   m.style.alignItems = 'center';
   m.innerHTML = '<div class="modal" style="max-width:90vw;padding:20px">'+
     '<div style="text-align:center"><img loading="lazy" decoding="async" src="'+_escFew(entry.photo)+'" style="max-width:100%;max-height:60vh;border-radius:var(--rs);margin-bottom:14px"></div>'+
-    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-align:center;margin-bottom:4px">'+entry.date+'</div>'+
-    '<div style="font-size:14px;font-weight:500;color:var(--tx);text-align:center;margin-bottom:8px">'+(entry.weight!=null&&entry.weight!==''?((typeof wFmt==='function')?wFmt(entry.weight):(entry.weight+'kg')):'')+'</div>'+
-    (entry.note?'<div style="font-size:12px;color:var(--tx2);text-align:center;font-style:italic;margin-bottom:10px">'+_escFew(entry.note)+'</div>':'')+
+    '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);text-align:center;margin-bottom:4px">'+entry.date+'</div>'+
+    '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx);text-align:center;margin-bottom:8px">'+(entry.weight!=null&&entry.weight!==''?((typeof wFmt==='function')?wFmt(entry.weight):(entry.weight+'kg')):'')+'</div>'+
+    (entry.note?'<div style="font-size:var(--t-sm);color:var(--tx2);text-align:center;font-style:italic;margin-bottom:10px">'+_escFew(entry.note)+'</div>':'')+
     '<button class="btn" onclick="closeModal(this)" style="margin-top:8px">Close</button></div>';
   document.body.appendChild(m);
 }
@@ -355,11 +355,11 @@ function exportBodyCollage(){
   const ctx = canvas.getContext('2d');
   
   // Background
-  ctx.fillStyle = '#0C0C0E';
+  ctx.fillStyle = 'var(--bg)';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
   
   // Title
-  ctx.fillStyle = '#C8A96E';
+  ctx.fillStyle = 'var(--go)';
   ctx.font = 'italic 28px Georgia';
   ctx.textAlign = 'center';
   ctx.fillText('My Progress', canvas.width/2, 40);
@@ -387,7 +387,7 @@ function exportBodyCollage(){
       // Label
       ctx.fillStyle = 'rgba(0,0,0,0.7)';
       ctx.fillRect(x, y + PHOTO_SIZE - 28, PHOTO_SIZE, 28);
-      ctx.fillStyle = '#C8A96E';
+      ctx.fillStyle = 'var(--go)';
       ctx.font = '10px monospace';
       ctx.textAlign = 'center';
       ctx.fillText(e.date, x + PHOTO_SIZE/2, y + PHOTO_SIZE - 16);
@@ -455,8 +455,8 @@ function renderAffirmList(){
   affirms.forEach((a,i)=>{
     const row=document.createElement('div');
     row.style.cssText='display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bd)';
-    row.innerHTML='<div style="flex:1;font-size:13px;color:var(--tx2);line-height:1.4;font-style:italic">'+a+'</div>'+
-      '<button style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:16px;padding:0 4px" onclick="deleteAffirm('+i+')" aria-label="Delete this affirmation">&#215;</button>';
+    row.innerHTML='<div style="flex:1;font-size:var(--t-sm);color:var(--tx2);line-height:1.4;font-style:italic">'+a+'</div>'+
+      '<button style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:var(--t-base);padding:0 4px" onclick="deleteAffirm('+i+')" aria-label="Delete this affirmation">&#215;</button>';
     list.appendChild(row);
   });
 }
@@ -581,13 +581,13 @@ function _pledgeSaid(v, from){
   const n=v.pledgeDays||1;
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
-    '<div style="font-size:26px;margin-bottom:8px">'+svgIcon("users",24)+'</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.25;margin-bottom:10px">'+
+    '<div style="font-size:var(--t-title1);margin-bottom:8px">'+svgIcon("users",24)+'</div>'+
+    '<div style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);line-height:1.25;margin-bottom:10px">'+
       (viceMode(v)==='moderate'?'Today, I hold my line.':viceMode(v)==='watch'?'Today, I just look at it honestly.':'Today, not this.')+'</div>'+
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">'+word+'</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:14px">'+word+'</div>'+
     (n>1
-      ? '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.08em;margin-bottom:16px">'+plural(n,'day')+' now, you\u2019ve chosen this on purpose</div>'
-      : '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Just today. Tomorrow gets its own.</div>')+
+      ? '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);letter-spacing:0.01em;margin-bottom:16px">'+plural(n,'day')+' now, you\u2019ve chosen this on purpose</div>'
+      : '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:16px">Just today. Tomorrow gets its own.</div>')+
     (from==='morning'
       ? '<button class="btn primary" onclick="closeModal(this)">Back to my morning</button>'
       : '<button class="btn primary" onclick="closeModal(this);theRelease({did:\'You made your pledge for today \u2014 out loud, on purpose.\'})">Now go live it</button>')+
@@ -599,11 +599,11 @@ function _pledgeRowHTML(i){
   const n=v.pledgeDays||0;
   const line=(viceMode(v)==='moderate')?'Today, I hold my line':viceMode(v)==='watch'?'Today, I just look at it honestly':'Today, not this';
   if(vicePledgedToday(v)){
-    return '<div style="display:flex;align-items:center;gap:9px;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rm);padding:9px 11px;margin-bottom:10px">'+
-      '<span style="font-size:14px;flex:none">'+svgIcon("users")+'</span>'+
+    return '<div style="display:flex;align-items:center;gap:9px;background:var(--go-bg);border-radius:var(--rm);padding:9px 11px;margin-bottom:10px">'+
+      '<span style="font-size:var(--t-base);flex:none">'+svgIcon("users")+'</span>'+
       '<div style="flex:1;text-align:left">'+
-        '<div style="font-size:13px;color:var(--tx2);line-height:1.45">Pledged today. '+line+'.</div>'+
-        (n>1?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.08em;margin-top:2px">'+n+' days you\u2019ve chosen this</div>':'')+
+        '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.45">Pledged today. '+line+'.</div>'+
+        (n>1?'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em;margin-top:2px">'+n+' days you\u2019ve chosen this</div>':'')+
       '</div></div>';
   }
   // NO PLEDGE CTA ON THE CARD. The pledge is a morning act — you make it while you are clear,
@@ -652,8 +652,8 @@ function _stageStripHTML(i){
   // that. Once it IS set it earns its line, because then it changes what the card offers.
   if(!set) return '';
   return '<button onclick="openViceStage('+i+')" style="width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--bd);padding:0 0 9px;margin-bottom:10px;cursor:pointer">'+
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:3px">Where you are with this \u00b7 tap to change</div>'+
-    '<div style="font-size:12px;line-height:1.45;color:'+(set?'var(--go)':'var(--tx3)')+'">'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:3px">Where you are with this \u00b7 tap to change</div>'+
+    '<div style="font-size:var(--t-sm);line-height:1.45;color:'+(set?'var(--go)':'var(--tx3)')+'">'+
       (set ? s.label+' <span style="color:var(--tx3)">\u2014 '+s.blurb+'</span>'
            : 'Not set \u2014 tell me, and I\u2019ll change what I offer you')+'</div>'+
   '</button>';
@@ -662,7 +662,7 @@ function _stageCtaHTML(i){
   const v=vices[i]; if(!v) return '';
   const s=VICE_STAGES[viceStage(v)];
   if(!s.cta || !s.act) return '';
-  return '<button class="vice-btn" onclick="'+s.act.replace('IDX', i)+'" style="width:100%;background:var(--go);color:#1a1505;border:none;border-radius:var(--rm);padding:11px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:8px">'+s.cta+'</button>';
+  return '<button class="vice-btn" onclick="'+s.act.replace('IDX', i)+'" style="width:100%;background:var(--go);color:var(--on-tint);border:none;border-radius:var(--rm);padding:11px;font-size:var(--t-base);font-weight:600;cursor:pointer;margin-bottom:8px">'+s.cta+'</button>';
 }
 // The quit card's whole primary block. At 'ready' it is EXACTLY the button that was there before.
 // At every other stage the stage-matched move leads and the urge door stays, one tap away.
@@ -672,9 +672,9 @@ function _stageCtaHTML(i){
 function _urgeDoorOnlyHTML(i){
   const v = (typeof vices !== 'undefined' && vices) ? vices[i] : null; if(!v) return '';
   return '<button class="vice-btn" onclick="openMomentStakes(' + i + ')" ' +
-    'style="width:100%;margin-top:10px;background:none;border:1px solid var(--re-bd);color:var(--re);' +
-    'border-radius:var(--rm);padding:11px;font-size:13px;font-weight:500;cursor:pointer;display:flex;' +
-    'align-items:center;justify-content:center;gap:8px">' +
+    'style="width:100%;margin-top:10px;background:none;color:var(--re);' +
+    'border-radius:var(--rm);padding:11px;font-size:var(--t-base);font-weight:500;cursor:pointer;display:flex;' +
+    'align-items:center;justify-content:center;gap:8px;background:var(--fill2)">' +
     '<svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" ' +
       'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/>' +
       '<path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/></svg>' +
@@ -683,12 +683,12 @@ function _urgeDoorOnlyHTML(i){
 
 function _stagePrimaryHTML(i){
   const v=vices[i]; if(!v) return '';
-  const RED='<button class="vice-btn" onclick="openMomentStakes('+i+')" style="width:100%;background:var(--re);color:#fff;border:none;border-radius:var(--rm);padding:11px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">'+
+  const RED='<button class="vice-btn" onclick="openMomentStakes('+i+')" style="width:100%;background:var(--re);color:#fff;border:none;border-radius:var(--rm);padding:11px;font-size:var(--t-base);font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">'+
     '<svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'+
     'I\u2019m feeling it \u2014 come here first</button>';
   if(viceStage(v)==='ready') return RED;
   return _stageCtaHTML(i)+
-    '<button onclick="openMomentStakes('+i+')" style="width:100%;background:none;border:1px solid var(--re-bd);color:var(--re);border-radius:var(--rm);padding:9px;font-size:12px;cursor:pointer">\u26A0 I\u2019m feeling it right now</button>';
+    '<button onclick="openMomentStakes('+i+')" style="width:100%;background:none;color:var(--re);border-radius:var(--rm);padding:9px;font-size:var(--t-sm);cursor:pointer;background:var(--fill2)">\u26A0 I\u2019m feeling it right now</button>';
 }
 
 // B4 — the chooser
@@ -698,13 +698,13 @@ function openViceStage(i){
   const rows=Object.keys(VICE_STAGES).map(function(k){
     const s=VICE_STAGES[k]; const on=cur===k;
     return '<button onclick="setViceStage('+i+',\''+k+'\')" style="width:100%;text-align:left;padding:12px 13px;background:'+(on?'var(--go-bg)':'var(--bg3)')+';border:1px solid '+(on?'var(--go-bd)':'var(--bd)')+';border-radius:var(--rm);margin-bottom:8px;cursor:pointer">'+
-      '<div style="font-size:14px;color:var(--tx)">'+s.label+'</div>'+
-      '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">'+s.blurb+'</div></button>';
+      '<div style="font-size:var(--t-base);color:var(--tx)">'+s.label+'</div>'+
+      '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-top:2px">'+s.blurb+'</div></button>';
   }).join('');
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.25;margin-bottom:6px">Where are you with '+_escFew(v.n)+' right now?</div>'+
-    '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Honestly \u2014 not where you think you should be. Handing quit-tactics to someone who\u2019s still deciding just makes them dig in. I\u2019d rather offer you the right thing. Change it any day; going backwards is part of it.</div>'+
+    '<div style="text-align:center;font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);line-height:1.25;margin-bottom:6px">Where are you with '+_escFew(v.n)+' right now?</div>'+
+    '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:16px">Honestly \u2014 not where you think you should be. Handing quit-tactics to someone who\u2019s still deciding just makes them dig in. I\u2019d rather offer you the right thing. Change it any day; going backwards is part of it.</div>'+
     rows+
     '<button class="btn quiet" onclick="closeModal(this)" style="margin-top:2px">Not now</button>'+
   '</div>';
@@ -730,22 +730,22 @@ function renderMorningPledge(){
                   .filter(function(x){ return x.v && x.v.n && x.v.kind!=='letgo'; });
   if(!live.length){ if(card) card.style.display='none'; body.innerHTML=''; return; }
   if(card) card.style.display='';
-  body.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Today\u2019s pledge</div>'+
+  body.innerHTML='<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Today\u2019s pledge</div>'+
     live.map(function(x){
       const v=x.v, n=v.pledgeDays||0;
       const line=(viceMode(v)==='moderate')?'today, I hold my line':viceMode(v)==='watch'?'today, I just look at it honestly':'today, not this';
       if(vicePledgedToday(v)){
         return '<div style="display:flex;align-items:center;gap:9px;padding:8px 0;border-top:1px solid var(--bd)">'+
-          '<span style="flex:none;font-size:14px">'+svgIcon("users")+'</span>'+
-          '<div style="flex:1;text-align:left"><div style="font-size:13px;color:var(--tx2)">'+_escFew(v.n)+' \u2014 pledged.</div>'+
-          (n>1?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">'+n+' days you\u2019ve chosen this</div>':'')+
+          '<span style="flex:none;font-size:var(--t-base)">'+svgIcon("users")+'</span>'+
+          '<div style="flex:1;text-align:left"><div style="font-size:var(--t-sm);color:var(--tx2)">'+_escFew(v.n)+' \u2014 pledged.</div>'+
+          (n>1?'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px">'+n+' days you\u2019ve chosen this</div>':'')+
           '</div></div>';
       }
       return '<button onclick="makePledge('+x.i+',\'morning\')" style="width:100%;display:flex;align-items:center;gap:9px;text-align:left;padding:9px 0;border:none;border-top:1px solid var(--bd);background:none;cursor:pointer">'+
         '<span style="flex:none;width:18px;height:18px;border-radius:5px;border:1.5px dashed var(--go)"></span>'+
-        '<span style="flex:1;font-size:13px;color:var(--tx)">'+_escFew(v.n)+' \u2014 <span style="color:var(--go)">'+line+'</span></span></button>';
+        '<span style="flex:1;font-size:var(--t-base);color:var(--tx)">'+_escFew(v.n)+' \u2014 <span style="color:var(--go)">'+line+'</span></span></button>';
     }).join('')+
-    '<div style="font-size:10px;color:var(--tx3);line-height:1.5;margin-top:8px">One day only. If it breaks, nothing here punishes you \u2014 you just make it again tomorrow.</div>';
+    '<div style="font-size:var(--t-mini);color:var(--tx3);line-height:1.5;margin-top:8px">One day only. If it breaks, nothing here punishes you \u2014 you just make it again tomorrow.</div>';
 }
 
 // THE SOBRIETY CLOCK IS GONE, and it was not merely dead — it was dead and RUNNING.
@@ -1037,15 +1037,15 @@ function fightVice(i){
   m.style.alignItems='center';
   m.innerHTML='<div class="modal">'+
     '<div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:6px">'+_escFew(v.n)+'</div>'+
-    '<div style="text-align:center;font-size:12px;color:var(--tx3);margin-bottom:18px">What\'s happening?</div>'+
-    '<button class="btn primary stack" style="margin-bottom:8px;padding:14px;font-size:14px;text-align:left;line-height:1.4" onclick="startLiveIntervention('+i+')">'+
+    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;margin-bottom:6px">'+_escFew(v.n)+'</div>'+
+    '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx3);margin-bottom:18px">What\'s happening?</div>'+
+    '<button class="btn primary stack" style="margin-bottom:8px;padding:14px;font-size:var(--t-base);text-align:left;line-height:1.4" onclick="startLiveIntervention('+i+')">'+
       '<div style="font-weight:600">'+svgIcon("shield")+' Fighting right now</div>'+
-      '<div style="font-size:11px;opacity:0.85;font-weight:400;margin-top:3px">Open the live SOS &mdash; breathing, scripture, win/loss</div>'+
+      '<div style="font-size:var(--t-cap);opacity:0.85;font-weight:400;margin-top:3px">Open the live SOS &mdash; breathing, scripture, win/loss</div>'+
     '</button>'+
-    '<button class="btn stack" style="margin-bottom:8px;padding:14px;font-size:14px;text-align:left;line-height:1.4" onclick="startQuickLog('+i+')">'+
+    '<button class="btn stack" style="margin-bottom:8px;padding:14px;font-size:var(--t-base);text-align:left;line-height:1.4" onclick="startQuickLog('+i+')">'+
       '<div style="font-weight:600">'+svgIcon("edit")+' Log a past fight</div>'+
-      '<div style="font-size:11px;color:var(--tx3);font-weight:400;margin-top:3px">Quick log a battle from earlier &mdash; win or loss</div>'+
+      '<div style="font-size:var(--t-cap);color:var(--tx3);font-weight:400;margin-top:3px">Quick log a battle from earlier &mdash; win or loss</div>'+
     '</button>'+
     '<button class="btn quiet" onclick="closeModal(this)">Cancel</button>'+
   '</div>';
@@ -1081,10 +1081,10 @@ function startLiveIntervention(i){
   if(reminderEl){
     let html='';
     if(cleanDays>0){
-      html+='<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px">You are '+cleanDays+' day'+(cleanDays===1?'':'s')+' in</div>';
+      html+='<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">You are '+cleanDays+' day'+(cleanDays===1?'':'s')+' in</div>';
     }
     if(why){
-      html+='<div style="font-size:14px;color:var(--tx);font-style:italic;font-family:Cormorant Garamond,serif;line-height:1.5">Remember why: "'+_escFew(why)+'"</div>';
+      html+='<div style="font-size:var(--t-base);color:var(--tx);font-style:italic;font-family:var(--font-serif);line-height:1.5">Remember why: "'+_escFew(why)+'"</div>';
     }
     reminderEl.innerHTML=html;
     reminderEl.style.display=html?'block':'none';
@@ -1103,22 +1103,22 @@ function startQuickLog(i){
   m.style.alignItems='center';
   m.innerHTML='<div class="modal">'+
     '<div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:14px">'+_escFew(v.n)+'</div>'+
+    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;margin-bottom:14px">'+_escFew(v.n)+'</div>'+
     
-    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Did you win or lose?</div>'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Did you win or lose?</div>'+
     '<div style="display:flex;gap:8px;margin-bottom:14px">'+
       '<button class="btn" id="ql-win-btn" style="flex:1;padding:12px;border:2px solid var(--bd)" onclick="setQLOutcome(true)">I beat it</button>'+
       '<button class="btn" id="ql-loss-btn" style="flex:1;padding:12px;border:2px solid var(--bd)" onclick="setQLOutcome(false)">I gave in</button>'+
     '</div>'+
     
-    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Intensity (1-10)</div>'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Intensity (1-10)</div>'+
     '<input type="range" id="ql-intensity" min="1" max="10" value="5" style="width:100%;margin-bottom:12px">'+
     
-    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">What triggered it? (optional)</div>'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">What triggered it? (optional)</div>'+
     '<input type="text" id="ql-trigger" placeholder="stress, boredom, certain person..." style="margin-bottom:12px">'+
     
-    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Anything you want to remember? (optional)</div>'+
-    '<textarea id="ql-note" placeholder="What you felt, what helped, what didn\'t..." style="height:60px;resize:none;margin-bottom:14px;font-size:16px"></textarea>'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Anything you want to remember? (optional)</div>'+
+    '<textarea id="ql-note" placeholder="What you felt, what helped, what didn\'t..." style="height:60px;resize:none;margin-bottom:14px;font-size:var(--t-base)"></textarea>'+
     
     '<button class="btn primary" onclick="saveQuickLog()" style="margin-bottom:8px">Save this fight</button>'+
     '<button class="btn quiet" onclick="closeModal(this)">Cancel</button>'+
@@ -1251,9 +1251,9 @@ function _celebrateFirstWin(){
   const m = document.createElement('div');
   m.className = 'modal-bg open'; m.style.alignItems='center';
   m.innerHTML = '<div class="modal" style="text-align:center">'+
-    '<div style="font-size:34px;margin-bottom:10px">'+svgIcon("sprout",31)+'</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:10px">Your first one'+(name?', '+name:'')+'.</div>'+
-    '<div style="font-size:14px;color:var(--tx2);line-height:1.7;margin-bottom:20px">This is the one that matters most \u2014 not because it\u2019s the hardest, but because it\u2019s the proof that you can. Every road starts with a single honest step, and you just took it. I\u2019ll be here for the next one, and the one after that.</div>'+
+    '<div style="font-size:var(--t-2xl);margin-bottom:10px">'+svgIcon("sprout",31)+'</div>'+
+    '<div style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:10px">Your first one'+(name?', '+name:'')+'.</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:20px">This is the one that matters most \u2014 not because it\u2019s the hardest, but because it\u2019s the proof that you can. Every road starts with a single honest step, and you just took it. I\u2019ll be here for the next one, and the one after that.</div>'+
     '<button class="btn primary" onclick="closeModal(this)">This is the beginning</button>'+
     '</div>';
   document.body.appendChild(m);
@@ -1265,12 +1265,12 @@ function _graceAfterRelapse(viceName){
   const m = document.createElement('div');
   m.className = 'modal-bg open'; m.style.alignItems='center';
   m.innerHTML = '<div class="modal" style="text-align:center">'+
-    '<div style="font-size:30px;margin-bottom:10px">'+svgIcon("leaf",28)+'</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:10px">'+(name?name+', this':'This')+' is not the end of anything.</div>'+
-    '<div style="font-size:14px;color:var(--tx2);line-height:1.7;margin-bottom:20px">One day doesn\u2019t erase the road you\u2019ve walked. What matters most just happened: you came back and you were honest. That\u2019s not weakness \u2014 that\u2019s the exact strength this is built on. Grace is new every morning, and so are you.</div>'+
+    '<div style="font-size:var(--t-2xl);margin-bottom:10px">'+svgIcon("leaf",28)+'</div>'+
+    '<div style="font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:10px">'+(name?name+', this':'This')+' is not the end of anything.</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:20px">One day doesn\u2019t erase the road you\u2019ve walked. What matters most just happened: you came back and you were honest. That\u2019s not weakness \u2014 that\u2019s the exact strength this is built on. Grace is new every morning, and so are you.</div>'+
     '<button class="btn primary" onclick="closeModal(this)" style="margin-bottom:8px">Thank you. I\u2019m back.</button>'+
     '<button class="btn subtle" onclick="closeModal(this);openCompanionForUrge()" style="margin-bottom:8px">Sit with me a moment</button>'+
-    '<button class="btn" onclick="_lifeHappenedNotSlip('+(typeof curVice!=='undefined'?curVice:-1)+');closeModal(this)" style="background:none;border:none;color:var(--tx3);font-size:12px;line-height:1.5">Honestly, this was circumstance, not a slip \u2014 don\u2019t reset me</button>'+
+    '<button class="btn" onclick="_lifeHappenedNotSlip('+(typeof curVice!=='undefined'?curVice:-1)+');closeModal(this)" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);line-height:1.5">Honestly, this was circumstance, not a slip \u2014 don\u2019t reset me</button>'+
     '</div>';
   document.body.appendChild(m);
 }
@@ -1393,7 +1393,7 @@ function setFaithTradition(tr){
     document.querySelectorAll('.faithtr-opt').forEach(b=>{
       const on = b.dataset.tr===tr;
       b.style.borderColor = on ? 'var(--go)' : 'var(--bd)';
-      b.style.background = on ? 'rgba(200,169,110,0.10)' : 'var(--bg3)';
+      b.style.background = on ? 'var(--go-bg)' : 'var(--bg3)';
     });
   }catch(_){}
   try{ if(typeof applyFaithLabels==='function') applyFaithLabels(); }catch(_){}
@@ -1409,7 +1409,7 @@ function setFaithLevel(level){
     document.querySelectorAll('.faith-opt').forEach(b=>{
       const on = b.dataset.faith===level;
       b.style.borderColor = on ? 'var(--go)' : 'var(--bd)';
-      b.style.background = on ? 'rgba(200,169,110,0.10)' : 'var(--bg3)';
+      b.style.background = on ? 'var(--go-bg)' : 'var(--bg3)';
     });
   }catch(_){}
   if(typeof showToast==='function') showToast('Saved', level==='light' ? 'Scripture will surface more gently.' : 'Faith woven through, as built.');
@@ -1422,7 +1422,7 @@ function setFaithLevel(level){
 function faithLevel(){ return ls('totry_faith_level') || 'full'; }
 function setUserSex(sex){
   ls('totry_sex', sex);
-  try{ document.querySelectorAll('.sex-opt').forEach(b=>{ const on=b.dataset.sex===sex; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'rgba(200,169,110,0.10)':'var(--bg3)'; }); }catch(_){}
+  try{ document.querySelectorAll('.sex-opt').forEach(b=>{ const on=b.dataset.sex===sex; b.style.borderColor=on?'var(--go)':'var(--bd)'; b.style.background=on?'var(--go-bg)':'var(--bg3)'; }); }catch(_){}
   // Draw what this just unlocked. Without it the toast promises a change nothing performs — the cycle
   // card and its surfaces are gated on sex and only appear when renderCycleSurfaces() runs.
   try{ if(typeof applyCoachVoiceCopy==='function') applyCoachVoiceCopy(); }catch(_){}   // the Coach tab's own copy is gendered too
@@ -1454,12 +1454,12 @@ function openWindDown(){
   ];
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:8px">Land the day.</div>'+
-    '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Four small things, same order every night. It works by repetition, not willpower \u2014 your body learns the sequence and starts winding down before you do.</div>'+
+    '<div style="text-align:center;font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:8px">Land the day.</div>'+
+    '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:16px">Four small things, same order every night. It works by repetition, not willpower \u2014 your body learns the sequence and starts winding down before you do.</div>'+
     steps.map(function(x){ return '<div style="display:flex;gap:11px;align-items:flex-start;margin-bottom:11px">'+
-      '<div style="font-size:18px;flex-shrink:0;width:26px;text-align:center;color:var(--go)">'+(svgIcon(x[0],18)||x[0])+'</div>'+
-      '<div style="flex:1"><div style="font-size:13px;color:var(--tx);margin-bottom:2px">'+x[1]+'</div>'+
-      '<div style="font-size:12px;color:var(--tx3);line-height:1.55">'+x[2]+'</div></div></div>'; }).join('')+
+      '<div style="font-size:var(--t-hd);flex-shrink:0;width:26px;text-align:center;color:var(--go)">'+(svgIcon(x[0],18)||x[0])+'</div>'+
+      '<div style="flex:1"><div style="font-size:var(--t-base);color:var(--tx);margin-bottom:2px">'+x[1]+'</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.55">'+x[2]+'</div></div></div>'; }).join('')+
     '<button class="btn primary" style="margin-top:6px" onclick="closeModal(this);openBreath(\'sleep\',{reason:\'winddown\'})">Breathe me down first</button>'+
     '<button class="btn subtle" style="margin-top:8px" onclick="closeModal(this);theRelease({did:\'You landed the day on purpose \u2014 and the phone is going down with it.\'})">I\u2019m putting it down</button>'+
   '</div>';
@@ -1486,17 +1486,17 @@ function openRecoveryBridge(){
   if(faithOn && tr!=='christianity' && tr!=='secular') opts.splice(2,0,['\u{1F54C}','Your community','An imam, a priest, a monk, an elder — someone in your own tradition who has walked beside people through this.','']);
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:8px">People who do this properly.</div>'+
-    '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px">I am a tool, and a tool is not enough on its own. None of these is better than the others — different people need different rooms. Pick whichever you would actually walk into.</div>'+
+    '<div style="text-align:center;font-family:var(--font-display);font-size:var(--t-title1);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:8px">People who do this properly.</div>'+
+    '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:16px">I am a tool, and a tool is not enough on its own. None of these is better than the others — different people need different rooms. Pick whichever you would actually walk into.</div>'+
     opts.map(function(o){
       const _mk=svgIcon(o[0]);
       const _mark=_mk?('<span style="color:var(--go)">'+_mk+'</span>'):o[0];
-      const link=o[3]?('<a href="'+o[3]+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;min-height:36px;margin-top:2px;font-size:12px;font-weight:600;color:var(--go);text-decoration:none">find one \u2192</a>'):'';
-      return '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:13px 15px;margin-bottom:9px">'+
-        '<div style="font-size:14px;color:var(--tx);margin-bottom:3px">'+_mark+'&nbsp;&nbsp;'+o[1]+'</div>'+
-        '<div style="font-size:12px;color:var(--tx2);line-height:1.6">'+o[2]+'</div>'+link+'</div>';
+      const link=o[3]?('<a href="'+o[3]+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;min-height:36px;margin-top:2px;font-size:var(--t-sm);font-weight:600;color:var(--go);text-decoration:none">find one \u2192</a>'):'';
+      return '<div style="background:var(--bg3);border-radius:var(--rm);padding:13px 15px;margin-bottom:9px">'+
+        '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:3px">'+_mark+'&nbsp;&nbsp;'+o[1]+'</div>'+
+        '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">'+o[2]+'</div>'+link+'</div>';
     }).join('')+
-    '<div style="font-size:11px;color:var(--tx3);line-height:1.6;margin:6px 0 14px;text-align:center">Going does not mean this stopped working. It means you took it seriously enough to bring someone real into it.</div>'+
+    '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.6;margin:6px 0 14px;text-align:center">Going does not mean this stopped working. It means you took it seriously enough to bring someone real into it.</div>'+
     '<button class="btn primary" onclick="closeModal(this)">Okay</button>'+
   '</div>';
   document.body.appendChild(m);
@@ -1520,10 +1520,10 @@ function openServiceExit(){
   const a=_SERVICE_ACTS[day%_SERVICE_ACTS.length];
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
-    '<div style="font-size:28px;margin-bottom:8px;color:var(--go)">'+(svgIcon(a[0],26)||a[0])+'</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:10px">'+a[1]+'</div>'+
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:8px">'+a[2]+'</div>'+
-    '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:18px">An urge points you inward, at yourself. The quickest way out is not to think harder about it \u2014 it is to turn and do one small thing for someone else.</div>'+
+    '<div style="font-size:var(--t-2xl);margin-bottom:8px;color:var(--go)">'+(svgIcon(a[0],26)||a[0])+'</div>'+
+    '<div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:10px">'+a[1]+'</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:8px">'+a[2]+'</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:18px">An urge points you inward, at yourself. The quickest way out is not to think harder about it \u2014 it is to turn and do one small thing for someone else.</div>'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);theRelease({did:\'You turned outward instead of inward \u2014 and did something real for someone else.\'})">I\u2019m doing it</button>'+
     '<button class="btn subtle" onclick="closeModal(this);openServiceExit()" style="margin-bottom:8px">Give me another</button>'+
     '<button class="btn subtle" onclick="closeModal(this);openDEADS()" style="margin-bottom:8px">'+'<span style="color:var(--go)">'+svgIcon("map")+'</span>'+' Five ways through \u2014 pick one</button>'+
@@ -1543,17 +1543,17 @@ function bridgeToRealHelp(reason){
     const m = document.createElement('div');
     m.className='modal-bg open'; m.style.alignItems='center';
     m.innerHTML = '<div class="modal" style="text-align:left">'+
-      '<div style="text-align:center;font-size:26px;margin-bottom:8px">'+svgIcon("users",24)+'</div>'+
-      '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:12px">You don\u2019t have to carry this alone</div>'+
-      '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:16px">'+lead+' Reaching for a real person is one of the strongest things you can do \u2014 it\u2019s what the strongest people do.</div>'+
-      '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:14px;margin-bottom:10px">'+
-        '<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">Real people who can help</div>'+
-        '<div style="font-size:13px;color:var(--tx2);line-height:1.9">'+
+      '<div style="text-align:center;font-size:var(--t-title1);margin-bottom:8px">'+svgIcon("users",24)+'</div>'+
+      '<div style="text-align:center;font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);line-height:1.3;margin-bottom:12px">You don\u2019t have to carry this alone</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:16px">'+lead+' Reaching for a real person is one of the strongest things you can do \u2014 it\u2019s what the strongest people do.</div>'+
+      '<div style="background:var(--bg3);border-radius:var(--rm);padding:14px;margin-bottom:10px">'+
+        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Real people who can help</div>'+
+        '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.9">'+
           '\u2022 <b style="color:var(--tx)">Someone you trust</b> \u2014 a sibling, a friend, a mentor. Even just saying it out loud to one person breaks its power.<br>'+
           '\u2022 <b style="color:var(--tx)">A priest</b> \u2014 confession and a real conversation. Grace you can\u2019t get from a screen.<br>'+
           '\u2022 <b style="color:var(--tx)">A counsellor or your GP</b> \u2014 this is exactly what they\u2019re there for. No shame in it.<br>'+
           '\u2022 <b style="color:var(--tx)">A helpline</b> \u2014 someone trained for this, right now, free:<br>'+
-          '<span style="display:inline-block;margin-top:4px;font-size:12px;line-height:1.9">'+
+          '<span style="display:inline-block;margin-top:4px;font-size:var(--t-sm);line-height:1.9">'+
             '\uD83C\uDDE6\uD83C\uDDFA Lifeline <a href="tel:131114" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">13 11 14</a> \u00b7 '+
             '\uD83C\uDDFA\uD83C\uDDF8 <a href="tel:988" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">988</a> \u00b7 '+
             '\uD83C\uDDEC\uD83C\uDDE7 <a href="tel:116123" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">116 123</a><br>'+
@@ -1561,8 +1561,8 @@ function bridgeToRealHelp(reason){
           '</span>'+
         '</div>'+
       '</div>'+
-      '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px;text-align:center">I\u2019ll still be here, walking it with you. Someone who has got you points you to real help \u2014 they don\u2019t pretend to be all of it.</div>'+
-      '<button class="btn" onclick="closeModal(this);openRecoveryBridge()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx);margin-bottom:8px">Show me actual meetings and people</button>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:16px;text-align:center">I\u2019ll still be here, walking it with you. Someone who has got you points you to real help \u2014 they don\u2019t pretend to be all of it.</div>'+
+      '<button class="btn" onclick="closeModal(this);openRecoveryBridge()" style="background:var(--bg3);color:var(--tx);margin-bottom:8px">Show me actual meetings and people</button>'+
       '<button class="btn primary" onclick="closeModal(this)">Okay</button>'+
       '</div>';
     document.body.appendChild(m);
@@ -1585,7 +1585,7 @@ function renderUrgeInsights(){
     const ready = (vices||[]).filter(v => !v.trackPatterns && analyzeUrgePatterns(v.n)).slice(0, 1);
     if(ready.length){
       box.innerHTML = ready.map(function(v){ const idx=vices.indexOf(v);
-        return '<div style="margin-bottom:8px;padding:12px 14px;background:var(--bg3);border:1px solid var(--go-bd);border-radius:var(--rm);display:flex;align-items:center;justify-content:space-between;gap:10px"><div style="font-size:13px;color:var(--tx2);line-height:1.5">There’s a pattern in your <b style="color:var(--tx)">'+_esc(v.n)+'</b> battles — when it hits hardest, and how to get ahead of it.</div><button onclick="toggleVicePatterns('+idx+')" style="flex-shrink:0;padding:8px 13px;border-radius:100px;border:1px solid var(--go-bd);background:var(--go-bg);color:var(--go);font-size:12px;cursor:pointer">Show me</button></div>';
+        return '<div style="margin-bottom:8px;padding:12px 14px;background:var(--bg3);border-radius:var(--rm);display:flex;align-items:center;justify-content:space-between;gap:10px"><div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.5">There’s a pattern in your <b style="color:var(--tx)">'+_esc(v.n)+'</b> battles — when it hits hardest, and how to get ahead of it.</div><button onclick="toggleVicePatterns('+idx+')" style="flex-shrink:0;padding:8px 13px;border-radius:100px;background:var(--go-bg);color:var(--go);font-size:var(--t-sm);cursor:pointer">Show me</button></div>';
       }).join('');
       box.style.display='block'; return;
     }
@@ -1595,7 +1595,7 @@ function renderUrgeInsights(){
   tracked.forEach(v => {
     const p = analyzeUrgePatterns(v.n);
     if(!p){
-      html += '<div style="margin-bottom:10px;padding:12px;background:var(--bg3);border-radius:var(--rm);font-size:12px;color:var(--tx3);line-height:1.5">Tracking <b style="color:var(--tx2)">'+_escFew(v.n)+'</b> — log a few more battles and your patterns will show here.</div>';
+      html += '<div style="margin-bottom:10px;padding:12px;background:var(--bg3);border-radius:var(--rm);font-size:var(--t-sm);color:var(--tx3);line-height:1.5">Tracking <b style="color:var(--tx2)">'+_escFew(v.n)+'</b> — log a few more battles and your patterns will show here.</div>';
       return;
     }
     const trendColor = p.trend==='improving'?'var(--gr)':p.trend==='slipping'?'var(--re)':'var(--tx2)';
@@ -1603,9 +1603,9 @@ function renderUrgeInsights(){
     // concrete, evidence-based override — what to actually DO to break this specific loop. The mirror
     // shows the wound AND how to heal it.
     const override = _overridePlan(p);
-    html += '<div style="margin-bottom:10px;padding:14px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm)">'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:17px;color:var(--go);font-style:italic;margin-bottom:8px">'+_escFew(v.n)+' — your patterns</div>'+
-      '<div style="font-size:12px;color:var(--tx2);line-height:1.7">'+
+    html += '<div style="margin-bottom:10px;padding:14px;background:var(--bg3);border-radius:var(--rm)">'+
+      '<div style="font-family:var(--font-serif);font-size:var(--t-base);color:var(--go);font-style:italic;margin-bottom:8px">'+_escFew(v.n)+' — your patterns</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7">'+
         (p.riskWindow?'Hardest time: <b style="color:var(--tx)">'+p.riskWindow+'</b>'+(p.riskDay?', especially <b style="color:var(--tx)">'+p.riskDay+'s</b>':'')+'.<br>':'')+
         (p.topTrigger?'Most common trigger: <b style="color:var(--tx)">'+p.topTrigger+'</b>.<br>':'')+
         // NOT A BARE WIN RATE AT ZERO. viceFrequencyRead and the vice card both removed this
@@ -1619,7 +1619,7 @@ function renderUrgeInsights(){
           ? 'Win rate: <b style="color:'+trendColor+'">'+p.winRate+'%</b>'+(p.trend?' ('+p.trend+')':'')+' over '+plural(p.total,'battle')+'.'
           : 'You logged <b style="color:var(--tx)">'+plural(p.total,'battle')+'</b> honestly'+(p.trend?' ('+p.trend+')':'')+' \u2014 every one of them named, none hidden.')+
       '</div>'+
-      (override ? '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)"><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">How to get ahead of it</div><div style="font-size:12px;color:var(--tx2);line-height:1.7">'+override+'</div></div>' : '')+
+      (override ? '<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bd)"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">How to get ahead of it</div><div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7">'+override+'</div></div>' : '')+
       '</div>';
   });
   box.innerHTML = html;
@@ -1633,7 +1633,7 @@ function playTheTape(){
   if(!box) return;
   const why = (ls('totry_why') || '').trim();
   box.innerHTML =
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px">Both paths \u2014 look before you choose</div>'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:10px">Both paths \u2014 look before you choose</div>'+
     // The honest cost, not a threat. Dangling a counter reset ("you'll lose your streak") is the
     // shame lever this app exists to break \u2014 and the evidence is that it makes the next slip MORE
     // likely, not less. So: name what's actually true about each path, and let them choose freely.
@@ -1707,11 +1707,11 @@ function renderFeelingWinsMomentum(){
   const total = wins.length;
   el.style.display='block';
   el.innerHTML =
-    '<div style="padding:14px;background:linear-gradient(135deg,rgba(200,169,110,0.12),rgba(140,107,182,0.08));border:1px solid var(--go-bd);border-radius:var(--rm);margin-bottom:14px">'+
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Times you chose yourself</div>'+
+    '<div style="padding:14px;background:var(--go-bg);border-radius:var(--rm);margin-bottom:14px">'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Times you chose yourself</div>'+
       '<div style="display:flex;align-items:baseline;gap:10px">'+
-        '<div style="font-size:30px;font-family:Cormorant Garamond,serif;color:var(--tx)">'+(weekCount||total)+'</div>'+
-        '<div style="font-size:13px;color:var(--tx2);line-height:1.4">'+(weekCount?('time'+(weekCount===1?'':'s')+' this week you felt it and didn\u2019t give in.'):(total+' time'+(total===1?'':'s')+' in all \u2014 every one counts.'))+'</div>'+
+        '<div style="font-size:var(--t-2xl);font-family:var(--font-display);font-weight:700;color:var(--tx)">'+(weekCount||total)+'</div>'+
+        '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.4">'+(weekCount?('time'+(weekCount===1?'':'s')+' this week you felt it and didn\u2019t give in.'):(total+' time'+(total===1?'':'s')+' in all \u2014 every one counts.'))+'</div>'+
       '</div>'+
     '</div>';
 }
@@ -1731,8 +1731,8 @@ function openFeelingNow(){
 function _feelingNowStep1(){
   const b=document.getElementById('feelingnow-body'); if(!b) return;
   b.innerHTML=
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-style:italic;color:var(--tx);margin-bottom:6px">You\u2019re here. That\u2019s the hardest part.</div>'+
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:16px">What are you feeling right now? Say it however it comes \u2014 no need to make it neat.</div>'+
+    '<div style="font-family:var(--font-serif);font-size:var(--t-title1);font-style:italic;color:var(--tx);margin-bottom:6px">You\u2019re here. That\u2019s the hardest part.</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:16px">What are you feeling right now? Say it however it comes \u2014 no need to make it neat.</div>'+
     '<textarea id="feelingnow-input" placeholder="e.g. I want to gamble / I\u2019m so horny I can\u2019t think / everything at once and I just want to numb it..." style="min-height:80px;margin-bottom:10px"></textarea>'+
     '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">'+
       '<button class="ftag" onclick="_feelingQuick(\'the urge to gamble\')">Gambling</button>'+
@@ -1743,7 +1743,7 @@ function _feelingNowStep1(){
       '<button class="ftag" onclick="_feelingQuick(\'low and heavy\')">Heavy / low</button>'+
     '</div>'+
     '<button class="btn primary" style="padding:15px" onclick="_feelingNowGo()">Help me through it</button>'+
-    '<button class="btn" onclick="document.getElementById(\'feelingnow-modal\')?.remove()" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:8px">I\u2019m okay now</button>';
+    '<button class="btn" onclick="document.getElementById(\'feelingnow-modal\')?.remove()" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);margin-top:8px">I\u2019m okay now</button>';
   setTimeout(()=>{ try{ document.getElementById('feelingnow-input').focus(); }catch(_){ } }, 200);
 }
 function _feelingQuick(text){
@@ -1781,24 +1781,24 @@ async function _feelingNowGo(){
   // Your actual ritual prayer, hand on heart — the thing that locks you in.
   b.innerHTML=
     '<div style="text-align:center;padding:8px 0 4px">'+
-      '<div id="feelingnow-breath" style="width:120px;height:120px;border-radius:50%;margin:0 auto 18px;background:radial-gradient(circle,rgba(200,169,110,0.25),rgba(140,107,182,0.08));border:1px solid var(--go-bd);display:flex;align-items:center;justify-content:center;animation:fnBreathe 8s ease-in-out infinite">'+
-        '<span style="font-size:11px;color:var(--go);font-family:DM Mono,monospace;letter-spacing:0.1em">breathe</span>'+
+      '<div id="feelingnow-breath" style="width:120px;height:120px;border-radius:50%;margin:0 auto 18px;background:radial-gradient(circle,var(--go-bd),rgba(140,107,182,0.08));display:flex;align-items:center;justify-content:center;animation:fnBreathe 8s ease-in-out infinite">'+
+        '<span style="font-size:var(--t-cap);color:var(--go);font-family:var(--font-text);letter-spacing:0.01em">breathe</span>'+
       '</div>'+
       // Each tradition's OWN practice for this moment — see _PULL_PRACTICE. Not a swapped phrase: the
       // name, the words, the posture and the count all come from the tradition the person chose, and
       // secular gets urge surfing with no religious framing at all.
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:8px">'+_escFew(_fnPractice().name)+'</div>'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;line-height:1.5;color:var(--tx);margin-bottom:10px">\u201C'+_escFew(_fnPractice().line)+'\u201D</div>'+
-      '<div style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:8px">'+_escFew(_fnPractice().how)+'</div>'+
-      '<div style="font-size:11px;color:var(--tx3);line-height:1.6;margin-bottom:16px;padding:0 4px">'+_escFew(_fnPractice().why)+'</div>'+
-      '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:18px">You only have to get through <span style="color:var(--go)">this</span> one moment \u2014 not forever.</div>'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">'+_escFew(_fnPractice().name)+'</div>'+
+      '<div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;line-height:1.5;color:var(--tx);margin-bottom:10px">\u201C'+_escFew(_fnPractice().line)+'\u201D</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.65;margin-bottom:8px">'+_escFew(_fnPractice().how)+'</div>'+
+      '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.6;margin-bottom:16px;padding:0 4px">'+_escFew(_fnPractice().why)+'</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:18px">You only have to get through <span style="color:var(--go)">this</span> one moment \u2014 not forever.</div>'+
     '</div>'+
     '<div id="feelingnow-redirect" style="padding:14px;background:var(--bg3);border-radius:var(--rm);margin-bottom:14px;min-height:60px">'+
-      '<p class="pulsing" style="font-family:Cormorant Garamond,serif;font-style:italic;color:var(--tx3);text-align:center;font-size:14px">Sitting with you...</p>'+
+      '<p class="pulsing" style="font-family:var(--font-serif);font-style:italic;color:var(--tx3);text-align:center;font-size:var(--t-sm)">Sitting with you...</p>'+
     '</div>'+
     '<button class="btn primary" style="padding:15px" onclick="_feelingNowWon()">It\u2019s passing \u2014 I got through it</button>'+
-    '<button class="btn" onclick="_feelingNowStillHard()" style="background:var(--bg3);border:1px solid var(--bd);margin-top:8px;font-size:13px">Still really hard</button>'+
-    '<button class="btn" onclick="document.getElementById(\'feelingnow-modal\')?.remove()" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:6px">Close</button>';
+    '<button class="btn" onclick="_feelingNowStillHard()" style="background:var(--bg3);margin-top:8px;font-size:var(--t-base)">Still really hard</button>'+
+    '<button class="btn" onclick="document.getElementById(\'feelingnow-modal\')?.remove()" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);margin-top:6px">Close</button>';
   haptic('light');
   // Generate the personal redirect in the background — shaped by exactly what they said + who they are.
   try{
@@ -1809,13 +1809,13 @@ async function _feelingNowGo(){
     const msg=await api(sys,[],prompt,500);
     const box=document.getElementById('feelingnow-redirect');
     if(box && msg && msg.trim()){
-      box.innerHTML='<div style="font-size:14px;color:var(--tx);line-height:1.7">'+msg.trim().replace(/</g,'&lt;')+'</div>'+(typeof aiTag==='function'?aiTag():'');
+      box.innerHTML='<div style="font-size:var(--t-base);color:var(--tx);line-height:1.7">'+msg.trim().replace(/</g,'&lt;')+'</div>'+(typeof aiTag==='function'?aiTag():'');
     } else if(box){
-      box.innerHTML='<div style="font-size:14px;color:var(--tx2);line-height:1.7">This wave is real, but it peaks and breaks within minutes if you don\u2019t feed it. Stand up. Walk to another room. Drink a full glass of water slowly. The feeling is not a command \u2014 you are still the one who chooses. Stay with the prayer.</div>';
+      box.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7">This wave is real, but it peaks and breaks within minutes if you don\u2019t feed it. Stand up. Walk to another room. Drink a full glass of water slowly. The feeling is not a command \u2014 you are still the one who chooses. Stay with the prayer.</div>';
     }
   }catch(e){
     const box=document.getElementById('feelingnow-redirect');
-    if(box) box.innerHTML='<div style="font-size:14px;color:var(--tx2);line-height:1.7">This wave peaks and breaks within minutes if you don\u2019t feed it. Stand up, change rooms, drink water slowly. The feeling isn\u2019t a command. Stay with the prayer.</div>';
+    if(box) box.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7">This wave peaks and breaks within minutes if you don\u2019t feed it. Stand up, change rooms, drink water slowly. The feeling isn\u2019t a command. Stay with the prayer.</div>';
   }
 }
 // Still hard → escalate gently: remember what they're fighting for (their real "why") + the coach.
@@ -1825,14 +1825,14 @@ function _feelingNowStillHard(){
   // fighting for. Falls back to the feeling-specific cost note if that's all they've set.
   const why = ((ls('totry_why')||'').trim()) || ((ls('totry_feeling_cost')||'').trim());
   b.innerHTML=
-    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:12px">Okay. Stay with me.</div>'+
-    '<div style="font-size:14px;color:var(--tx2);line-height:1.7;margin-bottom:14px">Picture it honestly: if you give in right now, how do you feel in twenty minutes? You already know \u2014 the shame, the same hole, a bit deeper. This moment is the whole fight. Winning it once makes the next one easier.</div>'+
+    '<div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);margin-bottom:12px">Okay. Stay with me.</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:14px">Picture it honestly: if you give in right now, how do you feel in twenty minutes? You already know \u2014 the shame, the same hole, a bit deeper. This moment is the whole fight. Winning it once makes the next one easier.</div>'+
     (why
-      ? ('<div style="padding:12px;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rm);font-size:14px;color:var(--tx);line-height:1.65;margin-bottom:14px;white-space:pre-wrap">This is what you\u2019re fighting for:\n\n'+why.replace(/</g,'&lt;')+'</div>')
-      : ('<button class="btn" onclick="_feelingNowSetWhy()" style="background:var(--bg3);border:1px solid var(--go-bd);color:var(--go);margin-bottom:14px;font-size:13px">'+svgIcon("edit")+' Write what you\u2019re fighting for</button>'))+
+      ? ('<div style="padding:12px;background:var(--go-bg);border-radius:var(--rm);font-size:var(--t-base);color:var(--tx);line-height:1.65;margin-bottom:14px;white-space:pre-wrap">This is what you\u2019re fighting for:\n\n'+why.replace(/</g,'&lt;')+'</div>')
+      : ('<button class="btn" onclick="_feelingNowSetWhy()" style="background:var(--bg3);color:var(--go);margin-bottom:14px;font-size:var(--t-base)">'+svgIcon("edit")+' Write what you\u2019re fighting for</button>'))+
     '<button class="btn primary" style="padding:15px" onclick="document.getElementById(\'feelingnow-modal\')?.remove();openNeedTalk()">Talk to my Coach now</button>'+
-    '<button class="btn" onclick="_feelingNowWon()" style="background:var(--bg3);border:1px solid var(--bd);margin-top:8px">It\u2019s passing \u2014 I got through it</button>'+
-    '<button class="btn" onclick="_feelingNowStep1()" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:6px">Back</button>';
+    '<button class="btn" onclick="_feelingNowWon()" style="background:var(--bg3);margin-top:8px">It\u2019s passing \u2014 I got through it</button>'+
+    '<button class="btn" onclick="_feelingNowStep1()" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);margin-top:6px">Back</button>';
   haptic('medium');
 }
 // Quick in-the-moment capture of "what you're fighting for" — saved to the same durable why the
@@ -1840,11 +1840,11 @@ function _feelingNowStillHard(){
 function _feelingNowSetWhy(){
   const b=document.getElementById('feelingnow-body'); if(!b) return;
   b.innerHTML=
-    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:8px">What are you fighting for?</div>'+
-    '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:12px">In your own words. The people you love, the person you\u2019re becoming, what giving in costs you. The app will hold this in front of you when it\u2019s hard.</div>'+
+    '<div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);margin-bottom:8px">What are you fighting for?</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:12px">In your own words. The people you love, the person you\u2019re becoming, what giving in costs you. The app will hold this in front of you when it\u2019s hard.</div>'+
     '<textarea id="feelingnow-why-input" placeholder="For my future family... / I\u2019m done letting myself down... / what gambling is costing me..." style="min-height:110px;margin-bottom:10px"></textarea>'+
     '<button class="btn primary" style="padding:14px" onclick="_feelingNowSaveWhy()">Save it</button>'+
-    '<button class="btn" onclick="_feelingNowStillHard()" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:6px">Back</button>';
+    '<button class="btn" onclick="_feelingNowStillHard()" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);margin-top:6px">Back</button>';
   setTimeout(()=>{ try{ document.getElementById('feelingnow-why-input').focus(); }catch(_){ } }, 200);
 }
 function _feelingNowSaveWhy(){
@@ -1865,8 +1865,8 @@ function _feelingNowWon(){
   b.innerHTML=
     '<div style="text-align:center;padding:16px 8px">'+
       '<div style="font-size:40px;margin-bottom:10px">\u2713</div>'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-style:italic;color:var(--tx);margin-bottom:10px">You just chose yourself.</div>'+
-      '<div style="font-size:14px;color:var(--tx2);line-height:1.7;margin-bottom:18px">That\u2019s the whole thing, right there. Not forever \u2014 just now, this once. And you did it. The version of you they all see? That was you.</div>'+
+      '<div style="font-family:var(--font-serif);font-size:var(--t-title1);font-style:italic;color:var(--tx);margin-bottom:10px">You just chose yourself.</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;margin-bottom:18px">That\u2019s the whole thing, right there. Not forever \u2014 just now, this once. And you did it. The version of you they all see? That was you.</div>'+
     '</div>'+
     '<button class="btn primary" style="padding:15px" onclick="document.getElementById(\'feelingnow-modal\')?.remove();theRelease({did:\'You chose yourself — not forever, just now, this once. And you did it.\'})">'+((typeof faithAssent==='function')?faithAssent():'Amen')+'</button>';
   haptic('celebrate');
@@ -2014,7 +2014,7 @@ function goSosP3(){
   if(whyEl){
     if(why){
       whyEl.style.display='block';
-      whyEl.innerHTML='<div class="eyebrow" style="color:var(--go);margin-bottom:4px">Why you started this</div><div style="font-family:Cormorant Garamond,serif;font-style:italic;font-size:16px;color:var(--tx);line-height:1.5">\u201C'+why.replace(/</g,'&lt;')+'\u201D</div>';
+      whyEl.innerHTML='<div class="eyebrow" style="color:var(--go);margin-bottom:4px">Why you started this</div><div style="font-family:var(--font-serif);font-style:italic;font-size:var(--t-base);color:var(--tx);line-height:1.5">\u201C'+why.replace(/</g,'&lt;')+'\u201D</div>';
     } else {
       whyEl.style.display='none';
     }
@@ -2035,12 +2035,12 @@ function goSosP3(){
       btns.innerHTML =
         '<button class="btn success" onclick="logModerateWithin()">I stayed within my limit ✓</button>' +
         '<button class="btn blue" onclick="goSosCoach()">I need to talk to my coach</button>' +
-        '<button class="btn" onclick="logModerateOver()" style="background:var(--bg3);border:1px solid var(--bd)">I went over — note it honestly</button>';
+        '<button class="btn" onclick="logModerateOver()" style="background:var(--bg3)">I went over — note it honestly</button>';
     } else if(typeof viceMode==='function' && viceMode(v) === 'watch'){
       btns.innerHTML =
         '<button class="btn success" onclick="logWin()">I let it pass \u2014 log that</button>' +
         '<button class="btn blue" onclick="goSosCoach()">I need to talk to my coach</button>' +
-        '<button class="btn" onclick="logLoss()" style="background:var(--bg3);border:1px solid var(--bd)">I used \u2014 note it honestly</button>';
+        '<button class="btn" onclick="logLoss()" style="background:var(--bg3)">I used \u2014 note it honestly</button>';
     } else {
       btns.innerHTML =
         '<button class="btn success" onclick="logWin()">'+svgIcon("trophy")+' I beat it — log the win</button>' +
@@ -2063,7 +2063,7 @@ async function goSosCoach(){
   // wait uses) — this overwrite threw it away one line in, so no real person ever saw it. The
   // overwrite itself has to stay: it resets the box when someone re-enters phase 4 after a previous
   // answer. Only the sentence and the typeface were wrong.
-  if(box)box.innerHTML='<div class="pulsing" style="font-family:Cormorant Garamond,serif;font-size:16px;font-style:italic;color:var(--tx3)">Getting your coach...</div>';
+  if(box)box.innerHTML='<div class="pulsing" style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;color:var(--tx3)">Getting your coach...</div>';
   
   const cleanDays=viceCleanDays(v);
   const why=ls('totry_why')||'';

@@ -10,7 +10,7 @@ function openCreateExercise(prefillName){
   m.className = 'modal-bg open'; m.id = 'create-ex-modal';
   m.innerHTML = '<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
     '<h3 style="margin-bottom:4px">Create an exercise</h3>'+
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Add a movement we don\u2019t have yet. It\u2019ll work like any other — log sets, track progress, hit PRs.</p>'+
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px">Add a movement we don\u2019t have yet. It\u2019ll work like any other — log sets, track progress, hit PRs.</p>'+
     '<div class="lbl">Name</div>'+
     '<input type="text" id="cx-name" placeholder="e.g. Pendulum Squat" value="'+((prefillName||'').replace(/"/g,'&quot;'))+'" style="margin-bottom:14px">'+
     '<div class="lbl">Body part</div>'+
@@ -28,7 +28,7 @@ function openCreateExercise(prefillName){
     '</select>'+
     '<label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:18px;cursor:pointer">'+
       '<input type="checkbox" id="cx-share" style="margin-top:3px;width:18px;height:18px;flex-shrink:0">'+
-      '<span style="font-size:12px;color:var(--tx2);line-height:1.5">Share with the community<br><span style="color:var(--tx3)">Off by default — this stays private to you. Tick to add it to ToTry\u2019s shared library so other users can find it too.</span></span>'+
+      '<span style="font-size:var(--t-sm);color:var(--tx2);line-height:1.5">Share with the community<br><span style="color:var(--tx3)">Off by default — this stays private to you. Tick to add it to ToTry\u2019s shared library so other users can find it too.</span></span>'+
     '</label>'+
     '<button class="btn primary" onclick="saveCustomExercise()" style="margin-bottom:8px">Create &amp; add to workout</button>'+
     '<button class="btn" onclick="closeModal(this)">Cancel</button></div>';
@@ -96,7 +96,7 @@ async function searchExercises(query, opts){
   const _typeahead = !!(opts && opts.typeahead);
   const res=document.getElementById('pt-ex-results');
   if(!res)return;
-  res.innerHTML='<p class="pulsing" style="font-family:Cormorant Garamond,serif;font-size:15px;font-style:italic;color:var(--tx3);text-align:center;padding:16px">Finding exercises...</p>';
+  res.innerHTML='<p class="pulsing" style="font-family:var(--font-serif);font-size:var(--t-base);font-style:italic;color:var(--tx3);text-align:center;padding:16px">Finding exercises...</p>';
   
   const q=query.toLowerCase().trim();
   let exercises=[];
@@ -152,8 +152,8 @@ async function searchExercises(query, opts){
   if(!exercises.length){
     if(_typeahead){ res.innerHTML=''; return; }   // mid-word: say nothing rather than "No exercises found"
     const safeQ = query.replace(/'/g,"\\'").replace(/</g,'&lt;');
-    res.innerHTML='<div style="text-align:center;padding:16px"><p style="font-size:13px;color:var(--tx3);margin-bottom:12px">No exercises found for "'+query.replace(/</g,'&lt;')+'".</p>'+
-      '<button class="btn primary" onclick="openCreateExercise(\''+safeQ+'\')" style="width:auto;padding:10px 18px;font-size:13px">+ Create "'+query.replace(/</g,'&lt;')+'"</button></div>';
+    res.innerHTML='<div style="text-align:center;padding:16px"><p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:12px">No exercises found for "'+query.replace(/</g,'&lt;')+'".</p>'+
+      '<button class="btn primary" onclick="openCreateExercise(\''+safeQ+'\')" style="width:auto;padding:10px 18px;font-size:var(--t-base)">+ Create "'+query.replace(/</g,'&lt;')+'"</button></div>';
     return;
   }
   
@@ -270,7 +270,7 @@ async function showExerciseForm(name){
     // _escFew: this name comes from wger, from a Hevy import, or from a custom exercise somebody
     // typed — the same three sources the search row names in its own comment when it escapes it.
     '<h3 style="margin-bottom:4px">' + _escFew(name) + '</h3>' +
-    '<p id="ex-form-status" style="font-size:11px;color:var(--tx3);margin-bottom:14px">Looking up form &amp; instructions\u2026</p>' +
+    '<p id="ex-form-status" style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:14px">Looking up form &amp; instructions\u2026</p>' +
     '<div id="ex-form-body" style="text-align:center;padding:20px"><p class="pulsing" style="font-style:italic;color:var(--tx3)">Looking up...</p></div>' +
     '<button class="btn" onclick="closeModal(this)" style="margin-top:14px">Close</button>' +
   '</div>';
@@ -287,8 +287,8 @@ async function showExerciseForm(name){
     // (app.js:1666) and Capacitor routes it to the system browser in the native shell.
     if(_status) _status.textContent = 'No reference for this one';
     const q = encodeURIComponent(name + ' proper form');
-    body.innerHTML = '<p style="font-size:13px;color:var(--tx2);text-align:center;line-height:1.65;padding:6px 4px 14px">I do not have a form reference for this exercise. The clearest thing is usually thirty seconds of video from someone who coaches it.</p>'+
-      '<button class="btn" onclick="window.open(\'https://www.youtube.com/results?search_query='+q+'\',\'_blank\')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx);font-size:13px">Search YouTube for this</button>';
+    body.innerHTML = '<p style="font-size:var(--t-sm);color:var(--tx2);text-align:center;line-height:1.65;padding:6px 4px 14px">I do not have a form reference for this exercise. The clearest thing is usually thirty seconds of video from someone who coaches it.</p>'+
+      '<button class="btn" onclick="window.open(\'https://www.youtube.com/results?search_query='+q+'\',\'_blank\')" style="background:var(--bg3);color:var(--tx);font-size:var(--t-base)">Search YouTube for this</button>';
     return;
   }
   if(_status) _status.textContent = 'Form & instructions';
@@ -301,18 +301,18 @@ async function showExerciseForm(name){
   const tags = [info.target, info.equipment, ...(info.secondary || [])].filter(Boolean);
   if(tags.length){
     html += '<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:14px">' +
-      tags.map(t => '<span style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:3px 10px;font-size:11px;color:var(--tx2);text-transform:capitalize">' + t + '</span>').join('') +
+      tags.map(t => '<span style="background:var(--bg3);border-radius:var(--rm);padding:3px 10px;font-size:var(--t-cap);color:var(--tx2);text-transform:capitalize">' + t + '</span>').join('') +
     '</div>';
   }
   
   if(info.instructions && info.instructions.length){
-    html += '<div style="text-align:left;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:14px">' +
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">How to do it</div>' +
-      info.instructions.map((s, i) => '<div style="font-size:13px;color:var(--tx);line-height:1.6;margin-bottom:8px"><span style="color:var(--go);font-family:DM Mono,monospace;font-size:10px">' + (i+1) + '.</span> ' + s + '</div>').join('') +
+    html += '<div style="text-align:left;background:var(--bg3);border-radius:var(--rm);padding:14px">' +
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">How to do it</div>' +
+      info.instructions.map((s, i) => '<div style="font-size:var(--t-base);color:var(--tx);line-height:1.6;margin-bottom:8px"><span style="color:var(--go);font-family:var(--font-text);font-size:var(--t-mini)">' + (i+1) + '.</span> ' + s + '</div>').join('') +
     '</div>';
   }
   
-  html += '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-align:center;margin-top:10px;letter-spacing:0.08em">' + info.source + '</div>';
+  html += '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-align:center;margin-top:10px;letter-spacing:0.01em">' + info.source + '</div>';
   body.innerHTML = html;
 }
 // ── LOADING THE BAR ──────────────────────────────────────────────────────────────────────────────
@@ -348,24 +348,24 @@ function platesForSide(target, bar, plates){
 function _plateChipsHTML(r){
   if(!r) return '';
   if(r.under){
-    return '<div style="font-size:12px;color:var(--go);line-height:1.6">That’s under the bar on its own — the bar is ' +
+    return '<div style="font-size:var(--t-sm);color:var(--go);line-height:1.6">That’s under the bar on its own — the bar is ' +
       r.bar + 'kg.</div>';
   }
   const chips = r.perSide.length
     ? r.perSide.map(function(p){
-        return '<span style="display:inline-block;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);' +
-          'padding:6px 11px;font-family:DM Mono,monospace;font-size:14px;color:var(--tx);margin:0 5px 5px 0">' + p + '</span>';
+        return '<span style="display:inline-block;background:var(--bg3);border-radius:var(--rs);' +
+          'padding:6px 11px;font-family:var(--font-text);font-size:var(--t-base);color:var(--tx);margin:0 5px 5px 0">' + p + '</span>';
       }).join('')
-    : '<span style="font-size:12px;color:var(--tx3)">Just the bar.</span>';
+    : '<span style="font-size:var(--t-sm);color:var(--tx3)">Just the bar.</span>';
   const off = r.off === 0
     ? ''
-    : '<div style="font-size:12px;color:var(--go);line-height:1.55;margin-top:8px">Closest you can actually load is <b>' +
+    : '<div style="font-size:var(--t-sm);color:var(--go);line-height:1.55;margin-top:8px">Closest you can actually load is <b>' +
       r.achieved + 'kg</b> — ' + (r.off > 0 ? r.off + 'kg over' : Math.abs(r.off) + 'kg under') +
       ' what you asked for. Plates go on both sides, so the total can only move in 2.5kg steps.</div>';
-  return '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;' +
-      'letter-spacing:0.12em;margin-bottom:7px">Per side</div>' +
+  return '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;' +
+      'letter-spacing:0.01em;margin-bottom:7px">Per side</div>' +
     '<div>' + chips + '</div>' +
-    '<div style="font-size:13px;color:var(--tx2);margin-top:9px">' + r.bar + 'kg bar + ' +
+    '<div style="font-size:var(--t-sm);color:var(--tx2);margin-top:9px">' + r.bar + 'kg bar + ' +
       r.perSide.length + ' plate' + (r.perSide.length === 1 ? '' : 's') + ' each side = <b style="color:var(--tx)">' +
       r.achieved + 'kg</b></div>' + off;
 }
@@ -412,14 +412,14 @@ function openPlateMath(exIndex){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:6px">Load the bar</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">What you want on the bar, and what goes on each side.</p>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px;line-height:1.5">What you want on the bar, and what goes on each side.</p>' +
     '<input type="number" id="plate-target" inputmode="decimal" step="2.5" value="' + _escFew(prefill) + '" placeholder="102.5" ' +
-      'oninput="_plateRender()" style="font-family:DM Mono,monospace;font-size:22px;text-align:center;padding:12px;margin-bottom:12px">' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:7px">Bar</div>' +
+      'oninput="_plateRender()" style="font-family:var(--font-text);font-size:var(--t-xl);text-align:center;padding:12px;margin-bottom:12px">' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:7px">Bar</div>' +
     '<div style="display:flex;gap:8px;margin-bottom:14px">' +
       BARS_KG.map(function(b){
         return '<button id="plate-bar-' + b + '" onclick="_plateSetBar(' + b + ')" class="btn" ' +
-          'style="flex:1;font-family:DM Mono,monospace;font-size:13px;padding:9px;margin:0;background:transparent;border:1px solid var(--bd);color:var(--tx3)">' +
+          'style="flex:1;font-family:var(--font-text);font-size:var(--t-sm);padding:9px;margin:0;background:transparent;color:var(--tx3);background:var(--fill2)">' +
           b + 'kg</button>';
       }).join('') +
     '</div>' +
@@ -498,10 +498,10 @@ function renderWorkoutSession(){
         // so the old argument was the literal string "undefined".
         const _rid = String(r.hevyId != null ? r.hevyId : (r.id != null ? r.id : '')).replace(/[\\'"]/g, '');
         const fn = isHevy ? ("startHevyRoutine('"+_rid+"')") : ('loadRoutine('+r.id+')');
-        return '<button class="routine-row" onclick="'+fn+'" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:12px 13px;margin-bottom:6px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);cursor:pointer">'+
-          '<div style="flex:1;min-width:0"><div style="font-size:14px;color:var(--tx);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+name.replace(/</g,'&lt;')+'</div>'+
-          '<div style="font-size:11px;color:var(--tx3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+sub.replace(/</g,'&lt;')+'</div></div>'+
-          '<span style="color:var(--go);font-size:13px;flex-shrink:0">Start &rarr;</span></button>';
+        return '<button class="routine-row" onclick="'+fn+'" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:12px 13px;margin-bottom:6px;background:var(--bg3);border-radius:var(--rm);cursor:pointer">'+
+          '<div style="flex:1;min-width:0"><div style="font-size:var(--t-base);color:var(--tx);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+name.replace(/</g,'&lt;')+'</div>'+
+          '<div style="font-size:var(--t-cap);color:var(--tx3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+sub.replace(/</g,'&lt;')+'</div></div>'+
+          '<span style="color:var(--go);font-size:var(--t-base);flex-shrink:0">Start &rarr;</span></button>';
       };
       // Reform: if Hevy routines exist (Pro live-sync OR free import/export), Hevy is the source of
       // truth — one clean list, no "From Hevy" split, no native builder competing. No Hevy routines
@@ -510,14 +510,14 @@ function renderWorkoutSession(){
       const hevyOwns = hevyAll.length > 0;
       let html='';
       if(hevyOwns){
-        html+='<div class="lbl" style="margin-top:2px;display:flex;justify-content:space-between;align-items:center"><span>Your routines</span><span style="font-weight:400;color:var(--tx3);font-size:10px">via Hevy</span></div>';
+        html+='<div class="lbl" style="margin-top:2px;display:flex;justify-content:space-between;align-items:center"><span>Your routines</span><span style="font-weight:400;color:var(--tx3);font-size:var(--t-mini)">via Hevy</span></div>';
         const list = hevyAll.length>6 ? hevyAll.slice(0,6) : hevyAll;
         html+= list.map(r=>rowFor(r,true)).join('');
-        if(hevyAll.length>6) html+='<button class="btn" onclick="_showAllHevyRoutines()" style="font-size:12px;background:none;border:1px solid var(--bd);color:var(--tx3);margin-top:2px">Show all '+hevyAll.length+' routines</button>';
-        html+='<div style="font-size:10px;color:var(--tx3);text-align:center;margin-top:8px;line-height:1.5">Managed in Hevy &amp; synced here \u00b7 edit them in Hevy</div>';
+        if(hevyAll.length>6) html+='<button class="btn" onclick="_showAllHevyRoutines()" style="font-size:var(--t-sm);background:none;color:var(--tx3);margin-top:2px;background:var(--fill2)">Show all '+hevyAll.length+' routines</button>';
+        html+='<div style="font-size:var(--t-mini);color:var(--tx3);text-align:center;margin-top:8px;line-height:1.5">Managed in Hevy &amp; synced here \u00b7 edit them in Hevy</div>';
       } else {
         if(own.length){ html+='<div class="lbl" style="margin-top:2px">Your routines</div>'+own.map(r=>rowFor(r,false)).join(''); }
-        html+='<button class="btn" onclick="setPTTab(\'routines\')" style="font-size:12px;background:none;border:1px dashed var(--go-bd);color:var(--go);margin-top:'+(own.length?'8px':'2px')+'">+ Build a routine</button>';
+        html+='<button class="btn" onclick="setPTTab(\'routines\')" style="font-size:var(--t-sm);background:none;border:1px dashed var(--go-bd);color:var(--go);margin-top:'+(own.length?'8px':'2px')+'">+ Build a routine</button>';
       }
       rBox.innerHTML = html;
     }
@@ -562,39 +562,39 @@ function renderWorkoutSession(){
   // the handler into the markup as stray attributes. _jsAttr does both.
   const safeName = (typeof _jsAttr === 'function') ? _jsAttr(ex.name) : ex.name.replace(/'/g, "\\'");
     const supersetBadge = ex.superset && ei > 0 ?
-      '<span style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);margin-left:8px;letter-spacing:0.1em">⇆ SUPERSET</span>' : '';
+      '<span style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);margin-left:8px;letter-spacing:0.01em">⇆ SUPERSET</span>' : '';
     const supersetBtn = ei > 0 ?
-      '<button class="se-superset" title="' + (ex.superset ? 'Unpair from previous exercise' : 'Pair with previous exercise as a superset') + '" onclick="toggleSuperset(' + ei + ')" style="background:none;border:none;color:' + (ex.superset ? 'var(--go)' : 'var(--tx3)') + ';font-size:11px;cursor:pointer;padding:0 6px;margin-left:4px;font-family:DM Mono,monospace">' + (ex.superset ? '⇆' : '⇆') + '</button>' : '';
+      '<button class="se-superset" title="' + (ex.superset ? 'Unpair from previous exercise' : 'Pair with previous exercise as a superset') + '" onclick="toggleSuperset(' + ei + ')" style="background:none;border:none;color:' + (ex.superset ? 'var(--go)' : 'var(--tx3)') + ';font-size:var(--t-cap);cursor:pointer;padding:0 6px;margin-left:4px;font-family:var(--font-text)">' + (ex.superset ? '⇆' : '⇆') + '</button>' : '';
     // Reorder controls — move an exercise up/down in the session (Hevy lets you drag-reorder).
-    const upBtn = ei > 0 ? '<button title="Move up" onclick="moveExercise('+ei+',-1)" style="background:none;border:none;color:var(--tx3);font-size:13px;cursor:pointer;padding:0 4px">↑</button>' : '';
-    const downBtn = ei < currentSession.length-1 ? '<button title="Move down" onclick="moveExercise('+ei+',1)" style="background:none;border:none;color:var(--tx3);font-size:13px;cursor:pointer;padding:0 4px">↓</button>' : '';
+    const upBtn = ei > 0 ? '<button title="Move up" onclick="moveExercise('+ei+',-1)" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);cursor:pointer;padding:0 4px">↑</button>' : '';
+    const downBtn = ei < currentSession.length-1 ? '<button title="Move down" onclick="moveExercise('+ei+',1)" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);cursor:pointer;padding:0 4px">↓</button>' : '';
     
     // Target reps/rest badge (from routine builder)
     const targets = [];
     if(ex.targetReps) targets.push('Target: ' + ex.targetReps + ' reps');
     if(ex.targetRest) targets.push('Rest: ' + ex.targetRest);
     const targetBadge = targets.length ?
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.08em;margin-bottom:6px;padding:4px 8px;background:var(--go-bg);border-radius:4px;display:inline-block">' + targets.join(' · ') + '</div>' : '';
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);letter-spacing:0.01em;margin-bottom:6px;padding:4px 8px;background:var(--go-bg);border-radius:4px;display:inline-block">' + targets.join(' · ') + '</div>' : '';
     // Item 15 — light progression nudge, shown only when the data earns it (see suggestProgression).
     const prog = (typeof suggestProgression==='function') ? suggestProgression(ex, getLastPerformance(ex.name)) : null;
     const progBadge = prog ?
-      '<div style="font-size:11px;color:var(--tx2);line-height:1.5;margin-bottom:6px;padding:6px 9px;background:rgba(91,185,125,0.08);border:1px solid var(--go-bd);border-radius:var(--rs)">↗ <span style="color:var(--gr)">'+prog.text+'</span></div>' : '';
+      '<div style="font-size:var(--t-cap);color:var(--tx2);line-height:1.5;margin-bottom:6px;padding:6px 9px;background:rgba(91,185,125,0.08);border-radius:var(--rs)">↗ <span style="color:var(--gr)">'+prog.text+'</span></div>' : '';
     
     // A THIRD EXECUTING SINK, same class as the routine name and the bank-CSV description. Exercise
     // names are not all from the catalogue — addCustomExercise() lets a person type their own, and
     // that name lands here raw. Driven with `<img src=x onerror=...>`: it fired.
     card.innerHTML='<div class="se-name">'+_escFew(ex.name) + supersetBadge +
-      '<button class="se-form" title="Show form & instructions" onclick="showExerciseForm(\''+safeName+'\')" style="background:none;border:none;color:var(--go);font-size:11px;cursor:pointer;padding:0 6px;font-family:DM Mono,monospace">FORM</button>'+
-      '<button title="Swap exercise \u2014 keeps your sets" onclick="swapExercise('+ei+')" style="background:none;border:none;color:var(--tx3);font-size:12px;cursor:pointer;padding:0 5px;font-family:DM Mono,monospace">\u21c4</button>'+
+      '<button class="se-form" title="Show form & instructions" onclick="showExerciseForm(\''+safeName+'\')" style="background:none;border:none;color:var(--go);font-size:var(--t-cap);cursor:pointer;padding:0 6px;font-family:var(--font-text)">FORM</button>'+
+      '<button title="Swap exercise \u2014 keeps your sets" onclick="swapExercise('+ei+')" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);cursor:pointer;padding:0 5px;font-family:var(--font-text)">\u21c4</button>'+
       supersetBtn + upBtn + downBtn +
       '<button class="se-del" onclick="removeExFromSession('+ei+')" aria-label="Remove this exercise from the session">&#215;</button></div>'+
       targetBadge +
       progBadge +
       '<div id="sets-'+ei+'"></div>'+
       '<div style="margin-top:6px">' +
-        '<button onclick="toggleExerciseNotes('+ei+')" id="ex-notes-toggle-'+ei+'" style="background:none;border:none;color:var(--tx3);font-size:10px;font-family:DM Mono,monospace;cursor:pointer;padding:4px 0;letter-spacing:0.05em">' + (ex.notes ? svgIcon("edit",12)+' Notes: "' + _escFew(ex.notes.length > 40 ? ex.notes.slice(0,40)+'…' : ex.notes) + '"' : '+ Add note') + '</button>' +
+        '<button onclick="toggleExerciseNotes('+ei+')" id="ex-notes-toggle-'+ei+'" style="background:none;border:none;color:var(--tx3);font-size:var(--t-mini);font-family:var(--font-text);cursor:pointer;padding:4px 0;letter-spacing:0.01em">' + (ex.notes ? svgIcon("edit",12)+' Notes: "' + _escFew(ex.notes.length > 40 ? ex.notes.slice(0,40)+'…' : ex.notes) + '"' : '+ Add note') + '</button>' +
         '<div id="ex-notes-wrap-'+ei+'" style="display:none;margin-top:4px">' +
-          '<textarea id="ex-notes-input-'+ei+'" placeholder="Form cue, how it felt, what to try next..." style="min-height:50px;font-size:16px;line-height:1.5" oninput="saveExerciseNote('+ei+',this.value)">' + _escFew(ex.notes || '') + '</textarea>' +
+          '<textarea id="ex-notes-input-'+ei+'" placeholder="Form cue, how it felt, what to try next..." style="min-height:50px;font-size:var(--t-base);line-height:1.5" oninput="saveExerciseNote('+ei+',this.value)">' + _escFew(ex.notes || '') + '</textarea>' +
         '</div>' +
       '</div>' +
       '<button class="add-set-btn" onclick="addSetToEx('+ei+')">+ Add set</button>' +
@@ -702,7 +702,7 @@ function renderSets(ei){
   container.innerHTML='';
   // Hevy-style column header so the set rows read like a clean table, not loose inputs.
   const hdr=document.createElement('div');
-  hdr.style.cssText='display:flex;align-items:center;gap:0;font-family:"DM Mono",monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;padding:0 2px';
+  hdr.style.cssText='display:flex;align-items:center;gap:0;font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px;padding:0 2px';
   hdr.innerHTML='<span style="min-width:20px;text-align:center">#</span>'+
     '<span style="width:20px;text-align:center;margin-left:0">Type</span>'+
     '<span style="min-width:46px;text-align:center">Prev</span>'+
@@ -713,7 +713,7 @@ function renderSets(ei){
     '<span style="margin-right:4px">Done</span>'+
     '<span style="width:28px;text-align:center;margin-left:4px">RPE</span>';
   container.appendChild(hdr);
-  if(lastSets){const lr=document.createElement('div');lr.style.cssText='font-family:"DM Mono",monospace;font-size:9px;color:var(--tx3);margin-bottom:6px;letter-spacing:0.04em';lr.innerHTML='<span style="color:var(--bl)">Tap the blue numbers</span> to reuse last session\'s weight \u00d7 reps.';container.appendChild(lr);}
+  if(lastSets){const lr=document.createElement('div');lr.style.cssText='font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-bottom:6px;letter-spacing:0.01em';lr.innerHTML='<span style="color:var(--bl)">Tap the blue numbers</span> to reuse last session\'s weight \u00d7 reps.';container.appendChild(lr);}
   const tl={normal:'S',warmup:'W',drop:'D',failure:'F'};
   ex.sets.forEach((s,si)=>{
     const lastSet=lastSets?.[si];
@@ -732,17 +732,17 @@ function renderSets(ei){
     row.addEventListener('touchend',()=>{ _drag=false; if(_dx<-60){ _doDelete(); } else { _resetSwipe(); } _dx=0; });
     // Set number prefix
     const numEl=document.createElement('span');
-    numEl.style.cssText='font-family:\'DM Mono\',monospace;font-size:11px;color:var(--tx3);font-weight:600;min-width:20px;text-align:center';
+    numEl.style.cssText='font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3);font-weight:600;min-width:20px;text-align:center';
     numEl.textContent=(si+1);
     row.appendChild(numEl);
-    const tb=document.createElement('button');tb.style.cssText='background:none;border:1px solid var(--bd);border-radius:4px;color:var(--tx3);font-size:9px;font-family:"DM Mono",monospace;min-width:24px;height:28px;cursor:pointer;flex-shrink:0';
+    const tb=document.createElement('button');tb.style.cssText='background:none;border:1px solid var(--bd);border-radius:4px;color:var(--tx3);font-size:var(--t-micro);font-family:var(--font-text);min-width:24px;height:28px;cursor:pointer;flex-shrink:0';
     tb.textContent=tl[s.type||'normal'];tb.onclick=()=>{const types=['normal','warmup','drop','failure'];const cur=types.indexOf(s.type||'normal');currentSession[ei].sets[si].type=types[(cur+1)%types.length];renderSets(ei);};row.appendChild(tb);
     // Hevy's killer feature: tap your previous-session number to instantly fill this set.
     // The single biggest friction-remover for progressive overload.
     const prevBtn=document.createElement('button');
     prevBtn.title='Tap to use last time';
     if(lastSet && (lastSet.weight || lastSet.reps)){
-      prevBtn.style.cssText='background:none;border:none;color:var(--bl);font-size:9px;font-family:"DM Mono",monospace;min-width:46px;text-align:center;cursor:pointer;flex-shrink:0;opacity:0.75;line-height:1.2';
+      prevBtn.style.cssText='background:none;border:none;color:var(--bl);font-size:var(--t-micro);font-family:var(--font-text);min-width:46px;text-align:center;cursor:pointer;flex-shrink:0;opacity:0.75;line-height:1.2';
       prevBtn.innerHTML=(lastSet.weight||'?')+'<br>×'+(lastSet.reps||'?');
       prevBtn.onclick=()=>{
         currentSession[ei].sets[si].weight=lastSet.weight||'';
@@ -751,7 +751,7 @@ function renderSets(ei){
         renderSets(ei);
       };
     } else {
-      prevBtn.style.cssText='background:none;border:none;color:var(--tx3);font-size:9px;font-family:"DM Mono",monospace;min-width:46px;text-align:center;flex-shrink:0;opacity:0.4';
+      prevBtn.style.cssText='background:none;border:none;color:var(--tx3);font-size:var(--t-micro);font-family:var(--font-text);min-width:46px;text-align:center;flex-shrink:0;opacity:0.4';
       prevBtn.innerHTML='—<br>—';
       prevBtn.disabled=true;
     }
@@ -765,7 +765,7 @@ function renderSets(ei){
     const wIn=document.createElement('input');wIn.type='number';wIn.className='set-input';wIn.placeholder=wPlaceholder||'kg';
     // Display assisted weight as positive (the assistance amount); store as negative internally.
     wIn.value = (s.weight!==''&&s.weight!=null) ? (trk==='assisted' ? Math.abs(parseFloat(s.weight)) : s.weight) : '';
-    wIn.style.cssText='width:58px;padding:7px 6px;font-size:13px;flex:none';
+    wIn.style.cssText='width:58px;padding:7px 6px;font-size:var(--t-base);flex:none';
     if(trk==='bodyweight'){ wIn.disabled=true; wIn.style.opacity='0.4'; }
     // ONE READER FOR THIS FIELD. The input shows assistance as a positive number and stores it as
     // NEGATIVE ("less help = stronger", 19-workout.js). This did the negation; the ✓ handler below
@@ -783,7 +783,7 @@ function renderSets(ei){
     wIn.onchange=()=>{ currentSession[ei].sets[si].weight = _readWeight(); };
     row.appendChild(wIn);
     const ks=document.createElement('span');ks.className='set-unit';ks.textContent=unitLabel;row.appendChild(ks);
-    const rIn=document.createElement('input');rIn.type='number';rIn.className='set-input';rIn.placeholder=lastSet?.reps||'reps';rIn.value=s.reps||'';rIn.style.cssText='width:65px;padding:7px 6px;font-size:13px;flex:none';rIn.onchange=()=>{currentSession[ei].sets[si].reps=rIn.value;};row.appendChild(rIn);
+    const rIn=document.createElement('input');rIn.type='number';rIn.className='set-input';rIn.placeholder=lastSet?.reps||'reps';rIn.value=s.reps||'';rIn.style.cssText='width:65px;padding:7px 6px;font-size:var(--t-base);flex:none';rIn.onchange=()=>{currentSession[ei].sets[si].reps=rIn.value;};row.appendChild(rIn);
     const db=document.createElement('button');db.className='set-done'+(s.done?' on':'');db.textContent='\u2713';
     db.onclick=()=>{
       currentSession[ei].sets[si].weight=_readWeight();currentSession[ei].sets[si].reps=rIn.value;
@@ -952,7 +952,7 @@ function showWorkoutSummary(s){
   m.style.alignItems='center';
   const prLines = (s.prs && s.prs.length)
     ? '<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bd)"><div class="eyebrow" style="color:var(--go);margin-bottom:8px">'+svgIcon("award")+' New personal record'+(s.prs.length>1?'s':'')+'</div>'+
-      s.prs.slice(0,5).map(p=>'<div style="font-size:13px;color:var(--tx);margin-bottom:3px">'+p.name.replace(/</g,'&lt;')+' — est. 1RM '+p.orm+'kg</div>').join('')+'</div>'
+      s.prs.slice(0,5).map(p=>'<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:3px">'+p.name.replace(/</g,'&lt;')+' — est. 1RM '+p.orm+'kg</div>').join('')+'</div>'
     : '';
   // ── THE LOOP: Train → Nourish handoff. Training creates a fueling need; bridge straight
   // into it: rough burn estimate, today's protein status, one tap to log a meal.
@@ -978,24 +978,24 @@ function showWorkoutSummary(s){
     const _gentle = (typeof nutGentle==='function') && nutGentle();
     fuelBlock = '<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--bd)">'+
       '<div class="eyebrow" style="margin-bottom:6px">Now fuel it</div>'+
-      '<div style="font-size:13px;color:var(--tx2);line-height:1.6">'+
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6">'+
         (_gentle
           ? 'You have just asked something of your body \u2014 give it what it needs. The meal after training is the one that matters most.'
           : ((burnEst ? 'Roughly <span style="color:var(--go)">~'+burnEst+' cal</span> burned (added to today\'s net). ' : '')+
              (proLeft > 0 ? 'Protein: <span style="color:var(--gr)">'+proSoFar+'g of '+proGoal+'g</span> — '+proLeft+'g to go. The next meal matters most after training.' : 'Protein: <span style="color:var(--gr)">'+proSoFar+'g</span> — goal hit. Well fuelled.')))+
       '</div>'+
-      '<button class="btn" onclick="closeModal(this);go(\'nourish\')" style="margin-top:10px;background:var(--bg3);border:1px solid var(--bd);font-size:13px">Log a meal →</button>'+
+      '<button class="btn" onclick="closeModal(this);go(\'nourish\')" style="margin-top:10px;background:var(--bg3);font-size:var(--t-base)">Log a meal →</button>'+
     '</div>';
   }catch(_){ fuelBlock=''; }
   m.innerHTML='<div class="modal">'+
     '<div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:26px;color:var(--go);font-style:italic;margin-bottom:4px">Session complete '+svgIcon("dumbbell",26)+'</div>'+
-    '<div style="text-align:center;font-size:13px;color:var(--tx3);margin-bottom:18px">Logged and saved. Strong work.</div>'+
+    '<div style="text-align:center;font-family:var(--font-serif);font-size:var(--t-title1);color:var(--go);font-style:italic;margin-bottom:4px">Session complete '+svgIcon("dumbbell",26)+'</div>'+
+    '<div style="text-align:center;font-size:var(--t-sm);color:var(--tx3);margin-bottom:18px">Logged and saved. Strong work.</div>'+
     '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">'+
-      (s.durationMin?'<div style="background:var(--bg3);border-radius:var(--rm);padding:12px;text-align:center"><div style="font-family:DM Mono,monospace;font-size:22px;color:var(--tx)">'+(s.durationMin>=60?Math.floor(s.durationMin/60)+'h '+(s.durationMin%60)+'m':s.durationMin+'m')+'</div><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-top:2px">Duration</div></div>':'')+
-      '<div style="background:var(--bg3);border-radius:var(--rm);padding:12px;text-align:center"><div style="font-family:DM Mono,monospace;font-size:22px;color:var(--tx)">'+(s.vol>0?s.vol.toLocaleString():'—')+'</div><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-top:2px">kg volume</div></div>'+
-      '<div style="background:var(--bg3);border-radius:var(--rm);padding:12px;text-align:center"><div style="font-family:DM Mono,monospace;font-size:22px;color:var(--tx)">'+s.sets+'</div><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-top:2px">Sets done</div></div>'+
-      '<div style="background:var(--bg3);border-radius:var(--rm);padding:12px;text-align:center"><div style="font-family:DM Mono,monospace;font-size:22px;color:var(--tx)">'+s.exercises+'</div><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-top:2px">Exercises</div></div>'+
+      (s.durationMin?'<div style="background:var(--bg3);border-radius:var(--rm);padding:12px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-xl);color:var(--tx)">'+(s.durationMin>=60?Math.floor(s.durationMin/60)+'h '+(s.durationMin%60)+'m':s.durationMin+'m')+'</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-top:2px">Duration</div></div>':'')+
+      '<div style="background:var(--bg3);border-radius:var(--rm);padding:12px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-xl);color:var(--tx)">'+(s.vol>0?s.vol.toLocaleString():'—')+'</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-top:2px">kg volume</div></div>'+
+      '<div style="background:var(--bg3);border-radius:var(--rm);padding:12px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-xl);color:var(--tx)">'+s.sets+'</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-top:2px">Sets done</div></div>'+
+      '<div style="background:var(--bg3);border-radius:var(--rm);padding:12px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-xl);color:var(--tx)">'+s.exercises+'</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-top:2px">Exercises</div></div>'+
     '</div>'+
     prLines+
     fuelBlock+
@@ -1088,11 +1088,11 @@ function _compressToThumb(file, maxDim, quality){
 function _renderProofChips(unifiedId){
   const arr=_getSessionProof(unifiedId);
   const chips = arr.map((p,i)=> p.kind==='photo'
-    ? '<div style="position:relative;display:inline-block"><img loading="lazy" decoding="async" src="'+p.thumb+'" style="width:54px;height:54px;object-fit:cover;border-radius:var(--rs)"><button onclick="_removeProof(&quot;'+unifiedId+'&quot;,'+i+')" style="position:absolute;top:-6px;right:-6px;background:var(--re);border:none;color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer">&times;</button></div>'
-    : '<div style="display:inline-flex;align-items:center;gap:5px;padding:8px 10px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);font-size:11px;color:var(--tx2)"><span style="color:var(--go)">'+svgIcon("film",14)+'</span> '+(p.name||'clip').slice(0,16)+'<button onclick="_removeProof(&quot;'+unifiedId+'&quot;,'+i+')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:13px">&times;</button></div>'
+    ? '<div style="position:relative;display:inline-block"><img loading="lazy" decoding="async" src="'+p.thumb+'" style="width:54px;height:54px;object-fit:cover;border-radius:var(--rs)"><button onclick="_removeProof(&quot;'+unifiedId+'&quot;,'+i+')" style="position:absolute;top:-6px;right:-6px;background:var(--re);border:none;color:#fff;border-radius:50%;width:18px;height:18px;font-size:var(--t-cap);cursor:pointer">&times;</button></div>'
+    : '<div style="display:inline-flex;align-items:center;gap:5px;padding:8px 10px;background:var(--bg3);border-radius:var(--rs);font-size:var(--t-cap);color:var(--tx2)"><span style="color:var(--go)">'+svgIcon("film",14)+'</span> '+(p.name||'clip').slice(0,16)+'<button onclick="_removeProof(&quot;'+unifiedId+'&quot;,'+i+')" style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:var(--t-sm)">&times;</button></div>'
   ).join('');
   return '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px">'+chips+
-    '<button class="btn" onclick="attachSessionProof(&quot;'+unifiedId+'&quot;)" style="width:auto;padding:8px 12px;font-size:12px;background:none;border:1px dashed var(--go-bd);color:var(--go)">'+svgIcon("image",14)+' Add proof</button></div>';
+    '<button class="btn" onclick="attachSessionProof(&quot;'+unifiedId+'&quot;)" style="width:auto;padding:8px 12px;font-size:var(--t-sm);background:none;border:1px dashed var(--go-bd);color:var(--go)">'+svgIcon("image",14)+' Add proof</button></div>';
 }
 function _removeProof(unifiedId, i){
   const arr=_getSessionProof(unifiedId); arr.splice(i,1); _saveSessionProof(unifiedId, arr);
@@ -1113,7 +1113,7 @@ function openEditTraining(unifiedId){
     const _pp = _paceParts(pace);
     const paceStr = _pp ? (_pp.m + ':' + _pp.s + ' /' + _pp.unit) : null;
     const when = a.date ? new Date(a.date).toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long'}) : '';
-    const stat = (label,val) => val ? '<div style="flex:1;min-width:70px;background:var(--bg3);border-radius:var(--rs);padding:10px;text-align:center"><div style="font-family:DM Mono,monospace;font-size:18px;color:var(--tx)">'+val+'</div><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em;margin-top:2px">'+label+'</div></div>' : '';
+    const stat = (label,val) => val ? '<div style="flex:1;min-width:70px;background:var(--bg3);border-radius:var(--rs);padding:10px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-hd);color:var(--tx)">'+val+'</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-top:2px">'+label+'</div></div>' : '';
     const stats = [
       stat('distance', km ? km.toFixed(2)+dUnit() : null),   // km holds mToDisp(...) — the person's unit
       stat('time', mins ? mins+' min' : null),
@@ -1126,13 +1126,13 @@ function openEditTraining(unifiedId){
     m.className = 'modal-bg open'; m.id = 'edit-training-modal';
     m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
       '<div class="src-tag" style="color:#FC4C02;margin-bottom:4px">STRAVA</div>'+
-      '<div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:2px">'+(a.name||a.type||'Activity').replace(/</g,'&lt;')+'</div>'+
-      '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">'+(a.type||'')+(when?' \u00b7 '+when:'')+'</div>'+
-      (stats ? '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">'+stats+'</div>' : '<div style="font-size:12px;color:var(--tx3);margin-bottom:16px">No detailed metrics on this activity.</div>')+
+      '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:2px">'+(a.name||a.type||'Activity').replace(/</g,'&lt;')+'</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px">'+(a.type||'')+(when?' \u00b7 '+when:'')+'</div>'+
+      (stats ? '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">'+stats+'</div>' : '<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:16px">No detailed metrics on this activity.</div>')+
       '<div class="lbl" style="margin-top:4px">Proof <span style="font-weight:400;color:var(--tx3)">\u00b7 for your weekly review</span></div>'+
       '<div id="session-proof-wrap">'+_renderProofChips(unifiedId)+'</div>'+
-      '<div style="font-size:11px;color:var(--tx3);margin-bottom:12px;line-height:1.5">Synced from Strava. Edit it in Strava; you can remove it from ToTry here.</div>'+
-      '<button class="btn" onclick="deleteTraining(&quot;strava&quot;,&quot;'+rawId+'&quot;)" style="background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re);margin-bottom:8px">Remove from ToTry</button>'+
+      '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:12px;line-height:1.5">Synced from Strava. Edit it in Strava; you can remove it from ToTry here.</div>'+
+      '<button class="btn" onclick="deleteTraining(&quot;strava&quot;,&quot;'+rawId+'&quot;)" style="background:var(--re-bg);color:var(--re);margin-bottom:8px">Remove from ToTry</button>'+
       '<button class="btn" onclick="closeModal(this)">Cancel</button></div>';
     document.body.appendChild(m);
     return;
@@ -1159,9 +1159,9 @@ function openEditTraining(unifiedId){
         const wt = (s.weight!=null && s.weight!=='') ? s.weight+'kg' : '';
         const rp = (s.reps!=null && s.reps!=='') ? s.reps+' reps' : '';
         const meta = [wt,rp].filter(Boolean).join(' \u00d7 ') || '\u2014';
-        return '<div style="display:flex;justify-content:space-between;font-family:DM Mono,monospace;font-size:11px;color:var(--tx3);padding:2px 0"><span>Set '+(i+1)+'</span><span style="color:var(--tx2)">'+meta+'</span></div>';
+        return '<div style="display:flex;justify-content:space-between;font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3);padding:2px 0"><span>Set '+(i+1)+'</span><span style="color:var(--tx2)">'+meta+'</span></div>';
       }).join('');
-      return '<div style="margin-bottom:12px"><div style="font-size:13px;color:var(--tx);margin-bottom:4px">'+(ex.name||'Exercise').replace(/</g,'&lt;')+'</div>'+(setRows||'<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3)">No sets recorded</div>')+'</div>';
+      return '<div style="margin-bottom:12px"><div style="font-size:var(--t-base);color:var(--tx);margin-bottom:4px">'+(ex.name||'Exercise').replace(/</g,'&lt;')+'</div>'+(setRows||'<div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--tx3)">No sets recorded</div>')+'</div>';
     }).join('');
     const meta = [];
     if(w.volume) meta.push(Math.round(w.volume).toLocaleString()+'kg volume');
@@ -1169,14 +1169,14 @@ function openEditTraining(unifiedId){
     if(w.durationMin || w.durationMinutes) meta.push((w.durationMin || w.durationMinutes)+' min');
     m.innerHTML = '<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
       '<div class="src-tag" style="color:var(--go);margin-bottom:4px">'+(fromHevy?'HEVY':'LOGGED')+'</div>'+
-      '<div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:2px">'+(w.splitFocus||w.type||'Workout').replace(/</g,'&lt;')+'</div>'+
-      '<div style="font-size:12px;color:var(--tx3);margin-bottom:4px">'+when+'</div>'+
-      (meta.length ? '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--go);margin-bottom:16px">'+meta.join(' \u00b7 ')+'</div>' : '<div style="margin-bottom:12px"></div>')+
-      (exList || '<div style="font-size:12px;color:var(--tx3);margin-bottom:12px">No exercise detail came through on this session.</div>')+
+      '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:2px">'+(w.splitFocus||w.type||'Workout').replace(/</g,'&lt;')+'</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:4px">'+when+'</div>'+
+      (meta.length ? '<div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);margin-bottom:16px">'+meta.join(' \u00b7 ')+'</div>' : '<div style="margin-bottom:12px"></div>')+
+      (exList || '<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:12px">No exercise detail came through on this session.</div>')+
       '<div class="lbl" style="margin-top:4px">Proof <span style="font-weight:400;color:var(--tx3)">\u00b7 for your weekly review</span></div>'+
       '<div id="session-proof-wrap">'+_renderProofChips(unifiedId)+'</div>'+
-      (fromHevy ? '<div style="font-size:11px;color:var(--tx3);margin:6px 0 12px;line-height:1.5">Synced from Hevy. Edit the exercises in Hevy; you can remove it from ToTry here.</div>' : '<div style="font-size:11px;color:var(--tx3);margin:6px 0 12px;line-height:1.5">You logged this one here. Set-by-set editing is not in yet \u2014 for now you can remove it and log it again.</div>')+
-      '<button class="btn" onclick="deleteTraining(&quot;workout&quot;,&quot;'+w.id+'&quot;)" style="background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re);margin-bottom:8px">Remove from ToTry</button>'+
+      (fromHevy ? '<div style="font-size:var(--t-cap);color:var(--tx3);margin:6px 0 12px;line-height:1.5">Synced from Hevy. Edit the exercises in Hevy; you can remove it from ToTry here.</div>' : '<div style="font-size:var(--t-cap);color:var(--tx3);margin:6px 0 12px;line-height:1.5">You logged this one here. Set-by-set editing is not in yet \u2014 for now you can remove it and log it again.</div>')+
+      '<button class="btn" onclick="deleteTraining(&quot;workout&quot;,&quot;'+w.id+'&quot;)" style="background:var(--re-bg);color:var(--re);margin-bottom:8px">Remove from ToTry</button>'+
       '<button class="btn" onclick="closeModal(this)">Cancel</button></div>';
     document.body.appendChild(m);
     return;
@@ -1189,16 +1189,16 @@ function openEditTraining(unifiedId){
   const tsDate = w.ts ? new Date(w.ts) : new Date();
   const dateStr = tsDate.getFullYear()+'-'+String(tsDate.getMonth()+1).padStart(2,'0')+'-'+String(tsDate.getDate()).padStart(2,'0');
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:14px">Edit workout</div>'+
-    '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.1em">Activity</div>'+
+    '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:14px">Edit workout</div>'+
+    '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:6px;font-family:var(--font-text);text-transform:uppercase;letter-spacing:0.01em">Activity</div>'+
     '<select id="edit-cardio-type" onchange="renderEditCardioFields()" style="margin-bottom:14px">'+
       types.map(t=>'<option value="'+t+'"'+(t===curType?' selected':'')+'>'+CARDIO_TYPES[t].emoji+'  '+t+'</option>').join('')+
     '</select>'+
     '<div id="edit-cardio-fields"></div>'+
-    '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.1em">When</div>'+
+    '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:6px;font-family:var(--font-text);text-transform:uppercase;letter-spacing:0.01em">When</div>'+
     '<input type="date" id="edit-cardio-date" value="'+dateStr+'" style="margin-bottom:14px">'+
     '<button class="btn primary" onclick="saveEditTraining(&quot;'+w.id+'&quot;)" style="margin-bottom:8px">Save changes</button>'+
-    '<button class="btn" onclick="deleteTraining(&quot;workout&quot;,&quot;'+w.id+'&quot;)" style="background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re);margin-bottom:8px">Delete workout</button>'+
+    '<button class="btn" onclick="deleteTraining(&quot;workout&quot;,&quot;'+w.id+'&quot;)" style="background:var(--re-bg);color:var(--re);margin-bottom:8px">Delete workout</button>'+
     '<button class="btn" onclick="closeModal(this)">Cancel</button></div>';
   document.body.appendChild(m);
   // Pre-fill fields after the select renders them.
@@ -1250,10 +1250,10 @@ function renderEditCardioFields(){
     // A field nobody has labelled yet must cost that one field, never the whole form.
     if(!labels[f]) return;
     const [lab,ph,id] = labels[f];
-    html += '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.1em">'+lab+'</div>'+
+    html += '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:6px;font-family:var(--font-text);text-transform:uppercase;letter-spacing:0.01em">'+lab+'</div>'+
       '<input type="text" id="'+id+'" inputmode="'+(f==='time'?'text':'decimal')+'" placeholder="'+ph+'" oninput="updateEditCardioPace()" style="margin-bottom:12px">';
   });
-  if(cfg.pace){ html += '<div id="edit-cardio-pace" style="font-family:DM Mono,monospace;font-size:11px;color:var(--go);margin:-4px 0 12px 0;min-height:14px"></div>'; }
+  if(cfg.pace){ html += '<div id="edit-cardio-pace" style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);margin:-4px 0 12px 0;min-height:14px"></div>'; }
   wrap.innerHTML = html;
   // Restore only into fields the NEW type still has. One the new type does not carry is deliberately
   // not restored — saveEditTraining clears exactly those, which is how a distance stops following an
@@ -1386,14 +1386,14 @@ function logCardioManually(){
   m.className = 'modal-bg open';
   m.id = 'cardio-log-modal';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:4px">Log a workout</div>'+
-    '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">Pick the activity, then enter what you see on your Apple Fitness summary.</div>'+
-    '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.1em">Activity</div>'+
+    '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:4px">Log a workout</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px">Pick the activity, then enter what you see on your Apple Fitness summary.</div>'+
+    '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:6px;font-family:var(--font-text);text-transform:uppercase;letter-spacing:0.01em">Activity</div>'+
     '<select id="cardio-type" onchange="renderCardioFields()" style="margin-bottom:14px">'+
       types.map(t=>'<option value="'+t+'">'+CARDIO_TYPES[t].emoji+'  '+t+'</option>').join('')+
     '</select>'+
     '<div id="cardio-fields"></div>'+
-    '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.1em;margin-top:4px">When</div>'+
+    '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:6px;font-family:var(--font-text);text-transform:uppercase;letter-spacing:0.01em;margin-top:4px">When</div>'+
     '<input type="date" id="cardio-date" style="margin-bottom:14px">'+
     '<button class="btn primary" onclick="saveCardioManually()" style="margin-bottom:8px">Save workout</button>'+
     '<button class="btn" onclick="closeModal(this)">Cancel</button></div>';
@@ -1423,8 +1423,8 @@ function renderCardioFields(){
     // Distance row gets a km/miles toggle on the right.
     if(f==='distance'){
       html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
-        '<span style="font-size:11px;color:var(--tx3);font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.1em">'+lab+'</span>'+
-        '<span style="font-family:DM Mono,monospace;font-size:10px">'+
+        '<span style="font-size:var(--t-cap);color:var(--tx3);font-family:var(--font-text);text-transform:uppercase;letter-spacing:0.01em">'+lab+'</span>'+
+        '<span style="font-family:var(--font-text);font-size:var(--t-mini)">'+
           '<span onclick="setCardioUnit(&quot;km&quot;)" style="cursor:pointer;color:'+(unit==='km'?'var(--go)':'var(--tx3)')+'">km</span>'+
           '<span style="color:var(--tx3)"> / </span>'+
           '<span onclick="setCardioUnit(&quot;mi&quot;)" style="cursor:pointer;color:'+(unit==='mi'?'var(--go)':'var(--tx3)')+'">mi</span>'+
@@ -1432,18 +1432,18 @@ function renderCardioFields(){
         '<input type="text" id="'+id+'" inputmode="decimal" placeholder="'+ph+'" oninput="updateCardioPace()" style="margin-bottom:12px">';
     } else if(f==='effort'){
       // Effort as an RPE 1–10 dropdown — feeds training-load + interference awareness (WS4/WS6).
-      html += '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.1em">'+lab+'</div>'+
+      html += '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:6px;font-family:var(--font-text);text-transform:uppercase;letter-spacing:0.01em">'+lab+'</div>'+
         '<select id="'+id+'" style="margin-bottom:12px"><option value="">\u2014</option>'+
         [1,2,3,4,5,6,7,8,9,10].map(n=>'<option value="'+n+'">'+n+(n<=3?' (easy)':n<=6?' (moderate)':n<=8?' (hard)':' (max)')+'</option>').join('')+
         '</select>';
     } else {
-      html += '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px;font-family:DM Mono,monospace;text-transform:uppercase;letter-spacing:0.1em">'+lab+'</div>'+
+      html += '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:6px;font-family:var(--font-text);text-transform:uppercase;letter-spacing:0.01em">'+lab+'</div>'+
         '<input type="text" id="'+id+'" inputmode="'+(f==='time'?'text':'decimal')+'" placeholder="'+ph+'" oninput="updateCardioPace()" style="margin-bottom:12px">';
     }
   });
   // Live pace readout for distance-based activities (e.g. Indoor Walk → min/km or min/mi).
   if(cfg.pace){
-    html += '<div id="cardio-pace" style="font-family:DM Mono,monospace;font-size:11px;color:var(--go);margin:-4px 0 12px 0;min-height:14px"></div>';
+    html += '<div id="cardio-pace" style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);margin:-4px 0 12px 0;min-height:14px"></div>';
   }
   wrap.innerHTML = html;
   updateCardioPace();
@@ -1570,12 +1570,12 @@ async function handleWorkoutScreenshot(event){
   }
   const resultDiv = document.getElementById('workout-screenshot-result');
   if(resultDiv){
-    resultDiv.innerHTML = '<div style="padding:12px;background:var(--bg3);border-radius:var(--rm);font-size:13px;color:var(--tx2);text-align:center"><span class="pulsing">Reading your workout...</span></div>';
+    resultDiv.innerHTML = '<div style="padding:12px;background:var(--bg3);border-radius:var(--rm);font-size:var(--t-sm);color:var(--tx2);text-align:center"><span class="pulsing">Reading your workout...</span></div>';
   }
   // Downscale on-device first — full-size phone photos blow the request size and time out.
   let dataUrl;
   try{ dataUrl = await downscaleImage(file, 1280, 0.85); }
-  catch(_e){ if(resultDiv) resultDiv.innerHTML = '<div style="padding:12px;background:var(--re-bg);border:1px solid var(--re-bd);border-radius:var(--rm);font-size:13px;color:var(--re)">Could not read that image. Try a screenshot rather than a photo.</div>'; return; }
+  catch(_e){ if(resultDiv) resultDiv.innerHTML = '<div style="padding:12px;background:var(--re-bg);border-radius:var(--rm);font-size:var(--t-base);color:var(--re)">Could not read that image. Try a screenshot rather than a photo.</div>'; return; }
   {
     const base64 = dataUrl.split(',')[1];
     const mime = 'image/jpeg';
@@ -1599,20 +1599,20 @@ async function handleWorkoutScreenshot(event){
       
       if(error || !data?.text){
         const reason = error?.message ? ' (' + error.message + ')' : '';
-        resultDiv.innerHTML = '<div style="padding:12px;background:var(--re-bg);border:1px solid var(--re-bd);border-radius:var(--rm);font-size:13px;color:var(--re)">Couldn\'t read the screenshot' + reason + '. Try a clearer image, or check Settings → Test AI connection.</div>';
+        resultDiv.innerHTML = '<div style="padding:12px;background:var(--re-bg);border-radius:var(--rm);font-size:var(--t-base);color:var(--re)">Couldn\'t read the screenshot' + reason + '. Try a clearer image, or check Settings → Test AI connection.</div>';
         return;
       }
       
       const text = data.text;
       const m = text.match(/\{[\s\S]*\}/);
       if(!m){
-        resultDiv.innerHTML = '<div style="padding:12px;background:var(--re-bg);border:1px solid var(--re-bd);border-radius:var(--rm);font-size:13px;color:var(--re)">AI response unreadable. Please try again.</div>';
+        resultDiv.innerHTML = '<div style="padding:12px;background:var(--re-bg);border-radius:var(--rm);font-size:var(--t-base);color:var(--re)">AI response unreadable. Please try again.</div>';
         return;
       }
       
       const parsed = JSON.parse(m[0]);
       if(parsed.error){
-        resultDiv.innerHTML = '<div style="padding:12px;background:var(--bg3);border-radius:var(--rm);font-size:13px;color:var(--tx2)">No workout summary detected in this image. Make sure your screenshot shows the full workout details.</div>';
+        resultDiv.innerHTML = '<div style="padding:12px;background:var(--bg3);border-radius:var(--rm);font-size:var(--t-sm);color:var(--tx2)">No workout summary detected in this image. Make sure your screenshot shows the full workout details.</div>';
         return;
       }
       
@@ -1624,20 +1624,20 @@ async function handleWorkoutScreenshot(event){
       const confidence = parsed.confidence || 'medium';
       
       resultDiv.innerHTML = 
-        '<div style="padding:14px;background:var(--bg3);border:1px solid var(--go-bd);border-radius:var(--rm)">' +
-          '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Detected · ' + confidence + ' confidence</div>' +
-          '<div style="font-size:15px;color:var(--tx);margin-bottom:8px">' + type + '</div>' +
+        '<div style="padding:14px;background:var(--bg3);border-radius:var(--rm)">' +
+          '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Detected · ' + confidence + ' confidence</div>' +
+          '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:8px">' + type + '</div>' +
           '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px">' +
-            '<div><div style="font-size:10px;color:var(--tx3)">Duration</div><div style="font-family:DM Mono,monospace;color:var(--tx)">' + mins + ' min</div></div>' +
-            '<div><div style="font-size:10px;color:var(--tx3)">Calories</div><div style="font-family:DM Mono,monospace;color:var(--re)">' + cal + '</div></div>' +
-            (hr ? '<div><div style="font-size:10px;color:var(--tx3)">Avg HR</div><div style="font-family:DM Mono,monospace;color:var(--tx)">' + hr + ' bpm</div></div>' : '<div></div>') +
+            '<div><div style="font-size:var(--t-mini);color:var(--tx3)">Duration</div><div style="font-family:var(--font-text);color:var(--tx)">' + mins + ' min</div></div>' +
+            '<div><div style="font-size:var(--t-mini);color:var(--tx3)">Calories</div><div style="font-family:var(--font-text);color:var(--re)">' + cal + '</div></div>' +
+            (hr ? '<div><div style="font-size:var(--t-mini);color:var(--tx3)">Avg HR</div><div style="font-family:var(--font-text);color:var(--tx)">' + hr + ' bpm</div></div>' : '<div></div>') +
           '</div>' +
           '<button class="btn primary" onclick="confirmScreenshotWorkout(' + JSON.stringify(parsed).replace(/"/g, '&quot;') + ')" style="margin-bottom:6px">Log this workout</button>' +
           '<button class="btn quiet" onclick="document.getElementById(\'workout-screenshot-result\').innerHTML=\'\';document.getElementById(\'workout-screenshot-input\').value=\'\'">Cancel</button>' +
         '</div>';
     }catch(err){
       console.error('Screenshot processing failed:', err);
-      resultDiv.innerHTML = '<div style="padding:12px;background:var(--re-bg);border:1px solid var(--re-bd);border-radius:var(--rm);font-size:13px;color:var(--re)">Failed to process: ' + (err.message || err) + '</div>';
+      resultDiv.innerHTML = '<div style="padding:12px;background:var(--re-bg);border-radius:var(--rm);font-size:var(--t-base);color:var(--re)">Failed to process: ' + (err.message || err) + '</div>';
     }
   }
 }
@@ -1833,12 +1833,12 @@ function renderTemplates(){
   const box = document.getElementById('pt-templates'); if(!box) return;
   const mine = (ls('totry_routines')||[]).map(r=>r.name);
   box.innerHTML = TEMPLATE_LIBRARY.map((p,pi) =>
-    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:12px;margin-bottom:8px">'+
-    '<div style="font-size:14px;color:var(--tx);margin-bottom:2px">'+_escFew(p.name)+'</div>'+
-    '<div style="font-size:11px;color:var(--tx3);margin-bottom:8px">'+p.desc+'</div>'+
+    '<div style="background:var(--bg3);border-radius:var(--rm);padding:12px;margin-bottom:8px">'+
+    '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:2px">'+_escFew(p.name)+'</div>'+
+    '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:8px">'+p.desc+'</div>'+
     p.days.map((d,di) => {
       const added = mine.includes(d.name);
-      return '<button class="btn" onclick="addTemplateDay('+pi+','+di+')" style="width:auto;padding:6px 12px;font-size:11px;margin:0 6px 6px 0;'+(added?'background:transparent;border:1px solid var(--bd);color:var(--tx3)':'background:var(--bg2);border:1px solid var(--go-bd);color:var(--go)')+'">'+(added?'\u2713 ':'+ ')+d.name+'</button>';
+      return '<button class="btn" onclick="addTemplateDay('+pi+','+di+')" style="width:auto;padding:6px 12px;font-size:var(--t-cap);margin:0 6px 6px 0;'+(added?'background:transparent;color:var(--tx3)':'background:var(--bg2);color:var(--go)')+'">'+(added?'\u2713 ':'+ ')+d.name+'</button>';
     }).join('')+'</div>'
   ).join('');
 }
@@ -1869,9 +1869,9 @@ function _showAllHevyRoutines(){
   const rows=hevy.map(r=>{
     const exs=Array.isArray(r.exercises)?r.exercises:[];
     const sub=exs.length?(exs.length+' exercise'+(exs.length>1?'s':'')):'tap to start';
-    return '<button class="routine-row" onclick="document.getElementById(\'hevy-all-modal\')?.remove();startHevyRoutine(&#39;'+String(r.hevyId!=null?r.hevyId:(r.id!=null?r.id:'')).replace(/[\\\'"]/g,'')+'&#39;)" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:12px 13px;margin-bottom:6px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);cursor:pointer"><div style="flex:1;min-width:0"><div style="font-size:14px;color:var(--tx);font-weight:500">'+String(r.title||r.name).replace(/</g,'&lt;')+'</div><div style="font-size:11px;color:var(--tx3);margin-top:2px">'+sub+'</div></div><span style="color:var(--go);font-size:13px">Start &rarr;</span></button>';
+    return '<button class="routine-row" onclick="document.getElementById(\'hevy-all-modal\')?.remove();startHevyRoutine(&#39;'+String(r.hevyId!=null?r.hevyId:(r.id!=null?r.id:'')).replace(/[\\\'"]/g,'')+'&#39;)" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:12px 13px;margin-bottom:6px;background:var(--bg3);border-radius:var(--rm);cursor:pointer"><div style="flex:1;min-width:0"><div style="font-size:var(--t-base);color:var(--tx);font-weight:500">'+String(r.title||r.name).replace(/</g,'&lt;')+'</div><div style="font-size:var(--t-cap);color:var(--tx3);margin-top:2px">'+sub+'</div></div><span style="color:var(--go);font-size:var(--t-base)">Start &rarr;</span></button>';
   }).join('');
-  m.innerHTML='<div class="modal" style="max-height:85vh;overflow-y:auto"><div class="modal-handle"></div><div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:4px">Your Hevy routines</div><div style="font-size:12px;color:var(--tx3);margin-bottom:16px">'+hevy.length+' imported</div>'+rows+'<button class="btn" onclick="document.getElementById(\'hevy-all-modal\')?.remove()" style="background:none;border:none;color:var(--tx3);font-size:13px;margin-top:6px">Close</button></div>';
+  m.innerHTML='<div class="modal" style="max-height:85vh;overflow-y:auto"><div class="modal-handle"></div><div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);margin-bottom:4px">Your Hevy routines</div><div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:16px">'+hevy.length+' imported</div>'+rows+'<button class="btn" onclick="document.getElementById(\'hevy-all-modal\')?.remove()" style="background:none;border:none;color:var(--tx3);font-size:var(--t-sm);margin-top:6px">Close</button></div>';
   document.body.appendChild(m); m.addEventListener('click',e=>{if(e.target===m)m.remove();});
 }
 async function startHevyRoutine(id){
@@ -1947,45 +1947,45 @@ function showRoutineBuilderModal(){
   
   const exListHtml = r.exercises.length ?
     r.exercises.map((ex, i) =>
-      '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:10px;margin-bottom:6px">' +
+      '<div style="background:var(--bg3);border-radius:var(--rs);padding:10px;margin-bottom:6px">' +
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">' +
-          '<div style="flex:1;font-size:13px;color:var(--tx)">' + (i+1) + '. ' + ex.name.replace(/</g, '&lt;') + '</div>' +
+          '<div style="flex:1;font-size:var(--t-base);color:var(--tx)">' + (i+1) + '. ' + ex.name.replace(/</g, '&lt;') + '</div>' +
           '<div style="display:flex;gap:4px">' +
-            (i > 0 ? '<button onclick="builderMoveEx(' + i + ',-1)" style="background:none;border:1px solid var(--bd);border-radius:4px;color:var(--tx3);font-size:11px;cursor:pointer;padding:2px 6px">↑</button>' : '') +
-            (i < r.exercises.length - 1 ? '<button onclick="builderMoveEx(' + i + ',1)" style="background:none;border:1px solid var(--bd);border-radius:4px;color:var(--tx3);font-size:11px;cursor:pointer;padding:2px 6px">↓</button>' : '') +
-            '<button onclick="builderRemoveEx(' + i + ')" style="background:none;border:1px solid var(--bd);border-radius:4px;color:var(--re);font-size:11px;cursor:pointer;padding:2px 6px">×</button>' +
+            (i > 0 ? '<button onclick="builderMoveEx(' + i + ',-1)" style="background:none;border-radius:4px;color:var(--tx3);font-size:var(--t-cap);cursor:pointer;padding:2px 6px;background:var(--fill2)">↑</button>' : '') +
+            (i < r.exercises.length - 1 ? '<button onclick="builderMoveEx(' + i + ',1)" style="background:none;border-radius:4px;color:var(--tx3);font-size:var(--t-cap);cursor:pointer;padding:2px 6px;background:var(--fill2)">↓</button>' : '') +
+            '<button onclick="builderRemoveEx(' + i + ')" style="background:none;border-radius:4px;color:var(--re);font-size:var(--t-cap);cursor:pointer;padding:2px 6px;background:var(--fill2)">×</button>' +
           '</div>' +
         '</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">' +
-          '<div>Sets: <input type="number" min="1" max="20" value="' + ex.sets + '" oninput="builderUpdateEx(' + i + ',\'sets\',this.value)" style="width:38px;padding:3px;font-size:16px;text-align:center"></div>' +
-          '<div>Reps: <input type="text" value="' + (ex.reps || '') + '" placeholder="8-12" oninput="builderUpdateEx(' + i + ',\'reps\',this.value)" style="width:50px;padding:3px;font-size:16px;text-align:center"></div>' +
-          '<div>Rest: <input type="text" value="' + (ex.rest || '') + '" placeholder="90s" oninput="builderUpdateEx(' + i + ',\'rest\',this.value)" style="width:50px;padding:3px;font-size:16px;text-align:center"></div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">' +
+          '<div>Sets: <input type="number" min="1" max="20" value="' + ex.sets + '" oninput="builderUpdateEx(' + i + ',\'sets\',this.value)" style="width:38px;padding:3px;font-size:var(--t-base);text-align:center"></div>' +
+          '<div>Reps: <input type="text" value="' + (ex.reps || '') + '" placeholder="8-12" oninput="builderUpdateEx(' + i + ',\'reps\',this.value)" style="width:50px;padding:3px;font-size:var(--t-base);text-align:center"></div>' +
+          '<div>Rest: <input type="text" value="' + (ex.rest || '') + '" placeholder="90s" oninput="builderUpdateEx(' + i + ',\'rest\',this.value)" style="width:50px;padding:3px;font-size:var(--t-base);text-align:center"></div>' +
         '</div>' +
       '</div>'
     ).join('') :
     '<div class="empty-note">No exercises yet. Add the first one below.</div>';
   
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:4px">Routine builder</div>' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">Routine builder</div>' +
     '<h3 style="margin-bottom:6px">Build a routine</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.55">Name the routine, list the exercises with their target sets/reps. Save and assign to a day in your weekly split.</p>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:12px;line-height:1.55">Name the routine, list the exercises with their target sets/reps. Save and assign to a day in your weekly split.</p>' +
     '<div class="eyebrow">Routine name</div>' +
     '<input type="text" id="builder-name" value="' + (r.name || '') + '" placeholder="e.g. Push Day A, Heavy Legs, Pull (Volume)" oninput="_builderRoutine.name=this.value" style="margin-bottom:14px">' +
     
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Exercises (' + r.exercises.length + ')</div>' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Exercises (' + r.exercises.length + ')</div>' +
     '<div id="builder-ex-list" style="max-height:45vh;overflow-y:auto;margin-bottom:12px;padding-right:4px">' + exListHtml + '</div>' +
     
     '<div class="eyebrow">Add exercise</div>' +
     '<div style="position:relative;margin-bottom:14px">' +
       '<div style="display:flex;gap:6px">' +
         '<input type="text" id="builder-add-input" placeholder="Search or type an exercise…" autocomplete="off" oninput="builderSearchExercises(this.value)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();builderAddExFromInput();}" style="flex:1">' +
-        '<button class="btn" onclick="builderAddExFromInput()" style="width:auto;padding:9px 14px;background:var(--bg3);border:1px solid var(--bd);white-space:nowrap">+ Add</button>' +
+        '<button class="btn" onclick="builderAddExFromInput()" style="width:auto;padding:9px 14px;background:var(--bg3);white-space:nowrap">+ Add</button>' +
       '</div>' +
       '<div id="builder-ex-suggestions" style="margin-top:6px"></div>' +
     '</div>' +
     
     '<button class="btn primary" onclick="saveBuilderRoutine()" style="margin-bottom:8px">Save routine</button>' +
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd)">Cancel</button>' +
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;background:var(--fill2)">Cancel</button>' +
   '</div>';
   document.body.appendChild(m);
   
@@ -2022,11 +2022,11 @@ function builderSearchExercises(q){
       }
     });
   }
-  if(!matches.length){ box.innerHTML = '<div style="font-size:11px;color:var(--tx3);padding:6px 2px;font-style:italic">No library match — tap "+ Add" to use what you typed.</div>'; return; }
+  if(!matches.length){ box.innerHTML = '<div style="font-size:var(--t-cap);color:var(--tx3);padding:6px 2px;font-style:italic">No library match — tap "+ Add" to use what you typed.</div>'; return; }
   box.innerHTML = matches.slice(0, 8).map(m =>
-    '<button onclick="builderAddNamed(&apos;' + m.name.replace(/'/g, "\\'") + '&apos;)" style="display:block;width:100%;text-align:left;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:9px 12px;margin-bottom:4px;cursor:pointer;color:var(--tx)">' +
-      '<div style="font-size:13px">' + m.name.replace(/</g,'&lt;') + '</div>' +
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + m.meta.replace(/</g,'&lt;') + '</div>' +
+    '<button onclick="builderAddNamed(&apos;' + m.name.replace(/'/g, "\\'") + '&apos;)" style="display:block;width:100%;text-align:left;background:var(--bg3);border-radius:var(--rs);padding:9px 12px;margin-bottom:4px;cursor:pointer;color:var(--tx)">' +
+      '<div style="font-size:var(--t-base)">' + m.name.replace(/</g,'&lt;') + '</div>' +
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px">' + m.meta.replace(/</g,'&lt;') + '</div>' +
     '</button>'
   ).join('');
 }
@@ -2101,8 +2101,8 @@ function openGoalRoutine(){
   const m=document.createElement('div');
   m.className='modal-bg open';
   m.innerHTML='<div class="modal" style="max-height:92vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:6px">Build from your goal</div>'+
-    '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:14px">Tell me your goal, how many days you can train, and any equipment or limits. I\u2019ll draft a routine you can save and tweak \u2014 a starting point, not gospel.</div>'+
+    '<div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);margin-bottom:6px">Build from your goal</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:14px">Tell me your goal, how many days you can train, and any equipment or limits. I\u2019ll draft a routine you can save and tweak \u2014 a starting point, not gospel.</div>'+
     '<textarea id="goal-routine-input" placeholder="e.g. Build muscle, 4 days a week, full gym, bad left shoulder so easy on overhead pressing" style="min-height:90px;margin-bottom:10px"></textarea>'+
     '<button class="btn primary" id="goal-routine-btn" onclick="generateGoalRoutine()">Draft my routine</button>'+
     '<div id="goal-routine-out" style="margin-top:14px"></div>'+
@@ -2125,17 +2125,17 @@ async function generateGoalRoutine(){
       window.__pendingGoalRoutine=plan;
       let html='';
       (plan.days||[]).forEach((d,di)=>{
-        html+='<div class="card"><div style="font-size:14px;color:var(--tx);font-weight:500;margin-bottom:2px">'+(d.name||'Day '+(di+1))+'</div>'+
-          (d.focus?'<div style="font-size:11px;color:var(--go);margin-bottom:8px">'+d.focus+'</div>':'')+
-          (d.exercises||[]).map(ex=>'<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;font-size:12px;border-bottom:1px solid var(--bd)"><span style="color:var(--tx2)">'+ex.name+(ex.note?' <span style="color:var(--tx3);font-size:10px">('+ex.note+')</span>':'')+'</span><span style="color:var(--tx3);font-family:DM Mono,monospace;font-size:10px;white-space:nowrap">'+(ex.sets||3)+'\u00d7'+(ex.reps||'')+'</span></div>').join('')+
-          '<button class="btn" onclick="saveGoalRoutineDay('+di+')" style="margin-top:8px;font-size:12px;background:var(--bg3);border:1px solid var(--bd)">Save \u201c'+(d.name||'Day '+(di+1)).replace(/"/g,'')+'\u201d as a routine</button>'+
+        html+='<div class="card"><div style="font-size:var(--t-base);color:var(--tx);font-weight:500;margin-bottom:2px">'+(d.name||'Day '+(di+1))+'</div>'+
+          (d.focus?'<div style="font-size:var(--t-cap);color:var(--go);margin-bottom:8px">'+d.focus+'</div>':'')+
+          (d.exercises||[]).map(ex=>'<div style="display:flex;justify-content:space-between;gap:8px;padding:3px 0;font-size:var(--t-sm);border-bottom:1px solid var(--bd)"><span style="color:var(--tx2)">'+ex.name+(ex.note?' <span style="color:var(--tx3);font-size:var(--t-mini)">('+ex.note+')</span>':'')+'</span><span style="color:var(--tx3);font-family:var(--font-text);font-size:var(--t-mini);white-space:nowrap">'+(ex.sets||3)+'\u00d7'+(ex.reps||'')+'</span></div>').join('')+
+          '<button class="btn" onclick="saveGoalRoutineDay('+di+')" style="margin-top:8px;font-size:var(--t-sm);background:var(--bg3)">Save \u201c'+(d.name||'Day '+(di+1)).replace(/"/g,'')+'\u201d as a routine</button>'+
           '</div>';
       });
-      if(plan.summary) html+='<div style="font-size:12px;color:var(--tx2);line-height:1.6;padding:10px;background:var(--bg3);border-radius:var(--rs);margin-bottom:8px">'+plan.summary+'</div>';
+      if(plan.summary) html+='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;padding:10px;background:var(--bg3);border-radius:var(--rs);margin-bottom:8px">'+plan.summary+'</div>';
       html+='<button class="btn primary" onclick="saveAllGoalRoutineDays()" style="margin-top:4px">Save all days as routines</button>';
       out.innerHTML=html;
-    } else if(out){ out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t draft that. Try describing your goal differently.</div>'; }
-  }catch(e){ if(out){ out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t reach the coach right now.</div>'; } }
+    } else if(out){ out.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Couldn\u2019t draft that. Try describing your goal differently.</div>'; }
+  }catch(e){ if(out){ out.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Couldn\u2019t reach the coach right now.</div>'; } }
   finally{ if(btn){ btn.textContent='Draft my routine'; btn.disabled=false; } }
 }
 function _goalDayToRoutine(d){
@@ -2171,9 +2171,9 @@ function saveAllGoalRoutineDays(){
 
 function renderRoutines(){
   const routines=ls('totry_routines')||[];const container=document.getElementById('pt-routines-list');if(!container)return;
-  if(!routines.length){container.innerHTML='<div style="text-align:center;padding:24px 16px"><div style="font-family:\'Cormorant Garamond\',serif;font-size:18px;font-style:italic;color:var(--tx3);margin-bottom:6px">No routines saved yet.</div><div style="font-size:13px;color:var(--tx3)">Log a session and save it as a routine.</div></div>';return;}
+  if(!routines.length){container.innerHTML='<div style="text-align:center;padding:24px 16px"><div style="font-family:var(--font-serif);font-size:var(--t-hd);font-style:italic;color:var(--tx3);margin-bottom:6px">No routines saved yet.</div><div style="font-size:var(--t-sm);color:var(--tx3)">Log a session and save it as a routine.</div></div>';return;}
   container.innerHTML='';
-  routines.forEach(r=>{const card=document.createElement('div');card.className='card';card.style.marginBottom='8px';const _ex=(r&&Array.isArray(r.exercises))?r.exercises:[];card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div style="font-size:13px;font-weight:500;color:var(--tx)">'+_escFew(r.name||'Routine')+'</div><button style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:14px;padding:0 4px" onclick="deleteRoutine('+r.id+')" aria-label="Delete this routine">&#215;</button></div><div style="font-size:12px;color:var(--tx3);margin-bottom:10px">'+_ex.length+' exercise'+(_ex.length===1?'':'s')+' \u00b7 '+_ex.map(e=>e&&e.name||'?').slice(0,3).join(', ')+(_ex.length>3?'...':'')+'</div><button class="btn primary" style="padding:9px" onclick="loadRoutine('+r.id+')">Load this routine \u2192</button>';container.appendChild(card);});
+  routines.forEach(r=>{const card=document.createElement('div');card.className='card';card.style.marginBottom='8px';const _ex=(r&&Array.isArray(r.exercises))?r.exercises:[];card.innerHTML='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px"><div style="font-size:var(--t-base);font-weight:500;color:var(--tx)">'+_escFew(r.name||'Routine')+'</div><button style="background:none;border:none;color:var(--tx3);cursor:pointer;font-size:var(--t-sm);padding:0 4px" onclick="deleteRoutine('+r.id+')" aria-label="Delete this routine">&#215;</button></div><div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px">'+_ex.length+' exercise'+(_ex.length===1?'':'s')+' \u00b7 '+_ex.map(e=>e&&e.name||'?').slice(0,3).join(', ')+(_ex.length>3?'...':'')+'</div><button class="btn primary" style="padding:9px" onclick="loadRoutine('+r.id+')">Load this routine \u2192</button>';container.appendChild(card);});
 }
 // renderSplitDayCards() removed. It painted .pt-split-day-card rows into #pt-split-days — an id
 // that is not in the shell — so it returned on its first line at both call sites. Its live
@@ -2234,7 +2234,7 @@ function renderExerciseProgressChart(exName){
   });
   
   if(points.length < 2){
-    box.innerHTML = '<div style="padding:18px;text-align:center;color:var(--tx3);font-size:12px;font-style:italic;background:var(--bg3);border-radius:var(--rs)">Log this lift at least twice to see your strength curve. One session in — keep going.</div>';
+    box.innerHTML = '<div style="padding:18px;text-align:center;color:var(--tx3);font-size:var(--t-sm);font-style:italic;background:var(--bg3);border-radius:var(--rs)">Log this lift at least twice to see your strength curve. One session in — keep going.</div>';
     return;
   }
   
@@ -2263,7 +2263,7 @@ function renderExerciseProgressChart(exName){
     svg += '<text x="' + (padL-4) + '" y="' + (yy+3).toFixed(1) + '" text-anchor="end" font-family="DM Mono,monospace" font-size="8" fill="var(--tx3)">' + v + '</text>';
   });
   // area fill
-  svg += '<polygon points="' + areaPts + '" fill="rgba(200,169,110,0.12)"/>';
+  svg += '<polygon points="' + areaPts + '" fill="var(--go-bg)"/>';
   // line
   svg += '<polyline points="' + linePts + '" fill="none" stroke="var(--go)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
   // dots
@@ -2301,19 +2301,19 @@ function renderExerciseProgressChart(exName){
 
   box.innerHTML = svg +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;padding-top:10px;border-top:1px solid var(--bd)">' +
-      '<div><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Est. 1RM now</div><div style="font-size:18px;color:var(--tx)">' + last + 'kg</div></div>' +
-      '<div style="text-align:right"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Since first log</div><div style="font-size:14px;color:' + deltaColor + '">' + deltaTxt + '</div></div>' +
+      '<div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">Est. 1RM now</div><div style="font-size:var(--t-hd);color:var(--tx)">' + last + 'kg</div></div>' +
+      '<div style="text-align:right"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">Since first log</div><div style="font-size:var(--t-base);color:' + deltaColor + '">' + deltaTxt + '</div></div>' +
     '</div>' +
     '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px">' +
-      '<div style="background:var(--bg3);border-radius:var(--rs);padding:9px;text-align:center"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em">Best set</div><div style="font-size:13px;color:var(--tx);margin-top:2px">' + (bestSet.w?bestSet.w+'×'+bestSet.r:'—') + '</div></div>' +
-      '<div style="background:var(--bg3);border-radius:var(--rs);padding:9px;text-align:center"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em">Total volume</div><div style="font-size:13px;color:var(--tx);margin-top:2px">' + (totalVol>=1000?(totalVol/1000).toFixed(1)+'t':Math.round(totalVol)+'kg') + '</div></div>' +
-      '<div style="background:var(--bg3);border-radius:var(--rs);padding:9px;text-align:center"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.08em">Sessions</div><div style="font-size:13px;color:var(--tx);margin-top:2px">' + sessions + '</div></div>' +
+      '<div style="background:var(--bg3);border-radius:var(--rs);padding:9px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">Best set</div><div style="font-size:var(--t-base);color:var(--tx);margin-top:2px">' + (bestSet.w?bestSet.w+'×'+bestSet.r:'—') + '</div></div>' +
+      '<div style="background:var(--bg3);border-radius:var(--rs);padding:9px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">Total volume</div><div style="font-size:var(--t-base);color:var(--tx);margin-top:2px">' + (totalVol>=1000?(totalVol/1000).toFixed(1)+'t':Math.round(totalVol)+'kg') + '</div></div>' +
+      '<div style="background:var(--bg3);border-radius:var(--rs);padding:9px;text-align:center"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">Sessions</div><div style="font-size:var(--t-base);color:var(--tx);margin-top:2px">' + sessions + '</div></div>' +
     '</div>';
   // Progressive-overload nudge — what to try next session, from this lift's own history.
   try{
     const ov = (typeof overloadSuggestion==='function') ? overloadSuggestion(exName) : null;
     if(ov && ov.suggestion){
-      box.innerHTML += '<div style="margin-top:10px;padding:11px 13px;background:linear-gradient(135deg,rgba(200,169,110,0.10),rgba(140,107,182,0.04));border:1px solid var(--go-bd);border-radius:var(--rs)"><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">\u2197 Next session</div><div style="font-size:12px;color:var(--tx2);line-height:1.5">' + ov.suggestion + '</div></div>';
+      box.innerHTML += '<div style="margin-top:10px;padding:11px 13px;background:var(--go-bg);border-radius:var(--rs)"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">\u2197 Next session</div><div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.5">' + ov.suggestion + '</div></div>';
     }
   }catch(_){ }
 }
@@ -2321,7 +2321,7 @@ function renderExerciseProgressChart(exName){
 function renderWorkoutHistory(){
   renderPersonalRecords();
   const history=ls('totry_workouts')||[];const container=document.getElementById('pt-history-list');if(!container)return;
-  if(!history.length){container.innerHTML='<div style="text-align:center;padding:32px 16px"><div style="font-family:\'Cormorant Garamond\',serif;font-size:18px;font-style:italic;color:var(--tx3);margin-bottom:6px">No sessions logged yet.</div><div style="font-size:12px;color:var(--tx3);line-height:1.6">Log a workout in the <span style="color:var(--go)">Log</span> tab, or sync Hevy to import your history.</div></div>';return;}
+  if(!history.length){container.innerHTML='<div style="text-align:center;padding:32px 16px"><div style="font-family:var(--font-serif);font-size:var(--t-hd);font-style:italic;color:var(--tx3);margin-bottom:6px">No sessions logged yet.</div><div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6">Log a workout in the <span style="color:var(--go)">Log</span> tab, or sync Hevy to import your history.</div></div>';return;}
   container.innerHTML='';
   history.forEach(s=>{
     const item=document.createElement('div');item.className='workout-history-item';
@@ -2354,17 +2354,17 @@ function renderWorkoutHistory(){
       const exList = s.exercises.map(ex => {
         const setsHtml = (ex.sets || []).map((set, i) => {
           const rpe = set.rpe ? ' <span style="color:var(--go);font-weight:600">@' + set.rpe + '</span>' : '';
-          return '<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:' + (set.done ? 'var(--gr)' : 'var(--tx3)') + ';margin-right:10px;display:inline-block">S' + (i+1) + ': ' + (set.weight||'?') + 'kg×' + (set.reps||'?') + rpe + '</span>';
+          return '<span style="font-family:var(--font-text);font-size:var(--t-mini);color:' + (set.done ? 'var(--gr)' : 'var(--tx3)') + ';margin-right:10px;display:inline-block">S' + (i+1) + ': ' + (set.weight||'?') + 'kg×' + (set.reps||'?') + rpe + '</span>';
         }).join('');
         const noteHtml = ex.notes && ex.notes.trim() ?
-          '<div style="margin-top:6px;padding:6px 8px;background:var(--bg3);border-left:2px solid var(--go);border-radius:0 4px 4px 0;font-size:11px;color:var(--tx2);line-height:1.5;font-style:italic">'+svgIcon("edit")+' ' + ex.notes.replace(/</g, '&lt;') + '</div>' : '';
+          '<div style="margin-top:6px;padding:6px 8px;background:var(--bg3);border-left:2px solid var(--go);border-radius:0 4px 4px 0;font-size:var(--t-cap);color:var(--tx2);line-height:1.5;font-style:italic">'+svgIcon("edit")+' ' + ex.notes.replace(/</g, '&lt;') + '</div>' : '';
         return '<div style="padding:10px 0;border-bottom:1px solid var(--bd)">' +
-          '<div style="font-size:13px;font-weight:500;color:var(--tx);margin-bottom:6px">' + ex.name + '</div>' +
+          '<div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:6px">' + ex.name + '</div>' +
           '<div style="line-height:1.7">' + setsHtml + '</div>' +
           noteHtml +
         '</div>';
       }).join('');
-      m.innerHTML='<div class="modal" style="max-height:92vh"><div class="modal-handle"></div><div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);margin-bottom:4px;letter-spacing:0.1em">'+_when+'</div><div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:8px">'+_focus+'</div>'+((displayVolume(s))?'<div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--go);margin-bottom:10px">Volume: '+displayVolume(s).toLocaleString()+'kg'+(ls('totry_bw_volume')?' (incl. bodyweight)':'')+'</div>':'')+'<div style="max-height:55vh;overflow-y:auto;padding-right:4px;margin-bottom:14px">'+exList+'</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" style="flex:1" onclick="reloadSession('+s.id+');this.closest(\'.modal-bg\').remove()">Repeat session</button><button class="btn" style="flex:1" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div><button class="btn" onclick="deleteWorkoutFromHistory('+s.id+')" style="background:transparent;border:1px solid var(--bd);color:var(--re);font-size:11px;margin-top:8px">Delete this session</button></div>';
+      m.innerHTML='<div class="modal" style="max-height:92vh"><div class="modal-handle"></div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);margin-bottom:4px;letter-spacing:0.1em">'+_when+'</div><div style="font-size:var(--t-base);font-weight:500;color:var(--tx);margin-bottom:8px">'+_focus+'</div>'+((displayVolume(s))?'<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);margin-bottom:10px">Volume: '+displayVolume(s).toLocaleString()+'kg'+(ls('totry_bw_volume')?' (incl. bodyweight)':'')+'</div>':'')+'<div style="max-height:55vh;overflow-y:auto;padding-right:4px;margin-bottom:14px">'+exList+'</div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn primary" style="flex:1" onclick="reloadSession('+s.id+');this.closest(\'.modal-bg\').remove()">Repeat session</button><button class="btn" style="flex:1" onclick="this.closest(\'.modal-bg\').remove()">Close</button></div><button class="btn" onclick="deleteWorkoutFromHistory('+s.id+')" style="background:transparent;color:var(--re);font-size:var(--t-cap);margin-top:8px;background:var(--fill2)">Delete this session</button></div>';
       document.body.appendChild(m);
     };
     container.appendChild(item);
@@ -2493,7 +2493,7 @@ function renderMuscleHeatmap(){
     '<rect x="63" y="166" width="13" height="38" rx="5" '+st('calves')+'/>'+
     '<text x="60" y="232" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.35)" font-family="DM Mono,monospace">BACK</text></svg>';
   box.innerHTML = '<div class="card" style="margin-top:8px"><div class="card-hd" style="margin-bottom:4px">Muscle map &middot; last 7 days</div>'+
-    '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Brighter gold = more sets this week. Dark = untouched.</div>'+
+    '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:10px">Brighter gold = more sets this week. Dark = untouched.</div>'+
     // AN ALWAYS-DARK PANEL, the way .breath-overlay already does it. This diagram is built entirely
     // out of white-on-dark alphas — untouched muscles are rgba(255,255,255,0.05) and the card's own
     // caption says "Dark = untouched" — so on the light theme the whole body went invisible on cream
@@ -2520,17 +2520,17 @@ function _renderSetsPerMuscle(){
       const tag = status==='in' ? 'in range' : (status==='under' ? 'build up' : 'high');
       const pct = Math.min(100, (n/20)*100);
       return '<div style="margin-bottom:7px">'+
-        '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px"><span style="color:var(--tx2)">'+labels[g]+'</span><span style="color:'+col+';font-family:DM Mono,monospace;font-size:10px">'+n+' sets \u00b7 '+tag+'</span></div>'+
+        '<div style="display:flex;justify-content:space-between;font-size:var(--t-cap);margin-bottom:2px"><span style="color:var(--tx2)">'+labels[g]+'</span><span style="color:'+col+';font-family:var(--font-text);font-size:var(--t-mini)">'+n+' sets \u00b7 '+tag+'</span></div>'+
         '<div style="height:4px;background:var(--bg3);border-radius:2px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+col+'"></div></div>'+
         '</div>';
     }).join('');
     let warnHtml = '';
     const warns = muscleBalanceWarnings();
     if(warns.length){
-      warnHtml = warns.map(w => '<div style="margin-top:8px;padding:9px 11px;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rs);font-size:11px;color:var(--tx2);line-height:1.5">'+svgIcon("scale")+' '+w+'</div>').join('');
+      warnHtml = warns.map(w => '<div style="margin-top:8px;padding:9px 11px;background:var(--go-bg);border-radius:var(--rs);font-size:var(--t-cap);color:var(--tx2);line-height:1.5">'+svgIcon("scale")+' '+w+'</div>').join('');
     }
     return '<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--bd)">'+
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px">Weekly sets \u00b7 target 10\u201320 per muscle</div>'+
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:10px">Weekly sets \u00b7 target 10\u201320 per muscle</div>'+
       rows + warnHtml + '</div>';
   }catch(e){ return ''; }
 }
@@ -2552,11 +2552,11 @@ function renderTrainingLoad(){
       const meta = [d.sessions + ' session' + (d.sessions===1?'':'s'), d.minutes?d.minutes+' min':null, d.avgEffort?('avg RPE '+d.avgEffort):null].filter(Boolean).join(' \u00b7 ');
       const lb = labels[m];
       const lbHtml = lb ? ((lb[0] ? '<span style="color:var(--go)">'+svgIcon(lb[0],14)+'</span> ' : '') + lb[1]) : m;
-      return '<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;font-size:12px"><span style="color:var(--tx2)">' + lbHtml + '</span><span style="color:var(--tx3);font-family:DM Mono,monospace;font-size:10px">' + meta + '</span></div>';
+      return '<div style="display:flex;justify-content:space-between;gap:8px;padding:5px 0;font-size:var(--t-sm)"><span style="color:var(--tx2)">' + lbHtml + '</span><span style="color:var(--tx3);font-family:var(--font-text);font-size:var(--t-mini)">' + meta + '</span></div>';
     }).join('');
-    const intfHtml = intf ? '<div style="margin-top:10px;padding:10px 12px;background:rgba(140,107,182,0.08);border:1px solid var(--go-bd);border-radius:var(--rs);font-size:12px;color:var(--tx2);line-height:1.5">'+svgIcon("zap")+' ' + intf + '</div>' : '';
+    const intfHtml = intf ? '<div style="margin-top:10px;padding:10px 12px;background:rgba(140,107,182,0.08);border-radius:var(--rs);font-size:var(--t-sm);color:var(--tx2);line-height:1.5">'+svgIcon("zap")+' ' + intf + '</div>' : '';
     box.innerHTML = '<div class="card" style="margin-top:8px"><div class="card-hd" style="margin-bottom:4px">Training mix \u00b7 last 7 days</div>'+
-      (mods.length>1?'<div style="font-size:11px;color:var(--tx3);margin-bottom:8px">How your week balances across training types.</div>':'')+
+      (mods.length>1?'<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:8px">How your week balances across training types.</div>':'')+
       rows + intfHtml + '</div>';
   }catch(e){ box.innerHTML = ''; }
 }
@@ -2683,7 +2683,7 @@ function renderMuscleGroupCard(){
   const totalVol = Object.values(volumes).reduce((s,v) => s+v, 0);
   
   if(totalVol === 0){
-    container.innerHTML = '<div style="text-align:center;padding:20px 12px;font-size:12px;color:var(--tx3);font-style:italic">Log some workouts to see your weekly volume + frequency.</div>';
+    container.innerHTML = '<div style="text-align:center;padding:20px 12px;font-size:var(--t-sm);color:var(--tx3);font-style:italic">Log some workouts to see your weekly volume + frequency.</div>';
     return;
   }
   
@@ -2703,13 +2703,13 @@ function renderMuscleGroupCard(){
       else if(days <= 7) freqLabel = '<span style="color:var(--go)">' + days + 'd ago</span>';
       else freqLabel = '<span style="color:var(--re)">' + days + 'd ago</span>';
       
-      return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;font-size:11px">' +
+      return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;font-size:var(--t-cap)">' +
         '<div style="min-width:80px;color:var(--tx2)">' + groupLabels[g] + '</div>' +
         '<div style="flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">' +
           '<div style="height:100%;background:var(--go);width:' + pct + '%;transition:width 0.4s"></div>' +
         '</div>' +
-        '<div style="min-width:80px;text-align:right;font-family:DM Mono,monospace;color:var(--tx2)">' + _volLabel(v) + '</div>' +
-        '<div style="min-width:60px;text-align:right;font-family:DM Mono,monospace;font-size:10px">' + freqLabel + '</div>' +
+        '<div style="min-width:80px;text-align:right;font-family:var(--font-text);color:var(--tx2)">' + _volLabel(v) + '</div>' +
+        '<div style="min-width:60px;text-align:right;font-family:var(--font-text);font-size:var(--t-mini)">' + freqLabel + '</div>' +
       '</div>';
     }).join('');
   
@@ -2718,13 +2718,13 @@ function renderMuscleGroupCard(){
   const neglected = notHitThisWeek.length ? notHitThisWeek.map(g => groupLabels[g]).join(', ') : null;
   
   container.innerHTML =
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:10px">Weekly volume · last hit</div>' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:10px">Weekly volume · last hit</div>' +
     volumeRows +
     (neglected ?
-      '<div style="margin-top:14px;padding:10px;background:rgba(216,93,75,0.08);border:1px solid var(--re-bd);border-radius:var(--rs);font-size:11px;color:var(--tx2);line-height:1.5">' +
+      '<div style="margin-top:14px;padding:10px;background:rgba(216,93,75,0.08);border-radius:var(--rs);font-size:var(--t-cap);color:var(--tx2);line-height:1.5">' +
         '<strong style="color:var(--re)">Not trained this week:</strong> ' + neglected +
       '</div>' : '') +
-    '<div style="font-family:Cormorant Garamond,serif;font-size:11px;font-style:italic;color:var(--tx3);text-align:center;margin-top:14px;line-height:1.5">Volume = weight × reps for completed sets. Volume per group hit by multi-joint lifts counts once per primary muscle.</div>';
+    '<div style="font-family:var(--font-serif);font-size:var(--t-cap);font-style:italic;color:var(--tx3);text-align:center;margin-top:14px;line-height:1.5">Volume = weight × reps for completed sets. Volume per group hit by multi-joint lifts counts once per primary muscle.</div>';
 }
 
 // ── STARTER ROUTINE TEMPLATES ────────────────────────────────
@@ -2805,15 +2805,15 @@ function openRoutineTemplates(){
   m.className = 'modal-bg open';
   let cards = '';
   STARTER_TEMPLATES.forEach((t, i) => {
-    cards += '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:14px;margin-bottom:10px;cursor:pointer" onclick="previewTemplate(' + i + ')">' +
-      '<div style="font-size:14px;color:var(--tx);margin-bottom:4px">' + t.name + '</div>' +
-      '<div style="font-size:11px;color:var(--tx3);line-height:1.5">' + t.description + '</div>' +
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);margin-top:6px;text-transform:uppercase;letter-spacing:0.1em">' + t.days.length + ' day' + (t.days.length > 1 ? 's' : '') + ' · Tap to preview</div>' +
+    cards += '<div style="background:var(--bg3);border-radius:var(--rm);padding:14px;margin-bottom:10px;cursor:pointer" onclick="previewTemplate(' + i + ')">' +
+      '<div style="font-size:var(--t-base);color:var(--tx);margin-bottom:4px">' + t.name + '</div>' +
+      '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5">' + t.description + '</div>' +
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);margin-top:6px;text-transform:uppercase;letter-spacing:0.01em">' + t.days.length + ' day' + (t.days.length > 1 ? 's' : '') + ' · Tap to preview</div>' +
     '</div>';
   });
   m.innerHTML = '<div class="modal" style="max-height:88vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:6px">Starter templates</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Proven routines used by lifters worldwide. Pick one to import as your weekly split.</p>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px">Proven routines used by lifters worldwide. Pick one to import as your weekly split.</p>' +
     cards +
     '<button class="btn" onclick="closeModal(this)">Close</button>' +
   '</div>';
@@ -2829,14 +2829,14 @@ function previewTemplate(idx){
   m.className = 'modal-bg open';
   let daysHtml = '';
   t.days.forEach((d, i) => {
-    daysHtml += '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:12px;margin-bottom:8px">' +
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">Day ' + (i+1) + ' · ' + d.focus + '</div>' +
-      '<div style="font-size:12px;color:var(--tx2);line-height:1.7">' + d.exercises.map(e => '• ' + e).join('<br>') + '</div>' +
+    daysHtml += '<div style="background:var(--bg3);border-radius:var(--rm);padding:12px;margin-bottom:8px">' +
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">Day ' + (i+1) + ' · ' + d.focus + '</div>' +
+      '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7">' + d.exercises.map(e => '• ' + e).join('<br>') + '</div>' +
     '</div>';
   });
   m.innerHTML = '<div class="modal" style="max-height:90vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:4px">' + t.name + '</h3>' +
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.5">' + t.description + '</p>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:14px;line-height:1.5">' + t.description + '</p>' +
     daysHtml +
     '<button class="btn primary" onclick="importTemplate(' + idx + ')" style="margin-bottom:8px">Import as my split</button>' +
     '<button class="btn" onclick="closeModal(this)">Back</button>' +
@@ -2893,7 +2893,7 @@ function importTemplate(idx){
 function renderPersonalRecords(){
   const prs=ls('totry_prs')||{};const container=document.getElementById('pt-pr-list');if(!container)return;
   const keys=Object.keys(prs);
-  if(!keys.length){container.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:8px 0">Log workouts to track personal records.</p>';return;}
+  if(!keys.length){container.innerHTML='<p style="font-size:var(--t-sm);color:var(--tx3);text-align:center;padding:8px 0">Log workouts to track personal records.</p>';return;}
   container.innerHTML='';
   keys.sort().forEach(name=>{
     const pr=prs[name];
@@ -2901,7 +2901,7 @@ function renderPersonalRecords(){
     card.className='pr-card';
     card.style.cursor = 'pointer';
     card.title = 'Tap to see progress chart';
-    card.innerHTML='<div><div class="pr-ex">'+_escFew(name)+'</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);margin-top:2px">'+svgIcon("chart")+' Tap to chart</div></div><div style="text-align:right"><div class="pr-val">'+pr.weight+'kg \u00d7 '+pr.reps+'</div><div class="pr-date">est. 1RM: '+pr.orm+'kg \u00b7 '+pr.date+'</div></div>';
+    card.innerHTML='<div><div class="pr-ex">'+_escFew(name)+'</div><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);margin-top:2px">'+svgIcon("chart")+' Tap to chart</div></div><div style="text-align:right"><div class="pr-val">'+pr.weight+'kg \u00d7 '+pr.reps+'</div><div class="pr-date">est. 1RM: '+pr.orm+'kg \u00b7 '+pr.date+'</div></div>';
     card.onclick = () => showExerciseProgress(name);
     container.appendChild(card);
   });
@@ -2982,11 +2982,11 @@ function showExerciseProgress(exName){
   
   // Last 5 sessions table
   const recent = dataPoints.slice(-5).reverse();
-  let tableHtml = '<div style="margin-top:14px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Recent sessions</div>';
+  let tableHtml = '<div style="margin-top:14px"><div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">Recent sessions</div>';
   recent.forEach(d => {
-    tableHtml += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px">' +
+    tableHtml += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:var(--t-sm)">' +
       '<span style="color:var(--tx2)">' + d.date + '</span>' +
-      '<span style="font-family:DM Mono,monospace;color:var(--tx)">' + d.maxW + 'kg × ' + d.bestReps + ' · 1RM ' + d.est1RM + 'kg</span>' +
+      '<span style="font-family:var(--font-text);color:var(--tx)">' + d.maxW + 'kg × ' + d.bestReps + ' · 1RM ' + d.est1RM + 'kg</span>' +
     '</div>';
   });
   tableHtml += '</div>';
@@ -2998,13 +2998,13 @@ function showExerciseProgress(exName){
   const progressPct = first.est1RM > 0 ? Math.round((progressKg / first.est1RM) * 100) : 0;
   const progressLine = dataPoints.length > 1 ?
     '<div style="text-align:center;background:var(--bg3);border:1px solid ' + (progressKg >= 0 ? 'var(--gr-bd)' : 'var(--re-bd)') + ';border-radius:var(--rs);padding:10px;margin-bottom:12px">' +
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Progress since first session</div>' +
-      '<div style="font-size:18px;color:' + (progressKg >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:2px">' + (progressKg >= 0 ? '+' : '') + progressKg + 'kg (' + (progressPct >= 0 ? '+' : '') + progressPct + '%)</div>' +
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em">Progress since first session</div>' +
+      '<div style="font-size:var(--t-hd);color:' + (progressKg >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:2px">' + (progressKg >= 0 ? '+' : '') + progressKg + 'kg (' + (progressPct >= 0 ? '+' : '') + progressPct + '%)</div>' +
     '</div>' : '';
   
   m.innerHTML = '<div class="modal" style="max-height:90vh"><div class="modal-handle"></div>' +
     '<h3 style="margin-bottom:4px">' + _escFew(exName) + '</h3>' +
-    '<p style="font-size:11px;color:var(--tx3);margin-bottom:12px">Estimated 1RM (Epley formula) over time</p>' +
+    '<p style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:12px">Estimated 1RM (Epley formula) over time</p>' +
     progressLine +
     svg +
     tableHtml +

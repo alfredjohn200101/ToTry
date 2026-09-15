@@ -79,8 +79,8 @@ function renderConnectedApps(){
     }
     row.innerHTML = '<div class="ca-icon" style="background:'+app.color+'">'+app.icon+'</div>'+
       '<div style="flex:1"><div class="ca-name">'+app.name+'</div><div class="ca-status">'+statusLabel+'</div></div>'+
-      '<button class="btn sr-action" style="width:auto;padding:6px 10px;font-size:11px" onclick="openLinkedApp(&apos;'+appId+'&apos;)">Open</button>'+
-      '<button class="btn sr-action" style="width:auto;padding:6px 8px;font-size:11px;background:var(--re-bg);color:var(--re);border-color:var(--re-bd)" onclick="removeLinkedApp(&apos;'+appId+'&apos;)" aria-label="Unlink this app">&#215;</button>';
+      '<button class="btn sr-action" style="width:auto;padding:6px 10px;font-size:var(--t-cap)" onclick="openLinkedApp(&apos;'+appId+'&apos;)">Open</button>'+
+      '<button class="btn sr-action" style="width:auto;padding:6px 8px;font-size:var(--t-cap);background:var(--re-bg);color:var(--re);border-color:var(--re-bd)" onclick="removeLinkedApp(&apos;'+appId+'&apos;)" aria-label="Unlink this app">&#215;</button>';
     list.appendChild(row);
   });
 }

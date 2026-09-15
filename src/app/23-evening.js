@@ -213,7 +213,7 @@ function renderEveningHabitTickList(){
     // same lie that was fixed on Home's habit card while this copy sat here untouched. Give the
     // person the actual door instead of the name of a room that does not hold it.
     list.innerHTML = '<p class="empty-note" style="margin-bottom:10px">No habits yet \u2014 pick one small thing you want to be true of you most days.</p>' +
-      '<button class="btn primary" style="width:auto;padding:9px 18px;font-size:13px" onclick="openAddHabit()">Add your first habit</button>';
+      '<button class="btn primary" style="width:auto;padding:9px 18px;font-size:var(--t-base)" onclick="openAddHabit()">Add your first habit</button>';
     return;
   }
   list.innerHTML = '';
@@ -233,9 +233,9 @@ function renderEveningHabitTickList(){
     row.setAttribute('aria-label', h.n);
     row.style.cssText = 'width:100%;text-align:left;font:inherit;border:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px;background:'+(done?'var(--gr-bg)':'var(--bg3)')+';border:1px solid '+(done?'var(--gr-bd)':'var(--bd)')+';border-radius:var(--rs);margin-bottom:6px;cursor:pointer';
     row.onclick = () => toggleEveningHabit(hi);
-    row.innerHTML = '<div style="width:22px;height:22px;border-radius:var(--rs);border:2px solid '+(done?'var(--gr)':'var(--bd)')+';background:'+(done?'var(--gr)':'transparent')+';display:flex;align-items:center;justify-content:center;color:#0C0C0E;font-weight:700;flex-shrink:0">'+(done?'&#10003;':'')+'</div>'+
-      '<div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--tx)">'+_escFew(h.n)+'</div>'+
-      (habitAnchor(h)?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">after '+_escFew(habitAnchor(h))+'</div>':'')+'</div>';
+    row.innerHTML = '<div style="width:22px;height:22px;border-radius:var(--rs);border:2px solid '+(done?'var(--gr)':'var(--bd)')+';background:'+(done?'var(--gr)':'transparent')+';display:flex;align-items:center;justify-content:center;color:var(--bg);font-weight:700;flex-shrink:0">'+(done?'&#10003;':'')+'</div>'+
+      '<div style="flex:1;min-width:0"><div style="font-size:var(--t-base);color:var(--tx)">'+_escFew(h.n)+'</div>'+
+      (habitAnchor(h)?'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">after '+_escFew(habitAnchor(h))+'</div>':'')+'</div>';
     list.appendChild(row);
   });
 }
@@ -425,13 +425,13 @@ function showExamenStep(idx){
     '<div style="display:flex;gap:4px;margin-bottom:12px">' +
       EXAMEN_STEPS.map((_, i) => '<div style="flex:1;height:3px;border-radius:2px;background:' + (i <= idx ? 'var(--go)' : 'var(--bd)') + '"></div>').join('') +
     '</div>' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:4px">Step ' + step.n + ' of 5</div>' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">Step ' + step.n + ' of 5</div>' +
     '<h3 style="margin-bottom:4px">' + step.title + '</h3>' +
-    '<div style="font-family:Cormorant Garamond,serif;font-size:17px;color:var(--tx2);font-style:italic;margin-bottom:10px">' + step.sub + '</div>' +
-    '<p style="font-size:13px;color:var(--tx3);line-height:1.65;margin-bottom:14px">' + step.body + '</p>' +
+    '<div style="font-family:var(--font-serif);font-size:var(--t-base);color:var(--tx2);font-style:italic;margin-bottom:10px">' + step.sub + '</div>' +
+    '<p style="font-size:var(--t-sm);color:var(--tx3);line-height:1.65;margin-bottom:14px">' + step.body + '</p>' +
     '<textarea id="examen-input" placeholder="' + step.placeholder + '" style="min-height:' + step.minHeight + 'px;margin-bottom:14px">' + (_examenAnswers[step.field] || '') + '</textarea>' +
     '<div style="display:flex;gap:8px">' +
-      (idx > 0 ? '<button class="btn" onclick="examenBack(' + idx + ')" style="flex:1;background:transparent;border:1px solid var(--bd)">Back</button>' : '') +
+      (idx > 0 ? '<button class="btn" onclick="examenBack(' + idx + ')" style="flex:1;background:transparent;background:var(--fill2)">Back</button>' : '') +
       '<button class="btn primary" onclick="examenNext(' + idx + ')" style="flex:2">' + (isLast ? ('Complete ' + _examenNoun()) : 'Next →') + '</button>' +
     '</div>' +
     '<button class="btn quiet" onclick="closeModal(this)" style="margin-top:8px">Exit (progress lost)</button>' +
@@ -479,9 +479,9 @@ function saveExamen(){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>' +
     '<div style="text-align:center;padding:14px 0">' +
-      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:8px">'+_examenNoun()+' Complete</div>' +
-      '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;line-height:1.4;margin-bottom:14px">"'+_examenClose().q+'"</div>' +
-      '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3)">'+_escFew(_examenClose().r)+'</div>' +
+      '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">'+_examenNoun()+' Complete</div>' +
+      '<div style="font-family:var(--font-serif);font-size:var(--t-xl);color:var(--tx);font-style:italic;line-height:1.4;margin-bottom:14px">"'+_examenClose().q+'"</div>' +
+      '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3)">'+_escFew(_examenClose().r)+'</div>' +
     '</div>' +
     '<div class="prayer-box" style="margin-bottom:14px"><div class="prayer-text">'+_escFew(((typeof _EVE_PRAYERS!=='undefined' && _EVE_PRAYERS[(typeof faithTradition==='function'?faithTradition():'secular')]) || _EVE_PRAYERS.secular).text)+'</div></div>' +
     '<button class="btn primary" onclick="closeModal(this)">Rest in peace tonight</button>' +
@@ -517,17 +517,17 @@ function showExamenHistory(){
     // Build a 1-line preview from any filled answer
     const previewSrc = e.gratitude || e.review || e.repent || e.renewal || e.petition || '';
     const preview = previewSrc.slice(0, 80) + (previewSrc.length > 80 ? '…' : '');
-    return '<div onclick="showExamenDetail(' + i + ')" style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rm);padding:12px 14px;margin-bottom:8px;cursor:pointer">' +
+    return '<div onclick="showExamenDetail(' + i + ')" style="background:var(--bg2);border-radius:var(--rm);padding:12px 14px;margin-bottom:8px;cursor:pointer">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
-        '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em">' + (e.date || (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') : 'Earlier')) + ' · Day ' + (e.day || '?') + '</div>' +
-        '<div style="font-size:14px;color:var(--tx3)">›</div>' +
+        '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--go);text-transform:uppercase;letter-spacing:0.01em">' + (e.date || (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') : 'Earlier')) + ' · Day ' + (e.day || '?') + '</div>' +
+        '<div style="font-size:var(--t-sm);color:var(--tx3)">›</div>' +
       '</div>' +
-      (preview ? '<div style="font-size:12px;color:var(--tx2);line-height:1.55;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' + preview.replace(/</g,'&lt;') + '</div>' : '<div style="font-size:11px;color:var(--tx3);font-style:italic">No notes — just walked the steps</div>') +
+      (preview ? '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.55;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' + preview.replace(/</g,'&lt;') + '</div>' : '<div style="font-size:var(--t-cap);color:var(--tx3);font-style:italic">No notes — just walked the steps</div>') +
     '</div>';
   }).join('');
   
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:4px">' + log.length + ' ' + _examenNoun().toLowerCase() + (log.length === 1 ? '' : 's') + ' walked</div>' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">' + log.length + ' ' + _examenNoun().toLowerCase() + (log.length === 1 ? '' : 's') + ' walked</div>' +
     '<h3 style="margin-bottom:12px">Past ' + _examenNoun().toLowerCase() + 's</h3>' +
     '<div style="max-height:60vh;overflow-y:auto;padding-right:4px;margin-bottom:14px">' + itemsHtml + '</div>' +
     '<button class="btn" onclick="closeModal(this)">Close</button>' +
@@ -554,8 +554,8 @@ function showExamenDetail(idx){
     const val = (e[k] || '').trim();
     if(val){
       body += '<div style="margin-bottom:14px">' +
-        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">' + labels[k] + '</div>' +
-        '<div style="font-size:13px;color:var(--tx);line-height:1.65;white-space:pre-wrap">' + val.replace(/</g, '&lt;') + '</div>' +
+        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:6px">' + labels[k] + '</div>' +
+        '<div style="font-size:var(--t-base);color:var(--tx);line-height:1.65;white-space:pre-wrap">' + val.replace(/</g, '&lt;') + '</div>' +
       '</div>';
     }
   });
@@ -566,11 +566,11 @@ function showExamenDetail(idx){
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:4px">' + (e.date || (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') : 'Earlier')) + ' · Day ' + (e.day || '?') + '</div>' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">' + (e.date || (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') : 'Earlier')) + ' · Day ' + (e.day || '?') + '</div>' +
     '<h3 style="margin-bottom:14px">' + _examenNoun() + '</h3>' +
     '<div style="max-height:60vh;overflow-y:auto;padding-right:4px;margin-bottom:14px">' + body + '</div>' +
     '<button class="btn" onclick="showExamenHistory()" style="margin-bottom:8px">Back to list</button>' +
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd)">Close</button>' +
+    '<button class="btn" onclick="closeModal(this)" style="background:transparent;background:var(--fill2)">Close</button>' +
   '</div>';
   document.body.appendChild(m);
 }
@@ -682,10 +682,10 @@ function renderActivityHeatmap(){
       // Color buckets — green-gold scale
       let color;
       if(score === 0) color = 'rgba(255,255,255,0.04)';
-      else if(score === 1) color = 'rgba(200,169,110,0.25)';
-      else if(score === 2) color = 'rgba(200,169,110,0.5)';
-      else if(score === 3) color = 'rgba(200,169,110,0.75)';
-      else color = 'rgba(200,169,110,1)';
+      else if(score === 1) color = 'var(--go-bd)';
+      else if(score === 2) color = 'var(--go-bd)';
+      else if(score === 3) color = 'var(--go)';
+      else color = 'var(--go)';
       
       const tooltip = cellDate.toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}) + ' · ' + (score === 0 ? 'no activity' : score + ' log' + (score===1?'':'s'));
       svg += '<rect x="' + x + '" y="' + y + '" width="' + cellSize + '" height="' + cellSize + '" rx="2" fill="' + color + '" stroke="rgba(255,255,255,0.05)" stroke-width="0.5" style="cursor:pointer" onclick="showDayActivityDetail(\'' + key + '\')"><title>' + tooltip + '</title></rect>';
@@ -708,7 +708,7 @@ function renderActivityHeatmap(){
   if(legend){
     legend.innerHTML = '<span>' + totalDays + '/' + totalCells + ' days · ' + showupRate + '% show-up</span>' +
       '<span style="display:flex;align-items:center;gap:4px">less' +
-        ['rgba(255,255,255,0.04)','rgba(200,169,110,0.25)','rgba(200,169,110,0.5)','rgba(200,169,110,0.75)','rgba(200,169,110,1)']
+        ['rgba(255,255,255,0.04)','var(--go-bd)','var(--go-bd)','var(--go)','var(--go)']
           .map(c => '<span style="width:10px;height:10px;border-radius:2px;background:' + c + '"></span>').join('') +
         'more</span>';
   }
@@ -782,12 +782,12 @@ function showDayActivityDetail(dateKey){
   }
   
   m.innerHTML = '<div class="modal" style="max-height:88vh"><div class="modal-handle"></div>' +
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:4px">' + dateKey + '</div>' +
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">' + dateKey + '</div>' +
     '<h3 style="margin-bottom:12px">' + items.length + ' thing' + (items.length===1?'':'s') + ' logged</h3>' +
     '<div style="max-height:55vh;overflow-y:auto;padding-right:4px;margin-bottom:14px">' +
-      items.map(it => '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:10px;margin-bottom:6px">' +
-        '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">' + it.kind + '</div>' +
-        (it.text ? '<div style="font-size:12px;color:var(--tx2);line-height:1.5">' + (it.mood ? it.mood + ' ' : '') + it.text.replace(/</g, '&lt;') + '</div>' : '') +
+      items.map(it => '<div style="background:var(--bg3);border-radius:var(--rs);padding:10px;margin-bottom:6px">' +
+        '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:4px">' + it.kind + '</div>' +
+        (it.text ? '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.5">' + (it.mood ? it.mood + ' ' : '') + it.text.replace(/</g, '&lt;') + '</div>' : '') +
       '</div>').join('') +
     '</div>' +
     '<button class="btn" onclick="closeModal(this)">Close</button>' +
@@ -837,26 +837,26 @@ function renderTGT(){
     return '<input type="text" id="'+id+'" maxlength="160" placeholder="'+ph+'" value="'+_escFew(val||'')+'" '+
       /* onblur alone — onchange also fires on blur for a text input, so both meant a double save. */
       'onblur="_tgtSaveField(\''+id.replace('tgt-','')+'\',this.value)" '+
-      'style="width:100%;margin-bottom:8px;padding:9px 11px;font-size:16px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);color:var(--tx)">';
+      'style="width:100%;margin-bottom:8px;padding:9px 11px;font-size:var(--t-base);background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);color:var(--tx)">';
   };
   const told = !!t.told;
   el.innerHTML =
-    '<div style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:10px">Three things that went right today, however small. Not a gratitude exercise to perform — just three true things, so the day isn’t only remembered by what went wrong.</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.55;margin-bottom:10px">Three things that went right today, however small. Not a gratitude exercise to perform — just three true things, so the day isn’t only remembered by what went wrong.</div>'+
     field('tgt-a','Something that went right…', t.a)+
     field('tgt-b','Something else…', t.b)+
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.1em;text-transform:uppercase;margin:10px 0 5px">And one that was a person</div>'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);letter-spacing:0.01em;text-transform:uppercase;margin:10px 0 5px">And one that was a person</div>'+
     field('tgt-c','Someone who made today better…', t.c)+
     (few.length
       ? '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 8px">'+
           few.slice(0,5).map(function(p){ const on=(person===p.name);
-            return '<button class="btn" onclick="_tgtPickPerson(\''+String(p.name).replace(/'/g,"\\'").replace(/"/g,'')+'\')" style="width:auto;padding:5px 10px;font-size:11px;background:'+(on?'var(--go-bg)':'transparent')+';border:1px solid '+(on?'var(--go-bd)':'var(--bd)')+';color:'+(on?'var(--go)':'var(--tx3)')+'">'+_escFew(p.name)+'</button>'; }).join('')+
+            return '<button class="btn" onclick="_tgtPickPerson(\''+String(p.name).replace(/'/g,"\\'").replace(/"/g,'')+'\')" style="width:auto;padding:5px 10px;font-size:var(--t-cap);background:'+(on?'var(--go-bg)':'transparent')+';border:1px solid '+(on?'var(--go-bd)':'var(--bd)')+';color:'+(on?'var(--go)':'var(--tx3)')+'">'+_escFew(p.name)+'</button>'; }).join('')+
         '</div>'
       : '')+
     ((t.c && t.c.trim())
       ? (told
-          ? '<div style="font-size:12px;color:var(--gr);line-height:1.5;margin-top:4px">✓ You told them. That’s the part that actually lands.</div>'
-          : '<button class="btn" onclick="_tgtTellThem()" style="margin-top:4px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:12px">Tell them →</button>'+
-            '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:6px">Saying it out loud is worth more than writing it down. They’ll take it better than you expect — people almost always do.</div>')
+          ? '<div style="font-size:var(--t-sm);color:var(--gr);line-height:1.5;margin-top:4px">✓ You told them. That’s the part that actually lands.</div>'
+          : '<button class="btn" onclick="_tgtTellThem()" style="margin-top:4px;background:var(--go-bg);color:var(--go);font-size:var(--t-sm)">Tell them →</button>'+
+            '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.5;margin-top:6px">Saying it out loud is worth more than writing it down. They’ll take it better than you expect — people almost always do.</div>')
       : '');
 }
 function _tgtPickPerson(name){ saveTGT({person:String(name||'').slice(0,40)}); try{ renderTGT(); }catch(_){} }
@@ -872,9 +872,9 @@ function _tgtTellThem(){
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:8px">Send it as it is.</div>'+
-    '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:12px">Edit it if you want — but plain and unpolished lands better than clever. Copy it, then send it in whatever you normally use.</div>'+
-    '<textarea id="tgt-msg" style="min-height:92px;font-size:16px;line-height:1.55;margin-bottom:12px">'+_escFew(msg)+'</textarea>'+
+    '<div style="font-family:var(--font-display);font-size:var(--t-xl);font-weight:700;color:var(--tx);margin-bottom:8px">Send it as it is.</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:12px">Edit it if you want — but plain and unpolished lands better than clever. Copy it, then send it in whatever you normally use.</div>'+
+    '<textarea id="tgt-msg" style="min-height:92px;font-size:var(--t-base);line-height:1.55;margin-bottom:12px">'+_escFew(msg)+'</textarea>'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="_tgtCopyAndDone()">Copy &amp; mark as told</button>'+
     '<button class="btn quiet" onclick="closeModal(this)">Not yet</button>'+
   '</div>';
@@ -966,7 +966,7 @@ function completeEvening(){
       _m.style.alignItems = 'center';
       _m.innerHTML = '<div class="modal" style="max-width:92vw"><div class="modal-handle"></div>' +
         '<div id="evening-crisis-slot"></div>' +
-        '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;margin-top:10px">Close</button></div>';
+        '<button class="btn" onclick="closeModal(this)" style="background:transparent;color:var(--tx3);font-size:var(--t-sm);margin-top:10px;background:var(--fill2)">Close</button></div>';
       document.body.appendChild(_m);
       if(typeof showCrisisResponse === 'function') showCrisisResponse('evening-crisis-slot', _evCrisis);
     }catch(_){ }
@@ -1045,7 +1045,7 @@ function initEveningTab(){
     const _box=document.getElementById('evening-day-evidence');
     const _list=document.getElementById('evening-day-evidence-list');
     if(_box&&_list){
-      if(ev.length){ _list.innerHTML=ev.map(e=>'<span style="font-size:13px;color:var(--tx);background:var(--bg3);border:1px solid var(--bd);border-radius:999px;padding:5px 11px;white-space:nowrap">'+e+'</span>').join(''); _box.style.display='block'; }
+      if(ev.length){ _list.innerHTML=ev.map(e=>'<span style="font-size:var(--t-base);color:var(--tx);background:var(--bg3);border-radius:999px;padding:5px 11px;white-space:nowrap">'+e+'</span>').join(''); _box.style.display='block'; }
       else { _box.style.display='none'; }
     }
   }catch(_){}
@@ -1198,8 +1198,8 @@ function renderReachOutCard(){
   const cp=document.getElementById('call-prompt'); if(!cp) return;
   const few=getYourFew();
   if(!few.length){
-    cp.innerHTML='<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:10px">Who are you doing this for? Add the people you carry — and the app will help you stay close to them.</div>'+
-      '<button class="btn" style="width:auto;padding:7px 14px;font-size:12px" onclick="openYourFew()">Add someone</button>';
+    cp.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:10px">Who are you doing this for? Add the people you carry — and the app will help you stay close to them.</div>'+
+      '<button class="btn" style="width:auto;padding:7px 14px;font-size:var(--t-sm)" onclick="openYourFew()">Add someone</button>';
     return;
   }
   const s=reachOutSuggestion(); if(!s){ cp.textContent=''; return; }
@@ -1210,17 +1210,17 @@ function renderReachOutCard(){
   const dtxt = (s.days==null)?'':(s.days===0?'you reached out today':(s.days===1?'1 day since you last reached out':s.days+' days since you last reached out'));
   // The remembered detail comes FIRST — it's the difference between "reach out" and knowing someone.
   const noteLine = (s.person.note && s.person.note.trim())
-    ? '<div style="font-size:12px;color:var(--go);line-height:1.55;margin-bottom:6px">You wanted to remember: '+_escFew(s.person.note.trim())+'</div>'
+    ? '<div style="font-size:var(--t-sm);color:var(--go);line-height:1.55;margin-bottom:6px">You wanted to remember: '+_escFew(s.person.note.trim())+'</div>'
     : '';
   cp.innerHTML =
     noteLine+
-    '<div style="font-size:13px;color:var(--tx);line-height:1.6;margin-bottom:6px">'+line+'</div>'+
-    (s.reframe?'<div style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:10px;font-style:italic">'+s.reframe+'</div>':'')+
-    (dtxt?'<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);letter-spacing:0.04em;margin-bottom:10px">'+dtxt+'</div>':'')+
+    '<div style="font-size:var(--t-base);color:var(--tx);line-height:1.6;margin-bottom:6px">'+line+'</div>'+
+    (s.reframe?'<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.55;margin-bottom:10px;font-style:italic">'+s.reframe+'</div>':'')+
+    (dtxt?'<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);letter-spacing:0.01em;margin-bottom:10px">'+dtxt+'</div>':'')+
     '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
-      '<button class="btn" style="width:auto;padding:7px 14px;font-size:12px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go)" onclick="logReachOutCurrent()">I reached out ✓</button>'+
-      '<button class="btn" style="width:auto;padding:7px 12px;font-size:12px" onclick="openYourFew()">Your few</button>'+
-      '<button class="btn" style="width:auto;padding:7px 12px;font-size:12px" onclick="openBlessing()">'+(((typeof faithTradition==='function')&&(faithTradition()==='buddhism'||faithTradition()==='secular'))?'Wish them well':'Pray for them')+'</button>'+
+      '<button class="btn" style="width:auto;padding:7px 14px;font-size:var(--t-sm);background:var(--go-bg);color:var(--go)" onclick="logReachOutCurrent()">I reached out ✓</button>'+
+      '<button class="btn" style="width:auto;padding:7px 12px;font-size:var(--t-sm)" onclick="openYourFew()">Your few</button>'+
+      '<button class="btn" style="width:auto;padding:7px 12px;font-size:var(--t-sm)" onclick="openBlessing()">'+(((typeof faithTradition==='function')&&(faithTradition()==='buddhism'||faithTradition()==='secular'))?'Wish them well':'Pray for them')+'</button>'+
       // For someone who has died, or who it isn't safe or possible to contact — carried, never nudged.
       '<button class="btn quiet" style="width:auto;padding:7px 10px" onclick="muteCurrentReachOut()">Not this one</button>'+
     '</div>';
@@ -1229,21 +1229,21 @@ function openYourFew(){
   const few=getYourFew();
   const rows = few.length ? few.map(function(p,i){ return
     '<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--bd)">'+
-      '<div style="flex:1;min-width:0"><div style="font-size:14px;color:var(--tx)">'+_escFew(p.name)+'</div>'+
+      '<div style="flex:1;min-width:0"><div style="font-size:var(--t-base);color:var(--tx)">'+_escFew(p.name)+'</div>'+
       // The note is the whole point: "she mentioned the surgery — ask how it went". Remembering the
       // specific thing is what turns a generic nudge into actually knowing someone.
       '<input type="text" value="'+_escFew(p.note||'')+'" maxlength="90" placeholder="what to remember — e.g. ask about her surgery" '+
         'onchange="_yfNote('+i+',this.value)" onblur="_yfNote('+i+',this.value)" '+
-        'style="width:100%;margin:4px 0 0;padding:5px 7px;font-size:16px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);color:var(--tx2)">'+
-      (function(){ if(yourFewMuted(p)) return '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.04em;margin-top:3px">held quietly · no reminders</div>'; const d=daysSinceReachOut(p.name); return d==null?'':'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.04em;margin-top:3px">'+(d===0?'reached out today':d+'d since you logged one')+'</div>'; })()+
+        'style="width:100%;margin:4px 0 0;padding:5px 7px;font-size:var(--t-base);background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);color:var(--tx2)">'+
+      (function(){ if(yourFewMuted(p)) return '<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em;margin-top:3px">held quietly · no reminders</div>'; const d=daysSinceReachOut(p.name); return d==null?'':'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);letter-spacing:0.01em;margin-top:3px">'+(d===0?'reached out today':d+'d since you logged one')+'</div>'; })()+
       '</div>'+
-      '<button class="btn" style="width:auto;padding:5px 8px;font-size:11px;color:var(--tx3)" title="Carry them without reminders" onclick="toggleFewMute('+i+')">'+(yourFewMuted(p)?'🔔':'🔕')+'</button>'+
-      '<button class="btn" style="width:auto;padding:5px 10px;font-size:11px;color:var(--tx3)" onclick="_yfRemove('+i+')">Remove</button>'+
-    '</div>'; }).join('') : '<div style="font-size:12px;color:var(--tx3);padding:8px 0">No one yet. Add the people you carry.</div>';
+      '<button class="btn" style="width:auto;padding:5px 8px;font-size:var(--t-cap);color:var(--tx3)" title="Carry them without reminders" onclick="toggleFewMute('+i+')">'+(yourFewMuted(p)?'🔔':'🔕')+'</button>'+
+      '<button class="btn" style="width:auto;padding:5px 10px;font-size:var(--t-cap);color:var(--tx3)" onclick="_yfRemove('+i+')">Remove</button>'+
+    '</div>'; }).join('') : '<div style="font-size:var(--t-sm);color:var(--tx3);padding:8px 0">No one yet. Add the people you carry.</div>';
   const m=document.createElement('div'); m.className='modal-bg open'; m.id='yourfew-modal';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
     '<h3 style="margin-bottom:4px">Your few</h3>'+
-    '<div style="font-size:12px;color:var(--tx3);line-height:1.5;margin-bottom:14px">The people you carry — a partner, a parent, a friend, anyone. Private to you. The app helps you stay close to them; it never nags, never scores. Tap 🔕 for someone you want to carry <em>without</em> reminders — someone you’ve lost, or who it isn’t right to contact. They stay part of your why.</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5;margin-bottom:14px">The people you carry — a partner, a parent, a friend, anyone. Private to you. The app helps you stay close to them; it never nags, never scores. Tap 🔕 for someone you want to carry <em>without</em> reminders — someone you’ve lost, or who it isn’t right to contact. They stay part of your why.</div>'+
     '<div id="yf-list">'+rows+'</div>'+
     '<div style="display:flex;gap:8px;margin-top:14px">'+
       '<input type="text" id="yf-name" placeholder="Name" maxlength="40" style="flex:1">'+
@@ -1318,7 +1318,7 @@ function renderReviewHistory(){
   const reviews=ls('totry_reviews')||[];const hist=document.getElementById('review-history');if(!hist)return;
   hist.innerHTML='';if(!reviews.length)return;
   hist.innerHTML='<div class="lbl" style="margin-top:8px">Past reviews</div>';
-  reviews.slice(0,8).forEach(r=>{const item=document.createElement('div');item.className='review-item';item.innerHTML='<div class="ri-week">'+_escFew(r.week)+' \u2014 Day '+_escFew(r.day)+'</div><div style="font-size:13px;color:var(--tx);margin-bottom:2px">'+_escFew(r.proud)+'</div><div style="font-size:12px;color:var(--tx3)">Focus: '+_escFew(r.focus)+'</div>';hist.appendChild(item);});
+  reviews.slice(0,8).forEach(r=>{const item=document.createElement('div');item.className='review-item';item.innerHTML='<div class="ri-week">'+_escFew(r.week)+' \u2014 Day '+_escFew(r.day)+'</div><div style="font-size:var(--t-base);color:var(--tx);margin-bottom:2px">'+_escFew(r.proud)+'</div><div style="font-size:var(--t-sm);color:var(--tx3)">Focus: '+_escFew(r.focus)+'</div>';hist.appendChild(item);});
 }
 
 // ── MILESTONES + TOAST ────────────────────────────────────────

@@ -435,13 +435,13 @@ function openMobilityAssessment(){
   const m = document.createElement('div');
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:4px">Mobility check</div>'+
-    '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Rate each area honestly: 1 = very tight, 5 = full, easy range. No camera \u2014 just try the movement and score how it feels. Re-check every few weeks to see progress.</div>'+
+    '<div style="font-family:var(--font-serif);font-size:var(--t-xl);font-style:italic;color:var(--tx);margin-bottom:4px">Mobility check</div>'+
+    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.6;margin-bottom:16px">Rate each area honestly: 1 = very tight, 5 = full, easy range. No camera \u2014 just try the movement and score how it feels. Re-check every few weeks to see progress.</div>'+
     MOBILITY_JOINTS.map(j =>
-      '<div style="margin-bottom:14px"><div style="font-size:13px;color:var(--tx);margin-bottom:2px">' + j.label + '</div>'+
-      '<div style="font-size:11px;color:var(--tx3);margin-bottom:8px;line-height:1.4">' + j.test + '</div>'+
+      '<div style="margin-bottom:14px"><div style="font-size:var(--t-base);color:var(--tx);margin-bottom:2px">' + j.label + '</div>'+
+      '<div style="font-size:var(--t-cap);color:var(--tx3);margin-bottom:8px;line-height:1.4">' + j.test + '</div>'+
       '<div style="display:flex;gap:6px" id="mob-row-' + j.id + '">'+
-      [1,2,3,4,5].map(n => '<button onclick="_pickMob(\'' + j.id + '\',' + n + ')" data-v="' + n + '" class="mob-dot" style="flex:1;padding:10px 0;border-radius:var(--rs);border:1px solid ' + ((prof[j.id]===n)?'var(--go)':'var(--bd)') + ';background:' + ((prof[j.id]===n)?'rgba(200,169,110,0.15)':'var(--bg3)') + ';color:' + ((prof[j.id]===n)?'var(--go)':'var(--tx2)') + ';font-size:14px">' + n + '</button>').join('')+
+      [1,2,3,4,5].map(n => '<button onclick="_pickMob(\'' + j.id + '\',' + n + ')" data-v="' + n + '" class="mob-dot" style="flex:1;padding:10px 0;border-radius:var(--rs);border:1px solid ' + ((prof[j.id]===n)?'var(--go)':'var(--bd)') + ';background:' + ((prof[j.id]===n)?'var(--go-bg)':'var(--bg3)') + ';color:' + ((prof[j.id]===n)?'var(--go)':'var(--tx2)') + ';font-size:var(--t-sm)">' + n + '</button>').join('')+
       '</div></div>'
     ).join('')+
     '<button class="btn primary" onclick="saveMobilityAssessment()" style="margin-bottom:8px;margin-top:6px">Save my mobility profile</button>'+
@@ -455,7 +455,7 @@ function _pickMob(joint, val){
   if(row){ row.querySelectorAll('.mob-dot').forEach(b => {
     const on = parseInt(b.dataset.v) === val;
     b.style.border = '1px solid ' + (on?'var(--go)':'var(--bd)');
-    b.style.background = on?'rgba(200,169,110,0.15)':'var(--bg3)';
+    b.style.background = on?'var(--go-bg)':'var(--bg3)';
     b.style.color = on?'var(--go)':'var(--tx2)';
   }); }
 }
@@ -560,34 +560,34 @@ function buildMobilityRoutine(minutes){
 }
 function _mobMoveRow(m){
   return '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 0;border-top:1px solid var(--bd)">'+
-    '<div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--tx);line-height:1.35">'+m.name+'</div>'+
-    '<div style="font-size:11px;color:var(--tx3);line-height:1.45;margin-top:2px">'+m.cue+'</div></div>'+
-    '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--go);white-space:nowrap">'+m.dur+'</div></div>';
+    '<div style="flex:1;min-width:0"><div style="font-size:var(--t-base);color:var(--tx);line-height:1.35">'+m.name+'</div>'+
+    '<div style="font-size:var(--t-cap);color:var(--tx3);line-height:1.45;margin-top:2px">'+m.cue+'</div></div>'+
+    '<div style="font-family:var(--font-text);font-size:var(--t-cap);color:var(--go);white-space:nowrap">'+m.dur+'</div></div>';
 }
 // Warm-up renders directly in the panel \u2014 instant, so there's no "Generate" button to tap.
 function renderWarmupInline(){
   const box=document.getElementById('mob-warmup-out'); if(!box) return;
   const w=buildWarmup();
   const rd=(typeof computeReadiness==='function')?computeReadiness():null;
-  const section=(label,moves)=>moves.length?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin:12px 0 0">'+label+'</div>'+moves.map(_mobMoveRow).join(''):'';
+  const section=(label,moves)=>moves.length?'<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--tx3);text-transform:uppercase;letter-spacing:0.01em;margin:12px 0 0">'+label+'</div>'+moves.map(_mobMoveRow).join(''):'';
   const musc=w.muscles.length?w.muscles.slice(0,5).join(', '):'a general session';
   box.style.display='block';
   box.innerHTML=
-    '<div style="font-size:12px;color:var(--tx3);line-height:1.5;margin-bottom:2px">Prepping '+musc+(w.tight.length?' \u00b7 easing your tight '+w.tight.map(_jointLabel).join(', '):'')+'.</div>'+
-    (rd&&rd.level==='rest'?'<div style="font-size:11px;color:var(--go);line-height:1.5;margin-top:4px">Readiness is low today \u2014 keep it gentle, don\u2019t force range.</div>':'')+
+    '<div style="font-size:var(--t-sm);color:var(--tx3);line-height:1.5;margin-bottom:2px">Prepping '+musc+(w.tight.length?' \u00b7 easing your tight '+w.tight.map(_jointLabel).join(', '):'')+'.</div>'+
+    (rd&&rd.level==='rest'?'<div style="font-size:var(--t-cap);color:var(--go);line-height:1.5;margin-top:4px">Readiness is low today \u2014 keep it gentle, don\u2019t force range.</div>':'')+
     section('Raise',w.raise)+section('Mobilise',w.mobility)+section('Activate',w.activation);
 }
 // Daily flow renders on tap of a duration (5 / 8 / 12) \u2014 the duration is a real choice, so it stays.
 function generateMobilityRoutine(minutes){
   const box=document.getElementById('mob-daily-out'); if(!box) return;
   ['5','8','12'].forEach(v=>{ const b=document.getElementById('mob-daily-'+v); if(b){ const on=String(minutes)===v;
-    b.style.background=on?'var(--go)':'var(--bg3)'; b.style.color=on?'#1a1505':'var(--tx2)'; b.style.border='1px solid '+(on?'var(--go)':'var(--bd)'); } });
+    b.style.background=on?'var(--go)':'var(--bg3)'; b.style.color=on?'var(--on-tint)':'var(--tx2)'; b.style.border='1px solid '+(on?'var(--go)':'var(--bd)'); } });
   const r=buildMobilityRoutine(minutes);
   const total=Math.round(r.moves.reduce((a,m)=>a+m.secs,0)/60);
   box.style.display='block';
-  box.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px">'+svgIcon("sparkle")+' '+r.minutes+'-min flow'+(r.tight.length?' \u00b7 for your tight '+r.tight.map(_jointLabel).join(', '):' \u00b7 full body')+'</div>'+
+  box.innerHTML='<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:2px">'+svgIcon("sparkle")+' '+r.minutes+'-min flow'+(r.tight.length?' \u00b7 for your tight '+r.tight.map(_jointLabel).join(', '):' \u00b7 full body')+'</div>'+
     r.moves.map(_mobMoveRow).join('')+
-    '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:8px">\u2248 '+total+' min \u00b7 move slow, breathe through each one</div>';
+    '<div style="font-family:var(--font-text);font-size:var(--t-mini);color:var(--tx3);margin-top:8px">\u2248 '+total+' min \u00b7 move slow, breathe through each one</div>';
 }
 // WS-I: form-check from a single photo via AI vision. Heavily caveated — "things to look at",
 // never medical/coaching certainty, and honest that one still can't capture a full movement.
@@ -596,7 +596,7 @@ async function runFormCheck(event){
   if(!file) return;
   if(!file.type || !file.type.startsWith('image/')){ showToast('Wrong file','Please choose an image.'); return; }
   const out = document.getElementById('formcheck-out');
-  if(out){ out.style.display='block'; out.innerHTML='<p class="pulsing" style="font-family:Cormorant Garamond,serif;font-style:italic;color:var(--tx3);text-align:center;padding:8px">Looking at your position...</p>'; }
+  if(out){ out.style.display='block'; out.innerHTML='<p class="pulsing" style="font-family:var(--font-serif);font-style:italic;color:var(--tx3);text-align:center;padding:8px">Looking at your position...</p>'; }
   try{
     const dataUrl = await new Promise((resolve,reject)=>{
       const reader=new FileReader();
@@ -613,23 +613,23 @@ async function runFormCheck(event){
       reader.onerror=reject; reader.readAsDataURL(file);
     });
     const base64=dataUrl.split(',')[1];
-    if(!sb){ if(out) out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Form check needs you to be signed in.</div>'; return; }
+    if(!sb){ if(out) out.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Form check needs you to be signed in.</div>'; return; }
     const prompt='This is a photo of someone performing a strength exercise (or holding a position). As a knowledgeable strength coach, give GENERAL, encouraging observations about what you can see of their body position — "things to look at" only. Identify the exercise if you can. Mention up to 3 things that look okay and up to 3 things worth checking (e.g. back angle, knee tracking, bar path, depth). Be clear these are observations from a single still, not a diagnosis. NEVER give medical advice. Plain text, short. End with one line reminding them a single photo can\u2019t capture the full movement and a coach is best for real assessment. If this is not a person exercising, say so briefly.';
     const {data,error}=await Promise.race([
       sb.functions.invoke('ai-proxy', { body:{ action:'vision', prompt, image_base64:base64, image_mime:'image/jpeg', max_tokens:600 } }),
       new Promise((_,rej)=>setTimeout(()=>rej(new Error('Timed out')),35000))
     ]).catch(e=>({error:e}));
     if(error || !(data && data.text)){
-      if(out) out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t read that photo. Try better lighting and a side-on angle, or check your AI key is set up.</div>';
+      if(out) out.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Couldn\u2019t read that photo. Try better lighting and a side-on angle, or check your AI key is set up.</div>';
       return;
     }
     if(out){
-      out.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Things to look at</div>'+
-        '<div style="font-size:13px;color:var(--tx2);line-height:1.7;white-space:pre-wrap">'+data.text.replace(/</g,'&lt;')+'</div>'+
-        '<div style="font-size:10px;color:var(--tx3);margin-top:10px;line-height:1.5;font-style:italic">General guidance from one still image — not medical or coaching certainty.</div>';
+      out.innerHTML='<div style="font-family:var(--font-text);font-size:var(--t-micro);color:var(--go);text-transform:uppercase;letter-spacing:0.01em;margin-bottom:8px">Things to look at</div>'+
+        '<div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.7;white-space:pre-wrap">'+data.text.replace(/</g,'&lt;')+'</div>'+
+        '<div style="font-size:var(--t-mini);color:var(--tx3);margin-top:10px;line-height:1.5;font-style:italic">General guidance from one still image — not medical or coaching certainty.</div>';
     }
   }catch(e){
-    if(out) out.innerHTML='<div style="font-size:12px;color:var(--tx3)">Something went wrong reading that photo.</div>';
+    if(out) out.innerHTML='<div style="font-size:var(--t-sm);color:var(--tx3)">Something went wrong reading that photo.</div>';
   }
 }
 
@@ -639,31 +639,31 @@ function renderMobilityPanel(){
   const prof = getMobilityProfile();
   let profHtml;
   if(!prof){
-    profHtml = '<div class="card"><div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:12px">Start with a quick mobility check so warm-ups can target your tight spots.</div>'+
+    profHtml = '<div class="card"><div style="font-size:var(--t-sm);color:var(--tx2);line-height:1.6;margin-bottom:12px">Start with a quick mobility check so warm-ups can target your tight spots.</div>'+
       '<button class="btn primary" onclick="openMobilityAssessment()">Take the mobility check</button></div>';
   } else {
     const items = MOBILITY_JOINTS.filter(j => prof[j.id]).map(j => {
       const v = prof[j.id];
       const col = v <= 2 ? 'var(--re)' : (v >= 4 ? 'var(--gr)' : 'var(--go)');
-      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:12px"><span style="color:var(--tx2)">' + j.label + '</span>'+
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:var(--t-sm)"><span style="color:var(--tx2)">' + j.label + '</span>'+
         '<span style="display:flex;gap:3px">' + [1,2,3,4,5].map(n=>'<span style="width:7px;height:7px;border-radius:50%;background:'+(n<=v?col:'var(--bg3)')+'"></span>').join('') + '</span></div>';
     }).join('');
     const when = prof._ts ? new Date(prof._ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : '';
-    profHtml = '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div class="card-hd" style="margin-bottom:0">Your mobility</div><span style="font-size:10px;color:var(--tx3)">checked ' + when + '</span></div>'+
-      items + '<button class="btn" onclick="openMobilityAssessment()" style="margin-top:10px;background:var(--bg3);border:1px solid var(--bd);font-size:12px">Re-check mobility</button></div>';
+    profHtml = '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><div class="card-hd" style="margin-bottom:0">Your mobility</div><span style="font-size:var(--t-mini);color:var(--tx3)">checked ' + when + '</span></div>'+
+      items + '<button class="btn" onclick="openMobilityAssessment()" style="margin-top:10px;background:var(--bg3);font-size:var(--t-sm)">Re-check mobility</button></div>';
   }
   box.innerHTML = profHtml +
-    '<div class="card" style="background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">'+
+    '<div class="card" style="background:var(--go-bg);border-color:var(--go-bd)">'+
       '<div class="card-hd" style="margin-bottom:6px">'+svgIcon("flame")+' Warm up for today</div>'+
       '<div id="mob-warmup-out"></div>'+
     '</div>'+
     '<div class="card">'+
       '<div class="card-hd" style="margin-bottom:6px">'+svgIcon("breath")+' Daily mobility</div>'+
-      '<div style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Little and often beats long and rare. A short daily flow for your tight areas.</div>'+
+      '<div style="font-size:var(--t-sm);color:var(--tx3);margin-bottom:10px;line-height:1.5">Little and often beats long and rare. A short daily flow for your tight areas.</div>'+
       '<div style="display:flex;gap:8px;margin-bottom:8px">'+
-        '<button class="btn" id="mob-daily-5" onclick="generateMobilityRoutine(5)" style="flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12px">5 min</button>'+
-        '<button class="btn primary" id="mob-daily-8" onclick="generateMobilityRoutine(8)" style="flex:1;font-size:12px">8 min</button>'+
-        '<button class="btn" id="mob-daily-12" onclick="generateMobilityRoutine(12)" style="flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12px">12 min</button>'+
+        '<button class="btn" id="mob-daily-5" onclick="generateMobilityRoutine(5)" style="flex:1;background:var(--bg3);font-size:var(--t-sm)">5 min</button>'+
+        '<button class="btn primary" id="mob-daily-8" onclick="generateMobilityRoutine(8)" style="flex:1;font-size:var(--t-sm)">8 min</button>'+
+        '<button class="btn" id="mob-daily-12" onclick="generateMobilityRoutine(12)" style="flex:1;background:var(--bg3);font-size:var(--t-sm)">12 min</button>'+
       '</div>'+
       '<div id="mob-daily-out" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"></div>'+
     '</div>';
