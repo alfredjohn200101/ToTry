@@ -59,12 +59,12 @@ function renderSoulStill(){
 
   el.style.display = 'block';
   el.innerHTML =
-    '<div style="border:1px solid var(--bd);border-radius:16px;padding:20px 18px;margin-bottom:18px;' +
+    '<div style="border:1px solid var(--bd);border-radius:var(--r);padding:20px 18px;margin-bottom:18px;' +
       'background:var(--bg2)">' +
       '<div class="eyebrow" style="color:var(--go);margin-bottom:9px">' + _escFew(eyebrow) + '</div>' +
       '<div style="font-family:Cormorant Garamond,serif;font-size:' + (line ? '21px' : '19px') + ';' +
         'color:var(--tx);line-height:1.45;margin-bottom:' + (ref ? '8px' : '16px') + '">' + body + '</div>' +
-      (ref ? '<div style="font-family:DM Mono,monospace;font-size:9.5px;letter-spacing:0.08em;' +
+      (ref ? '<div style="font-family:DM Mono,monospace;font-size:9px;letter-spacing:0.08em;' +
              'color:var(--tx3);margin-bottom:16px">' + _escFew(ref) + '</div>' : '') +
       '<button class="btn" onclick="soulBeStill()" style="width:100%;background:var(--bg3);' +
         'border:1px solid var(--go-bd);color:var(--go)">Be still for a minute</button>' +
@@ -124,7 +124,7 @@ async function readTodaysGospel(){
     box.innerHTML = '<div style="font-size:12px;color:var(--tx2);line-height:1.6;padding:6px">Couldn\u2019t load the passage inline right now \u2014 tap the USCCB link below for the full reading.</div>';
     return;
   }
-  let html = '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-top:4px">'+
+  let html = '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rm);padding:14px;margin-top:4px">'+
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px">'+ref.replace(/</g,'&lt;')+'</div>';
   // The lectionary SKIPS the verses between two ranges; running them together would present the
   // reading as continuous when it is not. Mark the join so the omission is visible.
@@ -256,7 +256,7 @@ function _renderRosaryStep(){
       '<div style="font-family:Cormorant Garamond,serif;font-size:30px;font-style:italic;color:var(--tx);line-height:1.2;margin-bottom:12px">'+esc(m.title)+'</div>'+
       '<div style="font-family:DM Mono,monospace;font-size:12px;color:var(--tx3);margin-bottom:18px">'+esc(m.ref)+'</div>'+
       '<div style="font-size:13px;color:var(--go);line-height:1.6">Fruit of the mystery: <span style="color:var(--tx2)">'+esc(m.fruit)+'</span></div>'+
-      '<div style="font-size:12.5px;color:var(--tx3);line-height:1.7;margin-top:16px;font-style:italic">Picture the scene. Sit with it a moment before you pray.</div>';
+      '<div style="font-size:12px;color:var(--tx3);line-height:1.7;margin-top:16px;font-style:italic">Picture the scene. Sit with it a moment before you pray.</div>';
   } else {
     bodyHtml=
       '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:4px">'+esc(s.name)+'</div>'+
@@ -312,7 +312,7 @@ async function renderMorningLiturgy(){
   if(d.celebration && d.celebration.name) line = 'Today: ' + d.celebration.name;
   else if(d.readings && d.readings.gospel) line = 'Gospel today: ' + d.readings.gospel;
   if(!line){ box.style.display='none'; return; }
-  box.innerHTML = '<div onclick="go(\'liturgy\')" style="cursor:pointer;background:var(--bg3);border:1px solid var(--go-bd);border-radius:10px;padding:11px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px">'+
+  box.innerHTML = '<div onclick="go(\'liturgy\')" style="cursor:pointer;background:var(--bg3);border:1px solid var(--go-bd);border-radius:var(--rm);padding:11px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px">'+
     '<div><div style="font-family:DM Mono,monospace;font-size:8px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:3px">In the Church today</div>'+
     '<div style="font-size:12px;color:var(--tx2)">'+line.replace(/</g,'&lt;')+'</div></div>'+
     '<span style="color:var(--tx3);font-size:18px">\u203a</span></div>';
@@ -358,7 +358,7 @@ function renderWhyAffirmations(){
   const list = ls('totry_affirmations') || [];
   if(!list.length){ box.innerHTML = '<p style="font-size:12px;color:var(--tx3);font-style:italic;padding:4px 0">No affirmations yet.</p>'; return; }
   box.innerHTML = list.map((a,i) =>
-    '<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;margin-bottom:6px">'+
+    '<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);margin-bottom:6px">'+
     '<span style="flex:1;font-size:13px;color:var(--tx);font-style:italic">\u201c'+a.replace(/</g,'&lt;')+'\u201d</span>'+
     '<button onclick="removeWhyAffirmation('+i+')" style="background:none;border:none;color:var(--tx3);font-size:16px;flex-shrink:0">\u00d7</button></div>'
   ).join('');
@@ -431,7 +431,7 @@ function renderWhyPromises(){
   if(due){
     const dueNow = promises.filter(p => p.status==='open' && new Date(p.due).getTime() <= now);
     due.innerHTML = dueNow.map(p =>
-      '<div style="padding:12px;background:var(--bg3);border:1px solid var(--go-bd);border-radius:8px;margin-bottom:8px">'+
+      '<div style="padding:12px;background:var(--bg3);border:1px solid var(--go-bd);border-radius:var(--rs);margin-bottom:8px">'+
       '<div style="font-size:13px;color:var(--tx);margin-bottom:8px">'+p.text.replace(/</g,'&lt;')+'</div>'+
       '<div style="display:flex;gap:8px"><button class="btn success" style="flex:1;padding:7px;font-size:12px" onclick="resolveWhyPromise('+p.id+',true)">Kept it</button>'+
       '<button class="btn" style="flex:1;padding:7px;font-size:12px;background:var(--bg2);border:1px solid var(--bd)" onclick="resolveWhyPromise('+p.id+',false)">Didn\u2019t</button></div></div>'
@@ -441,8 +441,8 @@ function renderWhyPromises(){
     const open = promises.filter(p => p.status==='open' && new Date(p.due).getTime() > now);
     const done = promises.filter(p => p.status!=='open');
     list.innerHTML =
-      open.map(p => '<div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--bg3);border-radius:8px;margin-bottom:6px;font-size:12px"><span style="color:var(--tx2)">'+p.text.replace(/</g,'&lt;')+'</span><span style="color:var(--tx3);font-family:DM Mono,monospace;font-size:10px">'+Math.ceil((new Date(p.due).getTime()-now)/86400000)+'d</span></div>').join('')+
-      done.slice(0,10).map(p => '<div style="display:flex;justify-content:space-between;padding:8px 12px;border-radius:8px;margin-bottom:6px;font-size:12px;opacity:0.6"><span style="color:var(--tx3);text-decoration:'+(p.status==='kept'?'none':'line-through')+'">'+p.text.replace(/</g,'&lt;')+'</span><span style="font-size:13px">'+(p.status==='kept'?'\u2713':'\u2014')+'</span></div>').join('');
+      open.map(p => '<div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--bg3);border-radius:var(--rs);margin-bottom:6px;font-size:12px"><span style="color:var(--tx2)">'+p.text.replace(/</g,'&lt;')+'</span><span style="color:var(--tx3);font-family:DM Mono,monospace;font-size:10px">'+Math.ceil((new Date(p.due).getTime()-now)/86400000)+'d</span></div>').join('')+
+      done.slice(0,10).map(p => '<div style="display:flex;justify-content:space-between;padding:8px 12px;border-radius:var(--rs);margin-bottom:6px;font-size:12px;opacity:0.6"><span style="color:var(--tx3);text-decoration:'+(p.status==='kept'?'none':'line-through')+'">'+p.text.replace(/</g,'&lt;')+'</span><span style="font-size:13px">'+(p.status==='kept'?'\u2713':'\u2014')+'</span></div>').join('');
   }
 }
 function resolveWhyPromise(id, kept){
@@ -459,7 +459,7 @@ function renderWhyLetters(){
   if(dueBox){
     const ready = letters.filter(l => !l.delivered && new Date(l.deliverAt).getTime() <= now);
     dueBox.innerHTML = ready.map(l =>
-      '<div style="padding:14px;background:linear-gradient(135deg,rgba(200,169,110,0.1),rgba(140,107,182,0.05));border:1px solid var(--go-bd);border-radius:10px;margin-bottom:8px">'+
+      '<div style="padding:14px;background:linear-gradient(135deg,rgba(200,169,110,0.1),rgba(140,107,182,0.05));border:1px solid var(--go-bd);border-radius:var(--rm);margin-bottom:8px">'+
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">A letter from your past self has arrived</div>'+
       '<div style="font-family:Cormorant Garamond,serif;font-size:15px;color:var(--tx);font-style:italic;line-height:1.6;white-space:pre-wrap">'+l.text.replace(/</g,'&lt;')+'</div>'+
       '<button class="btn" style="margin-top:10px;padding:6px 12px;font-size:11px;background:var(--bg3);border:1px solid var(--bd)" onclick="markWhyLetterRead('+l.id+')">I\u2019ve read it</button></div>'
@@ -488,7 +488,7 @@ function renderLetters(){
   
   if(dueList){
     if(dueNow.length){
-      dueList.innerHTML='<div style="background:var(--go-bg);border:1px solid var(--go-bd);border-radius:8px;padding:10px 12px;margin-bottom:8px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">'+dueNow.length+' letter'+(dueNow.length>1?'s':'')+' ready to open</div>'+dueNow.map(l=>'<button class="btn primary" style="margin-top:6px" onclick="deliverLetter('+l.id+')">Open letter from '+new Date(l.written).toLocaleDateString('en-AU',{day:'numeric',month:'short'})+'</button>').join('')+'</div>';
+      dueList.innerHTML='<div style="background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rs);padding:10px 12px;margin-bottom:8px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">'+dueNow.length+' letter'+(dueNow.length>1?'s':'')+' ready to open</div>'+dueNow.map(l=>'<button class="btn primary" style="margin-top:6px" onclick="deliverLetter('+l.id+')">Open letter from '+new Date(l.written).toLocaleDateString('en-AU',{day:'numeric',month:'short'})+'</button>').join('')+'</div>';
     }else{
       dueList.innerHTML='';
     }
@@ -499,7 +499,7 @@ function renderLetters(){
     html+='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;margin-top:8px">Sealed letters</div>';
     pending.forEach(l=>{
       const deliverDate=new Date(l.deliverAt).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
-      html+='<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">'+
+      html+='<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">'+
         '<div><div style="font-size:12px;color:var(--tx)">'+(letterDay(l)!=null?('Letter from Day '+letterDay(l)):'A letter you sealed')+'</div><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">Opens '+deliverDate+'</div></div>'+
         '<button class="btn" style="width:auto;padding:4px 8px;font-size:10px;background:none;border:none;color:var(--tx3)" onclick="deleteLetter('+l.id+')" aria-label="Delete this letter">&#215;</button>'+
       '</div>';
@@ -508,7 +508,7 @@ function renderLetters(){
   if(delivered.length){
     html+='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px;margin-top:10px">Opened</div>';
     delivered.slice(0,5).forEach(l=>{
-      html+='<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer" onclick="deliverLetter('+l.id+')">'+
+      html+='<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 12px;margin-bottom:6px;cursor:pointer" onclick="deliverLetter('+l.id+')">'+
         '<div style="font-size:12px;color:var(--tx)">'+(letterDay(l)!=null?('Letter from Day '+letterDay(l)):'A letter you sealed')+' · read</div>'+
         '<div style="font-size:11px;color:var(--tx3);margin-top:2px;font-style:italic">'+_escFew(String(l&&l.text||'').slice(0,100))+'...</div>'+
       '</div>';
@@ -676,17 +676,17 @@ function openShareCustomizer(){
   
   // Build the field list — only show fields with real data
   const fields = [
-    {key:'showDay', icon:'📅', label:'Day '+dayCount, desc:'Days into your journey'},
-    {key:'showCatchphrase', icon:'✨', label:'"The least we can do everyday, is to try."', desc:'The catchphrase'},
-    longestStreak > 0 ? {key:'showStreak', icon:'🔥', label:longestStreak+' day clean streak', desc:'Your longest current vice streak'} : null,
-    totalWins > 0 ? {key:'showWins', icon:'⚔️', label:totalWins+' urges fought', desc:'Total wins to date'} : null,
-    identity ? {key:'showIdentity', icon:'👤', label:'Identity statement', desc:'Who you\'re becoming'} : null,
-    todayWorkout ? {key:'showWorkout', icon:'💪', label:'Today\'s workout', desc:(todayWorkout.splitFocus || todayWorkout.type || 'Trained today')} : null,
-    habitsTotal > 0 ? {key:'showHabits', icon:'✅', label:'Habits: '+habitsToday+'/'+habitsTotal+' today', desc:'How you showed up today'} : null,
-    journalCount > 0 ? {key:'showJournalCount', icon:'📝', label:journalCount+' journal entries', desc:'Times you reflected in writing'} : null,
-    debtPaid > 0 ? {key:'showFinance', icon:'💰', label:curSym()+Math.round(debtPaid).toLocaleString()+' debt paid', desc:'Money fight progress'} : null,
-    (openPrayers + answeredPrayers) > 0 ? {key:'showPrayers', icon:'🙏', label:answeredPrayers+' prayers I marked answered', desc:'Out of '+openPrayers+' active · only YOU log these'} : null,
-    {key:'showAffirmation', icon:'💭', label:'A motivational close', desc:'A short affirming line'},
+    {key:'showDay', icon:'calendar', label:'Day '+dayCount, desc:'Days into your journey'},
+    {key:'showCatchphrase', icon:'sparkle', label:'"The least we can do everyday, is to try."', desc:'The catchphrase'},
+    longestStreak > 0 ? {key:'showStreak', icon:'flame', label:longestStreak+' day clean streak', desc:'Your longest current vice streak'} : null,
+    totalWins > 0 ? {key:'showWins', icon:'shield', label:totalWins+' urges fought', desc:'Total wins to date'} : null,
+    identity ? {key:'showIdentity', icon:'user', label:'Identity statement', desc:'Who you\'re becoming'} : null,
+    todayWorkout ? {key:'showWorkout', icon:'dumbbell', label:'Today\'s workout', desc:(todayWorkout.splitFocus || todayWorkout.type || 'Trained today')} : null,
+    habitsTotal > 0 ? {key:'showHabits', icon:'check', label:'Habits: '+habitsToday+'/'+habitsTotal+' today', desc:'How you showed up today'} : null,
+    journalCount > 0 ? {key:'showJournalCount', icon:'edit', label:journalCount+' journal entries', desc:'Times you reflected in writing'} : null,
+    debtPaid > 0 ? {key:'showFinance', icon:'wallet', label:curSym()+Math.round(debtPaid).toLocaleString()+' debt paid', desc:'Money fight progress'} : null,
+    (openPrayers + answeredPrayers) > 0 ? {key:'showPrayers', icon:'flame', label:answeredPrayers+' prayers I marked answered', desc:'Out of '+openPrayers+' active · only YOU log these'} : null,
+    {key:'showAffirmation', icon:'message', label:'A motivational close', desc:'A short affirming line'},
   ].filter(Boolean);
   
   const m = document.createElement('div');
@@ -699,9 +699,9 @@ function openShareCustomizer(){
     '<p style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:14px">Tap to toggle. Only what\'s ticked appears on the share card. Your private data stays private.</p>' +
     '<div id="share-customizer-fields" style="margin-bottom:14px">' +
       fields.map((f, i) => 
-        '<label class="share-field-row" data-key="' + f.key + '" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;margin-bottom:6px;cursor:pointer;' + (prefs[f.key] ? 'border-color:var(--go);background:linear-gradient(135deg,rgba(200,169,110,0.05),transparent)' : '') + '">' +
+        '<label class="share-field-row" data-key="' + f.key + '" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);margin-bottom:6px;cursor:pointer;' + (prefs[f.key] ? 'border-color:var(--go);background:linear-gradient(135deg,rgba(200,169,110,0.05),transparent)' : '') + '">' +
           '<input type="checkbox" data-field="' + f.key + '" ' + (prefs[f.key] ? 'checked' : '') + ' style="width:18px;height:18px;cursor:pointer">' +
-          '<div style="font-size:20px;line-height:1">' + f.icon + '</div>' +
+          '<div style="line-height:1;color:var(--go)">' + svgIcon(f.icon,19) + '</div>' +
           '<div style="flex:1;min-width:0">' +
             '<div style="font-size:13px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + f.label + '</div>' +
             '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">' + f.desc + '</div>' +
@@ -988,7 +988,7 @@ function renderCustomShareCard(prefs){
     m.className = 'modal-bg open';
     m.style.alignItems = 'center';
     m.innerHTML = '<div class="modal" style="max-width:90vw;padding:16px"><div class="modal-handle"></div>' +
-      '<div style="text-align:center;margin-bottom:14px"><img loading="lazy" decoding="async" src="' + url + '" style="max-width:100%;max-height:60vh;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.5)"></div>' +
+      '<div style="text-align:center;margin-bottom:14px"><img loading="lazy" decoding="async" src="' + url + '" style="max-width:100%;max-height:60vh;border-radius:var(--rs);box-shadow:0 8px 32px rgba(0,0,0,0.5)"></div>' +
       '<div style="display:flex;flex-direction:column;gap:8px">' +
         '<button class="btn primary" onclick="downloadShareCard(\'' + url + '\')">Download</button>' +
         (navigator.share ? '<button class="btn" onclick="shareCardNative(\'' + url + '\')">Share to apps</button>' : '') +
@@ -1211,12 +1211,12 @@ function _renderShareCanvas(style, theme){
     m.className = 'modal-bg open'; m.style.alignItems = 'center';
     const otherTheme = theme === 'dark' ? 'light' : 'dark';
     m.innerHTML = '<div class="modal" style="max-width:90vw;padding:16px"><div class="modal-handle"></div>' +
-      '<div style="text-align:center;margin-bottom:14px"><img loading="lazy" decoding="async" src="' + url + '" style="max-width:100%;max-height:56vh;border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,0.5)"></div>' +
+      '<div style="text-align:center;margin-bottom:14px"><img loading="lazy" decoding="async" src="' + url + '" style="max-width:100%;max-height:56vh;border-radius:var(--rm);box-shadow:0 8px 32px rgba(0,0,0,0.5)"></div>' +
       '<div style="display:flex;flex-direction:column;gap:8px">' +
         '<button class="btn primary" onclick="downloadShareCard(\'' + url + '\')">Download</button>' +
         (navigator.share ? '<button class="btn" onclick="shareCardNative(\'' + url + '\')">Share to apps</button>' : '') +
-        '<button class="btn" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="closeModal(this);URL.revokeObjectURL(\'' + url + '\');setShareTheme(\'' + otherTheme + '\');createShareCard(\'' + style + '\')">Switch to ' + otherTheme + ' background</button>' +
-        '<button class="btn" onclick="closeModal(this);URL.revokeObjectURL(\'' + url + '\')" style="background:transparent;border:none;color:var(--tx3);font-size:13px">Close</button>' +
+        '<button class="btn subtle" onclick="closeModal(this);URL.revokeObjectURL(\'' + url + '\');setShareTheme(\'' + otherTheme + '\');createShareCard(\'' + style + '\')">Switch to ' + otherTheme + ' background</button>' +
+        '<button class="btn quiet" onclick="closeModal(this);URL.revokeObjectURL(\'' + url + '\')">Close</button>' +
       '</div></div>';
     document.body.appendChild(m);
     haptic('celebrate');

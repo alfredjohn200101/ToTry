@@ -222,7 +222,7 @@ async function _verifyNativeNotifPermission(){
     if(!box || box.querySelector('.notif-perm-warn')) return;
     const warn = document.createElement('div');
     warn.className = 'notif-perm-warn';
-    warn.style.cssText = 'margin-top:10px;padding:10px 12px;border:1px solid var(--go-bd);background:var(--go-bg);border-radius:8px;font-size:12px;color:var(--go);line-height:1.55';
+    warn.style.cssText = 'margin-top:10px;padding:10px 12px;border:1px solid var(--go-bd);background:var(--go-bg);border-radius:var(--rs);font-size:12px;color:var(--go);line-height:1.55';
     warn.textContent = 'Reminders are switched on in here, but iOS is not allowing notifications — so nothing can actually reach you. Turn them on in iOS Settings \u2192 Notifications \u2192 ToTry.';
     box.appendChild(warn);
   }catch(_){}
@@ -625,7 +625,7 @@ async function initApp(){
       if(!bar){
         bar=document.createElement('div');
         bar.id='update-ready-bar';
-        bar.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(var(--sb,0px) + 150px);z-index:200;background:var(--bg2);border:1px solid var(--go-bd);border-radius:12px;padding:12px 14px;box-shadow:0 8px 30px rgba(0,0,0,0.5);display:flex;align-items:center;gap:10px';
+        bar.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(var(--sb,0px) + 150px);z-index:200;background:var(--bg2);border:1px solid var(--go-bd);border-radius:var(--rm);padding:12px 14px;box-shadow:0 8px 30px rgba(0,0,0,0.5);display:flex;align-items:center;gap:10px';
         bar.innerHTML='<div style="flex:1;font-size:13px;color:var(--tx);line-height:1.4">A new version is ready.</div>'+
           '<button class="btn primary" style="width:auto;padding:8px 14px;font-size:12px;margin:0" onclick="(function(){var b=document.getElementById(\'update-ready-bar\');if(b)b.remove();window.__doUpdate&&window.__doUpdate();})()">Refresh</button>'+
           '<button class="btn" style="width:auto;padding:8px 10px;font-size:12px;margin:0;background:none;border:none;color:var(--tx3)" onclick="(function(){var b=document.getElementById(\'update-ready-bar\');if(b)b.remove();})()">Later</button>';
@@ -731,10 +731,10 @@ function showUnderageFuelNote(){
     const m = document.createElement('div');
     m.className = 'modal-bg open'; m.style.alignItems = 'center';
     m.innerHTML = '<div class="modal" style="text-align:center">'+
-      '<div style="font-size:28px;margin-bottom:8px">\uD83E\uDD1D</div>'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);line-height:1.3;margin-bottom:12px">This one is not mine to set.</div>'+
-      '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:16px">The equation behind this calculator was built on adults, and a body that is still growing needs more than it does \u2014 not less. A weight-loss target at your age belongs with your GP or a dietitian, who can look at the whole picture. That is not me brushing you off; it is the one honest answer I have.</div>'+
-      '<div style="font-size:12.5px;color:var(--tx3);line-height:1.65;margin-bottom:18px">Everything else here still works. Log your food, train, sleep, and let the rest look after itself for now \u2014 that is what actually builds a body at your age anyway.</div>'+
+      '<div style="font-size:28px;margin-bottom:8px">'+svgIcon("users",26)+'</div>'+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:12px">This one is not mine to set.</div>'+
+      '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:16px">The equation behind this calculator was built on adults, and a body that is still growing needs more than it does \u2014 not less. A weight-loss target at your age belongs with your GP or a dietitian, who can look at the whole picture. That is not me brushing you off; it is the one honest answer I have.</div>'+
+      '<div style="font-size:12px;color:var(--tx3);line-height:1.65;margin-bottom:18px">Everything else here still works. Log your food, train, sleep, and let the rest look after itself for now \u2014 that is what actually builds a body at your age anyway.</div>'+
       '<button class="btn primary" onclick="closeModal(this)">Understood</button>'+
     '</div>';
     document.body.appendChild(m);
@@ -840,7 +840,7 @@ function calcTDEE(){
         const verb = goal === 'lose' ? 'fat loss' : 'building muscle';
         const dir = goal === 'lose' ? 'deficit' : 'surplus';
         const amt = goal === 'lose' ? '500' : '300';
-        let h = '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:8px;text-align:left">';
+        let h = '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:14px;margin-bottom:8px;text-align:left">';
         h += '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">What ' + verb + ' actually asks of you</div>';
         h += '<div style="font-size:13px;color:var(--tx2);line-height:1.65">Your target sits at a <b>' + amt + '-calorie ' + dir + '</b> each day. In real terms: ';
         if(goal === 'lose'){ h += 'hitting your protein (' + t.pro + 'g) keeps muscle while the fat comes off, and the deficit is small on purpose \u2014 sustainable beats fast. Progress shows over weeks, not days, and the scale will bounce around from water and food. What matters is the <b>direction over a month</b>, not any single morning.'; }
@@ -848,7 +848,7 @@ function calcTDEE(){
         h += '</div><div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-top:10px;font-style:italic">This is the work, not a promise. Life happens \u2014 weeks you fall short aren\u2019t failure, they\u2019re part of it. Keep coming back. The least you can do is try.</div></div>';
         return h;
       })()+
-      "<div style=\"background:var(--gr-bg);border:1px solid var(--gr-bd);border-radius:8px;padding:10px;font-size:12px;color:var(--gr);text-align:center;margin-bottom:8px\">&#10003; Saved as your daily targets</div>" + 
+      "<div style=\"background:var(--gr-bg);border:1px solid var(--gr-bd);border-radius:var(--rs);padding:10px;font-size:12px;color:var(--gr);text-align:center;margin-bottom:8px\">&#10003; Saved as your daily targets</div>" + 
       (function(){
         // Apple Watch goal helper. Their Watch "Move" ring tracks ACTIVE calories (on top of the
         // calories the body burns at rest). We derive a sensible active-calorie target from the
@@ -861,8 +861,8 @@ function calcTDEE(){
           if(goal === 'gain') activeTarget = Math.round(activeTarget * 0.9);  // a touch lower so the surplus isn't eaten by cardio
           activeTarget = Math.round(activeTarget/10)*10;
           const exerciseMin = goal === 'lose' ? 45 : 30;
-          return "<div style=\"background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:12px;margin-bottom:8px\">"+
-            "<div style=\"font-family:'DM Mono',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px\">&#8986; Apple Watch goals to set</div>"+
+          return "<div style=\"background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:12px;margin-bottom:8px\">"+
+            "<div style=\"font-family:'DM Mono',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px\">"+svgIcon('clock',13)+" Apple Watch goals to set</div>"+
             "<div style=\"display:flex;justify-content:space-between;font-size:13px;color:var(--tx);margin-bottom:5px\"><span>Move (active calories)</span><b>"+activeTarget+" cal</b></div>"+
             "<div style=\"display:flex;justify-content:space-between;font-size:13px;color:var(--tx);margin-bottom:5px\"><span>Exercise</span><b>"+exerciseMin+" min</b></div>"+
             "<div style=\"display:flex;justify-content:space-between;font-size:13px;color:var(--tx);margin-bottom:10px\"><span>Stand</span><b>12 hrs</b></div>"+

@@ -95,7 +95,7 @@ function renderReclaimedBuysFreedom(){
   } else { return; }
   const el=document.createElement('div');
   el.id='reclaim-buys-freedom';
-  el.style.cssText='margin-top:10px;padding-top:10px;border-top:1px solid var(--go-bd);font-size:12.5px;color:var(--tx2);line-height:1.6';
+  el.style.cssText='margin-top:10px;padding-top:10px;border-top:1px solid var(--go-bd);font-size:13px;color:var(--tx2);line-height:1.6';
   el.innerHTML=line;
   host.after(el);
 }
@@ -260,11 +260,11 @@ function renderMoneyGate(){
       '<div class="card-hd" style="margin-bottom:0">Your money, honestly</div>'+
       '<span style="font-family:DM Mono,monospace;font-size:15px;color:'+(_negNow?'var(--re)':'var(--gr)')+'">'+(_negNow?'−':'+')+money(_net)+(_thin?'':'/mo')+'</span>'+
     '</div>'+
-    (_thin ? '<div style="font-size:11.5px;color:var(--tx3);line-height:1.5;margin-bottom:10px">That is '+_spanLbl+' — not a month yet. I will not turn a few days into a monthly figure and call it honest.</div>' : '')+
+    (_thin ? '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:10px">That is '+_spanLbl+' — not a month yet. I will not turn a few days into a monthly figure and call it honest.</div>' : '')+
     // The "biggest movable cost" is a per-MONTH number too, so it waits for the same evidence.
-    (r.lockIn && !_thin ? '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:10px">Biggest movable cost: <b style="color:var(--tx)">'+r.lockIn.name+'</b>, '+money(r.lockIn.perMonth)+' a month.</div>' : '')+
+    (r.lockIn && !_thin ? '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:10px">Biggest movable cost: <b style="color:var(--tx)">'+r.lockIn.name+'</b>, '+money(r.lockIn.perMonth)+' a month.</div>' : '')+
     (staleDays > 9
-      ? '<div style="font-size:11.5px;color:var(--go);line-height:1.5;margin-bottom:10px">Your last statement stops '+staleDays+' days ago. A balance sheet nobody feeds stops being true — import the latest when you get a minute.</div>'
+      ? '<div style="font-size:11px;color:var(--go);line-height:1.5;margin-bottom:10px">Your last statement stops '+staleDays+' days ago. A balance sheet nobody feeds stops being true — import the latest when you get a minute.</div>'
       : '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Up to date as of '+r.to.toLocaleDateString('en-AU')+'.</div>')+
     '<div style="display:flex;gap:8px">'+
       '<button class="btn" style="flex:1;width:auto;padding:9px;font-size:12px" onclick="openSpendingRead()">See the full read</button>'+
@@ -297,7 +297,7 @@ function renderFinance(){
     const cleared = rem <= 0.005;
     const item=document.createElement('div');item.className='debt-row';
     if(cleared) item.style.opacity='0.62';
-    item.innerHTML='<div class="dr-top"><span class="dr-name">'+_escFew(d.n)+(si===starIdx?' \u2b50':'')+(cleared?' \u2713':'')+' </span><span class="dr-amt">'+(cleared?'Paid off':curSym()+Math.round(rem).toLocaleString())+'</span></div>'+
+    item.innerHTML='<div class="dr-top"><span class="dr-name">'+_escFew(d.n)+(si===starIdx?' <span style="color:var(--go)">'+svgIcon("target",13)+'</span>':'')+(cleared?' \u2713':'')+' </span><span class="dr-amt">'+(cleared?'Paid off':curSym()+Math.round(rem).toLocaleString())+'</span></div>'+
       (d.due&&!cleared?'<span class="dr-date" style="color:'+_dueColor(d.due)+'">'+_escFew(_dueLabel(d.due)||('Due: '+d.due))+'</span>':'')+
       '<div class="bar-wrap"><div class="bar" style="width:'+Math.min(100,pct)+'%"></div></div>'+
       '<div class="dr-meta"><span class="dr-paid">'+curSym()+Math.round(d.p).toLocaleString()+' paid ('+pct+'%)</span><span>'+(cleared?'Cleared \u2014 tap to edit':'Tap to log payment')+'</span><button class="dr-edit" aria-label="Edit '+_jsAttr(d.n)+'" onclick="event.stopPropagation();editDebt('+d.idx+')" style="background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;padding:14px 12px;margin:-12px -12px;min-height:40px;text-decoration:underline">Edit</button></div>';

@@ -84,8 +84,8 @@ function _fuelElicit(){
   const m = document.createElement('div');
   m.className='modal-bg open'; m.id='fuel-elicit-modal'; m.style.alignItems='flex-end';
   m.innerHTML = '<div class="modal" style="text-align:left;max-height:88vh;overflow-y:auto">'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">Let’s build your fuel plan</div>'+
-    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:16px">Around your real life — not a generic diet. I already know you’re <b style="color:var(--tx)">'+ctx.goalLabel+'</b>'+((typeof nutGentle==='function' && nutGentle()) ? '' : ' at about <b style="color:var(--tx)">'+ctx.cal+' cal</b> and <b style="color:var(--tx)">'+ctx.pro+'g protein</b>')+', so I’ll plan around that. A few quick things:</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);margin-bottom:4px">Let’s build your fuel plan</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:16px">Around your real life — not a generic diet. I already know you’re <b style="color:var(--tx)">'+ctx.goalLabel+'</b>'+((typeof nutGentle==='function' && nutGentle()) ? '' : ' at about <b style="color:var(--tx)">'+ctx.cal+' cal</b> and <b style="color:var(--tx)">'+ctx.pro+'g protein</b>')+', so I’ll plan around that. A few quick things:</div>'+
     '<div class="eyebrow" style="margin-bottom:6px">Weekly grocery budget</div>'+
     '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px"><span style="font-size:16px;color:var(--tx2)">'+curSym()+'</span><input type="number" id="fuel-budget" inputmode="numeric" placeholder="e.g. 120" value="'+(p.budget||'')+'" style="flex:1"></div>'+
     '<div class="eyebrow" style="margin-bottom:6px">Meals per day</div>'+
@@ -147,7 +147,7 @@ function _fuelFinishSave(vals){
 function _fuelSafetyModal(){
   const m = document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML = '<div class="modal" style="text-align:left">'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);margin-bottom:10px">Let’s keep this about fuelling you</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:10px">Let’s keep this about fuelling you</div>'+
     '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:16px">A plan should build the person you’re becoming, not shrink you. I’ll keep your calories in a healthy range and never push a crash. If food or your body has felt heavy lately, talking to a real person is strength — not failure.</div>'+
     '<button class="btn primary" onclick="closeModal(this);_fuelFinishSave(window._fuelPendingVals)">Build me a healthy plan</button>'+
     '<button class="btn" style="background:none;border:1px solid var(--bd);color:var(--tx2);margin-top:8px" onclick="closeModal(this);if(typeof bridgeToRealHelp===\'function\')bridgeToRealHelp(\'heavy\')">Point me to real help</button>'+
@@ -186,13 +186,13 @@ function _fuelShopPicker(){
   const m = document.createElement('div');
   m.className='modal-bg open'; m.id='fuel-shop-modal'; m.style.alignItems='flex-end';
   m.innerHTML = '<div class="modal" style="text-align:left">'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">Where do you shop?</div>'+
-    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:16px">Pick every shop you use — I’ll build one shopping list, split by store so you know exactly what to get where.</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);margin-bottom:4px">Where do you shop?</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:16px">Pick every shop you use — I’ll build one shopping list, split by store so you know exactly what to get where.</div>'+
     '<div class="eyebrow" style="margin-bottom:6px">Country</div>'+
     '<input type="text" id="fuel-country" value="'+String(country).replace(/"/g,'&quot;')+'" style="width:100%;margin-bottom:16px">'+
     '<div class="eyebrow" style="margin-bottom:6px">Your shops (pick any)</div>'+
     '<div id="fuel-shops-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'+chips+'</div>'+
-    '<div style="display:flex;gap:8px;margin-bottom:18px"><input type="text" id="fuel-shop-add" placeholder="Add another shop (any country)..." style="flex:1"><button class="btn" style="width:auto;padding:0 16px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="_fuelAddShop()">Add</button></div>'+
+    '<div style="display:flex;gap:8px;margin-bottom:18px"><input type="text" id="fuel-shop-add" placeholder="Add another shop (any country)..." style="flex:1"><button class="btn subtle" style="width:auto;padding:0 16px" onclick="_fuelAddShop()">Add</button></div>'+
     '<button class="btn primary" onclick="_fuelShopGenerate()">Build my plan →</button>'+
     '<button class="btn" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:6px" onclick="closeModal(this)">Later</button>'+
     '</div>';
@@ -221,7 +221,7 @@ async function _fuelGenerate(){
   const lead = getPreworkoutLead();
   const preworkout = _fuelComputePreworkout(lead); // concrete pre-gym meal times from their real schedule
   const load = document.createElement('div'); load.className='modal-bg open'; load.id='fuel-loading'; load.style.alignItems='center';
-  load.innerHTML = '<div class="modal" style="text-align:center"><div style="font-size:26px;margin-bottom:10px">🍽️</div><div style="font-family:Cormorant Garamond,serif;font-size:20px;color:var(--tx);margin-bottom:6px">Building your plan…</div><div style="font-size:12px;color:var(--tx3);line-height:1.6">Fitting your targets, budget and training, and building your shopping list.</div></div>';
+  load.innerHTML = '<div class="modal" style="text-align:center"><div style="font-size:26px;margin-bottom:10px">'+svgIcon("utensils",24)+'</div><div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:6px">Building your plan…</div><div style="font-size:12px;color:var(--tx3);line-height:1.6">Fitting your targets, budget and training, and building your shopping list.</div></div>';
   document.body.appendChild(load);
   let brief=''; try{ if(typeof getLifeState==='function') brief = getLifeState().brief || ''; }catch(_){ brief=''; }
   // RESOLVE THE CONTRADICTION FOR A NUMBERS-OFF PERSON. The brief embedded above tells the model
@@ -303,37 +303,37 @@ function _fuelRenderPlan(plan){
     return '<div style="padding:10px 0;border-top:1px solid var(--bd)">'+
       '<div style="display:flex;justify-content:space-between;gap:8px"><div style="font-size:13px;font-weight:600;color:var(--tx)">'+_esc(mm.name||'Meal')+'</div><div style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx3);white-space:nowrap">'+(_gentle?'':(R(mm.cal||0)+' cal \u00b7 '+R(mm.pro||0)+'p \u00b7 '+R(mm.carbs||0)+'c \u00b7 '+R(mm.fat||0)+'f'))+'</div></div>'+
       '<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-top:3px">'+_esc(mm.items||'')+'</div>'+
-      (mm.why?'<div style="font-size:11.5px;color:var(--go);line-height:1.5;margin-top:5px;font-style:italic">'+_esc(mm.why)+'</div>':'')+
+      (mm.why?'<div style="font-size:11px;color:var(--go);line-height:1.5;margin-top:5px;font-style:italic">'+_esc(mm.why)+'</div>':'')+
       '<button onclick="_fuelSwapMeal('+i+')" style="margin-top:6px;background:none;border:none;color:var(--tx3);font-size:11px;cursor:pointer;font-family:\'DM Mono\',monospace;letter-spacing:0.03em">↻ swap this meal</button>'+
     '</div>';
   }).join('');
   // Number() so an already-stored string cannot turn addition into concatenation.
   const sum = function(k){ return (plan.meals||[]).reduce(function(a,mm){ const n=parseFloat(mm&&mm[k]); return a+(isFinite(n)?n:0); },0); };
   const dayCal=sum('cal'), dayPro=sum('pro'), dayCarbs=sum('carbs'), dayFat=sum('fat');
-  const macroRow = _gentle ? '' : '<div style="display:flex;justify-content:space-between;margin-top:12px;padding:9px 12px;background:var(--bg3);border-radius:8px;font-family:\'DM Mono\',monospace;font-size:10.5px;color:var(--tx2)"><span>'+R(dayCal)+' cal</span><span style="color:var(--gr)">'+R(dayPro)+'g P</span><span style="color:var(--bl)">'+R(dayCarbs)+'g C</span><span style="color:var(--go)">'+R(dayFat)+'g F</span></div>';
+  const macroRow = _gentle ? '' : '<div style="display:flex;justify-content:space-between;margin-top:12px;padding:9px 12px;background:var(--bg3);border-radius:var(--rs);font-family:\'DM Mono\',monospace;font-size:10px;color:var(--tx2)"><span>'+R(dayCal)+' cal</span><span style="color:var(--gr)">'+R(dayPro)+'g P</span><span style="color:var(--bl)">'+R(dayCarbs)+'g C</span><span style="color:var(--go)">'+R(dayFat)+'g F</span></div>';
   const tgtCal = (plan.targets&&plan.targets.cal)||0, tgtPro = (plan.targets&&plan.targets.pro)||0;
   const calGap = tgtCal ? (dayCal - tgtCal) : 0; const onTarget = tgtCal && Math.abs(calGap) <= tgtCal*0.08;
-  const targetHtml = (tgtCal && !_gentle) ? ('<div style="font-size:11.5px;line-height:1.5;margin-top:6px;color:'+(onTarget?'var(--gr)':'var(--go)')+'">'+(onTarget ? ('On target — ~'+R(dayCal)+' of your '+tgtCal+' cal, '+R(dayPro)+' of '+tgtPro+'g protein.') : (calGap<0 ? ('About '+R(-calGap)+' cal under your '+tgtCal+' target — bump portions, or <span onclick="_fuelAddSnack()" style="color:var(--go);border-bottom:1px solid var(--go-bd);cursor:pointer">add a snack to hit it →</span>') : ('About '+R(calGap)+' cal over your '+tgtCal+' target — trim portions slightly.')))+'</div>') : '';
+  const targetHtml = (tgtCal && !_gentle) ? ('<div style="font-size:11px;line-height:1.5;margin-top:6px;color:'+(onTarget?'var(--gr)':'var(--go)')+'">'+(onTarget ? ('On target — ~'+R(dayCal)+' of your '+tgtCal+' cal, '+R(dayPro)+' of '+tgtPro+'g protein.') : (calGap<0 ? ('About '+R(-calGap)+' cal under your '+tgtCal+' target — bump portions, or <span onclick="_fuelAddSnack()" style="color:var(--go);border-bottom:1px solid var(--go-bd);cursor:pointer">add a snack to hit it →</span>') : ('About '+R(calGap)+' cal over your '+tgtCal+' target — trim portions slightly.')))+'</div>') : '';
   const _td = _fuelToday();
-  const todayHtml = tgtCal ? ('<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:10px 12px;background:var(--bg3);border-radius:8px;gap:8px"><div style="font-size:11.5px;color:var(--tx2);line-height:1.4">'+(_gentle ? 'What you ate today counts toward your day, not the plan.' : 'Logged today <span style="font-family:\'DM Mono\',monospace;color:var(--tx)">'+R(_td.cal)+'</span> / '+tgtCal+' cal<br><span style="color:var(--tx3);font-size:10.5px">counts to your target, not the plan</span>')+'</div><button onclick="_fuelFlexToday()" style="flex-shrink:0;background:none;border:1px solid var(--go-bd);color:var(--go);border-radius:100px;padding:7px 13px;font-size:11.5px;cursor:pointer;white-space:nowrap">Eating out?</button></div>') : '';
-  const microHtml = plan.microNote ? '<div style="font-size:11.5px;color:var(--tx2);line-height:1.6;margin-top:10px"><span style="color:var(--gr);font-weight:600">Micronutrients · </span>'+_esc(plan.microNote)+'</div>' : '';
+  const todayHtml = tgtCal ? ('<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs);gap:8px"><div style="font-size:11px;color:var(--tx2);line-height:1.4">'+(_gentle ? 'What you ate today counts toward your day, not the plan.' : 'Logged today <span style="font-family:\'DM Mono\',monospace;color:var(--tx)">'+R(_td.cal)+'</span> / '+tgtCal+' cal<br><span style="color:var(--tx3);font-size:10px">counts to your target, not the plan</span>')+'</div><button onclick="_fuelFlexToday()" style="flex-shrink:0;background:none;border:1px solid var(--go-bd);color:var(--go);border-radius:100px;padding:7px 13px;font-size:11px;cursor:pointer;white-space:nowrap">Eating out?</button></div>') : '';
+  const microHtml = plan.microNote ? '<div style="font-size:11px;color:var(--tx2);line-height:1.6;margin-top:10px"><span style="color:var(--gr);font-weight:600">Micronutrients · </span>'+_esc(plan.microNote)+'</div>' : '';
   let timingHtml='';
   if(plan.preworkout && plan.preworkout.length){
-    const rows = plan.preworkout.map(function(x){ return '<div style="display:flex;justify-content:space-between;font-size:12.5px;padding:4px 0"><div style="color:var(--tx2)">'+_esc(x.day)+' · gym '+_esc(x.sessionStart)+'</div><div style="color:var(--go);font-family:\'DM Mono\',monospace">eat by '+_esc(x.eatBy)+'</div></div>'; }).join('');
-    timingHtml='<div style="background:var(--bg3);border:1px solid var(--go-bd);border-radius:10px;padding:12px;margin-top:14px">'+
+    const rows = plan.preworkout.map(function(x){ return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0"><div style="color:var(--tx2)">'+_esc(x.day)+' · gym '+_esc(x.sessionStart)+'</div><div style="color:var(--go);font-family:\'DM Mono\',monospace">eat by '+_esc(x.eatBy)+'</div></div>'; }).join('');
+    timingHtml='<div style="background:var(--bg3);border:1px solid var(--go-bd);border-radius:var(--rm);padding:12px;margin-top:14px">'+
       '<div class="eyebrow" style="color:var(--go);margin-bottom:6px">Fuel around your training</div>'+rows+
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);gap:10px"><div style="font-size:11px;color:var(--tx3);line-height:1.4">Pre-workout meal: '+(plan.lead||getPreworkoutLead())+' min before<br>find your number — adjust by feel</div><div style="display:flex;gap:6px"><button onclick="_fuelSetLead(-15)" style="width:30px;height:30px;border-radius:8px;border:1px solid var(--bd);background:var(--bg2);color:var(--tx2);font-size:16px;cursor:pointer">−</button><button onclick="_fuelSetLead(15)" style="width:30px;height:30px;border-radius:8px;border:1px solid var(--bd);background:var(--bg2);color:var(--tx2);font-size:16px;cursor:pointer">+</button></div></div>'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);gap:10px"><div style="font-size:11px;color:var(--tx3);line-height:1.4">Pre-workout meal: '+(plan.lead||getPreworkoutLead())+' min before<br>find your number — adjust by feel</div><div style="display:flex;gap:6px"><button onclick="_fuelSetLead(-15)" style="width:30px;height:30px;border-radius:var(--rs);border:1px solid var(--bd);background:var(--bg2);color:var(--tx2);font-size:16px;cursor:pointer">−</button><button onclick="_fuelSetLead(15)" style="width:30px;height:30px;border-radius:var(--rs);border:1px solid var(--bd);background:var(--bg2);color:var(--tx2);font-size:16px;cursor:pointer">+</button></div></div>'+
       (plan.carbNote?'<div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-top:8px">'+_esc(plan.carbNote)+'</div>':'')+
     '</div>';
   } else {
-    timingHtml='<div style="background:var(--bg3);border:1px solid var(--go-bd);border-radius:10px;padding:12px;margin-top:14px">'+
+    timingHtml='<div style="background:var(--bg3);border:1px solid var(--go-bd);border-radius:var(--rm);padding:12px;margin-top:14px">'+
       '<div class="eyebrow" style="color:var(--go);margin-bottom:6px">Fuel around your training</div>'+
-      '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:10px">Add your training times and I’ll tell you exactly when to eat before each session — real times, not generic advice.</div>'+
-      '<button class="btn" style="width:100%;background:var(--bg2);border:1px solid var(--go-bd);color:var(--go);font-size:12.5px;padding:10px" onclick="closeModal(this);if(typeof go===\'function\')go(\'calendar\')">Add my schedule →</button>'+
+      '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:10px">Add your training times and I’ll tell you exactly when to eat before each session — real times, not generic advice.</div>'+
+      '<button class="btn" style="width:100%;background:var(--bg2);border:1px solid var(--go-bd);color:var(--go);font-size:12px;padding:10px" onclick="closeModal(this);if(typeof go===\'function\')go(\'calendar\')">Add my schedule →</button>'+
     '</div>';
   }
   // Interactive shopping checklist — tap an item off as you shop (persists), per-store progress.
-  const row1 = function(s){ const got=!!s.got; return '<div onclick="_fuelToggleShopItem(this,'+s._i+')" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;font-size:12.5px;cursor:pointer"><div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0"><span class="fuel-tick" style="width:16px;height:16px;border-radius:4px;border:1px solid '+(got?'var(--go)':'var(--bd2)')+';background:'+(got?'var(--go)':'transparent')+';display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:#231803;flex-shrink:0">'+(got?'✓':'')+'</span><span class="fuel-item" style="color:var(--tx2)'+(got?';text-decoration:line-through;opacity:0.45':'')+'">'+_esc(s.item||'')+'</span></div><span class="fuel-price" style="font-family:\'DM Mono\',monospace;color:var(--tx);white-space:nowrap'+(got?';opacity:0.45':'')+'">'+money(s.price)+'</span></div>'; };
+  const row1 = function(s){ const got=!!s.got; return '<div onclick="_fuelToggleShopItem(this,'+s._i+')" style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;font-size:12px;cursor:pointer"><div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0"><span class="fuel-tick" style="width:16px;height:16px;border-radius:4px;border:1px solid '+(got?'var(--go)':'var(--bd2)')+';background:'+(got?'var(--go)':'transparent')+';display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:#231803;flex-shrink:0">'+(got?'✓':'')+'</span><span class="fuel-item" style="color:var(--tx2)'+(got?';text-decoration:line-through;opacity:0.45':'')+'">'+_esc(s.item||'')+'</span></div><span class="fuel-price" style="font-family:\'DM Mono\',monospace;color:var(--tx);white-space:nowrap'+(got?';opacity:0.45':'')+'">'+money(s.price)+'</span></div>'; };
   const shopHtml = (function(){
     const items = (plan.shopping||[]).map(function(s,idx){ s._i=idx; return s; });
     if(!items.length) return '';
@@ -342,21 +342,21 @@ function _fuelRenderPlan(plan){
     if(order.length <= 1) return items.map(row1).join(''); // single store — flat list
     return order.map(function(k){
       const list=groups[k]; const sub=list.reduce(function(a,s){ return a+(s.price||0); },0); const gotN=list.filter(function(s){ return s.got; }).length;
-      return '<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:1px"><div style="font-size:13px;font-weight:600;color:var(--go)">'+_esc(k)+' <span style="font-size:10.5px;color:var(--tx3);font-weight:400">'+gotN+'/'+list.length+'</span></div><div style="font-family:\'DM Mono\',monospace;font-size:11px;color:var(--tx3)">'+money(sub)+'</div></div>'+list.map(row1).join('')+'</div>';
+      return '<div style="margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:1px"><div style="font-size:13px;font-weight:600;color:var(--go)">'+_esc(k)+' <span style="font-size:10px;color:var(--tx3);font-weight:400">'+gotN+'/'+list.length+'</span></div><div style="font-family:\'DM Mono\',monospace;font-size:11px;color:var(--tx3)">'+money(sub)+'</div></div>'+list.map(row1).join('')+'</div>';
     }).join('');
   })();
   const total = plan.total||0; const budget = plan.budget||p.budget||0;
   const overBudget = budget>0 && total>budget;
   const m = document.createElement('div'); m.className='modal-bg open'; m.id='fuel-plan-modal'; m.style.alignItems='flex-end';
   m.innerHTML = '<div class="modal" style="text-align:left;max-height:90vh;overflow-y:auto">'+
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx)">Your fuel plan</div><button onclick="closeModal(this)" style="background:none;border:none;color:var(--tx3);font-size:20px;cursor:pointer">×</button></div>'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px"><div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx)">Your fuel plan</div><button onclick="closeModal(this)" style="background:none;border:none;color:var(--tx3);font-size:20px;cursor:pointer">×</button></div>'+
     '<div style="font-size:12px;color:var(--tx3);margin-bottom:14px">'+(_gentle ? 'A full day of eating' : ('A day around '+R(dayCal)+' cal'))+(p.chain?' \u00b7 '+_esc(p.chain):'')+'</div>'+
     '<div class="eyebrow" style="color:var(--go);margin-bottom:2px">A day of meals</div>'+
     mealsHtml+ macroRow+ targetHtml+ todayHtml+ microHtml+ timingHtml+
     '<div class="eyebrow" style="margin:16px 0 4px">Weekly shopping list</div>'+shopHtml+
     '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd);font-size:13px"><div style="color:var(--tx);font-weight:600">Weekly total</div><div style="font-family:\'DM Mono\',monospace;color:'+(overBudget?'var(--re)':'var(--gr)')+'">'+money(total)+(budget?(' / '+curSym()+_moneyG(budget)):'')+'</div></div>'+
-    '<button onclick="_fuelCopyShopList()" style="width:100%;margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx3);border-radius:8px;padding:8px;font-size:11.5px;cursor:pointer">Copy shopping list</button>'+
-    (overBudget?'<div style="font-size:11.5px;color:var(--re);margin-top:6px;line-height:1.5">A bit over budget — tap Regenerate for a leaner version, or nudge your budget up.</div>':'')+
+    '<button onclick="_fuelCopyShopList()" style="width:100%;margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx3);border-radius:var(--rs);padding:8px;font-size:11px;cursor:pointer">Copy shopping list</button>'+
+    (overBudget?'<div style="font-size:11px;color:var(--re);margin-top:6px;line-height:1.5">A bit over budget — tap Regenerate for a leaner version, or nudge your budget up.</div>':'')+
     (plan._estimated?'<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:10px">Prices are estimates — tap “Get live prices”, or confirm in-store.</div>':'')+
     ((plan.citations&&plan.citations.length)?'<div style="font-size:10px;color:var(--tx3);line-height:1.6;margin-top:8px">Prices checked: '+plan.citations.map(_esc).join(' · ')+'</div>':'')+
     (plan.note?'<div style="font-size:11px;color:var(--tx3);line-height:1.6;margin-top:12px;font-style:italic">'+_esc(plan.note)+'</div>':'')+
@@ -448,7 +448,7 @@ function _fuelFlexToday(){
   const _gentle = (typeof nutGentle==='function' && nutGentle());
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:left">'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:10px">Going out? Enjoy it.</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:10px">Going out? Enjoy it.</div>'+
     '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:16px">A meal out, a buffet, a night with people — that’s a life, not a failure. One meal won’t undo your week; what you do <i>most</i> days is what shapes you. The plan is a guide, not a cage.'+((tgt&&!_gentle)?(' You’ve still got about <b style="color:var(--tx)">'+left+' cal</b> to your target today if you want a rough anchor — or just be present and pick it up tomorrow.'):'')+'</div>'+
     '<button class="btn primary" onclick="closeModal(this);if(typeof go===\'function\')go(\'nourish\');setTimeout(function(){var i=document.getElementById(\'nut-search-in\');if(i)i.focus();},350)">Log what I ate</button>'+
     '<button class="btn" style="margin-top:8px;background:none;border:1px solid var(--bd);color:var(--tx2)" onclick="closeModal(this);if(typeof haptic===\'function\')haptic(\'tap\');if(typeof showToast===\'function\')showToast(\'Enjoy it\',\'You’re living, not failing. Back on track tomorrow.\')">Just enjoy it — back tomorrow</button>'+
@@ -598,7 +598,7 @@ function renderHomeCalendar(){
   if(!events.length){
     // Don't hide entirely — without a visible door, a new user can never reach the calendar to add
     // their first event. Show a gentle invitation instead.
-    summary.innerHTML = '<span style="color:var(--tx2)">\ud83d\uddd3\ufe0f Add your week \u2014 paste a roster or type your schedule, and it shows up across the app.</span>';
+    summary.innerHTML = '<span style="color:var(--tx2)">'+svgIcon("calendar")+' Add your week \u2014 paste a roster or type your schedule, and it shows up across the app.</span>';
     card.style.display = 'block';
     return;
   }
@@ -685,7 +685,7 @@ function renderCalendarDay(){
       }
       const isPast = (nowMin == null) ? false
         : (_endMin != null ? (_endMin < nowMin) : (_startMin < nowMin - 60));
-      html += '<div onclick="editCalEvent('+e.id+')" style="display:flex;align-items:center;gap:12px;padding:12px 13px;margin-bottom:7px;background:var(--bg3);border-radius:9px;border-left:3px solid '+col+';cursor:pointer;opacity:'+(isPast?'0.5':'1')+'">'+
+      html += '<div onclick="editCalEvent('+e.id+')" style="display:flex;align-items:center;gap:12px;padding:12px 13px;margin-bottom:7px;background:var(--bg3);border-radius:var(--rs);border-left:3px solid '+col+';cursor:pointer;opacity:'+(isPast?'0.5':'1')+'">'+
         '<div style="font-family:DM Mono,monospace;font-size:12px;color:'+col+';flex-shrink:0;min-width:46px">'+(e.start||'')+'</div>'+
         '<div style="flex:1;min-width:0"><div style="font-size:14px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_escFew(e.title)+'</div>'+
         '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:1px">'+time+(e.recurring?' \u00b7 weekly':'')+'</div></div>'+
@@ -701,7 +701,7 @@ function renderCalendarWeek(){
   const events = _calEvents();
   const todayDow = (new Date().getDay()+6)%7; // 0=Mon
   if(!events.length){
-    wrap.innerHTML = '<div style="text-align:center;padding:24px 12px;color:var(--tx3)"><div style="font-size:32px;margin-bottom:8px">\ud83d\uddd3\ufe0f</div><div style="font-size:13px;line-height:1.5">Nothing scheduled yet.<br>Paste a roster above, or tap "+ Add one".</div></div>';
+    wrap.innerHTML = '<div style="text-align:center;padding:24px 12px;color:var(--tx3)"><div style="font-size:32px;margin-bottom:8px">'+svgIcon("calendar",29)+'</div><div style="font-size:13px;line-height:1.5">Nothing scheduled yet.<br>Paste a roster above, or tap "+ Add one".</div></div>';
     const ic = document.getElementById('cal-insight-card'); if(ic) ic.style.display='none';
     return;
   }
@@ -717,7 +717,7 @@ function renderCalendarWeek(){
       dayEvents.forEach(e => {
         const col = CAL_TYPE_COLORS[e.type] || CAL_TYPE_COLORS.other;
         const time = e.start + (e.end ? '\u2013'+e.end : '');
-        html += '<div onclick="editCalEvent('+e.id+')" style="display:flex;align-items:center;gap:10px;padding:9px 11px;margin-bottom:5px;background:var(--bg3);border-radius:8px;border-left:3px solid '+col+';cursor:pointer">'+
+        html += '<div onclick="editCalEvent('+e.id+')" style="display:flex;align-items:center;gap:10px;padding:9px 11px;margin-bottom:5px;background:var(--bg3);border-radius:var(--rs);border-left:3px solid '+col+';cursor:pointer">'+
           '<div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_escFew(e.title)+'</div>'+
           '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:1px">'+time+(e.recurring?' \u00b7 weekly':'')+'</div></div>'+
           '<button onclick="event.stopPropagation();deleteCalEvent('+e.id+')" aria-label="Remove this event" style="background:none;border:none;color:var(--tx3);font-size:14px;min-width:32px;min-height:32px;flex-shrink:0;cursor:pointer">\u00d7</button></div>';
@@ -742,9 +742,9 @@ function renderCalendarMonth(){
   const todayStr = new Date().toDateString();
   const monthLabel = ref.toLocaleDateString('en-AU', {month:'long', year:'numeric'});
   let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'+
-    '<button class="btn" onclick="calMonthShift(-1)" style="width:auto;padding:4px 10px;font-size:14px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">\u2039</button>'+
+    '<button class="btn subtle" onclick="calMonthShift(-1)" style="width:auto;padding:4px 10px">\u2039</button>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:18px;color:var(--tx)">'+monthLabel+'</div>'+
-    '<button class="btn" onclick="calMonthShift(1)" style="width:auto;padding:4px 10px;font-size:14px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">\u203a</button></div>';
+    '<button class="btn subtle" onclick="calMonthShift(1)" style="width:auto;padding:4px 10px">\u203a</button></div>';
   html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px">';
   ['M','T','W','T','F','S','S'].forEach(d => html += '<div style="text-align:center;font-family:DM Mono,monospace;font-size:9px;color:var(--tx3)">'+d+'</div>');
   html += '</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">';
@@ -767,7 +767,7 @@ function renderCalendarMonth(){
     const dayEvents = events.filter(e => e.day === dow && (e.recurring !== false || _calSameWeek(e, cellDate)));
     const isToday = cellDate.toDateString() === todayStr;
     const dots = dayEvents.slice(0,4).map(e => '<span style="width:5px;height:5px;border-radius:50%;background:'+(CAL_TYPE_COLORS[e.type]||CAL_TYPE_COLORS.other)+'"></span>').join('');
-    html += '<div onclick="calJumpToDay('+dow+',\''+_calCellISO+'\')" style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:5px;gap:3px;border-radius:7px;cursor:pointer;background:'+(isToday?'rgba(200,169,110,0.16)':'var(--bg3)')+';border:1px solid '+(isToday?'var(--go-bd)':'transparent')+'">'+
+    html += '<div onclick="calJumpToDay('+dow+',\''+_calCellISO+'\')" style="aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:5px;gap:3px;border-radius:var(--rs);cursor:pointer;background:'+(isToday?'rgba(200,169,110,0.16)':'var(--bg3)')+';border:1px solid '+(isToday?'var(--go-bd)':'transparent')+'">'+
       '<div style="font-size:12px;color:'+(isToday?'var(--go)':'var(--tx2)')+'">'+d+'</div>'+
       '<div style="display:flex;gap:2px;flex-wrap:wrap;justify-content:center;max-width:80%">'+dots+'</div></div>';
   }
@@ -856,7 +856,7 @@ function openEventLogger(){
     '<input type="text" id="ev-title" placeholder="e.g. Work shift, Lecture, Gym, Mass" style="margin-bottom:14px">'+
     '<div class="lbl">Which day(s)?</div>'+
     '<div id="ev-days" style="display:flex;gap:5px;margin-bottom:14px;flex-wrap:wrap">'+
-      days.map((d,i)=>'<button type="button" class="ev-day-btn" data-day="'+i+'" onclick="_evToggleDay('+i+')" style="flex:1;min-width:38px;padding:10px 4px;border-radius:9px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);font-size:12px;font-family:Outfit,sans-serif">'+d+'</button>').join('')+
+      days.map((d,i)=>'<button type="button" class="ev-day-btn" data-day="'+i+'" onclick="_evToggleDay('+i+')" style="flex:1;min-width:38px;padding:10px 4px;border-radius:var(--rs);border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);font-size:12px;font-family:Outfit,sans-serif">'+d+'</button>').join('')+
     '</div>'+
     '<div style="display:flex;gap:10px;margin-bottom:14px">'+
       '<div style="flex:1"><div class="lbl">Start</div><select id="ev-start">'+timeOpts+'</select></div>'+
@@ -864,9 +864,9 @@ function openEventLogger(){
     '</div>'+
     '<div class="lbl">Type</div>'+
     '<div id="ev-types" style="display:flex;gap:5px;margin-bottom:16px;flex-wrap:wrap">'+
-      [['work','Work'],['class','Class'],['gym','Gym'],['personal','Personal'],['other','Other']].map(t=>'<button type="button" class="ev-type-btn" data-type="'+t[0]+'" onclick="_evSetType(\''+t[0]+'\')" style="flex:1;min-width:56px;padding:9px 4px;border-radius:9px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);font-size:12px;font-family:Outfit,sans-serif">'+t[1]+'</button>').join('')+
+      [['work','Work'],['class','Class'],['gym','Gym'],['personal','Personal'],['other','Other']].map(t=>'<button type="button" class="ev-type-btn" data-type="'+t[0]+'" onclick="_evSetType(\''+t[0]+'\')" style="flex:1;min-width:56px;padding:9px 4px;border-radius:var(--rs);border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);font-size:12px;font-family:Outfit,sans-serif">'+t[1]+'</button>').join('')+
     '</div>'+
-    '<label style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg3);border-radius:10px;margin-bottom:18px;cursor:pointer"><span style="font-size:14px;color:var(--tx)">Repeats every week</span><input type="checkbox" id="ev-recurring" checked style="width:auto;transform:scale(1.3)"></label>'+
+    '<label style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg3);border-radius:var(--rm);margin-bottom:18px;cursor:pointer"><span style="font-size:14px;color:var(--tx)">Repeats every week</span><input type="checkbox" id="ev-recurring" checked style="width:auto;transform:scale(1.3)"></label>'+
     '<button class="btn primary" style="padding:14px;margin-bottom:8px" onclick="_saveEventFromModal()">Add to week</button>'+
     '<button class="btn" onclick="document.getElementById(\'event-modal\')?.remove()" style="background:none;border:none;color:var(--tx3);font-size:13px">Cancel</button>'+
   '</div>';
@@ -1073,7 +1073,7 @@ function openCSVImport(){
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:6px">Import transactions</div>'+
     '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:14px">Export a CSV from your banking app (most banks let you do this), then upload it here. ToTry reads the date, description, and amount, auto-sorts each into a category, and lets you review before saving. The file itself is never uploaded \u2014 it\u2019s read on your phone. What you choose to save is stored with the rest of your data, and syncs to your account if you\u2019re signed in.</div>'+
-    '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:16px;padding:10px 12px;background:var(--bg3);border-radius:8px">Works with standard bank exports (columns like Date, Description, Amount). Negative amounts = spending, positive = income.</div>'+
+    '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:16px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs)">Works with standard bank exports (columns like Date, Description, Amount). Negative amounts = spending, positive = income.</div>'+
     '<button class="btn primary" onclick="document.getElementById(&quot;csv-import-input&quot;).click()" style="margin-bottom:8px">Choose CSV file</button>'+
     '<button class="btn" onclick="closeModal(this)">Cancel</button></div>';
   document.body.appendChild(m);
@@ -1215,7 +1215,7 @@ function spendingReadHTML(){
   const _out = _thin ? r.spend  : r.spendPerMonth;
   const _net = _thin ? (r.income - r.spend) : r.netPerMonth;
   const neg = _net < 0;
-  h += '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:12px">'+
+  h += '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:14px;margin-bottom:12px">'+
     '<div style="font-size:11px;color:var(--tx3);margin-bottom:8px">'+period+' of your money · '+r.count+' transactions</div>'+
     '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--tx2);padding:3px 0"><span>Coming in</span><span style="font-family:DM Mono,monospace;color:var(--gr)">'+money(_in)+_suffix+'</span></div>'+
     '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--tx2);padding:3px 0"><span>Going out</span><span style="font-family:DM Mono,monospace;color:var(--re)">'+money(_out)+_suffix+'</span></div>'+
@@ -1256,7 +1256,7 @@ function spendingReadHTML(){
         }
       }
     }catch(_){}
-    h += '<div style="background:var(--go-bg);border:1px solid var(--go-bd);border-radius:12px;padding:14px;margin-bottom:12px">'+
+    h += '<div style="background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rm);padding:14px;margin-bottom:12px">'+
       '<div style="font-size:11px;color:var(--go);margin-bottom:6px">WHERE TO LOCK IN</div>'+
       '<div style="font-size:13px;color:var(--tx);line-height:1.6">'+r.lockIn.name+' is '+money(r.lockIn.perMonth)+' a month — your biggest movable cost. '+consequence+'</div>'+
     '</div>';
@@ -1282,7 +1282,7 @@ function viceLedgerHTML(){
       // Did it happen inside the streak the app is currently crediting?
       const insideStreak = viceSpendFromBank(kind, Date.now() - clean*86400000);
       const contradicts = viceIsAbstinence(v) && insideStreak && insideStreak.total > 0;
-      out += '<div style="background:'+(contradicts?'var(--re-bg)':'var(--bg3)')+';border:1px solid '+(contradicts?'var(--re-bd)':'var(--bd)')+';border-radius:12px;padding:14px;margin-bottom:12px">'+
+      out += '<div style="background:'+(contradicts?'var(--re-bg)':'var(--bg3)')+';border:1px solid '+(contradicts?'var(--re-bd)':'var(--bd)')+';border-radius:var(--rm);padding:14px;margin-bottom:12px">'+
         '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px">'+_escFew(v.n.toUpperCase())+' · WHAT THE BANK SAYS</div>'+
         '<div style="font-family:DM Mono,monospace;font-size:26px;color:'+(contradicts?'var(--re)':'var(--tx)')+';line-height:1">'+curSym()+Math.round(bank.total).toLocaleString()+'</div>'+
         '<div style="font-size:12px;color:var(--tx2);line-height:1.6;margin-top:8px">'+
@@ -1291,7 +1291,7 @@ function viceLedgerHTML(){
             ? 'But this card says you’ve been clean '+clean+' days — and '+curSym()+Math.round(insideStreak.total).toLocaleString()+' of that spending falls inside it. One of the two isn’t true. No judgement either way; I’d just rather you had the real number.'
             : 'That’s the real number — not an estimate. It’s what this cost you.')+
         '</div>'+
-        (contradicts ? '<button onclick="openLogUse('+i+')" style="width:100%;margin-top:10px;background:none;border:1px solid var(--re-bd);color:var(--re);border-radius:9px;padding:9px;font-size:12px;cursor:pointer">Set it straight</button>' : '')+
+        (contradicts ? '<button onclick="openLogUse('+i+')" style="width:100%;margin-top:10px;background:none;border:1px solid var(--re-bd);color:var(--re);border-radius:var(--rs);padding:9px;font-size:12px;cursor:pointer">Set it straight</button>' : '')+
       '</div>';
     });
   }catch(_){}

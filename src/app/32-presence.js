@@ -586,7 +586,7 @@ function renderHomeQuickWins(){
       return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0' + (i>0?';border-top:1px solid var(--bd)':'') + '">' +
         '<div style="min-width:0;flex:1"><div style="font-size:14px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + v.n.replace(/</g,'&lt;') + '</div>' +
         '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">day ' + lgDays + ' of letting go</div></div>' +
-        '<button class="btn" onclick="openLettingGo()" style="width:auto;padding:8px 14px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);flex-shrink:0">Feeling the pull?</button>' +
+        '<button class="btn subtle" onclick="openLettingGo()" style="width:auto;padding:8px 14px;flex-shrink:0">Feeling the pull?</button>' +
       '</div>';
     }
     const moderate = v.mode === 'moderate';

@@ -1305,7 +1305,7 @@ H.section('native reach — things the wrapper unlocks must actually be used');
   //    one platform with a Taptic Engine. The native path must come FIRST, before that early return.
   const h = code.slice(code.indexOf('function haptic('));
   const hb = h.slice(0, h.indexOf('\n}'));
-  H.ok(/Plugins\.Haptics/.test(hb), 'haptic() uses the native Haptics plugin');
+  H.ok(/Plugins\.Haptics/.test(hb), 'haptsvgIcon() uses the native Haptics plugin');
   H.ok(hb.indexOf('Plugins.Haptics') < hb.indexOf('!navigator.vibrate'),
     'the native path runs BEFORE the navigator.vibrate early-return that kills it on iOS');
   const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
@@ -6488,7 +6488,7 @@ H.section('a breath you can follow with your eyes shut');
   // sit ahead of the plugin call, not inside one branch of it, or turning haptics off would still
   // buzz on every path that does not go through that branch.
   const hp = H.extractFn('haptic');
-  H.ok(/ls\('totry_haptics'\)\s*===\s*'off'/.test(hp), 'haptic() reads the off switch');
+  H.ok(/ls\('totry_haptics'\)\s*===\s*'off'/.test(hp), 'haptsvgIcon() reads the off switch');
   H.ok(hp.indexOf("totry_haptics") < hp.indexOf('Capacitor'),
     'and it returns BEFORE reaching the native plugin, so every pattern is covered');
   H.ok(hp.indexOf("totry_haptics") < hp.indexOf('navigator.vibrate'),
@@ -7383,6 +7383,212 @@ H.section('there is more than one thing a person means by "reset", and more than
   const ora = H.code(H.extractFn('openResetAll'));
   H.ok(/resetAllVices\(false\)/.test(ora) && /resetAllVices\(true\)/.test(ora), 'the chooser offers both depths');
   H.ok(/Day one again/.test(ora) && /Clear the history too/.test(ora), 'named by what they do');
+}
+
+H.section('"you are here" is one colour, and it is not the one that means danger');
+{
+  // Four tab strips in this app. Three said gold for the selected tab and the fourth — the Fight
+  // tab's own Fight/Score header — said var(--re): the DANGER colour, the one that paints
+  // .btn.danger, the SOS vice name and the "loss" journal tag. So the screen a person opens when
+  // they are fighting something greeted them with alarm before they had done anything wrong, and the
+  // app had two different answers to "which one am I on". This is the shape of thing that makes an
+  // app read as assembled rather than designed.
+  const code = H.code(H.html);
+  const strips = [...code.matchAll(/\.(nb|bst|rst|fst)\.active\{([^}]*)\}/g)].map(m => ({ k:m[1], css:m[2] }));
+  H.ok(strips.length === 4, 'all four tab strips were found (' + strips.length + ')');
+  const odd = strips.filter(s => !/var\(--go\)/.test(s.css));
+  H.ok(odd.length === 0, 'every strip marks the selected tab in gold' + (odd.length ? ' — stray: ' + odd.map(s => '.' + s.k).join(', ') : ''));
+  // CALIBRATION: --re must still mean danger somewhere, or this assertion is only proving the token
+  // was deleted.
+  H.ok(/\.btn\.danger\{[^}]*var\(--re\)/.test(code), 'and --re still means danger (calibration)');
+}
+
+H.section('one icon language — the app draws its own icons, and only once');
+{
+  // For 42 modules the app had TWO icon languages: 25 hand-drawn stroke icons on a 24x24 grid in the
+  // tab bar and the header, and Apple's emoji art absolutely everywhere else — full colour, a
+  // different weight, a different hand. Nothing in the gate could see it, because an emoji is just a
+  // character and every id, handler and contrast check passed. It is the loudest "prototype" signal
+  // an app can send, and it is invisible to every check that reads source as code rather than as a
+  // picture.
+  const code = H.code(H.html);
+
+  // 1. svgIcon() exists, is a real set, and refuses an unknown name rather than emitting broken markup.
+  const icFn = H.extractFn('svgIcon');
+  H.ok(/viewBox="0 0 24 24"/.test(icFn), 'svgIcon() draws on the same 24x24 grid as the tab bar');
+  H.ok(/if\(!d\) return ''/.test(icFn), 'an unknown icon name returns empty, never half a tag');
+  // A two-letter global in a ONE-SCOPE script is a loaded gun: this function was called svgIcon() for
+  // about an hour, and renderCalendarWeek already had `const ic = document.getElementById(...)`
+  // one line BELOW where the sweep inserted a call — so the call hit the const's temporal dead
+  // zone and the whole calendar threw. npm test was green; only the crisis walk opened that view.
+  const shadow = [...code.matchAll(/\b(?:const|let|var)\s+svgIcon\b/g)];
+  H.ok(shadow.length === 0, 'nothing shadows svgIcon with a block-scoped binding');
+  const names = [...icFn.matchAll(/^    ([a-z]+):'/gm)].map(m => m[1]);
+  H.ok(names.length >= 55, 'the set is real: ' + names.length + ' icons');
+  H.ok(new Set(names).size === names.length, 'no icon name is defined twice');
+
+  // 2. EXECUTE it — a test that only greps the definition passes on a set that cannot render.
+  const F = H.load(['svgIcon']);
+  const heart = F.svgIcon('heart');
+  H.ok(/^<svg class="ic"/.test(heart) && /<\/svg>$/.test(heart), 'svgIcon("heart") returns one complete svg');
+  H.ok(F.svgIcon('definitely-not-an-icon') === '', 'and an unknown name returns exactly empty string');
+  H.ok(F.svgIcon('heart', 28).indexOf('width="28"') > -1, 'the size argument reaches the markup');
+  // every name in the set actually renders something with geometry in it
+  const empty = names.filter(n => !/<(path|circle|rect|line|polyline|polygon)/.test(F.svgIcon(n)));
+  H.ok(empty.length === 0, 'every icon has real geometry' + (empty.length ? ' — empty: ' + empty.join(', ') : ''));
+
+  // 3. The static shell cannot call a function, so its icons are inlined literals. That duplication
+  // is only safe if it can never drift, so: every literal must BE one of svgIcon()'s paths, verbatim.
+  // svgIcon()'s own template is the one legitimate non-literal: it holds '+d+' where a path goes.
+  const literals = [...H.html.matchAll(/<svg class="ic"[^>]*>([\s\S]*?)<\/svg>/g)]
+    .map(m => m[1]).filter(d => d !== "'+d+'");
+  H.ok(literals.length >= 60, 'the shell inlines ' + literals.length + ' icons');
+  const known = new Set(names.map(n => F.svgIcon(n).replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '')));
+  const drifted = literals.filter(d => !known.has(d));
+  H.ok(drifted.length === 0, 'every inlined icon matches svgIcon() exactly — no drift' +
+       (drifted.length ? ' (' + drifted.length + ' stray, first: ' + drifted[0].slice(0, 60) + ')' : ''));
+
+  // 4. A <button> inherits neither font-family NOR color. The font one was found and fixed in v595;
+  // the colour one could not bite until the icons arrived, because emoji carry their own colour and
+  // a stroke:currentColor icon does not. Seven visible buttons computed to rgb(0,0,0), six holding
+  // an icon — Train's Strength and Cardio cards drew a black icon on a translucent gold fill.
+  H.ok(/button\{color:inherit\}/.test(code), 'button{color:inherit} — buttons inherit ink like everything else');
+  H.ok(/button\{font-family:'Outfit'/.test(code), 'and the font-family rule it pairs with is still there (calibration)');
+
+  // 5. The sweep must not rot back. No emoji may LEAD an element's text anywhere in the shell —
+  // that is the chrome position, the one that reads as a sticker pasted onto the design.
+  const CHROME = /<(?:div|span|button|summary|b|p|h[1-6])[^>]*>(?:&nbsp;|\s)*(?:\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDEFF]|\uD83E[\uDD00-\uDFFF])/g;
+  // The KEEP set is named here on purpose, so that what stays emoji is a decision on the record
+  // rather than whatever the sweep happened to miss: the mood and sleep faces (a person in a bad
+  // moment reads a face faster than a line drawing), the traditions' own marks, and the dove.
+  const KEEP = /[\u{1F634}\u{1F610}\u{1F642}\u{1F60C}\u{1F621}\u{1F614}\u{1F64F}\u{1F549}\u{1F54A}\u{1F54C}\u{1F311}-\u{1F318}\u{1F32B}\u{271D}\u{262A}\u{2638}]/u;
+  const leaks = [...H.html.matchAll(CHROME)].map(m => m[0]).filter(m => !KEEP.test(m));
+  H.ok(leaks.length === 0, 'no emoji leads an element in the shell' +
+       (leaks.length ? ' — ' + leaks.length + ' found, e.g. ' + leaks[0].slice(-40) : ''));
+  H.ok(KEEP.test('😴') && KEEP.test('🕉') && !KEEP.test('📈'),
+       'the keep-set detector knows a mood face and an om, and does NOT excuse a chart (calibration)');
+
+  // The shell check above can only see markup. The other shape a glyph hides in is a DATA field —
+  // a chip label, a row's first argument — which never reaches the page as a tag and so was invisible
+  // to it. Two coach chips survived the whole sweep that way, one of them written \ud83e\udded so
+  // that no search for the character itself could find it either.
+  const LABEL = /(?:label|title|name)\s*:\s*'(?:\\u[0-9a-fA-F]{4}|\\u\{[0-9a-fA-F]+\}|[\u{1F300}-\u{1FAFF}\u{2600}-\u{26FF}])/gu;
+  const dataGlyphs = [...code.matchAll(LABEL)].map(m => m[0])
+    .filter(m => !/\\ud83d\\ude4f|\\ud83d\\udd4a|🙏|🕊|✝|☪|🕉|☸/.test(m));
+  H.ok(dataGlyphs.length === 0, 'no chip or row label opens with a glyph instead of an icon' +
+       (dataGlyphs.length ? ' — ' + dataGlyphs.length + ' found, e.g. ' + dataGlyphs[0] : ''));
+  H.ok(LABEL.test("label: '\\ud83c\\udfaf Focus'") , 'and that detector sees an escaped one (calibration)');
+
+  // THE FOURTH ENCODING. The two checks above read the bundle as TEXT, so they see a literal 🔥 and
+  // they see the 🔥 that a JS string compiles to — and they are blind to &#128293;, which
+  // is the SAME character written for HTML. 101 emoji were hiding in that spelling, including the
+  // sleeping face on the Track list, which sat between a stroke scale icon and a stroke moon icon
+  // in the same three-row list while this suite reported one icon language. An audit that reads one
+  // encoding of a thing has audited one encoding of a thing.
+  const decodeEntities = s => s.replace(/&#(\d+);|&#x([0-9a-fA-F]+);/g,
+    (m, d, h) => { try { return String.fromCodePoint(d ? parseInt(d, 10) : parseInt(h, 16)); } catch (e) { return m; } });
+  const decoded = decodeEntities(H.html);
+  const ENT_CHROME = /<(?:div|span|button|summary|b|p|h[1-6])[^>]*>(?:\s|&nbsp;)*(?:\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDEFF]|\uD83E[\uDD00-\uDFFF])/g;
+  // The pickers and the third-party tiles are named by CLASS, because that is what makes them
+  // content: mood-btn / dr-btn / sleep-opt / comp-choice-emoji are feelings, sc-name is the
+  // identity-season picker, app-link-icon and setCalApp are other companies' logos.
+  const BY_ROLE = /mood-btn|dr-btn|sleep-opt|comp-choice-emoji|sc-name|app-link-icon|setCalApp|ci-icon|tr-icon"[^>]*>&#1285/;
+  const entLeaks = [...decoded.matchAll(ENT_CHROME)].map(m => m[0])
+    .filter(m => !KEEP.test(m) && !BY_ROLE.test(m));
+  H.ok(entLeaks.length === 0, 'no emoji written as an HTML entity leads an element either' +
+       (entLeaks.length ? ' — ' + entLeaks.length + ' found, e.g. ' + entLeaks[0].slice(-42) : ''));
+  // CALIBRATION: the decoder has to actually decode, or the check above is empty.
+  H.ok(decodeEntities('<div>&#128293; x</div>') === '<div>🔥 x</div>',
+       'and the entity decoder really decodes (calibration)');
+  H.ok(ENT_CHROME.test('<div>🔥 Streak</div>'), 'and the detector fires on a planted one (calibration)');
+
+  // The toast is the app's smallest voice and it speaks 488 times. Fourteen of those titles opened
+  // with a decorative glyph and 474 did not, which is not a style — it is fourteen places where
+  // somebody felt like it. The one that stays is instructional: it names the microphone key the
+  // person has to find on their OWN keyboard, so the picture is the content.
+  const toasts = [...code.matchAll(/showToast\(\s*(['"])((?:\\.|(?!\1)[^\\])*)\1/g)].map(m => m[2]);
+  H.ok(toasts.length > 400, 'the toast census found the calls (' + toasts.length + ')');
+  // ANYWHERE in the title, not just the front. The first cut anchored with ^ and passed while
+  // "Verse saved \u2661" sat two lines from two other "Verse saved" toasts that had no heart —
+  // the same action, worded three ways. A trailing glyph is the commoner spelling of this defect.
+  const glyphToasts = toasts.filter(t =>
+    // PICTOGRAPHS only. A check mark on "Approved \u2713" is the app's own confirmation mark, drawn
+    // in its own font and kept everywhere else under the icon rule; the first widening swept 23 of
+    // them in and would have been switched off inside a week.
+    /\\u\{1F[0-9a-fA-F]{3}\}|\\u[dD]83[cdeCDE]\\u[dD][c-fC-F][0-9a-fA-F]{2}|&#1[0-9]{5};|[\u{1F300}-\u{1FAFF}]/u.test(t));
+  H.ok(glyphToasts.length === 0, 'no toast title opens with a decorative glyph' +
+       (glyphToasts.length ? ' — ' + glyphToasts.length + ' do, e.g. "' + glyphToasts[0].slice(0, 40) + '"' : ''));
+
+  // CALIBRATION: the detector must be able to fire at all.
+  H.ok(CHROME.test('<div style="x">📈 Strength</div>'), 'and that detector does fire on a planted one');
+
+  // 6. What deliberately STAYS emoji is content, not chrome, and must survive the sweep: a person in
+  // a bad moment reads a face faster than a line drawing, and the traditions' marks are not ours to
+  // redraw.
+  H.ok(/😴/.test(H.html), 'the mood faces are still faces');
+  H.ok(/✝/.test(H.html) && /☪/.test(H.html) && /ὔ9|🕉/.test(H.html),
+       'the traditions keep their own marks');
+}
+
+H.section('one type scale — no size sits between two steps, and every declared step is used');
+{
+  // The scale was declared (--t-micro … --t-xl) and then ignored: 27 distinct font sizes rendered on a
+  // walk of 16 tabs, including 9.5, 10.5, 11.5, 12.5, 13.5 and 14.5 — half-pixels that exist only to
+  // sit between two real steps. Two paragraphs of counsel in ONE card were 13.5px and 12.5px, same
+  // ink, same role. Nobody can name that difference; everybody feels it as an app nobody finished.
+  //
+  // What this asserts is deliberately narrow, so it can stay green: NOT "every font-size is a token"
+  // (that fails at two thousand sites on day one and would be switched off, which is worse than no
+  // check) — only the two things that are unambiguous defects.
+  const code = H.code(H.html);
+
+  // 1. No half-pixel sizes, in any of the three ways this codebase writes a size.
+  const half = [...code.matchAll(/font-size:\s*\d+\.5px|fontSize\s*=\s*['"]\d+\.5px/g)].map(m => m[0]);
+  H.ok(half.length === 0, 'no font size sits on a half pixel' + (half.length ? ' — ' + half.length + ', e.g. ' + half[0] : ''));
+  H.ok(/font-size:\s*\d+\.5px/.test('style="font-size:12.5px"'), 'and that detector fires on a planted one (calibration)');
+
+  // 2. Every step the scale declares is used by something. A token with no consumer is a scale that
+  // exists on paper — which is exactly what this one was, for its whole life, before 14 Sep 2026.
+  const root = (code.match(/--t-micro:[^}]*/) || [''])[0];
+  const steps = [...root.matchAll(/--(t-[a-z0-9]+):/g)].map(m => m[1]);
+  H.ok(steps.length >= 8, 'the type scale declares its steps (' + steps.length + ')');
+  const unused = steps.filter(t => !new RegExp('var\\(--' + t + '\\)').test(code));
+  H.ok(unused.length === 0, 'every declared type step is used' + (unused.length ? ' — unused: --' + unused.join(', --') : ''));
+
+  // 3. The two flex-button intents the markup already states must render as stated.
+  H.ok(/\.btn\[style\*="text-align:left"\][^{]*\{justify-content:flex-start\}/.test(code),
+       'a .btn that asks for text-align:left gets it (flex centres it otherwise)');
+  H.ok(/\.btn\.stack\{flex-direction:column/.test(code), 'a title-over-description button stacks');
+  const faith = [...H.html.matchAll(/<button class="([^"]*)"[^>]*onclick="obPickFaith\(/g)].map(m => m[1]);
+  H.ok(faith.length >= 4 && faith.every(c => /\bstack\b/.test(c)),
+       'onboarding’s faith buttons stack their description under the name (' + faith.length + ')');
+}
+
+H.section('three more doors where a person’s own typing became live markup');
+{
+  // Found by the audit of the icon sweep, on lines that sweep touched — none of them caused by it,
+  // all three present in HEAD. Each was DRIVEN with a payload before the fix and after it: on the old
+  // build `<img src=x onerror=...>` typed as a food search executed, and an exercise note of
+  // `</textarea><img ...>` executed AND destroyed its own textarea, taking the note with it.
+  const code = H.code(H.html);
+
+  const sf = H.code(H.extractFn('searchFood'));
+  H.ok(/Search the web for "'\+_escFew\(query\)\+'"/.test(sf), 'the web-search card escapes the person’s own query');
+  H.ok(!/Search the web for "'\+query\+'"/.test(sf), 'and no raw copy of it survives (calibration against a partial fix)');
+
+  const rws = H.code(H.extractFn('renderWorkoutSession'));
+  H.ok(/>' \+ _escFew\(ex\.notes \|\| ''\) \+ '<\/textarea>/.test(rws), 'an exercise note is escaped inside its textarea');
+  H.ok(/Notes: "' \+ _escFew\(ex\.notes/.test(rws), 'and escaped in the notes toggle above it');
+  // The live update runs in saveExerciseNote on every keystroke, NOT in toggleExerciseNotes — the
+  // first draft of this assertion searched the wrong function and could not fail.
+  const sen = H.code(H.extractFn('saveExerciseNote'));
+  H.ok(/toggle\.innerHTML = svgIcon\("edit",12\)\+' Notes: "' \+ _escFew\(text/.test(sen),
+       'the keystroke-by-keystroke update of that toggle escapes what is being typed');
+
+  // The four "Which meal?" buttons held only an emoji, which a screen reader spoke as the name.
+  // The icon sweep replaced it with an aria-hidden SVG, so all four became nameless controls.
+  H.ok(/class="qa-meal"[^>]*aria-label="'\+x\[0\]\.charAt\(0\)\.toUpperCase\(\)/.test(code),
+       'the quick-add meal buttons have a name now that their only content is a decorative icon');
 }
 
 H.report();

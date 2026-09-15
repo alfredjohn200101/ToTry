@@ -1,6 +1,6 @@
 // To Try — Service Worker
 // Bump CACHE version with every new deploy to force update
-const CACHE = 'totry-v601-forty-nine-that-survived-refutation'
+const CACHE = 'totry-v603-the-system-was-already-there'
 
 const CORE = [
   './',

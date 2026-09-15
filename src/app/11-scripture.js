@@ -198,7 +198,7 @@ function saveVerseResult(idx){
     saved.unshift({verse:v.verse,reference:v.reference,date:new Date().toLocaleDateString('en-AU',{day:'numeric',month:'short'})});
     ls('totry_sv',saved.slice(0,200));
     renderSavedVerses();
-    showToast('Verse saved \u2661',v.reference);   // the entity is printed literally now that showToast escapes
+    showToast('Verse saved',v.reference);   // the entity is printed literally now that showToast escapes
   }else{
     showToast('Already saved',v.reference);
   }
@@ -1110,7 +1110,7 @@ async function loadBibleChapter(){
           '</div>';
       }
     }catch(_){ }
-    _html += '<button class="btn" onclick="loadBibleChapter()" style="margin:10px 8px 0;width:auto;padding:8px 16px;font-size:12px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);min-height:34px">Try again</button>';
+    _html += '<button class="btn subtle" onclick="loadBibleChapter()" style="margin:10px 8px 0;width:auto;padding:8px 16px;min-height:34px">Try again</button>';
     document.getElementById('br-verses').innerHTML = _html;
   }
 }
@@ -1128,7 +1128,7 @@ async function loadStudyNotes(){
     if(r.ok){ const d = await r.json(); notes = (d.chapter && d.chapter.content) || d.content || null; }
   }catch(_){ }
   if(!notes || !notes.length){
-    body.innerHTML = '<div style="font-size:13px;color:var(--tx2);line-height:1.6;padding:8px;background:var(--bg3);border-radius:8px">No study notes are available for this chapter. Not every chapter has them yet — the Gospels and major books have the most.</div>';
+    body.innerHTML = '<div style="font-size:13px;color:var(--tx2);line-height:1.6;padding:8px;background:var(--bg3);border-radius:var(--rs)">No study notes are available for this chapter. Not every chapter has them yet — the Gospels and major books have the most.</div>';
     return;
   }
   // Render notes — each item may be {type, verseNumber, content[]}
@@ -1256,7 +1256,7 @@ async function searchBible(query){
         res.innerHTML='';
         if(data.reading){
           const reading=document.createElement('div');
-          reading.style.cssText='padding:14px 16px;margin-bottom:14px;background:linear-gradient(135deg,rgba(200,169,110,0.08),rgba(140,107,182,0.06));border:1px solid var(--go-bd);border-radius:12px;font-family:\'Cormorant Garamond\',serif;font-size:16px;font-style:italic;line-height:1.6;color:var(--tx)';
+          reading.style.cssText='padding:14px 16px;margin-bottom:14px;background:linear-gradient(135deg,rgba(200,169,110,0.08),rgba(140,107,182,0.06));border:1px solid var(--go-bd);border-radius:var(--rm);font-family:\'Cormorant Garamond\',serif;font-size:16px;font-style:italic;line-height:1.6;color:var(--tx)';
           reading.textContent=data.reading;
           res.appendChild(reading);
         }
@@ -1402,7 +1402,7 @@ async function generatePrayerFor(situation, verse){
   const res=document.getElementById('br-search-results');
   const existing=res.innerHTML;
   const prayerBox=document.createElement('div');
-  prayerBox.style.cssText='padding:16px;margin-top:12px;background:var(--bg3);border:1px solid var(--go-bd);border-radius:12px';
+  prayerBox.style.cssText='padding:16px;margin-top:12px;background:var(--bg3);border:1px solid var(--go-bd);border-radius:var(--rm)';
   prayerBox.innerHTML='<p class="pulsing" style="font-family:\'Cormorant Garamond\',serif;font-style:italic;color:var(--tx3);text-align:center">Writing a prayer...</p>';
   res.appendChild(prayerBox);
   
@@ -1436,7 +1436,7 @@ function saveVerseFromReader(text,ref){
   });
   ls('totry_sv', saved.slice(0,200));
   renderSavedVersesEverywhere();
-  showToast('Verse saved \u2665', ref);
+  showToast('Verse saved', ref);
 }
 // The off-tap. Without this the highlight and the shelf disagreed the moment you tapped twice.
 // THE SAME QUESTION THE SHELF ASKS. v570 made the reader's highlight MEAN "saved", which turned a tap

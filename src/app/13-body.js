@@ -453,7 +453,7 @@ function adjustCaloriesFromWeightTrend(){
           '<div class="modal-handle"></div>' +
           '<div style="text-align:center;font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:6px">Coach update</div>' +
           '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:14px">Your targets shifted.</div>' +
-          '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px">' +
+          '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:14px;margin-bottom:14px">' +
             '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
               '<div style="font-size:12px;color:var(--tx3)">Daily calories</div>' +
               '<div style="font-family:DM Mono,monospace;font-size:13px"><span style="color:var(--tx3);text-decoration:line-through">' + oldCal + '</span> <span style="color:var(--go);font-weight:700;margin-left:8px">' + newCal + '</span></div>' +
@@ -600,7 +600,7 @@ function renderWeightHistory(){
     // The way back to the rest of them. Without this the list simply stopped at eight with no
     // sign there were more, which is why nobody noticed the older ones were unreachable.
     (entries.length > 8
-      ? '<button onclick="toggleWeighShowAll()" style="width:100%;min-height:34px;margin-top:6px;background:none;border:none;color:var(--tx3);font-size:11.5px;font-family:\'DM Mono\',monospace;cursor:pointer">'
+      ? '<button onclick="toggleWeighShowAll()" style="width:100%;min-height:34px;margin-top:6px;background:none;border:none;color:var(--tx3);font-size:11px;font-family:\'DM Mono\',monospace;cursor:pointer">'
         + (_weighShowAll ? 'Show fewer' : 'Show all ' + entries.length + ' weigh-ins') + '</button>'
       : '');
 }
@@ -698,9 +698,9 @@ function renderBodyGoalCard(){
     box.style.display = '';
     box.innerHTML = '<div class="card" style="padding:14px">' +
       '<div class="lbl" style="margin-bottom:6px">Goal ' + _escFew(wf(goal)) + '</div>' +
-      '<div style="font-size:12.5px;color:var(--tx3);line-height:1.55">Three weeks of weigh-ins and I can tell you when. ' +
+      '<div style="font-size:12px;color:var(--tx3);line-height:1.55">Three weeks of weigh-ins and I can tell you when. ' +
         'Until then a date would be a guess dressed up as a fact.</div>' +
-      '<button class="btn" onclick="openGoalWeight()" style="margin-top:10px;background:transparent;border:none;color:var(--tx3);font-size:11.5px;padding:6px 0">Change it</button>' +
+      '<button class="btn quiet" onclick="openGoalWeight()" style="margin-top:10px;padding:6px 0">Change it</button>' +
     '</div>';
     return;
   }
@@ -754,8 +754,8 @@ function renderBodyGoalCard(){
     '<div class="lbl" style="margin-bottom:6px">Goal ' + _escFew(wf(p.goal)) + '</div>' +
     '<div style="font-family:\'Cormorant Garamond\',serif;font-size:20px;font-style:italic;color:' + col + ';line-height:1.3;margin-bottom:6px">' +
       _escFew(head) + '</div>' +
-    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6">' + _escFew(body) + '</div>' +
-    '<button class="btn" onclick="openGoalWeight()" style="margin-top:10px;background:transparent;border:none;color:var(--tx3);font-size:11.5px;padding:6px 0">Change the goal</button>' +
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.6">' + _escFew(body) + '</div>' +
+    '<button class="btn quiet" onclick="openGoalWeight()" style="margin-top:10px;padding:6px 0">Change the goal</button>' +
   '</div>';
 }
 
@@ -774,8 +774,8 @@ function openGoalWeight(){
     '<input type="number" id="gw-input" inputmode="decimal" step="0.1" value="' + shown + '" ' +
       'placeholder="Goal weight (' + u + ')" style="width:100%;box-sizing:border-box;margin-bottom:12px">' +
     '<button class="btn primary" onclick="saveGoalWeight()" style="margin-bottom:8px">Save goal weight</button>' +
-    (cur ? '<button class="btn" onclick="clearGoalWeight()" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Remove the goal</button>'
-         : '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>') +
+    (cur ? '<button class="btn quiet" onclick="clearGoalWeight()">Remove the goal</button>'
+         : '<button class="btn quiet" onclick="closeModal(this)">Not now</button>') +
   '</div>';
   document.body.appendChild(m);
   setTimeout(function(){ try{ document.getElementById('gw-input').focus(); }catch(_){ } }, 80);
@@ -1109,7 +1109,7 @@ function renderBody(){
         // one screen that is meant to be their honest history. The stored values were always right.
         .filter(x=>x[1]>0).map(x=>x[0]+' '+x[1]+'/10').join(' \u00b7 ');
       const card=document.createElement('div');
-      card.style.cssText='background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:8px';
+      card.style.cssText='background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:12px;margin-bottom:8px';
       let html='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:'+((scoreLine||e.win||e.struggle||e.focus||e.note)?'8px':'0')+'">'+
         '<span style="font-family:DM Mono,monospace;font-size:11px;color:var(--tx3)">'+(e.date || (e.ts ? new Date(e.ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : ''))+'</span>'+
         (e.weight>0?'<span style="font-size:15px;color:var(--tx)">'+wFmt(e.weight)+' <span style="font-size:11px;color:'+(cls==='down'?'var(--gr)':cls==='up'?'var(--re)':'var(--tx3)')+'">'+cs+'</span></span>':'')+
@@ -1280,7 +1280,7 @@ function openMeasurementLogger(){
     '</div>' +
     // Evolt 360 body scan section — for Revo gym users with access to the scanner
     '<details style="margin-bottom:14px">' +
-      '<summary style="cursor:pointer;padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;font-family:DM Mono,monospace;font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.1em;list-style:none">🔬 Add Evolt 360 scan data</summary>' +
+      '<summary style="cursor:pointer;padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);font-family:DM Mono,monospace;font-size:10px;color:var(--tx2);text-transform:uppercase;letter-spacing:0.1em;list-style:none">'+svgIcon("search")+' Add Evolt 360 scan data</summary>' +
       '<div style="padding:12px 2px 0">' +
         '<p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Got a body scan at the gym (Evolt 360 / InBody)? Enter the key numbers from your printout to track composition over time.</p>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
@@ -1488,7 +1488,7 @@ function renderProgressPhotos(){
   });
   grid.innerHTML = dates.map(date => {
     const tiles = byDate[date].map(p =>
-      '<div onclick="openProgressPhotoViewer(' + p.id + ')" style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;cursor:pointer;background:var(--bg3)">' +
+      '<div onclick="openProgressPhotoViewer(' + p.id + ')" style="position:relative;aspect-ratio:1;border-radius:var(--rs);overflow:hidden;cursor:pointer;background:var(--bg3)">' +
         '<img loading="lazy" decoding="async" src="' + p.dataUrl + '" style="width:100%;height:100%;object-fit:cover" alt="' + date + '">' +
       '</div>'
     ).join('');
@@ -1507,7 +1507,7 @@ function openProgressPhotoViewer(id){
   m.className = 'modal-bg open';
   m.innerHTML = '<div class="modal" style="max-height:92vh"><div class="modal-handle"></div>' +
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">' + p.date + '</div>' +
-    '<img loading="lazy" decoding="async" src="' + p.dataUrl + '" style="width:100%;border-radius:10px;background:#000;margin-bottom:12px">' +
+    '<img loading="lazy" decoding="async" src="' + p.dataUrl + '" style="width:100%;border-radius:var(--rm);background:#000;margin-bottom:12px">' +
     '<button class="btn danger" onclick="deleteProgressPhoto(' + p.id + ')" style="margin-bottom:8px">Delete this photo</button>' +
     '<button class="btn" onclick="closeModal(this)">Close</button>' +
   '</div>';

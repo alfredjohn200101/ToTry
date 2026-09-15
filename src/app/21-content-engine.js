@@ -47,15 +47,15 @@ async function generateWeeklyContent(){
         const cap = (data.caption||'').replace(/</g,'&lt;');
         box.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px">Your storyboard \u00b7 '+clips.length+' clip'+(clips.length===1?'':'s')+' ready</div>'+
           board +
-          '<div style="margin-top:14px;padding:12px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Caption</div><div id="weekly-caption-text" style="font-size:13px;color:var(--tx);line-height:1.6">'+cap+'</div><button class="btn" onclick="(function(){var t=document.getElementById(&quot;weekly-caption-text&quot;);if(t&&navigator.clipboard){navigator.clipboard.writeText(t.textContent).then(function(){showToast(&quot;Copied&quot;,&quot;Caption copied \u2014 paste it in your editor.&quot;);});}})()" style="margin-top:10px;width:auto;padding:8px 14px;font-size:12px;background:none;border:1px solid var(--go-bd);color:var(--go)">Copy caption</button></div>'+
-          (clips.length ? '<div style="margin-top:12px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Your clips (open these in your editor)</div><div style="display:flex;flex-wrap:wrap;gap:8px">'+clips.map(c=>c.thumb?'<img src="'+c.thumb+'" style="width:48px;height:48px;object-fit:cover;border-radius:8px">':'<div style="padding:8px 10px;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;font-size:11px;color:var(--tx2)">\u{1F3AC} '+(c.name||'clip').slice(0,14)+'</div>').join('')+'</div></div>' : '<div style="margin-top:12px;font-size:11px;color:var(--tx3);line-height:1.5">No clips attached this week. Add proof to your sessions (in any workout) and they\u2019ll appear here for next week\u2019s package.</div>')+
+          '<div style="margin-top:14px;padding:12px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm)"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Caption</div><div id="weekly-caption-text" style="font-size:13px;color:var(--tx);line-height:1.6">'+cap+'</div><button class="btn" onclick="(function(){var t=document.getElementById(&quot;weekly-caption-text&quot;);if(t&&navigator.clipboard){navigator.clipboard.writeText(t.textContent).then(function(){showToast(&quot;Copied&quot;,&quot;Caption copied \u2014 paste it in your editor.&quot;);});}})()" style="margin-top:10px;width:auto;padding:8px 14px;font-size:12px;background:none;border:1px solid var(--go-bd);color:var(--go)">Copy caption</button></div>'+
+          (clips.length ? '<div style="margin-top:12px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Your clips (open these in your editor)</div><div style="display:flex;flex-wrap:wrap;gap:8px">'+clips.map(c=>c.thumb?'<img src="'+c.thumb+'" style="width:48px;height:48px;object-fit:cover;border-radius:var(--rs)">':'<div style="padding:8px 10px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);font-size:11px;color:var(--tx2)"><span style="color:var(--go)">'+svgIcon("film",14)+'</span> '+_escFew((c.name||'clip').slice(0,14))+'</div>').join('')+'</div></div>' : '<div style="margin-top:12px;font-size:11px;color:var(--tx3);line-height:1.5">No clips attached this week. Add proof to your sessions (in any workout) and they\u2019ll appear here for next week\u2019s package.</div>')+
           '<div style="margin-top:12px;font-size:11px;color:var(--tx3);line-height:1.5">ToTry produces \u2014 you finish it in CapCut, Reels, or TikTok. Your videos stay in your camera roll.</div>';
       } else {
         box.innerHTML = '<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t assemble it right now \u2014 try again shortly.</div>';
       }
     }
   }catch(e){ if(box){ box.style.display='block'; box.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t reach the producer right now. Try again shortly.</div>'; } }
-  finally{ if(btn){ btn.textContent='\u{1F3AC} Make this week\u2019s content'; btn.disabled=false; } }
+  finally{ if(btn){ btn.innerHTML=svgIcon("film",14)+' Make this week\u2019s content'; btn.disabled=false; } }
 }
 
 async function generateWeeklyReflection(){
@@ -79,7 +79,7 @@ async function generateWeeklyReflection(){
       const reflection = qMatch ? raw.slice(0, qMatch.index).trim() : raw.trim();
       const question = qMatch ? qMatch[1].trim() : '';
       box.innerHTML = '<div style="font-family:Cormorant Garamond,serif;font-size:15px;font-style:italic;color:var(--tx);line-height:1.8;white-space:pre-wrap">'+reflection.replace(/</g,'&lt;')+'</div>'+
-        (question ? '<div style="margin-top:14px;padding:13px 15px;background:var(--bg3);border:1px solid var(--go-bd);border-radius:12px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">One honest question</div><div style="font-size:14px;color:var(--tx);line-height:1.6;margin-bottom:10px">'+question.replace(/</g,'&lt;')+'</div><button class="btn" onclick="(function(){var q='+JSON.stringify(question).replace(/"/g,'&quot;')+';try{goCoach? goCoach(q):go(\'coach\');}catch(e){go(\'coach\')}})()" style="width:auto;padding:8px 14px;font-size:12px;background:none;border:1px solid var(--go-bd);color:var(--go)">Answer with my coach</button></div>' : '');
+        (question ? '<div style="margin-top:14px;padding:13px 15px;background:var(--bg3);border:1px solid var(--go-bd);border-radius:var(--rm)"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">One honest question</div><div style="font-size:14px;color:var(--tx);line-height:1.6;margin-bottom:10px">'+question.replace(/</g,'&lt;')+'</div><button class="btn" onclick="(function(){var q='+JSON.stringify(question).replace(/"/g,'&quot;')+';try{goCoach? goCoach(q):go(\'coach\');}catch(e){go(\'coach\')}})()" style="width:auto;padding:8px 14px;font-size:12px;background:none;border:1px solid var(--go-bd);color:var(--go)">Answer with my coach</button></div>' : '');
     }
     ls('totry_weekly_reflection_at', Date.now());
   }catch(e){ if(box){ box.style.display='block'; box.innerHTML='<div style="font-size:12px;color:var(--tx3)">Couldn\u2019t reach the coach right now. Try again shortly.</div>'; } }
@@ -284,7 +284,7 @@ function renderUnifiedTraining(){
           '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">Already have a plan, or use Hevy / Strava? Link it and the coach works around it. Starting from nothing? I’ll build you a plan and tell you today’s session — no guesswork.</div>'+
           '<button class="btn primary" onclick="setupTraining()" style="width:auto;padding:10px 18px;font-size:13px">Set up my training</button>';
       }
-      emptyBox.innerHTML = '<div class="card" style="text-align:center;padding:24px 18px"><div style="font-size:30px;margin-bottom:10px">\ud83c\udfcb\ufe0f</div>'+body+'</div>';
+      emptyBox.innerHTML = '<div class="card" style="text-align:center;padding:24px 18px"><div style="font-size:30px;margin-bottom:10px">'+svgIcon("dumbbell",28)+'</div>'+body+'</div>';
       emptyBox.style.display = 'block';
     }
     card.style.display = 'none';
@@ -293,15 +293,16 @@ function renderUnifiedTraining(){
   if(emptyBox) emptyBox.style.display = 'none';
   if(populated) populated.style.display = 'block';
   const w = getUnifiedWeekStats();
+  // Returns an svgIcon() NAME, not a glyph \u2014 the row below draws it with svgIcon().
   const typeEmoji = (t) => {
     const item = t || {};
-    if(item.kind === 'strength') return '\ud83c\udfcb\ufe0f';
+    if(item.kind === 'strength') return 'dumbbell';
     const x = (item.activityType||'').toLowerCase();
-    if(x.includes('run')) return '\ud83c\udfc3';
-    if(x.includes('ride')||x.includes('cycl')||x.includes('bike')) return '\ud83d\udeb4';
-    if(x.includes('swim')) return '\ud83c\udfca';
-    if(x.includes('walk')||x.includes('hike')) return '\ud83d\udeb6';
-    return '\ud83d\udcaa';
+    if(x.includes('run')) return 'run';
+    if(x.includes('ride')||x.includes('cycl')||x.includes('bike')) return 'bike';
+    if(x.includes('swim')) return 'swim';
+    if(x.includes('walk')||x.includes('hike')) return 'walk';
+    return 'zap';
   };
   const srcDot = (src) => {
     if(src === 'strava') return '<span class="src-tag" style="color:#FC4C02">STRAVA</span>';
@@ -328,7 +329,7 @@ function renderUnifiedTraining(){
   const rows = all.slice(0,10).map(t => {
     const when = t.ts ? new Date(t.ts).toLocaleDateString('en-AU',{day:'numeric',month:'short'}) : '';
     return '<div class="strava-activity" onclick="openEditTraining(&quot;'+t.id+'&quot;)" style="display:flex;align-items:center;gap:10px;cursor:pointer">'+
-      '<span style="font-size:17px;flex-shrink:0">'+typeEmoji(t)+'</span>'+
+      '<span style="flex-shrink:0;display:flex;align-items:center;color:var(--go)">'+svgIcon(typeEmoji(t),18)+'</span>'+
       '<div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:6px"><span style="font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(t.title||'Session').replace(/</g,'&lt;')+'</span>'+srcDot(t.source)+'</div>'+
       '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:2px">'+fmtMeta(t)+'</div></div>'+
       '<span style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);flex-shrink:0">'+when+' ›</span></div>';
@@ -348,7 +349,7 @@ function renderUnifiedTraining(){
     '</div>'+
     (summaryBits.length ? '<div style="font-size:12px;color:var(--go);margin-bottom:2px">This week: '+summaryBits.join(' \u00b7 ')+'</div>' : '')+
     (detailBits.length ? '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-bottom:12px">'+detailBits.join(' \u00b7 ')+'</div>' : '<div style="margin-bottom:10px"></div>')+
-    (function(){ const tr = (typeof getTrainingTrend==='function') ? getTrainingTrend() : ''; return tr ? '<div style="font-size:11px;color:var(--bl);background:var(--bg3);border-radius:8px;padding:9px 11px;margin-bottom:12px;line-height:1.5">\ud83d\udcc8 '+tr+'</div>' : ''; })()+
+    (function(){ const tr = (typeof getTrainingTrend==='function') ? getTrainingTrend() : ''; return tr ? '<div style="font-size:11px;color:var(--bl);background:var(--bg3);border-radius:var(--rs);padding:9px 11px;margin-bottom:12px;line-height:1.5">'+svgIcon("chart")+' '+tr+'</div>' : ''; })()+
     rows +
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-align:center;margin-top:10px">' + (function(){
       const srcs = new Set(all.map(t=>t.source));
@@ -447,10 +448,10 @@ function loadTodaySplitCard(){
   
   if(isRest){
     // Rest day — celebrate the recovery, don't nag about logging
-    if(nameEl)nameEl.textContent='😴 Rest day';
+    if(nameEl)nameEl.innerHTML=svgIcon("bed")+' Rest day';
     if(detailEl)detailEl.textContent='Recovery is part of the program. Rest well — you train again tomorrow.';
     if(hf){
-      hf.textContent='😴 Rest day';
+      hf.innerHTML=svgIcon("bed")+' Rest day';
       if(hd)hd.textContent='Recovery is part of the program. Rest is where the growth happens.';
     }
     if(wrap) wrap.style.display='block';

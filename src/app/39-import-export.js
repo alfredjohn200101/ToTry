@@ -194,14 +194,14 @@ function confirmScaleScreenshotEntry(weight, p){
       '<div style="width:140px"><label style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;display:block;margin-bottom:4px">Date</label>'+
       '<input type="date" id="shot-date" max="'+today+'" value="'+today+'" style="width:100%;font-size:16px;padding:11px;color-scheme:dark"></div>'+
     '</div>'+
-    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;margin-bottom:14px">'+
+    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:10px 12px;margin-bottom:14px">'+
       row('Body fat', p.bf, '%')+row('Muscle mass', p.musclePct, '%')+row('Muscle mass', p.muscleKg, 'kg')+
       row('Body fat mass', p.fatMassKg, 'kg')+row('Lean body mass', p.leanKg, 'kg')+row('BMI', p.bmi, '')+
       row('Water', p.water, '%')+row('Visceral fat', p.visceral, '')+row('BMR', p.bmr, 'kcal')+
       row('Bone mass', p.boneKg, 'kg')+row('Protein', p.protein, '%')+row('Heart rate', p.heartRate, 'bpm')+
     '</div>'+
     '<button class="btn primary" onclick="saveScaleScreenshotEntry()" style="margin-bottom:8px">Save this weigh-in</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Cancel</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)">Cancel</button>'+
     '</div>';
   m.__parsed = p;
   document.body.appendChild(m);

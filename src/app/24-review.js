@@ -342,7 +342,7 @@ function showWeeklySynthesisModal(synthesis){
   if(s.spent || s.earned) statRows.push({label:'Money', value: curSym() + _moneyG(s.earned) + ' in / '+curSym() + _moneyG(s.spent) + ' out'});
   
   const statsHtml = statRows.length ?
-    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:14px">' +
+    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:12px;margin-bottom:14px">' +
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">Your week in numbers</div>' +
       statRows.map(r => '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12px"><span style="color:var(--tx3)">' + r.label + '</span><span style="font-family:DM Mono,monospace;color:var(--tx)">' + r.value + '</span></div>').join('') +
     '</div>' : '';
@@ -485,7 +485,7 @@ function showYearInReview(year){
   const heroHtml = heroStats.length ?
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">' +
       heroStats.map(h =>
-        '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:14px;text-align:center">' +
+        '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:14px;text-align:center">' +
           '<div style="font-family:Georgia,serif;font-size:34px;color:var(--go);line-height:1.1">' + h.big + '</div>' +
           '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-top:6px">' + h.label + '</div>' +
         '</div>'
@@ -509,7 +509,7 @@ function showYearInReview(year){
   if(stats.winRate > 0) details.push(['Battle win rate', stats.winRate + '%']);
   
   const detailHtml = details.length ?
-    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:14px">' +
+    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:14px;margin-bottom:14px">' +
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">' + year + ' · the full year</div>' +
       details.map(([k,v]) => '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--bd);font-size:12px"><span style="color:var(--tx3)">' + k + '</span><span style="font-family:DM Mono,monospace;color:var(--tx)">' + v + '</span></div>').join('') +
     '</div>' : '';
@@ -583,7 +583,7 @@ function showSynthesisHistory(){
     const summaryLine = summary.length ? '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:6px">' + summary.join(' · ') + '</div>' : '';
     const previewText = (s.text || '').slice(0, 130) + ((s.text || '').length > 130 ? '…' : '');
     
-    return '<div onclick="viewSingleSynthesis(' + i + ')" style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer">' +
+    return '<div onclick="viewSingleSynthesis(' + i + ')" style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rm);padding:12px 14px;margin-bottom:8px;cursor:pointer">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
         '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em">Week of ' + s.date + '</div>' +
         '<div style="font-size:14px;color:var(--tx3)">›</div>' +
@@ -724,7 +724,7 @@ function renderRelationships(){
       nudge='var(--re)';
     }
     const row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;margin-bottom:6px';
+    row.style.cssText='display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);margin-bottom:6px';
     row.innerHTML='<div style="flex:1">'+
       '<div style="font-size:13px;font-weight:500;color:var(--tx)">'+_escFew(p.name)+'</div>'+
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:'+nudge+';margin-top:2px">'+_escFew(String(p.role||'someone').toUpperCase())+' · '+timeAgo+'</div>'+
@@ -756,8 +756,8 @@ function deliverLetter(id){
     '<div class="modal-handle"></div>'+
     '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;text-align:center;margin-bottom:6px">Letter from '+writtenDate+' · Day '+((typeof letterDay==='function'?letterDay(letter):letter.writtenDay) ?? '?')+'</div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:18px;color:var(--tx);text-align:center;margin-bottom:18px;font-style:italic">A message from past you.</div>'+
-    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:16px;font-family:Cormorant Garamond,serif;font-size:16px;color:var(--tx);line-height:1.7;white-space:pre-wrap;margin-bottom:14px">'+_escFew(letter.text)+'</div>'+
-    '<button class="btn primary" onclick="closeModal(this)">Close</button>'+
+    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:16px;font-family:Cormorant Garamond,serif;font-size:16px;color:var(--tx);line-height:1.7;white-space:pre-wrap;margin-bottom:14px">'+_escFew(letter.text)+'</div>'+
+    '<button class="btn" onclick="closeModal(this)">Close</button>'+
   '</div>';
   document.body.appendChild(m);
   haptic('celebrate');

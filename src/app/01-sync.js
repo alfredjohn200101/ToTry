@@ -379,7 +379,7 @@ async function loadPendingSubmissions(){
         ? [d.bodyPart, d.equipment, d.tracking].filter(Boolean).map(_escFew).join(' \u00b7 ')
         : [d.brand, d.serving, (d.cal!=null?d.cal+' cal':''), (d.pro!=null?d.pro+'g P':'')].filter(Boolean).map(_escFew).join(' \u00b7 ');
       const vTag = row.verified ? '<span class="src-tag" style="color:var(--gr);margin-left:6px">VERIFIED</span>' : '';
-      return '<div style="border:1px solid var(--bd);border-radius:10px;padding:11px 12px;margin-bottom:8px">'+
+      return '<div style="border:1px solid var(--bd);border-radius:var(--rm);padding:11px 12px;margin-bottom:8px">'+
         '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><span style="font-size:8px;color:var(--tx3);font-family:DM Mono,monospace;text-transform:uppercase">'+row.kind+'</span>'+vTag+'</div>'+
         '<div style="font-size:14px;color:var(--tx);margin-bottom:2px">'+_escFew(row.name||'')+'</div>'+
         '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">'+(meta||'\u2014')+'</div>'+

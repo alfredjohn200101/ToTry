@@ -41,15 +41,15 @@ function setupTraining(){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center">'+
     '<div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">Set up your training</div>'+
-    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">So the coach knows what you’re doing — and tells you today’s session.</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);margin-bottom:4px">Set up your training</div>'+
+    '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px">So the coach knows what you’re doing — and tells you today’s session.</div>'+
     '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Days a week</div>'+
     '<div class="ts-days" style="display:flex;gap:6px;justify-content:center;margin-bottom:16px"></div>'+
     '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Main goal</div>'+
     '<div class="ts-goals" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:18px"></div>'+
     '<button class="btn primary ts-build" style="margin-bottom:8px">Build my plan</button>'+
-    '<button class="btn ts-else" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin-bottom:8px;font-size:13px">I already train elsewhere (Hevy / my own)</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
+    '<button class="btn ts-else subtle" style="margin-bottom:8px">I already train elsewhere (Hevy / my own)</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
   const st={days:3, goal:'build'};
@@ -81,11 +81,11 @@ function _breathProof(){
 function _hardHourBreath(viceName){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center">'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:8px">Get ahead of it</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:8px">Get ahead of it</div>'+
     '<div style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:18px">'+(viceName?('This is usually when '+String(viceName).replace(/</g,'&lt;')+' pulls. '):'')+'Nothing has to be happening yet — that’s the point. One slow minute now makes the next hour easier.</div>'+
     '<button class="btn primary" onclick="closeModal(this);openBreath(\'settle\',{reason:\'hard hour\'})" style="margin-bottom:8px">Breathe through it — 1 min</button>'+
-    '<button class="btn" onclick="closeModal(this);_feelThePull()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin-bottom:8px;font-size:13px">Talk it through instead</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">I’m okay</button>'+
+    '<button class="btn subtle" onclick="closeModal(this);_feelThePull()" style="margin-bottom:8px">Talk it through instead</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)">I’m okay</button>'+
   '</div>';
   document.body.appendChild(m); if(typeof haptic==='function') haptic('tap');
 }
@@ -285,7 +285,7 @@ function renderMorningLightCard(){
     if(!card) return;
     const done = morningLightDoneToday();
     const title = card.querySelector('div[style*="font-size:14px"]');
-    const sub = card.querySelector('div[style*="font-size:11.5px"]');
+    const sub = card.querySelector('div[style*="font-size:11px"]');
     const chev = card.lastElementChild;
     if(done){
       if(title) title.textContent = 'Light in your eyes \u2713';
@@ -388,9 +388,9 @@ function nextSmallThing(){
 function nextSmallThingHTML(){
   try{
     const n = nextSmallThing(); if(!n) return '';
-    return '<div style="margin:2px auto 22px;max-width:330px;padding:13px 15px;background:rgba(255,255,255,0.03);border:1px solid var(--bd);border-radius:12px">'+
-      '<div style="font-family:DM Mono,monospace;font-size:8.5px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">One small real thing</div>'+
-      '<div style="font-size:13.5px;color:var(--tx);line-height:1.6">When I put this down, I’ll '+_escFew(n.act)+'.</div>'+
+    return '<div style="margin:2px auto 22px;max-width:330px;padding:13px 15px;background:rgba(255,255,255,0.03);border:1px solid var(--bd);border-radius:var(--rm)">'+
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">One small real thing</div>'+
+      '<div style="font-size:13px;color:var(--tx);line-height:1.6">When I put this down, I’ll '+_escFew(n.act)+'.</div>'+
     '</div>';
   }catch(_){ return ''; }
 }

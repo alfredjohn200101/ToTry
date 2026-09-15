@@ -131,7 +131,7 @@ function renderSplitOverview(){
     const row=document.createElement('div');
     row.className='split-day-row';
     const isToday=i===ti;
-    row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 12px;background:'+(isToday?'var(--go-bg)':'var(--bg3)')+';border:1px solid '+(isToday?'var(--go-bd)':'var(--bd)')+';border-radius:8px;margin-bottom:6px';
+    row.style.cssText='display:flex;align-items:center;gap:10px;padding:10px 12px;background:'+(isToday?'var(--go-bg)':'var(--bg3)')+';border:1px solid '+(isToday?'var(--go-bd)':'var(--bd)')+';border-radius:var(--rs);margin-bottom:6px';
     // getUserSplit() returns [null × 7] when no plan is set up — that is its documented "no plan yet"
     // value — and this dereferenced it, so a person with no split (or with any null day) got a
     // TypeError that took out the whole Train tab on open. Reading a null day as a rest day is both
@@ -246,7 +246,7 @@ async function generateRecommendation(){
     let html='<div class="modal-handle"></div>'+
       '<div style="font-size:16px;font-weight:500;color:var(--tx);margin-bottom:14px">Your recommended split</div>';
     recSplit.forEach(d=>{
-      html+='<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px 12px;margin-bottom:6px">'+
+      html+='<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:10px 12px;margin-bottom:6px">'+
         '<div style="display:flex;justify-content:space-between;margin-bottom:6px"><div style="font-family:DM Mono,monospace;font-size:11px;color:var(--go);text-transform:uppercase">'+d.day+'</div><div style="font-size:13px;font-weight:500;color:var(--tx)">'+d.focus+'</div></div>';
       if(d.exercises&&d.exercises.length){
         html+='<div style="font-size:11px;color:var(--tx3);line-height:1.6">'+d.exercises.join(', ')+'</div>';
@@ -311,7 +311,7 @@ function renderBodyCollage(){
   container.innerHTML = '';
   withPhotos.forEach((e, i) => {
     const div = document.createElement('div');
-    div.style.cssText = 'position:relative;border-radius:8px;overflow:hidden;border:1px solid var(--bd);cursor:pointer';
+    div.style.cssText = 'position:relative;border-radius:var(--rs);overflow:hidden;border:1px solid var(--bd);cursor:pointer';
     // A stored/restored photo string lands inside a quoted src= attribute; escape so it cannot close it.
     div.innerHTML = '<img loading="lazy" decoding="async" src="'+_escFew(e.photo)+'" style="width:100%;height:120px;object-fit:cover;display:block">'+
       '<div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,rgba(0,0,0,0.85),transparent);padding:4px 6px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-align:center">'+e.date+'</div><div style="font-size:11px;color:var(--tx);text-align:center;font-weight:500">'+(e.weight!=null&&e.weight!==''?((typeof wFmt==='function')?wFmt(e.weight):(e.weight+'kg')):'')+'</div></div>';
@@ -329,7 +329,7 @@ function viewBodyPhoto(idx){
   m.className = 'modal-bg open';
   m.style.alignItems = 'center';
   m.innerHTML = '<div class="modal" style="max-width:90vw;padding:20px">'+
-    '<div style="text-align:center"><img loading="lazy" decoding="async" src="'+_escFew(entry.photo)+'" style="max-width:100%;max-height:60vh;border-radius:8px;margin-bottom:14px"></div>'+
+    '<div style="text-align:center"><img loading="lazy" decoding="async" src="'+_escFew(entry.photo)+'" style="max-width:100%;max-height:60vh;border-radius:var(--rs);margin-bottom:14px"></div>'+
     '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-align:center;margin-bottom:4px">'+entry.date+'</div>'+
     '<div style="font-size:14px;font-weight:500;color:var(--tx);text-align:center;margin-bottom:8px">'+(entry.weight!=null&&entry.weight!==''?((typeof wFmt==='function')?wFmt(entry.weight):(entry.weight+'kg')):'')+'</div>'+
     (entry.note?'<div style="font-size:12px;color:var(--tx2);text-align:center;font-style:italic;margin-bottom:10px">'+_escFew(entry.note)+'</div>':'')+
@@ -581,10 +581,10 @@ function _pledgeSaid(v, from){
   const n=v.pledgeDays||1;
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
-    '<div style="font-size:26px;margin-bottom:8px">\uD83E\uDD1D</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:25px;color:var(--tx);line-height:1.25;margin-bottom:10px">'+
+    '<div style="font-size:26px;margin-bottom:8px">'+svgIcon("users",24)+'</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.25;margin-bottom:10px">'+
       (viceMode(v)==='moderate'?'Today, I hold my line.':viceMode(v)==='watch'?'Today, I just look at it honestly.':'Today, not this.')+'</div>'+
-    '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:14px">'+word+'</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">'+word+'</div>'+
     (n>1
       ? '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);letter-spacing:0.08em;margin-bottom:16px">'+plural(n,'day')+' now, you\u2019ve chosen this on purpose</div>'
       : '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Just today. Tomorrow gets its own.</div>')+
@@ -599,10 +599,10 @@ function _pledgeRowHTML(i){
   const n=v.pledgeDays||0;
   const line=(viceMode(v)==='moderate')?'Today, I hold my line':viceMode(v)==='watch'?'Today, I just look at it honestly':'Today, not this';
   if(vicePledgedToday(v)){
-    return '<div style="display:flex;align-items:center;gap:9px;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:10px;padding:9px 11px;margin-bottom:10px">'+
-      '<span style="font-size:14px;flex:none">\uD83E\uDD1D</span>'+
+    return '<div style="display:flex;align-items:center;gap:9px;background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rm);padding:9px 11px;margin-bottom:10px">'+
+      '<span style="font-size:14px;flex:none">'+svgIcon("users")+'</span>'+
       '<div style="flex:1;text-align:left">'+
-        '<div style="font-size:12.5px;color:var(--tx2);line-height:1.45">Pledged today. '+line+'.</div>'+
+        '<div style="font-size:13px;color:var(--tx2);line-height:1.45">Pledged today. '+line+'.</div>'+
         (n>1?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.08em;margin-top:2px">'+n+' days you\u2019ve chosen this</div>':'')+
       '</div></div>';
   }
@@ -653,7 +653,7 @@ function _stageStripHTML(i){
   if(!set) return '';
   return '<button onclick="openViceStage('+i+')" style="width:100%;text-align:left;background:none;border:none;border-bottom:1px solid var(--bd);padding:0 0 9px;margin-bottom:10px;cursor:pointer">'+
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:3px">Where you are with this \u00b7 tap to change</div>'+
-    '<div style="font-size:12.5px;line-height:1.45;color:'+(set?'var(--go)':'var(--tx3)')+'">'+
+    '<div style="font-size:12px;line-height:1.45;color:'+(set?'var(--go)':'var(--tx3)')+'">'+
       (set ? s.label+' <span style="color:var(--tx3)">\u2014 '+s.blurb+'</span>'
            : 'Not set \u2014 tell me, and I\u2019ll change what I offer you')+'</div>'+
   '</button>';
@@ -662,7 +662,7 @@ function _stageCtaHTML(i){
   const v=vices[i]; if(!v) return '';
   const s=VICE_STAGES[viceStage(v)];
   if(!s.cta || !s.act) return '';
-  return '<button class="vice-btn" onclick="'+s.act.replace('IDX', i)+'" style="width:100%;background:var(--go);color:#1a1505;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:8px">'+s.cta+'</button>';
+  return '<button class="vice-btn" onclick="'+s.act.replace('IDX', i)+'" style="width:100%;background:var(--go);color:#1a1505;border:none;border-radius:var(--rm);padding:11px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:8px">'+s.cta+'</button>';
 }
 // The quit card's whole primary block. At 'ready' it is EXACTLY the button that was there before.
 // At every other stage the stage-matched move leads and the urge door stays, one tap away.
@@ -673,7 +673,7 @@ function _urgeDoorOnlyHTML(i){
   const v = (typeof vices !== 'undefined' && vices) ? vices[i] : null; if(!v) return '';
   return '<button class="vice-btn" onclick="openMomentStakes(' + i + ')" ' +
     'style="width:100%;margin-top:10px;background:none;border:1px solid var(--re-bd);color:var(--re);' +
-    'border-radius:10px;padding:11px;font-size:13px;font-weight:500;cursor:pointer;display:flex;' +
+    'border-radius:var(--rm);padding:11px;font-size:13px;font-weight:500;cursor:pointer;display:flex;' +
     'align-items:center;justify-content:center;gap:8px">' +
     '<svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" ' +
       'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/>' +
@@ -683,12 +683,12 @@ function _urgeDoorOnlyHTML(i){
 
 function _stagePrimaryHTML(i){
   const v=vices[i]; if(!v) return '';
-  const RED='<button class="vice-btn" onclick="openMomentStakes('+i+')" style="width:100%;background:var(--re);color:#fff;border:none;border-radius:10px;padding:11px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">'+
+  const RED='<button class="vice-btn" onclick="openMomentStakes('+i+')" style="width:100%;background:var(--re);color:#fff;border:none;border-radius:var(--rm);padding:11px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">'+
     '<svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'+
     'I\u2019m feeling it \u2014 come here first</button>';
   if(viceStage(v)==='ready') return RED;
   return _stageCtaHTML(i)+
-    '<button onclick="openMomentStakes('+i+')" style="width:100%;background:none;border:1px solid var(--re-bd);color:var(--re);border-radius:10px;padding:9px;font-size:12px;cursor:pointer">\u26A0 I\u2019m feeling it right now</button>';
+    '<button onclick="openMomentStakes('+i+')" style="width:100%;background:none;border:1px solid var(--re-bd);color:var(--re);border-radius:var(--rm);padding:9px;font-size:12px;cursor:pointer">\u26A0 I\u2019m feeling it right now</button>';
 }
 
 // B4 — the chooser
@@ -697,16 +697,16 @@ function openViceStage(i){
   const cur=v.stage||'';
   const rows=Object.keys(VICE_STAGES).map(function(k){
     const s=VICE_STAGES[k]; const on=cur===k;
-    return '<button onclick="setViceStage('+i+',\''+k+'\')" style="width:100%;text-align:left;padding:12px 13px;background:'+(on?'var(--go-bg)':'var(--bg3)')+';border:1px solid '+(on?'var(--go-bd)':'var(--bd)')+';border-radius:10px;margin-bottom:8px;cursor:pointer">'+
+    return '<button onclick="setViceStage('+i+',\''+k+'\')" style="width:100%;text-align:left;padding:12px 13px;background:'+(on?'var(--go-bg)':'var(--bg3)')+';border:1px solid '+(on?'var(--go-bd)':'var(--bd)')+';border-radius:var(--rm);margin-bottom:8px;cursor:pointer">'+
       '<div style="font-size:14px;color:var(--tx)">'+s.label+'</div>'+
-      '<div style="font-size:11.5px;color:var(--tx3);line-height:1.5;margin-top:2px">'+s.blurb+'</div></button>';
+      '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">'+s.blurb+'</div></button>';
   }).join('');
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal"><div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);line-height:1.25;margin-bottom:6px">Where are you with '+_escFew(v.n)+' right now?</div>'+
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.25;margin-bottom:6px">Where are you with '+_escFew(v.n)+' right now?</div>'+
     '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Honestly \u2014 not where you think you should be. Handing quit-tactics to someone who\u2019s still deciding just makes them dig in. I\u2019d rather offer you the right thing. Change it any day; going backwards is part of it.</div>'+
     rows+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:2px">Not now</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)" style="margin-top:2px">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
   if(typeof haptic==='function') haptic('tap');
@@ -736,16 +736,16 @@ function renderMorningPledge(){
       const line=(viceMode(v)==='moderate')?'today, I hold my line':viceMode(v)==='watch'?'today, I just look at it honestly':'today, not this';
       if(vicePledgedToday(v)){
         return '<div style="display:flex;align-items:center;gap:9px;padding:8px 0;border-top:1px solid var(--bd)">'+
-          '<span style="flex:none;font-size:14px">\uD83E\uDD1D</span>'+
-          '<div style="flex:1;text-align:left"><div style="font-size:12.5px;color:var(--tx2)">'+_escFew(v.n)+' \u2014 pledged.</div>'+
+          '<span style="flex:none;font-size:14px">'+svgIcon("users")+'</span>'+
+          '<div style="flex:1;text-align:left"><div style="font-size:13px;color:var(--tx2)">'+_escFew(v.n)+' \u2014 pledged.</div>'+
           (n>1?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px">'+n+' days you\u2019ve chosen this</div>':'')+
           '</div></div>';
       }
       return '<button onclick="makePledge('+x.i+',\'morning\')" style="width:100%;display:flex;align-items:center;gap:9px;text-align:left;padding:9px 0;border:none;border-top:1px solid var(--bd);background:none;cursor:pointer">'+
         '<span style="flex:none;width:18px;height:18px;border-radius:5px;border:1.5px dashed var(--go)"></span>'+
-        '<span style="flex:1;font-size:12.5px;color:var(--tx)">'+_escFew(v.n)+' \u2014 <span style="color:var(--go)">'+line+'</span></span></button>';
+        '<span style="flex:1;font-size:13px;color:var(--tx)">'+_escFew(v.n)+' \u2014 <span style="color:var(--go)">'+line+'</span></span></button>';
     }).join('')+
-    '<div style="font-size:10.5px;color:var(--tx3);line-height:1.5;margin-top:8px">One day only. If it breaks, nothing here punishes you \u2014 you just make it again tomorrow.</div>';
+    '<div style="font-size:10px;color:var(--tx3);line-height:1.5;margin-top:8px">One day only. If it breaks, nothing here punishes you \u2014 you just make it again tomorrow.</div>';
 }
 
 // THE SOBRIETY CLOCK IS GONE, and it was not merely dead — it was dead and RUNNING.
@@ -973,54 +973,54 @@ function getVicePlaybook(v){
 const LOC={
   alone:{
     actions:[
-      {icon:'&#128167;',text:'Go to the bathroom NOW. Splash cold water on your face 10 times. The physical shock breaks the mental loop.'},
-      {icon:'&#128170;',text:'Drop and do 20 pushups right now. Your body chemistry changes in 60 seconds of movement.'},
-      {icon:'&#128331;',text:'Stand up, walk to a different room, open a window. Change your physical environment immediately.'},
+      {icon:'droplet',text:'Go to the bathroom NOW. Splash cold water on your face 10 times. The physical shock breaks the mental loop.'},
+      {icon:'dumbbell',text:'Drop and do 20 pushups right now. Your body chemistry changes in 60 seconds of movement.'},
+      {icon:'walk',text:'Stand up, walk to a different room, open a window. Change your physical environment immediately.'},
     ],
     questions:['What does giving in cost you today \u2014 and tomorrow?','If you beat this right now, how will you feel in 10 minutes?','Who are you proving something to right now?'],
     timer:60
   },
   people:{
     actions:[
-      {icon:'&#127788;',text:'Breathe in for 4 counts, hold for 4, out for 6. Do this 5 times. Nobody will notice. You will feel it.'},
-      {icon:'&#128694;',text:'Excuse yourself. Go to the bathroom or step outside for 2 minutes. You don\'t need a reason.'},
-      {icon:'&#128065;',text:'Name 5 things you can see, 4 you can touch, 3 you can hear. Stay in this moment, not the urge.'},
+      {icon:'breath',text:'Breathe in for 4 counts, hold for 4, out for 6. Do this 5 times. Nobody will notice. You will feel it.'},
+      {icon:'walk',text:'Excuse yourself. Go to the bathroom or step outside for 2 minutes. You don\'t need a reason.'},
+      {icon:'eye',text:'Name 5 things you can see, 4 you can touch, 3 you can hear. Stay in this moment, not the urge.'},
     ],
     questions:['You\'re around people \u2014 what would they see if you acted on this urge?','The urge peaks and fades. You just need to outlast this moment.','What does getting through the next 5 minutes look like?'],
     timer:45
   },
   car:{
     actions:[
-      {icon:'&#128663;',text:'If safe \u2014 pull over. Put the car in park. No decisions while moving.'},
-      {icon:'&#127925;',text:'Put on a song that reminds you of who you\'re trying to be. Turn it up.'},
-      {icon:'&#128222;',text:'Call someone you trust right now. You don\'t have to say why. Just talk.'},
+      {icon:'car',text:'If safe \u2014 pull over. Put the car in park. No decisions while moving.'},
+      {icon:'mic',text:'Put on a song that reminds you of who you\'re trying to be. Turn it up.'},
+      {icon:'phone',text:'Call someone you trust right now. You don\'t have to say why. Just talk.'},
     ],
     questions:['Keep driving toward who you\'re becoming.','What would you say to someone you love who was feeling exactly this?','This passes. Drive through it.'],
     timer:45
   },
   bed:{
     actions:[
-      {icon:'&#128161;',text:'Turn the lights ON right now. Darkness feeds this. Light breaks the mood immediately.'},
-      {icon:'&#129427;',text:'Put your feet on the floor. Sit up. Get out of the bed. The bed is where this wins.'},
-      {icon:'&#128214;',text:'Read Psalm 23 or Psalm 91 out loud. Your own voice praying breaks the spiral.'},
+      {icon:'bulb',text:'Turn the lights ON right now. Darkness feeds this. Light breaks the mood immediately.'},
+      {icon:'bed',text:'Put your feet on the floor. Sit up. Get out of the bed. The bed is where this wins.'},
+      {icon:'book',text:'Read Psalm 23 or Psalm 91 out loud. Your own voice praying breaks the spiral.'},
     ],
     questions:['Getting through tonight is everything.','How will you feel about this at breakfast tomorrow?','Morning is coming. Hold on.'],
     timer:60
   },
   work:{
     actions:[
-      {icon:'&#128694;',text:'Take a 2-minute break — step to the bathroom, the break room, or outside. You\'re allowed.'},
-      {icon:'&#128167;',text:'Get a glass of water and wash your hands or face. The cold and the small task reset you.'},
-      {icon:'&#128241;',text:'Put the phone away and pick up the nearest work task. Doing the next small thing breaks the loop.'},
+      {icon:'walk',text:'Take a 2-minute break — step to the bathroom, the break room, or outside. You\'re allowed.'},
+      {icon:'droplet',text:'Get a glass of water and wash your hands or face. The cold and the small task reset you.'},
+      {icon:'phoneoff',text:'Put the phone away and pick up the nearest work task. Doing the next small thing breaks the loop.'},
     ],
     questions:['You\'re at work — the urge will pass long before your shift does.','What\'s the next small task you can pour 5 minutes into?','Who are you when no one\'s watching? Be that now.'],
     timer:45
   },
   class:{
     actions:[
-      {icon:'&#127891;',text:'You\'re in class — discreetly breathe in 4, hold 4, out 6, five times. No one will notice.'},
-      {icon:'&#9999;&#65039;',text:'Pick up your pen and write down the next thing being said, or one line of notes. Anchor to the room.'},
-      {icon:'&#128065;',text:'Ground yourself: 5 things you see, 4 you can touch, 3 you can hear. Come back to this moment.'},
+      {icon:'school',text:'You\'re in class — discreetly breathe in 4, hold 4, out 6, five times. No one will notice.'},
+      {icon:'edit',text:'Pick up your pen and write down the next thing being said, or one line of notes. Anchor to the room.'},
+      {icon:'eye',text:'Ground yourself: 5 things you see, 4 you can touch, 3 you can hear. Come back to this moment.'},
     ],
     questions:['You came here to build a future — this urge is trying to rob that. Stay present.','The lecture ends soon; the urge ends sooner. Outlast it.','What does the person you\'re becoming do right now?'],
     timer:45
@@ -1039,15 +1039,15 @@ function fightVice(i){
     '<div class="modal-handle"></div>'+
     '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);font-style:italic;margin-bottom:6px">'+_escFew(v.n)+'</div>'+
     '<div style="text-align:center;font-size:12px;color:var(--tx3);margin-bottom:18px">What\'s happening?</div>'+
-    '<button class="btn primary" style="margin-bottom:8px;padding:14px;font-size:14px;text-align:left;line-height:1.4" onclick="startLiveIntervention('+i+')">'+
-      '<div style="font-weight:600">&#x2694;&#xfe0f; Fighting right now</div>'+
+    '<button class="btn primary stack" style="margin-bottom:8px;padding:14px;font-size:14px;text-align:left;line-height:1.4" onclick="startLiveIntervention('+i+')">'+
+      '<div style="font-weight:600">'+svgIcon("shield")+' Fighting right now</div>'+
       '<div style="font-size:11px;opacity:0.85;font-weight:400;margin-top:3px">Open the live SOS &mdash; breathing, scripture, win/loss</div>'+
     '</button>'+
-    '<button class="btn" style="margin-bottom:8px;padding:14px;font-size:14px;text-align:left;line-height:1.4" onclick="startQuickLog('+i+')">'+
-      '<div style="font-weight:600">&#x270d;&#xfe0f; Log a past fight</div>'+
+    '<button class="btn stack" style="margin-bottom:8px;padding:14px;font-size:14px;text-align:left;line-height:1.4" onclick="startQuickLog('+i+')">'+
+      '<div style="font-weight:600">'+svgIcon("edit")+' Log a past fight</div>'+
       '<div style="font-size:11px;color:var(--tx3);font-weight:400;margin-top:3px">Quick log a battle from earlier &mdash; win or loss</div>'+
     '</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Cancel</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)">Cancel</button>'+
   '</div>';
   document.body.appendChild(m);
   haptic('tap');
@@ -1121,7 +1121,7 @@ function startQuickLog(i){
     '<textarea id="ql-note" placeholder="What you felt, what helped, what didn\'t..." style="height:60px;resize:none;margin-bottom:14px;font-size:16px"></textarea>'+
     
     '<button class="btn primary" onclick="saveQuickLog()" style="margin-bottom:8px">Save this fight</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Cancel</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)">Cancel</button>'+
   '</div>';
   document.body.appendChild(m);
 }
@@ -1251,8 +1251,8 @@ function _celebrateFirstWin(){
   const m = document.createElement('div');
   m.className = 'modal-bg open'; m.style.alignItems='center';
   m.innerHTML = '<div class="modal" style="text-align:center">'+
-    '<div style="font-size:34px;margin-bottom:10px">\uD83C\uDF31</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:25px;color:var(--tx);line-height:1.3;margin-bottom:10px">Your first one'+(name?', '+name:'')+'.</div>'+
+    '<div style="font-size:34px;margin-bottom:10px">'+svgIcon("sprout",31)+'</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:10px">Your first one'+(name?', '+name:'')+'.</div>'+
     '<div style="font-size:14px;color:var(--tx2);line-height:1.7;margin-bottom:20px">This is the one that matters most \u2014 not because it\u2019s the hardest, but because it\u2019s the proof that you can. Every road starts with a single honest step, and you just took it. I\u2019ll be here for the next one, and the one after that.</div>'+
     '<button class="btn primary" onclick="closeModal(this)">This is the beginning</button>'+
     '</div>';
@@ -1265,11 +1265,11 @@ function _graceAfterRelapse(viceName){
   const m = document.createElement('div');
   m.className = 'modal-bg open'; m.style.alignItems='center';
   m.innerHTML = '<div class="modal" style="text-align:center">'+
-    '<div style="font-size:30px;margin-bottom:10px">\uD83C\uDF3F</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.3;margin-bottom:10px">'+(name?name+', this':'This')+' is not the end of anything.</div>'+
+    '<div style="font-size:30px;margin-bottom:10px">'+svgIcon("leaf",28)+'</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:10px">'+(name?name+', this':'This')+' is not the end of anything.</div>'+
     '<div style="font-size:14px;color:var(--tx2);line-height:1.7;margin-bottom:20px">One day doesn\u2019t erase the road you\u2019ve walked. What matters most just happened: you came back and you were honest. That\u2019s not weakness \u2014 that\u2019s the exact strength this is built on. Grace is new every morning, and so are you.</div>'+
     '<button class="btn primary" onclick="closeModal(this)" style="margin-bottom:8px">Thank you. I\u2019m back.</button>'+
-    '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin-bottom:8px">Sit with me a moment</button>'+
+    '<button class="btn subtle" onclick="closeModal(this);openCompanionForUrge()" style="margin-bottom:8px">Sit with me a moment</button>'+
     '<button class="btn" onclick="_lifeHappenedNotSlip('+(typeof curVice!=='undefined'?curVice:-1)+');closeModal(this)" style="background:none;border:none;color:var(--tx3);font-size:12px;line-height:1.5">Honestly, this was circumstance, not a slip \u2014 don\u2019t reset me</button>'+
     '</div>';
   document.body.appendChild(m);
@@ -1301,7 +1301,7 @@ function _lifeHappenedNotSlip(i){
   saveV();
   renderVices(); if(typeof renderScoreboard==='function') renderScoreboard(); if(typeof renderDayCounter==='function') renderDayCounter();
   if(typeof syncToCloud==='function') syncToCloud();
-  showToast('Streak protected \uD83C\uDF3F','Life happens. Your road stands. Rest, and keep walking tomorrow.');
+  showToast('Streak protected','Life happens. Your road stands. Rest, and keep walking tomorrow.');
 }
 // Pattern intelligence: reads the fight log for ONE vice and finds its risky windows,
 // top triggers, and a win-rate trend. Pure local computation, no AI cost. Consent-gated.
@@ -1447,21 +1447,21 @@ function openWindDown(){
                buddhism:'Let the day go as it is \u2014 unfinished, imperfect, impermanent. Nothing to hold onto.',
                secular:'Set the day down. It is finished, whether or not it went well.'}[t] || 'Set the day down.';
   const steps=[
-    ['\u{1F4F5}','Phone out of the bedroom','This is the whole thing. Each hour of screen time in bed raises the odds of insomnia by well over half \u2014 not the blue light, the being-awake-with-it.'],
-    ['\u{1F576}','Lights down, not off','Dim what you can. You are telling your body the day is over, and it believes lighting more than it believes you.'],
-    ['\u{1F4DD}','One line: where you stopped','If your mind is still working, write the next step down and let it stop guarding it. That is what frees you \u2014 not finishing.'],
-    [soft?'\u{1F319}':'\u{1F64F}', soft?'One slow minute':'One line to close it', close]
+    ['phoneoff','Phone out of the bedroom','This is the whole thing. Each hour of screen time in bed raises the odds of insomnia by well over half \u2014 not the blue light, the being-awake-with-it.'],
+    ['sunset','Lights down, not off','Dim what you can. You are telling your body the day is over, and it believes lighting more than it believes you.'],
+    ['edit','One line: where you stopped','If your mind is still working, write the next step down and let it stop guarding it. That is what frees you \u2014 not finishing.'],
+    [soft?'moon':'flame', soft?'One slow minute':'One line to close it', close]
   ];
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.3;margin-bottom:8px">Land the day.</div>'+
-    '<div style="text-align:center;font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Four small things, same order every night. It works by repetition, not willpower \u2014 your body learns the sequence and starts winding down before you do.</div>'+
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:8px">Land the day.</div>'+
+    '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Four small things, same order every night. It works by repetition, not willpower \u2014 your body learns the sequence and starts winding down before you do.</div>'+
     steps.map(function(x){ return '<div style="display:flex;gap:11px;align-items:flex-start;margin-bottom:11px">'+
-      '<div style="font-size:18px;flex-shrink:0;width:26px;text-align:center">'+x[0]+'</div>'+
-      '<div style="flex:1"><div style="font-size:13.5px;color:var(--tx);margin-bottom:2px">'+x[1]+'</div>'+
+      '<div style="font-size:18px;flex-shrink:0;width:26px;text-align:center;color:var(--go)">'+(svgIcon(x[0],18)||x[0])+'</div>'+
+      '<div style="flex:1"><div style="font-size:13px;color:var(--tx);margin-bottom:2px">'+x[1]+'</div>'+
       '<div style="font-size:12px;color:var(--tx3);line-height:1.55">'+x[2]+'</div></div></div>'; }).join('')+
     '<button class="btn primary" style="margin-top:6px" onclick="closeModal(this);openBreath(\'sleep\',{reason:\'winddown\'})">Breathe me down first</button>'+
-    '<button class="btn" style="margin-top:8px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="closeModal(this);theRelease({did:\'You landed the day on purpose \u2014 and the phone is going down with it.\'})">I\u2019m putting it down</button>'+
+    '<button class="btn subtle" style="margin-top:8px" onclick="closeModal(this);theRelease({did:\'You landed the day on purpose \u2014 and the phone is going down with it.\'})">I\u2019m putting it down</button>'+
   '</div>';
   document.body.appendChild(m);
   if(typeof haptic==='function') haptic('tap');
@@ -1477,24 +1477,26 @@ function openRecoveryBridge(){
   const faithOn = (typeof faithLevel!=='function') || faithLevel()!=='light';
   const tr = (typeof faithTradition==='function') ? faithTradition() : 'secular';
   const opts = [
-    ['\u{1F9ED}','SMART Recovery','Free meetings, online and in person. Science-based, secular, no higher power required — you are the agent of your own change.','https://smartrecovery.org/meetings/'],
-    ['\u{1F91D}','AA / NA','The widest availability of anything on this list — a meeting most places, most nights. The higher power is yours to define.','https://www.aa.org/find-aa'],
-    ['\u{1FA7A}','A GP or counsellor','The most underrated door. They have seen this a hundred times, it is confidential, and they can refer you on.',''],
-    ['\u{1F4AC}','Someone who already knows','A sibling, a mate, a mentor. Saying it out loud to one person breaks most of its power — that is not a cliche, it is the mechanism.','']
+    ['compass','SMART Recovery','Free meetings, online and in person. Science-based, secular, no higher power required — you are the agent of your own change.','https://smartrecovery.org/meetings/'],
+    ['users','AA / NA','The widest availability of anything on this list — a meeting most places, most nights. The higher power is yours to define.','https://www.aa.org/find-aa'],
+    ['stethoscope','A GP or counsellor','The most underrated door. They have seen this a hundred times, it is confidential, and they can refer you on.',''],
+    ['message','Someone who already knows','A sibling, a mate, a mentor. Saying it out loud to one person breaks most of its power — that is not a cliche, it is the mechanism.','']
   ];
   if(faithOn && tr==='christianity') opts.splice(2,0,['\u271D','Celebrate Recovery','Christ-centred twelve steps, in a church, with people who will not flinch. Free.','https://locator.crgroups.info/']);
   if(faithOn && tr!=='christianity' && tr!=='secular') opts.splice(2,0,['\u{1F54C}','Your community','An imam, a priest, a monk, an elder — someone in your own tradition who has walked beside people through this.','']);
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.3;margin-bottom:8px">People who do this properly.</div>'+
-    '<div style="text-align:center;font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">I am a tool, and a tool is not enough on its own. None of these is better than the others — different people need different rooms. Pick whichever you would actually walk into.</div>'+
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:8px">People who do this properly.</div>'+
+    '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px">I am a tool, and a tool is not enough on its own. None of these is better than the others — different people need different rooms. Pick whichever you would actually walk into.</div>'+
     opts.map(function(o){
-      const link=o[3]?('<a href="'+o[3]+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;min-height:36px;margin-top:2px;font-size:12.5px;font-weight:600;color:var(--go);text-decoration:none">find one \u2192</a>'):'';
-      return '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:13px 15px;margin-bottom:9px">'+
-        '<div style="font-size:14px;color:var(--tx);margin-bottom:3px">'+o[0]+'&nbsp;&nbsp;'+o[1]+'</div>'+
+      const _mk=svgIcon(o[0]);
+      const _mark=_mk?('<span style="color:var(--go)">'+_mk+'</span>'):o[0];
+      const link=o[3]?('<a href="'+o[3]+'" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;min-height:36px;margin-top:2px;font-size:12px;font-weight:600;color:var(--go);text-decoration:none">find one \u2192</a>'):'';
+      return '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:13px 15px;margin-bottom:9px">'+
+        '<div style="font-size:14px;color:var(--tx);margin-bottom:3px">'+_mark+'&nbsp;&nbsp;'+o[1]+'</div>'+
         '<div style="font-size:12px;color:var(--tx2);line-height:1.6">'+o[2]+'</div>'+link+'</div>';
     }).join('')+
-    '<div style="font-size:11.5px;color:var(--tx3);line-height:1.6;margin:6px 0 14px;text-align:center">Going does not mean this stopped working. It means you took it seriously enough to bring someone real into it.</div>'+
+    '<div style="font-size:11px;color:var(--tx3);line-height:1.6;margin:6px 0 14px;text-align:center">Going does not mean this stopped working. It means you took it seriously enough to bring someone real into it.</div>'+
     '<button class="btn primary" onclick="closeModal(this)">Okay</button>'+
   '</div>';
   document.body.appendChild(m);
@@ -1506,11 +1508,11 @@ function openRecoveryBridge(){
 // craving runs on, faster than trying to think your way out of it. Faith-congruent (James 2) and
 // fully coherent secularly as contribution. Ends off the phone, like every other exit here.
 const _SERVICE_ACTS = [
-  ['\u{1F4AC}','Send the message you keep meaning to send','Someone is wondering how you are. Thirty seconds.'],
-  ['\u{1F9F9}','Do one thing that helps whoever you live with','Unasked. They will notice, and you will feel it before they do.'],
-  ['\u{1F4DE}','Ring the person who would be glad to hear from you','Not to talk about this. Just to talk.'],
-  ['\u{1F4B7}','Give something small away','A coffee, a tenner, an hour. Generosity turns the camera around.'],
-  ['\u{1F64F}','Hold someone else for a minute','Someone you know is having a harder week than you. Carry them for sixty seconds.']
+  ['message','Send the message you keep meaning to send','Someone is wondering how you are. Thirty seconds.'],
+  ['home','Do one thing that helps whoever you live with','Unasked. They will notice, and you will feel it before they do.'],
+  ['phone','Ring the person who would be glad to hear from you','Not to talk about this. Just to talk.'],
+  ['wallet','Give something small away','A coffee, a tenner, an hour. Generosity turns the camera around.'],
+  ['heart','Hold someone else for a minute','Someone you know is having a harder week than you. Carry them for sixty seconds.']
 ];
 function openServiceExit(){
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
@@ -1518,14 +1520,14 @@ function openServiceExit(){
   const a=_SERVICE_ACTS[day%_SERVICE_ACTS.length];
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
-    '<div style="font-size:28px;margin-bottom:8px">'+a[0]+'</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);line-height:1.3;margin-bottom:10px">'+a[1]+'</div>'+
+    '<div style="font-size:28px;margin-bottom:8px;color:var(--go)">'+(svgIcon(a[0],26)||a[0])+'</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:10px">'+a[1]+'</div>'+
     '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:8px">'+a[2]+'</div>'+
     '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:18px">An urge points you inward, at yourself. The quickest way out is not to think harder about it \u2014 it is to turn and do one small thing for someone else.</div>'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);theRelease({did:\'You turned outward instead of inward \u2014 and did something real for someone else.\'})">I\u2019m doing it</button>'+
-    '<button class="btn" onclick="closeModal(this);openServiceExit()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px;margin-bottom:8px">Give me another</button>'+
-    '<button class="btn" onclick="closeModal(this);openDEADS()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin-bottom:8px;font-size:13px">\u{1F5FA} Five ways through \u2014 pick one</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
+    '<button class="btn subtle" onclick="closeModal(this);openServiceExit()" style="margin-bottom:8px">Give me another</button>'+
+    '<button class="btn subtle" onclick="closeModal(this);openDEADS()" style="margin-bottom:8px">'+'<span style="color:var(--go)">'+svgIcon("map")+'</span>'+' Five ways through \u2014 pick one</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
   if(typeof haptic==='function') haptic('tap');
@@ -1541,17 +1543,17 @@ function bridgeToRealHelp(reason){
     const m = document.createElement('div');
     m.className='modal-bg open'; m.style.alignItems='center';
     m.innerHTML = '<div class="modal" style="text-align:left">'+
-      '<div style="text-align:center;font-size:26px;margin-bottom:8px">\uD83E\uDD1D</div>'+
-      '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);line-height:1.3;margin-bottom:12px">You don\u2019t have to carry this alone</div>'+
-      '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:16px">'+lead+' Reaching for a real person is one of the strongest things you can do \u2014 it\u2019s what the strongest people do.</div>'+
-      '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:14px;margin-bottom:10px">'+
+      '<div style="text-align:center;font-size:26px;margin-bottom:8px">'+svgIcon("users",24)+'</div>'+
+      '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:12px">You don\u2019t have to carry this alone</div>'+
+      '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:16px">'+lead+' Reaching for a real person is one of the strongest things you can do \u2014 it\u2019s what the strongest people do.</div>'+
+      '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:14px;margin-bottom:10px">'+
         '<div style="font-family:\'DM Mono\',monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">Real people who can help</div>'+
         '<div style="font-size:13px;color:var(--tx2);line-height:1.9">'+
           '\u2022 <b style="color:var(--tx)">Someone you trust</b> \u2014 a sibling, a friend, a mentor. Even just saying it out loud to one person breaks its power.<br>'+
           '\u2022 <b style="color:var(--tx)">A priest</b> \u2014 confession and a real conversation. Grace you can\u2019t get from a screen.<br>'+
           '\u2022 <b style="color:var(--tx)">A counsellor or your GP</b> \u2014 this is exactly what they\u2019re there for. No shame in it.<br>'+
           '\u2022 <b style="color:var(--tx)">A helpline</b> \u2014 someone trained for this, right now, free:<br>'+
-          '<span style="display:inline-block;margin-top:4px;font-size:12.5px;line-height:1.9">'+
+          '<span style="display:inline-block;margin-top:4px;font-size:12px;line-height:1.9">'+
             '\uD83C\uDDE6\uD83C\uDDFA Lifeline <a href="tel:131114" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">13 11 14</a> \u00b7 '+
             '\uD83C\uDDFA\uD83C\uDDF8 <a href="tel:988" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">988</a> \u00b7 '+
             '\uD83C\uDDEC\uD83C\uDDE7 <a href="tel:116123" style="color:var(--go);text-decoration:none;border-bottom:1px solid var(--go-bd)">116 123</a><br>'+
@@ -1583,7 +1585,7 @@ function renderUrgeInsights(){
     const ready = (vices||[]).filter(v => !v.trackPatterns && analyzeUrgePatterns(v.n)).slice(0, 1);
     if(ready.length){
       box.innerHTML = ready.map(function(v){ const idx=vices.indexOf(v);
-        return '<div style="margin-bottom:8px;padding:12px 14px;background:var(--bg3);border:1px solid var(--go-bd);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:10px"><div style="font-size:12.5px;color:var(--tx2);line-height:1.5">There’s a pattern in your <b style="color:var(--tx)">'+_esc(v.n)+'</b> battles — when it hits hardest, and how to get ahead of it.</div><button onclick="toggleVicePatterns('+idx+')" style="flex-shrink:0;padding:8px 13px;border-radius:100px;border:1px solid var(--go-bd);background:var(--go-bg);color:var(--go);font-size:12px;cursor:pointer">Show me</button></div>';
+        return '<div style="margin-bottom:8px;padding:12px 14px;background:var(--bg3);border:1px solid var(--go-bd);border-radius:var(--rm);display:flex;align-items:center;justify-content:space-between;gap:10px"><div style="font-size:13px;color:var(--tx2);line-height:1.5">There’s a pattern in your <b style="color:var(--tx)">'+_esc(v.n)+'</b> battles — when it hits hardest, and how to get ahead of it.</div><button onclick="toggleVicePatterns('+idx+')" style="flex-shrink:0;padding:8px 13px;border-radius:100px;border:1px solid var(--go-bd);background:var(--go-bg);color:var(--go);font-size:12px;cursor:pointer">Show me</button></div>';
       }).join('');
       box.style.display='block'; return;
     }
@@ -1593,7 +1595,7 @@ function renderUrgeInsights(){
   tracked.forEach(v => {
     const p = analyzeUrgePatterns(v.n);
     if(!p){
-      html += '<div style="margin-bottom:10px;padding:12px;background:var(--bg3);border-radius:10px;font-size:12px;color:var(--tx3);line-height:1.5">Tracking <b style="color:var(--tx2)">'+_escFew(v.n)+'</b> — log a few more battles and your patterns will show here.</div>';
+      html += '<div style="margin-bottom:10px;padding:12px;background:var(--bg3);border-radius:var(--rm);font-size:12px;color:var(--tx3);line-height:1.5">Tracking <b style="color:var(--tx2)">'+_escFew(v.n)+'</b> — log a few more battles and your patterns will show here.</div>';
       return;
     }
     const trendColor = p.trend==='improving'?'var(--gr)':p.trend==='slipping'?'var(--re)':'var(--tx2)';
@@ -1601,7 +1603,7 @@ function renderUrgeInsights(){
     // concrete, evidence-based override — what to actually DO to break this specific loop. The mirror
     // shows the wound AND how to heal it.
     const override = _overridePlan(p);
-    html += '<div style="margin-bottom:10px;padding:14px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px">'+
+    html += '<div style="margin-bottom:10px;padding:14px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm)">'+
       '<div style="font-family:Cormorant Garamond,serif;font-size:17px;color:var(--go);font-style:italic;margin-bottom:8px">'+_escFew(v.n)+' — your patterns</div>'+
       '<div style="font-size:12px;color:var(--tx2);line-height:1.7">'+
         (p.riskWindow?'Hardest time: <b style="color:var(--tx)">'+p.riskWindow+'</b>'+(p.riskDay?', especially <b style="color:var(--tx)">'+p.riskDay+'s</b>':'')+'.<br>':'')+
@@ -1705,7 +1707,7 @@ function renderFeelingWinsMomentum(){
   const total = wins.length;
   el.style.display='block';
   el.innerHTML =
-    '<div style="padding:14px;background:linear-gradient(135deg,rgba(200,169,110,0.12),rgba(140,107,182,0.08));border:1px solid var(--go-bd);border-radius:12px;margin-bottom:14px">'+
+    '<div style="padding:14px;background:linear-gradient(135deg,rgba(200,169,110,0.12),rgba(140,107,182,0.08));border:1px solid var(--go-bd);border-radius:var(--rm);margin-bottom:14px">'+
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Times you chose yourself</div>'+
       '<div style="display:flex;align-items:baseline;gap:10px">'+
         '<div style="font-size:30px;font-family:Cormorant Garamond,serif;color:var(--tx)">'+(weekCount||total)+'</div>'+
@@ -1787,11 +1789,11 @@ async function _feelingNowGo(){
       // secular gets urge surfing with no religious framing at all.
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:8px">'+_escFew(_fnPractice().name)+'</div>'+
       '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;line-height:1.5;color:var(--tx);margin-bottom:10px">\u201C'+_escFew(_fnPractice().line)+'\u201D</div>'+
-      '<div style="font-size:12.5px;color:var(--tx2);line-height:1.65;margin-bottom:8px">'+_escFew(_fnPractice().how)+'</div>'+
+      '<div style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:8px">'+_escFew(_fnPractice().how)+'</div>'+
       '<div style="font-size:11px;color:var(--tx3);line-height:1.6;margin-bottom:16px;padding:0 4px">'+_escFew(_fnPractice().why)+'</div>'+
       '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:18px">You only have to get through <span style="color:var(--go)">this</span> one moment \u2014 not forever.</div>'+
     '</div>'+
-    '<div id="feelingnow-redirect" style="padding:14px;background:var(--bg3);border-radius:10px;margin-bottom:14px;min-height:60px">'+
+    '<div id="feelingnow-redirect" style="padding:14px;background:var(--bg3);border-radius:var(--rm);margin-bottom:14px;min-height:60px">'+
       '<p class="pulsing" style="font-family:Cormorant Garamond,serif;font-style:italic;color:var(--tx3);text-align:center;font-size:14px">Sitting with you...</p>'+
     '</div>'+
     '<button class="btn primary" style="padding:15px" onclick="_feelingNowWon()">It\u2019s passing \u2014 I got through it</button>'+
@@ -1826,8 +1828,8 @@ function _feelingNowStillHard(){
     '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:12px">Okay. Stay with me.</div>'+
     '<div style="font-size:14px;color:var(--tx2);line-height:1.7;margin-bottom:14px">Picture it honestly: if you give in right now, how do you feel in twenty minutes? You already know \u2014 the shame, the same hole, a bit deeper. This moment is the whole fight. Winning it once makes the next one easier.</div>'+
     (why
-      ? ('<div style="padding:12px;background:rgba(200,169,110,0.08);border:1px solid var(--go-bd);border-radius:10px;font-size:14px;color:var(--tx);line-height:1.65;margin-bottom:14px;white-space:pre-wrap">This is what you\u2019re fighting for:\n\n'+why.replace(/</g,'&lt;')+'</div>')
-      : ('<button class="btn" onclick="_feelingNowSetWhy()" style="background:var(--bg3);border:1px solid var(--go-bd);color:var(--go);margin-bottom:14px;font-size:13px">\u270d\ufe0f Write what you\u2019re fighting for</button>'))+
+      ? ('<div style="padding:12px;background:rgba(200,169,110,0.08);border:1px solid var(--go-bd);border-radius:var(--rm);font-size:14px;color:var(--tx);line-height:1.65;margin-bottom:14px;white-space:pre-wrap">This is what you\u2019re fighting for:\n\n'+why.replace(/</g,'&lt;')+'</div>')
+      : ('<button class="btn" onclick="_feelingNowSetWhy()" style="background:var(--bg3);border:1px solid var(--go-bd);color:var(--go);margin-bottom:14px;font-size:13px">'+svgIcon("edit")+' Write what you\u2019re fighting for</button>'))+
     '<button class="btn primary" style="padding:15px" onclick="document.getElementById(\'feelingnow-modal\')?.remove();openNeedTalk()">Talk to my Coach now</button>'+
     '<button class="btn" onclick="_feelingNowWon()" style="background:var(--bg3);border:1px solid var(--bd);margin-top:8px">It\u2019s passing \u2014 I got through it</button>'+
     '<button class="btn" onclick="_feelingNowStep1()" style="background:none;border:none;color:var(--tx3);font-size:12px;margin-top:6px">Back</button>';
@@ -1894,7 +1896,7 @@ function setLocation(loc){
     // which is most people who get this far.
     const constrained = (loc === 'bed' || loc === 'car');
     if(publicSetting){
-      action = { icon:'&#127788;', text: 'Breathe in 4, hold 4, out 6 — five times. Nobody will notice. Then, when you can, step away: ' + pb.firstMove };
+      action = { icon:'breath', text: 'Breathe in 4, hold 4, out 6 — five times. Nobody will notice. Then, when you can, step away: ' + pb.firstMove };
     } else if(constrained && data && data.actions && data.actions.length){
       // The location's own first move leads here, because in these two settings it is the only one
       // that can actually be done — and in the car it is the safety instruction. The vice-specific
@@ -1903,12 +1905,15 @@ function setLocation(loc){
                  text: data.actions[0].text + (pb.firstMove ? ' Then, when you can: ' + pb.firstMove : '') };
     } else {
       const t = pb.actions[Math.floor(Math.random()*pb.actions.length)];
-      action = { icon:'&#9889;', text: t };
+      action = { icon:'zap', text: t };
     }
   } else {
     action = data.actions[Math.floor(Math.random()*data.actions.length)];
   }
-  document.getElementById('sos-action-icon').innerHTML=action.icon;
+  const _sosIcEl=document.getElementById('sos-action-icon');
+  const _sosIcHTML=svgIcon(action.icon,40);
+  _sosIcEl.style.color=_sosIcHTML?'var(--go)':'';
+  _sosIcEl.innerHTML=_sosIcHTML||action.icon;
   document.getElementById('sos-action-text').textContent=action.text;
   let secs=data.timer;
   const ring=document.getElementById('sos-timer-ring');
@@ -2038,7 +2043,7 @@ function goSosP3(){
         '<button class="btn" onclick="logLoss()" style="background:var(--bg3);border:1px solid var(--bd)">I used \u2014 note it honestly</button>';
     } else {
       btns.innerHTML =
-        '<button class="btn success" onclick="logWin()">I beat it — log the win 🏆</button>' +
+        '<button class="btn success" onclick="logWin()">'+svgIcon("trophy")+' I beat it — log the win</button>' +
         '<button class="btn blue" onclick="goSosCoach()">I need to talk to my coach</button>' +
         '<button class="btn danger" onclick="logLoss()">I gave in — log it honestly</button>';
     }

@@ -225,7 +225,7 @@ function openAllTransactions(){
             '<span style="font-family:DM Mono,monospace;color:' + color + ';flex-shrink:0">' + sign + curSym() + _moneyG(t.amount||0) + '</span></div>';
         }).join('');
     }).join('') +
-    '<button class="btn" onclick="closeModal(this)" style="margin-top:16px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)">Close</button>'+
+    '<button class="btn subtle" onclick="closeModal(this)" style="margin-top:16px">Close</button>'+
   '</div>';
   document.body.appendChild(m);
 }
@@ -306,9 +306,9 @@ function renderTransactions(){
   const net  = inR - outR;
   
   summary.innerHTML = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">In</div><div style="font-size:16px;color:var(--gr);margin-top:3px">'+curSym() + inR.toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Out</div><div style="font-size:16px;color:var(--re);margin-top:3px">'+curSym() + outR.toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Net</div><div style="font-size:16px;color:' + (net >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:3px">'+(net < 0 ? '\u2212' : '') + curSym() + Math.abs(net).toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:var(--rs);padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">In</div><div style="font-size:16px;color:var(--gr);margin-top:3px">'+curSym() + inR.toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:var(--rs);padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Out</div><div style="font-size:16px;color:var(--re);margin-top:3px">'+curSym() + outR.toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:var(--rs);padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Net</div><div style="font-size:16px;color:' + (net >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:3px">'+(net < 0 ? '\u2212' : '') + curSym() + Math.abs(net).toLocaleString() + '</div></div>' +
   '</div>';
   
   // Category breakdown for expenses
@@ -366,7 +366,7 @@ function renderTransactions(){
           '</div>';
         }).join('') +
         ((list.length > recentList.length)
-          ? '<button class="btn" onclick="openAllTransactions()" style="margin-top:10px;background:transparent;border:1px solid var(--bd);color:var(--tx2);font-size:12px">See all ' + list.length + ' \u2192</button>'
+          ? '<button class="btn outline" onclick="openAllTransactions()" style="margin-top:10px">See all ' + list.length + ' \u2192</button>'
           : '');
     }
   }
@@ -557,7 +557,7 @@ function renderFamilyContribution(){
     const remaining = Math.max(0, target.amount - monthGiven);
     const met = monthGiven >= target.amount;
     const dueStr = target.dueDay + (target.dueDay===1?'st':target.dueDay===2?'nd':target.dueDay===3?'rd':'th');
-    targetHtml = '<div style="background:var(--bg3);border:1px solid '+(met?'var(--go-bd)':'var(--bd)')+';border-radius:10px;padding:12px;margin-bottom:12px">'+
+    targetHtml = '<div style="background:var(--bg3);border:1px solid '+(met?'var(--go-bd)':'var(--bd)')+';border-radius:var(--rm);padding:12px;margin-bottom:12px">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">This month\u2019s target \u00b7 due '+dueStr+'</span><button onclick="setFamilyTarget()" style="background:none;border:none;color:var(--go);font-size:11px;cursor:pointer;padding:16px 13px;margin:-16px -13px;position:relative">Edit</button></div>'+
       '<div style="font-size:15px;color:'+(met?'var(--gr)':'var(--tx)')+'">'+curSym()+monthGiven.toLocaleString()+' / '+curSym()+target.amount.toLocaleString()+(met?'  \u2713':'')+'</div>'+
       '<div style="height:6px;background:var(--bg);border-radius:3px;margin-top:6px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+(met?'var(--gr)':'var(--go)')+'"></div></div>'+
@@ -570,7 +570,7 @@ function renderFamilyContribution(){
     return;
   }
   wrap.__targetHtml = targetHtml;
-  wrap.innerHTML = (wrap.__targetHtml||'') + (target ? '' : '<button onclick="setFamilyTarget()" style="width:100%;background:var(--bg3);border:1px dashed var(--bd);color:var(--go);border-radius:8px;padding:8px;font-size:12px;cursor:pointer;margin-bottom:10px">+ Set a recurring monthly target</button>') + list.slice(0,12).map(c=>{
+  wrap.innerHTML = (wrap.__targetHtml||'') + (target ? '' : '<button onclick="setFamilyTarget()" style="width:100%;background:var(--bg3);border:1px dashed var(--bd);color:var(--go);border-radius:var(--rs);padding:8px;font-size:12px;cursor:pointer;margin-bottom:10px">+ Set a recurring monthly target</button>') + list.slice(0,12).map(c=>{
     const when = new Date(c.date).toLocaleDateString('en-AU',{day:'numeric',month:'short',year:'numeric'});
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)">'+
       '<div><div style="font-size:14px;color:var(--tx)">'+curSym()+c.amount.toLocaleString()+'</div>'+(c.note?'<div style="font-size:11px;color:var(--tx3)">'+c.note.replace(/</g,'&lt;')+'</div>':'')+'</div>'+
@@ -623,7 +623,7 @@ function renderPoker(){
   const wins = list.filter(s=>s.net>0).length;
   if(sumEl){
     const col = totalNet>=0 ? 'var(--gr)' : 'var(--re)';
-    sumEl.innerHTML = '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:14px;text-align:center">'+
+    sumEl.innerHTML = '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:14px;text-align:center">'+
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px">Lifetime net</div>'+
       '<div style="font-size:24px;color:'+col+'">'+(totalNet>=0?'+'+curSym():'\u2212'+curSym())+Math.abs(totalNet).toLocaleString()+'</div>'+
       '<div style="font-size:11px;color:var(--tx3);margin-top:4px">'+sessions+' session'+(sessions===1?'':'s')+' \u00b7 '+wins+' winning</div></div>';
@@ -709,12 +709,12 @@ function renderSubDetect(){
   if(!found.length){ el.style.display='none'; el.innerHTML=''; return; }
   const total=found.reduce(function(a,f){ return a+f.yearly; },0);
   el.style.display='block';
-  el.innerHTML='<div style="background:var(--bg3);border:1px solid var(--go-bd);border-radius:12px;padding:13px 15px;margin-bottom:12px">'+
+  el.innerHTML='<div style="background:var(--bg3);border:1px solid var(--go-bd);border-radius:var(--rm);padding:13px 15px;margin-bottom:12px">'+
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px">Found in your statements</div>'+
-    '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:10px">'+found.length+' charge'+(found.length===1?'':'s')+(found.length===1?' that repeats':' that repeat')+' like subscriptions \u2014 about <b style="color:var(--tx)">'+curSym()+total.toLocaleString()+'/year</b> between them. Not an accusation, just the ones you may have stopped noticing.</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:10px">'+found.length+' charge'+(found.length===1?'':'s')+(found.length===1?' that repeats':' that repeat')+' like subscriptions \u2014 about <b style="color:var(--tx)">'+curSym()+total.toLocaleString()+'/year</b> between them. Not an accusation, just the ones you may have stopped noticing.</div>'+
     found.map(function(f){ return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--bd)">'+
       '<div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+_escFew(f.name)+'</div>'+
-      '<div style="font-family:DM Mono,monospace;font-size:9.5px;color:var(--tx3)">'+curSym()+_moneyG(f.amount)+'/'+_period1(f.period)+' \u00b7 seen '+f.seen+'\u00d7 \u00b7 ~'+curSym()+f.yearly.toLocaleString()+'/yr</div></div>'+
+      '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3)">'+curSym()+_moneyG(f.amount)+'/'+_period1(f.period)+' \u00b7 seen '+f.seen+'\u00d7 \u00b7 ~'+curSym()+f.yearly.toLocaleString()+'/yr</div></div>'+
       '<button class="btn" style="width:auto;padding:5px 10px;font-size:11px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go)" onclick="_subAccept(\''+String(f.key).replace(/'/g,"")+'\')">Track</button>'+
       '<button class="btn" style="width:auto;padding:5px 8px;font-size:11px;color:var(--tx3)" onclick="_subDismiss(\''+String(f.key).replace(/'/g,"")+'\')">Not one</button>'+
     '</div>'; }).join('')+
@@ -765,9 +765,9 @@ function renderOnThisDay(){
   const months=Math.round(hit.age/30);
   const when = hit.age>=330 ? 'about a year ago' : (months+' months ago');
   el.style.display='block';
-  el.innerHTML='<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:13px 15px;margin-bottom:12px">'+
+  el.innerHTML='<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:13px 15px;margin-bottom:12px">'+
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px">You wrote this '+when+'</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:14.5px;font-style:italic;color:var(--tx2);line-height:1.7;margin-bottom:10px">\u201c'+_escFew(String(hit.e.text).slice(0,340))+(String(hit.e.text).length>340?'\u2026':'')+'\u201d</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:14px;font-style:italic;color:var(--tx2);line-height:1.7;margin-bottom:10px">\u201c'+_escFew(String(hit.e.text).slice(0,340))+(String(hit.e.text).length>340?'\u2026':'')+'\u201d</div>'+
     '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:10px">Not to make you feel anything in particular \u2014 just so you can hear how you were speaking then, and notice whether it has moved.</div>'+
     // "Read it" used to hide the card and jump to Reflect \u2014 it never opened anything, and it burned
     // the entry: totry_otd_seen was stamped so it could never resurface. The card is already the
@@ -1077,7 +1077,7 @@ function renderBills(){
     else if(daysUntil <= 3) urgency = {color: 'var(--re)', label: daysUntil === 0 ? 'Due today' : daysUntil + ' day' + (daysUntil===1?'':'s'), bg: 'rgba(216,93,75,0.08)', border: 'var(--re-bd)'};
     else if(daysUntil <= 7) urgency = {color: 'var(--go)', label: daysUntil + ' days', bg: 'rgba(200,169,110,0.06)', border: 'var(--go-bd)'};
     else urgency = {color: 'var(--tx3)', label: daysUntil + ' days', bg: 'var(--bg3)', border: 'var(--bd)'};
-    return '<div style="background:' + urgency.bg + ';border:1px solid ' + urgency.border + ';border-radius:8px;padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">' +
+    return '<div style="background:' + urgency.bg + ';border:1px solid ' + urgency.border + ';border-radius:var(--rs);padding:10px 12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">' +
       '<div style="flex:1;min-width:0">' +
         '<div style="font-size:13px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _escFew(b.name||b.n||'Bill') + '</div>' +
         '<div style="font-family:DM Mono,monospace;font-size:10px;color:' + urgency.color + ';margin-top:2px">'+curSym() + _moneyG(Number(b.amount!=null?b.amount:b.amt)||0) + ' · ' + urgency.label + '</div>' +
@@ -1288,9 +1288,9 @@ function renderNetWorth(){
   const netWorth = _rAssets - _rDebts;
   
   summary.innerHTML = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Assets</div><div style="font-size:14px;color:var(--gr);margin-top:3px">'+curSym() + _rAssets.toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Debts</div><div style="font-size:14px;color:var(--re);margin-top:3px">'+curSym() + _rDebts.toLocaleString() + '</div></div>' +
-    '<div style="text-align:center;background:var(--bg3);border-radius:8px;padding:10px;border:1px solid var(--go-bd)"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Net</div><div style="font-size:14px;color:' + (netWorth >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:3px">'+curSym() + netWorth.toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:var(--rs);padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Assets</div><div style="font-size:14px;color:var(--gr);margin-top:3px">'+curSym() + _rAssets.toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:var(--rs);padding:10px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Debts</div><div style="font-size:14px;color:var(--re);margin-top:3px">'+curSym() + _rDebts.toLocaleString() + '</div></div>' +
+    '<div style="text-align:center;background:var(--bg3);border-radius:var(--rs);padding:10px;border:1px solid var(--go-bd)"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em">Net</div><div style="font-size:14px;color:' + (netWorth >= 0 ? 'var(--gr)' : 'var(--re)') + ';margin-top:3px">'+curSym() + netWorth.toLocaleString() + '</div></div>' +
   '</div>';
   
   if(!assets.length){
@@ -1501,7 +1501,7 @@ function calcPayday(){
   const canApply = steps.some(s => (s.kind==='debt' || s.kind==='savings') && s.amt > 0);
   result.innerHTML='<h4>Allocation for '+curSym()+amt.toLocaleString()+'</h4>'+steps.map(s=>'<div class="pay-step"><div class="pay-n">'+s.n+'</div><div style="flex:1"><div class="pay-title">'+_escFew(s.title)+'</div><div class="pay-desc">'+_escFew(s.desc)+'</div></div><div class="pay-amt">'+curSym()+s.amt.toLocaleString()+'</div></div>').join('')+
     (canApply ? '<button class="btn primary" style="margin-top:14px" onclick="applyPaydayAllocation()">Apply this \u2014 book it all</button>' : '')+
-    '<button class="btn" style="margin-top:8px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="document.getElementById(\'payday-result\').style.display=\'none\'">Just showing me</button>';
+    '<button class="btn subtle" style="margin-top:8px" onclick="document.getElementById(\'payday-result\').style.display=\'none\'">Just showing me</button>';
 }
 // Book the allocation for real: pay down the named debts (and record each payment so the debt-free
 // projection has data), and move the savings slice into the top goal. One tap instead of re-entering

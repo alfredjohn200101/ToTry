@@ -57,32 +57,32 @@ function renderCoachQuickReplies(){
   
   // PRIORITY 1 — urgent state
   if(recentRelapse){
-    chips.push({p: 9, label: '💔 Help me reset', prompt: 'I just slipped up. Help me reset without shame and without losing what I had built.'});
+    chips.push({p: 9, ic:'heartbreak', label: 'Help me reset', prompt: 'I just slipped up. Help me reset without shame and without losing what I had built.'});
   }
   if(isNight){
-    chips.push({p: 8, label: '🌙 Get me to bed clean', prompt: 'It is late at night and I feel my willpower is gone. What do I do for the next 20 minutes to get to sleep without falling?'});
+    chips.push({p: 8, ic:'moon', label: 'Get me to bed clean', prompt: 'It is late at night and I feel my willpower is gone. What do I do for the next 20 minutes to get to sleep without falling?'});
   }
   if(dueSoon.length > 0){
-    chips.push({p: 7, label: '⚠ What bill first?', prompt: 'I have ' + dueSoon.length + ' bill' + (dueSoon.length===1?'':'s') + ' due in the next week. ' + getDebtStr() + '. What do I pay first?'});
+    chips.push({p: 7, ic:'stop', label: 'What bill first?', prompt: 'I have ' + dueSoon.length + ' bill' + (dueSoon.length===1?'':'s') + ' due in the next week. ' + getDebtStr() + '. What do I pay first?'});
   }
   
   // PRIORITY 2 — time of day
   if(isMorning){
-    chips.push({p: 6, label: '🌅 What\'s my focus today?', prompt: 'I just woke up. Day ' + getDayCount() + '. What should be my one focus for today based on what you know about me?'});
+    chips.push({p: 6, ic:'sunrise', label: 'What\'s my focus today?', prompt: 'I just woke up. Day ' + getDayCount() + '. What should be my one focus for today based on what you know about me?'});
   }
   if(isEvening){
-    chips.push({p: 6, label: '🌆 Walk me through today', prompt: 'Walk me through my day. What did I do well? What do I need to address before bed?'});
+    chips.push({p: 6, ic:'sunset', label: 'Walk me through today', prompt: 'Walk me through my day. What did I do well? What do I need to address before bed?'});
   }
   
   // PRIORITY 3 — opportunities/state
   if(isFasting && fastHours >= 12){
-    chips.push({p: 5, label: '⏱ Push me to finish the fast', prompt: 'I am ' + Math.floor(fastHours) + 'h into my fast. Help me push through to the end with the right mindset.'});
+    chips.push({p: 5, ic:'clock', label: 'Push me to finish the fast', prompt: 'I am ' + Math.floor(fastHours) + 'h into my fast. Help me push through to the end with the right mindset.'});
   }
   if(todayFocus && todayFocus !== 'Rest'){
-    chips.push({p: 5, label: '💪 Plan ' + (todayFocus.length > 12 ? todayFocus.slice(0,12)+'…' : todayFocus), prompt: 'Today is ' + todayFocus + ' day in my split. Give me exact sets/reps and meals to crush it.'});
+    chips.push({p: 5, ic:'dumbbell', label: 'Plan ' + (todayFocus.length > 12 ? todayFocus.slice(0,12)+'…' : todayFocus), prompt: 'Today is ' + todayFocus + ' day in my split. Give me exact sets/reps and meals to crush it.'});
   }
   if(longestStreak >= 7){
-    chips.push({p: 4, label: '🔥 Keep me sharp at day ' + longestStreak, prompt: 'I am on a ' + longestStreak + '-day clean streak. How do I keep building without getting complacent?'});
+    chips.push({p: 4, ic:'flame', label: 'Keep me sharp at day ' + longestStreak, prompt: 'I am on a ' + longestStreak + '-day clean streak. How do I keep building without getting complacent?'});
   }
   // NOT ON DAY ONE, AND NOT THE WORD "ONLY". This fired for a brand-new person against habits the
   // app had suggested for them, putting "I have only hit 0/6 habits today" in their own mouth as the
@@ -90,7 +90,7 @@ function renderCoachQuickReplies(){
   // a few days of their own record before the question means anything, and it never needs "only".
   if(habitsTotal > 0 && habitsToday < habitsTotal / 2 && habitsToday > 0
      && (typeof daysInstalled !== 'function' || daysInstalled() >= 4)){
-    chips.push({p: 4, label: '📋 What habits matter most?', prompt: 'I hit ' + habitsToday + ' of ' + habitsTotal + ' habits today. Which ones matter most, and which could I let go?'});
+    chips.push({p: 4, ic:'file', label: 'What habits matter most?', prompt: 'I hit ' + habitsToday + ' of ' + habitsTotal + ' habits today. Which ones matter most, and which could I let go?'});
   }
   if(prayers.length > 0){
     chips.push({p: 3, label: '🙏 Pray with me', prompt: 'I have ' + prayers.length + ' prayer' + (prayers.length===1?'':'s') + ' I am still praying about. Help me bring them to God right now.'});
@@ -104,7 +104,7 @@ function renderCoachQuickReplies(){
       const _proGoal = (ls('totry_nut_goals')||{}).pro || 0;
       const _hr = new Date().getHours();
       if(_proGoal > 0 && _hr >= 14 && _pro < _proGoal * 0.5){
-        chips.push({p: 4, label: '🍗 I\'m low on protein today', prompt: 'I\'ve only had about ' + Math.round(_pro) + 'g of protein today and my goal is ' + _proGoal + 'g. Suggest a few realistic high-protein foods or meals to help me close the gap before bed.'});
+        chips.push({p: 4, ic:'utensils', label: 'I\'m low on protein today', prompt: 'I\'ve only had about ' + Math.round(_pro) + 'g of protein today and my goal is ' + _proGoal + 'g. Suggest a few realistic high-protein foods or meals to help me close the gap before bed.'});
       }
     }
   }catch(_){}
@@ -117,7 +117,7 @@ function renderCoachQuickReplies(){
     }
   }
   if(debtRemaining > 0){
-    chips.push({p: 3, label: '💰 How do I clear debt faster?', prompt: 'How do I get out of '+curSym() + Math.round(debtRemaining).toLocaleString() + ' debt faster based on my actual income and spending?'});
+    chips.push({p: 3, ic:'wallet', label: 'How do I clear debt faster?', prompt: 'How do I get out of '+curSym() + Math.round(debtRemaining).toLocaleString() + ' debt faster based on my actual income and spending?'});
   }
   
   // PRIORITY 4 — always-on fallbacks
@@ -128,14 +128,14 @@ function renderCoachQuickReplies(){
     const _tr = (typeof faithTradition==='function') ? faithTradition() : 'christianity';
     const _wp = (typeof faithWordPhrase==='function') ? faithWordPhrase() : 'a word';
     if(_tr === 'secular'){
-      chips.push({p: 2, label: '\ud83e\udded Something to steady me', prompt: 'Give me something grounded and practical to steady me for what I am going through right now. No religious language.'});
+      chips.push({p: 2, ic:'compass', label: 'Something to steady me', prompt: 'Give me something grounded and practical to steady me for what I am going through right now. No religious language.'});
     } else {
       const _cap = _wp.charAt(0).toUpperCase() + _wp.slice(1);
-      chips.push({p: 2, label: '\ud83d\udcd6 ' + _cap + ' for what I\'m feeling', prompt: 'I need ' + _wp + ' for what I am going through right now.'});
+      chips.push({p: 2, ic:'book', label: _cap + ' for what I\'m feeling', prompt: 'I need ' + _wp + ' for what I am going through right now.'});
     }
   }
-  chips.push({p: 2, label: '🎯 Full check-in', prompt: 'Give me a full check-in. What should I prioritise this week across everything you know about me?'});
-  chips.push({p: 1, label: '💭 Who am I becoming?', prompt: 'I want to talk about who I am becoming and why I keep falling into old patterns.'});
+  chips.push({p: 2, ic:'target', label: 'Full check-in', prompt: 'Give me a full check-in. What should I prioritise this week across everything you know about me?'});
+  chips.push({p: 1, ic:'user', label: 'Who am I becoming?', prompt: 'I want to talk about who I am becoming and why I keep falling into old patterns.'});
   
   // Sort by priority descending, take top 7
   chips.sort((a,b) => b.p - a.p);
@@ -147,7 +147,7 @@ function renderCoachQuickReplies(){
     // quote in the middle of a string literal, so any chip whose prompt contains an apostrophe threw
     // a SyntaxError on tap and did nothing at all. _jsCode + JSON.stringify is the house pattern for
     // exactly this (see 14-nourish.js:517); the label is escaped as text, which it is.
-    return '<button class="qb" onclick="' + _jsCode('sendCoachPrompt(' + JSON.stringify(c.prompt) + ')') + '">' + _escFew(c.label) + '</button>';
+    return '<button class="qb" onclick="' + _jsCode('sendCoachPrompt(' + JSON.stringify(c.prompt) + ')') + '">' + (c.ic ? svgIcon(c.ic,14) + ' ' : '') + _escFew(c.label) + '</button>';
   }).join('');
 }
 

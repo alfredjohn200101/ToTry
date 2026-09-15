@@ -18,18 +18,18 @@ function _daysShowedUp(){
   }catch(_){ return 0; }
 }
 const ACHS=[
-  {icon:'\u2694\uFE0F',title:'First Battle',desc:'Fought your first urge',check:(v)=>v.some(x=>x.total>=1)},
-  {icon:'\u{1F3C6}',title:'First Victory',desc:'Won your first battle',check:(v,tw)=>tw>=1},
-  {icon:'\u{1F525}',title:'On Fire',desc:'10 total wins',check:(v,tw)=>tw>=10},
-  {icon:'\u{1F4AF}',title:'Century',desc:'100 urges defeated',check:(v,tw)=>tw>=100},
-  {icon:'\u26A1',title:'Unstoppable',desc:'70%+ win rate with 5+ battles',check:(v)=>v.some(x=>x.total>=5&&((x.w||0)/x.total)>=0.7)},
-  {icon:'\u{1F6E1}\uFE0F',title:'Warrior',desc:'50 total wins',check:(v,tw)=>tw>=50},
-  {icon:'\u{1F305}',title:'New Day',desc:'30 days in — and you showed up for them',check:(v,tw,day)=>day>=30&&_daysShowedUp()>=15},
-  {icon:'\u{1F4D6}',title:'Faithful',desc:'7 days clean',check:(v,tw,day,str)=>str>=7},   // str is cleanStreak (see renderScoreboard), never getStreak()
-  {icon:'\u{1F4B0}',title:'Debt Fighter',desc:'Made first debt payment',check:()=>(ls('totry_payments')||[]).length>=1},
-  {icon:'\u2600\uFE0F',title:'Morning Person',desc:'7 morning rituals',check:()=>ritualLog('totry_mornings').length>=7},
-  {icon:'\u{1F4D3}',title:'Honest',desc:'10 journal entries',check:()=>(ls('totry_journal')||[]).length>=10},
-  {icon:'\u{1F4AA}',title:'Committed',desc:'100 days in — half of them you actually turned up',check:(v,tw,day)=>day>=100&&_daysShowedUp()>=50},
+  {icon:'target',title:'First Battle',desc:'Fought your first urge',check:(v)=>v.some(x=>x.total>=1)},
+  {icon:'trophy',title:'First Victory',desc:'Won your first battle',check:(v,tw)=>tw>=1},
+  {icon:'flame',title:'On Fire',desc:'10 total wins',check:(v,tw)=>tw>=10},
+  {icon:'award',title:'Century',desc:'100 urges defeated',check:(v,tw)=>tw>=100},
+  {icon:'zap',title:'Unstoppable',desc:'70%+ win rate with 5+ battles',check:(v)=>v.some(x=>x.total>=5&&((x.w||0)/x.total)>=0.7)},
+  {icon:'shield',title:'Warrior',desc:'50 total wins',check:(v,tw)=>tw>=50},
+  {icon:'sunrise',title:'New Day',desc:'30 days in — and you showed up for them',check:(v,tw,day)=>day>=30&&_daysShowedUp()>=15},
+  {icon:'book',title:'Faithful',desc:'7 days clean',check:(v,tw,day,str)=>str>=7},   // str is cleanStreak (see renderScoreboard), never getStreak()
+  {icon:'wallet',title:'Debt Fighter',desc:'Made first debt payment',check:()=>(ls('totry_payments')||[]).length>=1},
+  {icon:'sun',title:'Morning Person',desc:'7 morning rituals',check:()=>ritualLog('totry_mornings').length>=7},
+  {icon:'edit',title:'Honest',desc:'10 journal entries',check:()=>(ls('totry_journal')||[]).length>=10},
+  {icon:'dumbbell',title:'Committed',desc:'100 days in — half of them you actually turned up',check:(v,tw,day)=>day>=100&&_daysShowedUp()>=50},
 ];
 function renderScoreboard(){
   loadV();
@@ -129,7 +129,7 @@ function renderScoreboard(){
 
   const ael=e('achievements');
   if(ael){ael.innerHTML='';let earned=0;
-    ACHS.forEach(a=>{if(_achHas(a)){earned++;const el=document.createElement('div');el.className='ach';el.innerHTML='<div class="ach-icon">'+a.icon+'</div><div><div class="ach-title">'+a.title+'</div><div class="ach-desc">'+a.desc+'</div></div>';ael.appendChild(el);}});
+    ACHS.forEach(a=>{if(_achHas(a)){earned++;const el=document.createElement('div');el.className='ach';el.innerHTML='<div class="ach-icon" style="color:var(--go);line-height:1">'+(svgIcon(a.icon,22)||a.icon)+'</div><div><div class="ach-title">'+a.title+'</div><div class="ach-desc">'+a.desc+'</div></div>';ael.appendChild(el);}});
     if(!earned)ael.innerHTML='<p style="font-size:13px;color:var(--tx3);text-align:center;padding:16px">Fight your first urge to unlock achievements.</p>';
   }
 }
@@ -508,7 +508,7 @@ function openHabitAnchor(hi){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:8px">Anchor it to something you already do</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);line-height:1.3;margin-bottom:6px">After I\u2026 I will '+_escFew(h.n).toLowerCase()+'.</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:6px">After I\u2026 I will '+_escFew(h.n).toLowerCase()+'.</div>'+
     '<div style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px">A habit with no cue waits on motivation, and motivation doesn\u2019t show up daily. Tied to something already in your day, it just happens. Same move as the plans you lock in at the Feeling Door \u2014 decide it now, while you\u2019re clear.</div>'+
     '<input type="text" id="hab-anchor" maxlength="70" placeholder="e.g. I make my coffee" value="'+_escFew(cur)+'" style="font-size:16px;padding:12px;margin-bottom:10px">'+
     // The target was write-once at creation. Someone who typed it wrong, or left it blank and then
@@ -519,8 +519,8 @@ function openHabitAnchor(hi){
     '<input type="number" id="hab-pw" min="1" max="7" placeholder="blank for most days" value="'+((h.pw>=1&&h.pw<=7)?h.pw:'')+'" style="font-size:16px;padding:12px;margin-bottom:14px">'+
     '<div style="display:flex;flex-wrap:wrap;justify-content:center;margin-bottom:14px">'+chips+'</div>'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="saveHabitAnchor('+hi+')">Lock in my anchor</button>'+
-    (cur?'<button class="btn" onclick="clearHabitAnchor('+hi+')" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-bottom:4px">Remove the anchor</button>':'')+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
+    (cur?'<button class="btn quiet" onclick="clearHabitAnchor('+hi+')" style="margin-bottom:4px">Remove the anchor</button>':'')+
+    '<button class="btn quiet" onclick="closeModal(this)">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
   setTimeout(function(){ const t=document.getElementById('hab-anchor'); if(t) t.focus(); },60);

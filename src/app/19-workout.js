@@ -441,11 +441,11 @@ function openMobilityAssessment(){
       '<div style="margin-bottom:14px"><div style="font-size:13px;color:var(--tx);margin-bottom:2px">' + j.label + '</div>'+
       '<div style="font-size:11px;color:var(--tx3);margin-bottom:8px;line-height:1.4">' + j.test + '</div>'+
       '<div style="display:flex;gap:6px" id="mob-row-' + j.id + '">'+
-      [1,2,3,4,5].map(n => '<button onclick="_pickMob(\'' + j.id + '\',' + n + ')" data-v="' + n + '" class="mob-dot" style="flex:1;padding:10px 0;border-radius:8px;border:1px solid ' + ((prof[j.id]===n)?'var(--go)':'var(--bd)') + ';background:' + ((prof[j.id]===n)?'rgba(200,169,110,0.15)':'var(--bg3)') + ';color:' + ((prof[j.id]===n)?'var(--go)':'var(--tx2)') + ';font-size:14px">' + n + '</button>').join('')+
+      [1,2,3,4,5].map(n => '<button onclick="_pickMob(\'' + j.id + '\',' + n + ')" data-v="' + n + '" class="mob-dot" style="flex:1;padding:10px 0;border-radius:var(--rs);border:1px solid ' + ((prof[j.id]===n)?'var(--go)':'var(--bd)') + ';background:' + ((prof[j.id]===n)?'rgba(200,169,110,0.15)':'var(--bg3)') + ';color:' + ((prof[j.id]===n)?'var(--go)':'var(--tx2)') + ';font-size:14px">' + n + '</button>').join('')+
       '</div></div>'
     ).join('')+
     '<button class="btn primary" onclick="saveMobilityAssessment()" style="margin-bottom:8px;margin-top:6px">Save my mobility profile</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3)">Cancel</button></div>';
+    '<button class="btn quiet" onclick="closeModal(this)">Cancel</button></div>';
   document.body.appendChild(m);
 }
 let _mobPick = {};
@@ -585,7 +585,7 @@ function generateMobilityRoutine(minutes){
   const r=buildMobilityRoutine(minutes);
   const total=Math.round(r.moves.reduce((a,m)=>a+m.secs,0)/60);
   box.style.display='block';
-  box.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px">\u2728 '+r.minutes+'-min flow'+(r.tight.length?' \u00b7 for your tight '+r.tight.map(_jointLabel).join(', '):' \u00b7 full body')+'</div>'+
+  box.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:2px">'+svgIcon("sparkle")+' '+r.minutes+'-min flow'+(r.tight.length?' \u00b7 for your tight '+r.tight.map(_jointLabel).join(', '):' \u00b7 full body')+'</div>'+
     r.moves.map(_mobMoveRow).join('')+
     '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--tx3);margin-top:8px">\u2248 '+total+' min \u00b7 move slow, breathe through each one</div>';
 }
@@ -654,11 +654,11 @@ function renderMobilityPanel(){
   }
   box.innerHTML = profHtml +
     '<div class="card" style="margin-bottom:12px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">'+
-      '<div class="card-hd" style="margin-bottom:6px">\ud83d\udd25 Warm up for today</div>'+
+      '<div class="card-hd" style="margin-bottom:6px">'+svgIcon("flame")+' Warm up for today</div>'+
       '<div id="mob-warmup-out"></div>'+
     '</div>'+
     '<div class="card">'+
-      '<div class="card-hd" style="margin-bottom:6px">\ud83e\uddd8 Daily mobility</div>'+
+      '<div class="card-hd" style="margin-bottom:6px">'+svgIcon("breath")+' Daily mobility</div>'+
       '<div style="font-size:12px;color:var(--tx3);margin-bottom:10px;line-height:1.5">Little and often beats long and rare. A short daily flow for your tight areas.</div>'+
       '<div style="display:flex;gap:8px;margin-bottom:8px">'+
         '<button class="btn" id="mob-daily-5" onclick="generateMobilityRoutine(5)" style="flex:1;background:var(--bg3);border:1px solid var(--bd);font-size:12px">5 min</button>'+

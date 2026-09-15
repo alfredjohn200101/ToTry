@@ -217,7 +217,7 @@ function _promptSacramentDate(kind){
         ? 'closeModal(this);logConfession(iso);'
         : 'var e=document.getElementById(\'sacrament-euch-input\');var euchEl=document.getElementById(\'mass-received-eucharist\');if(euchEl&&e)euchEl.checked=e.checked;closeModal(this);logMass(iso);')+
       '}).call(this)" style="margin-bottom:8px">Save '+(kind==='confession'?'confession':'Mass')+'</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Cancel</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)">Cancel</button>'+
     '</div>';
   document.body.appendChild(m);
 }
@@ -399,7 +399,7 @@ function renderPrayers(){
       const agoLabel = ago === 0 ? 'today' : ago === 1 ? 'yesterday' : ago + ' days ago';
       
       const card = document.createElement('div');
-      card.style.cssText = 'background:var(--bg2);border:1px solid ' + (p.status === 'answered' ? 'var(--gr-bd)' : 'var(--bd)') + ';border-radius:10px;padding:12px;margin-bottom:8px';
+      card.style.cssText = 'background:var(--bg2);border:1px solid ' + (p.status === 'answered' ? 'var(--gr-bd)' : 'var(--bd)') + ';border-radius:var(--rm);padding:12px;margin-bottom:8px';
       
       let html = '';
       if(p.category){
@@ -411,7 +411,7 @@ function renderPrayers(){
       if(p.status === 'answered'){
         const ansAgo = Math.floor((Date.now() - new Date(p.answeredAt).getTime()) / 86400000);
         const ansLabel = ansAgo === 0 ? 'today' : ansAgo === 1 ? 'yesterday' : ansAgo + ' days ago';
-        html += '<div style="background:var(--gr-bg);border:1px solid var(--gr-bd);border-radius:8px;padding:8px 10px;margin-bottom:8px">' +
+        html += '<div style="background:var(--gr-bg);border:1px solid var(--gr-bd);border-radius:var(--rs);padding:8px 10px;margin-bottom:8px">' +
           '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--gr);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:3px">Answered ' + ansLabel + '</div>' +
           (p.answerNote ? '<div style="font-size:12px;color:var(--tx);line-height:1.5">' + p.answerNote.replace(/</g, '&lt;') + '</div>' : '<div style="font-size:11px;color:var(--tx3);font-style:italic">No note added</div>') +
         '</div>';

@@ -119,7 +119,7 @@ function _lockOverlay(){
     '<div style="flex:1"></div>' +
     '<div class="ob-logo" style="margin-bottom:10px">To<em>Try</em></div>' +
     '<div id="app-lock-msg" style="font-size:13px;color:var(--tx3);line-height:1.6;max-width:280px">Locked \u2014 just for you.</div>' +
-    '<button class="btn" id="app-lock-btn" style="max-width:200px;margin-top:22px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px" onclick="unlockApp()">Unlock</button>' +
+    '<button class="btn subtle" id="app-lock-btn" style="max-width:200px;margin-top:22px" onclick="unlockApp()">Unlock</button>' +
     '<div style="flex:1"></div>' +
     // CRISIS HELP IS NEVER BEHIND A GATE. The sign-in screen states the rule in its own comment
     // ("Crisis help must never sit behind a login") and carries the numbers for exactly that reason —
@@ -129,12 +129,12 @@ function _lockOverlay(){
     // and reveal nothing private, so carrying them here costs the lock nothing at all.
     // It sits at the FOOT now rather than floating mid-screen — where a person looks for help.
     '<div style="padding-top:14px;border-top:1px solid var(--bd);max-width:320px;width:100%">' +
-      '<div style="font-size:11.5px;color:var(--tx3);line-height:1.6;margin-bottom:6px">Need real help right now? You don&#8217;t have to unlock anything.</div>' +
-      '<div style="font-size:12.5px;line-height:1.9;color:var(--tx3)">' +
+      '<div style="font-size:11px;color:var(--tx3);line-height:1.6;margin-bottom:6px">Need real help right now? You don&#8217;t have to unlock anything.</div>' +
+      '<div style="font-size:12px;line-height:1.9;color:var(--tx3)">' +
         '&#127462;&#127482; Lifeline <a href="tel:131114" style="color:var(--go);text-decoration:none">13 11 14</a> &nbsp;&#183;&nbsp; ' +
         '&#127482;&#127480; <a href="tel:988" style="color:var(--go);text-decoration:none">988</a> &nbsp;&#183;&nbsp; ' +
         '&#127468;&#127463; <a href="tel:116123" style="color:var(--go);text-decoration:none">116 123</a><br>' +
-        '&#127760; <a href="https://findahelpline.com" target="_blank" rel="noopener" style="color:var(--bl);text-decoration:none">findahelpline.com</a> &mdash; anywhere in the world' +
+        '<svg class="ic" aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> <a href="https://findahelpline.com" target="_blank" rel="noopener" style="color:var(--bl);text-decoration:none">findahelpline.com</a> &mdash; anywhere in the world' +
       '</div>' +
     '</div>';
   document.body.appendChild(el);

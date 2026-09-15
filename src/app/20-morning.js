@@ -309,7 +309,7 @@ function renderReadinessCard(){
   const r = computeReadiness();
   if(!r){ card.style.display = 'none'; return; }
   const col = r.level==='go' ? 'var(--gr)' : (r.level==='moderate' ? 'var(--go)' : 'var(--re)');
-  const icon = r.level==='go' ? '\u2705' : (r.level==='moderate' ? '\u26a1' : '\ud83d\udecc');
+  const icon = r.level==='go' ? svgIcon("check") : (r.level==='moderate' ? svgIcon("zap") : svgIcon("bed"));
   const label = r.level==='go' ? 'Ready to go' : (r.level==='moderate' ? 'Train controlled' : 'Recover today');
   // WHAT IT IS ACTUALLY BUILT FROM. With no self-report the reasons array is empty, and this said
   // "based on your recent days" over a footer reading "From your check-ins" — citing a source the
@@ -354,7 +354,7 @@ function renderWeeklyReflectionCard(){
     '<div class="card" style="margin-bottom:12px;background:linear-gradient(135deg,rgba(200,169,110,0.06),rgba(140,107,182,0.03));border-color:var(--go-bd)">'+
       '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:12px">Take a moment to see your week honestly \u2014 body, discipline, and spirit, woven together.</div>'+
       '<button class="btn primary" id="weekly-reflection-btn" onclick="generateWeeklyReflection()" style="font-size:13px">Reflect on my week</button>'+
-      '<button class="btn" id="weekly-content-btn" onclick="generateWeeklyContent()" style="font-size:13px;margin-top:8px;background:none;border:1px solid var(--go-bd);color:var(--go)">\u{1F3AC} Make this week\u2019s content</button>'+
+      '<button class="btn" id="weekly-content-btn" onclick="generateWeeklyContent()" style="font-size:13px;margin-top:8px;background:none;border:1px solid var(--go-bd);color:var(--go)">'+svgIcon("film",14)+' Make this week\u2019s content</button>'+
       '<div id="weekly-content-out" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"></div>'+
       '<div id="weekly-reflection-out" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"></div>'+
     '</div>';
@@ -440,7 +440,7 @@ function renderPlateauCard(){
   card.style.display='block';
   card.className='card';
   card.style.cssText='display:block;margin-bottom:14px;background:linear-gradient(135deg,rgba(140,107,182,0.08),rgba(200,169,110,0.04));border:1px solid var(--go-bd)';
-  card.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">\u26f0\ufe0f Plateau spotted</div>'+
+  card.innerHTML = '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">'+svgIcon("mountain")+' Plateau spotted</div>'+
     '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:12px">'+p.detail+'</div>'+
     '<button class="btn primary" id="plateau-explain-btn" onclick="explainPlateau()" style="font-size:13px">Why am I stuck?</button>'+
     '<div id="plateau-explain-out" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)"></div>';

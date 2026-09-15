@@ -138,7 +138,7 @@ async function openPushRoutineToHevy(){
         '<span style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3)">' + (r.exercises||[]).length + ' ex →</span>' +
       '</button>'
     ).join('') +
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:4px">Cancel</button>' +
+    '<button class="btn quiet" onclick="closeModal(this)" style="margin-top:4px">Cancel</button>' +
   '</div>';
   document.body.appendChild(m);
 }
@@ -439,9 +439,9 @@ function openHevyTodayPicker(){
   m.innerHTML = '<div class="modal"><div class="modal-handle"></div>'+
     '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-style:italic;color:var(--tx);margin-bottom:12px">Today\u2019s routine</div>'+
     '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">'+
-    routines.map(r => '<button class="btn" style="background:var(--bg3);border:1px solid var(--bd);text-align:left;padding:12px" onclick="setTodayHevyRoutine(\'' + r.hevyId + '\');this.closest(\'.modal-bg\').remove()"><div style="color:var(--tx);font-size:14px">' + r.title + '</div><div style="color:var(--tx3);font-size:11px;margin-top:2px">' + (r.exercises||[]).length + ' exercises</div></button>').join('')+
+    routines.map(r => '<button class="btn stack" style="background:var(--bg3);border:1px solid var(--bd);text-align:left;padding:12px" onclick="setTodayHevyRoutine(\'' + r.hevyId + '\');this.closest(\'.modal-bg\').remove()"><div style="color:var(--tx);font-size:14px">' + r.title + '</div><div style="color:var(--tx3);font-size:11px;margin-top:2px">' + (r.exercises||[]).length + ' exercises</div></button>').join('')+
     '</div>'+
-    '<button class="btn" onclick="this.closest(\'.modal-bg\').remove()" style="background:transparent;border:none;color:var(--tx3)">Cancel</button></div>';
+    '<button class="btn quiet" onclick="this.closest(\'.modal-bg\').remove()">Cancel</button></div>';
   document.body.appendChild(m);
 }
 

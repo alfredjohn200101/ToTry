@@ -231,9 +231,9 @@ function renderEveningHabitTickList(){
     row.setAttribute('role', 'checkbox');
     row.setAttribute('aria-checked', done ? 'true' : 'false');
     row.setAttribute('aria-label', h.n);
-    row.style.cssText = 'width:100%;text-align:left;font:inherit;border:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px;background:'+(done?'var(--gr-bg)':'var(--bg3)')+';border:1px solid '+(done?'var(--gr-bd)':'var(--bd)')+';border-radius:8px;margin-bottom:6px;cursor:pointer';
+    row.style.cssText = 'width:100%;text-align:left;font:inherit;border:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:10px 12px;background:'+(done?'var(--gr-bg)':'var(--bg3)')+';border:1px solid '+(done?'var(--gr-bd)':'var(--bd)')+';border-radius:var(--rs);margin-bottom:6px;cursor:pointer';
     row.onclick = () => toggleEveningHabit(hi);
-    row.innerHTML = '<div style="width:22px;height:22px;border-radius:6px;border:2px solid '+(done?'var(--gr)':'var(--bd)')+';background:'+(done?'var(--gr)':'transparent')+';display:flex;align-items:center;justify-content:center;color:#0C0C0E;font-weight:700;flex-shrink:0">'+(done?'&#10003;':'')+'</div>'+
+    row.innerHTML = '<div style="width:22px;height:22px;border-radius:var(--rs);border:2px solid '+(done?'var(--gr)':'var(--bd)')+';background:'+(done?'var(--gr)':'transparent')+';display:flex;align-items:center;justify-content:center;color:#0C0C0E;font-weight:700;flex-shrink:0">'+(done?'&#10003;':'')+'</div>'+
       '<div style="flex:1;min-width:0"><div style="font-size:13px;color:var(--tx)">'+_escFew(h.n)+'</div>'+
       (habitAnchor(h)?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">after '+_escFew(habitAnchor(h))+'</div>':'')+'</div>';
     list.appendChild(row);
@@ -434,7 +434,7 @@ function showExamenStep(idx){
       (idx > 0 ? '<button class="btn" onclick="examenBack(' + idx + ')" style="flex:1;background:transparent;border:1px solid var(--bd)">Back</button>' : '') +
       '<button class="btn primary" onclick="examenNext(' + idx + ')" style="flex:2">' + (isLast ? ('Complete ' + _examenNoun()) : 'Next →') + '</button>' +
     '</div>' +
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:11px;margin-top:8px">Exit (progress lost)</button>' +
+    '<button class="btn quiet" onclick="closeModal(this)" style="margin-top:8px">Exit (progress lost)</button>' +
   '</div>';
   document.body.appendChild(m);
   setTimeout(() => document.getElementById('examen-input')?.focus(), 100);
@@ -517,7 +517,7 @@ function showExamenHistory(){
     // Build a 1-line preview from any filled answer
     const previewSrc = e.gratitude || e.review || e.repent || e.renewal || e.petition || '';
     const preview = previewSrc.slice(0, 80) + (previewSrc.length > 80 ? '…' : '');
-    return '<div onclick="showExamenDetail(' + i + ')" style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:12px 14px;margin-bottom:8px;cursor:pointer">' +
+    return '<div onclick="showExamenDetail(' + i + ')" style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rm);padding:12px 14px;margin-bottom:8px;cursor:pointer">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
         '<div style="font-family:DM Mono,monospace;font-size:10px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em">' + (e.date || (e.ts ? new Date(e.ts).toLocaleDateString('en-AU') : 'Earlier')) + ' · Day ' + (e.day || '?') + '</div>' +
         '<div style="font-size:14px;color:var(--tx3)">›</div>' +
@@ -785,7 +785,7 @@ function showDayActivityDetail(dateKey){
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.15em;margin-bottom:4px">' + dateKey + '</div>' +
     '<h3 style="margin-bottom:12px">' + items.length + ' thing' + (items.length===1?'':'s') + ' logged</h3>' +
     '<div style="max-height:55vh;overflow-y:auto;padding-right:4px;margin-bottom:14px">' +
-      items.map(it => '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:8px;padding:10px;margin-bottom:6px">' +
+      items.map(it => '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);padding:10px;margin-bottom:6px">' +
         '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px">' + it.kind + '</div>' +
         (it.text ? '<div style="font-size:12px;color:var(--tx2);line-height:1.5">' + (it.mood ? it.mood + ' ' : '') + it.text.replace(/</g, '&lt;') + '</div>' : '') +
       '</div>').join('') +
@@ -837,7 +837,7 @@ function renderTGT(){
     return '<input type="text" id="'+id+'" maxlength="160" placeholder="'+ph+'" value="'+_escFew(val||'')+'" '+
       /* onblur alone — onchange also fires on blur for a text input, so both meant a double save. */
       'onblur="_tgtSaveField(\''+id.replace('tgt-','')+'\',this.value)" '+
-      'style="width:100%;margin-bottom:8px;padding:9px 11px;font-size:16px;background:var(--bg3);border:1px solid var(--bd);border-radius:9px;color:var(--tx)">';
+      'style="width:100%;margin-bottom:8px;padding:9px 11px;font-size:16px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);color:var(--tx)">';
   };
   const told = !!t.told;
   el.innerHTML =
@@ -849,13 +849,13 @@ function renderTGT(){
     (few.length
       ? '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 8px">'+
           few.slice(0,5).map(function(p){ const on=(person===p.name);
-            return '<button class="btn" onclick="_tgtPickPerson(\''+String(p.name).replace(/'/g,"\\'").replace(/"/g,'')+'\')" style="width:auto;padding:5px 10px;font-size:11.5px;background:'+(on?'var(--go-bg)':'transparent')+';border:1px solid '+(on?'var(--go-bd)':'var(--bd)')+';color:'+(on?'var(--go)':'var(--tx3)')+'">'+_escFew(p.name)+'</button>'; }).join('')+
+            return '<button class="btn" onclick="_tgtPickPerson(\''+String(p.name).replace(/'/g,"\\'").replace(/"/g,'')+'\')" style="width:auto;padding:5px 10px;font-size:11px;background:'+(on?'var(--go-bg)':'transparent')+';border:1px solid '+(on?'var(--go-bd)':'var(--bd)')+';color:'+(on?'var(--go)':'var(--tx3)')+'">'+_escFew(p.name)+'</button>'; }).join('')+
         '</div>'
       : '')+
     ((t.c && t.c.trim())
       ? (told
           ? '<div style="font-size:12px;color:var(--gr);line-height:1.5;margin-top:4px">✓ You told them. That’s the part that actually lands.</div>'
-          : '<button class="btn" onclick="_tgtTellThem()" style="margin-top:4px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:12.5px">Tell them →</button>'+
+          : '<button class="btn" onclick="_tgtTellThem()" style="margin-top:4px;background:var(--go-bg);border:1px solid var(--go-bd);color:var(--go);font-size:12px">Tell them →</button>'+
             '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:6px">Saying it out loud is worth more than writing it down. They’ll take it better than you expect — people almost always do.</div>')
       : '');
 }
@@ -872,11 +872,11 @@ function _tgtTellThem(){
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:8px">Send it as it is.</div>'+
-    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:12px">Edit it if you want — but plain and unpolished lands better than clever. Copy it, then send it in whatever you normally use.</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:8px">Send it as it is.</div>'+
+    '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:12px">Edit it if you want — but plain and unpolished lands better than clever. Copy it, then send it in whatever you normally use.</div>'+
     '<textarea id="tgt-msg" style="min-height:92px;font-size:16px;line-height:1.55;margin-bottom:12px">'+_escFew(msg)+'</textarea>'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="_tgtCopyAndDone()">Copy &amp; mark as told</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not yet</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)">Not yet</button>'+
   '</div>';
   document.body.appendChild(m);
   setTimeout(function(){ const a=document.getElementById('tgt-msg'); if(a) a.focus(); },60);
@@ -1033,16 +1033,19 @@ function initEveningTab(){
     const _au=new Date().toLocaleDateString('en-AU');
     const _isToday=(ts)=> ts && new Date(ts).toLocaleDateString('en-AU')===_au;
     const ev=[];
-    if(ritualLog('totry_mornings').some(m=>_isToday(m.ts))) ev.push('\ud83c\udf05 Set your intention');
-    if((ls('totry_workouts')||[]).some(w=>_isToday(w.ts))) ev.push('\ud83d\udcaa Trained');
-    const _meals=((ls('totry_nutlog')||{})[_au]||[]).length; if(_meals) ev.push('\ud83c\udf7d Logged '+_meals+' meal'+(_meals>1?'s':''));
-    const _wins=(ls('totry_feeling_wins')||[]).filter(w=>_isToday(w.ts)).length; if(_wins) ev.push('\ud83d\udee1 Outlasted '+_wins+' urge'+(_wins>1?'s':''));
-    if((ls('totry_prayers')||[]).some(p=>_isToday(p.createdAt || p.ts))) ev.push('\ud83d\ude4f Prayed');
-    const _tr=(ls('totry_trackers')||{})[_au]||{}; if(_tr.steps>=1000) ev.push('\ud83d\udc5f '+Number(_tr.steps).toLocaleString()+' steps');
+    // One icon language: the evidence chips draw svgIcon(), gold so they read as icons on the
+    // neutral chip, not as dim text.
+    const _evIc=(n)=>'<span style="color:var(--go)">'+svgIcon(n,14)+'</span> ';
+    if(ritualLog('totry_mornings').some(m=>_isToday(m.ts))) ev.push(_evIc('sunrise')+'Set your intention');
+    if((ls('totry_workouts')||[]).some(w=>_isToday(w.ts))) ev.push(_evIc('dumbbell')+'Trained');
+    const _meals=((ls('totry_nutlog')||{})[_au]||[]).length; if(_meals) ev.push(_evIc('utensils')+'Logged '+_meals+' meal'+(_meals>1?'s':''));
+    const _wins=(ls('totry_feeling_wins')||[]).filter(w=>_isToday(w.ts)).length; if(_wins) ev.push(_evIc('shield')+'Outlasted '+_wins+' urge'+(_wins>1?'s':''));
+    if((ls('totry_prayers')||[]).some(p=>_isToday(p.createdAt || p.ts))) ev.push(_evIc('flame')+'Prayed');
+    const _tr=(ls('totry_trackers')||{})[_au]||{}; if(_tr.steps>=1000) ev.push(_evIc('shoe')+Number(_tr.steps).toLocaleString()+' steps');
     const _box=document.getElementById('evening-day-evidence');
     const _list=document.getElementById('evening-day-evidence-list');
     if(_box&&_list){
-      if(ev.length){ _list.innerHTML=ev.map(e=>'<span style="font-size:12.5px;color:var(--tx);background:var(--bg3);border:1px solid var(--bd);border-radius:999px;padding:5px 11px;white-space:nowrap">'+e+'</span>').join(''); _box.style.display='block'; }
+      if(ev.length){ _list.innerHTML=ev.map(e=>'<span style="font-size:13px;color:var(--tx);background:var(--bg3);border:1px solid var(--bd);border-radius:999px;padding:5px 11px;white-space:nowrap">'+e+'</span>').join(''); _box.style.display='block'; }
       else { _box.style.display='none'; }
     }
   }catch(_){}
@@ -1207,7 +1210,7 @@ function renderReachOutCard(){
   const dtxt = (s.days==null)?'':(s.days===0?'you reached out today':(s.days===1?'1 day since you last reached out':s.days+' days since you last reached out'));
   // The remembered detail comes FIRST — it's the difference between "reach out" and knowing someone.
   const noteLine = (s.person.note && s.person.note.trim())
-    ? '<div style="font-size:12.5px;color:var(--go);line-height:1.55;margin-bottom:6px">You wanted to remember: '+_escFew(s.person.note.trim())+'</div>'
+    ? '<div style="font-size:12px;color:var(--go);line-height:1.55;margin-bottom:6px">You wanted to remember: '+_escFew(s.person.note.trim())+'</div>'
     : '';
   cp.innerHTML =
     noteLine+
@@ -1219,7 +1222,7 @@ function renderReachOutCard(){
       '<button class="btn" style="width:auto;padding:7px 12px;font-size:12px" onclick="openYourFew()">Your few</button>'+
       '<button class="btn" style="width:auto;padding:7px 12px;font-size:12px" onclick="openBlessing()">'+(((typeof faithTradition==='function')&&(faithTradition()==='buddhism'||faithTradition()==='secular'))?'Wish them well':'Pray for them')+'</button>'+
       // For someone who has died, or who it isn't safe or possible to contact — carried, never nudged.
-      '<button class="btn" style="width:auto;padding:7px 10px;font-size:12px;background:transparent;border:none;color:var(--tx3)" onclick="muteCurrentReachOut()">Not this one</button>'+
+      '<button class="btn quiet" style="width:auto;padding:7px 10px" onclick="muteCurrentReachOut()">Not this one</button>'+
     '</div>';
 }
 function openYourFew(){
@@ -1231,7 +1234,7 @@ function openYourFew(){
       // specific thing is what turns a generic nudge into actually knowing someone.
       '<input type="text" value="'+_escFew(p.note||'')+'" maxlength="90" placeholder="what to remember — e.g. ask about her surgery" '+
         'onchange="_yfNote('+i+',this.value)" onblur="_yfNote('+i+',this.value)" '+
-        'style="width:100%;margin:4px 0 0;padding:5px 7px;font-size:16px;background:var(--bg3);border:1px solid var(--bd);border-radius:7px;color:var(--tx2)">'+
+        'style="width:100%;margin:4px 0 0;padding:5px 7px;font-size:16px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rs);color:var(--tx2)">'+
       (function(){ if(yourFewMuted(p)) return '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.04em;margin-top:3px">held quietly · no reminders</div>'; const d=daysSinceReachOut(p.name); return d==null?'':'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.04em;margin-top:3px">'+(d===0?'reached out today':d+'d since you logged one')+'</div>'; })()+
       '</div>'+
       '<button class="btn" style="width:auto;padding:5px 8px;font-size:11px;color:var(--tx3)" title="Carry them without reminders" onclick="toggleFewMute('+i+')">'+(yourFewMuted(p)?'🔔':'🔕')+'</button>'+
@@ -1246,7 +1249,7 @@ function openYourFew(){
       '<input type="text" id="yf-name" placeholder="Name" maxlength="40" style="flex:1">'+
       '<button class="btn primary" style="width:auto;padding:8px 16px" onclick="_yfAdd()">Add</button>'+
     '</div>'+
-    '<button class="btn" style="margin-top:12px;background:transparent;border:none;color:var(--tx3)" onclick="closeYourFew()">Done</button>'+
+    '<button class="btn quiet" style="margin-top:12px" onclick="closeYourFew()">Done</button>'+
   '</div>';
   m.addEventListener('click', function(e){ if(e.target===m) closeYourFew(); });
   // Every close path must go through closeYourFew, or the card behind it goes stale (still saying
@@ -1328,12 +1331,12 @@ function checkMilestones(){
     const mDay=parseInt(m);
     if(day>=mDay && !achieved.includes('d'+m)){
       achieved.push('d'+m); ls('totry_ms',achieved);
-      if(day === mDay){ showToast(m+' Days \u2728', msg + ' \u00b7 Tap to make a share card.', ()=>{ try{ if(typeof createShareCard==='function'){ if(typeof setShareTheme==='function') setShareTheme(ls('totry_share_theme')||'dark'); createShareCard('milestone'); } }catch(_){} }); }
+      if(day === mDay){ showToast(m+' Days', msg + ' \u00b7 Tap to make a share card.', ()=>{ try{ if(typeof createShareCard==='function'){ if(typeof setShareTheme==='function') setShareTheme(ls('totry_share_theme')||'dark'); createShareCard('milestone'); } }catch(_){} }); }
     }
   });
   loadV();const tw=vices.reduce((a,v)=>a+(v.w||0),0);
   const winMsgs={1:'First win. You proved you can.',10:'10 urges defeated. You fight back.',25:'25 wins. This is becoming who you are.',50:'50 victories.',100:'100 wins. 100 moments you chose differently.'};
-  Object.entries(winMsgs).forEach(([m,msg])=>{if(tw>=parseInt(m)&&!achieved.includes('w'+m)){achieved.push('w'+m);ls('totry_ms',achieved);showToast(m+' Wins \ud83c\udfc6',msg);}});
+  Object.entries(winMsgs).forEach(([m,msg])=>{if(tw>=parseInt(m)&&!achieved.includes('w'+m)){achieved.push('w'+m);ls('totry_ms',achieved);showToast(m+' Wins',msg);}});
 }
 
 

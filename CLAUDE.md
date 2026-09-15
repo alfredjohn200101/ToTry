@@ -42,7 +42,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - Supabase backend (URL: oklvalcgxeoudgpldzkk.supabase.co). AI via an `ai-proxy` edge function with
   a free-first chain (Gemini → Groq → OpenRouter → Anthropic Haiku) + web search. See AI-PROXY-DEPLOY.md.
 - Hevy + Strava integrations. GitHub Pages hosting, manual deploy.
-- `APP_VERSION` in `src/app/00-boot.js` — currently **v599**. Bump it AND `CACHE` in sw.js together, always.
+- `APP_VERSION` in `src/app/00-boot.js` — currently **v603**. Bump it AND `CACHE` in sw.js together, always.
 
 ## The nervous system (key functions — grep these)
 - `getLifeState()` — returns the whole person {training, nutrition, body, soul, fight, readiness,
@@ -54,6 +54,16 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
 - `openFeelingDoor()` / `_feelMove()` — THE FEELING DOOR: the orb's primary action. Meets a person
   in their feeling and moves them through it. This is the entry point through emotion.
 - `Notify` (object) — wrapper-aware notification layer; native push when wrapped, web fallback now.
+- `svgIcon(name, size)` (`src/app/00-boot.js`) — **the app has ONE icon language.** 66 icons on the
+  same 24x24 grid, weight and round caps as the 25 tab-bar icons, drawn `stroke:currentColor` so an
+  icon in a gold card is gold. It is NOT called `ic()`: it was, for an hour, and `renderCalendarWeek`
+  already had `const ic = document.getElementById(...)` one line below an inserted call, so the call
+  hit that const's temporal dead zone and the whole calendar threw — with `npm test` green, because a
+  TDZ error is a runtime fact. In one shared top-level scope a two-letter global is a loaded gun.
+  The static shell cannot call a function, so its icons are **inlined literals**; a test asserts every
+  literal is byte-identical to `svgIcon()`'s own path, which is what makes that duplication safe.
+  What stays emoji is content, not chrome, and is named in the test: the mood and sleep faces (a
+  person in a bad moment reads a face faster than a line drawing) and the traditions' own marks.
 - `applyHomeProgressiveDisclosure()` — hides depth for new users, unlocks as they establish.
 - Companion = the in-the-moment bottom-sheet (clinical mechanisms: urge-surf, ACT defusion, CBT
   cognitive restructuring, grounding). `_companionSay()` builds its prompt.
@@ -65,7 +75,7 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
    reported 1032 PASSED, because the harness extracts functions by name and never parsed the whole
    script. A suite that stays green while the app cannot boot is worse than no suite.
 2. **Run the whole gate before you ship**, not just `npm test`:
-   - `npm test` — 1860 assertions over the real bundle (core math, dead code, privacy promises,
+   - `npm test` — 2224 assertions over the real bundle (core math, dead code, privacy promises,
      the voice gates, the parse check). Four classes were added on 6 Sep 2026 after an audit of the
      PREVIOUS round's own fixes, each of which had been fixed only where it was reported:
      **(a) a person's own typing as live HTML** — the v579 sweep found five doors by looking for typed
@@ -100,6 +110,55 @@ and dopamine. Live: https://alfredjohn200101.github.io/ToTry/
      on a KNOWN coloured fill (dark text on gold, Strava's orange on Strava's chip, the boot splash,
      which is painted before a theme exists); source cannot know their background, so each is named in
      an allowlist with its reason rather than guessed at. A tenth fails the build.
+     **(g) ONE ICON LANGUAGE, added 14 Sep 2026.** The app had two: 25 hand-drawn stroke icons in the
+     tab bar and the header, and Apple's emoji art everywhere else — over 400 of them, 62 rendered on
+     an ordinary walk of 13 tabs, 34 inside a tappable control. Nothing in the gate could see it,
+     because an emoji is just a character: every id, handler, contrast and tap-target check passed it.
+     It is the loudest "prototype" signal an app can send and it is invisible to any check that reads
+     source as code rather than as a picture. Four assertions now hold it: `svgIcon()` executes (a
+     grep of the definition passes on a set that cannot render); every icon inlined in the static
+     shell is byte-identical to `svgIcon()`'s own path; no emoji LEADS an element's text; and no chip
+     or row **label** opens with one — that last shape is the one that hid, because a data field never
+     reaches the page as a tag, and two coach chips survived the whole sweep, one written
+     `\ud83e\udded` so that no search for the character could find it either. The KEEP set is named
+     in the test on purpose, so what stays emoji is a decision on the record rather than whatever the
+     sweep happened to miss.
+     **(h) `button{color:inherit}`.** The same trap as the `font-family` rule beside it, dormant for
+     seven versions because emoji paint themselves: the day icons became `stroke:currentColor`, seven
+     visible buttons computed to rgb(0,0,0) and Train drew a black icon on a translucent gold fill.
+     A defect can sit invisible for years because another defect was masking it.
+     **(i) the radius scale is honoured.** `--r:14px` and `--rs:8px` were declared and then ignored:
+     328 literal radii ran 6, 7, 8, 9, 10, 11, 12, 14, 15, 16px, and a walk found SEVEN distinct radii
+     on card surfaces. Nobody can name that, everybody feels it. Collapsed onto `--rs`/`--rm`/`--r`
+     (8/12/14) plus the pill — seven distinct down to four, max shift 2px.
+     **(j) THE SYSTEM EXISTED AND WAS OVERRIDDEN, added 15 Sep 2026.** A six-lens audit (55 findings,
+     68 of 69 verdicts real) found one cause under almost every "vibe coded" symptom: components the
+     app already HAS, re-painted by hand at the call site. `.btn` has primary/danger/success/blue and
+     712 buttons carried an inline style anyway, 524 overriding the class's own paint — 190 distinct
+     recipes. `.eyebrow` and `.lbl` drew one label two ways. Fourteen tab titles were fourteen copies
+     of one inline style, the fourteenth ("Your coach") 2px smaller. So the fixes are mostly NAMING:
+     `.btn.quiet` / `.subtle` / `.outline` (181 call sites folded), `.page-title`, `.btn.stack`, and a
+     type scale that finally has consumers (806 in the shell, 200 half-pixel sizes folded in the
+     modules, serif headlines six sizes down to two). Honest caveat, measured: folding an inline
+     recipe into a class that paints the same thing does NOT change what a person sees — the
+     rendered button-treatment count only moved 33 to 32. The visible wins were the ones that
+     changed pixels: the half-pixels, the headline sizes, and two layout bugs below.
+     **A FLEX BUTTON IGNORES `text-align`.** `.btn` is `display:flex;justify-content:center`, so
+     `text-align:left` on one does nothing — it positions children, and text-align only reaches text
+     inside each child. Onboarding's identity and "why" chips said left and started 43–120px in, each
+     at a different offset, and the faith picker put "Christianity" BESIDE its description instead of
+     over it. Those are the first things anyone taps. The fourth member of one family, after
+     `<button>` not inheriting `font-family` and not inheriting `color`: a declaration the element
+     silently cannot honour. Guarded; measured 14 and 5 before, 0 and 0 after.
+     **AN ENTITY IS A NUMBER NOBODY SEES.** The icon sweep read literals and `\u` escapes and missed
+     `&#128564;`, so 101 emoji survived a check that reported one icon language — including the
+     sleeping face BETWEEN two stroke icons in the Track list. Worse, two entities on the SOS path had
+     codepoint typos: a KAABA at 44px beside "Stand up, walk to a different room", and a ZEBRA beside
+     "Put your feet on the floor. Get out of the bed." Shown to someone mid-urge, invisible in source.
+     Four encodings are now checked: literal, `\uXXXX`, `\u{...}`, `&#NNN;`/`&#xHH;`. And three
+     injection doors on lines the sweep touched, each DRIVEN with a payload before and after (both
+     executed on the old build; one destroyed its own textarea): the food web-search query, an
+     exercise note in its textarea and toggle, and a content clip name.
    - `npm run crisis` — types the worst sentence into all TWENTY free-text doors and asserts a
      helpline is on screen and TAPPABLE (geometry, not DOM presence — the bug it was written for
      had the text in the document and off the screen). Fourteen checks in all: the eleven doors, the

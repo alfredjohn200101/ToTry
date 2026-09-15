@@ -361,6 +361,113 @@ const serve = () => new Promise(res => {
     await ctx.close();
   }
 
+  // ── THE BULK VICE RESET, DRIVEN ────────────────────────────────────────────────
+  // Built because someone with four fights going could only start them over ONE AT A TIME, and a bad
+  // night rarely touches only one. Every assertion here is about what the STORE holds afterwards,
+  // because this is the one feature in the app whose whole job is to destroy data on purpose.
+  //
+  // It is in this file and not core.test.js for a reason worth keeping: core.test.js greps source, so
+  // it happily confirmed that resetAllVices() calls the right things — while a driver seeded with the
+  // wrong key watched it do nothing at all and could not tell the difference. Three of my own seeds
+  // were wrong before this passed: the key is `totry_v` not `totry_vices`, the name field is `n` not
+  // `name`, and the linked tables key on `v` (or `vice`, for the fight log). Seed from the WRITE site.
+  {
+    const ctx = await browser.newContext({ viewport: { width: 414, height: 896 }, deviceScaleFactor: 2,
+                                           hasTouch: true, isMobile: true, serviceWorkers: 'block' });
+    const pg = await ctx.newPage();
+    await pg.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: 'networkidle' });
+    const ago = d => new Date(Date.now() - d * 864e5).toISOString();
+    await pg.evaluate(a => {
+      const S = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+      S('totry_onboarded', true); S('totry_name', 'Alfred');
+      S('totry_v', [
+        { n:'Porn',       type:'general', mode:'quit',  startDate:a[0], fightingSince:a[1], cleanDaysTotal:47, relapseCount:6, w:4, total:6, urgelog:[{t:a[2],won:true},{t:a[3],won:false}] },
+        { n:'Doomscroll', type:'general', mode:'quit',  startDate:a[0], fightingSince:a[1], cleanDaysTotal:22, relapseCount:3, w:2, total:3, urgelog:[{t:a[2],won:true}] },
+        { n:'Resentment', type:'general', mode:'letgo', kind:'letgo',   startDate:a[0], cleanDaysTotal:12 },
+      ]);
+      S('totry_vice_uses',   [{ v:'Porn', ts:a[2], qty:1 }]);
+      S('totry_moments_won', [{ v:'Porn', ts:a[2] }]);
+      S('totry_fight_log',   [{ vice:'Porn', won:false, ts:a[3] }]);
+    }, [ago(9), ago(120), ago(30), ago(12)]);
+    await pg.reload({ waitUntil: 'networkidle' });
+    await pg.waitForTimeout(1800);
+    await pg.evaluate(() => { try { go('fight'); } catch (e) {} });
+    await pg.waitForTimeout(500);
+
+    const snap = () => pg.evaluate(() => { loadV(); return {
+      v: vices.map(x => ({ n:x.n, mode:viceMode(x), clean:x.cleanDaysTotal, rel:x.relapseCount,
+                           urges:(x.urgelog||[]).length, days:viceCleanDays(x) })),
+      uses:(JSON.parse(localStorage.getItem('totry_vice_uses')||'[]')).length,
+      won:(JSON.parse(localStorage.getItem('totry_moments_won')||'[]')).length,
+      log:(JSON.parse(localStorage.getItem('totry_fight_log')||'[]')).length }; });
+
+    const b0 = await snap();
+    ok(b0.v.length === 3 && b0.v[0].days === 9,
+       `bulk reset — the seed lands as the app itself stores it (${b0.v.length} vices, ${b0.v[0].days} days)`);
+
+    // The row only earns its place once there is more than one fight to act on.
+    const row = await pg.evaluate(() => { const e = document.getElementById('vices-bulk');
+      return e ? { shown: getComputedStyle(e).display !== 'none',
+                   btns: [...e.querySelectorAll('button')].map(b => (b.textContent||'').trim()) } : null; });
+    ok(row && row.shown, 'bulk reset — the row is on screen when more than one fight is named');
+    ok(row && row.btns.length === 2, `bulk reset — it offers both doors (${row ? row.btns.join(' · ') : 'none'})`);
+
+    await pg.evaluate(() => { window.askConfirm = async () => true; });
+
+    // 1. DAY ONE AGAIN — the streak restarts, what happened is not denied.
+    await pg.evaluate(() => resetAllVices(false));
+    await pg.waitForTimeout(350);
+    const b1 = await snap();
+    ok(b1.v.filter(x => x.mode !== 'letgo').every(x => x.days === 0),
+       'bulk reset — "day one again" puts every fight back to day one');
+    ok(b1.v[0].clean === 47 && b1.v[0].rel === 6,
+       `bulk reset — and KEEPS the history (${b1.v[0].clean} clean days, ${b1.v[0].rel} slips)`);
+    const letgo1 = b1.v.find(x => x.mode === 'letgo');
+    ok(letgo1 && letgo1.clean === 12,
+       'bulk reset — letting go is not a streak, so it is left alone');
+
+    // 2. UNDO — this destroys data, so the way back must be real, not a toast that says "undone".
+    const undone = await pg.evaluate(() => { const c = [...document.querySelectorAll('button,a,[onclick]')]
+      .filter(e => /^undo$/i.test((e.textContent||'').trim()));
+      if (!c.length) return false; c[c.length-1].click(); return true; });
+    ok(undone, 'bulk reset — an undo is actually offered');
+    await pg.waitForTimeout(350);
+    const b2 = await snap();
+    ok(b2.v[0].days === 9 && b2.v[1].days === 9,
+       `bulk reset — undo restores every streak, not just the first (${b2.v.map(x=>x.days).join('/')})`);
+
+    // 3. CLEAR THE HISTORY TOO — the deeper door, and it must reach the LINKED tables as well. A
+    //    "cleared" fight that still has its slips in totry_fight_log is the fight still being counted.
+    await pg.evaluate(() => resetAllVices(true));
+    await pg.waitForTimeout(350);
+    const b3 = await snap();
+    ok(b3.v.filter(x => x.mode !== 'letgo').every(x => !x.clean && !x.rel && x.urges === 0),
+       'bulk reset — "clear the history too" leaves no counts behind');
+    ok(b3.uses === 0 && b3.won === 0 && b3.log === 0,
+       `bulk reset — and clears the LINKED tables too (uses ${b3.uses}, wins ${b3.won}, log ${b3.log})`);
+    const letgo3 = b3.v.find(x => x.mode === 'letgo');
+    ok(letgo3 && letgo3.clean === 12,
+       'bulk reset — letting go survives the deep reset as well');
+    ok(b3.v.length === 3, 'bulk reset — it resets the fights, it never deletes them');
+
+    // 4. AND THE DEEP UNDO. The shallow undo restores `startDate` inline; the deep one goes through
+    //    _viceResetUndo and has to put back the counts AND the linked rows. Those are two different
+    //    code paths, and asserting only the first left the destructive one — the one that throws away
+    //    every count a person has — with no way back that anything checked.
+    const undone2 = await pg.evaluate(() => { const c = [...document.querySelectorAll('button,a,[onclick]')]
+      .filter(e => /^undo$/i.test((e.textContent||'').trim()));
+      if (!c.length) return false; c[c.length-1].click(); return true; });
+    ok(undone2, 'bulk reset — the deep reset offers an undo too');
+    await pg.waitForTimeout(350);
+    const b4 = await snap();
+    ok(b4.v[0].clean === 47 && b4.v[0].rel === 6 && b4.v[0].urges === 2,
+       `bulk reset — deep undo puts the counts back (${b4.v[0].clean}/${b4.v[0].rel}/${b4.v[0].urges})`);
+    ok(b4.uses === 1 && b4.won === 1 && b4.log === 1,
+       `bulk reset — and puts the LINKED rows back too (uses ${b4.uses}, wins ${b4.won}, log ${b4.log})`);
+
+    await ctx.close();
+  }
+
   await browser.close();
   server.close();
 

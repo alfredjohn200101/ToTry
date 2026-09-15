@@ -217,7 +217,7 @@ function _demoBanner(){
       b.style.cssText='position:fixed;left:0;right:0;top:0;z-index:99999;background:#7a2e2e;color:#fff;'+
         'font-family:DM Mono,monospace;font-size:9px;letter-spacing:0.07em;text-transform:uppercase;'+
         'padding:6px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 2px 14px rgba(0,0,0,.4)';
-      b.innerHTML='<span>\ud83c\udfac Demo data \u00b7 sync off</span>'+
+      b.innerHTML='<span>'+svgIcon("film")+' Demo data \u00b7 sync off</span>'+
         '<button onclick="exitDemoMode()" style="background:#fff;color:#7a2e2e;border:none;border-radius:100px;'+
         'padding:4px 10px;font-family:inherit;font-size:9px;text-transform:uppercase;letter-spacing:0.07em;cursor:pointer;white-space:nowrap">Restore</button>';
       document.body.appendChild(b);
@@ -568,7 +568,7 @@ function startFeatureTour(){
     ov.id = 'tour-overlay';
     ov.style.cssText = 'position:fixed;inset:0;z-index:9999;pointer-events:none';
     ov.innerHTML =
-      '<div id="tour-spot" style="position:absolute;border-radius:14px;box-shadow:0 0 0 9999px rgba(0,0,0,0.78);transition:all 0.3s cubic-bezier(.4,0,.2,1);pointer-events:none;border:2px solid var(--go)"></div>'+
+      '<div id="tour-spot" style="position:absolute;border-radius:var(--r);box-shadow:0 0 0 9999px rgba(0,0,0,0.78);transition:all 0.3s cubic-bezier(.4,0,.2,1);pointer-events:none;border:2px solid var(--go)"></div>'+
       '<div id="tour-card" style="position:absolute;left:16px;right:16px;background:var(--bg2);border:1px solid var(--go-bd);border-radius:var(--r);padding:16px;box-shadow:0 12px 40px rgba(0,0,0,0.6);pointer-events:auto;transition:top 0.3s,bottom 0.3s"></div>';
     document.body.appendChild(ov);
   }
@@ -625,10 +625,10 @@ function renderTourStep(){
       if(!rect){ card.style.transform='translateY(-50%)'; } else { card.style.transform='none'; }
       card.innerHTML =
         '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:6px">Tour \u00b7 '+(_tourIdx+1)+' of '+TOUR_STEPS.length+'</div>'+
-        '<div style="font-family:Cormorant Garamond,serif;font-size:21px;color:var(--tx);margin-bottom:6px">'+step.title+'</div>'+
+        '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:6px">'+step.title+'</div>'+
         '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:14px">'+step.caption+'</div>'+
         '<div style="display:flex;gap:8px;align-items:center">'+
-          (_tourIdx>0?'<button class="btn" onclick="tourPrev()" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:13px">Back</button>':'')+
+          (_tourIdx>0?'<button class="btn subtle" onclick="tourPrev()" style="flex:1">Back</button>':'')+
           (_tourIdx<TOUR_STEPS.length-1
             ? '<button class="btn primary" onclick="tourNext()" style="flex:2;font-size:13px">Next \u2192</button>'
             : '<button class="btn primary" onclick="endFeatureTour()" style="flex:2;font-size:13px">Got it</button>')+
@@ -958,7 +958,7 @@ function logQuickWin(){
   const input=document.getElementById('quick-win-input');const text=input?.value.trim();if(!text)return;
   const wins=ls('totry_wins')||[];
   wins.unshift({id:Date.now(),text,date:new Date().toLocaleDateString('en-AU',{weekday:'short',day:'numeric',month:'short'}),ts:new Date().toISOString(),day:getDayCount()});
-  ls('totry_wins',wins.slice(0,500));input.value='';renderWinsLog();showToast('Win logged \u2b50',text.slice(0,50));
+  ls('totry_wins',wins.slice(0,500));input.value='';renderWinsLog();showToast('Win logged',text.slice(0,50));
 }
 function renderWinsLog(){
   const wins=ls('totry_wins')||[];const list=document.getElementById('wins-log-list');if(!list)return;
@@ -966,9 +966,9 @@ function renderWinsLog(){
   list.innerHTML='';
   wins.slice(0,20).forEach(w=>{
     const el=document.createElement('div');el.className='win-item';
-    const icon = w.source==='vice' ? '\u{1F94A}' : '\u2b50';
+    const icon = w.source==='vice' ? svgIcon("shield") : svgIcon("sparkle");
     const dateLine = w.date + (w.day ? ' \u00b7 Day '+w.day : '');
-    el.innerHTML='<span class="win-icon">'+icon+'</span><div><div class="win-text">'+(w.text||'').replace(/</g,'&lt;')+'</div><div class="win-date">'+dateLine+'</div></div>';
+    el.innerHTML='<span class="win-icon" style="color:var(--go)">'+icon+'</span><div><div class="win-text">'+(w.text||'').replace(/</g,'&lt;')+'</div><div class="win-date">'+dateLine+'</div></div>';
     list.appendChild(el);
   });
 }
@@ -1111,7 +1111,7 @@ function runUniversalSearch(query){
   box.innerHTML = '<div class="eyebrow" style="margin-bottom:8px">' + results.length + ' result' + (results.length===1?'':'s') + '</div>' +
     results.slice(0, 60).map(r => {
       const preview = previewText(r.body, q);
-      return '<div onclick="' + r.onclick + '" style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:10px 12px;margin-bottom:6px;cursor:pointer">' +
+      return '<div onclick="' + r.onclick + '" style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rm);padding:10px 12px;margin-bottom:6px;cursor:pointer">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px">' +
           '<div style="font-family:DM Mono,monospace;font-size:9px;color:' + r.sourceColor + ';text-transform:uppercase;letter-spacing:0.1em">' + r.source + '</div>' +
           '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3)">' + r.date + '</div>' +

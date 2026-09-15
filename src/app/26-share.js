@@ -273,7 +273,7 @@ function askConfirm(title, body, opts){
           ? 'background:var(--re-bg);border:1px solid var(--re-bd);color:var(--re)'
           : 'background:var(--go);border:none;color:#1a1505')+'">'+_escFew(opts.confirmLabel || 'Yes, do it')+'</button>'+
         (opts.cancelLabel === null ? '' :
-          '<button class="btn" id="_ac-no" style="background:transparent;border:1px solid var(--bd);color:var(--tx2)">'+_escFew(opts.cancelLabel || 'Cancel')+'</button>')+
+          '<button class="btn outline" id="_ac-no">'+_escFew(opts.cancelLabel || 'Cancel')+'</button>')+
       '</div>';
     m.setAttribute('aria-labelledby', '_ac-title');
     if(body) m.setAttribute('aria-describedby', '_ac-body');
@@ -325,13 +325,13 @@ function askText(title, body, opts){
     m.innerHTML =
       '<div class="modal" style="text-align:left;max-width:340px">'+
         '<label for="_at-in" id="_at-title" style="display:block;font-family:Cormorant Garamond,serif;font-size:21px;color:var(--tx);line-height:1.3;margin-bottom:'+(body?'6px':'14px')+'">'+_escFew(title)+'</label>'+
-        (body ? '<div style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-bottom:14px;white-space:pre-wrap">'+_escFew(body)+'</div>' : '')+
+        (body ? '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:14px;white-space:pre-wrap">'+_escFew(body)+'</div>' : '')+
         '<input id="_at-in" type="'+(numeric?'text':'text')+'"'+(numeric?' inputmode="decimal"':'')+
           ' value="'+String(opts.value == null ? '' : opts.value).replace(/"/g,'&quot;')+'"'+
           ' placeholder="'+String(opts.placeholder || '').replace(/"/g,'&quot;')+'"'+
           ' style="width:100%;font-size:16px;padding:12px;margin-bottom:14px">'+
         '<button class="btn primary" id="_at-ok" style="margin-bottom:8px">'+_escFew(opts.confirmLabel || 'Save')+'</button>'+
-        '<button class="btn" id="_at-no" style="background:transparent;border:1px solid var(--bd);color:var(--tx2)">'+_escFew(opts.cancelLabel || 'Cancel')+'</button>'+
+        '<button class="btn outline" id="_at-no">'+_escFew(opts.cancelLabel || 'Cancel')+'</button>'+
       '</div>';
     m.setAttribute('aria-labelledby', '_at-title');
     document.body.appendChild(m);
@@ -546,9 +546,9 @@ function openFeedback(){
     '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px;line-height:1.55">Honest and specific helps most. What happened, what you expected, what you\'d want instead.</p>' +
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px">Type</div>' +
     '<div style="display:flex;gap:6px;margin-bottom:14px">' +
-      '<button class="meal-chip selected" id="fb-type-bug" onclick="setFeedbackType(\'bug\')" style="flex:1">🐛 Bug</button>' +
-      '<button class="meal-chip" id="fb-type-idea" onclick="setFeedbackType(\'idea\')" style="flex:1">💡 Idea</button>' +
-      '<button class="meal-chip" id="fb-type-other" onclick="setFeedbackType(\'other\')" style="flex:1">💬 Other</button>' +
+      '<button class="meal-chip selected" id="fb-type-bug" onclick="setFeedbackType(\'bug\')" style="flex:1">'+svgIcon("tool")+' Bug</button>' +
+      '<button class="meal-chip" id="fb-type-idea" onclick="setFeedbackType(\'idea\')" style="flex:1">'+svgIcon("bulb")+' Idea</button>' +
+      '<button class="meal-chip" id="fb-type-other" onclick="setFeedbackType(\'other\')" style="flex:1">'+svgIcon("message")+' Other</button>' +
     '</div>' +
     '<textarea id="fb-text" placeholder="Tell me what\'s on your mind..." style="height:120px;resize:none;margin-bottom:10px;font-size:16px;line-height:1.6"></textarea>' +
     '<label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;min-height:32px;font-size:12px;color:var(--tx3);cursor:pointer">' +

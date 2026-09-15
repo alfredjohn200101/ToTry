@@ -273,7 +273,7 @@ function showAppPreview(){
     '<div style="max-height:62vh;overflow-y:auto;padding-right:4px">' +
     
       // Identity + day count
-      '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:10px">' +
+      '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
         '<div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:3px">Who you are becoming</div>' +
         '<div style="font-family:Cormorant Garamond,serif;font-size:16px;color:var(--tx);font-style:italic;margin-bottom:8px">Disciplined · present · faithful · strong</div>' +
         '<div style="display:flex;justify-content:space-between;align-items:center">' +
@@ -283,13 +283,13 @@ function showAppPreview(){
       '</div>' +
     
       // Coach line
-      '<div style="background:linear-gradient(135deg,rgba(140,107,182,0.1),rgba(200,169,110,0.06));border:1px solid rgba(140,107,182,0.3);border-radius:10px;padding:12px;margin-bottom:10px">' +
+      '<div style="background:linear-gradient(135deg,rgba(140,107,182,0.1),rgba(200,169,110,0.06));border:1px solid rgba(140,107,182,0.3);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
         '<div style="font-family:DM Mono,monospace;font-size:8px;color:var(--pu);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px">Your coach says</div>' +
         '<div style="font-family:Cormorant Garamond,serif;font-size:14px;color:var(--tx);font-style:italic;line-height:1.5">"Yesterday you trained legs hard and journaled about feeling tired. Today: lighter session, double protein, sleep 8h. Phil 4:13."</div>' +
       '</div>' +
     
       // Heatmap mock
-      '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:10px">' +
+      '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
         '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">Show-up heatmap · 87% rate</div>' +
         '<div style="display:grid;grid-template-columns:repeat(13,1fr);gap:2px">' +
           Array.from({length:13*7}, (_,i) => {
@@ -300,7 +300,7 @@ function showAppPreview(){
       '</div>' +
     
       // Training summary mock
-      '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:10px">' +
+      '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
         '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">Weekly muscle volume</div>' +
         ['Chest 18.4k kg · 2d ago','Back 22.1k kg · today','Legs 31.8k kg · 1d ago','Shoulders 8.2k kg · 3d ago'].map(r =>
           '<div style="display:flex;justify-content:space-between;font-family:DM Mono,monospace;font-size:11px;color:var(--tx2);padding:3px 0">' +
@@ -310,7 +310,7 @@ function showAppPreview(){
       '</div>' +
     
       // Nutrition card mock
-      '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:10px">' +
+      '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
         '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px">Today\'s nutrition</div>' +
         '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:8px">' +
           '<div style="text-align:center"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3)">CAL</div><div style="font-family:DM Mono,monospace;font-size:14px;color:var(--go)">2104</div></div>' +
@@ -321,13 +321,13 @@ function showAppPreview(){
       '</div>' +
     
       // Vice pattern mock
-      '<div style="background:linear-gradient(135deg,rgba(140,107,182,0.08),rgba(200,169,110,0.05));border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:10px">' +
+      '<div style="background:linear-gradient(135deg,rgba(140,107,182,0.08),rgba(200,169,110,0.05));border:1px solid var(--bd);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
         '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Patterns from your fights</div>' +
-        '<div style="font-size:11px;color:var(--tx2);line-height:1.6">🎯 Top trigger: "boredom" — 6 times · 67% win rate<br>📆 Hardest day: Fridays — 8 fights · 50% won<br>⏰ Peak: late night — 9 fights · 78% won</div>' +
+        '<div style="font-size:11px;color:var(--tx2);line-height:1.6">'+svgIcon("target")+' Top trigger: "boredom" — 6 times · 67% win rate<br>'+svgIcon("calendar")+' Hardest day: Fridays — 8 fights · 50% won<br>'+svgIcon("clock")+' Peak: late night — 9 fights · 78% won</div>' +
       '</div>' +
     
       // Money mock
-      '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:12px;margin-bottom:10px">' +
+      '<div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--rm);padding:12px;margin-bottom:10px">' +
         '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">Money</div>' +
         '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);padding:3px 0"><span>Debt remaining</span><span style="font-family:DM Mono,monospace;color:var(--re)">'+curSym()+'6,840</span></div>' +
         '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);padding:3px 0"><span>Saved from vices</span><span style="font-family:DM Mono,monospace;color:var(--gr)">+'+curSym()+'432</span></div>' +

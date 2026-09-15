@@ -144,6 +144,54 @@ function getNextStep(){
 // whole cathedral. The first days he sees only what serves him now — the brother, his identity, his
 // one next step, the guided start. Depth UNLOCKS as he establishes himself, so the app grows WITH
 // him instead of drowning him. This is the opposite of how the field fails.
+// ── The tab intros step back once they are no longer needed ────────────────────
+// Every tab opened with its title and then a grey paragraph explaining what the tab is FOR. Eleven
+// of them, 1,660 characters, and they reprinted on EVERY visit — so measured on a populated app,
+// Settings was 69% explanatory prose above the fold, Track 56%, Coach 46%. That is what a demo
+// looks like: software still introducing itself to someone who has used it for months.
+//
+// The fix is NOT to delete the voice. That voice is the product, and a person opening Money for the
+// first time genuinely needs to be told what this app thinks money is for. The fix is that it stops
+// once it has been heard: the orientation stays for anybody who has nothing on that tab yet, and
+// steps back the moment they have something of their own there.
+//
+// It fails OPEN. Any error, any unknown key, any empty answer and the paragraph stays — over-
+// explaining is a much smaller sin than leaving someone on a blank screen with no idea what it is.
+function tabIntroHasContent(what){
+  try{
+    const n = k => { const v = ls(k); return Array.isArray(v) ? v.length
+                     : (v && typeof v === 'object') ? Object.keys(v).length : 0; };
+    switch(what){
+      case 'soul':      return n('totry_prayers') > 0 || n('totry_journal') > 0 || n('totry_letters') > 0;
+      case 'body':      return n('totry_body') > 0 || n('totry_measurements') > 0 || n('totry_progress_photos') > 0;
+      case 'train':     return n('totry_workouts') > 0 || n('totry_routines') > 0;
+      case 'money':     { const f = ls('totry_f'); return (f && Array.isArray(f.d) && f.d.length > 0)
+                                 || n('totry_bills') > 0 || n('totry_transactions') > 0 || n('totry_subscriptions') > 0; }
+      case 'scripture': return n('totry_sv') > 0 || n('totry_reading_plan') > 0;
+      case 'coach':     return n('totry_coach_thread') > 0 || n('totry_syntheses') > 0;
+      // Settings earns its sentence differently: it is not about having DATA there, it is about
+      // having been there. Once someone has changed anything at all, they know what it is.
+      case 'settings':  return !!ls('totry_theme') || !!ls('totry_weight_unit') || !!ls('totry_currency')
+                                 || n('totry_push_prefs') > 0;
+    }
+  }catch(_){ }
+  return false;
+}
+function applyTabIntroDisclosure(){
+  try{
+    document.querySelectorAll('[data-intro-for]').forEach(function(el){
+      const what = el.getAttribute('data-intro-for');
+      if(tabIntroHasContent(what)){
+        // Remember what it said. Nothing here destroys copy — "Show me what this is" in Settings
+        // puts every one of them back, and so does an empty tab.
+        if(el.style.display !== 'none'){ el.dataset._introHidden = '1'; el.style.display = 'none'; }
+      } else if(el.dataset._introHidden === '1'){
+        delete el.dataset._introHidden; el.style.display = '';
+      }
+    });
+  }catch(_){ }
+}
+
 function applyHomeProgressiveDisclosure(){
   try{
     // HOW LONG THEY HAVE HAD THE APP, NOT WHAT THEIR COUNTER SAYS. getDayCount() honours the
@@ -245,22 +293,22 @@ function renderLifeWoven(){
   if(m.hasDebt) moneyBits.push(curSym()+m.totalDebt.toLocaleString()+' debt');
   const moneyTxt=moneyBits.length?moneyBits.join(' · '):'not tracked yet';
   const rows=[
-    ['🛡️','The fight',fightTxt,"go('fight')"],
-    ['💪','Body',bodyTxt,"go('grow')"],
-    ['🙏','Spirit',spiritTxt,"go('soul')"],
-    ['💰','Money',moneyTxt,"go('money')"]
+    ['shield','The fight',fightTxt,"go('fight')"],
+    ['dumbbell','Body',bodyTxt,"go('grow')"],
+    ['flame','Spirit',spiritTxt,"go('soul')"],
+    ['wallet','Money',moneyTxt,"go('money')"]
   ];
   box.innerHTML='<div class="card" style="padding:4px 2px;margin-bottom:14px">'+
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.14em;text-transform:uppercase;padding:8px 12px 2px">Your life, woven</div>'+
     rows.map(r=>'<button onclick="'+r[3]+'" style="width:100%;display:flex;align-items:center;gap:11px;background:none;border:none;border-top:1px solid var(--bd);padding:11px 12px;cursor:pointer;text-align:left">'+
-      '<span style="font-size:15px;flex-shrink:0;width:20px;text-align:center">'+r[0]+'</span>'+
+      '<span style="flex-shrink:0;width:20px;text-align:center;color:var(--go);line-height:1">'+svgIcon(r[0],17)+'</span>'+
       '<span style="font-size:13px;color:var(--tx);flex-shrink:0;width:66px">'+r[1]+'</span>'+
       '<span style="flex:1;font-size:12px;color:var(--tx3);text-align:right">'+r[2]+'</span>'+
       '<span style="color:var(--tx3);font-size:14px;flex-shrink:0;margin-left:6px">›</span>'+
     '</button>').join('')+
     // The one number this app is proud of: not time spent here, but times you left better. Earned (≥3),
     // never shown at zero — the anti-engagement metric made quietly visible. (totry_releases)
-    (function(){ const rc=(typeof releaseCount==='function')?releaseCount():0; return rc>=3 ? '<div style="font-family:DM Mono,monospace;font-size:9.5px;color:var(--tx3);letter-spacing:0.05em;line-height:1.5;border-top:1px solid var(--bd);padding:9px 12px 8px;text-align:center">🕊️ '+rc+' times, you came here and walked back into your life</div>' : ''; })()+
+    (function(){ const rc=(typeof releaseCount==='function')?releaseCount():0; return rc>=3 ? '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.05em;line-height:1.5;border-top:1px solid var(--bd);padding:9px 12px 8px;text-align:center">🕊️ '+rc+' times, you came here and walked back into your life</div>' : ''; })()+
   '</div>';
 }
 function renderHomeGreeting(){
@@ -466,7 +514,7 @@ function renderHomeHabits(){
   const todayTotal = habits.length;
   
   const summary = document.createElement('div');
-  summary.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--bg3);border-radius:10px;margin-bottom:14px';
+  summary.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--bg3);border-radius:var(--rm);margin-bottom:14px';
   summary.innerHTML = 
     '<div>' +
       '<div class="eyebrow">' + (knowable ? 'This week so far' : 'This week') + '</div>' +
@@ -583,7 +631,7 @@ function renderHomeHabits(){
       }
       
       cell.style.cssText = 
-        'width:100%;max-width:32px;aspect-ratio:1/1;min-height:24px;margin:0 auto;border-radius:6px;display:flex;align-items:center;justify-content:center;' +
+        'width:100%;max-width:32px;aspect-ratio:1/1;min-height:24px;margin:0 auto;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;' +
         'font-family:DM Mono,monospace;font-size:12px;font-weight:600;box-sizing:border-box;' +
         'background:' + bg + ';border:' + border + ';color:' + color + ';user-select:none' +
         '';   // no cursor:pointer — this grid is deliberately read-only (see below), so it must not

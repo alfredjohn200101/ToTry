@@ -98,7 +98,7 @@ function _feelThePull(){
       '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:23px;font-style:italic;color:var(--tx);margin-bottom:4px">Which one’s pulling?</div>'+
       '<div class="empty-note">No wrong answer. I just want to meet the right one.</div>'+
       vs.map(v=>{ const idx=vices.indexOf(v); const _act=(v.kind==='letgo')?'openLettingGo()':('openMomentStakes('+idx+')'); return '<button class="btn" onclick="closeModal(this);'+_act+'" style="margin-bottom:8px;text-align:left;padding:13px;font-size:14px">'+String(v.n).replace(/</g,'&lt;')+'</button>'; }).join('')+
-      '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:4px">Something else — just talk</button>'+
+      '<button class="btn quiet" onclick="closeModal(this);openCompanionForUrge()" style="margin-top:4px">Something else — just talk</button>'+
       '</div>';
     document.body.appendChild(m);
     if(typeof haptic==='function') haptic('tap');
@@ -191,11 +191,11 @@ function _lockItIn(feeling){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center;max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:8px">A plan for next time</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);line-height:1.3;margin-bottom:6px">When I feel '+_escFew(label)+', I will…</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:6px">When I feel '+_escFew(label)+', I will…</div>'+
     '<div style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:14px">Decide it now, while you’re clear. Next time the feeling comes, I’ll hand you back your own words — that’s what makes it hold.</div>'+
     '<textarea id="ifthen-act" style="min-height:70px;font-size:16px;line-height:1.5;margin-bottom:14px">'+_escFew(preset)+'</textarea>'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="_saveIfThenFromModal(\''+feeling+'\')">Lock in my plan</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
   setTimeout(function(){ const t=document.getElementById('ifthen-act'); if(t) t.focus(); },60);
@@ -234,7 +234,7 @@ function _feelMove(feeling){
   // where they are, not railroaded into a workout or a task. (Skip the talk chip when talking IS the
   // primary action, e.g. "anxious".)
   const _talkBtn = (s.go==='__companion') ? '' :
-    '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin:0;font-size:13px">💬 Just talk</button>';
+    '<button class="btn subtle" onclick="closeModal(this);openCompanionForUrge()" style="flex:1;margin:0">'+svgIcon("message")+' Just talk</button>';
   const _saved = (typeof getIfThen==='function') ? getIfThen(feeling) : null;
   // THE DOOR REMEMBERS. Coming back to the same feeling over and over is the single most useful thing
   // this app knows about a person, and it was being written to disk and forgotten. Said as an
@@ -249,23 +249,23 @@ function _feelMove(feeling){
       const tail = _saved
         ? 'Your plan below is the right place to start.'
         : 'That is worth a plan, not just a moment \u2014 there is one at the bottom of this.';
-      return '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:14px;text-align:left;background:var(--bg3);border-radius:10px;padding:10px 12px">'+
+      return '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:14px;text-align:left;background:var(--bg3);border-radius:var(--rm);padding:10px 12px">'+
         'This is the <b style="color:var(--tx2)">'+n+((n%100>=11&&n%100<=13)?'th':({1:'st',2:'nd',3:'rd'}[n%10]||'th'))+'</b> time '+_escFew(lbl)+' has brought you here this week. '+tail+'</div>';
     }catch(_){ return ''; }
   })();
-  const _savedBanner = _saved ? '<div style="background:var(--go-bg);border:1px solid var(--go-bd);border-radius:10px;padding:10px 12px;margin-bottom:16px;text-align:left"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">The plan you set for this</div><div style="font-size:12.5px;color:var(--tx2);line-height:1.55">'+_escFew(_saved.action)+'</div></div>' : '';
+  const _savedBanner = _saved ? '<div style="background:var(--go-bg);border:1px solid var(--go-bd);border-radius:var(--rm);padding:10px 12px;margin-bottom:16px;text-align:left"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:4px">The plan you set for this</div><div style="font-size:13px;color:var(--tx2);line-height:1.55">'+_escFew(_saved.action)+'</div></div>' : '';
   // Their own #1 value, as a QUESTION, never a verdict. Skipped when they're heavy: a person who is
   // low does not need their own standard held up in front of them. That would be shame, not counsel.
   const _valBanner = (function(){
     try{
       if(feeling==='down') return '';
       const tv=(typeof topValue==='function')?topValue():null; if(!tv) return '';
-      return '<div style="font-size:12.5px;color:var(--tx3);line-height:1.55;margin-bottom:16px;font-style:italic">You said <span style="color:var(--go);font-style:normal">'+_escFew(tv)+'</span> matters most to you. Does the next hour move toward it?</div>';
+      return '<div style="font-size:12px;color:var(--tx3);line-height:1.55;margin-bottom:16px;font-style:italic">You said <span style="color:var(--go);font-style:normal">'+_escFew(tv)+'</span> matters most to you. Does the next hour move toward it?</div>';
     }catch(_){ return ''; }
   })();
   m.innerHTML = '<div class="modal" style="text-align:center">'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.25;margin-bottom:10px">'+s.title+'</div>'+
-    '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:18px">'+s.body+'</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.25;margin-bottom:10px">'+s.title+'</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:18px">'+s.body+'</div>'+
     _recur+
     _savedBanner+
     _valBanner+
@@ -276,16 +276,16 @@ function _feelMove(feeling){
       if(!bp || (s.go && s.go.indexOf('__breath:')===0)) return '';
       const p = (typeof _protoFor==='function') ? _protoFor(bp) : null;
       const why = p ? p.why : 'One minute of breathing';
-      return '<button class="btn" onclick="closeModal(this);openBreath(\''+bp+'\',{reason:\''+feeling+'\'})" style="margin-bottom:8px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px">🫁 Take a breath first — <span style="color:var(--tx3)">'+why.toLowerCase()+'</span></button>';
+      return '<button class="btn subtle" onclick="closeModal(this);openBreath(\''+bp+'\',{reason:\''+feeling+'\'})" style="margin-bottom:8px">'+svgIcon("breath")+' Take a breath first — <span style="color:var(--tx3)">'+why.toLowerCase()+'</span></button>';
     })()+
     '<div style="display:flex;gap:8px;margin-bottom:8px">'+_talkBtn+
-      '<button class="btn" onclick="closeModal(this);openQuickJournal()" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin:0;font-size:13px">✎ Write it down</button>'+
+      '<button class="btn subtle" onclick="closeModal(this);openQuickJournal()" style="flex:1;margin:0">'+svgIcon("edit")+' Write it down</button>'+
     '</div>'+
     // The outward exit — offered where rumination and self-focus are loudest.
     ((feeling==='flat'||feeling==='restless'||feeling==='down'||feeling==='angry')
-      ? '<button class="btn" onclick="closeModal(this);openLookUp()" style="margin-bottom:8px;background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12.5px">🌄 Go outside and look up</button>' : '')+
-    '<button class="btn" onclick="_lockItIn(\''+feeling+'\')" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0 0 4px">🔒 '+(_saved?'Update':'Make')+' my plan for next time</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0">Not now</button>'+
+      ? '<button class="btn" onclick="closeModal(this);openLookUp()" style="margin-bottom:8px;background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px">'+svgIcon("sunrise")+' Go outside and look up</button>' : '')+
+    '<button class="btn quiet" onclick="_lockItIn(\''+feeling+'\')" style="margin:0 0 4px">'+svgIcon("lock")+' '+(_saved?'Update':'Make')+' my plan for next time</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)" style="margin:0">Not now</button>'+
     '</div>';
   // A DIALOG, AND THE READER GOES INTO IT. closeFeelingDoor() runs first and hands focus back to the
   // orb, so without this the sheet that is the whole point of the door — the move they were sent to —
@@ -310,7 +310,7 @@ function _startSmallestThing(){
         setTimeout(function(){ try{ if(typeof journalMeetCrisis==='function') journalMeetCrisis(_avCrisis); }catch(_){ } }, 250);
         return true;   // closes the form; the crisis card takes the screen instead of the 2-minute nudge
       }
-      setTimeout(()=>{ const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center'; m.innerHTML='<div class="modal" style="text-align:center"><div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:10px">Just 2 minutes</div><div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:20px">Don\u2019t do <b style="color:var(--tx)">'+t.replace(/</g,'&lt;')+'</b>. Just START it \u2014 the smallest first step, for 2 minutes. Open the doc. Put on the shoes. Dial the number. You\u2019re allowed to stop after 2 minutes. You won\u2019t want to.</div><button class="btn primary" onclick="closeModal(this)">I\u2019m starting now</button></div>'; document.body.appendChild(m); if(typeof haptic==='function') haptic('tap'); }, 250);
+      setTimeout(()=>{ const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center'; m.innerHTML='<div class="modal" style="text-align:center"><div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:10px">Just 2 minutes</div><div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:20px">Don\u2019t do <b style="color:var(--tx)">'+t.replace(/</g,'&lt;')+'</b>. Just START it \u2014 the smallest first step, for 2 minutes. Open the doc. Put on the shoes. Dial the number. You\u2019re allowed to stop after 2 minutes. You won\u2019t want to.</div><button class="btn primary" onclick="closeModal(this)">I\u2019m starting now</button></div>'; document.body.appendChild(m); if(typeof haptic==='function') haptic('tap'); }, 250);
       return true;
     });
   }
@@ -329,21 +329,21 @@ function openLettingGo(){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center;max-height:90vh;overflow-y:auto">'+
     '<div class="modal-handle"></div>'+
-    '<div style="font-size:30px;margin-bottom:6px">💔</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:25px;color:var(--tx);line-height:1.25;margin-bottom:10px">You\u2019re letting go of someone.</div>'+
-    '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:14px">Missing them isn\u2019t weakness \u2014 it\u2019s love that hasn\u2019t found its new shape yet. You don\u2019t have to stop feeling it. You just don\u2019t have to feed it. Let\u2019s tend it here, and then let you go and live.</div>'+
-    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:13px 15px;margin-bottom:16px;text-align:left">'+
+    '<div style="font-size:30px;margin-bottom:6px">'+svgIcon("heartbreak",28)+'</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.25;margin-bottom:10px">You\u2019re letting go of someone.</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">Missing them isn\u2019t weakness \u2014 it\u2019s love that hasn\u2019t found its new shape yet. You don\u2019t have to stop feeling it. You just don\u2019t have to feed it. Let\u2019s tend it here, and then let you go and live.</div>'+
+    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:13px 15px;margin-bottom:16px;text-align:left">'+
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px">One honest thing</div>'+
-      '<div style="font-size:12.5px;color:var(--tx2);line-height:1.65">Looking them up feels like staying close. It isn\u2019t. The research is blunt: on the days people check an ex, their mood is measurably worse \u2014 <i>that same day</i> \u2014 and it keeps the wound open. Watching them isn\u2019t reaching them. It\u2019s reaching the wound.</div>'+
+      '<div style="font-size:13px;color:var(--tx2);line-height:1.65">Looking them up feels like staying close. It isn\u2019t. The research is blunt: on the days people check an ex, their mood is measurably worse \u2014 <i>that same day</i> \u2014 and it keeps the wound open. Watching them isn\u2019t reaching them. It\u2019s reaching the wound.</div>'+
     '</div>'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);_letGoSurf()">The urge to look \u2014 ride it out</button>'+
-    '<button class="btn" style="margin-bottom:8px;text-align:left;background:var(--bg3);border:1px solid var(--bd);color:var(--tx)" onclick="closeModal(this);_letGoJournal()">\u270E&nbsp;&nbsp;Put it here, not in their feed</button>'+
-    '<button class="btn" style="margin-bottom:8px;text-align:left;background:var(--bg3);border:1px solid var(--bd);color:var(--tx)" onclick="closeModal(this);_letGoAct()">🌿&nbsp;&nbsp;One real thing instead</button>'+
+    '<button class="btn" style="margin-bottom:8px;text-align:left;background:var(--bg3);border:1px solid var(--bd);color:var(--tx)" onclick="closeModal(this);_letGoJournal()">'+svgIcon("edit")+'&nbsp;&nbsp;Put it here, not in their feed</button>'+
+    '<button class="btn" style="margin-bottom:8px;text-align:left;background:var(--bg3);border:1px solid var(--bd);color:var(--tx)" onclick="closeModal(this);_letGoAct()">'+svgIcon("leaf")+'&nbsp;&nbsp;One real thing instead</button>'+
     '<div style="display:flex;gap:8px;margin-bottom:8px">'+
-      '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="flex:1;background:transparent;border:1px solid var(--bd);color:var(--tx3);margin:0;font-size:12px">💬 Just talk</button>'+
+      '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="flex:1;background:transparent;border:1px solid var(--bd);color:var(--tx3);margin:0;font-size:12px">'+svgIcon("message")+' Just talk</button>'+
       '<button class="btn" onclick="closeModal(this);_letGoName()" style="flex:1;background:transparent;border:1px solid var(--bd);color:var(--tx3);margin:0;font-size:12px">I keep going back</button>'+
     '</div>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0">Not now</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)" style="margin:0">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
   if(typeof haptic==='function') haptic('tap');
@@ -361,7 +361,7 @@ function _letGoJournal(){
     '<p style="font-size:12px;color:var(--tx3);margin-bottom:12px;line-height:1.55">Not them, necessarily \u2014 the feeling underneath. What do you miss? What were you getting from them that you need right now? Write it here, where it gets processed instead of poured back into the wound.</p>'+
     '<textarea id="lg-jtext" placeholder="I miss\u2026" style="min-height:130px;font-size:16px;line-height:1.6;margin-bottom:14px" autofocus></textarea>'+
     '<button class="btn primary" onclick="_letGoSaveJournal()" style="margin-bottom:8px">Set it down</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
   setTimeout(()=>document.getElementById('lg-jtext')?.focus(),60);
@@ -388,18 +388,18 @@ function _letGoSaveJournal(){
 function _letGoAct(){
   document.querySelector('.modal-bg.open')?.remove();
   const acts=[
-    ['🚶','Walk \u2014 10 minutes, outside, phone in your pocket'],
-    ['📞','Message ONE real person who loves you'],
-    ['🚿','Cold water on your face, or a shower'],
-    ['🧹','One thing with your hands \u2014 tidy, cook, fix something'],
-    ['🏋️','Move your body \u2014 even 20 push-ups']
+    ['walk','Walk \u2014 10 minutes, outside, phone in your pocket'],
+    ['phone','Message ONE real person who loves you'],
+    ['droplet','Cold water on your face, or a shower'],
+    ['tool','One thing with your hands \u2014 tidy, cook, fix something'],
+    ['dumbbell','Move your body \u2014 even 20 push-ups']
   ];
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center;max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:6px">One real thing</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);margin-bottom:6px">One real thing</div>'+
     '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:16px">Rumination breaks when you do something real. Pick one \u2014 then put the phone down and go do it.</div>'+
-    acts.map(a=>'<button class="btn" style="text-align:left;margin-bottom:8px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx);font-size:13px" onclick="closeModal(this);theRelease({did:\''+a[1].replace(/'/g,"\\'")+'\'})">'+a[0]+'&nbsp;&nbsp;'+a[1]+'</button>').join('')+
-    '<button class="btn" onclick="closeModal(this);openLettingGo()" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0">Back</button>'+
+    acts.map(a=>'<button class="btn" style="text-align:left;margin-bottom:8px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx);font-size:13px" onclick="closeModal(this);theRelease({did:\''+a[1].replace(/'/g,"\\'")+'\'})">'+svgIcon(a[0])+'&nbsp;&nbsp;'+a[1]+'</button>').join('')+
+    '<button class="btn quiet" onclick="closeModal(this);openLettingGo()" style="margin:0">Back</button>'+
   '</div>';
   document.body.appendChild(m);
   if(typeof haptic==='function') haptic('tap');
@@ -431,10 +431,10 @@ function _letGoWentBack(i){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
     '<div style="font-size:26px;margin-bottom:8px">🕊️</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:10px">Noticed, not judged.</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:10px">Noticed, not judged.</div>'+
     '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:18px">Reaching back is part of letting go, not the end of it. Nothing resets \u2014 you\u2019re still on the way. What do you need right now?</div>'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);openLettingGo()">Help me with this moment</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">I\u2019m okay</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)">I\u2019m okay</button>'+
   '</div>';
   document.body.appendChild(m);
   if(typeof haptic==='function') haptic('tap');
@@ -468,7 +468,7 @@ function theRelease(opts){
     // Behavioural activation: hand over ONE concrete phone-off act, matched to whichever pillar is
     // actually thinnest tonight. "Go live your life" is a sentiment; this is a thing you can do.
     ((typeof nextSmallThingHTML==='function') ? nextSmallThingHTML() : '')+
-    '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:26px;max-width:330px">Now put me down'+(name?', '+name.replace(/</g,'&lt;'):'')+'. Go live the next hour \u2014 the real one, off the glass. I\u2019m right here if the wave comes back. But you don\u2019t need me right now.</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:26px;max-width:330px">Now put me down'+(name?', '+name.replace(/</g,'&lt;'):'')+'. Go live the next hour \u2014 the real one, off the glass. I\u2019m right here if the wave comes back. But you don\u2019t need me right now.</div>'+
     '<button class="btn primary rel-go" style="max-width:240px;margin:0 auto">I\u2019m putting it down</button>'+
     // The best thing to walk back into is a person. Offered only when someone is actually named and
     // not held quietly \u2014 never a nag, and it logs the reach-out so the app stops asking.
@@ -476,13 +476,13 @@ function theRelease(opts){
       try{
         const _s=(typeof reachOutSuggestion==='function')?reachOutSuggestion():null;
         if(!_s||!_s.person) return '';
-        return '<button class="btn rel-person" style="max-width:240px;margin:10px auto 0;background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12.5px;padding:10px">\u2026or go message '+_escFew(_s.person.name)+'</button>';
+        return '<button class="btn rel-person" style="max-width:240px;margin:10px auto 0;background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;padding:10px">\u2026or go message '+_escFew(_s.person.name)+'</button>';
       }catch(_){ return ''; }
     })()+
     // A guest has now actually BEEN helped \u2014 the honest moment to offer an account, framed as keeping
     // what just happened. Sits UNDER the release button on purpose: putting the phone down still wins.
     ((typeof isGuest==='function' && isGuest())
-      ? '<button class="btn rel-keep" style="max-width:240px;margin:10px auto 0;background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12.5px;padding:10px">Keep this \u2192</button>'+
+      ? '<button class="btn rel-keep" style="max-width:240px;margin:10px auto 0;background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;padding:10px">Keep this \u2192</button>'+
         '<div style="font-size:11px;color:var(--tx3);opacity:0.75;margin-top:8px;max-width:280px;line-height:1.5">An account keeps tonight \u2014 and lets me remember you next time.</div>'
       : '')+
     countLine;
@@ -534,10 +534,10 @@ function _impulseFeeling(what, amt){
   const shown=_escFew(what);         // for anything the person reads
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center;max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);line-height:1.3;margin-bottom:6px">What’s underneath it?</div>'+
-    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Naming the feeling takes some of the heat out of it. That’s not a trick — it’s the same thing that works on any other urge.</div>'+
-    _IMPULSE_FEELINGS.map(function(f,i){ return '<button class="btn" onclick="_impulseHold(\''+safe+'\','+amt+','+i+')" style="text-align:left;margin-bottom:8px;padding:12px;background:var(--bg3);border:1px solid var(--bd);font-size:13.5px">'+f[0]+'&nbsp;&nbsp;'+f[1]+'</button>'; }).join('')+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:6px">What’s underneath it?</div>'+
+    '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Naming the feeling takes some of the heat out of it. That’s not a trick — it’s the same thing that works on any other urge.</div>'+
+    _IMPULSE_FEELINGS.map(function(f,i){ return '<button class="btn" onclick="_impulseHold(\''+safe+'\','+amt+','+i+')" style="text-align:left;margin-bottom:8px;padding:12px;background:var(--bg3);border:1px solid var(--bd);font-size:13px">'+f[0]+'&nbsp;&nbsp;'+f[1]+'</button>'; }).join('')+
+    '<button class="btn quiet" onclick="closeModal(this)">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
   if(typeof haptic==='function') haptic('tap');
@@ -550,14 +550,14 @@ function _impulseHold(what, amt, fi){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center;max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
     '<div style="font-size:26px;margin-bottom:8px">'+f[0]+'</div>'+
-    '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:14px">'+f[2]+'</div>'+
-    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:13px 15px;margin-bottom:14px;text-align:left">'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">'+f[2]+'</div>'+
+    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:13px 15px;margin-bottom:14px;text-align:left">'+
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px">The 24-hour hold</div>'+
-      '<div style="font-size:12.5px;color:var(--tx2);line-height:1.65">Don’t decide now — decide tomorrow. About seven in ten urges to buy are gone within a day, and the ones that aren’t are usually the ones worth having. I’ll ask you about <b style="color:var(--tx)">'+safe+'</b> then.</div>'+
+      '<div style="font-size:13px;color:var(--tx2);line-height:1.65">Don’t decide now — decide tomorrow. About seven in ten urges to buy are gone within a day, and the ones that aren’t are usually the ones worth having. I’ll ask you about <b style="color:var(--tx)">'+safe+'</b> then.</div>'+
     '</div>'+
     (why?'<div style="font-size:12px;color:var(--go);line-height:1.6;margin-bottom:14px;font-style:italic">Why you started: “'+why.replace(/</g,'&lt;').slice(0,150)+'”</div>':'')+
     '<button class="btn primary" style="margin-bottom:8px" onclick="_impulseSaveHold(\''+String(what).replace(/'/g,"").replace(/"/g,'')+'\','+amt+')">Hold it for a day</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px;margin-bottom:8px">I’m buying it anyway — that’s allowed</button>'+
+    '<button class="btn subtle" onclick="closeModal(this)" style="margin-bottom:8px">I’m buying it anyway — that’s allowed</button>'+
     '<div style="font-size:11px;color:var(--tx3);line-height:1.5">Either way there’s no telling-off here. Buying something isn’t a moral failure; doing it without noticing is just how money leaks.</div>'+
   '</div>';
   document.body.appendChild(m);
@@ -600,7 +600,7 @@ function _resolveHold(ts, bought){
 // Reuses: openBreath · openCompanion · openHALT · openValuesSort · openBlessing · _letGoAct ·
 // theRelease · openFormModal · bridgeToRealHelp · faithLevel/faithTradition · _escFew · showToast · haptic.
 const _TOOLKIT = [
-  { id:'wave', ic:'\uD83C\uDF0A', t:'Riding the wave', st:'Why an urge fades if you stop fighting it',
+  { id:'wave', ic:'droplet', t:'Riding the wave', st:'Why an urge fades if you stop fighting it',
     idea:[
       'An urge is not a straight line that climbs until you give in. It rises, it peaks, and it comes down \u2014 whether or not you feed it. That shape is the entire reason you can outlast one.',
       'Bracing against it is what makes it louder. Push a thought away and it comes back with interest; that rebound is one of the most reliably reproduced findings in the field. So you do the opposite of fighting: notice it, find where it sits in your body, breathe, and let it crest with you watching.',
@@ -617,7 +617,7 @@ const _TOOLKIT = [
     // reason-carrying calls (letgo, and the HALT angry/tired ones) ARE in the moment and keep theirs.
     live:'Breathe one through now', act:"openBreath('settle')" },
 
-  { id:'defuse', ic:'\u26C5', t:'Thoughts as weather', st:'Getting half a step back from what your mind says',
+  { id:'defuse', ic:'cloud', t:'Thoughts as weather', st:'Getting half a step back from what your mind says',
     idea:[
       'Your mind produces sentences all day. Some are useful, some are rubbish, and none of them are orders. The trouble starts when you are so far inside a thought that you cannot see it is a thought \u2014 it just feels like the truth about you.',
       'Defusion is the half-step back. Not arguing with it, not replacing it, not pretending it isn\u2019t there. Only changing your relationship to it: from being inside it, to hearing it. \u201cI never follow through\u201d becomes \u201cI\u2019m having the thought that I never follow through.\u201d Same sentence \u2014 and suddenly there is a person there, holding it.',
@@ -629,7 +629,7 @@ const _TOOLKIT = [
     src:'Paraphrased from Acceptance and Commitment Therapy (Steven Hayes and colleagues), where defusion and the \u201cI\u2019m having the thought that\u2026\u201d move come from.',
     live:'Say one to me now', act:'openCompanion()' },
 
-  { id:'reframe', ic:'\uD83E\uDDF2', t:'Catching the sentence before the slip', st:'The permission-giving thought, and how to test it',
+  { id:'reframe', ic:'message', t:'Catching the sentence before the slip', st:'The permission-giving thought, and how to test it',
     idea:[
       'Almost nobody slips out of nowhere. There is a sentence first, and it always sounds reasonable: just once. I\u2019ve had a hard week. I\u2019ve already ruined today. I\u2019ll start properly tomorrow. I can\u2019t cope with this without it.',
       'That sentence is doing a job \u2014 it is giving you permission. Catch it and you take the permission back. Three moves: catch it (say it in the exact words your head used), test it (is that actually true? has \u201cjust once\u201d ever been just once?), and replace it with something truer that you genuinely believe.',
@@ -641,7 +641,7 @@ const _TOOLKIT = [
     src:'Paraphrased from Aaron Beck\u2019s cognitive therapy and standard CBT relapse-prevention practice. The permission-giving thoughts listed are the ones this app\u2019s companion already listens for.',
     live:'One is loud right now', act:'openCompanion()' },
 
-  { id:'ave', ic:'\uD83E\uDE79', t:'Why one becomes five', st:'Stopping a slip from becoming a night',
+  { id:'ave', ic:'stop', t:'Why one becomes five', st:'Stopping a slip from becoming a night',
     idea:[
       'The damage in a slip is usually not the slip. It is the story you tell in the ninety seconds afterwards. \u201cWell, that\u2019s gone.\u201d \u201cI\u2019m clearly not built for this.\u201d And once you are the kind of person who has blown it, there is no reason left to stop at one.',
       'Clinicians named this decades ago because they kept watching it happen: one lapse, plus shame, plus all-or-nothing thinking, equals a full relapse. The lapse was survivable. The story wasn\u2019t.',
@@ -653,7 +653,7 @@ const _TOOLKIT = [
     src:'Paraphrased from Marlatt & Gordon\u2019s relapse-prevention model, where the abstinence violation effect was first described.',
     live:'Put it in my plan', act:"go('fight')" },
 
-  { id:'compassion', ic:'\uD83E\uDEB6', t:'Why the hard voice loses', st:'Self-compassion, and the honest evidence for it',
+  { id:'compassion', ic:'heart', t:'Why the hard voice loses', st:'Self-compassion, and the honest evidence for it',
     idea:[
       'The hard voice makes a promise: be brutal with yourself and you will finally get in line. It is worth asking whether it has delivered. Most people have been running that experiment for years.',
       'Here is the mechanism, and it isn\u2019t sentimental. Self-attack produces shame. Shame makes you want to disappear \u2014 and the fastest way to disappear is the exact behaviour you were attacking yourself for. So the hard voice reliably manufactures the next slip it is furious about.',
@@ -665,7 +665,7 @@ const _TOOLKIT = [
     src:'Paraphrased from Kristin Neff\u2019s self-compassion research (the three components are hers) and Paul Gilbert\u2019s compassion-focused therapy, which is where the shame-avoidance mechanism and the soothing-touch cue come from.',
     live:'Sit with it a minute', act:'openBlessing()' },
 
-  { id:'values', ic:'\uD83E\uDDED', t:'Doing it when you don\u2019t feel like it', st:'Values, and why motivation was never the entry fee',
+  { id:'values', ic:'compass', t:'Doing it when you don\u2019t feel like it', st:'Values, and why motivation was never the entry fee',
     idea:[
       'You were sold a sequence: first you feel motivated, then you act. It is backwards often enough to ruin people. Waiting to feel like it hands your life to whichever mood turns up.',
       'The alternative is boring and it works: pick the direction you actually care about, and act in that direction regardless of the weather inside you. A value isn\u2019t a goal \u2014 you cannot complete \u201cbeing someone my sister can rely on.\u201d That\u2019s the point. It is available again in ten minutes, no matter how today went.',
@@ -677,7 +677,7 @@ const _TOOLKIT = [
     src:'Paraphrased from ACT (Hayes and colleagues) for the values-versus-goals distinction, and self-determination theory (Deci & Ryan) for the autonomy point.',
     live:'Sort my values', act:'openValuesSort()' },
 
-  { id:'activation', ic:'\uD83D\uDC5F', t:'Action comes first', st:'The strongest-evidenced idea on this list',
+  { id:'activation', ic:'shoe', t:'Action comes first', st:'The strongest-evidenced idea on this list',
     idea:[
       'Low mood shrinks your world. You do less, so less good happens, so you feel worse, so you do even less. It is a spiral with a very simple mechanism \u2014 which is good news, because simple mechanisms can be interrupted from the outside.',
       'You interrupt it by doing, not by feeling. Not the whole thing \u2014 one specific, small, scheduled, real action. Not \u201cget my life together.\u201d \u201cWalk to the end of the road at four.\u201d The motivation shows up afterwards, if it shows up at all, and you don\u2019t need it either way.',
@@ -689,7 +689,7 @@ const _TOOLKIT = [
     src:'Paraphrased from behavioural activation research: Lewinsohn\u2019s original model, Jacobson\u2019s component study, the Ekers meta-analysis, and the COBRA non-inferiority trial.',
     live:'', act:'' },
 
-  { id:'halt', ic:'\uD83C\uDF7D', t:'The need under the urge', st:'Hungry, angry, lonely, tired \u2014 and the honest caveat',
+  { id:'halt', ic:'utensils', t:'The need under the urge', st:'Hungry, angry, lonely, tired \u2014 and the honest caveat',
     idea:[
       'A lot of urges are not really about the thing. They are an unmet need arriving in the only costume it knows. Four candidates cover most of it: hungry, angry, lonely, tired.',
       'Check them before you reach for any technique \u2014 because if you\u2019re running on no food and no sleep and you\u2019ve spoken to nobody all day, no clever exercise is going to hold. You are not weak in that state. You are depleted, which is a different problem with a different fix.',
@@ -738,19 +738,19 @@ function openToolkit(){
   const myLine=(_tkStore().myLine||'').trim();
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="max-height:90vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.3;margin-bottom:6px">The tools I use with you.</div>'+
-    '<div style="text-align:center;font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:14px">Two minutes each. Learn one somewhere calm and it works far better at 11pm, because you\u2019ll recognise it. Nothing to finish here \u2014 no streak, no score. Pick one up and put me down.</div>'+
-    (myLine?'<div style="background:rgba(200,169,110,0.08);border:1px solid var(--go-bd);border-radius:12px;padding:11px 13px;margin-bottom:12px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:5px">The sentence you told me about</div><div style="font-size:13px;color:var(--tx);line-height:1.55;font-style:italic">\u201c'+_escFew(myLine)+'\u201d</div></div>':'')+
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:6px">The tools I use with you.</div>'+
+    '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:14px">Two minutes each. Learn one somewhere calm and it works far better at 11pm, because you\u2019ll recognise it. Nothing to finish here \u2014 no streak, no score. Pick one up and put me down.</div>'+
+    (myLine?'<div style="background:rgba(200,169,110,0.08);border:1px solid var(--go-bd);border-radius:var(--rm);padding:11px 13px;margin-bottom:12px"><div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:5px">The sentence you told me about</div><div style="font-size:13px;color:var(--tx);line-height:1.55;font-style:italic">\u201c'+_escFew(myLine)+'\u201d</div></div>':'')+
     _TOOLKIT.map(function(l){
       const hi=(l.id===sug);
-      return '<button class="btn" onclick="openLesson(\''+l.id+'\')" style="text-align:left;margin-bottom:8px;padding:13px;background:'+(hi?'rgba(200,169,110,0.10)':'var(--bg3)')+';border:1px solid '+(hi?'var(--go-bd)':'var(--bd)')+';display:block;width:100%">'+
-        (hi?'<div style="font-family:DM Mono,monospace;font-size:8.5px;color:var(--go);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:5px">Maybe start here</div>':'')+
-        '<div style="font-size:14px;color:var(--tx);margin-bottom:3px">'+l.ic+'&nbsp;&nbsp;'+l.t+'</div>'+
+      return '<button class="btn stack" onclick="openLesson(\''+l.id+'\')" style="text-align:left;margin-bottom:8px;padding:13px;background:'+(hi?'rgba(200,169,110,0.10)':'var(--bg3)')+';border:1px solid '+(hi?'var(--go-bd)':'var(--bd)')+';display:block;width:100%">'+
+        (hi?'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:5px">Maybe start here</div>':'')+
+        '<div style="font-size:14px;color:var(--tx);margin-bottom:3px"><span style="color:var(--go)">'+svgIcon(l.ic,16)+'</span>&nbsp;&nbsp;'+l.t+'</div>'+
         '<div style="font-size:12px;color:var(--tx3);line-height:1.5">'+l.st+'</div></button>';
     }).join('')+
-    '<div style="font-size:11.5px;color:var(--tx3);line-height:1.65;margin:10px 0 12px;text-align:left">'+_TK_NOT_THERAPY+'</div>'+
-    '<button class="btn" onclick="closeModal(this);if(typeof bridgeToRealHelp===\'function\')bridgeToRealHelp(\'heavy\')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px;margin-bottom:8px">\uD83E\uDD1D This is bigger than a skill \u2014 point me to real help</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0">Close</button>'+
+    '<div style="font-size:11px;color:var(--tx3);line-height:1.65;margin:10px 0 12px;text-align:left">'+_TK_NOT_THERAPY+'</div>'+
+    '<button class="btn subtle" onclick="closeModal(this);if(typeof bridgeToRealHelp===\'function\')bridgeToRealHelp(\'heavy\')" style="margin-bottom:8px">'+svgIcon("users")+' This is bigger than a skill \u2014 point me to real help</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)" style="margin:0">Close</button>'+
   '</div>';
   document.body.appendChild(m);
   if(typeof haptic==='function') haptic('tap');
@@ -766,23 +766,23 @@ function openLesson(id){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="max-height:90vh;overflow-y:auto">'+
     '<div class="modal-handle"></div>'+
-    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.13em;text-transform:uppercase;margin-bottom:7px">'+l.ic+'&nbsp; about 2 minutes</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:25px;color:var(--tx);line-height:1.25;margin-bottom:12px">'+l.t+'</div>'+
-    (again?'<div style="font-size:11.5px;color:var(--tx3);line-height:1.55;margin-bottom:12px;font-style:italic">You\u2019ve picked this one up before. Good \u2014 repetition is how a skill stops being information and starts being a reflex.</div>':'')+
+    '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.13em;text-transform:uppercase;margin-bottom:7px">'+svgIcon(l.ic,13)+'&nbsp; about 2 minutes</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.25;margin-bottom:12px">'+l.t+'</div>'+
+    (again?'<div style="font-size:11px;color:var(--tx3);line-height:1.55;margin-bottom:12px;font-style:italic">You\u2019ve picked this one up before. Good \u2014 repetition is how a skill stops being information and starts being a reflex.</div>':'')+
     l.idea.map(function(p){ return '<div style="font-size:14px;color:var(--tx2);line-height:1.75;margin-bottom:12px">'+p+'</div>'; }).join('')+
-    (fLine?'<div style="font-size:13.5px;color:var(--tx2);line-height:1.75;margin-bottom:12px;padding-left:11px;border-left:2px solid var(--go-bd)">'+fLine+'</div>':'')+
-    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:13px 14px;margin:4px 0 14px">'+
+    (fLine?'<div style="font-size:13px;color:var(--tx2);line-height:1.75;margin-bottom:12px;padding-left:11px;border-left:2px solid var(--go-bd)">'+fLine+'</div>':'')+
+    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:13px 14px;margin:4px 0 14px">'+
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.13em;text-transform:uppercase;margin-bottom:6px">What it looks like</div>'+
       '<div style="font-size:13px;color:var(--tx2);line-height:1.7">'+l.ex+'</div></div>'+
-    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:13px 14px;margin-bottom:14px">'+
+    '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:13px 14px;margin-bottom:14px">'+
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--tx3);letter-spacing:0.13em;text-transform:uppercase;margin-bottom:6px">What it\u2019s honestly evidenced for</div>'+
-      '<div style="font-size:12.5px;color:var(--tx2);line-height:1.7;margin-bottom:8px">'+l.ev+'</div>'+
+      '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:8px">'+l.ev+'</div>'+
       '<div style="font-size:11px;color:var(--tx3);line-height:1.6">Where it comes from: '+l.src+' The wording, the example and the practice here are the app\u2019s own.</div></div>'+
     '<button class="btn primary" onclick="_tkPractice(\''+l.id+'\')" style="margin-bottom:8px">Try the practice \u2014 one minute</button>'+
     // A person can land straight in a lesson without passing the index, so the honest limit travels
     // with the lesson rather than living only on the shelf it came from.
     '<div style="font-size:11px;color:var(--tx3);line-height:1.6;margin:2px 0 10px;text-align:left">A skill, not treatment \u2014 and nobody\u2019s suffering continues because they haven\u2019t learned one yet. If this is bigger than an hour, <a href="#" onclick="event.preventDefault();closeModal(this);if(typeof openRecoveryBridge===\'function\')openRecoveryBridge()" style="color:var(--go);text-decoration:none">that deserves a real person</a>.</div>'+
-    '<button class="btn" onclick="closeModal(this);openToolkit()" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0">Back to the toolkit</button>'+
+    '<button class="btn quiet" onclick="closeModal(this);openToolkit()" style="margin:0">Back to the toolkit</button>'+
   '</div>';
   document.body.appendChild(m);
   try{ m.querySelector('.modal').scrollTop=0; }catch(_){}
@@ -796,15 +796,15 @@ function _tkPractice(id){
   if(l.pracFn==='_tkMyLine'){ _tkMyLine(); return; }
   if(l.pracFn==='openHALT' || l.pracFn==='_letGoAct'){ _tkMark(id); try{ window[l.pracFn](); }catch(_){} return; }
   const yourVal=(id==='values'&&typeof getValues==='function')?getValues():null;
-  const valLine=(yourVal&&yourVal.v&&yourVal.v.length)?'<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:14px">You already told me one of yours: <span style="color:var(--go)">'+_escFew(yourVal.v[0])+'</span>. Start there.</div>':'';
+  const valLine=(yourVal&&yourVal.v&&yourVal.v.length)?'<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:14px">You already told me one of yours: <span style="color:var(--go)">'+_escFew(yourVal.v[0])+'</span>. Start there.</div>':'';
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center;max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
     '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.13em;text-transform:uppercase;margin-bottom:8px">One tiny practice \u2014 now</div>'+
-    '<div style="font-size:14.5px;color:var(--tx);line-height:1.75;margin-bottom:14px;text-align:left">'+l.prac+'</div>'+
+    '<div style="font-size:14px;color:var(--tx);line-height:1.75;margin-bottom:14px;text-align:left">'+l.prac+'</div>'+
     valLine+
     '<button class="btn primary" onclick="_tkDone(\''+l.id+'\')" style="margin-bottom:8px">'+(l.pracBtn||'Done')+'</button>'+
-    (l.live?'<button class="btn" onclick="_tkMark(\''+l.id+'\');closeModal(this);'+l.act+'" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px;margin-bottom:8px">'+l.live+'</button>':'')+
-    '<button class="btn" onclick="closeModal(this);openLesson(\''+l.id+'\')" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0">Back to the lesson</button>'+
+    (l.live?'<button class="btn subtle" onclick="_tkMark(\''+l.id+'\');closeModal(this);'+l.act+'" style="margin-bottom:8px">'+l.live+'</button>':'')+
+    '<button class="btn quiet" onclick="closeModal(this);openLesson(\''+l.id+'\')" style="margin:0">Back to the lesson</button>'+
   '</div>';
   document.body.appendChild(m);
   if(typeof haptic==='function') haptic('tap');
@@ -860,12 +860,12 @@ function openHALT(){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center;max-height:88vh;overflow-y:auto">'+
     '<div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.3;margin-bottom:6px">Before anything else — what’s actually going on?</div>'+
-    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">An urge is often a different need wearing a disguise. Pick whichever is truest right now. More than one can be.</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:6px">Before anything else — what’s actually going on?</div>'+
+    '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px">An urge is often a different need wearing a disguise. Pick whichever is truest right now. More than one can be.</div>'+
     _HALT.map(function(h){ return '<button class="btn" onclick="_haltPick(\''+h.k+'\')" style="text-align:left;margin-bottom:8px;padding:13px;background:var(--bg3);border:1px solid var(--bd)">'+
       '<div style="font-size:14px;color:var(--tx)">'+h.icon+'&nbsp;&nbsp;'+h.label+'</div>'+
-      '<div style="font-size:11.5px;color:var(--tx3);margin-left:26px">'+h.sub+'</div></button>'; }).join('')+
-    '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12.5px;margin-top:2px">None of these — just stay with me</button>'+
+      '<div style="font-size:11px;color:var(--tx3);margin-left:26px">'+h.sub+'</div></button>'; }).join('')+
+    '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="background:transparent;border:1px solid var(--bd);color:var(--tx3);font-size:12px;margin-top:2px">None of these — just stay with me</button>'+
   '</div>';
   document.body.appendChild(m);
   if(typeof haptic==='function') haptic('tap');
@@ -876,12 +876,12 @@ function _haltPick(k){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center">'+
     '<div style="font-size:28px;margin-bottom:8px">'+h.icon+'</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:10px">'+h.label+'.</div>'+
-    '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:18px">'+h.line+'</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:10px">'+h.label+'.</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:18px">'+h.line+'</div>'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);'+h.act+'">'+h.cta+'</button>'+
-    '<button class="btn" onclick="closeModal(this);openCompanionForUrge()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px;margin-bottom:8px">Stay with me instead</button>'+
-    '<button class="btn" onclick="closeModal(this);openHALT()" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Back</button>'+
-    '<button class="btn" onclick="closeModal(this);openServiceExit()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);margin-bottom:8px;font-size:13px">\u{1F91D} Do something for someone else instead</button>'+
+    '<button class="btn subtle" onclick="closeModal(this);openCompanionForUrge()" style="margin-bottom:8px">Stay with me instead</button>'+
+    '<button class="btn quiet" onclick="closeModal(this);openHALT()">Back</button>'+
+    '<button class="btn subtle" onclick="closeModal(this);openServiceExit()" style="margin-bottom:8px">'+svgIcon("users")+' Do something for someone else instead</button>'+
   '</div>';
   document.body.appendChild(m);
   if(typeof haptic==='function') haptic('tap');
@@ -921,9 +921,9 @@ function _shrinkIt(thing, level){
     '<div style="font-size:14px;color:var(--tx);line-height:1.65;margin-bottom:16px">'+_SHRINK[lv](shown)+'</div>'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="closeModal(this);_startTwoMin(\''+safe+'\')">Start two minutes</button>'+
     (lv < _SHRINK.length-1
-      ? '<button class="btn" onclick="closeModal(this);_shrinkIt(\''+safe+'\','+(lv+1)+')" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px;margin-bottom:8px">Still too big — make it smaller</button>'
-      : '<div style="font-size:11.5px;color:var(--tx3);line-height:1.5;margin-bottom:10px">If even that’s too much today, that’s information about your capacity, not your character. Rest counts.</div>')+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
+      ? '<button class="btn subtle" onclick="closeModal(this);_shrinkIt(\''+safe+'\','+(lv+1)+')" style="margin-bottom:8px">Still too big — make it smaller</button>'
+      : '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:10px">If even that’s too much today, that’s information about your capacity, not your character. Rest counts.</div>')+
+    '<button class="btn quiet" onclick="closeModal(this)">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
   if(typeof haptic==='function') haptic('tap');
@@ -1042,12 +1042,12 @@ function openLookUp(){
   const what = _LOOK_UP_PROMPTS[day % _LOOK_UP_PROMPTS.length];
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center">'+
-    '<div style="font-size:30px;margin-bottom:10px">🌄</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:25px;color:var(--tx);line-height:1.3;margin-bottom:12px">Go outside and look up.</div>'+
-    '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:8px">Phone in your pocket. Step outside, even just the doorway. Find <b style="color:var(--tx)">'+what+'</b> — and actually look at it for a minute.</div>'+
-    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:18px">Don’t photograph it. Don’t post it. Nothing to log — I won’t even ask how it went. Something bigger than you, for one minute, is the oldest way there is to get out of your own head.</div>'+
+    '<div style="font-size:30px;margin-bottom:10px">'+svgIcon("sunrise",28)+'</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:12px">Go outside and look up.</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:8px">Phone in your pocket. Step outside, even just the doorway. Find <b style="color:var(--tx)">'+what+'</b> — and actually look at it for a minute.</div>'+
+    '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:18px">Don’t photograph it. Don’t post it. Nothing to log — I won’t even ask how it went. Something bigger than you, for one minute, is the oldest way there is to get out of your own head.</div>'+
     '<button class="btn primary" onclick="closeModal(this);theRelease({did:\'You went outside and looked up — out of your head, into the world.\'})">I’m going out</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:4px">Not now</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)" style="margin-top:4px">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
   if(typeof haptic==='function') haptic('tap');
@@ -1126,7 +1126,7 @@ function _blessLines(name, anim){
   const t=_escFew(name);
   return '<div id="bless-lines">'+_bless().p.map(function(l,i){
     const a = anim ? ';animation:fadeUpY .6s ease both;animation-delay:'+(i*0.45)+'s' : '';
-    return '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);line-height:1.45;margin-bottom:9px'+a+'">'+l.replace(/\{t\}/g, function(){ return t; })+'</div>';
+    return '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.45;margin-bottom:9px'+a+'">'+l.replace(/\{t\}/g, function(){ return t; })+'</div>';
   }).join('')+'</div>';
 }
 function _blessPicker(){
@@ -1138,7 +1138,7 @@ function _blessPicker(){
         return '<button class="btn" style="width:auto;margin:0;padding:6px 11px;font-size:12px;background:'+(on?'var(--go-bg)':'var(--bg3)')+';border:1px solid '+(on?'var(--go-bd)':'var(--bd)')+';color:'+(on?'var(--go)':'var(--tx2)')+'" onclick="_blessPick('+i+')">'+_escFew(p.name)+(yourFewMuted(p)?' <span style="color:var(--tx3);font-size:10px">\u00B7 held quietly</span>':'')+'</button>';
       }).join('')+'</div>'+
       // Held quietly = someone lost, or someone it isn't safe to contact. They can still be blessed.
-      (yourFewMuted(cur)?'<div style="font-size:11.5px;color:var(--tx3);line-height:1.55;margin-bottom:10px;font-style:italic">You hold them quietly \u2014 no reminders, ever. You can still wish them well. For someone you\u2019ve lost, this may be the only thing left to give them, and it counts.</div>':'');
+      (yourFewMuted(cur)?'<div style="font-size:11px;color:var(--tx3);line-height:1.55;margin-bottom:10px;font-style:italic">You hold them quietly \u2014 no reminders, ever. You can still wish them well. For someone you\u2019ve lost, this may be the only thing left to give them, and it counts.</div>':'');
   }
   if(s.step>=2 && s.step<=4){
     const v=(s.step===2)?s.loved:(s.step===3?s.neutral:s.hard);
@@ -1179,11 +1179,11 @@ function _blessRender(){
   if(s.step===0){
     b.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.14em;margin-bottom:8px">'+f.eyebrow+'</div>'+
       '<div style="font-family:Cormorant Garamond,serif;font-size:27px;color:var(--tx);line-height:1.25;margin-bottom:10px">'+f.title+'</div>'+
-      '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:14px">'+f.intro+'</div>'+
+      '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">'+f.intro+'</div>'+
       // Honest about what this can and can't do. The app must never claim more than it knows.
-      '<div style="font-size:11.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px;font-style:italic">Straight with you: the research here is real but modest \u2014 warmth toward yourself and others lifts over weeks of practice, not in one sitting. It is not a treatment for depression, and it is not a substitute for a real person.</div>'+
+      '<div style="font-size:11px;color:var(--tx3);line-height:1.6;margin-bottom:16px;font-style:italic">Straight with you: the research here is real but modest \u2014 warmth toward yourself and others lifts over weeks of practice, not in one sitting. It is not a treatment for depression, and it is not a substitute for a real person.</div>'+
       '<button class="btn primary" style="margin-bottom:8px" onclick="_blessNext()">Begin</button>'+
-      '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>';
+      '<button class="btn quiet" onclick="closeModal(this)">Not now</button>';
     return;
   }
   if(s.step>=1 && s.step<=5){
@@ -1195,8 +1195,8 @@ function _blessRender(){
       (s.step===5?'<div style="font-family:Cormorant Garamond,serif;font-size:16px;font-style:italic;color:var(--go);line-height:1.5;margin-top:14px">'+f.close+'</div>':'')+
       '<button class="btn primary" style="margin-top:20px;margin-bottom:8px" onclick="_blessNext()">'+(s.step===5?'Done':'Next')+'</button>'+
       (s.step===4
-        ? '<button class="btn" onclick="_blessSkipHard()" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Skip this one \u2014 I\u2019m not there</button>'
-        : '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Stop here</button>');
+        ? '<button class="btn quiet" onclick="_blessSkipHard()">Skip this one \u2014 I\u2019m not there</button>'
+        : '<button class="btn quiet" onclick="closeModal(this)">Stop here</button>');
     return;
   }
   // ── into connection: contemplation is where this starts, not where it ends ──
@@ -1204,15 +1204,15 @@ function _blessRender(){
   s.cands=(s.few||[]).filter(function(p){ return p && !yourFewMuted(p); });
   const chips = s.cands.length ? '<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:12px">'+
     s.cands.map(function(p,i){ const on=(s.reach===p.name);
-      return '<button class="btn" style="width:auto;margin:0;padding:7px 12px;font-size:12.5px;background:'+(on?'var(--go-bg)':'var(--bg3)')+';border:1px solid '+(on?'var(--go-bd)':'var(--bd)')+';color:'+(on?'var(--go)':'var(--tx2)')+'" onclick="_blessReach('+i+')">'+_escFew(p.name)+'</button>';
+      return '<button class="btn" style="width:auto;margin:0;padding:7px 12px;font-size:12px;background:'+(on?'var(--go-bg)':'var(--bg3)')+';border:1px solid '+(on?'var(--go-bd)':'var(--bd)')+';color:'+(on?'var(--go)':'var(--tx2)')+'" onclick="_blessReach('+i+')">'+_escFew(p.name)+'</button>';
     }).join('')+'</div>' : '';
   b.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.14em;margin-bottom:8px">INTO CONNECTION</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.3;margin-bottom:8px">Now make one of them real.</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:8px">Now make one of them real.</div>'+
     '<div style="font-size:13px;color:var(--tx2);line-height:1.65;margin-bottom:14px">Wishing someone well is where this starts, not where it ends. Name ONE person you\u2019ll actually reach out to \u2014 today, not one day.</div>'+
     chips+
     '<input type="text" id="bless-reach" maxlength="40" value="'+_escFew(s.reach)+'" placeholder="'+(s.cands.length?'\u2026or someone else':'Who will you reach out to?')+'" oninput="_blessReachTyped(this.value)" style="margin-bottom:14px;text-align:center">'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="_blessGo()">I\u2019m going to them now</button>'+
-    '<button class="btn" onclick="_blessHold()" style="background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12.5px">Just hold them for now</button>';
+    '<button class="btn subtle" onclick="_blessHold()">Just hold them for now</button>';
 }
 
 // ════ WHAT MATTERS — the values card sort ════
@@ -1290,22 +1290,22 @@ function _vsRender(){
   const b=document.getElementById('vs-body'); if(!b) return; const s=_vsS;
   if(s.phase===1){
     b.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.14em;margin-bottom:8px">WHAT MATTERS \u00B7 1 OF 3</div>'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.25;margin-bottom:6px">Pick the five you\u2019d defend.</div>'+
-      '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:12px">Not the five that sound good \u2014 the five you\u2019d actually give something up for. There is no right answer here and nothing is scored. Redo it whenever you like.</div>'+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.25;margin-bottom:6px">Pick the five you\u2019d defend.</div>'+
+      '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:12px">Not the five that sound good \u2014 the five you\u2019d actually give something up for. There is no right answer here and nothing is scored. Redo it whenever you like.</div>'+
       '<div style="font-family:DM Mono,monospace;font-size:10px;letter-spacing:0.1em;margin-bottom:10px;color:'+(s.picked.length===5?'var(--go)':'var(--tx3)')+'">'+s.picked.length+' of 5 chosen</div>'+
       VALUES.map(function(v){ const on=s.picked.indexOf(v[0])>=0;
-        return '<button class="btn" onclick="_vsToggle(\''+v[0]+'\')" style="text-align:left;margin-bottom:6px;padding:11px 12px;background:'+(on?'var(--go-bg)':'var(--bg3)')+';border:1px solid '+(on?'var(--go-bd)':'var(--bd)')+'">'+
+        return '<button class="btn stack" onclick="_vsToggle(\''+v[0]+'\')" style="text-align:left;margin-bottom:6px;padding:11px 12px;background:'+(on?'var(--go-bg)':'var(--bg3)')+';border:1px solid '+(on?'var(--go-bd)':'var(--bd)')+'">'+
           '<div style="font-size:14px;color:'+(on?'var(--go)':'var(--tx)')+'">'+v[1]+'</div>'+
-          '<div style="font-size:11.5px;color:var(--tx3);line-height:1.5;margin-top:2px">'+v[2]+'</div></button>';
+          '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:2px">'+v[2]+'</div></button>';
       }).join('')+
       '<button class="btn primary" style="margin-top:10px;margin-bottom:8px" onclick="_vsPhase(2)">Order them \u203A</button>'+
-      '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>';
+      '<button class="btn quiet" onclick="closeModal(this)">Not now</button>';
     return;
   }
   if(s.phase===2){
     b.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.14em;margin-bottom:8px">WHAT MATTERS \u00B7 2 OF 3</div>'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.25;margin-bottom:6px">Now put them in order.</div>'+
-      '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:12px">When two of them pull against each other \u2014 and they will \u2014 which one wins? That\u2019s all the order means.</div>'+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.25;margin-bottom:6px">Now put them in order.</div>'+
+      '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:12px">When two of them pull against each other \u2014 and they will \u2014 which one wins? That\u2019s all the order means.</div>'+
       s.picked.map(function(id,i){
         return '<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--bd)">'+
           '<div style="font-family:DM Mono,monospace;font-size:11px;color:var(--go);width:16px">'+(i+1)+'</div>'+
@@ -1314,15 +1314,15 @@ function _vsRender(){
           '<button class="btn" style="width:auto;margin:0;padding:5px 10px;font-size:12px" onclick="_vsMove('+i+',1)">\u25BC</button></div>';
       }).join('')+
       '<button class="btn primary" style="margin-top:14px;margin-bottom:8px" onclick="_vsPhase(3)">That\u2019s the order \u203A</button>'+
-      '<button class="btn" onclick="_vsPhase(1)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">\u2039 Back to the list</button>';
+      '<button class="btn quiet" onclick="_vsPhase(1)">\u2039 Back to the list</button>';
     return;
   }
   b.innerHTML='<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.14em;margin-bottom:8px">WHAT MATTERS \u00B7 3 OF 3</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.3;margin-bottom:6px">'+valLabel(s.picked[0])+' is your first.</div>'+
-    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:12px">One line: why that one? This is the sentence I\u2019ll hand back to you when a hard choice comes. Optional \u2014 blank is fine.</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:6px">'+valLabel(s.picked[0])+' is your first.</div>'+
+    '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:12px">One line: why that one? This is the sentence I\u2019ll hand back to you when a hard choice comes. Optional \u2014 blank is fine.</div>'+
     '<textarea id="vs-why" maxlength="160" placeholder="e.g. because I\u2019d rather be the person my kids describe than the one they explain" style="min-height:76px;font-size:16px;line-height:1.5;margin-bottom:14px">'+_escFew(s.why)+'</textarea>'+
     '<button class="btn primary" style="margin-bottom:8px" onclick="_vsSave()">Hold me to this</button>'+
-    '<button class="btn" onclick="_vsPhase(2)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">\u2039 Back</button>';
+    '<button class="btn quiet" onclick="_vsPhase(2)">\u2039 Back</button>';
 }
 function renderValuesCard(){
   const el=document.getElementById('values-body'); if(!el) return;
@@ -1338,8 +1338,8 @@ function renderValuesCard(){
         '<span style="font-size:'+(i===0?'16px':'14px')+';color:'+(i===0?'var(--go)':'var(--tx)')+'">'+valLabel(id)+'</span></div>';
     }).join('')+'</div>'+
     (o.why?'<div style="font-family:Cormorant Garamond,serif;font-size:15px;font-style:italic;color:var(--tx2);line-height:1.55;border-left:2px solid var(--go-bd);padding-left:11px;margin-bottom:12px">'+_escFew(o.why)+'</div>':'')+
-    '<p style="font-size:11.5px;color:var(--tx3);line-height:1.5;margin-bottom:10px">A mirror, not a scoreboard. Nothing here is ever scored against you \u2014 and values move as life moves. Re-sort whenever it stops being true.</p>'+
-    '<button class="btn" style="font-size:13px;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2)" onclick="openValuesSort()">Re-sort</button>';
+    '<p style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:10px">A mirror, not a scoreboard. Nothing here is ever scored against you \u2014 and values move as life moves. Re-sort whenever it stops being true.</p>'+
+    '<button class="btn subtle" onclick="openValuesSort()">Re-sort</button>';
 }
 
 // ════ BREATH & STILLNESS — the minimum viable work ════
@@ -1461,10 +1461,10 @@ function _breathSafetyGate(cb){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center">'+
     '<div style="font-size:30px;margin-bottom:8px">⚠️</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;color:var(--tx);margin-bottom:10px">One quick check</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:10px">One quick check</div>'+
     '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:16px">This one is more intense — fast breathing. <b style="color:var(--tx)">Skip it</b> if you’re pregnant, have heart, blood-pressure or breathing conditions, or get panic attacks. Never do it while driving or in water. Sit down first, and stop if you feel dizzy.</div>'+
     '<button class="btn primary" id="b-safe-ok" style="margin-bottom:8px">I understand — continue</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Not now</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
   m.querySelector('#b-safe-ok').onclick=()=>{ try{ ls('totry_breath_intense_ok',true); }catch(_){} m.remove(); if(typeof cb==='function') cb(); };
@@ -1477,14 +1477,14 @@ function openBreathMenu(){
   const _pf = _breathProof();
   const proofLine = (_pf && _pf.n>0) ? '<div style="font-size:12px;color:var(--tx2);line-height:1.5;margin-bottom:14px;font-style:italic">Breathing brought the wave down '+_pf.n+' of your last '+_pf.m+' times.</div>' : '';
   let html='<div class="modal" style="text-align:center"><div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">Take a breath</div>'+
-    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:'+((mw>0||proofLine)?'10px':'16px')+'">The one work you can always do. Pick what fits right now.</div>'+mindfulLine+proofLine;
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);margin-bottom:4px">Take a breath</div>'+
+    '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:'+((mw>0||proofLine)?'10px':'16px')+'">The one work you can always do. Pick what fits right now.</div>'+mindfulLine+proofLine;
   ids.forEach(id=>{ const p=_protoFor(id); html+=
     '<button class="btn" onclick="closeModal(this);openBreath(\''+id+'\')" style="text-align:left;margin-bottom:8px;padding:12px 14px">'+
       '<div style="font-size:14px;color:var(--tx)">'+p.name+(p.intense?' <span style="color:var(--tx3);font-size:10px">· intense</span>':'')+'</div>'+
-      '<div style="font-size:11.5px;color:var(--tx3)">'+p.why+'</div>'+
+      '<div style="font-size:11px;color:var(--tx3)">'+p.why+'</div>'+
     '</button>'; });
-  html+='<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:4px">Not now</button></div>';
+  html+='<button class="btn quiet" onclick="closeModal(this)" style="margin-top:4px">Not now</button></div>';
   m.innerHTML=html; document.body.appendChild(m); if(typeof haptic==='function') haptic('tap');
 }
 function openBreath(id, opts){
@@ -1503,7 +1503,7 @@ function openBreath(id, opts){
     '<button class="b-x" aria-label="Close" style="position:absolute;top:calc(env(safe-area-inset-top, 0px) + 10px);right:10px;background:none;border:none;color:var(--tx3);font-size:28px;line-height:1;cursor:pointer;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center">×</button>'+
     '<div class="b-pre" style="display:none;max-width:340px">'+
       '<div style="font-family:Cormorant Garamond,serif;font-size:24px;margin-bottom:6px">Before we begin</div>'+
-      '<div style="font-size:13.5px;color:var(--tx2);line-height:1.6;margin-bottom:18px">How strong is it right now? <span style="color:var(--tx3)">0 is gone, 10 is overwhelming.</span></div>'+
+      '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:18px">How strong is it right now? <span style="color:var(--tx3)">0 is gone, 10 is overwhelming.</span></div>'+
       '<div class="b-scale" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px"></div>'+
       '<button class="b-skip" style="background:transparent;border:none;color:var(--tx3);font-size:12px;cursor:pointer">Skip — just breathe</button>'+
     '</div>'+
@@ -1518,7 +1518,7 @@ function openBreath(id, opts){
     '</div>'+
     '<div class="b-post" style="display:none;max-width:340px">'+
       '<div style="font-family:Cormorant Garamond,serif;font-size:24px;margin-bottom:6px">And now?</div>'+
-      '<div style="font-size:13.5px;color:var(--tx2);line-height:1.6;margin-bottom:18px">Same scale — where is it now?</div>'+
+      '<div style="font-size:13px;color:var(--tx2);line-height:1.6;margin-bottom:18px">Same scale — where is it now?</div>'+
       '<div class="b-scale2" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px"></div>'+
     '</div>'+
     '<div class="b-done" style="display:none;max-width:360px">'+
@@ -1539,7 +1539,7 @@ function openBreath(id, opts){
   q('.b-x').onclick=close;
   q('.b-change').onclick=()=>{ cleanup(); ov.remove(); openBreathMenu(); };
   function show(sec){ ['.b-pre','.b-run','.b-post','.b-done'].forEach(s=>{ const e=q(s); if(e) e.style.display=(s===sec)?(s==='.b-run'?'flex':'block'):'none'; }); }
-  function buildScale(container, cb){ if(!container) return; container.innerHTML=''; for(let n=0;n<=10;n++){ const b=document.createElement('button'); b.textContent=n; b.style.cssText='width:26px;height:34px;border-radius:8px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);font-size:13px;cursor:pointer'; b.onclick=()=>cb(n); container.appendChild(b); } }
+  function buildScale(container, cb){ if(!container) return; container.innerHTML=''; for(let n=0;n<=10;n++){ const b=document.createElement('button'); b.textContent=n; b.style.cssText='width:26px;height:34px;border-radius:var(--rs);border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);font-size:13px;cursor:pointer'; b.onclick=()=>cb(n); container.appendChild(b); } }
   function startBreathing(){
     show('.b-run');
     // Prime the selection generator ONCE for the whole exercise. Without this every tick below is a
@@ -1650,9 +1650,9 @@ function walkBackLinks(v){
 function _walkBackAtThreshold(v){
   try{
     const L=walkBackLinks(v); if(!L || !L.catches.length) return '';
-    return '<div style="border:1px solid var(--bd);border-radius:12px;padding:12px;margin-top:10px;background:var(--bg3)">'+
+    return '<div style="border:1px solid var(--bd);border-radius:var(--rm);padding:12px;margin-top:10px;background:var(--bg3)">'+
       '<div style="font-family:DM Mono,monospace;font-size:8px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:6px">The link you said you’d break</div>'+
-      L.catches.map(function(c){ return '<div style="font-size:12.5px;color:var(--tx);line-height:1.5">• '+_escFew(c)+'</div>'; }).join('')+
+      L.catches.map(function(c){ return '<div style="font-size:13px;color:var(--tx);line-height:1.5">• '+_escFew(c)+'</div>'; }).join('')+
       '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-top:6px">You worked that out when you were clear-headed. It is still true now.</div>'+
     '</div>';
   }catch(_){ return ''; }
@@ -1727,24 +1727,24 @@ function openCBA(i){
 
 // 2.3 — DEADS. Named escapes, so a craving has more answers than "hold on".
 const _DEADS=[
-  ['\u23F1','Delay','Not "no" \u2014 just not now. Set fifteen minutes and decide at the end of it. Most of the wave is gone by then.'],
-  ['\u{1F6AA}','Escape','Leave the room. Not a metaphor \u2014 the actual room. Most urges are half-made of where you\u2019re standing.'],
-  ['\u{1F91D}','Accept','Stop wrestling it. Let it be there, unfought, and watch it move. It always does.'],
-  ['\u{1F3AF}','Distract','Something with your hands and a bit of friction \u2014 cold water, a walk, tidying, press-ups. Not a screen.'],
-  ['\u{1F504}','Substitute','Give the need what it actually wants. Tired \u2192 rest. Lonely \u2192 a person. Bored \u2192 something real.']
+  ['clock','Delay','Not "no" \u2014 just not now. Set fifteen minutes and decide at the end of it. Most of the wave is gone by then.'],
+  ['walk','Escape','Leave the room. Not a metaphor \u2014 the actual room. Most urges are half-made of where you\u2019re standing.'],
+  ['leaf','Accept','Stop wrestling it. Let it be there, unfought, and watch it move. It always does.'],
+  ['target','Distract','Something with your hands and a bit of friction \u2014 cold water, a walk, tidying, press-ups. Not a screen.'],
+  ['repeat','Substitute','Give the need what it actually wants. Tired \u2192 rest. Lonely \u2192 a person. Bored \u2192 something real.']
 ];
 function openDEADS(){
   document.querySelectorAll('.modal-bg.open').forEach(function(m){ m.remove(); });
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="max-height:88vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);line-height:1.3;margin-bottom:6px">Five ways through.</div>'+
-    '<div style="text-align:center;font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:15px">Enduring it is only one of them, and usually the hardest. Pick whichever you could actually do in the next minute.</div>'+
-    _DEADS.map(function(d){ return '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin-bottom:8px">'+
-      '<div style="font-size:13.5px;color:var(--tx);margin-bottom:2px">'+d[0]+'&nbsp;&nbsp;'+d[1]+'</div>'+
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:6px">Five ways through.</div>'+
+    '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:15px">Enduring it is only one of them, and usually the hardest. Pick whichever you could actually do in the next minute.</div>'+
+    _DEADS.map(function(d){ return '<div style="background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm);padding:12px 14px;margin-bottom:8px">'+
+      '<div style="font-size:13px;color:var(--tx);margin-bottom:2px"><span style="color:var(--go)">'+svgIcon(d[0],16)+'</span>&nbsp;&nbsp;'+d[1]+'</div>'+
       '<div style="font-size:12px;color:var(--tx2);line-height:1.55">'+d[2]+'</div></div>'; }).join('')+
     '<button class="btn primary" style="margin-top:4px" onclick="closeModal(this);theRelease({did:\'You picked a way through instead of white-knuckling it.\'})">Doing one now</button>'+
-    '<button class="btn" onclick="closeModal(this);openToolkit()" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:8px">Learn these properly when it\u2019s quiet \u2192</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:6px">Back</button>'+
+    '<button class="btn quiet" onclick="closeModal(this);openToolkit()" style="margin-top:8px">Learn these properly when it\u2019s quiet \u2192</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)" style="margin-top:6px">Back</button>'+
   '</div>';
   document.body.appendChild(m);
   if(typeof haptic==='function') haptic('tap');
@@ -1760,7 +1760,7 @@ function openVicePlan(i){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="max-height:92vh;overflow-y:auto">'+
     '<div class="modal-handle"></div>'+
-    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:2px">Your plan for '+String(v.n).replace(/</g,'&lt;')+'</div>'+
+    '<div style="text-align:center;font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:2px">Your plan for '+String(v.n).replace(/</g,'&lt;')+'</div>'+
     '<div style="text-align:center;font-size:12px;color:var(--tx3);line-height:1.5;margin-bottom:16px">' +
       (v.mode ? 'Why it matters to you, and the moves that actually help. Change the goal any time.'
               : 'However you want to handle it \u2014 I\u2019ll shape everything around this. No wrong answer.') +
@@ -1772,7 +1772,7 @@ function openVicePlan(i){
     // sheet then leads with the two things nobody has asked yet.
     (v.mode
       ? '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;' +
-          'padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:10px">' +
+          'padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--rm)">' +
           '<div style="font-size:12px;color:var(--tx2)">Goal: <span style="color:var(--tx)">' +
             _escFew(v.mode==='quit' ? 'quit it' : v.mode==='moderate' ? 'keep it in check' : 'just watching') +
           '</span></div>' +
@@ -1783,29 +1783,29 @@ function openVicePlan(i){
     '<div class="vp-mode" style="display:' + (v.mode ? 'none' : 'flex') + ';gap:6px;margin-bottom:16px"></div>'+
     '<div class="vp-line-wrap" style="display:none;margin-bottom:16px">'+
       '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Your line (how much is okay)</div>'+
-      '<input class="vp-line" type="number" min="1" value="'+(v.modThreshold||3)+'" style="width:100%;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:16px;box-sizing:border-box" placeholder="e.g. 3 a week">'+
+      '<input class="vp-line" type="number" min="1" value="'+(v.modThreshold||3)+'" style="width:100%;padding:12px;border-radius:var(--rm);border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:16px;box-sizing:border-box" placeholder="e.g. 3 a week">'+
     '</div>'+
     '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">Why this matters to you</div>'+
-    '<textarea class="vp-why" placeholder="The real reason. I’ll say it back to you when it’s hard." style="width:100%;min-height:56px;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:16px;font-family:inherit;margin-bottom:16px;resize:vertical;box-sizing:border-box">'+(plan.why?String(plan.why).replace(/</g,'&lt;'):'')+'</textarea>'+
+    '<textarea class="vp-why" placeholder="The real reason. I’ll say it back to you when it’s hard." style="width:100%;min-height:56px;padding:12px;border-radius:var(--rm);border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:16px;font-family:inherit;margin-bottom:16px;resize:vertical;box-sizing:border-box">'+(plan.why?String(plan.why).replace(/</g,'&lt;'):'')+'</textarea>'+
     '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px">When it pulls hardest, what helps you?</div>'+
     '<div class="vp-moves" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px"></div>'+
     '<button class="btn primary vp-save">Save my plan</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:6px">Not now</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)" style="margin-top:6px">Not now</button>'+
       '<div style="display:flex;gap:8px;margin-bottom:8px">'+
-      '<button class="btn" onclick="closeModal(this);openCBA('+i+')" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px;margin:0">\u2696 The honest ledger</button>'+
-      '<button class="btn" onclick="closeModal(this);openWalkBack('+i+')" style="flex:1;background:var(--bg3);border:1px solid var(--bd);color:var(--tx2);font-size:12px;margin:0">\u{1F50E} How did I get there?</button>'+
+      '<button class="btn subtle" onclick="closeModal(this);openCBA('+i+')" style="flex:1;margin:0">'+svgIcon("scale")+' The honest ledger</button>'+
+      '<button class="btn subtle" onclick="closeModal(this);openWalkBack('+i+')" style="flex:1;margin:0">'+svgIcon("search")+' How did I get there?</button>'+
     '</div>'+
     '</div>';
   document.body.appendChild(m);
   const modeWrap=m.querySelector('.vp-mode'), lineWrap=m.querySelector('.vp-line-wrap');
   function renderMode(){
     modeWrap.innerHTML='';
-    [['quit','Quit it'],['moderate','Moderate it'],['watch','Just watch it']].forEach(o=>{ const b=document.createElement('button'); b.type='button'; b.textContent=o[1]; const on=mode===o[0]; b.style.cssText='flex:1;padding:9px 4px;border-radius:10px;border:1px solid '+(on?'var(--go)':'var(--bd)')+';background:'+(on?'rgba(200,169,110,0.14)':'var(--bg3)')+';color:var(--tx);font-size:12.5px;cursor:pointer'; b.onclick=()=>{mode=o[0];renderMode();}; modeWrap.appendChild(b); });
+    [['quit','Quit it'],['moderate','Moderate it'],['watch','Just watch it']].forEach(o=>{ const b=document.createElement('button'); b.type='button'; b.textContent=o[1]; const on=mode===o[0]; b.style.cssText='flex:1;padding:9px 4px;border-radius:var(--rm);border:1px solid '+(on?'var(--go)':'var(--bd)')+';background:'+(on?'rgba(200,169,110,0.14)':'var(--bg3)')+';color:var(--tx);font-size:13px;cursor:pointer'; b.onclick=()=>{mode=o[0];renderMode();}; modeWrap.appendChild(b); });
     lineWrap.style.display = mode==='moderate' ? 'block' : 'none';
   }
   renderMode();
   const movesWrap=m.querySelector('.vp-moves');
-  MOVES.forEach(mv=>{ const b=document.createElement('button'); b.type='button'; b.textContent=mv; const on=chosen.has(mv); b.style.cssText='padding:7px 11px;border-radius:15px;border:1px solid '+(on?'var(--go)':'var(--bd)')+';background:'+(on?'rgba(200,169,110,0.14)':'var(--bg3)')+';color:'+(on?'var(--tx)':'var(--tx2)')+';font-size:12px;cursor:pointer'; b.onclick=()=>{ if(chosen.has(mv)){chosen.delete(mv);b.style.borderColor='var(--bd)';b.style.background='var(--bg3)';b.style.color='var(--tx2)';}else{chosen.add(mv);b.style.borderColor='var(--go)';b.style.background='rgba(200,169,110,0.14)';b.style.color='var(--tx)';} }; movesWrap.appendChild(b); });
+  MOVES.forEach(mv=>{ const b=document.createElement('button'); b.type='button'; b.textContent=mv; const on=chosen.has(mv); b.style.cssText='padding:7px 11px;border-radius:var(--r);border:1px solid '+(on?'var(--go)':'var(--bd)')+';background:'+(on?'rgba(200,169,110,0.14)':'var(--bg3)')+';color:'+(on?'var(--tx)':'var(--tx2)')+';font-size:12px;cursor:pointer'; b.onclick=()=>{ if(chosen.has(mv)){chosen.delete(mv);b.style.borderColor='var(--bd)';b.style.background='var(--bg3)';b.style.color='var(--tx2)';}else{chosen.add(mv);b.style.borderColor='var(--go)';b.style.background='rgba(200,169,110,0.14)';b.style.color='var(--tx)';} }; movesWrap.appendChild(b); });
   m.querySelector('.vp-save').onclick=()=>{
     if(typeof loadV==='function') loadV();
     const vv=(typeof vices!=='undefined'&&vices[i])?vices[i]:null; if(!vv){ m.remove(); return; }
@@ -1833,7 +1833,7 @@ function _planCardHTML(i){
     let inner='';
     if(why) inner+='<div style="font-size:13px;color:var(--tx);line-height:1.6;font-style:italic;margin-bottom:'+(move?'8px':'0')+'">“'+String(why).replace(/</g,'&lt;')+'”</div>';
     if(move) inner+='<div style="font-size:11px;color:var(--tx3);line-height:1.5"><span style="color:var(--go)">Your move:</span> '+String(move).replace(/</g,'&lt;')+'</div>';
-    return '<div style="background:rgba(200,169,110,0.08);border:1px solid var(--go-bd);border-radius:12px;padding:13px 14px;margin-bottom:14px;text-align:left">'+
+    return '<div style="background:rgba(200,169,110,0.08);border:1px solid var(--go-bd);border-radius:var(--rm);padding:13px 14px;margin-bottom:14px;text-align:left">'+
       '<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--go);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px">Your plan — in your words</div>'+inner+'</div>';
   }catch(_){ return ''; }
 }
@@ -1861,13 +1861,13 @@ function _pickHigh(type){
 function _coldPlunge(){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   m.innerHTML='<div class="modal" style="text-align:center">'+
-    '<div style="font-size:30px;margin-bottom:8px">\uD83E\uDDCA</div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:25px;color:var(--tx);line-height:1.3;margin-bottom:10px">Go cold.</div>'+
-    '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:14px">Turn it all the way cold at the end of your shower. It will feel like too much for about fifteen seconds, and then it will not. Breathe out slowly \u2014 do not hold your breath.</div>'+
+    '<div style="font-size:30px;margin-bottom:8px">'+svgIcon("snow",28)+'</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:10px">Go cold.</div>'+
+    '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">Turn it all the way cold at the end of your shower. It will feel like too much for about fifteen seconds, and then it will not. Breathe out slowly \u2014 do not hold your breath.</div>'+
     '<div id="cold-clock" role="timer" aria-live="polite" style="font-family:\'DM Mono\',monospace;font-size:44px;color:var(--go);line-height:1;margin-bottom:6px">1:30</div>'+
     '<div id="cold-sub" style="font-size:12px;color:var(--tx3);margin-bottom:16px">Ninety seconds. Start it when the water turns.</div>'+
     '<button class="btn primary" id="cold-go" style="margin-bottom:8px">Start</button>'+
-    '<button class="btn" id="cold-close" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0">Not now</button>'+
+    '<button class="btn quiet" id="cold-close" style="margin:0">Not now</button>'+
   '</div>';
   document.body.appendChild(m);
   if(typeof haptic==='function') haptic('tap');
@@ -1904,24 +1904,24 @@ function _reachOneNow(){
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   if(!s || !s.person){
     m.innerHTML='<div class="modal" style="text-align:center">'+
-      '<div style="font-size:30px;margin-bottom:8px">\uD83E\uDD1D</div>'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.3;margin-bottom:10px">Reach out to one person.</div>'+
-      '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:16px">Isolation feeds the flatness; contact starves it. One message, to one person who is good for you \u2014 it does not have to be deep.</div>'+
+      '<div style="font-size:30px;margin-bottom:8px">'+svgIcon("users",28)+'</div>'+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:10px">Reach out to one person.</div>'+
+      '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:16px">Isolation feeds the flatness; contact starves it. One message, to one person who is good for you \u2014 it does not have to be deep.</div>'+
       '<button class="btn primary" onclick="closeModal(this);if(typeof openYourFew===\'function\')openYourFew()" style="margin-bottom:8px">Add the people I carry</button>'+
-      '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0">Not now</button>'+
+      '<button class="btn quiet" onclick="closeModal(this)" style="margin:0">Not now</button>'+
     '</div>';
   } else {
     const nm = _escFew(s.person.name);
     const since = (s.days==null) ? 'You have not logged reaching out to them yet.'
                                  : ('It has been '+s.days+' day'+(s.days===1?'':'s')+'.');
     m.innerHTML='<div class="modal" style="text-align:center">'+
-      '<div style="font-size:30px;margin-bottom:8px">\uD83E\uDD1D</div>'+
-      '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);line-height:1.3;margin-bottom:6px">Message '+nm+'.</div>'+
-      '<div style="font-size:11.5px;color:var(--tx3);margin-bottom:12px">'+since+'</div>'+
-      '<div style="font-size:13.5px;color:var(--tx2);line-height:1.7;margin-bottom:14px">'+_escFew(s.prompt||'Say one true thing. It does not have to be deep.')+'</div>'+
+      '<div style="font-size:30px;margin-bottom:8px">'+svgIcon("users",28)+'</div>'+
+      '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);line-height:1.3;margin-bottom:6px">Message '+nm+'.</div>'+
+      '<div style="font-size:11px;color:var(--tx3);margin-bottom:12px">'+since+'</div>'+
+      '<div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:14px">'+_escFew(s.prompt||'Say one true thing. It does not have to be deep.')+'</div>'+
       (s.reframe?'<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px">'+s.reframe+'</div>':'')+
       '<button class="btn primary" id="reach-one-did" style="margin-bottom:8px">I reached out</button>'+
-      '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin:0">Not now</button>'+
+      '<button class="btn quiet" onclick="closeModal(this)" style="margin:0">Not now</button>'+
     '</div>';
   }
   document.body.appendChild(m);
@@ -1947,11 +1947,11 @@ function _recoveryPhaseNote(days){
 }
 function openNaturalHighs(){
   const HIGHS=[
-    ['move','🏃','Move your body','Movement lifts mood and takes the edge off a craving more reliably than anything else here — and it works on the day you least feel like it.'],
-    ['cold','🧊','Cold water','60–90 seconds of cold gives most people a sharp, clean lift in alertness and mood. Short-lived, but no crash, and it breaks the loop you are in.'],
-    ['sun','☀️','Morning light','10–20 min of early sun anchors your body clock — which is what actually fixes the sleep that is feeding the craving.'],
-    ['connect','🤝','Reach out to someone','Real connection rebuilds the reward the vice was faking.'],
-    ['breath','🌬️','A charged breath','A fast breathing round to lift a flat, numb day.']
+    ['move','run','Move your body','Movement lifts mood and takes the edge off a craving more reliably than anything else here — and it works on the day you least feel like it.'],
+    ['cold','snow','Cold water','60–90 seconds of cold gives most people a sharp, clean lift in alertness and mood. Short-lived, but no crash, and it breaks the loop you are in.'],
+    ['sun','sun','Morning light','10–20 min of early sun anchors your body clock — which is what actually fixes the sleep that is feeding the craving.'],
+    ['connect','users','Reach out to someone','Real connection rebuilds the reward the vice was faking.'],
+    ['breath','breath','A charged breath','A fast breathing round to lift a flat, numb day.']
   ];
   // Recovery-arc framing applies ONLY to vices being QUIT (abstinence). Someone moderating has no
   // "clean streak" to heal — natural highs still help them (clean dopamine beats the fake), but we
@@ -1962,14 +1962,14 @@ function openNaturalHighs(){
   const _intro=_phase?'Feeling flat after quitting is the reward system healing — not you failing. These rebuild it for real. Pick one and go.':'A real hit of clean dopamine beats the fake one every time — no crash, and it makes the pull quieter. Pick one and go.';
   const m=document.createElement('div'); m.className='modal-bg open'; m.style.alignItems='center';
   let html='<div class="modal" style="text-align:center;max-height:92vh;overflow-y:auto"><div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">Chase a real high</div>'+
-    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:'+(_phase?'10px':'16px')+'">'+_intro+'</div>'+_phaseLine;
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);margin-bottom:4px">Chase a real high</div>'+
+    '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:'+(_phase?'10px':'16px')+'">'+_intro+'</div>'+_phaseLine;
   HIGHS.forEach(h=>{ html+=
     '<button class="btn" onclick="_pickHigh(\''+h[0]+'\')" style="text-align:left;margin-bottom:8px;padding:12px 14px;display:flex;align-items:center;gap:11px">'+
-      '<span style="font-size:20px;flex-shrink:0">'+h[1]+'</span>'+
-      '<span style="flex:1"><span style="font-size:14px;color:var(--tx);display:block">'+h[2]+'</span><span style="font-size:11.5px;color:var(--tx3);line-height:1.45">'+h[3]+'</span></span>'+
+      '<span style="flex-shrink:0;display:flex;align-items:center;color:var(--go)">'+svgIcon(h[1],20)+'</span>'+
+      '<span style="flex:1"><span style="font-size:14px;color:var(--tx);display:block">'+h[2]+'</span><span style="font-size:11px;color:var(--tx3);line-height:1.45">'+h[3]+'</span></span>'+
     '</button>'; });
-  html+='<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px;margin-top:4px">Not now</button></div>';
+  html+='<button class="btn quiet" onclick="closeModal(this)" style="margin-top:4px">Not now</button></div>';
   m.innerHTML=html; document.body.appendChild(m); if(typeof haptic==='function') haptic('tap');
 }
 
@@ -2013,17 +2013,17 @@ function openProgressCheckin(){
   const picked=new Set();
   m.innerHTML='<div class="modal" style="text-align:center;max-height:92vh;overflow-y:auto">'+
     '<div class="modal-handle"></div>'+
-    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;color:var(--tx);margin-bottom:4px">How far have you come?</div>'+
-    '<div style="font-size:12.5px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Since you started with ToTry — what have you noticed? Tap any that fit. '+_raffleCopy('intro')+'</div>'+
+    '<div style="font-family:Cormorant Garamond,serif;font-size:24px;font-weight:300;color:var(--tx);margin-bottom:4px">How far have you come?</div>'+
+    '<div style="font-size:12px;color:var(--tx3);line-height:1.6;margin-bottom:16px">Since you started with ToTry — what have you noticed? Tap any that fit. '+_raffleCopy('intro')+'</div>'+
     '<div class="pc-areas" style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px"></div>'+
-    '<textarea class="pc-note" placeholder="Anything you’d want Alfy to know? What’s working, what’s missing?" style="width:100%;min-height:70px;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:16px;font-family:inherit;margin-bottom:14px;resize:vertical;box-sizing:border-box"></textarea>'+
+    '<textarea class="pc-note" placeholder="Anything you’d want Alfy to know? What’s working, what’s missing?" style="width:100%;min-height:70px;padding:12px;border-radius:var(--rm);border:1px solid var(--bd);background:var(--bg3);color:var(--tx);font-size:16px;font-family:inherit;margin-bottom:14px;resize:vertical;box-sizing:border-box"></textarea>'+
     '<div style="font-size:11px;color:var(--tx3);line-height:1.5;margin-bottom:16px">'+_raffleCopy('send')+'</div>'+
     '<button class="btn primary pc-send" style="margin-bottom:8px">Send it to Alfy</button>'+
-    '<button class="btn" onclick="closeModal(this)" style="background:transparent;border:none;color:var(--tx3);font-size:12px">Maybe later</button>'+
+    '<button class="btn quiet" onclick="closeModal(this)">Maybe later</button>'+
   '</div>';
   document.body.appendChild(m);
   const areasWrap=m.querySelector('.pc-areas');
-  AREAS.forEach(a=>{ const b=document.createElement('button'); b.type='button'; b.textContent=a; b.style.cssText='padding:8px 12px;border-radius:16px;border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);font-size:12.5px;cursor:pointer'; b.onclick=()=>{ if(picked.has(a)){ picked.delete(a); b.style.borderColor='var(--bd)'; b.style.color='var(--tx2)'; b.style.background='var(--bg3)'; } else { picked.add(a); b.style.borderColor='var(--go)'; b.style.color='var(--tx)'; b.style.background='rgba(200,169,110,0.14)'; } }; areasWrap.appendChild(b); });
+  AREAS.forEach(a=>{ const b=document.createElement('button'); b.type='button'; b.textContent=a; b.style.cssText='padding:8px 12px;border-radius:var(--r);border:1px solid var(--bd);background:var(--bg3);color:var(--tx2);font-size:13px;cursor:pointer'; b.onclick=()=>{ if(picked.has(a)){ picked.delete(a); b.style.borderColor='var(--bd)'; b.style.color='var(--tx2)'; b.style.background='var(--bg3)'; } else { picked.add(a); b.style.borderColor='var(--go)'; b.style.color='var(--tx)'; b.style.background='rgba(200,169,110,0.14)'; } }; areasWrap.appendChild(b); });
   m.querySelector('.pc-send').onclick=()=>{
     const note=(m.querySelector('.pc-note').value||'').trim();
     if(!picked.size && !note){ if(typeof showToast==='function') showToast('Tell me one thing','Tap what’s improved, or write a line.'); return; }
@@ -2056,7 +2056,7 @@ function openProgressCheckin(){
     try{ if(typeof logEvent==='function') logEvent('progress_checkin'); }catch(_){}
     m.remove();
     const t=document.createElement('div'); t.className='modal-bg open'; t.style.alignItems='center';
-    t.innerHTML='<div class="modal" style="text-align:center"><div style="font-size:30px;margin-bottom:8px">🙏</div><div style="font-family:Cormorant Garamond,serif;font-size:23px;color:var(--tx);margin-bottom:10px">Thank you — really.</div><div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:16px">'+_raffleCopy('thanks')+'</div><button class="btn primary" onclick="closeModal(this)">Back to it</button></div>';
+    t.innerHTML='<div class="modal" style="text-align:center"><div style="font-size:30px;margin-bottom:8px">🙏</div><div style="font-family:Cormorant Garamond,serif;font-size:22px;font-weight:300;color:var(--tx);margin-bottom:10px">Thank you — really.</div><div style="font-size:13px;color:var(--tx2);line-height:1.7;margin-bottom:16px">'+_raffleCopy('thanks')+'</div><button class="btn primary" onclick="closeModal(this)">Back to it</button></div>';
     document.body.appendChild(t);
     if(typeof haptic==='function') haptic('tap');
   };

@@ -965,7 +965,7 @@ function checkGoneQuietWelcome(){
     const hi = name ? ('Hey '+name+'.') : 'Hey.';
     setTimeout(()=>{
       if(typeof showToast==='function'){
-        showToast(hi + ' Good to see you. \uD83C\uDF3F',
+        showToast(hi + ' Good to see you.',
           'It\u2019s been a few days \u2014 no guilt at all. Whatever happened, you\u2019re here now, and that\u2019s what counts. Tap if you want to ease back in.',
           ()=>{ try{ if(typeof go==='function') go('home'); }catch(_){} });
       }

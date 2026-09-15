@@ -184,7 +184,7 @@ async function syncHevyWorkouts(){
           const prsHit = detectAndRecordPRs(latest.exercises || []);
           if(prsHit.length){
             const top = prsHit.sort((a,b)=>b.e1rm-a.e1rm)[0];
-            setTimeout(()=>{ showToast('New PR! \u{1F3C6}', top.name + ' \u2014 est. 1RM ' + top.e1rm + 'kg'); if(typeof showVerseToast==='function') setTimeout(()=>showVerseToast('pr','Word for your PR'),800); }, 600);
+            setTimeout(()=>{ showToast('New PR!', top.name + ' \u2014 est. 1RM ' + top.e1rm + 'kg'); if(typeof showVerseToast==='function') setTimeout(()=>showVerseToast('pr','Word for your PR'),800); }, 600);
           }
         }catch(_){ }
       } else if(fullHistory && existing.length){
